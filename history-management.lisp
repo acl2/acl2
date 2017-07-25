@@ -6457,8 +6457,7 @@
             (alist1 msg)
             (fms msg alist1 *standard-co* state (ld-evisc-tuple state)))
        (er-let*
-        ((ans (state-global-let*
-               ((infixp nil))
+        ((ans (with-infixp-nil
                (read-object *standard-oi* state))))
         (let ((temp (and (symbolp ans)
                          (assoc-keyword
@@ -7323,6 +7322,14 @@
        (getpropc name 'label nil wrld)
        (equal event-form (get-event name wrld))))
 
+(defmacro make-ctx-for-event (event-form ctx)
+  #+acl2-infix
+  `(if (output-in-infixp state) ,event-form ,ctx)
+  #-acl2-infix
+  (declare (ignore event-form))
+  #-acl2-infix
+  ctx)
+
 (defun deflabel-fn (name state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -7330,7 +7337,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (if (output-in-infixp state) event-form (cons 'deflabel name))
+   (make-ctx-for-event event-form (cons 'deflabel name))
    (let ((wrld1 (w state))
          (event-form (or event-form
                          (list 'deflabel name))))
@@ -7620,8 +7627,7 @@
      (signal val state)
      (mv-let
       (erp obj state)
-      (state-global-let*
-       ((infixp nil))
+      (with-infixp-nil
        (read-object *standard-oi* state))
       (cond
        (erp (mv 'exit nil state))
@@ -15985,7 +15991,7 @@
                              (getpropc name 'table-alist nil wrld))))))
         (:put
          (with-ctx-summarized
-          (if (output-in-infixp state) event-form ctx)
+          (make-ctx-for-event event-form ctx)
           (let* ((tbl (getpropc name 'table-alist nil wrld)))
             (er-progn
              (chk-table-nil-args :put term '(5) ctx state)
@@ -16025,7 +16031,7 @@
                    state))))))))
         (:clear
          (with-ctx-summarized
-          (if (output-in-infixp state) event-form ctx)
+          (make-ctx-for-event event-form ctx)
           (er-progn
            (chk-table-nil-args :clear
                                (or key term)
@@ -16074,7 +16080,7 @@
             (value (getpropc name 'table-guard *t* wrld))))
           (t
            (with-ctx-summarized
-            (if (output-in-infixp state) event-form ctx)
+            (make-ctx-for-event event-form ctx)
             (er-progn
              (chk-table-nil-args op
                                  (or key val)
