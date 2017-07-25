@@ -4765,13 +4765,16 @@
         (set-difference-eq vars (fargs (car dests)))))
    ((getpropc (ffn-symb (car dests)) 'eliminate-destructors-rule nil wrld)
     (er soft ctx
-        "~x0 is an unacceptable destructor elimination rule because ~
-         we already have a destructor elimination rule for ~x1, ~
-         namely ~x2, and we do not support more than one elimination rule ~
-         for the same function symbol."
+        "~x0 is an unacceptable destructor elimination rule because we ~
+         already have a destructor elimination rule for ~x1, namely ~x2, and ~
+         we do not support more than one elimination rule for the same ~
+         function symbol."
         name
         (ffn-symb (car dests))
-        (getpropc (ffn-symb (car dests)) 'eliminate-destructors-rule nil wrld)))
+        (base-symbol (access elim-rule
+                             (getpropc (ffn-symb (car dests))
+                                       'eliminate-destructors-rule nil wrld)
+                             :rune))))
    (t (chk-acceptable-elim-rule1 name vars (cdr dests) ctx wrld state))))
 
 (defun chk-acceptable-elim-rule (name term ctx wrld state)
