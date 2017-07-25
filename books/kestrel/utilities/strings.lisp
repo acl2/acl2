@@ -77,7 +77,7 @@
   :long
   "<p>
    If the message is a string,
-   we use @(tsee str::downcase-first) on the message.
+   we use @(tsee str::downcase-first) on the string.
    </p>
    <p>
    Otherwise, if the format string of the message
@@ -115,7 +115,7 @@
      <li>
      If the command character of the tilde-directive is @('n'),
      we leave the message unchanged because that directive
-     already prints words starting with lower case characters.
+     already prints words that start with lower case characters.
      </li>
      <li>
      If the command character of the tilde-directive is @('N'),
@@ -132,18 +132,18 @@
      and if it is a string we use @(tsee str::downcase-first) on it.
      If instead it is a symbol, we leave the message unchanged
      because symbols are in all caps or start with @('|')
-     (as in the case of the @('x') and a other command characters above).
+     (as in the case of the @('x') and other command characters above).
      </li>
      <li>
      If the command character of the tilde-directive is
      @('#'), @('*'), @('&'), or @('v'),
-     we stop with an error.
-     These directives are currently not supported by the implementation.
+     we stop with an error:
+     these directives are currently not supported by the implementation.
      </li>
    </ul>
    <p>
    Since @(tsee msgp) is a weak recognizer for messages,
-   there is not guarantee that the format string is followed by an alist,
+   there is no guarantee that the format string is followed by an alist,
    and that the values in the alist have the appropriate types.
    This function leaves the message unchanged
    if some of these properties do not hold.
