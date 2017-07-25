@@ -11153,7 +11153,7 @@
   (when-logic
    "DEFAXIOM"
    (with-ctx-summarized
-    (if (output-in-infixp state) event-form (cons 'defaxiom name))
+    (make-ctx-for-event event-form (cons 'defaxiom name))
 
 ; At one time we thought that event-form could be nil.  It is simplest, for
 ; checking redundancy, not to consider the case of manufacturing an event-form,
@@ -11363,7 +11363,8 @@
                         event-form
                         #+:non-standard-analysis std-p)
   (with-ctx-summarized
-   (if (output-in-infixp state) event-form (cons 'defthm name))
+   (make-ctx-for-event event-form (cons 'defthm name))
+
 ; At one time we thought that event-form could be nil.  It is simplest, for
 ; checking redundancy, not to consider the case of manufacturing an event-form,
 ; so now we insist on event-form being supplied (not nil).
@@ -11533,9 +11534,9 @@
 (defun thm-fn (term state hints otf-flg)
   (er-progn
    (with-ctx-summarized
-    (if (output-in-infixp state)
-        (list* 'THM term (if (or hints otf-flg) '(irrelevant) nil))
-      "( THM ...)")
+    (make-ctx-for-event
+     (list* 'THM term (if (or hints otf-flg) '(irrelevant) nil))
+     "( THM ...)")
     (let ((wrld (w state))
           (ens (ens state)))
       (er-let* ((hints (translate-hints+ 'thm
