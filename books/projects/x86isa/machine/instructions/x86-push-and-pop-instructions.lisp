@@ -20,7 +20,11 @@
   :short "PUSH: 50+rw/rd"
   :long "<p>Op/En: O</p>
    <p><tt>50+rw/rd r16/r64</tt>: \[PUSH E\]</p>
-   <p>Note that <tt>50+rd r32</tt> is N.E. in the 64-bit mode.</p>"
+   <p>Note that <tt>50+rd r32</tt> is N.E. in the 64-bit mode.</p>
+
+<p>PUSH doesn't have a separate instruction semantic function,
+unlike other opcodes like ADD, SUB, etc. I've just coupled the
+decoding with the execution in this case.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
