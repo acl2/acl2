@@ -161,13 +161,20 @@
  defined by @(tsee mutual-recursion).  Thanks to Eric Smith for a helpful bug
  report.</p>
 
+ <p>The macro @(tsee must-fail) has a new keyword option, @(':expected'), to
+ indicate the kind of error that is expected.  New macros @(tsee
+ ensure-soft-error), @(tsee ensure-hard-error), and @(tsee ensure-error)
+ provide nice interfaces to @('must-fail') with the legal values of this new
+ option.  See @(see must-fail).  Thanks to Eric Smith for discussions leading
+ to these changes.</p>
+
  <p>Added utility @(tsee er-soft+) for producing soft errors with @(':')@(tsee
  logic) mode code, returning a specified @(see error-triple).  The new utility
  @(tsee er-soft-logic) is similar but a bit simpler, for use when the only
  property needed of the returned @(see error-triple) is that its error
  component is not @('nil').</p>
 
- <p>New utility @(tsee manage-screen-output) is an improved versions o @(tsee
+ <p>New utility @(tsee manage-screen-output) is an improved version of @(tsee
  control-screen-output) (which may eventually be removed).</p>
 
  <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
