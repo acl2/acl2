@@ -945,3 +945,59 @@ extension (ModR/m.reg = 0).</p>"
     x86))
 
 ;; ======================================================================
+;; INSTRUCTION: PUSHA/PUSHAD
+;; ======================================================================
+
+;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+
+(def-inst x86-pusha
+
+  :parents (one-byte-opcodes)
+
+  :short "PUSHA/PUSHAD: 60"
+
+  :long
+  "<p>
+   This is invalid in 64-bit mode.
+   It throws a #UD exception.
+   </p>"
+
+  :implemented
+  (add-to-implemented-opcodes-table 'pusha #x60 '(:nil nil) 'x86-pusha)
+
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+
+  :body
+  (b* ((ctx 'x86-pusha))
+    (!!fault-fresh :ud nil))) ;; #UD
+
+;; ======================================================================
+;; INSTRUCTION: POPA/POPAD
+;; ======================================================================
+
+;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+
+(def-inst x86-popa
+
+  :parents (one-byte-opcodes)
+
+  :short "POPA/POPD: 61"
+
+  :long
+  "<p>
+   This is invalid in 64-bit mode.
+   It throws a #UD exception.
+   </p>"
+
+  :implemented
+  (add-to-implemented-opcodes-table 'popa #x61 '(:nil nil) 'x86-popa)
+
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+
+  :body
+  (b* ((ctx 'x86-popa))
+    (!!fault-fresh :ud nil))) ;; #UD
+
+;; ======================================================================
