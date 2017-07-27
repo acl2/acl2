@@ -1396,15 +1396,15 @@
 ; built with feature :acl2-devel set (typically with "make ACL2_DEVEL=t"), but
 ; this should take only a couple of minutes or so.  It assumes that the only
 ; alist entry below is for "system/top" and that ACL2 is your ACL2 sources
-; directory.  Note: Replace "saved_acl2d" as necessary, e.g.,
-; "ccl-saved_acl2d".
+; directory.  Note: Replace "ccl-saved_acl2d" as necessary, e.g.,
+; "saved_acl2d".
 
 ; cd ACL2
 ; make clean-books
 ; cd books
-; (time nice ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert)
+; (time ./build/cert.pl -j 8 --acl2 `pwd`/../ccl-saved_acl2d system/top.cert)
 ; cd ACL2
-; make devel-check ACL2=`pwd`/saved_acl2d
+; make devel-check ACL2=`pwd`/ccl-saved_acl2d
 
 ; Note that it is not necessary to do a full regression with an :acl2-devel
 ; executable; only the books in the keys of this alist need to be certified.
@@ -1473,6 +1473,9 @@
      (PLAUSIBLE-DCLSP ACL2-COUNT LST)
      (PLAUSIBLE-DCLSP1 ACL2-COUNT LST)
      (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
+     (REMOVE-GUARD-HOLDERS)
+     (REMOVE-GUARD-HOLDERS1 ACL2-COUNT TERM)
+     (REMOVE-GUARD-HOLDERS1-LST ACL2-COUNT LST)
      (REMOVE-LAMBDAS)
      (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
      (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
