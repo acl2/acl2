@@ -143,6 +143,12 @@
  that opened input and output channels remain open until closed, to
  aid guard theorem proofs.  See @(see open-channel-lemmas).</p>
 
+ <h4>Miscellaneous @(see std) changes</h4>
+
+ <p>The @('why') and @('why-explain') convenience macros in
+ @('std/std-customization.lsp') now support rule classes other than
+ @(':rewrite').</p>
+
  <h4>@(see kestrel-utilities)</h4>
 
  <p>Improved an error message for @('verify-guards-program') (thanks to Eric
