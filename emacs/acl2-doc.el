@@ -668,6 +668,10 @@ then restart the ACL2-Doc browser to view that manual."
     (setq *acl2-doc-show-help-message* t))
   (acl2-doc-display name))
 
+;;; Avoid warning in Emacs 25.
+(defvar acl2-doc-find-tag-function
+  'find-tag)
+
 (defun acl2-doc-go! ()
 
   "Go to the topic occurring at the cursor position.  In the case
@@ -1373,7 +1377,7 @@ ACL2-Doc browser."
 	(let ((tags-add-tables t)
 	      (tags-case-fold-search t)) ; the name may be upper-case
 	  (visit-tags-table new-tags-file-name)
-	  (find-tag nil t)
+	  (funcall acl2-doc-find-tag-function nil t)
 
 ;;; We leave the buffer if and only if find-tag fails to cause an
 ;;; error, which is when we save the point much as we do with
@@ -1416,9 +1420,10 @@ See the online (XDOC) documentation for acl2-doc for how to build it."
 	    (let ((tags-add-tables nil)
 		  (tags-case-fold-search t)) ; the name may be upper-case
 	      (visit-tags-table new-tags-file-name)
-	      (find-tag (if use-default
-			    default
-			  (acl2-doc-find-tag-topic default)))
+	      (funcall acl2-doc-find-tag-function
+		       (if use-default
+			   default
+			 (acl2-doc-find-tag-topic default)))
 
 ;;; If there is no error, then remember what we have in case we want
 ;;; to find more matches.

@@ -1177,8 +1177,7 @@
                                  col))
                     state)
                   (value (car instr-list)))
-        (state-global-let*
-         ((infixp nil))
+        (with-infixp-nil
          (read-object instr-list state)))
       (cond
        (erp

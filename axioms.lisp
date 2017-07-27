@@ -12530,7 +12530,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verbose-pstack ; *verbose-pstk*
     user-stobj-alist-safe ; chk-user-stobj-alist
     comp-fn ; compile-uncompiled-defuns
-    fmt-ppr ; print-infix
+    #+acl2-infix fmt-ppr
     acl2-raw-eval ; eval
     pstack-fn ; *pstk-stack*
     dmr-start-fn ; dmr-start-fn-raw
@@ -12557,8 +12557,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-synp ; *metafunction-context*
     add-polys ; *add-polys-counter*
     dmr-stop-fn ; dmr-stop-fn-raw
-    ld-print-results ; print-infix
-    flpr ; print-flat-infix
+    ld-print-results
+    #+acl2-infix flpr
     close-trace-file-fn ; *trace-output*
     ev-fncall-rec ; raw-ev-fncall
     ev-fncall ; live-state-p
@@ -13199,7 +13199,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (in-prove-flg . nil)
     (in-verify-flg . nil) ; value can be set to the ld-level
     (including-uncertified-p . nil) ; valid only during include-book
-    (infixp . nil)                   ; See the Essay on Infix below
+    #+acl2-infix (infixp . nil) ; See the Essay on Infix below
     (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
                                      ; will print a summary for each event.
                                      ; Exit-boot-strap-mode sets this list
@@ -13339,6 +13339,26 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Essay on Infix
 
+; Note: As of late July 2017, infix printing is no longer supported.  As a
+; result, it is now possible to execute some forms in safe-mode that were
+; formerly prohibited; for example, evaluation of the form
+
+;   (defconst *c* (fms-to-string "abc~x0" (list (cons #\0 (expt 2 4)))))
+
+; formerly failed with an error saying that a call of flpr had been made in
+; safe-mode, which was illegal because flpr had raw Lisp code -- which is no
+; longer the case.  Note, however, that we have left the infix-printing code in
+; place for the case #+acl2-infix, in case it becomes desirable to restore it
+; in the future.  Indeed, if you build ACL2 with :acl2-info pushed to
+; *features*, you may be able to do infix printing.  Warning: In that case,
+; some user books may fail, since more functions would have raw Lisp code,
+; hence would be disqualified from evaluation in safe-mode.  Here is an
+; example:
+
+;   (defconst *c* (fms-to-string "abc~x0" (list (cons #\0 (expt 2 4)))))
+
+; Below is the rest of the Essay on Infix.
+
 ; ACL2 has a hook for providing a different syntax.  We call this different
 ; syntax "infix" but it could be anything.  If the state global variable
 ; infixp is nil, ACL2 only supports CLTL syntax.  If infixp is non-nil
@@ -13386,6 +13406,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; (defun flatsize-infix (x termp j max state eviscp) ...)
 
 ; We document each of these when we define them for the silly $ syntax.
+
+; It is common to bind state global infixp to nil, so we create the following
+; macro for that purpose.
+
+(defmacro with-infixp-nil (form)
+  #+acl2-infix
+  `(state-global-let* ((infixp nil))
+                      ,form)
+  #-acl2-infix
+  form)
 
 (defun all-boundp (alist1 alist2)
   (declare (xargs :guard (and (eqlable-alistp alist1)
@@ -16700,6 +16730,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; return t; otherwise we return nil.
 
   (cond
+   #+acl2-infix
    ((null (f-get-global 'infixp *the-live-state*))
     t)
    (t
@@ -16722,7 +16753,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; unix command should return error code 3 if the parse fails.  Otherwise, the
 ; parse is assumed to have worked.
 
-#-acl2-loop-only
+#+(and acl2-infix (not acl2-loop-only))
 (defun-one-output parse-infix-file (infile outfile)
 
 ; This function is only used with the silly $ infix syntax.  It is the analogue
@@ -16876,7 +16907,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         (interface-er "Illegal input-type ~x0." typ)))))
                 (cond
                  ((null stream) (mv nil *the-live-state*))
-                 #+akcl
+                 #+(and acl2-infix akcl)
                  ((and (eq typ :object)
                        (not (lisp-book-syntaxp os-file-name)))
 
@@ -17641,7 +17672,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (open-input-channels state-state))
          state-state))))
 
-#-acl2-loop-only
+#+(and acl2-infix (not acl2-loop-only))
 (defun-one-output parse-infix-from-terminal (eof)
 
 ; Eof is an arbitrary lisp object.  If the terminal input is empty, return eof.
@@ -17719,10 +17750,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 (eq channel *standard-ci*))
                             nil
                           si:*notify-gbc*))
+                 #+acl2-infix
                  (infixp (f-get-global 'infixp state-state))
                  (stream (get-input-stream-from-channel channel))
                  (obj
                   (cond
+                   #+acl2-infix
                    ((and (or (eq infixp t) (eq infixp :in))
                          (eq stream (get-input-stream-from-channel  *standard-ci*)))
                     (let ((obj (parse-infix-from-terminal read-object-eof)))

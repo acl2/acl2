@@ -8,12 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file implements the tail recursion transformation,
-; which turns a recursive function that is not tail-recursive
-; into an equivalent tail-recursive function.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "APT")
 
 (include-book "kestrel/utilities/doublets" :dir :system)

@@ -1,0 +1,4 @@
+; The :zz ttag isn't needed, because we are not including the SAT
+; solver backend.
+
+; cert-flags: ? t :ttags (:fast-cons-memo :aig-vars)

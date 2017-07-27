@@ -13,11 +13,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains utilities for querying ACL2 worlds
-; that complement the world query utilities in the ACL2 source code.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "std/util/deflist" :dir :system)
@@ -438,7 +433,7 @@
   :long
   "<p>
    This is similar to the result of @(tsee induction-machine),
-   but each record has one recursive calls (instead of zero or more),
+   but each record has one recursive call (instead of zero or more),
    and there is exactly one record for each recursive call.
    </p>"
   (termination-machine

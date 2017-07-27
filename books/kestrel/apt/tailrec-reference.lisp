@@ -1,17 +1,10 @@
-; APT Tail Recursion Transformation -- Reference
+; APT Tail Recursion Transformation -- Reference Documentation
 ;
 ; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This file provides reference documentation for
-; the tail recursion transformation,
-; which turns a recursive function that is not tail-recursive
-; into an equivalent tail-recursive function.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

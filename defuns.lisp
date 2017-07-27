@@ -4949,13 +4949,12 @@
   (when-logic
    "VERIFY-GUARDS"
    (with-ctx-summarized
-    (if (output-in-infixp state)
-        event-form
-        (cond ((and (null hints)
-                    (null otf-flg))
-               (msg "( VERIFY-GUARDS ~x0)"
-                    name))
-              (t (cons 'verify-guards name))))
+    (make-ctx-for-event event-form
+                        (cond ((and (null hints)
+                                    (null otf-flg))
+                               (msg "( VERIFY-GUARDS ~x0)"
+                                    name))
+                              (t (cons 'verify-guards name))))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list* 'verify-guards
@@ -8707,22 +8706,23 @@
                       wrld)))
 
 (defun defun-ctx (def-lst state event-form #+:non-standard-analysis std-p)
-  (if (output-in-infixp state)
-      event-form
-    (cond ((atom def-lst)
-           (msg "( DEFUNS ~x0)"
-                def-lst))
-          ((atom (car def-lst))
-           (cons 'defuns (car def-lst)))
-          ((null (cdr def-lst))
-           #+:non-standard-analysis
-           (if std-p
-               (cons 'defun-std (caar def-lst))
-             (cons 'defun (caar def-lst)))
-           #-:non-standard-analysis
-           (cons 'defun (caar def-lst)))
-          (t (msg *mutual-recursion-ctx-string*
-                  (caar def-lst))))))
+  #-acl2-infix (declare (ignore event-form state))
+  (make-ctx-for-event
+   event-form
+   (cond ((atom def-lst)
+          (msg "( DEFUNS ~x0)"
+               def-lst))
+         ((atom (car def-lst))
+          (cons 'defuns (car def-lst)))
+         ((null (cdr def-lst))
+          #+:non-standard-analysis
+          (if std-p
+              (cons 'defun-std (caar def-lst))
+            (cons 'defun (caar def-lst)))
+          #-:non-standard-analysis
+          (cons 'defun (caar def-lst)))
+         (t (msg *mutual-recursion-ctx-string*
+                 (caar def-lst))))))
 
 (defun install-event-defuns (names event-form def-lst0 symbol-class
                                    reclassifyingp non-executablep pair ctx wrld

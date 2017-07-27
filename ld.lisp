@@ -919,8 +919,8 @@
                       output-channel state)
 
 ; The following raw code is identical to the logic code below except that the
-; raw code handles infix printing, which is, at the moment, entirely
-; extra-logical.
+; raw code handles infix and raw-mode printing (which are, at the moment,
+; entirely extra-logical).
 
               #-acl2-loop-only
               (let ((col
@@ -929,6 +929,7 @@
                        0))
                     (evg (cadr eviscerated-valx)))
                 (cond
+                 #+acl2-infix
                  ((and (live-state-p state)
                        (output-in-infixp state))
                   (print-infix
@@ -950,6 +951,7 @@
           (t (pprogn
               #-acl2-loop-only
               (cond
+               #+acl2-infix
                ((and (live-state-p state)
                      (output-in-infixp state))
                 (print-infix
@@ -2105,8 +2107,7 @@
         (list (cons #\0 file))
         state)))
      (cond ((eq ans :until)
-            (state-global-let*
-             ((infixp nil))
+            (with-infixp-nil
              (read-object *standard-oi* state)))
            (t (value ans))))))
 

@@ -1,6 +1,6 @@
 ; User Interface
 ;
-; Copyright (C) 2015-2016
+; Copyright (C) 2015-2017
 ;   Kestrel Institute (http://www.kestrel.edu)
 ;   Regents of the University of Texas
 ;
@@ -8,13 +8,8 @@
 ;
 ; Authors:
 ;   Alessandro Coglio (coglio@kestrel.edu)
-;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 ;   Eric Smith (eric.smith@kestrel.edu)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This file provides utilities for
-; the user interface of event-generating macros.
+;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,31 +177,9 @@
    </p>
    <p>
    Note that if @('form') is an event (see @(see embedded-event-form)), then
-   @('(manage-screen-output verbose form)') is an event.  However, the function
-   @('manage-screen-output') may not be called in the body of a function; for
-   that, see @(see manage-screen-output!).
+   @('(manage-screen-output verbose form)') evaluates to an event.
    </p>"
   (manage-screen-output-aux verbose form nil))
-
-(define manage-screen-output! (verbose (form pseudo-event-formp))
-  :returns (form-with-output-managed pseudo-event-formp :hyp :guard)
-  :parents (user-interface)
-  :short "Programatically manage the screen output generated from an event form."
-  :long
-  "<p>See @(see manage-screen-output).  The two utilities are identical,
-  except:</p>
-
-  <ul>
-
-  <li>If @('form') is an event (see @(see embedded-event-form)), then
-  @('(manage-screen-output verbose form)') is an event but
-  @('(manage-screen-output! verbose form)') is not.</li>
-
-  <li>The function @('manage-screen-output!') may be called in a function body,
-  but the function @('manage-screen-output') may not.</li>
-
-  </ul>"
-  (manage-screen-output-aux verbose form t))
 
 (defsection cw-event
   :parents (user-interface)

@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Portcullis
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -8,10 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides a portcullis
-; for SOFT (Second-Order Functions and Theorems),
-; according to the recommendations in the WORKING-WITH-PACKAGES manual page.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; This follows the recommendations in the WORKING-WITH-PACKAGES manual page.
 
 (in-package "SOFT")
