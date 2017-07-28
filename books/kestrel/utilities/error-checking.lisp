@@ -269,9 +269,10 @@
           '(value-triple :redundant))
          (function-name name)
          (macro-name (add-suffix name "$"))
+         (description (intern-in-package-of-symbol "DESCRIPTION" name))
          (function
           `(define ,function-name
-             (,@xs (description msgp) (ctx "Context for errors.") state)
+             (,@xs (,description msgp) (ctx "Context for errors.") state)
              :returns (mv
                        (erp
                         "<see topic='@(url acl2::booleanp)'>@('booleanp')</see>
@@ -291,8 +292,8 @@
              :no-function t))
          (x-symbols (def-error-checker-x-symbols xs))
          (macro
-          `(defmacro ,macro-name (,@x-symbols description)
-             (list ',function-name ,@x-symbols description 'ctx 'state)))
+          `(defmacro ,macro-name (,@x-symbols ,description)
+             (list ',function-name ,@x-symbols ,description 'ctx 'state)))
          (section-short (concatenate 'string
                                      "Calls @(tsee "
                                      (string-downcase

@@ -298,7 +298,7 @@
   ((variant "Input to the transformation."))
   "Ensure that the @('variant') input to the transformation is valid."
   (((tailrec-variantp variant)
-    "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." acl2::description))
+    "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." description))
   (nothing "Always @('nil')."))
 
 (define tailrec-check-domain
