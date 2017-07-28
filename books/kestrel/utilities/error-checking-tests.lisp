@@ -925,7 +925,7 @@
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
  (must-eval-to-t
   (b* (((er x) (ensure-term-guard-verified-exec-fns
-                (body 'f nil (w state)) "This" 'test state)))
+                (ubody 'f (w state)) "This" 'test state)))
     (value (equal x nil)))))
 
 (must-succeed*
@@ -1103,7 +1103,7 @@
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
  (must-eval-to-t
   (b* (((er x) (ensure-lambda-guard-verified-exec-fns
-                `(lambda (x) ,(body 'f nil (w state))) "This" 'test state)))
+                `(lambda (x) ,(ubody 'f (w state))) "This" 'test state)))
     (value (equal x nil)))))
 
 (must-succeed*
@@ -1308,7 +1308,7 @@
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
  (must-eval-to-t
   (b* (((er x) (ensure-function/lambda-guard-verified-exec-fns
-                `(lambda (x) ,(body 'f nil (w state))) "This" 'test state)))
+                `(lambda (x) ,(ubody 'f (w state))) "This" 'test state)))
     (value (equal x nil)))))
 
 (must-succeed*

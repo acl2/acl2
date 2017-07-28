@@ -488,7 +488,7 @@
    as the code assumes without checking that the body of @('fn')
    has one of the forms above.
    </p>"
-  (let* ((body (body fn nil wrld))
+  (let* ((body (ubody fn wrld))
          (core (if non-executable
                    (car (last body))
                  body)))
