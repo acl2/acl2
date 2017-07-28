@@ -38,12 +38,23 @@
   :parents (world-queries)
   :short "Check if a symbol names a theorem,
           i.e. it has a @('theorem') property."
+  :long
+  "<p>
+   This function is named in analogy to
+   the @(tsee function-symbolp) built-in system utility.
+   </p>"
   (not (eq t (getpropc sym 'theorem t wrld))))
 
 (define macro-symbolp ((sym symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (world-queries)
-  :short "Check if a symbol names a macro."
+  :short "Check if a symbol names a macro,
+          i.e. it has a @('macro-args') property."
+  :long
+  "<p>
+   This function is named in analogy to
+   the @(tsee function-symbolp) built-in system utility.
+   </p>"
   (not (eq t (getpropc sym 'macro-args t wrld))))
 
 (std::deflist function-symbol-listp (x wrld)
@@ -164,8 +175,7 @@
                          (wrld plist-worldp))
   :returns (yes/no "A @(tsee booleanp).")
   :parents (world-queries)
-  :short "The @(tsee non-executable) status
-          of a logic-mode, defined function."
+  :short "The @(tsee non-executable) status of a logic-mode defined function."
   (getpropc fn 'non-executablep nil wrld)
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
