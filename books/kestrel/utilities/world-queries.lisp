@@ -125,6 +125,9 @@
   :true-listp t)
 
 (define logical-name-listp (names (wrld plist-worldp))
+  ;; we cannot use STD::DEFLIST to define LOGICAL-NAME-LISTP
+  ;; because STD::DEFLIST attempts to prove that LOGICAL-NAMEP is boolean,
+  ;; which it is not
   :returns (yes/no booleanp)
   :verify-guards nil
   :parents (world-queries)
