@@ -197,6 +197,11 @@
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
  (assert! (guard-verified-exec-fnsp (body 'f nil (w state)) (w state))))
 
+(must-succeed*
+ (defun f (x) (declare (xargs :verify-guards nil)) x)
+ (defun g (x) (declare (xargs :verify-guards t)) (cons (ec-call (f x)) (len x)))
+ (assert! (guard-verified-exec-fnsp (body 'g nil (w state)) (w state))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert! (lambda-guard-verified-exec-fnsp '(lambda (x) x) (w state)))
@@ -221,26 +226,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (all-non-gv-exec-ffn-symbs 'x nil (w state)) nil)
+(assert-equal (all-non-gv-exec-ffn-symbs 'x (w state)) nil)
 
-(assert-equal (all-non-gv-exec-ffn-symbs '(quote 4) nil (w state)) nil)
+(assert-equal (all-non-gv-exec-ffn-symbs '(quote 4) (w state)) nil)
 
-(assert-equal (all-non-gv-exec-ffn-symbs '(cons x y) nil (w state)) nil)
+(assert-equal (all-non-gv-exec-ffn-symbs '(cons x y) (w state)) nil)
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards nil)) x)
  (defun g (x) (declare (xargs :verify-guards t)) x)
  (assert!
-  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (f x) (g (f y))) nil (w state))
+  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (f x) (g (f y))) (w state))
              '(f))))
 
 (must-succeed*
  (defun mycar (x) (declare (xargs :verify-guards nil)) (car x))
  (assert!
-  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (mycar z) (len y)) nil (w state))
+  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (mycar z) (len y)) (w state))
              '(mycar)))
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
- (assert-equal (all-non-gv-exec-ffn-symbs (body 'f nil (w state)) nil (w state))
+ (assert-equal (all-non-gv-exec-ffn-symbs (body 'f nil (w state)) (w state))
+               nil))
+
+(must-succeed*
+ (defun f (x) (declare (xargs :verify-guards nil)) x)
+ (defun g (x) (declare (xargs :verify-guards t)) (cons (ec-call (f x)) (len x)))
+ (assert-equal (all-non-gv-exec-ffn-symbs (body 'g nil (w state)) (w state))
                nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

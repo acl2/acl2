@@ -855,7 +855,7 @@
      (except possibly in the :LOGIC subterms of MBEs), ~
      but it calls the non-guard-verified ~@1."
     description
-    (let ((fns (all-non-gv-exec-ffn-symbs term nil (w state))))
+    (let ((fns (all-non-gv-exec-ffn-symbs term (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
         (msg "functions ~&0" fns))))))
@@ -922,7 +922,7 @@
      (except possibly in the :LOGIC subterms of MBEs), ~
      but it calls the non-guard-verified ~@1."
     description
-    (let ((fns (all-non-gv-exec-ffn-symbs (lambda-body lambd) nil (w state))))
+    (let ((fns (all-non-gv-exec-ffn-symbs (lambda-body lambd) (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
         (msg "functions ~&0" fns))))))
