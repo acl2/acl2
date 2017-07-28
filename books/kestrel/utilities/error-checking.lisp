@@ -356,7 +356,7 @@
   ((x "Value to check."))
   "Cause an error if a value is not a @('nil')-terminated list of symbols."
   (((symbol-listp x)
-    "~@0 must be a NIL-terminated alist of symbols." description)))
+    "~@0 must be a NIL-terminated list of symbols." description)))
 
 (def-error-checker ensure-symbol-alist
   ((x "Value to check."))
