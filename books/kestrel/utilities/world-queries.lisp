@@ -446,7 +446,7 @@
    and there is exactly one record for each recursive call.
    </p>"
   (termination-machine
-   (list fn) (body fn nil wrld) nil nil (ruler-extenders fn wrld)))
+   (list fn) (ubody fn wrld) nil nil (ruler-extenders fn wrld)))
 
 (std::deflist pseudo-event-landmark-listp (x)
   (pseudo-event-landmarkp x)
