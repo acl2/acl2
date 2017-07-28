@@ -142,6 +142,14 @@
   (not (eq t (getpropc fn 'unnormalized-body t wrld)))
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
+(define ubody ((fn (and (logic-function-namep fn wrld)
+                        (definedp fn wrld)))
+               (wrld plist-worldp))
+  :returns (body "A @(tsee pseudo-termp).")
+  :parents (world-queries)
+  :short "Unnormalized body of a logic-mode defined function."
+  (getpropc fn 'unnormalized-body nil wrld))
+
 (define guard-verified-p ((fn/thm (or (function-namep fn/thm wrld)
                                       (theorem-namep fn/thm wrld)))
                           (wrld plist-worldp))
