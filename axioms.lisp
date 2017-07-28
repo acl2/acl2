@@ -3760,13 +3760,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :rule-classes nil)
 
 ;; RAG - This axiom was strengthened to include the reals.
+; (Note: We turned this into a disabled rewrite rule after ACL2 7.4.)
 
 (defaxiom complex-definition
   (implies (and (real/rationalp x)
                 (real/rationalp y))
            (equal (complex x y)
-                  (+ x (* #c(0 1) y))))
-  :rule-classes nil)
+                  (+ x (* #c(0 1) y)))))
+(in-theory (disable complex-definition))
 
 ;; RAG - This axiom was weakened to accomodate the reals.
 
@@ -5415,6 +5416,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (pkg-imports x)
            nil))
   :rule-classes nil)
+
+(defthm default-pkg-imports
+  (implies (not (stringp x))
+           (equal (pkg-imports x)
+                  nil))
+  :hints (("Goal" :use completion-of-pkg-imports)))
 
 ; These axioms are just the ones that would be added by defpkg had the packages
 ; in question been introduced that way.
@@ -22938,15 +22945,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (code-char 0)))
   :rule-classes nil)
 
-; Omitted for now; maybe slows down the rewriter too much.
-;
-; (defthm default-code-char
-;   (implies (not (and (integerp x)
-;                      (>= x 0)
-;                      (< x 256)))
-;            (equal (code-char x)
-;                   (code-char 0)))
-;   :hints (("Goal" :use completion-of-code-char)))
+(defthm default-code-char
+  (implies (and (syntaxp (not (equal x ''0))) ; for efficiency
+                (not (and (integerp x)
+                          (>= x 0)
+                          (< x 256))))
+           (equal (code-char x)
+                  (code-char 0)))
+  :hints (("Goal" :use completion-of-code-char)))
 
 ;; RAG - This axiom was strengthened to include the reals.
 
@@ -23143,12 +23149,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            nil))
   :rule-classes nil)
 
-; (defthm default-intern-in-package-of-symbol
-;   (implies (not (and (stringp x)
-;                      (symbolp y)))
-;            (equal (intern-in-package-of-symbol x y)
-;                   nil))
-;   :hints (("Goal" :use completion-of-intern-in-package-of-symbol)))
+(defthm default-intern-in-package-of-symbol
+  (implies (not (and (stringp x)
+                     (symbolp y)))
+           (equal (intern-in-package-of-symbol x y)
+                  nil))
+  :hints (("Goal" :use completion-of-intern-in-package-of-symbol)))
 
 (defaxiom completion-of-numerator
   (equal (numerator x)
