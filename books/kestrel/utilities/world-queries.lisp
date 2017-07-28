@@ -169,13 +169,14 @@
   (getpropc fn 'non-executablep nil wrld)
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
-(define unwrapped-nonexec-body ((fn (and (function-namep fn wrld)
+(define unwrapped-nonexec-body ((fn (and (logic-function-namep fn wrld)
+                                         (definedp fn wrld)
                                          (non-executablep fn wrld)))
                                 (wrld plist-worldp))
   :returns (unwrapped-body "A @(tsee pseudo-termp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Body of a non-executable function,
+  :short "Body of a logic-mode defined non-executable function,
           without the &ldquo;non-executable wrapper&rdquo;."
   :long
   "<p>
@@ -202,11 +203,11 @@
    The code of this system utility defensively ensures that
    the body of @('fn') has the form above.
    </p>"
-  (let ((body (body fn nil wrld)))
+  (let ((body (ubody fn wrld)))
     (if (throw-nonexec-error-p body fn (formals fn wrld))
-        (fourth (body fn nil wrld))
+        (fourth body)
       (raise "The body ~x0 of the non-executable function ~x1 ~
-             does not have the expected wrapper." body fn))))
+              does not have the expected wrapper." body fn))))
 
 (define number-of-results ((fn (function-namep fn wrld))
                            (wrld plist-worldp))
