@@ -196,7 +196,7 @@
 
 (define funvars-of-defun ((fun symbolp) (wrld plist-worldp))
   :mode :program
-  (let* ((body (body fun nil wrld))
+  (let* ((body (ubody fun wrld))
          (measure (if (recursivep fun nil wrld)
                       (measure fun wrld)
                     nil))
@@ -272,7 +272,7 @@
   :mode :program
   (let* ((rule-name (defun-sk-info->rewrite-name (defun-sk-check fun wrld)))
          (rule-body (formula rule-name nil wrld))
-         (fun-body (body fun nil wrld)))
+         (fun-body (ubody fun wrld)))
     (or (set-equiv (funvars-of-term rule-body wrld)
                    (funvars-of-term fun-body wrld))
         (raise "The custome rewrite rule ~x0 must have ~
@@ -728,7 +728,7 @@
             (raise "~x0 has no instance for ~x1." fun fsbs))
            (fsbs (acons fun funinst fsbs))) ; extend FSBS
           (case (sofun-kind fun wrld)
-            ((plain quant) (ext-fun-subst-term (body fun nil wrld) fsbs wrld))
+            ((plain quant) (ext-fun-subst-term (ubody fun wrld) fsbs wrld))
             (choice (ext-fun-subst-term (defchoose-body fun wrld) fsbs wrld)))))
      (t fsbs)))) ; FUN is not a 2nd-order function
 
@@ -1067,7 +1067,7 @@
                             (cadr verify-guards-option)
                           (guard-verified-p sofun wrld))))
        ;; retrieve body, measure, and guard of SOFUN:
-       (sofun-body (body sofun nil wrld))
+       (sofun-body (ubody sofun wrld))
        (sofun-measure (if (recursivep sofun nil wrld)
                           (measure sofun wrld)
                         nil))

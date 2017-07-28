@@ -541,8 +541,8 @@
      </p>
 
      <p>
-     It must be an alist
-     @('((appcond1 . hints1) ... (appcondp . hintsp))')
+     It must be a list of doublets
+     @('((appcond1 hints1) ... (appcondp hintsp))')
      where each @('appcondk') is a symbol (in any package)
      that names one of the applicability conditions below,
      and each @('hintsk') consists of hints as may appear

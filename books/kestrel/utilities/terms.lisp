@@ -328,57 +328,41 @@
          (ans (all-non-gv-ffn-symbs (car terms) ans wrld)))
       (all-non-gv-ffn-symbs-lst (cdr terms) ans wrld))))
 
-(defines guard-verified-exec-fnsp
+(define guard-verified-exec-fnsp ((term (termp term wrld))
+                                  (wrld plist-worldp-with-formals))
+  :returns (yes/no "A @(tsee booleanp).")
+  :mode :program
   :parents (term-utilities)
   :short "Check if a term calls only guard-verified functions for execution."
   :long
   "<p>
-   Check if all the functions that occur in the term,
-   except possibly the ones in the @(':logic') subterms of @(tsee mbe)s,
+   Check if all the functions that occur in the term, except possibly
+   the ones in the @(':logic') subterms of @(tsee mbe)s
+   and the ones called via @(tsee ec-call),
    are guard-verified.
    The purpose of this function is to check whether a term
    could be potentially guard-verified.
    </p>
    <p>
-   In translated form,
-   a term @('(mbe :logic a :exec b)')
-   appears as @('(return-last 'mbe1-raw b a)').
-   So the code of this function treats this pattern specially.
-   </p>
-   <p>
    The name of this function is consistent with
    the name of @(tsee guard-verified-fnsp).
    </p>
-   @(def guard-verified-exec-fnsp)
-   @(def guard-verified-exec-fnsp-lst)"
-  :verify-guards nil
-
-  (define guard-verified-exec-fnsp ((term (termp term wrld))
-                                    (wrld plist-worldp-with-formals))
-    :returns (yes/no booleanp)
-    (b* (((when (variablep term)) t)
-         ((when (fquotep term)) t)
-         (fn/lambda (ffn-symb term))
-         ((when (and (eq fn/lambda 'return-last)
-                     (equal (fargn term 1) '(quote mbe1-raw))))
-          (guard-verified-exec-fnsp (fargn term 2) wrld)))
-      (if (symbolp fn/lambda)
-          (and (guard-verified-p fn/lambda wrld)
-               (guard-verified-exec-fnsp-lst (fargs term) wrld))
-        (and (guard-verified-exec-fnsp (lambda-body fn/lambda) wrld)
-             (guard-verified-exec-fnsp-lst (fargs term) wrld)))))
-
-  (define guard-verified-exec-fnsp-lst ((terms (term-listp terms wrld))
-                                        (wrld plist-worldp-with-formals))
-    :returns (yes/no booleanp)
-    (or (endp terms)
-        (and (guard-verified-exec-fnsp (car terms) wrld)
-             (guard-verified-exec-fnsp-lst (cdr terms) wrld)))))
+   <p>
+   The @('all-fnnames-exec') built-in system utility
+   returns all the function symbols except
+   the ones in the @(':logic') subterms of @(tsee mbe)s
+   and the ones called via @(tsee ec-call)
+   (see the ACL2 source code).
+   The @('collect-non-common-lisp-compliants') built-in system utility
+   returns all the ones that are not guard-verified
+   (see the ACL2 source code).
+   </p>"
+  (null (collect-non-common-lisp-compliants (all-fnnames-exec term) wrld)))
 
 (define lambda-guard-verified-exec-fnsp ((lambd (lambdap lambd wrld))
                                          (wrld plist-worldp-with-formals))
-  :returns (yes/no booleanp)
-  :verify-guards nil
+  :returns (yes/no "A @(tsee booleanp).")
+  :mode :program
   :parents (term-utilities)
   :short "Check if a lambda expression calls only guard-verified functions
           for execution."
@@ -389,56 +373,35 @@
    </p>"
   (guard-verified-exec-fnsp (lambda-body lambd) wrld))
 
-(defines all-non-gv-exec-ffn-symbs
+(define all-non-gv-exec-ffn-symbs ((term pseudo-termp) (wrld plist-worldp))
+  :returns (final-ans "A @(tsee symbol-listp).")
+  :mode :program
   :parents (term-utilities)
   :short "Non-guard-verified functions called by a term for execution."
-  :long
   "<p>
    These are all the non-guard-verified functions that occur in the term,
-   except those that occur in the @(':logic') subterms of @(tsee mbe)s.
+   except those that occur in the @(':logic') subterms of @(tsee mbe)s
+   and those called via @(tsee ec-call).
    This is because, in order for a function to be guard-verified,
    the functions that occurs in such subterms do not have to be guard-verified.
    If this function returns @('nil'),
    the term could be potentially guard-verified.
    </p>
    <p>
-   In translated form,
-   a term @('(mbe :logic a :exec b)')
-   appears as @('(return-last 'mbe1-raw b a)').
-   So the code of this function treats this pattern specially.
-   </p>
-   <p>
    The name of this function is consistent with
    the name of @('all-ffn-symbs') in the ACL2 source code.
    </p>
-   @(def all-non-gv-exec-ffn-symbs)
-   @(def all-non-gv-exec-ffn-symbs-lst)"
-  :verify-guards nil
-
-  (define all-non-gv-exec-ffn-symbs ((term pseudo-termp)
-                                     (ans symbol-listp)
-                                     (wrld plist-worldp))
-    :returns (final-ans symbol-listp :hyp :guard)
-    (b* (((when (variablep term)) ans)
-         ((when (fquotep term)) ans)
-         (fn/lambda (ffn-symb term))
-         ((when (and (eq fn/lambda 'return-last)
-                     (equal (fargn term 1) '(quote mbe1-raw))))
-          (all-non-gv-exec-ffn-symbs (fargn term 2) ans wrld))
-         (ans (if (flambdap fn/lambda)
-                  (all-non-gv-exec-ffn-symbs (lambda-body fn/lambda) ans wrld)
-                (if (guard-verified-p fn/lambda wrld)
-                    ans
-                  (add-to-set-eq fn/lambda ans)))))
-      (all-non-gv-exec-ffn-symbs-lst (fargs term) ans wrld)))
-
-  (define all-non-gv-exec-ffn-symbs-lst ((terms pseudo-term-listp)
-                                         (ans symbol-listp)
-                                         (wrld plist-worldp))
-    :returns (final-ans symbol-listp :hyp :guard)
-    (b* (((when (endp terms)) ans)
-         (ans (all-non-gv-exec-ffn-symbs (car terms) ans wrld)))
-      (all-non-gv-exec-ffn-symbs-lst (cdr terms) ans wrld))))
+   <p>
+   The @('all-fnnames-exec') built-in system utility
+   returns all the function symbols except
+   the ones in the @(':logic') subterms of @(tsee mbe)s
+   and the ones called via @(tsee ec-call)
+   (see the ACL2 source code).
+   The @('collect-non-common-lisp-compliants') built-in system utility
+   returns all the ones that are not guard-verified
+   (see the ACL2 source code).
+   </p>"
+  (collect-non-common-lisp-compliants (all-fnnames-exec term) wrld))
 
 (define check-user-term (x (wrld plist-worldp))
   :returns (mv (term/message "A @(tsee pseudo-termp) or @(tsee msgp).")

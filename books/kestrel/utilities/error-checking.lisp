@@ -269,9 +269,10 @@
           '(value-triple :redundant))
          (function-name name)
          (macro-name (add-suffix name "$"))
+         (description (intern-in-package-of-symbol "DESCRIPTION" name))
          (function
           `(define ,function-name
-             (,@xs (description msgp) (ctx "Context for errors.") state)
+             (,@xs (,description msgp) (ctx "Context for errors.") state)
              :returns (mv
                        (erp
                         "<see topic='@(url acl2::booleanp)'>@('booleanp')</see>
@@ -291,8 +292,8 @@
              :no-function t))
          (x-symbols (def-error-checker-x-symbols xs))
          (macro
-          `(defmacro ,macro-name (,@x-symbols description)
-             (list ',function-name ,@x-symbols description 'ctx 'state)))
+          `(defmacro ,macro-name (,@x-symbols ,description)
+             (list ',function-name ,@x-symbols ,description 'ctx 'state)))
          (section-short (concatenate 'string
                                      "Calls @(tsee "
                                      (string-downcase
@@ -356,7 +357,7 @@
   ((x "Value to check."))
   "Cause an error if a value is not a @('nil')-terminated list of symbols."
   (((symbol-listp x)
-    "~@0 must be a NIL-terminated alist of symbols." description)))
+    "~@0 must be a NIL-terminated list of symbols." description)))
 
 (def-error-checker ensure-symbol-alist
   ((x "Value to check."))
@@ -855,7 +856,7 @@
      (except possibly in the :LOGIC subterms of MBEs), ~
      but it calls the non-guard-verified ~@1."
     description
-    (let ((fns (all-non-gv-exec-ffn-symbs term nil (w state))))
+    (let ((fns (all-non-gv-exec-ffn-symbs term (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
         (msg "functions ~&0" fns))))))
@@ -922,7 +923,7 @@
      (except possibly in the :LOGIC subterms of MBEs), ~
      but it calls the non-guard-verified ~@1."
     description
-    (let ((fns (all-non-gv-exec-ffn-symbs (lambda-body lambd) nil (w state))))
+    (let ((fns (all-non-gv-exec-ffn-symbs (lambda-body lambd) (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
         (msg "functions ~&0" fns))))))

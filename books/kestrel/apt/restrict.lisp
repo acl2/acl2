@@ -552,7 +552,7 @@
        (formals (formals old-fn-name wrld))
        (old-body (if (non-executablep old-fn-name wrld)
                      (unwrapped-nonexec-body old-fn-name wrld)
-                   (body old-fn-name nil wrld)))
+                   (ubody old-fn-name wrld)))
        (new-body-core (sublis-fn-simple (acons old-fn-name new-fn-name nil)
                                         old-body))
        (new-body `(if ,restriction$ ,new-body-core ':undefined))

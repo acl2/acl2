@@ -238,6 +238,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (ubody 'atom (w state)) '(not (consp x)))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert-equal (ubody 'f (w state)) 'x))
+
+(must-succeed*
+ (defun p (x) (and (natp x) (natp 3)))
+ (assert-equal (body 'p t (w state)) '(natp x))
+ (assert-equal (ubody 'p (w state)) '(if (natp x) (natp '3) 'nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (guard-verified-p 'len (w state)))
 
 (assert! (guard-verified-p 'cons (w state)))
@@ -282,7 +295,7 @@
 
 (must-succeed*
  (defun-nx f (x) (cons (list x) (list x)))
- (assert-equal (body 'f nil (w state))
+ (assert-equal (ubody 'f (w state))
                '(return-last 'progn
                              (throw-nonexec-error 'f (cons x 'nil))
                              (cons (cons x 'nil) (cons x 'nil))))
