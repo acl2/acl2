@@ -240,7 +240,7 @@
        ((er &) (ensure-function-known-measure$ old-fn-name description))
        (body (if (non-executablep old-fn-name wrld)
                  (unwrapped-nonexec-body old-fn-name wrld)
-               (body old-fn-name nil wrld)))
+               (ubody old-fn-name wrld)))
        (body (remove-lambdas body))
        ((er (list test base combine-nonrec-reccall))
         (ensure-term-if-call$ body

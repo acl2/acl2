@@ -100,6 +100,7 @@
                         symbol-symbol-alistp
                         term-guard-obligation
                         theorem-intro-macro
+                        ubody
                         untranslate-lst
                         unwrapped-nonexec-body
                         variablep

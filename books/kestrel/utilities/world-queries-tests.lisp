@@ -295,7 +295,7 @@
 
 (must-succeed*
  (defun-nx f (x) (cons (list x) (list x)))
- (assert-equal (body 'f nil (w state))
+ (assert-equal (ubody 'f (w state))
                '(return-last 'progn
                              (throw-nonexec-error 'f (cons x 'nil))
                              (cons (cons x 'nil) (cons x 'nil))))

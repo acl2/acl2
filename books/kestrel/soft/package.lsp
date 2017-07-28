@@ -43,5 +43,6 @@
                          restrict-alist
                          strip-keyword-list
                          symbol-symbol-alistp
+                         ubody
                          variablep
                          well-founded-relation)))
