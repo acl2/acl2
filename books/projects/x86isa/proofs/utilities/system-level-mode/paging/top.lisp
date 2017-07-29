@@ -82,11 +82,74 @@
 
 ;; Memory reads from the state returned after a page walk:
 
+;; TODO: Fix lin-addr and base-addr inside *entry-addr functions?
+
+(defthm remove-logext-48-from-page-table-entry-addr
+  (equal (page-table-entry-addr (logext 48 lin-addr) base-addr)
+         (page-table-entry-addr lin-addr base-addr))
+  :hints (("Goal" :in-theory (e/d* (page-table-entry-addr logext)
+                                   ()))))
+
+(defthm remove-logext-48-from-xlation-governing-entries-paddrs-for-page-table
+  (equal (xlation-governing-entries-paddrs-for-page-table
+          (logext 48 lin-addr) base-addr x86)
+         (xlation-governing-entries-paddrs-for-page-table
+          lin-addr base-addr x86))
+  :hints (("Goal" :in-theory (e/d* (xlation-governing-entries-paddrs-for-page-table)
+                                   ()))))
+
+(defthm remove-logext-48-from-page-directory-entry-addr
+  (equal (page-directory-entry-addr (logext 48 lin-addr) base-addr)
+         (page-directory-entry-addr lin-addr base-addr))
+  :hints (("Goal" :in-theory (e/d* (page-directory-entry-addr logext)
+                                   ()))))
+
+(defthm remove-logext-48-from-xlation-governing-entries-paddrs-for-page-directory
+  (equal (xlation-governing-entries-paddrs-for-page-directory
+          (logext 48 lin-addr) base-addr x86)
+         (xlation-governing-entries-paddrs-for-page-directory
+          lin-addr base-addr x86))
+  :hints (("Goal" :in-theory (e/d* (xlation-governing-entries-paddrs-for-page-directory)
+                                   ()))))
+
+(defthm remove-logext-48-from-page-dir-ptr-table-entry-addr
+  (equal (page-dir-ptr-table-entry-addr (logext 48 lin-addr) base-addr)
+         (page-dir-ptr-table-entry-addr lin-addr base-addr))
+  :hints (("Goal" :in-theory (e/d* (page-dir-ptr-table-entry-addr logext)
+                                   ()))))
+
+(defthm remove-logext-48-from-xlation-governing-entries-paddrs-for-page-dir-ptr-table
+  (equal (xlation-governing-entries-paddrs-for-page-dir-ptr-table
+          (logext 48 lin-addr) base-addr x86)
+         (xlation-governing-entries-paddrs-for-page-dir-ptr-table
+          lin-addr base-addr x86))
+  :hints (("Goal" :in-theory (e/d* (xlation-governing-entries-paddrs-for-page-dir-ptr-table)
+                                   ()))))
+
+(defthm removing-irrelevant-logext-from-logtail-and-loghead
+  (implies (and (<= (+ i j) n) (natp n) (natp j))                
+           (equal (loghead i (logtail j (logext n lin-addr)))
+                  (loghead i (logtail j lin-addr))))
+  :hints ((logbitp-reasoning)))
+  
+(defthm remove-logext-48-from-pml4-table-entry-addr
+  (equal (pml4-table-entry-addr (logext 48 lin-addr) base-addr)
+         (pml4-table-entry-addr lin-addr base-addr))
+  :hints (("Goal" :in-theory (e/d* (pml4-table-entry-addr)
+                                   ()))))
+
+(defthm remove-logext-48-from-xlation-governing-entries-paddrs-for-pml4-table
+  (equal (xlation-governing-entries-paddrs-for-pml4-table
+          (logext 48 lin-addr) base-addr x86)
+         (xlation-governing-entries-paddrs-for-pml4-table
+          lin-addr base-addr x86))
+  :hints (("Goal" :in-theory (e/d* (xlation-governing-entries-paddrs-for-pml4-table)
+                                   ()))))
+
 (defthm xr-mem-disjoint-ia32e-la-to-pa-page-table
   (implies (and (disjoint-p (list index)
                             (xlation-governing-entries-paddrs-for-page-table
                              lin-addr base-addr (double-rewrite x86)))
-                (canonical-address-p lin-addr)
                 (physical-address-p base-addr)
                 (equal (loghead 12 base-addr) 0))
            (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-table
@@ -94,7 +157,8 @@
                                             base-addr u/s-acc r/w-acc x/d-acc
                                             wp smep smap ac nxe r-w-x cpl x86)))
                   (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-table
+  :hints (("Goal" :in-theory (e/d* (disjoint-p
+                                    ia32e-la-to-pa-page-table
                                     xlation-governing-entries-paddrs-for-page-table)
                                    (negative-logand-to-positive-logand-with-integerp-x
                                     bitops::logand-with-negated-bitmask)))))
@@ -103,7 +167,6 @@
   (implies (and (disjoint-p (list index)
                             (xlation-governing-entries-paddrs-for-page-directory
                              lin-addr base-addr (double-rewrite x86)))
-                (canonical-address-p lin-addr)
                 (physical-address-p base-addr)
                 (equal (loghead 12 base-addr) 0))
            (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-directory
@@ -120,7 +183,6 @@
   (implies (and (disjoint-p (list index)
                             (xlation-governing-entries-paddrs-for-page-dir-ptr-table
                              lin-addr base-addr (double-rewrite x86)))
-                (canonical-address-p lin-addr)
                 (physical-address-p base-addr)
                 (equal (loghead 12 base-addr) 0))
            (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
@@ -137,7 +199,6 @@
   (implies (and (disjoint-p (list index)
                             (xlation-governing-entries-paddrs-for-pml4-table
                              lin-addr base-addr (double-rewrite x86)))
-                (canonical-address-p lin-addr)
                 (physical-address-p base-addr)
                 (equal (loghead 12 base-addr) 0))
            (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-pml4-table
@@ -150,9 +211,8 @@
                                     bitops::logand-with-negated-bitmask)))))
 
 (defthm xr-mem-disjoint-ia32e-la-to-pa
-  (implies (and (disjoint-p (list index)
-                            (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
-                (canonical-address-p lin-addr))
+  (implies (disjoint-p (list index)
+                       (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
            (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (xr :mem index x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
@@ -190,11 +250,9 @@
                              force (force))))))
 
 (defthm read-from-physical-memory-and-mv-nth-2-ia32e-la-to-pa
-  (implies (and
-            (disjoint-p
-             p-addrs
-             (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
-            (canonical-address-p lin-addr))
+  (implies (disjoint-p
+            p-addrs
+            (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
            (equal (read-from-physical-memory
                    p-addrs
                    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
@@ -212,9 +270,8 @@
 
 (defthm rm-low-64-disjoint-ia32e-la-to-pa
   (implies
-   (and (disjoint-p (addr-range 8 index)
-                    (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
-        (canonical-address-p lin-addr))
+   (disjoint-p (addr-range 8 index)
+               (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
    (equal (rm-low-64 index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
           (rm-low-64 index x86)))
   :hints (("Goal" :in-theory (e/d* (rm-low-64 rm-low-32 disjoint-p)
