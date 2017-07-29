@@ -712,6 +712,26 @@
 ; When we succeed in proving termination, we will store the
 ; justification properties.
 
+(defun normalize-ruler-extenders (ruler-extenders)
+
+; The ruler-extenders supplied to a defun may be :all, :basic, :lambdas, or a
+; list of symbols.  The :basic value is equivalent to the list of symbols in
+; *basic-ruler-extenders*.  The :lambdas value is equivalent to the list
+; consisting of the symbol :lambdas and the symbols in *basic-ruler-extenders*.
+; This function normalizes ruler-extenders by expanding the :basic and :lambdas
+; values into lists, and by sorting and deduplicating list.  The value :all is
+; left unchanged.  This function is used in putprop-justification-lst to
+; normalize the ruler-extenders stored into the properties of a function, and
+; is used in non-identical-defp to normalize the ruler-extenders of a proposed
+; function for redundancy check, allowing a simple equality test for that
+; redundancy check.  Note that the default ruler-extenders are not stored in
+; normalized form, since they are not checked for redundancy.
+
+  (cond ((eq ruler-extenders :all) :all)
+        ((eq ruler-extenders :basic) *basic-ruler-extenders*)
+        ((eq ruler-extenders :lambdas) *basic-ruler-extenders-plus-lambdas*)
+        (t (sort-symbol-listp ruler-extenders))))
+
 (defun putprop-justification-lst (measure-alist subset-lst mp rel
                                                 ruler-extenders-lst
                                                 subversive-p wrld)
@@ -737,7 +757,12 @@
                            :mp mp
                            :rel rel
                            :measure (cdar measure-alist)
-                           :ruler-extenders (car ruler-extenders-lst))
+
+; We normalize ruler-extenders prior to storing them.  See
+; normalize-ruler-extenders for an explanation.
+
+                           :ruler-extenders (normalize-ruler-extenders
+                                             (car ruler-extenders-lst)))
                      wrld)))))
 
 (defun union-equal-to-end (x y)
@@ -5925,8 +5950,13 @@
                              (getpropc (car def2) 'justification nil wrld)))
          (all-but-body1 (butlast (cddr def1) 1))
          (ruler-extenders1-lst (fetch-dcl-field :ruler-extenders all-but-body1))
+
+; We normalize the ruler-extenders of the proposed definition def1 prior to
+; comparing them below.  See normalize-ruler-extenders for an explanation.
+
          (ruler-extenders1 (if ruler-extenders1-lst
-                               (car ruler-extenders1-lst)
+                               (normalize-ruler-extenders
+                                (car ruler-extenders1-lst))
                              (default-ruler-extenders wrld))))
     (cond
      ((and justification

@@ -8218,7 +8218,23 @@
   :none)
 
 (defconst *basic-ruler-extenders*
-  '(mv-list return-last))
+
+; We ensure that these are sorted; see normalize-ruler-extenders.
+
+  (let ((lst '(mv-list return-last)))
+    (assert$ (strict-symbol-<-sortedp lst)
+             lst)))
+
+(defconst *basic-ruler-extenders-plus-lambdas*
+
+; We ensure that these are sorted; see normalize-ruler-extenders.
+; If we change *basic-ruler-extenders* so that the cons of :lambdas to the
+; front is no longer sorted, then we will have to call sort-symbol-listp.  But
+; here we got lucky.
+
+  (let ((lst (cons :lambdas *basic-ruler-extenders*)))
+    (assert$ (strict-symbol-<-sortedp lst)
+             lst)))
 
 (defun get-ruler-extenders1 (r edcls default ctx wrld state)
 
@@ -8245,8 +8261,7 @@
                          (cond ((eq r0 :BASIC)
                                 (value *basic-ruler-extenders*))
                                ((eq r0 :LAMBDAS)
-                                (value (cons :lambdas
-                                             *basic-ruler-extenders*)))
+                                (value *basic-ruler-extenders-plus-lambdas*))
                                ((eq r0 :ALL)
                                 (value :ALL))
                                (t (er-progn

@@ -1004,8 +1004,6 @@
 
  (verify-guards strict-merge-sort-symbol-<)
 
- (verify-termination-boot-strap strict-symbol-<-sortedp) ; and guards
-
  (verify-termination-boot-strap sort-symbol-listp) ; and guards
 
  )

@@ -15623,15 +15623,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                (t ""))))
                    (t nil))))))
 
-(defmacro chk-ruler-extenders (x soft ctx wrld)
+(defun strict-symbol-<-sortedp (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (cond ((or (endp x) (null (cdr x)))
+         t)
+        (t (and (symbol-< (car x) (cadr x))
+                (strict-symbol-<-sortedp (cdr x))))))
+
+(defmacro chk-ruler-extenders (x type ctx wrld)
+
+; We check whether x is a legal value for ruler-extenders.  This is really two
+; macros, depending on whether type is 'soft or 'hard.  If type is 'soft, then
+; we return an error triple; otherwise we return an ordinary value but cause a
+; hard error if x is illegal.  Moreover, if x is hard then we check that x is
+; sorted.
+
+  (declare (xargs :guard (member-eq type '(soft hard))))
   (let ((err-str "The proposed ruler-extenders is illegal because ~@0."))
     `(let ((ctx ,ctx)
            (err-str ,err-str)
-           (msg (ruler-extenders-msg ,x ,wrld)))
-       (cond (msg ,(cond ((eq soft 'soft) `(er soft ctx err-str msg))
-                         (t `(illegal ctx err-str (list (cons #\0 msg))))))
-             (t ,(cond ((eq soft 'soft) '(value t))
-                       (t t)))))))
+           (x ,x))
+       (let ((msg (ruler-extenders-msg x ,wrld)))
+         (cond (msg ,(cond ((eq type 'soft) `(er soft ctx err-str msg))
+                           (t `(illegal ctx err-str (list (cons #\0 msg))))))
+               ,@(and (eq type 'hard)
+                      `(((not (strict-symbol-<-sortedp x))
+                         (illegal ctx err-str
+                                  (list (cons #\0 "it is not sorted"))))))
+               (t ,(cond ((eq type 'soft) '(value t))
+                         (t t))))))))
 
 (defmacro fixnum-bound () ; most-positive-fixnum in Allegro CL and many others
   (1- (expt 2 29)))
@@ -21343,30 +21363,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore x))
   nil)
 
-#+acl2-loop-only
-(defmacro set-ruler-extenders (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (er-progn
-     (chk-ruler-extenders ,x soft 'set-ruler-extenders (w state))
-     (progn
-       (table acl2-defaults-table :ruler-extenders
-              (let ((x0 ,x))
-                (case x0
-
-; If keywords other than :ALL, :BASIC, and :LAMBDAS are supported, then also
-; change get-ruler-extenders1.
-
-                  (:all :all)
-                  (:lambdas (cons :lambdas *basic-ruler-extenders*))
-                  (:basic *basic-ruler-extenders*)
-                  (otherwise x0))))
-       (table acl2-defaults-table :ruler-extenders)))))
-
-#-acl2-loop-only
-(defmacro set-ruler-extenders (x)
-  (declare (ignore x))
-  nil)
+; Set-ruler-extenders has been moved from here to simplify.lisp, so that
+; sort-symbol-listp is defined first.
 
 #+acl2-loop-only
 (defmacro set-irrelevant-formals-ok (x)

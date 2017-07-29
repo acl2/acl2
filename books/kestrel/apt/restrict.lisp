@@ -44,29 +44,33 @@
   :short "Ensure that the @('old') input to the transformation is valid."
   (b* ((wrld (w state))
        ((er old-fn-name) (ensure-function-name-or-numbered-wildcard$
-                          old "The first input"))
+                          old "The first input" t nil))
        (description (msg "The target function ~x0" old-fn-name))
-       ((er &) (ensure-function-logic-mode$ old-fn-name description))
-       ((er &) (ensure-function-defined$ old-fn-name description))
-       ((er &) (ensure-function-has-args$ old-fn-name description))
-       ((er &) (ensure-function-number-of-results$ old-fn-name 1 description))
-       ((er &) (ensure-function-no-stobjs$ old-fn-name description))
+       ((er &) (ensure-function-logic-mode$ old-fn-name description t nil))
+       ((er &) (ensure-function-defined$ old-fn-name description t nil))
+       ((er &) (ensure-function-has-args$ old-fn-name description t nil))
+       ((er &) (ensure-function-number-of-results$ old-fn-name 1
+                                                   description t nil))
+       ((er &) (ensure-function-no-stobjs$ old-fn-name description t nil))
        (recursive (recursivep old-fn-name nil wrld))
        ((er &) (if recursive
-                   (ensure-function-singly-recursive$ old-fn-name description)
+                   (ensure-function-singly-recursive$ old-fn-name
+                                                      description t nil)
                  (value nil)))
        ((er &) (if recursive
-                   (ensure-function-known-measure$ old-fn-name description)
+                   (ensure-function-known-measure$ old-fn-name
+                                                   description t nil)
                  (value nil)))
        ((er &) (if recursive
                    (ensure-function-not-in-termination-thm$ old-fn-name
-                                                            description)
+                                                            description t nil)
                  (value nil)))
        ((er &) (if (eq verify-guards t)
                    (ensure-function-guard-verified$
                     old-fn-name
                     (msg "Since the :VERIFY-GUARDS input is T, ~
-                          the target function ~x0" old-fn-name))
+                          the target function ~x0" old-fn-name)
+                    t nil)
                  (value nil))))
     (value old-fn-name)))
 
@@ -90,24 +94,25 @@
           is valid."
   (b* ((wrld (w state))
        ((er (list term stobjs-out)) (ensure-term$ restriction
-                                                  "The second input"))
+                                                  "The second input" t nil))
        (description (msg "The term ~x0 that denotes the restricting predicate"
                          restriction))
        ((er &) (ensure-term-free-vars-subset$ term
                                               (formals old-fn-name wrld)
-                                              description))
-       ((er &) (ensure-term-logic-mode$ term description))
-       ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out
-                                                               1
-                                                               description))
-       ((er &) (ensure-term-no-stobjs$ stobjs-out description))
+                                              description t nil))
+       ((er &) (ensure-term-logic-mode$ term description t nil))
+       ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
+                                                               description
+                                                               t nil))
+       ((er &) (ensure-term-no-stobjs$ stobjs-out description t nil))
        ((er &) (if do-verify-guards
                    (ensure-term-guard-verified-exec-fns$
                     term
                     (msg "Since either the :VERIFY-GUARDS input is T, ~
                           or it is (perhaps by default) :AUTO ~
                           and the target function ~x0 is guard-verified, ~@1"
-                         old-fn-name (msg-downcase-first description)))
+                         old-fn-name (msg-downcase-first description))
+                    t nil)
                  (value nil))))
     (value term)))
 
@@ -124,7 +129,7 @@
                state)
   :mode :program
   :short "Ensure that the @(':new-name') input to the transformation is valid."
-  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input"))
+  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
        (name (if (eq new-name :auto)
                  (next-numbered-name old-fn-name (w state))
                new-name))
@@ -135,7 +140,7 @@
                               since the :NEW-NAME input ~
                               is (perhaps by default) :AUTO"
                            "supplied as the :NEW-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description)))
+       ((er &) (ensure-symbol-new-event-name$ name description t nil)))
     (value name)))
 
 (define restrict-check-thm-name
@@ -154,7 +159,7 @@
   :mode :program
   :short "Ensure that the @(':thm-name') input to the transformation
           is valid."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input"))
+  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
        (name (cond ((eq thm-name :arrow)
                     (packn (list old-fn-name '-~>- new-fn-name)))
                    ((eq thm-name :becomes)
@@ -172,7 +177,7 @@
                               since the :THM-NAME input ~
                               is (perhaps by default) :ARROW, :BECOMES, or :IS"
                            "supplied as the :THM-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description))
+       ((er &) (ensure-symbol-new-event-name$ name description t nil))
        ((when (eq name new-fn-name))
         (er soft ctx
             "~@0 must differ from the name ~x1 of the new function ~
@@ -226,18 +231,18 @@
    may be in any package,
    so long as their names match the applicability condition names.
    </p>"
-  (b* (((er &) (ensure-doublet-list$ hints "The :HINTS input"))
+  (b* (((er &) (ensure-doublet-list$ hints "The :HINTS input" t nil))
        (alist (doublets-to-alist hints))
        (keys (strip-cars alist))
        (vals (strip-cdrs alist))
        (description
         (msg "The list ~x0 of the first components of the :HINTS input" keys))
-       ((er &) (ensure-symbol-list$ keys description))
+       ((er &) (ensure-symbol-list$ keys description t nil))
        (keys (intern-list (symbol-list-names keys)
                           (pkg-witness "APT")))
-       ((er &) (ensure-list-no-duplicates$ keys description))
+       ((er &) (ensure-list-no-duplicates$ keys description t nil))
        ((er &) (ensure-list-subset$ keys *restrict-app-cond-names*
-                                    description)))
+                                    description t nil)))
     (value (pairlis$ keys vals))))
 
 (define restrict-check-inputs ((old "Input to the transformation.")
@@ -312,7 +317,7 @@
        ((er do-verify-guards) (ensure-boolean-or-auto-and-return-boolean$
                                verify-guards
                                (guard-verified-p old-fn-name (w state))
-                               "The :VERIFY-GUARDS input"))
+                               "The :VERIFY-GUARDS input" t nil))
        ((er restriction$) (restrict-check-restriction
                            restriction old-fn-name do-verify-guards ctx state))
        ((er new-fn-name) (restrict-check-new-name
@@ -320,17 +325,17 @@
        ((er new-fn-enable) (ensure-boolean-or-auto-and-return-boolean$
                             new-enable
                             (fundef-enabledp old state)
-                            "The :NEW-ENABLE input"))
+                            "The :NEW-ENABLE input" t nil))
        ((er old-to-new-thm-name) (restrict-check-thm-name
                                   thm-name old-fn-name new-fn-name ctx state))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input"))
+       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
        ((er make-non-executable) (ensure-boolean-or-auto-and-return-boolean$
                                   non-executable
                                   (non-executablep old (w state))
-                                  "The :NON-EXECUTABLE input"))
+                                  "The :NON-EXECUTABLE input" t nil))
        ((er hints-alist) (restrict-check-hints hints ctx state))
-       ((er &) (ensure-boolean$ verbose "The :VERBOSE input"))
-       ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input")))
+       ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
+       ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
     (value (list old-fn-name
                  restriction$
                  new-fn-name
