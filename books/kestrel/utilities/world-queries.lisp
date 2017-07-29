@@ -501,3 +501,99 @@
     (cond ((equal namex 0) nil) ; no names
           ((consp namex) namex) ; list of names
           (t (list namex))))) ; single name
+
+(define fresh-namep (name type (wrld plist-worldp))
+  :guard (member-eq type
+                    '(function macro const stobj constrained-function nil))
+  :returns (msg/nil "A message (see @(see msg)) or @('nil').")
+  :mode :program
+  :parents (world-queries)
+  :short "Returns either @('nil') or a message indicating why the name is not ~
+          a legal new name."
+  :long
+  "<p>
+   Returns either @('nil') or a message (see @(see msg)) indicating why the
+   given name is not legal for a definition of the given type: @('function')
+   for @(tsee defun), @('macro') for @(tsee defmacro), @('const') for @(tsee
+   defconst), @('stobj') for @(tsee defstobj), @('constrained-function') for
+   @(tsee defchoose), and otherwise @('nil') (for other kinds of @(see events),
+   for example @(tsee defthm) and @(tsee deflabel)).  See @(see name).  For a
+   utility that makes a slightly stronger check, see @(see fresh-namep!).
+   </p>
+
+   <p>
+   WARNING: This is an incomplete check in the case of a stobj name, because
+   the field names are not supplied.
+   </p>"
+
+  (flet ((not-new-namep-msg (name wrld)
+
+; It is tempting to report that the properties 'global-value, 'table-alist,
+; 'table-guard are not relevant for this check.  But that would probably make
+; the message confusing.
+
+                            (let ((old-type (logical-name-type name wrld t)))
+                              (cond
+                               (old-type
+                                (msg "~x0 is already the name for a ~s1."
+                                     name
+                                     (string-downcase
+                                      (symbol-name old-type))))
+                               (t
+                                (msg "~x0 has properties in the world; it is ~
+                                      not a new name."
+                                     name))))))
+    (cond
+     ((mv-let (ctx msg)
+        (chk-all-but-new-name-cmp name 'fresh-namep type wrld)
+        (and ctx ; it's an error
+             msg)))
+     ((not (new-namep name wrld))
+      (not-new-namep-msg name wrld))
+     (t (case type
+          (const
+           (and (not (legal-constantp name))
+
+; A somewhat more informative error message is produced by
+; chk-legal-defconst-name, but I think the following suffices.
+
+                (msg "~x0 is not a legal constant name."
+                     name)))
+          (stobj
+           (and (not (new-namep (the-live-var name) wrld))
+                (not-new-namep-msg (the-live-var name) wrld)))
+          (t nil))))))
+
+(define fresh-namep! (name type ctx (wrld plist-worldp) state)
+  :guard (member-eq type
+                    '(function macro const stobj constrained-function nil))
+  :returns (mv erp val state)
+  :mode :program
+  :parents (world-queries)
+  :short "Checks whether name is a legal new name."
+  :long
+  "<p>
+   Returns an @(see error-triple) @('(mv erp val state)') where @('erp') is
+   @('nil') if and only if name is a legal new name, and @('val') is
+   irrelevant.  If @('erp') is not nil, then an explanatory error message is
+   printed.
+   </p>
+
+   <p>
+   For more information about legality of new names see @(see fresh-namep).
+   That utility returns a single value but is less aggressive than
+   @('fresh-namep!'), which checks that functions and macros aren't already
+   defined in raw Lisp.
+   </p>
+
+   <p>
+   Implementation Note.  The extra check requires modification of state,
+   because the check for legality of new definitions (carried out by ACL2
+   source function @('chk-virgin')) modifies state.  That modification is
+   necessary because for all we know, raw Lisp is defining functions we don't
+   know about without our having modified state; so we need to pop the oracle
+   when checking virginity.  End of Implementation Note.
+   </p>"
+  (let ((msg (fresh-namep name type wrld)))
+    (cond (msg (er soft ctx "~@0" msg))
+          (t (chk-virgin name type ctx wrld state)))))

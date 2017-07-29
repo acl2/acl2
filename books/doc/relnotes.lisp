@@ -186,6 +186,10 @@
  <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
  fails, then to evaluate a second event.</p>
 
+ <p>Added other utilities, for example world queries (in the book
+ @('world-queries.lisp')) and error checking utilities (in the new book
+ @('error-checking.lisp')).</p>
+
  <h4>The apply books</h4>
 
  <p>Updated books pertaining to @('apply$'); see @('projects/apply-model/') and
