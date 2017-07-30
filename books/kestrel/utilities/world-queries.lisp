@@ -502,7 +502,7 @@
           ((consp namex) namex) ; list of names
           (t (list namex))))) ; single name
 
-(define fresh-namep (name type (wrld plist-worldp))
+(define fresh-namep-msg (name type (wrld plist-worldp))
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
   :returns (msg/nil "A message (see @(see msg)) or @('nil').")
@@ -518,7 +518,7 @@
    defconst), @('stobj') for @(tsee defstobj), @('constrained-function') for
    @(tsee defchoose), and otherwise @('nil') (for other kinds of @(see events),
    for example @(tsee defthm) and @(tsee deflabel)).  See @(see name).  For a
-   utility that makes a slightly stronger check, see @(see fresh-namep!).
+   utility that makes a slightly stronger check, see @(see chk-fresh-namep).
    </p>
 
    <p>
@@ -545,7 +545,7 @@
                                      name))))))
     (cond
      ((mv-let (ctx msg)
-        (chk-all-but-new-name-cmp name 'fresh-namep type wrld)
+        (chk-all-but-new-name-cmp name 'fresh-namep-msg type wrld)
         (and ctx ; it's an error
              msg)))
      ((not (new-namep name wrld))
@@ -564,7 +564,7 @@
                 (not-new-namep-msg (the-live-var name) wrld)))
           (t nil))))))
 
-(define fresh-namep! (name type ctx (wrld plist-worldp) state)
+(define chk-fresh-namep (name type ctx (wrld plist-worldp) state)
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
   :returns (mv erp val state)
@@ -580,9 +580,9 @@
    </p>
 
    <p>
-   For more information about legality of new names see @(see fresh-namep).
+   For more information about legality of new names see @(see fresh-namep-msg).
    That utility returns a single value but is less aggressive than
-   @('fresh-namep!'), which checks that functions and macros aren't already
+   @('chk-fresh-namep'), which checks that functions and macros aren't already
    defined in raw Lisp.
    </p>
 
@@ -594,6 +594,6 @@
    know about without our having modified state; so we need to pop the oracle
    when checking virginity.  End of Implementation Note.
    </p>"
-  (let ((msg (fresh-namep name type wrld)))
+  (let ((msg (fresh-namep-msg name type wrld)))
     (cond (msg (er soft ctx "~@0" msg))
           (t (chk-virgin name type ctx wrld state)))))
