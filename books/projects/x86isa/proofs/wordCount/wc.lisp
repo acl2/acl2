@@ -764,11 +764,11 @@
              (equal (grab-bytes xs) xs))
     :hints (("Goal" :in-theory (e/d* (grab-bytes) ()))))
 
-  (defthm byte-listp-of-take
-    (implies (and (byte-listp xs)
-                  (< n (len xs)))
-             (byte-listp (take n xs)))
-    :hints (("Goal" :in-theory (e/d* (byte-listp) (take)))))
+  ;; (defthm byte-listp-of-take
+  ;;   (implies (and (byte-listp xs)
+  ;;                 (< n (len xs)))
+  ;;            (byte-listp (take n xs)))
+  ;;   :hints (("Goal" :in-theory (e/d* (byte-listp) (take)))))
 
   (defthm unsigned-byte-p-of-nth-of-byte-listp
     (implies (and (< i (len bytes))

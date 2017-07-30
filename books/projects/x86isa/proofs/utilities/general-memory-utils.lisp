@@ -8,6 +8,8 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
 
 ;; ======================================================================
 
@@ -125,11 +127,11 @@
     (implies (posp n)
              (equal (+ -8 (ash n 3))
                     (ash (+ -1 n) 3)))
-    :hints (("Goal" :in-theory (e/d* (ash) ()))))
+    :hints (("Goal" :in-theory (e/d* (ash) ()))))  
 
   (defthm ash-n-3-bound
-    (implies (and (not (zp n))
-                  (natp n))
+    (implies (and (integerp n)
+                  (< 0 n))
              (<= 8 (ash n 3)))
     :hints (("Goal" :in-theory (e/d* (ash) ())))
     :rule-classes :linear)
@@ -139,6 +141,75 @@
              (equal (ash (+ 1 n) 3)
                     (+ 8 (ash n 3))))
     :hints (("Goal" :in-theory (e/d* (ash) ())))))
+
+;; ======================================================================
+
+;; Lemmas about combine-bytes and part-select:
+
+(defthmd logtail-n>=8-of-byte
+   (implies (and (unsigned-byte-p 8 byte)
+                 (natp n)
+                 (<= 8 n))
+            (equal (logtail n byte) 0))
+   :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                     bitops::ihsext-inductions)
+                                    ()))))
+
+(defthmd loghead-n->=8-of-a-byte
+  (implies (and (unsigned-byte-p 8 byte)
+                (natp n)
+                (<= 8 n))
+           (equal (loghead n byte) byte))
+  :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                    bitops::ihsext-inductions)
+                                   ()))))
+
+(local (in-theory (e/d* (logtail-n>=8-of-byte
+                         loghead-n->=8-of-a-byte)
+                        ())))
+
+(defthm break-loghead-and-ash
+  (implies (natp i)
+           (equal (loghead (+ i j) (ash x i))
+                  (ash (loghead j x) i)))
+  :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                    bitops::ihsext-recursive-redefs)
+                                   ()))))
+
+(local
+ (defthm combine-bytes-take-and-loghead-helper
+   (implies (natp n)
+            (equal (loghead (ash n 3) (ash x 8))
+                   (ash (loghead (ash (+ -1 n) 3) x) 8)))
+   :hints (("Goal" :use ((:instance ash-and-plus (n n)))
+            :in-theory (e/d* () (ash-and-plus))))))
+
+
+(defthm combine-bytes-take-and-loghead
+  (implies (and (natp num)
+                (byte-listp xs))
+           (equal (combine-bytes (take num xs))
+                  (loghead (ash num 3)
+                           (combine-bytes xs)))))
+
+(defthm combine-bytes-nthcdr-and-logtail
+  (implies (and (natp i)
+                (byte-listp xs))
+           (equal (combine-bytes (nthcdr i xs))
+                  (logtail (ash i 3) (combine-bytes xs)))))
+
+(defthmd relating-combine-bytes-and-part-select
+  (implies (and
+            (natp i) (natp num)
+            (byte-listp bytes))
+           (equal (combine-bytes (take num (nthcdr i bytes)))
+                  (part-select (combine-bytes bytes)
+                               :low   (ash i 3)
+                               :width (ash num 3))
+                  ;; (loghead (ash n 3)
+                  ;;          (logtail (ash (+ addr (- prog-addr)) 3)
+                  ;;                   (combine-n-bytes 0 (len bytes) bytes)))
+                  )))
 
 ;; ======================================================================
 

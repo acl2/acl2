@@ -533,47 +533,6 @@
 
 ;; The following theorems help in relieving the hypotheses of
 ;; get-prefixes opener lemmas.
-(local
- (defthm rb-1-from-program-at-helper
-   (implies (and (signed-byte-p 48 prog-addr)
-                 (equal (car bytes) (ifix (mv-nth 1 (rvm08 prog-addr x86))))
-                 (equal (mv-nth 1 (rb-1 1 addr :x x86))
-                        (nth (+ -1 addr (- prog-addr)) (cdr bytes)))
-                 (program-at (+ 1 prog-addr) (cdr bytes) x86)
-                 (signed-byte-p 48 addr)
-                 (<= prog-addr addr)
-                 (xr :programmer-level-mode 0 x86))
-            (equal (mv-nth 1 (rb-1 1 addr :x x86))
-                   (nth (+ addr (- prog-addr)) bytes)))
-   :hints (("Goal"
-            :do-not-induct t
-            :in-theory (e/d* () (signed-byte-p))
-            :expand ((nth (+ addr (- prog-addr)) bytes))))))
-
-(local
- (defthm ash-lemma
-   (implies (and (integerp i)
-                 (< 0 i))
-            (<= 8 (ash i 3)))
-   :rule-classes :linear))
-
-(local
- (defthm relating-nth-and-combine-bytes-helper
-   (implies (and (unsigned-byte-p 8 byte)
-                 (natp n)
-                 (<= 8 n))
-            (equal (logtail n byte) 0))
-   :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
-                                     bitops::ihsext-inductions)
-                                    ())))))
-
-(defthmd relating-nth-and-combine-bytes
-  (implies (and (byte-listp bytes)
-                (natp i)
-                (< i (len bytes)))
-           (equal (nth i bytes)
-                  (loghead 8 (logtail (ash i 3) (combine-bytes bytes)))))
-  :hints (("Goal" :in-theory (e/d* (nth) ()))))
 
 (defthmd rb-1-error-free-implies-canonical-addresses
   (implies (and (not (mv-nth 0 (rb-1 n addr r-x x86)))
@@ -614,7 +573,60 @@
     `((prog-addr . ,prog-addr)
       (bytes . ,bytes))))
 
+(defthm many-reads-with-rb-from-program-at
+  (implies
+   (and (bind-free (find-info-from-program-at-term-in-programmer-mode
+                    'many-reads-with-rb-from-program-at
+                    mfc state)
+                   (prog-addr bytes))
+        (program-at prog-addr bytes x86)
+        (<= prog-addr addr)
+        (< (+ n addr) (+ (len bytes) prog-addr))
+        (canonical-address-p addr)
+        (posp n)
+        (byte-listp bytes)
+        (programmer-level-mode x86)
+        (x86p x86))
+   (equal (mv-nth 1 (rb n addr :x x86))
+          ;; During symbolic simulation of a program, we'd know the
+          ;; concrete value of "bytes".  Moreover, note that using
+          ;; combine-bytes instead of combine-n-bytes would have been
+          ;; expensive because the former would combine all program
+          ;; bytes whereas the latter only combines n of them.
+          (combine-n-bytes (- addr prog-addr) n bytes)))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance rb-rb-subset
+                            (j n) (addr-j addr) (r-x-j :x) (x86 x86)
+                            (i (len bytes)) (addr-i prog-addr) (r-x-i :x)
+                            (val (combine-n-bytes 0 (len bytes) bytes)))
+                 (:instance program-at-implies-canonical-addresses))
+           :in-theory (e/d (relating-combine-bytes-and-part-select
+                            program-at)
+                           (acl2::commutativity-of-logior
+                            take nthcdr ;; combine-n-bytes
+                            rb rb-1 nth signed-byte-p)))))
+
+(local
+ (defthm relating-nth-and-combine-bytes
+   (implies (and (byte-listp bytes)
+                 (natp i)
+                 (< i (len bytes)))
+            (equal (nth i bytes)
+                   (loghead 8 (logtail (ash i 3) (combine-bytes bytes)))))
+   :hints (("Goal" :in-theory (e/d* (nth
+                                     logtail-n>=8-of-byte
+                                     loghead-n->=8-of-a-byte)
+                                    ((:linear ash-monotone-2)
+                                     member-equal
+                                     (:linear size-of-combine-bytes-of-take)))))))
+
 (defthm one-read-with-rb-from-program-at
+  ;; Even though we have many-reads-with-rb-from-program-at, I like
+  ;; having this lemma around because it has a weaker hyp of
+  ;; (< addr (+ (len bytes) prog-addr))
+  ;; instead of
+  ;; (< (+ 1 addr) (+ (len bytes) prog-addr)).
   (implies (and
             (bind-free (find-info-from-program-at-term-in-programmer-mode
                         'one-read-with-rb-from-program-at
@@ -637,69 +649,14 @@
                             (i (len bytes)) (addr-i prog-addr) (r-x-i :x)
                             (val (combine-bytes bytes)))
                  (:instance program-at-implies-canonical-addresses))
-           :in-theory (e/d (relating-nth-and-combine-bytes program-at)
-                           (rb rb-1 nth signed-byte-p)))))
-
-
-(local
- (defthmd many-reads-with-rb-from-program-at-helper
-   (implies (and (program-at prog-addr bytes x86)
-                 (signed-byte-p 48 prog-addr)
-                 (<= prog-addr addr)
-                 (< (+ addr n) (+ prog-addr (len bytes)))
-                 (signed-byte-p 48 addr)
-                 (not (zp n))
-                 (byte-listp bytes)
-                 (xr :programmer-level-mode 0 x86)
-                 (x86p x86))
-            (equal (mv-nth 1 (rb n addr :x x86))
-                   (logior (loghead 8
-                                    (logtail (ash (+ addr (- prog-addr)) 3)
-                                             (combine-bytes bytes)))
-                           (ash (mv-nth 1 (rb (+ -1 n) (+ 1 addr) :x x86))
-                                8))))
-   :hints (("Goal"
-            :do-not-induct t
-            :expand ((rb-1 n addr :x x86))
-            :use ((:instance one-read-with-rb-from-program-at))
-            :in-theory (e/d (relating-nth-and-combine-bytes)
-                            (one-read-with-rb-from-program-at
-                             acl2::commutativity-of-logior
-                             nth signed-byte-p))))))
-
-(defthm many-reads-with-rb-from-program-at
-  (implies
-   (and (bind-free (find-info-from-program-at-term-in-programmer-mode
-                    'many-reads-with-rb-from-program-at
-                    mfc state)
-                   (prog-addr bytes))
-        (program-at prog-addr bytes x86)
-        (<= prog-addr addr)
-        (< (+ n addr) (+ (len bytes) prog-addr))
-        (canonical-address-p addr)
-        (posp n)
-        (byte-listp bytes)
-        (programmer-level-mode x86)
-        (x86p x86))
-   (equal (mv-nth 1 (rb n addr :x x86))
-          (logior (nth (nfix (- addr prog-addr)) bytes)
-                  (ash (mv-nth 1 (rb (1- n) (1+ addr) :x x86)) 8))))
-  :hints (("Goal"
-           :do-not-induct t
-           :use ((:instance many-reads-with-rb-from-program-at-helper)
-                 (:instance rb-rb-subset
-                            (j n) (addr-j addr) (r-x-j :x) (x86 x86)
-                            (i (len bytes)) (addr-i prog-addr) (r-x-i :x)
-                            (val (combine-bytes bytes)))
-                 (:instance program-at-implies-canonical-addresses))
-           :in-theory (e/d (program-at
-                            relating-nth-and-combine-bytes)
-                           (acl2::commutativity-of-logior
-                            rb rb-1 nth signed-byte-p)))))
+           :in-theory (e/d (program-at)
+                           (take rb rb-1 nth signed-byte-p)))))
 
 ;; ======================================================================
 
-(globally-disable '(rb wb canonical-address-p program-at unsigned-byte-p signed-byte-p))
+(globally-disable '(rb wb
+                    canonical-address-p program-at
+                    unsigned-byte-p signed-byte-p))
 
 (in-theory (e/d*
             ;; We enable all these functions so that reasoning about

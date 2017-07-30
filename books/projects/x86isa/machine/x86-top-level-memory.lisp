@@ -4311,7 +4311,7 @@ memory.</li>
   :parents (x86-top-level-memory)
 
   (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-  
+
   (define byte-listp (x)
     :parents (x86-top-level-memory)
     :short "Recognizer of a list of bytes"
@@ -4430,8 +4430,114 @@ memory.</li>
                       :corollary
                       (implies (and (byte-listp bytes)
                                     (equal n (ash (len bytes) 3)))
-                               (<= 0 (combine-bytes bytes)))))))   
+                               (<= 0 (combine-bytes bytes)))))))
 
+  (local (include-book "std/lists/nthcdr" :dir :system))
+  (local (include-book "std/lists/take" :dir :system))
+
+  (defthm byte-listp-of-nthcdr
+    (implies (byte-listp xs)
+             (byte-listp (nthcdr n xs))))
+
+  (defthm byte-listp-of-take
+    (implies (and (byte-listp xs)
+                  (<= n (len xs)))
+             (byte-listp (take n xs))))
+
+  (define combine-n-bytes ((low  natp "Index of the first byte")
+                           (num  natp "Number of bytes to combine,
+                                       starting at @('pos')")
+                           (bytes byte-listp))
+    :guard (<= (+ low num) (len bytes))
+    :enabled t
+    (combine-bytes (take num (nthcdr low bytes)))
+
+    ///
+
+    (defthm combine-bytes-and-take-degenerate-cases
+      (and (implies (zp n) (equal (combine-bytes (take n bytes)) 0))
+           (equal (combine-bytes (take n nil)) 0)))
+
+    (defthm natp-of-combine-bytes-of-take
+      (implies (byte-listp bytes)
+               (<= 0 (combine-bytes (take num bytes))))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm natp-combine-n-bytes
+      (implies (force (byte-listp bytes))
+               (natp (combine-n-bytes low num bytes)))
+      :hints (("Goal" :in-theory (e/d* () (force (force)))))
+      :rule-classes
+      ((:type-prescription)
+       (:linear
+        :corollary
+        (implies (byte-listp bytes)
+                 (<= 0 (combine-n-bytes low num bytes))))))
+
+    (local
+     (encapsulate
+       ()
+
+       (local (include-book "arithmetic-3/top" :dir :system))
+
+       (defthmd ash-combine
+         (implies (integerp num)
+                  (equal (+ (ash (+ -1 num) 3) 8)
+                         (ash num 3)))
+         :hints (("Goal" :in-theory (e/d* (ash) ()))))))
+
+    (defthmd unsigned-byte-p-of-logior-and-ash-in-second-arg
+      (implies (and (unsigned-byte-p n x)
+                    (unsigned-byte-p i b))
+               (unsigned-byte-p (+ i n) (logior b (ash x i))))
+      :rule-classes
+      ((:rewrite
+        :corollary
+        (implies (and (< x (expt 2 n))
+                      (< b (expt 2 i))
+                      (natp x) (natp n)
+                      (natp b) (natp i))
+                 (< (logior b (ash x i))
+                    (expt 2 (+ i n))))
+        :hints (("Goal"
+                 :in-theory (union-theories '(unsigned-byte-p integer-range-p natp)
+                                            (theory 'minimal-theory)))))))
+
+    (local
+     (defthm size-of-combine-bytes-of-take-helper
+       (implies (and (not (zp num))
+                     (< (combine-bytes (take (+ -1 num) (cdr bytes)))
+                        (expt 2 (ash (+ -1 num) 3)))
+                     (integerp (car bytes))
+                     (< (car bytes) 256))
+                (< (logior (car bytes)
+                           (ash (combine-bytes (take (+ -1 num) (cdr bytes)))
+                                8))
+                   (expt 2 (ash num 3))))
+       :hints (("Goal"
+                :use ((:instance ash-combine)
+                      (:instance unsigned-byte-p-of-logior-and-ash-in-second-arg
+                                 (i 8) (n (ash (+ -1 num) 3))
+                                 (b (car bytes))
+                                 (x (combine-bytes (take (+ -1 num) (cdr bytes))))))))))
+
+    (defthm size-of-combine-bytes-of-take
+      (implies (byte-listp bytes)
+               (< (combine-bytes (take num bytes)) (expt 2 (ash num 3))))
+      :rule-classes :linear)
+
+    (defthm size-of-combine-n-bytes
+      (implies (byte-listp bytes)
+               (< (combine-n-bytes low num bytes) (expt 2 (ash num 3))))
+      :rule-classes :linear)
+
+    (defthm unsigned-byte-p-of-combine-n-bytes
+      (implies (and (byte-listp bytes) (natp num))
+               (unsigned-byte-p (ash num 3) (combine-n-bytes low num bytes)))
+      :hints (("Goal"
+               :use ((:instance size-of-combine-n-bytes)
+                     (:instance natp-combine-n-bytes))
+               :in-theory (e/d* () (combine-n-bytes))))))
 
   (define program-at (prog-addr bytes x86)
 
@@ -4453,7 +4559,17 @@ memory.</li>
           (rb (len bytes) prog-addr :x x86)))
       (and
        (equal flg        nil)
-       (equal bytes-read (combine-bytes bytes))))
+
+       ;; (combine-n-bytes 2 3 '(#xAA #xBB #xCC #xDD #xEE))
+       ;; ==
+       ;; (part-select (combine-bytes '(#xAA #xBB #xCC #xDD #xEE))
+       ;;              :low (ash 2 3) :width (ash 3 3))
+
+       ;; I prefer combine-n-bytes here instead of combine-bytes
+       ;; because combine-n-bytes lets me think of subseqs of a list
+       ;; in the same way I think about slices of a number a la
+       ;; part-select.
+       (equal bytes-read (combine-n-bytes 0 (len bytes) bytes))))
 
     ///
 
