@@ -712,7 +712,7 @@
 ; When we succeed in proving termination, we will store the
 ; justification properties.
 
-(defun normalize-ruler-extenders (ruler-extenders)
+(defun normalize-ruler-extenders (ruler-extenders checkp)
 
 ; The ruler-extenders supplied to a defun may be :all, :basic, :lambdas, or a
 ; list of symbols.  The :basic value is equivalent to the list of symbols in
@@ -727,10 +727,23 @@
 ; redundancy check.  Note that the default ruler-extenders are not stored in
 ; normalized form, since they are not checked for redundancy.
 
+; If checkp is t then we are careful not to assume that ruler-extenders is
+; valid.  If it is not valid, then we return it unchanged.  Thus, when using
+; this function to compare proposed invalid ruler-extenders against the
+; ruler-extenders of an existing function (see non-identical-defp), we know
+; that they will differ.  But when using this function to store ruler-extenders
+; that have already been checked for legality (see putprop-justification-lst),
+; we avoid the needless check for a list of symbols.  Of course, this may be
+; overkill since probably it is never expensive to check that ruler-extenders
+; is a symbol-listp.
+
   (cond ((eq ruler-extenders :all) :all)
         ((eq ruler-extenders :basic) *basic-ruler-extenders*)
         ((eq ruler-extenders :lambdas) *basic-ruler-extenders-plus-lambdas*)
-        (t (sort-symbol-listp ruler-extenders))))
+        ((or (null checkp) ; presumably no need to check for symbol-listp
+             (symbol-listp ruler-extenders))
+         (sort-symbol-listp ruler-extenders))
+        (t ruler-extenders)))
 
 (defun putprop-justification-lst (measure-alist subset-lst mp rel
                                                 ruler-extenders-lst
@@ -762,7 +775,8 @@
 ; normalize-ruler-extenders for an explanation.
 
                            :ruler-extenders (normalize-ruler-extenders
-                                             (car ruler-extenders-lst)))
+                                             (car ruler-extenders-lst)
+                                             nil))
                      wrld)))))
 
 (defun union-equal-to-end (x y)
@@ -5956,7 +5970,8 @@
 
          (ruler-extenders1 (if ruler-extenders1-lst
                                (normalize-ruler-extenders
-                                (car ruler-extenders1-lst))
+                                (car ruler-extenders1-lst)
+                                t)
                              (default-ruler-extenders wrld))))
     (cond
      ((and justification
