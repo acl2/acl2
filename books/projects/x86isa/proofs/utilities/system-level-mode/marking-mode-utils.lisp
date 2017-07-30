@@ -1930,103 +1930,65 @@
                                           signed-byte-p)))
             nil)))
 
-(local
- (defthm ash-lemma
-   (implies (and (integerp i)
-                 (< 0 i))
-            (<= 8 (ash i 3)))
-   :rule-classes :linear))
 
-(local
- (defthm relating-nth-and-combine-bytes-helper
-   (implies (and (unsigned-byte-p 8 byte)
-                 (natp n)
-                 (<= 8 n))
-            (equal (logtail n byte) 0))
-   :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
-                                     bitops::ihsext-inductions)
-                                    ())))))
-
-(defthmd relating-nth-and-combine-bytes
-  (implies (and (byte-listp bytes)
-                (natp i)
-                (< i (len bytes)))
-           (equal (nth i bytes)
-                  (loghead 8 (logtail (ash i 3) (combine-bytes bytes)))))
-  :hints (("Goal" :in-theory (e/d* (nth) ()))))
-
-(defthmd rb-error-free-implies-canonical-addresses
-  (implies (and (not (mv-nth 0 (rb n addr r-x x86)))
-                (not (zp n))
-                (not (programmer-level-mode x86)))
-           (and (canonical-address-p (+ -1 n addr))
-                (canonical-address-p addr)))
-  :HINTS
-  (("Goal"
-    :IN-THEORY
-    '((:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
-      (:DEFINITION CANONICAL-ADDRESS-P$INLINE)
-      (:DEFINITION FIX)
-      (:DEFINITION LAS-TO-PAS)
-      (:DEFINITION NOT)
-      (:DEFINITION PROGRAMMER-LEVEL-MODE$INLINE)
-      (:DEFINITION RB)
-      (:DEFINITION SYNP)
-      (:EXECUTABLE-COUNTERPART <)
-      (:EXECUTABLE-COUNTERPART BINARY-+)
-      (:EXECUTABLE-COUNTERPART NFIX)
-      (:EXECUTABLE-COUNTERPART ZP)
-      (:FORWARD-CHAINING ACL2::SIGNED-BYTE-P-FORWARD)
-      (:INDUCTION LAS-TO-PAS)
-      (:META ACL2::MV-NTH-CONS-META)
-      (:REWRITE ACL2::<-0-+-NEGATIVE-1)
-      (:REWRITE ASSOCIATIVITY-OF-+)
-      (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
-      (:REWRITE COMMUTATIVITY-OF-+)
-      (:REWRITE ACL2::FOLD-CONSTS-IN-+)
-      (:REWRITE LAS-TO-PAS-N=0)
-      (:REWRITE ACL2::MINUS-CANCELLATION-ON-LEFT)
-      (:REWRITE MV-NTH-1-IA32E-LA-TO-PA-WHEN-ERROR)
-      (:REWRITE MV-NTH-1-LAS-TO-PAS-WHEN-ERROR)
-      (:REWRITE
-       BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER)
-      (:REWRITE UNICITY-OF-0)
-      (:REWRITE XR-IA32E-LA-TO-PA)
-      (:REWRITE ACL2::ZP-WHEN-INTEGERP)
-      (:TYPE-PRESCRIPTION CANONICAL-ADDRESS-P$INLINE)
-      (:TYPE-PRESCRIPTION SIGNED-BYTE-P)))))
-
-(local
- (defthm non-zero-len-of-consp
-   ;; Ugh.
-   (implies (consp x)
-            (equal (equal (len x) 0) nil))))
-
-(defthmd program-at-implies-canonical-addresses
-  (implies (and (program-at prog-addr bytes x86)
-                (consp bytes)
-                (not (programmer-level-mode x86)))
-           (and (canonical-address-p (+ -1 (len bytes) prog-addr))
-                (canonical-address-p prog-addr)))
+(defthm many-reads-with-rb-from-program-at-in-marking-mode
+  (implies (and
+            (bind-free
+             (find-program-at-info 'prog-addr 'bytes mfc state)
+             (prog-addr bytes))
+            (program-at prog-addr bytes x86)
+            (disjoint-p
+             (mv-nth 1 (las-to-pas
+                        (len bytes) prog-addr :x (double-rewrite x86)))
+             (all-xlation-governing-entries-paddrs
+              (len bytes) prog-addr (double-rewrite x86)))
+            (<= prog-addr lin-addr)
+            (< (+ n lin-addr) (+ (len bytes) prog-addr))
+            (canonical-address-p lin-addr)
+            (canonical-address-p (+ -1 n prog-addr))
+            (posp n)
+            (not (programmer-level-mode x86))
+            (page-structure-marking-mode x86)
+            (byte-listp bytes)
+            (x86p x86))
+           (equal (mv-nth 1 (rb n lin-addr :x x86))
+                  ;; During symbolic simulation of a program, we'd
+                  ;; know the concrete value of "bytes".  Moreover,
+                  ;; note that using combine-bytes instead of
+                  ;; combine-n-bytes would have been expensive because
+                  ;; the former would combine all program bytes
+                  ;; whereas the latter only combines n of them.
+                  (combine-n-bytes (- lin-addr prog-addr) n bytes)))
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance rb-error-free-implies-canonical-addresses
-                            (n (len bytes))
-                            (addr prog-addr)
-                            (r-x :x)))
-           :in-theory (e/d* (program-at rb) ()))))
+           :in-theory (e/d (program-at
+                            relating-combine-bytes-and-part-select)
+                           (rb
+                            take nthcdr nth
+                            signed-byte-p
+                            not acl2::mv-nth-cons-meta))
+           :use ((:instance rb-rb-subset-in-marking-mode
+                            (addr-i prog-addr) (i (len bytes))
+                            (addr-j lin-addr)  (j n)
+                            (r-w-x :x)
+                            (val (combine-n-bytes 0 (len bytes) bytes)))
+                 (:instance program-at-implies-canonical-addresses)))))
 
 (defthm one-read-with-rb-from-program-at-in-marking-mode
+  ;; Even though we have
+  ;; many-reads-with-rb-from-program-at-in-marking-mode, I like having
+  ;; this lemma around because it has a weaker hyp of
+  ;; (< lin-addr (+ (len bytes) prog-addr))
+  ;; instead of
+  ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr)).
   (implies (and
-            (bind-free (find-program-at-info 'prog-addr 'bytes mfc state)
-                       (prog-addr bytes))
+            (bind-free
+             (find-program-at-info 'prog-addr 'bytes mfc state)
+             (prog-addr bytes))
             (program-at prog-addr bytes x86)
             (disjoint-p
              (mv-nth 1 (las-to-pas (len bytes) prog-addr :x (double-rewrite x86)))
-             (all-xlation-governing-entries-paddrs
-              (len bytes) prog-addr (double-rewrite x86)))
-            (not (mv-nth 0 (las-to-pas
-                            (len bytes) prog-addr :x (double-rewrite x86))))
+             (all-xlation-governing-entries-paddrs (len bytes) prog-addr (double-rewrite x86)))
             (<= prog-addr lin-addr)
             (< lin-addr (+ (len bytes) prog-addr))
             (canonical-address-p lin-addr)
@@ -2041,7 +2003,7 @@
            :in-theory (e/d (program-at
                             relating-nth-and-combine-bytes)
                            (rb
-                            nth
+                            nth take nthcdr
                             signed-byte-p
                             not acl2::mv-nth-cons-meta))
            :use ((:instance rb-rb-subset-in-marking-mode
@@ -2051,62 +2013,4 @@
                             (val (combine-bytes bytes)))
                  (:instance program-at-implies-canonical-addresses)))))
 
-(i-am-here)
-
-(defthm many-reads-with-rb-from-program-at-in-marking-mode
-  (implies (and
-            (bind-free (find-program-at-info 'prog-addr 'bytes mfc state)
-                       (prog-addr bytes))
-            (program-at prog-addr bytes x86)
-            (disjoint-p
-             (mv-nth 1 (las-to-pas (len bytes) prog-addr :x (double-rewrite x86)))
-             (all-xlation-governing-entries-paddrs
-              (len bytes) prog-addr (double-rewrite x86)))
-            (not (mv-nth 0 (las-to-pas
-                            (len bytes) prog-addr :x (double-rewrite x86))))
-            (<= prog-addr lin-addr)
-            (< (+ n lin-addr) (+ (len bytes) prog-addr))
-            (canonical-address-p lin-addr)
-            ;;
-            (canonical-address-p (+ -1 n prog-addr))
-            (posp n)
-            (not (programmer-level-mode x86))
-            (page-structure-marking-mode x86)
-            (byte-listp bytes)
-            (x86p x86))
-           (equal (mv-nth 1 (rb n lin-addr :x x86))
-                  (logior (nth (- lin-addr prog-addr) bytes)
-                          (ash (mv-nth 1 (rb (1- n) (1+ lin-addr) :x x86)) 8))))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d (program-at
-                            relating-nth-and-combine-bytes)
-                           (rb
-                            nth
-                            signed-byte-p
-                            not acl2::mv-nth-cons-meta))
-           :use ((:instance rb-rb-subset-in-marking-mode
-                            (addr-i prog-addr) (i (len bytes))
-                            (addr-j lin-addr)  (j n)
-                            (r-w-x :x)
-                            (val (combine-bytes bytes)))
-                 (:instance program-at-implies-canonical-addresses))))
-  :otf-flg t)
-
 ;; ======================================================================
-
-
-;; (local
-;;  (defthmd rb-in-terms-of-rb-subset-p-helper
-;;    (implies (and
-;;              ;; <n-2,lin-addr-2> is a subset of <n-1,lin-addr-1>.
-;;              (<= lin-addr-1 lin-addr-2)
-;;              (< (+ n-2 lin-addr-2) (+ n-1 lin-addr-1))
-;;              (disjoint-p (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x x86))
-;;                          (all-xlation-governing-entries-paddrs n-1 lin-addr-1 x86))
-;;              (not (mv-nth 0 (las-to-pas n-1 lin-addr-1 r-w-x x86)))
-;;              (posp n-1) (posp n-2)
-;;              (integerp lin-addr-1)
-;;              (integerp lin-addr-2))
-;;             (disjoint-p (mv-nth 1 (las-to-pas n-2 lin-addr-2 r-w-x x86))
-;;                         (all-xlation-governing-entries-paddrs n-2 lin-addr-2 x86)))))

@@ -772,73 +772,62 @@
                                           signed-byte-p)))
             nil)))
 
-(local
- (defthm ash-lemma
-   (implies (and (integerp i)
-                 (< 0 i))
-            (<= 8 (ash i 3)))
-   :rule-classes :linear))
-
-(local
- (defthm relating-nth-and-combine-bytes-helper
-   (implies (and (unsigned-byte-p 8 byte)
-                 (natp n)
-                 (<= 8 n))
-            (equal (logtail n byte) 0))
-   :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
-                                     bitops::ihsext-inductions)
-                                    ())))))
-
-(defthmd relating-nth-and-combine-bytes
-  (implies (and (byte-listp bytes)
-                (natp i)
-                (< i (len bytes)))
-           (equal (nth i bytes)
-                  (loghead 8 (logtail (ash i 3) (combine-bytes bytes)))))
-  :hints (("Goal" :in-theory (e/d* (nth) ()))))
-
-(defthmd rb-error-free-implies-canonical-addresses
-  (implies (and (not (mv-nth 0 (rb n addr r-x x86)))
-                (not (zp n))
-                (not (programmer-level-mode x86)))
-           (and (canonical-address-p (+ -1 n addr))
-                (canonical-address-p addr))))
-
-(local
- (defthm non-zero-len-of-consp
-   ;; Ugh.
-   (implies (consp x)
-            (equal (equal (len x) 0) nil))))
-
-(defthmd program-at-implies-canonical-addresses
-  (implies (and (program-at prog-addr bytes x86)
-                (consp bytes)
-                (not (programmer-level-mode x86)))
-           (and (canonical-address-p (+ -1 (len bytes) prog-addr))
-                (canonical-address-p prog-addr)))
+(defthm many-reads-with-rb-from-program-at-in-non-marking-mode
+  (implies
+   (and (bind-free (find-program-at-info 'prog-addr 'bytes mfc state)
+                   (prog-addr bytes))
+        (syntaxp (quotep n))
+        (program-at prog-addr bytes x86)
+        (<= prog-addr lin-addr)
+        (< (+ n lin-addr) (+ (len bytes) prog-addr))
+        (posp n)
+        (canonical-address-p lin-addr)
+        (byte-listp bytes)
+        (not (programmer-level-mode x86))
+        (not (page-structure-marking-mode x86))
+        (x86p x86))
+   (equal (mv-nth 1 (rb n lin-addr :x x86))
+          ;; During symbolic simulation of a program, we'd know the
+          ;; concrete value of "bytes".  Moreover, note that using
+          ;; combine-bytes instead of combine-n-bytes would have been
+          ;; expensive because the former would combine all program
+          ;; bytes whereas the latter only combines n of them.
+          (combine-n-bytes (- lin-addr prog-addr) n bytes)))
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance rb-error-free-implies-canonical-addresses
-                            (n (len bytes))
-                            (addr prog-addr)
-                            (r-x :x)))
-           :in-theory (e/d* (program-at rb) ()))))
+           :use ((:instance rb-rb-subset-in-non-marking-mode
+                            (addr-i prog-addr) (i (len bytes))
+                            (addr-j lin-addr)  (j n)
+                            (r-w-x :x)
+                            (val (combine-bytes bytes)))
+                 (:instance program-at-implies-canonical-addresses))
+           :in-theory (e/d (program-at
+                            relating-nth-and-combine-bytes
+                            relating-combine-bytes-and-part-select)
+                           (rb
+                            canonical-address-p
+                            acl2::mv-nth-cons-meta)))))
 
 (defthm one-read-with-rb-from-program-at-in-non-marking-mode
-  (implies (and (bind-free
-                 (find-program-at-info 'prog-addr 'bytes mfc state)
-                 (prog-addr bytes))
-                (program-at prog-addr bytes x86)
-                (<= prog-addr lin-addr)
-                (< lin-addr (+ (len bytes) prog-addr))
-                (canonical-address-p lin-addr)
-                (canonical-address-p prog-addr)
-                (byte-listp bytes)
-                (not (page-structure-marking-mode x86))
-                (not (programmer-level-mode x86))
-                (x86p x86))
-           (equal (mv-nth 1 (rb 1 lin-addr :x x86))
-                  (nth (- lin-addr prog-addr) bytes)))
+  ;; Even though we have
+  ;; many-reads-with-rb-from-program-at-in-non-marking-mode, I like having
+  ;; this lemma around because it has a weaker hyp of
+  ;; (< lin-addr (+ (len bytes) prog-addr))
+  ;; instead of
+  ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr)).
+  (implies
+   (and (bind-free (find-program-at-info 'prog-addr 'bytes mfc state)
+                   (prog-addr bytes))
+        (program-at prog-addr bytes x86)
+        (<= prog-addr lin-addr)
+        (< lin-addr (+ (len bytes) prog-addr))
+        (canonical-address-p lin-addr)
+        (byte-listp bytes)
+        (not (page-structure-marking-mode x86))
+        (not (programmer-level-mode x86))
+        (x86p x86))
+   (equal (mv-nth 1 (rb 1 lin-addr :x x86))
+          (nth (- lin-addr prog-addr) bytes)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (program-at
@@ -853,71 +842,6 @@
                             (r-w-x :x)
                             (val (combine-bytes bytes)))
                  (:instance program-at-implies-canonical-addresses)))))
-
-(local
- (defthmd many-reads-with-rb-from-program-at-in-non-marking-mode-helper
-   (implies
-    (and (canonical-address-p prog-addr)
-         (not (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86)))
-         (equal (mv-nth 1 (rb (len bytes) prog-addr :x x86))
-                (combine-bytes bytes))
-         (<= prog-addr lin-addr)
-         (< (+ lin-addr n) (+ prog-addr (len bytes)))
-         (not (mv-nth 0 (las-to-pas (+ -1 n) (+ 1 lin-addr) :x x86)))
-         (not (zp n))
-         (canonical-address-p lin-addr)
-         (byte-listp bytes)
-         (not (xr :programmer-level-mode 0 x86))
-         (not (xr :page-structure-marking-mode 0 x86))
-         (x86p x86))
-    (equal (mv-nth 1 (rb n lin-addr :x x86))
-           (logior (ash (mv-nth 1 (rb (+ -1 n) (+ 1 lin-addr) :x x86)) 8)
-                   (loghead 8 (logtail (ash (+ lin-addr (- prog-addr)) 3)
-                                       (combine-bytes bytes))))))
-   :hints (("Goal"
-            :do-not-induct t
-            :expand ((rb n lin-addr :x x86))
-            :use ((:instance one-read-with-rb-from-program-at-in-non-marking-mode))
-            :in-theory (e/d (relating-nth-and-combine-bytes
-                             program-at
-                             logior)
-                            (one-read-with-rb-from-program-at-in-non-marking-mode
-                             acl2::commutativity-of-logior
-                             nth signed-byte-p
-                             acl2::mv-nth-cons-meta))))))
-
-(defthm many-reads-with-rb-from-program-at-in-non-marking-mode
-  (implies
-   (and (bind-free
-         (find-program-at-info 'prog-addr 'bytes mfc state)
-         (prog-addr bytes))
-        (syntaxp (quotep n))
-        (program-at prog-addr bytes x86)
-        (<= prog-addr lin-addr)
-        (< (+ n lin-addr) (+ (len bytes) prog-addr))
-        (not (mv-nth 0 (las-to-pas n lin-addr :x x86)))
-        (posp n) (canonical-address-p lin-addr)
-        (byte-listp bytes)
-        (not (programmer-level-mode x86))
-        (not (page-structure-marking-mode x86))
-        (x86p x86))
-   (equal (mv-nth 1 (rb n lin-addr :x x86))
-          (logior (nth (- lin-addr prog-addr) bytes)
-                  (ash (mv-nth 1 (rb (1- n) (1+ lin-addr) :x x86)) 8))))
-  :hints (("Goal"
-           :do-not-induct t
-           :use ((:instance rb-rb-subset-in-non-marking-mode
-                            (addr-i prog-addr) (i (len bytes))
-                            (addr-j lin-addr)  (j n)
-                            (r-w-x :x)
-                            (val (combine-bytes bytes)))
-                 (:instance program-at-implies-canonical-addresses)
-                 (:instance many-reads-with-rb-from-program-at-in-non-marking-mode-helper))
-           :in-theory (e/d (program-at                            
-                            relating-nth-and-combine-bytes)
-                           (rb
-                            canonical-address-p
-                            acl2::mv-nth-cons-meta)))))
 
 ;; ======================================================================
 

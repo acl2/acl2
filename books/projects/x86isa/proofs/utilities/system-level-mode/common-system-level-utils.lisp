@@ -10,6 +10,7 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/gl/gl" :dir :system))
 
 (local (in-theory (e/d* () (signed-byte-p unsigned-byte-p))))
@@ -662,5 +663,50 @@
                             (ac (bool->bit (logbitp 18 (xr :rflags 0 x86))))
                             (nxe (loghead 1 (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86)))))))
            :in-theory (e/d* (ia32e-la-to-pa) ()))))
+
+;; ======================================================================
+
+;; Some misc. lemmas, needed for theorems of the kind
+;; one-read-with-rb-from-program-at-in-non-marking-mode:
+
+(defthmd rb-error-free-implies-canonical-addresses
+  (implies (and (not (mv-nth 0 (rb n addr r-x x86)))
+                (not (zp n))
+                (not (programmer-level-mode x86)))
+           (and (canonical-address-p (+ -1 n addr))
+                (canonical-address-p addr))))
+
+(local
+ (defthm non-zero-len-of-consp
+   ;; Ugh.
+   (implies (consp x)
+            (equal (equal (len x) 0) nil))))
+
+(defthmd program-at-implies-canonical-addresses
+  (implies (and (program-at prog-addr bytes x86)
+                (consp bytes)
+                (not (programmer-level-mode x86)))
+           (and (canonical-address-p (+ -1 (len bytes) prog-addr))
+                (canonical-address-p prog-addr)))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance rb-error-free-implies-canonical-addresses
+                            (n (len bytes))
+                            (addr prog-addr)
+                            (r-x :x)))
+           :in-theory (e/d* (program-at rb) ()))))
+
+(defthmd relating-nth-and-combine-bytes
+  (implies (and (byte-listp bytes)
+                (natp i)
+                (< i (len bytes)))
+           (equal (nth i bytes)
+                  (loghead 8 (logtail (ash i 3) (combine-bytes bytes)))))
+  :hints (("Goal" :in-theory (e/d* (nth
+                                    logtail-n>=8-of-byte
+                                    loghead-n->=8-of-a-byte)
+                                   ((:linear ash-monotone-2)
+                                    member-equal
+                                    (:linear size-of-combine-bytes-of-take))))))
 
 ;; ======================================================================
