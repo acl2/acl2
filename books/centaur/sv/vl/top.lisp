@@ -226,7 +226,7 @@
                                               (change-vl-design good :mods good.mods)))
 
        ;; Translate the VL module hierarchy into an isomorphic SVEX module hierarchy.
-       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1)))
+       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1 :config config)))
        ;; The reportcard can't have any warnings about bad, because it's only being
        ;; generated from a subset of good.  So, just apply it to good.
        (good (vl-apply-reportcard good reportcard)))

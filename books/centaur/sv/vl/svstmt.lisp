@@ -74,6 +74,9 @@
       (then svstmtlist)
       (else svstmtlist))
      :layout :tree)
+    (:xcond
+     ((cond svex)
+      (body svstmtlist)))
     (:while
      ((cond svex)
       (body svstmtlist)
@@ -130,6 +133,9 @@
               (svex-vars x.cond)
               (svstmtlist-vars x.body)
               (svstmtlist-vars x.next))
+      :xcond (append-without-guard
+              (svex-vars x.cond)
+              (svstmtlist-vars x.body))
       :constraints (constraintlist-vars x.constraints)
       :scope (append-without-guard
               (svarlist-fix x.locals)
@@ -169,6 +175,12 @@
                    (svstmtlist-vars body)
                    (svstmtlist-vars next)))
     :hints (("goal" :expand ((svstmt-vars (svstmt-while cond body next))))))
+
+  (defthm svstmt-vars-of-xcond
+    (equal (svstmt-vars (svstmt-xcond cond body))
+           (append (svex-vars cond)
+                   (svstmtlist-vars body)))
+    :hints (("goal" :expand ((svstmt-vars (svstmt-xcond cond body))))))
 
   (defthm svstmt-vars-of-constraint
     (equal (svstmt-vars (svstmt-constraints constraints))

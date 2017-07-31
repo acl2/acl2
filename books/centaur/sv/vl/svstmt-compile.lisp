@@ -1022,6 +1022,14 @@ exists there.</p>"
              (svstates-compatible new-st st))))
 
 
+(defprojection 4veclist-quote ((x 4veclist-p))
+  :returns (svexes svexlist-p)
+  (svex-quote x)
+  ///
+  (defret vars-of-4veclist-quote
+    (equal (svexlist-vars svexes) nil)
+    :hints(("Goal" :in-theory (enable svexlist-vars)))))
+
 
 ;; Procedure for performing an assignment.
 ;; We have an RHS expression (any svex), an LHS static and dynamic select
@@ -1046,6 +1054,7 @@ exists there.</p>"
 (define svstmt-process-write ((write svstmt-write-p)
                               (blockingp)
                               (nb-delayp)
+                              (xcond)
                               (st svstate-p))
   :returns (mv (new-st svstate-p)
                (lhs lhs-p))
@@ -1054,12 +1063,19 @@ exists there.</p>"
        (svstack (if blockingp
                     st.blkst
                   (cons st.nonblkst st.blkst)))
-       (lhs-indices (svexlist-maskfree-rewrite
-                     (svexlist-compose-svstack (svex-select->indices write.lhs) svstack)))
+       (lhs-indices (if xcond
+                        (4veclist-quote (svexlist-xeval (svex-select->indices write.lhs)))
+                      (svexlist-maskfree-rewrite
+                       (svexlist-compose-svstack (svex-select->indices write.lhs) svstack))))
        (rhs (svex-compose-svstack write.rhs svstack))
        (rhs (if (and (eq nb-delayp t)
                      (not blockingp))
                 (svex-add-delay rhs 1)
+              rhs))
+       ;; BOZO this is very coarse-grained but simple and easy and will work
+       ;; for the cases I currently care about.
+       (rhs (if xcond
+                (svex-x)
               rhs))
        (lhs-select (svex-select-replace-indices write.lhs lhs-indices))
        (lhs-var (svex-select-inner-var write.lhs))
@@ -1082,7 +1098,9 @@ exists there.</p>"
 
   (defret svarlist-addr-p-of-svstmt-process-write
     (implies (and (svarlist-addr-p (svstmt-write-vars write))
-                  (svarlist-addr-p (svstate-vars st)))
+                  (svarlist-addr-p (svstate-vars st))
+                  ;; (svarlist-addr-p (svex-vars xcond))
+                  )
              (Svarlist-addr-p (svstate-vars new-st)))
     :hints(("Goal" :in-theory (enable svstmt-write-vars
                                       svstate-vars)))))
@@ -1091,12 +1109,13 @@ exists there.</p>"
 (define svstmt-process-writelist ((x svstmt-writelist-p)
                                   (blockingp)
                                   (nb-delayp)
+                                  (xcond)
                                   (st svstate-p))
   :returns (mv (new-st svstate-p)
                (all-lhs lhs-p "Concatenation of the static LHSes of all of the writes."))
   (b* (((when (atom x)) (mv (svstate-fix st) nil))
-       ((mv st lhs1) (svstmt-process-write (car x) blockingp nb-delayp st))
-       ((mv st lhs2) (svstmt-process-writelist (cdr x) blockingp nb-delayp st)))
+       ((mv st lhs1) (svstmt-process-write (car x) blockingp nb-delayp xcond st))
+       ((mv st lhs2) (svstmt-process-writelist (cdr x) blockingp nb-delayp xcond st)))
     (mv st (append-without-guard lhs1 lhs2)))
   ///
   (defret svstates-compatible-of-svstmt-process-writelist
@@ -1105,7 +1124,9 @@ exists there.</p>"
 
   (defret svarlist-addr-p-of-svstmt-process-writelist
     (implies (and (svarlist-addr-p (svstmt-writelist-vars x))
-                  (svarlist-addr-p (svstate-vars st)))
+                  (svarlist-addr-p (svstate-vars st))
+                  ;; (svarlist-addr-p (svex-vars xcond))
+                  )
              (svarlist-addr-p (svstate-vars new-st)))
     :hints(("Goal" :in-theory (enable svstmt-writelist-vars)))))
 
@@ -2396,6 +2417,8 @@ exists there.</p>"
                              :cond (svex-compose-svstack (constraint->cond (car x)) a))
           (constraintlist-compose-svstack (cdr x) a))))
 
+
+
 (defines svstmt-compile
   :verify-guards nil
   (define svstmt-compile ((x svstmt-p)
@@ -2403,7 +2426,8 @@ exists there.</p>"
                           (reclimit natp)
                           (nb-delayp)
                           (blk-masks 4vmask-alist-p)
-                          (nonblk-masks 4vmask-alist-p))
+                          (nonblk-masks 4vmask-alist-p)
+                          (xcond))
     :parents (svstmt)
     :returns (mv (ok)
                  (warnings1 vl::vl-warninglist-p)
@@ -2446,7 +2470,7 @@ exists there.</p>"
         ;;
         ;; OK, so anything we look up in the LHS and don't find, we bind to
         ;; itself.  And that goes for the RHS as well.
-        (b* (((mv st full-lhs) (svstmt-process-writelist x.writes x.blockingp nb-delayp st))
+        (b* (((mv st full-lhs) (svstmt-process-writelist x.writes x.blockingp nb-delayp xcond st))
              ;; BOZO collect writemask as well
              ((mv blk-masks nonblk-masks conf-acc) (svstmt-lhs-check-masks 
                                                     blk-masks nonblk-masks full-lhs x.blockingp
@@ -2471,16 +2495,18 @@ exists there.</p>"
              ;; like:
              ;;    A = 1;
              ;;    if (A) { ... } else {...}
-             (cond-compose (svex-compose-svstack x.cond st.blkst))
+             (cond-compose (if xcond
+                               (svex-quote (svex-xeval x.cond))
+                             (svex-compose-svstack x.cond st.blkst)))
              (st2 (svstate-fork st))
              ((vl::wmv ok warnings then-st then-jst blk-masks nonblk-masks)
-              (svstmtlist-compile x.then st reclimit nb-delayp blk-masks nonblk-masks))
+              (svstmtlist-compile x.then st reclimit nb-delayp blk-masks nonblk-masks xcond))
              ((unless ok)
               (b* ((st (make-svstate)))
                 (svstate-free st2)
                 (mv nil warnings st (make-empty-svjumpstate st) blk-masks nonblk-masks)))
              ((vl::wmv ok warnings else-st else-jst blk-masks nonblk-masks)
-              (svstmtlist-compile x.else st2 reclimit nb-delayp blk-masks nonblk-masks))
+              (svstmtlist-compile x.else st2 reclimit nb-delayp blk-masks nonblk-masks xcond))
              ((unless ok)
               (b* ((st (make-svstate)))
                 (svstate-free then-st)
@@ -2489,7 +2515,11 @@ exists there.</p>"
              (jst (svjumpstate-merge-branches cond-compose then-jst else-jst)))
           (mv t warnings st jst blk-masks nonblk-masks))
         :while
-        (b* ((cond-compose (svex-compose-svstack x.cond st.blkst))
+        (b* (;; could try to do something smart with xcond here but we hope not
+             ;; to see loops inside unique cases :-p
+             (cond-compose (if xcond
+                               (svex-quote (svex-xeval x.cond))
+                             (svex-compose-svstack x.cond st.blkst)))
              (cond-rw (svex-maskfree-rewrite cond-compose))
              ((when (eql cond-rw 0))
               ;; Loop condition is syntactically just always false so there is
@@ -2514,7 +2544,7 @@ exists there.</p>"
              (norun-jst (make-empty-svjumpstate norun-st))
 
              ((vl::wmv ok warnings run-st body-jst blk-masks nonblk-masks)
-              (svstmtlist-compile x.body st reclimit nb-delayp blk-masks nonblk-masks))
+              (svstmtlist-compile x.body st reclimit nb-delayp blk-masks nonblk-masks xcond))
              ((unless ok)
               (svstate-free norun-st)
               (b* ((st (make-svstate)))
@@ -2535,7 +2565,7 @@ exists there.</p>"
               ;; The for loop step can only be certain things,
               ;; break/continue/return not among them.  So for now at least, we
               ;; ignore the jumpstate from this part.
-              (svstmtlist-compile x.next run-st reclimit nb-delayp blk-masks nonblk-masks))
+              (svstmtlist-compile x.next run-st reclimit nb-delayp blk-masks nonblk-masks xcond))
 
              (- (b* (((svjumpstate next-jst)))
                   (and (or (not (eql 0 next-jst.breakcond))
@@ -2556,7 +2586,7 @@ exists there.</p>"
              ;; data when we're processing the body, so we won't know for sure
              ;; that we are breaking.
              ((vl::wmv ok warnings run-st loop-jst blk-masks nonblk-masks)
-              (svstmt-compile x run-st (1- reclimit) nb-delayp blk-masks nonblk-masks))
+              (svstmt-compile x run-st (1- reclimit) nb-delayp blk-masks nonblk-masks xcond))
              ((unless ok)
               (svstate-free norun-st)
               (b* ((st (make-svstate)))
@@ -2593,6 +2623,27 @@ exists there.</p>"
              (st (svstate-merge-branches cond-rw run-st norun-st))
              (jst (svjumpstate-merge-branches cond-rw run-jst norun-jst)))
           (mv ok warnings st jst blk-masks nonblk-masks))
+        :xcond
+        (b* (((when xcond)
+              (svstmtlist-compile x.body st reclimit nb-delayp blk-masks nonblk-masks xcond))
+             (cond1 (svex-compose-svstack x.cond st.blkst))
+
+             (st2 (svstate-fork st))
+             ((vl::wmv ok warnings good-st good-jst blk-masks nonblk-masks)
+              (svstmtlist-compile x.body st reclimit nb-delayp blk-masks nonblk-masks nil))
+             ((unless ok)
+              (b* ((st (make-svstate)))
+                (svstate-free st2)
+                (mv nil warnings st (make-empty-svjumpstate st) blk-masks nonblk-masks)))
+             ((vl::wmv ok warnings bad-st bad-jst blk-masks nonblk-masks)
+              (svstmtlist-compile x.body st2 reclimit nb-delayp blk-masks nonblk-masks t))
+             ((unless ok)
+              (b* ((st (make-svstate)))
+                (svstate-free good-st)
+                (mv nil warnings st (make-empty-svjumpstate st) blk-masks nonblk-masks)))
+             (st (svstate-merge-branches cond1 bad-st good-st))
+             (jst (svjumpstate-merge-branches cond1 bad-jst good-jst)))
+          (mv t warnings st jst blk-masks nonblk-masks))
         :constraints (mv t warnings st
                          (make-empty-svjumpstate st :constraints
                                                  (constraintlist-compose-svstack x.constraints st.blkst))
@@ -2600,7 +2651,7 @@ exists there.</p>"
         :scope
         (b* ((subscope-st (svstate-push-scope st x.locals))
              ((vl::wmv ok warnings subscope-st subscope-jst blk-masks nonblk-masks)
-              (svstmtlist-compile x.body subscope-st reclimit nb-delayp blk-masks nonblk-masks))
+              (svstmtlist-compile x.body subscope-st reclimit nb-delayp blk-masks nonblk-masks xcond))
              ((unless ok) (mv nil warnings subscope-st subscope-jst blk-masks nonblk-masks))
              (st (svstate-pop-scope subscope-st))
              (jst (svjumpstate-pop-scope subscope-jst)))
@@ -2618,7 +2669,8 @@ exists there.</p>"
                               (reclimit natp)
                               (nb-delayp)
                               (blk-masks 4vmask-alist-p)
-                              (nonblk-masks 4vmask-alist-p))
+                              (nonblk-masks 4vmask-alist-p)
+                              (xcond))
     :returns (mv (ok)
                  (warnings1 vl::vl-warninglist-p)
                  (st1       svstate-p)
@@ -2635,11 +2687,11 @@ exists there.</p>"
               (4vmask-alist-fix blk-masks)
               (4vmask-alist-fix nonblk-masks)))
          ((vl::wmv okp warnings st jst1 blk-masks nonblk-masks)
-          (svstmt-compile (car x) st reclimit nb-delayp blk-masks nonblk-masks))
+          (svstmt-compile (car x) st reclimit nb-delayp blk-masks nonblk-masks xcond))
          ((unless okp)
           (mv nil warnings st jst1 blk-masks nonblk-masks))
          ((vl::wmv okp warnings st jst2 blk-masks nonblk-masks)
-          (svstmtlist-compile (cdr x) st reclimit nb-delayp blk-masks nonblk-masks))
+          (svstmtlist-compile (cdr x) st reclimit nb-delayp blk-masks nonblk-masks xcond))
          ((unless okp)
           (mv nil warnings st jst2 blk-masks nonblk-masks))
          (jst (svjumpstate-sequence jst1 jst2)))
@@ -2698,11 +2750,11 @@ exists there.</p>"
   (defthm-svstmt-compile-flag
     (defthm svstmt-compile-preserves-blkst-compatible
       (b* (((mv ?ok ?warnings ?new-st ?jst)
-            (svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks)))
+            (svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks xcond)))
         (implies ok
                  (and (svstates-compatible new-st (double-rewrite st))
                       (svjumpstates-compatible jst (double-rewrite (make-empty-svjumpstate st))))))
-      :hints ('(:expand ((svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks))
+      :hints ('(:expand ((:free (xcond) (svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks xcond)))
                 :do-not-induct t)
               (and stable-under-simplificationp
                    '(:in-theory (enable svjumpstate-svstate-compatible)))
@@ -2710,11 +2762,11 @@ exists there.</p>"
       :flag svstmt-compile)
     (defthm svstmtlist-compile-preserves-blkst-compatible
       (b* (((mv ?ok ?warnings ?new-st ?jst)
-            (svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks)))
+            (svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks xcond)))
         (implies ok
                  (and (svstates-compatible new-st (double-rewrite st))
                       (svjumpstates-compatible jst (double-rewrite (make-empty-svjumpstate st))))))
-      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks))))
+      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks xcond))))
       :flag svstmtlist-compile))
 
 
@@ -2777,28 +2829,30 @@ exists there.</p>"
   (defthm-svstmt-compile-flag
     (defthm vars-of-svstmt-compile
       (b* (((mv ?ok ?warnings ?new-st ?jst)
-            (svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks)))
+            (svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks xcond)))
         (implies (and (svarlist-addr-p (svstmt-vars x))
                       (svarlist-addr-p (svstate-vars st))
+                      ;; (svarlist-addr-p (svex-vars xcond))
                       ;; (not (member v (svarlist-add-delay (svstate-vars st) 1)))
                       ok)
                  (and (svarlist-addr-p (svstate-vars new-st))
                       (svarlist-addr-p (svjumpstate-vars jst)))))
-      :hints ('(:expand ((svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks)
+      :hints ('(:expand ((:free (xcond) (svstmt-compile x st reclimit nb-delayp blk-masks nonblk-masks xcond))
                          (svstmt-vars x))
                 :do-not-induct t)
               )
       :flag svstmt-compile)
     (defthm vars-of-svstmtlist-compile
       (b* (((mv ?ok ?warnings ?new-st ?jst)
-            (svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks)))
+            (svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks xcond)))
         (implies (and (svarlist-addr-p (svstmtlist-vars x))
                       (svarlist-addr-p (svstate-vars st))
+                      ;; (svarlist-addr-p (svex-vars xcond))
                       ;; (not (member v (svarlist-add-delay (svstate-vars st) 1)))
                       ok)
                  (and (svarlist-addr-p (svstate-vars new-st))
                       (svarlist-addr-p (svjumpstate-vars jst)))))
-      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks))))
+      :hints ('(:expand ((svstmtlist-compile x st reclimit nb-delayp blk-masks nonblk-masks xcond))))
       :flag svstmtlist-compile))
 
   (deffixequiv-mutual svstmt-compile))
@@ -2815,7 +2869,7 @@ exists there.</p>"
                (blk-masks 4vmask-alist-p)
                (nonblk-masks 4vmask-alist-p))
   (b* (((mv ok warnings st jst blk-masks nonblk-masks)
-        (svstmtlist-compile x (make-svstate) reclimit nb-delayp nil nil))
+        (svstmtlist-compile x (make-svstate) reclimit nb-delayp nil nil nil))
        ((svjumpstate jst))
        (final-st (svstate-fork (svstate-merge-branches
                                 jst.returncond jst.returnst st))))
@@ -2873,6 +2927,7 @@ exists there.</p>"
       :while (svstmtlist-lhs-var-sizes
               x.next blockstack
               (svstmtlist-lhs-var-sizes x.body blockstack acc))
+      :xcond (svstmtlist-lhs-var-sizes x.body blockstack acc)
       :scope (svstmtlist-lhs-var-sizes
               x.body (cons (svstmt-initialize-locals x.locals) blockstack) acc)
       :constraints (svar-size-alist-fix acc)

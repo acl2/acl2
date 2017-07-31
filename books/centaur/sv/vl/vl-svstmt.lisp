@@ -696,7 +696,7 @@ because... (BOZO)</p>
 
 (fty::defprod svstmt-config
   ((nonblockingp booleanp)
-   (uniquecase-conservativep booleanp)
+   (uniquecase-conservative natp :default 0)
    (uniquecase-constraints booleanp)))
 
 (define vl-caselist-none/multiple ((x vl-caselist-p)
@@ -739,94 +739,160 @@ because... (BOZO)</p>
              (and (sv::svarlist-addr-p (sv::svex-vars nonematch))
                   (sv::svarlist-addr-p (sv::svex-vars multimatch))))))
 
-(define vl-caselist-maybe-none/multiple ((x vl-caselist-p)
-                                         (size natp)
-                                         (test sv::svex-p)
-                                         (casetype vl-casetype-p)
-                                         (casekey vl-casekey-p)
-                                         (ss vl-scopestack-p)
-                                         (scopes vl-elabscopes-p)
-                                         (conservative))
+(define vl-casestmt-violation-conds ((x vl-stmt-p)
+                                     (size natp)
+                                     (test sv::svex-p)
+                                     (ss vl-scopestack-p)
+                                     (scopes vl-elabscopes-p)
+                                     (config svstmt-config-p))
   :returns (mv (vttree (and (vttree-p vttree)
                             (sv::svarlist-addr-p (sv::constraintlist-vars (vttree->constraints vttree)))))
-               (nonematch sv::svex-p
-                          "Expression (whose value is a bit) signifying that none of the cases match")
-               (multimatch sv::svex-p
-                           "Expression (whose value is a bit) signifying that more than 1 case matches"))
-  (if conservative
-      (vl-caselist-none/multiple x size test casetype casekey ss scopes)
-    (mv nil 0 0))
+               (constraint sv::svstmtlist-p)
+               (wrapper-xcond
+                sv::svex-p
+                "Expression (whose value is a bit) saying that all assignments should use X as the rhs")
+               (full-conservative
+                sv::svex-p
+                "Expression (whose value is a bit) signifying that we should make all tests X")
+               (part-conservative
+                sv::svex-p
+                "Expression (whose value is a bit) signifying that any selected
+                 test should become X -- e.g., conservativity 1, unique case, multiple
+                 signals match."))
+  :guard (vl-stmt-case x :vl-casestmt)
+  (b* (((vl-casestmt x))
+       ((svstmt-config config))
+       ((when (or (not x.check)
+                  (eq x.check :vl-priority)))
+        (mv nil nil 0 0 0))
+       ((when (and (eql 0 config.uniquecase-conservative)
+                   (not config.uniquecase-constraints)))
+        (mv nil nil 0 0 0))
+       ((mv vttree nonematch multimatch)
+        (vl-caselist-none/multiple x.caselist size test x.casetype x.casekey ss scopes))
+       ((mv full-conservative part-conservative)
+        (case config.uniquecase-conservative
+          (0 (mv 0 0))
+          (1 (mv (if (and (eq x.check :vl-unique)
+                          (vl-stmt-case x.default :vl-nullstmt))
+                     nonematch
+                   0)
+                 multimatch))
+          (2 (mv (if (and (eq x.check :vl-unique)
+                          (vl-stmt-case x.default :vl-nullstmt))
+                     (sv::svcall sv::bitor nonematch multimatch)
+                   multimatch)
+                 0))
+          ;; note: basically using all Xes anyway
+          (t (mv 0 0))))
+       (wrapper-xcond (if (eql config.uniquecase-conservative 3)
+                          (if (and (eq x.check :vl-unique)
+                                   (vl-stmt-case x.default :vl-nullstmt))
+                              (sv::svcall sv::bitor nonematch multimatch)
+                            multimatch)
+                        0))
+       (constraint (and config.uniquecase-constraints
+                        (b* ((name (cat (vl-casecheck-string x.check)
+                                        " "
+                                        (vl-casetype-string x.casetype)
+                                        " at " (vl-location-string x.loc)))
+                             (onehot (sv::svcall sv::bitnot (sv::svcall sv::uor multimatch)))
+                             (cond (if (eq x.check :vl-unique)
+                                       onehot
+                                     (sv::svcall sv::bitor onehot nonematch))))
+                          (list (sv::make-svstmt-constraints
+                                 :constraints (list (sv::make-constraint :name name :cond cond))))))))
+    (mv vttree constraint wrapper-xcond full-conservative part-conservative))
   ///
   
 
-  (defret svex-addr-p-of-vl-caselist-maybe-none/multiple
+  (defret svex-addr-p-of-vl-caselist-violation-conds
     (implies (sv::svarlist-addr-p (sv::svex-vars test))
-             (and (sv::svarlist-addr-p (sv::svex-vars nonematch))
-                  (sv::svarlist-addr-p (sv::svex-vars multimatch))))))
-
-(define vl-case-conservativep ((x vl-stmt-p)
-                               (config svstmt-config-p))
-  :guard (vl-stmt-case x :vl-casestmt)
-  :returns (mv multi-conservative zero-conservative)
-  (b* (((vl-casestmt x))
-       ((svstmt-config config)))
-    (if config.uniquecase-conservativep
-        (mv (or (eq x.check :vl-unique)
-                (eq x.check :vl-unique0))
-            (and (eq x.check :vl-unique)
-                 ;; BOZO really need to know whether there was a default or not
-                 ;; -- might be a problem if there is something like:
-                 ;;   default: ;
-                 (vl-stmt-case x.default :vl-nullstmt)))
-      (mv nil nil))))
-
-(define vl-case-constraint ((x vl-stmt-p)
-                            (nonematch sv::svex-p)
-                            (multimatch sv::svex-p)
-                            (generate-constraint))
-  :guard (vl-stmt-case x :vl-casestmt)
-  :returns (constr sv::svstmtlist-p)
-  (b* (((unless generate-constraint) nil)
-       ((vl-casestmt x))
-       ((when (not (or (eq x.check :vl-unique)
-                       (eq x.check :vl-unique0))))
-        nil)
-       (name (cat (vl-casecheck-string x.check)
-                  " "
-                  (vl-casetype-string x.casetype)
-                  " at " (vl-location-string x.loc)))
-       (onehot (sv::svcall sv::bitnot (sv::svcall sv::uor multimatch)))
-       (cond (if (eq x.check :vl-unique)
-                 onehot
-               (sv::svcall sv::bitor onehot nonematch))))
-    (list (sv::make-svstmt-constraints :constraints (list (sv::make-constraint :name name :cond cond)))))
-  ///
-  (defret svarlist-addr-p-of-vl-case-constraint
-    (implies (and (sv::svarlist-addr-p (sv::svex-vars nonematch))
-                  (sv::svarlist-addr-p (sv::svex-vars multimatch)))
-             (sv::svarlist-addr-p (sv::svstmtlist-vars constr)))
+             (and (sv::svarlist-addr-p (sv::svex-vars wrapper-xcond))
+                  (sv::svarlist-addr-p (sv::svex-vars full-conservative))
+                  (sv::svarlist-addr-p (sv::svex-vars part-conservative))
+                  (sv::svarlist-addr-p (sv::svstmtlist-vars constraint))))
     :hints(("Goal" :in-theory (enable sv::constraintlist-vars)))))
 
+;; (define vl-case-conservative ((x vl-stmt-p)
+;;                                (config svstmt-config-p))
+;;   :guard (vl-stmt-case x :vl-casestmt)
+;;   :returns (mv multi-conservative zero-conservative)
+;;   (b* (((vl-casestmt x))
+;;        ((svstmt-config config)))
+;;     (if config.uniquecase-conservativep
+;;         (mv (or (eq x.check :vl-unique)
+;;                 (eq x.check :vl-unique0))
+;;             (and (eq x.check :vl-unique)
+;;                  ;; BOZO really need to know whether there was a default or not
+;;                  ;; -- might be a problem if there is something like:
+;;                  ;;   default: ;
+;;                  (vl-stmt-case x.default :vl-nullstmt)))
+;;       (mv nil nil))))
+
+;; (define vl-case-constraint ((x vl-stmt-p)
+;;                             (nonematch sv::svex-p)
+;;                             (multimatch sv::svex-p)
+;;                             (generate-constraint))
+;;   :guard (vl-stmt-case x :vl-casestmt)
+;;   :returns (constr sv::svstmtlist-p)
+;;   (b* (((unless generate-constraint) nil)
+;;        ((vl-casestmt x))
+;;        ((when (not (or (eq x.check :vl-unique)
+;;                        (eq x.check :vl-unique0))))
+;;         nil)
+;;        (name (cat (vl-casecheck-string x.check)
+;;                   " "
+;;                   (vl-casetype-string x.casetype)
+;;                   " at " (vl-location-string x.loc)))
+;;        (onehot (sv::svcall sv::bitnot (sv::svcall sv::uor multimatch)))
+;;        (cond (if (eq x.check :vl-unique)
+;;                  onehot
+;;                (sv::svcall sv::bitor onehot nonematch))))
+;;     (list (sv::make-svstmt-constraints :constraints (list (sv::make-constraint :name name :cond cond)))))
+;;   ///
+;;   (defret svarlist-addr-p-of-vl-case-constraint
+;;     (implies (and (sv::svarlist-addr-p (sv::svex-vars nonematch))
+;;                   (sv::svarlist-addr-p (sv::svex-vars multimatch)))
+;;              (sv::svarlist-addr-p (sv::svstmtlist-vars constr)))
+;;     :hints(("Goal" :in-theory (enable sv::constraintlist-vars)))))
+
+(define vl-case-xcond-wrapper ((x sv::svstmtlist-p)
+                               (full-conservative sv::svex-p)
+                               (config svstmt-config-p))
+  :returns (new-x sv::svstmtlist-p)
+  (b* ((conservative (svstmt-config->uniquecase-conservative config))
+       ((unless (and (<= 3 (lnfix conservative))
+                     (not (equal (sv::svex-fix full-conservative) 0))))
+        (sv::svstmtlist-fix x)))
+    (list (sv::make-svstmt-xcond
+           :cond full-conservative
+           :body x)))
+  ///
+  (defret svarlist-addr-p-of-vl-case-xcond-wrapper
+    (implies (and (sv::svarlist-addr-p (sv::svex-vars full-conservative))
+                  (sv::svarlist-addr-p (sv::svstmtlist-vars x)))
+             (sv::svarlist-addr-p (sv::svstmtlist-vars new-x)))))
+
 (define vl-case-conservative-test-expr ((test sv::svex-p) ;; 0 or -1
-                                        (nonematch sv::svex-p) ;; 0 or 1
-                                        (multimatch sv::svex-p) ;; 0 or 1
-                                        (multi-conservative)
-                                        (zero-conservative))
+                                        (full-conservative sv::svex-p) ;; 0 or 1
+                                        (part-conservative sv::svex-p) ;; 0 or 1
+                                        )
   :returns (full-test sv::svex-p) ;; 0 or -1
   (b* ((multi-test
-        (if multi-conservative
-            (sv::svcall sv::bitand test
-                        (sv::svcall sv::? multimatch (sv::svex-x) 1))
-          (sv::svex-fix test)))
-       (none-test (if zero-conservative
-                      (sv::svcall sv::? nonematch (sv::svex-x) multi-test)
-                    multi-test)))
+        (if (equal (sv::svex-fix part-conservative) 0)
+            (sv::svex-fix test)
+          (sv::svcall sv::bitand test
+                        (sv::svcall sv::? part-conservative (sv::svex-x) 1))))
+       (none-test (if (equal (sv::svex-fix full-conservative) 0)
+                      multi-test
+                    (sv::svcall sv::? full-conservative (sv::svex-x) multi-test))))
     none-test)
   ///
   (defret svex-addr-p-of-vl-case-conservative-test-expr
     (implies (and (sv::svarlist-addr-p (sv::svex-vars test))
-                  (sv::svarlist-addr-p (sv::svex-vars nonematch))
-                  (sv::svarlist-addr-p (sv::svex-vars multimatch)))
+                  (sv::svarlist-addr-p (sv::svex-vars full-conservative))
+                  (sv::svarlist-addr-p (sv::svex-vars part-conservative)))
              (sv::svarlist-addr-p (sv::svex-vars full-test)))))
 
 
@@ -992,16 +1058,14 @@ because... (BOZO)</p>
              ((wmv ok1 warnings default) (vl-stmt->svstmts x.default ss scopes config fnname))
              ((mv ?vttree test-svex &)
               (vl-expr-to-svex-selfdet x.test size ss scopes))
-             ((mv multi-conservative none-conservative)
-              (vl-case-conservativep x config))
-             ((mv ?vttree nonematch multimatch)
-              (vl-caselist-none/multiple
-               x.caselist size test-svex x.casetype x.casekey ss scopes))
+             ((mv ?vttree constraintstmts wrapper-xcond full-conservative part-conservative)
+              (vl-casestmt-violation-conds x size test-svex ss scopes config))
              ((wmv ok2 warnings ans)
               (vl-caselist->svstmts x.caselist size test-svex default x.casetype x.casekey ss scopes config fnname
-                                    multi-conservative none-conservative multimatch nonematch))
-             (constraint (vl-case-constraint x nonematch multimatch (svstmt-config->uniquecase-constraints config))))
-          (mv (and ok1 ok2) warnings (append constraint ans)))
+                                    full-conservative part-conservative))
+             (ans (vl-case-xcond-wrapper (append-without-guard constraintstmts ans)
+                                         wrapper-xcond config)))
+          (mv (and ok1 ok2) warnings ans))
 
         :vl-callstmt
         (b* (((when (and x.systemp
@@ -1083,16 +1147,14 @@ because... (BOZO)</p>
                                 (scopes vl-elabscopes-p)
                                 (config svstmt-config-p)
                                 (fnname vl-maybe-expr-p)
-                                (multi-conservative)
-                                (none-conservative)
-                                (multimatch sv::svex-p)
-                                (nonematch sv::svex-p))
+                                (full-conservative sv::svex-p)
+                                (part-conservative sv::svex-p))
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
                  (res (and (sv::svstmtlist-p res)
                            (implies (and (sv::svarlist-addr-p (sv::svex-vars test))
-                                         (sv::svarlist-addr-p (sv::svex-vars nonematch))
-                                         (sv::svarlist-addr-p (sv::svex-vars multimatch))
+                                         (sv::svarlist-addr-p (sv::svex-vars full-conservative))
+                                         (sv::svarlist-addr-p (sv::svex-vars part-conservative))
                                          (sv::svarlist-addr-p (sv::svstmtlist-vars default)))
                                     (sv::svarlist-addr-p
                                      (sv::svstmtlist-vars res))))))
@@ -1103,12 +1165,12 @@ because... (BOZO)</p>
          ((cons tests stmt) (car x))
          ((mv ok1 warnings rest)
           (vl-caselist->svstmts (cdr x) size test default casetype casekey ss scopes
-                                config fnname multi-conservative none-conservative multimatch nonematch))
+                                config fnname full-conservative part-conservative))
          ((wmv ok2 warnings first) (vl-stmt->svstmts stmt ss scopes config fnname))
          ((vwmv vttree test)
           (vl-caseexprs->svex-test tests test size casetype casekey ss scopes))
          (constraints (vttree-constraints-to-svstmts vttree))
-         (test (vl-case-conservative-test-expr test nonematch multimatch multi-conservative none-conservative)))
+         (test (vl-case-conservative-test-expr test full-conservative part-conservative)))
       (mv (and ok1 ok2)
           warnings
           (append constraints (list (sv::make-svstmt-if :cond test :then first :else rest))))))
@@ -1311,8 +1373,8 @@ because... (BOZO)</p>
        ;; nonblocking assignments not allowed
        ((wmv ok warnings svstmts) (vl-stmt->svstmts x.body ss scopes
                                                     (make-svstmt-config :nonblockingp nil
-                                                                        :uniquecase-conservativep
-                                                                        config.uniquecase-conservativep
+                                                                        :uniquecase-conservative
+                                                                        config.uniquecase-conservative
                                                                         :uniquecase-constraints
                                                                         config.uniquecase-constraints)
                                                     (vl-idexpr x.name)))
@@ -1999,6 +2061,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 #!sv
 (define svarlist-remove-delays ((x svarlist-p))
+  :returns (new-x svarlist-p)
   (if (atom x)
       nil
     (cons (b* (((svar x1) (car x)))
@@ -2102,17 +2165,6 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                       (:free (a b) (vl-always-apply-trigger-to-updates trigger (cons a b)))
                       (sv::svex-alist-fix x))))))
 
-
-#||
-
-(trace$ #!vl (vl-always->svex 
-              :entry (list 'vl-always->svex
-                           (with-local-ps (vl-pp-always x)))
-              :exit (list 'vl-always->svex
-                          (with-local-ps (vl-print-warnings (car values)))
-                          (cadr values))))
-
-||#
 
 #!sv
 (define svex-alist-unset-nonblocking ((x svex-alist-p))
@@ -2229,10 +2281,18 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 #||
 (trace$
  #!vl
- (vl-always->svex-fn
+ (vl-always->svex
+  :cond (b* (((Vl-always x))
+             ((vl-location x.loc)))
+          (and (equal x.loc.filename "/n_mounts/f0-fs5/chiprel1/rel0517.cns/rtl/cns/lib/rtllib/rmuxdx4_im.v")
+               (vl-scopestack-case ss
+                 :local (equal (vl-scope->id ss.top) "rmuxdx4_im$width=1")
+                 :otherwise nil)
+               ))
   :entry (list 'vl-always->svex
                (with-local-ps (vl-pp-always x))
-               (vl-scopestack->path ss))
+               (vl-scopestack->path ss)
+               config)
   :exit (b* (((list ?warnings assigns) values))
           (list 'vl-always->svex assigns))))
 
@@ -2287,7 +2347,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
         (vl-stmt->svstmts stmt ss scopes
                           (make-svstmt-config
                            :nonblockingp t
-                           :uniquecase-conservativep config.uniquecase-conservativep
+                           :uniquecase-conservative config.uniquecase-conservative
                            :uniquecase-constraints config.uniquecase-constraints)
                           nil)) ;; fnname
        ((unless ok) (mv warnings nil nil))

@@ -58,22 +58,26 @@
                  :rule-classes :type-prescription
                  :default 1000)
 
-   (uniquecase-conservativep booleanp
-                             "For @('unique case') and @('unique0 case') statements,
-                              a synthesis tool is allowed to assume that the cases
-                              are mutually exclusive and simplify the logic accordingly.
-                              For @('unique') they can assume that exactly one
-                              of the tests will be true.  When this flag is not
-                              set, the logic we generate emulates a simulator,
-                              which always executes the first matching case.  When
-                              it is set, we instead make our logic conservative
-                              in the following way: if no test evaluates to true
-                              and there is no default, we pretend that all tests
-                              evaluated to X, and if more than one test evalutes
-                              to true, we pretend that all tests that were true
-                              instead are X.  The intention behind this is to make
-                              it likely that our logic is conservative with respect
-                              to anything a synthesis tool might produce.")
+   (uniquecase-conservative natp :default 0
+                            "For @('unique case') and @('unique0 case') statements,
+                             a synthesis tool is allowed to assume that the cases
+                             are mutually exclusive and simplify the logic accordingly.
+                             For @('unique') they can assume that exactly one of
+                             the tests will be true.  This configuration flag is
+                             a natural number that sets the degree of conservativity,
+                             as follows: When 0 (the default), the logic we generate
+                             emulates a simulator, which always executes the first
+                             matching case.  When 1, if uniqueness is violated,
+                             then we pretend that all tests that were 1 instead
+                             evaluated to X, or if all tests were 0 then we pretend
+                             all instead evaluated to X.  When 2 or greater, when
+                             the condition is violated we pretend all tests evaluated
+                             to X.  When 3 or greater, we additionally pretend that
+                             all assignments within the case statement write X
+                             instead of the given value.  The intention behind
+                             this is to make it likely that our logic is conservative
+                             with respect to anything a synthesis tool might
+                             produce.")
 
    (uniquecase-constraints booleanp
                            "Generate constraints for @('unique case') and @('unique0
