@@ -13,6 +13,7 @@
 (include-book "acceptable-rewrite-rule-p")
 (include-book "all-vars-theorems")
 (include-book "auto-termination")
+(include-book "bytes")
 (include-book "characters")
 (include-book "copy-def")
 (include-book "defchoose-queries")
