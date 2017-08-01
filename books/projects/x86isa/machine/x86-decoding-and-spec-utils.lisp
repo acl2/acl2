@@ -94,7 +94,7 @@ the @('fault') field instead.</li>
    is always in one of the following modes:
    </p>
    <ul>
-     <li>Protected mode.<li>
+     <li>Protected mode.</li>
      <li>Compatibility mode (sub-mode of IA-32e mode).</li>
      <li>64-bit mode (sub-mode of IA-32e mode).</li>
    </ul>
