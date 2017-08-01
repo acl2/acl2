@@ -16,7 +16,7 @@
 ;; jmp
 ;; ======================================================================
 
-; From Intel Vol. 1, 6-11:
+; From Intel Vol. 1, Section 6.3.7:
 
 ;; In 64-bit mode, the operand size for all near branches (CALL, RET, JCC,
 ;; JCXZ, JMP, and LOOP) is forced to 64 bits. These instructions update the
