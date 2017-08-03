@@ -71,15 +71,13 @@ additional hyps")
          (partial-A (remove-non-constant-value-entries partial-A))
          
          (bound-vars (strip-cars partial-A))
-         ((mv size calls) (cs%-enumcalls cs% ctx wrld bound-vars))
+         ((mv size min max calls) (cs%-enumcalls cs% ctx wrld bound-vars))
          
          (seed. (defdata::getseed state))
          ((mv erp seed. ans state)
           (case sm
             (:uniform-random 
-             (b* (((mv m seed.) (defdata::random-natural-seed seed.))
-; See comment in build-enumcalls.lisp:541
-; (defdata::random-index-seed *recursive-uniform-enum-measure* seed.))
+             (b* (((mv m seed.) (defdata::choose-size min max seed.))
                   (call `(acl2::mv-list 2 ;arity -- pete caught this missing arity on 17 July '13
                                         (let ((seed. ,seed.))
                                           ,(subst m 'm (second calls)))))
