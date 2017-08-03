@@ -8,12 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains utilities
-; for recognizing functions introduced via DEFUN-SK
-; and for retrieving their DEFUN-SK-specific constituents.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "std/util/defaggregate" :dir :system)
@@ -494,7 +488,7 @@
    as the code assumes without checking that the body of @('fn')
    has one of the forms above.
    </p>"
-  (let* ((body (body fn nil wrld))
+  (let* ((body (ubody fn wrld))
          (core (if non-executable
                    (car (last body))
                  body)))

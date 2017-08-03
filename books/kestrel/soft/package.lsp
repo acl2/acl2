@@ -8,10 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file defines a package for SOFT (Second-Order Functions and Theorems).
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
@@ -47,5 +43,6 @@
                          restrict-alist
                          strip-keyword-list
                          symbol-symbol-alistp
+                         ubody
                          variablep
                          well-founded-relation)))

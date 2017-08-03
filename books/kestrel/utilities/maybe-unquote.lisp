@@ -1,18 +1,14 @@
 ; Unquote Object If Quoted
 ;
-; Copyright (C) 2015-2016
+; Copyright (C) 2015-2017
 ;   Kestrel Institute (http://www.kestrel.edu)
 ;   Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors:
-;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 ;   Alessandro Coglio (coglio@kestrel.edu)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This file provides a utility to remove a wrapping QUOTE, if any.
+;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

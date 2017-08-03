@@ -8,10 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides certification instructions
-; for APT (Automated Program Transformations),
-; according to the recommendations in the WORKING-WITH-PACKAGES manual page.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; This follows the recommendations in the WORKING-WITH-PACKAGES manual page.
 
 (include-book "portcullis")

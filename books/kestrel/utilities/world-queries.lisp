@@ -13,11 +13,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file contains utilities for querying ACL2 worlds
-; that complement the world query utilities in the ACL2 source code.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "std/util/deflist" :dir :system)
@@ -43,12 +38,23 @@
   :parents (world-queries)
   :short "Check if a symbol names a theorem,
           i.e. it has a @('theorem') property."
+  :long
+  "<p>
+   This function is named in analogy to
+   the @(tsee function-symbolp) built-in system utility.
+   </p>"
   (not (eq t (getpropc sym 'theorem t wrld))))
 
 (define macro-symbolp ((sym symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (world-queries)
-  :short "Check if a symbol names a macro."
+  :short "Check if a symbol names a macro,
+          i.e. it has a @('macro-args') property."
+  :long
+  "<p>
+   This function is named in analogy to
+   the @(tsee function-symbolp) built-in system utility.
+   </p>"
   (not (eq t (getpropc sym 'macro-args t wrld))))
 
 (std::deflist function-symbol-listp (x wrld)
@@ -119,6 +125,9 @@
   :true-listp t)
 
 (define logical-name-listp (names (wrld plist-worldp))
+  ;; we cannot use STD::DEFLIST to define LOGICAL-NAME-LISTP
+  ;; because STD::DEFLIST attempts to prove that LOGICAL-NAMEP is boolean,
+  ;; which it is not
   :returns (yes/no booleanp)
   :verify-guards nil
   :parents (world-queries)
@@ -147,6 +156,14 @@
   (not (eq t (getpropc fn 'unnormalized-body t wrld)))
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
+(define ubody ((fn (and (logic-function-namep fn wrld)
+                        (definedp fn wrld)))
+               (wrld plist-worldp))
+  :returns (body "A @(tsee pseudo-termp).")
+  :parents (world-queries)
+  :short "Unnormalized body of a logic-mode defined function."
+  (getpropc fn 'unnormalized-body nil wrld))
+
 (define guard-verified-p ((fn/thm (or (function-namep fn/thm wrld)
                                       (theorem-namep fn/thm wrld)))
                           (wrld plist-worldp))
@@ -161,18 +178,18 @@
                          (wrld plist-worldp))
   :returns (yes/no "A @(tsee booleanp).")
   :parents (world-queries)
-  :short "The @(tsee non-executable) status
-          of a logic-mode, defined function."
+  :short "The @(tsee non-executable) status of a logic-mode defined function."
   (getpropc fn 'non-executablep nil wrld)
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
-(define unwrapped-nonexec-body ((fn (and (function-namep fn wrld)
+(define unwrapped-nonexec-body ((fn (and (logic-function-namep fn wrld)
+                                         (definedp fn wrld)
                                          (non-executablep fn wrld)))
                                 (wrld plist-worldp))
   :returns (unwrapped-body "A @(tsee pseudo-termp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Body of a non-executable function,
+  :short "Body of a logic-mode defined non-executable function,
           without the &ldquo;non-executable wrapper&rdquo;."
   :long
   "<p>
@@ -199,11 +216,11 @@
    The code of this system utility defensively ensures that
    the body of @('fn') has the form above.
    </p>"
-  (let ((body (body fn nil wrld)))
+  (let ((body (ubody fn wrld)))
     (if (throw-nonexec-error-p body fn (formals fn wrld))
-        (fourth (body fn nil wrld))
+        (fourth body)
       (raise "The body ~x0 of the non-executable function ~x1 ~
-             does not have the expected wrapper." body fn))))
+              does not have the expected wrapper." body fn))))
 
 (define number-of-results ((fn (function-namep fn wrld))
                            (wrld plist-worldp))
@@ -438,11 +455,11 @@
   :long
   "<p>
    This is similar to the result of @(tsee induction-machine),
-   but each record has one recursive calls (instead of zero or more),
+   but each record has one recursive call (instead of zero or more),
    and there is exactly one record for each recursive call.
    </p>"
   (termination-machine
-   (list fn) (body fn nil wrld) nil nil (ruler-extenders fn wrld)))
+   (list fn) (ubody fn wrld) nil nil (ruler-extenders fn wrld)))
 
 (std::deflist pseudo-event-landmark-listp (x)
   (pseudo-event-landmarkp x)
@@ -484,3 +501,99 @@
     (cond ((equal namex 0) nil) ; no names
           ((consp namex) namex) ; list of names
           (t (list namex))))) ; single name
+
+(define fresh-namep-msg (name type (wrld plist-worldp))
+  :guard (member-eq type
+                    '(function macro const stobj constrained-function nil))
+  :returns (msg/nil "A message (see @(see msg)) or @('nil').")
+  :mode :program
+  :parents (world-queries)
+  :short "Returns either @('nil') or a message indicating why the name is not ~
+          a legal new name."
+  :long
+  "<p>
+   Returns either @('nil') or a message (see @(see msg)) indicating why the
+   given name is not legal for a definition of the given type: @('function')
+   for @(tsee defun), @('macro') for @(tsee defmacro), @('const') for @(tsee
+   defconst), @('stobj') for @(tsee defstobj), @('constrained-function') for
+   @(tsee defchoose), and otherwise @('nil') (for other kinds of @(see events),
+   for example @(tsee defthm) and @(tsee deflabel)).  See @(see name).  For a
+   utility that makes a slightly stronger check, see @(see chk-fresh-namep).
+   </p>
+
+   <p>
+   WARNING: This is an incomplete check in the case of a stobj name, because
+   the field names are not supplied.
+   </p>"
+
+  (flet ((not-new-namep-msg (name wrld)
+
+; It is tempting to report that the properties 'global-value, 'table-alist,
+; 'table-guard are not relevant for this check.  But that would probably make
+; the message confusing.
+
+                            (let ((old-type (logical-name-type name wrld t)))
+                              (cond
+                               (old-type
+                                (msg "~x0 is already the name for a ~s1."
+                                     name
+                                     (string-downcase
+                                      (symbol-name old-type))))
+                               (t
+                                (msg "~x0 has properties in the world; it is ~
+                                      not a new name."
+                                     name))))))
+    (cond
+     ((mv-let (ctx msg)
+        (chk-all-but-new-name-cmp name 'fresh-namep-msg type wrld)
+        (and ctx ; it's an error
+             msg)))
+     ((not (new-namep name wrld))
+      (not-new-namep-msg name wrld))
+     (t (case type
+          (const
+           (and (not (legal-constantp name))
+
+; A somewhat more informative error message is produced by
+; chk-legal-defconst-name, but I think the following suffices.
+
+                (msg "~x0 is not a legal constant name."
+                     name)))
+          (stobj
+           (and (not (new-namep (the-live-var name) wrld))
+                (not-new-namep-msg (the-live-var name) wrld)))
+          (t nil))))))
+
+(define chk-fresh-namep (name type ctx (wrld plist-worldp) state)
+  :guard (member-eq type
+                    '(function macro const stobj constrained-function nil))
+  :returns (mv erp val state)
+  :mode :program
+  :parents (world-queries)
+  :short "Checks whether name is a legal new name."
+  :long
+  "<p>
+   Returns an @(see error-triple) @('(mv erp val state)') where @('erp') is
+   @('nil') if and only if name is a legal new name, and @('val') is
+   irrelevant.  If @('erp') is not nil, then an explanatory error message is
+   printed.
+   </p>
+
+   <p>
+   For more information about legality of new names see @(see fresh-namep-msg).
+   That utility returns a single value but is less aggressive than
+   @('chk-fresh-namep'), which checks that functions and macros aren't already
+   defined in raw Lisp.
+   </p>
+
+   <p>
+   Implementation Note.  The extra check requires modification of state,
+   because the check for legality of new definitions (carried out by ACL2
+   source function @('chk-virgin')) modifies state.  That modification is
+   necessary because for all we know, raw Lisp is defining functions we don't
+   know about without our having modified state; so we need to pop the oracle
+   when checking virginity.  End of Implementation Note.
+   </p>"
+  (let ((msg (fresh-namep-msg name type wrld)))
+    (cond (msg (er soft ctx "~@0" msg))
+          (t (chk-virgin name type ctx wrld state)))))

@@ -50,6 +50,9 @@ mutual-recursion)."
 
 <ul>
 
+<li>a theorem proving that the appropriate invocations of the flag function are
+equivalent to the original mutually-recursive functions,</li>
+
 <li>a \"flag function\" that mimics a @(see mutual-recursion), and</li>
 
 <li>a macro for proving properties by induction according to the flag
@@ -909,6 +912,16 @@ one such form may affect what you might think of as the proof of another.</p>
    (concatenate 'string "DEFTHM-" (symbol-name flag-fn-name))
    flag-fn-name))
 
+(defun equivalences-name (flag-fn-name)
+
+; This function was introduced by Matt K. in order to be able to call it
+; elsewhere.  Such functions could be introduced for other such symbol
+; constructors in this file.
+
+  (intern-in-package-of-symbol
+   (concatenate 'string (symbol-name flag-fn-name) "-EQUIVALENCES")
+   flag-fn-name))
+
 (defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints
                                   defthm-macro-name
                                   formals-subst
@@ -920,9 +933,7 @@ one such form may affect what you might think of as the proof of another.</p>
                               (get-clique-members clique-member-name world))))
          (defthm-macro-name (or defthm-macro-name
                                 (thm-macro-name flag-fn-name)))
-         (equiv-thm-name (intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name flag-fn-name) "-EQUIVALENCES")
-                          flag-fn-name))
+         (equiv-thm-name (equivalences-name flag-fn-name))
          (formals        (merge-formals alist world)))
     `(,@(if local '(progn) '(encapsulate nil))
       ;; use encapsulate instead of progn so set-ignore-ok is local to this

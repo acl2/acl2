@@ -8,18 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file implements SOFT (Second-Order Functions and Theorems),
-; a tool to mimic second-order functions and theorems
-; in the first-order logic of ACL2.
-; Some possible improvements/extensions are discussed at the end of the file.
-
-; SOFT is documented in documentation.lisp.
-; Examples of use of SOFT are in
-; workshop-paper-examples.lisp and workshop-talk-examples.lisp.
-; Other tests are in tests.lisp.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "SOFT")
 
 (include-book "kestrel/utilities/defchoose-queries" :dir :system)
@@ -29,6 +17,8 @@
 (include-book "std/util/defines" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Some possible improvements/extensions are discussed at the end of the file.
 
 ; Second-order functions and theorems depend on function variables.
 ; Each function variable is typed by the number of its arguments (0 or more).
@@ -206,7 +196,7 @@
 
 (define funvars-of-defun ((fun symbolp) (wrld plist-worldp))
   :mode :program
-  (let* ((body (body fun nil wrld))
+  (let* ((body (ubody fun wrld))
          (measure (if (recursivep fun nil wrld)
                       (measure fun wrld)
                     nil))
@@ -282,10 +272,10 @@
   :mode :program
   (let* ((rule-name (defun-sk-info->rewrite-name (defun-sk-check fun wrld)))
          (rule-body (formula rule-name nil wrld))
-         (fun-body (body fun nil wrld)))
+         (fun-body (ubody fun wrld)))
     (or (set-equiv (funvars-of-term rule-body wrld)
                    (funvars-of-term fun-body wrld))
-        (raise "The custome rewrite rule ~x0 must have ~
+        (raise "The custom rewrite rule ~x0 must have ~
                 the same function variables as the function body ~x1.~%"
                rule-body fun-body))))
 
@@ -738,7 +728,7 @@
             (raise "~x0 has no instance for ~x1." fun fsbs))
            (fsbs (acons fun funinst fsbs))) ; extend FSBS
           (case (sofun-kind fun wrld)
-            ((plain quant) (ext-fun-subst-term (body fun nil wrld) fsbs wrld))
+            ((plain quant) (ext-fun-subst-term (ubody fun wrld) fsbs wrld))
             (choice (ext-fun-subst-term (defchoose-body fun wrld) fsbs wrld)))))
      (t fsbs)))) ; FUN is not a 2nd-order function
 
@@ -1077,7 +1067,7 @@
                             (cadr verify-guards-option)
                           (guard-verified-p sofun wrld))))
        ;; retrieve body, measure, and guard of SOFUN:
-       (sofun-body (body sofun nil wrld))
+       (sofun-body (ubody sofun wrld))
        (sofun-measure (if (recursivep sofun nil wrld)
                           (measure sofun wrld)
                         nil))

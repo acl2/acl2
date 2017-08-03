@@ -466,7 +466,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (if (output-in-infixp state) event-form (cons 'defconst name))
+   (make-ctx-for-event event-form (cons 'defconst name))
    (let ((wrld1 (w state))
          (event-form (or event-form (list* 'defconst name form
                                            (if doc (list doc) nil)))))
@@ -827,7 +827,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (if (output-in-infixp state) event-form (cons 'defmacro (car mdef)))
+   (make-ctx-for-event event-form (cons 'defmacro (car mdef)))
    (let ((wrld1 (w state))
          (event-form (or event-form (cons 'defmacro mdef))))
      (mv-let
@@ -2102,7 +2102,7 @@
 ; over it and simply refuse requests to intern into it.
 
   (with-ctx-summarized
-   (if (output-in-infixp state) event-form (cons 'defpkg name))
+   (make-ctx-for-event event-form (cons 'defpkg name))
    (let ((w (w state))
          (event-form (or event-form
                          (list* 'defpkg name form
@@ -3149,9 +3149,9 @@
   (when-logic
    "DEFTHEORY"
    (with-ctx-summarized
-    (cond ((output-in-infixp state) event-form)
-          (ctx)
-          (t (cons 'deftheory name)))
+    (make-ctx-for-event event-form
+                        (cond (ctx)
+                              (t (cons 'deftheory name))))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list 'deftheory name expr))))
@@ -3205,14 +3205,13 @@
   (when-logic
    "IN-THEORY"
    (with-ctx-summarized
-    (if (output-in-infixp state)
-        event-form
-      (cond ((atom expr)
-             (msg "( IN-THEORY ~x0)" expr))
-            ((symbolp (car expr))
-             (msg "( IN-THEORY (~x0 ...))"
-                  (car expr)))
-            (t "( IN-THEORY (...))")))
+    (make-ctx-for-event event-form
+                        (cond ((atom expr)
+                               (msg "( IN-THEORY ~x0)" expr))
+                              ((symbolp (car expr))
+                               (msg "( IN-THEORY (~x0 ...))"
+                                    (car expr)))
+                              (t "( IN-THEORY (...))")))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list 'in-theory expr))))
@@ -3266,14 +3265,13 @@
   (when-logic
    "IN-ARITHMETIC-THEORY"
    (with-ctx-summarized
-    (if (output-in-infixp state)
-        event-form
-      (cond ((atom expr)
-             (msg "( IN-ARITHMETIC-THEORY ~x0)" expr))
-            ((symbolp (car expr))
-             (msg "( IN-ARITHMETIC-THEORY (~x0 ...))"
-                  (car expr)))
-            (t "( IN-ARITHMETIC-THEORY (...))")))
+    (make-ctx-for-event event-form
+                        (cond ((atom expr)
+                               (msg "( IN-ARITHMETIC-THEORY ~x0)" expr))
+                              ((symbolp (car expr))
+                               (msg "( IN-ARITHMETIC-THEORY (~x0 ...))"
+                                    (car expr)))
+                              (t "( IN-ARITHMETIC-THEORY (...))")))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list 'in-arithmetic-theory expr))))
@@ -8392,7 +8390,7 @@
 
   (let ((ctx (encapsulate-ctx signatures ev-lst)))
     (with-ctx-summarized
-     (if (output-in-infixp state) event-form ctx)
+     (make-ctx-for-event event-form ctx)
      (let* ((wrld1 (w state))
             (saved-proved-functional-instances-alist
              (global-val 'proved-functional-instances-alist wrld1))
@@ -10557,25 +10555,25 @@
                                               actual-entry
                                               state)
               (mv (cons
-                   (msg "-- its certificate requires the book \"~s0\" with ~
-                         certificate annotations~|  ~x1~|and book hash ~x2, ~
-                         but we have included ~@3~@4"
-                        full-book-name
-                        (car reqd-entry)  ;;; cert-annotations
-                        (cdr reqd-entry)  ;;; book-hash
-                        (cond
-                         ((null (cdr actual-entry))
-                          (msg "an uncertified version of ~x0 with ~
-                                certificate annotations~|  ~x1,"
+                   (cond
+                    ((null (cdr actual-entry))
+                     (msg "-- its certificate requires the uncertified book ~
+                           ~x0~@1"
+                          full-book-name
+                          phrase))
+                    (t
+                     (msg "-- its certificate requires the book \"~s0\" with ~
+                           certificate annotations~|  ~x1~|and book hash ~x2, ~
+                           but we have included ~@3~@4"
+                          full-book-name
+                          (car reqd-entry) ;;; cert-annotations
+                          (cdr reqd-entry) ;;; book-hash
+                          (msg "a version of ~x0 with certificate ~
+                                  annotations~|  ~x1~|and book-hash ~x2,"
                                familiar-name
                                (car actual-entry) ; cert-annotations
-                               ))
-                         (t (msg "a version of ~x0 with certificate ~
-                                  annotations~|  ~x1~|and book-hash ~x2,"
-                                 familiar-name
-                                 (car actual-entry) ; cert-annotations
-                                 (cdr actual-entry))))
-                        phrase)
+                               (cdr actual-entry))
+                          phrase)))
                    msgs)
                   state)))))))))
 
@@ -10592,7 +10590,7 @@
     (tilde-*-book-hash-phrase1 reqd-alist
                                actual-alist
                                state)
-    (mv (list "" "~%~@*" "~%~@*;~|" "~%~@*;~|"
+    (mv (list "~|" "~|~@*" "~|~@*;~|" "~|~@*;~|"
               phrase1)
         state)))
 
@@ -10608,8 +10606,7 @@
 ; accumulate onto ans as we go.  Ans should be nil initially.
 
   (mv-let (eofp form state)
-          (state-global-let*
-           ((infixp nil))
+          (with-infixp-nil
            (read-object ch state))
           (cond
            (eofp (mv t nil state))
@@ -10708,8 +10705,7 @@
 ; nil initially.
 
   (mv-let (eofp form state)
-          (state-global-let*
-           ((infixp nil))
+          (with-infixp-nil
            (read-object ch state))
           (cond
            (eofp
@@ -11332,8 +11328,7 @@
 
             (eq caller 'convert-pcert)
             ch ctx state))))
-     (state-global-let*
-      ((infixp nil))
+     (with-infixp-nil
       (mv-let (erp tuple state)
         (read-file-into-template '(:expansion-alist
                                    :cert-data
@@ -11484,7 +11479,7 @@
 
   (mv-let
    (eofp version state)
-   (state-global-let* ((infixp nil)) (read-object ch state))
+   (with-infixp-nil (read-object ch state))
    (cond
     (eofp (ill-formed-certificate-er
            ctx 'chk-certificate-file1{empty}
@@ -11494,7 +11489,7 @@
           (version-okp
            (mv-let
             (eofp key state)
-            (state-global-let* ((infixp nil)) (read-object ch state))
+            (with-infixp-nil (read-object ch state))
             (cond
              (eofp
               (ill-formed-certificate-er
@@ -11545,7 +11540,7 @@
                    (equal (subseq version 0 13) "ACL2 Version "))
               (mv-let
                (eofp key state)
-               (state-global-let* ((infixp nil)) (read-object ch state))
+               (with-infixp-nil (read-object ch state))
                (cond
                 (eofp
                  (ill-formed-certificate-er
@@ -11615,8 +11610,7 @@
                         :uncertified-okp
                         suspect-book-action-alist
                         ctx state))
-      (t (er-let* ((pkg (state-global-let*
-                         ((infixp nil))
+      (t (er-let* ((pkg (with-infixp-nil
                          (chk-in-package ch file2 nil ctx state))))
            (cond
             ((not (equal pkg "ACL2"))
@@ -13004,8 +12998,7 @@
        ((null ch)
         (value nil))
        (t
-        (er-let* ((pkg (state-global-let*
-                        ((infixp nil))
+        (er-let* ((pkg (with-infixp-nil
                         (chk-in-package ch port-file t ctx state))))
           (cond
            ((null pkg) ; empty .port file
@@ -13552,8 +13545,8 @@
                                       state)
                                      (include-book-er1
                                       full-book-name nil
-                                      (cons "After including the book ~
-                                             ~x0:~|~*3."
+                                      (cons "After processing the events in ~
+                                             the book ~x0:~*3."
                                             (list (cons #\3 msgs)))
                                       warning-summary ctx state))))))
                               (t (value certified-p)))))
@@ -13894,7 +13887,7 @@
 ; is the cert-data from pass1.  Otherwise, expansion-alist/cert-data is nil.
 
   (with-ctx-summarized
-   (if (output-in-infixp state) event-form (cons 'include-book user-book-name))
+   (make-ctx-for-event event-form (cons 'include-book user-book-name))
    (pprogn
     (cond ((and (not (eq load-compiled-file :default))
                 (not (eq load-compiled-file nil))
@@ -15754,12 +15747,12 @@
                                        skip-proofs-okp ttags ttagsx ttagsxp
                                        acl2x write-port pcert state)
   (with-ctx-summarized
-   (if (output-in-infixp state)
-       (list* 'certify-book user-book-name
-              (if (and (equal k 0) (eq compile-flg :default))
-                  nil
-                '(irrelevant)))
-     (cons 'certify-book user-book-name))
+   (make-ctx-for-event
+    (list* 'certify-book user-book-name
+           (if (and (equal k 0) (eq compile-flg :default))
+               nil
+             '(irrelevant)))
+    (cons 'certify-book user-book-name))
    (save-parallelism-settings
     (let ((wrld0 (w state)))
       (cond
@@ -16924,7 +16917,7 @@
   (when-logic
    "DEFCHOOSE"
    (with-ctx-summarized
-    (if (output-in-infixp state) event-form (cons 'defchoose (car def)))
+    (make-ctx-for-event event-form (cons 'defchoose (car def)))
     (let* ((wrld (w state))
            (event-form (or event-form (cons 'defchoose def)))
            (raw-bound-vars (cadr def))
@@ -18543,9 +18536,8 @@
 ; install-event just below its "Comment on irrelevance of skip-proofs".
 
   (with-ctx-summarized
-   (if (output-in-infixp state)
-       event-form
-     (msg "( DEFSTOBJ ~x0 ...)" name))
+   (make-ctx-for-event event-form
+                       (msg "( DEFSTOBJ ~x0 ...)" name))
    (let ((event-form (or event-form (list* 'defstobj name args)))
          (wrld0 (w state)))
      (er-let* ((wrld1 (chk-acceptable-defstobj name args ctx wrld0 state)))
@@ -20715,9 +20707,8 @@
 ; why the ee-entry argument of process-embedded-events below uses 'defstobj.
 
   (with-ctx-summarized
-   (if (output-in-infixp state)
-       event-form
-     (msg "( DEFABSSTOBJ ~x0 ...)" st-name))
+   (make-ctx-for-event event-form
+                       (msg "( DEFABSSTOBJ ~x0 ...)" st-name))
    (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
      protect-default congruent-to missing-only ctx state event-form)))
 
@@ -20940,11 +20931,10 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (if (output-in-infixp state)
-       event-form
-     (cond ((symbolp name)
-            (msg "( PUSH-UNTOUCHABLE ~x0 ~x1)" name fn-p))
-           (t "( PUSH-UNTOUCHABLE ...)")))
+   (make-ctx-for-event event-form
+                       (cond ((symbolp name)
+                              (msg "( PUSH-UNTOUCHABLE ~x0 ~x1)" name fn-p))
+                             (t "( PUSH-UNTOUCHABLE ...)")))
    (let ((wrld (w state))
          (event-form (or event-form
                          (list 'push-untouchable name fn-p)))
@@ -21014,11 +21004,10 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (if (output-in-infixp state)
-       event-form
-     (cond ((symbolp name)
-            (msg "( REMOVE-UNTOUCHABLE ~x0 ~x1)" name fn-p))
-           (t "( REMOVE-UNTOUCHABLE ...)")))
+   (make-ctx-for-event event-form
+                       (cond ((symbolp name)
+                              (msg "( REMOVE-UNTOUCHABLE ~x0 ~x1)" name fn-p))
+                             (t "( REMOVE-UNTOUCHABLE ...)")))
    (let ((wrld (w state))
          (event-form (or event-form
                          (list 'remove-untouchable name fn-p)))
@@ -21098,11 +21087,10 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (if (output-in-infixp state)
-       event-form
-     (cond ((symbolp fn)
-            (msg "( SET-BODY ~x0)" fn))
-           (t "( SET-BODY ...)")))
+   (make-ctx-for-event event-form
+                       (cond ((symbolp fn)
+                              (msg "( SET-BODY ~x0)" fn))
+                             (t "( SET-BODY ...)")))
    (let* ((wrld (w state))
           (rune (if (symbolp name-or-rune)
 
@@ -23971,10 +23959,8 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (cond ((output-in-infixp state)
-          event-form)
-         (t
-          (msg "( RESET-PREHISTORY ~x0 ...)" permanent-p)))
+   (make-ctx-for-event event-form
+                       (msg "( RESET-PREHISTORY ~x0 ...)" permanent-p))
    (cond ((and (not permanent-p)
                (or (f-get-global 'certify-book-info state)
                    (eq (f-get-global 'ld-skip-proofsp state) 'include-book)
@@ -27465,23 +27451,23 @@
 
 (defun defattach-fn (args state event-form)
   (with-ctx-summarized
-   (if (output-in-infixp state)
-       event-form
-     (case-match args
-       (((x y))
-        (msg "( DEFATTACH (~x0 ~x1))" x y))
-       (((x y . &))
-        (msg "( DEFATTACH (~x0 ~x1 ...))" x y))
-       (((x y) . &)
-        (msg "( DEFATTACH (~x0 ~x1) ...)" x y))
-       (((x y . &) . &)
-        (msg "( DEFATTACH (~x0 ~x1 ...) ...)" x y))
-       ((x y)
-        (msg "( DEFATTACH ~x0 ~x1)" x y))
-       ((x y . &)
-        (msg "( DEFATTACH ~x0 ~x1 ...)" x y))
-       (&
-        (msg "( DEFATTACH ...)"))))
+   (make-ctx-for-event
+    event-form
+    (case-match args
+      (((x y))
+       (msg "( DEFATTACH (~x0 ~x1))" x y))
+      (((x y . &))
+       (msg "( DEFATTACH (~x0 ~x1 ...))" x y))
+      (((x y) . &)
+       (msg "( DEFATTACH (~x0 ~x1) ...)" x y))
+      (((x y . &) . &)
+       (msg "( DEFATTACH (~x0 ~x1 ...) ...)" x y))
+      ((x y)
+       (msg "( DEFATTACH ~x0 ~x1)" x y))
+      ((x y . &)
+       (msg "( DEFATTACH ~x0 ~x1 ...)" x y))
+      (&
+       (msg "( DEFATTACH ...)"))))
    (let* ((wrld (w state))
           (proved-fnl-insts-alist
            (global-val 'proved-functional-instances-alist wrld)))
@@ -28153,8 +28139,14 @@
 ; notinlined functions, following up on remark (2) in :doc defun-inline.
 
 ; We insist on a specific suffix for inlined functions, *inline-suffix*,
-; because Common Lisp provides no way to undo (declaim (inline foo)).  Consider
-; for example:
+; because Common Lisp provides no way to undo (declaim (inline foo)).  To see
+; why such undoing is relevant, suppose that (defun-inline foo (x) ...) simply
+; expanded to:
+
+;   (progn (declaim (inline foo))
+;          (defun foo ...))
+
+; Now consider this example:
 
 ;   (encapsulate
 ;     ()
@@ -28163,11 +28155,17 @@
 ;
 ;   (defun foo (x) (cons x x))
 
-; When the encapsulate runs, the form (declaim (inline foo)) is generated.
-; Since there is no way to undo that declaim (before starting the second pass
-; of the encapsulate), the global definition of foo would also be an inline
-; definition.  A similar problem occurs if (defun-inline foo ...) is in a
-; locally included book.
+; When that encapsulate runs, the form (declaim (inline foo)) would be
+; generated.  Since there is no way to undo that declaim before starting the
+; second pass of the encapsulate, the global (final) definition of foo would
+; also be an inline definition, perhaps contrary to intent.  A similar problem
+; occurs if (defun-inline foo ...) is in a locally included book.
+
+; (One might ask: why not undo the (declaim (inline foo)) with (declaim
+; (notinline foo))?  That also seems unacceptable, because perhaps it would be
+; advantageous for the Lisp compiler to inline some definitions of foo and not
+; others.  We would really like something like (declaim
+; (back-to-no-claims-about-inline foo)), but that's not available.)
 
 ; By insisting on a syntactic naming convention for inlined functions --
 ; namely, their names end in *inline-suffix* (i.e., in "$INLINE") -- we
@@ -28325,9 +28323,8 @@
   (when-logic
    "REGENERATE-TAU-DATABASE"
    (with-ctx-summarized
-    (if (output-in-infixp state)
-        event-form
-      "( REGENERATE-TAU-DATABASE)")
+    (make-ctx-for-event event-form
+                        "( REGENERATE-TAU-DATABASE)")
     (let* ((wrld (w state))
            (event-form (or event-form
                            '(REGENERATE-TAU-DATABASE)))
@@ -29224,7 +29221,8 @@
 
                                     (maybe-add-event-landmark state))
                                    (t (value nil)))
-                             (value result))))))))))))))))))
+                             (value result)))))))))))))))
+     :event-type 'make-event)))
 
 (defun get-check-invariant-risk (state)
   (let ((pair (assoc-eq :check-invariant-risk

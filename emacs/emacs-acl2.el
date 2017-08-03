@@ -84,6 +84,13 @@
   ;          (remove-hook 'lisp-mode-hook '(lambda () (font-lock-mode 1))))
   ; "meta-x visit-acl2-tags-table" sets the current tag table to the one in the
   ;      ACL2 source directory.
+  ; "meta-," is defined to be tags-loop-continue, which is how it has
+  ;      traditionally been defined by Emacs but might be defined
+  ;      differently in some versions of Emacs 25 (and perhaps later).
+  ;      NOTE:
+  ;      Put (setq *preserve-tags-loop-continue* t) in your .emacs
+  ;      file before loading the present file, if you want to avoid
+  ;      redefining "meta-,".
   ; "control-t f" fills format strings; see documentation for more info
   ;      ("control-h f fill-format-string").
   ; "control-t control-f" buries the current buffer (puts it on the bottom of
@@ -744,6 +751,10 @@ then also ignore case if that argument is positive, else do not ignore case."
   "Visit the tags table for ACL2."
   (interactive)
   (visit-tags-table (concat (acl2-sources-dir) "TAGS")))
+
+(when (not (and (boundp '*preserve-tags-loop-continue*)
+                *preserve-tags-loop-continue*))
+  (define-key (current-global-map) "\M-," 'tags-loop-continue))
 
 ; Set the right margin (used when auto-fill-mode is on).
 (add-hook 'lisp-mode-hook

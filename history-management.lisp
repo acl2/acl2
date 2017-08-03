@@ -1151,6 +1151,10 @@
 ; string name introduced by an event, or the keyword :here meaning the
 ; most recent event.
 
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (known-package-alistp (global-val 'known-package-alist
+                                                         wrld)))))
   (cond ((symbolp name)
          (cond ((eq name :here) (not (null wrld)))
                (t (getpropc name 'absolute-event-number nil wrld))))
@@ -2484,16 +2488,32 @@
                                       "")))
                         channel state)
      (newline channel state)
-     (fms *proof-failure-string* nil channel state nil))))
+     (io? summary nil state (channel)
+          (fms *proof-failure-string* nil channel state nil)))))
 
 (defun print-failure (erp event-type ctx state)
   (pprogn
-   (print-gag-state state)
+   (io? summary nil state nil
+        (print-gag-state state))
    #+acl2-par
    (print-acl2p-checkpoints state)
-   (cond ((not (member-eq event-type '(encapsulate progn)))
-          (io? error nil state (erp ctx)
-               (print-failure1 erp ctx state)))
+   (cond ((not (member-eq event-type
+
+; For events whose failure already produces a message of type error, we
+; consider further failure messages to be of type summary.  That way we see the
+; true source of errors when output is inhibited to show only errors.  Compound
+; events are in this category.  Defthm is not, since when a proof fails no
+; output of type error is typically generated, and thus the only error
+; generated for defthm is typically the failure message from print-failure1.
+; Defun is however in thie category, since proof failures result in error
+; messages about guard proof failure or termination proof failure.
+
+                          '(encapsulate progn make-event defun)))
+          (cond
+           ((output-ignored-p 'error state)
+            (io? summary nil state (erp ctx)
+                 (print-failure1 erp ctx state)))
+           (t (print-failure1 erp ctx state))))
          ((member-eq 'errors (f-get-global 'inhibited-summary-types state))
           state)
          (t (io? summary nil state (erp ctx)
@@ -2906,26 +2926,24 @@
 ; in case the proof was aborted without printing this part of the summary.
 
            state)
-          (cond
-           (output-ignored-p state)
-           (t (pprogn
-               (cond (erp
-                      (pprogn
-                       (print-failure erp event-type ctx state)
-                       (cond
-                        ((f-get-global 'proof-tree state)
-                         (io? proof-tree nil state
-                              (ctx)
-                              (pprogn (f-put-global 'proof-tree-ctx
-                                                    (cons :failed ctx)
-                                                    state)
-                                      (print-proof-tree state))))
-                        (t state))))
-                     (t (pprogn
-                         #+acl2-par
-                         (erase-acl2p-checkpoints-for-summary state)
-                         state)))
-               (f-put-global 'proof-tree nil state)))))))))))
+          (pprogn
+           (cond (erp
+                  (pprogn
+                   (print-failure erp event-type ctx state)
+                   (cond
+                    ((f-get-global 'proof-tree state)
+                     (io? proof-tree nil state
+                          (ctx)
+                          (pprogn (f-put-global 'proof-tree-ctx
+                                                (cons :failed ctx)
+                                                state)
+                                  (print-proof-tree state))))
+                    (t state))))
+                 (t (pprogn
+                     #+acl2-par
+                     (erase-acl2p-checkpoints-for-summary state)
+                     state)))
+           (f-put-global 'proof-tree nil state)))))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)
 
@@ -6328,9 +6346,14 @@
 
 (defmacro pe! (logical-name)
   `(with-output :off (summary event)
-     (make-event (er-progn (table pe-table nil nil :clear)
-                           (pe ,logical-name)
-                           (value '(value-triple :invisible))))))
+     (make-event (er-progn
+                  (let ((logical-name ,logical-name))
+                    (cond
+                     ((eq logical-name :here)
+                      (pe :here))
+                     (t (er-progn (table pe-table nil nil :clear)
+                                  (pe ,logical-name)))))
+                  (value '(value-triple :invisible))))))
 
 (defmacro gthm (fn &optional (simp-p 't) guard-debug)
   `(untranslate (guard-theorem ,fn ,simp-p ,guard-debug (w state) state)
@@ -6434,8 +6457,7 @@
             (alist1 msg)
             (fms msg alist1 *standard-co* state (ld-evisc-tuple state)))
        (er-let*
-        ((ans (state-global-let*
-               ((infixp nil))
+        ((ans (with-infixp-nil
                (read-object *standard-oi* state))))
         (let ((temp (and (symbolp ans)
                          (assoc-keyword
@@ -7300,6 +7322,14 @@
        (getpropc name 'label nil wrld)
        (equal event-form (get-event name wrld))))
 
+(defmacro make-ctx-for-event (event-form ctx)
+  #+acl2-infix
+  `(if (output-in-infixp state) ,event-form ,ctx)
+  #-acl2-infix
+  (declare (ignore event-form))
+  #-acl2-infix
+  ctx)
+
 (defun deflabel-fn (name state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -7307,7 +7337,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (if (output-in-infixp state) event-form (cons 'deflabel name))
+   (make-ctx-for-event event-form (cons 'deflabel name))
    (let ((wrld1 (w state))
          (event-form (or event-form
                          (list 'deflabel name))))
@@ -7597,8 +7627,7 @@
      (signal val state)
      (mv-let
       (erp obj state)
-      (state-global-let*
-       ((infixp nil))
+      (with-infixp-nil
        (read-object *standard-oi* state))
       (cond
        (erp (mv 'exit nil state))
@@ -8189,7 +8218,23 @@
   :none)
 
 (defconst *basic-ruler-extenders*
-  '(mv-list return-last))
+
+; We ensure that these are sorted; see normalize-ruler-extenders.
+
+  (let ((lst '(mv-list return-last)))
+    (assert$ (strict-symbol-<-sortedp lst)
+             lst)))
+
+(defconst *basic-ruler-extenders-plus-lambdas*
+
+; We ensure that these are sorted; see normalize-ruler-extenders.
+; If we change *basic-ruler-extenders* so that the cons of :lambdas to the
+; front is no longer sorted, then we will have to call sort-symbol-listp.  But
+; here we got lucky.
+
+  (let ((lst (cons :lambdas *basic-ruler-extenders*)))
+    (assert$ (strict-symbol-<-sortedp lst)
+             lst)))
 
 (defun get-ruler-extenders1 (r edcls default ctx wrld state)
 
@@ -8216,8 +8261,7 @@
                          (cond ((eq r0 :BASIC)
                                 (value *basic-ruler-extenders*))
                                ((eq r0 :LAMBDAS)
-                                (value (cons :lambdas
-                                             *basic-ruler-extenders*)))
+                                (value *basic-ruler-extenders-plus-lambdas*))
                                ((eq r0 :ALL)
                                 (value :ALL))
                                (t (er-progn
@@ -15962,7 +16006,7 @@
                              (getpropc name 'table-alist nil wrld))))))
         (:put
          (with-ctx-summarized
-          (if (output-in-infixp state) event-form ctx)
+          (make-ctx-for-event event-form ctx)
           (let* ((tbl (getpropc name 'table-alist nil wrld)))
             (er-progn
              (chk-table-nil-args :put term '(5) ctx state)
@@ -16002,7 +16046,7 @@
                    state))))))))
         (:clear
          (with-ctx-summarized
-          (if (output-in-infixp state) event-form ctx)
+          (make-ctx-for-event event-form ctx)
           (er-progn
            (chk-table-nil-args :clear
                                (or key term)
@@ -16051,7 +16095,7 @@
             (value (getpropc name 'table-guard *t* wrld))))
           (t
            (with-ctx-summarized
-            (if (output-in-infixp state) event-form ctx)
+            (make-ctx-for-event event-form ctx)
             (er-progn
              (chk-table-nil-args op
                                  (or key val)

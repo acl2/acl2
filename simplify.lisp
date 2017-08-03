@@ -8119,18 +8119,39 @@
             (strict-merge-sort-symbol-< (odds l))
             nil))))
 
-(defun strict-symbol-<-sortedp (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (cond ((or (endp x) (null (cdr x)))
-         t)
-        (t (and (symbol-< (car x) (cadr x))
-                (strict-symbol-<-sortedp (cdr x))))))
-
 (defun sort-symbol-listp (x)
   (declare (xargs :guard (symbol-listp x)))
   (cond ((strict-symbol-<-sortedp x)
          x)
         (t (strict-merge-sort-symbol-< x))))
+
+; Now that sort-symbol-listp has been defined, we can define
+; set-ruler-extenders.
+
+#+acl2-loop-only
+(defmacro set-ruler-extenders (x)
+  `(state-global-let*
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+    (er-progn
+     (chk-ruler-extenders ,x soft 'set-ruler-extenders (w state))
+     (progn
+       (table acl2-defaults-table :ruler-extenders
+              (let ((x0 ,x))
+                (case x0
+
+; If keywords other than :ALL, :BASIC, and :LAMBDAS are supported, then also
+; change get-ruler-extenders1.
+
+                  (:all :all)
+                  (:lambdas *basic-ruler-extenders-plus-lambdas*)
+                  (:basic *basic-ruler-extenders*)
+                  (otherwise (sort-symbol-listp x0)))))
+       (table acl2-defaults-table :ruler-extenders)))))
+
+#-acl2-loop-only
+(defmacro set-ruler-extenders (x)
+  (declare (ignore x))
+  nil)
 
 (defun strict-merge-sort-symbol-<-cdrs (alist)
   (cond ((endp alist) nil)

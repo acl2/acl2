@@ -48,7 +48,7 @@
            start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
-       
+
        ((the (integer 1 8) register-size)
         (select-operand-size nil rex-byte nil prefixes))
        ((the (integer 1 4) src-size) (ash register-size -1))
@@ -108,7 +108,7 @@
            start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
-       
+
        ((the (integer 1 8) src-size)
         (select-operand-size nil rex-byte nil prefixes))
        (src (rgfi-size src-size *rax* rex-byte x86))

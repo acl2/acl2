@@ -1507,6 +1507,14 @@
   (ser-decode-and-load-strs hons-mode decoder stream)
   (ser-decode-and-load-packages check-packagesp decoder stream))
 
+(defun ser-make-array-wrapper (size)
+
+; Sol Swords reported in July 2017 that with SBCL, he has provided the
+; following safety-3 wrapper to avoid some crashes in ser-decode-from-stream.
+
+  #+sbcl (declare (optimize (safety 3)))
+  (make-array size))
+
 (defun ser-decode-from-stream (check-packagesp hons-mode stream)
 
 ; Warning: If you change the input or output signature of this function, change
@@ -1533,7 +1541,7 @@
     (unless (typep arr-size 'fixnum)
       (error "Serialized object is too large."))
 
-    (let* ((arr     (make-array arr-size))
+    (let* ((arr     (ser-make-array-wrapper arr-size))
            (decoder (make-ser-decoder :array arr
                                       :free 0
                                       :version version)))

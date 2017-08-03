@@ -142,8 +142,8 @@
      (and (stringp (car fn))
           (alistp (cdr fn))) ; character-alistp isn't defined yet...
      fn))
-   (t (msg "ACL2 cannot ev the call of undefined function ~x0 on argument ~
-            list:~|~%~x1~@2~|~%~@3"
+   (t (msg "ACL2 cannot ev the call of non-executable function ~x0 on ~
+            argument list:~|~%~x1~@2~|~%~@3"
            fn
            args
            (ignored-attachment-msg ignored-attachment)
@@ -780,7 +780,7 @@
 ;                   (FMT-SOFT-RIGHT-MARGIN . 65)
 ;                   (GSTACKP)
 ;                   (GUARD-CHECKING-ON . T)
-;                   (INFIXP)
+;                   #+acl2-infix (INFIXP)
 ;                   (INHIBIT-OUTPUT-LST SUMMARY)
 ;                   (IN-LOCAL-FLG . NIL)
 ;                   (LD-LEVEL . 0)
@@ -6492,6 +6492,9 @@
         (t nil)))
 
 (defun deref-macro-name (macro-name macro-aliases)
+  (declare (xargs :guard (if (symbolp macro-name)
+                             (alistp macro-aliases)
+                           (symbol-alistp macro-aliases))))
   (let ((entry (assoc-eq macro-name macro-aliases)))
     (if entry
         (cdr entry)

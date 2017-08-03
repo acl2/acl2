@@ -20,7 +20,11 @@
   :short "PUSH: 50+rw/rd"
   :long "<p>Op/En: O</p>
    <p><tt>50+rw/rd r16/r64</tt>: \[PUSH E\]</p>
-   <p>Note that <tt>50+rd r32</tt> is N.E. in the 64-bit mode.</p>"
+   <p>Note that <tt>50+rd r32</tt> is N.E. in the 64-bit mode.</p>
+
+<p>PUSH doesn't have a separate instruction semantic function,
+unlike other opcodes like ADD, SUB, etc. I've just coupled the
+decoding with the execution in this case.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -29,7 +33,7 @@
   (b* ((ctx 'x86-push-general-register)
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
@@ -42,7 +46,7 @@
        (rsp (rgfi *rsp* x86))
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :new-rsp-not-canonical new-rsp)) ;; #SS
+        (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand
@@ -50,7 +54,7 @@
                                 (the (integer 0 15)
                                   (- operand-size 1)))
                                0))))
-        (!!ms-fresh :new-rsp-not-aligned new-rsp)) ;; #AC
+        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp)) ;; #AC(0)
 
        ;; See "Z" in http://ref.x86asm.net/geek.html#x50
        (reg (mbe :logic (loghead 3 opcode)
@@ -126,7 +130,7 @@ extension (ModR/m.reg = 6).</p>"
   (b* ((ctx 'x86-push-Ev)
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p3? (eql #.*operand-size-override*
@@ -145,7 +149,7 @@ extension (ModR/m.reg = 6).</p>"
        (rsp (rgfi *rsp* x86))
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :new-rsp-not-canonical new-rsp)) ;; #SS
+        (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand
@@ -153,7 +157,7 @@ extension (ModR/m.reg = 6).</p>"
                                 (the (integer 0 15)
                                   (- operand-size 1)))
                                0))))
-        (!!ms-fresh :new-rsp-not-aligned new-rsp)) ;; #AC
+        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp)) ;; #AC(0)
 
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?E-addr) x86)
@@ -177,7 +181,7 @@ extension (ModR/m.reg = 6).</p>"
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+        (!!fault-fresh :gp 0 :temp-rip-not-canonical temp-rip)) ;; #GP(0)
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
          (the (signed-byte #.*max-linear-address-size*)
@@ -225,7 +229,7 @@ decoding with the execution in this case.</p>"
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
   :guard-hints (("Goal" :in-theory (e/d* () ())))
-                 
+
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'PUSH #x68 '(:nil nil)
@@ -239,7 +243,7 @@ decoding with the execution in this case.</p>"
        (lock (eql #.*lock*
                   (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
@@ -261,7 +265,7 @@ decoding with the execution in this case.</p>"
        (rsp (rgfi *rsp* x86))
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :new-rsp-not-canonical new-rsp))
+        (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
 
        ((mv flg0 (the (signed-byte 32) imm) x86)
         (rim-size imm-size temp-rip :x x86))
@@ -276,7 +280,7 @@ decoding with the execution in this case.</p>"
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+        (!!fault-fresh :gp 0 :temp-rip-not-canonical temp-rip)) ;; #GP(0)
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
@@ -342,7 +346,7 @@ the execution in this case.</p>"
        (lock (eql #.*lock*
                   (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
@@ -355,7 +359,7 @@ the execution in this case.</p>"
        (rsp (rgfi *rsp* x86))
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :new-rsp-not-canonical new-rsp))
+        (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
 
        ((the (unsigned-byte 16) val)
         (seg-visiblei (if (eql opcode #xA0) *FS* *GS*) x86))
@@ -410,7 +414,7 @@ the execution in this case.</p>"
   (b* ((ctx 'x86-pop-general-register)
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
@@ -422,12 +426,12 @@ the execution in this case.</p>"
           8))
        (rsp (rgfi *rsp* x86))
        ((when (not (canonical-address-p rsp)))
-        (!!ms-fresh :rsp-not-canonical rsp)) ;; #SS
+        (!!fault-fresh :ss 0 :rsp-not-canonical rsp)) ;; #SS(0)
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
                                0))))
-        (!!ms-fresh :rsp-not-aligned rsp)) ;; #AC
+        (!!fault-fresh :ac 0 :rsp-not-aligned rsp)) ;; #AC(0)
 
        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
         (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
@@ -436,7 +440,8 @@ the execution in this case.</p>"
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
                                new-rsp))))
-        (!!ms-fresh :ss-exception-new-rsp-not-canonical new-rsp))
+        (!!fault-fresh :ss 0
+                       :ss-exception-new-rsp-not-canonical new-rsp)) ;; #SS(0)
 
        ((mv flg0 val x86)
         (rm-size operand-size rsp :r x86))
@@ -502,7 +507,7 @@ extension (ModR/m.reg = 0).</p>"
   (b* ((ctx 'x86-pop-Ev)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p3 (equal #.*operand-size-override*
                   (prefixes-slice :group-3-prefix prefixes)))
@@ -520,12 +525,12 @@ extension (ModR/m.reg = 0).</p>"
 
        (rsp (rgfi *rsp* x86))
        ((when (not (canonical-address-p rsp)))
-        (!!ms-fresh :rsp-not-canonical rsp)) ;; #SS
+        (!!fault-fresh :ss 0 :rsp-not-canonical rsp)) ;; #SS(0)
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
                                0))))
-        (!!ms-fresh :rsp-not-aligned rsp)) ;; #AC
+        (!!fault-fresh :ac 0 :rsp-not-aligned rsp)) ;; #AC(0)
 
        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
         (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
@@ -535,7 +540,8 @@ extension (ModR/m.reg = 0).</p>"
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
                                new-rsp))))
-        (!!ms-fresh :ss-exception-new-rsp-not-canonical new-rsp))
+        (!!fault-fresh :ss 0
+                       :ss-exception-new-rsp-not-canonical new-rsp)) ;; #SS(0)
 
        ((mv flg0 val x86)
         (rm-size operand-size rsp :r x86))
@@ -747,7 +753,7 @@ extension (ModR/m.reg = 0).</p>"
   (b* ((ctx 'x86-pushf)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        (p3? (equal #.*operand-size-override*
                    (prefixes-slice :group-3-prefix prefixes)))
        ((the (integer 1 8) operand-size)
@@ -758,12 +764,13 @@ extension (ModR/m.reg = 0).</p>"
        (rsp (rgfi *rsp* x86))
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :new-rsp-not-canonical new-rsp)) ;; #SS
+        (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
-                   (not (equal (logand new-rsp (the (integer 0 15) (- operand-size 1)))
+                   (not (equal (logand new-rsp
+                                       (the (integer 0 15) (- operand-size 1)))
                                0))))
-        (!!ms-fresh :new-rsp-not-aligned new-rsp)) ;; #AC
+        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp)) ;; #AC(0)
 
        ((the (unsigned-byte 32) eflags) (rflags x86))
 
@@ -864,7 +871,7 @@ extension (ModR/m.reg = 0).</p>"
   (b* ((ctx 'x86-popf)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        (p3? (equal #.*operand-size-override*
                    (prefixes-slice :group-3-prefix prefixes)))
        ((the (integer 1 8) operand-size)
@@ -874,12 +881,13 @@ extension (ModR/m.reg = 0).</p>"
           8))
        (rsp (rgfi *rsp* x86))
        ((when (not (canonical-address-p rsp)))
-        (!!ms-fresh :rsp-not-canonical rsp)) ;; #SS
+        (!!fault-fresh :ss 0 :rsp-not-canonical rsp)) ;; #SS(0)
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
-                   (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
+                   (not (equal (logand rsp
+                                       (the (integer 0 15) (- operand-size 1)))
                                0))))
-        (!!ms-fresh :rsp-not-aligned rsp)) ;; #AC
+        (!!fault-fresh :ac 0 :rsp-not-aligned rsp)) ;; #AC(0)
        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
         (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
        ;; Raise a #SS exception.
@@ -888,7 +896,8 @@ extension (ModR/m.reg = 0).</p>"
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
                                new-rsp))))
-        (!!ms-fresh :ss-exception-new-rsp-not-canonical new-rsp))
+        (!!fault-fresh :ss 0
+                       :ss-exception-new-rsp-not-canonical new-rsp)) ;; #SS(0)
 
        ((mv flg0 val x86)
         (rm-size operand-size rsp :r x86))
@@ -934,5 +943,61 @@ extension (ModR/m.reg = 0).</p>"
         (!!ms-fresh :virtual-memory-error temp-rip))
        (x86 (!rip temp-rip x86)))
     x86))
+
+;; ======================================================================
+;; INSTRUCTION: PUSHA/PUSHAD
+;; ======================================================================
+
+;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+
+(def-inst x86-pusha
+
+  :parents (one-byte-opcodes)
+
+  :short "PUSHA/PUSHAD: 60"
+
+  :long
+  "<p>
+   This is invalid in 64-bit mode.
+   It throws a #UD exception.
+   </p>"
+
+  :implemented
+  (add-to-implemented-opcodes-table 'pusha #x60 '(:nil nil) 'x86-pusha)
+
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+
+  :body
+  (b* ((ctx 'x86-pusha))
+    (!!fault-fresh :ud nil))) ;; #UD
+
+;; ======================================================================
+;; INSTRUCTION: POPA/POPAD
+;; ======================================================================
+
+;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+
+(def-inst x86-popa
+
+  :parents (one-byte-opcodes)
+
+  :short "POPA/POPD: 61"
+
+  :long
+  "<p>
+   This is invalid in 64-bit mode.
+   It throws a #UD exception.
+   </p>"
+
+  :implemented
+  (add-to-implemented-opcodes-table 'popa #x61 '(:nil nil) 'x86-popa)
+
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+
+  :body
+  (b* ((ctx 'x86-popa))
+    (!!fault-fresh :ud nil))) ;; #UD
 
 ;; ======================================================================

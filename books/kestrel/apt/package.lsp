@@ -8,10 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file defines a package for APT (Automated Program Transformations).
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
@@ -104,6 +100,7 @@
                         symbol-symbol-alistp
                         term-guard-obligation
                         theorem-intro-macro
+                        ubody
                         untranslate-lst
                         unwrapped-nonexec-body
                         variablep

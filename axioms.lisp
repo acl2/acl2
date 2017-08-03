@@ -3760,13 +3760,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :rule-classes nil)
 
 ;; RAG - This axiom was strengthened to include the reals.
+; (Note: We turned this into a disabled rewrite rule after ACL2 7.4.)
 
 (defaxiom complex-definition
   (implies (and (real/rationalp x)
                 (real/rationalp y))
            (equal (complex x y)
-                  (+ x (* #c(0 1) y))))
-  :rule-classes nil)
+                  (+ x (* #c(0 1) y)))))
+(in-theory (disable complex-definition))
 
 ;; RAG - This axiom was weakened to accomodate the reals.
 
@@ -5415,6 +5416,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (pkg-imports x)
            nil))
   :rule-classes nil)
+
+(defthm default-pkg-imports
+  (implies (not (stringp x))
+           (equal (pkg-imports x)
+                  nil))
+  :hints (("Goal" :use completion-of-pkg-imports)))
 
 ; These axioms are just the ones that would be added by defpkg had the packages
 ; in question been introduced that way.
@@ -12530,7 +12537,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verbose-pstack ; *verbose-pstk*
     user-stobj-alist-safe ; chk-user-stobj-alist
     comp-fn ; compile-uncompiled-defuns
-    fmt-ppr ; print-infix
+    #+acl2-infix fmt-ppr
     acl2-raw-eval ; eval
     pstack-fn ; *pstk-stack*
     dmr-start-fn ; dmr-start-fn-raw
@@ -12557,8 +12564,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-synp ; *metafunction-context*
     add-polys ; *add-polys-counter*
     dmr-stop-fn ; dmr-stop-fn-raw
-    ld-print-results ; print-infix
-    flpr ; print-flat-infix
+    ld-print-results
+    #+acl2-infix flpr
     close-trace-file-fn ; *trace-output*
     ev-fncall-rec ; raw-ev-fncall
     ev-fncall ; live-state-p
@@ -13199,7 +13206,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (in-prove-flg . nil)
     (in-verify-flg . nil) ; value can be set to the ld-level
     (including-uncertified-p . nil) ; valid only during include-book
-    (infixp . nil)                   ; See the Essay on Infix below
+    #+acl2-infix (infixp . nil) ; See the Essay on Infix below
     (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
                                      ; will print a summary for each event.
                                      ; Exit-boot-strap-mode sets this list
@@ -13339,6 +13346,26 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Essay on Infix
 
+; Note: As of late July 2017, infix printing is no longer supported.  As a
+; result, it is now possible to execute some forms in safe-mode that were
+; formerly prohibited; for example, evaluation of the form
+
+;   (defconst *c* (fms-to-string "abc~x0" (list (cons #\0 (expt 2 4)))))
+
+; formerly failed with an error saying that a call of flpr had been made in
+; safe-mode, which was illegal because flpr had raw Lisp code -- which is no
+; longer the case.  Note, however, that we have left the infix-printing code in
+; place for the case #+acl2-infix, in case it becomes desirable to restore it
+; in the future.  Indeed, if you build ACL2 with :acl2-info pushed to
+; *features*, you may be able to do infix printing.  Warning: In that case,
+; some user books may fail, since more functions would have raw Lisp code,
+; hence would be disqualified from evaluation in safe-mode.  Here is an
+; example:
+
+;   (defconst *c* (fms-to-string "abc~x0" (list (cons #\0 (expt 2 4)))))
+
+; Below is the rest of the Essay on Infix.
+
 ; ACL2 has a hook for providing a different syntax.  We call this different
 ; syntax "infix" but it could be anything.  If the state global variable
 ; infixp is nil, ACL2 only supports CLTL syntax.  If infixp is non-nil
@@ -13386,6 +13413,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; (defun flatsize-infix (x termp j max state eviscp) ...)
 
 ; We document each of these when we define them for the silly $ syntax.
+
+; It is common to bind state global infixp to nil, so we create the following
+; macro for that purpose.
+
+(defmacro with-infixp-nil (form)
+  #+acl2-infix
+  `(state-global-let* ((infixp nil))
+                      ,form)
+  #-acl2-infix
+  form)
 
 (defun all-boundp (alist1 alist2)
   (declare (xargs :guard (and (eqlable-alistp alist1)
@@ -15586,15 +15623,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                (t ""))))
                    (t nil))))))
 
-(defmacro chk-ruler-extenders (x soft ctx wrld)
+(defun strict-symbol-<-sortedp (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (cond ((or (endp x) (null (cdr x)))
+         t)
+        (t (and (symbol-< (car x) (cadr x))
+                (strict-symbol-<-sortedp (cdr x))))))
+
+(defmacro chk-ruler-extenders (x type ctx wrld)
+
+; We check whether x is a legal value for ruler-extenders.  This is really two
+; macros, depending on whether type is 'soft or 'hard.  If type is 'soft, then
+; we return an error triple; otherwise we return an ordinary value but cause a
+; hard error if x is illegal.  Moreover, if x is hard then we check that x is
+; sorted.
+
+  (declare (xargs :guard (member-eq type '(soft hard))))
   (let ((err-str "The proposed ruler-extenders is illegal because ~@0."))
     `(let ((ctx ,ctx)
            (err-str ,err-str)
-           (msg (ruler-extenders-msg ,x ,wrld)))
-       (cond (msg ,(cond ((eq soft 'soft) `(er soft ctx err-str msg))
-                         (t `(illegal ctx err-str (list (cons #\0 msg))))))
-             (t ,(cond ((eq soft 'soft) '(value t))
-                       (t t)))))))
+           (x ,x))
+       (let ((msg (ruler-extenders-msg x ,wrld)))
+         (cond (msg ,(cond ((eq type 'soft) `(er soft ctx err-str msg))
+                           (t `(illegal ctx err-str (list (cons #\0 msg))))))
+               ,@(and (eq type 'hard)
+                      `(((not (strict-symbol-<-sortedp x))
+                         (illegal ctx err-str
+                                  (list (cons #\0 "it is not sorted"))))))
+               (t ,(cond ((eq type 'soft) '(value t))
+                         (t t))))))))
 
 (defmacro fixnum-bound () ; most-positive-fixnum in Allegro CL and many others
   (1- (expt 2 29)))
@@ -16700,6 +16757,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; return t; otherwise we return nil.
 
   (cond
+   #+acl2-infix
    ((null (f-get-global 'infixp *the-live-state*))
     t)
    (t
@@ -16722,7 +16780,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; unix command should return error code 3 if the parse fails.  Otherwise, the
 ; parse is assumed to have worked.
 
-#-acl2-loop-only
+#+(and acl2-infix (not acl2-loop-only))
 (defun-one-output parse-infix-file (infile outfile)
 
 ; This function is only used with the silly $ infix syntax.  It is the analogue
@@ -16876,7 +16934,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         (interface-er "Illegal input-type ~x0." typ)))))
                 (cond
                  ((null stream) (mv nil *the-live-state*))
-                 #+akcl
+                 #+(and acl2-infix akcl)
                  ((and (eq typ :object)
                        (not (lisp-book-syntaxp os-file-name)))
 
@@ -17641,7 +17699,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (open-input-channels state-state))
          state-state))))
 
-#-acl2-loop-only
+#+(and acl2-infix (not acl2-loop-only))
 (defun-one-output parse-infix-from-terminal (eof)
 
 ; Eof is an arbitrary lisp object.  If the terminal input is empty, return eof.
@@ -17719,10 +17777,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 (eq channel *standard-ci*))
                             nil
                           si:*notify-gbc*))
+                 #+acl2-infix
                  (infixp (f-get-global 'infixp state-state))
                  (stream (get-input-stream-from-channel channel))
                  (obj
                   (cond
+                   #+acl2-infix
                    ((and (or (eq infixp t) (eq infixp :in))
                          (eq stream (get-input-stream-from-channel  *standard-ci*)))
                     (let ((obj (parse-infix-from-terminal read-object-eof)))
@@ -21303,30 +21363,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore x))
   nil)
 
-#+acl2-loop-only
-(defmacro set-ruler-extenders (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (er-progn
-     (chk-ruler-extenders ,x soft 'set-ruler-extenders (w state))
-     (progn
-       (table acl2-defaults-table :ruler-extenders
-              (let ((x0 ,x))
-                (case x0
-
-; If keywords other than :ALL, :BASIC, and :LAMBDAS are supported, then also
-; change get-ruler-extenders1.
-
-                  (:all :all)
-                  (:lambdas (cons :lambdas *basic-ruler-extenders*))
-                  (:basic *basic-ruler-extenders*)
-                  (otherwise x0))))
-       (table acl2-defaults-table :ruler-extenders)))))
-
-#-acl2-loop-only
-(defmacro set-ruler-extenders (x)
-  (declare (ignore x))
-  nil)
+; Set-ruler-extenders has been moved from here to simplify.lisp, so that
+; sort-symbol-listp is defined first.
 
 #+acl2-loop-only
 (defmacro set-irrelevant-formals-ok (x)
@@ -22905,15 +22943,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (code-char 0)))
   :rule-classes nil)
 
-; Omitted for now; maybe slows down the rewriter too much.
-;
-; (defthm default-code-char
-;   (implies (not (and (integerp x)
-;                      (>= x 0)
-;                      (< x 256)))
-;            (equal (code-char x)
-;                   (code-char 0)))
-;   :hints (("Goal" :use completion-of-code-char)))
+(defthm default-code-char
+  (implies (and (syntaxp (not (equal x ''0))) ; for efficiency
+                (not (and (integerp x)
+                          (>= x 0)
+                          (< x 256))))
+           (equal (code-char x)
+                  (code-char 0)))
+  :hints (("Goal" :use completion-of-code-char)))
 
 ;; RAG - This axiom was strengthened to include the reals.
 
@@ -23110,12 +23147,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            nil))
   :rule-classes nil)
 
-; (defthm default-intern-in-package-of-symbol
-;   (implies (not (and (stringp x)
-;                      (symbolp y)))
-;            (equal (intern-in-package-of-symbol x y)
-;                   nil))
-;   :hints (("Goal" :use completion-of-intern-in-package-of-symbol)))
+(defthm default-intern-in-package-of-symbol
+  (implies (not (and (stringp x)
+                     (symbolp y)))
+           (equal (intern-in-package-of-symbol x y)
+                  nil))
+  :hints (("Goal" :use completion-of-intern-in-package-of-symbol)))
 
 (defaxiom completion-of-numerator
   (equal (numerator x)

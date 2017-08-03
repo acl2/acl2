@@ -35,6 +35,7 @@
 (include-book "termp")
 (include-book "all-ffn-symbs-logic")
 (include-book "kestrel")
+(include-book "remove-guard-holders")
 
 ; The following is commented out only because we aren't currently motivated to
 ; put its functions into ACL2 system constant *system-verify-guards-alist*,

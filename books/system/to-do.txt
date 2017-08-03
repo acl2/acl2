@@ -6,8 +6,9 @@ grep '^{{.*}}[ ]*$' to-do.txt | sed 's/^{{//' | sed 's/}}[ ]*$//' > to-do-summar
 **WARNINGS**:
 
 (1) This is for a small group of incipient ACL2 developers who have
-undergone suitable training.  You know who you are.  We hope you will
-contribute!
+undergone suitable training (see
+http://www.cs.utexas.edu/users/moore/acl2/workshop-devel-2017/).  We
+hope you will contribute!
 
 (2) Matt and J need to approve any changes that go into any part of
 the ACL2 system except for what is under books/.  So, you might want
@@ -252,24 +253,6 @@ ginger:~/temp% cat foo.lisp
   (foo x))
 
 ginger:~/temp%
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
-{{Improve redundancy for :ruler-extenders.}}
-
-This isn't redundant when executed twice.
-
-(defun foo (y)
-  (declare (xargs :ruler-extenders :lambdas))
-  (let ((z (if (consp y) (foo (cdr y)) y)))
-    z))
-
-This is:
-
-(defun foo (y)
-  (declare (xargs :ruler-extenders (:lambdas mv-list return-last)))
-  (let ((z (if (consp y) (foo (cdr y)) y)))
-    z))
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 

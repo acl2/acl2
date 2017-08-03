@@ -1997,10 +1997,12 @@
                           eviscp)
                    maximum state eviscp)))))
 
+#+acl2-infix
 (defun output-in-infixp (state)
   (let ((infixp (f-get-global 'infixp state)))
     (or (eq infixp t) (eq infixp :out))))
 
+#+acl2-infix
 (defun flatsize-infix (x print-base print-radix termp j max state eviscp)
 
 ; Suppose that printing x flat in infix notation causes k characters to come
@@ -2018,7 +2020,9 @@
   (+ 2 (flsz1 x print-base print-radix j max state eviscp)))
 
 (defun flsz (x termp j maximum state eviscp)
-  (cond ((output-in-infixp state)
+  #-acl2-infix (declare (ignore termp))
+  (cond #+acl2-infix
+        ((output-in-infixp state)
          (flatsize-infix x (print-base) (print-radix) termp j maximum state
                          eviscp))
         (t (flsz1 x (print-base) (print-radix) j maximum state eviscp))))
@@ -2173,6 +2177,9 @@
 )
 
 (defun newline (channel state)
+  (declare (xargs :guard (and (state-p state)
+                              (symbolp channel)
+                              (open-output-channel-p channel :character state))))
   (princ$ #\Newline channel state))
 
 (defun fmt-hard-right-margin (state)
@@ -2212,6 +2219,8 @@
         state))))
 
 (defun write-for-read (state)
+  (declare (xargs :guard (and (state-p state)
+                              (f-boundp-global 'write-for-read state))))
   (f-get-global 'write-for-read state))
 
 (defun spaces1 (n col hard-right-margin channel state)
@@ -2307,7 +2316,7 @@
 
 )
 
-#-acl2-loop-only
+#+(and acl2-infix (not acl2-loop-only))
 (defun-one-output print-flat-infix (x termp file eviscp)
 
 ; Print x flat (without terpri's) in infix notation to the open output
@@ -2323,9 +2332,9 @@
     (prin1 x file)))
 
 (defun flpr (x termp channel state eviscp)
-  #+acl2-loop-only
+  #-(and acl2-infix (not acl2-loop-only))
   (declare (ignore termp))
-  #-acl2-loop-only
+  #+(and acl2-infix (not acl2-loop-only))
   (cond ((and (live-state-p state)
               (output-in-infixp state))
          (print-flat-infix x termp
@@ -2970,7 +2979,7 @@
     (assert$ (not (eq evisc-tuple :default)) ; only abbrev, term evisc-tuples
              evisc-tuple)))
 
-#-acl2-loop-only
+#+(and acl2-infix (not acl2-loop-only))
 (defun-one-output print-infix (x termp width rpc col file eviscp)
 
 ; X is an s-expression denoting a term (if termp = t) or an evg (if
@@ -3013,9 +3022,9 @@
 
 (defun fmt-ppr (x termp width rpc col channel state eviscp)
   (declare (type (signed-byte 30) col))
-  #+acl2-loop-only
+  #-(and acl2-infix (not acl2-loop-only))
   (declare (ignore termp))
-  #-acl2-loop-only
+  #+(and acl2-infix (not acl2-loop-only))
   (cond
    ((and (live-state-p state)
          (output-in-infixp state))
@@ -3955,7 +3964,8 @@
 
   (the2s
    (signed-byte 30)
-   (cond ((output-in-infixp state)
+   (cond #+acl2-infix
+         ((output-in-infixp state)
           (fmt1 "~p0"
                 (list (cons #\0 ctx))
                 col channel state
@@ -6073,6 +6083,9 @@
 ; of variable symbols.  But just to make this an ironclad guarantee, we include
 ; the first conjunct below.
 
+  (declare (xargs :guard (and (plist-worldp w)
+                              (or (eq known-stobjs t)
+                                  (true-listp known-stobjs)))))
   (and x
        (symbolp x)
        (if (eq known-stobjs t)

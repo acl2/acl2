@@ -8,19 +8,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides a documentation topic for the design notes of
-; the tail recursion transformation,
-; which turns a recursive function that is not tail-recursive
-; into an equivalent tail-recursive function.
-; The design notes are in design-notes/tailrec.pdf.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "APT")
 
 (include-book "xdoc/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; documentation topic for the design notes,
+; which are in design-notes/tailrec.pdf:
 
 (defxdoc tailrec-design
 

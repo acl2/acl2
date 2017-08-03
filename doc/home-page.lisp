@@ -68,6 +68,12 @@
     documentation                       ;;; s
     copyright                           ;;; t
     git-quick-start                     ;;; u
+
+; During development, "v" might not be used, so that we can link to the talks
+; in the "bleeding edge" manual.  At release time we should use this "v" link
+; instead.  See "Talks" below.
+
+    talks                               ;;; v
   ))
 
 (defconst *home-page*
@@ -122,7 +128,7 @@ Software System Award</A>.<P>
 <A HREF=\"~sa\"><IMG SRC=\"HTML/door02.gif\" BORDER=0></A>
 </TD>
 <TD>
-Start Here: <A HREF=\"~sj\">Applications</A>, <A HREF=\"~sa\">Tours</A>, and <A HREF=\"~sb\">Tutorials/Demos</A>
+Start Here: <A HREF=\"~sj\">Applications</A>, <A HREF=\"http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____TALKS\">Talks</A>, <A HREF=\"~sa\">Tours</A>, and <A HREF=\"~sb\">Tutorials/Demos</A>
 </TD>
 
 <TD ALIGN=CENTER VALIGN=MIDDLE>

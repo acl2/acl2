@@ -76,6 +76,25 @@
 (verify-termination ffnnamep) ; and guards
 (verify-termination world-evisceration-alist) ; and guards
 (verify-termination abbrev-evisc-tuple) ; and guards
+(verify-termination override-hints) ; and guards
+(verify-termination stobjp) ; and guards
+(verify-termination newline) ; and guards
+(verify-termination lambda-subtermp) ; and guards
+(verify-termination ens) ; and guards
+(local (defthm car-assoc-equal-cdr-type
+         (implies (alistp x)
+                  (or (consp (assoc-equal-cdr key x))
+                      (equal (assoc-equal-cdr key x) nil)))
+         :rule-classes :type-prescription))
+(verify-termination runep) ; and guards
+(verify-termination clean-brr-stack1) ; and guards
+(verify-termination clean-brr-stack) ; and guards
+(verify-termination deref-macro-name) ; and guards
+(verify-termination write-for-read) ; and guards
+(verify-termination fnume) ; and guards
+(verify-termination translate-abbrev-rune) ; and guards
+(verify-termination logical-namep) ; and guards
+(verify-termination er-cmp-fn) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; The following section was written by David L. Rager.

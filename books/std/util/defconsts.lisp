@@ -234,10 +234,22 @@ this large list in the certificate.</li>
         (t
          (defconsts-make-defconsts (cdr x)))))
 
+(defun check-stobjs (stobjs wrld acc)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (true-listp acc))))
+  (cond ((atom stobjs)
+         (and acc
+              (er hard? 'defconsts
+                  "The symbol~#0~[ ~&0 is~/s ~&0 are~] illegal for defconsts. ~
+                   ~ See :DOC defconsts."
+                  (reverse acc))))
+        ((acl2::stobjp (car stobjs) t wrld)
+         (check-stobjs (cdr stobjs) wrld acc))
+        (t (check-stobjs (cdr stobjs) wrld (cons (car stobjs) acc)))))
 
 (defund defconsts-fn (consts body)
   (declare (xargs :guard t))
-  (b* (;; Goofy thing to allow (defconsts *foo* ...) instead of (defconsts (*foo*) ...)
+  (b* ( ;; Goofy thing to allow (defconsts *foo* ...) instead of (defconsts (*foo*) ...)
        (consts (if (atom consts)
                    (list consts)
                  consts))
@@ -311,20 +323,24 @@ this large list in the certificate.</li>
                     ,@idecl
                     ,ret)
                `(mv-let ,amp-free
-                        ,body
-                        ,@idecl
-                        ,ret))))
+                  ,body
+                  ,@idecl
+                  ,ret))))
 
-      `(make-event (time$
-                    (let ((__function__
-                           ;; Goofy: we bind __function__ to make it easy to
-                           ;; move code between functions based on
-                           ;; std::define and defconsts forms
-                           ',(intern summary "ACL2")))
-                      (declare (ignorable __function__))
-                      ,form)
-                    :msg "; ~s0: ~st seconds, ~sa bytes~%"
-                    :args (list ,summary)))))
+    `(make-event (prog2$
+                  (check-stobjs ',stobjs (w state) nil)
+                  (time$
+                   (let ((__function__
+                          ;; Goofy: we bind __function__ to make it easy to
+                          ;; move code between functions based on
+                          ;; std::define and defconsts forms
+                          ',(intern summary "ACL2")))
+                     (declare (ignorable __function__))
+                     ,form)
+                   :msg "; ~s0: ~st seconds, ~sa bytes~%"
+                   :args (list ,summary))))))
+                     
+                         
 
 (defmacro defconsts (consts body)
   (defconsts-fn consts body))
