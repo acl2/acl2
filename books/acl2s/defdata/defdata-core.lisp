@@ -102,6 +102,7 @@ B is the builtin combinator table."
               (mget-dex-calls (and field-pred-alist (apply-mget-to-var-lst (strip-cars field-pred-alist) x)))
               (dest-calls (or (and (get1 :recp kwd-alist) mget-dex-calls) dest-calls)) ;recursive new-constructors take precedence!
               (binding (bind-names-vals (cdr s) dest-calls))
+              ;; BUG -- :satisfies x-expr needs to go at the top-level.
               (satisfies-exprs (get-all :satisfies kwd-alist))
               (satisfies-exprs (acl2::subst x 'acl2s::x satisfies-exprs))
               (call-exprs (replace-calls-with-names dest-calls (cdr s)))

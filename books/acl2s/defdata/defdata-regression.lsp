@@ -1078,3 +1078,6 @@
                                 (< x 10000)
                                 (list x)))))
 |#
+
+;;BUG
+(defdata foo4 (oneof nil (cons (x2 . pos) foo4) (acons pos pos foo4)) :satisfies (> x2 5))
