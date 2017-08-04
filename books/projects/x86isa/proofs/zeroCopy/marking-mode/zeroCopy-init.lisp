@@ -612,6 +612,7 @@
    (x86p x86)
    (equal (xr :ms 0 x86) nil)
    (equal (xr :fault 0 x86) nil)
+   (64-bit-modep x86)
    (not (alignment-checking-enabled-p x86))
    (not (programmer-level-mode x86))
    (page-structure-marking-mode x86)

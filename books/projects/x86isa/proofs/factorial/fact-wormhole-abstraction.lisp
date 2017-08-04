@@ -153,6 +153,7 @@
        (equal (ms x86) nil)
        (equal (fault x86) nil)
        (equal n (rgfi *rdi* x86))
+       (64-bit-modep x86)
        (programmer-level-mode x86)
        (canonical-address-p addr)
        (canonical-address-p (+ addr (len *factorial_recursive*)))
@@ -169,6 +170,7 @@
                 (equal (ms x86) nil)
                 (equal (fault x86) nil)
                 (equal n (rgfi *rdi* x86))
+                (64-bit-modep x86)
                 (programmer-level-mode x86)
                 (canonical-address-p addr)
                 (canonical-address-p (+ addr (len *factorial_recursive*)))
@@ -368,6 +370,7 @@
   :hints (("Goal"
            :induct (loop-all-induction n a loop-addr x86)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
                              imul-spec             ;; IMUL
                              imul-spec-32          ;; IMUL
                              gpr-sub-spec-4        ;; SUB
@@ -427,6 +430,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
@@ -464,6 +468,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
@@ -508,6 +513,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem

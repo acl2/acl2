@@ -288,6 +288,7 @@
    (x86p x86)
    (equal (xr :ms 0 x86) nil)
    (equal (xr :fault 0 x86) nil)
+   (64-bit-modep x86)
    (not (alignment-checking-enabled-p x86))
    (not (programmer-level-mode x86))
    (not (page-structure-marking-mode x86))
@@ -847,7 +848,7 @@
     (:linear rgfi-is-i64p)
     (:rewrite member-p-cdr)
     (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
-    (:rewrite acl2::difference-unsigned-byte-p)    
+    (:rewrite acl2::difference-unsigned-byte-p)
     (:rewrite acl2::append-when-not-consp)
     (:linear rip-is-i48p)
     (:type-prescription byte-ify)
@@ -1350,6 +1351,7 @@
            :do-not '(preprocess)
            :do-not-induct t
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
                              shr-spec
                              shr-spec-64
                              sal/shl-spec

@@ -72,6 +72,7 @@
                                                        X86)))))))))))))))
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-and-spec-4
                              gpr-add-spec-8
@@ -385,6 +386,18 @@
                              loop-preconditions-fwd-chain-to-its-body
                              loop-preconditions
                              effects-copyData-loop-recur
+                             (loop-clk-recur)
+                             force (force))))))
+
+(defthm effects-copyData-loop-recur-64-bit-modep-projection
+  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
+                (< 4 m))
+           (equal (64-bit-modep (x86-run (loop-clk-recur) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal"
+           :use effects-copyData-loop-recur
+           :in-theory (e/d* (64-bit-modep)
+                            (loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))
 

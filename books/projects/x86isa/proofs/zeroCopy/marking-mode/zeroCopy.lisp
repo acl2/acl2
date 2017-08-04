@@ -18,6 +18,7 @@
  (in-theory
   ;; For the effects theorems:
   (e/d* (instruction-decoding-and-spec-rules
+         64-bit-modep
          shr-spec
          shr-spec-64
          sal/shl-spec
