@@ -88,7 +88,7 @@
      be defined,
      have at least one formal argument,
      return a non-<see topic='@(url mv)'>multiple</see> value, and
-     have no input or output @(see acl2::stobj)s.
+     have no input or output <see topic='@(url acl2::stobj)'>stobjs</see>.
      If @('old') is recursive, it must
      be singly (not mutually) recursive,
      not have a @(':?') measure (see @(':measure') in @(tsee xargs)), and
@@ -164,7 +164,7 @@
      that includes no free variables other than @('x1'), ..., @('xn'),
      that only calls logic-mode functions,
      that returns a non-<see topic='@(url mv)'>multiple</see> value,
-     and that has no output @(see acl2::stobj)s.
+     and that has no output <see topic='@(url acl2::stobj)'>stobjs</see>.
      If the generated function is guard-verified
      (which is determined by the @(':verify-guards') input; see below),
      then the term must only call guard-verified functions,
@@ -326,7 +326,8 @@
      <blockquote>
 
      <p>
-     Determines whether @('new') is @(see acl2::non-executable):
+     Determines whether @('new') is
+     <see topic='@(url acl2::non-executable)'>non-executable</see>:
      </p>
 
      <ul>
