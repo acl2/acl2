@@ -50,10 +50,10 @@ mutual-recursion)."
 
 <ul>
 
+<li>a \"flag function\" that mimics a @(see mutual-recursion), and</li>
+
 <li>a theorem proving that the appropriate invocations of the flag function are
 equivalent to the original mutually-recursive functions,</li>
-
-<li>a \"flag function\" that mimics a @(see mutual-recursion), and</li>
 
 <li>a macro for proving properties by induction according to the flag
 function.</li>
