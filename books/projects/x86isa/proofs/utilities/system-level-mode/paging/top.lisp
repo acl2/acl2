@@ -127,11 +127,11 @@
                                    ()))))
 
 (defthm removing-irrelevant-logext-from-logtail-and-loghead
-  (implies (and (<= (+ i j) n) (natp n) (natp j))                
+  (implies (and (<= (+ i j) n) (natp n) (natp j))
            (equal (loghead i (logtail j (logext n lin-addr)))
                   (loghead i (logtail j lin-addr))))
   :hints ((logbitp-reasoning)))
-  
+
 (defthm remove-logext-48-from-pml4-table-entry-addr
   (equal (pml4-table-entry-addr (logext 48 lin-addr) base-addr)
          (pml4-table-entry-addr lin-addr base-addr))
@@ -1110,27 +1110,27 @@
 
 ;; ======================================================================
 
-#||
-
 ;; Commuting physical memory writes with page table traversals:
 
 (encapsulate
   ()
 
-  ;; The book page-walk-side-effects.lisp characterizes the effects of ;
-  ;; a page walk in terms of EQUAL instead of XLATE-EQUIV-MEMORY, ;
-  ;; which is an aberration for this library.  However, this ;
-  ;; characterization is useful in proving theorems like ;
-  ;; xw-mem-and-ia32e-la-to-pa-page-table-commute.  We include this ;
-  ;; book locally so that EQUAL doesn't pollute our canonical forms ;
-  ;; that rely on XLATE-EQUIV-MEMORY. ;
-;  (local (include-book "page-walk-side-effects")) ;
+  ;; The book page-walk-side-effects.lisp characterizes the effects of
+  ;; a page walk in terms of EQUAL instead of XLATE-EQUIV-MEMORY,
+  ;; which is an aberration for this library.  However, this
+  ;; characterization is useful in proving theorems like
+  ;; xw-mem-and-ia32e-la-to-pa-page-table-commute.  We include this
+  ;; book locally so that EQUAL doesn't pollute our canonical forms
+  ;; that rely on XLATE-EQUIV-MEMORY.
+
+  (local (include-book "page-walk-side-effects"))
 
   (defthm xw-mem-and-ia32e-la-to-pa-page-table-commute
     (implies (and
               (disjoint-p
                (list index)
-               (xlation-governing-entries-paddrs-for-page-table lin-addr base-addr (double-rewrite x86)))
+               (xlation-governing-entries-paddrs-for-page-table
+                lin-addr base-addr (double-rewrite x86)))
               (canonical-address-p lin-addr)
               (physical-address-p base-addr)
               (equal (loghead 12 base-addr) 0)
@@ -1221,28 +1221,47 @@
                   (canonical-address-p lin-addr)
                   (x86p x86) (integerp index) (unsigned-byte-p 8 value))
              (equal (xw :mem index value
-                        (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl
+                        (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x
                                               (xw :mem index value x86))))))
+
+  (local
+   (define xw-mem-and-las-to-pas-commute-ind-hint
+     (n lin-addr r-w-x index value x86)
+     :enabled t
+     :verify-guards nil
+     (if (zp n)
+         (mv t nil n lin-addr r-w-x index value x86)
+       (b* (((unless (canonical-address-p lin-addr))
+             (mv t nil n lin-addr r-w-x index value x86))
+            ((mv flg p-addr x86)
+             (ia32e-la-to-pa lin-addr r-w-x x86))
+            ((when flg) (mv flg nil n lin-addr r-w-x index value x86))
+            ((mv flgs p-addrs n lin-addr r-w-x index value x86)
+             (xw-mem-and-las-to-pas-commute-ind-hint
+              (1- n) (1+ lin-addr) r-w-x index value x86)))
+         (mv flgs (if flgs nil (cons p-addr p-addrs)) n lin-addr r-w-x index value x86)))))
+
 
   (defthm xw-mem-and-las-to-pas-commute
     (implies
      (and (disjoint-p (list index)
                       (all-xlation-governing-entries-paddrs
-                       l-addrs (double-rewrite x86)))
-          (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
-          (canonical-address-listp l-addrs)
+                       n lin-addr (double-rewrite x86)))
+          (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
           (x86p x86) (integerp index) (unsigned-byte-p 8 value))
-     (equal (xw :mem index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-            (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw :mem index value x86)))))
+     (equal (xw :mem index value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+            (mv-nth 2 (las-to-pas n lin-addr r-w-x (xw :mem index value x86)))))
     :hints
     (("Goal"
-      :expand ((las-to-pas l-addrs r-w-x cpl (xw :mem index value x86)))
+      :induct (xw-mem-and-las-to-pas-commute-ind-hint
+               n lin-addr r-w-x index value x86)
       :in-theory (e/d* (disjoint-p
                         las-to-pas
                         member-p
-                        all-xlation-governing-entries-paddrs)
-                       ()))))
+                        all-xlation-governing-entries-paddrs
+                        signed-byte-p)
+                       (mv-nth-2-ia32e-la-to-pa-in-terms-of-updates-no-errors)))))
 
   ) ;; End of encapsulate ;
 
@@ -1252,35 +1271,29 @@
                  (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
                 (canonical-address-p lin-addr)
                 (physical-address-listp p-addrs)
-                (byte-listp bytes)
-                (equal (len bytes) (len p-addrs))
                 (x86p x86))
            (equal (write-to-physical-memory
-                   p-addrs bytes (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                   p-addrs value (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (mv-nth 2 (ia32e-la-to-pa
-                             lin-addr r-w-x cpl
-                             (write-to-physical-memory p-addrs bytes x86)))))
+                             lin-addr r-w-x 
+                             (write-to-physical-memory p-addrs value x86)))))
   :hints (("Goal"
-           :induct (write-to-physical-memory p-addrs bytes x86)
+           :induct (write-to-physical-memory p-addrs value x86)
            :in-theory (e/d* (disjoint-p) ()))))
 
 (defthm write-to-physical-memory-and-mv-nth-2-las-to-pas-commute
   (implies
    (and (disjoint-p p-addrs
                     (all-xlation-governing-entries-paddrs
-                     l-addrs (double-rewrite x86)))
-        (canonical-address-listp l-addrs)
-        (physical-address-listp p-addrs)
-        (byte-listp bytes)
-        (equal (len bytes) (len p-addrs))
+                     n lin-addr (double-rewrite x86)))        
+        (physical-address-listp p-addrs)        
         (x86p x86))
    (equal
-    (write-to-physical-memory p-addrs bytes (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-    (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))))
+    (write-to-physical-memory p-addrs value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+    (mv-nth 2 (las-to-pas n lin-addr r-w-x (write-to-physical-memory p-addrs value x86)))))
   :hints
-  (("Goal" :induct (cons (las-to-pas l-addrs r-w-x cpl x86)
-                         (write-to-physical-memory p-addrs bytes x86))
+  (("Goal" :induct (cons (las-to-pas n lin-addr r-w-x x86)
+                         (write-to-physical-memory p-addrs value x86))
     :in-theory (e/d* (disjoint-p las-to-pas all-xlation-governing-entries-paddrs) ()))))
 
 ;; ======================================================================
-||#

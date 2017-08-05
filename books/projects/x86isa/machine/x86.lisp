@@ -1627,23 +1627,21 @@
 
 
     (#x60
-     "(PUSHA) or (PUSHAD) Invalid in 64-bit mode."
-     (x86-step-unimplemented
-      (cons (ms x86)
-            (list start-rip temp-rip prefixes rex-byte opcode)) x86))
+     "(PUSHA) or (PUSHAD)"
+     (x86-pusha start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
 
     (#x61
-     "(POPA) or (POPAD) Invalid in 64-bit mode."
-     (x86-step-unimplemented
-      (cons (ms x86)
-            (list start-rip temp-rip prefixes rex-byte opcode)) x86))
+     "(POPA) or (POPAD)"
+     (x86-popa start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
+
 
     (#x62
      "(BOUND Gv Ma) Invalid in 64-bit mode."
      (x86-step-unimplemented
       (cons (ms x86)
             (list start-rip temp-rip prefixes rex-byte opcode)) x86))
+
 
     (#x63
      "(MOVSXD Gv Ev) and (ARPL Ew Gw).  However, the latter is invalid in

@@ -2033,7 +2033,7 @@ call princ and write-char on just one argument, the thing to be printed.
                                (let ((*rightmost-char-number* (- *rightmost-char-number* 6)))
                                  (infix-print-term1 (cadr (car tail))))
 			       ;; TESTING.  Inserted (math-space 1) and deleted the following
-			       ;; Swithced back, using to-current-margin.
+			       ;; Switched back, using to-current-margin.
 			       (if some-line-broken
 				   (to-current-margin)
 				   (math-space 1))

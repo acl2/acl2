@@ -712,6 +712,39 @@
 ; When we succeed in proving termination, we will store the
 ; justification properties.
 
+(defun normalize-ruler-extenders (ruler-extenders checkp)
+
+; The ruler-extenders supplied to a defun may be :all, :basic, :lambdas, or a
+; list of symbols.  The :basic value is equivalent to the list of symbols in
+; *basic-ruler-extenders*.  The :lambdas value is equivalent to the list
+; consisting of the symbol :lambdas and the symbols in *basic-ruler-extenders*.
+; This function normalizes ruler-extenders by expanding the :basic and :lambdas
+; values into lists, and by sorting and deduplicating list.  The value :all is
+; left unchanged.  This function is used in putprop-justification-lst to
+; normalize the ruler-extenders stored into the properties of a function, and
+; is used in non-identical-defp to normalize the ruler-extenders of a proposed
+; function for redundancy check, allowing a simple equality test for that
+; redundancy check.  Note that the default ruler-extenders are not stored in
+; normalized form, since they are not checked for redundancy.
+
+; If checkp is t then we are careful not to assume that ruler-extenders is
+; valid.  If it is not valid, then we return it unchanged.  Thus, when using
+; this function to compare proposed invalid ruler-extenders against the
+; ruler-extenders of an existing function (see non-identical-defp), we know
+; that they will differ.  But when using this function to store ruler-extenders
+; that have already been checked for legality (see putprop-justification-lst),
+; we avoid the needless check for a list of symbols.  Of course, this may be
+; overkill since probably it is never expensive to check that ruler-extenders
+; is a symbol-listp.
+
+  (cond ((eq ruler-extenders :all) :all)
+        ((eq ruler-extenders :basic) *basic-ruler-extenders*)
+        ((eq ruler-extenders :lambdas) *basic-ruler-extenders-plus-lambdas*)
+        ((or (null checkp) ; presumably no need to check for symbol-listp
+             (symbol-listp ruler-extenders))
+         (sort-symbol-listp ruler-extenders))
+        (t ruler-extenders)))
+
 (defun putprop-justification-lst (measure-alist subset-lst mp rel
                                                 ruler-extenders-lst
                                                 subversive-p wrld)
@@ -737,7 +770,13 @@
                            :mp mp
                            :rel rel
                            :measure (cdar measure-alist)
-                           :ruler-extenders (car ruler-extenders-lst))
+
+; We normalize ruler-extenders prior to storing them.  See
+; normalize-ruler-extenders for an explanation.
+
+                           :ruler-extenders (normalize-ruler-extenders
+                                             (car ruler-extenders-lst)
+                                             nil))
                      wrld)))))
 
 (defun union-equal-to-end (x y)
@@ -4949,13 +4988,12 @@
   (when-logic
    "VERIFY-GUARDS"
    (with-ctx-summarized
-    (if (output-in-infixp state)
-        event-form
-        (cond ((and (null hints)
-                    (null otf-flg))
-               (msg "( VERIFY-GUARDS ~x0)"
-                    name))
-              (t (cons 'verify-guards name))))
+    (make-ctx-for-event event-form
+                        (cond ((and (null hints)
+                                    (null otf-flg))
+                               (msg "( VERIFY-GUARDS ~x0)"
+                                    name))
+                              (t (cons 'verify-guards name))))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list* 'verify-guards
@@ -5926,8 +5964,14 @@
                              (getpropc (car def2) 'justification nil wrld)))
          (all-but-body1 (butlast (cddr def1) 1))
          (ruler-extenders1-lst (fetch-dcl-field :ruler-extenders all-but-body1))
+
+; We normalize the ruler-extenders of the proposed definition def1 prior to
+; comparing them below.  See normalize-ruler-extenders for an explanation.
+
          (ruler-extenders1 (if ruler-extenders1-lst
-                               (car ruler-extenders1-lst)
+                               (normalize-ruler-extenders
+                                (car ruler-extenders1-lst)
+                                t)
                              (default-ruler-extenders wrld))))
     (cond
      ((and justification
@@ -8707,22 +8751,23 @@
                       wrld)))
 
 (defun defun-ctx (def-lst state event-form #+:non-standard-analysis std-p)
-  (if (output-in-infixp state)
-      event-form
-    (cond ((atom def-lst)
-           (msg "( DEFUNS ~x0)"
-                def-lst))
-          ((atom (car def-lst))
-           (cons 'defuns (car def-lst)))
-          ((null (cdr def-lst))
-           #+:non-standard-analysis
-           (if std-p
-               (cons 'defun-std (caar def-lst))
-             (cons 'defun (caar def-lst)))
-           #-:non-standard-analysis
-           (cons 'defun (caar def-lst)))
-          (t (msg *mutual-recursion-ctx-string*
-                  (caar def-lst))))))
+  #-acl2-infix (declare (ignore event-form state))
+  (make-ctx-for-event
+   event-form
+   (cond ((atom def-lst)
+          (msg "( DEFUNS ~x0)"
+               def-lst))
+         ((atom (car def-lst))
+          (cons 'defuns (car def-lst)))
+         ((null (cdr def-lst))
+          #+:non-standard-analysis
+          (if std-p
+              (cons 'defun-std (caar def-lst))
+            (cons 'defun (caar def-lst)))
+          #-:non-standard-analysis
+          (cons 'defun (caar def-lst)))
+         (t (msg *mutual-recursion-ctx-string*
+                 (caar def-lst))))))
 
 (defun install-event-defuns (names event-form def-lst0 symbol-class
                                    reclassifyingp non-executablep pair ctx wrld

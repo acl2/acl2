@@ -1,14 +1,10 @@
 ; Term Utilities -- Tests
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This file contains tests for the term manipulation utilities in terms.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,7 +195,12 @@
  (defun mycar (x) (declare (xargs :verify-guards nil)) (car x))
  (assert! (not (guard-verified-exec-fnsp '(cons (mycar z) (len y)) (w state))))
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
- (assert! (guard-verified-exec-fnsp (body 'f nil (w state)) (w state))))
+ (assert! (guard-verified-exec-fnsp (ubody 'f (w state)) (w state))))
+
+(must-succeed*
+ (defun f (x) (declare (xargs :verify-guards nil)) x)
+ (defun g (x) (declare (xargs :verify-guards t)) (cons (ec-call (f x)) (len x)))
+ (assert! (guard-verified-exec-fnsp (ubody 'g (w state)) (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -221,30 +222,36 @@
                 '(lambda (x y z) (cons (mycar z) (len y))) (w state))))
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
  (assert! (lambda-guard-verified-exec-fnsp
-           (make-lambda '(x) (body 'f nil (w state))) (w state))))
+           (make-lambda '(x) (ubody 'f (w state))) (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (all-non-gv-exec-ffn-symbs 'x nil (w state)) nil)
+(assert-equal (all-non-gv-exec-ffn-symbs 'x (w state)) nil)
 
-(assert-equal (all-non-gv-exec-ffn-symbs '(quote 4) nil (w state)) nil)
+(assert-equal (all-non-gv-exec-ffn-symbs '(quote 4) (w state)) nil)
 
-(assert-equal (all-non-gv-exec-ffn-symbs '(cons x y) nil (w state)) nil)
+(assert-equal (all-non-gv-exec-ffn-symbs '(cons x y) (w state)) nil)
 
 (must-succeed*
  (defun f (x) (declare (xargs :verify-guards nil)) x)
  (defun g (x) (declare (xargs :verify-guards t)) x)
  (assert!
-  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (f x) (g (f y))) nil (w state))
+  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (f x) (g (f y))) (w state))
              '(f))))
 
 (must-succeed*
  (defun mycar (x) (declare (xargs :verify-guards nil)) (car x))
  (assert!
-  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (mycar z) (len y)) nil (w state))
+  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (mycar z) (len y)) (w state))
              '(mycar)))
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
- (assert-equal (all-non-gv-exec-ffn-symbs (body 'f nil (w state)) nil (w state))
+ (assert-equal (all-non-gv-exec-ffn-symbs (ubody 'f (w state)) (w state))
+               nil))
+
+(must-succeed*
+ (defun f (x) (declare (xargs :verify-guards nil)) x)
+ (defun g (x) (declare (xargs :verify-guards t)) (cons (ec-call (f x)) (len x)))
+ (assert-equal (all-non-gv-exec-ffn-symbs (ubody 'g (w state)) (w state))
                nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

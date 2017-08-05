@@ -256,24 +256,6 @@ ginger:~/temp%
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Improve redundancy for :ruler-extenders.}}
-
-This isn't redundant when executed twice.
-
-(defun foo (y)
-  (declare (xargs :ruler-extenders :lambdas))
-  (let ((z (if (consp y) (foo (cdr y)) y)))
-    z))
-
-This is:
-
-(defun foo (y)
-  (declare (xargs :ruler-extenders (:lambdas mv-list return-last)))
-  (let ((z (if (consp y) (foo (cdr y)) y)))
-    z))
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
 {{Maybe support custom printing for table guard violations.}}
 
 I asked in an ACL2 seminar (12/4, I think), and nobody seemed to care

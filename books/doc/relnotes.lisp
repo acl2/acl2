@@ -122,6 +122,14 @@
  <p>The new directory is @('projects/sat/lrat/cube/').  See file @('README') in
  that directory.</p>
 
+ <h4>SAT proof-checker from 2011</h4>
+
+ <p>An early SAT proof-checker based on resolution may be found in directory
+ @('books/projects/sat/zz-resolution-checker/'); see the @('README') in that
+ directory.  It was sufficiently efficient to get limited use in industry, but
+ ultimately was superseded by much more efficient clause-based
+ proof-checking (see directory @('books/projects/sat/lrat/')).</p>
+
  <h4>EDIF conversion</h4>
 
  <p>See @('projects/async/tools/convert-edif.lisp') for tools to convert
@@ -134,6 +142,12 @@
  <p>The @(see std/io) library now contains lemmas to help users prove
  that opened input and output channels remain open until closed, to
  aid guard theorem proofs.  See @(see open-channel-lemmas).</p>
+
+ <h4>Miscellaneous @(see std) changes</h4>
+
+ <p>The @('why') and @('why-explain') convenience macros in
+ @('std/std-customization.lsp') now support rule classes other than
+ @(':rewrite').</p>
 
  <h4>@(see kestrel-utilities)</h4>
 
@@ -149,18 +163,32 @@
  @(tsee let) and @(tsee mv-let) expressions (and @('lambda') expressions) and
  towards ensuring executability of its results.</p>
 
+ <p>Improved the utility, @('copy-def'), to avoid failures for some functions
+ defined by @(tsee mutual-recursion).  Thanks to Eric Smith for a helpful bug
+ report.</p>
+
+ <p>The macro @(tsee must-fail) has a new keyword option, @(':expected'), to
+ indicate the kind of error that is expected.  New macros @(tsee
+ ensure-soft-error), @(tsee ensure-hard-error), and @(tsee ensure-error)
+ provide nice interfaces to @('must-fail') with the legal values of this new
+ option.  See @(see must-fail).  Thanks to Eric Smith for discussions leading
+ to these changes.</p>
+
  <p>Added utility @(tsee er-soft+) for producing soft errors with @(':')@(tsee
  logic) mode code, returning a specified @(see error-triple).  The new utility
  @(tsee er-soft-logic) is similar but a bit simpler, for use when the only
  property needed of the returned @(see error-triple) is that its error
  component is not @('nil').</p>
 
- <p>New utilities @(tsee manage-screen-output) and @(tsee
- manage-screen-output!) are improved versions of @(tsee
+ <p>New utility @(tsee manage-screen-output) is an improved version of @(tsee
  control-screen-output) (which may eventually be removed).</p>
 
  <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
  fails, then to evaluate a second event.</p>
+
+ <p>Added other utilities, for example world queries (in the book
+ @('world-queries.lisp')) and error checking utilities (in the new book
+ @('error-checking.lisp')).</p>
 
  <h4>The apply books</h4>
 

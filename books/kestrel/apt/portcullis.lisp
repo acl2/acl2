@@ -8,9 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides a portcullis for APT (Automated Program Transformations),
-; according to the recommendations in the WORKING-WITH-PACKAGES manual page.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; This follows the recommendations in the WORKING-WITH-PACKAGES manual page.
 
 (in-package "APT")

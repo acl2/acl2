@@ -1,17 +1,10 @@
-; APT Tail Recursion Transformation -- Reference
+; APT Tail Recursion Transformation -- Reference Documentation
 ;
 ; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This file provides reference documentation for
-; the tail recursion transformation,
-; which turns a recursive function that is not tail-recursive
-; into an equivalent tail-recursive function.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -548,8 +541,8 @@
      </p>
 
      <p>
-     It must be an alist
-     @('((appcond1 . hints1) ... (appcondp . hintsp))')
+     It must be a list of doublets
+     @('((appcond1 hints1) ... (appcondp hintsp))')
      where each @('appcondk') is a symbol (in any package)
      that names one of the applicability conditions below,
      and each @('hintsk') consists of hints as may appear

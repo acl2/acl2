@@ -8,17 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file documents SOFT (Second-Order Functions and Theorems),
-; a tool to mimic second-order functions and theorems
-; in the first-order logic of ACL2.
-
-; SOFT is implemented in implementation.lisp.
-; Examples of use of SOFT are in
-; workshop-paper-examples.lisp and workshop-talk-examples.lisp.
-; Other tests are in tests.lisp.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "SOFT")
 
 (include-book "xdoc/top" :dir :system)
@@ -595,9 +584,9 @@
    @({
    ;; A recursive predicate that recognizes NIL-terminated lists
    ;; whose elements satisfy the predicate parameter:
-     (defun2 all[?p] (?p) (l)
-       (cond ((atom l) (null l))
-             (t (and (?p (car l)) (all[?p] (cdr l))))))
+   (defun2 all[?p] (?p) (l)
+     (cond ((atom l) (null l))
+           (t (and (?p (car l)) (all[?p] (cdr l))))))
    })
 
    <h4>Example 3</h4>

@@ -43,7 +43,10 @@ is typically the function name (a symbol).</li>
 be bound.  We return an updated @('x86') that has a non-nil @('ms')
 field conveying useful information. </li>
 
-<li>@('!!ms-fresh'): @('ctx') must already be bound.</li>
+<li>@('!!ms-fresh'): @('ctx') and @('x86') must already be bound.</li>
+
+<li>@('!!fault-fresh'): like @('!!ms-fresh') but it updates
+the @('fault') field instead.</li>
 
 </ul>
 
@@ -53,7 +56,9 @@ field conveying useful information. </li>
 
 @(def !!ms)
 
-@(def !!ms-fresh)"
+@(def !!ms-fresh)
+
+@(def !!fault-fresh)"
 
   (defmacro !ms-erp (&rest args)
     `(cons (list ctx ,@args)
@@ -70,6 +75,10 @@ field conveying useful information. </li>
   (defmacro !!ms-fresh (&rest args)
     `(!ms (!ms-erp-fresh :rip (rip x86) ,@args)
           x86))
+
+  (defmacro !!fault-fresh (&rest args)
+    `(!fault (!ms-erp-fresh :rip (rip x86) ,@args)
+             x86))
   )
 
 (define 64-bit-modep (x86)
@@ -866,7 +875,33 @@ made from privilege level 3.</sf>"
 (program)
 
 (defun add-to-implemented-opcodes-table-fn
-  (opcode-name opcode type fn-name world state)
+    (opcode-name opcode type fn-name world state)
+
+  ;; For most x86 instructions (e.g., ADD, opcode: 00), the type field
+  ;; is simply '(:nil nil) --- though we don't enforce any constraints
+  ;; on it (except that it must be a true-listp).  However, this type
+  ;; field comes in useful when just knowing the opcode value is not
+  ;; sufficient to tell us which x86 instruction we're talking about.
+  ;; Consider the one-byte opcode 80 --- unless we also know the value
+  ;; of the reg field of the ModR/M byte, we can't tell whether this
+  ;; opcode corresponds to an ADD, OR, CMP, XOR, SUB, AND, SBB, or ADC
+  ;; instruction (immediate group 1).  For instance, the ADD flavor of
+  ;; 80 is listed as "80 / 0" in the Intel manuals (see Section
+  ;; 3.1.1.1 in Intel Vol. 2, March 2017 edition, for details), which
+  ;; means that the opcode byte is 80 and the reg field has the value
+  ;; 0.  For this instruction, the type field would be '(:reg 0).
+
+  ;; Another example of the kind of information the type field can
+  ;; have is mandatory prefixes.  For example, instruction MOVSS
+  ;; (two-byte opcode, 0F 10) is called with a mandatory prefix F3. We
+  ;; chose the type field to be the following in this case:
+  ;; '(:misc
+  ;;   (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
+
+  ;; All of this type information in the implemented-opcodes-table can
+  ;; be seen in :doc x86isa::implemented-opcodes, listed in the
+  ;; "Extension" part of each instruction.
+
   (declare (xargs :stobjs state
                   :guard (and (natp opcode)
                               (true-listp type)
@@ -883,6 +918,7 @@ made from privilege level 3.</sf>"
   `(make-event
     (add-to-implemented-opcodes-table-fn
      ,opcode-name ,opcode ,type ,fn-name (w state) state)))
+
 
 (logic)
 

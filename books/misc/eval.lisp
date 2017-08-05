@@ -160,22 +160,44 @@ defthm)&mdash;will not be successful."
 theories, etc. to your books.  Basic examples:</p>
 
 @({
-    (must-fail                     ;; works fine
-      (defun 5))                   ;;   (invalid defun will indeed fail)
+    (must-fail                      ;; succeeds
+      (defun 5))                    ;;   (invalid defun will indeed fail)
 
-    (must-fail                     ;; causes an error
-      (thm t))                     ;;   (because this thm proves fine)
+    (must-fail                      ;; causes an error
+      (thm t))                      ;;   (because this thm proves fine)
 
-    (must-fail                     ;; causes an error
-      (in-theory (enable floor)))  ;;   (because this works fine)
+    (must-fail (mv nil (hard-error 'foo \"MESSAGE\" nil) state))
+                                    ;; causes an error
+                                    ;;   (because hard errors propagate past
+                                    ;;    must-fail by default)
 
-    (must-fail                     ;; causes an error
-      (* 3 4))                     ;;   (doesn't return an error triple)
+    (must-fail (mv nil (hard-error 'foo \"MESSAGE\" nil) state)
+               :expected :hard)     ;; succeeds
+
+    (must-fail                      ;; causes an error
+      (in-theory (enable floor)))   ;;   (because this works fine)
+
+    (must-fail                      ;; causes an error
+      (* 3 4))                      ;;   (doesn't return an error triple)
 })
 
 <p>Must-fail is almost just like @(see must-succeed), except that the event is
-expected to fail instead of succeed.  Please see the documentation for
-@('must-succeed') for syntax, options, and additional discussion.</p>
+expected to fail instead of succeed.  The option @(':expected') is described
+below; for everything else, please see the documentation for @('must-succeed')
+for syntax, options, and additional discussion.</p>
+
+<p>Also see @(see ensure-error), @(see ensure-soft-error), and @(see
+ensure-hard-error), which are essentially aliases for @('must-fail') with
+different values for the option, @(':expected'), which we now describe.</p>
+
+<p>When the value of keyword @(':expected') is @(':any'), then @('must-fail')
+succeeds if and only if ACL2 causes an error during evaluation of the supplied
+form.  However @(':expected') is @(':soft') by default, in which case success
+requires that the error is ``soft'', not ``hard'': hard errors are caused by
+guard violations, by calls of @(tsee illegal) and @(tsee hard-error), and by
+calls of @(tsee er) that are not ``soft''.  Finally, if @(':expected') is
+@(':hard'), then the call of @('must-fail') succeeds if and only if evaluation
+of the form causes a hard error.</p>
 
 <p>CAVEAT: If a book contains a non-@(see local) form that causes proofs to be
 done, such as one of the form @('(must-fail (thm ...))'), then it might not be
@@ -187,9 +209,78 @@ wrapper @(tsee must-fail!) that creates a call of @('must-fail') with
 including a book (because of the way that @('must-fail') is implemented using
 @(tsee make-event)).</p>")
 
+(defxdoc ensure-error
+  :parents (errors)
+  :short "Ensure that an error occurs"
+
+  :long "<p>Evaluation of @('(ensure-error <form>)' returns without error
+ exactly when evaluation of @('<form>') causes an error.</p>
+
+ <p>See @(see must-fail) for more details, as @('ensure-error') abbreviates
+ @('must-fail') as follows.</p>
+
+ @(def ensure-error)
+
+ <p>Also see @(see ensure-soft-error) and @(see ensure-hard-error).</p>")
+
+(defxdoc ensure-soft-error
+  :parents (errors)
+  :short "Ensure that a soft error occurs"
+
+  :long "<p>Evaluation of @('(ensure-error <form>)' returns without error
+ exactly when evaluation of @('<form>') causes a soft error.</p>
+
+ <p>See @(see must-fail) for more details, as @('ensure-soft-error')
+ abbreviates @('must-fail') as follows.</p>
+
+ @(def ensure-soft-error)
+
+ <p>Also see @(see ensure-error) and @(see ensure-hard-error).</p>")
+
+(defxdoc ensure-hard-error
+  :parents (errors)
+  :short "Ensure that a hard error occurs"
+
+  :long "<p>Evaluation of @('(ensure-error <form>)' returns without error
+ exactly when evaluation of @('<form>') causes a hard error.</p>
+
+ <p>See @(see must-fail) for more details, as @('ensure-hard-error')
+ abbreviates @('must-fail') as follows.</p>
+
+ @(def ensure-hard-error)
+
+ <p>Also see @(see ensure-error) and @(see ensure-soft-error).</p>")
+
+(defun error-from-eval-fn (form ctx aok)
+  `(let ((form ',form)
+         (ctx ,ctx)
+         (aok ,aok))
+     (mv-let (erp stobjs-out/replaced-val state)
+       (trans-eval form ctx state aok)
+       (let ((stobjs-out (car stobjs-out/replaced-val))
+             (replaced-val (cdr stobjs-out/replaced-val)))
+         (cond (erp (value :hard)) ; no stobjs-out to obtain in this case
+               ((not (equal stobjs-out
+                            '(nil nil state)))
+                (value (er hard ctx
+                           "The given form must return an error triple, but ~
+                            ~x0 does not.  See :DOC error-triple."
+                           form)))
+               (t (value (and (car replaced-val)
+                              :soft))))))))
+
+(defmacro error-from-eval (form &optional
+                                (ctx ''hard-error-to-soft-error)
+                                (aok 't))
+
+; Returns :hard for hard error, :soft for soft error, and nil for no error.
+
+  (error-from-eval-fn form ctx aok))
+
 (defmacro must-fail (&whole must-fail-form
                             form
                             &key
+                            (expected ':soft) ; :soft, :hard, or :any
                             (with-output-off ':all)
                             (check-expansion 'nil check-expansion-p))
 
@@ -205,20 +296,38 @@ including a book (because of the way that @('must-fail') is implemented using
 ; .acl2x file generation during provisional certification:
 ; "; See note about ld-skip-proofsp in the definition of must-fail."
 
-  `(make-event
-    '(must-eval-to-t
-      (mv-let (erp val state)
-        ,form
-        (declare (ignore val))
-        (value (not (eq erp nil))))
-      :ld-skip-proofsp
-      (if (eq (cert-op state) :write-acl2xu)
-          nil
-        (f-get-global 'ld-skip-proofsp state))
-      :with-output-off ,with-output-off
-      ,@(and check-expansion-p
-             `(:check-expansion ,check-expansion)))
-    :on-behalf-of ,must-fail-form))
+  (declare (xargs :guard (member-eq expected '(:soft :hard :any))))
+  (let ((form (case-match expected
+                (:soft form)
+                (& `(error-from-eval ,form))))
+        (success (case-match expected
+                   (:soft '(not (eq erp nil)))
+                   (:hard '(eq val :hard))
+                   (& ; :any, so val should be :hard or :soft, not nil
+                    '(not (eq val nil))))))
+    `(make-event
+      '(must-eval-to-t
+        (mv-let (erp val state)
+          ,form
+          (declare (ignorable erp val))
+          (value ,success))
+        :ld-skip-proofsp
+        (if (eq (cert-op state) :write-acl2xu)
+            nil
+          (f-get-global 'ld-skip-proofsp state))
+        :with-output-off ,with-output-off
+        ,@(and check-expansion-p
+               `(:check-expansion ,check-expansion)))
+      :on-behalf-of ,must-fail-form)))
+
+(defmacro ensure-hard-error (form &rest args)
+  (list* 'must-fail form :expected :hard args))
+
+(defmacro ensure-soft-error (form &rest args)
+  (list* 'must-fail form :expected :soft args))
+
+(defmacro ensure-error (form &rest args)
+  (list* 'must-fail form :expected :any args))
 
 (defmacro thm? (&rest args)
   `(must-succeed (thm ,@args)))

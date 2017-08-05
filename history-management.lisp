@@ -6457,8 +6457,7 @@
             (alist1 msg)
             (fms msg alist1 *standard-co* state (ld-evisc-tuple state)))
        (er-let*
-        ((ans (state-global-let*
-               ((infixp nil))
+        ((ans (with-infixp-nil
                (read-object *standard-oi* state))))
         (let ((temp (and (symbolp ans)
                          (assoc-keyword
@@ -7323,6 +7322,14 @@
        (getpropc name 'label nil wrld)
        (equal event-form (get-event name wrld))))
 
+(defmacro make-ctx-for-event (event-form ctx)
+  #+acl2-infix
+  `(if (output-in-infixp state) ,event-form ,ctx)
+  #-acl2-infix
+  (declare (ignore event-form))
+  #-acl2-infix
+  ctx)
+
 (defun deflabel-fn (name state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -7330,7 +7337,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (if (output-in-infixp state) event-form (cons 'deflabel name))
+   (make-ctx-for-event event-form (cons 'deflabel name))
    (let ((wrld1 (w state))
          (event-form (or event-form
                          (list 'deflabel name))))
@@ -7620,8 +7627,7 @@
      (signal val state)
      (mv-let
       (erp obj state)
-      (state-global-let*
-       ((infixp nil))
+      (with-infixp-nil
        (read-object *standard-oi* state))
       (cond
        (erp (mv 'exit nil state))
@@ -8212,7 +8218,23 @@
   :none)
 
 (defconst *basic-ruler-extenders*
-  '(mv-list return-last))
+
+; We ensure that these are sorted; see normalize-ruler-extenders.
+
+  (let ((lst '(mv-list return-last)))
+    (assert$ (strict-symbol-<-sortedp lst)
+             lst)))
+
+(defconst *basic-ruler-extenders-plus-lambdas*
+
+; We ensure that these are sorted; see normalize-ruler-extenders.
+; If we change *basic-ruler-extenders* so that the cons of :lambdas to the
+; front is no longer sorted, then we will have to call sort-symbol-listp.  But
+; here we got lucky.
+
+  (let ((lst (cons :lambdas *basic-ruler-extenders*)))
+    (assert$ (strict-symbol-<-sortedp lst)
+             lst)))
 
 (defun get-ruler-extenders1 (r edcls default ctx wrld state)
 
@@ -8239,8 +8261,7 @@
                          (cond ((eq r0 :BASIC)
                                 (value *basic-ruler-extenders*))
                                ((eq r0 :LAMBDAS)
-                                (value (cons :lambdas
-                                             *basic-ruler-extenders*)))
+                                (value *basic-ruler-extenders-plus-lambdas*))
                                ((eq r0 :ALL)
                                 (value :ALL))
                                (t (er-progn
@@ -15985,7 +16006,7 @@
                              (getpropc name 'table-alist nil wrld))))))
         (:put
          (with-ctx-summarized
-          (if (output-in-infixp state) event-form ctx)
+          (make-ctx-for-event event-form ctx)
           (let* ((tbl (getpropc name 'table-alist nil wrld)))
             (er-progn
              (chk-table-nil-args :put term '(5) ctx state)
@@ -16025,7 +16046,7 @@
                    state))))))))
         (:clear
          (with-ctx-summarized
-          (if (output-in-infixp state) event-form ctx)
+          (make-ctx-for-event event-form ctx)
           (er-progn
            (chk-table-nil-args :clear
                                (or key term)
@@ -16074,7 +16095,7 @@
             (value (getpropc name 'table-guard *t* wrld))))
           (t
            (with-ctx-summarized
-            (if (output-in-infixp state) event-form ctx)
+            (make-ctx-for-event event-form ctx)
             (er-progn
              (chk-table-nil-args op
                                  (or key val)

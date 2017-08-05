@@ -1,0 +1,5 @@
+; This could be included with each use of make-flag, but it seems reasonable to
+; include it just once, here.  We need the flag package in order to read the
+; symbol flag::equivalences-name in copy-def.lisp.
+
+(include-book "tools/flag" :dir :system)
