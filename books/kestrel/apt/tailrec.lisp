@@ -1974,7 +1974,7 @@
     (value event)))
 
 (defsection tailrec-implementation
-  :parents (tailrec)
+  :parents (implementation tailrec)
   :short "Implementation of the tail recursion transformation."
   :long
   "<p>

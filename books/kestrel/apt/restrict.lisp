@@ -996,7 +996,7 @@
     (value event)))
 
 (defsection restrict-implementation
-  :parents (restrict)
+  :parents (implementation restrict)
   :short "Implementation of the domain restriction transformation."
   :long
   "<p>
