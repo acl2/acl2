@@ -1053,3 +1053,5 @@
 
 
 
+(DEFDATA DECIMAL_30_TO_30 (RANGE RATIONAL (30 <= _ <= 30)))
+(test? (implies (DECIMAL_30_TO_30P x) (= x 30)))
