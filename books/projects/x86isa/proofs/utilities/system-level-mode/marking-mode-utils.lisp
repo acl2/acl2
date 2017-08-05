@@ -1870,9 +1870,229 @@
     (signed-byte-p 48 (+ addr-i j)))
    :hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))))
 
+
+(local
+ (encapsulate
+   ()
+   (local
+    (in-theory (e/d* ()
+                     ((:definition member-equal)
+                      (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
+                      (:rewrite
+                       infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses)
+                      (:linear mv-nth-1-idiv-spec)
+                      (:linear mv-nth-1-div-spec)
+                      (:definition len)
+                      (:rewrite cdr-mv-nth-1-las-to-pas-no-error)
+                      (:rewrite default-+-1)
+                      (:rewrite default-+-2)
+                      (:linear ash-monotone-2)
+                      (:rewrite size-of-read-from-physical-memory)
+                      (:rewrite mv-nth-1-las-to-pas-when-error)
+                      (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-mode)
+                      (:rewrite consp-mv-nth-1-las-to-pas)
+                      (:rewrite acl2::loghead-identity)
+                      (:rewrite unsigned-byte-p-of-logtail)
+                      (:rewrite ia32e-la-to-pa-in-programmer-level-mode)
+                      (:rewrite bitops::basic-signed-byte-p-of-+)
+                      (:rewrite default-<-2)
+                      (:rewrite default-<-1)
+                      (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                      (:rewrite xr-mv-nth-2-ia32e-la-to-pa-when-error)
+                      (:rewrite mv-nth-2-ia32e-la-to-pa-system-level-non-marking-mode)
+                      (:rewrite mv-nth-1-ia32e-la-to-pa-when-error)
+                      (:rewrite acl2::unsigned-byte-p-plus)
+                      (:rewrite xr-ia32e-la-to-pa)
+                      (:rewrite two-page-walks-ia32e-la-to-pa)
+                      (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
+                      (:rewrite r-w-x-is-irrelevant-for-mv-nth-1-las-to-pas-when-no-errors)
+                      (:rewrite disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
+                      (:rewrite r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
+                      (:rewrite canonical-address-p-limits-thm-3)
+                      (:rewrite r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-when-no-errors)
+                      (:rewrite r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors)
+                      (:rewrite bitops::signed-byte-p-monotonicity)
+                      (:type-prescription len)
+                      (:definition binary-append)
+                      (:rewrite signed-byte-p-limits-thm)
+                      (:rewrite canonical-address-p-limits-thm-1)
+                      (:rewrite canonical-address-p-limits-thm-2)
+                      (:rewrite canonical-address-p-limits-thm-0)
+                      (:rewrite xr-mem-disjoint-las-to-pas)
+                      (:definition open-qword-paddr-list)
+                      (:rewrite unsigned-byte-p-of-ash)
+                      (:type-prescription disjoint-p$)
+                      (:rewrite default-cdr)
+                      (:meta acl2::cancel_plus-equal-correct)
+                      (:meta acl2::cancel_times-equal-correct)
+                      (:definition addr-range)
+                      (:rewrite car-mv-nth-1-las-to-pas)
+                      (:type-prescription member-equal)
+                      (:linear bitops::logior-<-0-linear-2)
+                      (:linear member-p-pos-value)
+                      (:linear member-p-pos-1-value)
+                      (:rewrite default-car)
+                      (:rewrite subset-p-cdr-y)
+                      (:rewrite car-addr-range)
+                      (:rewrite subset-p-of-nil)
+                      (:rewrite acl2::ifix-when-not-integerp)
+                      (:definition atom)
+                      (:rewrite bitops::signed-byte-p-of-decrement-when-natural-signed-byte-p)
+                      (:definition ifix)
+                      (:rewrite acl2::expt-with-violated-guards)
+                      (:rewrite size-of-rb)
+                      (:type-prescription true-listp-addr-range)
+                      (:type-prescription gather-all-paging-structure-qword-addresses)
+                      (:type-prescription consp-addr-range)
+                      (:rewrite neg-addr-range=nil)
+                      (:rewrite acl2::natp-posp)
+                      (:rewrite acl2::equal-constant-+)
+                      (:rewrite cdr-addr-range)
+                      (:rewrite equal-ash-ash)
+                      (:linear acl2::expt-is-increasing-for-base>1)
+                      (:rewrite acl2::posp-rw)
+                      (:type-prescription natp)
+                      (:rewrite acl2::nfix-when-not-natp)
+                      (:rewrite loghead-of-non-integerp)
+                      (:type-prescription acl2::|x < y  =>  0 < y-x|)
+                      (:rewrite
+                       infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
+                      (:rewrite acl2::natp-when-gte-0)
+                      (:linear bitops::logior-<-0-linear-1)
+                      (:linear size-of-combine-bytes-of-take)
+                      (:linear size-of-combine-bytes)
+                      (:linear bitops::expt-2-lower-bound-by-logbitp)
+                      (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+                      (:linear size-of-rb)
+                      (:rewrite
+                       all-mem-except-paging-structures-equal-aux-and-xr-mem-from-rest-of-memory)
+                      (:rewrite
+                       all-mem-except-paging-structures-equal-and-xr-mem-from-rest-of-memory)
+                      (:rewrite loghead-ash-0)
+                      (:rewrite canonical-address-p-limits-thm-4)
+                      (:rewrite bitops::basic-signed-byte-p-of-+-with-cin
+                                . 2)
+                      (:rewrite bitops::basic-signed-byte-p-of-+-with-cin
+                                . 1)
+                      (:rewrite
+                       read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures)
+                      (:rewrite acl2::natp-rw)
+                      (:rewrite default-unary-minus)
+                      (:rewrite acl2::zp-open)
+                      (:rewrite acl2::natp-when-integerp)
+                      (:rewrite loghead-zero-smaller)
+                      (:type-prescription ash)
+                      (:rewrite acl2::<-0-+-negative-2)
+                      (:rewrite acl2::inverse-of-+-as=0)
+                      (:linear size-of-rb-in-programmer-level-mode)
+                      (:linear bitops::upper-bound-of-logior-for-naturals)))))
+
+   (defthmd rb-rb-subset-in-marking-mode-aux
+     (implies (and (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
+                   (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
+                   (disjoint-p
+                    (mv-nth 1 (las-to-pas i addr-i r-w-x (double-rewrite x86)))
+                    (all-xlation-governing-entries-paddrs i addr-i (double-rewrite x86)))
+                   ;; Ugh, the following hyp is aggravating --- I can
+                   ;; eliminate it via rb-rb-subset-helper-4 though...
+                   (disjoint-p (mv-nth 1 (las-to-pas j addr-i r-w-x x86))
+                               (all-xlation-governing-entries-paddrs j addr-i x86))
+                   ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
+                   ;; This non-strictness is nice because it lets me have
+                   ;; a better hyp in one-read-with-rb-from-program-at-in-non-marking-mode ---
+                   ;; (< lin-addr (+ (len bytes) prog-addr))
+                   ;; instead of
+                   ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
+                   (<= (+ j addr-j) (+ i addr-i))
+                   (<= addr-i addr-j)
+                   (canonical-address-p addr-i)
+                   (canonical-address-p (+ -1 i addr-i))
+                   (canonical-address-p (+ -1 j addr-i))
+                   (canonical-address-p addr-j)
+                   (posp i) (posp j)
+                   (not (programmer-level-mode x86))
+                   (page-structure-marking-mode x86)
+                   (x86p x86))
+              (equal (mv-nth 1 (rb j addr-j r-w-x x86))
+                     (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
+     :hints (("Goal"
+              :induct (list (rb-rb-induction-scheme j addr-j i addr-i val x86)
+                            (las-to-pas i addr-i r-w-x x86)
+                            (las-to-pas j addr-j r-w-x x86))
+              :in-theory (e/d* (signed-byte-p
+                                ifix
+                                nfix
+                                rb-1-opener-theorem)
+                               (unsigned-byte-p)))
+             (if (equal (car id) '(0 1))
+                 '(:expand ((las-to-pas i addr-i r-w-x x86))
+                           :use ((:instance rb-rb-same-start-address-different-op-sizes
+                                            (addr addr-i))
+                                 (:instance mv-nth-0-las-to-pas-subset-p
+                                            (n-1 i)
+                                            (addr-1 addr-i)
+                                            (n-2 j)
+                                            (addr-2 addr-j))
+                                 (:instance mv-nth-0-las-to-pas-subset-p
+                                            (n-1 i)
+                                            (addr-1 addr-i)
+                                            (n-2 j)
+                                            (addr-2 addr-i))
+                                 ;; (:instance mv-nth-1-las-to-pas-subset-p
+                                 ;;            (n-1 i)
+                                 ;;            (addr-1 addr-i)
+                                 ;;            (n-2 j)
+                                 ;;            (addr-2 addr-j))
+                                 ;; (:instance mv-nth-1-las-to-pas-subset-p
+                                 ;;            (n-1 i)
+                                 ;;            (addr-1 addr-i)
+                                 ;;            (n-2 j)
+                                 ;;            (addr-2 addr-i))
+                                 )
+                           :in-theory (e/d* (rb-rb-subset-helper-1
+                                             rb-rb-subset-helper-2
+                                             rb-rb-subset-helper-3
+                                             signed-byte-p
+                                             ifix
+                                             nfix
+                                             rb-1-opener-theorem)
+                                            (unsigned-byte-p
+                                             ;; mv-nth-1-las-to-pas-subset-p
+                                             signed-byte-p)))
+               nil)))))
+
+(local
+ (defthmd rb-rb-subset-helper-4
+   (implies
+    (and
+     (disjoint-p
+      (mv-nth 1
+              (las-to-pas i addr-i r-w-x (double-rewrite x86)))
+      (all-xlation-governing-entries-paddrs i addr-i (double-rewrite x86)))
+     (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
+     (<= (+ j addr-j) (+ i addr-i))
+     (<= addr-i addr-j)
+     (posp i))
+    (disjoint-p (mv-nth 1 (las-to-pas j addr-i r-w-x x86))
+                (all-xlation-governing-entries-paddrs j addr-i x86)))
+   :hints (("Goal"
+            :do-not-induct t
+            :in-theory (e/d* ()
+                             (mv-nth-1-las-to-pas-subset-p
+                              all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs))
+            :use ((:instance mv-nth-1-las-to-pas-subset-p
+                             (n-1 i)
+                             (addr-1 addr-i)
+                             (n-2 j)
+                             (addr-2 addr-i))
+                  (:instance all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
+                             (n-2 i)
+                             (addr-2 addr-i)
+                             (n-1 j)
+                             (addr-1 addr-i)))))))
+  
+
 (defthmd rb-rb-subset-in-marking-mode
-  ;; [Shilpi]: Expensive rule. Keep this disabled.
-  ;; TODO: Speed this up!
   (implies (and (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
                 (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
                 (disjoint-p
@@ -1897,38 +2117,8 @@
            (equal (mv-nth 1 (rb j addr-j r-w-x x86))
                   (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
   :hints (("Goal"
-           :induct (list (rb-rb-induction-scheme j addr-j i addr-i val x86)
-                         (las-to-pas i addr-i r-w-x x86)
-                         (las-to-pas j addr-j r-w-x x86))
-           :in-theory (e/d* (signed-byte-p
-                             ifix
-                             nfix
-                             rb-1-opener-theorem)
-                            (unsigned-byte-p)))
-          (if (equal (car id) '(0 1))
-              '(:expand ((las-to-pas i addr-i r-w-x x86))
-                        :use ((:instance rb-rb-same-start-address-different-op-sizes
-                                         (addr addr-i))
-                              (:instance mv-nth-0-las-to-pas-subset-p
-                                         (n-1 i)
-                                         (addr-1 addr-i)
-                                         (n-2 j)
-                                         (addr-2 addr-j))
-                              (:instance mv-nth-0-las-to-pas-subset-p
-                                         (n-1 i)
-                                         (addr-1 addr-i)
-                                         (n-2 j)
-                                         (addr-2 addr-i)))
-                        :in-theory (e/d* (rb-rb-subset-helper-1
-                                          rb-rb-subset-helper-2
-                                          rb-rb-subset-helper-3
-                                          signed-byte-p
-                                          ifix
-                                          nfix
-                                          rb-1-opener-theorem)
-                                         (unsigned-byte-p
-                                          signed-byte-p)))
-            nil)))
+           :use ((:instance rb-rb-subset-helper-4)
+                 (:instance rb-rb-subset-in-marking-mode-aux)))))
 
 
 (defthm many-reads-with-rb-from-program-at-in-marking-mode
@@ -1943,7 +2133,7 @@
              (all-xlation-governing-entries-paddrs
               (len bytes) prog-addr (double-rewrite x86)))
             (<= prog-addr lin-addr)
-            (< (+ n lin-addr) (+ (len bytes) prog-addr))
+            (<= (+ n lin-addr) (+ (len bytes) prog-addr))
             (canonical-address-p lin-addr)
             (canonical-address-p (+ -1 n prog-addr))
             (posp n)
@@ -1977,10 +2167,10 @@
 (defthm one-read-with-rb-from-program-at-in-marking-mode
   ;; Even though we have
   ;; many-reads-with-rb-from-program-at-in-marking-mode, I like having
-  ;; this lemma around because it has a weaker hyp of
+  ;; this lemma around because it has a hyp of
   ;; (< lin-addr (+ (len bytes) prog-addr))
   ;; instead of
-  ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr)).
+  ;; (<= (+ 1 lin-addr) (+ (len bytes) prog-addr)).
   (implies (and
             (bind-free
              (find-program-at-info 'prog-addr 'bytes mfc state)

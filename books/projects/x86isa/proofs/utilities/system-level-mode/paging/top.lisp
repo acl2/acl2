@@ -739,45 +739,91 @@
                              member-p)
                             (xlation-governing-entries-paddrs)))))
 
-(local
- (defthmd mv-nth-1-las-to-pas-subset-p-helper-1
-   (implies (and (< n-2 n-1)
-                 (not (mv-nth 0 (las-to-pas n-1 addr r-w-x x86)))
-                 (posp n-1) (posp n-2) (integerp addr))
-            (subset-p (mv-nth 1 (las-to-pas n-2 addr r-w-x x86))
-                      (mv-nth 1 (las-to-pas n-1 addr r-w-x x86))))
-   :hints (("Goal" :in-theory (e/d* (subset-p) ())))))
+;; (encapsulate
+;;   ()
+;;   (local
+;;    (defthmd mv-nth-1-las-to-pas-subset-p-helper-1
+;;      (implies (and (< n-2 n-1)
+;;                    (not (mv-nth 0 (las-to-pas n-1 addr r-w-x x86)))
+;;                    (posp n-1) (posp n-2) (integerp addr))
+;;               (subset-p (mv-nth 1 (las-to-pas n-2 addr r-w-x x86))
+;;                         (mv-nth 1 (las-to-pas n-1 addr r-w-x x86))))
+;;      :hints (("Goal" :in-theory (e/d* (subset-p) ())))))
 
-(local
- (defthmd mv-nth-1-las-to-pas-subset-p-helper-2
-   (implies
-    (and (signed-byte-p 48 addr-1)
-         (< (+ addr-1 n-2) (+ addr-1 n-1))
-         (not (mv-nth 0 (las-to-pas (+ -1 n-1) (+ 1 addr-1) r-w-x x86)))
-         (integerp n-1)
-         (< 0 n-2))
-    (subset-p (mv-nth 1 (las-to-pas n-2 addr-1 r-w-x x86))
-              (cons (mv-nth 1 (ia32e-la-to-pa addr-1 r-w-x x86))
-                    (mv-nth 1
-                            (las-to-pas (+ -1 n-1)
-                                        (+ 1 addr-1)
-                                        r-w-x x86)))))
-   :hints (("Goal"
-            :do-not-induct t
-            :use ((:instance mv-nth-1-las-to-pas-subset-p-helper-1
-                             (addr addr-1)))
-            :expand ((las-to-pas n-1 addr-1 r-w-x x86))
-            :in-theory (e/d* (las-to-pas subset-p) ())))))
+;;   (local
+;;    (defthmd mv-nth-1-las-to-pas-subset-p-helper-2
+;;      (implies
+;;       (and (signed-byte-p 48 addr-1)
+;;            (< (+ addr-1 n-2) (+ addr-1 n-1))
+;;            (not (mv-nth 0 (las-to-pas (+ -1 n-1) (+ 1 addr-1) r-w-x x86)))
+;;            (integerp n-1)
+;;            (< 0 n-2))
+;;       (subset-p (mv-nth 1 (las-to-pas n-2 addr-1 r-w-x x86))
+;;                 (cons (mv-nth 1 (ia32e-la-to-pa addr-1 r-w-x x86))
+;;                       (mv-nth 1
+;;                               (las-to-pas (+ -1 n-1)
+;;                                           (+ 1 addr-1)
+;;                                           r-w-x x86)))))
+;;      :hints (("Goal"
+;;               :do-not-induct t
+;;               :use ((:instance mv-nth-1-las-to-pas-subset-p-helper-1
+;;                                (addr addr-1)))
+;;               :expand ((las-to-pas n-1 addr-1 r-w-x x86))
+;;               :in-theory (e/d* (las-to-pas subset-p) ())))))
 
-(defthm mv-nth-1-las-to-pas-subset-p
-  (implies (and (<= addr-1 addr-2)
-                (< (+ n-2 addr-2) (+ n-1 addr-1))
-                (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
-                (posp n-1) (posp n-2) (integerp addr-2))
-           (subset-p (mv-nth 1 (las-to-pas n-2 addr-2 r-w-x x86))
-                     (mv-nth 1 (las-to-pas n-1 addr-1 r-w-x x86))))
-  :hints (("Goal" :in-theory (e/d* (mv-nth-1-las-to-pas-subset-p-helper-2 subset-p)
-                                   ()))))
+;;   (defthm mv-nth-1-las-to-pas-subset-p
+;;     (implies (and (<= addr-1 addr-2)
+;;                   (< (+ n-2 addr-2) (+ n-1 addr-1))
+;;                   (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
+;;                   (posp n-1) (posp n-2) (integerp addr-2))
+;;              (subset-p (mv-nth 1 (las-to-pas n-2 addr-2 r-w-x x86))
+;;                        (mv-nth 1 (las-to-pas n-1 addr-1 r-w-x x86))))
+;;     :hints (("Goal" :in-theory (e/d* (mv-nth-1-las-to-pas-subset-p-helper-2 subset-p)
+;;                                      ())))))
+
+(encapsulate
+  ()
+
+  (local
+   (defthmd mv-nth-1-las-to-pas-subset-p-helper-1
+     (implies (and (<= n-2 n-1)
+                   (not (mv-nth 0 (las-to-pas n-1 addr r-w-x x86)))
+                   (natp n-1))
+              (subset-p (mv-nth 1 (las-to-pas n-2 addr r-w-x x86))
+                        (mv-nth 1 (las-to-pas n-1 addr r-w-x x86))))
+     :hints (("Goal" :in-theory (e/d* (subset-p las-to-pas) ())))))
+
+  (local
+   (defthmd mv-nth-1-las-to-pas-subset-p-helper-2
+     (implies
+      (and (<= (+ addr-1 n-2) (+ addr-1 n-1))
+           (not (mv-nth 0 (las-to-pas (+ -1 n-1) (+ 1 addr-1) r-w-x x86)))
+           (integerp n-1)
+           (< 0 n-2))
+      (subset-p (mv-nth 1 (las-to-pas n-2 addr-1 r-w-x x86))
+                (cons (mv-nth 1 (ia32e-la-to-pa addr-1 r-w-x x86))
+                      (mv-nth 1
+                              (las-to-pas (+ -1 n-1)
+                                          (+ 1 addr-1)
+                                          r-w-x x86)))))
+     :hints (("Goal"
+              :do-not-induct t
+              :use ((:instance mv-nth-1-las-to-pas-subset-p-helper-1
+                               (addr addr-1)))
+              :expand ((las-to-pas n-1 addr-1 r-w-x x86))
+              :in-theory (e/d* (las-to-pas subset-p) ())))))
+
+  (defthm mv-nth-1-las-to-pas-subset-p
+    (implies (and (<= addr-1 addr-2)
+                  (<= (+ n-2 addr-2) (+ n-1 addr-1))
+                  (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
+                  (posp n-1) (posp n-2) (integerp addr-2))
+             (subset-p (mv-nth 1 (las-to-pas n-2 addr-2 r-w-x x86))
+                       (mv-nth 1 (las-to-pas n-1 addr-1 r-w-x x86))))
+    :hints (("Goal" :in-theory (e/d* (las-to-pas
+                                      mv-nth-1-las-to-pas-subset-p-helper-2
+                                      subset-p)
+                                     ())))))
 
 ;; ======================================================================
 
@@ -870,8 +916,8 @@
      (mv-nth 1 (las-to-pas prog-len prog-addr r-w-x (double-rewrite x86)))
      other-p-addrs)
     (not (mv-nth 0 (las-to-pas prog-len prog-addr r-w-x (double-rewrite x86))))
-    ;; <n,addr> is a subset of <prog-len,prog-addr>.
-    (< (+ n addr) (+ prog-len prog-addr))
+    ;; <n,addr> is a non-strict subset of <prog-len,prog-addr>.
+    (<= (+ n addr) (+ prog-len prog-addr))
     (<= prog-addr addr)
     (posp prog-len) (posp n) (integerp addr))
    (disjoint-p (mv-nth 1 (las-to-pas n addr r-w-x x86))
@@ -891,7 +937,7 @@
     (disjoint-p$ other-p-addrs
                  (all-xlation-governing-entries-paddrs
                   n-2 lin-addr-2 (double-rewrite x86)))
-    ;; <n-1,lin-addr-1> is a subset of <n-2,lin-addr-2>.
+    ;; <n-1,lin-addr-1> is a non-strict subset of <n-2,lin-addr-2>.
     (< (+ n-1 lin-addr-1) (+ n-2 lin-addr-2))
     (<= lin-addr-2 lin-addr-1)
     (posp n-2) (integerp lin-addr-1) (integerp lin-addr-2))
@@ -987,11 +1033,11 @@
     (disjoint-p$
      (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1  (double-rewrite x86)))
      (mv-nth 1 (las-to-pas n-2 lin-addr-2 r-w-x-2  (double-rewrite x86))))
-    ;; <ns-1,addr-1> is a subset of <n-1,lin-addr-1>.
-    (< (+ ns-1 addr-1) (+ n-1 lin-addr-1))
+    ;; <ns-1,addr-1> is a non-strict subset of <n-1,lin-addr-1>.
+    (<= (+ ns-1 addr-1) (+ n-1 lin-addr-1))
     (<= lin-addr-1 addr-1)
-    ;; <ns-2,addr-2> is a subset of <n-2,lin-addr-2>.
-    (< (+ ns-2 addr-2) (+ n-2 lin-addr-2))
+    ;; <ns-2,addr-2> is a non-strict subset of <n-2,lin-addr-2>.
+    (<= (+ ns-2 addr-2) (+ n-2 lin-addr-2))
     (<= lin-addr-2 addr-2)
     (not (mv-nth 0 (las-to-pas n-1 lin-addr-1 r-w-x-1 x86)))
     (not (mv-nth 0 (las-to-pas n-2 lin-addr-2 r-w-x-2 x86)))
@@ -1000,19 +1046,19 @@
     (mv-nth 1 (las-to-pas ns-1 addr-1 r-w-x-1 x86))
     (mv-nth 1 (las-to-pas ns-2 addr-2 r-w-x-2 x86))))
   :hints (("Goal" :do-not-induct t
-           :use ( (:instance mv-nth-1-las-to-pas-subset-p
-                             (n-1 n-1) (addr-1 lin-addr-1)
-                             (n-2 ns-1) (addr-2 addr-1)
-                             (r-w-x r-w-x-1))
-                  (:instance mv-nth-1-las-to-pas-subset-p
-                             (n-1 n-2) (addr-1 lin-addr-2)
-                             (n-2 ns-2) (addr-2 addr-2)
-                             (r-w-x r-w-x-2))
-                  (:instance disjoint-p-subset-p
-                             (x (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 x86)))
-                             (y (mv-nth 1 (las-to-pas n-2 lin-addr-2 r-w-x-2 x86)))
-                             (a (mv-nth 1 (las-to-pas ns-1 addr-1 r-w-x-1 x86)))
-                             (b (mv-nth 1 (las-to-pas ns-2 addr-2 r-w-x-2 x86)))))
+           :use ((:instance mv-nth-1-las-to-pas-subset-p
+                            (n-1 n-1) (addr-1 lin-addr-1)
+                            (n-2 ns-1) (addr-2 addr-1)
+                            (r-w-x r-w-x-1))
+                 (:instance mv-nth-1-las-to-pas-subset-p
+                            (n-1 n-2) (addr-1 lin-addr-2)
+                            (n-2 ns-2) (addr-2 addr-2)
+                            (r-w-x r-w-x-2))
+                 (:instance disjoint-p-subset-p
+                            (x (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 x86)))
+                            (y (mv-nth 1 (las-to-pas n-2 lin-addr-2 r-w-x-2 x86)))
+                            (a (mv-nth 1 (las-to-pas ns-1 addr-1 r-w-x-1 x86)))
+                            (b (mv-nth 1 (las-to-pas ns-2 addr-2 r-w-x-2 x86)))))
            :in-theory (e/d* (disjoint-p$)
                             (mv-nth-1-las-to-pas-subset-p
                              disjoint-p-subset-p)))))
@@ -1074,10 +1120,10 @@
      (open-qword-paddr-list
       (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
     (not (mv-nth 0 (las-to-pas (len bytes) super-addr :x (double-rewrite x86))))
-    ;; Both <n-1,lin-addr-1> and <n-2,lin-addr-2> are subsets of
+    ;; Both <n-1,lin-addr-1> and <n-2,lin-addr-2> are non-strict subsets of
     ;; <(len bytes),super-addr>.
-    (< (+ n-1 lin-addr-1) (+ (len bytes) super-addr))
-    (< (+ n-2 lin-addr-2) (+ (len bytes) super-addr))
+    (<= (+ n-1 lin-addr-1) (+ (len bytes) super-addr))
+    (<= (+ n-2 lin-addr-2) (+ (len bytes) super-addr))
     (<= super-addr lin-addr-1)
     (<= super-addr lin-addr-2)
     (canonical-address-p super-addr)
@@ -1092,7 +1138,9 @@
            :in-theory (e/d* (disjoint-p$ subset-p)
                             (disjoint-p-subset-p
                              mv-nth-1-las-to-pas-subset-p
-                             all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs))
+                             all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
+                             disjoint-p-all-xlation-governing-entries-paddrs-subset-p
+                             las-to-pas))
            :use ((:instance disjoint-p-subset-p
                             (x (mv-nth 1 (las-to-pas (len bytes) super-addr :x x86)))
                             (y (all-xlation-governing-entries-paddrs (len bytes) super-addr x86))
@@ -1100,7 +1148,7 @@
                             (b (all-xlation-governing-entries-paddrs n-2 lin-addr-2 x86)))
                  (:instance mv-nth-1-las-to-pas-subset-p
                             (n-1 (len bytes)) (addr-1 super-addr)
-                            (n-2 n-1) (addr-2 addr-1)
+                            (n-2 n-1) (addr-2 lin-addr-1)
                             (r-w-x :x))
                  (:instance all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
                             (n-1 n-2) (addr-1 lin-addr-2)
@@ -1275,7 +1323,7 @@
            (equal (write-to-physical-memory
                    p-addrs value (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (mv-nth 2 (ia32e-la-to-pa
-                             lin-addr r-w-x 
+                             lin-addr r-w-x
                              (write-to-physical-memory p-addrs value x86)))))
   :hints (("Goal"
            :induct (write-to-physical-memory p-addrs value x86)
@@ -1285,8 +1333,8 @@
   (implies
    (and (disjoint-p p-addrs
                     (all-xlation-governing-entries-paddrs
-                     n lin-addr (double-rewrite x86)))        
-        (physical-address-listp p-addrs)        
+                     n lin-addr (double-rewrite x86)))
+        (physical-address-listp p-addrs)
         (x86p x86))
    (equal
     (write-to-physical-memory p-addrs value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))

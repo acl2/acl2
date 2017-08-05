@@ -2077,6 +2077,37 @@
                                disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                                mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)))))
 
+  (defthm disjointness-of-program-bytes-from-paging-structures
+    (implies (and
+              (bind-free
+               (find-program-at-alt-info 'prog-addr 'bytes mfc state)
+               (prog-addr bytes))
+              (program-at-alt prog-addr bytes (double-rewrite x86))
+              ;; <n,lin-addr> is a non-strict subset of <(len bytes),prog-addr>.
+              (<= prog-addr lin-addr)
+              (<= (+ n lin-addr) (+ (len bytes) prog-addr))
+              (posp n) (integerp lin-addr))
+             (disjoint-p (mv-nth 1 (las-to-pas n lin-addr :x x86))
+                         (open-qword-paddr-list
+                          (gather-all-paging-structure-qword-addresses x86))))
+    :hints (("Goal"
+             :do-not-induct t
+             :cases ((= (+ n lin-addr) (+ (len bytes) prog-addr)))
+             :use ((:instance program-at-alt-implies-program-addresses-properties)
+                   (:instance program-at-nil-when-translation-error)
+                   (:instance disjoint-p-subset-p
+                              (x (mv-nth 1 (las-to-pas (len bytes) prog-addr :x x86)))
+                              (y
+                               (open-qword-paddr-list
+                                (gather-all-paging-structure-qword-addresses x86)))
+                              (a (mv-nth 1 (las-to-pas n lin-addr :x x86)))
+                              (b (open-qword-paddr-list
+                                  (gather-all-paging-structure-qword-addresses x86)))))
+             :in-theory (e/d* (disjoint-p$)
+                              (disjoint-p-subset-p
+                               program-at-nil-when-translation-error
+                               force (force))))))
+
   (defthmd disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures-general
     (implies ;; No bind-free here.
      (and
@@ -2279,7 +2310,7 @@
     (implies
      (and
       (direct-map-p 8 entry-addr :w (double-rewrite x86))
-      (equal (page-size value) 1)    
+      (equal (page-size value) 1)
       (disjoint-p
        (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86)))
        (open-qword-paddr-list

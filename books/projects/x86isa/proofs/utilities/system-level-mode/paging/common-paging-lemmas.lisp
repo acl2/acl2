@@ -463,7 +463,7 @@
   (defthm all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
     (implies
      (and (<= addr-2 addr-1)
-          (< (+ n-1 addr-1) (+ n-2 addr-2))
+          (<= (+ n-1 addr-1) (+ n-2 addr-2))
           (posp n-2) (integerp addr-1) (integerp addr-2))
      (equal
       (subset-p (all-xlation-governing-entries-paddrs n-1 addr-1 x86)
