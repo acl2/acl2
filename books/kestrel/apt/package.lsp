@@ -16,6 +16,7 @@
 
 (defpkg "APT" (append *std-pkg-symbols*
                       '(add-numbered-name-in-use
+                        add-suffix-to-fn
                         alist-to-doublets
                         all-calls
                         apply-term
