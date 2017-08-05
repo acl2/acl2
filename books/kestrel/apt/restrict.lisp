@@ -160,13 +160,17 @@
   :short "Ensure that the @(':thm-name') input to the transformation
           is valid."
   (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
-       (name (cond ((eq thm-name :arrow)
-                    (packn (list old-fn-name '-~>- new-fn-name)))
-                   ((eq thm-name :becomes)
-                    (packn (list old-fn-name '-becomes- new-fn-name)))
-                   ((eq thm-name :is)
-                    (packn (list old-fn-name '-is- new-fn-name)))
-                   (t thm-name)))
+       (name (if (member-eq thm-name '(:arrow :becomes :is))
+                 (b* ((separator (case thm-name
+                                   (:arrow "-~>-")
+                                   (:becomes "-BECOMES-")
+                                   (:is "-IS-")
+                                   (otherwise (impossible))))
+                      (string (str::cat (symbol-name old-fn-name)
+                                        separator
+                                        (symbol-name new-fn-name))))
+                   (intern-in-package-of-symbol string old-fn-name))
+               thm-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the target function ~x1 ~
                           to the new function ~x2, ~
