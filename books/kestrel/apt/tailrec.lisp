@@ -406,7 +406,7 @@
           is valid."
   (b* (((er &) (ensure-symbol$ wrapper-name "The :WRAPPER-NAME input" t nil))
        (name (if (eq wrapper-name :auto)
-                 (packn (list new-fn-name '-wrapper))
+                 (add-suffix-to-fn new-fn-name "-WRAPPER")
                wrapper-name))
        (description (msg "The name ~x0 of the wrapper function, ~@1,"
                          name
