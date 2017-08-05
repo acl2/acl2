@@ -100,6 +100,7 @@
                         subst-var
                         symbol-symbol-alistp
                         term-guard-obligation
+                        tests-and-call
                         theorem-intro-macro
                         ubody
                         untranslate-lst

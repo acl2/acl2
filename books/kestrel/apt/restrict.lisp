@@ -397,8 +397,8 @@
      (if (endp rec-calls-with-tests)
          (reverse rev-conjuncts)
        (b* ((tests-and-call (car rec-calls-with-tests))
-            (tests (access acl2::tests-and-call tests-and-call :tests))
-            (call (access acl2::tests-and-call tests-and-call :call))
+            (tests (access tests-and-call tests-and-call :tests))
+            (call (access tests-and-call tests-and-call :call))
             (context (conjoin tests)))
          (restrict-restriction-of-rec-calls-consequent-aux
           old-fn-name
