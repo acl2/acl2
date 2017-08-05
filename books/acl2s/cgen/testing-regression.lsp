@@ -1051,7 +1051,53 @@
 )
 
 
-
+;; CHeck singleton range types are working correctly.
 
 (DEFDATA DECIMAL_30_TO_30 (RANGE RATIONAL (30 <= _ <= 30)))
 (test? (implies (DECIMAL_30_TO_30P x) (= x 30)))
+
+
+;; Check len support in Cgen.
+(defdata d1 (oneof 'a 'b 'c 'd 'e 'f))
+
+(defdata ld1-aux
+  (listof d1)
+  :min-rec-depth 2
+  :max-rec-depth 201)
+
+(acl2s::defunc ld1p (x)
+  :input-contract t
+  :output-contract (booleanp (ld1p x))
+ (and (ld1-auxp x)
+      (>= (len x) 3)
+      (<= (len x) 200)))
+
+;; (defdata ld1 (listof d1))
+
+(defdata d2 'g)
+
+(defdata ld2-aux
+  (listof d2)
+  :min-rec-depth 0
+  :max-rec-depth 7)
+
+(acl2s::defunc ld2p (x)
+  :input-contract t
+  :output-contract (booleanp (ld2p x))
+  (and (ld2-auxp x)
+       (<= (len x) 6)))
+
+Now, cgen fails to find a counterexample for this.
+(acl2s-defaults :set verbosity-level 3)
+
+(test?
+ (implies (and (ld2p a)
+               (ld1p b)
+               (ld1p c)
+               (integerp x)
+               (<= x (len a))
+               (> x 0)
+               (equal (len a) (len b)))
+               
+          (and (consp c)
+               (<= x (len c)))))
