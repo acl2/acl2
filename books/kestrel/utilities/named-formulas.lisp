@@ -69,20 +69,20 @@
    to ease navigation in an Emacs buffer.
    </p>"
   (b* (((run-when verbose)
-        (cw "(Proving ~x0:~%~x1~|" name formula))
+        (cw "~%(Proving ~x0:~%~x1~|" name formula))
        ((mv erp yes/no state) (prove$ formula :hints hints)))
     (cond (erp (b* (((run-when verbose)
-                     (cw "Prover error.)~%~%")))
+                     (cw "Prover error.)~%")))
                  (mv nil
                      (msg "Prover error ~x0 ~
                            when attempting to prove ~x1:~%~x2~|"
                           erp name formula)
                      state)))
           (yes/no (b* (((run-when verbose)
-                        (cw "Done.)~%~%")))
+                        (cw "Done.)~%")))
                     (mv t "" state)))
           (t (b* (((run-when verbose)
-                   (cw "Failed.)~%~%")))
+                   (cw "Failed.)~%")))
                (mv nil
                    (msg "Unable to prove ~x0:~%~x1~|" name formula)
                    state))))))
