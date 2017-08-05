@@ -1875,7 +1875,9 @@
                              ,new-fn-numbered-name-event
                              ,wrapper-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
-       ((when show-only) `(value-triple ',encapsulate))
+       ((when show-only) `(progn
+                            (cw-event "~x0~|" ',encapsulate)
+                            (value-triple ':invisible)))
        (transformation-table-event `(table transformation-table
                                       ',call ',encapsulate))
        (new-fn-show-event `(cw-event "~x0~|~%"
