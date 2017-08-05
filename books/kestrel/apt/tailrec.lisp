@@ -291,6 +291,7 @@
                     t nil)
                  (value nil)))
        ((run-when verbose)
+        (cw "~%")
         (cw "Components of the target function ~x0:~%" old-fn-name)
         (cw "- Exit test: ~x0.~%" (untranslate test nil wrld))
         (cw "- Base value: ~x0.~%" (untranslate base nil wrld))
@@ -298,8 +299,7 @@
         (cw "- Argument updates: ~x0.~%" (untranslate-lst updates nil wrld))
         (cw "- Combination operator: ~x0.~%" (untranslate combine nil wrld))
         (cw "- Fresh variable for non-recursive computation: ~x0.~%" q)
-        (cw "- Fresh variable for recursive call: ~x0.~%" r)
-        (cw "~%")))
+        (cw "- Fresh variable for recursive call: ~x0.~%" r)))
     (value (list old-fn-name test base nonrec updates combine q r))))
 
 (std::defenum tailrec-variantp (:assoc :monoid :monoid-alt)
@@ -1884,12 +1884,12 @@
                             (value-triple ':invisible)))
        (transformation-table-event `(table transformation-table
                                       ',call ',encapsulate))
-       (new-fn-show-event `(cw-event "~x0~|~%"
+       (new-fn-show-event `(cw-event "~x0~|"
                                      ',new-fn-exported-event))
-       (wrapper-fn-show-event `(cw-event "~x0~|~%"
+       (wrapper-fn-show-event `(cw-event "~x0~|"
                                          ',wrapper-fn-exported-event))
        (old-to-wrapper-thm-show-event `(cw-event
-                                        "~x0~|~%"
+                                        "~x0~|"
                                         ',old-to-wrapper-thm-exported-event)))
     `(progn
        ,encapsulate

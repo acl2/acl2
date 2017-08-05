@@ -918,10 +918,10 @@
                             (value-triple :invisible)))
        (transformation-table-event `(table transformation-table
                                       ',call ',encapsulate))
-       (new-fn-show-event `(cw-event "~%~x0~|~%"
+       (new-fn-show-event `(cw-event "~x0~|"
                                      ',new-fn-exported-event))
        (old-to-new-thm-show-event `(cw-event
-                                    "~x0~|~%"
+                                    "~x0~|"
                                     ',old-to-new-thm-exported-event)))
     `(progn
        ,encapsulate
