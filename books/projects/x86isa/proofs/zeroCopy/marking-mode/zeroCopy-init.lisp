@@ -126,7 +126,7 @@
 
 ;; Control printing:
 (acl2::add-untranslate-pattern-function
- (program-at (create-canonical-address-list 272 (xr :rip 0 x86))
+ (program-at (xr :rip 0 x86)
              '(15 32 216 72 137 68 36 232 72 139 84 36 232
                   72 137 248 72 193 232 36 37 248 15 0 0
                   72 129 226 0 240 255 255 72 9 208 72 139
@@ -150,9 +150,38 @@
                   102 46 15 31 132 0 0 0 0 0 72 199 192
                   255 255 255 255 195 15 31 132 0 0 0 0 0)
              x86)
- (program-at (create-canonical-address-list (len *rewire_dst_to_src*) (xr :rip 0 x86))
+ (program-at (xr :rip 0 x86)
              *rewire_dst_to_src*
              x86))
+
+(acl2::add-untranslate-pattern-function
+ (program-at-alt (xr :rip 0 x86)
+                 '(15 32 216 72 137 68 36 232 72 139 84 36 232
+                      72 137 248 72 193 232 36 37 248 15 0 0
+                      72 129 226 0 240 255 255 72 9 208 72 139
+                      0 168 1 15 132 210 0 0 0 72 193 232 12
+                      73 184 255 255 255 255 255 0 0 0 72 137
+                      249 76 33 192 72 193 233 27 129 225 248
+                      15 0 0 72 193 224 12 72 9 200 72 139 0
+                      72 137 193 129 225 129 0 0 0 72 129 249
+                      129 0 0 0 15 133 148 0 0 0 72 137 241
+                      73 185 0 0 0 192 255 255 15 0 72 193 233
+                      36 73 33 193 129 225 248 15 0 0 72 9 209
+                      72 139 1 168 1 116 112 72 193 232 12 72
+                      137 242 76 33 192 72 193 234 27 129 226
+                      248 15 0 0 72 193 224 12 72 9 208 72 186
+                      255 255 255 63 0 0 240 255 72 35 16 76
+                      9 202 72 137 16 72 137 208 37 129 0 0 0
+                      72 61 129 0 0 0 117 50 72 184 0 0 0 192
+                      255 255 15 0 129 230 255 255 255 63 129
+                      231 255 255 255 63 72 33 194 76 9 207
+                      49 192 72 9 242 72 57 215 15 148 192 195
+                      102 46 15 31 132 0 0 0 0 0 72 199 192
+                      255 255 255 255 195 15 31 132 0 0 0 0 0)
+                 x86)
+ (program-at-alt (xr :rip 0 x86)
+                 *rewire_dst_to_src*
+                 x86))
 
 ;; ======================================================================
 
@@ -181,14 +210,10 @@
   ;; proof.
   (ash (loghead 40 (logtail
                     12
-                    (combine-bytes
-                     (mv-nth 1 (rb
-                                (create-canonical-address-list
-                                 8
-                                 (pml4-table-entry-addr
-                                  lin-addr
-                                  (pml4-table-base-addr x86)))
-                                :r x86)))))
+                    (mv-nth 1 (rb 8
+                                  (pml4-table-entry-addr
+                                   lin-addr (pml4-table-base-addr x86))
+                                  :r x86))))
        12))
 
 ;; The following is really a consequence of keeping

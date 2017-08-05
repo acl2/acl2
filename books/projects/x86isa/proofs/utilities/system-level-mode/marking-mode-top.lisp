@@ -1493,6 +1493,20 @@
 
   (local (in-theory (e/d* () (program-at-alt))))
 
+  (defthmd program-at-alt-implies-program-addresses-properties
+    (implies (program-at-alt prog-addr bytes (double-rewrite x86))
+             (and (page-structure-marking-mode x86)
+                  (not (programmer-level-mode x86))
+                  (canonical-address-p prog-addr)
+                  (canonical-address-p (+ -1 (len bytes) prog-addr))
+                  (disjoint-p$
+                   (mv-nth 1 (las-to-pas (len bytes) prog-addr :x x86))
+                   (open-qword-paddr-list
+                    (gather-all-paging-structure-qword-addresses x86)))
+                  (program-at prog-addr bytes x86)))
+    :hints (("Goal" :in-theory (e/d* (program-at-alt)
+                                     ()))))
+
   (defthm rewrite-program-at-to-program-at-alt
     (implies (forced-and
               (disjoint-p$
@@ -1812,97 +1826,166 @@
              :use ((:instance xlate-equiv-memory-and-two-mv-nth-2-rb))))
     :rule-classes :congruence)
 
-  (i-am-here)
+  (local
+   (defthmd establishing-some-canonical-address-properties
+     (implies (and ;; <n,lin-addr> is a subset of <(len bytes),prog-addr>.
+               (<= prog-addr lin-addr)
+               (< (+ n lin-addr) (+ prog-len prog-addr))
+               (canonical-address-p prog-addr)
+               (canonical-address-p (+ -1 prog-len prog-addr))
+               (posp n) (integerp lin-addr))
+              (and (canonical-address-p (+ -1 n lin-addr))
+                   (canonical-address-p lin-addr)
+                   (canonical-address-p (+ -1 n prog-addr))))
+     :hints (("Goal" :in-theory (e/d* (canonical-address-p
+                                       signed-byte-p)
+                                      ())))))
 
-  ;; See many-reads-with-rb-from-program-at-in-non-marking-mode onwards...
+  (defun find-program-at-alt-info (addr-var bytes-var mfc state)
+    (declare (xargs :stobjs (state) :mode :program)
+             (ignorable state))
+    (b* ((call (acl2::find-call-lst 'program-at-alt (acl2::mfc-clause mfc)))
+         (call (or call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc))))
+         ((when (not call))
+          ;; No program-at-alt or program-at terms encountered.
+          nil))
+      `((,addr-var . ,(nth 1 call))
+        (,bytes-var . ,(nth 2 call)))))
 
-  (defthm rb-alt-in-terms-of-nth-and-pos-in-system-level-mode
-    (implies (and (bind-free
-                   (find-program-at-info 'prog-addr 'bytes mfc state)
-                   (prog-addr bytes))
-                  (program-at-alt prog-addr bytes (double-rewrite x86))
-                  ;; <n,addr> is a subset of <(len bytes),prog-addr>.
-                  (<= prog-addr addr)
-                  (< (+ n addr) (+ (len bytes) prog-addr))                  
-                  (disjoint-p$
-                   (mv-nth 1 (las-to-pas (len bytes) prog-addr :x (double-rewrite x86)))
-                   (open-qword-paddr-list
-                    (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-                  (page-structure-marking-mode x86)
-                  (not (xr :programmer-level-mode 0 x86))
-                  (x86p x86))
-             (equal (car (mv-nth 1 (rb-alt (list lin-addr) :x x86)))
-                    (nth (pos lin-addr n prog-addr)) bytes))
+  (defthm many-reads-with-rb-alt-from-program-at-alt-in-marking-mode
+    (implies (and
+              (bind-free
+               (find-program-at-alt-info 'prog-addr 'bytes mfc state)
+               (prog-addr bytes))
+              (program-at-alt prog-addr bytes (double-rewrite x86))
+              ;; <n,lin-addr> is a subset of <(len bytes),prog-addr>.
+              (<= prog-addr lin-addr)
+              (< (+ n lin-addr) (+ (len bytes) prog-addr))
+              (integerp lin-addr) (posp n)
+              (byte-listp bytes) (x86p x86))
+             (equal (mv-nth 1 (rb-alt n lin-addr :x x86))
+                    ;; During symbolic simulation of a program, we'd
+                    ;; know the concrete value of "bytes".  Moreover,
+                    ;; note that using combine-bytes instead of
+                    ;; combine-n-bytes would have been expensive because
+                    ;; the former would combine all program bytes
+                    ;; whereas the latter only combines n of them.
+                    (combine-n-bytes (- lin-addr prog-addr) n bytes)))
     :hints (("Goal"
              :do-not-induct t
-             :in-theory (e/d (las-to-pas
-                              subset-p
-                              disjoint-p
-                              disjoint-p$
-                              disjoint-p-commutative)
+             :in-theory (e/d (disjoint-p$)
                              (acl2::mv-nth-cons-meta
-                              rb-in-terms-of-nth-and-pos-in-system-level-mode
+                              many-reads-with-rb-from-program-at-in-marking-mode
+                              rewrite-program-at-to-program-at-alt
                               rewrite-rb-to-rb-alt
-                              disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p))
-             :use ((:instance rewrite-rb-to-rb-alt
-                              (l-addrs (list lin-addr))
-                              (r-x :x))
-                   (:instance rb-in-terms-of-nth-and-pos-in-system-level-mode)))))
+                              mv-nth-1-las-to-pas-subset-p
+                              combine-n-bytes))
+             :use ((:instance establishing-some-canonical-address-properties
+                              (prog-len (len bytes)))
+                   (:instance mv-nth-1-las-to-pas-subset-p
+                              (n-2 n) (addr-2 lin-addr)
+                              (n-1 (len bytes)) (addr-1 prog-addr)
+                              (r-w-x :x))
+                   (:instance many-reads-with-rb-from-program-at-in-marking-mode)
+                   (:instance rewrite-rb-to-rb-alt (addr lin-addr) (r-x :x))
+                   (:instance program-at-alt-implies-program-addresses-properties)
+                   (:instance program-at-implies-canonical-addresses)))))
 
-  (defthm rb-alt-in-terms-of-rb-alt-subset-p-in-system-level-mode
-    (implies
-     (and
-      (bind-free (find-info-from-program-at-term
-                  'rb-alt-in-terms-of-rb-alt-subset-p-in-system-level-mode
-                  mfc state)
-                 (n prog-addr bytes))
-      (program-at-alt (create-canonical-address-list n prog-addr) bytes x86)
-      (subset-p l-addrs (create-canonical-address-list n prog-addr))
-      (syntaxp (quotep n))
-      (consp l-addrs)
-      (not (mv-nth 0
-                   (las-to-pas (create-canonical-address-list n prog-addr)
-                               :x (cpl x86) (double-rewrite x86))))
-      (disjoint-p$
-       (mv-nth 1
-               (las-to-pas (create-canonical-address-list n prog-addr)
-                           :x (cpl x86) (double-rewrite x86)))
-       (open-qword-paddr-list
-        (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-      (page-structure-marking-mode x86)
-      (not (programmer-level-mode x86))
-      (x86p x86))
-     (equal (mv-nth 1 (rb-alt l-addrs :x x86))
-            (append (list (nth (pos
-                                (car l-addrs)
-                                (create-canonical-address-list n prog-addr))
-                               bytes))
-                    (mv-nth 1 (rb-alt (cdr l-addrs) :x x86)))))
+  (local
+   (defthmd establishing-some-more-canonical-address-properties
+     (implies (and ;; <1,lin-addr> is a subset of <(len bytes),prog-addr>.
+               (<= prog-addr lin-addr)
+               (< lin-addr (+ prog-len prog-addr))
+               (canonical-address-p prog-addr)
+               (canonical-address-p (+ -1 prog-len prog-addr))
+               (integerp lin-addr))
+              (canonical-address-p lin-addr))
+     :hints (("Goal" :in-theory (e/d* (canonical-address-p
+                                       signed-byte-p)
+                                      ())))))
+
+  (local
+   (defthmd mv-nth-0-las-to-pas-subset-p-for-1-byte
+     (implies
+      (and (<= addr-1 addr-2)
+           (< addr-2 (+ n-1 addr-1))
+           (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
+           (posp n-1)
+           (canonical-address-p addr-2))
+      (not (mv-nth 0 (las-to-pas 1   addr-2 r-w-x x86))))
+     :hints
+     (("Goal" :in-theory (e/d* (las-to-pas
+                                subset-p
+                                canonical-address-p
+                                signed-byte-p)
+                               ())))))
+
+  (local
+   (defthmd mv-nth-1-las-to-pas-subset-p-for-1-byte
+     (implies
+      (and (<= addr-1 addr-2)
+           (< addr-2 (+ n-1 addr-1))
+           (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
+           (posp n-1))
+      (subset-p (mv-nth 1 (las-to-pas 1   addr-2 r-w-x x86))
+                (mv-nth 1 (las-to-pas n-1 addr-1 r-w-x x86))))
+     :hints
+     (("Goal"
+       :in-theory (e/d* (las-to-pas subset-p)
+                        (mv-nth-1-las-to-pas-subset-p))))))
+
+  (defthm one-read-with-rb-alt-from-program-at-alt-in-marking-mode
+    ;; Even though we have
+    ;; many-reads-with-rb-alt-from-program-at-alt-in-marking-mode, I like having
+    ;; this lemma around because it has a weaker hyp of
+    ;; (< lin-addr (+ (len bytes) prog-addr))
+    ;; instead of
+    ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr)).
+    (implies (and
+              (bind-free
+               (find-program-at-alt-info 'prog-addr 'bytes mfc state)
+               (prog-addr bytes))
+              (program-at-alt prog-addr bytes (double-rewrite x86))
+              ;; <1,lin-addr> is a subset of <(len bytes),prog-addr>.
+              (<= prog-addr lin-addr)
+              (< lin-addr (+ (len bytes) prog-addr))
+              (integerp lin-addr) (byte-listp bytes) (x86p x86))
+             (equal (mv-nth 1 (rb-alt 1 lin-addr :x x86))
+                    (nth (- lin-addr prog-addr) bytes)))
     :hints (("Goal"
              :do-not-induct t
-             :in-theory (e/d (las-to-pas
-                              subset-p
-                              disjoint-p
-                              disjoint-p$
-                              disjoint-p-commutative)
-                             (rb-in-terms-of-rb-subset-p-in-system-level-mode
+             :in-theory (e/d (disjoint-p$)
+                             (acl2::mv-nth-cons-meta
+                              many-reads-with-rb-from-program-at-in-marking-mode
+                              one-read-with-rb-from-program-at-in-marking-mode
+                              many-reads-with-rb-alt-from-program-at-alt-in-marking-mode
+                              rewrite-program-at-to-program-at-alt
                               rewrite-rb-to-rb-alt
-                              acl2::mv-nth-cons-meta
-                              disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p))
-             :use ((:instance rb-in-terms-of-rb-subset-p-in-system-level-mode)
-                   (:instance rewrite-rb-to-rb-alt
-                              (r-x :x))
-                   (:instance rewrite-rb-to-rb-alt
-                              (l-addrs (cdr l-addrs))
-                              (r-x :x))))))
+                              mv-nth-1-las-to-pas-subset-p
+                              combine-n-bytes
+                              program-at-nil-when-translation-error))
+             :use ((:instance program-at-nil-when-translation-error)
+                   (:instance rewrite-rb-to-rb-alt (n 1) (addr lin-addr) (r-x :x))
+                   (:instance program-at-alt-implies-program-addresses-properties)
+                   (:instance establishing-some-more-canonical-address-properties
+                              (prog-len (len bytes)))
+                   (:instance one-read-with-rb-from-program-at-in-marking-mode)
+                   (:instance mv-nth-1-las-to-pas-subset-p-for-1-byte
+                              (addr-2 lin-addr)
+                              (n-1 (len bytes)) (addr-1 prog-addr)
+                              (r-w-x :x))
+                   (:instance mv-nth-0-las-to-pas-subset-p-for-1-byte
+                              (addr-2 lin-addr)
+                              (n-1 (len bytes)) (addr-1 prog-addr)
+                              (r-w-x :x))))))
 
   (defthmd rb-alt-wb-equal-in-system-level-mode
     (implies (and (equal
                    ;; The physical addresses pertaining to the read
                    ;; operation are equal to those pertaining to the
                    ;; write operation.
-                   (mv-nth 1 (las-to-pas l-addrs r-x (cpl x86) (double-rewrite x86)))
-                   (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
+                   (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86)))
+                   (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86))))
                   ;; The following should be directly present as a
                   ;; hypothesis of the effects theorem for programs.
                   ;; That's why it's in terms of disjoint-p$ instead
@@ -1911,30 +1994,32 @@
                    ;; The physical addresses pertaining to the write are
                    ;; disjoint from the xlation-governing-entries-paddrs
                    ;; pertaining to the read.
-                   (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+                   (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
                    (open-qword-paddr-list (gather-all-paging-structure-qword-addresses
                                            (double-rewrite x86))))
                   (no-duplicates-p
-                   (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-                  (not (mv-nth 0 (las-to-pas l-addrs r-x (cpl x86) (double-rewrite x86))))
-                  (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86))))
-                  (canonical-address-listp l-addrs)
-                  (addr-byte-alistp addr-lst)
-                  (page-structure-marking-mode x86)
-                  (not (programmer-level-mode x86))
+                   (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86))))
+                  (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+                  (not (mv-nth 0 (las-to-pas n-w write-addr :w (double-rewrite x86))))
+                  (canonical-address-p (+ -1 n lin-addr))
+                  (canonical-address-p lin-addr)
+                  (unsigned-byte-p (ash n-w 3) value)
+                  (natp n-w)
                   (x86p x86))
-             (equal (mv-nth 1 (rb-alt l-addrs r-x (mv-nth 1 (wb addr-lst w x86))))
-                    (strip-cdrs addr-lst)))
-    :hints (("Goal" :do-not-induct t
+             (equal (mv-nth 1 (rb n lin-addr r-w-x
+                                  (mv-nth 1 (wb n-w write-addr w value x86))))
+                    value))
+    :hints (("Goal"
+             :do-not-induct t
              :in-theory (e/d* (las-to-pas
-                               disjoint-p$
-                               disjoint-p-commutative)
+                               disjoint-p$)
                               (rewrite-rb-to-rb-alt
                                disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                                mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
                                force (force)))
              :use ((:instance rewrite-rb-to-rb-alt
-                              (x86 (mv-nth 1 (wb addr-lst w x86))))
+                              (addr lin-addr) (r-x r-w-x)
+                              (x86 (mv-nth 1 (wb n-w write-addr w value x86))))
                    (:instance rb-wb-equal-in-system-level-mode)))))
 
   (defthm rb-alt-wb-disjoint-in-system-level-mode
@@ -1943,8 +2028,8 @@
                ;; The physical addresses pertaining to the write
                ;; operation are disjoint from those pertaining to the
                ;; read operation.
-               (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
-               (mv-nth 1 (las-to-pas l-addrs r-x (cpl x86) (double-rewrite x86))))
+               (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
+               (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
               ;; We use disjoint-p for reads and disjoint-p$ for
               ;; writes, because l-addrs can be a subset of program
               ;; addresses and hence, unlike (strip-cars addr-lst),
@@ -1955,118 +2040,109 @@
                ;; The physical addresses pertaining to the read are
                ;; disjoint from the physical addresses of the paging
                ;; structures.
-               (mv-nth 1 (las-to-pas l-addrs r-x (cpl x86) (double-rewrite x86)))
+               (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86)))
                (open-qword-paddr-list (gather-all-paging-structure-qword-addresses
                                        (double-rewrite x86))))
               (disjoint-p$
                ;; The physical addresses pertaining to the write are
                ;; disjoint from the physical addresses of the paging
                ;; structures.
-               (mv-nth 1 (las-to-pas (strip-cars addr-lst) :w (cpl x86) (double-rewrite x86)))
+               (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
                (open-qword-paddr-list
                 (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-              (not (mv-nth 0 (las-to-pas l-addrs r-x (cpl x86) (double-rewrite x86))))
-              (canonical-address-listp l-addrs)
-              (addr-byte-alistp addr-lst)
+              (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+              (canonical-address-p (+ -1 n lin-addr))
+              (canonical-address-p lin-addr)
+              (canonical-address-p (+ -1 n-w write-addr))
+              (canonical-address-p write-addr)
               (page-structure-marking-mode x86)
-              (not (programmer-level-mode x86))
-              (x86p x86))
+              (not (programmer-level-mode x86)))
              (and
-              (equal (mv-nth 0 (rb-alt l-addrs r-x (mv-nth 1 (wb addr-lst w x86))))
-                     (mv-nth 0 (rb-alt l-addrs r-x (double-rewrite x86))))
-              (equal (mv-nth 1 (rb-alt l-addrs r-x (mv-nth 1 (wb addr-lst w x86))))
-                     (mv-nth 1 (rb-alt l-addrs r-x (double-rewrite x86))))))
+              (equal (mv-nth 0 (rb-alt n lin-addr r-w-x
+                                       (mv-nth 1 (wb n-w write-addr w value x86))))
+                     (mv-nth 0 (rb-alt n lin-addr r-w-x (double-rewrite x86))))
+              (equal (mv-nth 1 (rb-alt n lin-addr r-w-x
+                                       (mv-nth 1 (wb n-w write-addr w value x86))))
+                     (mv-nth 1 (rb-alt n lin-addr r-w-x (double-rewrite x86))))))
     :hints (("Goal" :do-not-induct t
              :use ((:instance rewrite-rb-to-rb-alt
-                              (x86 (mv-nth 1 (wb addr-lst w x86))))
-                   (:instance rewrite-rb-to-rb-alt)
+                              (addr lin-addr) (r-x r-w-x)
+                              (x86 (mv-nth 1 (wb n-w write-addr w value x86))))
+                   (:instance rewrite-rb-to-rb-alt
+                              (addr lin-addr) (r-x r-w-x))
                    (:instance rb-wb-disjoint-in-system-level-mode))
-             :in-theory (e/d* (disjoint-p-commutative
-                               disjoint-p$)
+             :in-theory (e/d* (disjoint-p$)
                               (rewrite-rb-to-rb-alt
                                rb-wb-disjoint-in-system-level-mode
                                disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                                mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)))))
 
-  (defthm disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures
-    ;; Note that r-x = :x here -- this rule applies during
-    ;; instruction fetches.
-    (implies (and
-              (bind-free
-               (find-l-addrs-from-program-at-or-program-at-alt-term
-                'infer-disjointness 'l-addrs mfc state)
-               (l-addrs))
-              ;; The equality of
-              ;; gather-all-paging-structure-qword-addresses and
-              ;; las-to-pas with x86-1 and x86-2 are better than the
-              ;; xlate-equiv-memory hyp because x86-2 may contain wb
-              ;; terms, which don't preserve xlate-equiv-memory relation
-              ;; on the x86 states.
-              ;; (xlate-equiv-memory (double-rewrite x86-1) (double-rewrite x86-2))
-              (equal
-               (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))
-               (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))
-              (equal (mv-nth 1 (las-to-pas l-addrs :x cpl (double-rewrite x86-1)))
-                     (mv-nth 1 (las-to-pas l-addrs :x cpl (double-rewrite x86-2))))
-              (equal (page-size value) 1)
-              (direct-map-p 8 lin-addr :w (cpl x86-2) (double-rewrite x86-2))
-              (disjoint-p$
-               (mv-nth 1 (las-to-pas l-addrs :x cpl (double-rewrite x86-1)))
-               (open-qword-paddr-list
-                (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
-              (subset-p l-addrs-subset l-addrs)
-              (not (mv-nth 0 (las-to-pas l-addrs :x cpl (double-rewrite x86-1))))
-              (physical-address-p lin-addr)
-              (equal (loghead 3 lin-addr) 0)
-              (canonical-address-p lin-addr)
-              (unsigned-byte-p 64 value)
-              (not (programmer-level-mode x86-2)))
-             (disjoint-p
-              (mv-nth 1 (las-to-pas l-addrs-subset :x cpl x86-1))
-              (open-qword-paddr-list
-               (gather-all-paging-structure-qword-addresses
-                (mv-nth 1 (wb (create-addr-bytes-alist
-                               (create-canonical-address-list 8 lin-addr)
-                               (byte-ify 8 value))
-                              :w x86-2))))))
+  (defthmd disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures-general
+    (implies ;; No bind-free here.
+     (and
+      ;; The equality of
+      ;; gather-all-paging-structure-qword-addresses and
+      ;; las-to-pas with x86-1 and x86-2 are better than the
+      ;; xlate-equiv-memory hyp because x86-2 may contain wb
+      ;; terms, which don't preserve xlate-equiv-memory relation
+      ;; on the x86 states.
+      ;; (xlate-equiv-memory (double-rewrite x86-1) (double-rewrite x86-2))
+      (equal
+       (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))
+       (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))
+      (equal (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x (double-rewrite x86-1)))
+             (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x (double-rewrite x86-2))))
+      (equal (page-size value) 1)
+      (direct-map-p 8 entry-addr :w (double-rewrite x86-2))
+      (disjoint-p$
+       (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x (double-rewrite x86-1)))
+       (open-qword-paddr-list
+        (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+      ;; <n-2,lin-addr-2> is a subset of <n-1,lin-addr-1>.
+      (<= lin-addr-1 lin-addr-2)
+      (< (+ n-2 lin-addr-2) (+ n-1 lin-addr-1))
+      (not (mv-nth 0 (las-to-pas n-1 lin-addr-1 r-w-x (double-rewrite x86-1))))
+      (physical-address-p entry-addr)
+      (equal (loghead 3 entry-addr) 0)
+      (unsigned-byte-p 64 value)
+      (not (programmer-level-mode x86-2))
+      (posp n-1) (posp n-2) (integerp lin-addr-2))
+     (disjoint-p
+      (mv-nth 1 (las-to-pas n-2 lin-addr-2 r-w-x x86-1))
+      (open-qword-paddr-list
+       (gather-all-paging-structure-qword-addresses
+        (mv-nth 1 (wb 8 entry-addr w value x86-2))))))
     :hints (("Goal"
              :do-not-induct t
              :use ((:instance disjointness-of-las-to-pas-from-write-to-physical-memory-subset-of-paging-structures
-                              (p-addrs (addr-range 8 lin-addr))
-                              (r-x :x)
-                              (index lin-addr)
-                              (bytes (byte-ify 8 value))
-                              (x86 (mv-nth 2
-                                           (las-to-pas (create-canonical-address-list 8 lin-addr)
-                                                       :w (cpl x86-2) x86-2))))
+                              (n n-1) (lin-addr lin-addr-1)
+                              (p-addrs (addr-range 8 entry-addr))
+                              (r-x r-w-x)
+                              (index entry-addr)
+                              (value value)
+                              (x86 (mv-nth 2 (las-to-pas 8 entry-addr :w x86-2))))
                    (:instance disjoint-p-subset-p
-                              (x (mv-nth 1 (las-to-pas l-addrs :x cpl x86-1)))
+                              (x (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x x86-1)))
                               (y (open-qword-paddr-list
                                   (gather-all-paging-structure-qword-addresses x86-1)))
-                              (a (mv-nth 1 (las-to-pas l-addrs-subset :x cpl x86-1)))
+                              (a (mv-nth 1 (las-to-pas n-2 lin-addr-2 r-w-x x86-1)))
                               (b (open-qword-paddr-list
                                   (gather-all-paging-structure-qword-addresses x86-1))))
                    (:instance disjoint-p-subset-p
-                              (x (mv-nth 1 (las-to-pas l-addrs :x cpl x86-1)))
+                              (x (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x x86-1)))
                               (y (open-qword-paddr-list
                                   (gather-all-paging-structure-qword-addresses
                                    (write-to-physical-memory
-                                    (addr-range 8 lin-addr)
-                                    (byte-ify 8 value)
-                                    (mv-nth 2
-                                            (las-to-pas (create-canonical-address-list 8 lin-addr)
-                                                        :w (cpl x86-2)
-                                                        x86-2))))))
-                              (a (mv-nth 1 (las-to-pas l-addrs-subset :x cpl x86-1)))
+                                    (addr-range 8 entry-addr)
+                                    value
+                                    (mv-nth 2 (las-to-pas 8 entry-addr :w x86-2))))))
+                              (a (mv-nth 1 (las-to-pas n-2 lin-addr-2 r-w-x x86-1)))
                               (b (open-qword-paddr-list
                                   (gather-all-paging-structure-qword-addresses
                                    (write-to-physical-memory
-                                    (addr-range 8 lin-addr)
-                                    (byte-ify 8 value)
-                                    (mv-nth 2
-                                            (las-to-pas (create-canonical-address-list 8 lin-addr)
-                                                        :w (cpl x86-2)
-                                                        x86-2))))))))
+                                    (addr-range 8 entry-addr)
+                                    value
+                                    (mv-nth 2 (las-to-pas 8 entry-addr :w x86-2))))))))
              :in-theory (e/d* (disjoint-p$
                                subset-p
                                subset-p-reflexive
@@ -2074,8 +2150,25 @@
                                direct-map-p)
                               (disjointness-of-las-to-pas-from-write-to-physical-memory-subset-of-paging-structures)))))
 
-  (defthmd disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures-general
+  (defun find-program-at-alt-len-bytes-info (addr-var bytes-var mfc state)
+    (declare (xargs :stobjs (state) :mode :program)
+             (ignorable state))
+    (b* ((call (acl2::find-call-lst 'program-at-alt (acl2::mfc-clause mfc)))
+         (call (or call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc))))
+         ((when (not call))
+          ;; program-at-alt or program-at terms not encountered.
+          nil))
+      `((,addr-var . ,(nth 1 call))
+        (,bytes-var . (len ,(nth 2 call))))))
+
+  (defthm disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures
+    ;; Note that r-x = :x here -- this rule applies during
+    ;; instruction fetches.
     (implies (and
+              (bind-free
+               (find-program-at-alt-len-bytes-info 'lin-addr-1 'n-1 mfc state)
+               (lin-addr-1 n-1))
+
               ;; The equality of
               ;; gather-all-paging-structure-qword-addresses and
               ;; las-to-pas with x86-1 and x86-2 are better than the
@@ -2086,68 +2179,95 @@
               (equal
                (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))
                (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))
-              (equal (mv-nth 1 (las-to-pas l-addrs r-x cpl (double-rewrite x86-1)))
-                     (mv-nth 1 (las-to-pas l-addrs r-x cpl (double-rewrite x86-2))))
+              (equal (mv-nth 1 (las-to-pas n-1 lin-addr-1 :x (double-rewrite x86-1)))
+                     (mv-nth 1 (las-to-pas n-1 lin-addr-1 :x (double-rewrite x86-2))))
               (equal (page-size value) 1)
-              (direct-map-p 8 lin-addr :w (cpl x86-2) (double-rewrite x86-2))
+              (direct-map-p 8 entry-addr :w (double-rewrite x86-2))
               (disjoint-p$
-               (mv-nth 1 (las-to-pas l-addrs r-x cpl (double-rewrite x86-1)))
+               (mv-nth 1 (las-to-pas n-1 lin-addr-1 :x (double-rewrite x86-1)))
                (open-qword-paddr-list
                 (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
-              (subset-p l-addrs-subset l-addrs)
-              (not (mv-nth 0 (las-to-pas l-addrs r-x cpl (double-rewrite x86-1))))
-              (physical-address-p lin-addr)
-              (equal (loghead 3 lin-addr) 0)
-              (canonical-address-p lin-addr)
+              ;; <n-2,lin-addr-2> is a subset of <n-1,lin-addr-1>.
+              (<= lin-addr-1 lin-addr-2)
+              (< (+ n-2 lin-addr-2) (+ n-1 lin-addr-1))
+              (not (mv-nth 0 (las-to-pas n-1 lin-addr-1 :x (double-rewrite x86-1))))
+              (physical-address-p entry-addr)
+              (equal (loghead 3 entry-addr) 0)
               (unsigned-byte-p 64 value)
-              (not (programmer-level-mode x86-2)))
+              (not (programmer-level-mode x86-2))
+              (posp n-1) (posp n-2) (integerp lin-addr-2))
              (disjoint-p
-              (mv-nth 1 (las-to-pas l-addrs-subset r-x cpl x86-1))
+              (mv-nth 1 (las-to-pas n-2 lin-addr-2 :x x86-1))
               (open-qword-paddr-list
                (gather-all-paging-structure-qword-addresses
-                (mv-nth 1 (wb (create-addr-bytes-alist
-                               (create-canonical-address-list 8 lin-addr)
-                               (byte-ify 8 value))
-                              :w
-                              x86-2))))))
+                (mv-nth 1 (wb 8 entry-addr w value x86-2))))))
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures-general
+                              (r-w-x :x))))))
+
+  (defthmd disjointness-of-las-to-pas-from-wb-to-a-paging-entry
+    (implies ;; No bind-free here, and no linear address subsets.
+     (and
+      ;; the equality of
+      ;; gather-all-paging-structure-qword-addresses and
+      ;; las-to-pas with x86-1 and x86-2 are better than the
+      ;; xlate-equiv-memory hyp because x86-2 may contain wb
+      ;; terms, which don't preserve xlate-equiv-memory relation
+      ;; on the x86 states.
+      ;; (xlate-equiv-memory (double-rewrite x86-1) (double-rewrite x86-2))
+
+      (equal
+       (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))
+       (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))
+      (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))
+             (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-2))))
+      (equal (page-size value) 1)
+      (direct-map-p 8 entry-addr :w (double-rewrite x86-2))
+      (disjoint-p$
+       (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))
+       (open-qword-paddr-list
+        (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+      (physical-address-p entry-addr)
+      (equal (loghead 3 entry-addr) 0)
+      (unsigned-byte-p 64 value)
+      (not (programmer-level-mode x86-2)))
+     (disjoint-p
+      (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1))
+      (open-qword-paddr-list
+       (gather-all-paging-structure-qword-addresses
+        (mv-nth 1 (wb 8 entry-addr w value x86-2))))))
     :hints (("Goal"
              :do-not-induct t
              :use ((:instance disjointness-of-las-to-pas-from-write-to-physical-memory-subset-of-paging-structures
-                              (p-addrs (addr-range 8 lin-addr))
-                              (r-x r-x)
-                              (index lin-addr)
-                              (bytes (byte-ify 8 value))
-                              (x86 (mv-nth 2
-                                           (las-to-pas (create-canonical-address-list 8 lin-addr)
-                                                       :w (cpl x86-2) x86-2))))
+                              (n n) (lin-addr lin-addr)
+                              (p-addrs (addr-range 8 entry-addr))
+                              (r-x r-w-x)
+                              (index entry-addr)
+                              (value value)
+                              (x86 (mv-nth 2 (las-to-pas 8 entry-addr :w x86-2))))
                    (:instance disjoint-p-subset-p
-                              (x (mv-nth 1 (las-to-pas l-addrs r-x cpl x86-1)))
+                              (x (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)))
                               (y (open-qword-paddr-list
                                   (gather-all-paging-structure-qword-addresses x86-1)))
-                              (a (mv-nth 1 (las-to-pas l-addrs-subset r-x cpl x86-1)))
+                              (a (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)))
                               (b (open-qword-paddr-list
                                   (gather-all-paging-structure-qword-addresses x86-1))))
                    (:instance disjoint-p-subset-p
-                              (x (mv-nth 1 (las-to-pas l-addrs r-x cpl x86-1)))
+                              (x (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)))
                               (y (open-qword-paddr-list
                                   (gather-all-paging-structure-qword-addresses
                                    (write-to-physical-memory
-                                    (addr-range 8 lin-addr)
-                                    (byte-ify 8 value)
-                                    (mv-nth 2
-                                            (las-to-pas (create-canonical-address-list 8 lin-addr)
-                                                        :w (cpl x86-2)
-                                                        x86-2))))))
-                              (a (mv-nth 1 (las-to-pas l-addrs-subset r-x cpl x86-1)))
+                                    (addr-range 8 entry-addr)
+                                    value
+                                    (mv-nth 2 (las-to-pas 8 entry-addr :w x86-2))))))
+                              (a (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)))
                               (b (open-qword-paddr-list
                                   (gather-all-paging-structure-qword-addresses
                                    (write-to-physical-memory
-                                    (addr-range 8 lin-addr)
-                                    (byte-ify 8 value)
-                                    (mv-nth 2
-                                            (las-to-pas (create-canonical-address-list 8 lin-addr)
-                                                        :w (cpl x86-2)
-                                                        x86-2))))))))
+                                    (addr-range 8 entry-addr)
+                                    value
+                                    (mv-nth 2 (las-to-pas 8 entry-addr :w x86-2))))))))
              :in-theory (e/d* (disjoint-p$
                                subset-p
                                subset-p-reflexive
@@ -2156,51 +2276,36 @@
                               (disjointness-of-las-to-pas-from-write-to-physical-memory-subset-of-paging-structures)))))
 
   (defthm rb-alt-and-wb-to-paging-structures-disjoint
-    (implies (and
-              (equal (page-size value) 1)
-              (direct-map-p 8 lin-addr :w (cpl x86) (double-rewrite x86))
-              (disjoint-p
-               (mv-nth 1 (las-to-pas l-addrs r-x (cpl x86) (double-rewrite x86)))
-               (open-qword-paddr-list
-                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-              (disjoint-p
-               (mv-nth 1 (las-to-pas
-                          (create-canonical-address-list 8 lin-addr)
-                          :w (cpl x86) (double-rewrite x86)))
-               (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
-              (disjoint-p
-               (mv-nth 1 (las-to-pas (create-canonical-address-list 8 lin-addr)
-                                     :w (cpl x86) (double-rewrite x86)))
-               (mv-nth 1 (las-to-pas l-addrs r-x (cpl x86) (double-rewrite x86))))
-              (physical-address-p lin-addr)
-              (equal (loghead 3 lin-addr) 0)
-              (canonical-address-p lin-addr)
-              (unsigned-byte-p 64 value)
-              (x86p x86))
-             (and
-              (equal (mv-nth 0 (rb-alt l-addrs r-x
-                                       (mv-nth 1 (wb
-                                                  (create-addr-bytes-alist
-                                                   (create-canonical-address-list 8 lin-addr)
-                                                   (byte-ify 8 value)) x86))))
-                     (mv-nth 0 (rb-alt l-addrs r-x (double-rewrite x86))))
-              (equal (mv-nth 1 (rb-alt l-addrs r-x
-                                       (mv-nth 1 (wb
-                                                  (create-addr-bytes-alist
-                                                   (create-canonical-address-list 8 lin-addr)
-                                                   (byte-ify 8 value)) x86))))
-                     (mv-nth 1 (rb-alt l-addrs r-x (double-rewrite x86))))))
+    (implies
+     (and
+      (direct-map-p 8 entry-addr :w (double-rewrite x86))
+      (equal (page-size value) 1)    
+      (disjoint-p
+       (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86)))
+       (open-qword-paddr-list
+        (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+      (disjoint-p
+       (mv-nth 1 (las-to-pas 8 entry-addr :w (double-rewrite x86)))
+       (all-xlation-governing-entries-paddrs n lin-addr (double-rewrite x86)))
+      (disjoint-p
+       (mv-nth 1 (las-to-pas 8 entry-addr :w (double-rewrite x86)))
+       (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+      (physical-address-p entry-addr)
+      (equal (loghead 3 entry-addr) 0)
+      (unsigned-byte-p 64 value)
+      (canonical-address-p entry-addr))
+     (and
+      (equal (mv-nth 0 (rb-alt n lin-addr r-w-x
+                               (mv-nth 1 (wb 8 entry-addr w value x86))))
+             (mv-nth 0 (rb-alt n lin-addr r-w-x (double-rewrite x86))))
+      (equal (mv-nth 1 (rb-alt n lin-addr r-w-x
+                               (mv-nth 1 (wb 8 entry-addr w value x86))))
+             (mv-nth 1 (rb-alt n lin-addr r-w-x (double-rewrite x86))))))
     :hints (("Goal"
              :do-not-induct t
-             :use ((:instance disjointness-of-las-to-pas-from-wb-to-subset-of-paging-structures-general
-                              (l-addrs-subset l-addrs)
-                              (cpl (cpl x86))
-                              (x86-1 x86)
-                              (x86-2 x86)))
              :in-theory (e/d* (disjoint-p$
-                               subset-p
-                               subset-p-reflexive
-                               rb-alt)
+                               rb-alt
+                               disjointness-of-las-to-pas-from-wb-to-a-paging-entry)
                               (rewrite-rb-to-rb-alt))))))
 
 ;; ======================================================================
