@@ -788,7 +788,7 @@
    (defthmd mv-nth-1-las-to-pas-subset-p-helper-1
      (implies (and (<= n-2 n-1)
                    (not (mv-nth 0 (las-to-pas n-1 addr r-w-x x86)))
-                   (natp n-1))
+                   (integerp n-1))
               (subset-p (mv-nth 1 (las-to-pas n-2 addr r-w-x x86))
                         (mv-nth 1 (las-to-pas n-1 addr r-w-x x86))))
      :hints (("Goal" :in-theory (e/d* (subset-p las-to-pas) ())))))
@@ -798,8 +798,7 @@
      (implies
       (and (<= (+ addr-1 n-2) (+ addr-1 n-1))
            (not (mv-nth 0 (las-to-pas (+ -1 n-1) (+ 1 addr-1) r-w-x x86)))
-           (integerp n-1)
-           (< 0 n-2))
+           (integerp n-1))
       (subset-p (mv-nth 1 (las-to-pas n-2 addr-1 r-w-x x86))
                 (cons (mv-nth 1 (ia32e-la-to-pa addr-1 r-w-x x86))
                       (mv-nth 1
@@ -817,7 +816,7 @@
     (implies (and (<= addr-1 addr-2)
                   (<= (+ n-2 addr-2) (+ n-1 addr-1))
                   (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
-                  (posp n-1) (posp n-2) (integerp addr-2))
+                  (integerp n-1) (integerp addr-2))
              (subset-p (mv-nth 1 (las-to-pas n-2 addr-2 r-w-x x86))
                        (mv-nth 1 (las-to-pas n-1 addr-1 r-w-x x86))))
     :hints (("Goal" :in-theory (e/d* (las-to-pas
@@ -836,8 +835,7 @@
    ;;  mv-nth-0-las-to-pas-subset-p-with-l-addrs-from-bind-free.
    (implies (and (equal addr-1 addr-2)
                  (<= (+ n-2 addr-2) (+ n-1 addr-1))
-                 (<= addr-1 addr-2)
-                 (integerp addr-1) (integerp addr-2) (posp n-1) (posp n-2)
+                 (integerp n-1)
                  (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x (double-rewrite x86)))))
             (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
                    nil))
@@ -849,10 +847,10 @@
   (implies (and (bind-free
                  (find-l-addrs-from-las-to-pas '(n-1 addr-1) r-w-x mfc state)
                  (n-1 addr-1))
+                (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x (double-rewrite x86))))
                 (<= (+ n-2 addr-2) (+ n-1 addr-1))
                 (<= addr-1 addr-2)
-                (integerp addr-1) (integerp addr-2) (posp n-1) (posp n-2)
-                (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x (double-rewrite x86)))))
+                (integerp addr-2) (integerp n-1))
            (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
                   nil))
   :hints (("Goal"
@@ -1010,14 +1008,15 @@
                   (cons addr-var-2 (nth 2 term-2)))
             (find-l-addrs-from-disjoint-p$-of-two-las-to-pas-aux vars-1 vars-2 (cdr calls))))))
 
-(defun find-l-addrs-from-disjoint-p$-of-two-las-to-pas (vars-1 r-w-x-1 vars-2 r-w-x-2 mfc state)
+(defun find-l-addrs-from-disjoint-p$-of-two-las-to-pas
+    (vars-1 r-w-x-1 vars-2 r-w-x-2 mfc state)
   (declare (xargs :stobjs (state) :mode :program)
            (ignorable state))
   ;; Narrows the matches by looking at only those calls of las-to-pas
   ;; which have "r-w-x" in the permission field.
   (b* ((calls (acl2::find-matches-list
-               `(disjoint-p$ (mv-nth 1 (las-to-pas n addr ,r-w-x-1 x86))
-                             (mv-nth 1 (las-to-pas n addr ,r-w-x-2 x86)))
+               `(disjoint-p$ (mv-nth 1 (las-to-pas n-1 addr-1 ,r-w-x-1 x86-1))
+                             (mv-nth 1 (las-to-pas n-2 addr-2 ,r-w-x-2 x86-2)))
                (acl2::mfc-clause mfc) nil))
        ((when (not calls))
         ;; Term not encountered.
