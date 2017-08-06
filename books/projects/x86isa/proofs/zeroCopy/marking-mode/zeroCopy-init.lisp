@@ -185,6 +185,13 @@
 
 ;; ======================================================================
 
+(defthm disjoint-p$-implies-disjoint-p
+  (implies (disjoint-p$ x y)
+           (disjoint-p x y))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p$) ()))))
+
+;; ======================================================================
+
 ;; Lemmas to deal with some tedious arithmetic stuff:
 
 (defthm loghead-negative
@@ -266,16 +273,15 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat v-addr 64) (:nat base-addr 64))))
 
-(defthm canonical-address-p-page-dir-ptr-table-entry-addr-to-C-program-optimized-form
-  (implies (logbitp 7 (combine-bytes
-                       (mv-nth 1 (rb
-                                  8
-                                  (logior (logand 4088 (loghead 32 (logtail 27 v-addr)))
-                                          (ash (loghead 40 (logtail 12 val)) 12))
-                                  :r x86))))
-           (canonical-address-p
-            (logior (logand 4088 (loghead 32 (logtail 27 v-addr)))
-                    (ash (loghead 40 (logtail 12 val)) 12)))))
+;; (defthm canonical-address-p-page-dir-ptr-table-entry-addr-to-C-program-optimized-form
+;;   (implies (logbitp 7 (mv-nth 1 (rb
+;;                                  8
+;;                                  (logior (logand 4088 (loghead 32 (logtail 27 v-addr)))
+;;                                          (ash (loghead 40 (logtail 12 val)) 12))
+;;                                  :r x86)))
+;;            (canonical-address-p
+;;             (logior (logand 4088 (loghead 32 (logtail 27 v-addr)))
+;;                     (ash (loghead 40 (logtail 12 val)) 12)))))
 
 (def-gl-export remove-logext-from-page-dir-ptr-table-entry-addr-to-C-program-optimized-form
   :hyp (canonical-address-p v-addr)
@@ -730,13 +736,12 @@
      1
      (logext
       64
-      (combine-bytes
-       (mv-nth
-        1
-        (rb
-         8
-         (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))
-         :r x86)))))
+      (mv-nth
+       1
+       (rb
+        8
+        (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))
+        :r x86))))
     1)
    ;; The PML4TE physical addresses are disjoint from their own
    ;; translation-governing addresses.
@@ -753,6 +758,10 @@
 (defun-nx source-PDPTE-ok-p (x86)
   (and
    ;; PDPTE linear addresses are canonical.
+   (canonical-address-p
+    (page-dir-ptr-table-entry-addr
+     (xr :rgf *rdi* x86)
+     (pdpt-base-addr (xr :rgf *rdi* x86) x86)))
    (canonical-address-p
     (+ 7 (page-dir-ptr-table-entry-addr
           (xr :rgf *rdi* x86)
@@ -969,7 +978,7 @@
                    :r x86)))
    ;; No errors encountered while translating the PDPTE linear
    ;; addresses on behalf of a write.
-   (not (mv-nth 0 (las-to-pas   
+   (not (mv-nth 0 (las-to-pas
                    8
                    (page-dir-ptr-table-entry-addr
                     (xr :rgf *rsi* x86)

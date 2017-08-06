@@ -614,21 +614,10 @@
                                        signed-byte-p)
                                       ())))))
 
-  (defun find-program-at-alt-info (addr-var bytes-var mfc state)
-    (declare (xargs :stobjs (state) :mode :program)
-             (ignorable state))
-    (b* ((call (acl2::find-call-lst 'program-at-alt (acl2::mfc-clause mfc)))
-         (call (or call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc))))
-         ((when (not call))
-          ;; No program-at-alt or program-at terms encountered.
-          nil))
-      `((,addr-var . ,(nth 1 call))
-        (,bytes-var . ,(nth 2 call)))))
-
   (defthm many-reads-with-rb-alt-from-program-at-alt-in-marking-mode
     (implies (and
               (bind-free
-               (find-program-at-alt-info 'prog-addr 'bytes mfc state)
+               (find-program-at-info 'prog-addr 'bytes mfc state)
                (prog-addr bytes))
               (program-at-alt prog-addr bytes (double-rewrite x86))
               ;; <n,lin-addr> is a subset of <(len bytes),prog-addr>.
@@ -716,7 +705,7 @@
     ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr)).
     (implies (and
               (bind-free
-               (find-program-at-alt-info 'prog-addr 'bytes mfc state)
+               (find-program-at-info 'prog-addr 'bytes mfc state)
                (prog-addr bytes))
               (program-at-alt prog-addr bytes (double-rewrite x86))
               ;; <1,lin-addr> is a subset of <(len bytes),prog-addr>.
@@ -778,10 +767,16 @@
                   (canonical-address-p lin-addr)
                   (unsigned-byte-p (ash n-w 3) value)
                   (natp n-w)
+                  (not (programmer-level-mode x86))
+                  (page-structure-marking-mode x86)
                   (x86p x86))
-             (equal (mv-nth 1 (rb n lin-addr r-w-x
-                                  (mv-nth 1 (wb n-w write-addr w value x86))))
-                    value))
+             (and
+              (equal (mv-nth 0 (rb-alt n lin-addr r-w-x
+                                       (mv-nth 1 (wb n-w write-addr w value x86))))
+                     nil)
+              (equal (mv-nth 1 (rb-alt n lin-addr r-w-x
+                                       (mv-nth 1 (wb n-w write-addr w value x86))))
+                     value)))
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d* (las-to-pas
@@ -852,7 +847,7 @@
 
   (defthm no-errors-when-translating-program-bytes-in-marking-mode-using-program-at-alt
     (implies
-     (and (bind-free (find-program-at-alt-info 'prog-addr 'bytes mfc state)
+     (and (bind-free (find-program-at-info 'prog-addr 'bytes mfc state)
                      (prog-addr bytes))
           (program-at-alt prog-addr bytes x86)
           (<= prog-addr addr)
@@ -877,7 +872,7 @@
   (defthm disjointness-of-program-bytes-from-paging-structures
     (implies (and
               (bind-free
-               (find-program-at-alt-info 'prog-addr 'bytes mfc state)
+               (find-program-at-info 'prog-addr 'bytes mfc state)
                (prog-addr bytes))
               (program-at-alt prog-addr bytes (double-rewrite x86))
               ;; <n,lin-addr> is a non-strict subset of <(len bytes),prog-addr>.
@@ -1089,7 +1084,7 @@
              (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-2))))
       (equal (page-size value) 1)
       (direct-map-p 8 entry-addr :w (double-rewrite x86-2))
-      (disjoint-p$
+      (disjoint-p
        (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))
        (open-qword-paddr-list
         (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
@@ -1889,7 +1884,8 @@
                xlate-equiv-memory-and-xr-mem-from-rest-of-memory
                mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
                mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-               infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
+               infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
+               infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2
                r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
                mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
                xlate-equiv-memory-with-mv-nth-2-las-to-pas
@@ -2274,7 +2270,8 @@
                                  disjoint-p$
                                  wb
                                  disjoint-p-commutative
-                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
+                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
+                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2
                                  xlate-equiv-memory-with-mv-nth-2-las-to-pas)
                                 (rewrite-get-prefixes-to-get-prefixes-alt
                                  xlate-equiv-memory-and-two-get-prefixes-values
@@ -2392,7 +2389,6 @@
                                  acl2::fold-consts-in-+
                                  disjoint-p$
                                  wb
-                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
                                  xlate-equiv-memory-with-mv-nth-2-las-to-pas)
                                 (las-to-pas
                                  rewrite-get-prefixes-to-get-prefixes-alt
@@ -2403,7 +2399,8 @@
                                  xlate-equiv-memory-and-xr-mem-from-rest-of-memory
                                  mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
                                  write-to-physical-memory-and-mv-nth-2-las-to-pas-commute
-                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses)))))))
+                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
+                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2)))))))
 
 ;; ======================================================================
 

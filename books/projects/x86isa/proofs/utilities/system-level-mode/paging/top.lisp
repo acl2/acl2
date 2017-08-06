@@ -948,17 +948,41 @@
                                     all-xlation-governing-entries-paddrs)
                                    ()))))
 
-(defthm infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
+;; (defthm infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
+;;   (implies (and
+;;             (or
+;;              (disjoint-p
+;;               x
+;;               (open-qword-paddr-list
+;;                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+;;              (disjoint-p$
+;;               x
+;;               (open-qword-paddr-list
+;;                (gather-all-paging-structure-qword-addresses (double-rewrite x86)))))
+;;             (canonical-address-p addr)
+;;             (canonical-address-p (+ -1 n addr)))
+;;            (disjoint-p
+;;             x
+;;             (all-xlation-governing-entries-paddrs n addr x86)))
+;;   :hints (("Goal"
+;;            :do-not-induct t
+;;            :use ((:instance all-xlation-governing-entries-paddrs-subset-of-paging-structures)
+;;                  (:instance disjoint-p-subset-p
+;;                             (x x)
+;;                             (y (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
+;;                             (a x)
+;;                             (b (all-xlation-governing-entries-paddrs n addr x86))))
+;;            :in-theory (e/d* (disjoint-p-commutative disjoint-p$)
+;;                             (all-xlation-governing-entries-paddrs-subset-of-paging-structures
+;;                              disjoint-p-subset-p))))
+;;   :rule-classes :rewrite)
+
+(defthm infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
   (implies (and
-            (or
-             (disjoint-p
-              x
-              (open-qword-paddr-list
-               (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-             (disjoint-p$
-              x
-              (open-qword-paddr-list
-               (gather-all-paging-structure-qword-addresses (double-rewrite x86)))))
+            (disjoint-p
+             x
+             (open-qword-paddr-list
+              (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
             (canonical-address-p addr)
             (canonical-address-p (+ -1 n addr)))
            (disjoint-p
@@ -973,6 +997,24 @@
                             (a x)
                             (b (all-xlation-governing-entries-paddrs n addr x86))))
            :in-theory (e/d* (disjoint-p-commutative disjoint-p$)
+                            (all-xlation-governing-entries-paddrs-subset-of-paging-structures
+                             disjoint-p-subset-p))))
+  :rule-classes :rewrite)
+
+(defthm infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2
+  (implies (and
+            (disjoint-p$
+             x
+             (open-qword-paddr-list
+              (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+            (canonical-address-p addr)
+            (canonical-address-p (+ -1 n addr)))
+           (disjoint-p
+            x
+            (all-xlation-governing-entries-paddrs n addr x86)))
+  :hints (("Goal"
+           :do-not-induct t           
+           :in-theory (e/d* (disjoint-p$)
                             (all-xlation-governing-entries-paddrs-subset-of-paging-structures
                              disjoint-p-subset-p))))
   :rule-classes :rewrite)
@@ -1027,7 +1069,7 @@
   (implies
    (and
     (bind-free (find-l-addrs-from-disjoint-p$-of-two-las-to-pas
-                '(n-1 lin-addr-1) '(n-2 lin-addr-2) r-w-x-1 r-w-x-2 mfc state)
+                '(n-1 lin-addr-1) r-w-x-1 '(n-2 lin-addr-2) r-w-x-2 mfc state)
                (n-1 lin-addr-1 n-2 lin-addr-2))
     (disjoint-p$
      (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1  (double-rewrite x86)))
@@ -1101,7 +1143,7 @@
   :hints (("Goal" :in-theory (e/d* (disjoint-p$
                                     disjoint-p
                                     subset-p
-                                    infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses)
+                                    infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2)
                                    ())))
   :rule-classes :rewrite)
 

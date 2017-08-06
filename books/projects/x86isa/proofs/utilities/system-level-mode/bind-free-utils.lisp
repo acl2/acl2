@@ -31,9 +31,10 @@
 (defun find-program-at-info (addr-var bytes-var mfc state)
   (declare (xargs :stobjs (state) :mode :program)
            (ignorable state))
-  (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
+  (b* ((call (acl2::find-call-lst 'program-at-alt (acl2::mfc-clause mfc)))
+       (call (or call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc))))
        ((when (not call))
-        ;; program-at term not encountered.
+        ;; No program-at-alt or program-at terms encountered.
         nil))
     `((,addr-var . ,(nth 1 call))
       (,bytes-var . ,(nth 2 call)))))

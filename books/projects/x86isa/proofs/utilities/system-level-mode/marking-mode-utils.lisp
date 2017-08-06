@@ -1879,7 +1879,9 @@
                      ((:definition member-equal)
                       (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
                       (:rewrite
-                       infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses)
+                       infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1)
+                      (:rewrite
+                       infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2)
                       (:linear mv-nth-1-idiv-spec)
                       (:linear mv-nth-1-div-spec)
                       (:definition len)
