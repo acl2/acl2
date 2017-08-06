@@ -89,6 +89,7 @@
                         pseudo-tests-and-call-listp
                         recursive-calls
                         recursivep
+                        remove-keyword
                         remove-lambdas
                         resolve-numbered-name-wildcard
                         run-when

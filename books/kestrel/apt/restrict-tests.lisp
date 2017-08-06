@@ -548,3 +548,115 @@
   (assert! (function-namep 'nfix{1} (w state))))
 
  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test handling of redundancy.")
+
+ ;; initial call without :VERBOSE and without :SHOW-ONLY:
+ (must-succeed*
+  (restrict nfix (natp x))
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE T and without :SHOW-ONLY:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose t)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE NIL and without :SHOW-ONLY:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose nil)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call without :VERBOSE and with :SHOW-ONLY T:
+ (must-succeed*
+  (restrict nfix (natp x) :show-only t)
+  (must-fail-local (must-be-redundant (restrict nfix (natp x)))))
+
+ ;; initial call without :VERBOSE and with :SHOW-ONLY NIL:
+ (must-succeed*
+  (restrict nfix (natp x) :show-only nil)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE T and with :SHOW-ONLY T:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose t :show-only t)
+  (must-fail-local (must-be-redundant (restrict nfix (natp x)))))
+
+ ;; initial call with :VERBOSE T and with :SHOW-ONLY NIL:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose t :show-only nil)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE NIL and with :SHOW-ONLY T:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose nil :show-only t)
+  (must-fail-local (must-be-redundant (restrict nfix (natp x)))))
+
+ ;; initial call with :VERBOSE NIL and with :SHOW-ONLY NIL:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose nil :show-only nil)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; non-redundant calls:
+ (must-succeed*
+  (restrict nfix (natp x))
+  ;; different target:
+  (must-fail-local (must-be-redundant (restrict len (true-listp x))))
+  ;; different restriction:
+  (must-fail-local (must-be-redundant (restrict nfix (integerp x))))
+  ;; different options:
+  (must-fail-local
+   (must-be-redundant (restrict nfix (natp x) :verify-guards nil)))
+  (must-fail-local
+   (must-be-redundant (restrict nfix (natp x) :new-name nfix-new)))))
