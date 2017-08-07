@@ -169,7 +169,8 @@
      If the generated function is guard-verified
      (which is determined by the @(':verify-guards') input; see below),
      then the term must only call guard-verified functions,
-     except possibly in the @(':logic') subterms of @(tsee mbe)s.
+     except possibly in the @(':logic') subterms of @(tsee mbe)s
+     and via @(tsee ec-call).
      The term must not include any calls to @('old').
      </p>
 
@@ -209,7 +210,8 @@
      Even if the generated function is guard-verified
      (which is determined by the @(':verify-guards') input; see below),
      the term may call non-guard-verified functions
-     outside of the @(':logic') subterms of @(tsee mbe)s.
+     outside of the @(':logic') subterms of @(tsee mbe)s
+     and not via @(tsee ec-call).
      Since the term is governed by the negation of the guard
      (see the generated new function, below),
      the verification of its guards always succeeds trivially.

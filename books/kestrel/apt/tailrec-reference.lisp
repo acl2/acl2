@@ -268,7 +268,8 @@
        (which is determined by the @(':verify-guards') input; see below),
        then the body of the lambda expression
        must only call guard-verified functions,
-       except possibly in the @(':logic') subterms of @(tsee mbe)s.
+       except possibly in the @(':logic') subterms of @(tsee mbe)s
+       and via @(tsee ec-call).
        </li>
 
      </ul>
