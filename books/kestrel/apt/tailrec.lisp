@@ -360,7 +360,16 @@
                           and the target function ~x0 is guard-verified, ~@1"
                          old-fn-name (msg-downcase-first description))
                     t nil)
-                 (value nil))))
+                 (value nil)))
+       ((er &) (if (symbolp fn/lambda)
+                   (ensure-symbol-different$ fn/lambda
+                                             old-fn-name
+                                             (msg "the target function ~x0"
+                                                  old-fn-name)
+                                             description t nil)
+                 (ensure-term-does-not-call$ (lambda-body fn/lambda)
+                                             old-fn-name
+                                             description t nil))))
     (value fn/lambda)))
 
 (define tailrec-check-new-name

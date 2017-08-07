@@ -53,6 +53,7 @@
                         ensure-list-subset$
                         ensure-named-formulas
                         ensure-symbol$
+                        ensure-symbol-different$
                         ensure-symbol-list$
                         ensure-symbol-new-event-name$
                         ensure-term$

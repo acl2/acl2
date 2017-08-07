@@ -251,6 +251,7 @@
        If the generated functions are guard-verified
        (which is determined by the @(':verify-guards') input; see below),
        then the @(':domain') function must be guard-verified as well.
+       The @(':domain') function must be distinct from @('old').
        </li>
 
        <li>
@@ -270,6 +271,7 @@
        must only call guard-verified functions,
        except possibly in the @(':logic') subterms of @(tsee mbe)s
        and via @(tsee ec-call).
+       The lambda expression must not include any calls to @('old').
        </li>
 
      </ul>

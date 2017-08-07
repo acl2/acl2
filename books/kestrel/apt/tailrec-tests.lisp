@@ -304,7 +304,13 @@
   (must-succeed*
    (defun p (a) (declare (xargs :verify-guards nil)) (natp a))
    (must-fail (tailrec f :domain p))
-   (must-fail (tailrec f :domain (lambda (a) (or (p a) (natp a)))))))
+   (must-fail (tailrec f :domain (lambda (a) (or (p a) (natp a))))))
+
+  ;; same as OLD:
+  (must-fail (tailrec f :domain f))
+
+  ;; calls OLD:
+  (must-fail (tailrec f :domain (lambda (a) (equal (f a) 3)))))
 
  ;; successful applications:
  (must-succeed*
