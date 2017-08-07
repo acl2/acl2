@@ -338,14 +338,35 @@
 (program)
 (set-state-ok t)
 
+;; NOTE: In the section below, between the (redef+) and the (redef-),
+;; the following system functions are redefined so that they can deal
+;; with stobjs that can have hash table members.
+
+;; From basis-a.lisp:
+;;   - defstobj-fnname
+;;   - defstobj-field-templates
+;;   - defstobj-field-fns-raw-defs
+;;   - defstobj-raw-init-fields
+;;   - defstobj-component-recognizer-axiomatic-defs
+
+;; From other-events.lisp:
+;;   - chk-stobj-field-descriptor
+;;   - chk-acceptable-defstobj1
+;;   - defstobj-field-fns-axiomatic-defs
+;;   - defstobj-axiomatic-init-fields
+;;   - put-stobjs-in-and-outs1
+
+;; The comments "---<" and ">---" are used to indicate what parts of
+;; the functions are new for the purposes of this book.  All other
+;; comments inside the redefined functions are just copied from the
+;; original versions and, as such, are written about the original
+;; versions.
+
 (redef+)
+
 (defun defstobj-fnname (root key1 key2 renaming-alist)
 
 ; Warning: Keep this in sync with stobj-updater-guess-from-accessor.
-
-; This has been moved from other-events.lisp, where other stobj-related
-; functions are defined, because it is used in parse-with-local-stobj, which is
-; used in translate11.
 
 ; This function generates the actual name we will use for a function generated
 ; by defstobj.  Root and renaming-alist are, respectively, a symbol and an
@@ -423,8 +444,6 @@
          (temp (and default-fnname ; see comment above
                     (assoc-eq default-fnname renaming-alist))))
     (if temp (cadr temp) default-fnname)))
-
-
 
 (defun defstobj-field-templates (field-descriptors renaming wrld)
 
@@ -721,13 +740,14 @@
             (i ,var)
             (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
-            (the ,array-etype
-                 (,vref (the ,simple-type (svref ,var ,n))
-                        (the (and fixnum (integer 0 *)) i))))
+            (the$ ,array-etype
+                  (,vref (the ,simple-type (svref ,var ,n))
+                         (the (and fixnum (integer 0 *)) i))))
            (,updater-name
             (i v ,var)
             (declare (type (and fixnum (integer 0 *)) i)
-                     (type ,array-etype v))
+                     ,@(and (not (eq array-etype t))
+                            `((type ,array-etype v))))
             ,@(and inline (list *stobj-inline-declare*))
             (progn
               #+hons (memoize-flush ,flush-var)
@@ -735,9 +755,11 @@
 ; See the long comment below for the updater in the scalar case, about
 ; supporting *1* functions.
 
-              (setf (,vref (the ,simple-type (svref ,var ,n))
+              (setf (,vref ,(if (eq simple-type t)
+                                `(svref ,var ,n)
+                              `(the ,simple-type (svref ,var ,n)))
                            (the (and fixnum (integer 0 *)) i))
-                    (the ,array-etype v))
+                    (the$ ,array-etype v))
               ,var))))
         ((eq scalar-type t)
          `((,accessor-name (,var)
@@ -769,19 +791,20 @@
           (not stobj-creator) ; scalar-type is t for stobj-creator
           `((,accessor-name (,var)
                             ,@(and inline (list *stobj-inline-declare*))
-                            (the ,scalar-type
-                                 (aref (the (simple-array ,scalar-type (1))
-                                            (svref ,var ,n))
-                                       0)))
+                            (the$ ,scalar-type
+                                  (aref (the (simple-array ,scalar-type (1))
+                                             (svref ,var ,n))
+                                        0)))
             (,updater-name (v ,var)
-                           (declare (type ,scalar-type v))
+                           ,@(and (not (eq scalar-type t))
+                                  `((declare (type ,scalar-type v))))
                            ,@(and inline (list *stobj-inline-declare*))
                            (progn
                              #+hons (memoize-flush ,flush-var)
                              (setf (aref (the (simple-array ,scalar-type (1))
                                               (svref ,var ,n))
                                          0)
-                                   (the ,scalar-type v))
+                                   (the$ ,scalar-type v))
                              ,var)))))))
      (defstobj-field-fns-raw-defs
        var flush-var inline (1+ n) (cdr field-templates))))))
@@ -1063,8 +1086,7 @@
                             etype-error-string
                             field name etype))
                        ((and non-memoizable
-                             (not (getprop etype 'non-memoizable nil
-                                           'current-acl2-world wrld)))
+                             (not (getpropc etype 'non-memoizable nil wrld)))
                         (er soft ctx
                             child-stobj-memoizable-error-string
                             name etype))
@@ -1152,8 +1174,7 @@
                           type-error-string
                           field name type))
                      ((and non-memoizable
-                           (not (getprop type 'non-memoizable nil
-                                         'current-acl2-world wrld)))
+                           (not (getpropc type 'non-memoizable nil wrld)))
                       (er soft ctx
                           child-stobj-memoizable-error-string
                           name type))
@@ -1326,7 +1347,6 @@
                                            ))
                                   (cons accessor-const-name
                                         const-names))))))))
-
 
 (defun defstobj-field-fns-axiomatic-defs (top-recog var n field-templates wrld)
 
@@ -1620,7 +1640,6 @@
           (cons init
                 (defstobj-axiomatic-init-fields
                   (cdr field-templates) wrld))))))))
-
 
 (defun put-stobjs-in-and-outs1 (name field-templates wrld)
 
