@@ -185,6 +185,58 @@
 
 (must-succeed*
 
+ (test-title "Test the :UNDEFINED option.")
+
+ ;; not a valid term:
+ (must-fail (restrict nfix (natp x) :undefined (cons x)))
+
+ ;; free variables that are not formal arguments of OLD:
+ (must-fail (restrict nfix (natp x) :undefined (ifix y)))
+
+ ;; program-mode functions:
+ (must-succeed*
+  (defun p (x) (declare (xargs :mode :program)) x)
+  (must-fail (restrict nfix (natp x) :undefined (p x))))
+
+ ;; multiple values:
+ (must-fail (restrict nfix (natp x) :undefined (mv x x)))
+
+ ;; output stobjs:
+ (must-succeed*
+  (defstobj x)
+  (must-fail (restrict nfix t :undefined x)))
+
+ ;; call to target function:
+ (must-fail (restrict nfix (natp x) :undefined (nfix x)))
+
+ ;; default:
+ (must-succeed*
+  (restrict nfix (natp x))
+  (defthm undefined (implies (not (natp x))
+                             (equal (nfix{1} x) :undefined))))
+
+ ;; constant:
+ (must-succeed*
+  (restrict nfix (natp x) :undefined 50)
+  (defthm undefined (implies (not (natp x))
+                             (equal (nfix{1} x) 50))))
+
+ ;; non-constant:
+ (must-succeed*
+  (restrict nfix (natp x) :undefined (ifix x))
+  (defthm undefined (implies (not (natp x))
+                             (equal (nfix{1} x) (ifix x)))))
+
+ ;; non-guard-verifiable in itself:
+ (must-succeed*
+  (restrict nfix (natp x) :undefined (+ x "abc"))
+  (defthm undefined (implies (not (natp x))
+                             (equal (nfix{1} x) (+ x "abc"))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
  (test-title "Test the :NEW-NAME option.")
 
  ;; not a symbol:

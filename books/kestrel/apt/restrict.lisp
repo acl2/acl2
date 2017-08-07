@@ -118,6 +118,37 @@
                                            description t nil)))
     (value term)))
 
+(define restrict-check-undefined
+  ((undefined "Input to the transformation.")
+   (old-fn-name symbolp "Result of @(tsee restrict-check-old).")
+   (ctx "Context for errors.")
+   state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (undefined$ "A @(tsee pseudo-termp) that is
+                            the translation of @('undefined').")
+               state)
+  :mode :program
+  :short "Ensure that the @(':undefined') input to the transformation
+          is valid."
+  (b* ((wrld (w state))
+       ((er (list term stobjs-out)) (ensure-term$ undefined
+                                                  "The :UNDEFINED input" t nil))
+       (description (msg "The term ~x0 that denotes the undefined value"
+                         undefined))
+       ((er &) (ensure-term-free-vars-subset$ term
+                                              (formals old-fn-name wrld)
+                                              description t nil))
+       ((er &) (ensure-term-logic-mode$ term description t nil))
+       ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
+                                                               description
+                                                               t nil))
+       ((er &) (ensure-term-no-stobjs$ stobjs-out description t nil))
+       ((er &) (ensure-term-does-not-call$ term old-fn-name
+                                           description t nil)))
+    (value term)))
+
 (define restrict-check-new-name
   ((new-name "Input to the transformation.")
    (old-fn-name symbolp "Result of @(tsee restrict-check-old).")
@@ -253,6 +284,7 @@
 
 (define restrict-check-inputs ((old "Input to the transformation.")
                                (restriction "Input to the transformation.")
+                               (undefined "Input to the transformation.")
                                (new-name "Input to the transformation.")
                                (new-enable "Input to the transformation.")
                                (thm-name "Input to the transformation.")
@@ -269,6 +301,7 @@
                      triple</see>.")
                (result "A tuple @('(old-fn-name
                                     restriction$
+                                    undefined$
                                     new-fn-name
                                     new-fn-enable
                                     old-to-new-thm-name
@@ -277,6 +310,7 @@
                                     hints-alist)')
                         satisfying
                         @('(typed-tuplep symbolp
+                                         pseudo-termp
                                          pseudo-termp
                                          symbolp
                                          booleanp
@@ -289,6 +323,8 @@
                         the result of @(tsee restrict-check-old),
                         @('restriction$') is
                         the result of @(tsee restrict-check-restriction),
+                        @('undefined$') is
+                        the result of @(tsee restrict-check-undefined),
                         @('new-fn-name') is
                         the result of @(tsee restrict-check-new-name),
                         @('new-fn-enable') indicates whether
@@ -326,6 +362,8 @@
                                "The :VERIFY-GUARDS input" t nil))
        ((er restriction$) (restrict-check-restriction
                            restriction old-fn-name do-verify-guards ctx state))
+       ((er undefined$) (restrict-check-undefined
+                         undefined old-fn-name ctx state))
        ((er new-fn-name) (restrict-check-new-name
                           new-name old-fn-name ctx state))
        ((er new-fn-enable) (ensure-boolean-or-auto-and-return-boolean$
@@ -344,6 +382,7 @@
        ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
     (value (list old-fn-name
                  restriction$
+                 undefined$
                  new-fn-name
                  new-fn-enable
                  old-to-new-thm-name
@@ -498,6 +537,7 @@
 (define restrict-new-fn-intro-events
   ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
    (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
+   (undefined$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
    (new-fn-enable booleanp "Result of @(tsee restrict-check-inputs).")
    (make-non-executable booleanp "Result of @(tsee restrict-check-inputs).")
@@ -566,7 +606,7 @@
                    (ubody old-fn-name wrld)))
        (new-body-core (sublis-fn-simple (acons old-fn-name new-fn-name nil)
                                         old-body))
-       (new-body `(if ,restriction$ ,new-body-core ':undefined))
+       (new-body `(if ,restriction$ ,new-body-core ,undefined$))
        (new-body (untranslate new-body nil wrld))
        (recursive (recursivep old-fn-name nil wrld))
        (wfrel? (and recursive
@@ -759,6 +799,7 @@
 (define restrict-event
   ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
    (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
+   (undefined$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
    (new-fn-enable booleanp "Result of @(tsee restrict-check-inputs).")
    (old-to-new-thm-name symbolp "Result of @(tsee restrict-check-inputs).")
@@ -873,6 +914,7 @@
             new-fn-exported-event) (restrict-new-fn-intro-events
                                     old-fn-name
                                     restriction$
+                                    undefined$
                                     new-fn-name
                                     new-fn-enable
                                     make-non-executable
@@ -940,6 +982,7 @@
 (define restrict-fn
   ((old "Input to the transformation.")
    (restriction "Input to the transformation.")
+   (undefined "Input to the transformation.")
    (new-name "Input to the transformation.")
    (new-enable "Input to the transformation.")
    (thm-name "Input to the transformation.")
@@ -988,6 +1031,7 @@
                   (value-triple :invisible))))
        ((er (list old-fn-name
                   restriction$
+                  undefined$
                   new-fn-name
                   new-fn-enable
                   old-to-new-thm-name
@@ -995,6 +1039,7 @@
                   do-verify-guards
                   hints-alist)) (restrict-check-inputs old
                                                        restriction
+                                                       undefined
                                                        new-name
                                                        new-enable
                                                        thm-name
@@ -1012,6 +1057,7 @@
        ((er &) (ensure-named-formulas app-conds hints-alist verbose ctx state))
        (event (restrict-event old-fn-name
                               restriction$
+                              undefined$
                               new-fn-name
                               new-fn-enable
                               old-to-new-thm-name
@@ -1041,6 +1087,7 @@
                       restriction
                       ;; optional inputs:
                       &key
+                      (undefined ':undefined)
                       (new-name ':auto)
                       (new-enable ':auto)
                       (thm-name ':arrow)
@@ -1054,6 +1101,7 @@
      verbose
      `(make-event (restrict-fn ',old
                                ',restriction
+                               ',undefined
                                ',new-name
                                ',new-enable
                                ',thm-name
