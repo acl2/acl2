@@ -494,466 +494,6 @@
             (defstobj-field-templates
               (cdr field-descriptors) renaming wrld))))))
 
-(defun defstobj-raw-init-fields (field-templates)
-
-; Keep this in sync with defstobj-axiomatic-init-fields.
-
-  (cond
-   ((endp field-templates) nil)
-   (t (let* ((field-template (car field-templates))
-             (type (access defstobj-field-template field-template :type))
-             (arrayp (and (consp type) (eq (car type) 'array)))
-;---<
-             (hashp (and (consp type) (eq (car type) 'hash-table)))
-             (hash-test (and hashp (cadr type)))
-             (hash-init-size (and hashp (if (cddr type)
-                                            (caddr type)
-                                          20)))
-;   >---
-             (array-etype0 (and arrayp (cadr type)))
-             (array-size (and arrayp (car (caddr type))))
-             (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
-                                               nil))
-             (array-etype (and arrayp
-
-; See comment for this binding in defstobj-field-fns-raw-defs.
-
-                               (if stobj-creator
-                                   t
-                                 array-etype0)))
-             (init (access defstobj-field-template field-template :init)))
-        (cond
-         (arrayp
-          (cons (cond (stobj-creator
-                       (assert$
-                        (null init) ; checked by chk-stobj-field-descriptor
-                        (assert$
-
-; We expect array-size to be a natural number, as this is checked by
-; chk-stobj-field-descriptor (using fix-stobj-array-type).  It is important
-; that array-size not be a Lisp form that references the variable AR, even
-; after macroexpasion, in order to avoid capture by the binding of AR below.
-
-                         (natp array-size)
-                         `(let ((ar (make-array$ ,array-size
-
-; Do not be tempted to use :initial-element (,stobj-creator) here, because that
-; would presumably share structure among all the created stobjs.
-
-                                                 :element-type ',array-etype)))
-                            (loop for i from 0 to ,(1- array-size)
-                                  do
-                                  (setf (svref ar i) (,stobj-creator)))
-                            ar))))
-                      (t `(make-array$ ,array-size
-                                       :element-type ',array-etype
-                                       :initial-element ',init)))
-                (defstobj-raw-init-fields (cdr field-templates))))
-;---<
-         (hashp
-          (cons `(make-hash-table
-                  :test
-                  ,(case hash-test
-                     (eql ''eql)
-                     (equal
-                      ;; Is this safe?
-                      ''equal)
-                     (t (er hard hash-test
-                            "The hash test should be either EQL or EQUAL.~%")))
-                  :size ,hash-init-size)
-                (defstobj-raw-init-fields (cdr field-templates))))
-;   >---
-         ((eq type t)
-          (cons (kwote init)
-                (defstobj-raw-init-fields (cdr field-templates))))
-         (stobj-creator
-          (cons `(,stobj-creator)
-                (defstobj-raw-init-fields (cdr field-templates))))
-         (t (cons `(make-array$ 1
-                                :element-type ',type
-                                :initial-element ',init)
-                  (defstobj-raw-init-fields (cdr field-templates)))))))))
-
-(defun defstobj-component-recognizer-axiomatic-defs (name template
-                                                          field-templates wrld)
-
-; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
-
-; It is permissible for wrld to be nil, as this merely defeats additional
-; checking by translate-declaration-to-guard.
-
-; We return a list of defs (see defstobj-axiomatic-defs) for all the
-; recognizers for the single-threaded resource named name with the given
-; template.  The answer contains the top-level recognizer as well as the
-; definitions of all component recognizers.  The answer contains defs for
-; auxiliary functions used in array component recognizers.  The defs are listed
-; in an order suitable for processing (components first, then top-level).
-
-  (cond
-   ((endp field-templates)
-    (let* ((recog-name (access defstobj-template template :recognizer))
-           (field-templates (access defstobj-template template
-                                    :field-templates))
-           (n (length field-templates)))
-
-; Rockwell Addition: See comment below.
-
-; Note: The recognizer for a stobj must be Boolean!  That is why we
-; conclude the AND below with a final T.  The individual field
-; recognizers need not be Boolean and sometimes are not!  For example,
-; a field with :TYPE (MEMBER e1 ... ek) won't be Boolean, nor with
-; certain :TYPE (OR ...) involving MEMBER.  The reason we want the
-; stobj recognizer to be Boolean is so that we can replace it by T in
-; guard conjectures for functions that have been translated with the
-; stobj syntactic restrictions.  See optimize-stobj-recognizers.
-
-      (list `(,recog-name (,name)
-                          (declare (xargs :guard t
-                                          :verify-guards t))
-                          (and (true-listp ,name)
-                               (= (length ,name) ,n)
-                               ,@(defstobj-component-recognizer-calls
-                                   field-templates 0 name nil)
-                               t)))))
-   (t
-    (let ((recog-name (access defstobj-field-template
-                              (car field-templates)
-                              :fieldp-name))
-          (type (access defstobj-field-template
-                        (car field-templates)
-                        :type)))
-
-; Below we simply append the def or defs for this field to those for
-; the rest.  We get two defs for each array field and one def for each
-; of the others.
-
-      (cons (cond
-             ((and (consp type)
-                   (eq (car type) 'array))
-              (let ((etype (cadr type)))
-                `(,recog-name (x)
-                              (declare (xargs :guard t
-                                              :verify-guards t))
-                              (if (atom x)
-                                  (equal x nil)
-                                (and ,(translate-stobj-type-to-guard
-                                       etype '(car x) wrld)
-                                     (,recog-name (cdr x)))))))
-;---<
-             ((and (consp type)
-                   (eq (car type) 'hash-table))
-              `(,recog-name (x)
-                            (declare (xargs :guard t
-                                            :verify-guards t)
-                                     (ignore x))
-                            t))
-;   >---
-             (t (let ((type-term (translate-stobj-type-to-guard
-                                  type 'x wrld)))
-
-; We might not use x in the type-term and so have to declare it ignorable.
-
-                  `(,recog-name (x)
-                                (declare (xargs :guard t
-                                                :verify-guards t)
-                                         (ignorable x))
-                                ,type-term))))
-            (defstobj-component-recognizer-axiomatic-defs
-              name template (cdr field-templates) wrld))))))
-
-(defun defstobj-field-fns-axiomatic-defs (top-recog var n field-templates wrld)
-
-; Wrld is normally a logical world, but it can be nil when calling this
-; function from raw Lisp.
-
-; Warning: Keep the formals in the definitions below in sync with corresponding
-; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
-; correctly; we saw such a problem in Version_5.0 for a resize function.
-
-; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
-
-; We return a list of defs (see defstobj-axiomatic-defs) for all the accessors,
-; updaters, and optionally, array resizing and length, of a single-threaded
-; resource.
-
-; Warning: Each updater definition should immediately follow the corresponding
-; accessor definition, so that this is the case for the list of definitions
-; returned by defstobj-axiomatic-defs.  That list of definitions becomes the
-; 'stobj property laid down by defstobj-fn, and function
-; chk-stobj-let/updaters1 assumes that it will find each updater definition in
-; that property immediately after the corresponding accessor definition.
-
-  (cond
-   ((endp field-templates)
-    nil)
-   (t (let* ((field-template (car field-templates))
-             (type (access defstobj-field-template
-                           field-template
-                           :type))
-             (arrayp (and (consp type) (eq (car type) 'array)))
-             (init0 (access defstobj-field-template
-                            field-template
-                            :init))
-             (creator (get-stobj-creator (if arrayp (cadr type) type)
-                                         wrld))
-             (init (if creator
-                       `(non-exec (,creator))
-                     (kwote init0)))
-;---<
-             (hashp (and (consp type) (eq (car type) 'hash-table)))
-             (hash-test (and hashp (cadr type)))
-;   >---
-             (array-etype (and arrayp (cadr type)))
-             (stobj-formal
-              (cond (arrayp (and (not (eq array-etype 'state))
-                                 (stobjp array-etype t wrld)
-                                 array-etype))
-                    (t (and (not (eq type 'state))
-                            (stobjp type t wrld)
-                            type))))
-             (v-formal (or stobj-formal 'v))
-             (stobj-xargs (and stobj-formal
-                               `(:stobjs ,stobj-formal)))
-             (type-term            ; used in guard
-              (and (not arrayp)    ; else type-term is not used
-;---<
-                   (not hashp)
-;   >---
-                   (if (null wrld) ; called from raw Lisp, so guard is ignored
-                       t
-                     (translate-declaration-to-guard type v-formal wrld))))
-             (array-etype-term     ; used in guard
-              (and arrayp          ; else array-etype-term is not used
-                   (if (null wrld) ; called from raw Lisp, so guard is ignored
-                       t
-                     (translate-declaration-to-guard array-etype v-formal
-                                                     wrld))))
-             (array-length (and arrayp (car (caddr type))))
-             (accessor-name (access defstobj-field-template
-                                    field-template
-                                    :accessor-name))
-             (updater-name (access defstobj-field-template
-                                   field-template
-                                   :updater-name))
-             (length-name (access defstobj-field-template
-                                  field-template
-                                  :length-name))
-             (resize-name (access defstobj-field-template
-                                  field-template
-                                  :resize-name))
-             (resizable (access defstobj-field-template
-                                field-template
-                                :resizable))
-;---<
-             (other (access defstobj-field-template
-                            field-template
-                            :other))
-             (boundp-name (nth 0 other))
-             (accessor?-name (nth 1 other))
-             (remove-name (nth 2 other))
-             (count-name (nth 3 other))
-             (clear-name (nth 4 other))
-             (init-name (nth 5 other))
-;   >---
-             )
-        (cond
-         (arrayp
-          (append
-           `((,length-name (,var)
-                           (declare (xargs :guard (,top-recog ,var)
-                                           :verify-guards t)
-                                    ,@(and (not resizable)
-                                           `((ignore ,var))))
-                           ,(if resizable
-                                `(len (nth ,n ,var))
-                              `,array-length))
-             (,resize-name
-              (i ,var)
-              (declare (xargs :guard (,top-recog ,var)
-                              :verify-guards t)
-                       ,@(and (not resizable)
-                              '((ignore i))))
-              ,(if resizable
-                   `(update-nth ,n
-                                (resize-list (nth ,n ,var) i ,init)
-                                ,var)
-                 `(prog2$ (hard-error
-                           ',resize-name
-                           "The array field corresponding to accessor ~x0 of ~
-                            stobj ~x1 was not declared :resizable t.  ~
-                            Therefore, it is illegal to resize this array."
-                           (list (cons #\0 ',accessor-name)
-                                 (cons #\1 ',var)))
-                          ,var)))
-             (,accessor-name (i ,var)
-                             (declare (xargs :guard
-                                             (and (,top-recog ,var)
-                                                  (integerp i)
-                                                  (<= 0 i)
-                                                  (< i (,length-name ,var)))
-                                             :verify-guards t))
-                             (nth i (nth ,n ,var)))
-             (,updater-name (i ,v-formal ,var)
-                            (declare
-                             (xargs :guard
-                                    (and (,top-recog ,var)
-                                         (integerp i)
-                                         (<= 0 i)
-                                         (< i (,length-name ,var))
-
-; We avoid laying down the stobj recognizer twice for a child stobj (although
-; that would nevertheless be removed by the use of stobj-optp).
-
-                                         ,@(and (not stobj-xargs)
-                                                (assert$
-                                                 array-etype-term
-                                                 (if (eq array-etype-term
-                                                         t)
-                                                     nil
-                                                   (list array-etype-term)))))
-                                    :verify-guards t
-                                    ,@stobj-xargs))
-                            ,(if stobj-formal
-                                 `(non-exec
-                                   (update-nth-array ,n i ,v-formal ,var))
-                               `(update-nth-array ,n i ,v-formal ,var))))
-           (defstobj-field-fns-axiomatic-defs
-             top-recog var (+ n 1) (cdr field-templates) wrld)))
-;---<
-         (hashp
-          (append
-           `((,accessor-name
-              (k ,var)
-              (declare (xargs :guard ,(if (eq hash-test 'eql)
-                                          `(and (,top-recog ,var)
-                                                (eqlablep k))
-                                        `(,top-recog ,var))
-                              :verify-guards t))
-              (cdr (hons-assoc-equal k (nth ,n ,var))))
-             (,updater-name
-              (k v ,var)
-              (declare (xargs :guard ,(if (eq hash-test 'eql)
-                                          `(and (,top-recog ,var)
-                                                (eqlablep k))
-                                        `(,top-recog ,var))
-                              :verify-guards t))
-              (update-nth ,n (cons (cons k v) (nth ,n ,var)) ,var))
-             (,boundp-name
-              (k ,var)
-              (declare (xargs :guard ,(if (eq hash-test 'eql)
-                                          `(and (,top-recog ,var)
-                                                (eqlablep k))
-                                        `(,top-recog ,var))
-                              :verify-guards t))
-              (consp (hons-assoc-equal k (nth ,n ,var))))
-             (,accessor?-name
-
-              (k ,var)
-              (declare (xargs :guard ,(if (eq hash-test 'eql)
-                                          `(and (,top-recog ,var)
-                                                (eqlablep k))
-                                        `(,top-recog ,var))
-                              :verify-guards t))
-              (mv (,accessor-name k ,var)
-                  (,boundp-name k ,var)))
-             (,remove-name
-              (k ,var)
-              (declare (xargs :guard ,(if (eq hash-test 'eql)
-                                          `(and (,top-recog ,var)
-                                                (eqlablep k))
-                                        `(,top-recog ,var))
-                              :verify-guards t))
-              (update-nth ,n (hons-remove-assoc k (nth ,n ,var)) ,var))
-             (,count-name
-              (,var)
-              (declare (xargs :guard (,top-recog ,var)))
-              (count-keys (nth ,n ,var)))
-             (,clear-name
-              (,var)
-              (declare (xargs :guard (,top-recog ,var)))
-              (update-nth ,n nil ,var))
-             (,init-name
-              (size rehash-size rehash-threshold ,var)
-              (declare (xargs :guard (and (,top-recog ,var)
-                                          (or (natp size)
-                                              (not size))
-                                          (or (and (rationalp rehash-size)
-                                                   (< 1 rehash-size))
-                                              (not rehash-size))
-                                          (or (and (rationalp rehash-threshold)
-                                                   (<= 0 rehash-threshold)
-                                                   (<= rehash-threshold 1))
-                                              (not rehash-threshold))))
-                       (ignorable size rehash-size rehash-threshold))
-              (update-nth ,n nil ,var)))
-           (defstobj-field-fns-axiomatic-defs
-             top-recog var (+ n 1) (cdr field-templates) wrld)))
-;   >---
-         (t
-          (append
-           `((,accessor-name (,var)
-                             (declare (xargs :guard (,top-recog ,var)
-                                             :verify-guards t))
-                             (nth ,n ,var))
-             (,updater-name (,v-formal ,var)
-                            (declare (xargs :guard
-                                            ,(if (or (eq type-term t)
-
-; We avoid laying down the stobj recognizer twice for a child stobj (although
-; that would nevertheless be removed by the use of stobj-optp).
-
-                                                     stobj-xargs)
-                                                 `(,top-recog ,var)
-                                               (assert$
-                                                type-term
-                                                `(and ,type-term
-                                                      (,top-recog ,var))))
-                                            :verify-guards t
-                                            ,@stobj-xargs))
-                            ,(if stobj-formal
-                                 `(non-exec
-                                   (update-nth ,n ,v-formal ,var))
-                               `(update-nth ,n ,v-formal ,var))))
-           (defstobj-field-fns-axiomatic-defs
-             top-recog var (+ n 1) (cdr field-templates) wrld))))))))
-
-(defun defstobj-axiomatic-init-fields (field-templates wrld)
-
-; Keep this in sync with defstobj-raw-init-fields.
-
-  (cond
-   ((endp field-templates) nil)
-   (t (let* ((field-template (car field-templates))
-             (type (access defstobj-field-template
-                           field-template
-                           :type))
-             (arrayp (and (consp type) (eq (car type) 'array)))
-             (array-size (and arrayp (car (caddr type))))
-;---<
-             (hashp (and (consp type) (eq (car type) 'hash-table)))
-;   >---
-             (init0 (access defstobj-field-template
-                            field-template
-                            :init))
-             (creator (get-stobj-creator (if arrayp (cadr type) type)
-                                         wrld))
-             (init (if creator
-                       `(non-exec (,creator))
-                     (kwote init0))))
-        (cond
-         (arrayp
-          (cons `(make-list ,array-size :initial-element ,init)
-                (defstobj-axiomatic-init-fields (cdr field-templates) wrld)))
-;---<
-         (hashp
-          (cons nil
-                (defstobj-axiomatic-init-fields (cdr field-templates) wrld)))
-;   >---
-         (t ; whether the type is given or not is irrelevant
-          (cons init
-                (defstobj-axiomatic-init-fields
-                  (cdr field-templates) wrld))))))))
-
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning: Keep the formals in the definitions below in sync with corresponding
@@ -1246,6 +786,172 @@
      (defstobj-field-fns-raw-defs
        var flush-var inline (1+ n) (cdr field-templates))))))
 
+(defun defstobj-raw-init-fields (field-templates)
+
+; Keep this in sync with defstobj-axiomatic-init-fields.
+
+  (cond
+   ((endp field-templates) nil)
+   (t (let* ((field-template (car field-templates))
+             (type (access defstobj-field-template field-template :type))
+             (arrayp (and (consp type) (eq (car type) 'array)))
+;---<
+             (hashp (and (consp type) (eq (car type) 'hash-table)))
+             (hash-test (and hashp (cadr type)))
+             (hash-init-size (and hashp (if (cddr type)
+                                            (caddr type)
+                                          20)))
+;   >---
+             (array-etype0 (and arrayp (cadr type)))
+             (array-size (and arrayp (car (caddr type))))
+             (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
+                                               nil))
+             (array-etype (and arrayp
+
+; See comment for this binding in defstobj-field-fns-raw-defs.
+
+                               (if stobj-creator
+                                   t
+                                 array-etype0)))
+             (init (access defstobj-field-template field-template :init)))
+        (cond
+         (arrayp
+          (cons (cond (stobj-creator
+                       (assert$
+                        (null init) ; checked by chk-stobj-field-descriptor
+                        (assert$
+
+; We expect array-size to be a natural number, as this is checked by
+; chk-stobj-field-descriptor (using fix-stobj-array-type).  It is important
+; that array-size not be a Lisp form that references the variable AR, even
+; after macroexpasion, in order to avoid capture by the binding of AR below.
+
+                         (natp array-size)
+                         `(let ((ar (make-array$ ,array-size
+
+; Do not be tempted to use :initial-element (,stobj-creator) here, because that
+; would presumably share structure among all the created stobjs.
+
+                                                 :element-type ',array-etype)))
+                            (loop for i from 0 to ,(1- array-size)
+                                  do
+                                  (setf (svref ar i) (,stobj-creator)))
+                            ar))))
+                      (t `(make-array$ ,array-size
+                                       :element-type ',array-etype
+                                       :initial-element ',init)))
+                (defstobj-raw-init-fields (cdr field-templates))))
+;---<
+         (hashp
+          (cons `(make-hash-table
+                  :test
+                  ,(case hash-test
+                     (eql ''eql)
+                     (equal
+                      ;; Is this safe?
+                      ''equal)
+                     (t (er hard hash-test
+                            "The hash test should be either EQL or EQUAL.~%")))
+                  :size ,hash-init-size)
+                (defstobj-raw-init-fields (cdr field-templates))))
+;   >---
+         ((eq type t)
+          (cons (kwote init)
+                (defstobj-raw-init-fields (cdr field-templates))))
+         (stobj-creator
+          (cons `(,stobj-creator)
+                (defstobj-raw-init-fields (cdr field-templates))))
+         (t (cons `(make-array$ 1
+                                :element-type ',type
+                                :initial-element ',init)
+                  (defstobj-raw-init-fields (cdr field-templates)))))))))
+
+(defun defstobj-component-recognizer-axiomatic-defs (name template
+                                                          field-templates wrld)
+
+; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
+
+; It is permissible for wrld to be nil, as this merely defeats additional
+; checking by translate-declaration-to-guard.
+
+; We return a list of defs (see defstobj-axiomatic-defs) for all the
+; recognizers for the single-threaded resource named name with the given
+; template.  The answer contains the top-level recognizer as well as the
+; definitions of all component recognizers.  The answer contains defs for
+; auxiliary functions used in array component recognizers.  The defs are listed
+; in an order suitable for processing (components first, then top-level).
+
+  (cond
+   ((endp field-templates)
+    (let* ((recog-name (access defstobj-template template :recognizer))
+           (field-templates (access defstobj-template template
+                                    :field-templates))
+           (n (length field-templates)))
+
+; Rockwell Addition: See comment below.
+
+; Note: The recognizer for a stobj must be Boolean!  That is why we
+; conclude the AND below with a final T.  The individual field
+; recognizers need not be Boolean and sometimes are not!  For example,
+; a field with :TYPE (MEMBER e1 ... ek) won't be Boolean, nor with
+; certain :TYPE (OR ...) involving MEMBER.  The reason we want the
+; stobj recognizer to be Boolean is so that we can replace it by T in
+; guard conjectures for functions that have been translated with the
+; stobj syntactic restrictions.  See optimize-stobj-recognizers.
+
+      (list `(,recog-name (,name)
+                          (declare (xargs :guard t
+                                          :verify-guards t))
+                          (and (true-listp ,name)
+                               (= (length ,name) ,n)
+                               ,@(defstobj-component-recognizer-calls
+                                   field-templates 0 name nil)
+                               t)))))
+   (t
+    (let ((recog-name (access defstobj-field-template
+                              (car field-templates)
+                              :fieldp-name))
+          (type (access defstobj-field-template
+                        (car field-templates)
+                        :type)))
+
+; Below we simply append the def or defs for this field to those for
+; the rest.  We get two defs for each array field and one def for each
+; of the others.
+
+      (cons (cond
+             ((and (consp type)
+                   (eq (car type) 'array))
+              (let ((etype (cadr type)))
+                `(,recog-name (x)
+                              (declare (xargs :guard t
+                                              :verify-guards t))
+                              (if (atom x)
+                                  (equal x nil)
+                                (and ,(translate-stobj-type-to-guard
+                                       etype '(car x) wrld)
+                                     (,recog-name (cdr x)))))))
+;---<
+             ((and (consp type)
+                   (eq (car type) 'hash-table))
+              `(,recog-name (x)
+                            (declare (xargs :guard t
+                                            :verify-guards t)
+                                     (ignore x))
+                            t))
+;   >---
+             (t (let ((type-term (translate-stobj-type-to-guard
+                                  type 'x wrld)))
+
+; We might not use x in the type-term and so have to declare it ignorable.
+
+                  `(,recog-name (x)
+                                (declare (xargs :guard t
+                                                :verify-guards t)
+                                         (ignorable x))
+                                ,type-term))))
+            (defstobj-component-recognizer-axiomatic-defs
+              name template (cdr field-templates) wrld))))))
 
 (defun chk-stobj-field-descriptor (name field-descriptor non-memoizable
                                         ctx wrld state)
@@ -1620,6 +1326,300 @@
                                            ))
                                   (cons accessor-const-name
                                         const-names))))))))
+
+
+(defun defstobj-field-fns-axiomatic-defs (top-recog var n field-templates wrld)
+
+; Wrld is normally a logical world, but it can be nil when calling this
+; function from raw Lisp.
+
+; Warning: Keep the formals in the definitions below in sync with corresponding
+; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
+; correctly; we saw such a problem in Version_5.0 for a resize function.
+
+; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
+
+; We return a list of defs (see defstobj-axiomatic-defs) for all the accessors,
+; updaters, and optionally, array resizing and length, of a single-threaded
+; resource.
+
+; Warning: Each updater definition should immediately follow the corresponding
+; accessor definition, so that this is the case for the list of definitions
+; returned by defstobj-axiomatic-defs.  That list of definitions becomes the
+; 'stobj property laid down by defstobj-fn, and function
+; chk-stobj-let/updaters1 assumes that it will find each updater definition in
+; that property immediately after the corresponding accessor definition.
+
+  (cond
+   ((endp field-templates)
+    nil)
+   (t (let* ((field-template (car field-templates))
+             (type (access defstobj-field-template
+                           field-template
+                           :type))
+             (arrayp (and (consp type) (eq (car type) 'array)))
+             (init0 (access defstobj-field-template
+                            field-template
+                            :init))
+             (creator (get-stobj-creator (if arrayp (cadr type) type)
+                                         wrld))
+             (init (if creator
+                       `(non-exec (,creator))
+                     (kwote init0)))
+;---<
+             (hashp (and (consp type) (eq (car type) 'hash-table)))
+             (hash-test (and hashp (cadr type)))
+;   >---
+             (array-etype (and arrayp (cadr type)))
+             (stobj-formal
+              (cond (arrayp (and (not (eq array-etype 'state))
+                                 (stobjp array-etype t wrld)
+                                 array-etype))
+                    (t (and (not (eq type 'state))
+                            (stobjp type t wrld)
+                            type))))
+             (v-formal (or stobj-formal 'v))
+             (stobj-xargs (and stobj-formal
+                               `(:stobjs ,stobj-formal)))
+             (type-term            ; used in guard
+              (and (not arrayp)    ; else type-term is not used
+;---<
+                   (not hashp)
+;   >---
+                   (if (null wrld) ; called from raw Lisp, so guard is ignored
+                       t
+                     (translate-declaration-to-guard type v-formal wrld))))
+             (array-etype-term     ; used in guard
+              (and arrayp          ; else array-etype-term is not used
+                   (if (null wrld) ; called from raw Lisp, so guard is ignored
+                       t
+                     (translate-declaration-to-guard array-etype v-formal
+                                                     wrld))))
+             (array-length (and arrayp (car (caddr type))))
+             (accessor-name (access defstobj-field-template
+                                    field-template
+                                    :accessor-name))
+             (updater-name (access defstobj-field-template
+                                   field-template
+                                   :updater-name))
+             (length-name (access defstobj-field-template
+                                  field-template
+                                  :length-name))
+             (resize-name (access defstobj-field-template
+                                  field-template
+                                  :resize-name))
+             (resizable (access defstobj-field-template
+                                field-template
+                                :resizable))
+;---<
+             (other (access defstobj-field-template
+                            field-template
+                            :other))
+             (boundp-name (nth 0 other))
+             (accessor?-name (nth 1 other))
+             (remove-name (nth 2 other))
+             (count-name (nth 3 other))
+             (clear-name (nth 4 other))
+             (init-name (nth 5 other))
+;   >---
+             )
+        (cond
+         (arrayp
+          (append
+           `((,length-name (,var)
+                           (declare (xargs :guard (,top-recog ,var)
+                                           :verify-guards t)
+                                    ,@(and (not resizable)
+                                           `((ignore ,var))))
+                           ,(if resizable
+                                `(len (nth ,n ,var))
+                              `,array-length))
+             (,resize-name
+              (i ,var)
+              (declare (xargs :guard (,top-recog ,var)
+                              :verify-guards t)
+                       ,@(and (not resizable)
+                              '((ignore i))))
+              ,(if resizable
+                   `(update-nth ,n
+                                (resize-list (nth ,n ,var) i ,init)
+                                ,var)
+                 `(prog2$ (hard-error
+                           ',resize-name
+                           "The array field corresponding to accessor ~x0 of ~
+                            stobj ~x1 was not declared :resizable t.  ~
+                            Therefore, it is illegal to resize this array."
+                           (list (cons #\0 ',accessor-name)
+                                 (cons #\1 ',var)))
+                          ,var)))
+             (,accessor-name (i ,var)
+                             (declare (xargs :guard
+                                             (and (,top-recog ,var)
+                                                  (integerp i)
+                                                  (<= 0 i)
+                                                  (< i (,length-name ,var)))
+                                             :verify-guards t))
+                             (nth i (nth ,n ,var)))
+             (,updater-name (i ,v-formal ,var)
+                            (declare
+                             (xargs :guard
+                                    (and (,top-recog ,var)
+                                         (integerp i)
+                                         (<= 0 i)
+                                         (< i (,length-name ,var))
+
+; We avoid laying down the stobj recognizer twice for a child stobj (although
+; that would nevertheless be removed by the use of stobj-optp).
+
+                                         ,@(and (not stobj-xargs)
+                                                (assert$
+                                                 array-etype-term
+                                                 (if (eq array-etype-term
+                                                         t)
+                                                     nil
+                                                   (list array-etype-term)))))
+                                    :verify-guards t
+                                    ,@stobj-xargs))
+                            ,(if stobj-formal
+                                 `(non-exec
+                                   (update-nth-array ,n i ,v-formal ,var))
+                               `(update-nth-array ,n i ,v-formal ,var))))
+           (defstobj-field-fns-axiomatic-defs
+             top-recog var (+ n 1) (cdr field-templates) wrld)))
+;---<
+         (hashp
+          (append
+           `((,accessor-name
+              (k ,var)
+              (declare (xargs :guard ,(if (eq hash-test 'eql)
+                                          `(and (,top-recog ,var)
+                                                (eqlablep k))
+                                        `(,top-recog ,var))
+                              :verify-guards t))
+              (cdr (hons-assoc-equal k (nth ,n ,var))))
+             (,updater-name
+              (k v ,var)
+              (declare (xargs :guard ,(if (eq hash-test 'eql)
+                                          `(and (,top-recog ,var)
+                                                (eqlablep k))
+                                        `(,top-recog ,var))
+                              :verify-guards t))
+              (update-nth ,n (cons (cons k v) (nth ,n ,var)) ,var))
+             (,boundp-name
+              (k ,var)
+              (declare (xargs :guard ,(if (eq hash-test 'eql)
+                                          `(and (,top-recog ,var)
+                                                (eqlablep k))
+                                        `(,top-recog ,var))
+                              :verify-guards t))
+              (consp (hons-assoc-equal k (nth ,n ,var))))
+             (,accessor?-name
+
+              (k ,var)
+              (declare (xargs :guard ,(if (eq hash-test 'eql)
+                                          `(and (,top-recog ,var)
+                                                (eqlablep k))
+                                        `(,top-recog ,var))
+                              :verify-guards t))
+              (mv (,accessor-name k ,var)
+                  (,boundp-name k ,var)))
+             (,remove-name
+              (k ,var)
+              (declare (xargs :guard ,(if (eq hash-test 'eql)
+                                          `(and (,top-recog ,var)
+                                                (eqlablep k))
+                                        `(,top-recog ,var))
+                              :verify-guards t))
+              (update-nth ,n (hons-remove-assoc k (nth ,n ,var)) ,var))
+             (,count-name
+              (,var)
+              (declare (xargs :guard (,top-recog ,var)))
+              (count-keys (nth ,n ,var)))
+             (,clear-name
+              (,var)
+              (declare (xargs :guard (,top-recog ,var)))
+              (update-nth ,n nil ,var))
+             (,init-name
+              (size rehash-size rehash-threshold ,var)
+              (declare (xargs :guard (and (,top-recog ,var)
+                                          (or (natp size)
+                                              (not size))
+                                          (or (and (rationalp rehash-size)
+                                                   (< 1 rehash-size))
+                                              (not rehash-size))
+                                          (or (and (rationalp rehash-threshold)
+                                                   (<= 0 rehash-threshold)
+                                                   (<= rehash-threshold 1))
+                                              (not rehash-threshold))))
+                       (ignorable size rehash-size rehash-threshold))
+              (update-nth ,n nil ,var)))
+           (defstobj-field-fns-axiomatic-defs
+             top-recog var (+ n 1) (cdr field-templates) wrld)))
+;   >---
+         (t
+          (append
+           `((,accessor-name (,var)
+                             (declare (xargs :guard (,top-recog ,var)
+                                             :verify-guards t))
+                             (nth ,n ,var))
+             (,updater-name (,v-formal ,var)
+                            (declare (xargs :guard
+                                            ,(if (or (eq type-term t)
+
+; We avoid laying down the stobj recognizer twice for a child stobj (although
+; that would nevertheless be removed by the use of stobj-optp).
+
+                                                     stobj-xargs)
+                                                 `(,top-recog ,var)
+                                               (assert$
+                                                type-term
+                                                `(and ,type-term
+                                                      (,top-recog ,var))))
+                                            :verify-guards t
+                                            ,@stobj-xargs))
+                            ,(if stobj-formal
+                                 `(non-exec
+                                   (update-nth ,n ,v-formal ,var))
+                               `(update-nth ,n ,v-formal ,var))))
+           (defstobj-field-fns-axiomatic-defs
+             top-recog var (+ n 1) (cdr field-templates) wrld))))))))
+
+(defun defstobj-axiomatic-init-fields (field-templates wrld)
+
+; Keep this in sync with defstobj-raw-init-fields.
+
+  (cond
+   ((endp field-templates) nil)
+   (t (let* ((field-template (car field-templates))
+             (type (access defstobj-field-template
+                           field-template
+                           :type))
+             (arrayp (and (consp type) (eq (car type) 'array)))
+             (array-size (and arrayp (car (caddr type))))
+;---<
+             (hashp (and (consp type) (eq (car type) 'hash-table)))
+;   >---
+             (init0 (access defstobj-field-template
+                            field-template
+                            :init))
+             (creator (get-stobj-creator (if arrayp (cadr type) type)
+                                         wrld))
+             (init (if creator
+                       `(non-exec (,creator))
+                     (kwote init0))))
+        (cond
+         (arrayp
+          (cons `(make-list ,array-size :initial-element ,init)
+                (defstobj-axiomatic-init-fields (cdr field-templates) wrld)))
+;---<
+         (hashp
+          (cons nil
+                (defstobj-axiomatic-init-fields (cdr field-templates) wrld)))
+;   >---
+         (t ; whether the type is given or not is irrelevant
+          (cons init
+                (defstobj-axiomatic-init-fields
+                  (cdr field-templates) wrld))))))))
 
 
 (defun put-stobjs-in-and-outs1 (name field-templates wrld)
