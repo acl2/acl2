@@ -113,7 +113,9 @@
                           and the target function ~x0 is guard-verified, ~@1"
                          old-fn-name (msg-downcase-first description))
                     t nil)
-                 (value nil))))
+                 (value nil)))
+       ((er &) (ensure-term-does-not-call$ term old-fn-name
+                                           description t nil)))
     (value term)))
 
 (define restrict-check-new-name

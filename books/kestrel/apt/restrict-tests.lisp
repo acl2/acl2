@@ -129,7 +129,10 @@
  ;; non-guard-verified functions:
  (must-succeed*
   (defun r (x) (declare (xargs :verify-guards nil)) x)
-  (must-fail (restrict nfix (natp (r x))))))
+  (must-fail (restrict nfix (natp (r x)))))
+
+ ;; call to target function:
+ (must-fail (restrict nfix (> (nfix x) 10))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

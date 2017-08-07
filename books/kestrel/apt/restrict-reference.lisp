@@ -169,6 +169,7 @@
      (which is determined by the @(':verify-guards') input; see below),
      then the term must only call guard-verified functions,
      except possibly in the @(':logic') subterms of @(tsee mbe)s.
+     The term must not include any calls to @('old').
      </p>
 
      <p>
