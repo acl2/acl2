@@ -1035,9 +1035,10 @@
                   (union-theories
 
 ; Without the :executable-counterpart of force, the use of (theory
-; 'minimal-theory) will produce the warning "Forcing has transitioned
-; from enabled to disabled", at least if forcing is enabled (as is the
-; default).
+; 'minimal-theory) will produce the warning "Forcing has transitioned from
+; enabled to disabled", at least if forcing is enabled (as is the default).
+; Moreover, it's not unreasonable to leave forcing on in the minimal-theory,
+; for example in case it's useful for linear arithmetic.
 
                    '((:executable-counterpart force))
                    (theory 'executable-counterpart-minimal-theory))))
