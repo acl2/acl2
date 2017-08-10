@@ -42,8 +42,8 @@
   :short "Find true conclusions using GL"
   :long "<p>Given a list of possible conclusions, @('try-gl-concls') uses @(see
   GL) to return the ones that are true (if any).  For example, in the following
-  form, @('try-gl-concls') tells us that @('(not (equal (+ a b) 3))') is
-  true.</p>
+  form, @('try-gl-concls') tells us that @('(not (equal (+ a b) 3))') and
+  @('(not (equal (+ a b) 4))') are the only conclusions that are true.</p>
 
   @({
      (try-gl-concls test
@@ -51,6 +51,7 @@
        :concls ((not (equal (+ a b) 0))
                 (not (equal (+ a b) 1))
                 (not (equal (+ a b) 2))
+                (not (equal (+ a b) 3))
                 (not (equal (+ a b) 3)))
        :g-bindings (gl::auto-bindings (:mix (:nat a 8) (:nat b 8))))
    })"
