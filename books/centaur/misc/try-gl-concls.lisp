@@ -37,15 +37,35 @@
 
 ;; ----------------------------------------------------------------------
 
+(defxdoc try-gl-concls
+  :parents (debugging proof-automation)
+  :short "Find true conclusions using GL"
+  :long "<p>Given a list of possible conclusions, @('try-gl-concls') uses @(see
+  GL) to return the ones that are true (if any).  For example, in the following
+  form, @('try-gl-concls') tells us that @('(not (equal (+ a b) 3))') is
+  true.</p>
+
+  @({
+     (try-gl-concls test
+       :hyp (and (unsigned-byte-p 1 a) (unsigned-byte-p 1 b))
+       :concls ((not (equal (+ a b) 0))
+                (not (equal (+ a b) 1))
+                (not (equal (+ a b) 2))
+                (not (equal (+ a b) 3)))
+       :g-bindings (gl::auto-bindings (:mix (:nat a 8) (:nat b 8))))
+   })"
+  )
+
 (set-state-ok t)
 (set-irrelevant-formals-ok t)
 (program)
 
-(defun try-gl-concl-1 (name hyps concl kwd-alist state)
+(defun try-gl-concl-1 (name hyps concl g-bindings kwd-alist state)
 
   (b* ((form `(gl::gl-thm ,name
                           :hyp ,hyps
                           :concl ,concl
+                          :g-bindings ,g-bindings
                           ,@kwd-alist))
        (- (cw "~%Trying this form: ~p0~%" form))
        ;; Try the new event.
@@ -58,34 +78,48 @@
                 (car replaced-val))))
     (mv err state)))
 
-(defun try-gl-concls-aux (name hyps concls kwd-alist ok-concls state)
+(defun try-gl-concls-aux (name hyps concls g-bindings kwd-alist ok-concls state)
   (if (endp concls)
       (value ok-concls)
     (b* ((this-concl (car concls))
          (rest-concl (cdr concls))
          ((mv err state)
-          (try-gl-concl-1 name hyps this-concl kwd-alist state))
+          (try-gl-concl-1 name hyps this-concl g-bindings kwd-alist state))
          ((when (not err))
           ;; gl-thm succeeded, save concl in ok-concls and recur.
           (try-gl-concls-aux
-           name hyps rest-concl kwd-alist (cons this-concl ok-concls) state)))
+           name hyps rest-concl g-bindings kwd-alist (cons this-concl ok-concls) state)))
       ;; gl-thm failed, just recur.
       (try-gl-concls-aux
-       name hyps rest-concl kwd-alist ok-concls state))))
+       name hyps rest-concl g-bindings kwd-alist ok-concls state))))
+
+(defconst *try-gl-concls-permissible-keywords*
+  '(:hyp :concls :g-bindings :rest))
 
 (defun try-gl-concls-fn (name args state)
   (b* (((mv args-alist rest)
         (std::extract-keywords
-         'try-gl-concls '(:hyp :concls :g-rest) args nil))
+         'try-gl-concls *try-gl-concls-permissible-keywords* args nil))
+       ((unless (and (assoc :hyp        args-alist)
+                     (assoc :concls     args-alist)
+                     (assoc :g-bindings args-alist)))
+        (er soft 'try-gl-concls
+            "The keyword arguments HYP, CONCLS, and G-BINDINGS must be provided ~
+ in TRY-GL-CONCLS.~%"))
        ((when rest)
         (er soft 'try-gl-concls
-            "Non-keyword arg(s) to try-gl-concls: ~x0~%"
+            "Non-keyword arg(s) to TRY-GL-CONCLS: ~x0~%"
             rest))
-       (hyp          (std::getarg :hyp      t args-alist))
-       (concls       (std::getarg :concls nil args-alist))
-       (g-rest-alist (std::getarg :g-rest nil args-alist))
+       (hyp          (std::getarg :hyp          t args-alist))
+       (concls       (std::getarg :concls     nil args-alist))
+       ((when (not (true-list-listp concls)))
+        (er soft 'try-gl-concls
+            "CONCLS must be a list of terms. Instead, it is ~p0.~%"
+            concls))
+       (g-bindings   (std::getarg :g-bindings nil args-alist))
+       (g-rest-alist (std::getarg :rest       nil args-alist))
        ((mv erp ok-concls state)
-        (try-gl-concls-aux name hyp concls g-rest-alist nil state))
+        (try-gl-concls-aux name hyp concls g-bindings g-rest-alist nil state))
        (- (cw "~%Hyp:~%~p0~%" hyp))
        (- (if ok-concls
               (cw "~%Successful conclusion(s):~%")
@@ -101,11 +135,16 @@
 
 (try-gl-concls test
                :hyp (and (unsigned-byte-p 1 a) (unsigned-byte-p 1 b))
+               :concls (not (equal (+ a b) 0))
+               :g-bindings (gl::auto-bindings (:mix (:nat a 8) (:nat b 8))))
+
+(try-gl-concls test
+               :hyp (and (unsigned-byte-p 1 a) (unsigned-byte-p 1 b))
                :concls ((not (equal (+ a b) 0))
                         (not (equal (+ a b) 1))
                         (not (equal (+ a b) 2)))
-               :g-rest (:g-bindings
-                        (gl::auto-bindings (:mix (:nat a 8) (:nat b 8)))))
+               :g-bindings (gl::auto-bindings (:mix (:nat a 8) (:nat b 8)))
+               :rest (:do-not-expand (unsigned-byte-p)))
 
 (try-gl-concls test
                :hyp (and (unsigned-byte-p 1 a) (unsigned-byte-p 1 b))
@@ -113,8 +152,7 @@
                         (not (equal (+ a b) 1))
                         (not (equal (+ a b) 2))
                         (not (equal (+ a b) 3)))
-               :g-rest (:g-bindings
-                        (gl::auto-bindings (:mix (:nat a 8) (:nat b 8)))))
+               :g-bindings (gl::auto-bindings (:mix (:nat a 8) (:nat b 8))))
 
 ||#
 
