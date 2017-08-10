@@ -1677,7 +1677,7 @@ preprocessor) directive, e.g.,:</p>
 
 @({
     @([
-       c = \\pm\\sqrt{a^2 + b^2}
+       c = \\\\pm\\\\sqrt{a^2 + b^2}
     ])
 })
 
@@ -1691,7 +1691,7 @@ preprocessor) directive, e.g.,:</p>
 instance:</p>
 
 @({
-     The product @($a \\times b$) is even.
+     The product @($a \\\\times b$) is even.
 })
 
 <p>Produces text such as: the product @($a \\times b$).</p>
