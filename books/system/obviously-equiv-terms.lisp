@@ -645,10 +645,31 @@
               :in-theory (enable obv-ev-of-fncall-args)))
     :flag term-list-depth))
 
-;; (defthm hons-assoc-equal-of-append
-;;   (equal (hons-assoc-equal x (append y z))
-;;          (or (hons-assoc-equal x y)
-;;              (hons-assoc-equal x z))))
+(defthm-term-depth-flag
+  (defthm obv-ev-of-append-first
+    (implies (and (pseudo-termp x)
+                  ;; (no-nils-pseudo-termp x)
+                  )
+             (equal (obv-ev (subcor-var vars terms x) a)
+                    (obv-ev x (append (pairlis$ vars (obv-ev-lst terms a)) a))))
+    :hints ('(:expand ((subcor-var vars terms x)
+                       (no-nils-pseudo-termp x))
+              :in-theory (enable obv-ev-of-fncall-args)))
+    :flag term-depth)
+  (defthm obv-ev-lst-of-append-first-lst
+    (implies (and (pseudo-term-listp x)
+                  (no-nils-pseudo-term-listp x))
+             (equal (obv-ev-lst (subcor-var-lst vars terms x) a)
+                    (obv-ev-lst x (append (pairlis$ vars (obv-ev-lst terms a)) a))))
+    :hints ('(:expand ((subcor-var-lst vars terms x)
+                       (no-nils-pseudo-term-listp x))
+              :in-theory (enable obv-ev-of-fncall-args)))
+    :flag term-list-depth))
+
+(defthm hons-assoc-equal-of-append
+  (equal (hons-assoc-equal x (append y z))
+         (or (hons-assoc-equal x y)
+             (hons-assoc-equal x z))))
 
 ;; (defthm-term-depth-flag
 ;;   (defthm obv-ev-of-subcor-var
@@ -769,6 +790,95 @@
                        (subcor-var-lst vars terms x))))
     :flag term-list-depth))
 
+(defsection all-vars-redef
+  (local (flag::make-flag all-vars1-flag all-vars1))
+
+  (local (defun-sk all-vars1-accumulator-cond (term)
+           (forall acc
+                   (implies (syntaxp (not (equal acc ''nil)))
+                            (set-equiv (all-vars1 term acc)
+                                       (append acc
+                                               (all-vars1 term nil)))))
+           :rewrite :direct))
+  (local (defun-sk all-vars1-lst-accumulator-cond (lst)
+           (forall acc
+                   (implies (syntaxp (not (equal acc ''nil)))
+                            (set-equiv (all-vars1-lst lst acc)
+                                       (append acc (all-vars1-lst lst nil)))))
+           :rewrite :direct))
+  
+  (local
+   (defthm-all-vars1-flag
+     (defthm all-vars1-accumulator-elim-lemma
+       (all-vars1-accumulator-cond term)
+       :hints ('(:expand ((all-vars1-accumulator-cond term)
+                          (:free (acc) (all-vars1 term acc)))))
+       :flag all-vars1)
+     (defthm all-vars1-lst-accumulator-elim-lemma
+       (all-vars1-lst-accumulator-cond lst)
+       :hints ('(:expand ((all-vars1-lst-accumulator-cond lst)
+                          (:free (acc) (all-vars1 lst acc)))))
+       :flag all-vars1-lst)))
+
+  (defthm all-vars1-accumulator-elim
+    (implies (syntaxp (not (equal acc ''nil)))
+             (set-equiv (all-vars1 term acc)
+                        (append acc
+                                (all-vars1 term nil)))))
+
+  (defthm all-vars1-lst-accumulator-elim
+    (implies (syntaxp (not (equal acc ''nil)))
+             (set-equiv (all-vars1-lst lst acc)
+                        (append acc (all-vars1-lst lst nil)))))
+
+  (defun all-vars-lst (lst)
+    (if (atom lst)
+        nil
+      (append (all-vars (car lst))
+              (all-vars-lst (cdr lst)))))
+
+  (local (defthm all-vars1-lst-is-all-vars-lst
+           (set-equiv (all-vars1-lst lst nil)
+                      (all-vars-lst lst))
+           :hints(("Goal" :in-theory (enable all-vars)))))
+
+  (defthm all-vars-redef
+    (set-equiv (all-vars term)
+               (cond ((variablep term) (list term))
+                     ((fquotep term) nil)
+                     (t (all-vars-lst (cdr term)))))
+    :hints(("Goal" :in-theory (enable all-vars)
+            :expand ((all-vars1 term nil))))
+    :rule-classes
+    ((:definition
+      :clique (all-vars all-vars-lst)
+      :controller-alist ((all-vars t)
+                         (all-vars-lst t))))))
+
+(local (in-theory (disable all-vars)))
+
+(defthm-term-depth-flag
+  (defthm obv-ev-of-append-pairlis-when-vars-subset-of-first
+    (implies (and (pseudo-termp x)
+                  (no-nils-pseudo-termp x)
+                  (subsetp (all-vars x) vars1))
+             (equal (obv-ev x (append (pairlis$ vars1 vals1) rest))
+                    (obv-ev x (pairlis$ vars1 vals1))))
+    :hints ('(:expand ((pseudo-termp x)
+                       (no-nils-pseudo-termp x)
+                       (:with all-vars-redef (all-vars x)))
+              :in-theory (enable obv-ev-of-fncall-args)))
+    :flag term-depth)
+  (defthm obv-ev-lst-of-append-pairlis-when-vars-subset-of-first
+    (implies (and (pseudo-term-listp x)
+                  (no-nils-pseudo-term-listp x)
+                  (subsetp (all-vars-lst x) vars1))
+             (equal (obv-ev-lst x (append (pairlis$ vars1 vals1) rest))
+                    (obv-ev-lst x (pairlis$ vars1 vals1))))
+    :hints ('(:expand ((pseudo-term-listp x)
+                       (no-nils-pseudo-term-listp x)
+                       (all-vars-lst x))))
+    :flag term-list-depth))
 
 
 (defthm term-listp-when-arglistp1
@@ -828,6 +938,12 @@
   (local (defthm member-nil-when-arglistp1
            (implies (arglistp1 x)
                     (not (member nil x)))))
+
+  (local (defthm not-set-difference-implies-subset
+           (implies (not (set-difference$ x y))
+                    (subsetp x y))
+           :hints(("Goal" :in-theory (enable set-difference$
+                                             subsetp)))))
   
   (defthm termp-when-lambda
     (implies (and (termp x w)
@@ -842,7 +958,9 @@
                   (not (member nil (cadr (car x))))
                   (not (stringp (cadr (car x))))
                   (no-duplicatesp (cadr (car x)))
-                  (term-listp (cdr x) w)))))
+                  (term-listp (cdr x) w)
+                  (subsetp (all-vars (caddr (car x)))
+                           (cadr (car x)))))))
 
 (local (defthm length-is-len
          (implies (not (stringp x))
@@ -915,6 +1033,9 @@
   :hints (("goal" :induct (len x)
            :in-theory (enable len)))
   :rule-classes :type-prescription)
+
+
+
 
 (defines l-obviously-equiv-alist
   :flag-local nil
@@ -1030,11 +1151,11 @@
 
  (defthm-l-obviously-equiv-alist-flag l-obviously-equiv-terms-equal-implies-iff
   (Defthm l-obviously-equiv-terms-equal-implies-iff
-    (implies (and (termp x w)
-                  (termp y w)
-                  (equal (arity 'if w) 3)
+    (implies (and (equal (arity 'if w) 3)
                   (equal (arity 'implies w) 2)
-                  (equal (arity 'iff w) 2))
+                  (equal (arity 'iff w) 2)
+                  (termp x w)
+                  (termp y w))
              (implies (l-obviously-equiv-terms x y nil)
                       (l-obviously-equiv-terms x y t)))
     :hints ('(:expand ((:free (iff-flg) (l-obviously-equiv-terms x y iff-flg))
@@ -1056,12 +1177,12 @@
  
  (defthm-l-obviously-equiv-alist-flag l-obviously-equiv-terms-correct
   (defthm l-obviously-equiv-terms-correct
-    (implies (and (termp x w)
-                  (termp y w)
-                  (equal (arity 'if w) 3)
+    (implies (and (equal (arity 'if w) 3)
                   (equal (arity 'implies w) 2)
                   (equal (arity 'iff w) 2)
-                  (equal (arity 'not w) 1))
+                  (equal (arity 'not w) 1)
+                  (termp x w)
+                  (termp y w))
              (and (implies (l-obviously-equiv-terms x y t)
                            (iff* (obv-ev x a)
                                  (obv-ev y a)))
