@@ -135,6 +135,12 @@
  <p>See @('projects/async/tools/convert-edif.lisp') for tools to convert
  between EDIF format and corresponding convenient s-expressions.</p>
 
+ <h4>try-gl-concls</h4>
+
+ <p>See @('centaur/misc/try-gl-concls') for a small but convenient utility to
+ find all the true conclusions (if any) from a user-provided list of possible
+ conclusions using @(see GL::GL).</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <h4>@(see std/io)</h4>

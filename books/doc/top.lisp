@@ -125,6 +125,7 @@
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
 (include-book "centaur/misc/spacewalk" :dir :system)
 (include-book "centaur/misc/dag-measure" :dir :system)
+(include-book "centaur/misc/try-gl-concls" :dir :system)
 
 ;; BOZO conflicts with something in 4v-sexpr?
 
