@@ -350,11 +350,12 @@ That is to say, any square root of two must be an irrational real number.
 ;; negative squares, and so none of them can be the square root of 2.
 ;;
 ;; Unfortunately, Acl2 doesn't seem happy reasoning about complex arithmetic.
-;; Part of the reason is that the following axiom is disabled:
+;; Part of the reason is that the following axiom makes no rule available for
+;; reasoning:
 ;;
 ;;      (defaxiom complex-definition
-;;        (implies (and (realp x)
-;;                      (realp y))
+;;        (implies (and (real/rationalp x)
+;;                      (real/rationalp y))
 ;;                 (equal (complex x y)
 ;;                        (+ x (* #c(0 1) y))))
 ;;        :rule-classes nil)
