@@ -422,17 +422,17 @@
   (implies (xlate-equiv-memory (double-rewrite x86-1) x86-2)
            (and
             (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-1))
-                   (mv-nth 0(las-to-pas n lin-addr r-w-x x86-2)))
+                   (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-2)))
             (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1))
-                   (mv-nth 1(las-to-pas n lin-addr r-w-x x86-2)))))
+                   (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-2)))))
   :hints (("Goal"
            :induct (cons (las-to-pas n lin-addr r-w-x x86-1)
-                        (las-to-pas n lin-addr r-w-x x86-2)))))
+                         (las-to-pas n lin-addr r-w-x x86-2)))))
 
 (defthm xlate-equiv-memory-and-mv-nth-0-las-to-pas-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-1))
-                  (mv-nth 0(las-to-pas n lin-addr r-w-x x86-2))))
+                  (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-2))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory-and-las-to-pas) ())))
   :rule-classes :congruence)
 
@@ -445,9 +445,9 @@
 
 (defthm xlate-equiv-memory-with-mv-nth-2-las-to-pas
   (xlate-equiv-memory
-   (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86))
+   (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
    (double-rewrite x86))
-  :hints (("Goal" :induct (las-to-pas l-addrs r-w-x cpl x86))))
+  :hints (("Goal" :induct (las-to-pas n lin-addr r-w-x x86))))
 
 (defthm xlate-equiv-memory-with-two-mv-nth-2-las-to-pas-cong
   (implies (xlate-equiv-memory x86-1 x86-2)

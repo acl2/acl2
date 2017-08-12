@@ -701,13 +701,17 @@ memory.</li>
 
     (defthm flgi-las-to-pas
       (equal (flgi index (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
-             (flgi index x86))
+             (flgi index (double-rewrite x86)))
       :hints (("Goal" :in-theory (e/d* (flgi) (force (force))))))
 
     (defthm xr-fault-las-to-pas
       (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
                (equal (xr :fault 0 (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
-                      (xr :fault 0 x86)))
+                      ;; A missing double-rewrite here would kill me
+                      ;; --- sigh, it's hard to figure out when
+                      ;; missing double-rewrites cause otherwise good
+                      ;; rules to become less applicable.
+                      (xr :fault 0 (double-rewrite x86))))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
     (local (in-theory (e/d () (xr-las-to-pas))))

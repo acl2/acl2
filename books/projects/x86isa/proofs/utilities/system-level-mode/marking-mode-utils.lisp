@@ -457,10 +457,10 @@
            (and
             (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x
                                              (mv-nth 1 (wb n-w write-addr w value x86))))
-                   (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                   (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
             (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x
                                              (mv-nth 1 (wb n-w write-addr w value x86))))
-                   (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))
+                   (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -559,10 +559,10 @@
            (and
             (equal (mv-nth 0 (rb n lin-addr r-w-x
                                  (mv-nth 1 (wb n-w write-addr w value x86))))
-                   (mv-nth 0 (rb n lin-addr r-w-x x86)))
+                   (mv-nth 0 (rb n lin-addr r-w-x (double-rewrite x86))))
             (equal (mv-nth 1 (rb n lin-addr r-w-x
                                  (mv-nth 1 (wb n-w write-addr w value x86))))
-                   (mv-nth 1 (rb n lin-addr r-w-x x86)))))
+                   (mv-nth 1 (rb n lin-addr r-w-x (double-rewrite x86))))))
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance xlate-equiv-memory-and-las-to-pas
@@ -587,9 +587,9 @@
                  (all-xlation-governing-entries-paddrs n lin-addr (double-rewrite x86)))
 
                 (no-duplicates-p
-                 (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
-                (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
-                (not (mv-nth 0 (las-to-pas n-w write-addr :w x86)))
+                 (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86))))
+                (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+                (not (mv-nth 0 (las-to-pas n-w write-addr :w (double-rewrite x86))))
                 (unsigned-byte-p (ash n-w 3) value)
                 (natp n-w)
                 (x86p x86))
@@ -2092,7 +2092,7 @@
                              (addr-2 addr-i)
                              (n-1 j)
                              (addr-1 addr-i)))))))
-  
+
 
 (defthmd rb-rb-subset-in-marking-mode
   (implies (and (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)

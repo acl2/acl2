@@ -4,5 +4,12 @@
 (in-package "X86ISA")
 
 ;; To ensure both of these certify...
-(local (include-book "non-marking-mode-top" :ttags :all))
-(local (include-book "marking-mode-top" :ttags :all))
+(local
+ (encapsulate
+   ()
+   (local (include-book "non-marking-mode-top" :ttags :all))))
+
+(local
+ (encapsulate
+   ()
+   (local (include-book "marking-mode-top" :ttags :all))))

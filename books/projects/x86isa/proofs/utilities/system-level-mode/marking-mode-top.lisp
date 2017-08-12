@@ -1135,6 +1135,25 @@
                                direct-map-p)
                               (disjointness-of-las-to-pas-from-write-to-physical-memory-subset-of-paging-structures)))))
 
+  (defthm las-to-pas-values-and-wb-disjoint
+    (implies
+     (and
+      (disjoint-p
+       (mv-nth 1 (las-to-pas n-2 write-addr :w (double-rewrite x86)))
+       (all-xlation-governing-entries-paddrs n-1 lin-addr (double-rewrite x86)))
+      (not (programmer-level-mode x86))
+      (x86p x86))
+     (and
+      (equal
+       (mv-nth 0 (las-to-pas n-1 lin-addr r-w-x (mv-nth 1 (wb n-2 write-addr w value x86))))
+       (mv-nth 0 (las-to-pas n-1 lin-addr r-w-x (double-rewrite x86))))
+      (equal
+       (mv-nth 1 (las-to-pas n-1 lin-addr r-w-x (mv-nth 1 (wb n-2 write-addr w value x86))))
+       (mv-nth 1 (las-to-pas n-1 lin-addr r-w-x (double-rewrite x86))))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (wb) ()))))
+
   (defthm rb-alt-and-wb-to-paging-structures-disjoint
     (implies
      (and
