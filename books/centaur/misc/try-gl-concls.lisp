@@ -52,7 +52,7 @@
                 (not (equal (+ a b) 1))
                 (not (equal (+ a b) 2))
                 (not (equal (+ a b) 3))
-                (not (equal (+ a b) 3)))
+                (not (equal (+ a b) 4)))
        :g-bindings (gl::auto-bindings (:mix (:nat a 8) (:nat b 8))))
    })"
   )
