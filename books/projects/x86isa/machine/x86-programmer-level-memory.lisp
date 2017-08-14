@@ -42,7 +42,7 @@ ranges below:</p>
 the addresses</p>
 <tt>0            to     2^47-1</tt>
 <p>to map the first range, and the addresses</p>
-<tt>-2^47        to     -1</tt>
+<tt>-2^47        to         -1</tt>
 <p>to map the second range.</p>
 
 <tt>0            to     2^47-1       |     0            to     2^47-1</tt><br/>
@@ -60,7 +60,10 @@ functions, like @(see rm08) and @(see wm08) when
 of @('memi') and @('!memi'), because the latter allow reading from and
 writing to an address anywhere in the range <tt>0 to 2^52-1</tt>, and
 @('rvm08') and @('wvm08') allow reads and writes only to the range
-<tt>0 to 2^48-1</tt>.  Basically, we're overloading the @('mem') field
+<tt>0 to 2^48-1</tt> of physical memory: they take as argument a signed 48-bit
+integer that represents a canonical address, they convert it to an unsigned
+48-bit integer, and they use that to access physical memory.
+Basically, we're overloading the @('mem') field
 in @('x86') --- when @('programmer-level-mode') is set, @('mem')
 refers to the linear memory; otherwise, it refers to the physical
 memory.</p>" )
