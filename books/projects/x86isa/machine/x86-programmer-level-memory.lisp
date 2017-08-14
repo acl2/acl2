@@ -42,7 +42,7 @@ ranges below:</p>
 the addresses</p>
 <tt>0            to     2^47-1</tt>
 <p>to map the first range, and the addresses</p>
-<tt>2^47         to     2^48-1</tt>
+<tt>-2^47        to     -1</tt>
 <p>to map the second range.</p>
 
 <tt>0            to     2^47-1       |     0            to     2^47-1</tt><br/>
