@@ -90,7 +90,7 @@
       (equal (fault x86) nil)))
 
    (acl2::def-model-api
-    ;; BOZO codewalker requires the run function to have x86 as the 0th
+    ;; Codewalker requires the run function to have x86 as the 0th
     ;; formal...
     :run x86-run-alt               ;; the run function of the model
     :svar x86                      ;; name of state variable

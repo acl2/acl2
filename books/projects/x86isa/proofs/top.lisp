@@ -3,21 +3,24 @@
 
 (in-package "X86ISA")
 
+;; There are a lot of name clashes here.  The empty encapsulates below
+;; avoid this name clash problem while ensuring that the books get
+;; built as a part of the regression.
+
 ;; ======================================================================
 
 ;; Proof utilities
-(include-book "utilities/programmer-level-mode/top" :ttags :all)
-(include-book "utilities/system-level-mode/top" :ttags :all)
+(local
+ (encapsulate
+   ()
+   (local (include-book "utilities/programmer-level-mode/top" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "utilities/system-level-mode/top" :ttags :all))))
 
 ;; Proofs of correctness of various x86 programs: We exclude these
 ;; from the x86isa documentation.
-
-;; [Shilpi]: There are name clashes in these two factorial books.  The
-;; empty encapsulates below avoid this name clash problem while
-;; ensuring that the books get built as a part of the
-;; regression. Another way to ensure that these books get built is to
-;; rely on cert.pl's dependency scanner and put these include-books in
-;; a multi-line comment or something.
 
 ;; ----------------------------------------------------------------------
 ;; Application Programs:
@@ -79,6 +82,19 @@
  (encapsulate
    ()
    (local (include-book "zeroCopy/marking-mode/zeroCopy" :ttags :all))))
+
+;; ======================================================================
+
+;; x86isa+Codewalker:
+
+(local
+ (encapsulate
+   ()
+   (local (include-book "codewalker-examples/factorial" :ttags :all))))
+(local
+ (encapsulate
+   ()
+   (local (include-book "codewalker-examples/popcount-32" :ttags :all))))
 
 ;; ======================================================================
 
