@@ -53,6 +53,107 @@
 
 ;; ======================================================================
 
+(define update-a/d-bits (p-addrs
+                         (r-w-x  :type (member :r :w :x))
+                         x86)
+  ;; We expect p-addrs to be members of
+  ;; xlate-governing-qword-addresses addresses of some linear address
+  ;; on whose behalf a page walk is being done.
+
+  ;; Don't use anything other than the output of
+  ;; xlate-governing-qword-addresses* functions as input for p-addrs.
+  :guard (and (not (programmer-level-mode x86))
+              (mult-8-qword-paddr-listp p-addrs))
+  :enabled t
+  (if (endp p-addrs)
+      (mv nil x86)
+    (b* ((p-addr (car p-addrs))
+         ((when (not (physical-address-p (+ 7 p-addr))))
+          (mv t x86))
+         (entry (rm-low-64 p-addr x86))
+         (new-entry (set-accessed-bit entry))
+         (new-entry
+          (if (and (equal (len p-addrs) 1)
+                   (equal r-w-x :w))
+              ;; If the entry maps a page and translation is occurring
+              ;; on behalf of a write, set the dirty bit too.
+              (set-dirty-bit new-entry)
+            new-entry))
+         (x86 (wm-low-64 p-addr new-entry x86)))
+      (update-a/d-bits (cdr p-addrs) r-w-x x86)))
+
+  ///
+
+  (defthm x86p-mv-nth-1-update-a/d-bits
+    (implies (and (x86p x86)
+                  (physical-address-listp p-addrs))
+             (x86p (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86))))))
+
+(defthm xr-mem-from-update-a/d-bits-disjoint
+  (implies (and (disjoint-p (list index)
+                            (open-qword-paddr-list p-addrs))
+                (mult-8-qword-paddr-listp p-addrs))
+           (equal (xr :mem index (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86)))
+                  (xr :mem index x86))))
+
+(defthm rm-low-64-from-update-a/d-bits-disjoint
+  (implies (and (disjoint-p (addr-range 8 index)
+                            (open-qword-paddr-list p-addrs))
+                (mult-8-qword-paddr-listp p-addrs)
+                (integerp index))
+           (equal (rm-low-64 index (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86)))
+                  (rm-low-64 index x86))))
+
+(defthm xw-mem-from-update-a/d-bits-disjoint-commute
+  (implies (disjoint-p (list index)
+                       (open-qword-paddr-list p-addrs))
+           (equal (xw :mem index val (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86)))
+                  (mv-nth 1 (update-a/d-bits p-addrs r-w-x (xw :mem index val x86))))))
+
+(defthm wm-low-64-from-update-a/d-bits-disjoint-commute
+  (implies (and (disjoint-p (addr-range 8 index)
+                            (open-qword-paddr-list p-addrs))
+                (mult-8-qword-paddr-listp p-addrs)
+                (integerp index))
+           (equal (wm-low-64 index val (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86)))
+                  (mv-nth 1 (update-a/d-bits p-addrs r-w-x (wm-low-64 index val x86))))))
+
+;; ======================================================================
+
+;; Locally adding rm-low-64/wm-low-64 RoW rule that will allow
+;; splitting based on whether addr-1 and addr-2 are equal or
+;; completely disjoint:
+
+(local
+ (defthm |(rm-low-64 addr-2 (wm-low-64 addr-1 val x86)) --- split|
+   (implies (and (force (n64p val))
+                 (not (programmer-level-mode x86)))
+            (equal (rm-low-64 addr-2 (wm-low-64 addr-1 val x86))
+                   (if (equal addr-1 addr-2)
+                       val
+                     (if (disjoint-p (addr-range 8 addr-1)
+                                     (addr-range 8 addr-2))
+                         (rm-low-64 addr-2 x86)
+                       ;; This lemma is tailored for paging entries,
+                       ;; where addr-1 and addr-2 are the physical
+                       ;; addresses of two paging entries.  The hide
+                       ;; below is because I don't care about the case
+                       ;; where addr-1 and addr-2 overlap --- it's not
+                       ;; going to come up here because all paging
+                       ;; entries are quadword aligned.  Moreover,
+                       ;; putting this hide here avoids stack
+                       ;; overflows on value stack.
+                       (hide (rm-low-64 addr-2 (wm-low-64 addr-1 val x86)))))))
+   :hints (("Goal"
+            :expand ((:free (x) (hide x)))
+            :in-theory (e/d* (unsigned-byte-p) ())))))
+
+(local (in-theory (e/d ()
+                       (|(rm-low-64 addr2 (wm-low-64 addr1 val x86)) --- same addr|
+                        |(rm-low-64 addr2 (wm-low-64 addr1 val x86)) --- disjoint addr|))))
+
+;; ======================================================================
+
 ;; !! TODO: I should probably replace xlation-governing-entries-paddrs*
 ;; !! with xlate-governing-qword-addresses* eventually...
 
@@ -309,22 +410,22 @@
   output (depending on the page configurations, i.e., 4K, 2M, or 1G
   pages) include:</p>
 
-<ol>
-<li>The qword address of the relevant PML4 entry</li>
+ <ol>
+ <li>The qword address of the relevant PML4 entry</li>
 
-<li>The qword address of the relevant PDPT entry</li>
+ <li>The qword address of the relevant PDPT entry</li>
 
-<li>The qword address of the relevant PD entry</li>
+ <li>The qword address of the relevant PD entry</li>
 
-<li>The qword addresses of the relevant PT entry</li>
+ <li>The qword addresses of the relevant PT entry</li>
 
-</ol>
+ </ol>
 
-<p>The following rule shows the relationship between @(see
-xlation-governing-entries-paddrs) and
-@('xlate-governing-qword-addresses'):</p>
+ <p>The following rule shows the relationship between @(see
+ xlation-governing-entries-paddrs) and
+ @('xlate-governing-qword-addresses'):</p>
 
-@(def xlate-governing-qword-and-byte-addresses)"
+ @(def xlate-governing-qword-and-byte-addresses)"
 
   :guard (not (xr :programmer-level-mode 0 x86))
   :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
@@ -368,20 +469,23 @@ xlation-governing-entries-paddrs) and
              :in-theory (e/d* () (xlate-governing-qword-addresses-for-pml4-table))))))
 
 (define all-xlate-governing-qword-addresses
-  ((l-addrs canonical-address-listp)
+  ((n        natp)
+   (lin-addr canonical-address-p)
    x86)
-  :guard (not (xr :programmer-level-mode 0 x86))
+  :guard (and (not (xr :programmer-level-mode 0 x86))
+              (canonical-address-p (+ n lin-addr)))
+  :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))
   :enabled t
-  (if (endp l-addrs)
+  (if (zp n)
       nil
-    (append (xlate-governing-qword-addresses (car l-addrs) x86)
-            (all-xlate-governing-qword-addresses (cdr l-addrs)  x86)))
+    (append (xlate-governing-qword-addresses lin-addr x86)
+            (all-xlate-governing-qword-addresses (1- n) (1+ lin-addr) x86)))
   ///
 
   (defthm all-xlate-governing-qword-and-byte-addresses
     (equal (open-qword-paddr-list
-            (all-xlate-governing-qword-addresses l-addrs x86))
-           (all-xlation-governing-entries-paddrs l-addrs x86))
+            (all-xlate-governing-qword-addresses n lin-addr x86))
+           (all-xlation-governing-entries-paddrs n lin-addr x86))
     :hints (("Goal" :in-theory (e/d* (all-xlation-governing-entries-paddrs)
                                      ()))))
 
@@ -389,111 +493,23 @@ xlation-governing-entries-paddrs) and
     (implies (and (not (equal fld :mem))
                   (not (equal fld :ctr))
                   (not (equal fld :programmer-level-mode)))
-             (equal (all-xlate-governing-qword-addresses l-addrs (xw fld index value x86))
-                    (all-xlate-governing-qword-addresses l-addrs (double-rewrite x86))))
+             (equal (all-xlate-governing-qword-addresses
+                     n lin-addr (xw fld index value x86))
+                    (all-xlate-governing-qword-addresses
+                     n lin-addr (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* () (xlate-governing-qword-addresses)))))
 
   (defthm all-xlate-governing-qword-addresses-and-xw-mem-not-member
     (implies (and (not (member-p index
                                  (open-qword-paddr-list
-                                  (all-xlate-governing-qword-addresses l-addrs (double-rewrite x86)))))
+                                  (all-xlate-governing-qword-addresses
+                                   n lin-addr (double-rewrite x86)))))
                   (integerp index))
-             (equal (all-xlate-governing-qword-addresses l-addrs (xw :mem index value x86))
-                    (all-xlate-governing-qword-addresses l-addrs (double-rewrite x86))))
+             (equal (all-xlate-governing-qword-addresses
+                     n lin-addr (xw :mem index value x86))
+                    (all-xlate-governing-qword-addresses
+                     n lin-addr (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* () (xlate-governing-qword-addresses))))))
-
-;; ======================================================================
-
-(define update-a/d-bits (p-addrs
-                         (r-w-x  :type (member :r :w :x))
-                         x86)
-  ;; We expect p-addrs to be members of
-  ;; xlate-governing-qword-addresses addresses of some linear address
-  ;; on whose behalf a page walk is being done.
-
-  ;; Don't use anything other than the output of
-  ;; xlate-governing-qword-addresses* functions as input for p-addrs.
-  :guard (and (not (programmer-level-mode x86))
-              (mult-8-qword-paddr-listp p-addrs))
-  :enabled t
-  (if (endp p-addrs)
-      (mv nil x86)
-    (b* ((p-addr (car p-addrs))
-         ((when (not (physical-address-p (+ 7 p-addr))))
-          (mv t x86))
-         (entry (rm-low-64 p-addr x86))
-         (new-entry (set-accessed-bit entry))
-         (new-entry
-          (if (and (equal (len p-addrs) 1)
-                   (equal r-w-x :w))
-              ;; If the entry maps a page and translation is occurring
-              ;; on behalf of a write, set the dirty bit too.
-              (set-dirty-bit new-entry)
-            new-entry))
-         (x86 (wm-low-64 p-addr new-entry x86)))
-      (update-a/d-bits (cdr p-addrs) r-w-x x86)))
-
-  ///
-
-  (defthm x86p-mv-nth-1-update-a/d-bits
-    (implies (and (x86p x86)
-                  (physical-address-listp p-addrs))
-             (x86p (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86))))))
-
-(defthm xr-mem-from-update-a/d-bits-disjoint
-  (implies (and (disjoint-p (list index)
-                            (open-qword-paddr-list p-addrs))
-                (mult-8-qword-paddr-listp p-addrs))
-           (equal (xr :mem index (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86)))
-                  (xr :mem index x86))))
-
-(defthm rm-low-64-from-update-a/d-bits-disjoint
-  (implies (and (disjoint-p (addr-range 8 index)
-                            (open-qword-paddr-list p-addrs))
-                (mult-8-qword-paddr-listp p-addrs)
-                (integerp index))
-           (equal (rm-low-64 index (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86)))
-                  (rm-low-64 index x86))))
-
-(defthm xw-mem-from-update-a/d-bits-disjoint-commute
-  (implies (disjoint-p (list index)
-                       (open-qword-paddr-list p-addrs))
-           (equal (xw :mem index val (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86)))
-                  (mv-nth 1 (update-a/d-bits p-addrs r-w-x (xw :mem index val x86))))))
-
-(defthm wm-low-64-from-update-a/d-bits-disjoint-commute
-  (implies (and (disjoint-p (addr-range 8 index)
-                            (open-qword-paddr-list p-addrs))
-                (mult-8-qword-paddr-listp p-addrs)
-                (integerp index))
-           (equal (wm-low-64 index val (mv-nth 1 (update-a/d-bits p-addrs r-w-x x86)))
-                  (mv-nth 1 (update-a/d-bits p-addrs r-w-x (wm-low-64 index val x86))))))
-
-;; ======================================================================
-
-;; Locally adding rm-low-64/wm-low-64 RoW rule that will allow
-;; splitting based on whether addr-1 and addr-2 are equal or
-;; completely disjoint:
-
-(local
- (defthm |(rm-low-64 addr-2 (wm-low-64 addr-1 val x86)) --- split|
-   (implies (and (force (n64p val))
-                 (force (physical-address-p addr-1))
-                 (equal (loghead 3 addr-2) 0)
-                 (force (physical-address-p addr-2))
-                 (not (programmer-level-mode x86)))
-            (equal (rm-low-64 addr-2 (wm-low-64 addr-1 val x86))
-                   (if (equal addr-1 addr-2)
-                       val
-                     (if (disjoint-p (addr-range 8 addr-1)
-                                     (addr-range 8 addr-2))
-                         (rm-low-64 addr-2 x86)
-                       (rm-low-64 addr-2 (wm-low-64 addr-1 val x86))))))
-   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p) ())))))
-
-(local (in-theory (e/d ()
-                       (|(rm-low-64 addr2 (wm-low-64 addr1 val x86)) --- same addr|
-                        |(rm-low-64 addr2 (wm-low-64 addr1 val x86)) --- disjoint addr|))))
 
 ;; ======================================================================
 
@@ -1286,10 +1302,10 @@ xlation-governing-entries-paddrs) and
 (defthm mv-nth-2-ia32e-la-to-pa-in-terms-of-updates-no-errors
   (implies
    (and
-    (case-split (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
+    (case-split (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
     (canonical-address-p lin-addr)
     (x86p x86))
-   (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+   (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
           (if (or (xr :programmer-level-mode 0 x86)
                   (not (xr :page-structure-marking-mode 0 x86)))
               x86
@@ -1306,7 +1322,7 @@ xlation-governing-entries-paddrs) and
 
 (defthm xw-mem-mv-nth-2-ia32e-la-to-pa-errors-commute
   (implies
-   (and (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+   (and (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))
         (disjoint-p (list index)
                     (open-qword-paddr-list
                      (xlate-governing-qword-addresses
@@ -1314,11 +1330,11 @@ xlation-governing-entries-paddrs) and
         (canonical-address-p lin-addr))
    (equal (mv-nth
            2
-           (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem index val x86)))
+           (ia32e-la-to-pa lin-addr r-w-x (xw :mem index val x86)))
           (xw :mem index val
               (mv-nth
                2
-               (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+               (ia32e-la-to-pa lin-addr r-w-x x86)))))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
                                     xlate-governing-qword-addresses)
                                    (bitops::logand-with-negated-bitmask

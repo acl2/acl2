@@ -81,13 +81,59 @@ the @('fault') field instead.</li>
              x86))
   )
 
+;; Extended by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+;; Extended from always T to discriminating between 64-bit and 32-bit mode.
 (define 64-bit-modep (x86)
-  (declare (ignore x86))
-
   :parents (x86-decoding-and-spec-utils)
-  :short "@('64-bit-modep') is simply true, since we are focusing only
-  on the 64-bit mode for now."
-  t)
+  :short "Check whether we are in 64-bit mode."
+  :long
+  "<p>
+   For now we do not model in detail all the processor modes and transitions
+   (see Figure 2-3 in Intel Volume 3A).
+   We implicitly assume that the processor
+   is always in one of the following modes:
+   </p>
+   <ul>
+     <li>Protected mode.</li>
+     <li>Compatibility mode (sub-mode of IA-32e mode).</li>
+     <li>64-bit mode (sub-mode of IA-32e mode).</li>
+   </ul>
+   <p>
+   No real-address mode, virtual-8086 mode, or system management mode for now.
+   </p>
+   <p>
+   Given the above assumption, this predicate discriminates between
+   64-bit mode and the other two modes (collectively, 32-bit mode).
+   Based on Section 2.2 of in Intel Volume 3A (near Figure 2-3),
+   the discrimination is based on the IA32_EFER.LME and CS.L bits:
+   if they are both 1, we are in 64-bit mode,
+   otherwise we are in 32-bit mode
+   (protected mode if IA32_EFER.LME is 0,
+   compatibility mode if IA32_EFER.LME is 1 and CS.L is 0;
+   note that when IA32_EFER.LME is 0, CS.L should be 0,
+   according to Section 3.4.5 of Intel Volume 3A).
+   </p>
+   <p>
+   This predicate does not include state invariants such as
+   the constraints imposed by the 64-bit mode consistency checks
+   described in Section 9.8.5 of Intel Volume 3A.
+   </p>
+   <p>
+   This predicate is useful as a hypothesis of theorems
+   about either 64-bit or 32-bit mode.
+   </p>
+   <p>
+   Since @('(xr :msr ... x86)') returns a 64-bit value
+   but the IA32_EFER register consists of 12 bits.
+   So we use @(tsee n12) to make @('ia32_efer-slice') applicable.
+   </p>"
+  (b* ((ia32_efer (n12 (xr :msr *ia32_efer-idx* x86)))
+       (ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
+       (cs-hidden (xr :seg-hidden *cs* x86))
+       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+       (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
+    (and (equal ia32_efer.lma 1)
+         (equal cs.l 1))))
 
 ;; ======================================================================
 
@@ -470,17 +516,17 @@ made from privilege level 3.</sf>"
                       (alignment-checking-enabled-p x86))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-1-wb
-      (equal (alignment-checking-enabled-p (mv-nth 1 (wb addr-lst x86)))
+      (equal (alignment-checking-enabled-p (mv-nth 1 (wb n addr w val x86)))
              (alignment-checking-enabled-p x86))
       :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory flgi) ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-2-rb
-      (equal (alignment-checking-enabled-p (mv-nth 2 (rb l-addrs r-w-x x86)))
+      (equal (alignment-checking-enabled-p (mv-nth 2 (rb n addr r-x x86)))
              (alignment-checking-enabled-p x86))
       :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-2-las-to-pas
-      (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+      (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (alignment-checking-enabled-p x86))))
 
   (define x86-operand-from-modr/m-and-sib-bytes

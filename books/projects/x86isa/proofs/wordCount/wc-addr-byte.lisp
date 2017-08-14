@@ -25,6 +25,8 @@
          #xe0 #x48 #xc7 #xc2 #x01 #x00 #x00 #x00 #x0f #x05 #x89 #xc3 #x89
          #x5d #xf0 #x0f #xb6 #x45 #xf7 #x0f #xb6 #xc0 #x5b #x5d #xc3))
 
+(defconst *gc-len* (len *gc*))
+
 (defconst *wc-main*
   ;; Bytes corresponding to MAIN:
   '(#x55 #x48 #x89 #xe5 #x48 #x83 #xec #x20 #xc7 #x45 #xf8 #x00 #x00 #x00
@@ -37,9 +39,13 @@
          #xff #x89 #x45 #xfc #x83 #x7d #xfc #x23 #x75 #xb8 #xb8 #x00 #x00 #x00
          #x00 #xc9 #xc3))
 
+(defconst *wc-main-len* (len *wc-main*))
+
 (defconst *wc*
   ;; Bytes corresponding to WC (GC + Main):
   (append *gc* *wc-main*))
+
+(defconst *wc-len* (len *wc*))
 
 #||
 

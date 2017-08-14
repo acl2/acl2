@@ -12,13 +12,13 @@
 
 (defsection initialize-x86-state
   :parents (program-execution)
-  :short "Initializing the x86 state"
+  :short "Initializing the x86 state for concrete program execution"
 
-  :long "<p>The events in this section are meant to be used to
-initialize the x86 state when doing execution or maybe bit-blasting
-using GL, not for doing proofs using re-writing.  For events that help
-in code proofs, see the books in directory proofs/basics.</p>"
-  )
+  :long "<p>The utilities in this section are meant to be used to
+ initialize the x86 state when doing concrete execution or when
+ bit-blasting using GL.  These are not intended for doing proofs using
+ rewriting.  For utilities that help in code proofs, see the libraries
+ in directory @('x86isa/proofs/utilities').</p>")
 
 ;; ======================================================================
 
@@ -61,21 +61,21 @@ in code proofs, see the books in directory proofs/basics.</p>"
   program into the memory has not yet proved to be a deal-breaker in
   our experiments so far.</p>
 
-<p><b>Note on dealing with linear addresses emitted by GCC/LLVM:</b></p>
+ <p><b>Note on dealing with linear addresses emitted by GCC/LLVM:</b></p>
 
-<p>GCC and LLVM might not always output addresses satisfying our
-definition of @(see canonical-address-p) \(i.e., essentially
-@('i48p')\).  These tools will output 64-bit addresses.  Therefore,
-this function needs to be able to take a 64-bit address, check if it
-is canonical in the \"real\" world, and if so, convert it into a
-canonical address in our world.</p>
+ <p>GCC and LLVM might not always output addresses satisfying our
+ definition of @(see canonical-address-p) \(i.e., essentially
+ @('i48p')\).  These tools will output 64-bit addresses.  Therefore,
+ this function needs to be able to take a 64-bit address, check if it
+ is canonical in the \"real\" world, and if so, convert it into a
+ canonical address in our world.</p>
 
-<code>
-if (canonical-address-p (n64-to-i64 address))
-    address = (n64-to-i64 address)
-else
-    error!
-</code>"
+ <code>
+ if (canonical-address-p (n64-to-i64 address))
+     address = (n64-to-i64 address)
+ else
+     error!
+ </code>"
 
 
   (cond ((endp n64-bytes-lst) (mv nil x86))
@@ -92,7 +92,7 @@ else
               ((mv flg x86) (wm08 addr byte x86))
               ((when flg)
                (mv (cons 'load-program-into-memory 'wm08-error) x86)))
-             (load-program-into-memory (cdr n64-bytes-lst) x86))))
+           (load-program-into-memory (cdr n64-bytes-lst) x86))))
 
   ///
 
@@ -246,6 +246,6 @@ else
        (x86 (!msri-from-alist msrs x86)) ;; Model-Specific Registers
        (x86 (!ctri-from-alist ctrs x86)) ;; Control Registers
        (x86 (!rflags (n32 flags) x86)))  ;; Initial Flags
-      (mv nil x86)))
+    (mv nil x86)))
 
 ;; ======================================================================

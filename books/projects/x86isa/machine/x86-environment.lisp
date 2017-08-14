@@ -259,7 +259,7 @@
 
   :parents (x86-environment)
 
-  (local (xdoc::set-default-parents writing-strings-or-bytes-to-memory))
+  (local (xdoc::set-default-parents writing-strings-or-bytes-to-memory))  
 
   (local (in-theory (e/d () (str::coerce-to-list-removal))))
 
@@ -273,14 +273,14 @@
     :guard (and (integerp ptr)
                 (<= (- *2^47*) ptr)
                 (byte-listp bytes)
-                (< (+ (len bytes) ptr) *2^47*))
+                (< (+ -1 (len bytes) ptr) *2^47*))
     :returns (mv flg
                  (x86 x86p :hyp (x86p x86)))
 
     (if (mbt (and (integerp ptr)
                   (<= (- *2^47*) ptr)
                   (byte-listp bytes)
-                  (< (+ (len bytes) ptr) *2^47*)))
+                  (< (+ -1 (len bytes) ptr) *2^47*)))
 
         (if (endp bytes)
             (mv nil x86)
@@ -288,11 +288,33 @@
                 (wm08 ptr (the (unsigned-byte 8) (car bytes)) x86))
                ((when flg)
                 (mv flg x86)))
-              (write-bytes-to-memory
-               (the (signed-byte 49) (1+ ptr))
-               (cdr bytes) x86)))
+            (write-bytes-to-memory
+             (the (signed-byte 49) (1+ ptr))
+             (cdr bytes) x86)))
 
-      (mv t x86)))
+      (mv t x86))
+
+    ///
+
+    (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+
+    (defthm rewrite-write-bytes-to-memory-to-wb
+      (implies (and (programmer-level-mode x86)
+                    (canonical-address-p (+ -1 (len bytes) addr))
+                    (canonical-address-p addr)
+                    (byte-listp bytes))
+               (and
+                (equal (mv-nth 0 (write-bytes-to-memory addr bytes x86))
+                       (mv-nth 0 (wb (len bytes) addr :w (combine-bytes bytes) x86)))
+                (equal (mv-nth 1 (write-bytes-to-memory addr bytes x86))
+                       (mv-nth 1 (wb (len bytes) addr :w (combine-bytes bytes) x86)))))
+      :hints (("Goal" :in-theory (e/d* (wb
+                                        wb-1
+                                        wb-1-opener-theorem
+                                        wm08
+                                        canonical-address-p
+                                        signed-byte-p)
+                                       ())))))
 
   (define write-string-to-memory
     ((ptr :type (signed-byte #.*max-linear-address-size+1*))
@@ -303,14 +325,13 @@
     :guard (and (stringp str)
                 (integerp ptr)
                 (<= (- *2^47*) ptr)
-                (< (+ ptr (length str)) *2^47*))
+                (< (+ -1 ptr (length str)) *2^47*))
 
     :returns (mv flg
                  (x86 x86p :hyp (x86p x86)))
 
     (let ((bytes (string-to-bytes str)))
-      (write-bytes-to-memory ptr bytes x86)))
-  )
+      (write-bytes-to-memory ptr bytes x86))))
 
 ;; ======================================================================
 
