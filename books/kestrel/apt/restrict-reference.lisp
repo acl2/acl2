@@ -46,6 +46,7 @@
      (restrict old
                restriction
                &key
+               :undefined       ; default :undefined
                :new-name        ; default :auto
                :new-enable      ; default :auto
                :thm-name        ; default :arrow
@@ -88,7 +89,7 @@
      be defined,
      have at least one formal argument,
      return a non-<see topic='@(url mv)'>multiple</see> value, and
-     have no input or output @(see acl2::stobj)s.
+     have no input or output <see topic='@(url acl2::stobj)'>stobjs</see>.
      If @('old') is recursive, it must
      be singly (not mutually) recursive,
      not have a @(':?') measure (see @(':measure') in @(tsee xargs)), and
@@ -164,11 +165,13 @@
      that includes no free variables other than @('x1'), ..., @('xn'),
      that only calls logic-mode functions,
      that returns a non-<see topic='@(url mv)'>multiple</see> value,
-     and that has no output @(see acl2::stobj)s.
+     and that has no output <see topic='@(url acl2::stobj)'>stobjs</see>.
      If the generated function is guard-verified
      (which is determined by the @(':verify-guards') input; see below),
      then the term must only call guard-verified functions,
-     except possibly in the @(':logic') subterms of @(tsee mbe)s.
+     except possibly in the @(':logic') subterms of @(tsee mbe)s
+     and via @(tsee ec-call).
+     The term must not include any calls to @('old').
      </p>
 
      <p>
@@ -179,6 +182,43 @@
      In order to highlight the dependence on @('x1'), ..., @('xn'),
      in the rest of this documentation page,
      @('restriction<x1,...,xn>') is used for @('restriction').
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':undefined') &mdash; default @(':undefined')
+   </p>
+
+     <blockquote>
+
+     <p>
+     Denotes the value that the generated new function must return
+     outside of the domain restriction.
+     </p>
+
+     <p>
+     It must be a term
+     that includes no free variables other than @('x1'), ..., @('xn'),
+     that only calls logic-mode functions,
+     that returns a non-<see topic='@(url mv)'>multiple</see> value,
+     and that has no output <see topic='@(url acl2::stobj)'>stobjs</see>.
+     The term must not include any calls to @('old').
+     </p>
+
+     <p>
+     Even if the generated function is guard-verified
+     (which is determined by the @(':verify-guards') input; see below),
+     the term may call non-guard-verified functions
+     outside of the @(':logic') subterms of @(tsee mbe)s
+     and not via @(tsee ec-call).
+     Since the term is governed by the negation of the guard
+     (see the generated new function, below),
+     the verification of its guards always succeeds trivially.
+     </p>
+
+     <p>
+     In the rest of this documentation page, let @('undefined') be this term.
      </p>
 
      </blockquote>
@@ -326,7 +366,8 @@
      <blockquote>
 
      <p>
-     Determines whether @('new') is @(see acl2::non-executable):
+     Determines whether @('new') is
+     <see topic='@(url acl2::non-executable)'>non-executable</see>:
      </p>
 
      <ul>
@@ -543,7 +584,7 @@
        (defun new (x1 ... xn)
          (if restriction<x1,...,xn>
              old-body<x1,...,xn>
-           :undefined))
+           undefined))
 
        ;; when old is recursive:
        (defun new (x1 ... xn)
@@ -556,7 +597,7 @@
                       (new updatem-x1<x1,...,xn>
                            ...
                            updatem-xn<x1,...,xn>)>
-           :undefined))
+           undefined))
      })
 
      <p>

@@ -94,6 +94,8 @@
    Project Web page</a>.
    </p>")
 
+(xdoc::order-subtopics apt nil t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc reference
@@ -107,3 +109,9 @@
   :short "Design notes for the APT tools.")
 
 (xdoc::add-resource-directory "apt" "design-notes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc implementation
+  :parents (apt)
+  :short "Implementation of the APT tools.")

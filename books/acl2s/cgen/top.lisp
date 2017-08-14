@@ -469,12 +469,12 @@ information in a human-readable form. </p>
 
 
 ; [2016-04-03 Sun] Add fixers support to Cgen
-(defconst *fixers-enabled* t)
-(make-event
- (if *fixers-enabled*
-     '(progn
-        (include-book "fixers2" :ttags :all)
-        (include-book "cgen-rules")
-        (gl::gl-satlink-mode)
-        )
-   '(value-triple :invisible)))
+(defconst *fixers-enabled* nil)
+;; (make-event
+;;  (if *fixers-enabled*
+;;      '(progn
+;;         (include-book "fixers2" :ttags :all)
+;;         (include-book "cgen-rules")
+;;         (gl::gl-satlink-mode)
+;;         )
+;;    '(value-triple :invisible)))
