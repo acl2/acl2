@@ -275,7 +275,7 @@
          (fun-body (ubody fun wrld)))
     (or (set-equiv (funvars-of-term rule-body wrld)
                    (funvars-of-term fun-body wrld))
-        (raise "The custome rewrite rule ~x0 must have ~
+        (raise "The custom rewrite rule ~x0 must have ~
                 the same function variables as the function body ~x1.~%"
                rule-body fun-body))))
 

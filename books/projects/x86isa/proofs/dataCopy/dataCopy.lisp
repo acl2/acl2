@@ -364,6 +364,7 @@
 
 (defun-nx preconditions (n addr x86)
   (and (x86p x86)
+       (64-bit-modep x86)
        (xr :programmer-level-mode 0 x86)
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
@@ -440,6 +441,7 @@
 (defthm preconditions-fwd-chain-to-its-body
   (implies (preconditions n addr x86)
            (and (x86p x86)
+                (64-bit-modep x86)
                 (xr :programmer-level-mode 0 x86)
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
@@ -603,6 +605,7 @@
                                      (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86))))))
             16 X86)))))))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
+                                    64-bit-modep
 
                                     gpr-and-spec-4
                                     jcc/cmovcc/setcc-spec
@@ -740,6 +743,16 @@
            :use ((:instance effects-copydata-pre))
            :in-theory (e/d* (alignment-checking-enabled-p)
                             ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-64-bit-modep-projection
+  (implies (preconditions n addr x86)
+           (equal (64-bit-modep (x86-run (pre-clk n) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal"
+           :use effects-copyData-pre
+           :in-theory (e/d* (64-bit-modep)
+                            (pre-clk (pre-clk)
+                             force (force))))))
 
 (defthm preconditions-implies-loop-preconditions-after-pre-clk
   (implies (and (preconditions n addr x86)
@@ -1240,8 +1253,40 @@
                              effects-copydata-loop
                              create-canonical-address-list)))))
 
+(defthm loop-state-64-bit-modep-projection
+  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
+                (natp k))
+           (equal (64-bit-modep (loop-state k m src-addr dst-addr x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal"
+           :hands-off (x86-run)
+           :in-theory (e/d* ()
+                            (loop-preconditions
+                             loop-invariant
+                             destination-bytes
+                             source-bytes
+                             loop-clk-recur
+                             (loop-clk-recur)
+                             loop-clk-base
+                             (loop-clk-base)
+                             create-canonical-address-list)))))
+
+(defthm loop-clk-64-bit-modep-projection
+  (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
+           (equal (64-bit-modep (x86-run (loop-clk m) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal"
+           :use ((:instance effects-copydata-loop (k 0)))
+           :hands-off (x86-run)
+           :in-theory (e/d* ()
+                            (loop-preconditions
+                             (loop-clk) loop-clk
+                             effects-copydata-loop
+                             create-canonical-address-list)))))
+
 (defun-nx after-the-copy-conditions (n addr x86)
   (and (x86p x86)
+       (64-bit-modep x86)
        (xr :programmer-level-mode 0 x86)
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
@@ -1350,6 +1395,7 @@
                X86)))))
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem

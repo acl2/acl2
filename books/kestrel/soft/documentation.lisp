@@ -584,9 +584,9 @@
    @({
    ;; A recursive predicate that recognizes NIL-terminated lists
    ;; whose elements satisfy the predicate parameter:
-     (defun2 all[?p] (?p) (l)
-       (cond ((atom l) (null l))
-             (t (and (?p (car l)) (all[?p] (cdr l))))))
+   (defun2 all[?p] (?p) (l)
+     (cond ((atom l) (null l))
+           (t (and (?p (car l)) (all[?p] (cdr l))))))
    })
 
    <h4>Example 3</h4>

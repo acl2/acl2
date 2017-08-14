@@ -90,12 +90,19 @@ data last modified: [2014-08-07]
 (defloop polymorphic-inst-defdata-events0 (ps kwd-alist wrld)
   (for ((p in ps)) (append (polymorphic-inst-defdata-events1 p kwd-alist wrld))))
 
+(defun try-admitting-events-fun (events)
+  (if (endp events)
+      nil
+    (cons `(make-event
+            '(:or ,(car events) (value-triple t)))
+          (try-admitting-events-fun (cdr events)))))
+
 (defun polymorphic-inst-defdata-events (ps kwd-alist wrld)
   (b* ((events (polymorphic-inst-defdata-events0 ps kwd-alist wrld)))
     (and (consp events)
          (cons
           `(commentary ,(get1 :print-commentary kwd-alist) "~| Polymorphic sig instantiation events...~%")
-          events))))
+          (try-admitting-events-fun events)))))
 
 
 (add-pre-post-hook defdata-defaults-table :post-pred-hook-fns '(polymorphic-inst-defdata-events))

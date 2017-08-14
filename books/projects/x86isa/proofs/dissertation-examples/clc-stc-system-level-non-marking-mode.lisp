@@ -19,6 +19,8 @@
   (and
    ;; The x86 state is well-formed.
    (x86p x86)
+   ;; The model is operating in 64-bit mode.
+   (64-bit-modep x86)
    ;; The model is operating in the system-level non-marking mode.
    (not (programmer-level-mode x86))
    (not (page-structure-marking-mode x86))
@@ -60,6 +62,7 @@
            (equal (x86-run 2 x86)
                   (!rip (+ 2 (xr :rip 0 x86)) (!flgi *cf* 1 x86))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
+                                    64-bit-modep
                                     pos
                                     member-p
                                     subset-p)

@@ -61,6 +61,7 @@
   :hints (("Goal"
            :do-not '(preprocess)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-and-spec-4
                              gpr-add-spec-8
@@ -358,6 +359,18 @@
                               *copyData* x86)))
   :hints (("Goal" :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()
+                            (loop-clk-base
+                             (loop-clk-base)
+                             force (force))))))
+
+(defthm effects-copyData-loop-base-64-bit-modep-projection
+  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
+                (equal prog-len (len *copydata*))
+                (<= m 4))
+           (equal (64-bit-modep (x86-run (loop-clk-base) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal" :use ((:instance effects-copydata-loop-base))
+           :in-theory (e/d* (64-bit-modep)
                             (loop-clk-base
                              (loop-clk-base)
                              force (force))))))

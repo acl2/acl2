@@ -38,14 +38,19 @@ data last modified: [2014-08-06]
 (defconst *register-type-keywords*
   '(:predicate :enumerator ;mandatory names
                :enum/acc
+               :domain-size
+               :clique :def :normalized-def :prettyified-def ;defdata
+               :verbose :hints
+               :theory-name
+               :min-rec-depth :max-rec-depth
+               :recp ;is recursive or not
+               :satisfies :satisfies-fixer
+               :default-base-value
+               ;; the following are not implemented yet
                :equiv :equiv-fixer
                :fixer :fixer-domain
                :lub :glb
                :sampling
-               :size
-               :verbose :hints
-               :theory-name
-               :clique :def :normalized-def :prettyified-def ;defdata
                ))
 
 ; [2015-07-01 Wed] enumerator and enum/acc are attachable functions
@@ -83,8 +88,8 @@ data last modified: [2014-08-06]
        (kwd-alist (put-assoc-eq :enumerator enum-name kwd-alist))
        (kwd-alist (put-assoc-eq :enum/acc enum/acc-name kwd-alist))
        
-       (kwd-alist (put-assoc-eq :size (or (get1 :size kwd-alist) 't) kwd-alist))
-       (kwd-alist (put-assoc-eq :theory-name (or (get1 :theory-name kwd-alist) (s+ name 'theory)) kwd-alist))
+       (kwd-alist (put-assoc-eq :domain-size (or (get1 :domain-size kwd-alist) 't) kwd-alist))
+       (kwd-alist (put-assoc-eq :theory-name (or (get1 :theory-name kwd-alist) (s+ name '-theory)) kwd-alist))
 
        (existing-entry (assoc-eq name (table-alist 'type-metadata-table wrld)))
        ((when existing-entry)
@@ -92,7 +97,12 @@ data last modified: [2014-08-06]
             (er hard? ctx "~| ~x0 is already a registered defdata type.~%" name)
           '())) ;redundant event
 
-       (default-val (funcall-w enum (list 0) ctx wrld))
+       (default-val (or (get1 :default-base-value kwd-alist) (funcall-w enum (list 0) ctx wrld)))
+       (kwd-alist (put-assoc-eq :default-base-value default-val kwd-alist))
+
+       (kwd-alist (put-assoc-eq :min-rec-depth (or (get1 :min-rec-depth kwd-alist) 0) kwd-alist))
+       (kwd-alist (put-assoc-eq :max-rec-depth (or (get1 :max-rec-depth kwd-alist) 30) kwd-alist))
+       
        ;(- (cw "** default value of ~x0 is ~x1" enum default-val))
 
        )
