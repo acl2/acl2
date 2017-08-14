@@ -36,8 +36,8 @@
 ; PUSH r/m64 instructions, perhaps because their FFH opcode also encodes the
 ; INC/DEC instructions). According to Table A-1 in Intel Volume 2D, the d64
 ; superscript means that the default operand size is 64 bits (and that a 32-bit
-; operand size cannot encoded. These d64 superscripts are consistent with the
-; AMD instruction reference for PUSH and POP. From these parts of the
+; operand size cannot be encoded). These d64 superscripts are consistent with
+; the AMD instruction reference for PUSH and POP. From these parts of the
 ; documentation, we would conclude that in 64-bit mode the operand size for
 ; PUSH and POP is 64 bits by default, that it can be overridden by a 66H
 ; prefix, and that REX.W is irrelevant.
