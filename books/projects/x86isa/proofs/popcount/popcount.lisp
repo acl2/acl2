@@ -279,6 +279,13 @@
                 nil nil nil 0
                 *popcount-64*
                 x86))
+              ;; The following two updates to X86 make 64-BIT-MODEP true.
+              ;; The resulting state does not necessarily satisfy
+              ;; expected invariants of the processor state,
+              ;; but it suffices for the proof to go through.
+              (x86 (!msri
+                    *ia32_efer-idx* (expt 2 10) x86)) ; set IA32_EFER.LMA to 1
+              (x86 (!seg-hiddeni *cs* (expt 2 105) x86)) ; set CS.L to 1
               (x86 (wr32 *rdi* n x86))
               (count 300)
               (x86 (x86-run count x86)))
@@ -307,6 +314,13 @@
                 nil nil nil 0
                 *popcount-64*
                 x86))
+              ;; The following two updates to X86 make 64-BIT-MODEP true.
+              ;; The resulting state does not necessarily satisfy
+              ;; expected invariants of the processor state,
+              ;; but it suffices for the proof to go through.
+              (x86 (!msri
+                    *ia32_efer-idx* (expt 2 10) x86)) ; set IA32_EFER.LMA to 1
+              (x86 (!seg-hiddeni *cs* (expt 2 105) x86)) ; set CS.L to 1
               (x86 ;; (!rgfi *rdi* n x86)
                ;; Shilpi: It's important to use wr64 instead of !rgfi
                ;; because wr64 converts unsigned numbers to signed
@@ -471,6 +485,13 @@
                  nil nil nil 0
                  *popcount-32-buggy*
                  x86))
+               ;; The following two updates to X86 make 64-BIT-MODEP true.
+               ;; The resulting state does not necessarily satisfy
+               ;; expected invariants of the processor state,
+               ;; but it suffices for the proof to go through.
+               (x86 (!msri
+                     *ia32_efer-idx* (expt 2 10) x86)) ; set IA32_EFER.LMA to 1
+               (x86 (!seg-hiddeni *cs* (expt 2 105) x86)) ; set CS.L to 1
                (x86 (wr32 *rdi* n x86))
                (count 300)
                (x86 (x86-run count x86)))
@@ -532,6 +553,13 @@
                 nil nil nil 0
                 *popcount-32-buggy*
                 x86))
+              ;; The following two updates to X86 make 64-BIT-MODEP true.
+              ;; The resulting state does not necessarily satisfy
+              ;; expected invariants of the processor state,
+              ;; but it suffices for the proof to go through.
+              (x86 (!msri
+                    *ia32_efer-idx* (expt 2 10) x86)) ; set IA32_EFER.LMA to 1
+              (x86 (!seg-hiddeni *cs* (expt 2 105) x86)) ; set CS.L to 1
               (x86 (wr32 *rdi* n x86))
               (count 300)
               (x86 (x86-run count x86)))

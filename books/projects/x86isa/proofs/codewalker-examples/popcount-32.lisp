@@ -92,6 +92,7 @@
 ;   concrete terms, where the instructions are stored.
   (b* ((program-rip #x400610))
     (and (x86p x86)
+         (64-bit-modep x86)
          (equal (programmer-level-mode x86) t)
          (program-at program-rip *popcount-32-bytes* x86)
          (n32p (rgfi *rdi* x86))
@@ -135,6 +136,7 @@
  )
 
 (local (in-theory (e/d* (instruction-decoding-and-spec-rules
+                         64-bit-modep
 
                          shr-spec
                          shr-spec-32

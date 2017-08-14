@@ -1,5 +1,5 @@
 ;; AUTHOR:
-;; Shilpi Goel <shilpi@centtech.com>
+;; Shilpi Goel <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
 
@@ -23,6 +23,7 @@
   (b* ((program-rip 0)
        (n (rgfi *rdi* x86)))
     (and (x86p x86)
+         (64-bit-modep x86)
          (natp n)
          (< n 13)
          (equal (ms x86) nil)
@@ -69,6 +70,7 @@
  )
 
 (local (in-theory (e/d* (instruction-decoding-and-spec-rules
+                         64-bit-modep
 
                          shr-spec
                          shr-spec-32

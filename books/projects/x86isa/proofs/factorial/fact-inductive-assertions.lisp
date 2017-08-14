@@ -310,6 +310,7 @@
         (and (begin n0 n)
              (not (ms x86))
              (not (fault x86))
+             (64-bit-modep x86)
              (programmer-level-mode x86)
              ;; Program is in the memory
              (canonical-address-p addr)
@@ -319,6 +320,7 @@
           (and (loop-inv n0 n 1 a)
                (not (ms x86))
                (not (fault x86))
+               (64-bit-modep x86)
                (programmer-level-mode x86)
                ;; Program is in the memory
                (canonical-address-p addr)
@@ -326,6 +328,7 @@
                (program-at addr *factorial_recursive* x86))
         (if (equal (rip x86) (+ 25 addr))
             (and (halt n0 a)
+                 (64-bit-modep x86)
                  (programmer-level-mode x86)
                  (not (fault x86))
                  (ms x86)
@@ -410,6 +413,7 @@
                           (loghead 32 (rgfi *rax* x86)))
                 (not (ms x86))
                 (not (fault x86))
+                (64-bit-modep x86)
                 (programmer-level-mode x86)
                 (canonical-address-p addr)
                 (canonical-address-p (+ 25 addr))
@@ -419,7 +423,7 @@
                          x86))
            (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
-           :in-theory (e/d* ()
+           :in-theory (e/d* (64-bit-modep)
                             (get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
                              get-prefixes-opener-lemma-group-3-prefix
@@ -428,6 +432,7 @@
           ("Subgoal 2"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
+                        64-bit-modep
 
                         gpr-and-spec-4
                         jcc/cmovcc/setcc-spec
@@ -482,6 +487,7 @@
           ("Subgoal 1"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
+                        64-bit-modep
 
                         gpr-and-spec-4
                         jcc/cmovcc/setcc-spec
@@ -543,6 +549,7 @@
   :hints (("Goal" :in-theory
            (e/d*
             (instruction-decoding-and-spec-rules
+             64-bit-modep
 
              gpr-and-spec-4
              jcc/cmovcc/setcc-spec
@@ -574,6 +581,7 @@
             ()))
           ("Subgoal 2"
            :in-theory (e/d (x86-fetch-decode-execute
+                            64-bit-modep
                             rr32)
                            ()))))
 
@@ -624,6 +632,7 @@
 
 (defthm partial-correctness-of-fact-recursive-effects
   (implies (and (x86p x86)
+                (64-bit-modep x86)
                 (programmer-level-mode x86)
                 (equal (rip x86) addr)
                 (and (begin n0 (rr32 *rdi* x86))
@@ -645,6 +654,7 @@
 
 (defthm partial-correctness-of-fact-recursive
   (implies (and (ok-inputs n0 x86)
+                (64-bit-modep x86)
                 (programmer-level-mode x86)
                 (equal (rip x86) addr)
                 (and (begin n0 (rr32 *rdi* x86))

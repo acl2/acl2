@@ -174,6 +174,8 @@
    (x86p x86)
    ;; Alignment checking is turned off.
    (not (alignment-checking-enabled-p x86))
+   ;; The model is operating in 64-bit mode.
+   (64-bit-modep x86)
    ;; The model is operating in the programmer-level mode.
    (programmer-level-mode x86)
    ;; The program is located at linear addresses ranging from (rip
@@ -211,6 +213,7 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              jcc/cmovcc/setcc-spec
                              gpr-and-spec-8
@@ -255,6 +258,7 @@
            :do-not-induct t
            :cases (equal (rgfi *rdi* x86) 0)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              jcc/cmovcc/setcc-spec
                              gpr-and-spec-8

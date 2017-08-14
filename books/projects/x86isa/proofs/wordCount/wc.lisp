@@ -235,6 +235,7 @@
   ;; subroutine, which is also the first instruction of this program.
 
   (and (x86p x86)
+       (64-bit-modep x86)
        (xr :programmer-level-mode 0 x86)
        ;; I don't care about alignment checks for this proof.
        (not (alignment-checking-enabled-p x86))
@@ -306,6 +307,7 @@
 (defthm preconditions-fwd-chaining-essentials
   (implies (preconditions addr x86)
            (and (x86p x86)
+                (64-bit-modep x86)
                 (xr :programmer-level-mode 0 x86)
                 (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
@@ -320,6 +322,7 @@
 (defun-nx loop-preconditions (addr x86)
   ;; Note: addr is the address of the first instruction in the GC subroutine.
   (and (x86p x86)
+       (64-bit-modep x86)
        (xr :programmer-level-mode 0 x86)
        (not (alignment-checking-enabled-p x86))
        (equal (xr :os-info 0 x86) :linux)
@@ -402,6 +405,7 @@
 (defthm loop-preconditions-fwd-chaining-essentials
   (implies (loop-preconditions addr x86)
            (and (x86p x86)
+                (64-bit-modep x86)
                 (xr :programmer-level-mode 0 x86)
                 (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
@@ -546,6 +550,7 @@
                              gc-clk-main-before-call
 
                              instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-add-spec-4
                              gpr-add-spec-8
@@ -685,31 +690,44 @@
            (equal (offset (x86-run (gc-clk-main-before-call) x86))
                   (offset x86))))
 
+(defthmd effects-to-gc-64-bit-modep-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (preconditions addr x86))
+           (equal (64-bit-modep (x86-run (gc-clk-main-before-call) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+
+(local
+ (defthm loop-preconditions-effects-to-gc-helper
+   (implies (preconditions addr x86)
+            (and (separate :x 166 addr :w 80 (+ -88 (xr :rgf *rsp* x86)))
+                 (separate :x 166 addr :r 80 (+ -88 (xr :rgf *rsp* x86)))))
+   :hints (("Goal" :in-theory (e/d* (preconditions) ())))))
+
 (defthm loop-preconditions-effects-to-gc
   (implies (preconditions addr x86)
            (loop-preconditions addr (x86-run (gc-clk-main-before-call) x86)))
-  :hints (("Goal"
-           :use ((:instance preconditions-forward-chain-addresses-info))
-           :in-theory (e/d* (effects-to-gc-rbp-projection
-                             effects-to-gc-rsp-projection
-                             x86p-effects-to-gc
-                             effects-to-gc-msri-projection
-                             effects-to-gc-rip-projection
-                             effects-to-gc-ms-projection
-                             effects-to-gc-fault-projection
-                             effects-to-gc-env-assumptions-projection
-                             (len)
-                             effects-to-gc-programmer-level-mode-projection
-                             effects-to-gc-alignment-checking-enabled-p-projection
-                             effects-to-gc-os-info-projection
-                             loop-preconditions-fwd-chaining-essentials
-                             loop-preconditions-forward-chain-addresses-info
-                             preconditions-fwd-chaining-essentials
-                             preconditions-forward-chain-addresses-info
-                             effects-to-gc-programmer-level-mode-projection
-                             effects-to-gc-program-projection)
-                            (effects-to-gc-no-call
-                             preconditions-forward-chain-addresses-info))
+  :hints (("Goal" :in-theory (e/d* (effects-to-gc-rbp-projection
+                                    effects-to-gc-rsp-projection
+                                    x86p-effects-to-gc
+                                    effects-to-gc-msri-projection
+                                    effects-to-gc-rip-projection
+                                    effects-to-gc-ms-projection
+                                    effects-to-gc-fault-projection
+                                    effects-to-gc-env-assumptions-projection
+                                    (len)
+                                    effects-to-gc-programmer-level-mode-projection
+                                    effects-to-gc-alignment-checking-enabled-p-projection
+                                    effects-to-gc-os-info-projection
+                                    loop-preconditions-fwd-chaining-essentials
+                                    loop-preconditions-forward-chain-addresses-info
+                                    preconditions-fwd-chaining-essentials
+                                    preconditions-forward-chain-addresses-info
+                                    effects-to-gc-programmer-level-mode-projection
+                                    effects-to-gc-program-projection
+                                    subset-p-two-create-canonical-address-lists-general
+                                    effects-to-gc-64-bit-modep-projection)
+                                   (effects-to-gc-no-call))
            :expand (loop-preconditions addr (x86-run (gc-clk-main-before-call) x86)))))
 
 ;; ----------------------------------------------------------------------
@@ -933,6 +951,7 @@
 
   (implies ;; Doesn't have the rbp binding of loop-preconditions
    (and (x86p x86)
+        (64-bit-modep x86)
         (xr :programmer-level-mode 0 x86)
         (not (alignment-checking-enabled-p x86))
         (equal (xr :os-info 0 x86) :linux)
@@ -1107,6 +1126,7 @@
                              gc-clk
 
                              instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-add-spec-4
                              gpr-add-spec-8
@@ -1159,43 +1179,45 @@
 ;; ----------------------------------------------------------------------
 
 (defthmd effects-call-gc-ms-projection
-  (implies ;; Doesn't have the rbp binding of loop-preconditions
-   (and (x86p x86)
-        (xr :programmer-level-mode 0 x86)
-        (not (alignment-checking-enabled-p x86))
-        (equal (xr :os-info 0 x86) :linux)
-        (env-assumptions x86)
-        (canonical-address-p (xr :rgf *rsp* x86))
-        ;; Address of the call instruction in the main sub-routine
-        ;; 95: Position of the call instruction in the main sub-routine
-        ;; (equal (xr :rip 0 x86) (+ (1- (+ *gc-len* 95)) addr))
-        (equal addr (- (xr :rip 0 x86) (1- (+ *gc-len* 95))))
-        (canonical-address-p addr)
-        (canonical-address-p (+ (1- *wc-len*) addr))
-        (canonical-address-p (+ 32 (xr :rgf *rsp* x86)))
-        (canonical-address-p (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
-        ;; (+ 8 32 8 32) = 80
-        (separate
-         ;; Program
-         :x *wc-len* addr
-         ;; Stack
-         :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
-        (separate
-         ;; Program
-         :x *wc-len* addr
-         ;; Stack
-         :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
-        (equal (xr :ms 0 x86) nil)
-        (equal (xr :fault 0 x86) nil)
-        ;; Enabling the SYSCALL instruction.
-        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-        (program-at addr *wc* x86))
-   (equal (xr :ms 0 (x86-run (gc-clk) x86)) nil)))
+  (implies (and (x86p x86) ;; Doesn't have the rbp binding of loop-preconditions
+                (64-bit-modep x86)
+                (xr :programmer-level-mode 0 x86)
+                (not (alignment-checking-enabled-p x86))
+                (equal (xr :os-info 0 x86) :linux)
+                (env-assumptions x86)
+                (canonical-address-p (xr :rgf *rsp* x86))
+                ;; Address of the call instruction in the main sub-routine
+                ;; 95: Position of the call instruction in the main sub-routine
+                ;; (equal (xr :rip 0 x86) (+ (1- (+ *gc-len* 95)) addr))
+                (equal addr (- (xr :rip 0 x86) (1- (+ *gc-len* 95))))
+                (canonical-address-p addr)
+                (canonical-address-p (+ (1- *wc-len*) addr))
+                (canonical-address-p (+ 32 (xr :rgf *rsp* x86)))
+                (canonical-address-p (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                ;; (+ 8 32 8 32) = 80
+                (separate
+                 ;; Program
+                 :x *wc-len* addr
+                 ;; Stack
+                 :r 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (separate
+                 ;; Program
+                 :x *wc-len* addr
+                 ;; Stack
+                 :w 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
+                (equal (xr :ms 0 x86) nil)
+                (equal (xr :fault 0 x86) nil)
+                ;; Enabling the SYSCALL instruction.
+                (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+                (program-at addr *wc* x86))
+
+           (equal (xr :ms 0 (x86-run (gc-clk) x86)) nil)))
 
 (defthmd effects-call-gc-fault-projection
-  (implies ;; Doesn't have the rbp binding of loop-preconditions
-   (and (x86p x86)
+  (implies
+   (and (x86p x86) ;; Doesn't have the rbp binding of loop-preconditions
+        (64-bit-modep x86)
         (xr :programmer-level-mode 0 x86)
         (not (alignment-checking-enabled-p x86))
         (equal (xr :os-info 0 x86) :linux)
@@ -1387,6 +1409,7 @@
            :in-theory (e/d* (env-assumptions
                              top-level-opcode-execute
                              instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-add-spec-4
                              gpr-sub-spec-4
@@ -2047,6 +2070,7 @@
            :in-theory (e/d* (env-assumptions
                              top-level-opcode-execute
                              instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-sub-spec-4
                              jcc/cmovcc/setcc-spec
@@ -2245,6 +2269,14 @@
            (equal (xr :os-info 0 (x86-run (gc-clk-no-eof) x86))
                   (xr :os-info 0 x86))))
 
+(defthmd effects-eof-not-encountered-prelim-64-bit-modep-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (not (equal (get-char (offset x86) (input x86)) *eof*)))
+           (equal (64-bit-modep (x86-run (gc-clk-no-eof) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+
 (defthmd effects-eof-not-encountered-prelim-for-composition
   (implies (and (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*)))
@@ -2339,6 +2371,7 @@
 
   (implies
    (and (x86p x86-new)
+        (64-bit-modep x86-new)
         (xr :programmer-level-mode 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
@@ -2409,6 +2442,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -2501,7 +2535,8 @@
                             (x86-new (x86-run (gc-clk-no-eof) x86)))
                  (:instance effects-eof-not-encountered-prelim-env-assumptions-projection)
                  (:instance effects-eof-not-encountered-prelim-rbp-projection)
-                 (:instance effects-eof-not-encountered-prelim-for-composition)))))
+                 (:instance effects-eof-not-encountered-prelim-for-composition)
+                 effects-eof-not-encountered-prelim-64-bit-modep-projection))))
 
 (defthm effects-newline-encountered
 
@@ -2660,6 +2695,14 @@
            (equal (xr :os-info 0 (x86-run (gc-clk-newline) x86))
                   (xr :os-info 0 x86))))
 
+(defthmd effects-newline-encountered-64-bit-modep-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (equal (get-char (offset x86) (input x86)) *newline*))
+           (equal (64-bit-modep (x86-run (gc-clk-newline) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+
 (defthm loop-preconditions-newline-encountered
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
@@ -2678,7 +2721,8 @@
                                loop-preconditions-forward-chain-addresses-info
                                effects-newline-encountered-programmer-level-mode-projection
                                effects-newline-encountered-os-info-projection
-                               effects-newline-encountered-program-projection)
+                               effects-newline-encountered-program-projection
+                               effects-newline-encountered-64-bit-modep-projection)
            :expand (loop-preconditions addr (x86-run (gc-clk-newline) x86)))))
 
 (defthmd effects-newline-encountered-input-projection
@@ -2775,6 +2819,7 @@
 
   (implies
    (and (x86p x86-new)
+        (64-bit-modep x86-new)
         (xr :programmer-level-mode 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
@@ -2834,6 +2879,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -2921,7 +2967,8 @@
                   effects-eof-not-encountered-prelim-rbp-projection
                   (x86 x86))
                  (:instance effects-space-encountered-limited
-                            (x86-new (x86-run (gc-clk-no-eof) x86)))))))
+                            (x86-new (x86-run (gc-clk-no-eof) x86)))
+                 effects-eof-not-encountered-prelim-64-bit-modep-projection))))
 
 (defthm effects-space-encountered
 
@@ -3073,6 +3120,14 @@
            (equal (xr :os-info 0 (x86-run (gc-clk-space) x86))
                   (xr :os-info 0 x86))))
 
+(defthmd effects-space-encountered-64-bit-modep-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (equal (get-char (offset x86) (input x86)) *space*))
+           (equal (64-bit-modep (x86-run (gc-clk-space) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+
 (defthm loop-preconditions-space-encountered
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *space*))
@@ -3091,7 +3146,8 @@
                                loop-preconditions-forward-chain-addresses-info
                                effects-space-encountered-programmer-level-mode-projection
                                effects-space-encountered-os-info-projection
-                               effects-space-encountered-program-projection)
+                               effects-space-encountered-program-projection
+                               effects-space-encountered-64-bit-modep-projection)
            :expand (loop-preconditions addr (x86-run (gc-clk-space) x86)))))
 
 (defthmd effects-space-encountered-input-projection
@@ -3181,6 +3237,7 @@
 
   (implies
    (and (x86p x86-new)
+        (64-bit-modep x86-new)
         (xr :programmer-level-mode 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
@@ -3240,6 +3297,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -3327,7 +3385,8 @@
                   effects-eof-not-encountered-prelim-rbp-projection
                   (x86 x86))
                  (:instance effects-tab-encountered-limited
-                            (x86-new (x86-run (gc-clk-no-eof) x86)))))))
+                            (x86-new (x86-run (gc-clk-no-eof) x86)))
+                 effects-eof-not-encountered-prelim-64-bit-modep-projection))))
 
 (defthm effects-tab-encountered
 
@@ -3474,6 +3533,14 @@
            (equal (xr :os-info 0 (x86-run (gc-clk-tab) x86))
                   (xr :os-info 0 x86))))
 
+(defthmd effects-tab-encountered-64-bit-modep-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (equal (get-char (offset x86) (input x86)) *tab*))
+           (equal (64-bit-modep (x86-run (gc-clk-tab) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+
 (defthm loop-preconditions-tab-encountered
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *tab*))
@@ -3492,7 +3559,8 @@
                                loop-preconditions-forward-chain-addresses-info
                                effects-tab-encountered-programmer-level-mode-projection
                                effects-tab-encountered-os-info-projection
-                               effects-tab-encountered-program-projection)
+                               effects-tab-encountered-program-projection
+                               effects-tab-encountered-64-bit-modep-projection)
            :expand (loop-preconditions addr (x86-run (gc-clk-tab) x86)))))
 
 (defthmd effects-tab-encountered-input-projection
@@ -3636,6 +3704,7 @@
 
   (implies
    (and (x86p x86-new)
+        (64-bit-modep x86-new)
         (xr :programmer-level-mode 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
@@ -3759,6 +3828,7 @@
 
                              top-level-opcode-execute
                              instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -3906,7 +3976,8 @@
                  (:instance effects-eof-not-encountered-prelim-rbp-projection
                             (x86 x86))
                  (:instance effects-other-char-encountered-state-out-limited
-                            (x86-new (x86-run (gc-clk-no-eof) x86)))))))
+                            (x86-new (x86-run (gc-clk-no-eof) x86)))
+                 effects-eof-not-encountered-prelim-64-bit-modep-projection))))
 
 (defthm effects-other-char-encountered-state-out
 
@@ -4187,6 +4258,36 @@
                   (xr :os-info 0 x86)))
   :hints (("Goal" :in-theory (e/d* () (word-state)))))
 
+(defthmd effects-other-char-encountered-state-out-64-bit-modep-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (equal (word-state x86 x86) *out*))
+           (equal (64-bit-modep (x86-run (gc-clk-otherwise-out) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal" :in-theory (e/d* (64-bit-modep)
+                                   (word-state
+                                    subset-p
+                                    (:definition acl2::take-redefinition)
+                                    (:rewrite las-to-pas-values-and-!flgi)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:definition las-to-pas)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0)
+                                    (:definition binary-append)
+                                    (:definition assoc-equal))))))
+
 (defthm loop-preconditions-other-char-encountered-state-out
   (implies (and (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*))
@@ -4209,7 +4310,8 @@
                                effects-other-char-encountered-state-out-programmer-level-mode-projection
                                effects-other-char-encountered-state-out-alignment-checking-enabled-p-projection
                                effects-other-char-encountered-state-out-os-info-projection
-                               effects-other-char-encountered-state-out-program-projection)
+                               effects-other-char-encountered-state-out-program-projection
+                               effects-other-char-encountered-state-out-64-bit-modep-projection)
            :expand (loop-preconditions addr (x86-run (gc-clk-otherwise-out) x86)))))
 
 (defthmd effects-other-char-encountered-state-out-input-projection
@@ -4400,6 +4502,7 @@
 
   (implies
    (and (x86p x86-new)
+        (64-bit-modep x86-new)
         (xr :programmer-level-mode 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
@@ -4495,6 +4598,7 @@
 
                              top-level-opcode-execute
                              instruction-decoding-and-spec-rules
+                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -4602,7 +4706,8 @@
                  (:instance effects-eof-not-encountered-prelim-rbp-projection (x86 x86))
                  (:instance effects-eof-not-encountered-prelim-programmer-level-mode-projection (x86 x86))
                  (:instance effects-other-char-encountered-state-in-limited
-                            (x86-new (x86-run (gc-clk-no-eof) x86)))))))
+                            (x86-new (x86-run (gc-clk-no-eof) x86)))
+                 effects-eof-not-encountered-prelim-64-bit-modep-projection))))
 
 (defthm effects-other-char-encountered-state-in
 
@@ -4862,6 +4967,43 @@
                   (xr :os-info 0 x86)))
   :hints (("Goal" :in-theory (e/d* () (word-state)))))
 
+(defthmd effects-other-char-encountered-state-in-64-bit-modep-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) *out*)))
+           (equal (64-bit-modep (x86-run (gc-clk-otherwise-in) x86))
+                  (64-bit-modep x86)))
+  :hints (("Goal" :in-theory (e/d* (64-bit-modep)
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info
+                                    negative-logand-to-positive-logand-with-integerp-x
+                                    las-to-pas-values-and-!flgi
+                                    las-to-pas
+                                    get-prefixes-opener-lemma-group-1-prefix
+                                    get-prefixes-opener-lemma-group-2-prefix
+                                    get-prefixes-opener-lemma-group-3-prefix
+                                    get-prefixes-opener-lemma-group-4-prefix
+                                    (:definition acl2::take-redefinition)
+                                    (:definition nth)
+                                    (:type-prescription file-descriptor-fieldp-implies-natp-offset)
+                                    (:rewrite acl2::take-of-too-many)
+                                    (:rewrite acl2::car-nthcdr)
+                                    (:type-prescription consp-append)
+                                    (:type-prescription xw)
+                                    (:type-prescription nthcdr-true-listp)
+                                    (:definition binary-append)
+                                    (:rewrite acl2::take-of-len-free)
+                                    (:rewrite acl2::take-when-atom)
+                                    (:type-prescription file-descriptor-fieldp)
+                                    (:rewrite effects-other-char-encountered-state-out)
+                                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
+                                    (:rewrite default-+-2)
+                                    (:rewrite acl2::zp-when-gt-0))))))
+
 (defthm loop-preconditions-other-char-encountered-state-in-pre
   (implies (and (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*))
@@ -4884,7 +5026,8 @@
                                effects-other-char-encountered-state-in-programmer-level-mode-projection
                                effects-other-char-encountered-state-in-alignment-checking-enabled-p-projection
                                effects-other-char-encountered-state-in-os-info-projection
-                               effects-other-char-encountered-state-in-program-projection)
+                               effects-other-char-encountered-state-in-program-projection
+                               effects-other-char-encountered-state-in-64-bit-modep-projection)
            :expand (loop-preconditions addr (x86-run (gc-clk-otherwise-in) x86)))))
 
 (defthmd effects-other-char-encountered-state-in-input-projection-pre
@@ -6238,6 +6381,7 @@
 
 (defthmd memory-analysis-effects-call-gc
   (implies (and (x86p x86)
+                (64-bit-modep x86)
                 (xr :programmer-level-mode 0 x86)
                 (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)

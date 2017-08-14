@@ -175,6 +175,7 @@
   ;;    this will decrease by 4 in every iteration
 
   (and (x86p x86)
+       (64-bit-modep x86)
        (xr :programmer-level-mode 0 x86)
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
@@ -246,6 +247,7 @@
 (defthm loop-preconditions-fwd-chain-to-its-body
   (implies (loop-preconditions k m addr src-addr dst-addr x86)
            (and (x86p x86)
+                (64-bit-modep x86)
                 (xr :programmer-level-mode 0 x86)
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)

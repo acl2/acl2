@@ -1,5 +1,5 @@
 ;; AUTHOR:
-;; Shilpi Goel <shilpi@centtech.com>
+;; Shilpi Goel <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
 
@@ -76,6 +76,7 @@
      (and
       ;; The x86 state is well-formed.
       (x86p x86)
+      (64-bit-modep x86)
       ;; The model is operating in the programmer-level mode.
       (programmer-level-mode x86)
       (equal (rip x86) 0) ;; Added for codewalker
@@ -124,7 +125,8 @@
     :var-names nil
     )
 
-   (local (in-theory (e/d* (x86-cmc/clc/stc/cld/std)
+   (local (in-theory (e/d* (x86-cmc/clc/stc/cld/std
+                            64-bit-modep)
                            (create-canonical-address-list
                             (create-canonical-address-list)))))
 

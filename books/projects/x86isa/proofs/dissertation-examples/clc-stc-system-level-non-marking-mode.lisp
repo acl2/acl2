@@ -22,6 +22,8 @@
   (and
    ;; The x86 state is well-formed.
    (x86p x86)
+   ;; The model is operating in 64-bit mode.
+   (64-bit-modep x86)
    ;; The model is operating in the system-level non-marking mode.
    (not (programmer-level-mode x86))
    (not (page-structure-marking-mode x86))
@@ -40,19 +42,23 @@
 
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
-;; (acl2::why rb-in-terms-of-nth-and-pos-in-system-level-non-marking-mode)
+;; (acl2::why many-reads-with-rb-from-program-at-in-non-marking-mode)
 
 (defthm program-effects-1
   (implies (preconditions x86)
            (equal (x86-run 1 x86)
                   (!rip (+ 1 (rip x86)) (!flgi *cf* 0 x86))))
-  :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std) ()))))
-
+  :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
+                                    64-bit-modep)
+                                   ()))))
 
 (defthm program-effects-2
   (implies (preconditions x86)
            (equal (x86-run 2 x86)
                   (!rip (+ 2 (xr :rip 0 x86)) (!flgi *cf* 1 x86))))
-  :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std las-to-pas) ()))))
+  :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
+                                    64-bit-modep
+                                    las-to-pas)
+                                   ()))))
 
 ;; ======================================================================

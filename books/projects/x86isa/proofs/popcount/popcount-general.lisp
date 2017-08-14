@@ -207,6 +207,7 @@
   (implies (and (x86p x86)
                 (equal (ms x86) nil)
                 (equal (fault x86) nil)
+                (64-bit-modep x86)
                 (equal (programmer-level-mode x86) t)
                 (n32p (rgfi *rdi* x86))
                 (canonical-address-p (rip x86))
@@ -215,6 +216,7 @@
            (equal (rgfi *rax* (x86-run 15 x86))
                   (logcount (xr :rgf *rdi* x86))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
+                                    64-bit-modep
 
                                     shr-spec
                                     shr-spec-32
@@ -850,6 +852,7 @@
    (implies (and (x86p x86)
                  (equal (ms x86) nil)
                  (equal (fault x86) nil)
+                 (64-bit-modep x86)
                  (equal (programmer-level-mode x86) t)
                  (unsigned-byte-p 64 n)
                  (equal n (rr64 *rdi* x86))
@@ -859,6 +862,7 @@
             (equal (rgfi *rax* (x86-run 16 (x86-run 18 x86)))
                    (logcount n)))
    :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
+                                     64-bit-modep
 
                                      shr-spec
                                      shr-spec-32
@@ -919,6 +923,7 @@
   (implies (and (x86p x86)
                 (equal (ms x86) nil)
                 (equal (fault x86) nil)
+                (64-bit-modep x86)
                 (equal (programmer-level-mode x86) t)
                 (unsigned-byte-p 64 n)
                 (equal n (rr64 *rdi* x86))
