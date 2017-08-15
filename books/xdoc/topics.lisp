@@ -1672,12 +1672,20 @@ web-based viewer, allowing you to typeset basic formulas.</p>
 
 <h3>Basic Usage</h3>
 
+<box><p><b><color rgb='#ff0000'>ESCAPING WARNING</color></b>. LaTeX-style
+formulas may be especially hard to type in ordinary ACL2 string literals
+because you have to escape all the backslashes.  For instance, you have to
+remember to write @('\\\\sqrt{x}') instead of @('\\sqrt{x}').  You can avoid
+this headache by using the @(see acl2::fancy-string-reader). In the rest of
+this document, we will use the concrete xdoc syntax without the escapes for
+simplicity.</p></box>
+
 <p>To typeset block-style formulas, you can use the @('@([...])') @(see
 preprocessor) directive, e.g.,:</p>
 
 @({
     @([
-       c = \\\\pm\\\\sqrt{a^2 + b^2}
+       c = \\pm\\sqrt{a^2 + b^2}
     ])
 })
 
@@ -1691,7 +1699,7 @@ preprocessor) directive, e.g.,:</p>
 instance:</p>
 
 @({
-     The product @($a \\\\times b$) is even.
+     The product @($a \\times b$) is even.
 })
 
 <p>Produces text such as: the product @($a \\times b$).</p>
@@ -1704,13 +1712,6 @@ instance:</p>
 <p>The <a href='formula.html'>KaTeX Preview</a> page lets you interactively
 type in your formula and see how it will be typeset.  It may be especially
 helpful since KaTeX only supports a particular subset of LaTeX.</p>
-
-<h5>Escaping Help.</h5>
-
-<p>LaTeX-style formulas may be especially hard to type in ordinary ACL2 string
-literals because you have to escape all the backslashes.  For instance, you
-have to remember to write @('\\\\sqrt{x}') instead of @('\\sqrt{x}').  You can
-avoid this headache by using the @(see acl2::fancy-string-reader).</p>
 
 <h5>Invalid Formulas.</h5>
 
