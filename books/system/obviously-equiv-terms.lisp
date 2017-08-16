@@ -189,8 +189,18 @@
                   (iff (position-equal-ac x y n)
                        (member x y)))))
 
+#||
+;; Matt -- A couple of bugs in obviously-equiv-terms:
 
-;; Matt -- the current definition of obviously-equal-lambda-args can sometimes
+;; the following condition isn't sufficient:
+                  ((OR (FQUOTEP X) (FQUOTEP Y))
+                   (AND IFF-FLG
+                        (EQUAL (EQUAL X *NIL*)
+                               (EQUAL Y *NIL*))))
+;; e.g., x is 'a and y is (foo).
+
+
+;; The current definition of obviously-equal-lambda-args can sometimes
 ;; cause an assertion violation.  E.g.:
 :trans (let ((z z) (x x)) (declare (ignore z)) (cons x nil))
 
@@ -217,7 +227,7 @@
 ;; above case not all the formals are actually free variables of the lambda
 ;; bodies.
 
-
+||#
 
 
 (defun l-obviously-equal-lambda-args (x-formals-tail x-args-tail y-formals
@@ -275,8 +285,10 @@
              ((or (fquotep x)
                   (fquotep y))
               (and iff-flg
-                   (equal (equal x *nil*)
-                          (equal y *nil*))))
+                   (fquotep x)
+                   (fquotep y)
+                   (unquote x)
+                   (unquote y)))
              ((flambda-applicationp x)
               (and (flambda-applicationp y)
 
@@ -645,27 +657,6 @@
               :in-theory (enable obv-ev-of-fncall-args)))
     :flag term-list-depth))
 
-(defthm-term-depth-flag
-  (defthm obv-ev-of-append-first
-    (implies (and (pseudo-termp x)
-                  ;; (no-nils-pseudo-termp x)
-                  )
-             (equal (obv-ev (subcor-var vars terms x) a)
-                    (obv-ev x (append (pairlis$ vars (obv-ev-lst terms a)) a))))
-    :hints ('(:expand ((subcor-var vars terms x)
-                       (no-nils-pseudo-termp x))
-              :in-theory (enable obv-ev-of-fncall-args)))
-    :flag term-depth)
-  (defthm obv-ev-lst-of-append-first-lst
-    (implies (and (pseudo-term-listp x)
-                  (no-nils-pseudo-term-listp x))
-             (equal (obv-ev-lst (subcor-var-lst vars terms x) a)
-                    (obv-ev-lst x (append (pairlis$ vars (obv-ev-lst terms a)) a))))
-    :hints ('(:expand ((subcor-var-lst vars terms x)
-                       (no-nils-pseudo-term-listp x))
-              :in-theory (enable obv-ev-of-fncall-args)))
-    :flag term-list-depth))
-
 (defthm hons-assoc-equal-of-append
   (equal (hons-assoc-equal x (append y z))
          (or (hons-assoc-equal x y)
@@ -960,7 +951,16 @@
                   (no-duplicatesp (cadr (car x)))
                   (term-listp (cdr x) w)
                   (subsetp (all-vars (caddr (car x)))
-                           (cadr (car x)))))))
+                           (cadr (car x))))))
+
+  (defthm termp-args-same-length-when-same-function
+    (implies (and (termp x w) (termp y w)
+                  (consp x) (consp y)
+                  (not (equal (car x) 'quote))
+                  (equal (car x) (car y)))
+             (equal (equal (len (cdr x))
+                           (len (cdr y)))
+                    t))))
 
 (local (defthm length-is-len
          (implies (not (stringp x))
