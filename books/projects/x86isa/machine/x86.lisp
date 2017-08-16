@@ -178,7 +178,7 @@
   ;; implementing that instruction.
 
 
-  `((#x00
+  '((#x00
      "LLDT: 0F 00/2"
      (if (64-bit-modep x86)
          (case (mrm-reg modr/m)
@@ -1434,7 +1434,7 @@
   ;; there is an opcode-extension or it is a call to the function
   ;; implementing that instruction.
 
-  `(
+  '(
     (#x00
      "(ADD Eb Gb)"
      (if (64-bit-modep x86)
