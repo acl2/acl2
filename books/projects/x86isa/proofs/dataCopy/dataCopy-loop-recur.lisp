@@ -67,7 +67,6 @@
                                                        X86)))))))))))))))
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-and-spec-4
                              gpr-add-spec-8
@@ -375,7 +374,7 @@
                   (64-bit-modep x86)))
   :hints (("Goal"
            :use effects-copyData-loop-recur
-           :in-theory (e/d* (64-bit-modep)
+           :in-theory (e/d* ()
                             (loop-clk-recur
                              (loop-clk-recur)
                              force (force))))))

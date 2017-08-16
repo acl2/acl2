@@ -1591,7 +1591,6 @@
            :do-not '(preprocess)
            :do-not-induct t
            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             64-bit-modep
                              shr-spec
                              shr-spec-64
                              sal/shl-spec

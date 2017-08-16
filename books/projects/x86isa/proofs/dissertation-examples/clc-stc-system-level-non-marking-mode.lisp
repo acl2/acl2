@@ -48,8 +48,7 @@
   (implies (preconditions x86)
            (equal (x86-run 1 x86)
                   (!rip (+ 1 (rip x86)) (!flgi *cf* 0 x86))))
-  :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
-                                    64-bit-modep)
+  :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std)
                                    ()))))
 
 (defthm program-effects-2
@@ -57,7 +56,6 @@
            (equal (x86-run 2 x86)
                   (!rip (+ 2 (xr :rip 0 x86)) (!flgi *cf* 1 x86))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
-                                    64-bit-modep
                                     las-to-pas)
                                    ()))))
 

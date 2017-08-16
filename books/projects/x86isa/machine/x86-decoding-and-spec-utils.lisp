@@ -133,7 +133,39 @@ the @('fault') field instead.</li>
        (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
        (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
     (and (equal ia32_efer.lma 1)
-         (equal cs.l 1))))
+         (equal cs.l 1)))
+  ///
+
+  (defrule 64-bit-modep-of-xw ; contributed by Eric Smith
+    (implies (and (not (equal fld :msr))
+                  (not (equal fld :seg-hidden)))
+             (equal (64-bit-modep (xw fld index value x86))
+                    (64-bit-modep x86))))
+
+  (defrule 64-bit-modep-of-mv-nth-1-of-wb ; contributed by Eric Smith
+    (equal (64-bit-modep (mv-nth 1 (wb n addr w value x86)))
+           (64-bit-modep x86)))
+
+  (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
+    (equal (64-bit-modep (!flgi flag val x86))
+           (64-bit-modep x86)))
+
+  (defrule 64-bit-modep-of-!flgi-undefined
+    (equal (64-bit-modep (!flgi-undefined flg x86))
+           (64-bit-modep x86))
+    :enable !flgi-undefined)
+
+  (defrule 64-bit-modep-of-write-user-rflags
+    (equal (64-bit-modep (write-user-rflags vector mask x86))
+           (64-bit-modep x86)))
+
+  (defrule 64-bit-modep-of-las-to-pas
+    (equal (64-bit-modep (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+           (64-bit-modep x86)))
+
+  (defrule 64-bit-modep-of-write-x86-file-des
+    (equal (64-bit-modep (write-x86-file-des fd fd-field x86))
+           (64-bit-modep x86))))
 
 ;; ======================================================================
 
