@@ -211,10 +211,91 @@
                   (x86p x86))
              (x86p (!msri-from-alist alist x86)))))
 
+(define seg-visiblei-alistp (alst)
+  :parents (initialize-x86-state)
+  :short "Recognizer for pairs of segment register indices and
+          values for the visible portions of the registers"
+  :long "<p>Note that the register values are required to be @('n16p') </p>"
+  :enabled t
+
+  (if (atom alst)
+      (equal alst nil)
+    (if (atom (car alst))
+        nil
+      (let ((index (caar alst))
+            (value (cdar alst))
+            (rest  (cdr  alst)))
+        (and (natp index)
+             (< index *segment-register-names-len*)
+             (unsigned-byte-p 16 value)
+             (seg-visiblei-alistp rest))))))
+
+(define !seg-visiblei-from-alist (seg-visible-alist x86)
+
+  :parents (initialize-x86-state)
+  :short "Update visible portion of segment registers as dictated by
+  @('seg-visible-alist'), which is required to be a @('seg-visiblei-alistp')."
+
+  :guard (seg-visiblei-alistp seg-visible-alist)
+
+  (cond ((endp seg-visible-alist) x86)
+        (t (let ((x86 (!seg-visiblei (caar seg-visible-alist)
+                                     (cdar seg-visible-alist)
+                                     x86)))
+             (!seg-visiblei-from-alist (cdr seg-visible-alist) x86))))
+
+  ///
+
+  (defthm x86p-!seg-visiblei-from-alist
+    (implies (and (seg-visiblei-alistp alist)
+                  (x86p x86))
+             (x86p (!seg-visiblei-from-alist alist x86)))))
+
+(define seg-hiddeni-alistp (alst)
+  :parents (initialize-x86-state)
+  :short "Recognizer for pairs of segment register indices and
+          values for the hidden portions of the registers"
+  :long "<p>Note that the register values are required to be @('n112p') </p>"
+  :enabled t
+
+  (if (atom alst)
+      (equal alst nil)
+    (if (atom (car alst))
+        nil
+      (let ((index (caar alst))
+            (value (cdar alst))
+            (rest  (cdr  alst)))
+        (and (natp index)
+             (< index *segment-register-names-len*)
+             (unsigned-byte-p 112 value)
+             (seg-hiddeni-alistp rest))))))
+
+(define !seg-hiddeni-from-alist (seg-hidden-alist x86)
+
+  :parents (initialize-x86-state)
+  :short "Update hidden portion of segment registers as dictated by
+  @('seg-hidden-alist'), which is required to be a @('seg-hiddeni-alistp')."
+
+  :guard (seg-hiddeni-alistp seg-hidden-alist)
+
+  (cond ((endp seg-hidden-alist) x86)
+        (t (let ((x86 (!seg-hiddeni (caar seg-hidden-alist)
+                                    (cdar seg-hidden-alist)
+                                    x86)))
+             (!seg-hiddeni-from-alist (cdr seg-hidden-alist) x86))))
+
+  ///
+
+  (defthm x86p-!seg-hiddeni-from-alist
+    (implies (and (seg-hiddeni-alistp alist)
+                  (x86p x86))
+             (x86p (!seg-hiddeni-from-alist alist x86)))))
+
 ;; ======================================================================
 
 (define init-x86-state
-  (status start-addr halt-addr gprs ctrs msrs flags mem x86)
+  (status start-addr halt-addr
+          gprs ctrs msrs seg-visibles seg-hiddens flags mem x86)
 
   :parents (initialize-x86-state)
   :short "A convenient function to populate the x86 state's
@@ -224,6 +305,8 @@
               (rgfi-alistp gprs)
               (ctri-alistp ctrs)
               (msri-alistp msrs)
+              (seg-visiblei-alistp seg-visibles)
+              (seg-hiddeni-alistp seg-hiddens)
               (n64p flags)
               (n64p-byte-alistp mem))
 
@@ -245,6 +328,8 @@
        (x86 (!rgfi-from-alist gprs x86)) ;; General-Purpose Registers
        (x86 (!msri-from-alist msrs x86)) ;; Model-Specific Registers
        (x86 (!ctri-from-alist ctrs x86)) ;; Control Registers
+       (x86 (!seg-visiblei-from-alist seg-visibles x86)) ;; Segment ...
+       (x86 (!seg-hiddeni-from-alist seg-hiddens x86)) ;; ... Registers
        (x86 (!rflags (n32 flags) x86)))  ;; Initial Flags
     (mv nil x86)))
 

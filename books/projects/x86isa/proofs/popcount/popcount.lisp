@@ -276,7 +276,7 @@
               ((mv flg x86)
                (init-x86-state
                 nil start-address halt-address
-                nil nil nil 0
+                nil nil nil nil nil 0
                 *popcount-64*
                 x86))
               ;; The following two updates to X86 make 64-BIT-MODEP true.
@@ -311,7 +311,7 @@
               ((mv flg x86)
                (init-x86-state
                 nil start-address halt-address
-                nil nil nil 0
+                nil nil nil nil nil 0
                 *popcount-64*
                 x86))
               ;; The following two updates to X86 make 64-BIT-MODEP true.
@@ -352,7 +352,7 @@
 ;;               ((mv flg x86)
 ;;                (init-x86-state
 ;;                 nil start-address halt-address
-;;                 nil nil nil 0
+;;                 nil nil nil nil nil 0
 ;;                 *popcount-64*
 ;;                 x86))
 ;;               (x86
@@ -482,7 +482,7 @@
                ((mv flg x86)
                 (init-x86-state
                  nil start-address halt-address
-                 nil nil nil 0
+                 nil nil nil nil nil 0
                  *popcount-32-buggy*
                  x86))
                ;; The following two updates to X86 make 64-BIT-MODEP true.
@@ -514,7 +514,7 @@
      ((mv ?flg x86)
       (init-x86-state
        nil start-address halt-address
-       nil nil nil 0
+       nil nil nil nil nil 0
        *popcount-32-buggy*
        x86))
      (x86 (wr32 *rdi* #x80000000  x86))
@@ -529,7 +529,7 @@
      ((mv ?flg x86)
       (init-x86-state
        nil start-address halt-address
-       nil nil nil 0
+       nil nil nil nil nil 0
        *popcount-32-buggy*
        x86))
      (x86 (wr32 *rdi* #xFFFFFFFF  x86))
@@ -550,7 +550,7 @@
               ((mv flg x86)
                (init-x86-state
                 nil start-address halt-address
-                nil nil nil 0
+                nil nil nil nil nil 0
                 *popcount-32-buggy*
                 x86))
               ;; The following two updates to X86 make 64-BIT-MODEP true.
