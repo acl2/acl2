@@ -175,7 +175,7 @@
     EXTEND-WORLD RETRACT-WORLD
     WITH-OUTPUT!
     ER-SOFT-LOGIC
-
+    GET-ENFORCE-REDUNDANCY
     ))
 
 (defun missing-from-acl2-exports (wrld)
