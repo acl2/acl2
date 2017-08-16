@@ -334,3 +334,62 @@
     (mv nil x86)))
 
 ;; ======================================================================
+
+(define init-x86-state-64 (status
+                           (start-addr canonical-address-p)
+                           (halt-addr canonical-address-p)
+                           (gprs rgfi-alistp)
+                           (ctrs ctri-alistp)
+                           (msrs msri-alistp)
+                           (seg-visibles seg-visiblei-alistp)
+                           (seg-hiddens seg-hiddeni-alistp)
+                           (flags n64p)
+                           (mem n64p-byte-alistp)
+                           x86)
+  :returns (mv flg
+               (x86 x86p :hyp :guard))
+  :parents (initialize-x86-state)
+  :short "A variant of @(tsee init-x86-state) that ensures 64-bit mode"
+  :long
+  "<p>
+   After calling @(tsee init-x86-state),
+   this function updates @('x86') to ensure that @(tsee 64-bit-modep) holds.
+   It does so by setting IA32_EFER.LMA and CS.L to 1.
+   </p>
+   <p>
+   The resulting state does not necessarily satisfy expected invariants
+   for 64-bit mode,
+   but that is also the case with @(tsee init-x86-state).
+   </p>
+   <p>
+   In alternative, one can use just @(tsee init-x86-state)
+   with appropriate model-specific and hidden segment register alists.
+   But we find this function convenient for now.
+   </p>"
+  (b* (((mv flg x86)
+        (init-x86-state status start-addr halt-addr gprs ctrs msrs
+                        seg-visibles seg-hiddens flags mem x86))
+       ((when flg) (mv t x86))
+       ;; set IA32_EFER.LMA to 1:
+       (ia32_efer (n12 (xr :msr *ia32_efer-idx* x86)))
+       (ia32_efer (!ia32_efer-slice :ia32_efer-lma 1 ia32_efer))
+       (x86 (xw :msr *ia32_efer-idx* (n64 ia32_efer) x86))
+       ;; set CS.L to 1:
+       (cs-hidden (xr :seg-hidden *cs* x86))
+       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+       (cs-attr (!code-segment-descriptor-attributes-layout-slice :l 1 cs-attr))
+       (cs-hidden (!hidden-seg-reg-layout-slice :attr cs-attr cs-hidden))
+       (x86 (xw :seg-hidden *cs* cs-hidden x86)))
+    (mv nil x86))
+  ///
+
+  (defrule 64-bit-modep-of-init-x86-state-64
+    (b* (((mv flg x86-new) (init-x86-state-64 status start-addr halt-addr
+                                              gprs ctrs msrs
+                                              seg-visibles seg-hiddens
+                                              flags mem x86)))
+      (implies (not flg)
+               (64-bit-modep x86-new)))
+    :enable (64-bit-modep)))
+
+;; ======================================================================
