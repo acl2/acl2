@@ -101,6 +101,7 @@
 (include-book "centaur/gl/gl-ttags" :dir :system)
 (include-book "centaur/gl/gobject-type-thms" :dir :system)
 (include-book "centaur/gl/bfr-satlink" :dir :system)
+(include-book "centaur/gl/bfr-fraig-satlink" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
 
 (include-book "centaur/glmc/glmc" :dir :system)

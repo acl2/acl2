@@ -22,6 +22,8 @@
                            acl2::resize-list-when-atom)))
 (local (std::add-default-post-define-hook :fix))
 
+(local (xdoc::set-default-parents balance))
+
 (fty::defprod balance-config
   ((search-higher-levels booleanp :default t
                          "Says whether to search literals with higher fanin depths
@@ -1502,6 +1504,10 @@
                  (config balance-config-p))
   :guard-debug t
   :returns new-aignet2
+  :parents (aignet-comb-transforms)
+  :short "Apply DAG-aware AND tree balancing to the network."
+  :long "<p>Note: This implementation is heavily based on the one in
+ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet2 aignet-tmp))
        (- (cw "Balance input: ") (print-aignet-levels aignet))
@@ -1534,6 +1540,8 @@
                   (config balance-config-p))
   :guard-debug t
   :returns new-aignet
+  :parents (balance)
+  :short "Like @(see observability-fix), but overwrites the original network instead of returning a new one."
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp))
        (- (cw "Balance input: ") (print-aignet-levels aignet))

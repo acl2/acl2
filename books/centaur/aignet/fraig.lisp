@@ -2753,6 +2753,8 @@ ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>"
                (state))
   :guard-debug t
   :returns (mv new-aignet state)
+  :parents (fraig)
+  :short "Like @(see fraig), but overwrites the original network instead of returning a new one."
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp state))
        ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))

@@ -108,7 +108,9 @@ satlink) after aignet fraiging to solve queries."
   :parents (modes reference)
   :short "GL: Use AIGs as the Boolean function representation and @(see
 satlink) after a configurable list of aignet transforms to solve queries."
-
+  :long "<p>The Satlink configuration to be used can be set by attaching a
+suitable function to @('gl-satlink-config') and the transforms used can be
+chosen by attaching to @('gl-transforms-config').</p>"
   (defmacro gl-simplify-satlink-mode ()
     '(progn
        (defattach bfr-mode bfr-aig)

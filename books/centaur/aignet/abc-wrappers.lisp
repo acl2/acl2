@@ -6,7 +6,7 @@
 (include-book "transform-utils")
 (include-book "oslib/tempfile" :dir :system)
 
-
+(local (xdoc::set-default-parents abc-comb-simplify))
 
 (fty::defprod abc-comb-simp-config
   ((script stringp :rule-classes :type-prescription)
@@ -24,6 +24,9 @@
                            (config abc-comb-simp-config-p)
                            (state))
   :returns (mv new-output-aignet new-state)
+  :parents (aignet-comb-transforms)
+  :short "Use the external tool ABC to apply a combinational simplification to
+          the network, and assume the result correct."
   (b* (((abc-comb-simp-config config))
        ((mv input-filename state) (oslib::tempfile "abc-comb-simplify-input.aig"))
        ((mv output-filename state) (oslib::tempfile "abc-comb-simplify-output.aig"))
@@ -72,6 +75,7 @@
                             (config abc-comb-simp-config-p)
                             (state))
   :returns (mv new-aignet new-state)
+  :short "Like @(see abc-comb-simplify), but overwrites the original network instead of returning a new one."
   (b* (((abc-comb-simp-config config))
        ((mv input-filename state) (oslib::tempfile "abc-comb-simplify-input.aig"))
        ((mv output-filename state) (oslib::tempfile "abc-comb-simplify-output.aig"))

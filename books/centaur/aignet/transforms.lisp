@@ -18,8 +18,8 @@ transforms.  The currently supported transforms are:</p>
 <ul>
 <li>@(see balance)</li>
 <li>@(see fraig)</li>
-<li>@(see observability)</li>
-<li>@(see abc-comb-simp)</li>
+<li>@(see observability-fix)</li>
+<li>@(see abc-comb-simplify)</li>
 </ul>")
 
 (local (xdoc::set-default-parents aignet-comb-transforms))
