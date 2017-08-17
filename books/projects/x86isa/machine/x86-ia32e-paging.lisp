@@ -4,6 +4,7 @@
 
 (in-package "X86ISA")
 (include-book "x86-physical-memory" :ttags (:undef-flg))
+(include-book "clause-processors/find-matching" :dir :system)
 
 ;; [Shilpi]: For now, I've removed nested paging and all paging modes
 ;; except IA-32e paging from our model.
@@ -1009,32 +1010,71 @@ accesses.</p>
     :hints (("Goal" :in-theory (e/d (page-fault-exception)
                                     ()))))
 
+  (define find-similar-paging-entries-from-page-present-equality-aux
+    ((index natp) entry-var calls)
+    (if (atom calls)
+        nil
+      (b* ((one-call (car calls))
+           ((unless (and (true-listp one-call)
+                         (true-listp (nth index one-call))
+                         (equal (len (nth index one-call)) 2)))
+            nil))
+        (cons (list (cons entry-var    (nth 1 (nth index one-call))))
+              (find-similar-paging-entries-from-page-present-equality-aux
+               index entry-var (cdr calls))))))
+
+  (defun find-similar-paging-entries-from-page-present-equality
+      (bound-entry-val entry-var mfc state)
+    (declare (xargs :stobjs (state) :mode :program)
+             (ignorable state))
+    (b* (((mv index calls)
+          (mv
+           2
+           (acl2::find-matches-list
+            `(equal (page-present ,bound-entry-val) (page-present e))
+            (acl2::mfc-clause mfc)
+            nil)))
+         ((mv index calls)
+          (if (not calls)
+              (mv 1
+                  (acl2::find-matches-list
+                   `(equal (page-present e) (page-present ,bound-entry-val))
+                   (acl2::mfc-clause mfc)
+                   nil))
+            (mv index calls)))
+         ((when (not calls))
+          ;; equality of page-present term not encountered.
+          nil))
+      (find-similar-paging-entries-from-page-present-equality-aux index entry-var calls)))
+
   (defthm mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
-    (implies (and (equal (page-present entry-1)
-                         (page-present entry-2))
-                  (syntaxp (not (eq entry-1 entry-2)))
-                  (syntaxp (and (consp entry-1)
-                                (equal (car entry-1) 'combine-bytes)))
-                  (equal (page-read-write entry-1)
-                         (page-read-write entry-2))
-                  (equal (page-user-supervisor entry-1)
-                         (page-user-supervisor entry-2))
-                  (equal (page-execute-disable entry-1)
-                         (page-execute-disable entry-2))
-                  (equal (page-size entry-1)
-                         (page-size entry-2))
-                  (if (equal structure-type 1)
-                      ;; For Page Directory
-                      (equal (part-select entry-1 :low 13 :high 20)
-                             (part-select entry-2 :low 13 :high 20))
-                    ;; For Page Directory Pointer Table
-                    (if (equal structure-type 2)
-                        (equal (part-select entry-1 :low 13 :high 29)
-                               (part-select entry-2 :low 13 :high 29))
-                      t))
-                  (unsigned-byte-p 2 structure-type)
-                  (unsigned-byte-p 64 entry-1)
-                  (unsigned-byte-p 64 entry-2))
+    (implies (and
+              (bind-free (find-similar-paging-entries-from-page-present-equality
+                          entry-1 'entry-2 mfc state)
+                         (entry-2))
+              (syntaxp (not (eq entry-1 entry-2)))
+              (equal (page-present entry-1)
+                     (page-present entry-2))
+              (equal (page-read-write entry-1)
+                     (page-read-write entry-2))
+              (equal (page-user-supervisor entry-1)
+                     (page-user-supervisor entry-2))
+              (equal (page-execute-disable entry-1)
+                     (page-execute-disable entry-2))
+              (equal (page-size entry-1)
+                     (page-size entry-2))
+              (if (equal structure-type 1)
+                  ;; For Page Directory
+                  (equal (part-select entry-1 :low 13 :high 20)
+                         (part-select entry-2 :low 13 :high 20))
+                ;; For Page Directory Pointer Table
+                (if (equal structure-type 2)
+                    (equal (part-select entry-1 :low 13 :high 29)
+                           (part-select entry-2 :low 13 :high 29))
+                  t))
+              (unsigned-byte-p 2 structure-type)
+              (unsigned-byte-p 64 entry-1)
+              (unsigned-byte-p 64 entry-2))
              (equal (mv-nth 0
                             (paging-entry-no-page-fault-p
                              structure-type lin-addr entry-1
@@ -2205,13 +2245,15 @@ accesses.</p>
 
 ;; ----------------------------------------------------------------------
 
+(defabbrev cpl (x86)
+  (the (unsigned-byte 2)
+       (seg-sel-layout-slice :rpl (the (unsigned-byte 16) (xr :seg-visible *cs* x86)))))
+
 (define ia32e-la-to-pa
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
              "Canonical linear address to be mapped to a physical address")
    (r-w-x     :type (member  :r :w :x)
               "Indicates whether this translation is on the behalf of a read, write, or instruction fetch")
-   (cpl       :type (unsigned-byte  2)
-              "Current privilege level (0-3), obtained from the CS segment selector [1:0]")
    (x86 "x86 state"))
 
   :parents (ia32e-paging)
@@ -2240,6 +2282,8 @@ accesses.</p>
            (cr4
             ;; CR4 has all but the low 21 bits reserved.
             (n21 (ctri *cr4* x86)))
+           ;; Current privilege level (0-3), obtained from the CS segment selector [1:0]
+           (cpl (the (unsigned-byte  2) (cpl x86)))
            ;; ia32-efer has all but the low 12 bits reserved.
            (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
            (wp        (cr0-slice :cr0-wp cr0))
@@ -2254,7 +2298,7 @@ accesses.</p>
              (ash (cr3-slice :cr3-pdb cr3) 12)
              :exec
              (the (unsigned-byte 52)
-               (ash (the (unsigned-byte 40) (cr3-slice :cr3-pdb cr3)) 12)))))
+                  (ash (the (unsigned-byte 40) (cr3-slice :cr3-pdb cr3)) 12)))))
         (ia32e-la-to-pa-pml4-table lin-addr pml4-table-base-addr wp smep smap ac nxe r-w-x cpl x86))
 
     (mv t 0 x86))
@@ -2264,10 +2308,9 @@ accesses.</p>
   (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa
     :hyp t
     :bound *physical-address-size*
-    :concl (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+    :concl (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
 
-    :hints (("Goal" :in-theory (e/d ()
-                                    (force (force) unsigned-byte-p))))
+    :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
     :otf-flg t
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
@@ -2277,21 +2320,18 @@ accesses.</p>
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa
     (implies (x86p x86)
-             (x86p (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+             (x86p (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))))
 
   (defthm xr-ia32e-la-to-pa
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault)))
-             (equal (xr fld index
-                        (mv-nth 2
-                                (ia32e-la-to-pa
-                                 lin-addr r-w-x cpl x86)))
+             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm xr-fault-ia32e-la-to-pa
-    (implies (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-             (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+    (implies (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
+             (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                     (xr :fault index x86)))
     :hints (("Goal" :in-theory (e/d* ()
                                      (force
@@ -2302,7 +2342,7 @@ accesses.</p>
   (defthm xr-and-ia32e-la-to-pa-in-non-marking-mode
     (implies (and (not (page-structure-marking-mode x86))
                   (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
@@ -2312,31 +2352,32 @@ accesses.</p>
                   (not (equal fld :fault))
                   (not (equal fld :ctr))
                   (not (equal fld :msr))
+                  (not (equal fld :seg-visible))
                   (not (equal fld :programmer-level-mode)))
              (and (equal (mv-nth 0
-                                 (ia32e-la-to-pa lin-addr r-w-x cpl
+                                 (ia32e-la-to-pa lin-addr r-w-x
                                                  (xw fld index value x86)))
                          (mv-nth 0
-                                 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                                 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (equal (mv-nth 1
-                                 (ia32e-la-to-pa lin-addr r-w-x cpl
+                                 (ia32e-la-to-pa lin-addr r-w-x
                                                  (xw fld index value x86)))
                          (mv-nth 1
-                                 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))))
+                                 (ia32e-la-to-pa lin-addr r-w-x x86))))))
 
   (defthm ia32e-la-to-pa-xw-rflags-not-ac
     (implies (equal (rflags-slice :ac value)
                     (rflags-slice :ac (rflags x86)))
              (and (equal (mv-nth 0
-                                 (ia32e-la-to-pa lin-addr r-w-x cpl
+                                 (ia32e-la-to-pa lin-addr r-w-x
                                                  (xw :rflags 0 value x86)))
                          (mv-nth 0
-                                 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                                 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (equal (mv-nth 1
-                                 (ia32e-la-to-pa lin-addr r-w-x cpl
+                                 (ia32e-la-to-pa lin-addr r-w-x
                                                  (xw :rflags 0 value x86)))
                          (mv-nth 1
-                                 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))))
+                                 (ia32e-la-to-pa lin-addr r-w-x x86))))))
 
   (defthm ia32e-la-to-pa-xw-state
     (implies (and (not (equal fld :mem))
@@ -2344,14 +2385,15 @@ accesses.</p>
                   (not (equal fld :fault))
                   (not (equal fld :ctr))
                   (not (equal fld :msr))
+                  (not (equal fld :seg-visible))
                   (not (equal fld :programmer-level-mode))
                   (not (equal fld :page-structure-marking-mode)))
              (equal (mv-nth 2
-                            (ia32e-la-to-pa lin-addr r-w-x cpl
+                            (ia32e-la-to-pa lin-addr r-w-x
                                             (xw fld index value x86)))
                     (xw fld index value
                         (mv-nth 2
-                                (ia32e-la-to-pa lin-addr r-w-x cpl
+                                (ia32e-la-to-pa lin-addr r-w-x
                                                 x86)))))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
@@ -2359,17 +2401,16 @@ accesses.</p>
     (implies (equal (rflags-slice :ac value)
                     (rflags-slice :ac (rflags x86)))
              (equal (mv-nth 2
-                            (ia32e-la-to-pa lin-addr r-w-x cpl
+                            (ia32e-la-to-pa lin-addr r-w-x
                                             (xw :rflags 0 value x86)))
                     (xw :rflags 0 value
-                        (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+                        (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm mv-nth-2-ia32e-la-to-pa-system-level-non-marking-mode
     (implies (and (not (page-structure-marking-mode x86))
-                  (not (mv-nth 0 (ia32e-la-to-pa
-                                  lin-addr r-w-x cpl x86))))
-             (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
+             (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
                     x86))
     :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) (force (force))))))
 
@@ -2388,10 +2429,10 @@ accesses.</p>
   (defthm ia32e-la-to-pa-values-and-!flgi
     (implies (and (not (equal index *ac*))
                   (x86p x86))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi index value x86)))
-                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi index value x86)))
-                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (!flgi index value x86)))
+                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (!flgi index value x86)))
+                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))
     :hints (("Goal"
              :cases ((equal index *iopl*))
              :use ((:instance rflags-slice-ac-simplify
@@ -2410,17 +2451,17 @@ accesses.</p>
   (defthm ia32e-la-to-pa-values-and-!flgi-undefined
     (implies (and (not (equal index *ac*))
                   (x86p x86))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi-undefined index x86)))
-                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi-undefined index x86)))
-                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (!flgi-undefined index x86)))
+                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (!flgi-undefined index x86)))
+                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))
     :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (!flgi ia32e-la-to-pa)))))
 
   (defthm mv-nth-2-ia32e-la-to-pa-and-!flgi-not-ac-commute
     (implies (and (not (equal index *ac*))
                   (x86p x86))
-             (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl (!flgi index value x86)))
-                    (!flgi index value (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+             (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x (!flgi index value x86)))
+                    (!flgi index value (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))))
 
     :hints (("Goal"
              :cases ((equal index *iopl*))
@@ -2723,10 +2764,9 @@ accesses.</p>
   (implies (and (natp n)
                 (<= n 12)
                 (x86p x86)
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
+                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
            (equal
-            (loghead n (mv-nth 1 (ia32e-la-to-pa
-                                  lin-addr r-w-x cpl x86)))
+            (loghead n (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))
             (loghead n lin-addr)))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa)
                                   ()))))
@@ -2740,10 +2780,9 @@ accesses.</p>
                        (n))
             (natp n)
             (<= n 12)
-            (not (equal (loghead n (mv-nth 1 (ia32e-la-to-pa
-                                              lin-addr r-w-x cpl x86)))
+            (not (equal (loghead n (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))
                         (loghead n lin-addr))))
-           (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+           (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa)
                                   (force (force))))))
 
@@ -2751,10 +2790,9 @@ accesses.</p>
   (implies (and (natp n)
                 (<= n 12)
                 (x86p x86)
-                (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
            (equal
-            (loghead n (mv-nth 1 (ia32e-la-to-pa
-                                  lin-addr r-w-x cpl x86)))
+            (loghead n (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))
             0))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) ()))))
 
@@ -2769,10 +2807,10 @@ accesses.</p>
                 (natp n)
                 (<= n 12)
                 (x86p x86)
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
+                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
            (equal
             (loghead n lin-addr)
-            (loghead n (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+            (loghead n (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) ()))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-!=-all-ones
@@ -2781,8 +2819,8 @@ accesses.</p>
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4095)
                 (not (mv-nth 0
-                             (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
-           (< (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                             (ia32e-la-to-pa lin-addr r-w-x x86))))
+           (< (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
               *mem-size-in-bytes-1*))
   :hints (("Goal" :in-theory (e/d () (ia32e-la-to-pa-lower-12-bits))))
   :rule-classes :linear)
@@ -2847,13 +2885,13 @@ accesses.</p>
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4093)
                 (not (mv-nth 0
-                             (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
-           (< (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                             (ia32e-la-to-pa lin-addr r-w-x x86))))
+           (< (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
               *mem-size-in-bytes-3*))
   :hints (("Goal" :in-theory (e/d () (ia32e-la-to-pa-lower-12-bits))
            :use ((:instance
                   ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4093-helper
-                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))))
+                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))))
   :rule-classes :linear)
 
 (defthmd ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4089-helper
@@ -2879,13 +2917,13 @@ accesses.</p>
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4089)
                 (not (mv-nth 0
-                             (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
-           (< (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                             (ia32e-la-to-pa lin-addr r-w-x x86))))
+           (< (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
               *mem-size-in-bytes-7*))
   :hints (("Goal" :in-theory (e/d () (ia32e-la-to-pa-lower-12-bits))
            :use ((:instance
                   ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4089-helper
-                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))))
+                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))))
   :rule-classes :linear)
 
 (defthmd ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4089-helper
@@ -2911,13 +2949,13 @@ accesses.</p>
                 (integerp lin-addr)
                 (equal (loghead 12 lin-addr) 4089)
                 (not (mv-nth 0
-                             (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
-           (<= (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                             (ia32e-la-to-pa lin-addr r-w-x x86))))
+           (<= (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
                *mem-size-in-bytes-7*))
   :hints (("Goal" :in-theory (e/d () (ia32e-la-to-pa-lower-12-bits))
            :use ((:instance
                   ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4089-helper
-                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))))
+                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))))
   :rule-classes :linear)
 
 (defthmd ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4090-helper
@@ -2942,13 +2980,13 @@ accesses.</p>
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (equal (loghead 12 lin-addr) 4090)
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
-           (<= (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
+           (<= (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
                *mem-size-in-bytes-6*))
   :hints (("Goal" :in-theory (e/d () (ia32e-la-to-pa-lower-12-bits))
            :use ((:instance
                   ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4090-helper
-                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))))
+                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))))
   :rule-classes :linear)
 
 (defthmd ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-<-4081-helper
@@ -2974,13 +3012,13 @@ accesses.</p>
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4081)
                 (not (mv-nth 0
-                             (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
-           (< (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                             (ia32e-la-to-pa lin-addr r-w-x x86))))
+           (< (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
               *mem-size-in-bytes-15*))
   :hints (("Goal" :in-theory (e/d () (ia32e-la-to-pa-lower-12-bits))
            :use ((:instance
                   ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-<-4081-helper
-                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))))
+                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))))
   :rule-classes :linear)
 
 (defthmd ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-=-4081-helper
@@ -3006,13 +3044,13 @@ accesses.</p>
                 (integerp lin-addr)
                 (equal (loghead 12 lin-addr) 4081)
                 (not (mv-nth 0
-                             (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
-           (<= (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
+                             (ia32e-la-to-pa lin-addr r-w-x x86))))
+           (<= (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
                *mem-size-in-bytes-15*))
   :hints (("Goal" :in-theory (e/d () (ia32e-la-to-pa-lower-12-bits))
            :use ((:instance
                   ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-=-4081-helper
-                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))))
+                  (x (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))))
   :rule-classes :linear)
 
 ;; ======================================================================
@@ -3021,8 +3059,6 @@ accesses.</p>
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
    (r-w-x     :type (member  :r :w :x)
               "Indicates whether this translation is on the behalf of a read, write, or instruction fetch")
-   (cpl       :type (unsigned-byte  2)
-              "Current privilege level (0-3), obtained from the CS segment selector [1:0]")
    (x86 "x86 state"))
 
   :inline t
@@ -3035,7 +3071,7 @@ accesses.</p>
 
   (if (mbt (and (canonical-address-p lin-addr)
                 (not (programmer-level-mode x86))))
-      (ia32e-la-to-pa lin-addr r-w-x cpl x86)
+      (ia32e-la-to-pa lin-addr r-w-x x86)
     (mv (list :ia32e-paging-invalid-linear-address-or-not-in-programmer-level-mode
               lin-addr)
         0 x86)))

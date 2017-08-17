@@ -900,7 +900,7 @@
    calls any non-guard-verified function for execution."
   (((guard-verified-exec-fnsp term (w state))
     "~@0 must call only guard-verified functions ~
-     (except possibly in the :LOGIC subterms of MBEs), ~
+     (except possibly in the :LOGIC subterms of MBEs and via EC-CALL), ~
      but it calls the non-guard-verified ~@1."
     description
     (let ((fns (all-non-gv-exec-ffn-symbs term (w state))))
@@ -967,7 +967,7 @@
    calls any non-guard-verified function for execution."
   (((lambda-guard-verified-exec-fnsp lambd (w state))
     "~@0 must call only guard-verified functions ~
-     (except possibly in the :LOGIC subterms of MBEs), ~
+     (except possibly in the :LOGIC subterms of MBEs and via EC-CALL), ~
      but it calls the non-guard-verified ~@1."
     description
     (let ((fns (all-non-gv-exec-ffn-symbs (lambda-body lambd) (w state))))

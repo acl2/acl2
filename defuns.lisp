@@ -146,6 +146,7 @@
                             " that is laid down by defun-nx"))))))))
 
 (defun translate-bodies (non-executablep names arglists bodies known-stobjs-lst
+                                         reclassifying-all-programp
                                          ctx wrld state)
 
 ; Translate the bodies given and return a pair consisting of their translations
@@ -161,7 +162,20 @@
                              names bodies
                              (pairlis$ names names)
                              known-stobjs-lst
-                             ctx wrld (default-state-vars t))
+                             ctx wrld
+                             (default-state-vars t
+
+; For the applyication of verify-termination to a function that has already
+; been admitted, we avoid failure due to an untouchable function or variable.
+
+                               :temp-touchable-fns
+                               (or reclassifying-all-programp
+                                   (f-get-global 'temp-touchable-fns
+                                                 state))
+                               :temp-touchable-vars
+                               (or reclassifying-all-programp
+                                   (f-get-global 'temp-touchable-vars
+                                                 state))))
           (er-progn
            (cond (erp ; erp is a ctx, lst is a msg
                   (er soft erp "~@0" lst))
@@ -6721,7 +6735,19 @@
                                         stobjs-in-lst
                                         ctx wrld default-state-vars)
                      (declare (ignore bindings))
-                     (cond (erp ans)
+                     (cond (erp
+
+; This error could be due to an untouchable variable or function in one of the
+; bodies.  In that case, we return the result returned by
+; redundant-or-reclassifying-defunsp0 above, without possibly converting it to
+; nil as may be done below.  That's OK; then we will not make an additional
+; check that we are truly doing redefinition.  As discussed above, such
+; perfection here is not required; in particular, we then simply consider the
+; definition redundant here just as if redefinition were off.  However, it
+; should be perfectly OK to consider the definition not to be redundant in that
+; case.
+
+                            ans)
                            ((eq (symbol-class (car names) wrld)
                                 :program)
                             (let ((old-defs (recover-defs-lst (car names)
@@ -6743,7 +6769,17 @@
                                     (cond ((and (null erp)
                                                 (equal lst old-lst))
                                            ans)
-                                          (t nil))))))
+                                          (t
+
+; If erp is true then we consider this to be true redefinition.  That is the
+; opposite decision from what is made in the case above when translate-bodies1
+; returns an error.  Which is the right decision: consider redefinition (vs.,
+; say, redundancy) or not when there is an error in translate-bodies1?  The
+; answer is that either is acceptable, as discussed above.  But as of this
+; writing (August 2017) the code has probably been this way for a long time, we
+; leave it alone, at least for now.
+
+                                           nil))))))
 
 ; Otherwise we expect to be dealing with :logic mode functions.
 
@@ -7836,6 +7872,7 @@
                              arglists
                              (get-bodies fives)
                              stobjs-in-lst ; see "slight abuse" comment below
+                             reclassifying-all-programp
                              ctx wrld2 state)))
          (let* ((bodies (car bodies-and-bindings))
                 (bindings
@@ -8011,8 +8048,7 @@
                                    non-executablep
                                    guard-debug
                                    measure-debug
-                                   split-types-terms
-                                   ))))))))))))))))
+                                   split-types-terms))))))))))))))))
 
 (defun conditionally-memoized-fns (fns memoize-table)
   (declare (xargs :guard (and (symbol-listp fns)

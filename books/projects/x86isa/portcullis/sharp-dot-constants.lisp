@@ -363,6 +363,14 @@
     ;; All additional values in mem-table are the initial value of 1, which means
     ;; "page is not present".
 
+    ;; Section 3.2.1 of Intel Volume 1 says that the maximum size of the
+    ;; physical address space is 2^46 bytes in 64-bit mode. However, Table 4-1
+    ;; of Intel Volume 3 says that the physical address width is up to 52 bits
+    ;; in 64-bit mode. Furtermore, Section 2.1.4.1 of AMD Volume 1 says that
+    ;; physical addresses are up to 52 bits in size. Based on all of this, our
+    ;; model assumes a 2^52-byte physical memory -- see the constant
+    ;; *physical-address-size*.
+
 ; Virtual Memory:
 
 (defconst *max-linear-address-size*  48)

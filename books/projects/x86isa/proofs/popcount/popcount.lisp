@@ -3,8 +3,8 @@
 
 (in-package "X86ISA")
 
-(include-book "projects/x86isa/proofs/utilities/programmer-level-mode/programmer-level-memory-utils" :dir :system :ttags :all)
-(include-book "projects/x86isa/tools/execution/x86-init-state" :dir :system :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "../../tools/execution/x86-init-state" :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "misc/eval" :dir :system)
 
@@ -274,9 +274,9 @@
               (halt-address #x400643)
               (x86 (!programmer-level-mode t (create-x86)))
               ((mv flg x86)
-               (init-x86-state
+               (init-x86-state-64
                 nil start-address halt-address
-                nil nil nil 0
+                nil nil nil nil nil 0
                 *popcount-64*
                 x86))
               (x86 (wr32 *rdi* n x86))
@@ -302,9 +302,9 @@
               (halt-address #x4006c2)
               (x86 (!programmer-level-mode t (create-x86)))
               ((mv flg x86)
-               (init-x86-state
+               (init-x86-state-64
                 nil start-address halt-address
-                nil nil nil 0
+                nil nil nil nil nil 0
                 *popcount-64*
                 x86))
               (x86 ;; (!rgfi *rdi* n x86)
@@ -336,9 +336,9 @@
 ;;               (halt-address #x4006c2)
 ;;               (x86 (!programmer-level-mode t (create-x86)))
 ;;               ((mv flg x86)
-;;                (init-x86-state
+;;                (init-x86-state-64
 ;;                 nil start-address halt-address
-;;                 nil nil nil 0
+;;                 nil nil nil nil nil 0
 ;;                 *popcount-64*
 ;;                 x86))
 ;;               (x86
@@ -466,9 +466,9 @@
                (halt-address #x400643)
                (x86 (!programmer-level-mode t (create-x86)))
                ((mv flg x86)
-                (init-x86-state
+                (init-x86-state-64
                  nil start-address halt-address
-                 nil nil nil 0
+                 nil nil nil nil nil 0
                  *popcount-32-buggy*
                  x86))
                (x86 (wr32 *rdi* n x86))
@@ -491,9 +491,9 @@
      (halt-address #x400643)
      (x86 (!programmer-level-mode t x86))
      ((mv ?flg x86)
-      (init-x86-state
+      (init-x86-state-64
        nil start-address halt-address
-       nil nil nil 0
+       nil nil nil nil nil 0
        *popcount-32-buggy*
        x86))
      (x86 (wr32 *rdi* #x80000000  x86))
@@ -506,9 +506,9 @@
      (halt-address #x400643)
      (x86 (!programmer-level-mode t x86))
      ((mv ?flg x86)
-      (init-x86-state
+      (init-x86-state-64
        nil start-address halt-address
-       nil nil nil 0
+       nil nil nil nil nil 0
        *popcount-32-buggy*
        x86))
      (x86 (wr32 *rdi* #xFFFFFFFF  x86))
@@ -527,9 +527,9 @@
               (halt-address #x400643)
               (x86 (!programmer-level-mode t (create-x86)))
               ((mv flg x86)
-               (init-x86-state
+               (init-x86-state-64
                 nil start-address halt-address
-                nil nil nil 0
+                nil nil nil nil nil 0
                 *popcount-32-buggy*
                 x86))
               (x86 (wr32 *rdi* n x86))

@@ -60,7 +60,7 @@
 
 ;; a new enumerator for the type num-pair it needs to be in program
 ;; mode because the nth-num-pair is a progran mode function.
-:program
+(program)
 (defun nth-num-pair-user (n)
   (filter-num-pair (nth-num-pair-builtin n)))
 
@@ -70,7 +70,7 @@
       (if (> n m)
         (mv pair seed)
         (mv (num-pair m (+ m n 1)) seed))))
-:logic
+(logic)
 
 ;; instruct CGEN to use the enumerator defined by the user
 (defdata-attach num-pair :enumerator nth-num-pair-user)
@@ -121,7 +121,7 @@
 
 
 (acl2s-defaults :set num-trials 2000)
-:set-gag-mode nil
+(set-gag-mode nil)
 (acl2s-defaults :set verbosity-level 3)
 (test?
   (IMPLIES (AND (ACL2::EXTRA-INFO '(:GUARD (:BODY SORT-HELPER))
@@ -138,18 +138,18 @@
 
 ; testcase -1 (from acl2s-issues)
 (must-fail
-(test? (implies (complex-rationalp j)
-                (> j -45)))
-)
+ (test? (implies (complex-rationalp j)
+                 (> j -45)))
+ )
 
 ;++++++++++++++testcase 0 [check if checkpoints are tested]++++++++++++++++++++
 
 (acl2s-defaults :set num-counterexamples 10)
 (must-fail
-(test? (implies (and (posp (car x))
-                       (posp (cdr x)))
-                  (= (cdr x) (len x))))
-)
+ (test? (implies (and (posp (car x))
+                      (posp (cdr x)))
+                 (= (cdr x) (len x))))
+ )
 
 
 ;Find a long running thm, put it here, interrupt it and
@@ -383,16 +383,16 @@
 
 ;; testcase 4 (Russinoff's example)
 (must-fail
-(test? (implies (and (real/rationalp a)
-                     (real/rationalp b)
-                     (real/rationalp c)
-                     (< 0 a)
-                     (< 0 b)
-                     (< 0 c)
-                     (<= (expt a 2) (* b (+ c 1)))
-                     (<= b (* 4 c)))
-                (< (expt (- a 1) 2) (* b c))))
-)
+ (test? (implies (and (real/rationalp a)
+                      (real/rationalp b)
+                      (real/rationalp c)
+                      (< 0 a)
+                      (< 0 b)
+                      (< 0 c)
+                      (<= (expt a 2) (* b (+ c 1)))
+                      (<= b (* 4 c)))
+                 (< (expt (- a 1) 2) (* b c))))
+ )
 ;; TODO: C is being printed in quoted form in :incremental
 ;; It seems the above has been fixed.
 
@@ -403,26 +403,26 @@
 ;; backtrack-limit and stopping condition in the case of incremental.
 ;; I need to revisit the implementation design of incremental!!
 (must-fail
-(thm (implies (and (real/rationalp a)
-                     (real/rationalp b)
-                     (real/rationalp c)
-                     (< 0 a)
-                     (< 0 b)
-                     (< 0 c)
-                     (<= (expt a 2) (* b (+ c 1)))
-                     (<= b (* 4 c)))
-                (< (expt (- a 1) 2) (* b c))))
-)
+ (thm (implies (and (real/rationalp a)
+                    (real/rationalp b)
+                    (real/rationalp c)
+                    (< 0 a)
+                    (< 0 b)
+                    (< 0 c)
+                    (<= (expt a 2) (* b (+ c 1)))
+                    (<= b (* 4 c)))
+               (< (expt (- a 1) 2) (* b c))))
+ )
 (time$
-(test? (implies (and (real/rationalp a)
-                     (real/rationalp b)
-                     (real/rationalp c)
-                     (<= 1 a)
-                     (< 0 b)
-                     (< 0 c)
-                     (<= (expt a 2) (* b (+ c 1)))
-                     (<= b (* 4 c)))
-                (< (expt (- a 1) 2) (* b c)))))
+ (test? (implies (and (real/rationalp a)
+                      (real/rationalp b)
+                      (real/rationalp c)
+                      (<= 1 a)
+                      (< 0 b)
+                      (< 0 c)
+                      (<= (expt a 2) (* b (+ c 1)))
+                      (<= b (* 4 c)))
+                 (< (expt (- a 1) 2) (* b c)))))
 
 (thm (implies (and (real/rationalp a)
                    (real/rationalp b)
@@ -450,7 +450,7 @@
                (< z (+ x y)))
           (< z 62)))
 
-:set-gag-mode nil
+(set-gag-mode nil)
 (must-fail
 (test?
  (IMPLIES (AND (RATIONALP x)
@@ -470,25 +470,25 @@
 
 ;from BM88 paper
 (must-fail
-(test?
- (implies (and (positive-rationalp k)
-               (positive-rationalp l)
-               (<= (+ (* 2 k) 1) (* 2 l)))
-          (<= (+ (* 2 k) 2) (* 2 l)))) 
-)
+ (test?
+  (implies (and (positive-rationalp k)
+                (positive-rationalp l)
+                (<= (+ (* 2 k) 1) (* 2 l)))
+           (<= (+ (* 2 k) 2) (* 2 l)))) 
+ )
 
 (acl2s-defaults :set search-strategy :simple)
 ;; testcase 5 (only finds cts if arithmetic-5 library is loaded)
 (must-fail
-(test?
- (implies (and (posp x)
-               (posp y)
-               (posp z)
-               (> z 16)
-               (<= (+ x y) (* 2 z)))
-          (or (> (* x y z) (* x y x))
-              (> (* x y z) (* x y y)))))
-)
+ (test?
+  (implies (and (posp x)
+                (posp y)
+                (posp z)
+                (> z 16)
+                (<= (+ x y) (* 2 z)))
+           (or (> (* x y z) (* x y x))
+               (> (* x y z) (* x y y)))))
+ )
 
 ; Aug 27th '12
 ; Note: BE does exceptionally well in the above example. The reason is
@@ -500,15 +500,15 @@
 
 ;;testcase 6
 (must-fail
-(test?
- (implies (and (posp x)
-               (posp y)
-               (posp z)
-               ;Idea of introducing variables to help SELECT
-               ;(equal w (* z z))
-               (<= (+ x y) (* 2 z)))
-          (> (* z z) (* x y))))
-)
+ (test?
+  (implies (and (posp x)
+                (posp y)
+                (posp z)
+;Idea of introducing variables to help SELECT
+;(equal w (* z z))
+                (<= (+ x y) (* 2 z)))
+           (> (* z z) (* x y))))
+ )
 
 ;; testcase 7 (from Harrison's book)
 (defdata formula (oneof pos
@@ -575,11 +575,11 @@
 ;(acl2s-defaults :set sampling-method :uniform-random)
 
 (must-fail
-(test? ;simp-nnf-commute
+ (test? ;simp-nnf-commute
   (implies (formulap f)
-  (equal (nnf (simplify-formula f))
-         (simplify-formula (nnf f)))))
-)
+           (equal (nnf (simplify-formula f))
+                  (simplify-formula (nnf f)))))
+ )
 
 ; TODO: print-testing-summary should not appear after the summary when a new
 ;form is called.
@@ -599,11 +599,11 @@
    (* x x))
  
 (must-fail 
-(test?
+ (test?
   (implies (natp i)
            (and (<= (square (square-root i)) i)
                 (< i (square (1+ (square-root i)))))))
-)
+ )
 
 ;; testcase 9 (a thm in 2, but cts in 3 variables)
 (defdata small-pos (enum '(1 2 3 4 5 6 7 8 9)))
@@ -613,19 +613,19 @@
 (acl2s-defaults :set search-strategy :incremental)
 (acl2s-defaults :set num-witnesses 0) ;recommended for incremental
 (must-fail
-(test? (implies (and (integerp x1)
-                     (integerp x2)
-                     (integerp x3)
-                     (integerp x4)
-                     (integerp x5)
-                     (integerp x6)
-                     (< x1 (* 2 x2))
-                     (< x2 (* 2 x3))
-                     (< x3 (* 2 x4))
-                     (< x4 (* 2 x5))
-                     )
-                (< x6 x5)))
-)
+ (test? (implies (and (integerp x1)
+                      (integerp x2)
+                      (integerp x3)
+                      (integerp x4)
+                      (integerp x5)
+                      (integerp x6)
+                      (< x1 (* 2 x2))
+                      (< x2 (* 2 x3))
+                      (< x3 (* 2 x4))
+                      (< x4 (* 2 x5))
+                      )
+                 (< x6 x5)))
+ )
 ;No luck without arithmetic-5.
 ;Lets add arith-5 lib and see now. Still no luck
 ; 19th March - I saw some counterexamples with (ld acl2s-mode.lsp)
@@ -665,7 +665,7 @@
 ;Sep 5 2013 - strange timeout + cts, but no summary. (incremental)
 (acl2s-defaults :set search-strategy :simple)
 (must-fail
-(test? 
+ (test? 
   (implies (and (integerp c1)
                 (integerp c2)
                 (integerp c3)
@@ -677,7 +677,7 @@
                 (equal 0 (+ c1 c2 c3))
                 (equal 0 (+ (* c1 x1) (* c2 x2) (* c3 x3))))
            (and (= 0 c1) (= 0 c2) (= 0 c3))))
-)
+ )
 
 (acl2s-defaults :set num-witnesses 3)
 ;; testcase 10
@@ -698,23 +698,23 @@
 (acl2s-defaults :set testing-enabled T) ;if simple, then only T works
 
 (must-fail
-(test? (implies (and (integerp x)
-                     (integerp y)
-                     (integerp z))
-                (/= (g x y z) 'error)))
-)
+ (test? (implies (and (integerp x)
+                      (integerp y)
+                      (integerp z))
+                 (/= (g x y z) 'error)))
+ )
 
 (acl2s-defaults :set testing-enabled :naive) ;for incremental, naive works too
 ; Actually :simple works too with naive.
 (must-fail
-(test? (implies (and (integerp x)
-                     (integerp y)
-                     (integerp z)
-                     (equal x (hash y))
-                     (equal y (hash z)))
-                NIL))
+ (test? (implies (and (integerp x)
+                      (integerp y)
+                      (integerp z)
+                      (equal x (hash y))
+                      (equal y (hash z)))
+                 NIL))
 
-)
+ )
 
 ;; testcase 11 (Euler Counterexample)
 ;fermat number: f(n) = 1 + 2^2^n
@@ -741,10 +741,10 @@
 
 ;TODO: get rid of duplicate cts/wts across subgoals
 (must-fail
-(test?
- (implies (posp k)
-          (not (factor? (fermat-factor k 5) (f 5)))))
-)
+ (test?
+  (implies (posp k)
+           (not (factor? (fermat-factor k 5) (f 5)))))
+ )
 ;Lets generalize this, for any fermat number, but since these are
 ;huge numbers we will restrict ourselves to n less than 15.
 (f 15) ;1000 digits long
@@ -767,12 +767,12 @@
 
 ;BOZO 20th March 2013 - arithmetic-5 caused the following to hang.
 (must-fail
-(test?
- (implies (and (posp k)
-               (posp n)
-               (< n 15))
-          (not (factor? (fermat-factor k n) (f n)))))
-)
+ (test?
+  (implies (and (posp k)
+                (posp n)
+                (< n 15))
+           (not (factor? (fermat-factor k n) (f n)))))
+ )
 
 ;09/28/12
 ;wow i found for the above a brand new counterexample:
@@ -922,14 +922,15 @@
          (perm (cdr x) (remove1-equal (car x) y)))))
 
 (acl2s-defaults :set testing-enabled t)
+
 (must-fail
-(test? ;remove-once-perm
+ (test? ;remove-once-perm
   (implies (and (consp X)
                 (member-equal a Y))
            (equal (perm (remove-equal a X)
                         (remove-equal a Y))
                   (perm X Y))))
-)
+ )
 
 (let ((X '("a" "b" "c")) 
       (Y '("b" "a" "d" "c"))
@@ -942,23 +943,23 @@
            (perm X Y)))
 
 (must-fail
-(test?; lucky cex: -- ((A "A") (X (LIST "BA")) (Y (LIST "A" "BA")))
-(implies (and (pos-listp X)
+ (test?; lucky cex: -- ((A "A") (X (LIST "BA")) (Y (LIST "A" "BA")))
+  (implies (and (pos-listp X)
                 (pos-listp Y)
                 (consp X) ;TODO why is CONS /\ LIST[:a] not working!
                 (member-equal a Y)
                 (perm (remove1-equal a X) (remove1-equal a Y)))
            (perm X Y)))
-)#|ACL2s-ToDo-Line|#
+ )#|ACL2s-ToDo-Line|#
 
 
 
 (must-fail
-(thm (implies (and (booleanp p)
+ (thm (implies (and (booleanp p)
                     (booleanp q))
                (not (equal (implies p q)
                            (implies q p)))))
-)
+ )
 
 #|
 ; test case for timeouts and interrupt behavior
@@ -1050,5 +1051,53 @@
 )
 
 
+;; CHeck singleton range types are working correctly.
+
+(DEFDATA DECIMAL_30_TO_30 (RANGE RATIONAL (30 <= _ <= 30)))
+(test? (implies (DECIMAL_30_TO_30P x) (= x 30)))
 
 
+;; Check len support in Cgen.
+(defdata d1 (oneof 'a 'b 'c 'd 'e 'f))
+
+(defdata ld1-aux
+  (listof d1)
+  :min-rec-depth 2
+  :max-rec-depth 201)
+
+(acl2s::defunc ld1p (x)
+  :input-contract t
+  :output-contract (booleanp (ld1p x))
+ (and (ld1-auxp x)
+      (>= (len x) 3)
+      (<= (len x) 200)))
+
+;; (defdata ld1 (listof d1))
+
+(defdata d2 'g)
+
+(defdata ld2-aux
+  (listof d2)
+  :min-rec-depth 0
+  :max-rec-depth 7)
+
+(acl2s::defunc ld2p (x)
+  :input-contract t
+  :output-contract (booleanp (ld2p x))
+  (and (ld2-auxp x)
+       (<= (len x) 6)))
+
+Now, cgen fails to find a counterexample for this.
+(acl2s-defaults :set verbosity-level 3)
+
+(test?
+ (implies (and (ld2p a)
+               (ld1p b)
+               (ld1p c)
+               (integerp x)
+               (<= x (len a))
+               (> x 0)
+               (equal (len a) (len b)))
+               
+          (and (consp c)
+               (<= x (len c)))))

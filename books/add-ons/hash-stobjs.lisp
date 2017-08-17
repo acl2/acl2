@@ -338,14 +338,35 @@
 (program)
 (set-state-ok t)
 
+;; NOTE: In the section below, between the (redef+) and the (redef-),
+;; the following system functions are redefined so that they can deal
+;; with stobjs that can have hash table members.
+
+;; From basis-a.lisp:
+;;   - defstobj-fnname
+;;   - defstobj-field-templates
+;;   - defstobj-field-fns-raw-defs
+;;   - defstobj-raw-init-fields
+;;   - defstobj-component-recognizer-axiomatic-defs
+
+;; From other-events.lisp:
+;;   - chk-stobj-field-descriptor
+;;   - chk-acceptable-defstobj1
+;;   - defstobj-field-fns-axiomatic-defs
+;;   - defstobj-axiomatic-init-fields
+;;   - put-stobjs-in-and-outs1
+
+;; The comments "---<" and ">---" are used to indicate what parts of
+;; the functions are new for the purposes of this book.  All other
+;; comments inside the redefined functions are just copied from the
+;; original versions and, as such, are written about the original
+;; versions.
+
 (redef+)
+
 (defun defstobj-fnname (root key1 key2 renaming-alist)
 
 ; Warning: Keep this in sync with stobj-updater-guess-from-accessor.
-
-; This has been moved from other-events.lisp, where other stobj-related
-; functions are defined, because it is used in parse-with-local-stobj, which is
-; used in translate11.
 
 ; This function generates the actual name we will use for a function generated
 ; by defstobj.  Root and renaming-alist are, respectively, a symbol and an
@@ -424,8 +445,6 @@
                     (assoc-eq default-fnname renaming-alist))))
     (if temp (cadr temp) default-fnname)))
 
-
-
 (defun defstobj-field-templates (field-descriptors renaming wrld)
 
 ; Note: Wrld may be a world or nil.  See fix-stobj-array-type.
@@ -493,6 +512,302 @@
                   )
             (defstobj-field-templates
               (cdr field-descriptors) renaming wrld))))))
+
+(defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
+
+; Warning: Keep the formals in the definitions below in sync with corresponding
+; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
+; correctly; we saw such a problem in Version_5.0 for a resize function.
+
+; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
+
+  #-hons (declare (ignorable flush-var)) ; irrelevant var without hons
+  (cond
+   ((endp field-templates) nil)
+   (t
+    (append
+     (let* ((field-template (car field-templates))
+            (type (access defstobj-field-template field-template :type))
+            (init (access defstobj-field-template field-template :init))
+            (arrayp (and (consp type) (eq (car type) 'array)))
+            (array-etype0 (and arrayp (cadr type)))
+            (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
+                                              nil))
+            (scalar-type
+             (if stobj-creator t type)) ; only used when (not arrayp)
+            (array-etype (and arrayp
+                              (if stobj-creator
+
+; Stobj-creator is non-nil when array-etype is a stobj.  The real element type,
+; then, is simple-array rather than a simple-array-type, so we might say that
+; the parent stobj array is not simple.  But we will assume that the advantage
+; of having a simple-vector for the parent stobj outweighs the advantage of
+; having a simple-vector element type declaration.
+
+                                  t
+                                array-etype0)))
+            (simple-type (and arrayp
+                              (simple-array-type array-etype (caddr type))))
+            (array-length (and arrayp (car (caddr type))))
+            (vref (and arrayp
+                       (if (eq (car simple-type) 'simple-vector)
+                           'svref
+                         'aref)))
+            (fix-vref (and arrayp
+                           (if (array-etype-is-fixnum-type array-etype)
+                               'fix-aref
+                             vref)))
+            (accessor-name (access defstobj-field-template
+                                   field-template
+                                   :accessor-name))
+            (updater-name (access defstobj-field-template
+                                  field-template
+                                  :updater-name))
+            (length-name (access defstobj-field-template
+                                 field-template
+                                 :length-name))
+            (resize-name (access defstobj-field-template
+                                 field-template
+                                 :resize-name))
+            (resizable (access defstobj-field-template
+                               field-template
+                               :resizable))
+;---<
+            (hashp (and (consp type) (eq (car type) 'hash-table)))
+            (hash-test (and hashp (cadr type)))
+            (other (access defstobj-field-template
+                           field-template
+                           :other))
+            (boundp-name (nth 0 other))
+            (accessor?-name (nth 1 other))
+            (remove-name (nth 2 other))
+            (count-name (nth 3 other))
+            (clear-name (nth 4 other))
+            (init-name (nth 5 other))
+;   >---
+            )
+       (cond
+;---<
+        (hashp
+         `((,accessor-name
+            (k ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (values (gethash ,(if (eq hash-test 'hons-equal)
+                                 `(hons-copy k)
+                               'k)
+                            (the hash-table (svref ,var ,n)))))
+           (,updater-name
+            (k v ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+hons (memoize-flush ,var)
+              (setf (gethash ,(if (eq hash-test 'hons-equal)
+                                  `(hons-copy k)
+                                'k)
+                             (the hash-table (svref ,var ,n)))
+                    v)
+              ,var))
+           (,boundp-name
+            (k ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (multiple-value-bind (val boundp)
+                (gethash ,(if (eq hash-test 'hons-equal)
+                              `(hons-copy k)
+                            'k)
+                         (the hash-table (svref ,var ,n)))
+              (declare (ignore val))
+              (if boundp t nil)))
+           (,accessor?-name
+            (k ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (multiple-value-bind
+                (val boundp)
+                (gethash ,(if (eq hash-test 'hons-equal)
+                              `(hons-copy k)
+                            'k)
+                         (the hash-table (svref ,var ,n)))
+              (mv val (if boundp t nil))))
+           (,remove-name
+            (k ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+(and hons (not acl2-loop-only))
+              (memoize-flush ,var)
+              (remhash ,(if (eq hash-test 'hons-equal)
+                            `(hons-copy k)
+                          'k)
+                       (the hash-table (svref ,var ,n)))
+              ,var))
+           (,count-name
+            (,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (hash-table-count (svref ,var ,n)))
+           (,clear-name
+            (,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+(and hons (not acl2-loop-only))
+              (memoize-flush ,var)
+              (clrhash (svref ,var ,n))
+              ,var))
+           (,init-name
+            (size rehash-size rehash-threshold ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+(and hons (not acl2-loop-only))
+              (memoize-flush ,var)
+              (setf (svref ,var ,n)
+                    (make-hash-table
+                     :test ',(case hash-test
+                               (eql 'eql)
+                               (equal 'equal)
+                               (t (er hard hash-test
+                                      "The hash test should be either EQL or ~
+                                       EQUAL.~%")))
+                     :size (or size 60)
+                     :rehash-size (if rehash-size
+                                      (float rehash-size)
+                                    (float 17/10))
+                     :rehash-threshold (if rehash-threshold
+                                           (float rehash-threshold)
+                                         (float 3/4))))
+              ,var))))
+;   >---
+        (arrayp
+         `((,length-name
+            (,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            ,@(if (not resizable)
+                  `((declare (ignore ,var))
+                    ,array-length)
+                `((the (and fixnum (integer 0 *))
+                       (length (svref ,var ,n))))))
+           (,resize-name
+            (i ,var)
+            ,@(if (not resizable)
+                  `((declare (ignore i))
+                    (prog2$
+                     (er hard ',resize-name
+                         "The array field corresponding to accessor ~x0 of ~
+                          stobj ~x1 was not declared :resizable t.  ~
+                          Therefore, it is illegal to resize this array."
+                         ',accessor-name
+                         ',var)
+                     ,var))
+                `((if (not (and (integerp i)
+                                (>= i 0)
+                                (< i array-dimension-limit)))
+                      (hard-error
+                       ',resize-name
+                       "Attempted array resize failed because the requested ~
+                        size ~x0 was not a nonnegative integer less than the ~
+                        value of Common Lisp constant array-dimension-limit, ~
+                        which is ~x1.  These bounds on array sizes are fixed ~
+                        by ACL2."
+                       (list (cons #\0 i)
+                             (cons #\1 array-dimension-limit)))
+                    (let* ((var ,var)
+                           (old (svref var ,n))
+                           (min-index (min i (length old)))
+                           (new (make-array$ i
+
+; The :initial-element below is probably not necessary in the case
+; that we are downsizing the array.  At least, CLtL2 does not make any
+; requirements about specifying an :initial-element, even when an
+; :element-type is supplied.  However, it seems harmless enough to go
+; ahead and specify :initial-element even for downsizing: resizing is
+; not expected to be fast, we save a case split here (at the expense
+; of this comment!), and besides, we are protecting against the
+; possibility that some Common Lisp will fail to respect the spec and
+; will cause an error by trying to initialize a fixnum array (say)
+; with NILs.
+
+                                             :initial-element
+                                             ',init
+                                             :element-type
+                                             ',array-etype)))
+                      #+hons (memoize-flush ,flush-var)
+                      (setf (svref var ,n)
+                            (,(pack2 'stobj-copy-array- fix-vref)
+                             old new 0 min-index))
+                      ,@(and stobj-creator
+                             `((when (< (length old) i)
+                                 (loop for j from (length old) to (1- i)
+                                       do (setf (svref new j)
+                                                (,stobj-creator))))))
+                      var)))))
+           (,accessor-name
+            (i ,var)
+            (declare (type (and fixnum (integer 0 *)) i))
+            ,@(and inline (list *stobj-inline-declare*))
+            (the$ ,array-etype
+                  (,vref (the ,simple-type (svref ,var ,n))
+                         (the (and fixnum (integer 0 *)) i))))
+           (,updater-name
+            (i v ,var)
+            (declare (type (and fixnum (integer 0 *)) i)
+                     ,@(and (not (eq array-etype t))
+                            `((type ,array-etype v))))
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+hons (memoize-flush ,flush-var)
+
+; See the long comment below for the updater in the scalar case, about
+; supporting *1* functions.
+
+              (setf (,vref ,(if (eq simple-type t)
+                                `(svref ,var ,n)
+                              `(the ,simple-type (svref ,var ,n)))
+                           (the (and fixnum (integer 0 *)) i))
+                    (the$ ,array-etype v))
+              ,var))))
+        ((eq scalar-type t)
+         `((,accessor-name (,var)
+                           ,@(and inline (list *stobj-inline-declare*))
+                           (svref ,var ,n))
+           (,updater-name (v ,var)
+                          ,@(and inline (list *stobj-inline-declare*))
+                          (progn
+                            #+hons (memoize-flush ,flush-var)
+
+; For the case of a stobj field, we considered causing an error here since the
+; raw Lisp code for stobj-let avoids calling updaters because there is no need:
+; updates for fields that are stobjs have already updated destructively.
+; However, a raw Lisp updater can be called by a *1* function, say *1*f,
+; applied to live stobjs, when guard checking does not pass control to the raw
+; Lisp function, f.  Perhaps we could optimize to avoid this, but there is no
+; need; this setf is fast and is only called on behalf of executing *1*
+; function calls.  See the comment referencing "defstobj-field-fns-raw-defs" in
+; community book misc/nested-stobj-tests.lisp.  To see this point in action,
+; evaluate the forms under that comment after modifying this definition by
+; uncommenting the following line of code.
+
+;                           ,@(when stobj-creator '((break$))) ; see just above
+
+                            (setf (svref ,var ,n) v)
+                            ,var))))
+        (t
+         (assert$
+          (not stobj-creator) ; scalar-type is t for stobj-creator
+          `((,accessor-name (,var)
+                            ,@(and inline (list *stobj-inline-declare*))
+                            (the$ ,scalar-type
+                                  (aref (the (simple-array ,scalar-type (1))
+                                             (svref ,var ,n))
+                                        0)))
+            (,updater-name (v ,var)
+                           ,@(and (not (eq scalar-type t))
+                                  `((declare (type ,scalar-type v))))
+                           ,@(and inline (list *stobj-inline-declare*))
+                           (progn
+                             #+hons (memoize-flush ,flush-var)
+                             (setf (aref (the (simple-array ,scalar-type (1))
+                                              (svref ,var ,n))
+                                         0)
+                                   (the$ ,scalar-type v))
+                             ,var)))))))
+     (defstobj-field-fns-raw-defs
+       var flush-var inline (1+ n) (cdr field-templates))))))
 
 (defun defstobj-raw-init-fields (field-templates)
 
@@ -660,6 +975,378 @@
                                 ,type-term))))
             (defstobj-component-recognizer-axiomatic-defs
               name template (cdr field-templates) wrld))))))
+
+(defun chk-stobj-field-descriptor (name field-descriptor non-memoizable
+                                        ctx wrld state)
+
+; See the comment just before chk-acceptable-defstobj1 for an explanation of
+; our handling of Common Lisp compliance.
+
+; The argument, non-memoizable, is the value of the :non-memoizable keyword of
+; the defstobj event intrducing name.  Let us consider whether there is a need
+; to add a check about :non-memoizable for the case of a stobj with stobj
+; fields.
+
+; On the one hand, it is fine for the parent stobj to be memoizable regardless
+; of whether any child stobjs are non-memoizable.  Suppose that some child
+; stobj is non-memoizable but the (new) parent stobj is memoizable.  The
+; concern is the case that some memoized function reads the parent twice on the
+; same inputs when between those reads, some child stobj has changed without
+; any flushing of memoization tables (because the child stobj is
+; non-memoizable).  But the only way to change a child stobj is by way of
+; stobj-let, which flushes the memo table for each function that takes the
+; parent stobj as an argument (since the parent is memoizable).
+
+; On the other hand, suppose that some child stobj is memoizable but the (new)
+; parent stobj is non-memoizable.  In this case, stobj-let does not flush the
+; parent stobj's memo tables, and we return to the soundness bug illustrated in
+; a comment in stobj-let-fn-raw.
+
+  (cond
+   ((symbolp field-descriptor) (value nil))
+   (t
+    (er-progn
+     (cond ((and (consp field-descriptor)
+                 (symbolp (car field-descriptor))
+                 (keyword-value-listp (cdr field-descriptor))
+                 (member-equal (length field-descriptor) '(1 3 5 7))
+                 (let ((keys (odds field-descriptor)))
+                   (and (no-duplicatesp keys)
+                        (subsetp-eq keys '(:type :initially :resizable)))))
+            (value nil))
+           (t (er soft ctx
+                  "The field descriptors of a single-threaded object ~
+                   definition must be a symbolic field-name or a list of the ~
+                   form (field-name :type type :initially val), where ~
+                   field-name is a symbol.  The :type and :initially keyword ~
+                   assignments are optional and their order is irrelevant.  ~
+                   The purported descriptor ~x0 for a field in ~x1 is not of ~
+                   this form."
+                  field-descriptor
+                  name)))
+     (let* ((field (car field-descriptor))
+            (type (if (assoc-keyword :type (cdr field-descriptor))
+                      (cadr (assoc-keyword :type (cdr field-descriptor)))
+                    t))
+            (initp (assoc-keyword :initially (cdr field-descriptor)))
+            (init (if initp (cadr initp) nil))
+            (resizable (if (assoc-keyword :resizable (cdr field-descriptor))
+                           (cadr (assoc-keyword :resizable
+                                                (cdr field-descriptor)))
+                         nil))
+            (child-stobj-memoizable-error-string
+             "It is illegal to declare stobj ~x0 as :NON-MEMOIZABLE, because ~
+              it has a child stobj, ~x1, that was not thus declared.  See ~
+              :DOC defstobj."))
+       (cond
+        ((and resizable (not (eq resizable t)))
+         (er soft ctx
+             "The :resizable value in the ~x0 field of ~x1 is illegal:  ~x2.  ~
+              The legal values are t and nil."
+             field name resizable))
+        ((and (consp type)
+              (eq (car type) 'array))
+         (cond
+          ((not (and (true-listp type)
+                     (equal (length type) 3)
+                     (true-listp (caddr type))
+                     (equal (length (caddr type)) 1)))
+           (er soft ctx
+               "When a field descriptor specifies an ARRAY :type, the type ~
+                must be of the form (ARRAY etype (n)).  Note that we only ~
+                support single-dimensional arrays.  The purported ARRAY :type ~
+                ~x0 for the ~x1 field of ~x2 is not of this form."
+               type field name))
+          (t (let* ((type0 (fix-stobj-array-type type wrld))
+                    (etype (cadr type0))
+                    (stobjp (stobjp etype t wrld))
+                    (etype-term ; used only when (not stobjp)
+                     (and (not stobjp) ; optimization
+                          (translate-declaration-to-guard etype 'x wrld)))
+                    (n (car (caddr type0)))
+                    (etype-error-string
+                     "The element type specified for the ~x0 field of ~x1, ~
+                      namely ~x2, is not recognized by ACL2 as a type-spec ~
+                      (see :DOC type-spec) or as a user-defined stobj name."))
+               (cond
+                ((not (natp n))
+                 (er soft ctx
+                     "An array dimension must be a non-negative integer or a ~
+                      defined constant whose value is a non-negative integer. ~
+                      ~ The :type ~x0 for the ~x1 field of ~x2 is thus ~
+                      illegal."
+                     type0 field name))
+                (stobjp
+
+; Defstobj-raw-init-fields depends on this check.  Also see the comment above
+; explaining how stobj-let depends on this check.
+
+                 (cond ((eq etype 'state)
+                        (er soft ctx
+                            etype-error-string
+                            field name etype))
+                       ((and non-memoizable
+                             (not (getpropc etype 'non-memoizable nil wrld)))
+                        (er soft ctx
+                            child-stobj-memoizable-error-string
+                            name etype))
+                       ((null initp) (value nil))
+                       (t (er soft ctx
+                              "The :initially keyword must be omitted for a ~
+                               :type specified as an array of stobjs.  But ~
+                               for :type ~x0, :initially is specified as ~x1 ~
+                               for the ~x2 field of ~x3."
+                              type init field name))))
+                ((null etype-term)
+                 (er soft ctx
+                     etype-error-string
+                     field name etype))
+                (t
+                 (er-let*
+                     ((pair (simple-translate-and-eval etype-term
+                                                       (list (cons 'x init))
+                                                       nil
+                                                       (msg
+                                                        "The type ~x0"
+                                                        etype-term)
+                                                       ctx
+                                                       wrld
+                                                       state
+                                                       nil)))
+
+; pair is (tterm . val), where tterm is a term and val is its value
+; under x<-init.
+
+                   (er-progn
+                    (chk-common-lisp-compliant-subfunctions
+                     nil (list field) (list (car pair))
+                     wrld "auxiliary function" ctx state)
+                    (chk-unrestricted-guards-for-user-fns
+                     (all-fnnames (car pair))
+                     wrld ctx state)
+                    (cond
+                     ((not (cdr pair))
+                      (er soft ctx
+                          "The value specified by the :initially ~
+                           keyword, namely ~x0, fails to satisfy the ~
+                           declared type ~x1 in the array ~
+                           specification for the ~x2 field of ~x3."
+                          init etype field name))
+                     (t (value nil)))))))))))
+        ((assoc-keyword :resizable (cdr field-descriptor))
+         (er soft ctx
+             "The :resizable keyword is only legal for array types, hence is ~
+              illegal for the ~x0 field of ~x1."
+             field name))
+;---<
+        ((and (consp type)
+              (eq (car type) 'hash-table))
+         (cond ((or (atom (cdr type))
+                    (not (member (cadr type)
+                                 '(EQL
+                                   EQUAL
+                                   #+(and hons (not acl2-loop-only))
+                                   HONS-EQUAL))))
+                (er soft ctx
+                    "A hash-table type must be specified as (HASH-TABLE ~
+                     TEST), where test is EQL, EQUAL, or (when built with the ~
+                     HONS extension) HONS-EQUAL.  The test given was ~x0.~%"
+                    (and (consp (cdr type))
+                         (cadr type))))
+               (t (value nil))))
+;   >---
+        (t (let* ((stobjp (stobjp type t wrld))
+                  (type-term ; used only when (not stobjp)
+                   (and (not stobjp) ; optimization
+                        (translate-declaration-to-guard type 'x wrld)))
+                  (type-error-string
+                   "The :type specified for the ~x0 field of ~x1, namely ~x2, ~
+                    is not recognized by ACL2 as a type-spec (see :DOC ~
+                    type-spec) or as a user-defined stobj name."))
+             (cond
+              (stobjp
+
+; Defstobj-raw-init-fields depends on this check.  Also see the comment above
+; explaining how stobj-let depends on this check.
+
+               (cond ((eq type 'state)
+                      (er soft ctx
+                          type-error-string
+                          field name type))
+                     ((and non-memoizable
+                           (not (getpropc type 'non-memoizable nil wrld)))
+                      (er soft ctx
+                          child-stobj-memoizable-error-string
+                          name type))
+                     ((null initp) (value nil))
+                     (t (er soft ctx
+                            "The :initially keyword must be omitted for a ~
+                             :type specified as a stobj.  But for :type ~x0, ~
+                             :initially is specified as ~x1 for the ~x2 field ~
+                             of ~x3."
+                            type init field name))))
+              ((null type-term)
+               (er soft ctx
+                   type-error-string
+                   field name type))
+              (t
+               (er-let* ((pair (simple-translate-and-eval type-term
+                                                          (list (cons 'x init))
+                                                          nil
+                                                          (msg
+                                                           "The type ~x0"
+                                                           type-term)
+                                                          ctx
+                                                          wrld
+                                                          state
+                                                          nil)))
+
+; pair is (tterm . val), where tterm is a term and val is its value
+; under x<-init.
+
+                 (er-progn
+                  (chk-common-lisp-compliant-subfunctions
+                   nil (list field) (list (car pair))
+                   wrld "body" ctx state)
+                  (chk-unrestricted-guards-for-user-fns
+                   (all-fnnames (car pair))
+                   wrld ctx state)
+                  (cond
+                   ((not (cdr pair))
+                    (er soft ctx
+                        "The value specified by the :initially keyword, ~
+                         namely ~x0, fails to satisfy the declared :type ~x1 ~
+                         for the ~x2 field of ~x3."
+                        init type field name))
+                   (t (value nil)))))))))))))))
+
+(defun chk-acceptable-defstobj1 (name field-descriptors ftemps renaming
+                                      non-memoizable ctx wrld state names
+                                      const-names)
+
+; We check whether it is legal to define name as a single-threaded
+; object with the description given in field-descriptors.  We know
+; name is a legal (and new) stobj name and we know that renaming is a
+; symbol to symbol doublet-style alist.  But we know nothing else.  We
+; either signal an error or return the world in which the event is to
+; be processed (thus implementing redefinitions).  Names is, in
+; general, the actual set of names that the defstobj event will
+; introduce.  That is, it contains the images of the default names
+; under the renaming alist.  We accumulate the actual names into it as
+; we go and check that it contains no duplicates at the termination of
+; this function.  All of the names in names are to be defined as
+; functions with :VERIFY-GUARDS T.  See the comment above about
+; Common Lisp compliance.
+
+  (cond
+   ((endp ftemps)
+    (let* ((recog-name (defstobj-fnname name :recognizer :top renaming))
+           (creator-name (defstobj-fnname name :creator :top renaming))
+           (names (list* recog-name creator-name names)))
+      (er-progn
+       (chk-all-but-new-name recog-name ctx 'function wrld state)
+       (chk-all-but-new-name creator-name ctx 'function wrld state)
+       (chk-acceptable-defstobj-renaming name field-descriptors renaming
+                                         ctx state nil)
+
+; Note: We insist that all the names be new.  In addition to the
+; obvious necessity for something like this, we note that this does
+; not permit us to have redundantly defined any of these names.  For
+; example, the user might have already defined a field recognizer,
+; PCP, that is identically defined to what we will lay down.  But we
+; do not allow that.  We basically insist that we have control over
+; every one of these names.
+
+       (chk-just-new-names names 'function nil ctx wrld state)
+       (chk-just-new-names const-names 'const nil ctx wrld state))))
+   (t
+
+; An element of field-descriptors (i.e., of ftemps) is either a symbolic field
+; name, field, or else of the form (field :type type :initially val), where
+; either or both of the keyword fields can be omitted.  Val must be an evg,
+; i.e., an unquoted constant like t, nil, 0 or undef (the latter meaning the
+; symbol 'undef).  :Type defaults to the unrestricted type t and :initially
+; defaults to nil.  Type is either a primitive type, as recognized by
+; translate-declaration-to-guard, or a stobj name, or else is of the form
+; (array ptype (n)), where ptype is a primitive type or stobj name and n is an
+; positive integer constant.  If type is a stobj name or an array of such, then
+; :initially must be omitted.
+
+    (er-progn
+     (chk-stobj-field-descriptor name (car ftemps) non-memoizable ctx wrld
+                                 state)
+     (let* ((field (if (atom (car ftemps))
+                       (car ftemps)
+                     (car (car ftemps))))
+            (type (if (consp (car ftemps))
+                      (or (cadr (assoc-keyword :type
+                                               (cdr (car ftemps))))
+                          t)
+                    t))
+;---<
+            (key2 (if (consp type)
+                     (case (car type)
+                       (array :array)
+                       (hash-table :hash-table)
+                       (t :non-array))
+                    :non-array))
+            (boundp-name (defstobj-fnname field :boundp key2 renaming))
+            (accessor?-name (defstobj-fnname field :accessor? key2
+                              renaming))
+            (remove-name (defstobj-fnname field :remove key2
+                           renaming))
+            (count-name (defstobj-fnname field :count key2 renaming))
+            (clear-name (defstobj-fnname field :clear key2 renaming))
+            (init-name (defstobj-fnname field :init key2 renaming))
+;   >---
+            (fieldp-name (defstobj-fnname field :recognizer key2 renaming))
+            (accessor-name (defstobj-fnname field :accessor key2 renaming))
+            (accessor-const-name (defconst-name accessor-name))
+            (updater-name (defstobj-fnname field :updater key2 renaming))
+            (length-name (defstobj-fnname field :length key2 renaming))
+            (resize-name (defstobj-fnname field :resize key2 renaming)))
+       (er-progn
+        (chk-all-but-new-name fieldp-name ctx 'function wrld state)
+        (chk-all-but-new-name accessor-name ctx 'function wrld state)
+        (chk-all-but-new-name updater-name ctx 'function wrld state)
+        (chk-all-but-new-name accessor-const-name ctx 'const wrld state)
+        (if (eq key2 :array)
+            (er-progn (chk-all-but-new-name length-name ctx 'function wrld state)
+                      (chk-all-but-new-name resize-name ctx 'function wrld state))
+;---<
+          (if (eq key2 :hash-table)
+              (er-progn (chk-all-but-new-name boundp-name ctx
+                                              'function wrld state)
+                        (chk-all-but-new-name accessor?-name ctx
+                                              'function wrld state)
+                        (chk-all-but-new-name remove-name ctx
+                                              'function wrld state))
+            (value nil)
+;   >---
+            ))
+        (chk-acceptable-defstobj1 name field-descriptors (cdr ftemps)
+                                  renaming non-memoizable ctx wrld state
+                                  (list* fieldp-name
+                                         accessor-name
+                                         updater-name
+                                         (if (eq key2 :array)
+                                             (list* length-name
+                                                    resize-name
+                                                    names)
+;---<
+                                           (if (eq key2 :hash-table)
+                                               (list* boundp-name
+                                                      accessor?-name
+                                                      remove-name
+                                                      count-name
+                                                      clear-name
+                                                      init-name
+                                                      names)
+                                             names)
+;   >---
+                                           ))
+                                  (cons accessor-const-name
+                                        const-names))))))))
 
 (defun defstobj-field-fns-axiomatic-defs (top-recog var n field-templates wrld)
 
@@ -953,674 +1640,6 @@
           (cons init
                 (defstobj-axiomatic-init-fields
                   (cdr field-templates) wrld))))))))
-
-(defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
-
-; Warning: Keep the formals in the definitions below in sync with corresponding
-; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
-; correctly; we saw such a problem in Version_5.0 for a resize function.
-
-; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
-
-  #-hons (declare (ignorable flush-var)) ; irrelevant var without hons
-  (cond
-   ((endp field-templates) nil)
-   (t
-    (append
-     (let* ((field-template (car field-templates))
-            (type (access defstobj-field-template field-template :type))
-            (init (access defstobj-field-template field-template :init))
-            (arrayp (and (consp type) (eq (car type) 'array)))
-            (array-etype0 (and arrayp (cadr type)))
-            (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
-                                              nil))
-            (scalar-type
-             (if stobj-creator t type)) ; only used when (not arrayp)
-            (array-etype (and arrayp
-                              (if stobj-creator
-
-; Stobj-creator is non-nil when array-etype is a stobj.  The real element type,
-; then, is simple-array rather than a simple-array-type, so we might say that
-; the parent stobj array is not simple.  But we will assume that the advantage
-; of having a simple-vector for the parent stobj outweighs the advantage of
-; having a simple-vector element type declaration.
-
-                                  t
-                                array-etype0)))
-            (simple-type (and arrayp
-                              (simple-array-type array-etype (caddr type))))
-            (array-length (and arrayp (car (caddr type))))
-            (vref (and arrayp
-                       (if (eq (car simple-type) 'simple-vector)
-                           'svref
-                         'aref)))
-            (fix-vref (and arrayp
-                           (if (array-etype-is-fixnum-type array-etype)
-                               'fix-aref
-                             vref)))
-            (accessor-name (access defstobj-field-template
-                                   field-template
-                                   :accessor-name))
-            (updater-name (access defstobj-field-template
-                                  field-template
-                                  :updater-name))
-            (length-name (access defstobj-field-template
-                                 field-template
-                                 :length-name))
-            (resize-name (access defstobj-field-template
-                                 field-template
-                                 :resize-name))
-            (resizable (access defstobj-field-template
-                               field-template
-                               :resizable))
-;---<
-            (hashp (and (consp type) (eq (car type) 'hash-table)))
-            (hash-test (and hashp (cadr type)))
-            (other (access defstobj-field-template
-                           field-template
-                           :other))
-            (boundp-name (nth 0 other))
-            (accessor?-name (nth 1 other))
-            (remove-name (nth 2 other))
-            (count-name (nth 3 other))
-            (clear-name (nth 4 other))
-            (init-name (nth 5 other))
-;   >---
-            )
-       (cond
-;---<
-        (hashp
-         `((,accessor-name
-            (k ,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            (values (gethash ,(if (eq hash-test 'hons-equal)
-                                 `(hons-copy k)
-                               'k)
-                            (the hash-table (svref ,var ,n)))))
-           (,updater-name
-            (k v ,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            (progn
-              #+hons (memoize-flush ,var)
-              (setf (gethash ,(if (eq hash-test 'hons-equal)
-                                  `(hons-copy k)
-                                'k)
-                             (the hash-table (svref ,var ,n)))
-                    v)
-              ,var))
-           (,boundp-name
-            (k ,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            (multiple-value-bind (val boundp)
-                (gethash ,(if (eq hash-test 'hons-equal)
-                              `(hons-copy k)
-                            'k)
-                         (the hash-table (svref ,var ,n)))
-              (declare (ignore val))
-              (if boundp t nil)))
-           (,accessor?-name
-            (k ,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            (multiple-value-bind
-                (val boundp)
-                (gethash ,(if (eq hash-test 'hons-equal)
-                              `(hons-copy k)
-                            'k)
-                         (the hash-table (svref ,var ,n)))
-              (mv val (if boundp t nil))))
-           (,remove-name
-            (k ,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            (progn
-              #+(and hons (not acl2-loop-only))
-              (memoize-flush ,var)
-              (remhash ,(if (eq hash-test 'hons-equal)
-                            `(hons-copy k)
-                          'k)
-                       (the hash-table (svref ,var ,n)))
-              ,var))
-           (,count-name
-            (,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            (hash-table-count (svref ,var ,n)))
-           (,clear-name
-            (,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            (progn
-              #+(and hons (not acl2-loop-only))
-              (memoize-flush ,var)
-              (clrhash (svref ,var ,n))
-              ,var))
-           (,init-name
-            (size rehash-size rehash-threshold ,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            (progn
-              #+(and hons (not acl2-loop-only))
-              (memoize-flush ,var)
-              (setf (svref ,var ,n)
-                    (make-hash-table
-                     :test ',(case hash-test
-                               (eql 'eql)
-                               (equal 'equal)
-                               (t (er hard hash-test
-                                      "The hash test should be either EQL or ~
-                                       EQUAL.~%")))
-                     :size (or size 60)
-                     :rehash-size (if rehash-size
-                                      (float rehash-size)
-                                    (float 17/10))
-                     :rehash-threshold (if rehash-threshold
-                                           (float rehash-threshold)
-                                         (float 3/4))))
-              ,var))))
-;   >---
-        (arrayp
-         `((,length-name
-            (,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            ,@(if (not resizable)
-                  `((declare (ignore ,var))
-                    ,array-length)
-                `((the (and fixnum (integer 0 *))
-                       (length (svref ,var ,n))))))
-           (,resize-name
-            (i ,var)
-            ,@(if (not resizable)
-                  `((declare (ignore i))
-                    (prog2$
-                     (er hard ',resize-name
-                         "The array field corresponding to accessor ~x0 of ~
-                          stobj ~x1 was not declared :resizable t.  ~
-                          Therefore, it is illegal to resize this array."
-                         ',accessor-name
-                         ',var)
-                     ,var))
-                `((if (not (and (integerp i)
-                                (>= i 0)
-                                (< i array-dimension-limit)))
-                      (hard-error
-                       ',resize-name
-                       "Attempted array resize failed because the requested ~
-                        size ~x0 was not a nonnegative integer less than the ~
-                        value of Common Lisp constant array-dimension-limit, ~
-                        which is ~x1.  These bounds on array sizes are fixed ~
-                        by ACL2."
-                       (list (cons #\0 i)
-                             (cons #\1 array-dimension-limit)))
-                    (let* ((var ,var)
-                           (old (svref var ,n))
-                           (min-index (min i (length old)))
-                           (new (make-array$ i
-
-; The :initial-element below is probably not necessary in the case
-; that we are downsizing the array.  At least, CLtL2 does not make any
-; requirements about specifying an :initial-element, even when an
-; :element-type is supplied.  However, it seems harmless enough to go
-; ahead and specify :initial-element even for downsizing: resizing is
-; not expected to be fast, we save a case split here (at the expense
-; of this comment!), and besides, we are protecting against the
-; possibility that some Common Lisp will fail to respect the spec and
-; will cause an error by trying to initialize a fixnum array (say)
-; with NILs.
-
-                                             :initial-element
-                                             ',init
-                                             :element-type
-                                             ',array-etype)))
-                      #+hons (memoize-flush ,flush-var)
-                      (setf (svref var ,n)
-                            (,(pack2 'stobj-copy-array- fix-vref)
-                             old new 0 min-index))
-                      ,@(and stobj-creator
-                             `((when (< (length old) i)
-                                 (loop for j from (length old) to (1- i)
-                                       do (setf (svref new j)
-                                                (,stobj-creator))))))
-                      var)))))
-           (,accessor-name
-            (i ,var)
-            (declare (type (and fixnum (integer 0 *)) i))
-            ,@(and inline (list *stobj-inline-declare*))
-            (the ,array-etype
-                 (,vref (the ,simple-type (svref ,var ,n))
-                        (the (and fixnum (integer 0 *)) i))))
-           (,updater-name
-            (i v ,var)
-            (declare (type (and fixnum (integer 0 *)) i)
-                     (type ,array-etype v))
-            ,@(and inline (list *stobj-inline-declare*))
-            (progn
-              #+hons (memoize-flush ,flush-var)
-
-; See the long comment below for the updater in the scalar case, about
-; supporting *1* functions.
-
-              (setf (,vref (the ,simple-type (svref ,var ,n))
-                           (the (and fixnum (integer 0 *)) i))
-                    (the ,array-etype v))
-              ,var))))
-        ((eq scalar-type t)
-         `((,accessor-name (,var)
-                           ,@(and inline (list *stobj-inline-declare*))
-                           (svref ,var ,n))
-           (,updater-name (v ,var)
-                          ,@(and inline (list *stobj-inline-declare*))
-                          (progn
-                            #+hons (memoize-flush ,flush-var)
-
-; For the case of a stobj field, we considered causing an error here since the
-; raw Lisp code for stobj-let avoids calling updaters because there is no need:
-; updates for fields that are stobjs have already updated destructively.
-; However, a raw Lisp updater can be called by a *1* function, say *1*f,
-; applied to live stobjs, when guard checking does not pass control to the raw
-; Lisp function, f.  Perhaps we could optimize to avoid this, but there is no
-; need; this setf is fast and is only called on behalf of executing *1*
-; function calls.  See the comment referencing "defstobj-field-fns-raw-defs" in
-; community book misc/nested-stobj-tests.lisp.  To see this point in action,
-; evaluate the forms under that comment after modifying this definition by
-; uncommenting the following line of code.
-
-;                           ,@(when stobj-creator '((break$))) ; see just above
-
-                            (setf (svref ,var ,n) v)
-                            ,var))))
-        (t
-         (assert$
-          (not stobj-creator) ; scalar-type is t for stobj-creator
-          `((,accessor-name (,var)
-                            ,@(and inline (list *stobj-inline-declare*))
-                            (the ,scalar-type
-                                 (aref (the (simple-array ,scalar-type (1))
-                                            (svref ,var ,n))
-                                       0)))
-            (,updater-name (v ,var)
-                           (declare (type ,scalar-type v))
-                           ,@(and inline (list *stobj-inline-declare*))
-                           (progn
-                             #+hons (memoize-flush ,flush-var)
-                             (setf (aref (the (simple-array ,scalar-type (1))
-                                              (svref ,var ,n))
-                                         0)
-                                   (the ,scalar-type v))
-                             ,var)))))))
-     (defstobj-field-fns-raw-defs
-       var flush-var inline (1+ n) (cdr field-templates))))))
-
-
-(defun chk-stobj-field-descriptor (name field-descriptor non-memoizable
-                                        ctx wrld state)
-
-; See the comment just before chk-acceptable-defstobj1 for an explanation of
-; our handling of Common Lisp compliance.
-
-; The argument, non-memoizable, is the value of the :non-memoizable keyword of
-; the defstobj event intrducing name.  Let us consider whether there is a need
-; to add a check about :non-memoizable for the case of a stobj with stobj
-; fields.
-
-; On the one hand, it is fine for the parent stobj to be memoizable regardless
-; of whether any child stobjs are non-memoizable.  Suppose that some child
-; stobj is non-memoizable but the (new) parent stobj is memoizable.  The
-; concern is the case that some memoized function reads the parent twice on the
-; same inputs when between those reads, some child stobj has changed without
-; any flushing of memoization tables (because the child stobj is
-; non-memoizable).  But the only way to change a child stobj is by way of
-; stobj-let, which flushes the memo table for each function that takes the
-; parent stobj as an argument (since the parent is memoizable).
-
-; On the other hand, suppose that some child stobj is memoizable but the (new)
-; parent stobj is non-memoizable.  In this case, stobj-let does not flush the
-; parent stobj's memo tables, and we return to the soundness bug illustrated in
-; a comment in stobj-let-fn-raw.
-
-  (cond
-   ((symbolp field-descriptor) (value nil))
-   (t
-    (er-progn
-     (cond ((and (consp field-descriptor)
-                 (symbolp (car field-descriptor))
-                 (keyword-value-listp (cdr field-descriptor))
-                 (member-equal (length field-descriptor) '(1 3 5 7))
-                 (let ((keys (odds field-descriptor)))
-                   (and (no-duplicatesp keys)
-                        (subsetp-eq keys '(:type :initially :resizable)))))
-            (value nil))
-           (t (er soft ctx
-                  "The field descriptors of a single-threaded object ~
-                   definition must be a symbolic field-name or a list of the ~
-                   form (field-name :type type :initially val), where ~
-                   field-name is a symbol.  The :type and :initially keyword ~
-                   assignments are optional and their order is irrelevant.  ~
-                   The purported descriptor ~x0 for a field in ~x1 is not of ~
-                   this form."
-                  field-descriptor
-                  name)))
-     (let* ((field (car field-descriptor))
-            (type (if (assoc-keyword :type (cdr field-descriptor))
-                      (cadr (assoc-keyword :type (cdr field-descriptor)))
-                    t))
-            (initp (assoc-keyword :initially (cdr field-descriptor)))
-            (init (if initp (cadr initp) nil))
-            (resizable (if (assoc-keyword :resizable (cdr field-descriptor))
-                           (cadr (assoc-keyword :resizable
-                                                (cdr field-descriptor)))
-                         nil))
-            (child-stobj-memoizable-error-string
-             "It is illegal to declare stobj ~x0 as :NON-MEMOIZABLE, because ~
-              it has a child stobj, ~x1, that was not thus declared.  See ~
-              :DOC defstobj."))
-       (cond
-        ((and resizable (not (eq resizable t)))
-         (er soft ctx
-             "The :resizable value in the ~x0 field of ~x1 is illegal:  ~x2.  ~
-              The legal values are t and nil."
-             field name resizable))
-        ((and (consp type)
-              (eq (car type) 'array))
-         (cond
-          ((not (and (true-listp type)
-                     (equal (length type) 3)
-                     (true-listp (caddr type))
-                     (equal (length (caddr type)) 1)))
-           (er soft ctx
-               "When a field descriptor specifies an ARRAY :type, the type ~
-                must be of the form (ARRAY etype (n)).  Note that we only ~
-                support single-dimensional arrays.  The purported ARRAY :type ~
-                ~x0 for the ~x1 field of ~x2 is not of this form."
-               type field name))
-          (t (let* ((type0 (fix-stobj-array-type type wrld))
-                    (etype (cadr type0))
-                    (stobjp (stobjp etype t wrld))
-                    (etype-term ; used only when (not stobjp)
-                     (and (not stobjp) ; optimization
-                          (translate-declaration-to-guard etype 'x wrld)))
-                    (n (car (caddr type0)))
-                    (etype-error-string
-                     "The element type specified for the ~x0 field of ~x1, ~
-                      namely ~x2, is not recognized by ACL2 as a type-spec ~
-                      (see :DOC type-spec) or as a user-defined stobj name."))
-               (cond
-                ((not (natp n))
-                 (er soft ctx
-                     "An array dimension must be a non-negative integer or a ~
-                      defined constant whose value is a non-negative integer. ~
-                      ~ The :type ~x0 for the ~x1 field of ~x2 is thus ~
-                      illegal."
-                     type0 field name))
-                (stobjp
-
-; Defstobj-raw-init-fields depends on this check.  Also see the comment above
-; explaining how stobj-let depends on this check.
-
-                 (cond ((eq etype 'state)
-                        (er soft ctx
-                            etype-error-string
-                            field name etype))
-                       ((and non-memoizable
-                             (not (getprop etype 'non-memoizable nil
-                                           'current-acl2-world wrld)))
-                        (er soft ctx
-                            child-stobj-memoizable-error-string
-                            name etype))
-                       ((null initp) (value nil))
-                       (t (er soft ctx
-                              "The :initially keyword must be omitted for a ~
-                               :type specified as an array of stobjs.  But ~
-                               for :type ~x0, :initially is specified as ~x1 ~
-                               for the ~x2 field of ~x3."
-                              type init field name))))
-                ((null etype-term)
-                 (er soft ctx
-                     etype-error-string
-                     field name etype))
-                (t
-                 (er-let*
-                     ((pair (simple-translate-and-eval etype-term
-                                                       (list (cons 'x init))
-                                                       nil
-                                                       (msg
-                                                        "The type ~x0"
-                                                        etype-term)
-                                                       ctx
-                                                       wrld
-                                                       state
-                                                       nil)))
-
-; pair is (tterm . val), where tterm is a term and val is its value
-; under x<-init.
-
-                   (er-progn
-                    (chk-common-lisp-compliant-subfunctions
-                     nil (list field) (list (car pair))
-                     wrld "auxiliary function" ctx state)
-                    (chk-unrestricted-guards-for-user-fns
-                     (all-fnnames (car pair))
-                     wrld ctx state)
-                    (cond
-                     ((not (cdr pair))
-                      (er soft ctx
-                          "The value specified by the :initially ~
-                           keyword, namely ~x0, fails to satisfy the ~
-                           declared type ~x1 in the array ~
-                           specification for the ~x2 field of ~x3."
-                          init etype field name))
-                     (t (value nil)))))))))))
-        ((assoc-keyword :resizable (cdr field-descriptor))
-         (er soft ctx
-             "The :resizable keyword is only legal for array types, hence is ~
-              illegal for the ~x0 field of ~x1."
-             field name))
-;---<
-        ((and (consp type)
-              (eq (car type) 'hash-table))
-         (cond ((or (atom (cdr type))
-                    (not (member (cadr type)
-                                 '(EQL
-                                   EQUAL
-                                   #+(and hons (not acl2-loop-only))
-                                   HONS-EQUAL))))
-                (er soft ctx
-                    "A hash-table type must be specified as (HASH-TABLE ~
-                     TEST), where test is EQL, EQUAL, or (when built with the ~
-                     HONS extension) HONS-EQUAL.  The test given was ~x0.~%"
-                    (and (consp (cdr type))
-                         (cadr type))))
-               (t (value nil))))
-;   >---
-        (t (let* ((stobjp (stobjp type t wrld))
-                  (type-term ; used only when (not stobjp)
-                   (and (not stobjp) ; optimization
-                        (translate-declaration-to-guard type 'x wrld)))
-                  (type-error-string
-                   "The :type specified for the ~x0 field of ~x1, namely ~x2, ~
-                    is not recognized by ACL2 as a type-spec (see :DOC ~
-                    type-spec) or as a user-defined stobj name."))
-             (cond
-              (stobjp
-
-; Defstobj-raw-init-fields depends on this check.  Also see the comment above
-; explaining how stobj-let depends on this check.
-
-               (cond ((eq type 'state)
-                      (er soft ctx
-                          type-error-string
-                          field name type))
-                     ((and non-memoizable
-                           (not (getprop type 'non-memoizable nil
-                                         'current-acl2-world wrld)))
-                      (er soft ctx
-                          child-stobj-memoizable-error-string
-                          name type))
-                     ((null initp) (value nil))
-                     (t (er soft ctx
-                            "The :initially keyword must be omitted for a ~
-                             :type specified as a stobj.  But for :type ~x0, ~
-                             :initially is specified as ~x1 for the ~x2 field ~
-                             of ~x3."
-                            type init field name))))
-              ((null type-term)
-               (er soft ctx
-                   type-error-string
-                   field name type))
-              (t
-               (er-let* ((pair (simple-translate-and-eval type-term
-                                                          (list (cons 'x init))
-                                                          nil
-                                                          (msg
-                                                           "The type ~x0"
-                                                           type-term)
-                                                          ctx
-                                                          wrld
-                                                          state
-                                                          nil)))
-
-; pair is (tterm . val), where tterm is a term and val is its value
-; under x<-init.
-
-                 (er-progn
-                  (chk-common-lisp-compliant-subfunctions
-                   nil (list field) (list (car pair))
-                   wrld "body" ctx state)
-                  (chk-unrestricted-guards-for-user-fns
-                   (all-fnnames (car pair))
-                   wrld ctx state)
-                  (cond
-                   ((not (cdr pair))
-                    (er soft ctx
-                        "The value specified by the :initially keyword, ~
-                         namely ~x0, fails to satisfy the declared :type ~x1 ~
-                         for the ~x2 field of ~x3."
-                        init type field name))
-                   (t (value nil)))))))))))))))
-
-(defun chk-acceptable-defstobj1 (name field-descriptors ftemps renaming
-                                      non-memoizable ctx wrld state names
-                                      const-names)
-
-; We check whether it is legal to define name as a single-threaded
-; object with the description given in field-descriptors.  We know
-; name is a legal (and new) stobj name and we know that renaming is a
-; symbol to symbol doublet-style alist.  But we know nothing else.  We
-; either signal an error or return the world in which the event is to
-; be processed (thus implementing redefinitions).  Names is, in
-; general, the actual set of names that the defstobj event will
-; introduce.  That is, it contains the images of the default names
-; under the renaming alist.  We accumulate the actual names into it as
-; we go and check that it contains no duplicates at the termination of
-; this function.  All of the names in names are to be defined as
-; functions with :VERIFY-GUARDS T.  See the comment above about
-; Common Lisp compliance.
-
-  (cond
-   ((endp ftemps)
-    (let* ((recog-name (defstobj-fnname name :recognizer :top renaming))
-           (creator-name (defstobj-fnname name :creator :top renaming))
-           (names (list* recog-name creator-name names)))
-      (er-progn
-       (chk-all-but-new-name recog-name ctx 'function wrld state)
-       (chk-all-but-new-name creator-name ctx 'function wrld state)
-       (chk-acceptable-defstobj-renaming name field-descriptors renaming
-                                         ctx state nil)
-
-; Note: We insist that all the names be new.  In addition to the
-; obvious necessity for something like this, we note that this does
-; not permit us to have redundantly defined any of these names.  For
-; example, the user might have already defined a field recognizer,
-; PCP, that is identically defined to what we will lay down.  But we
-; do not allow that.  We basically insist that we have control over
-; every one of these names.
-
-       (chk-just-new-names names 'function nil ctx wrld state)
-       (chk-just-new-names const-names 'const nil ctx wrld state))))
-   (t
-
-; An element of field-descriptors (i.e., of ftemps) is either a symbolic field
-; name, field, or else of the form (field :type type :initially val), where
-; either or both of the keyword fields can be omitted.  Val must be an evg,
-; i.e., an unquoted constant like t, nil, 0 or undef (the latter meaning the
-; symbol 'undef).  :Type defaults to the unrestricted type t and :initially
-; defaults to nil.  Type is either a primitive type, as recognized by
-; translate-declaration-to-guard, or a stobj name, or else is of the form
-; (array ptype (n)), where ptype is a primitive type or stobj name and n is an
-; positive integer constant.  If type is a stobj name or an array of such, then
-; :initially must be omitted.
-
-    (er-progn
-     (chk-stobj-field-descriptor name (car ftemps) non-memoizable ctx wrld
-                                 state)
-     (let* ((field (if (atom (car ftemps))
-                       (car ftemps)
-                     (car (car ftemps))))
-            (type (if (consp (car ftemps))
-                      (or (cadr (assoc-keyword :type
-                                               (cdr (car ftemps))))
-                          t)
-                    t))
-;---<
-            (key2 (if (consp type)
-                     (case (car type)
-                       (array :array)
-                       (hash-table :hash-table)
-                       (t :non-array))
-                    :non-array))
-            (boundp-name (defstobj-fnname field :boundp key2 renaming))
-            (accessor?-name (defstobj-fnname field :accessor? key2
-                              renaming))
-            (remove-name (defstobj-fnname field :remove key2
-                           renaming))
-            (count-name (defstobj-fnname field :count key2 renaming))
-            (clear-name (defstobj-fnname field :clear key2 renaming))
-            (init-name (defstobj-fnname field :init key2 renaming))
-;   >---
-            (fieldp-name (defstobj-fnname field :recognizer key2 renaming))
-            (accessor-name (defstobj-fnname field :accessor key2 renaming))
-            (accessor-const-name (defconst-name accessor-name))
-            (updater-name (defstobj-fnname field :updater key2 renaming))
-            (length-name (defstobj-fnname field :length key2 renaming))
-            (resize-name (defstobj-fnname field :resize key2 renaming)))
-       (er-progn
-        (chk-all-but-new-name fieldp-name ctx 'function wrld state)
-        (chk-all-but-new-name accessor-name ctx 'function wrld state)
-        (chk-all-but-new-name updater-name ctx 'function wrld state)
-        (chk-all-but-new-name accessor-const-name ctx 'const wrld state)
-        (if (eq key2 :array)
-            (er-progn (chk-all-but-new-name length-name ctx 'function wrld state)
-                      (chk-all-but-new-name resize-name ctx 'function wrld state))
-;---<
-          (if (eq key2 :hash-table)
-              (er-progn (chk-all-but-new-name boundp-name ctx
-                                              'function wrld state)
-                        (chk-all-but-new-name accessor?-name ctx
-                                              'function wrld state)
-                        (chk-all-but-new-name remove-name ctx
-                                              'function wrld state))
-            (value nil)
-;   >---
-            ))
-        (chk-acceptable-defstobj1 name field-descriptors (cdr ftemps)
-                                  renaming non-memoizable ctx wrld state
-                                  (list* fieldp-name
-                                         accessor-name
-                                         updater-name
-                                         (if (eq key2 :array)
-                                             (list* length-name
-                                                    resize-name
-                                                    names)
-;---<
-                                           (if (eq key2 :hash-table)
-                                               (list* boundp-name
-                                                      accessor?-name
-                                                      remove-name
-                                                      count-name
-                                                      clear-name
-                                                      init-name
-                                                      names)
-                                             names)
-;   >---
-                                           ))
-                                  (cons accessor-const-name
-                                        const-names))))))))
-
 
 (defun put-stobjs-in-and-outs1 (name field-templates wrld)
 

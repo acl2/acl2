@@ -3,13 +3,12 @@
 
 (in-package "X86ISA")
 (include-book "paging-basics" :ttags :all)
+(include-book "../bind-free-utils")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
-(local (in-theory (e/d () (unsigned-byte-p
-                           signed-byte-p
-                           xw-mem-and-wm-low-64-commute))))
+(local (in-theory (e/d () (unsigned-byte-p signed-byte-p))))
 
 (local (xdoc::set-default-parents gather-paging-structures))
 
@@ -55,8 +54,8 @@
                       page-fault-exception page-size)
                      ()))))
 
-;; ;; !!! Note that xlation-governing-entries-paddrs-* do not talk about
-;; ;; validity of paging entries.  Is that good or bad?
+;; Note that xlation-governing-entries-paddrs-* do not talk about
+;; validity of paging entries.
 
 (define xlation-governing-entries-paddrs-for-page-table
   ((lin-addr             :type (signed-byte   #.*max-linear-address-size*))
@@ -405,10 +404,10 @@
   (defthm ia32e-la-to-pa-values-and-xw-mem-not-member
     (implies (and (not (member-p index (xlation-governing-entries-paddrs lin-addr (double-rewrite x86))))
                   (canonical-address-p lin-addr))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))
-                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem index value x86)))
-                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))))
+             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (xw :mem index value x86)))
+                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
+                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (xw :mem index value x86)))
+                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
     :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (xlation-governing-entries-paddrs-for-pml4-table)))))
 
   (defthm xlation-governing-entries-paddrs-and-!flgi
@@ -430,96 +429,119 @@
              :in-theory (e/d* (disjoint-p disjoint-p-commutative) (xlation-governing-entries-paddrs))))))
 
 (define all-xlation-governing-entries-paddrs
-  ((l-addrs canonical-address-listp)
+  ((n        natp)
+   (lin-addr canonical-address-p)
    x86)
-  :guard (not (xr :programmer-level-mode 0 x86))
+  :guard (and (not (xr :programmer-level-mode 0 x86))
+              (canonical-address-p (+ n lin-addr)))
+  :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))
   :enabled t
-  (if (endp l-addrs)
+  (if (zp n)
       nil
-    (append (xlation-governing-entries-paddrs (car l-addrs) x86)
-            (all-xlation-governing-entries-paddrs (cdr l-addrs)  x86)))
+    (append (xlation-governing-entries-paddrs lin-addr x86)
+            (all-xlation-governing-entries-paddrs (1- n) (1+ lin-addr) x86)))
   ///
 
-  (defthm all-xlation-governing-entries-paddrs-and-nil
-    (equal (all-xlation-governing-entries-paddrs nil x86) nil))
+  (defthm all-xlation-governing-entries-paddrs-and-zero-bytes
+    (equal (all-xlation-governing-entries-paddrs 0 lin-addr x86) nil))
+
+  (local
+   (defthm xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs-helper
+     (implies (and (integerp n) (< 0 n))
+              (subset-p (xlation-governing-entries-paddrs a x86)
+                        (all-xlation-governing-entries-paddrs n a x86)))
+     :hints (("Goal" :expand (all-xlation-governing-entries-paddrs n a x86)))))
 
   (defthm xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
-    (implies (member-p addr l-addrs)
-             (equal (subset-p (xlation-governing-entries-paddrs addr x86)
-                              (all-xlation-governing-entries-paddrs l-addrs x86))
+    (implies (and (<= addr a) (< a (+ n addr))
+                  (posp n) (integerp a) (integerp addr))
+             (equal (subset-p (xlation-governing-entries-paddrs a x86)
+                              (all-xlation-governing-entries-paddrs n addr x86))
                     t))
     :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
   (defthm all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
-    (implies (subset-p l-addrs-subset l-addrs)
-             (equal
-              (subset-p (all-xlation-governing-entries-paddrs l-addrs-subset x86)
-                        (all-xlation-governing-entries-paddrs l-addrs x86))
-              t))
+    (implies
+     (and (<= addr-2 addr-1)
+          (<= (+ n-1 addr-1) (+ n-2 addr-2))
+          (posp n-2) (integerp addr-1) (integerp addr-2))
+     (equal
+      (subset-p (all-xlation-governing-entries-paddrs n-1 addr-1 x86)
+                (all-xlation-governing-entries-paddrs n-2 addr-2 x86))
+      t))
     :hints (("Goal" :in-theory (e/d* (subset-p member-p) ()))))
 
   (defthm all-xlation-governing-entries-paddrs-and-xw-not-mem
     (implies (and (not (equal fld :mem))
                   (not (equal fld :ctr))
                   (not (equal fld :programmer-level-mode)))
-             (equal (all-xlation-governing-entries-paddrs l-addrs (xw fld index value x86))
-                    (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))))
+             (equal (all-xlation-governing-entries-paddrs n addr (xw fld index value x86))
+                    (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs)))))
 
   (defthm all-xlation-governing-entries-paddrs-and-xw-mem-not-member
-    (implies (and (not (member-p index (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))))
-                  (integerp index))
-             (equal (all-xlation-governing-entries-paddrs l-addrs (xw :mem index value x86))
-                    (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))))
+    (implies (not (member-p index (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
+             (equal (all-xlation-governing-entries-paddrs n addr (xw :mem index value x86))
+                    (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs)))))
 
   (defthm all-xlation-governing-entries-paddrs-and-!flgi
-    (equal (all-xlation-governing-entries-paddrs l-addrs (!flgi index value x86))
-           (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
+    (equal (all-xlation-governing-entries-paddrs n addr (!flgi index value x86))
+           (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
     :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs force (force))))))
 
   (defthm all-xlation-governing-entries-paddrs-and-!flgi-undefined
-    (equal (all-xlation-governing-entries-paddrs l-addrs (!flgi-undefined index x86))
-           (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)))
+    (equal (all-xlation-governing-entries-paddrs n addr (!flgi-undefined index x86))
+           (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
     :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs force (force)))))))
 
 ;; ======================================================================
 
+(local
+ (defthmd disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-helper
+   (implies
+    (and
+     (disjoint-p
+      (all-xlation-governing-entries-paddrs n a (double-rewrite x86))
+      other-p-addrs)
+     (posp n) (integerp a))
+    (disjoint-p (xlation-governing-entries-paddrs a x86)
+                other-p-addrs))
+   :hints (("Goal" :in-theory (e/d* (member-p) ())))))
+
 (defthm disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs
-  (implies (and (bind-free
-                 (find-l-addrs-from-fn 'all-xlation-governing-entries-paddrs 'l-addrs mfc state)
-                 (l-addrs))
-                (disjoint-p (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)) other-p-addrs)
-                (member-p lin-addr l-addrs))
-           (disjoint-p (xlation-governing-entries-paddrs lin-addr x86) other-p-addrs))
-  :hints (("Goal" :in-theory (e/d* (member-p) ()))))
-
-;; (defthm disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
-;;   (implies (and (bind-free
-;;               (find-l-addrs-from-fn 'all-xlation-governing-entries-paddrs 'l-addrs mfc state)
-;;               (l-addrs))
-;;              (syntaxp (not (eq l-addrs-subset l-addrs)))
-;;              (disjoint-p (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86)) other-p-addrs)
-;;              (subset-p l-addrs-subset l-addrs))
-;;         (disjoint-p (all-xlation-governing-entries-paddrs l-addrs-subset x86) other-p-addrs))
-;;   :hints (("Goal" :in-theory (e/d* (subset-p member-p) (xlation-governing-entries-paddrs)))))
-
-(defthm disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
   (implies
    (and
     (bind-free
-     (find-l-addrs-from-fn 'all-xlation-governing-entries-paddrs 'l-addrs mfc state)
-     (l-addrs))
+     (find-l-addrs-from-fn 'all-xlation-governing-entries-paddrs 'n 'addr mfc state)
+     (n addr))
+    (disjoint-p
+     (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))
+     other-p-addrs)
+    (<= addr a) (< a (+ n addr))
+    (posp n) (integerp a) (integerp addr))
+   (disjoint-p (xlation-governing-entries-paddrs a x86)
+               other-p-addrs))
+  :hints (("Goal" :use ((:instance disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-helper)))))
+
+(defthm disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
+  ;; TODO Very expensive because of the bind-frees!
+  (implies
+   (and
+    (bind-free
+     (find-l-addrs-from-fn
+      'all-xlation-governing-entries-paddrs 'n-2 'addr-2 mfc state)
+     (n-2 addr-2))
     (bind-free
      (find-arg-of-fn 'disjoint-p 2 'other-p-addrs mfc state)
      (other-p-addrs))
-    (syntaxp (not (eq l-addrs-subset l-addrs)))
-    ;; (syntaxp (not (eq other-p-addrs-subset other-p-addrs)))
-    (disjoint-p (all-xlation-governing-entries-paddrs l-addrs (double-rewrite x86))
+    (disjoint-p (all-xlation-governing-entries-paddrs n-2 addr-2 (double-rewrite x86))
                 other-p-addrs)
     (subset-p other-p-addrs-subset other-p-addrs)
-    (subset-p l-addrs-subset l-addrs))
-   (disjoint-p (all-xlation-governing-entries-paddrs l-addrs-subset x86)
+    (<= addr-2 addr-1)
+    (< (+ n-1 addr-1) (+ n-2 addr-2))
+    (posp n-2) (integerp addr-1) (integerp addr-2))
+   (disjoint-p (all-xlation-governing-entries-paddrs n-1 addr-1 x86)
                other-p-addrs-subset))
   :hints
   (("Goal" :in-theory (e/d* (subset-p member-p)
@@ -533,27 +555,10 @@
   (implies (and (disjoint-p p-addrs (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
                 (physical-address-listp p-addrs)
                 (canonical-address-p lin-addr))
-           (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))
-                (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))))
-  :hints (("Goal"
-           :induct (write-to-physical-memory p-addrs bytes x86)
-           :in-theory (e/d* (disjoint-p) (xlation-governing-entries-paddrs)))))
-
-
-(local
- (defthm nth-0-xs
-   (equal (nth 0 xs) (car xs))))
-
-(defthm ia32e-la-to-pa-values-and-write-to-physical-memory-disjoint
-  (implies (and (disjoint-p p-addrs (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
-                (physical-address-listp p-addrs)
-                (canonical-address-p lin-addr))
-           (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))
-                (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (double-rewrite x86))))))
+           (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
+                (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
   :hints (("Goal"
            :induct (write-to-physical-memory p-addrs bytes x86)
            :in-theory (e/d* (disjoint-p) (xlation-governing-entries-paddrs)))))
@@ -638,7 +643,7 @@
                   structure-type lin-addr
                   entry u/s-acc r/w-acc x/d-acc wp
                   smep smap ac nxe r-w-x cpl
-                  (mv-nth 1 (wb addr-lst x86))
+                  (mv-nth 1 (wb n addr w value x86))
                   access-type))
          (mv-nth 0
                  (paging-entry-no-page-fault-p
@@ -656,9 +661,9 @@
 
 (defthm ia32e-la-to-pa-page-table-values-and-write-to-translation-governing-address
   ;; Similar lemmas can be found in proofs/zero-copy/zero-copy.lisp.
-  (b* ((p-addrs (xlation-governing-entries-paddrs-for-page-table lin-addr base-addr x86))
-       (page-table-entry (rm-low-64 (page-table-entry-addr lin-addr base-addr) x86))
-       (value (combine-bytes bytes)))
+  (b* ((p-addrs (xlation-governing-entries-paddrs-for-page-table
+                 lin-addr base-addr x86))
+       (page-table-entry (rm-low-64 (page-table-entry-addr lin-addr base-addr) x86)))
     (implies (and (not (mv-nth 0
                                (ia32e-la-to-pa-page-table
                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -673,9 +678,7 @@
                          (page-execute-disable value))
                   (equal (page-size page-table-entry)
                          (page-size value))
-
-                  (equal (len bytes) (len p-addrs))
-                  (byte-listp bytes)
+                  (unsigned-byte-p 64 value)
                   (canonical-address-p lin-addr)
                   (physical-address-p base-addr)
                   (equal (loghead 12 base-addr) 0)
@@ -684,23 +687,30 @@
                    (mv-nth 0 (ia32e-la-to-pa-page-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
                               wp smep smap ac nxe r-w-x cpl
-                              (write-to-physical-memory p-addrs bytes x86)))
+                              (write-to-physical-memory p-addrs value x86)))
                    nil)
                   (equal (mv-nth 1 (ia32e-la-to-pa-page-table
                                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                     wp smep smap ac nxe r-w-x cpl
-                                    (write-to-physical-memory p-addrs bytes x86)))
+                                    (write-to-physical-memory p-addrs value x86)))
                          (logior (loghead 12 lin-addr)
                                  (ash (loghead 40 (logtail 12 value))
                                       12))))))
   :hints (("Goal"
            :do-not-induct t
+           :use ((:instance mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
+                            (entry-1
+                             (rm-low-64 (page-table-entry-addr lin-addr base-addr) x86))
+                            (entry-2 value)
+                            (structure-type 0)
+                            (ignored 0)))
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa-page-table
                              page-table-entry-addr
                              xlation-governing-entries-paddrs-for-page-table)
-                            (wb
+                            (mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
+                             wb
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))

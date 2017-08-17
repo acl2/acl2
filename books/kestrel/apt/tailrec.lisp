@@ -291,6 +291,7 @@
                     t nil)
                  (value nil)))
        ((run-when verbose)
+        (cw "~%")
         (cw "Components of the target function ~x0:~%" old-fn-name)
         (cw "- Exit test: ~x0.~%" (untranslate test nil wrld))
         (cw "- Base value: ~x0.~%" (untranslate base nil wrld))
@@ -298,8 +299,7 @@
         (cw "- Argument updates: ~x0.~%" (untranslate-lst updates nil wrld))
         (cw "- Combination operator: ~x0.~%" (untranslate combine nil wrld))
         (cw "- Fresh variable for non-recursive computation: ~x0.~%" q)
-        (cw "- Fresh variable for recursive call: ~x0.~%" r)
-        (cw "~%")))
+        (cw "- Fresh variable for recursive call: ~x0.~%" r)))
     (value (list old-fn-name test base nonrec updates combine q r))))
 
 (std::defenum tailrec-variantp (:assoc :monoid :monoid-alt)
@@ -360,7 +360,16 @@
                           and the target function ~x0 is guard-verified, ~@1"
                          old-fn-name (msg-downcase-first description))
                     t nil)
-                 (value nil))))
+                 (value nil)))
+       ((er &) (if (symbolp fn/lambda)
+                   (ensure-symbol-different$ fn/lambda
+                                             old-fn-name
+                                             (msg "the target function ~x0"
+                                                  old-fn-name)
+                                             description t nil)
+                 (ensure-term-does-not-call$ (lambda-body fn/lambda)
+                                             old-fn-name
+                                             description t nil))))
     (value fn/lambda)))
 
 (define tailrec-check-new-name
@@ -406,7 +415,7 @@
           is valid."
   (b* (((er &) (ensure-symbol$ wrapper-name "The :WRAPPER-NAME input" t nil))
        (name (if (eq wrapper-name :auto)
-                 (packn (list new-fn-name '-wrapper))
+                 (add-suffix-to-fn new-fn-name "-WRAPPER")
                wrapper-name))
        (description (msg "The name ~x0 of the wrapper function, ~@1,"
                          name
@@ -441,13 +450,17 @@
   :short "Ensure that the @(':thm-name') input to the transformation
           is valid."
   (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
-       (name (cond ((eq thm-name :arrow)
-                    (packn (list old-fn-name '-~>- wrapper-fn-name)))
-                   ((eq thm-name :becomes)
-                    (packn (list old-fn-name '-becomes- wrapper-fn-name)))
-                   ((eq thm-name :is)
-                    (packn (list old-fn-name '-is- wrapper-fn-name)))
-                   (t thm-name)))
+       (name (if (member-eq thm-name '(:arrow :becomes :is))
+                 (b* ((separator (case thm-name
+                                   (:arrow "-~>-")
+                                   (:becomes "-BECOMES-")
+                                   (:is "-IS-")
+                                   (otherwise (impossible))))
+                      (string (str::cat (symbol-name old-fn-name)
+                                        separator
+                                        (symbol-name wrapper-fn-name))))
+                   (intern-in-package-of-symbol string old-fn-name))
+               thm-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the target function ~x1 ~
                           to the wrapper function ~x2 ~
@@ -1678,7 +1691,9 @@
    (hints-alist symbol-alistp "Result of @(tsee tailrec-check-inputs).")
    (show-only booleanp "Input to the transformation, after validation.")
    (app-conds symbol-alistp "Result of @(tsee tailrec-app-conds).")
-   (call pseudo-event-formp "Call to the transformation.")
+   (call-w/o-verbose-showonly pseudo-event-formp
+                              "Call to the transformation,
+                               without @(':verbose') and @(':show-only').")
    (wrld plist-worldp))
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
@@ -1735,7 +1750,9 @@
    </p>
    <p>
    The @(tsee encapsulate) is stored into the transformation table,
-   associated to the call to the transformation.
+   associated to the call to the transformation
+   (without @(':verbose') and @(':show-only'), if any,
+   because they only affect the transformation's screen output).
    Thus, the table event and the screen output events
    (which are in the @(tsee progn) but not in the @(tsee encapsulate))
    are not stored into the transformation table,
@@ -1875,15 +1892,18 @@
                              ,new-fn-numbered-name-event
                              ,wrapper-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
-       ((when show-only) `(value-triple ',encapsulate))
+       ((when show-only) `(progn
+                            (cw-event "~x0~|" ',encapsulate)
+                            (value-triple ':invisible)))
        (transformation-table-event `(table transformation-table
-                                      ',call ',encapsulate))
-       (new-fn-show-event `(cw-event "~x0~|~%"
+                                      ',call-w/o-verbose-showonly
+                                      ',encapsulate))
+       (new-fn-show-event `(cw-event "~x0~|"
                                      ',new-fn-exported-event))
-       (wrapper-fn-show-event `(cw-event "~x0~|~%"
+       (wrapper-fn-show-event `(cw-event "~x0~|"
                                          ',wrapper-fn-exported-event))
        (old-to-wrapper-thm-show-event `(cw-event
-                                        "~x0~|~%"
+                                        "~x0~|"
                                         ',old-to-wrapper-thm-exported-event)))
     `(progn
        ,encapsulate
@@ -1923,11 +1943,28 @@
   :long
   "<p>
    If this call to the transformation is redundant,
-   show @(':redundant') on screen, as customary in ACL2.
+   a message to that effect is shown on screen.
+   Redundancy is checked
+   after removing @(':verbose') and @(':show-only') from the call,
+   because those two options only affect screen output.
+   If the transformation is redundant and @(':show-only') is @('t'),
+   the @(tsee encapsulate), retrieved from the table, is shown on screen.
    </p>"
-  (b* (((when (assoc-equal call
-                           (table-alist 'transformation-table (w state))))
-        (value '(value-triple :redundant)))
+  (b* ((number-of-required-args-plus-1 2)
+       (call-options (nthcdr number-of-required-args-plus-1 call))
+       (call-options (remove-keyword :verbose call-options))
+       (call-options (remove-keyword :show-only call-options))
+       (call-w/o-verbose-showonly
+        (append (take number-of-required-args-plus-1 call) call-options))
+       (table (table-alist 'transformation-table (w state)))
+       (encapsulate? (cdr (assoc-equal call-w/o-verbose-showonly table)))
+       ((when encapsulate?)
+        (value `(progn
+                  ,@(and show-only
+                         `((cw-event "~x0~|" ',encapsulate?)))
+                  (cw-event "~%The transformation ~x0 is redundant.~%"
+                            ',call)
+                  (value-triple :invisible))))
        ((er (list old-fn-name
                   test
                   base
@@ -1970,11 +2007,11 @@
                wrapper-fn-name wrapper-enable
                old-to-wrapper-thm-name thm-enable
                make-non-executable do-verify-guards hints-alist show-only app-conds
-               call (w state))))
+               call-w/o-verbose-showonly (w state))))
     (value event)))
 
 (defsection tailrec-implementation
-  :parents (tailrec)
+  :parents (implementation tailrec)
   :short "Implementation of the tail recursion transformation."
   :long
   "<p>
