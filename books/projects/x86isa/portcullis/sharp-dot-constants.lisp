@@ -100,7 +100,7 @@
 (defconst *2^32-16*   (- *2^32* 16))
 
 ;; ======================================================================
-;; Prefixes:
+;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2.1.1):
 
 ;; Group 1:
 (defconst *lock*                  #xF0)
@@ -191,14 +191,14 @@
 (defconst *OP-UCOMI*      9)
 
 ;; ======================================================================
-;; REX bits:
+;; REX bits (Intel manual, Mar'17, Vol. 2A, Section 2.2.1.2):
 
 (defconst *b* 0)
 (defconst *x* 1)
 (defconst *r* 2)
 (defconst *w* 3)
 
-;; Rflags:
+;; Rflags (Intel manual, Mar'17, Vol. 1, Figure 3-8):
 
 (defconst *cf*    0) ;; Carry Flag
 (defconst *pf*    2) ;; Parity Flag
@@ -292,7 +292,7 @@
 (defconst *rgf-access* 0)
 (defconst *xmm-access* 1)
 
-;; Rounding Control bit definitions
+;; Rounding Control bit definitions (Intel manual, Mar'17, Vol. 1, Table 4-8):
 
 (defconst *rc-rn*             0)
 (defconst *rc-rd*             1)
@@ -307,15 +307,19 @@
 (defconst *less_than*    2)
 (defconst *equal*        3)
 
-;; Single-precision floating-point format
+;; Single-precision floating-point
+;; format (Intel manual, Mar'17, Vol. 1, Table 4-3)
 
 (defconst *ieee-sp-exp-width*          8)
 (defconst *ieee-sp-frac-width*        23)
 
 ;; Double-precision floating-point format
+;; format (Intel manual, Mar'17, Vol. 1, Table 4-3)
 
 (defconst *ieee-dp-exp-width*         11)
 (defconst *ieee-dp-frac-width*        52)
+
+;; Extended Feature Enable Register (Intel manual, Mar'17, Vol. 3A, Table 2-1)
 
 (defconst *ia32_efer-sce*  0)  ;; Syscall Enable (R/W) --- enables
                                ;; SYSCALL/SYSRET
@@ -363,12 +367,12 @@
     ;; All additional values in mem-table are the initial value of 1, which means
     ;; "page is not present".
 
-    ;; Section 3.2.1 of Intel Volume 1 says that the maximum size of the
-    ;; physical address space is 2^46 bytes in 64-bit mode. However, Table 4-1
-    ;; of Intel Volume 3 says that the physical address width is up to 52 bits
-    ;; in 64-bit mode. Furtermore, Section 2.1.4.1 of AMD Volume 1 says that
-    ;; physical addresses are up to 52 bits in size. Based on all of this, our
-    ;; model assumes a 2^52-byte physical memory -- see the constant
+    ;; Intel manual, Mar'17, Vol. 1, Section 3.2.1 says that the maximum size of
+    ;; the physical address space is 2^46 bytes in 64-bit mode. However, Table
+    ;; 4-1 in Vol. 3 says that the physical address width is up to 52 bits
+    ;; in 64-bit mode. Furtermore, AMD manual, Oct'13, Vol. 1, Section 2.1.4.1
+    ;; says that physical addresses are up to 52 bits in size. Based on all of
+    ;; this, our model assumes a 2^52-byte physical memory -- see the constant
     ;; *physical-address-size*.
 
 ; Virtual Memory:
