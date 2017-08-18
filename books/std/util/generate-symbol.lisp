@@ -25,8 +25,13 @@
 
 (in-package "STD")
 
-(defun string/symbol/integer-list-p (x)
-  (declare (xargs :verify-guards t   :guard-debug t))
+(local
+ (defthm character-listp-of-explode-nonnegative-integer
+   (implies (character-listp ans)
+            (character-listp
+             (explode-nonnegative-integer n print-base ans)))))
+
+(defn string/symbol/integer-list-p (x)
   (cond ((atom x)
          (null x))
         (t
@@ -37,8 +42,7 @@
 
 
 (defun generate-symbol-fn1 (lst)
-  (declare (xargs :guard (string/symbol/integer-list-p lst)
-                  :verify-guards nil))
+  (declare (xargs :guard (string/symbol/integer-list-p lst)))
   (cond ((atom lst)
          nil)
         (t
@@ -70,7 +74,6 @@
 
 (defun generate-symbol-in-package-of-symbol (string/symbol/decimal-list symbol)
   (declare (xargs :guard (and (string/symbol/integer-list-p string/symbol/decimal-list)
-                              (symbolp symbol))
-                  :verify-guards nil))
+                              (symbolp symbol))))
   (intern-in-package-of-symbol (string-append-lst (generate-symbol-fn1 string/symbol/decimal-list))
                                symbol))

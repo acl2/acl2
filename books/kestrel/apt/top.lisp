@@ -8,12 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides APT (Automated Program Transformations),
-; a library of tools
-; to transform programs and program specifications with automated support.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "APT")
 
 (include-book "restrict")
@@ -100,6 +94,8 @@
    Project Web page</a>.
    </p>")
 
+(xdoc::order-subtopics apt nil t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc reference
@@ -113,3 +109,9 @@
   :short "Design notes for the APT tools.")
 
 (xdoc::add-resource-directory "apt" "design-notes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc implementation
+  :parents (apt)
+  :short "Implementation of the APT tools.")

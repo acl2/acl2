@@ -79,7 +79,7 @@
       ;; syntax.
       `(er-progn
         (brr t)
-        (monitor '(:rewrite ,rule) ''(:eval :go t))))
+        (monitor ',rule ''(:eval :go t))))
 
     (defun explain-fn (state)
       (declare (xargs :stobjs (state)
@@ -100,9 +100,9 @@
     (defmacro why-explain (rule)
       `(er-progn
         (brr t)
-        (monitor '(:rewrite ,rule) ''(:eval
-                                      :ok-if (brr@ :wonp)
-                                      (explain)))))
+        (monitor ',rule ''(:eval
+                           :ok-if (brr@ :wonp)
+                           (explain)))))
 
     (defmacro with-redef (&rest forms)
       ;; A handy macro you can use to temporarily enable redefinition, but then

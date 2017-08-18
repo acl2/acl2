@@ -2,6 +2,9 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Thanks to Alessandro Coglio, Eric Smith, and Stephen Westfold for helpful
+; feedback.
+
 ; TODO:
 
 ; - Handle more built-in macros, such as case.

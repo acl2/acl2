@@ -62,29 +62,45 @@ memory.</li>
         (cons replace-term (cdr lst))
       (cons (car lst) (search-and-replace-once search-term replace-term (cdr lst))))))
 
-(defun generate-read-fn-over-xw-thms-1 (xw-fld read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?)
+(defun generate-read-fn-over-xw-thms-1
+    (xw-fld read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?)
   ;; (generate-read-fn-over-xw-thms-1 :RGF 'gather-all-paging-structure-qword-addresses '(x86) -1 t t)
   (b* ((body
         (if (equal output-index -1)
-            `(equal (,read-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) read-fn-formals))
+            `(equal
+              (,read-fn
+               ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) read-fn-formals))
+              (,read-fn
+               ,@(if double-rewrite-in-concl?
+                     (search-and-replace-once 'x86 '(double-rewrite x86) read-fn-formals)
+                   read-fn-formals)))
+          `(equal
+            (mv-nth ,output-index
+                    (,read-fn
+                     ,@(search-and-replace-once
+                        'x86 `(XW ,xw-fld index val x86) read-fn-formals)))
+            (mv-nth ,output-index
                     (,read-fn ,@(if double-rewrite-in-concl?
-                                    (search-and-replace-once 'x86 '(double-rewrite x86) read-fn-formals)
-                                  read-fn-formals)))
-          `(equal (mv-nth ,output-index (,read-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) read-fn-formals)))
-                  (mv-nth ,output-index (,read-fn ,@(if double-rewrite-in-concl?
-                                                        (search-and-replace-once 'x86 '(double-rewrite x86) read-fn-formals)
-                                                      read-fn-formals)))))))
-    `(defthm ,(mk-name (if (equal output-index -1) read-fn (mk-name "MV-NTH-" output-index "-" read-fn))  "-XW-" xw-fld)
+                                    (search-and-replace-once
+                                     'x86 '(double-rewrite x86) read-fn-formals)
+                                  read-fn-formals)))))))
+    `(defthm ,(mk-name (if (equal output-index -1)
+                           read-fn
+                         (mk-name "MV-NTH-" output-index "-" read-fn))
+                       "-XW-" xw-fld)
        ,(if (atom hyps-term)
             body
           `(implies ,hyps-term ,body)))))
 
-(defun generate-read-fn-over-xw-thms-aux (xw-flds read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?)
+(defun generate-read-fn-over-xw-thms-aux
+    (xw-flds read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?)
   (if (endp xw-flds)
       nil
     (cons
-     (generate-read-fn-over-xw-thms-1 (car xw-flds) read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?)
-     (generate-read-fn-over-xw-thms-aux (cdr xw-flds) read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?))))
+     (generate-read-fn-over-xw-thms-1
+      (car xw-flds) read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?)
+     (generate-read-fn-over-xw-thms-aux
+      (cdr xw-flds) read-fn read-fn-formals output-index hyps-term double-rewrite-in-concl?))))
 
 (define generate-read-fn-over-xw-thms
   (xw-flds read-fn read-fn-formals
@@ -101,27 +117,40 @@ memory.</li>
   ;;  :prepwork '((local (in-theory (e/d* () (xw))))))
   `(encapsulate ()
      ,@(or prepwork nil)
-     ,@(generate-read-fn-over-xw-thms-aux xw-flds read-fn read-fn-formals output-index hyps double-rewrite?)))
+     ,@(generate-read-fn-over-xw-thms-aux
+        xw-flds read-fn read-fn-formals output-index hyps double-rewrite?)))
 
-
-(defun generate-write-fn-over-xw-thms-1 (xw-fld write-fn write-fn-formals output-index hyps-term)
+(defun generate-write-fn-over-xw-thms-1
+    (xw-fld write-fn write-fn-formals output-index hyps-term)
   ;; (generate-write-fn-over-xw-thms-1 :RGF 'rvm08 '(addr x86) 2 t)
   (b* ((body
         (if (equal output-index -1)
-            `(equal (,write-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) write-fn-formals))
-                    (XW ,xw-fld index val ,(cons write-fn write-fn-formals)))
-          `(equal (mv-nth ,output-index (,write-fn ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) write-fn-formals)))
-                  (XW ,xw-fld index val (mv-nth ,output-index ,(cons write-fn write-fn-formals)))))))
-    `(defthm ,(mk-name (if (equal output-index -1) write-fn (mk-name "MV-NTH-" output-index "-" write-fn))  "-XW-" xw-fld)
+            `(equal
+              (,write-fn
+               ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) write-fn-formals))
+              (XW ,xw-fld index val ,(cons write-fn write-fn-formals)))
+          `(equal
+            (mv-nth
+             ,output-index
+             (,write-fn
+              ,@(search-and-replace-once 'x86 `(XW ,xw-fld index val x86) write-fn-formals)))
+            (XW ,xw-fld index val (mv-nth ,output-index ,(cons write-fn write-fn-formals)))))))
+    `(defthm ,(mk-name (if (equal output-index -1)
+                           write-fn
+                         (mk-name "MV-NTH-" output-index "-" write-fn))
+                       "-XW-" xw-fld)
        ,(if (atom hyps-term)
             body
           `(implies ,hyps-term ,body)))))
 
-(defun generate-write-fn-over-xw-thms-aux (xw-flds write-fn write-fn-formals output-index hyps-term)
+(defun generate-write-fn-over-xw-thms-aux
+    (xw-flds write-fn write-fn-formals output-index hyps-term)
   (if (endp xw-flds)
       nil
-    (cons (generate-write-fn-over-xw-thms-1 (car xw-flds) write-fn write-fn-formals output-index hyps-term)
-          (generate-write-fn-over-xw-thms-aux (cdr xw-flds) write-fn write-fn-formals output-index hyps-term))))
+    (cons (generate-write-fn-over-xw-thms-1
+           (car xw-flds) write-fn write-fn-formals output-index hyps-term)
+          (generate-write-fn-over-xw-thms-aux
+           (cdr xw-flds) write-fn write-fn-formals output-index hyps-term))))
 
 (define generate-write-fn-over-xw-thms
   (xw-flds write-fn write-fn-formals
@@ -139,8 +168,9 @@ memory.</li>
      ,@(or prepwork nil)
      ,@(generate-write-fn-over-xw-thms-aux xw-flds write-fn write-fn-formals output-index hyps)))
 
-(defun generate-xr-over-write-thms-1 (xr-fld write-fn write-fn-formals output-index hyps-term double-rewrite-in-concl?)
-  ;; (generate-xr-over-write-thms-1 :RGF 'rb '(addr r-w-x x86) 2 t nil)
+(defun generate-xr-over-write-thms-1
+    (xr-fld write-fn write-fn-formals output-index hyps-term double-rewrite-in-concl?)
+  ;; (generate-xr-over-write-thms-1 :RGF 'rb '(addr r-x x86) 2 t nil)
   (b* ((body
         (if (equal output-index -1)
             `(equal (XR ,xr-fld index ,(cons write-fn write-fn-formals))
@@ -151,16 +181,22 @@ memory.</li>
                   (XR ,xr-fld index ,(if double-rewrite-in-concl?
                                          `(double-rewrite x86)
                                        `x86))))))
-    `(defthm ,(mk-name "XR-" xr-fld "-" (if (equal output-index -1) write-fn (mk-name "MV-NTH-" output-index "-" write-fn)))
+    `(defthm ,(mk-name "XR-" xr-fld "-"
+                       (if (equal output-index -1)
+                           write-fn (mk-name "MV-NTH-" output-index "-" write-fn)))
        ,(if (atom hyps-term)
             body
           `(implies ,hyps-term ,body)))))
 
-(defun generate-xr-over-write-thms-aux (xr-flds write-fn write-fn-formals output-index hyps-term double-rewrite?)
+(defun generate-xr-over-write-thms-aux
+    (xr-flds write-fn write-fn-formals output-index hyps-term double-rewrite?)
   (if (endp xr-flds)
       nil
-    (cons (generate-xr-over-write-thms-1 (car xr-flds) write-fn write-fn-formals output-index hyps-term double-rewrite?)
-          (generate-xr-over-write-thms-aux (cdr xr-flds) write-fn write-fn-formals output-index hyps-term double-rewrite?))))
+    (cons
+     (generate-xr-over-write-thms-1
+      (car xr-flds) write-fn write-fn-formals output-index hyps-term double-rewrite?)
+     (generate-xr-over-write-thms-aux
+      (cdr xr-flds) write-fn write-fn-formals output-index hyps-term double-rewrite?))))
 
 (define generate-xr-over-write-thms
   (xr-flds write-fn write-fn-formals
@@ -177,7 +213,8 @@ memory.</li>
   ;;  :prepwork '((local (in-theory (e/d* () (xw))))))
   `(encapsulate ()
      ,@(or prepwork nil)
-     ,@(generate-xr-over-write-thms-aux xr-flds write-fn write-fn-formals output-index hyps double-rewrite?)))
+     ,@(generate-xr-over-write-thms-aux
+        xr-flds write-fn write-fn-formals output-index hyps double-rewrite?)))
 
 ;; ======================================================================
 
@@ -192,18 +229,19 @@ memory.</li>
                 (< k i))
            (signed-byte-p n (+ k addr))))
 
+(defthmd push-ash-inside-logior
+  (equal (ash (logior x y) n)
+         (logior (ash x n) (ash y n)))
+  :hints (("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                    ihsext-inductions)
+                                   ()))))
+
 (local (in-theory (e/d* (rm16-guard-proof-helper
                          rb-and-rvm32-helper
                          rm32-guard-proof-helper
                          rb-and-rvm64-helper
                          rm64-guard-proof-helper)
                         ())))
-
-(acl2::set-waterfall-parallelism t)
-
-(defabbrev cpl (x86)
-  (the (unsigned-byte 2)
-    (seg-sel-layout-slice :rpl (the (unsigned-byte 16) (xr :seg-visible *cs* x86)))))
 
 ;; ======================================================================
 
@@ -409,1589 +447,6 @@ memory.</li>
       (implies (canonical-address-listp x)
                (canonical-address-listp (cdr x)))))
 
-  (define byte-listp (x)
-    :short "Recognizer of a list of bytes"
-    :enabled t
-    (if (equal x nil)
-        t
-      (and (consp x)
-           (n08p (car x))
-           (byte-listp (cdr x))))
-    ///
-
-    (defthm byte-listp-implies-true-listp
-      (implies (byte-listp x)
-               (true-listp x))
-      :rule-classes :forward-chaining)
-
-    (defthm-usb n08p-element-of-byte-listp
-      :hyp (and (byte-listp acc)
-                (natp m)
-                (< m (len acc)))
-      :bound 8
-      :concl (nth m acc)
-      :gen-linear t
-      :gen-type t)
-
-    (defthm nthcdr-byte-listp
-      (implies (byte-listp xs)
-               (byte-listp (nthcdr n xs)))
-      :rule-classes (:rewrite :type-prescription))
-
-    (defthm len-of-nthcdr-byte-listp
-      (implies (and (< m (len acc))
-                    (natp m))
-               (equal (len (nthcdr m acc))
-                      (- (len acc) m))))
-
-    (defthm byte-listp-revappend
-      (implies (forced-and (byte-listp lst1)
-                           (byte-listp lst2))
-               (byte-listp (revappend lst1 lst2)))
-      :rule-classes :type-prescription)
-
-    (defthm true-listp-make-list-ac
-      (implies (true-listp ac)
-               (true-listp (make-list-ac n val ac)))
-      :rule-classes :type-prescription)
-
-    (defthm make-list-ac-byte-listp
-      (implies (and (byte-listp x)
-                    (natp n)
-                    (n08p m))
-               (byte-listp (make-list-ac n m x)))
-      :rule-classes (:type-prescription :rewrite))
-
-    (defthm reverse-byte-listp
-      (implies (byte-listp x)
-               (byte-listp (reverse x)))
-      :rule-classes (:type-prescription :rewrite))
-
-    (defthm byte-listp-append
-      (implies (forced-and (byte-listp lst1)
-                           (byte-listp lst2))
-               (byte-listp (append lst1 lst2)))
-      :rule-classes (:rewrite :type-prescription)))
-
-  (define addr-byte-alistp (alst)
-    :short "Recognizer of a list of address and byte pairs"
-    :enabled t
-    (if (atom alst)
-        (equal alst nil)
-      (if (atom (car alst))
-          nil
-        (let ((addr (caar alst))
-              (byte (cdar alst))
-              (rest (cdr  alst)))
-          (and (canonical-address-p addr)
-               (n08p byte)
-               (addr-byte-alistp rest)))))
-    ///
-
-    (defthm addr-byte-alistp-fwd-chain-to-alistp
-      (implies (addr-byte-alistp alst)
-               (alistp alst))
-      :rule-classes :forward-chaining)
-
-    (defthm strip-cars-addr-byte-alistp-is-canonical-address-listp
-      (implies (addr-byte-alistp alst)
-               (canonical-address-listp (strip-cars alst)))
-      :rule-classes (:type-prescription :rewrite))
-
-    (defthm strip-cdrs-addr-byte-alistp-is-byte-listp
-      (implies (addr-byte-alistp addr-lst)
-               (byte-listp (strip-cdrs addr-lst)))
-      :rule-classes (:type-prescription :rewrite))
-
-    (defthm append-and-addr-byte-alistp
-      (implies (and (addr-byte-alistp x)
-                    (addr-byte-alistp y))
-               (addr-byte-alistp (append x y)))))
-
-  (defthm len-of-strip-cdrs
-    (equal (len (strip-cdrs as)) (len as)))
-
-  (defthm len-of-strip-cars
-    (equal (len (strip-cars as)) (len as)))
-
-  (define combine-bytes (bytes)
-    :guard (byte-listp bytes)
-    :enabled t
-    (if (endp bytes)
-        0
-      (logior (car bytes)
-              (ash (combine-bytes (cdr bytes)) 8)))
-
-    ///
-    (defthm natp-combine-bytes
-      (implies (force (byte-listp bytes))
-               (natp (combine-bytes bytes)))
-      :rule-classes :type-prescription)
-
-    (local
-     (defthm plus-and-expt
-       (implies (and (natp y)
-                     (natp a)
-                     (< a (expt 256 y))
-                     (natp b)
-                     (< b 256))
-                (< (+ b (* 256 a))
-                   (expt 256 (+ 1 y))))))
-
-    (local (include-book "arithmetic-5/top" :dir :system))
-
-    (local
-     (in-theory (disable acl2::normalize-factors-gather-exponents
-                         acl2::arith-5-active-flag
-                         acl2::|(* c (expt d n))|)))
-
-    (defthm size-of-combine-bytes
-      (implies (and (byte-listp bytes)
-                    (equal l (len bytes)))
-               (< (combine-bytes bytes) (expt 2 (ash l 3))))
-      :hints (("Goal" :in-theory (e/d* (logapp) ())))
-      :rule-classes :linear)
-
-    (defthm unsigned-byte-p-of-combine-bytes
-      (implies (and (byte-listp bytes)
-                    (equal n (ash (len bytes) 3)))
-               (unsigned-byte-p n (combine-bytes bytes)))
-      :rule-classes ((:rewrite)
-                     (:linear
-                      :corollary
-                      (implies (and (byte-listp bytes)
-                                    (equal n (ash (len bytes) 3)))
-                               (<= 0 (combine-bytes bytes)))))))
-
-  (define byte-ify-general
-    ((n   natp)
-     (val integerp)
-     (acc byte-listp))
-
-    :short "@('byte-ify-general') takes an integer @('val') and
-  converts it into a list of @('n') bytes."
-
-    :long "<p>The list produced by @('byte-ify-general') has the least
-  significant byte as its the first element. Some clarifying examples
-  are as follows:</p>
-
-  <ul>
-  <li><code>(byte-ify-general 6 #xAABBCCDDEEFF nil) = (#xFF #xEE #xDD #xCC #xBB #xAA)</code></li>
-  <li><code>(byte-ify-general 4 #xAABBCCDDEEFF nil) = (#xFF #xEE #xDD #xCC)</code></li>
-  <li><code>(byte-ify-general 8 #xAABBCCDDEEFF nil) = (#xFF #xEE #xDD #xCC #xBB #xAA  #x0 #x0)</code></li>
-  <li><code>(byte-ify-general 8             -1 nil) = (#xFF #xFF #xFF #xFF #xFF #xFF #xFF #xFF)</code></li>
-  </ul>"
-
-
-    (if (mbt (byte-listp acc))
-
-        (b* ((n (mbe :logic (nfix n) :exec n))
-             (val (mbe :logic (ifix val) :exec val)))
-
-          (if (zp n)
-              (reverse acc)
-            (b* ((acc (cons (loghead 8 val) acc))
-                 (val (logtail 8 val)))
-              (byte-ify-general (1- n) val acc))))
-      nil)
-
-    ///
-
-    (defthm byte-listp-byte-ify-general
-      (implies (byte-listp acc)
-               (byte-listp (byte-ify-general n val acc)))
-      :hints (("Goal" :in-theory
-               (e/d ()
-                    (force acl2::reverse-removal
-                           reverse (force))))))
-
-    (defthm len-of-byte-ify-general
-      (implies (and (natp n)
-                    (integerp val)
-                    (byte-listp acc))
-               (equal (len (byte-ify-general n val acc))
-                      (+ n (len acc)))))
-
-    (defthm consp-byte-ify-general
-      (implies (and (natp n)
-                    (integerp val)
-                    (byte-listp acc)
-                    (or (consp acc)
-                        (< 0 n)))
-               (consp (byte-ify-general n val acc))))
-
-    (local (include-book "std/lists/nthcdr" :dir :system))
-
-    (defthm consp-nthcdr-of-byte-ify-general
-      (implies (and (integerp val)
-                    (natp n)
-                    (natp m)
-                    (< m n)
-                    (byte-listp acc))
-               (consp (nthcdr m (byte-ify-general n val acc))))
-      :rule-classes :type-prescription)
-
-    (defthm len-of-nthcdr-of-byte-ify-general
-      (implies (and (natp n)
-                    (natp m)
-                    (< m n)
-                    (integerp val)
-                    (byte-listp acc))
-               (equal (len (nthcdr m (byte-ify-general n val acc)))
-                      (- (+ n (len acc)) m)))
-      :hints (("Goal" :in-theory (e/d (nfix) ())))
-      :rule-classes :linear)
-
-    (defthmd byte-ify-opener
-      (implies (and (syntaxp (quotep n))
-                    (posp n))
-               (equal (byte-ify-general n val acc)
-                      (byte-ify-general (1- n) (logtail 8 val) (cons (loghead 8 val) acc))))))
-
-  (define byte-ify ((n natp) (val integerp))
-    :short "@('byte-ify') takes an integer @('val') and converts it
-  into a list of at least @('n') bytes."
-
-    :long "<p>The least significant byte is the first element of the
-  list produced by @('byte-ify'). A couple of clairifying examples are
-  as follows:</p>
-
-  <ul>
-  <li><code>(byte-ify 6 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA)</code></li>
-  <li><code>(byte-ify 8 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #x0 #x0 #x0)</code></li>
-  </ul>"
-
-    ;; This is logically equal to just (byte-ify-general n val nil), but
-    ;; reasoning about logheads and logtails in the common case is
-    ;; easier. Anyway, the theorem byte-ify-and-byte-ify-general establishes a
-    ;; relationship between byte-ify and byte-ify-general, but it's kept
-    ;; disabled.
-    (case n
-      (0 nil)
-      (1 (list (part-select val :low 0  :width 8)))
-      (2 (list (part-select val :low 0  :width 8)
-               (part-select val :low 8  :width 8)))
-      (4 (list (part-select val :low 0  :width 8)
-               (part-select val :low 8  :width 8)
-               (part-select val :low 16 :width 8)
-               (part-select val :low 24 :width 8)))
-      (6 (list (part-select val :low 0  :width 8)
-               (part-select val :low 8  :width 8)
-               (part-select val :low 16 :width 8)
-               (part-select val :low 24 :width 8)
-               (part-select val :low 32 :width 8)
-               (part-select val :low 40 :width 8)))
-      (8 (list (part-select val :low 0  :width 8)
-               (part-select val :low 8  :width 8)
-               (part-select val :low 16 :width 8)
-               (part-select val :low 24 :width 8)
-               (part-select val :low 32 :width 8)
-               (part-select val :low 40 :width 8)
-               (part-select val :low 48 :width 8)
-               (part-select val :low 56 :width 8)))
-      (10 (list (part-select val :low 0   :width 8)
-                (part-select val :low 8   :width 8)
-                (part-select val :low 16  :width 8)
-                (part-select val :low 24  :width 8)
-                (part-select val :low 32  :width 8)
-                (part-select val :low 40  :width 8)
-                (part-select val :low 48  :width 8)
-                (part-select val :low 56  :width 8)
-                (part-select val :low 64  :width 8)
-                (part-select val :low 72  :width 8)))
-      (16 (list (part-select val :low 0   :width 8)
-                (part-select val :low 8   :width 8)
-                (part-select val :low 16  :width 8)
-                (part-select val :low 24  :width 8)
-                (part-select val :low 32  :width 8)
-                (part-select val :low 40  :width 8)
-                (part-select val :low 48  :width 8)
-                (part-select val :low 56  :width 8)
-                (part-select val :low 64  :width 8)
-                (part-select val :low 72  :width 8)
-                (part-select val :low 80  :width 8)
-                (part-select val :low 88  :width 8)
-                (part-select val :low 96  :width 8)
-                (part-select val :low 104 :width 8)
-                (part-select val :low 112 :width 8)
-                (part-select val :low 120 :width 8)))
-      (otherwise (byte-ify-general n val nil)))
-
-    ///
-
-    (defthmd byte-ify-and-byte-ify-general
-      (equal (byte-ify n val)
-             (byte-ify-general n val nil))
-      :hints (("Goal" :in-theory (e/d* (byte-ify-opener
-                                        byte-ify-general)
-                                       ()))))
-    (defthm byte-listp-byte-ify
-      (byte-listp (byte-ify n val)))
-
-    (defthm len-of-byte-ify
-      (implies (and (natp n)
-                    (integerp val))
-               (equal (len (byte-ify n val)) n)))
-
-    (defthm consp-byte-ify
-      (implies (and (natp n)
-                    (integerp val)
-                    (< 0 n))
-               (consp (byte-ify n val)))
-      :hints (("Goal" :in-theory (e/d (byte-ify) ()))))
-
-    (local (include-book "std/lists/nthcdr" :dir :system))
-
-    (defthm consp-nthcdr-of-byte-ify
-      (implies  (and (integerp val)
-                     (natp n)
-                     (natp m)
-                     (< m n))
-                (consp (nthcdr m (byte-ify n val))))
-      :hints (("Goal" :in-theory (e/d (nfix) ())))
-      :rule-classes :type-prescription)
-
-    (defthm len-of-nthcdr-of-byte-ify
-      (implies (and (natp n)
-                    (natp m)
-                    (< m n)
-                    (integerp val))
-               (equal (len (nthcdr m (byte-ify n val)))
-                      (- n m)))
-      :hints (("Goal" :in-theory (e/d (nfix) ())))))
-
-  ;; Definition of RB and other related events:
-
-  (local
-   (defthm append-3
-     (equal (append (append x y) z)
-            (append x y z))))
-
-  (define rb-1
-    ((addresses)
-     (r-w-x    :type (member  :r :x))
-     (x86) (acc))
-
-    :guard (and (canonical-address-listp addresses)
-                (byte-listp acc))
-
-    :enabled t
-
-    (if (mbt (canonical-address-listp addresses))
-
-        (if (endp addresses)
-            (mv nil acc x86)
-          (b* ((addr (car addresses))
-               ;; rb-1 is used only in the programmer-level mode, so
-               ;; it makes sense to use rvm08 here.
-               ((mv flg byte x86)
-                (rvm08 addr x86))
-               ((when flg)
-                ;; Note: the bytes returned are nil, not acc.
-                (mv flg nil x86)))
-            (rb-1 (cdr addresses) r-w-x x86 (append acc (list byte)))))
-
-      (mv t acc x86))
-
-    ///
-
-    (defthm rb-1-returns-byte-listp
-      (implies (and (byte-listp acc)
-                    (x86p x86))
-               (byte-listp (mv-nth 1 (rb-1 addresses r-w-x x86 acc))))
-      :rule-classes (:rewrite :type-prescription))
-
-    (defthm rb-1-returns-x86p
-      (implies (x86p x86)
-               (x86p (mv-nth 2 (rb-1 addresses r-w-x x86 acc)))))
-
-    (defthm rb-1-returns-x86-programmer-level-mode
-      (implies (programmer-level-mode x86)
-               (equal (mv-nth 2 (rb-1 addresses r-w-x x86 acc))
-                      x86)))
-
-    (defthm rb-1-returns-no-error-programmer-level-mode
-      (implies (and (canonical-address-listp addresses)
-                    (programmer-level-mode x86))
-               (equal (mv-nth 0 (rb-1 addresses r-w-x x86 acc))
-                      nil))
-      :hints (("Goal" :in-theory (e/d (rvm08) ()))))
-
-    (local
-     (defthm rb-1-accumulator-thm-helper
-       (equal (mv-nth 1 (rb-1 addresses r-w-x x86 (append acc1 acc2)))
-              (append acc1 (mv-nth 1 (rb-1 addresses r-w-x x86 acc2))))))
-
-    (defthm rb-1-accumulator-thm
-      (implies (and (syntaxp (not (and (quotep acc)
-                                       (eq (car (acl2::unquote acc)) nil))))
-                    (true-listp acc))
-               (equal (mv-nth 1 (rb-1 addresses r-w-x x86 acc))
-                      (append acc (mv-nth 1 (rb-1 addresses r-w-x x86 nil))))))
-
-    (defthm len-of-rb-1-in-programmer-level-mode
-      (implies (and (programmer-level-mode x86)
-                    (canonical-address-listp addresses)
-                    (byte-listp acc))
-               (equal (len (mv-nth 1 (rb-1 addresses r-w-x x86 acc)))
-                      (+ (len acc) (len addresses))))))
-
-  (define las-to-pas
-    (l-addrs
-     (r-w-x :type (member :r :w :x))
-     (cpl   :type (unsigned-byte 2))
-     x86)
-    :enabled t
-    :guard (and (not (programmer-level-mode x86))
-                (canonical-address-listp l-addrs))
-
-    (if (atom l-addrs)
-        (mv nil nil x86)
-
-      (b* (((mv flg p-addr x86)
-            (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))
-           ((when flg) (mv flg nil x86))
-           ((mv flgs p-addrs x86)
-            (las-to-pas (cdr l-addrs) r-w-x cpl x86)))
-        (mv flgs (if flgs nil (cons p-addr p-addrs)) x86)))
-
-    ///
-
-    (defthm consp-mv-nth-1-las-to-pas
-      (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                    (consp l-addrs))
-               (consp (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
-      :hints (("Goal" :in-theory (e/d* (las-to-pas) ())))
-      :rule-classes (:rewrite :type-prescription))
-
-    (defthm true-listp-mv-nth-1-las-to-pas
-      (true-listp (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-      :rule-classes (:rewrite :type-prescription))
-
-    (defthm car-mv-nth-1-las-to-pas
-      (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                    (consp l-addrs))
-               (equal (car (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-                      (mv-nth 1 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))))
-      :hints (("Goal" :in-theory (e/d* (las-to-pas) ()))))
-
-    (defthm physical-address-listp-mv-nth-1-las-to-pas
-      (physical-address-listp (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))
-
-    (defthm x86p-mv-nth-2-las-to-pas
-      (implies (x86p x86)
-               (x86p (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
-
-    (defthm las-to-pas-l-addrs=nil
-      (and (equal (mv-nth 0 (las-to-pas nil r-w-x cpl x86)) nil)
-           (equal (mv-nth 1 (las-to-pas nil r-w-x cpl x86)) nil)
-           (equal (mv-nth 2 (las-to-pas nil r-w-x cpl x86)) x86)))
-
-    (local
-     (defthm xr-las-to-pas
-       (implies
-        (and (not (equal fld :mem))
-             (not (equal fld :fault)))
-        (equal (xr fld index (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-               (xr fld index x86)))
-       :hints (("Goal" :in-theory (e/d* () (force (force)))))))
-
-    (make-event
-     (generate-xr-over-write-thms
-      (remove-elements-from-list
-       '(:mem :fault)
-       *x86-field-names-as-keywords*)
-      'las-to-pas
-      (acl2::formals 'las-to-pas (w state))
-      :output-index 2))
-
-    (defthm flgi-las-to-pas
-      (equal (flgi index (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-             (flgi index x86))
-      :hints (("Goal" :in-theory (e/d* (flgi) (force (force))))))
-
-    (defthm xr-fault-las-to-pas
-      (implies (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
-               (equal (xr :fault 0 (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-                      (xr :fault 0 x86)))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (local (in-theory (e/d () (xr-las-to-pas))))
-
-    ;; The following two make-events generate a bunch of rules that
-    ;; together say the same thing as las-to-pas-xw-values, but these
-    ;; rules are more efficient than las-to-pas-xw-values as they
-    ;; match less frequently.
-    (make-event
-     (generate-read-fn-over-xw-thms
-      (remove-elements-from-list
-       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode)
-       *x86-field-names-as-keywords*)
-      'las-to-pas
-      (acl2::formals 'las-to-pas (w state))
-      :output-index 0))
-
-    (make-event
-     (generate-read-fn-over-xw-thms
-      (remove-elements-from-list
-       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode)
-       *x86-field-names-as-keywords*)
-      'las-to-pas
-      (acl2::formals 'las-to-pas (w state))
-      :output-index 1))
-
-    (defthm las-to-pas-xw-rflags-not-ac
-      (implies (equal (rflags-slice :ac value)
-                      (rflags-slice :ac (rflags x86)))
-               (and
-                (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (xw :rflags 0 value x86)))
-                       (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (xw :rflags 0 value x86)))
-                       (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86))))))
-
-    ;; The following make-event generate a bunch of rules that
-    ;; together say the same thing as las-to-pas-xw-state, but these
-    ;; rules are more efficient than las-to-pas-xw-state as they match
-    ;; less frequently.
-    (make-event
-     (generate-write-fn-over-xw-thms
-      (remove-elements-from-list
-       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode)
-       *x86-field-names-as-keywords*)
-      'las-to-pas
-      (acl2::formals 'las-to-pas (w state))
-      :output-index 2))
-
-    (defthm las-to-pas-xw-rflags-state-not-ac
-      (implies (equal (rflags-slice :ac value)
-                      (rflags-slice :ac (rflags x86)))
-               (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (xw :rflags 0 value x86)))
-                      (xw :rflags 0 value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (defthm mv-nth-2-las-to-pas-system-level-non-marking-mode
-      (implies (and (not (page-structure-marking-mode x86))
-                    (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86))))
-               (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86))
-                      x86))
-      :hints (("Goal" :in-theory (e/d (las-to-pas) (force (force))))))
-
-    (defthm len-of-mv-nth-1-las-to-pas
-      (implies (not (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-               (equal (len (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))
-                      (len l-addrs))))
-
-    (defthm las-to-pas-values-and-!flgi
-      (implies (and (not (equal index *ac*))
-                    (x86p x86))
-               (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
-                           (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))
-                    (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
-                           (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (double-rewrite x86))))))
-      :hints
-      (("Goal"
-        :do-not-induct t
-        :cases ((equal index *iopl*))
-        :use
-        ((:instance rflags-slice-ac-simplify
-                    (index index)
-                    (rflags (xr :rflags 0 x86)))
-         (:instance las-to-pas-xw-rflags-not-ac
-                    (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
-                                   (logand (xr :rflags 0 x86)
-                                           (loghead 32 (lognot (expt 2 (nfix index))))))))
-         (:instance las-to-pas-xw-rflags-not-ac
-                    (value (logior (ash (loghead 2 value) 12)
-                                   (logand 4294955007 (xr :rflags 0 x86))))))
-        :in-theory (e/d* (!flgi-open-to-xw-rflags)
-                         (las-to-pas-xw-rflags-not-ac)))))
-
-    (defthm las-to-pas-values-and-!flgi-undefined
-      (implies (and (not (equal index *ac*))
-                    (x86p x86))
-               (and (equal (mv-nth 0 (las-to-pas l-addrs r-w-x cpl (!flgi-undefined index x86)))
-                           (mv-nth 0 (las-to-pas l-addrs r-w-x cpl x86)))
-                    (equal (mv-nth 1 (las-to-pas l-addrs r-w-x cpl (!flgi-undefined index x86)))
-                           (mv-nth 1 (las-to-pas l-addrs r-w-x cpl x86)))))
-      :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (las-to-pas)))))
-
-    (defthm mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
-      (implies (and (not (equal index *ac*))
-                    (x86p x86))
-               (equal (mv-nth 2 (las-to-pas l-addrs r-w-x cpl (!flgi index value x86)))
-                      (!flgi index value (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))))
-      :hints
-      (("Goal"
-        :do-not-induct t
-        :cases ((equal index *iopl*))
-        :use
-        ((:instance rflags-slice-ac-simplify
-                    (index index)
-                    (rflags (xr :rflags 0 x86)))
-         (:instance las-to-pas-xw-rflags-state-not-ac
-                    (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
-                                   (logand (xr :rflags 0 x86)
-                                           (loghead 32 (lognot (expt 2 (nfix index))))))))
-         (:instance las-to-pas-xw-rflags-state-not-ac
-                    (value (logior (ash (loghead 2 value) 12)
-                                   (logand 4294955007 (xr :rflags 0 x86))))))
-        :in-theory (e/d* (!flgi-open-to-xw-rflags)
-                         (las-to-pas-xw-rflags-state-not-ac))))))
-
-  (define las-to-pas-tailrec
-    (l-addrs
-     (p-addrs physical-address-listp)
-     (r-w-x :type (member :r :w :x))
-     (cpl   :type (unsigned-byte 2))
-     x86)
-    :short "Used to discharge @('mbe') proof obligations for @(see
-    rm128) and @(see wm128)"
-    :enabled t
-    :guard (and (not (programmer-level-mode x86))
-                (canonical-address-listp l-addrs))
-
-    (if (atom l-addrs)
-        (mv nil (acl2::rev p-addrs) x86)
-
-      (b* (((mv flg p-addr x86)
-            (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))
-           ((when flg) (mv flg nil x86)))
-        (las-to-pas-tailrec
-         (cdr l-addrs) (cons p-addr p-addrs) r-w-x cpl x86)))
-
-    ///
-
-    (defthmd las-to-pas-tailrec-opener
-      (implies
-       (consp l-addrs)
-       (equal
-        (las-to-pas-tailrec l-addrs p-addrs r-w-x cpl x86)
-        (mv-let
-          (flg p-addr x86)
-          (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86)
-          (if flg
-              (mv flg () x86)
-            (las-to-pas-tailrec (cdr l-addrs) (cons p-addr p-addrs) r-w-x cpl x86))))))
-
-    (defthmd las-to-pas-tailrec-nil
-      (equal
-       (las-to-pas-tailrec () p-addrs r-w-x cpl x86)
-       (mv nil (acl2::rev p-addrs) x86)))
-
-    (local
-     (defthmd las-to-pas-tailrec-as-las-to-pas-lemma
-       (b* (((mv flg-new p-addrs-new x86-new)
-             (las-to-pas l-addrs r-w-x cpl x86))
-            ((mv flg-alt p-addrs-alt x86-alt)
-             (las-to-pas-tailrec l-addrs p-addrs r-w-x cpl x86)))
-         (and (equal flg-alt flg-new)
-              (equal p-addrs-alt
-                     (if flg-new
-                         ()
-                       (revappend p-addrs p-addrs-new)))
-              (equal x86-alt x86-new)))
-       :hints (("Goal" :induct (las-to-pas-tailrec
-                                l-addrs p-addrs r-w-x cpl x86)))))
-
-    (local
-     (defthm las-to-pas-as-list
-       (let ((mv (las-to-pas l-addrs r-w-x cpl x86)))
-         (equal mv (list (mv-nth 0 mv)
-                         (mv-nth 1 mv)
-                         (mv-nth 2 mv))))
-       :rule-classes ()))
-
-    (local
-     (defthm las-to-pas-tailrec-as-list
-       (let ((mv (las-to-pas-tailrec l-addrs p-addrs r-w-x cpl x86)))
-         (equal mv (list (mv-nth 0 mv)
-                         (mv-nth 1 mv)
-                         (mv-nth 2 mv))))
-       :rule-classes ()))
-
-    (local
-     (defrule last-to-pas-when-flg
-       (b* (((mv flg p-addrs ?x86) (las-to-pas l-addrs r-w-x cpl x86)))
-         (implies flg (not p-addrs)))))
-
-    (defthmd las-to-pas-as-las-to-pas-tailrec
-      (equal (las-to-pas l-addrs r-w-x cpl x86)
-             (las-to-pas-tailrec l-addrs () r-w-x cpl x86))
-      :hints (("Goal" :use
-               (las-to-pas-as-list
-                (:instance las-to-pas-tailrec-as-list (p-addrs ()))
-                (:instance las-to-pas-tailrec-as-las-to-pas-lemma (p-addrs ())))))))
-
-  (define read-from-physical-memory
-    ((p-addrs physical-address-listp)
-     x86)
-    :parents (reasoning-about-memory-reads-and-writes x86-physical-memory)
-    :enabled t
-    :guard (not (programmer-level-mode x86))
-    :returns (lst byte-listp :hyp :guard)
-    (if (endp p-addrs)
-        nil
-      (b* ((addr (car p-addrs))
-           (byte (memi addr x86)))
-        (cons byte (read-from-physical-memory (cdr p-addrs) x86))))
-
-    ///
-
-    (defthm len-of-read-from-physical-memory
-      (equal (len (read-from-physical-memory p-addrs x86))
-             (len p-addrs)))
-
-    (defthm cdr-read-from-physical-memory
-      (equal (cdr (read-from-physical-memory p-addrs x86))
-             (read-from-physical-memory (cdr p-addrs) x86)))
-
-    (defthm read-from-physical-memory-!flgi
-      (equal (read-from-physical-memory p-addrs (!flgi index val x86))
-             (read-from-physical-memory p-addrs x86)))
-
-    (defthm read-from-physical-memory-xw-not-mem
-      (implies (not (equal fld :mem))
-               (equal (read-from-physical-memory p-addrs (xw fld index val x86))
-                      (read-from-physical-memory p-addrs x86)))))
-
-  (define rb ((l-addrs canonical-address-listp)
-              (r-w-x :type (member :r :x))
-              (x86))
-    :enabled t
-
-    (if (programmer-level-mode x86)
-        (rb-1 l-addrs r-w-x x86 nil)
-      (b* (((mv flgs p-addrs x86)
-            (las-to-pas l-addrs r-w-x (cpl x86) x86))
-           ((when flgs) (mv flgs nil x86))
-           (bytes (read-from-physical-memory p-addrs x86)))
-        (mv nil bytes x86)))
-
-    ///
-
-    (defthmd rb-is-rb-1-for-programmer-level-mode
-      (implies (programmer-level-mode x86)
-               (equal (rb l-addrs r-w-x x86)
-                      (rb-1 l-addrs r-w-x x86 nil))))
-
-    (defthm rb-returns-byte-listp
-      (implies (x86p x86)
-               (byte-listp (mv-nth 1 (rb addresses r-w-x x86))))
-      :rule-classes (:rewrite :type-prescription))
-
-    (defthm rb-returns-x86p
-      (implies (x86p x86)
-               (x86p (mv-nth 2 (rb l-addrs r-w-x x86)))))
-
-    (defthm rb-returns-no-error-programmer-level-mode
-      (implies (and (canonical-address-listp l-addrs)
-                    (programmer-level-mode x86))
-               (equal (mv-nth 0 (rb l-addrs r-w-x x86)) nil)))
-
-    (defthm len-of-rb-in-programmer-level-mode
-      (implies (and (programmer-level-mode x86)
-                    (canonical-address-listp addresses))
-               (equal (len (mv-nth 1 (rb addresses r-w-x x86)))
-                      (len addresses))))
-
-    (defthm rb-returns-x86-programmer-level-mode
-      (implies (and (programmer-level-mode x86)
-                    (x86p x86))
-               (equal (mv-nth 2 (rb addresses r-w-x x86)) x86)))
-
-    (defthm len-of-rb-in-system-level-mode
-      (implies (and (not (mv-nth 0 (las-to-pas l-addrs r-w-x (cpl x86) x86)))
-                    (not (xr :programmer-level-mode 0 x86)))
-               (equal (len (mv-nth 1 (rb l-addrs r-w-x x86))) (len l-addrs)))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (defthm rb-values-and-!flgi-in-system-level-mode
-      (implies (and (not (equal index *ac*))
-                    (not (programmer-level-mode x86))
-                    (x86p x86))
-               (and (equal (mv-nth 0 (rb lin-addr r-w-x (!flgi index value x86)))
-                           (mv-nth 0 (rb lin-addr r-w-x x86)))
-                    (equal (mv-nth 1 (rb lin-addr r-w-x (!flgi index value x86)))
-                           (mv-nth 1 (rb lin-addr r-w-x x86)))))
-      :hints (("Goal"
-               :do-not-induct t
-               :in-theory (e/d* (rb) ()))))
-
-    (defthm rb-values-and-!flgi-undefined-in-system-level-mode
-      (implies (and (not (equal index *ac*))
-                    (not (programmer-level-mode x86))
-                    (x86p x86))
-               (and (equal (mv-nth 0 (rb lin-addr r-w-x (!flgi-undefined index x86)))
-                           (mv-nth 0 (rb lin-addr r-w-x x86)))
-                    (equal (mv-nth 1 (rb lin-addr r-w-x (!flgi-undefined index x86)))
-                           (mv-nth 1 (rb lin-addr r-w-x x86)))))
-      :hints (("Goal"
-               :do-not-induct t
-               :in-theory (e/d* (!flgi-undefined) ())))))
-
-  ;; Definition of WB and other related events:
-
-  (define page-faults-during-translation-p
-    (l-addrs
-     (r-w-x :type (member :r :w :x))
-     (cpl   :type (unsigned-byte 2))
-     x86)
-    :enabled t
-    :non-executable t
-    :short "Returns the first error flag, if any, encountered during
-    the translation of linear addresses @('l-addrs')"
-    :guard (and (not (programmer-level-mode x86))
-                (canonical-address-listp l-addrs))
-
-    (if (atom l-addrs)
-        (mv (not (eql l-addrs nil)) x86)
-      (if (mv-nth 0 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))
-          (mv (mv-nth 0 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86))
-              (mv-nth 2 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86)))
-        (page-faults-during-translation-p
-         (cdr l-addrs) r-w-x cpl
-         (mv-nth 2 (ia32e-la-to-pa (car l-addrs) r-w-x cpl x86)))))
-
-    ///
-
-    (defthm x86p-mv-nth-1-page-faults-during-translation-p
-      (implies (x86p x86)
-               (x86p (mv-nth 1 (page-faults-during-translation-p l-addrs r-w-x cpl x86)))))
-
-    (defthm xr-page-faults-during-translation-p
-      (implies (and (not (equal fld :mem))
-                    (not (equal fld :fault)))
-               (equal (xr fld index
-                          (mv-nth 1
-                                  (page-faults-during-translation-p
-                                   l-addrs r-w-x cpl x86)))
-                      (xr fld index x86)))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (defthm page-faults-during-translation-p-xw-values
-      (implies (and (not (equal fld :mem))
-                    (not (equal fld :rflags))
-                    (not (equal fld :fault))
-                    (not (equal fld :ctr))
-                    (not (equal fld :msr))
-                    (not (equal fld :programmer-level-mode))
-                    (not (equal fld :page-structure-marking-mode)))
-               (equal (mv-nth 0 (page-faults-during-translation-p l-addrs r-w-x cpl (xw fld index value x86)))
-                      (mv-nth 0 (page-faults-during-translation-p l-addrs r-w-x cpl x86)))))
-
-    (defthm page-faults-during-translation-p-xw-rflags-not-ac
-      (implies (equal (rflags-slice :ac value)
-                      (rflags-slice :ac (rflags x86)))
-               (equal (mv-nth 0
-                              (page-faults-during-translation-p l-addrs r-w-x cpl
-                                                                (xw :rflags 0 value x86)))
-                      (mv-nth 0
-                              (page-faults-during-translation-p l-addrs r-w-x cpl x86)))))
-
-    (defthm page-faults-during-translation-p-xw-state
-      (implies (and (not (equal fld :mem))
-                    (not (equal fld :rflags))
-                    (not (equal fld :fault))
-                    (not (equal fld :ctr))
-                    (not (equal fld :msr))
-                    (not (equal fld :programmer-level-mode))
-                    (not (equal fld :page-structure-marking-mode)))
-               (equal (mv-nth 1
-                              (page-faults-during-translation-p l-addrs r-w-x cpl
-                                                                (xw fld index value x86)))
-                      (xw fld index value
-                          (mv-nth 1
-                                  (page-faults-during-translation-p l-addrs r-w-x cpl
-                                                                    x86)))))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (defthm page-faults-during-translation-p-xw-rflags-state-not-ac
-      (implies (equal (rflags-slice :ac value)
-                      (rflags-slice :ac (rflags x86)))
-               (equal (mv-nth 1
-                              (page-faults-during-translation-p l-addrs r-w-x cpl
-                                                                (xw :rflags 0 value x86)))
-                      (xw :rflags 0 value
-                          (mv-nth 1 (page-faults-during-translation-p l-addrs r-w-x cpl x86)))))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (defthm mv-nth-2-page-faults-during-translation-p-system-level-non-marking-mode
-      (implies (and (not (page-structure-marking-mode x86))
-                    (not (mv-nth 0 (page-faults-during-translation-p
-                                    l-addrs r-w-x cpl x86))))
-               (equal (mv-nth 1 (page-faults-during-translation-p l-addrs r-w-x cpl x86))
-                      x86))
-      :hints (("Goal" :in-theory (e/d (page-faults-during-translation-p) (force (force)))))))
-
-  (define wb-1 (addr-lst x86)
-
-    :guard (addr-byte-alistp addr-lst)
-    :enabled t
-
-    (if (mbt (addr-byte-alistp addr-lst))
-
-        (if (endp addr-lst)
-            (mv nil x86)
-          (b* ((addr (caar addr-lst))
-               (byte (cdar addr-lst))
-               ((mv flg x86)
-                ;; wb-1 is used only in the programmer-level mode, so
-                ;; it makes sense to use wvm08 here.
-                (wvm08 addr byte x86))
-               ((when flg)
-                (mv flg x86)))
-            (wb-1 (cdr addr-lst) x86)))
-
-      (mv t x86))
-
-    ///
-
-    (defthm wb-1-returns-x86p
-      (implies (x86p x86)
-               (x86p (mv-nth 1 (wb-1 addr-lst x86)))))
-
-    (defthm wb-1-returns-no-error-programmer-level-mode
-      (implies (and (addr-byte-alistp addr-lst)
-                    (programmer-level-mode x86))
-               (equal (mv-nth 0 (wb-1 addr-lst x86))
-                      nil))
-      :hints (("Goal" :in-theory (e/d (wvm08) ())))))
-
-  (define write-to-physical-memory
-    ((p-addrs physical-address-listp)
-     (bytes byte-listp)
-     x86)
-    :parents (reasoning-about-memory-reads-and-writes x86-physical-memory)
-    :enabled t
-    :guard (and (equal (len p-addrs) (len bytes))
-                (not (programmer-level-mode x86)))
-    :returns (x86 x86p :hyp :guard)
-    (if (endp p-addrs)
-        x86
-      (b* ((addr (car p-addrs))
-           (byte (car bytes))
-           (x86 (!memi addr byte x86)))
-        (write-to-physical-memory (cdr p-addrs) (cdr bytes) x86)))
-
-    ///
-
-    (defthm xr-not-mem-write-to-physical-memory
-      (implies (not (equal fld :mem))
-               (equal (xr fld index (write-to-physical-memory p-addrs bytes x86))
-                      (xr fld index x86)))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (defthm write-to-physical-memory-xw-in-system-level-mode
-      ;; Keep the state updated by write-to-physical-memory inside all other nests of writes.
-      (implies (not (equal fld :mem))
-               (equal (write-to-physical-memory p-addrs bytes (xw fld index value x86))
-                      (xw fld index value (write-to-physical-memory p-addrs bytes x86))))
-      :hints (("Goal" :in-theory (e/d* (write-to-physical-memory) ())))))
-
-  (define wb (addr-lst x86)
-
-    :guard (addr-byte-alistp addr-lst)
-    :enabled t
-
-    (if (programmer-level-mode x86)
-        (wb-1 addr-lst x86)
-      (b* (((mv flgs p-addrs x86)
-            (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86))
-           ((when flgs) (mv flgs x86))
-           (x86 (write-to-physical-memory p-addrs (strip-cdrs addr-lst) x86)))
-        (mv nil x86)))
-
-    ///
-
-    (defthm wb-not-consp-addr-lst
-      (implies (not (consp addr-lst))
-               (equal (mv-nth 1 (wb addr-lst x86)) x86))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (defthmd wb-is-wb-1-for-programmer-level-mode
-      (implies (programmer-level-mode x86)
-               (equal (wb addr-lst x86)
-                      (wb-1 addr-lst x86))))
-
-    (defthm wb-returns-x86p
-      (implies (and (addr-byte-alistp addr-lst)
-                    (x86p x86))
-               (x86p (mv-nth 1 (wb addr-lst x86)))))
-
-    (defthm wb-returns-no-error-programmer-level-mode
-      (implies (and (addr-byte-alistp addr-lst)
-                    (programmer-level-mode x86))
-               (equal (mv-nth 0 (wb addr-lst x86)) nil))))
-
-  (defthm wb-by-wb-1-for-programmer-level-mode-induction-rule
-    t
-    :rule-classes ((:induction :pattern (wb addr-lst x86)
-                               :condition (programmer-level-mode x86)
-                               :scheme (wb-1 addr-lst x86))))
-
-  (local (in-theory (e/d () (force (force)))))
-
-  ;; Relating rb and xr/xw in the programmer-level mode:
-
-  (defthm xr-rb-state-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
-             (equal (xr fld index (mv-nth 2 (rb addr r-w-x x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (rb rb-1) ()))))
-
-  (defthm rb-xw-values-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (and (equal (mv-nth 0 (rb addr r-w-x (xw fld index value x86)))
-                         (mv-nth 0 (rb addr r-w-x x86)))
-                  (equal (mv-nth 1 (rb addr r-w-x (xw fld index value x86)))
-                         (mv-nth 1 (rb addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
-             :induct (rb-1 addr r-w-x x86 nil))))
-
-  (defthm rb-xw-state-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :programmer-level-mode)))
-             (equal (mv-nth 2 (rb addr r-w-x (xw fld index value x86)))
-                    (xw fld index value (mv-nth 2 (rb addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d* (rb rb-1) ()))))
-
-  ;; Relating rb and xr/xw in the system-level mode:
-
-  (defthm xr-rb-1-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (rb-1 addr r-w-x x86 acc)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
-             :induct (rb-1 addr r-w-x x86 acc))))
-
-  ;; (defthm xr-rb-state-in-system-level-mode
-  ;;   (implies (and (not (programmer-level-mode x86))
-  ;;                 (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (equal (xr fld index (mv-nth 2 (rb addr r-w-x x86)))
-  ;;                   (xr fld index x86)))
-  ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
-
-  ;; The following make-event generates a bunch of rules that together
-  ;; say the same thing as xr-rb-state-in-system-level-mode, but these
-  ;; rules are more efficient than xr-rb-state-in-system-level-mode as
-  ;; they match less frequently.
-  (make-event
-   (generate-xr-over-write-thms
-    (remove-elements-from-list
-     '(:mem :fault)
-     *x86-field-names-as-keywords*)
-    'rb
-    (acl2::formals 'rb (w state))
-    :output-index 2))
-
-  (defthm rb-1-xw-values-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :rflags))
-                  (not (equal fld :ctr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :msr))
-                  (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
-             (and (equal (mv-nth 0 (rb-1 addr r-w-x (xw fld index value x86) acc))
-                         (mv-nth 0 (rb-1 addr r-w-x x86 acc)))
-                  (equal (mv-nth 1 (rb-1 addr r-w-x (xw fld index value x86) acc))
-                         (mv-nth 1 (rb-1 addr r-w-x x86 acc)))))
-    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
-             :induct (rb-1 addr r-w-x x86 acc))))
-
-  ;; (defthm rb-xw-values-in-system-level-mode
-  ;;   (implies (and (not (programmer-level-mode x86))
-  ;;                 (not (equal fld :mem))
-  ;;                 (not (equal fld :rflags))
-  ;;                 (not (equal fld :ctr))
-  ;;                 (not (equal fld :seg-visible))
-  ;;                 (not (equal fld :msr))
-  ;;                 (not (equal fld :fault))
-  ;;                 (not (equal fld :programmer-level-mode))
-  ;;                 (not (equal fld :page-structure-marking-mode)))
-  ;;            (and (equal (mv-nth 0 (rb addr r-w-x (xw fld index value x86)))
-  ;;                        (mv-nth 0 (rb addr r-w-x x86)))
-  ;;                 (equal (mv-nth 1 (rb addr r-w-x (xw fld index value x86)))
-  ;;                        (mv-nth 1 (rb addr r-w-x x86)))))
-  ;;   :hints (("Goal" :in-theory (e/d* (rb) ()))))
-
-
-  ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as rb-xw-values-in-system-level-mode, but
-  ;; these rules are more efficient than
-  ;; rb-xw-values-in-system-level-mode as they match less frequently.
-  (make-event
-   (generate-read-fn-over-xw-thms
-    (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-     *x86-field-names-as-keywords*)
-    'rb
-    (acl2::formals 'rb (w state))
-    :output-index 0))
-
-  (make-event
-   (generate-read-fn-over-xw-thms
-    (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-     *x86-field-names-as-keywords*)
-    'rb
-    (acl2::formals 'rb (w state))
-    :output-index 1))
-
-  (defthm rb-1-xw-rflags-not-ac-values-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
-             (and (equal (mv-nth 0 (rb-1 addr r-w-x (xw :rflags 0 value x86) acc))
-                         (mv-nth 0 (rb-1 addr r-w-x x86 acc)))
-                  (equal (mv-nth 1 (rb-1 addr r-w-x (xw :rflags 0 value x86) acc))
-                         (mv-nth 1 (rb-1 addr r-w-x x86 acc)))))
-    :hints (("Goal" :induct (rb-1 addr r-w-x x86 acc)
-             :in-theory (e/d* (rb rb-1) ()))))
-
-  (defthm rb-xw-rflags-not-ac-values-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
-             (and (equal (mv-nth 0 (rb addr r-w-x (xw :rflags 0 value x86)))
-                         (mv-nth 0 (rb addr r-w-x x86)))
-                  (equal (mv-nth 1 (rb addr r-w-x (xw :rflags 0 value x86)))
-                         (mv-nth 1 (rb addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d* (rb) ()))))
-
-  (defthm rb-1-xw-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (equal fld :mem))
-                  (not (equal fld :rflags))
-                  (not (equal fld :ctr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :msr))
-                  (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
-             (equal (mv-nth 2 (rb-1 addr r-w-x (xw fld index value x86) acc))
-                    (xw fld index value (mv-nth 2 (rb-1 addr r-w-x x86 acc)))))
-    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
-             :induct (rb-1 addr r-w-x x86 acc))))
-
-  ;; (defthm rb-xw-state-in-system-level-mode
-  ;;   (implies (and (not (programmer-level-mode x86))
-  ;;                 (not (equal fld :mem))
-  ;;                 (not (equal fld :rflags))
-  ;;                 (not (equal fld :ctr))
-  ;;                 (not (equal fld :seg-visible))
-  ;;                 (not (equal fld :msr))
-  ;;                 (not (equal fld :fault))
-  ;;                 (not (equal fld :programmer-level-mode))
-  ;;                 (not (equal fld :page-structure-marking-mode)))
-  ;;            (equal (mv-nth 2 (rb addr r-w-x (xw fld index value x86)))
-  ;;                   (xw fld index value (mv-nth 2 (rb addr r-w-x x86)))))
-  ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
-
-  ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as rb-xw-state-in-system-level-mode but
-  ;; these rules are more efficient than
-  ;; rb-xw-state-in-system-level-mode as they match less frequently.
-  (make-event
-   (generate-write-fn-over-xw-thms
-    (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-     *x86-field-names-as-keywords*)
-    'rb
-    (acl2::formals 'rb (w state))
-    :output-index 2))
-
-  (defthm rb-1-xw-rflags-not-ac-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
-             (equal (mv-nth 2 (rb-1 addr r-w-x (xw :rflags 0 value x86) acc))
-                    (xw :rflags 0 value (mv-nth 2 (rb-1 addr r-w-x x86 acc)))))
-    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
-             :induct (rb-1 addr r-w-x x86 acc))))
-
-  (defthm rb-xw-rflags-not-ac-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
-             (equal (mv-nth 2 (rb addr r-w-x (xw :rflags 0 value x86)))
-                    (xw :rflags 0 value (mv-nth 2 (rb addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
-
-  ;; Relating wb and xr/xw in the programmer-level mode:
-
-  (defthm xr-wb-1-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem)))
-             (equal (xr fld index (mv-nth 1 (wb-1 addr-lst x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (wb-1) ()))))
-
-  (defthm xr-wb-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem)))
-             (equal (xr fld index (mv-nth 1 (wb addr-lst x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (wb) ()))))
-
-  (defthm wb-1-xw-in-programmer-level-mode
-    ;; Keep the state updated by wb-1 inside all other nests of writes.
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (and (equal (mv-nth 0 (wb-1 addr-lst (xw fld index value x86)))
-                         (mv-nth 0 (wb-1 addr-lst x86)))
-                  (equal (mv-nth 1 (wb-1 addr-lst (xw fld index value x86)))
-                         (xw fld index value (mv-nth 1 (wb-1 addr-lst x86))))))
-    :hints (("Goal" :in-theory (e/d* (wb-1) ()))))
-
-  (defthm wb-xw-in-programmer-level-mode
-    ;; Keep the state updated by wb inside all other nests of writes.
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (and (equal (mv-nth 0 (wb addr-lst (xw fld index value x86)))
-                         (mv-nth 0 (wb addr-lst x86)))
-                  (equal (mv-nth 1 (wb addr-lst (xw fld index value x86)))
-                         (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
-    :hints (("Goal" :in-theory (e/d* (wb) ()))))
-
-  ;; Relating wb and xr/xw in the system-level mode:
-
-  ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as xr-wb-in-system-level-mode but
-  ;; these rules are more efficient than
-  ;; xr-wb-in-system-level-mode as they match less frequently.
-  (make-event
-   (generate-xr-over-write-thms
-    (remove-elements-from-list
-     '(:mem :fault)
-     *x86-field-names-as-keywords*)
-    'wb
-    (acl2::formals 'wb (w state))
-    :output-index 1))
-
-  (defthm xr-fault-wb-in-system-level-marking-mode
-    (implies
-     (not (mv-nth 0 (las-to-pas (strip-cars addr-lst)
-                                :w (cpl x86) (double-rewrite x86))))
-     (equal (xr :fault 0 (mv-nth 1 (wb addr-lst x86)))
-            (xr :fault 0 x86)))
-    :hints
-    (("Goal" :do-not-induct t
-      :in-theory (e/d* (wb)
-                       ((:meta acl2::mv-nth-cons-meta)
-                        force (force))))))
-
-  ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as wb-xw-in-system-level-mode, but these rules
-  ;; are more efficient than wb-xw-in-system-level-mode as they match
-  ;; less frequently.  Note that wb is kept inside all other nests of
-  ;; writes.
-  (make-event
-   (generate-read-fn-over-xw-thms
-    (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-     *x86-field-names-as-keywords*)
-    'wb
-    (acl2::formals 'wb (w state))
-    :output-index 0))
-
-  (make-event
-   (generate-write-fn-over-xw-thms
-    (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
-     *x86-field-names-as-keywords*)
-    'wb
-    (acl2::formals 'wb (w state))
-    :output-index 1))
-
-  (defthm wb-xw-rflags-not-ac-in-system-level-mode
-    ;; Keep the state updated by wb inside all other nests of writes.
-    (implies (equal (rflags-slice :ac value)
-                    (rflags-slice :ac (rflags x86)))
-             (and (equal (mv-nth 0 (wb addr-lst (xw :rflags 0 value x86)))
-                         (mv-nth 0 (wb addr-lst x86)))
-                  (equal (mv-nth 1 (wb addr-lst (xw :rflags 0 value x86)))
-                         (xw :rflags 0 value (mv-nth 1 (wb addr-lst x86))))))
-    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
-
-  ;; (defthm mv-nth-1-wb-and-!flgi-commute
-  ;;   (implies (and (not (equal index *ac*))
-  ;;                 (not (programmer-level-mode x86))
-  ;;                 (not (page-structure-marking-mode x86)))
-  ;;            (equal (mv-nth 1 (wb addr-lst (!flgi index val x86)))
-  ;;                   (!flgi index val (mv-nth 1 (wb addr-lst x86)))))
-  ;;   :hints (("Goal" :in-theory (e/d* (!flgi
-  ;;                                     rflags-slice-ac-simplify
-  ;;                                     !flgi-open-to-xw-rflags)
-  ;;                                    (force (force))))))
-
-  (defthm mv-nth-1-wb-and-!flgi-commute
-    (implies (not (equal index *ac*))
-             (equal (mv-nth 1 (wb addr-lst (!flgi index val x86)))
-                    (!flgi index val (mv-nth 1 (wb addr-lst x86)))))
-    :hints (("Goal" :in-theory (e/d* (!flgi rflags-slice-ac-simplify
-                                            !flgi-open-to-xw-rflags)
-                                     (force (force))))))
-
-  (defthm mv-nth-1-wb-and-!flgi-undefined-commute
-    (implies (and (not (equal index *ac*))
-                  (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86)))
-             (equal (mv-nth 1 (wb addr-lst (!flgi-undefined index x86)))
-                    (!flgi-undefined index (mv-nth 1 (wb addr-lst x86)))))
-    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (wb !flgi)))))
-
-  (defthm xr-fault-wb-in-system-level-mode
-    (implies (and (not (mv-nth 0 (las-to-pas (strip-cars addr-lst) :w (cpl x86) x86)))
-                  (not (page-structure-marking-mode x86)))
-             (equal (xr :fault 0 (mv-nth 1 (wb addr-lst x86)))
-                    (xr :fault 0 x86)))
-    :hints
-    (("Goal" :in-theory (e/d* (wb)
-                              (write-to-physical-memory force (force))))))
-
-  (define create-phy-addr-bytes-alist
-    ((addr-list (physical-address-listp addr-list))
-     (byte-list (byte-listp byte-list)))
-    :guard (equal (len addr-list) (len byte-list))
-
-    :long "<p>Given a true list of physical addresses @('addr-list') and
-  a true list of bytes @('byte-list'),
-  @('create-phy-addr-bytes-alist') creates an alist binding the
-  @('n')-th address in @('addr-list') to the @('n')-th byte in
-  @('byte-list').</p>"
-
-    :enabled t
-
-    :prepwork
-    ((local (include-book "std/lists/nthcdr" :dir :system))
-     (local (include-book "std/lists/nth" :dir :system)))
-
-    (if (mbt (equal (len addr-list) (len byte-list)))
-        (if (endp addr-list)
-            nil
-          (acons (car addr-list) (car byte-list)
-                 (create-phy-addr-bytes-alist (cdr addr-list)
-                                              (cdr byte-list))))
-      nil)
-
-    ///
-
-    (defthm true-listp-create-phy-addr-bytes-alist
-      (true-listp (create-phy-addr-bytes-alist l-addrs bytes))
-      :rule-classes :type-prescription)
-
-    (defthm consp-create-phy-addr-bytes-alist-in-terms-of-len
-      (implies (and (not (zp (len byte-list)))
-                    (equal (len addr-list) (len byte-list)))
-               (consp (create-phy-addr-bytes-alist addr-list byte-list)))
-      :rule-classes (:rewrite :type-prescription))
-
-    (defthm consp-create-phy-addr-bytes-alist
-      (implies (and (or (consp addr-list) (consp byte-list))
-                    (equal (len addr-list) (len byte-list)))
-               (consp (create-phy-addr-bytes-alist addr-list byte-list)))
-      :rule-classes (:rewrite :type-prescription))
-
-    (defthm create-phy-addr-bytes-alist-bytes=nil
-      (equal (create-phy-addr-bytes-alist l-addrs nil) nil))
-
-    (defthm create-phy-addr-bytes-alist-l-addrs=nil
-      (equal (create-phy-addr-bytes-alist nil bytes) nil))
-
-    (defthmd cdr-of-create-phy-addr-bytes-alist
-      (equal (cdr (create-phy-addr-bytes-alist l-addrs bytes))
-             (create-phy-addr-bytes-alist (cdr l-addrs) (cdr bytes))))
-
-    (defthmd caar-of-create-phy-addr-bytes-alist
-      (implies (equal (len l-addrs) (len bytes))
-               (equal (car (car (create-phy-addr-bytes-alist l-addrs bytes)))
-                      (car l-addrs))))
-
-    (defthmd cdar-of-create-phy-addr-bytes-alist
-      (implies (equal (len l-addrs) (len bytes))
-               (equal (cdr (car (create-phy-addr-bytes-alist l-addrs bytes)))
-                      (car bytes))))
-
-    (defthm addr-byte-alistp-create-phy-addr-bytes-alist
-      (implies (and (canonical-address-listp addrs)
-                    (byte-listp bytes))
-               (addr-byte-alistp (create-phy-addr-bytes-alist addrs bytes)))
-      :rule-classes (:type-prescription :rewrite))
-
-    (defthm strip-cars-of-create-phy-addr-bytes-alist
-      (implies (and (true-listp addrs)
-                    (equal (len addrs) (len bytes)))
-               (equal (strip-cars (create-phy-addr-bytes-alist addrs bytes))
-                      addrs)))
-
-    (defthm strip-cdrs-of-create-phy-addr-bytes-alist
-      (implies (and (byte-listp bytes)
-                    (equal (len addrs) (len bytes)))
-               (equal (strip-cdrs (create-phy-addr-bytes-alist addrs bytes))
-                      bytes)))
-
-    (defthm strip-cars-of-append-of-create-phy-addr-bytes-alist
-      (implies (and (equal (len addrs1) (len bytes1))
-                    (canonical-address-listp addrs2)
-                    (equal (len addrs2) (len bytes2)))
-               (equal (strip-cars
-                       (append (create-phy-addr-bytes-alist addrs1 bytes1)
-                               (create-phy-addr-bytes-alist addrs2 bytes2)))
-                      (append addrs1 addrs2))))
-
-    (defthm strip-cdrs-of-append-of-create-phy-addr-bytes-alist
-      (implies (and (equal (len addrs1) (len bytes1))
-                    (byte-listp bytes2)
-                    (equal (len addrs2) (len bytes2)))
-               (equal (strip-cdrs
-                       (append (create-phy-addr-bytes-alist addrs1 bytes1)
-                               (create-phy-addr-bytes-alist addrs2 bytes2)))
-                      (append bytes1 bytes2))))
-
-    (defthm len-of-create-phy-addr-bytes-alist
-      (implies (and (not (zp (len byte-list)))
-                    (equal (len addr-list) (len byte-list)))
-               (equal (len (create-phy-addr-bytes-alist addr-list byte-list))
-                      (len addr-list)))))
-
-  (define create-addr-bytes-alist
-    ((addr-list (canonical-address-listp addr-list))
-     (byte-list (byte-listp byte-list)))
-    :guard (equal (len addr-list) (len byte-list))
-
-    :long "<p>Given a true list of canonical addresses @('addr-list')
-  and a true list of bytes @('byte-list'),
-  @('create-addr-bytes-alist') creates an alist binding the @('n')-th
-  address in @('addr-list') to the @('n')-th byte in
-  @('byte-list').</p>"
-
-    :enabled t
-
-    :prepwork
-    ((local (include-book "std/lists/nthcdr" :dir :system))
-     (local (include-book "std/lists/nth" :dir :system)))
-
-    (if (mbt (equal (len addr-list) (len byte-list)))
-        (if (endp addr-list)
-            nil
-          (acons (car addr-list) (car byte-list)
-                 (create-addr-bytes-alist (cdr addr-list)
-                                          (cdr byte-list))))
-      nil)
-
-    ///
-
-    (defthm true-listp-create-addr-bytes-alist
-      (true-listp (create-addr-bytes-alist l-addrs bytes))
-      :rule-classes :type-prescription)
-
-    (defthm alistp-create-addr-bytes-alist
-      (implies (and (canonical-address-listp addrs)
-                    (byte-listp bytes))
-               (alistp (create-addr-bytes-alist addrs bytes)))
-      :rule-classes (:type-prescription :rewrite))
-
-    (defthm consp-create-addr-bytes-alist-in-terms-of-len
-      (implies (and (not (zp (len byte-list)))
-                    (equal (len addr-list) (len byte-list)))
-               (consp (create-addr-bytes-alist addr-list byte-list)))
-      :rule-classes (:rewrite :type-prescription))
-
-    (defthm consp-create-addr-bytes-alist
-      (implies (and (or (consp addr-list) (consp byte-list))
-                    (equal (len addr-list) (len byte-list)))
-               (consp (create-addr-bytes-alist addr-list byte-list)))
-      :rule-classes (:rewrite :type-prescription))
-
-    (defthm create-addr-bytes-alist-bytes=nil
-      (equal (create-addr-bytes-alist l-addrs nil) nil))
-
-    (defthm create-addr-bytes-alist-l-addrs=nil
-      (equal (create-addr-bytes-alist nil bytes) nil))
-
-    (defthmd cdr-of-create-addr-bytes-alist
-      (equal (cdr (create-addr-bytes-alist l-addrs bytes))
-             (create-addr-bytes-alist (cdr l-addrs) (cdr bytes))))
-
-    (defthmd caar-of-create-addr-bytes-alist
-      (implies (equal (len l-addrs) (len bytes))
-               (equal (car (car (create-addr-bytes-alist l-addrs bytes)))
-                      (car l-addrs))))
-
-    (defthmd cdar-of-create-addr-bytes-alist
-      (implies (equal (len l-addrs) (len bytes))
-               (equal (cdr (car (create-addr-bytes-alist l-addrs bytes)))
-                      (car bytes))))
-
-    (defthm addr-byte-alistp-create-addr-bytes-alist
-      (implies (and (canonical-address-listp addrs)
-                    (byte-listp bytes))
-               (addr-byte-alistp (create-addr-bytes-alist addrs bytes)))
-      :rule-classes (:type-prescription :rewrite))
-
-    (defthm strip-cars-of-create-addr-bytes-alist
-      (implies (and (true-listp addrs)
-                    (equal (len addrs) (len bytes)))
-               (equal (strip-cars (create-addr-bytes-alist addrs bytes))
-                      addrs)))
-
-    (defthm strip-cdrs-of-create-addr-bytes-alist
-      (implies (and (byte-listp bytes)
-                    (equal (len addrs) (len bytes)))
-               (equal (strip-cdrs (create-addr-bytes-alist addrs bytes))
-                      bytes)))
-
-    (defthm strip-cars-of-append-of-create-addr-bytes-alist
-      (implies (and (equal (len addrs1) (len bytes1))
-                    (canonical-address-listp addrs2)
-                    (equal (len addrs2) (len bytes2)))
-               (equal (strip-cars
-                       (append (create-addr-bytes-alist addrs1 bytes1)
-                               (create-addr-bytes-alist addrs2 bytes2)))
-                      (append addrs1 addrs2))))
-
-    (defthm strip-cdrs-of-append-of-create-addr-bytes-alist
-      (implies (and (equal (len addrs1) (len bytes1))
-                    (byte-listp bytes2)
-                    (equal (len addrs2) (len bytes2)))
-               (equal (strip-cdrs
-                       (append (create-addr-bytes-alist addrs1 bytes1)
-                               (create-addr-bytes-alist addrs2 bytes2)))
-                      (append bytes1 bytes2))))
-
-    (defthm len-of-create-addr-bytes-alist
-      (implies (and (not (zp (len byte-list)))
-                    (equal (len addr-list) (len byte-list)))
-               (equal (len (create-addr-bytes-alist addr-list byte-list))
-                      (len addr-list))))
-
-    (defthm cons-and-create-addr-bytes-alist
-      (implies (equal (len x) (len a))
-               (equal (cons (cons xe ae)
-                            (create-addr-bytes-alist x a))
-                      (create-addr-bytes-alist (cons xe x) (cons ae a)))))
-
-    (local (include-book "std/lists/len" :dir :system))
-    (local (include-book "std/lists/append" :dir :system))
-
-    (defthm append-and-create-addr-bytes-alist
-      (implies (and (equal (len x) (len a))
-                    (equal (len y) (len b)))
-               (equal (append (create-addr-bytes-alist x a)
-                              (create-addr-bytes-alist y b))
-                      (create-addr-bytes-alist (append x y)
-                                               (append a b))))))
-
   (define create-canonical-address-list (count addr)
     :guard (natp count)
 
@@ -2063,68 +518,1117 @@ memory.</li>
       :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p)
                                        ())))))
 
-  (define addr-range (count addr)
-    :guard (natp count)
-
+  (define rb-1 ((n     natp "Number of bytes to be read")
+                (addr  integerp "First linear address")
+                (r-x  :type (member :r :x) "Type of memory access")
+                (x86))
+    :verify-guards nil
+    :guard (canonical-address-p (+ -1 n addr))
     :enabled t
 
-    (if (zp count)
-        nil
-      (cons (ifix addr)
-            (addr-range (1- count) (1+ (ifix addr)))))
+    (if (zp n)
+        (mv nil 0 x86)
+      ;; rb-1 is used only in the programmer-level mode, so it makes
+      ;; sense to use rvm08 here.
+      (b* (((unless (canonical-address-p addr))
+            (mv t 0 x86))
+           ((mv flg0 byte0 x86)
+            (rvm08 addr x86))
+           ((when flg0)
+            (mv flg0 0 x86))
+           ((mv rest-flg rest-bytes x86)
+            (rb-1 (1- n) (1+ addr) r-x x86)))
+        (mv rest-flg (logior byte0 (ash rest-bytes 8)) x86)))
 
     ///
 
-    (defthm neg-addr-range=nil
-      (implies (negp i) (equal (addr-range i n) nil)))
-
-    (defthm true-listp-addr-range
-      (true-listp (addr-range count addr))
+    (defthm integerp-of-mv-nth-1-rb-1
+      (integerp (mv-nth 1 (rb-1 n addr r-x x86)))
       :rule-classes :type-prescription)
 
-    (defthm addr-range-1
-      (equal (addr-range 1 x)
-             (list (ifix x)))
-      :hints (("Goal" :expand (addr-range 1 x))))
+    (verify-guards rb-1
+      :hints (("Goal" :in-theory (e/d* (signed-byte-p) ()))))
 
-    (defthm len-of-addr-range
-      (implies (natp n)
-               (equal (len (addr-range n val)) n))
-      :hints (("Goal" :in-theory (e/d (addr-range) ()))))
+    (defthm natp-of-mv-nth-1-rb-1
+      (implies (x86p x86)
+               (natp (mv-nth 1 (rb-1 n addr r-x x86))))
+      :rule-classes :type-prescription)
 
-    (defthm canonical-address-listp-addr-range
-      (implies (and (canonical-address-p lin-addr)
-                    (canonical-address-p (+ -1 n lin-addr)))
-               (canonical-address-listp (addr-range n lin-addr)))
-      :hints (("Goal" :in-theory (e/d (addr-range) ())))))
+    (defthm rb-1-returns-x86p
+      (implies (x86p x86)
+               (x86p (mv-nth 2 (rb-1 n addr r-x x86)))))
 
-  ;; Some misc. lemmas:
+    (defthm rb-1-returns-x86-programmer-level-mode
+      (implies (programmer-level-mode x86)
+               (equal (mv-nth 2 (rb-1 n addr r-x x86)) x86)))
 
-  (defthmd split-rb-and-create-canonical-address-list-in-programmer-level-mode
-    (implies (and (natp m)
-                  (< m n)
+    (local
+     (defthm rb-1-returns-no-error-programmer-level-mode-helper
+       (implies (xr :programmer-level-mode 0 x86)
+                (not (mv-nth 0 (rb-1 1 #.*2^47-1* r-x x86))))
+       :hints (("Goal" :expand (rb-1 1 #.*2^47-1* r-x x86)))))
+
+    (defthm rb-1-returns-no-error-programmer-level-mode
+      (implies (and (canonical-address-p addr)
+                    (canonical-address-p (+ -1 n addr))
+                    (programmer-level-mode x86))
+               (equal (mv-nth 0 (rb-1 n addr r-x x86)) nil))
+      :hints (("Goal" :in-theory (e/d (rvm08) ()))))
+
+    (local
+     (encapsulate
+       ()
+       (local (include-book "arithmetic-5/top" :dir :system))
+
+       (local
+        (in-theory (disable acl2::normalize-factors-gather-exponents
+                            acl2::arith-5-active-flag
+                            acl2::|(* c (expt d n))|)))
+
+       (defthm size-of-rb-1-helper-1
+         (implies (and (integerp n) (x86p x86) (< 1 n))
+                  (< (xr :mem (loghead 48 addr) x86) (expt 2 (* 8 n)))))))
+
+
+    (encapsulate
+      ()
+      (local
+       (defthm plus-and-expt
+         (implies (and (natp y)
+                       (natp a)
+                       (< a (expt 256 y))
+                       (< b 256))
+                  (< (+ b (* 256 a))
+                     (expt 256 (+ 1 y))))))
+
+      (local (include-book "arithmetic-3/top" :dir :system))
+
+      (local
+       (defthm size-of-rb-1-helper-2
+         (implies (and (natp a)
+                       (< a (expt 256 (+ -1 n)))
+                       (< b 256)
+                       (integerp n)
+                       (< 0 n))
+                  (< (+ b (* 256 a))
+                     (expt 2 (* 8 n))))
+         :hints (("Goal"
+                  :use ((:instance plus-and-expt
+                                   (y (+ -1 n))
+                                   (a a)
+                                   (b b)))
+                  :in-theory (e/d* ()
+                                   (plus-and-expt))))))
+
+      (defthm-usb size-of-rb-1
+        :hyp (and (equal m (ash n 3)) (natp n) (x86p x86))
+        :bound m
+        :concl (mv-nth 1 (rb-1 n addr r-x x86))
+        :hints (("Goal" :in-theory (e/d* (rvm08 expt-to-ash) (signed-byte-p))))
+        :gen-linear t
+        :hints-l (("Goal" :in-theory (e/d* () (rb-1)))))))
+
+  (define las-to-pas
+    ((n         natp "Number of bytes to be read")
+     (lin-addr  integerp "First linear address")
+     (r-w-x    :type (member :r :w :x) "Type of memory access: read, write, or execute")
+     x86)
+    :enabled t
+    :guard (and (canonical-address-p (+ -1 n lin-addr))
+                (not (programmer-level-mode x86)))
+    ;; It'd be sweet if las-to-pas returned the following instead of a
+    ;; list of physical addresses: <n, phy-addr>, where this region of
+    ;; physical memory corresponds to the linear memory region under
+    ;; consideration <n, lin-addr>.  However, it's not quite so simple
+    ;; because a contiguous linear memory region, like the one denoted
+    ;; by <n, lin-addr>, can map to multiple non-contiguous physical
+    ;; memory regions.
+    :returns (mv flg
+                 (p-addrs  true-listp :rule-classes (:rewrite :type-prescription))
+                 (x86      x86p :hyp (x86p x86)))
+
+    (if (zp n)
+        (mv nil nil x86)
+      (b* (((unless (canonical-address-p lin-addr))
+            (mv t nil x86))
+           ((mv flg p-addr x86)
+            (ia32e-la-to-pa lin-addr r-w-x x86))
+           ((when flg) (mv flg nil x86))
+           ((mv flgs p-addrs x86)
+            (las-to-pas (1- n) (1+ lin-addr) r-w-x x86)))
+        (mv flgs (if flgs nil (cons p-addr p-addrs)) x86)))
+
+    ///
+
+    (defthm consp-mv-nth-1-las-to-pas
+      (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
+                    (not (zp n)))
+               (consp (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm car-mv-nth-1-las-to-pas
+      (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
+                    (not (zp n)))
+               (equal (car (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))
+                      (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))))
+      :hints (("Goal" :in-theory (e/d* (las-to-pas) ()))))
+
+    (defthm physical-address-listp-mv-nth-1-las-to-pas
+      (physical-address-listp (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))))
+
+    (defthm las-to-pas-n=0
+      (and (equal (mv-nth 0 (las-to-pas 0 lin-addr r-w-x x86)) nil)
+           (equal (mv-nth 1 (las-to-pas 0 lin-addr r-w-x x86)) nil)
+           (equal (mv-nth 2 (las-to-pas 0 lin-addr r-w-x x86)) x86)))
+
+    (local
+     (defthm xr-las-to-pas
+       (implies
+        (and (not (equal fld :mem))
+             (not (equal fld :fault)))
+        (equal (xr fld index (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+               (xr fld index x86)))
+       :hints (("Goal" :in-theory (e/d* () (force (force)))))))
+
+    (make-event
+     (generate-xr-over-write-thms
+      (remove-elements-from-list
+       '(:mem :fault)
+       *x86-field-names-as-keywords*)
+      'las-to-pas
+      (acl2::formals 'las-to-pas (w state))
+      :output-index 2))
+
+    (defthm flgi-las-to-pas
+      (equal (flgi index (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+             (flgi index (double-rewrite x86)))
+      :hints (("Goal" :in-theory (e/d* (flgi) (force (force))))))
+
+    (defthm xr-fault-las-to-pas
+      (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+               (equal (xr :fault 0 (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+                      ;; A missing double-rewrite here would kill me
+                      ;; --- sigh, it's hard to figure out when
+                      ;; missing double-rewrites cause otherwise good
+                      ;; rules to become less applicable.
+                      (xr :fault 0 (double-rewrite x86))))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (local (in-theory (e/d () (xr-las-to-pas))))
+
+    ;; The following two make-events generate a bunch of rules that
+    ;; together say the same thing as las-to-pas-xw-values, but these
+    ;; rules are more efficient than las-to-pas-xw-values as they
+    ;; match less frequently.
+    (make-event
+     (generate-read-fn-over-xw-thms
+      (remove-elements-from-list
+       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode :seg-visible)
+       *x86-field-names-as-keywords*)
+      'las-to-pas
+      (acl2::formals 'las-to-pas (w state))
+      :output-index 0))
+
+    (make-event
+     (generate-read-fn-over-xw-thms
+      (remove-elements-from-list
+       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode :seg-visible)
+       *x86-field-names-as-keywords*)
+      'las-to-pas
+      (acl2::formals 'las-to-pas (w state))
+      :output-index 1))
+
+    (defthm las-to-pas-xw-rflags-not-ac
+      (implies (equal (rflags-slice :ac value)
+                      (rflags-slice :ac (rflags x86)))
+               (and
+                (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x (xw :rflags 0 value x86)))
+                       (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
+                (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (xw :rflags 0 value x86)))
+                       (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))))))
+
+    ;; The following make-event generate a bunch of rules that
+    ;; together say the same thing as las-to-pas-xw-state, but these
+    ;; rules are more efficient than las-to-pas-xw-state as they match
+    ;; less frequently.
+    (make-event
+     (generate-write-fn-over-xw-thms
+      (remove-elements-from-list
+       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode :seg-visible)
+       *x86-field-names-as-keywords*)
+      'las-to-pas
+      (acl2::formals 'las-to-pas (w state))
+      :output-index 2))
+
+    (defthm las-to-pas-xw-rflags-state-not-ac
+      (implies (equal (rflags-slice :ac value)
+                      (rflags-slice :ac (rflags x86)))
+               (equal (mv-nth 2 (las-to-pas n lin-addr r-w-x (xw :rflags 0 value x86)))
+                      (xw :rflags 0 value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm mv-nth-2-las-to-pas-system-level-non-marking-mode
+      (implies (and (not (page-structure-marking-mode x86))
+                    (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86))))
+               (equal (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
+                      x86))
+      :hints (("Goal" :in-theory (e/d (las-to-pas) (force (force))))))
+
+    ;; (defthm len-of-mv-nth-1-las-to-pas
+    ;;   (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
+    ;;                 (natp n))
+    ;;            (equal (len (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))
+    ;;                   ;; Or I could remove the (natp n) hypothesis and say the following in the RHS:
+    ;;                   ;; (if (zp n) 0 n)
+    ;;                   n)))
+
+    (defthm len-of-mv-nth-1-las-to-pas
+      (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
+               (equal (len (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))
+                      (nfix n))))
+
+    (defthm las-to-pas-values-and-!flgi
+      (implies (and (not (equal index *ac*))
+                    (x86p x86))
+               (and (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x (!flgi index value x86)))
+                           (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+                    (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (!flgi index value x86)))
+                           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))))
+      :hints
+      (("Goal"
+        :do-not-induct t
+        :cases ((equal index *iopl*))
+        :use
+        ((:instance rflags-slice-ac-simplify
+                    (index index)
+                    (rflags (xr :rflags 0 x86)))
+         (:instance las-to-pas-xw-rflags-not-ac
+                    (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                   (logand (xr :rflags 0 x86)
+                                           (loghead 32 (lognot (expt 2 (nfix index))))))))
+         (:instance las-to-pas-xw-rflags-not-ac
+                    (value (logior (ash (loghead 2 value) 12)
+                                   (logand 4294955007 (xr :rflags 0 x86))))))
+        :in-theory (e/d* (!flgi-open-to-xw-rflags)
+                         (las-to-pas-xw-rflags-not-ac)))))
+
+    (defthm las-to-pas-values-and-!flgi-undefined
+      (implies (and (not (equal index *ac*))
+                    (x86p x86))
+               (and (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x (!flgi-undefined index x86)))
+                           (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
+                    (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (!flgi-undefined index x86)))
+                           (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))))
+      :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (las-to-pas)))))
+
+    (defthm mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
+      (implies (and (not (equal index *ac*))
+                    (x86p x86))
+               (equal (mv-nth 2 (las-to-pas n lin-addr r-w-x (!flgi index value x86)))
+                      (!flgi index value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))))
+      :hints
+      (("Goal"
+        :do-not-induct t
+        :cases ((equal index *iopl*))
+        :use
+        ((:instance rflags-slice-ac-simplify
+                    (index index)
+                    (rflags (xr :rflags 0 x86)))
+         (:instance las-to-pas-xw-rflags-state-not-ac
+                    (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
+                                   (logand (xr :rflags 0 x86)
+                                           (loghead 32 (lognot (expt 2 (nfix index))))))))
+         (:instance las-to-pas-xw-rflags-state-not-ac
+                    (value (logior (ash (loghead 2 value) 12)
+                                   (logand 4294955007 (xr :rflags 0 x86))))))
+        :in-theory (e/d* (!flgi-open-to-xw-rflags)
+                         (las-to-pas-xw-rflags-state-not-ac))))))
+
+  ;; (define las-to-pas-tailrec ((l-addrs canonical-address-listp)
+  ;;                             (p-addrs physical-address-listp)
+  ;;                             (r-x :type (member :r :w :x))
+  ;;                             x86)
+  ;;   :short "Used to discharge @('mbe') proof obligations for @(see
+  ;;   rm128) and @(see wm128)"
+  ;;   :enabled t
+  ;;   :guard (not (programmer-level-mode x86))
+
+  ;;   (if (atom l-addrs)
+  ;;       (mv nil (acl2::rev p-addrs) x86)
+
+  ;;     (b* (((mv flg p-addr x86)
+  ;;           (ia32e-la-to-pa (car l-addrs) r-x x86))
+  ;;          ((when flg) (mv flg nil x86)))
+  ;;       (las-to-pas-tailrec
+  ;;        (cdr l-addrs) (cons p-addr p-addrs) r-x x86)))
+
+  ;;   ///
+
+  ;;   (defthmd las-to-pas-tailrec-opener
+  ;;     (implies
+  ;;      (consp l-addrs)
+  ;;      (equal
+  ;;       (las-to-pas-tailrec l-addrs p-addrs r-x x86)
+  ;;       (mv-let
+  ;;         (flg p-addr x86)
+  ;;         (ia32e-la-to-pa (car l-addrs) r-x x86)
+  ;;         (if flg
+  ;;             (mv flg () x86)
+  ;;           (las-to-pas-tailrec (cdr l-addrs) (cons p-addr p-addrs) r-x x86))))))
+
+  ;;   (defthmd las-to-pas-tailrec-nil
+  ;;     (equal
+  ;;      (las-to-pas-tailrec () p-addrs r-x x86)
+  ;;      (mv nil (acl2::rev p-addrs) x86)))
+
+  ;;   (local
+  ;;    (defthmd las-to-pas-tailrec-as-las-to-pas-lemma
+  ;;      (b* (((mv flg-new p-addrs-new x86-new)
+  ;;            (las-to-pas n lin-addr r-x x86))
+  ;;           ((mv flg-alt p-addrs-alt x86-alt)
+  ;;            (las-to-pas-tailrec l-addrs p-addrs r-x x86)))
+  ;;        (and (equal flg-alt flg-new)
+  ;;             (equal p-addrs-alt
+  ;;                    (if flg-new
+  ;;                        ()
+  ;;                      (revappend p-addrs p-addrs-new)))
+  ;;             (equal x86-alt x86-new)))
+  ;;      :hints (("Goal" :induct (las-to-pas-tailrec l-addrs p-addrs r-x x86)))))
+
+  ;;   (local
+  ;;    (defthm las-to-pas-as-list
+  ;;      (let ((mv (las-to-pas n lin-addr r-x x86)))
+  ;;        (equal mv (list (mv-nth 0 mv)
+  ;;                        (mv-nth 1 mv)
+  ;;                        (mv-nth 2 mv))))
+  ;;      :rule-classes ()))
+
+  ;;   (local
+  ;;    (defthm las-to-pas-tailrec-as-list
+  ;;      (let ((mv (las-to-pas-tailrec l-addrs p-addrs r-x x86)))
+  ;;        (equal mv (list (mv-nth 0 mv)
+  ;;                        (mv-nth 1 mv)
+  ;;                        (mv-nth 2 mv))))
+  ;;      :rule-classes ()))
+
+  ;;   (local
+  ;;    (defrule last-to-pas-when-flg
+  ;;      (b* (((mv flg p-addrs ?x86) (las-to-pas n lin-addr r-x x86)))
+  ;;        (implies flg (not p-addrs)))))
+
+  ;;   (defthmd las-to-pas-as-las-to-pas-tailrec
+  ;;     (equal (las-to-pas n lin-addr r-x x86)
+  ;;            (las-to-pas-tailrec l-addrs () r-x x86))
+  ;;     :hints (("Goal" :use
+  ;;              (las-to-pas-as-list
+  ;;               (:instance las-to-pas-tailrec-as-list (p-addrs ()))
+  ;;               (:instance las-to-pas-tailrec-as-las-to-pas-lemma (p-addrs ())))))))
+
+  (define read-from-physical-memory ((p-addrs physical-address-listp)
+                                     x86)
+    :parents (reasoning-about-memory-reads-and-writes x86-physical-memory)
+    :enabled t
+    :verify-guards nil
+    :guard (not (programmer-level-mode x86))
+    (if (endp p-addrs)
+        0
+      (b* ((addr0 (car p-addrs))
+           (byte0 (memi addr0 x86))
+           (rest-bytes (read-from-physical-memory (cdr p-addrs) x86)))
+        (logior byte0 (ash rest-bytes 8))))
+
+    ///
+
+    (defthm integerp-of-read-from-physical-memory
+      (integerp (read-from-physical-memory p-addrs x86))
+      :rule-classes :type-prescription)
+
+    (verify-guards read-from-physical-memory)
+
+    (local
+     (defthm-usb size-of-read-from-physical-memory-helper
+       :hyp (x86p x86)
+       :bound (ash (len p-addrs) 3)
+       :concl (read-from-physical-memory p-addrs x86)
+       :hints (("Goal" :in-theory (e/d* (expt-to-ash) (signed-byte-p))))))
+
+    (defthm-usb size-of-read-from-physical-memory
+      ;; Ugh, why do I need size-of-read-from-physical-memory-helper?
+      :hyp (and (equal n (ash (len p-addrs) 3))
+                (x86p x86))
+      :bound n
+      :concl (read-from-physical-memory p-addrs x86)
+      :hints (("Goal"
+               :use ((:instance size-of-read-from-physical-memory-helper))
+               :in-theory (e/d* ()
+                                (size-of-read-from-physical-memory-helper
+                                 signed-byte-p))))
+      :gen-type t
+      :hyp-t (x86p x86)
+      :gen-linear t)
+
+    (defthm read-from-physical-memory-!flgi
+      (equal (read-from-physical-memory p-addrs (!flgi index val x86))
+             (read-from-physical-memory p-addrs x86)))
+
+    (defthm read-from-physical-memory-xw-not-mem
+      (implies (not (equal fld :mem))
+               (equal (read-from-physical-memory p-addrs (xw fld index val x86))
+                      (read-from-physical-memory p-addrs x86)))))
+
+  (define rb ((n natp "Number of bytes to be read")
+              (addr integerp "First linear address")
+              (r-x :type (member :r :x) "Type of memory access")
+              (x86))
+    :enabled t
+    :verify-guards nil
+    :guard (canonical-address-p (+ -1 n addr))
+
+    (if (programmer-level-mode x86)
+        (rb-1 n addr r-x x86)
+      (b* (((mv flgs p-addrs x86)
+            (las-to-pas n addr r-x x86))
+           ((when flgs) (mv flgs 0 x86))
+           (val (read-from-physical-memory p-addrs x86)))
+        (mv nil val x86)))
+
+    ///
+
+    (defthm integerp-of-mv-nth-1-rb
+      (integerp (mv-nth 1 (rb n addr r-x x86)))
+      :hints (("Goal" :in-theory (e/d* () (force (force)))))
+      :rule-classes :type-prescription)
+
+    (verify-guards rb)
+
+    (defthm natp-of-mv-nth-1-rb
+      (implies (x86p x86)
+               (natp (mv-nth 1 (rb n addr r-x x86))))
+      :hints (("Goal" :in-theory (e/d* () (force (force)))))
+      :rule-classes :type-prescription)
+
+    (defthm rb-no-reads-when-zp-n
+      (equal (mv-nth 1 (rb 0 addr r-x x86)) 0)
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthmd rb-is-rb-1-for-programmer-level-mode
+      (implies (programmer-level-mode x86)
+               (equal (rb n addr r-x x86)
+                      (rb-1 n addr r-x x86))))
+
+    (defthm x86p-of-mv-nth-2-rb
+      (implies (x86p x86)
+               (x86p (mv-nth 2 (rb n addr r-x x86)))))
+
+    (defthm rb-returns-no-error-programmer-level-mode
+      (implies (and (programmer-level-mode x86)
+                    (canonical-address-p addr)
+                    (canonical-address-p (+ -1 n addr)))
+               (equal (mv-nth 0 (rb n addr r-x x86)) nil)))
+
+    (defthm rb-returns-x86-programmer-level-mode
+      (implies (programmer-level-mode x86)
+               (equal (mv-nth 2 (rb n addr r-x x86)) x86)))
+
+    (defthm rb-returns-x86-in-non-marking-mode-if-no-error
+      (implies (and (not (page-structure-marking-mode x86))
+                    (not (mv-nth 0 (rb n-1 addr-1 r-x-1 x86))))
+               (equal (mv-nth 2 (rb n-1 addr-1 r-x-1 x86))
+                      x86))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm-usb size-of-rb
+      :hyp (and (equal m (ash n 3))
+                (canonical-address-p addr)
+                (canonical-address-p (+ -1 n addr))
+                (natp n)
+                (x86p x86))
+      :bound m
+      :concl (mv-nth 1 (rb n addr r-x x86))
+      :hints (("Goal"
+               :do-not-induct t
+               :in-theory (e/d* () (unsigned-byte-p))))
+      :gen-linear t
+      :hints-l (("Goal" :in-theory (e/d* () (rb)))))
+
+    (defthm-usb size-of-rb-in-programmer-level-mode
+      ;; No need to know whether the addresses are canonical or not...
+      :hyp (and (programmer-level-mode x86) (natp n) (x86p x86))
+      :bound (ash n 3)
+      :concl (mv-nth 1 (rb n addr r-x x86))
+      :gen-linear t
+      :hints-l (("Goal" :in-theory (e/d* () (rb)))))
+
+    (defthm rb-values-and-!flgi-in-system-level-mode
+      (implies (and (not (equal index *ac*))
+                    (not (programmer-level-mode x86))
+                    (x86p x86))
+               (and (equal (mv-nth 0 (rb n addr r-x (!flgi index value x86)))
+                           (mv-nth 0 (rb n addr r-x x86)))
+                    (equal (mv-nth 1 (rb n addr r-x (!flgi index value x86)))
+                           (mv-nth 1 (rb n addr r-x x86)))))
+      :hints (("Goal"
+               :do-not-induct t
+               :in-theory (e/d* (rb) ()))))
+
+    (defthm rb-values-and-!flgi-undefined-in-system-level-mode
+      (implies (and (not (equal index *ac*))
+                    (not (programmer-level-mode x86))
+                    (x86p x86))
+               (and (equal (mv-nth 0 (rb n addr r-x (!flgi-undefined index x86)))
+                           (mv-nth 0 (rb n addr r-x x86)))
+                    (equal (mv-nth 1 (rb n addr r-x (!flgi-undefined index x86)))
+                           (mv-nth 1 (rb n addr r-x x86)))))
+      :hints (("Goal"
+               :do-not-induct t
+               :in-theory (e/d* (!flgi-undefined) ())))))
+
+  ;; Definition of WB and other related events:
+
+  (define wb-1 ((n natp "Number of bytes to be written")
+                (addr  integerp "First linear address")
+                ;; I could do away with the following argument (w),
+                ;; but I choose to keep it around because the current
+                ;; version of Codewalker expects reader and writer
+                ;; functions to have similar signatures.
+                (w     :type (member :w) "Type of memory access: write")
+                (value natp)
+                (x86))
+    :guard (canonical-address-p (+ -1 n addr))
+    :enabled t
+    :ignore-ok t
+
+    (if (mbt (canonical-address-p (+ -1 n addr)))
+
+        (if (zp n)
+            (mv nil x86)
+          ;; wb-1 is used only in the programmer-level mode, so it makes
+          ;; sense to use wvm08 here.
+          (b* (((unless (canonical-address-p addr))
+                (mv t x86))
+               ((mv flg0 x86)
+                (wvm08 addr (loghead 8 value) x86))
+               ((when flg0)
+                (mv flg0 x86))
+               ((mv rest-flg x86)
+                (wb-1 (1- n) (1+ addr) w (logtail 8 value) x86)))
+            (mv rest-flg x86)))
+
+      (mv t x86))
+
+    ///
+
+    (defthm wb-1-returns-x86p
+      (implies (x86p x86)
+               (x86p (mv-nth 1 (wb-1 n addr w value x86)))))
+
+    (local
+     (defthm wb-1-returns-no-error-programmer-level-mode-helper
+       (implies (xr :programmer-level-mode 0 x86)
+                (not (mv-nth 0 (wb-1 1 #.*2^47-1* w value x86))))
+       :hints (("Goal" :expand (wb-1 1 #.*2^47-1* w value x86)))))
+
+    (defthm wb-1-returns-no-error-programmer-level-mode
+      (implies (and (canonical-address-p addr)
+                    (canonical-address-p (+ -1 n addr))
+                    (programmer-level-mode x86))
+               (equal (mv-nth 0 (wb-1 n addr w value x86))
+                      nil))
+      :hints (("Goal" :in-theory (e/d (wvm08) ())))))
+
+  (define write-to-physical-memory ((p-addrs physical-address-listp)
+                                    (value natp)
+                                    x86)
+    :parents (reasoning-about-memory-reads-and-writes x86-physical-memory)
+    :enabled t
+    :guard (not (programmer-level-mode x86))
+    (if (endp p-addrs)
+        x86
+      (b* ((addr0 (car p-addrs))
+           (byte0 (loghead 8 value))
+           (x86 (!memi addr0 byte0 x86)))
+        (write-to-physical-memory (cdr p-addrs) (logtail 8 value) x86)))
+
+    ///
+
+    (defthm x86p-write-to-physical-memory
+      (implies (and (x86p x86)
+                    ;; The following hypothesis can be weakened to
+                    ;; integer-listp.
+                    (physical-address-listp p-addrs))
+               (x86p (write-to-physical-memory p-addrs value x86)))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm xr-not-mem-write-to-physical-memory
+      (implies (not (equal fld :mem))
+               (equal (xr fld index (write-to-physical-memory p-addrs bytes x86))
+                      (xr fld index x86)))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm write-to-physical-memory-xw-in-system-level-mode
+      ;; Keep the state updated by write-to-physical-memory inside all other nests of writes.
+      (implies (not (equal fld :mem))
+               (equal (write-to-physical-memory p-addrs bytes (xw fld index value x86))
+                      (xw fld index value (write-to-physical-memory p-addrs bytes x86))))
+      :hints (("Goal" :in-theory (e/d* (write-to-physical-memory) ())))))
+
+  (define wb ((n natp "Number of bytes to be written")
+              (addr integerp "First linear address")
+              ;; I could do away with the following argument (w),
+              ;; but I choose to keep it around because the current
+              ;; version of Codewalker expects reader and writer
+              ;; functions to have similar signatures.
+              (w :type (member :w) "Type of memory access")
+              (value natp)
+              (x86))
+
+    :ignore-ok t
+    :guard (canonical-address-p (+ -1 n addr))
+    :enabled t
+
+    (if (programmer-level-mode x86)
+        (wb-1 n addr w value x86)
+      (b* (((mv flgs p-addrs x86)
+            (las-to-pas n addr :w x86))
+           ((when flgs) (mv flgs x86))
+           (x86 (write-to-physical-memory p-addrs value x86)))
+        (mv nil x86)))
+
+    ///
+
+    (defthm wb-no-writes-when-zp-n
+      (equal (mv-nth 1 (wb 0 addr val w x86)) x86)
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthmd wb-is-wb-1-for-programmer-level-mode
+      (implies (programmer-level-mode x86)
+               (equal (wb n addr w value x86)
+                      (wb-1 n addr w value x86))))
+
+    (defthm x86p-of-wb
+      (implies (x86p x86)
+               (x86p (mv-nth 1 (wb n addr w value x86)))))
+
+    (defthm wb-returns-no-error-programmer-level-mode
+      (implies (and (canonical-address-p addr)
+                    (canonical-address-p (+ -1 n addr))
+                    (programmer-level-mode x86))
+               (equal (mv-nth 0 (wb n addr w value x86)) nil))))
+
+  (defthm wb-by-wb-1-for-programmer-level-mode-induction-rule
+    t
+    :rule-classes ((:induction :pattern (wb n addr w value x86)
+                               :condition (programmer-level-mode x86)
+                               :scheme (wb-1 n addr w value x86))))
+
+  (local (in-theory (e/d () (force (force)))))
+
+  ;; Relating rb and xr/xw in the programmer-level mode:
+
+  (defthm xr-rb-state-in-programmer-level-mode
+    (implies (programmer-level-mode x86)
+             (equal (xr fld index (mv-nth 2 (rb n addr r-x x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ()))))
+
+  (defthm rb-xw-values-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (rb n addr r-x (xw fld index value x86)))
+                         (mv-nth 0 (rb n addr r-x x86)))
+                  (equal (mv-nth 1 (rb n addr r-x (xw fld index value x86)))
+                         (mv-nth 1 (rb n addr r-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+             :induct (rb-1 n addr r-x x86))))
+
+  (defthm rb-xw-state-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :programmer-level-mode)))
+             (equal (mv-nth 2 (rb n addr r-x (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (rb n addr r-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ()))))
+
+  ;; Relating rb and xr/xw in the system-level mode:
+
+  (defthm xr-rb-1-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (rb-1 n addr r-x x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+             :induct (rb-1 n addr r-x x86))))
+
+  ;; (defthm xr-rb-state-in-system-level-mode
+  ;;   (implies (and (not (programmer-level-mode x86))
+  ;;                 (not (equal fld :mem))
+  ;;                 (not (equal fld :fault)))
+  ;;            (equal (xr fld index (mv-nth 2 (rb addr r-x x86)))
+  ;;                   (xr fld index x86)))
+  ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
+
+  ;; The following make-event generates a bunch of rules that together
+  ;; say the same thing as xr-rb-state-in-system-level-mode, but these
+  ;; rules are more efficient than xr-rb-state-in-system-level-mode as
+  ;; they match less frequently.
+  (make-event
+   (generate-xr-over-write-thms
+    (remove-elements-from-list
+     '(:mem :fault)
+     *x86-field-names-as-keywords*)
+    'rb
+    (acl2::formals 'rb (w state))
+    :output-index 2))
+
+  (defthm rb-1-xw-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (and (equal (mv-nth 0 (rb-1 n addr r-x (xw fld index value x86)))
+                         (mv-nth 0 (rb-1 n addr r-x x86)))
+                  (equal (mv-nth 1 (rb-1 n addr r-x (xw fld index value x86)))
+                         (mv-nth 1 (rb-1 n addr r-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+             :induct (rb-1 n addr r-x x86))))
+
+  ;; (defthm rb-xw-values-in-system-level-mode
+  ;;   (implies (and (not (programmer-level-mode x86))
+  ;;                 (not (equal fld :mem))
+  ;;                 (not (equal fld :rflags))
+  ;;                 (not (equal fld :ctr))
+  ;;                 (not (equal fld :seg-visible))
+  ;;                 (not (equal fld :msr))
+  ;;                 (not (equal fld :fault))
+  ;;                 (not (equal fld :programmer-level-mode))
+  ;;                 (not (equal fld :page-structure-marking-mode)))
+  ;;            (and (equal (mv-nth 0 (rb addr r-x (xw fld index value x86)))
+  ;;                        (mv-nth 0 (rb addr r-x x86)))
+  ;;                 (equal (mv-nth 1 (rb addr r-x (xw fld index value x86)))
+  ;;                        (mv-nth 1 (rb addr r-x x86)))))
+  ;;   :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+
+  ;; The following make-events generate a bunch of rules that together
+  ;; say the same thing as rb-xw-values-in-system-level-mode, but
+  ;; these rules are more efficient than
+  ;; rb-xw-values-in-system-level-mode as they match less frequently.
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault
+            :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'rb
+    (acl2::formals 'rb (w state))
+    :output-index 0))
+
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault
+            :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'rb
+    (acl2::formals 'rb (w state))
+    :output-index 1))
+
+  (defthm rb-1-xw-rflags-not-ac-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and (equal (mv-nth 0 (rb-1 n addr r-x (xw :rflags 0 value x86)))
+                         (mv-nth 0 (rb-1 n addr r-x x86)))
+                  (equal (mv-nth 1 (rb-1 n addr r-x (xw :rflags 0 value x86)))
+                         (mv-nth 1 (rb-1 n addr r-x x86)))))
+    :hints (("Goal" :induct (rb-1 n addr r-x x86)
+             :in-theory (e/d* (rb rb-1) ()))))
+
+  (defthm rb-xw-rflags-not-ac-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (and (equal (mv-nth 0 (rb n addr r-x (xw :rflags 0 value x86)))
+                         (mv-nth 0 (rb n addr r-x x86)))
+                  (equal (mv-nth 1 (rb n addr r-x (xw :rflags 0 value x86)))
+                         (mv-nth 1 (rb n addr r-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+  (defthm rb-1-xw-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode))
+                  (not (equal fld :page-structure-marking-mode)))
+             (equal (mv-nth 2 (rb-1 n addr r-x (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (rb-1 n addr r-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+             :induct (rb-1 n addr r-x x86))))
+
+  ;; (defthm rb-xw-state-in-system-level-mode
+  ;;   (implies (and (not (programmer-level-mode x86))
+  ;;                 (not (equal fld :mem))
+  ;;                 (not (equal fld :rflags))
+  ;;                 (not (equal fld :ctr))
+  ;;                 (not (equal fld :seg-visible))
+  ;;                 (not (equal fld :msr))
+  ;;                 (not (equal fld :fault))
+  ;;                 (not (equal fld :programmer-level-mode))
+  ;;                 (not (equal fld :page-structure-marking-mode)))
+  ;;            (equal (mv-nth 2 (rb addr r-x (xw fld index value x86)))
+  ;;                   (xw fld index value (mv-nth 2 (rb addr r-x x86)))))
+  ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
+
+  ;; The following make-events generate a bunch of rules that together
+  ;; say the same thing as rb-xw-state-in-system-level-mode but
+  ;; these rules are more efficient than
+  ;; rb-xw-state-in-system-level-mode as they match less frequently.
+  (make-event
+   (generate-write-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault
+            :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'rb
+    (acl2::formals 'rb (w state))
+    :output-index 2))
+
+  (defthm rb-1-xw-rflags-not-ac-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (equal (mv-nth 2 (rb-1 n addr r-x (xw :rflags 0 value x86)))
+                    (xw :rflags 0 value (mv-nth 2 (rb-1 n addr r-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+             :induct (rb-1 n addr r-x x86))))
+
+  (defthm rb-xw-rflags-not-ac-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (equal (rflags-slice :ac value)
+                         (rflags-slice :ac (rflags x86))))
+             (equal (mv-nth 2 (rb n addr r-x (xw :rflags 0 value x86)))
+                    (xw :rflags 0 value (mv-nth 2 (rb n addr r-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
+
+  ;; Relating wb and xr/xw in the programmer-level mode:
+
+  (defthm xr-wb-1-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem)))
+             (equal (xr fld index (mv-nth 1 (wb-1 n addr w value x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wb-1) ()))))
+
+  (defthm xr-wb-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem)))
+             (equal (xr fld index (mv-nth 1 (wb n addr w value x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
+
+  (defthm wb-1-xw-in-programmer-level-mode
+    ;; Keep the state updated by wb-1 inside all other nests of writes.
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (wb-1 n addr w val (xw fld index value x86)))
+                         (mv-nth 0 (wb-1 n addr w val x86)))
+                  (equal (mv-nth 1 (wb-1 n addr w val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wb-1 n addr w val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wb-1) ()))))
+
+  (defthm wb-xw-in-programmer-level-mode
+    ;; Keep the state updated by wb inside all other nests of writes.
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (wb n addr w val (xw fld index value x86)))
+                         (mv-nth 0 (wb n addr w val x86)))
+                  (equal (mv-nth 1 (wb n addr w val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wb n addr w val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
+
+  ;; Relating wb and xr/xw in the system-level mode:
+
+  ;; The following make-events generate a bunch of rules that together
+  ;; say the same thing as xr-wb-in-system-level-mode but
+  ;; these rules are more efficient than
+  ;; xr-wb-in-system-level-mode as they match less frequently.
+  (make-event
+   (generate-xr-over-write-thms
+    (remove-elements-from-list
+     '(:mem :fault)
+     *x86-field-names-as-keywords*)
+    'wb
+    (acl2::formals 'wb (w state))
+    :output-index 1))
+
+  (defthm xr-fault-wb-in-system-level-marking-mode
+    (implies
+     (not (mv-nth 0 (las-to-pas n addr :w (double-rewrite x86))))
+     (equal (xr :fault 0 (mv-nth 1 (wb n addr w val x86)))
+            (xr :fault 0 x86)))
+    :hints
+    (("Goal" :do-not-induct t
+      :in-theory (e/d* (wb)
+                       ((:meta acl2::mv-nth-cons-meta)
+                        force (force))))))
+
+  ;; The following make-events generate a bunch of rules that together
+  ;; say the same thing as wb-xw-in-system-level-mode, but these rules
+  ;; are more efficient than wb-xw-in-system-level-mode as they match
+  ;; less frequently.  Note that wb is kept inside all other nests of
+  ;; writes.
+  (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault
+            :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'wb
+    (acl2::formals 'wb (w state))
+    :output-index 0))
+
+  (make-event
+   (generate-write-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible :msr :fault
+            :programmer-level-mode :page-structure-marking-mode)
+     *x86-field-names-as-keywords*)
+    'wb
+    (acl2::formals 'wb (w state))
+    :output-index 1))
+
+  (defthm wb-xw-rflags-not-ac-in-system-level-mode
+    ;; Keep the state updated by wb inside all other nests of writes.
+    (implies (equal (rflags-slice :ac value)
+                    (rflags-slice :ac (rflags x86)))
+             (and (equal (mv-nth 0 (wb n addr w val (xw :rflags 0 value x86)))
+                         (mv-nth 0 (wb n addr w val x86)))
+                  (equal (mv-nth 1 (wb n addr w val (xw :rflags 0 value x86)))
+                         (xw :rflags 0 value (mv-nth 1 (wb n addr w val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
+
+  ;; (defthm mv-nth-1-wb-and-!flgi-commute
+  ;;   (implies (and (not (equal index *ac*))
+  ;;                 (not (programmer-level-mode x86))
+  ;;                 (not (page-structure-marking-mode x86)))
+  ;;            (equal (mv-nth 1 (wb addr-lst (!flgi index val x86)))
+  ;;                   (!flgi index val (mv-nth 1 (wb addr-lst x86)))))
+  ;;   :hints (("Goal" :in-theory (e/d* (!flgi
+  ;;                                     rflags-slice-ac-simplify
+  ;;                                     !flgi-open-to-xw-rflags)
+  ;;                                    (force (force))))))
+
+  (defthm mv-nth-1-wb-and-!flgi-commute
+    (implies (not (equal index *ac*))
+             (equal (mv-nth 1 (wb n addr w val (!flgi index value x86)))
+                    (!flgi index value (mv-nth 1 (wb n addr w val x86)))))
+    :hints (("Goal" :in-theory (e/d* (!flgi
+                                      rflags-slice-ac-simplify
+                                      !flgi-open-to-xw-rflags)
+                                     (force (force))))))
+
+  (defthm mv-nth-1-wb-and-!flgi-undefined-commute
+    (implies (and (not (equal index *ac*))
+                  (not (programmer-level-mode x86))
+                  (not (page-structure-marking-mode x86)))
+             (equal (mv-nth 1 (wb n addr w val (!flgi-undefined index x86)))
+                    (!flgi-undefined index (mv-nth 1 (wb n addr w val x86)))))
+    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (wb !flgi)))))
+
+  (defthm xr-fault-wb-in-system-level-mode
+    (implies (and (not (mv-nth 0 (las-to-pas n addr :w x86)))
+                  (not (page-structure-marking-mode x86)))
+             (equal (xr :fault 0 (mv-nth 1 (wb n addr w val x86)))
+                    (xr :fault 0 x86)))
+    :hints
+    (("Goal" :in-theory (e/d* (wb)
+                              (write-to-physical-memory force (force))))))
+
+  (local
+   (encapsulate
+     ()
+
+     (local (include-book "arithmetic-3/top" :dir :system))
+
+     (defthm ash-and-plus
+       (implies (posp n)
+                (equal (+ 8 (ash (+ -1 n) 3))
+                       (ash n 3)))
+       :hints (("Goal" :in-theory (e/d* (ash) ()))))
+
+     (defthm ash-and-minus
+       (implies (posp n)
+                (equal (+ -8 (ash n 3))
+                       (ash (+ -1 n) 3)))
+       :hints (("Goal" :in-theory (e/d* (ash) ()))))
+
+     (defthm ash-n-3-bound
+       (implies (and (not (zp n))
+                     (natp n))
+                (<= 8 (ash n 3)))
+       :hints (("Goal" :in-theory (e/d* (ash) ())))
+       :rule-classes :linear)
+
+     (defthm ash-separate-out
+       (implies (natp n)
+                (equal (ash (+ 1 n) 3)
+                       (+ 8 (ash n 3))))
+       :hints (("Goal" :in-theory (e/d* (ash) ()))))))
+
+  (defthm split-rb-in-programmer-level-mode
+    (implies (and (canonical-address-p (+ -1 i j lin-addr))
                   (canonical-address-p lin-addr)
-                  (canonical-address-p (+ -1 n lin-addr))
-                  (programmer-level-mode x86))
-             (equal (mv-nth 1 (rb (create-canonical-address-list n lin-addr) r-x x86))
-                    (b* ((low  (mv-nth 1 (rb (create-canonical-address-list       m       lin-addr) r-x x86)))
-                         (high (mv-nth 1 (rb (create-canonical-address-list (- n m) (+ m lin-addr)) r-x x86))))
-                      (append low high)))))
+                  (programmer-level-mode x86)
+                  (natp i)
+                  (natp j))
+             (equal (mv-nth 1 (rb (+ i j) lin-addr r-x x86))
+                    (b* ((low (mv-nth 1 (rb i lin-addr r-x x86)))
+                         (high (mv-nth 1 (rb j (+ i lin-addr) r-x x86))))
+                      (logior low (ash high (ash i 3))))))
+    :hints (("Goal" :in-theory (e/d* (push-ash-inside-logior)
+                                     (unsigned-byte-p
+                                      force (force))))))
 
-  (defthmd push-ash-inside-logior
-    (equal (ash (logior x y) n)
-           (logior (ash x n) (ash y n)))
-    :hints (("Goal" :in-theory (e/d* (ihsext-recursive-redefs
-                                      ihsext-inductions)
-                                     ()))))
+  (defun-nx split-wb-induction-scheme (i j lin-addr val x86)
+    (cond ((or (not (natp i))
+               (not (natp j))
+               (zp (+ i j))
+               (zp i)
+               (not (canonical-address-p lin-addr))
+               (not (canonical-address-p (+ -1 i j lin-addr))))
+           (mv i j lin-addr val x86))
+          (t
+           (split-wb-induction-scheme (1- i) j (1+ lin-addr) (logtail 8 val)
+                                      (mv-nth 1 (wvm08 lin-addr (loghead 8 val) x86))))))
 
-  (defthmd combine-bytes-of-append-of-byte-lists
-    (implies (byte-listp ys)
-             (equal (combine-bytes (append xs ys))
-                    (logior (combine-bytes xs)
-                            (ash (combine-bytes ys)
-                                 (* 8 (len xs))))))
-    :hints (("Goal" :in-theory (e/d* (push-ash-inside-logior) ())))))
+  (defthm split-wb-in-programmer-level-mode
+    (implies (and (canonical-address-p lin-addr)
+                  (canonical-address-p (+ -1 i j lin-addr))
+                  (unsigned-byte-p (ash (+ i j) 3) val)
+                  (programmer-level-mode x86)
+                  (posp i)
+                  (natp j))
+             (equal (mv-nth 1 (wb-1 (+ i j) lin-addr w val x86))
+                    (mv-nth 1 (wb-1 j (+ i lin-addr) w
+                                    (loghead (ash j 3) (logtail (ash i 3) val))
+                                    (mv-nth 1 (wb-1 i lin-addr w (loghead (ash i 3) val) x86))))))
+    :hints (("Goal"
+             :induct (split-wb-induction-scheme i j lin-addr val x86)
+             :in-theory (e/d* (push-ash-inside-logior
+                               signed-byte-p)
+                              (unsigned-byte-p))))))
 
 ;; ======================================================================
 
@@ -2149,35 +1653,64 @@ memory.</li>
             (equal (signed-byte-p 48 (+ n lin-addr))
                    (< (+ n lin-addr) #.*2^47*)))))
 
-(local (in-theory (e/d () (signed-byte-p))))
+(local
+ (defthmd rb-1-in-terms-of-its-components
+   ;; Ugh, dumb rule.
+   (implies (and (programmer-level-mode x86)
+                 (canonical-address-p lin-addr)
+                 (canonical-address-p (+ -1 n lin-addr))
+                 (x86p x86))
+            (equal (rb-1 n lin-addr r-x x86)
+                   (list nil
+                         (mv-nth 1 (rb-1 n lin-addr r-x x86))
+                         x86)))
+   :hints (("Goal"
+            :expand ((rb-1 1 #.*2^47-1* r-x x86))
+            :in-theory (e/d (rb-1) (force (force)))))))
 
-(define rm08
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+(defthmd rb-1-opener-theorem
+  (implies (canonical-address-p addr)
+           (equal (rb-1 1 addr r-x x86)
+                  (mv nil (ifix (mv-nth 1 (rvm08 addr x86))) x86)))
+  :hints (("Goal" :expand ((rb-1 1 addr r-x x86))
+           :in-theory (e/d* (rvm08) (force (force))))))
+
+(defthmd wb-1-opener-theorem
+  (implies (canonical-address-p addr)
+           (equal (wb-1 1 addr w val x86)
+                  (wvm08 addr (loghead 8 val) x86)))
+  :hints (("Goal" :expand ((wb-1 1 addr w val x86))
+           :in-theory (e/d* (wvm08) ()))))
+
+(local (in-theory (e/d (rb-1-opener-theorem wb-1-opener-theorem)
+                       (signed-byte-p))))
+
+(local
+ (defthm member-equal-r-w-x-lemma
+   (implies (member-equal r-x '(:r :x))
+            (member-equal r-x '(:r :w :x)))))
+
+(local (in-theory (e/d* () (member-equal))))
+
+(define rm08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+              (r-x      :type (member  :r :x))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
-  :guard-hints (("Goal" :in-theory (e/d* (rvm08) ())))
+  :guard-hints (("Goal"
+                 :in-theory (e/d* (ifix rvm08) ())))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (mbe
-
        :logic
-       (b* (((mv flg bytes x86)
-             (rb (create-canonical-address-list 1 lin-addr) r-x x86))
-            (result (combine-bytes bytes)))
-         (mv flg result x86))
-
+       (rb 1 lin-addr r-x x86)
        :exec
        (if (programmer-level-mode x86)
-
            (rvm08 lin-addr x86)
-
-         (b* ((cpl (cpl x86))
-              ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
-               (la-to-pa lin-addr r-x cpl x86))
+         (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
+               (la-to-pa lin-addr r-x x86))
               ((when flag)
                (mv flag 0 x86))
               (byte (the (unsigned-byte 8) (memi p-addr x86))))
@@ -2198,8 +1731,7 @@ memory.</li>
 
   (defthm x86p-rm08
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm08 lin-addr r-x x86))))
-    :rule-classes (:rewrite :type-prescription))
+             (x86p (mv-nth 2 (rm08 lin-addr r-x x86)))))
 
   (defthm rm08-value-when-error
     (implies (mv-nth 0 (rm08 addr :x x86))
@@ -2208,20 +1740,17 @@ memory.</li>
 
   (defthm rm08-does-not-affect-state-in-programmer-level-mode
     (implies (programmer-level-mode x86)
-             (equal (mv-nth 2 (rm08 start-rip :x x86))
-                    x86))
+             (equal (mv-nth 2 (rm08 start-rip :x x86)) x86))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
   (defthm programmer-level-mode-rm08-no-error
     (implies (and (programmer-level-mode x86)
                   (canonical-address-p addr)
                   (x86p x86))
-             (and (equal (mv-nth 0 (rm08 addr r-x x86))
-                         nil)
+             (and (equal (mv-nth 0 (rm08 addr r-x x86)) nil)
                   (equal (mv-nth 1 (rm08 addr :x x86))
                          (memi (loghead 48 addr) x86))
-                  (equal (mv-nth 2 (rm08 addr r-x x86))
-                         x86)))
+                  (equal (mv-nth 2 (rm08 addr r-x x86)) x86)))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
   (defthm xr-rm08-state-in-programmer-level-mode
@@ -2250,7 +1779,7 @@ memory.</li>
                   ;; No need for the conclusion about the state because
                   ;; "rm08-does-not-affect-state-in-programmer-level-mode".
                   ))
-    :hints (("Goal" :in-theory (e/d* (rvm08) ()))))
+    :hints (("Goal" :in-theory (e/d* () (rb)))))
 
   (defthm rm08-xw-system-mode
     (implies (and (not (programmer-level-mode x86))
@@ -2288,10 +1817,9 @@ memory.</li>
              (equal (mv-nth 2 (rm08 lin-addr r-x x86))
                     x86))))
 
-(define rim08
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+(define rim08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x    :type (member  :r :x))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
@@ -2315,37 +1843,26 @@ memory.</li>
              (x86p (mv-nth 2 (rim08 lin-addr r-x x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm08
-  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-   (val      :type (unsigned-byte 8))
-   (x86))
+(define wm08 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+              (val      :type (unsigned-byte 8))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
-  :guard-hints (("Goal" :in-theory (e/d* (wvm08 byte-ify) ())))
+  :guard-hints (("Goal" :in-theory (e/d* (wvm08) ())))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (mbe
-
-       :logic
-       (wb (create-addr-bytes-alist
-            (create-canonical-address-list 1 lin-addr)
-            (byte-ify 1 val))
-           x86)
-
+       :logic (wb 1 lin-addr :w val x86)
        :exec
        (if (programmer-level-mode x86)
-
            (wvm08 lin-addr val x86)
-
-         (b* ((cpl (cpl x86))
-              ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
-               (la-to-pa lin-addr :w cpl x86))
+         (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
+               (la-to-pa lin-addr :w x86))
               ((when flag)
                (mv flag x86))
-              (byte (mbe :logic (n08 val)
-                         :exec val))
+              (byte (mbe :logic (n08 val) :exec val))
               (x86 (!memi p-addr byte x86)))
            (mv nil x86))))
 
@@ -2356,15 +1873,14 @@ memory.</li>
   (defthm x86p-wm08
     (implies (force (x86p x86))
              (x86p (mv-nth 1 (wm08 lin-addr val x86))))
-    :hints (("Goal" :in-theory (e/d (byte-ify) (force (force)))))
+    :hints (("Goal" :in-theory (e/d () (force (force)))))
     :rule-classes (:rewrite :type-prescription))
 
   (defthm programmer-level-mode-wm08-no-error
     (implies (and (programmer-level-mode x86)
                   (canonical-address-p addr))
-             (equal (mv-nth 0 (wm08 addr val x86))
-                    nil))
-    :hints (("Goal" :in-theory (e/d (wm08 wvm08 byte-ify) ()))))
+             (equal (mv-nth 0 (wm08 addr val x86)) nil))
+    :hints (("Goal" :in-theory (e/d (wm08 wvm08) ()))))
 
   (defthm xr-wm08-programmer-level-mode
     (implies (and (programmer-level-mode x86)
@@ -2417,10 +1933,9 @@ memory.</li>
                          (xw :rflags 0 value (mv-nth 1 (wm08 addr val x86))))))
     :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
-(define wim08
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (val      :type (signed-byte 8))
-   (x86))
+(define wim08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (val      :type (signed-byte 8))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
@@ -2432,10 +1947,9 @@ memory.</li>
              (x86p (mv-nth 1 (wim08 lin-addr val x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm16
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+(define rm16 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+              (r-x      :type (member  :r :x))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
@@ -2447,57 +1961,53 @@ memory.</li>
   ((defthmd rb-and-rvm16
      (implies (and (programmer-level-mode x86)
                    (canonical-address-p lin-addr)
-                   (canonical-address-p (1+ lin-addr)))
+                   (canonical-address-p (1+ lin-addr))
+                   (x86p x86))
               (equal (rvm16 lin-addr x86)
-                     (b* (((mv flg bytes x86)
-                           (rb (create-canonical-address-list 2 lin-addr) r-x x86))
-                          (result (combine-bytes bytes)))
-                       (mv flg result x86))))
-     :hints (("Goal" :in-theory (e/d (rm08 rvm08 rvm16) (force (force)))))))
+                     (rb 2 lin-addr r-x x86)))
+     :hints (("Goal"
+              :in-theory (e/d (rm08 rvm08 rvm16)
+                              (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((1+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                           (1+ (the (signed-byte #.*max-linear-address-size*)
-                                 lin-addr)))))
+                              (1+ (the (signed-byte #.*max-linear-address-size*)
+                                       lin-addr)))))
 
 
         (if (mbe :logic (canonical-address-p 1+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                            1+lin-addr)
+                               1+lin-addr)
                           #.*2^47*))
 
             (mbe :logic
-                 (b* (((mv flg bytes x86)
-                       (rb (create-canonical-address-list 2 lin-addr) r-x x86))
-                      (result (combine-bytes bytes)))
-                   (mv flg result x86))
+                 (rb 2 lin-addr r-x x86)
                  :exec
                  (if (programmer-level-mode x86)
 
                      (rvm16 lin-addr x86)
 
-                   (let* ((cpl (cpl x86)))
-                     (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                           (la-to-pa lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
+                   (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                         (la-to-pa lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
 
-                          (1+lin-addr
-                           (the (signed-byte #.*max-linear-address-size+1*)
-                             (1+ (the (signed-byte #.*max-linear-address-size*)
-                                   lin-addr))))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) ?p-addr1) x86)
-                           (la-to-pa 1+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
+                        (1+lin-addr
+                         (the (signed-byte #.*max-linear-address-size+1*)
+                              (1+ (the (signed-byte #.*max-linear-address-size*)
+                                       lin-addr))))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) ?p-addr1) x86)
+                         (la-to-pa 1+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
 
-                          (byte0 (the (unsigned-byte 8) (memi p-addr0 x86)))
-                          (byte1 (the (unsigned-byte 8) (memi p-addr1 x86)))
+                        (byte0 (the (unsigned-byte 8) (memi p-addr0 x86)))
+                        (byte1 (the (unsigned-byte 8) (memi p-addr1 x86)))
 
-                          (word (the (unsigned-byte 16)
-                                  (logior (the (unsigned-byte 16) (ash byte1 8))
-                                          byte0))))
+                        (word (the (unsigned-byte 16)
+                                   (logior (the (unsigned-byte 16) (ash byte1 8))
+                                           byte0))))
 
-                       (mv nil word x86)))))
+                     (mv nil word x86))))
 
           (mv 'rm16 0 x86)))
 
@@ -2520,10 +2030,9 @@ memory.</li>
     :hints (("Goal" :in-theory (disable unsigned-byte-p signed-byte-p (force))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rim16
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+(define rim16 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x    :type (member  :r :x))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
@@ -2555,7 +2064,7 @@ memory.</li>
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
 
-  :guard-hints (("Goal" :in-theory (e/d (wb-and-wvm16 byte-ify) ())))
+  :guard-hints (("Goal" :in-theory (e/d (wb-and-wvm16) ())))
 
   :prepwork
 
@@ -2564,62 +2073,49 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (1+ lin-addr)))
               (equal (wvm16 lin-addr val x86)
-                     (wb (create-addr-bytes-alist
-                          (create-canonical-address-list 2 lin-addr)
-                          (byte-ify 2 val))
-                         x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm16 byte-ify)
-                                     (append-and-create-addr-bytes-alist
-                                      cons-and-create-addr-bytes-alist
-                                      append-and-addr-byte-alistp
-                                      force
-                                      (force)
-                                      unsigned-byte-p
-                                      (nth) nth
-                                      (nthcdr)))))))
+                     (wb 2 lin-addr :w val x86)))
+     :hints (("Goal"
+              :in-theory (e/d (wm08 wvm08 wvm16)
+                              (force (force) unsigned-byte-p))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((1+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                           (1+ (the (signed-byte #.*max-linear-address-size*)
-                                 lin-addr)))))
+                              (1+ (the (signed-byte #.*max-linear-address-size*)
+                                       lin-addr)))))
 
         (if (mbe :logic (canonical-address-p 1+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                            1+lin-addr)
+                               1+lin-addr)
                           #.*2^47*))
 
-            (mbe :logic (wb (create-addr-bytes-alist
-                             (create-canonical-address-list 2 lin-addr)
-                             (byte-ify 2 val))
-                            x86)
-                 :exec
+            (mbe
+             :logic
+             (wb 2 lin-addr :w val x86)
+             :exec
+             (if (programmer-level-mode x86)
 
-                 (if (programmer-level-mode x86)
+                 (wvm16 lin-addr val x86)
 
-                     (wvm16 lin-addr val x86)
+               (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                     (la-to-pa lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                   (let* ((cpl (cpl x86)))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                     (la-to-pa 1+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                     (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                           (la-to-pa lin-addr :w cpl x86))
-                          ((when flag) (mv flag x86))
+                    (byte0 (mbe
+                            :logic (part-select val :low 0 :width 8)
+                            :exec (the (unsigned-byte 8) (logand #xff val))))
+                    (byte1 (mbe
+                            :logic (part-select val :low 8 :width 8)
+                            :exec (the (unsigned-byte 8)
+                                       (logand #xff (ash val -8)))))
 
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                           (la-to-pa 1+lin-addr :w cpl x86))
-                          ((when flag) (mv flag x86))
-
-                          (byte0 (mbe
-                                  :logic (part-select val :low 0 :width 8)
-                                  :exec (the (unsigned-byte 8) (logand #xff val))))
-                          (byte1 (mbe
-                                  :logic (part-select val :low 8 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -8)))))
-
-                          (x86 (!memi p-addr0 byte0 x86))
-                          (x86 (!memi p-addr1 byte1 x86)))
-                       (mv nil x86)))))
+                    (x86 (!memi p-addr0 byte0 x86))
+                    (x86 (!memi p-addr1 byte1 x86)))
+                 (mv nil x86))))
 
           (mv 'wm16 x86)))
 
@@ -2630,13 +2126,12 @@ memory.</li>
   (defthm x86p-wm16
     (implies (force (x86p x86))
              (x86p (mv-nth 1 (wm16 lin-addr val x86))))
-    :hints (("Goal" :in-theory (e/d (byte-ify) (unsigned-byte-p signed-byte-p force (force)))))
+    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p signed-byte-p force (force)))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wim16
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (val      :type (signed-byte 16))
-   (x86))
+(define wim16 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (val      :type (signed-byte 16))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
@@ -2648,16 +2143,14 @@ memory.</li>
              (x86p (mv-nth 1 (wim16 lin-addr val x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm32
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+(define rm32 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+              (r-x    :type (member  :r :x))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm32 rm08)
-                                        (rb-1-accumulator-thm
-                                         rb-1
+                                        (rb-1
                                          (:rewrite acl2::ash-0)
                                          (:rewrite acl2::zip-open)
                                          (:linear ash-monotone-2)
@@ -2674,83 +2167,71 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 3 lin-addr)))
               (equal
-               (list
-                nil
-                (combine-bytes
-                 (mv-nth 1 (rb-1 (create-canonical-address-list 4 lin-addr)
-                                 r-x x86 nil)))
-                x86)
-               (rvm32 lin-addr x86)))
+               (rvm32 lin-addr x86)
+               (rb 4 lin-addr r-x x86)))
      :hints (("Goal"
               :in-theory (e/d (rm08 rvm08 rvm32) (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((3+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                           (+ 3 (the (signed-byte #.*max-linear-address-size*)
-                                  lin-addr)))))
+                              (+ 3 (the (signed-byte #.*max-linear-address-size*)
+                                        lin-addr)))))
 
         (if (mbe :logic (canonical-address-p 3+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                            3+lin-addr)
+                               3+lin-addr)
                           #.*2^47*))
 
             (mbe :logic
-                 (b* (((mv flg bytes x86)
-                       (rb (create-canonical-address-list 4 lin-addr)
-                           r-x x86))
-                      (result (combine-bytes bytes)))
-                   (mv flg result x86))
-
+                 (rb 4 lin-addr r-x x86)
                  :exec
                  (if (programmer-level-mode x86)
 
                      (rvm32 lin-addr x86)
 
-                   (let* ((cpl (cpl x86)))
+                   (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                         (la-to-pa lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
 
-                     (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                           (la-to-pa lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
+                        (1+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
+                                         (+ 1 (the (signed-byte #.*max-linear-address-size*)
+                                                   lin-addr))))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                         (la-to-pa 1+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
 
-                          (1+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                                        (+ 1 (the (signed-byte #.*max-linear-address-size*)
-                                               lin-addr))))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                           (la-to-pa 1+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
+                        (2+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
+                                         (+ 2 (the (signed-byte #.*max-linear-address-size*)
+                                                   lin-addr))))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                         (la-to-pa 2+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
 
-                          (2+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
-                                        (+ 2 (the (signed-byte #.*max-linear-address-size*)
-                                               lin-addr))))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                           (la-to-pa 2+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
+                        (3+lin-addr (the (signed-byte #.*max-linear-address-size+3*)
+                                         (+ 3 (the (signed-byte #.*max-linear-address-size*)
+                                                   lin-addr))))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                         (la-to-pa 3+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
 
-                          (3+lin-addr (the (signed-byte #.*max-linear-address-size+3*)
-                                        (+ 3 (the (signed-byte #.*max-linear-address-size*)
-                                               lin-addr))))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                           (la-to-pa 3+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
+                        (byte0 (the (unsigned-byte 8) (memi p-addr0 x86)))
+                        (byte1 (the (unsigned-byte 8) (memi p-addr1 x86)))
+                        (byte2 (the (unsigned-byte 8) (memi p-addr2 x86)))
+                        (byte3 (the (unsigned-byte 8) (memi p-addr3 x86)))
 
-                          (byte0 (the (unsigned-byte 8) (memi p-addr0 x86)))
-                          (byte1 (the (unsigned-byte 8) (memi p-addr1 x86)))
-                          (byte2 (the (unsigned-byte 8) (memi p-addr2 x86)))
-                          (byte3 (the (unsigned-byte 8) (memi p-addr3 x86)))
+                        (word0 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte1 8))
+                                            byte0)))
+                        (word1 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte3 8))
+                                            byte2)))
 
-                          (word0 (the (unsigned-byte 16)
-                                   (logior (the (unsigned-byte 16) (ash byte1 8))
-                                           byte0)))
-                          (word1 (the (unsigned-byte 16)
-                                   (logior (the (unsigned-byte 16) (ash byte3 8))
-                                           byte2)))
+                        (dword (the (unsigned-byte 32)
+                                    (logior (the (unsigned-byte 32) (ash word1 16))
+                                            word0))))
 
-                          (dword (the (unsigned-byte 32)
-                                   (logior (the (unsigned-byte 32) (ash word1 16))
-                                           word0))))
-
-                       (mv nil dword x86)))))
+                     (mv nil dword x86))))
 
           (mv 'rm32 0 x86)))
 
@@ -2773,10 +2254,9 @@ memory.</li>
     :hints (("Goal" :in-theory (disable unsigned-byte-p signed-byte-p (force))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rim32
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+(define rim32 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x    :type (member  :r :x))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
@@ -2800,15 +2280,14 @@ memory.</li>
              (x86p (mv-nth 2 (rim32 lin-addr r-x x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm32
-  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-   (val      :type (unsigned-byte 32))
-   (x86))
+(define wm32 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+              (val      :type (unsigned-byte 32))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
 
-  :guard-hints (("Goal" :in-theory (e/d (wb-and-wvm32 byte-ify)
+  :guard-hints (("Goal" :in-theory (e/d (wb-and-wvm32)
                                         ((:rewrite acl2::ash-0)
                                          (:rewrite acl2::zip-open)
                                          (:linear ash-monotone-2)
@@ -2824,87 +2303,74 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 3 lin-addr)))
               (equal (wvm32 lin-addr val x86)
-                     (wb (create-addr-bytes-alist
-                          (create-canonical-address-list 4 lin-addr)
-                          (byte-ify 4 val))
-                         x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 byte-ify)
-                                     (append-and-create-addr-bytes-alist
-                                      cons-and-create-addr-bytes-alist
-                                      append-and-addr-byte-alistp
-                                      force (force)))))))
+                     (wb 4 lin-addr :w val x86)))
+     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32)
+                                     (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((3+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                           (+ 3 (the (signed-byte #.*max-linear-address-size*)
-                                  lin-addr)))))
+                              (+ 3 (the (signed-byte #.*max-linear-address-size*)
+                                        lin-addr)))))
 
 
         (if (mbe :logic (canonical-address-p 3+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                            3+lin-addr)
+                               3+lin-addr)
                           #.*2^47*))
 
             (mbe
              :logic
-             (wb (create-addr-bytes-alist
-                  (create-canonical-address-list 4 lin-addr)
-                  (byte-ify 4 val))
-                 x86)
+             (wb 4 lin-addr :w val x86)
              :exec
-
              (if (programmer-level-mode x86)
-
                  (wvm32 lin-addr val x86)
 
-               (let* ((cpl (cpl x86)))
+               (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                     (la-to-pa lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                       (la-to-pa lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
+                     (+ 1 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                     (la-to-pa 1+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                      ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                       (+ 1 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                       (la-to-pa 1+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (2+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
+                                     (+ 2 (the (signed-byte #.*max-linear-address-size*)
+                                               lin-addr))))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                     (la-to-pa 2+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                      (2+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
-                                    (+ 2 (the (signed-byte #.*max-linear-address-size*)
-                                           lin-addr))))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                       (la-to-pa 2+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (3+lin-addr (the (signed-byte #.*max-linear-address-size+3*)
+                                     (+ 3 (the (signed-byte #.*max-linear-address-size*)
+                                               lin-addr))))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                     (la-to-pa 3+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                      (3+lin-addr (the (signed-byte #.*max-linear-address-size+3*)
-                                    (+ 3 (the (signed-byte #.*max-linear-address-size*)
-                                           lin-addr))))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                       (la-to-pa 3+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (byte0 (mbe
+                            :logic (part-select val :low 0 :width 8)
+                            :exec  (the (unsigned-byte 8) (logand #xff val))))
+                    (byte1 (mbe
+                            :logic (part-select val :low 8 :width 8)
+                            :exec  (the (unsigned-byte 8)
+                                        (logand #xff (ash val -8)))))
+                    (byte2 (mbe
+                            :logic (part-select val :low 16 :width 8)
+                            :exec (the (unsigned-byte 8)
+                                       (logand #xff (ash val -16)))))
+                    (byte3 (mbe
+                            :logic (part-select val :low 24 :width 8)
+                            :exec (the (unsigned-byte 8)
+                                       (logand #xff (ash val -24)))))
 
-                      (byte0 (mbe
-                              :logic (part-select val :low 0 :width 8)
-                              :exec  (the (unsigned-byte 8) (logand #xff val))))
-                      (byte1 (mbe
-                              :logic (part-select val :low 8 :width 8)
-                              :exec  (the (unsigned-byte 8)
-                                       (logand #xff (ash val -8)))))
-                      (byte2 (mbe
-                              :logic (part-select val :low 16 :width 8)
-                              :exec (the (unsigned-byte 8)
-                                      (logand #xff (ash val -16)))))
-                      (byte3 (mbe
-                              :logic (part-select val :low 24 :width 8)
-                              :exec (the (unsigned-byte 8)
-                                      (logand #xff (ash val -24)))))
-
-                      (x86 (!memi p-addr0 byte0 x86))
-                      (x86 (!memi p-addr1 byte1 x86))
-                      (x86 (!memi p-addr2 byte2 x86))
-                      (x86 (!memi p-addr3 byte3 x86)))
-                   (mv nil x86)))))
+                    (x86 (!memi p-addr0 byte0 x86))
+                    (x86 (!memi p-addr1 byte1 x86))
+                    (x86 (!memi p-addr2 byte2 x86))
+                    (x86 (!memi p-addr3 byte3 x86)))
+                 (mv nil x86))))
 
           (mv 'wm32 x86)))
 
@@ -2918,10 +2384,9 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () (force (force)))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wim32
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (val      :type (signed-byte 32))
-   (x86))
+(define wim32 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (val      :type (signed-byte 32))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
@@ -2933,19 +2398,17 @@ memory.</li>
              (x86p (mv-nth 1 (wim32 lin-addr val x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm48
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x      :type (member :r :x))
-   (x86))
+(define rm48 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+              (r-x      :type (member :r :x))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
-                 :expand ((create-canonical-address-list 6 lin-addr)
-                          (create-canonical-address-list 5 (+ 1 lin-addr)))
+                 :expand ((las-to-pas 6 lin-addr r-x x86)
+                          (las-to-pas 5 (+ 1 lin-addr) r-x (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))
                  :in-theory (e/d (rb-and-rvm48
                                   rm08
-                                  member-equal
                                   rb-and-rm48-helper-1
                                   rb-and-rm48-helper-2)
                                  (not
@@ -2961,21 +2424,17 @@ memory.</li>
   :prepwork
   ((local
     (defthmd rb-and-rvm48-helper
-      (implies (and (programmer-level-mode x86)
-                    (x86p x86)
-                    (canonical-address-p lin-addr)
-                    (canonical-address-p (+ 5 lin-addr)))
-               (equal (rvm48 lin-addr x86)
-                      (list nil
-                            (logior (combine-bytes
-                                     (mv-nth 1 (rb-1 (create-canonical-address-list 2 lin-addr)
-                                                     r-x x86 nil)))
-                                    (ash (combine-bytes
-                                          (mv-nth 1
-                                                  (rb-1 (create-canonical-address-list 4 (+ 2 lin-addr))
-                                                        r-x x86 nil)))
-                                         16))
-                            x86)))
+      (implies
+       (and (programmer-level-mode x86)
+            (x86p x86)
+            (canonical-address-p lin-addr)
+            (canonical-address-p (+ 5 lin-addr)))
+       (equal (rvm48 lin-addr x86)
+              (list nil
+                    (logior
+                     (mv-nth 1 (rb 2 lin-addr r-x x86))
+                     (ash (mv-nth 1 (rb 4 (+ 2 lin-addr) r-x x86)) 16))
+                    x86)))
       :hints (("Goal" :use ((:instance rb-and-rvm16)
                             (:instance rb-and-rvm32 (lin-addr (+ 2 lin-addr))))
                :in-theory (e/d (rvm48)
@@ -2987,11 +2446,7 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 5 lin-addr)))
               (equal (rvm48 lin-addr x86)
-                     (b* (((mv flg bytes x86)
-                           (rb-1 (create-canonical-address-list 6 lin-addr)
-                                 r-x x86 nil))
-                          (result (combine-bytes bytes)))
-                       (mv flg result x86))))
+                     (rb 6 lin-addr r-x x86)))
      :hints (("Goal"
               :in-theory (e/d (rb-and-rvm48-helper
                                rm48-guard-proof-helper)
@@ -3013,72 +2468,65 @@ memory.</li>
                           #.*2^47*))
 
             (mbe :logic
-                 (b* (((mv flg bytes x86)
-                       (rb (create-canonical-address-list 6 lin-addr)
-                           r-x x86))
-                      (result (combine-bytes bytes)))
-                   (mv flg result x86))
-
+                 (rb 6 lin-addr r-x x86)
                  :exec
                  (if (programmer-level-mode x86)
 
                      (rvm48 lin-addr x86)
 
-                   (let* ((cpl (cpl x86)))
+                   (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                         (la-to-pa lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
+                         (+ 1 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                         (la-to-pa 1+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
+                         (+ 2 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                         (la-to-pa 2+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
+                         (+ 3 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                         (la-to-pa 3+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
+                         (+ 4 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
+                         (la-to-pa 4+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
+                         (+ 5 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
+                         (la-to-pa 5+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
 
-                     (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                           (la-to-pa lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                           (+ 1 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                           (la-to-pa 1+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                           (+ 2 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                           (la-to-pa 2+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                           (+ 3 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                           (la-to-pa 3+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                           (+ 4 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                           (la-to-pa 4+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                           (+ 5 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                           (la-to-pa 5+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
+                        (byte0 (memi p-addr0 x86))
+                        (byte1 (memi p-addr1 x86))
+                        (byte2 (memi p-addr2 x86))
+                        (byte3 (memi p-addr3 x86))
+                        (byte4 (memi p-addr4 x86))
+                        (byte5 (memi p-addr5 x86))
 
-                          (byte0 (memi p-addr0 x86))
-                          (byte1 (memi p-addr1 x86))
-                          (byte2 (memi p-addr2 x86))
-                          (byte3 (memi p-addr3 x86))
-                          (byte4 (memi p-addr4 x86))
-                          (byte5 (memi p-addr5 x86))
+                        (word0 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte1 8))
+                                            byte0)))
+                        (word1 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte3 8))
+                                            byte2)))
+                        (word2 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte5 8))
+                                            byte4)))
+                        (dword1 (the (unsigned-byte 32)
+                                     (logior (the (unsigned-byte 32) (ash word2 16))
+                                             word1)))
+                        (value (the (unsigned-byte 48)
+                                    (logior (the (unsigned-byte 48) (ash dword1 16))
+                                            word0))))
 
-                          (word0 (the (unsigned-byte 16)
-                                      (logior (the (unsigned-byte 16) (ash byte1 8))
-                                              byte0)))
-                          (word1 (the (unsigned-byte 16)
-                                      (logior (the (unsigned-byte 16) (ash byte3 8))
-                                              byte2)))
-                          (word2 (the (unsigned-byte 16)
-                                      (logior (the (unsigned-byte 16) (ash byte5 8))
-                                              byte4)))
-                          (dword1 (the (unsigned-byte 32)
-                                       (logior (the (unsigned-byte 32) (ash word2 16))
-                                               word1)))
-                          (value (the (unsigned-byte 48)
-                                      (logior (the (unsigned-byte 48) (ash dword1 16))
-                                              word0))))
-
-                       (mv nil value x86)))))
+                     (mv nil value x86))))
 
           (mv 'rm48 0 x86)))
 
@@ -3102,18 +2550,17 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm48
-  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-   (val      :type (unsigned-byte 48))
-   (x86))
+(define wm48 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+              (val      :type (unsigned-byte 48))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
 
   :guard-hints (("Goal"
-                 :expand ((create-canonical-address-list 6 lin-addr)
-                          (create-canonical-address-list 5 (+ 1 lin-addr)))
-                 :in-theory (e/d (wb-and-wvm48 byte-ify)
+                 :expand ((las-to-pas 6 lin-addr :w x86)
+                          (las-to-pas 5 (+ 1 lin-addr) :w (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86))))
+                 :in-theory (e/d (wb-and-wvm48)
                                  ((:rewrite acl2::ash-0)
                                   (:rewrite acl2::zip-open)
                                   (:linear ash-monotone-2)
@@ -3128,111 +2575,99 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 5 lin-addr)))
               (equal (wvm48 lin-addr val x86)
-                     (wb (create-addr-bytes-alist
-                          (create-canonical-address-list 6 lin-addr)
-                          (byte-ify 6 val))
-                         x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm16 wvm32 wvm48 byte-ify)
-                                     (append-and-create-addr-bytes-alist
-                                      cons-and-create-addr-bytes-alist
-                                      append-and-addr-byte-alistp
-                                      force (force)))))))
+                     (wb 6 lin-addr :w val x86)))
+     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm16 wvm32 wvm48)
+                                     (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((5+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                           (+ 5 (the (signed-byte #.*max-linear-address-size*)
-                                  lin-addr)))))
+                              (+ 5 (the (signed-byte #.*max-linear-address-size*)
+                                        lin-addr)))))
 
 
         (if (mbe :logic (canonical-address-p 5+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                            5+lin-addr)
+                               5+lin-addr)
                           #.*2^47*))
 
             (mbe
              :logic
-             (wb (create-addr-bytes-alist
-                  (create-canonical-address-list 6 lin-addr)
-                  (byte-ify 6 val))
-                 x86)
+             (wb 6 lin-addr :w val x86)
              :exec
-
              (if (programmer-level-mode x86)
 
                  (wvm48 lin-addr val x86)
 
-               (let* ((cpl (cpl x86)))
+               (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                     (la-to-pa lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                       (la-to-pa lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
+                     (+ 1 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                     (la-to-pa 1+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                      ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                       (+ 1 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                       (la-to-pa 1+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (2+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
+                                     (+ 2 (the (signed-byte #.*max-linear-address-size*)
+                                               lin-addr))))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                     (la-to-pa 2+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                      (2+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
-                                    (+ 2 (the (signed-byte #.*max-linear-address-size*)
-                                           lin-addr))))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                       (la-to-pa 2+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (3+lin-addr (the (signed-byte #.*max-linear-address-size+3*)
+                                     (+ 3 (the (signed-byte #.*max-linear-address-size*)
+                                               lin-addr))))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                     (la-to-pa 3+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                      (3+lin-addr (the (signed-byte #.*max-linear-address-size+3*)
-                                    (+ 3 (the (signed-byte #.*max-linear-address-size*)
-                                           lin-addr))))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                       (la-to-pa 3+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (4+lin-addr (the (signed-byte #.*max-linear-address-size+4*)
+                                     (+ 4 (the (signed-byte #.*max-linear-address-size*)
+                                               lin-addr))))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
+                     (la-to-pa 4+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                      (4+lin-addr (the (signed-byte #.*max-linear-address-size+4*)
-                                    (+ 4 (the (signed-byte #.*max-linear-address-size*)
-                                           lin-addr))))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                       (la-to-pa 4+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (5+lin-addr (the (signed-byte #.*max-linear-address-size+5*)
+                                     (+ 5 (the (signed-byte #.*max-linear-address-size*)
+                                               lin-addr))))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
+                     (la-to-pa 5+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                      (5+lin-addr (the (signed-byte #.*max-linear-address-size+5*)
-                                    (+ 5 (the (signed-byte #.*max-linear-address-size*)
-                                           lin-addr))))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                       (la-to-pa 5+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (byte0 (mbe
+                            :logic (part-select val :low 0 :width 8)
+                            :exec  (the (unsigned-byte 8) (logand #xff val))))
+                    (byte1 (mbe
+                            :logic (part-select val :low 8 :width 8)
+                            :exec  (the (unsigned-byte 8)
+                                        (logand #xff (ash val -8)))))
+                    (byte2 (mbe
+                            :logic (part-select val :low 16 :width 8)
+                            :exec (the (unsigned-byte 8)
+                                       (logand #xff (ash val -16)))))
+                    (byte3 (mbe
+                            :logic (part-select val :low 24 :width 8)
+                            :exec (the (unsigned-byte 8)
+                                       (logand #xff (ash val -24)))))
+                    (byte4 (mbe
+                            :logic (part-select val :low 32 :width 8)
+                            :exec (the (unsigned-byte 8)
+                                       (logand #xff (ash val -32)))))
+                    (byte5 (mbe
+                            :logic (part-select val :low 40 :width 8)
+                            :exec (the (unsigned-byte 8)
+                                       (logand #xff (ash val -40)))))
 
-                      (byte0 (mbe
-                              :logic (part-select val :low 0 :width 8)
-                              :exec  (the (unsigned-byte 8) (logand #xff val))))
-                      (byte1 (mbe
-                              :logic (part-select val :low 8 :width 8)
-                              :exec  (the (unsigned-byte 8)
-                                       (logand #xff (ash val -8)))))
-                      (byte2 (mbe
-                              :logic (part-select val :low 16 :width 8)
-                              :exec (the (unsigned-byte 8)
-                                      (logand #xff (ash val -16)))))
-                      (byte3 (mbe
-                              :logic (part-select val :low 24 :width 8)
-                              :exec (the (unsigned-byte 8)
-                                      (logand #xff (ash val -24)))))
-                      (byte4 (mbe
-                              :logic (part-select val :low 32 :width 8)
-                              :exec (the (unsigned-byte 8)
-                                      (logand #xff (ash val -32)))))
-                      (byte5 (mbe
-                              :logic (part-select val :low 40 :width 8)
-                              :exec (the (unsigned-byte 8)
-                                      (logand #xff (ash val -40)))))
-
-                      (x86 (!memi p-addr0 byte0 x86))
-                      (x86 (!memi p-addr1 byte1 x86))
-                      (x86 (!memi p-addr2 byte2 x86))
-                      (x86 (!memi p-addr3 byte3 x86))
-                      (x86 (!memi p-addr4 byte4 x86))
-                      (x86 (!memi p-addr5 byte5 x86)))
-                   (mv nil x86)))))
+                    (x86 (!memi p-addr0 byte0 x86))
+                    (x86 (!memi p-addr1 byte1 x86))
+                    (x86 (!memi p-addr2 byte2 x86))
+                    (x86 (!memi p-addr3 byte3 x86))
+                    (x86 (!memi p-addr4 byte4 x86))
+                    (x86 (!memi p-addr5 byte5 x86)))
+                 (mv nil x86))))
 
           (mv 'wm48 x86)))
 
@@ -3246,31 +2681,41 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () (force (force)))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm64
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+(define rm64 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+              (r-x    :type (member  :r :x))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
-  :guard-hints (("Goal"
-                 :expand ((create-canonical-address-list 8 lin-addr)
-                          (create-canonical-address-list 7 (+ 1 lin-addr))
-                          (create-canonical-address-list 6 (+ 2 lin-addr))
-                          (create-canonical-address-list 5 (+ 3 lin-addr)))
-                 :in-theory (e/d (rb-and-rvm64 rm08)
-                                 (not
-                                  ash-monotone-2
-                                  (:rewrite acl2::ash-0)
-                                  (:rewrite acl2::zip-open)
-                                  (:linear ash-monotone-2)
-                                  (:linear bitops::logior-<-0-linear-2)
-                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
-                                  (:rewrite bitops::logior-equal-0)
-                                  (:linear memi-is-n08p)))))
+  :guard-hints
+  (("Goal"
+    :expand
+    ((las-to-pas 8 lin-addr r-x x86)
+     (las-to-pas 7 (+ 1 lin-addr) r-x (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86)))
+     (las-to-pas 6 (+ 2 lin-addr) r-x
+                 (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) r-x
+                                           (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86)))))
+     (las-to-pas 5 (+ 3 lin-addr) r-x
+                 (mv-nth 2 (las-to-pas 6 (+ 2 lin-addr) r-x
+                                       (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) r-x
+                                                                 (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))))))
+    :in-theory (e/d (rb-and-rvm64 rm08)
+                    (not
+                     ash-monotone-2
+                     (:rewrite acl2::ash-0)
+                     (:rewrite acl2::zip-open)
+                     (:linear ash-monotone-2)
+                     (:linear bitops::logior-<-0-linear-2)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                     (:rewrite bitops::logior-equal-0)
+                     (:linear memi-is-n08p)))))
 
   :prepwork
-  ((local
+  (
+   ;; Maybe we don't need this lemma anymore?
+   (local (in-theory (e/d* () (rb-and-rvm64-helper))))
+
+   (local
     (defthmd rb-and-rvm64-helper-1
       (implies (and (programmer-level-mode x86)
                     (x86p x86)
@@ -3278,13 +2723,8 @@ memory.</li>
                     (canonical-address-p (+ 7 lin-addr)))
                (equal (rvm64 lin-addr x86)
                       (list nil
-                            (logior (combine-bytes
-                                     (mv-nth 1 (rb-1 (create-canonical-address-list 4 lin-addr)
-                                                     r-x x86 nil)))
-                                    (ash (combine-bytes
-                                          (mv-nth 1
-                                                  (rb-1 (create-canonical-address-list 4 (+ 4 lin-addr))
-                                                        r-x x86 nil)))
+                            (logior (mv-nth 1 (rb-1 4 lin-addr r-x x86))
+                                    (ash (mv-nth 1 (rb-1 4 (+ 4 lin-addr) r-x x86))
                                          32))
                             x86)))
       :hints (("Goal" :use ((:instance rb-and-rvm32)
@@ -3300,25 +2740,14 @@ memory.</li>
                     (canonical-address-p lin-addr)
                     (canonical-address-p (+ 7 lin-addr)))
                (equal
-                (logior
-                 (combine-bytes (mv-nth 1
-                                        (rb-1 (create-canonical-address-list 4 lin-addr)
-                                              r-x x86 nil)))
-                 (ash (combine-bytes
-                       (mv-nth 1
-                               (rb-1 (create-canonical-address-list 4 (+ 4 lin-addr))
-                                     r-x x86 nil)))
-                      32))
-                (combine-bytes (mv-nth 1
-                                       (rb-1 (create-canonical-address-list 8 lin-addr)
-                                             r-x x86 nil)))))
+                (logior (mv-nth 1 (rb-1 4 lin-addr r-x x86))
+                        (ash (mv-nth 1 (rb-1 4 (+ 4 lin-addr) r-x x86))
+                             32))
+                (mv-nth 1 (rb-1 8 lin-addr r-x x86))))
       :hints (("Goal"
-               :use ((:instance split-rb-and-create-canonical-address-list-in-programmer-level-mode
-                                (n 8)
-                                (m 4))
-                     (:instance combine-bytes-of-append-of-byte-lists
-                                (xs (mv-nth 1 (rb-1 (create-canonical-address-list 4 lin-addr) r-x x86 nil)))
-                                (ys (mv-nth 1 (rb-1 (create-canonical-address-list 4 (+ 4 lin-addr)) r-x x86 nil)))))
+               :use ((:instance split-rb-in-programmer-level-mode
+                                (i 4)
+                                (j 4)))
                :in-theory (e/d () (force (force)))))))
 
    (defthmd rb-and-rvm64
@@ -3327,119 +2756,109 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 7 lin-addr)))
               (equal (rvm64 lin-addr x86)
-                     (b* (((mv flg bytes x86)
-                           (rb-1 (create-canonical-address-list 8 lin-addr)
-                                 r-x x86 nil))
-                          (result (combine-bytes bytes)))
-                       (mv flg result x86))))
+                     (rb 8 lin-addr r-x x86)))
      :hints (("Goal"
+              :use ((:instance rb-1-in-terms-of-its-components
+                               (n 8)))
               :in-theory (e/d (rb-and-rvm64-helper-1
                                rb-and-rvm64-helper-2)
                               (rb-and-rvm32-helper
                                rm64-guard-proof-helper
                                logior-expt-to-plus-quotep
                                signed-byte-p
-                               force (force))))))
-
-   (local (in-theory (e/d* () (rb-and-rvm64-helper)))))
+                               force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((7+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                           (+ 7 (the (signed-byte #.*max-linear-address-size*)
-                                  lin-addr)))))
+                              (+ 7 (the (signed-byte #.*max-linear-address-size*)
+                                        lin-addr)))))
 
 
         (if (mbe :logic (canonical-address-p 7+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                            7+lin-addr)
+                               7+lin-addr)
                           #.*2^47*))
 
             (mbe :logic
-                 (b* (((mv flg bytes x86)
-                       (rb (create-canonical-address-list 8 lin-addr)
-                           r-x x86))
-                      (result (combine-bytes bytes)))
-                   (mv flg result x86))
+                 (rb 8 lin-addr r-x x86)
 
                  :exec
                  (if (programmer-level-mode x86)
 
                      (rvm64 lin-addr x86)
 
-                   (let* ((cpl (cpl x86)))
+                   (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                         (la-to-pa lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
+                         (+ 1 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                         (la-to-pa 1+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
+                         (+ 2 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                         (la-to-pa 2+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
+                         (+ 3 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                         (la-to-pa 3+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
+                         (+ 4 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
+                         (la-to-pa 4+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
+                         (+ 5 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
+                         (la-to-pa 5+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
+                         (+ 6 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
+                         (la-to-pa 6+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
+                         (+ 7 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
+                         (la-to-pa 7+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
 
-                     (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                           (la-to-pa lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                           (+ 1 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                           (la-to-pa 1+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                           (+ 2 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                           (la-to-pa 2+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                           (+ 3 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                           (la-to-pa 3+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                           (+ 4 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                           (la-to-pa 4+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                           (+ 5 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                           (la-to-pa 5+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
-                           (+ 6 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
-                           (la-to-pa 6+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
-                           (+ 7 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
-                           (la-to-pa 7+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
+                        (byte0 (memi p-addr0 x86))
+                        (byte1 (memi p-addr1 x86))
+                        (byte2 (memi p-addr2 x86))
+                        (byte3 (memi p-addr3 x86))
+                        (byte4 (memi p-addr4 x86))
+                        (byte5 (memi p-addr5 x86))
+                        (byte6 (memi p-addr6 x86))
+                        (byte7 (memi p-addr7 x86))
 
-                          (byte0 (memi p-addr0 x86))
-                          (byte1 (memi p-addr1 x86))
-                          (byte2 (memi p-addr2 x86))
-                          (byte3 (memi p-addr3 x86))
-                          (byte4 (memi p-addr4 x86))
-                          (byte5 (memi p-addr5 x86))
-                          (byte6 (memi p-addr6 x86))
-                          (byte7 (memi p-addr7 x86))
+                        (word0 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte1 8))
+                                            byte0)))
+                        (word1 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte3 8))
+                                            byte2)))
+                        (dword0 (the (unsigned-byte 32)
+                                     (logior (the (unsigned-byte 32) (ash word1 16))
+                                             word0)))
+                        (word2 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte5 8))
+                                            byte4)))
+                        (word3 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte7 8))
+                                            byte6)))
+                        (dword1 (the (unsigned-byte 32)
+                                     (logior (the (unsigned-byte 32) (ash word3 16))
+                                             word2)))
+                        (qword (the (unsigned-byte 64)
+                                    (logior (the (unsigned-byte 64) (ash dword1 32))
+                                            dword0))))
 
-                          (word0 (the (unsigned-byte 16)
-                                   (logior (the (unsigned-byte 16) (ash byte1 8))
-                                           byte0)))
-                          (word1 (the (unsigned-byte 16)
-                                   (logior (the (unsigned-byte 16) (ash byte3 8))
-                                           byte2)))
-                          (dword0 (the (unsigned-byte 32)
-                                    (logior (the (unsigned-byte 32) (ash word1 16))
-                                            word0)))
-                          (word2 (the (unsigned-byte 16)
-                                   (logior (the (unsigned-byte 16) (ash byte5 8))
-                                           byte4)))
-                          (word3 (the (unsigned-byte 16)
-                                   (logior (the (unsigned-byte 16) (ash byte7 8))
-                                           byte6)))
-                          (dword1 (the (unsigned-byte 32)
-                                    (logior (the (unsigned-byte 32) (ash word3 16))
-                                            word2)))
-                          (qword (the (unsigned-byte 64)
-                                   (logior (the (unsigned-byte 64) (ash dword1 32))
-                                           dword0))))
-
-                       (mv nil qword x86)))))
+                     (mv nil qword x86))))
 
           (mv 'rm64 0 x86)))
 
@@ -3463,10 +2882,9 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rim64
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+(define rim64 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x    :type (member  :r :x))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
@@ -3490,27 +2908,33 @@ memory.</li>
              (x86p (mv-nth 2 (rim64 lin-addr r-x x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm64
-  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-   (val      :type (unsigned-byte 64))
-   (x86))
+(define wm64 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+              (val      :type (unsigned-byte 64))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
 
-  :guard-hints (("Goal"
-                 :expand ((create-canonical-address-list 8 lin-addr)
-                          (create-canonical-address-list 7 (+ 1 lin-addr))
-                          (create-canonical-address-list 6 (+ 2 lin-addr))
-                          (create-canonical-address-list 5 (+ 3 lin-addr)))
-                 :in-theory (e/d (wb-and-wvm64 byte-ify)
-                                 ((:rewrite acl2::ash-0)
-                                  (:rewrite acl2::zip-open)
-                                  (:linear ash-monotone-2)
-                                  (:linear bitops::logior-<-0-linear-2)
-                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
-                                  (:rewrite bitops::logior-equal-0)
-                                  (:linear memi-is-n08p)))))
+  :guard-hints
+  (("Goal"
+    :expand
+    ((las-to-pas 8 lin-addr :w x86)
+     (las-to-pas 7 (+ 1 lin-addr) :w (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86)))
+     (las-to-pas 6 (+ 2 lin-addr) :w
+                 (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) :w
+                                           (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86)))))
+     (las-to-pas 5 (+ 3 lin-addr) :w
+                 (mv-nth 2 (las-to-pas 6 (+ 2 lin-addr) :w
+                                       (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) :w
+                                                                 (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86))))))))
+    :in-theory (e/d (wb-and-wvm64)
+                    ((:rewrite acl2::ash-0)
+                     (:rewrite acl2::zip-open)
+                     (:linear ash-monotone-2)
+                     (:linear bitops::logior-<-0-linear-2)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                     (:rewrite bitops::logior-equal-0)
+                     (:linear memi-is-n08p)))))
 
   :prepwork
 
@@ -3519,117 +2943,104 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 7 lin-addr)))
               (equal (wvm64 lin-addr val x86)
-                     (wb (create-addr-bytes-alist
-                          (create-canonical-address-list 8 lin-addr)
-                          (byte-ify 8 val))
-                         x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 wvm64 byte-ify)
-                                     (append-and-create-addr-bytes-alist
-                                      cons-and-create-addr-bytes-alist
-                                      append-and-addr-byte-alistp
-                                      force (force)))))))
+                     (wb 8 lin-addr :w val x86)))
+     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 wvm64)
+                                     (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((7+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
-                           (+ 7 (the (signed-byte #.*max-linear-address-size*)
-                                  lin-addr)))))
+                              (+ 7 (the (signed-byte #.*max-linear-address-size*)
+                                        lin-addr)))))
 
 
         (if (mbe :logic (canonical-address-p 7+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                            7+lin-addr)
+                               7+lin-addr)
                           #.*2^47*))
 
             (mbe
              :logic
-             (wb (create-addr-bytes-alist
-                  (create-canonical-address-list 8 lin-addr)
-                  (byte-ify 8 val))
-                 x86)
-
+             (wb 8 lin-addr :w val x86)
              :exec
              (if (programmer-level-mode x86)
 
                  (wvm64 lin-addr val x86)
 
+               (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                     (la-to-pa lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
+                     (+ 1 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                     (la-to-pa 1+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
+                     (+ 2 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                     (la-to-pa 2+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
+                     (+ 3 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                     (la-to-pa 3+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
+                     (+ 4 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
+                     (la-to-pa 4+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
+                     (+ 5 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
+                     (la-to-pa 5+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
+                     (+ 6 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
+                     (la-to-pa 6+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
+                     (+ 7 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
+                     (la-to-pa 7+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-               (let* ((cpl (cpl x86)))
+                    (byte0 (mbe :logic (part-select val :low 0 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff val))))
+                    (byte1 (mbe :logic (part-select val :low 8 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -8)))))
+                    (byte2 (mbe :logic (part-select val :low 16 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -16)))))
+                    (byte3 (mbe :logic (part-select val :low 24 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -24)))))
+                    (byte4 (mbe :logic (part-select val :low 32 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -32)))))
+                    (byte5 (mbe :logic (part-select val :low 40 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -40)))))
+                    (byte6 (mbe :logic (part-select val :low 48 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -48)))))
+                    (byte7 (mbe :logic (part-select val :low 56 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -56)))))
 
-                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                       (la-to-pa lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                       (+ 1 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                       (la-to-pa 1+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                       (+ 2 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                       (la-to-pa 2+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                       (+ 3 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                       (la-to-pa 3+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                       (+ 4 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                       (la-to-pa 4+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                       (+ 5 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                       (la-to-pa 5+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
-                       (+ 6 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
-                       (la-to-pa 6+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
-                       (+ 7 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
-                       (la-to-pa 7+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (x86 (!memi p-addr0 byte0 x86))
+                    (x86 (!memi p-addr1 byte1 x86))
+                    (x86 (!memi p-addr2 byte2 x86))
+                    (x86 (!memi p-addr3 byte3 x86))
+                    (x86 (!memi p-addr4 byte4 x86))
+                    (x86 (!memi p-addr5 byte5 x86))
+                    (x86 (!memi p-addr6 byte6 x86))
+                    (x86 (!memi p-addr7 byte7 x86)))
 
-                      (byte0 (mbe :logic (part-select val :low 0 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff val))))
-                      (byte1 (mbe :logic (part-select val :low 8 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -8)))))
-                      (byte2 (mbe :logic (part-select val :low 16 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -16)))))
-                      (byte3 (mbe :logic (part-select val :low 24 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -24)))))
-                      (byte4 (mbe :logic (part-select val :low 32 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -32)))))
-                      (byte5 (mbe :logic (part-select val :low 40 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -40)))))
-                      (byte6 (mbe :logic (part-select val :low 48 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -48)))))
-                      (byte7 (mbe :logic (part-select val :low 56 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -56)))))
-
-                      (x86 (!memi p-addr0 byte0 x86))
-                      (x86 (!memi p-addr1 byte1 x86))
-                      (x86 (!memi p-addr2 byte2 x86))
-                      (x86 (!memi p-addr3 byte3 x86))
-                      (x86 (!memi p-addr4 byte4 x86))
-                      (x86 (!memi p-addr5 byte5 x86))
-                      (x86 (!memi p-addr6 byte6 x86))
-                      (x86 (!memi p-addr7 byte7 x86)))
-
-                   (mv nil x86)))))
+                 (mv nil x86))))
 
           (mv 'wm64 x86)))
 
@@ -3643,10 +3054,9 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wim64
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (val      :type (signed-byte 64))
-   (x86))
+(define wim64 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (val      :type (signed-byte 64))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
@@ -3658,29 +3068,36 @@ memory.</li>
              (x86p (mv-nth 1 (wim64 lin-addr val x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm80
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+(define rm80 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+              (r-x      :type (member  :r :x))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
-  :guard-hints (("Goal"
-                 :expand ((create-canonical-address-list 10 lin-addr)
-                          (create-canonical-address-list  9 (+ 1 lin-addr))
-                          (create-canonical-address-list  8 (+ 2 lin-addr))
-                          (create-canonical-address-list  7 (+ 3 lin-addr)))
-                 :in-theory (e/d (rb-and-rvm80
-                                  rm80-in-system-level-mode-guard-proof-helper
-                                  rm08)
-                                 (not
-                                  ash-monotone-2
-                                  (:rewrite acl2::ash-0)
-                                  (:rewrite acl2::zip-open)
-                                  (:linear ash-monotone-2)
-                                  (:linear bitops::logior-<-0-linear-2)
-                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
-                                  (:rewrite bitops::logior-equal-0)))))
+  :guard-hints
+  (("Goal"
+    :expand
+    ((las-to-pas 10 lin-addr r-x x86)
+     (las-to-pas 9 (+ 1 lin-addr) r-x (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86)))
+     (las-to-pas 8 (+ 2 lin-addr) r-x
+                 (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) r-x
+                                           (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86)))))
+     (las-to-pas 7 (+ 3 lin-addr) r-x
+                 (mv-nth 2 (ia32e-la-to-pa (+ 2 lin-addr) r-x
+                                           (mv-nth 2 (ia32e-la-to-pa
+                                                      (+ 1 lin-addr) r-x
+                                                      (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))))))
+    :in-theory (e/d (rb-and-rvm80
+                     rm80-in-system-level-mode-guard-proof-helper
+                     rm08)
+                    (not
+                     ash-monotone-2
+                     (:rewrite acl2::ash-0)
+                     (:rewrite acl2::zip-open)
+                     (:linear ash-monotone-2)
+                     (:linear bitops::logior-<-0-linear-2)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                     (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
   ((defthmd rb-and-rvm80
@@ -3689,25 +3106,11 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 9 lin-addr)))
               (equal (rvm80 lin-addr x86)
-                     (b* (((mv flg bytes x86)
-                           (rb (create-canonical-address-list 10 lin-addr)
-                               r-x x86))
-                          (result (combine-bytes bytes)))
-                       (mv flg result x86))))
+                     (rb 10 lin-addr r-x x86)))
      :hints (("Goal"
 
               :in-theory (e/d (rvm80 rb-and-rvm16 rb-and-rvm64 rm80-guard-proof-helper)
-                              (force (force))))))
-
-   (defthm combine-bytes-size-for-rm80
-     (implies (and (signed-byte-p 48 lin-addr)
-                   (x86p x86)
-                   (signed-byte-p 48 (+ 9 lin-addr)))
-              (< (combine-bytes (mv-nth 1
-                                        (rb (create-canonical-address-list 10 lin-addr)
-                                            r-x x86)))
-                 *2^80*))
-     :rule-classes :linear))
+                              (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
@@ -3721,109 +3124,103 @@ memory.</li>
                           #.*2^47*))
 
             (mbe :logic
-                 (b* (((mv flg bytes x86)
-                       (rb (create-canonical-address-list 10 lin-addr)
-                           r-x x86))
-                      (result (combine-bytes bytes)))
-                   (mv flg result x86))
+                 (rb 10 lin-addr r-x x86)
 
                  :exec
                  (if (programmer-level-mode x86)
 
                      (rvm80 lin-addr x86)
 
-                   (let* ((cpl (cpl x86)))
+                   (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                         (la-to-pa lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
+                         (+ 1 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                         (la-to-pa 1+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
+                         (+ 2 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                         (la-to-pa 2+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
+                         (+ 3 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                         (la-to-pa 3+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
+                         (+ 4 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
+                         (la-to-pa 4+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
+                         (+ 5 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
+                         (la-to-pa 5+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
+                         (+ 6 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
+                         (la-to-pa 6+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
+                         (+ 7 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
+                         (la-to-pa 7+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+8*) 8+lin-addr)
+                         (+ 8 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr8) x86)
+                         (la-to-pa 8+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
+                        ((the (signed-byte #.*max-linear-address-size+9*) 9+lin-addr)
+                         (+ 9 lin-addr))
+                        ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr9) x86)
+                         (la-to-pa 9+lin-addr r-x x86))
+                        ((when flag) (mv flag 0 x86))
 
-                     (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                           (la-to-pa lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                           (+ 1 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                           (la-to-pa 1+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                           (+ 2 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                           (la-to-pa 2+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                           (+ 3 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                           (la-to-pa 3+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                           (+ 4 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                           (la-to-pa 4+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                           (+ 5 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                           (la-to-pa 5+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
-                           (+ 6 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
-                           (la-to-pa 6+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
-                           (+ 7 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
-                           (la-to-pa 7+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+8*) 8+lin-addr)
-                           (+ 8 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr8) x86)
-                           (la-to-pa 8+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+9*) 9+lin-addr)
-                           (+ 9 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr9) x86)
-                           (la-to-pa 9+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
+                        (byte0  (memi p-addr0  x86))
+                        (byte1  (memi p-addr1  x86))
+                        (byte2  (memi p-addr2  x86))
+                        (byte3  (memi p-addr3  x86))
+                        (byte4  (memi p-addr4  x86))
+                        (byte5  (memi p-addr5  x86))
+                        (byte6  (memi p-addr6  x86))
+                        (byte7  (memi p-addr7  x86))
+                        (byte8  (memi p-addr8  x86))
+                        (byte9  (memi p-addr9  x86))
 
-                          (byte0  (memi p-addr0  x86))
-                          (byte1  (memi p-addr1  x86))
-                          (byte2  (memi p-addr2  x86))
-                          (byte3  (memi p-addr3  x86))
-                          (byte4  (memi p-addr4  x86))
-                          (byte5  (memi p-addr5  x86))
-                          (byte6  (memi p-addr6  x86))
-                          (byte7  (memi p-addr7  x86))
-                          (byte8  (memi p-addr8  x86))
-                          (byte9  (memi p-addr9  x86))
+                        (word0 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte1 8))
+                                            byte0)))
+                        (word1 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte3 8))
+                                            byte2)))
+                        (word2 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte5 8))
+                                            byte4)))
+                        (dword0 (the (unsigned-byte 32)
+                                     (logior (the (unsigned-byte 32) (ash word2 16))
+                                             word1)))
+                        (word3 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte7 8))
+                                            byte6)))
+                        (word4 (the (unsigned-byte 16)
+                                    (logior (the (unsigned-byte 16) (ash byte9 8))
+                                            byte8)))
+                        (dword1 (the (unsigned-byte 32)
+                                     (logior (the (unsigned-byte 32) (ash word4 16))
+                                             word3)))
+                        (qword (the (unsigned-byte 64)
+                                    (logior (the (unsigned-byte 64) (ash dword1 32))
+                                            dword0)))
+                        (value
+                         (the (unsigned-byte 80)
+                              (logior (the (unsigned-byte 80) (ash qword 16))
+                                      word0))))
 
-                          (word0 (the (unsigned-byte 16)
-                                      (logior (the (unsigned-byte 16) (ash byte1 8))
-                                              byte0)))
-                          (word1 (the (unsigned-byte 16)
-                                      (logior (the (unsigned-byte 16) (ash byte3 8))
-                                              byte2)))
-                          (word2 (the (unsigned-byte 16)
-                                      (logior (the (unsigned-byte 16) (ash byte5 8))
-                                              byte4)))
-                          (dword0 (the (unsigned-byte 32)
-                                       (logior (the (unsigned-byte 32) (ash word2 16))
-                                               word1)))
-                          (word3 (the (unsigned-byte 16)
-                                      (logior (the (unsigned-byte 16) (ash byte7 8))
-                                              byte6)))
-                          (word4 (the (unsigned-byte 16)
-                                      (logior (the (unsigned-byte 16) (ash byte9 8))
-                                              byte8)))
-                          (dword1 (the (unsigned-byte 32)
-                                       (logior (the (unsigned-byte 32) (ash word4 16))
-                                               word3)))
-                          (qword (the (unsigned-byte 64)
-                                      (logior (the (unsigned-byte 64) (ash dword1 32))
-                                              dword0)))
-                          (value
-                           (the (unsigned-byte 80)
-                                (logior (the (unsigned-byte 80) (ash qword 16))
-                                        word0))))
-
-                       (mv nil value x86)))))
+                     (mv nil value x86))))
 
           (mv 'rm80 0 x86)))
 
@@ -3835,7 +3232,7 @@ memory.</li>
     :hyp (force (x86p x86))
     :bound 80
     :concl (mv-nth 1 (rm80 lin-addr r-x x86))
-    :hints (("Goal" :in-theory (e/d () (signed-byte-p ash-monotone-2 rb))))
+    :hints (("Goal" :in-theory (e/d (rb) (signed-byte-p ash-monotone-2))))
     :otf-flg t
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (ash-monotone-2 rb))))
@@ -3847,25 +3244,32 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () (rb unsigned-byte-p signed-byte-p (force)))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm80
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (val      :type (unsigned-byte 80))
-   (x86))
+(define wm80 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+              (val      :type (unsigned-byte 80))
+              (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
-  :guard-hints (("Goal"
-                 :expand ((create-canonical-address-list 10 lin-addr)
-                          (create-canonical-address-list 9 (+ 1 lin-addr))
-                          (create-canonical-address-list 8 (+ 2 lin-addr))
-                          (create-canonical-address-list 7 (+ 3 lin-addr)))
-                 :in-theory (e/d (wb-and-wvm80 byte-ify)
-                                 ((:rewrite acl2::ash-0)
-                                  (:rewrite acl2::zip-open)
-                                  (:linear ash-monotone-2)
-                                  (:linear bitops::logior-<-0-linear-2)
-                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
-                                  (:rewrite bitops::logior-equal-0)))))
+  :guard-hints
+  (("Goal"
+    :expand
+    ((las-to-pas 10 lin-addr :w x86)
+     (las-to-pas 9 (+ 1 lin-addr) :w (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86)))
+     (las-to-pas 8 (+ 2 lin-addr) :w
+                 (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) :w
+                                           (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86)))))
+     (las-to-pas 7 (+ 3 lin-addr) :w
+                 (mv-nth 2 (ia32e-la-to-pa (+ 2 lin-addr) :w
+                                           (mv-nth 2 (ia32e-la-to-pa
+                                                      (+ 1 lin-addr) :w
+                                                      (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86))))))))
+    :in-theory (e/d (wb-and-wvm80)
+                    ((:rewrite acl2::ash-0)
+                     (:rewrite acl2::zip-open)
+                     (:linear ash-monotone-2)
+                     (:linear bitops::logior-<-0-linear-2)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                     (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
 
@@ -3874,134 +3278,123 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 9 lin-addr)))
               (equal (wvm80 lin-addr val x86)
-                     (wb (create-addr-bytes-alist
-                          (create-canonical-address-list 10 lin-addr)
-                          (byte-ify 10 val))
-                         x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm16 wvm32 wvm64 wvm80 byte-ify)
-                                     (append-and-create-addr-bytes-alist
-                                      cons-and-create-addr-bytes-alist
-                                      append-and-addr-byte-alistp
-                                      force (force) nthcdr-byte-listp))))))
+                     (wb 10 lin-addr :w val x86)))
+     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm16 wvm32 wvm64 wvm80)
+                                     (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((9+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                           (+ 9 (the (signed-byte #.*max-linear-address-size*)
-                                  lin-addr)))))
+                              (+ 9 (the (signed-byte #.*max-linear-address-size*)
+                                        lin-addr)))))
 
 
         (if (mbe :logic (canonical-address-p 9+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                            9+lin-addr)
+                               9+lin-addr)
                           #.*2^47*))
 
             (mbe
              :logic
-             (wb (create-addr-bytes-alist
-                  (create-canonical-address-list 10 lin-addr)
-                  (byte-ify 10 val))
-                 x86)
+             (wb 10 lin-addr :w val x86)
 
              :exec
              (if (programmer-level-mode x86)
 
                  (wvm80 lin-addr val x86)
 
-               (let* ((cpl (cpl x86)))
+               (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                     (la-to-pa lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
+                     (+ 1 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                     (la-to-pa 1+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
+                     (+ 2 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                     (la-to-pa 2+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
+                     (+ 3 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                     (la-to-pa 3+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
+                     (+ 4 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
+                     (la-to-pa 4+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
+                     (+ 5 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
+                     (la-to-pa 5+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
+                     (+ 6 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
+                     (la-to-pa 6+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
+                     (+ 7 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
+                     (la-to-pa 7+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+8*) 8+lin-addr)
+                     (+ 8 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr8) x86)
+                     (la-to-pa 8+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
+                    ((the (signed-byte #.*max-linear-address-size+9*) 9+lin-addr)
+                     (+ 9 lin-addr))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr9) x86)
+                     (la-to-pa 9+lin-addr :w x86))
+                    ((when flag) (mv flag x86))
 
-                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                       (la-to-pa lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                       (+ 1 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                       (la-to-pa 1+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                       (+ 2 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                       (la-to-pa 2+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                       (+ 3 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                       (la-to-pa 3+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                       (+ 4 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                       (la-to-pa 4+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                       (+ 5 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                       (la-to-pa 5+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
-                       (+ 6 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
-                       (la-to-pa 6+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
-                       (+ 7 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
-                       (la-to-pa 7+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+8*) 8+lin-addr)
-                       (+ 8 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr8) x86)
-                       (la-to-pa 8+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+9*) 9+lin-addr)
-                       (+ 9 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr9) x86)
-                       (la-to-pa 9+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
+                    (byte0 (mbe :logic (part-select val :low 0 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff val))))
+                    (byte1 (mbe :logic (part-select val :low 8 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -8)))))
+                    (byte2 (mbe :logic (part-select val :low 16 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -16)))))
+                    (byte3 (mbe :logic (part-select val :low 24 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -24)))))
+                    (byte4 (mbe :logic (part-select val :low 32 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -32)))))
+                    (byte5 (mbe :logic (part-select val :low 40 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -40)))))
+                    (byte6 (mbe :logic (part-select val :low 48 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -48)))))
+                    (byte7 (mbe :logic (part-select val :low 56 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -56)))))
+                    (byte8 (mbe :logic (part-select val :low 64 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -64)))))
+                    (byte9 (mbe :logic (part-select val :low 72 :width 8)
+                                :exec (the (unsigned-byte 8)
+                                           (logand #xff (ash val -72)))))
 
-                      (byte0 (mbe :logic (part-select val :low 0 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff val))))
-                      (byte1 (mbe :logic (part-select val :low 8 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -8)))))
-                      (byte2 (mbe :logic (part-select val :low 16 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -16)))))
-                      (byte3 (mbe :logic (part-select val :low 24 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -24)))))
-                      (byte4 (mbe :logic (part-select val :low 32 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -32)))))
-                      (byte5 (mbe :logic (part-select val :low 40 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -40)))))
-                      (byte6 (mbe :logic (part-select val :low 48 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -48)))))
-                      (byte7 (mbe :logic (part-select val :low 56 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -56)))))
-                      (byte8 (mbe :logic (part-select val :low 64 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -64)))))
-                      (byte9 (mbe :logic (part-select val :low 72 :width 8)
-                                  :exec (the (unsigned-byte 8)
-                                          (logand #xff (ash val -72)))))
+                    (x86 (!memi p-addr0 byte0 x86))
+                    (x86 (!memi p-addr1 byte1 x86))
+                    (x86 (!memi p-addr2 byte2 x86))
+                    (x86 (!memi p-addr3 byte3 x86))
+                    (x86 (!memi p-addr4 byte4 x86))
+                    (x86 (!memi p-addr5 byte5 x86))
+                    (x86 (!memi p-addr6 byte6 x86))
+                    (x86 (!memi p-addr7 byte7 x86))
+                    (x86 (!memi p-addr8 byte8 x86))
+                    (x86 (!memi p-addr9 byte9 x86)))
 
-                      (x86 (!memi p-addr0 byte0 x86))
-                      (x86 (!memi p-addr1 byte1 x86))
-                      (x86 (!memi p-addr2 byte2 x86))
-                      (x86 (!memi p-addr3 byte3 x86))
-                      (x86 (!memi p-addr4 byte4 x86))
-                      (x86 (!memi p-addr5 byte5 x86))
-                      (x86 (!memi p-addr6 byte6 x86))
-                      (x86 (!memi p-addr7 byte7 x86))
-                      (x86 (!memi p-addr8 byte8 x86))
-                      (x86 (!memi p-addr9 byte9 x86)))
-
-                   (mv nil x86)))))
+                 (mv nil x86))))
 
           (mv 'wm80 x86)))
 
@@ -4015,96 +3408,62 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () (rb force (force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm128
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (r-x    :type (member  :r :x))
-   (x86))
+;; TODO: Prove rm128 equivalent to rb in the system-level mode.
+(define rm128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x      :type (member :r :x))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
-  :guard-hints
-  (("Goal"
-    :in-theory
-    (e/d (rb-and-rvm128
-          las-to-pas-as-las-to-pas-tailrec
-          las-to-pas-tailrec-opener
-          las-to-pas-tailrec-nil
-          combine-bytes-as-merge-16-u8s)
-         (rvm128
-          page-structure-marking-mode$inline
-          xr-and-ia32e-la-to-pa-in-non-marking-mode
-          mv-nth-2-ia32e-la-to-pa-system-level-non-marking-mode
-          acl2::loghead-identity
-          loghead-zero-smaller
-          (:meta acl2::mv-nth-cons-meta)
-          las-to-pas
-          combine-bytes
-          not
-          ash-monotone-2
-          default-+-2
-          default-+-1
-          unsigned-byte-p))))
+  :guard-hints (("Goal"
+                 :in-theory (e/d (rb-and-rvm128
+                                  rm08 rm64
+                                  rb-and-rvm128-helper-1
+                                  rb-and-rvm128-helper-2)
+                                 (not
+                                  ash-monotone-2
+                                  (:rewrite acl2::ash-0)
+                                  (:rewrite acl2::zip-open)
+                                  (:linear ash-monotone-2)
+                                  (:linear bitops::logior-<-0-linear-2)
+                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                                  (:rewrite bitops::logior-equal-0)
+                                  (:linear memi-is-n08p)))))
 
   :prepwork
   ((local
     (defthmd rb-and-rvm128-helper-1
-      (implies (and (programmer-level-mode x86)
-                    (x86p x86)
-                    (canonical-address-p lin-addr)
-                    (canonical-address-p (+ 15 lin-addr)))
-               (equal (rvm128 lin-addr x86)
-                      (list
-                       nil
-                       (logior (combine-bytes
-                                (mv-nth
-                                 1
-                                 (rb-1 (create-canonical-address-list 8 lin-addr)
-                                       r-x x86 nil)))
-                               (ash (combine-bytes
-                                     (mv-nth
-                                      1
-                                      (rb-1 (create-canonical-address-list 8 (+ 8 lin-addr))
-                                            r-x x86 nil)))
-                                    64))
-                       x86)))
-      :hints (("Goal"
-               :in-theory (e/d (rvm128 rb-and-rvm64)
-                               (force (force)))))))
+      (implies
+       (and (programmer-level-mode x86)
+            (x86p x86)
+            (canonical-address-p lin-addr)
+            (canonical-address-p (+ 15 lin-addr)))
+       (equal (rvm128 lin-addr x86)
+              (list
+               nil
+               (logior (mv-nth 1 (rb-1 8 lin-addr r-x x86))
+                       (ash (mv-nth 1 (rb-1 8 (+ 8 lin-addr) r-x x86))
+                            64))
+               x86)))
+      :hints (("Goal" :in-theory (e/d (rvm128 rb-and-rvm64)
+                                      (force (force)))))))
 
    (local
     (defthmd rb-and-rvm128-helper-2
-      (implies (and (programmer-level-mode x86)
-                    (x86p x86)
-                    (canonical-address-p lin-addr)
-                    (canonical-address-p (+ 15 lin-addr)))
-               (equal
-                (logior
-                 (combine-bytes (mv-nth 1
-                                        (rb-1 (create-canonical-address-list 8 lin-addr)
-                                              r-x x86 nil)))
-                 (ash (combine-bytes
-                       (mv-nth 1
-                               (rb-1 (create-canonical-address-list 8 (+ 8 lin-addr))
-                                     r-x x86 nil)))
-                      64))
-                (combine-bytes (mv-nth 1
-                                       (rb-1 (create-canonical-address-list 16 lin-addr)
-                                             r-x x86 nil)))))
+      (implies
+       (and (programmer-level-mode x86)
+            (x86p x86)
+            (canonical-address-p lin-addr)
+            (canonical-address-p (+ 15 lin-addr)))
+       (equal
+        (logior (mv-nth 1 (rb-1 8 lin-addr r-x x86))
+                (ash (mv-nth 1 (rb-1 8 (+ 8 lin-addr) r-x x86)) 64))
+        (mv-nth 1 (rb-1 16 lin-addr r-x x86))))
       :hints (("Goal"
                :in-theory (e/d () (force (force)))
                :use
-               ((:instance split-rb-and-create-canonical-address-list-in-programmer-level-mode
-                           (n 16)
-                           (m 8))
-                (:instance combine-bytes-of-append-of-byte-lists
-                           (xs (mv-nth
-                                1
-                                (rb-1 (create-canonical-address-list 8 lin-addr)
-                                      r-x x86 nil)))
-                           (ys (mv-nth
-                                1
-                                (rb-1 (create-canonical-address-list 8 (+ 8 lin-addr))
-                                      r-x x86 nil)))))))))
+               ((:instance split-rb-in-programmer-level-mode
+                           (i 8) (j 8)))))))
 
    (defthmd rb-and-rvm128
      (implies (and (programmer-level-mode x86)
@@ -4112,27 +3471,13 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 15 lin-addr)))
               (equal (rvm128 lin-addr x86)
-                     (b* (((mv flg bytes x86)
-                           (rb (create-canonical-address-list 16 lin-addr)
-                               r-x x86))
-                          (result (combine-bytes bytes)))
-                       (mv flg result x86))))
+                     (rb 16 lin-addr r-x x86)))
      :hints (("Goal"
-
+              :use ((:instance rb-1-in-terms-of-its-components
+                               (n 16)))
               :in-theory (e/d (rb-and-rvm128-helper-1
                                rb-and-rvm128-helper-2)
                               (force (force))))))
-
-   (defthm combine-bytes-size-for-rm128
-     (implies (and (signed-byte-p 48 lin-addr)
-                   (x86p x86)
-                   (signed-byte-p 48 (+ 15 lin-addr)))
-              (< (combine-bytes
-                  (mv-nth 1
-                          (rb (create-canonical-address-list 16 lin-addr)
-                              r-x x86)))
-                 *2^128*))
-     :rule-classes :linear)
 
    (defthm-usb unsigned-byte-p-128-of-merge-16-u8s-linear
      :hyp (and (unsigned-byte-p 8 h7)
@@ -4154,53 +3499,12 @@ memory.</li>
      :bound 128
      :concl (bitops::merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0 l7 l6 l5 l4 l3 l2 l1 l0)
      :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
-     :hints-l (("Goal" :in-theory (e/d* (unsigned-byte-p) (bitops::unsigned-byte-p-128-of-merge-16-u8s))
+     :hints-l (("Goal"
+                :in-theory
+                (e/d* (unsigned-byte-p) (bitops::unsigned-byte-p-128-of-merge-16-u8s))
                 :use ((:instance bitops::unsigned-byte-p-128-of-merge-16-u8s))))
-     :gen-linear t)
+     :gen-linear t))
 
-   (local
-    (defthmd logior-ash-to-logapp
-      (implies (unsigned-byte-p w x)
-               (equal (logior x (ash y w))
-                      (logapp w x y)))
-      :hints(("Goal" :in-theory (e/d* (ihsext-inductions
-                                       ihsext-recursive-redefs)
-                                      (unsigned-byte-p))))))
-
-   (local
-    (defthmd logior-ash-to-logapp-2
-      (implies (unsigned-byte-p w x)
-               (equal (logior x (ash y w) z)
-                      (logior (logapp w x y) z)))
-      :hints (("Goal" :use ((:instance (:theorem
-                                        (implies (equal a b)
-                                                 (equal (logior a c)
-                                                        (logior b c))))
-                                       (a (logior (ash y w) x))
-                                       (b (logapp w x y))))
-               :in-theory (e/d (logior-ash-to-logapp))))))
-
-
-   (local (defthm logior-0
-            (equal (logior x 0) (ifix x))))
-
-   (defthmd combine-bytes-as-merge-16-u8s
-     (implies
-      (and (unsigned-byte-p 8 b0)  (unsigned-byte-p 8 b1)  (unsigned-byte-p 8 b2)  (unsigned-byte-p 8 b3)
-           (unsigned-byte-p 8 b4)  (unsigned-byte-p 8 b5)  (unsigned-byte-p 8 b6)  (unsigned-byte-p 8 b7)
-           (unsigned-byte-p 8 b8)  (unsigned-byte-p 8 b9)  (unsigned-byte-p 8 b10) (unsigned-byte-p 8 b11)
-           (unsigned-byte-p 8 b12) (unsigned-byte-p 8 b13) (unsigned-byte-p 8 b14) (unsigned-byte-p 8 b15))
-      (equal
-       (combine-bytes
-        (list
-         b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15))
-       (bitops::merge-16-u8s
-        b15 b14 b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0)))
-     :hints (("goal" :in-theory (e/d (push-ash-inside-logior
-                                      merge-16-u8s
-                                      logior-ash-to-logapp)
-                                     (unsigned-byte-p
-                                      acl2::commutativity-of-logior))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
@@ -4208,130 +3512,121 @@ memory.</li>
                                (+ 15 (the (signed-byte #.*max-linear-address-size*)
                                           lin-addr)))))
 
+
         (if (mbe :logic (canonical-address-p 15+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
                                15+lin-addr)
                           #.*2^47*))
 
-            (mbe :logic
-                 (b* (((mv flg bytes x86)
-                       (rb (create-canonical-address-list 16 lin-addr)
-                           r-x x86))
-                      (result (combine-bytes bytes)))
-                   (mv flg result x86))
+            (if (programmer-level-mode x86)
+                (mbe :logic (rb 16 lin-addr r-x x86)
+                     :exec (rvm128 lin-addr x86))
 
-                 :exec
-                 (if (programmer-level-mode x86)
+              (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                    (la-to-pa lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
+                    (+ 1 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                    (la-to-pa 1+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
+                    (+ 2 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                    (la-to-pa 2+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
+                    (+ 3 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                    (la-to-pa 3+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
+                    (+ 4 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
+                    (la-to-pa 4+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
+                    (+ 5 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
+                    (la-to-pa 5+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
+                    (+ 6 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
+                    (la-to-pa 6+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
+                    (+ 7 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
+                    (la-to-pa 7+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+8*) 8+lin-addr)
+                    (+ 8 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr8) x86)
+                    (la-to-pa 8+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+9*) 9+lin-addr)
+                    (+ 9 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr9) x86)
+                    (la-to-pa 9+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+10*) 10+lin-addr)
+                    (+ 10 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr10) x86)
+                    (la-to-pa 10+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+11*) 11+lin-addr)
+                    (+ 11 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr11) x86)
+                    (la-to-pa 11+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+12*) 12+lin-addr)
+                    (+ 12 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr12) x86)
+                    (la-to-pa 12+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+13*) 13+lin-addr)
+                    (+ 13 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr13) x86)
+                    (la-to-pa 13+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+14*) 14+lin-addr)
+                    (+ 14 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr14) x86)
+                    (la-to-pa 14+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
+                   ((the (signed-byte #.*max-linear-address-size+15*) 15+lin-addr)
+                    (+ 15 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr15) x86)
+                    (la-to-pa 15+lin-addr r-x x86))
+                   ((when flag) (mv flag 0 x86))
 
-                     (rvm128 lin-addr x86)
+                   (byte0  (memi p-addr0  x86))
+                   (byte1  (memi p-addr1  x86))
+                   (byte2  (memi p-addr2  x86))
+                   (byte3  (memi p-addr3  x86))
+                   (byte4  (memi p-addr4  x86))
+                   (byte5  (memi p-addr5  x86))
+                   (byte6  (memi p-addr6  x86))
+                   (byte7  (memi p-addr7  x86))
+                   (byte8  (memi p-addr8  x86))
+                   (byte9  (memi p-addr9  x86))
+                   (byte10 (memi p-addr10 x86))
+                   (byte11 (memi p-addr11 x86))
+                   (byte12 (memi p-addr12 x86))
+                   (byte13 (memi p-addr13 x86))
+                   (byte14 (memi p-addr14 x86))
+                   (byte15 (memi p-addr15 x86))
 
-                   (let* ((cpl (cpl x86)))
+                   (oword
+                    (the (unsigned-byte 128)
+                         (bitops::merge-16-u8s
+                          byte15 byte14 byte13 byte12
+                          byte11 byte10 byte9  byte8
+                          byte7  byte6  byte5  byte4
+                          byte3  byte2  byte1  byte0))))
 
-                     (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                           (la-to-pa lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                           (+ 1 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                           (la-to-pa 1+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                           (+ 2 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                           (la-to-pa 2+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                           (+ 3 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                           (la-to-pa 3+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                           (+ 4 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                           (la-to-pa 4+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                           (+ 5 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                           (la-to-pa 5+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
-                           (+ 6 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
-                           (la-to-pa 6+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
-                           (+ 7 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
-                           (la-to-pa 7+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+8*) 8+lin-addr)
-                           (+ 8 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr8) x86)
-                           (la-to-pa 8+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+9*) 9+lin-addr)
-                           (+ 9 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr9) x86)
-                           (la-to-pa 9+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+10*) 10+lin-addr)
-                           (+ 10 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr10) x86)
-                           (la-to-pa 10+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+11*) 11+lin-addr)
-                           (+ 11 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr11) x86)
-                           (la-to-pa 11+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+12*) 12+lin-addr)
-                           (+ 12 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr12) x86)
-                           (la-to-pa 12+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+13*) 13+lin-addr)
-                           (+ 13 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr13) x86)
-                           (la-to-pa 13+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+14*) 14+lin-addr)
-                           (+ 14 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr14) x86)
-                           (la-to-pa 14+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-                          ((the (signed-byte #.*max-linear-address-size+15*) 15+lin-addr)
-                           (+ 15 lin-addr))
-                          ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr15) x86)
-                           (la-to-pa 15+lin-addr r-x cpl x86))
-                          ((when flag) (mv flag 0 x86))
-
-                          (byte0  (memi p-addr0  x86))
-                          (byte1  (memi p-addr1  x86))
-                          (byte2  (memi p-addr2  x86))
-                          (byte3  (memi p-addr3  x86))
-                          (byte4  (memi p-addr4  x86))
-                          (byte5  (memi p-addr5  x86))
-                          (byte6  (memi p-addr6  x86))
-                          (byte7  (memi p-addr7  x86))
-                          (byte8  (memi p-addr8  x86))
-                          (byte9  (memi p-addr9  x86))
-                          (byte10 (memi p-addr10 x86))
-                          (byte11 (memi p-addr11 x86))
-                          (byte12 (memi p-addr12 x86))
-                          (byte13 (memi p-addr13 x86))
-                          (byte14 (memi p-addr14 x86))
-                          (byte15 (memi p-addr15 x86))
-
-                          (oword
-                           (the (unsigned-byte 128)
-                                (bitops::merge-16-u8s
-                                 byte15 byte14 byte13 byte12
-                                 byte11 byte10 byte9  byte8
-                                 byte7  byte6  byte5  byte4
-                                 byte3  byte2  byte1  byte0))))
-
-                       (mv nil oword x86)))))
+                (mv nil oword x86)))
 
           (mv 'rm128 0 x86)))
 
@@ -4343,7 +3638,7 @@ memory.</li>
     :hyp (force (x86p x86))
     :bound 128
     :concl (mv-nth 1 (rm128 lin-addr r-x x86))
-    :hints (("Goal" :in-theory (e/d () (signed-byte-p ash-monotone-2 rb))))
+    :hints (("Goal" :in-theory (e/d () (signed-byte-p ash-monotone-2))))
     :otf-flg t
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (ash-monotone-2 rb))))
@@ -4352,27 +3647,29 @@ memory.</li>
   (defthm x86p-rm128
     (implies (force (x86p x86))
              (x86p (mv-nth 2 (rm128 lin-addr r-x x86))))
-    :hints (("Goal" :in-theory (e/d () (rb unsigned-byte-p signed-byte-p (force)))))
+    :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm128
-  ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-   (val      :type (unsigned-byte 128))
-   (x86))
+;; TODO: Prove wm128 equivalent to rb in the system-level mode.
+(define wm128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (val      :type (unsigned-byte 128))
+               (x86))
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
 
   :guard-hints
-  (("Goal"
-    :in-theory (e/d (wb-and-wvm128
-                     byte-ify
-                     las-to-pas-as-las-to-pas-tailrec
-                     las-to-pas-tailrec-opener
-                     las-to-pas-tailrec-nil
-                     create-addr-bytes-alist-opener)
-                    (wvm128
-                     las-to-pas))))
+  (("Goal" :in-theory (e/d (wb-and-wvm128)
+                           (wvm128
+                            not
+                            ash-monotone-2
+                            (:rewrite acl2::ash-0)
+                            (:rewrite acl2::zip-open)
+                            (:linear ash-monotone-2)
+                            (:linear bitops::logior-<-0-linear-2)
+                            (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                            (:rewrite bitops::logior-equal-0)
+                            (:linear memi-is-n08p)))))
 
   :prepwork
   ((defthmd wb-and-wvm128
@@ -4380,197 +3677,174 @@ memory.</li>
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 15 lin-addr)))
               (equal (wvm128 lin-addr val x86)
-                     (wb (create-addr-bytes-alist
-                          (create-canonical-address-list 16 lin-addr)
-                          (byte-ify 16 val))
-                         x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 wvm64 wvm128 byte-ify)
-                                     (append-and-create-addr-bytes-alist
-                                      cons-and-create-addr-bytes-alist
-                                      append-and-addr-byte-alistp
-                                      force (force) nthcdr-byte-listp)))))
-
-   (defthmd create-addr-bytes-alist-opener
-     (implies
-      (and (consp addr-list)
-           (equal (len addr-list) (len byte-list)))
-      (equal (create-addr-bytes-alist addr-list byte-list)
-             (acons (car addr-list) (car byte-list)
-                    (create-addr-bytes-alist (cdr addr-list)
-                                             (cdr byte-list)))))))
+                     (wb 16 lin-addr :w val x86)))
+     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 wvm64 wvm128)
+                                     (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((15+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                            (+ 15 (the (signed-byte #.*max-linear-address-size*)
-                                    lin-addr)))))
+                               (+ 15 (the (signed-byte #.*max-linear-address-size*)
+                                          lin-addr)))))
 
 
         (if (mbe :logic (canonical-address-p 15+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                            15+lin-addr)
+                               15+lin-addr)
                           #.*2^47*))
 
-            (mbe
-             :logic
-             (wb (create-addr-bytes-alist
-                  (create-canonical-address-list 16 lin-addr)
-                  (byte-ify 16 val))
-                 x86)
+            (if (programmer-level-mode x86)
 
-             :exec
-             (if (programmer-level-mode x86)
+                (mbe :logic (wb 16 lin-addr :w val x86)
+                     :exec (wvm128 lin-addr val x86))
 
-                 (wvm128 lin-addr val x86)
+              (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                    (la-to-pa lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
+                    (+ 1 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
+                    (la-to-pa 1+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
+                    (+ 2 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
+                    (la-to-pa 2+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
+                    (+ 3 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
+                    (la-to-pa 3+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
+                    (+ 4 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
+                    (la-to-pa 4+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
+                    (+ 5 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
+                    (la-to-pa 5+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
+                    (+ 6 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
+                    (la-to-pa 6+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
+                    (+ 7 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
+                    (la-to-pa 7+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+8*) 8+lin-addr)
+                    (+ 8 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr8) x86)
+                    (la-to-pa 8+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+9*) 9+lin-addr)
+                    (+ 9 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr9) x86)
+                    (la-to-pa 9+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+10*) 10+lin-addr)
+                    (+ 10 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr10) x86)
+                    (la-to-pa 10+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+11*) 11+lin-addr)
+                    (+ 11 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr11) x86)
+                    (la-to-pa 11+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+12*) 12+lin-addr)
+                    (+ 12 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr12) x86)
+                    (la-to-pa 12+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+13*) 13+lin-addr)
+                    (+ 13 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr13) x86)
+                    (la-to-pa 13+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+14*) 14+lin-addr)
+                    (+ 14 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr14) x86)
+                    (la-to-pa 14+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
+                   ((the (signed-byte #.*max-linear-address-size+15*) 15+lin-addr)
+                    (+ 15 lin-addr))
+                   ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr15) x86)
+                    (la-to-pa 15+lin-addr :w x86))
+                   ((when flag) (mv flag x86))
 
-               (let* ((cpl (cpl x86)))
-
-                 (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                       (la-to-pa lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+1*) 1+lin-addr)
-                       (+ 1 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr1) x86)
-                       (la-to-pa 1+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+2*) 2+lin-addr)
-                       (+ 2 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
-                       (la-to-pa 2+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+3*) 3+lin-addr)
-                       (+ 3 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
-                       (la-to-pa 3+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+4*) 4+lin-addr)
-                       (+ 4 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
-                       (la-to-pa 4+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+5*) 5+lin-addr)
-                       (+ 5 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
-                       (la-to-pa 5+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+6*) 6+lin-addr)
-                       (+ 6 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr6) x86)
-                       (la-to-pa 6+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+7*) 7+lin-addr)
-                       (+ 7 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr7) x86)
-                       (la-to-pa 7+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+8*) 8+lin-addr)
-                       (+ 8 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr8) x86)
-                       (la-to-pa 8+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+9*) 9+lin-addr)
-                       (+ 9 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr9) x86)
-                       (la-to-pa 9+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+10*) 10+lin-addr)
-                       (+ 10 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr10) x86)
-                       (la-to-pa 10+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+11*) 11+lin-addr)
-                       (+ 11 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr11) x86)
-                       (la-to-pa 11+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+12*) 12+lin-addr)
-                       (+ 12 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr12) x86)
-                       (la-to-pa 12+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+13*) 13+lin-addr)
-                       (+ 13 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr13) x86)
-                       (la-to-pa 13+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+14*) 14+lin-addr)
-                       (+ 14 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr14) x86)
-                       (la-to-pa 14+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-                      ((the (signed-byte #.*max-linear-address-size+15*) 15+lin-addr)
-                       (+ 15 lin-addr))
-                      ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr15) x86)
-                       (la-to-pa 15+lin-addr :w cpl x86))
-                      ((when flag) (mv flag x86))
-
-                      (byte0 (mbe :logic (part-select val :low 0 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte0 (mbe :logic (part-select val :low 0 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff val))))
-                      (byte1 (mbe :logic (part-select val :low 8 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte1 (mbe :logic (part-select val :low 8 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff (ash val -8)))))
-                      (byte2 (mbe :logic (part-select val :low 16 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte2 (mbe :logic (part-select val :low 16 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff (ash val -16)))))
-                      (byte3 (mbe :logic (part-select val :low 24 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte3 (mbe :logic (part-select val :low 24 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff (ash val -24)))))
-                      (byte4 (mbe :logic (part-select val :low 32 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte4 (mbe :logic (part-select val :low 32 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff (ash val -32)))))
-                      (byte5 (mbe :logic (part-select val :low 40 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte5 (mbe :logic (part-select val :low 40 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff (ash val -40)))))
-                      (byte6 (mbe :logic (part-select val :low 48 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte6 (mbe :logic (part-select val :low 48 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff (ash val -48)))))
-                      (byte7 (mbe :logic (part-select val :low 56 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte7 (mbe :logic (part-select val :low 56 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff (ash val -56)))))
-                      (byte8 (mbe :logic (part-select val :low 64 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte8 (mbe :logic (part-select val :low 64 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff (ash val -64)))))
-                      (byte9 (mbe :logic (part-select val :low 72 :width 8)
-                                  :exec (the (unsigned-byte 8)
+                   (byte9 (mbe :logic (part-select val :low 72 :width 8)
+                               :exec (the (unsigned-byte 8)
                                           (logand #xff (ash val -72)))))
-                      (byte10 (mbe :logic (part-select val :low 80 :width 8)
-                                   :exec (the (unsigned-byte 8)
+                   (byte10 (mbe :logic (part-select val :low 80 :width 8)
+                                :exec (the (unsigned-byte 8)
                                            (logand #xff (ash val -80)))))
-                      (byte11 (mbe :logic (part-select val :low 88 :width 8)
-                                   :exec (the (unsigned-byte 8)
+                   (byte11 (mbe :logic (part-select val :low 88 :width 8)
+                                :exec (the (unsigned-byte 8)
                                            (logand #xff (ash val -88)))))
-                      (byte12 (mbe :logic (part-select val :low 96 :width 8)
-                                   :exec (the (unsigned-byte 8)
+                   (byte12 (mbe :logic (part-select val :low 96 :width 8)
+                                :exec (the (unsigned-byte 8)
                                            (logand #xff (ash val -96)))))
-                      (byte13 (mbe :logic (part-select val :low 104 :width 8)
-                                   :exec (the (unsigned-byte 8)
+                   (byte13 (mbe :logic (part-select val :low 104 :width 8)
+                                :exec (the (unsigned-byte 8)
                                            (logand #xff (ash val -104)))))
-                      (byte14 (mbe :logic (part-select val :low 112 :width 8)
-                                   :exec (the (unsigned-byte 8)
+                   (byte14 (mbe :logic (part-select val :low 112 :width 8)
+                                :exec (the (unsigned-byte 8)
                                            (logand #xff (ash val -112)))))
-                      (byte15 (mbe :logic (part-select val :low 120 :width 8)
-                                   :exec (the (unsigned-byte 8)
+                   (byte15 (mbe :logic (part-select val :low 120 :width 8)
+                                :exec (the (unsigned-byte 8)
                                            (logand #xff (ash val -120)))))
 
-                      (x86 (!memi p-addr0 byte0 x86))
-                      (x86 (!memi p-addr1 byte1 x86))
-                      (x86 (!memi p-addr2 byte2 x86))
-                      (x86 (!memi p-addr3 byte3 x86))
-                      (x86 (!memi p-addr4 byte4 x86))
-                      (x86 (!memi p-addr5 byte5 x86))
-                      (x86 (!memi p-addr6 byte6 x86))
-                      (x86 (!memi p-addr7 byte7 x86))
-                      (x86 (!memi p-addr8 byte8 x86))
-                      (x86 (!memi p-addr9 byte9 x86))
-                      (x86 (!memi p-addr10 byte10 x86))
-                      (x86 (!memi p-addr11 byte11 x86))
-                      (x86 (!memi p-addr12 byte12 x86))
-                      (x86 (!memi p-addr13 byte13 x86))
-                      (x86 (!memi p-addr14 byte14 x86))
-                      (x86 (!memi p-addr15 byte15 x86)))
+                   (x86 (!memi p-addr0 byte0 x86))
+                   (x86 (!memi p-addr1 byte1 x86))
+                   (x86 (!memi p-addr2 byte2 x86))
+                   (x86 (!memi p-addr3 byte3 x86))
+                   (x86 (!memi p-addr4 byte4 x86))
+                   (x86 (!memi p-addr5 byte5 x86))
+                   (x86 (!memi p-addr6 byte6 x86))
+                   (x86 (!memi p-addr7 byte7 x86))
+                   (x86 (!memi p-addr8 byte8 x86))
+                   (x86 (!memi p-addr9 byte9 x86))
+                   (x86 (!memi p-addr10 byte10 x86))
+                   (x86 (!memi p-addr11 byte11 x86))
+                   (x86 (!memi p-addr12 byte12 x86))
+                   (x86 (!memi p-addr13 byte13 x86))
+                   (x86 (!memi p-addr14 byte14 x86))
+                   (x86 (!memi p-addr15 byte15 x86)))
 
-                   (mv nil x86)))))
+                (mv nil x86)))
+
 
           (mv 'wm128 x86)))
 
@@ -4592,12 +3866,12 @@ memory.</li>
 
   :short "Functions to read/write 8/16/32/64/128 bits into the memory:"
 
-  (define rm-size
-    ((nbytes :type (member 1 2 4 6 8 10 16))
-     (addr   :type (signed-byte #.*max-linear-address-size*))
-     (r-x  :type (member :r :x))
-     (x86))
+  (define rm-size ((nbytes :type (member 1 2 4 6 8 10 16))
+                   (addr   :type (signed-byte #.*max-linear-address-size*))
+                   (r-x    :type (member :r :x))
+                   (x86))
     :guard (natp nbytes)
+    :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))
     :inline t
     :enabled t
     (case nbytes
@@ -4616,12 +3890,8 @@ memory.</li>
       (16 (rm128 addr r-x x86))
       (otherwise
        (if (mbe :logic (canonical-address-p (+ -1 nbytes addr))
-                :exec (< (+ nbytes addr) #.*2^47-1*))
-           (b* (((mv flg bytes x86)
-                 (rb (create-canonical-address-list nbytes addr) r-x x86))
-                ((when flg)
-                 (mv flg 0 x86)))
-             (mv nil (combine-bytes bytes) x86))
+                :exec (< (+ -1 nbytes addr) #.*2^47*))
+           (rb nbytes addr r-x x86)
          (mv 'rm-size 0 x86))))
 
     ///
@@ -4630,24 +3900,26 @@ memory.</li>
       (implies (force (x86p x86))
                (x86p (mv-nth 2 (rm-size bytes lin-addr r-x x86)))))
 
-    (defthmd rm-size-to-rb
-      (implies (and (canonical-address-p (+ -1 nbytes lin-addr))
-                    (canonical-address-p lin-addr))
-               (b* (((mv flg1 val x86-1)
-                     (rm-size nbytes lin-addr r-x x86))
-                    ((mv flg2 bytes x86-2)
-                     (rb (create-canonical-address-list nbytes lin-addr) r-x x86)))
-                 (and (equal flg1 flg2)
-                      (equal val (if flg1 0 (combine-bytes bytes)))
-                      (equal x86-1 x86-2))))
-      :hints (("Goal" :in-theory (e/d* (signed-byte-p rm08 rm128 rm32 rm48 rm64 rm80 rm16)
-                                       (create-canonical-address-list-1))))))
+    ;; TODO Prove the following after proving the equivalence of rm128
+    ;; and rb in system-level mode.
+    ;; (defthmd rm-size-to-rb
+    ;;   (implies (and (canonical-address-p (+ -1 nbytes lin-addr))
+    ;;                 (canonical-address-p lin-addr))
+    ;;            (b* (((mv flg1 val x86-1)
+    ;;                  (rm-size nbytes lin-addr r-x x86))
+    ;;                 ((mv flg2 bytes x86-2)
+    ;;                  (rb nbytes lin-addr r-x x86)))
+    ;;              (and (equal flg1 flg2)
+    ;;                   (equal val (if flg1 0 bytes))
+    ;;                   (equal x86-1 x86-2))))
+    ;;   :hints (("Goal" :in-theory (e/d* (signed-byte-p rm08 rm128 rm32 rm48 rm64 rm80 rm16)
+    ;;                                    ()))))
+    )
 
-  (define rim-size
-    ((nbytes :type (member 1 2 4 8))
-     (addr   :type (signed-byte #.*max-linear-address-size*))
-     (r-x  :type (member :r :x))
-     (x86))
+  (define rim-size ((nbytes :type (member 1 2 4 8))
+                    (addr   :type (signed-byte #.*max-linear-address-size*))
+                    (r-x  :type (member :r :x))
+                    (x86))
     :inline t
     :enabled t
     (case nbytes
@@ -4658,11 +3930,10 @@ memory.</li>
       (otherwise
        (mv 'rim-size nbytes x86))))
 
-  (define wm-size
-    ((nbytes :type (member 1 2 4 6 8 10 16))
-     (addr   :type (signed-byte #.*max-linear-address-size*))
-     (val    :type (integer 0 *))
-     (x86))
+  (define wm-size ((nbytes :type (member 1 2 4 6 8 10 16))
+                   (addr   :type (signed-byte #.*max-linear-address-size*))
+                   (val    :type (integer 0 *))
+                   (x86))
     :guard (case nbytes
              (1  (n08p val))
              (2  (n16p val))
@@ -4689,14 +3960,7 @@ memory.</li>
       (otherwise
        (if (mbe :logic (canonical-address-p (+ -1 nbytes addr))
                 :exec (< (+ nbytes addr) #.*2^47-1*))
-           (b* (((mv flg x86)
-                 (wb (create-addr-bytes-alist
-                      (create-canonical-address-list nbytes addr)
-                      (byte-ify nbytes val))
-                     x86))
-                ((when flg)
-                 (mv flg x86)))
-             (mv nil x86))
+           (wb nbytes addr :w val x86)
          (mv 'wm-size x86))))
 
     ///
@@ -4706,29 +3970,27 @@ memory.</li>
                (x86p (mv-nth 1 (wm-size nbytes lin-addr val x86))))
       :hints (("Goal" :in-theory (e/d () (rb force (force) unsigned-byte-p signed-byte-p)))))
 
-    (defthmd wm-size-to-wb
-      (implies (and (canonical-address-p (+ -1 nbytes lin-addr))
-                    (canonical-address-p lin-addr))
-               (b* (((mv flg1 x86-1)
-                     (wm-size nbytes lin-addr val x86))
-                    ((mv flg2 x86-2)
-                     (wb (create-addr-bytes-alist
-                          (create-canonical-address-list nbytes lin-addr)
-                          (byte-ify nbytes val))
-                         x86)))
-                 (and (equal flg1 flg2)
-                      (equal x86-1 x86-2))))
-      :hints (("Goal" :in-theory (e/d* (signed-byte-p
-                                        las-to-pas
-                                        byte-ify
-                                        wm08 wm128 wm32 wm48 wm64 wm80 wm16)
-                                       ())))))
+    ;; TODO Prove the following after proving the equivalence of wm128
+    ;; and wb in system-level mode.
+    ;; (defthmd wm-size-to-wb
+    ;;   (implies (and (canonical-address-p (+ -1 nbytes lin-addr))
+    ;;                 (canonical-address-p lin-addr))
+    ;;            (b* (((mv flg1 x86-1)
+    ;;                  (wm-size nbytes lin-addr val x86))
+    ;;                 ((mv flg2 x86-2)
+    ;;                  (wb nbytes lin-addr :w val x86)))
+    ;;              (and (equal flg1 flg2)
+    ;;                   (equal x86-1 x86-2))))
+    ;;   :hints (("Goal" :in-theory (e/d* (signed-byte-p
+    ;;                                     las-to-pas
+    ;;                                     wm08 wm128 wm32 wm48 wm64 wm80 wm16)
+    ;;                                    ()))))
+    )
 
-  (define wim-size
-    ((nbytes :type (member 1 2 4 8))
-     (addr   :type (signed-byte #.*max-linear-address-size*))
-     (val    :type integer)
-     (x86))
+  (define wim-size ((nbytes :type (member 1 2 4 8))
+                    (addr   :type (signed-byte #.*max-linear-address-size*))
+                    (val    :type integer)
+                    (x86))
     :guard (case nbytes
              (1 (i08p val))
              (2 (i16p val))
@@ -4768,7 +4030,7 @@ memory.</li>
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((last-lin-addr (the (signed-byte 49)
-                              (+ -1 nbytes lin-addr))))
+                                 (+ -1 nbytes lin-addr))))
         (if (mbe :logic (canonical-address-p last-lin-addr)
                  :exec (< (the (signed-byte 49) last-lin-addr)
                           #.*2^47*))
@@ -4788,13 +4050,13 @@ memory.</li>
                (2 (rm16 lin-addr r-x x86))
                (4 (rm32 lin-addr r-x x86))
                (6
-                  ;; Use case: To fetch operands of the form m16:32 (see far jmp ;
-                  ;; instruction). ;
+                  ;; Use case: To fetch operands of the form m16:32 (see far jmp ; ;
+                  ;; instruction). ; ;
                 (rm48 lin-addr r-x x86))
                (8 (rm64 lin-addr r-x x86))
                (10
-                  ;; Use case: The instructions LGDT and LIDT need to read 10 ;
-                  ;; bytes at once. ;
+                  ;; Use case: The instructions LGDT and LIDT need to read 10 ; ;
+                  ;; bytes at once. ; ;
                 (rm80 lin-addr r-x x86))
                (16 (rm128 lin-addr r-x x86))
                (otherwise
@@ -4937,7 +4199,7 @@ memory.</li>
              (n16-to-i16 (part-select canonical-address :low 32 :high 47))
              :exec
              (the (signed-byte 16)
-               (ash canonical-address -32))))
+                  (ash canonical-address -32))))
            ((mv flg0 x86)
             (wm32 lin-addr canonical-address-low-nat x86))
            ((the (signed-byte #.*max-linear-address-size+1*) next-addr)
@@ -4946,7 +4208,7 @@ memory.</li>
                        :exec (<= #.*2^47*
                                  (the (signed-byte
                                        #.*max-linear-address-size+1*)
-                                   next-addr))))
+                                      next-addr))))
             (mv 'wm64-canonical-address-user-mode x86))
            ((mv flg1 x86)
             (wim32 next-addr canonical-address-high-int x86))
@@ -4956,38 +4218,15 @@ memory.</li>
 
     (mv 'unreachable x86)))
 
-(local (in-theory (e/d* () ((:meta acl2::mv-nth-cons-meta)))))
-
-(local
- (defthm mv-nth-0-of-list-of-2-things
-   (equal (mv-nth 0 (list x y)) x)))
-
-(local
- (defthm mv-nth-1-of-list-of-2-things
-   (equal (mv-nth 1 (list x y)) y)))
-
-(local
- (defthm combining-wb-1
-   (implies (and (addr-byte-alistp alst-1)
-                 (addr-byte-alistp alst-2)
-                 (programmer-level-mode x86)
-                 (x86p x86))
-            (equal
-             (mv-nth 1 (wb-1 alst-2 (mv-nth 1 (wb-1 alst-1 x86))))
-             (mv-nth 1 (wb-1 (append alst-1 alst-2) x86))))
-   :hints (("Goal" :in-theory (e/d* (wb-1)
-                                    ((:meta acl2::mv-nth-cons-meta)))))))
-
 (local
  (defthmd wb-1-in-programmer-level-mode
-   (implies (and (addr-byte-alistp addr-lst)
-                 (x86p x86)
-                 (programmer-level-mode x86))
-            (equal (wb-1 addr-lst x86)
-                   (mv
-                    nil
-                    (mv-nth 1 (wb-1 addr-lst x86)))))))
-
+   (implies (and (x86p x86)
+                 (programmer-level-mode x86)
+                 (canonical-address-p lin-addr)
+                 (canonical-address-p (+ -1 n lin-addr)))
+            (equal (wb-1 n lin-addr w val x86)
+                   (mv nil (mv-nth 1 (wb-1 n lin-addr w val x86)))))
+   :hints (("Goal" :in-theory (e/d* (wvm08) ())))))
 
 (local
  (defthm write-canonical-address-to-memory-user-exec-and-wb
@@ -4998,31 +4237,23 @@ memory.</li>
                  (x86p x86))
             (equal (write-canonical-address-to-memory-user-exec
                     lin-addr canonical-address x86)
-                   (wb (create-addr-bytes-alist
-                        (create-canonical-address-list 8 lin-addr)
-                        (byte-ify 8 canonical-address))
-                       x86)))
+                   (wb 8 lin-addr :w (loghead 64 canonical-address) x86)))
    :hints (("Goal"
-            :use ((:instance create-canonical-address-list-split
+            :use ((:instance split-wb-in-programmer-level-mode
+                             (i 4)
                              (j 4)
-                             (k 4)
-                             (addr lin-addr))
+                             (w :w)
+                             (lin-addr lin-addr)
+                             (val (loghead 64 canonical-address)))
                   (:instance wb-1-in-programmer-level-mode
-                             (addr-lst (create-addr-bytes-alist
-                                        (create-canonical-address-list 8 lin-addr)
-                                        (list (loghead 8 canonical-address)
-                                              (loghead 8 (logtail 8 canonical-address))
-                                              (loghead 8 (logtail 16 canonical-address))
-                                              (loghead 8 (logtail 24 canonical-address))
-                                              (loghead 8 (logtail 32 canonical-address))
-                                              (loghead 8 (logtail 40 canonical-address))
-                                              (loghead 8 (logtail 48 canonical-address))
-                                              (loghead 8 (logtail 56 canonical-address)))))))
+                             (n 8)
+                             (lin-addr lin-addr)
+                             (w :w)
+                             (val (loghead 64 canonical-address))))
             :in-theory (e/d*
                         (write-canonical-address-to-memory-user-exec
                          wim32
                          wm32
-                         byte-ify
                          wb-and-wvm64
                          wb-1)
                         ())))))
@@ -5037,22 +4268,19 @@ memory.</li>
                                         ())))
 
   (let* ((7+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
-                       (+ 7 lin-addr))))
+                          (+ 7 lin-addr))))
 
 
     (if (mbe :logic (canonical-address-p 7+lin-addr)
              :exec (< (the (signed-byte #.*max-linear-address-size+2*)
-                        7+lin-addr)
+                           7+lin-addr)
                       #.*2^47*))
 
 
         (if (programmer-level-mode x86)
 
             (mbe :logic
-                 (wb (create-addr-bytes-alist
-                      (create-canonical-address-list 8 lin-addr)
-                      (byte-ify 8 canonical-address))
-                     x86)
+                 (wb 8 lin-addr :w (loghead 64 canonical-address) x86)
                  :exec
                  (write-canonical-address-to-memory-user-exec
                   lin-addr canonical-address x86))
@@ -5083,36 +4311,278 @@ memory.</li>
 
 ;; ======================================================================
 
-(define program-at (addresses bytes x86)
-
+(defsection program-location
   :parents (x86-top-level-memory)
-  :non-executable t
 
-  :short "Predicate that makes a statement about a program's location
+  (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+
+  (define byte-listp (x)
+    :parents (x86-top-level-memory)
+    :short "Recognizer of a list of bytes"
+    :enabled t
+    (if (equal x nil)
+        t
+      (and (consp x)
+           (n08p (car x))
+           (byte-listp (cdr x))))
+    ///
+
+    (defthm byte-listp-implies-true-listp
+      (implies (byte-listp x)
+               (true-listp x))
+      :rule-classes :forward-chaining)
+
+    (defthm-usb n08p-element-of-byte-listp
+      :hyp (and (byte-listp acc)
+                (natp m)
+                (< m (len acc)))
+      :bound 8
+      :concl (nth m acc)
+      :gen-linear t
+      :gen-type t)
+
+    (defthm nthcdr-byte-listp
+      (implies (byte-listp xs)
+               (byte-listp (nthcdr n xs)))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm len-of-nthcdr-byte-listp
+      (implies (and (< m (len acc))
+                    (natp m))
+               (equal (len (nthcdr m acc))
+                      (- (len acc) m))))
+
+    (defthm byte-listp-revappend
+      (implies (forced-and (byte-listp lst1)
+                           (byte-listp lst2))
+               (byte-listp (revappend lst1 lst2)))
+      :rule-classes :type-prescription)
+
+    (defthm true-listp-make-list-ac
+      (implies (true-listp ac)
+               (true-listp (make-list-ac n val ac)))
+      :rule-classes :type-prescription)
+
+    (defthm make-list-ac-byte-listp
+      (implies (and (byte-listp x)
+                    (natp n)
+                    (n08p m))
+               (byte-listp (make-list-ac n m x)))
+      :rule-classes (:type-prescription :rewrite))
+
+    (defthm reverse-byte-listp
+      (implies (byte-listp x)
+               (byte-listp (reverse x)))
+      :rule-classes (:type-prescription :rewrite))
+
+    (defthm byte-listp-append
+      (implies (forced-and (byte-listp lst1)
+                           (byte-listp lst2))
+               (byte-listp (append lst1 lst2)))
+      :rule-classes (:rewrite :type-prescription)))
+
+  (define combine-bytes (bytes)
+    :guard (byte-listp bytes)
+    :enabled t
+    (if (endp bytes)
+        0
+      (logior (car bytes)
+              (ash (combine-bytes (cdr bytes)) 8)))
+
+    ///
+    (defthm natp-combine-bytes
+      (implies (force (byte-listp bytes))
+               (natp (combine-bytes bytes)))
+      :rule-classes :type-prescription)
+
+    (local
+     (encapsulate
+       ()
+       (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+       (defthm plus-and-expt
+         (implies (and (natp y)
+                       (natp a)
+                       (< a (expt 256 y))
+                       (natp b)
+                       (< b 256))
+                  (< (+ b (* 256 a))
+                     (expt 256 (+ 1 y)))))))
+
+    (local (include-book "arithmetic-5/top" :dir :system))
+
+    (local
+     (in-theory (disable acl2::normalize-factors-gather-exponents
+                         acl2::arith-5-active-flag
+                         acl2::|(* c (expt d n))|)))
+
+    (defthm size-of-combine-bytes
+      (implies (and (byte-listp bytes)
+                    (equal l (len bytes)))
+               (< (combine-bytes bytes) (expt 2 (ash l 3))))
+      :hints (("Goal" :in-theory (e/d* (logapp) ())))
+      :rule-classes :linear)
+
+    (local (in-theory (e/d* (unsigned-byte-p) ())))
+
+    (defthm unsigned-byte-p-of-combine-bytes
+      (implies (and (byte-listp bytes)
+                    (equal n (ash (len bytes) 3)))
+               (unsigned-byte-p n (combine-bytes bytes)))
+      :rule-classes ((:rewrite)
+                     (:linear
+                      :corollary
+                      (implies (and (byte-listp bytes)
+                                    (equal n (ash (len bytes) 3)))
+                               (<= 0 (combine-bytes bytes)))))))
+
+  (local (include-book "std/lists/nthcdr" :dir :system))
+  (local (include-book "std/lists/take" :dir :system))
+
+  (defthm byte-listp-of-nthcdr
+    (implies (byte-listp xs)
+             (byte-listp (nthcdr n xs))))
+
+  (defthm byte-listp-of-take
+    (implies (and (byte-listp xs)
+                  (<= n (len xs)))
+             (byte-listp (take n xs))))
+
+  (define combine-n-bytes ((low  natp "Index of the first byte")
+                           (num  natp "Number of bytes to combine,
+                                       starting at @('pos')")
+                           (bytes byte-listp))
+    :guard (<= (+ low num) (len bytes))
+    :enabled t
+    (combine-bytes (take num (nthcdr low bytes)))
+
+    ///
+
+    (defthm combine-bytes-and-take-degenerate-cases
+      (and (implies (zp n) (equal (combine-bytes (take n bytes)) 0))
+           (equal (combine-bytes (take n nil)) 0)))
+
+    (defthm natp-of-combine-bytes-of-take
+      (implies (byte-listp bytes)
+               (<= 0 (combine-bytes (take num bytes))))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthm natp-combine-n-bytes
+      (implies (force (byte-listp bytes))
+               (natp (combine-n-bytes low num bytes)))
+      :hints (("Goal" :in-theory (e/d* () (force (force)))))
+      :rule-classes
+      ((:type-prescription)
+       (:linear
+        :corollary
+        (implies (byte-listp bytes)
+                 (<= 0 (combine-n-bytes low num bytes))))))
+
+    (local
+     (encapsulate
+       ()
+
+       (local (include-book "arithmetic-3/top" :dir :system))
+
+       (defthmd ash-combine
+         (implies (integerp num)
+                  (equal (+ (ash (+ -1 num) 3) 8)
+                         (ash num 3)))
+         :hints (("Goal" :in-theory (e/d* (ash) ()))))))
+
+    (defthmd unsigned-byte-p-of-logior-and-ash-in-second-arg
+      (implies (and (unsigned-byte-p n x)
+                    (unsigned-byte-p i b))
+               (unsigned-byte-p (+ i n) (logior b (ash x i))))
+      :rule-classes
+      ((:rewrite
+        :corollary
+        (implies (and (< x (expt 2 n))
+                      (< b (expt 2 i))
+                      (natp x) (natp n)
+                      (natp b) (natp i))
+                 (< (logior b (ash x i))
+                    (expt 2 (+ i n))))
+        :hints (("Goal"
+                 :in-theory (union-theories '(unsigned-byte-p integer-range-p natp)
+                                            (theory 'minimal-theory)))))))
+
+    (local
+     (defthm size-of-combine-bytes-of-take-helper
+       (implies (and (not (zp num))
+                     (< (combine-bytes (take (+ -1 num) (cdr bytes)))
+                        (expt 2 (ash (+ -1 num) 3)))
+                     (integerp (car bytes))
+                     (< (car bytes) 256))
+                (< (logior (car bytes)
+                           (ash (combine-bytes (take (+ -1 num) (cdr bytes)))
+                                8))
+                   (expt 2 (ash num 3))))
+       :hints (("Goal"
+                :use ((:instance ash-combine)
+                      (:instance unsigned-byte-p-of-logior-and-ash-in-second-arg
+                                 (i 8) (n (ash (+ -1 num) 3))
+                                 (b (car bytes))
+                                 (x (combine-bytes (take (+ -1 num) (cdr bytes))))))))))
+
+    (defthm size-of-combine-bytes-of-take
+      (implies (byte-listp bytes)
+               (< (combine-bytes (take num bytes)) (expt 2 (ash num 3))))
+      :rule-classes :linear)
+
+    (defthm size-of-combine-n-bytes
+      (implies (byte-listp bytes)
+               (< (combine-n-bytes low num bytes) (expt 2 (ash num 3))))
+      :rule-classes :linear)
+
+    (defthm unsigned-byte-p-of-combine-n-bytes
+      (implies (and (byte-listp bytes) (natp num))
+               (unsigned-byte-p (ash num 3) (combine-n-bytes low num bytes)))
+      :hints (("Goal"
+               :use ((:instance size-of-combine-n-bytes)
+                     (:instance natp-combine-n-bytes))
+               :in-theory (e/d* () (combine-n-bytes))))))
+
+  (define program-at (prog-addr bytes x86)
+
+    :parents (x86-top-level-memory)
+    :non-executable t
+
+    :short "Predicate that makes a statement about a program's location
   in the memory"
+    :long "<p>We use @('program-at') to state that a program, given by
+  as a list of @('bytes'), is located at contiguous addresses from
+  @('prog-addr') to @('(len bytes) + prog-addr - 1') in the memory of
+  the x86 state.  Note that this function is non-executable; we use it
+  only for reasoning about machine-code.</p>"
+    :guard (and (canonical-address-p prog-addr)
+                (canonical-address-p (+ -1 (len bytes) prog-addr))
+                (byte-listp bytes))
 
-  :long "<p>We use @('program-at') to state that a program, given by
-  as a list of @('bytes'), is located at the list of @('addresses') in
-  the memory of the x86 state.  Note that this function is
-  non-executable; we use it only for reasoning about
-  machine-code.</p>"
+    (b* (((mv flg bytes-read ?x86)
+          (rb (len bytes) prog-addr :x x86)))
+      (and
+       (equal flg        nil)
 
-  :guard (and (canonical-address-listp addresses)
-              (byte-listp bytes))
+       ;; (combine-n-bytes 2 3 '(#xAA #xBB #xCC #xDD #xEE))
+       ;; ==
+       ;; (part-select (combine-bytes '(#xAA #xBB #xCC #xDD #xEE))
+       ;;              :low (ash 2 3) :width (ash 3 3))
 
-  (b* (((mv flg bytes-read ?x86)
-        (rb addresses :x x86))
-       ((when flg) nil))
-    (equal bytes bytes-read))
+       ;; I prefer combine-n-bytes here instead of combine-bytes
+       ;; because combine-n-bytes lets me think of subseqs of a list
+       ;; in the same way I think about slices of a number a la
+       ;; part-select.
+       (equal bytes-read (combine-n-bytes 0 (len bytes) bytes))))
 
-  ///
+    ///
 
-  (defthm program-at-xw-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
-             (equal (program-at addresses bytes (xw fld index value x86))
-                    (program-at addresses bytes x86)))
-    :hints (("Goal" :in-theory (e/d* () (rb))))))
+    (defthm program-at-xw-in-programmer-level-mode
+      (implies (and (programmer-level-mode x86)
+                    (not (equal fld :mem))
+                    (not (equal fld :programmer-level-mode)))
+               (equal (program-at addr bytes (xw fld index value x86))
+                      (program-at addr bytes x86)))
+      :hints (("Goal" :in-theory (e/d* () (rb)))))))
 
 ;; ======================================================================

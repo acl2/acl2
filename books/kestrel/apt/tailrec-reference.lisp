@@ -1,17 +1,10 @@
-; APT Tail Recursion Transformation -- Reference
+; APT Tail Recursion Transformation -- Reference Documentation
 ;
 ; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This file provides reference documentation for
-; the tail recursion transformation,
-; which turns a recursive function that is not tail-recursive
-; into an equivalent tail-recursive function.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,7 +92,7 @@
      be in logic mode,
      be defined,
      return a non-<see topic='@(url mv)'>multiple</see> value,
-     have no input or output @(see acl2::stobj)s,
+     have no input or output <see topic='@(url acl2::stobj)'>stobjs</see>,
      be singly (not mutually) recursive, and
      not have a @(':?') measure.
      If the @(':verify-guards') input is @('t'),
@@ -253,17 +246,20 @@
        <li>
        The name of a logic-mode unary function
        that returns a non-<see topic='@(url mv)'>multiple</see> value
-       and that has no input or output @(see acl2::stobj)s.
+       and that has no
+       input or output <see topic='@(url acl2::stobj)'>stobjs</see>.
        If the generated functions are guard-verified
        (which is determined by the @(':verify-guards') input; see below),
        then the @(':domain') function must be guard-verified as well.
+       The @(':domain') function must be distinct from @('old').
        </li>
 
        <li>
        A unary closed lambda expression
        that only references logic-mode functions,
        that returns a non-<see topic='@(url mv)'>multiple</see> value
-       and that has no input or output @(see acl2::stobj)s.
+       and that has no
+       input or output <see topic='@(url acl2::stobj)'>stobjs</see>.
        As an abbreviation, the name @('mac') of a macro stands for
        the lambda expression @('(lambda (z1 z2 ...) (mac z1 z2 ...))'),
        where @('z1'), @('z2'), ... are the required parameters of @('mac');
@@ -273,7 +269,9 @@
        (which is determined by the @(':verify-guards') input; see below),
        then the body of the lambda expression
        must only call guard-verified functions,
-       except possibly in the @(':logic') subterms of @(tsee mbe)s.
+       except possibly in the @(':logic') subterms of @(tsee mbe)s
+       and via @(tsee ec-call).
+       The lambda expression must not include any calls to @('old').
        </li>
 
      </ul>
@@ -487,8 +485,8 @@
      <blockquote>
 
      <p>
-     Determines whether @('new') and @('wrapper')
-     are @(see acl2::non-executable):
+     Determines whether @('new') and @('wrapper') are
+     <see topic='@(url acl2::non-executable)'>non-executable</see>:
      </p>
 
      <ul>
@@ -548,8 +546,8 @@
      </p>
 
      <p>
-     It must be an alist
-     @('((appcond1 . hints1) ... (appcondp . hintsp))')
+     It must be a list of doublets
+     @('((appcond1 hints1) ... (appcondp hintsp))')
      where each @('appcondk') is a symbol (in any package)
      that names one of the applicability conditions below,
      and each @('hintsk') consists of hints as may appear

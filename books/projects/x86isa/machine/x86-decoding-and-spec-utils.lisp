@@ -43,7 +43,10 @@ is typically the function name (a symbol).</li>
 be bound.  We return an updated @('x86') that has a non-nil @('ms')
 field conveying useful information. </li>
 
-<li>@('!!ms-fresh'): @('ctx') must already be bound.</li>
+<li>@('!!ms-fresh'): @('ctx') and @('x86') must already be bound.</li>
+
+<li>@('!!fault-fresh'): like @('!!ms-fresh') but it updates
+the @('fault') field instead.</li>
 
 </ul>
 
@@ -53,7 +56,9 @@ field conveying useful information. </li>
 
 @(def !!ms)
 
-@(def !!ms-fresh)"
+@(def !!ms-fresh)
+
+@(def !!fault-fresh)"
 
   (defmacro !ms-erp (&rest args)
     `(cons (list ctx ,@args)
@@ -70,15 +75,97 @@ field conveying useful information. </li>
   (defmacro !!ms-fresh (&rest args)
     `(!ms (!ms-erp-fresh :rip (rip x86) ,@args)
           x86))
+
+  (defmacro !!fault-fresh (&rest args)
+    `(!fault (!ms-erp-fresh :rip (rip x86) ,@args)
+             x86))
   )
 
+;; Extended by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+;; Extended from always T to discriminating between 64-bit and 32-bit mode.
 (define 64-bit-modep (x86)
-  (declare (ignore x86))
-
   :parents (x86-decoding-and-spec-utils)
-  :short "@('64-bit-modep') is simply true, since we are focusing only
-  on the 64-bit mode for now."
-  t)
+  :short "Check whether we are in 64-bit mode."
+  :long
+  "<p>
+   For now we do not model in detail all the processor modes and transitions
+   (see Figure 2-3 in Intel Volume 3A).
+   We implicitly assume that the processor
+   is always in one of the following modes:
+   </p>
+   <ul>
+     <li>Protected mode.</li>
+     <li>Compatibility mode (sub-mode of IA-32e mode).</li>
+     <li>64-bit mode (sub-mode of IA-32e mode).</li>
+   </ul>
+   <p>
+   No real-address mode, virtual-8086 mode, or system management mode for now.
+   </p>
+   <p>
+   Given the above assumption, this predicate discriminates between
+   64-bit mode and the other two modes (collectively, 32-bit mode).
+   Based on Section 2.2 of in Intel Volume 3A (near Figure 2-3),
+   the discrimination is based on the IA32_EFER.LME and CS.L bits:
+   if they are both 1, we are in 64-bit mode,
+   otherwise we are in 32-bit mode
+   (protected mode if IA32_EFER.LME is 0,
+   compatibility mode if IA32_EFER.LME is 1 and CS.L is 0;
+   note that when IA32_EFER.LME is 0, CS.L should be 0,
+   according to Section 3.4.5 of Intel Volume 3A).
+   </p>
+   <p>
+   This predicate does not include state invariants such as
+   the constraints imposed by the 64-bit mode consistency checks
+   described in Section 9.8.5 of Intel Volume 3A.
+   </p>
+   <p>
+   This predicate is useful as a hypothesis of theorems
+   about either 64-bit or 32-bit mode.
+   </p>
+   <p>
+   Since @('(xr :msr ... x86)') returns a 64-bit value
+   but the IA32_EFER register consists of 12 bits.
+   So we use @(tsee n12) to make @('ia32_efer-slice') applicable.
+   </p>"
+  (b* ((ia32_efer (n12 (xr :msr *ia32_efer-idx* x86)))
+       (ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
+       (cs-hidden (xr :seg-hidden *cs* x86))
+       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+       (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
+    (and (equal ia32_efer.lma 1)
+         (equal cs.l 1)))
+  ///
+
+  (defrule 64-bit-modep-of-xw ; contributed by Eric Smith
+    (implies (and (not (equal fld :msr))
+                  (not (equal fld :seg-hidden)))
+             (equal (64-bit-modep (xw fld index value x86))
+                    (64-bit-modep x86))))
+
+  (defrule 64-bit-modep-of-mv-nth-1-of-wb ; contributed by Eric Smith
+    (equal (64-bit-modep (mv-nth 1 (wb n addr w value x86)))
+           (64-bit-modep x86)))
+
+  (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
+    (equal (64-bit-modep (!flgi flag val x86))
+           (64-bit-modep x86)))
+
+  (defrule 64-bit-modep-of-!flgi-undefined
+    (equal (64-bit-modep (!flgi-undefined flg x86))
+           (64-bit-modep x86))
+    :enable !flgi-undefined)
+
+  (defrule 64-bit-modep-of-write-user-rflags
+    (equal (64-bit-modep (write-user-rflags vector mask x86))
+           (64-bit-modep x86)))
+
+  (defrule 64-bit-modep-of-las-to-pas
+    (equal (64-bit-modep (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+           (64-bit-modep x86)))
+
+  (defrule 64-bit-modep-of-write-x86-file-des
+    (equal (64-bit-modep (write-x86-file-des fd fd-field x86))
+           (64-bit-modep x86))))
 
 ;; ======================================================================
 
@@ -461,17 +548,17 @@ made from privilege level 3.</sf>"
                       (alignment-checking-enabled-p x86))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-1-wb
-      (equal (alignment-checking-enabled-p (mv-nth 1 (wb addr-lst x86)))
+      (equal (alignment-checking-enabled-p (mv-nth 1 (wb n addr w val x86)))
              (alignment-checking-enabled-p x86))
       :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory flgi) ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-2-rb
-      (equal (alignment-checking-enabled-p (mv-nth 2 (rb l-addrs r-w-x x86)))
+      (equal (alignment-checking-enabled-p (mv-nth 2 (rb n addr r-x x86)))
              (alignment-checking-enabled-p x86))
       :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-2-las-to-pas
-      (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+      (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (alignment-checking-enabled-p x86))))
 
   (define x86-operand-from-modr/m-and-sib-bytes
@@ -866,7 +953,33 @@ made from privilege level 3.</sf>"
 (program)
 
 (defun add-to-implemented-opcodes-table-fn
-  (opcode-name opcode type fn-name world state)
+    (opcode-name opcode type fn-name world state)
+
+  ;; For most x86 instructions (e.g., ADD, opcode: 00), the type field
+  ;; is simply '(:nil nil) --- though we don't enforce any constraints
+  ;; on it (except that it must be a true-listp).  However, this type
+  ;; field comes in useful when just knowing the opcode value is not
+  ;; sufficient to tell us which x86 instruction we're talking about.
+  ;; Consider the one-byte opcode 80 --- unless we also know the value
+  ;; of the reg field of the ModR/M byte, we can't tell whether this
+  ;; opcode corresponds to an ADD, OR, CMP, XOR, SUB, AND, SBB, or ADC
+  ;; instruction (immediate group 1).  For instance, the ADD flavor of
+  ;; 80 is listed as "80 / 0" in the Intel manuals (see Section
+  ;; 3.1.1.1 in Intel Vol. 2, March 2017 edition, for details), which
+  ;; means that the opcode byte is 80 and the reg field has the value
+  ;; 0.  For this instruction, the type field would be '(:reg 0).
+
+  ;; Another example of the kind of information the type field can
+  ;; have is mandatory prefixes.  For example, instruction MOVSS
+  ;; (two-byte opcode, 0F 10) is called with a mandatory prefix F3. We
+  ;; chose the type field to be the following in this case:
+  ;; '(:misc
+  ;;   (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
+
+  ;; All of this type information in the implemented-opcodes-table can
+  ;; be seen in :doc x86isa::implemented-opcodes, listed in the
+  ;; "Extension" part of each instruction.
+
   (declare (xargs :stobjs state
                   :guard (and (natp opcode)
                               (true-listp type)
@@ -883,6 +996,7 @@ made from privilege level 3.</sf>"
   `(make-event
     (add-to-implemented-opcodes-table-fn
      ,opcode-name ,opcode ,type ,fn-name (w state) state)))
+
 
 (logic)
 

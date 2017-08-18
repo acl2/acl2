@@ -296,7 +296,8 @@
 (defxdoc Publications
   :parents (x86isa)
   :short "Technical publications related to the work done during this project"
-  :long "<ol>
+  :long "<p>From the oldest to the newest:</p>
+ <ol>
 
  <li>Warren A. Hunt, Jr. and Matt Kaufmann. Towards a Formal Model of
    the x86 ISA. Technical Report, Department of Computer Science, The
@@ -321,6 +322,19 @@
    Programs That Make System Calls. In Proceedings of the 14th
    Conference on Formal Methods in Computer-Aided Design (FMCAD 14),
    pages 18:91 98, 2014</li>
+
+ <li>Shilpi Goel. Formal Verification of Application and System
+  Programs Based on a Validated x86 ISA Model. Ph.D. Dissertation,
+  Department of Computer Science, The University of Texas at
+  Austin. 2016</li>
+
+ <li>Shilpi Goel, Warren A. Hunt, Jr., and Matt Kaufmann.  Engineering
+  a Formal, Executable x86 ISA Simulator for Software Verification. In
+  Provably Correct Systems (ProCoS), 2017</li>
+
+ <li>Shilpi Goel. The @('x86isa') Books: Features, Usage, and Future
+  Plans}. In the Fourteenth International Workshop on the ACL2 Theorem
+  Prover and Its Applications (ACL2 Workshop), 2017</li>
 
  </ol>")
 
@@ -390,9 +404,6 @@
 
  <h3>TO-DO</h3>
 
- <p>The items below need to be done sometime soon because they affect
- usability or in some cases, correctness of the x86 model.</p>
-
  <ul>
 
  <li>Remove the capability of reading and writing 6 and 10 bytes from
@@ -408,17 +419,14 @@
 
  <h3>Wishlist</h3>
 
- <p>The items below would be good to have someday, but they are not on
- the critical path.</p>
-
  <ul>
 
  <li>Generate the dispatch function using
- @('implemented-opcodes-table') in machine/x86.lisp.</li>
+ @('implemented-opcodes-table') in @('machine/x86.lisp').</li>
 
  <li>Save memory by loading either the elf or mach-o stobj as
  necessary, as opposed to loading both by default in
- tools/execution/top.lisp.</li>
+ @('tools/execution/top.lisp').</li>
 
  </ul>")
 

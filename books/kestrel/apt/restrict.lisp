@@ -44,29 +44,33 @@
   :short "Ensure that the @('old') input to the transformation is valid."
   (b* ((wrld (w state))
        ((er old-fn-name) (ensure-function-name-or-numbered-wildcard$
-                          old "The first input"))
+                          old "The first input" t nil))
        (description (msg "The target function ~x0" old-fn-name))
-       ((er &) (ensure-function-logic-mode$ old-fn-name description))
-       ((er &) (ensure-function-defined$ old-fn-name description))
-       ((er &) (ensure-function-has-args$ old-fn-name description))
-       ((er &) (ensure-function-number-of-results$ old-fn-name 1 description))
-       ((er &) (ensure-function-no-stobjs$ old-fn-name description))
+       ((er &) (ensure-function-logic-mode$ old-fn-name description t nil))
+       ((er &) (ensure-function-defined$ old-fn-name description t nil))
+       ((er &) (ensure-function-has-args$ old-fn-name description t nil))
+       ((er &) (ensure-function-number-of-results$ old-fn-name 1
+                                                   description t nil))
+       ((er &) (ensure-function-no-stobjs$ old-fn-name description t nil))
        (recursive (recursivep old-fn-name nil wrld))
        ((er &) (if recursive
-                   (ensure-function-singly-recursive$ old-fn-name description)
+                   (ensure-function-singly-recursive$ old-fn-name
+                                                      description t nil)
                  (value nil)))
        ((er &) (if recursive
-                   (ensure-function-known-measure$ old-fn-name description)
+                   (ensure-function-known-measure$ old-fn-name
+                                                   description t nil)
                  (value nil)))
        ((er &) (if recursive
                    (ensure-function-not-in-termination-thm$ old-fn-name
-                                                            description)
+                                                            description t nil)
                  (value nil)))
        ((er &) (if (eq verify-guards t)
                    (ensure-function-guard-verified$
                     old-fn-name
                     (msg "Since the :VERIFY-GUARDS input is T, ~
-                          the target function ~x0" old-fn-name))
+                          the target function ~x0" old-fn-name)
+                    t nil)
                  (value nil))))
     (value old-fn-name)))
 
@@ -90,25 +94,59 @@
           is valid."
   (b* ((wrld (w state))
        ((er (list term stobjs-out)) (ensure-term$ restriction
-                                                  "The second input"))
+                                                  "The second input" t nil))
        (description (msg "The term ~x0 that denotes the restricting predicate"
                          restriction))
        ((er &) (ensure-term-free-vars-subset$ term
                                               (formals old-fn-name wrld)
-                                              description))
-       ((er &) (ensure-term-logic-mode$ term description))
-       ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out
-                                                               1
-                                                               description))
-       ((er &) (ensure-term-no-stobjs$ stobjs-out description))
+                                              description t nil))
+       ((er &) (ensure-term-logic-mode$ term description t nil))
+       ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
+                                                               description
+                                                               t nil))
+       ((er &) (ensure-term-no-stobjs$ stobjs-out description t nil))
        ((er &) (if do-verify-guards
                    (ensure-term-guard-verified-exec-fns$
                     term
                     (msg "Since either the :VERIFY-GUARDS input is T, ~
                           or it is (perhaps by default) :AUTO ~
                           and the target function ~x0 is guard-verified, ~@1"
-                         old-fn-name (msg-downcase-first description)))
-                 (value nil))))
+                         old-fn-name (msg-downcase-first description))
+                    t nil)
+                 (value nil)))
+       ((er &) (ensure-term-does-not-call$ term old-fn-name
+                                           description t nil)))
+    (value term)))
+
+(define restrict-check-undefined
+  ((undefined "Input to the transformation.")
+   (old-fn-name symbolp "Result of @(tsee restrict-check-old).")
+   (ctx "Context for errors.")
+   state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (undefined$ "A @(tsee pseudo-termp) that is
+                            the translation of @('undefined').")
+               state)
+  :mode :program
+  :short "Ensure that the @(':undefined') input to the transformation
+          is valid."
+  (b* ((wrld (w state))
+       ((er (list term stobjs-out)) (ensure-term$ undefined
+                                                  "The :UNDEFINED input" t nil))
+       (description (msg "The term ~x0 that denotes the undefined value"
+                         undefined))
+       ((er &) (ensure-term-free-vars-subset$ term
+                                              (formals old-fn-name wrld)
+                                              description t nil))
+       ((er &) (ensure-term-logic-mode$ term description t nil))
+       ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
+                                                               description
+                                                               t nil))
+       ((er &) (ensure-term-no-stobjs$ stobjs-out description t nil))
+       ((er &) (ensure-term-does-not-call$ term old-fn-name
+                                           description t nil)))
     (value term)))
 
 (define restrict-check-new-name
@@ -124,7 +162,7 @@
                state)
   :mode :program
   :short "Ensure that the @(':new-name') input to the transformation is valid."
-  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input"))
+  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
        (name (if (eq new-name :auto)
                  (next-numbered-name old-fn-name (w state))
                new-name))
@@ -135,7 +173,7 @@
                               since the :NEW-NAME input ~
                               is (perhaps by default) :AUTO"
                            "supplied as the :NEW-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description)))
+       ((er &) (ensure-symbol-new-event-name$ name description t nil)))
     (value name)))
 
 (define restrict-check-thm-name
@@ -154,14 +192,18 @@
   :mode :program
   :short "Ensure that the @(':thm-name') input to the transformation
           is valid."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input"))
-       (name (cond ((eq thm-name :arrow)
-                    (packn (list old-fn-name '-~>- new-fn-name)))
-                   ((eq thm-name :becomes)
-                    (packn (list old-fn-name '-becomes- new-fn-name)))
-                   ((eq thm-name :is)
-                    (packn (list old-fn-name '-is- new-fn-name)))
-                   (t thm-name)))
+  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
+       (name (if (member-eq thm-name '(:arrow :becomes :is))
+                 (b* ((separator (case thm-name
+                                   (:arrow "-~>-")
+                                   (:becomes "-BECOMES-")
+                                   (:is "-IS-")
+                                   (otherwise (impossible))))
+                      (string (str::cat (symbol-name old-fn-name)
+                                        separator
+                                        (symbol-name new-fn-name))))
+                   (intern-in-package-of-symbol string old-fn-name))
+               thm-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the target function ~x1 ~
                           to the new function ~x2, ~
@@ -172,7 +214,7 @@
                               since the :THM-NAME input ~
                               is (perhaps by default) :ARROW, :BECOMES, or :IS"
                            "supplied as the :THM-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description))
+       ((er &) (ensure-symbol-new-event-name$ name description t nil))
        ((when (eq name new-fn-name))
         (er soft ctx
             "~@0 must differ from the name ~x1 of the new function ~
@@ -226,22 +268,23 @@
    may be in any package,
    so long as their names match the applicability condition names.
    </p>"
-  (b* (((er &) (ensure-doublet-list$ hints "The :HINTS input"))
+  (b* (((er &) (ensure-doublet-list$ hints "The :HINTS input" t nil))
        (alist (doublets-to-alist hints))
        (keys (strip-cars alist))
        (vals (strip-cdrs alist))
        (description
         (msg "The list ~x0 of the first components of the :HINTS input" keys))
-       ((er &) (ensure-symbol-list$ keys description))
+       ((er &) (ensure-symbol-list$ keys description t nil))
        (keys (intern-list (symbol-list-names keys)
                           (pkg-witness "APT")))
-       ((er &) (ensure-list-no-duplicates$ keys description))
+       ((er &) (ensure-list-no-duplicates$ keys description t nil))
        ((er &) (ensure-list-subset$ keys *restrict-app-cond-names*
-                                    description)))
+                                    description t nil)))
     (value (pairlis$ keys vals))))
 
 (define restrict-check-inputs ((old "Input to the transformation.")
                                (restriction "Input to the transformation.")
+                               (undefined "Input to the transformation.")
                                (new-name "Input to the transformation.")
                                (new-enable "Input to the transformation.")
                                (thm-name "Input to the transformation.")
@@ -258,6 +301,7 @@
                      triple</see>.")
                (result "A tuple @('(old-fn-name
                                     restriction$
+                                    undefined$
                                     new-fn-name
                                     new-fn-enable
                                     old-to-new-thm-name
@@ -266,6 +310,7 @@
                                     hints-alist)')
                         satisfying
                         @('(typed-tuplep symbolp
+                                         pseudo-termp
                                          pseudo-termp
                                          symbolp
                                          booleanp
@@ -278,6 +323,8 @@
                         the result of @(tsee restrict-check-old),
                         @('restriction$') is
                         the result of @(tsee restrict-check-restriction),
+                        @('undefined$') is
+                        the result of @(tsee restrict-check-undefined),
                         @('new-fn-name') is
                         the result of @(tsee restrict-check-new-name),
                         @('new-fn-enable') indicates whether
@@ -312,27 +359,30 @@
        ((er do-verify-guards) (ensure-boolean-or-auto-and-return-boolean$
                                verify-guards
                                (guard-verified-p old-fn-name (w state))
-                               "The :VERIFY-GUARDS input"))
+                               "The :VERIFY-GUARDS input" t nil))
        ((er restriction$) (restrict-check-restriction
                            restriction old-fn-name do-verify-guards ctx state))
+       ((er undefined$) (restrict-check-undefined
+                         undefined old-fn-name ctx state))
        ((er new-fn-name) (restrict-check-new-name
                           new-name old-fn-name ctx state))
        ((er new-fn-enable) (ensure-boolean-or-auto-and-return-boolean$
                             new-enable
                             (fundef-enabledp old state)
-                            "The :NEW-ENABLE input"))
+                            "The :NEW-ENABLE input" t nil))
        ((er old-to-new-thm-name) (restrict-check-thm-name
                                   thm-name old-fn-name new-fn-name ctx state))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input"))
+       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
        ((er make-non-executable) (ensure-boolean-or-auto-and-return-boolean$
                                   non-executable
                                   (non-executablep old (w state))
-                                  "The :NON-EXECUTABLE input"))
+                                  "The :NON-EXECUTABLE input" t nil))
        ((er hints-alist) (restrict-check-hints hints ctx state))
-       ((er &) (ensure-boolean$ verbose "The :VERBOSE input"))
-       ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input")))
+       ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
+       ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
     (value (list old-fn-name
                  restriction$
+                 undefined$
                  new-fn-name
                  new-fn-enable
                  old-to-new-thm-name
@@ -388,8 +438,8 @@
      (if (endp rec-calls-with-tests)
          (reverse rev-conjuncts)
        (b* ((tests-and-call (car rec-calls-with-tests))
-            (tests (access acl2::tests-and-call tests-and-call :tests))
-            (call (access acl2::tests-and-call tests-and-call :call))
+            (tests (access tests-and-call tests-and-call :tests))
+            (call (access tests-and-call tests-and-call :call))
             (context (conjoin tests)))
          (restrict-restriction-of-rec-calls-consequent-aux
           old-fn-name
@@ -487,6 +537,7 @@
 (define restrict-new-fn-intro-events
   ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
    (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
+   (undefined$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
    (new-fn-enable booleanp "Result of @(tsee restrict-check-inputs).")
    (make-non-executable booleanp "Result of @(tsee restrict-check-inputs).")
@@ -552,10 +603,10 @@
        (formals (formals old-fn-name wrld))
        (old-body (if (non-executablep old-fn-name wrld)
                      (unwrapped-nonexec-body old-fn-name wrld)
-                   (body old-fn-name nil wrld)))
+                   (ubody old-fn-name wrld)))
        (new-body-core (sublis-fn-simple (acons old-fn-name new-fn-name nil)
                                         old-body))
-       (new-body `(if ,restriction$ ,new-body-core ':undefined))
+       (new-body `(if ,restriction$ ,new-body-core ,undefined$))
        (new-body (untranslate new-body nil wrld))
        (recursive (recursivep old-fn-name nil wrld))
        (wfrel? (and recursive
@@ -585,7 +636,6 @@
                  (declare (xargs ,@(and recursive
                                         (list :well-founded-relation wfrel?
                                               :measure measure?
-                                              :hints termination-hints?
                                               :ruler-extenders :all))
                                  :guard ,new-guard
                                  :verify-guards ,do-verify-guards))
@@ -749,6 +799,7 @@
 (define restrict-event
   ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
    (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
+   (undefined$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
    (new-fn-enable booleanp "Result of @(tsee restrict-check-inputs).")
    (old-to-new-thm-name symbolp "Result of @(tsee restrict-check-inputs).")
@@ -758,7 +809,9 @@
    (hints-alist symbol-alistp "Result of @(tsee restrict-check-inputs).")
    (show-only booleanp "Input to the transformation, after validation.")
    (app-conds symbol-alistp "Result of @(tsee restrict-app-conds).")
-   (call pseudo-event-formp "Call to the transformation.")
+   (call-w/o-verbose-showonly pseudo-event-formp
+                              "Call to the transformation,
+                               without @(':verbose') and @(':show-only').")
    (wrld plist-worldp))
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
@@ -818,7 +871,9 @@
    </p>
    <p>
    The @(tsee encapsulate) is stored into the transformation table,
-   associated to the call to the transformation.
+   associated to the call to the transformation
+   (without @(':verbose') and @(':show-only'), if any,
+   because they only affect the transformation's screen output).
    Thus, the table event and the screen output events
    (which are in the @(tsee progn) but not in the @(tsee encapsulate))
    are not stored into the transformation table,
@@ -859,6 +914,7 @@
             new-fn-exported-event) (restrict-new-fn-intro-events
                                     old-fn-name
                                     restriction$
+                                    undefined$
                                     new-fn-name
                                     new-fn-enable
                                     make-non-executable
@@ -905,13 +961,16 @@
                              ,old-to-new-thm-exported-event
                              ,new-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
-       ((when show-only) `(value-triple ',encapsulate))
+       ((when show-only) `(progn
+                            (cw-event "~x0~|" ',encapsulate)
+                            (value-triple :invisible)))
        (transformation-table-event `(table transformation-table
-                                      ',call ',encapsulate))
-       (new-fn-show-event `(cw-event "~%~x0~|~%"
+                                      ',call-w/o-verbose-showonly
+                                      ',encapsulate))
+       (new-fn-show-event `(cw-event "~x0~|"
                                      ',new-fn-exported-event))
        (old-to-new-thm-show-event `(cw-event
-                                    "~x0~|~%"
+                                    "~x0~|"
                                     ',old-to-new-thm-exported-event)))
     `(progn
        ,encapsulate
@@ -923,6 +982,7 @@
 (define restrict-fn
   ((old "Input to the transformation.")
    (restriction "Input to the transformation.")
+   (undefined "Input to the transformation.")
    (new-name "Input to the transformation.")
    (new-enable "Input to the transformation.")
    (thm-name "Input to the transformation.")
@@ -947,13 +1007,31 @@
   :long
   "<p>
    If this call to the transformation is redundant,
-   show @(':redundant') on screen, as customary in ACL2.
+   a message to that effect is shown on screen.
+   Redundancy is checked
+   after removing @(':verbose') and @(':show-only') from the call,
+   because those two options only affect screen output.
+   If the transformation is redundant and @(':show-only') is @('t'),
+   the @(tsee encapsulate), retrieved from the table, is shown on screen.
    </p>"
-  (b* (((when (assoc-equal call
-                           (table-alist 'transformation-table (w state))))
-        (value '(value-triple :redundant)))
+  (b* ((number-of-required-args-plus-1 3)
+       (call-options (nthcdr number-of-required-args-plus-1 call))
+       (call-options (remove-keyword :verbose call-options))
+       (call-options (remove-keyword :show-only call-options))
+       (call-w/o-verbose-showonly
+        (append (take number-of-required-args-plus-1 call) call-options))
+       (table (table-alist 'transformation-table (w state)))
+       (encapsulate? (cdr (assoc-equal call-w/o-verbose-showonly table)))
+       ((when encapsulate?)
+        (value `(progn
+                  ,@(and show-only
+                         `((cw-event "~x0~|" ',encapsulate?)))
+                  (cw-event "~%The transformation ~x0 is redundant.~%"
+                            ',call)
+                  (value-triple :invisible))))
        ((er (list old-fn-name
                   restriction$
+                  undefined$
                   new-fn-name
                   new-fn-enable
                   old-to-new-thm-name
@@ -961,6 +1039,7 @@
                   do-verify-guards
                   hints-alist)) (restrict-check-inputs old
                                                        restriction
+                                                       undefined
                                                        new-name
                                                        new-enable
                                                        thm-name
@@ -978,6 +1057,7 @@
        ((er &) (ensure-named-formulas app-conds hints-alist verbose ctx state))
        (event (restrict-event old-fn-name
                               restriction$
+                              undefined$
                               new-fn-name
                               new-fn-enable
                               old-to-new-thm-name
@@ -987,12 +1067,12 @@
                               hints-alist
                               show-only
                               app-conds
-                              call
+                              call-w/o-verbose-showonly
                               (w state))))
     (value event)))
 
 (defsection restrict-implementation
-  :parents (restrict)
+  :parents (implementation restrict)
   :short "Implementation of the domain restriction transformation."
   :long
   "<p>
@@ -1007,6 +1087,7 @@
                       restriction
                       ;; optional inputs:
                       &key
+                      (undefined ':undefined)
                       (new-name ':auto)
                       (new-enable ':auto)
                       (thm-name ':arrow)
@@ -1020,6 +1101,7 @@
      verbose
      `(make-event (restrict-fn ',old
                                ',restriction
+                               ',undefined
                                ',new-name
                                ',new-enable
                                ',thm-name

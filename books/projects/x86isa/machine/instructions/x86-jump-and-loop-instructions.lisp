@@ -16,7 +16,7 @@
 ;; jmp
 ;; ======================================================================
 
-; From Intel Vol. 1, 6-11:
+; From Intel Vol. 1, Section 6.3.7:
 
 ;; In 64-bit mode, the operand size for all near branches (CALL, RET, JCC,
 ;; JCXZ, JMP, and LOOP) is forced to 64 bits. These instructions update the
@@ -65,7 +65,7 @@
   (b* ((ctx 'x86-near-jmp-Op/En-D)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 0 4) offset-size)
         (case opcode
@@ -146,7 +146,7 @@
   (b* ((ctx 'x86-near-jmp-Op/En-M)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        ;; Note that the reg field serves as an opcode extension for
        ;; this instruction.  The reg field will always be 4 when this

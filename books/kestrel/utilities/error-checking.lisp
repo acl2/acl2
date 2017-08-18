@@ -8,14 +8,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides utilities to check for erroneous conditions
-; (e.g. in inputs from a user to a macro).
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "enumerations")
+(include-book "er-soft-plus")
 (include-book "event-forms")
 (include-book "numbered-names")
 (include-book "strings")
@@ -32,13 +28,22 @@
   :long
   "<p>
    Each error-checking function in these utilities
-   causes a <see topic='@(url er)'>soft error</see>,
+   causes a <see topic='@(url er-soft+)'>soft error</see>,
    with an informative message,
+   and optionally informative error flag and value,
    when certain conditions are not satisified.
    These error-checking functions are useful, for instance,
-   to programmatically validate inputs from the user to a macro.
+   to programmatically validate inputs from the user to a macro,
+   providing the informative error messages to the user.
+   The informative error flags and values are useful
+   when such a macro is invoked programmatically,
+   to enable the caller to take appropriate actions
+   based on the nature of the error,
+   as with an exception mechanism.
+   </p>
+   <p>
    Inside @(tsee b*), the <see topic='@(url patbind-er)'>@('er') binder</see>
-   can be used with calls to these functions.
+   can be used with calls to these error-checking functions.
    </p>
    <p>
    These error-checking functions include @(tsee msgp) parameters
@@ -53,7 +58,7 @@
 (defsection def-error-checker
 
   :short "Generate an error-checking function
-          and associated macro abbreviation."
+          and an associated macro abbreviation."
 
   :long
 
@@ -65,22 +70,22 @@
    @({
      (define <name> (<x1> ... <xn>
                      (description msgp)
+                     (error-erp \"Flag to return in case of error.\")
+                     (error-val \"Value to return in case of error.\")
                      (ctx \"Context for errors.\")
                      state)
-       :returns (mv (erp
-                     \"<see topic='@(url acl2::booleanp)'>@('booleanp')</see>
-                      flag of the
-                      <see topic='@(url acl2::error-triple)'>error
-                      triple</see>.\")
+       :returns (mv (erp \"@('error-erp') or @('nil').\")
                     <y>
                     state)
        :mode :program
        :parents <parents>  ; optional
        :short <short>
        :long <long>  ; optional
-       (b* (((unless <condition1>) (er soft ctx . <message1>))
+       (b* (((unless <condition1>) (er-soft+
+                                    ctx error-erp error-val . <message1>))
             ...
-            ((unless <conditionm>) (er soft ctx . <messagem>)))
+            ((unless <conditionm>) (er-soft+
+                                    ctx error-erp error-val . <messagem>)))
          (value <result>))
        :no-function t)
 
@@ -89,8 +94,8 @@
        :short \"Calls @(tsee <name>) with
                @('ctx') and @('state') as the last two arguments.\"
        :long \"@(def <name>$)\"
-       (defmacro <name>$ (<x1'> ... <xn'> description)
-         `(<name> ,<x1'> ... ,<xn'> description ctx state)))
+       (defmacro <name>$ (<x1'> ... <xn'> description error-erp error-val)
+         `(<name> ,<x1'> ... ,<xn'> description error-erp error-val ctx state)))
    })
 
    <p>
@@ -117,10 +122,10 @@
      or <see topic='@(url std::returns-specifiers)'>return specifier</see>
      that describes the value returned
      inside an <see topic='@(url error-triple)'>error triple</see>.
-     Since the error-checking function is generated in program mode
-     (because @(tsee er) expands into a term
-     that calls the program-mode function @(tsee error1)),
+     Since the error-checking function is generated in program mode,
      these return specifier should not use types but only documentation strings.
+     Ideally, the documentation string should say that
+     the value may be the @('error-val') argument (in case of error).
      </li>
 
      <li>
@@ -149,7 +154,7 @@
      and it should correspond to a @('~@') placeholder
      in the format string,
      which is appropriate for the @(tsee msgp) type of @('description').
-     The @('<messagej>') list is inserted into the @(tsee er) call,
+     The @('<messagej>') list is inserted into the @(tsee er-soft+) call,
      providing an error message when @('<conditionj>') is not satisfied
      (but the previous conditions are).
      </li>
@@ -170,7 +175,7 @@
        (<x1> ... <xn>)
        <short>
        ((<condition1> . <message1>) ... (<conditionm> . <messagem>))
-       <y> ; optional - default is (nothing \"Always @('nil').\")
+       <y> ; optional - default is (val \"@('nil') or @('error-val').\")
        <result> ; optional - default is nil
        :parents <parents> ; optional - default is :not-supplied
        :long <long> ; optional - default is :not-supplied
@@ -190,7 +195,10 @@
                 (eq (car key) 'def-error-checker)
                 (null val)))
 
-  (define def-error-checker-bindings ((conditions-messages true-list-listp))
+  (define def-error-checker-bindings
+    ((conditions-messages true-list-listp)
+     (error-erp symbolp "The @('error-erp') formal.")
+     (error-val symbolp "The @('error-val') formal."))
     :returns (bindings true-list-listp)
     :parents (def-error-checker)
     :short "Generate the @(tsee b*) bindings of the error-checking function."
@@ -199,18 +207,20 @@
      These are the
      </p>
      @({
-       ((unless <conditionj>) (er soft ctx . <messagej>))
+       ((unless <conditionj>) (er-soft+ ctx error-erp error-val . <messagej>))
      })
      <p>
      bindings,
      but a binder of the form @('(unless (not <condition>))')
      is turned into @('(when <condition>)') to improve readability.
      </p>"
-    (def-error-checker-bindings-aux conditions-messages nil)
+    (def-error-checker-bindings-aux conditions-messages error-erp error-val nil)
 
     :prepwork
     ((define def-error-checker-bindings-aux
        ((conditions-messages true-list-listp)
+        (error-erp symbolp)
+        (error-val symbolp)
         (rev-current-bindings true-list-listp))
        :returns (final-bindings true-list-listp
                                 :hyp (true-list-listp rev-current-bindings))
@@ -223,9 +233,12 @@
              (case-match condition
                (('not negated-condition) (mv 'when negated-condition))
                (& (mv 'unless condition))))
-            (binding `((,unless/when ,condition) (er soft ctx ,@message))))
+            (binding `((,unless/when ,condition)
+                       (er-soft+ ctx ,error-erp ,error-val ,@message))))
          (def-error-checker-bindings-aux
            (cdr conditions-messages)
+           error-erp
+           error-val
            (cons binding rev-current-bindings))))))
 
   (define def-error-checker-x-symbols ((xs true-listp))
@@ -274,30 +287,41 @@
           '(value-triple :redundant))
          (function-name name)
          (macro-name (add-suffix name "$"))
+         (description (intern-in-package-of-symbol "DESCRIPTION" name))
+         (error-erp (intern-in-package-of-symbol "ERROR-ERP" name))
+         (error-val (intern-in-package-of-symbol "ERROR-VAL" name))
          (function
           `(define ,function-name
-             (,@xs (description msgp) (ctx "Context for errors.") state)
-             :returns (mv
-                       (erp
-                        "<see topic='@(url acl2::booleanp)'>@('booleanp')</see>
-                         flag of the
-                         <see topic='@(url acl2::error-triple)'>error
-                         triple</see>.")
-                       ,y
-                       state)
+             (,@xs
+              (,description msgp)
+              (,error-erp "Flag to return in case of error.")
+              (,error-val "Value to return in case of error.")
+              (ctx "Context for errors.")
+              state)
+             :returns (mv (erp "@('error-erp') or @('nil').")
+                          ,y
+                          state)
              :mode :program
              ,@(and (not (eq parents :not-supplied))
                     (list :parents parents))
              :short ,short
              ,@(and (not (eq long :not-supplied))
                     (list :long long))
-             (b* ,(def-error-checker-bindings conditions-messages)
+             (b* ,(def-error-checker-bindings
+                    conditions-messages error-erp error-val)
                (value ,result))
              :no-function t))
          (x-symbols (def-error-checker-x-symbols xs))
          (macro
-          `(defmacro ,macro-name (,@x-symbols description)
-             (list ',function-name ,@x-symbols description 'ctx 'state)))
+          `(defmacro ,macro-name
+               (,@x-symbols ,description ,error-erp ,error-val)
+             (list ',function-name
+                   ,@x-symbols
+                   ,description
+                   ,error-erp
+                   ,error-val
+                   'ctx
+                   'state)))
          (section-short (concatenate 'string
                                      "Calls @(tsee "
                                      (string-downcase
@@ -323,7 +347,7 @@
                                       short
                                       conditions-messages
                                       &optional
-                                      (y '(nothing "Always @('nil')."))
+                                      (y '(val "@('nil') or @('error-val')."))
                                       (result 'nil)
                                       &key
                                       (parents ':not-supplied)
@@ -361,7 +385,7 @@
   ((x "Value to check."))
   "Cause an error if a value is not a @('nil')-terminated list of symbols."
   (((symbol-listp x)
-    "~@0 must be a NIL-terminated alist of symbols." description)))
+    "~@0 must be a NIL-terminated list of symbols." description)))
 
 (def-error-checker ensure-symbol-alist
   ((x "Value to check."))
@@ -437,7 +461,7 @@
   "Cause an error if a value is not @('t'), @('nil'), or @(':auto');
    otherwise return a boolean result."
   (((t/nil/auto-p x) "~@0 must be T, NIL, or :AUTO." description))
-  (result "A @(tsee booleanp).")
+  (result "A @(tsee booleanp) or @('error-val').")
   (if (booleanp x) x r)
   :long
   "<p>
@@ -481,7 +505,7 @@
     "~@0 must not be a keyword." description)
    ((not (logical-namep symb (w state)))
     "~@0 is already in use." description))
-  (nothing "Always @('nil').")
+  (val "@('nil') or @('error-val').")
   nil
   :long
   "<p>
@@ -498,13 +522,15 @@
   (((function-namep x (w state))
     "~@0 must be the name of an existing function." description)))
 
-(define ensure-function-name-or-numbered-wildcard ((x "Value to check.")
-                                                   (description msgp)
-                                                   (ctx "Context for errors.")
-                                                   state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
-               (name "A @(tsee symbolp).")
+(define ensure-function-name-or-numbered-wildcard
+  ((x "Value to check.")
+   (description msgp)
+   (error-erp "Flag to return in case of error.")
+   (error-val "Value to return in case of error.")
+   (ctx "Context for errors.")
+   state)
+  :returns (mv (erp "@('error-erp') or @('nil').")
+               (val "A @(tsee symbolp) or @('error-val').")
                state)
   :mode :program
   :short "Cause an error if a value is not
@@ -522,13 +548,16 @@
    because it occurs at the beginning of all the error messages except one;
    for that one, @(tsee msg-downcase-first) is applied to the description.
    </p>"
-  (b* (((er &) (ensure-symbol$ x description))
+  (b* (((er &) (ensure-symbol$ x description error-erp error-val))
        (name (resolve-numbered-name-wildcard x (w state)))
        ((er &) (ensure-symbol-function$
-                name (if (eq x name)
-                         (msg "~@0, which is the symbol ~x1," description x)
-                       (msg "The symbol ~x0, to which ~@1 resolves to,"
-                            name (msg-downcase-first description))))))
+                name
+                (if (eq x name)
+                    (msg "~@0, which is the symbol ~x1," description x)
+                  (msg "The symbol ~x0, to which ~@1 resolves to,"
+                       name (msg-downcase-first description)))
+                error-erp
+                error-val)))
     (value name))
   ///
 
@@ -536,22 +565,27 @@
     :parents (ensure-function-name-or-numbered-wildcard)
     :short "Call @(tsee ensure-function-name-or-numbered-wildcard)
             with @('ctx') and @('state') as the last two arguments."
-    (defmacro ensure-function-name-or-numbered-wildcard$ (x description)
-      `(ensure-function-name-or-numbered-wildcard ,x ,description ctx state))))
+    (defmacro ensure-function-name-or-numbered-wildcard$
+        (x description error-erp error-val)
+      `(ensure-function-name-or-numbered-wildcard
+        ,x ,description ,error-erp ,error-val ctx state))))
 
-(define ensure-function/macro/lambda ((x "Value to check.")
-                                      (description msgp)
-                                      (ctx "Context for errors.")
-                                      state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
-               (result
+(define ensure-function/macro/lambda
+  ((x "Value to check.")
+   (description msgp)
+   (error-erp "Flag to return in case of error.")
+   (error-val "Value to return in case of error.")
+   (ctx "Context for errors.")
+   state)
+  :returns (mv (erp "@('error-erp') or @('nil').")
+               (val
                 "A tuple @('(pfn stobjs-in stobjs-out new-description)')
                  consisting of
                  a @(tsee pseudo-fn/lambda-p),
                  a @(tsee symbol-listp),
                  a @(tsee symbol-listp), and
-                 a @(tsee msgp).")
+                 a @(tsee msgp);
+                 or @('error-val').")
                state)
   :mode :program
   :short "Cause an error if a value is not
@@ -615,20 +649,26 @@
                           denoted by the macro ~x2,"
                          description ulambda x)))))
           ((symbolp x)
-           (er soft ctx
-               "~@0 must be a function name, a macro name, ~
-                or a lambda expression.  ~
-                The symbol ~x1 is not the name of a function or macro."
-               description x))
+           (er-soft+
+            ctx
+            error-erp
+            error-val
+            "~@0 must be a function name, a macro name, ~
+             or a lambda expression.  ~
+             The symbol ~x1 is not the name of a function or macro."
+            description x))
           (t (b* (((mv tlambda/msg stobjs-out) (check-user-lambda x wrld))
                   ((when (msgp tlambda/msg))
-                   (er soft ctx
-                       "~@0 must be a function name, a macro name, ~
-                        or a lambda expression.  ~
-                        Since ~x1 is not a symbol, ~
-                        it must be a lambda expression.  ~
-                        But ~@2"
-                       description x tlambda/msg))
+                   (er-soft+
+                    ctx
+                    error-erp
+                    error-val
+                    "~@0 must be a function name, a macro name, ~
+                     or a lambda expression.  ~
+                     Since ~x1 is not a symbol, ~
+                     it must be a lambda expression.  ~
+                     But ~@2"
+                    description x tlambda/msg))
                   (tlambda tlambda/msg)
                   (stobjs-in
                    (compute-stobj-flags (lambda-formals tlambda) t wrld)))
@@ -644,20 +684,23 @@
     :short "Call @(tsee ensure-function/macro/lambda)
             with @('ctx') and @('state') as the last two arguments."
     :long "@(def ensure-function/macro/lambda$)"
-    (defmacro ensure-function/macro/lambda$ (x description)
-      `(ensure-function/macro/lambda ,x ,description ctx state))))
+    (defmacro ensure-function/macro/lambda$ (x description error-erp error-val)
+      `(ensure-function/macro/lambda
+        ,x ,description ,error-erp ,error-val ctx state))))
 
 (define ensure-term ((x "Value to check.")
                      (description msgp)
+                     (error-erp "Flag to return in case of error.")
+                     (error-val "Value to return in case of error.")
                      (ctx "Context for errors.")
                      state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
-               (result
+  :returns (mv (erp "@('error-erp') or @('nil').")
+               (val
                 "A tuple @('(term stobjs-out)')
                  consisting of
                  a @(tsee pseudo-termp) and
-                 a @(tsee symbol-listp).")
+                 a @(tsee symbol-listp);
+                 or @('error-val').")
                state)
   :mode :program
   :short "Cause an error if a value is not a term."
@@ -676,9 +719,9 @@
    </p>"
   (b* (((mv term/msg stobjs-out) (check-user-term x (w state))))
     (if (msgp term/msg)
-        (er soft ctx
-            "~@0 must be a term. But ~@1"
-            description term/msg)
+        (er-soft+ ctx error-erp error-val
+                  "~@0 must be a term. But ~@1"
+                  description term/msg)
       (value (list term/msg stobjs-out))))
   ///
 
@@ -687,8 +730,8 @@
     :short "Call @(tsee ensure-term)
             with @('ctx') and @('state') as the last two arguments."
     :long "@(def ensure-term$)"
-    (defmacro ensure-term$ (x description)
-      `(ensure-term ,x ,description ctx state))))
+    (defmacro ensure-term$ (x description error-erp error-val)
+      `(ensure-term ,x ,description ,error-erp ,error-val ctx state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -748,7 +791,7 @@
   "Cause an error if a function has input or output @(see stobj)s."
   (((no-stobjs-p fn (w state))
     "~@0 must have no input or output stobjs." description))
-  (nothing "Always @('nil').")
+  (val "@('nil') or @('error-val').")
   nil
   :long
   "<p>
@@ -777,7 +820,7 @@
   (((= (number-of-results fn (w state)) n)
     "~@0 must return ~x1 ~@2."
     description n (if (= n 1) "result" "results")))
-  (nothing "Always @('nil').")
+  (val "@('nil') or @('error-val').")
   nil
   :long
   "<p>
@@ -857,10 +900,10 @@
    calls any non-guard-verified function for execution."
   (((guard-verified-exec-fnsp term (w state))
     "~@0 must call only guard-verified functions ~
-     (except possibly in the :LOGIC subterms of MBEs), ~
+     (except possibly in the :LOGIC subterms of MBEs and via EC-CALL), ~
      but it calls the non-guard-verified ~@1."
     description
-    (let ((fns (all-non-gv-exec-ffn-symbs term nil (w state))))
+    (let ((fns (all-non-gv-exec-ffn-symbs term (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
         (msg "functions ~&0" fns))))))
@@ -876,7 +919,7 @@
   "Cause an error if a term is not a call to @(tsee if)."
   (((and (nvariablep term) (eq (ffn-symb term) 'if))
     "~@0 must start with IF." description))
-  (test+then+else "A @(tsee pseudo-term-listp) of length 3.")
+  (test+then+else "A @(tsee pseudo-term-listp) of length 3, or @('error-val').")
   (list (fargn term 1) (fargn term 2) (fargn term 3))
   :long
   "<p>
@@ -924,10 +967,10 @@
    calls any non-guard-verified function for execution."
   (((lambda-guard-verified-exec-fnsp lambd (w state))
     "~@0 must call only guard-verified functions ~
-     (except possibly in the :LOGIC subterms of MBEs), ~
+     (except possibly in the :LOGIC subterms of MBEs and via EC-CALL), ~
      but it calls the non-guard-verified ~@1."
     description
-    (let ((fns (all-non-gv-exec-ffn-symbs (lambda-body lambd) nil (w state))))
+    (let ((fns (all-non-gv-exec-ffn-symbs (lambda-body lambd) (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
         (msg "functions ~&0" fns))))))
@@ -950,7 +993,7 @@
   (((= (len stobjs-in) n)
     "~@0 must take ~x1 ~@2."
     description n (if (= n 1) "argument" "arguments")))
-  (nothing "Always @('nil').")
+  (val "@('nil') or @('error-val').")
   nil
   :long
   "<p>
@@ -979,7 +1022,7 @@
   (((and (all-nils stobjs-in)
          (all-nils stobjs-out))
     "~@0 must have no input or output stobjs." description))
-  (nothing "Always @('nil').")
+  (val "@('nil') or @('error-val').")
   nil
   :long
   "<p>
@@ -994,11 +1037,12 @@
 (define ensure-function/lambda-logic-mode
   ((fn/lambda pseudo-fn/lambda-p "Function or lambda expression to check.")
    (description msgp)
+   (error-erp "Flag to return in case of error.")
+   (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
-               (nothing "Always @('nil').")
+  :returns (mv (erp "@('error-erp') or @('nil').")
+               (val "@('nil') or @('error-val').")
                state)
   :mode :program
   :short "Cause an error if a function or lambda expression is
@@ -1014,8 +1058,8 @@
    should describe the function or lambda expression.
    </p>"
   (if (symbolp fn/lambda)
-      (ensure-function-logic-mode$ fn/lambda description)
-    (ensure-lambda-logic-mode$ fn/lambda description))
+      (ensure-function-logic-mode$ fn/lambda description error-erp error-val)
+    (ensure-lambda-logic-mode$ fn/lambda description error-erp error-val))
   ///
 
   (defsection ensure-function/lambda-logic-mode$
@@ -1023,17 +1067,20 @@
     :short "Call @(tsee ensure-function/lambda-logic-mode)
             with @('ctx') and @('state') as the last two arguments."
     :long "@(def ensure-function/lambda-logic-mode$)"
-    (defmacro ensure-function/lambda-logic-mode$ (x description)
-      `(ensure-function/lambda-logic-mode ,x ,description ctx state))))
+    (defmacro ensure-function/lambda-logic-mode$
+        (x description error-erp error-val)
+      `(ensure-function/lambda-logic-mode
+        ,x ,description ,error-erp ,error-val ctx state))))
 
 (define ensure-function/lambda-guard-verified-fns
   ((fn/lambda pseudo-fn/lambda-p "Function or lambda expression to check.")
    (description msgp)
+   (error-erp "Flag to return in case of error.")
+   (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
-               (nothing "Always @('nil').")
+  :returns (mv (erp "@('error-erp') or @('nil').")
+               (val "@('nil') or @('error-val').")
                state)
   :mode :program
   :short "Cause an error if a function or lambda expression is
@@ -1049,8 +1096,10 @@
    should describe the function or lambda expression.
    </p>"
   (if (symbolp fn/lambda)
-      (ensure-function-guard-verified$ fn/lambda description)
-    (ensure-lambda-guard-verified-fns$ fn/lambda description))
+      (ensure-function-guard-verified$
+       fn/lambda description error-erp error-val)
+    (ensure-lambda-guard-verified-fns$
+     fn/lambda description error-erp error-val))
   ///
 
   (defsection ensure-function/lambda-guard-verified-fns$
@@ -1058,17 +1107,20 @@
     :short "Call @(tsee ensure-function/lambda-guard-verified-fns)
             with @('ctx') and @('state') as the last two arguments."
     :long "@(def ensure-function/lambda-guard-verified-fns$)"
-    (defmacro ensure-function/lambda-guard-verified-fns$ (x description)
-      `(ensure-function/lambda-guard-verified-fns ,x ,description ctx state))))
+    (defmacro ensure-function/lambda-guard-verified-fns$
+        (x description error-erp error-val)
+      `(ensure-function/lambda-guard-verified-fns
+        ,x ,description ,error-erp ,error-val ctx state))))
 
 (define ensure-function/lambda-guard-verified-exec-fns
   ((fn/lambda pseudo-fn/lambda-p "Function or lambda expression to check.")
    (description msgp)
+   (error-erp "Flag to return in case of error.")
+   (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
-               (nothing "Always @('nil').")
+  :returns (mv (erp "@('error-erp') or @('nil').")
+               (val "@('nil') or @('error-val').")
                state)
   :mode :program
   :short "Cause an error if a function or lambda expression is
@@ -1085,8 +1137,10 @@
    should describe the function or lambda expression.
    </p>"
   (if (symbolp fn/lambda)
-      (ensure-function-guard-verified$ fn/lambda description)
-    (ensure-lambda-guard-verified-exec-fns$ fn/lambda description))
+      (ensure-function-guard-verified$
+       fn/lambda description error-erp error-val)
+    (ensure-lambda-guard-verified-exec-fns$
+     fn/lambda description error-erp error-val))
   ///
 
   (defsection ensure-function/lambda-guard-verified-exec-fns$
@@ -1094,9 +1148,10 @@
     :short "Call @(tsee ensure-function/lambda-guard-verified-exec-fns)
             with @('ctx') and @('state') as the last two arguments."
     :long "@(def ensure-function/lambda-guard-verified-exec-fns$)"
-    (defmacro ensure-function/lambda-guard-verified-exec-fns$ (x description)
+    (defmacro ensure-function/lambda-guard-verified-exec-fns$
+        (x description error-erp error-val)
       `(ensure-function/lambda-guard-verified-exec-fns
-        ,x ,description ctx state))))
+        ,x ,description ,error-erp ,error-val ctx state))))
 
 (def-error-checker ensure-function/lambda-closed
   ((fn/lambda pseudo-fn/lambda-p "Function or lambda expression to check."))
@@ -1104,7 +1159,7 @@
    a non-closed lambda expression."
   (((or (symbolp fn/lambda) (lambda-closedp fn/lambda))
     "~@0 must be closed." description))
-  (nothing "Always @('nil').")
+  (val "@('nil') or @('error-val').")
   nil
   :long
   "<p>
@@ -1131,7 +1186,7 @@
   (((= (len stobjs-out) n)
     "~@0 must return ~x1 ~@2."
     description n (if (= n 1) "result" "results")))
-  (nothing "Always @('nil').")
+  (val "@('nil') or @('error-val').")
   nil
   :long
   "<p>

@@ -1743,7 +1743,13 @@ implementations.")
 ; On October 18, 2016, we found that even 16,000 is insufficient for building
 ; the manual.  So we are increasin this value by 50%, to 24,000.
 
-  #+x86-64 24000
+; On August 16, 2017 we found that 24,000 was insufficient to build
+; books/projects/x86isa/proofs/zeroCopy/marking-mode/zeroCopy.cert, so we
+; increased to 32,000.  (Note: this was based on the x86isa books as of a few
+; days earlier.  Even if the increase to 32,000 was not necessary, it seems a
+; good idea to accommodate even the previous version.)
+
+  #+x86-64 32000
   #-x86-64 2000)
 
 #+sbcl
@@ -1844,7 +1850,13 @@ implementations.")
 ; out this option to us after ACL2 Version_6.2, we started using it in place of
 ; " --userinit /dev/null", which had not worked on Windows.
 
+; In July 2017 we added ${SBCL_USER_ARGS} below to accommodate Sol Swords's
+; request to be able to pass runtime-options without having to call save-exec.
+; Example:
+; (export SBCL_USER_ARGS="--lose-on-corruption" ; ./sbcl-saved_acl2)
+
         "~s --dynamic-space-size ~s --control-stack-size 64 --core ~s~a ~
+         ${SBCL_USER_ARGS} ~
          --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
         prog
         *sbcl-dynamic-space-size*

@@ -9,7 +9,7 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* (rb-rb-subset)
+(local (in-theory (e/d* ()
                         (mv-nth-1-wb-and-!flgi-commute
                          ia32e-la-to-pa-values-and-!flgi
                          las-to-pas
@@ -66,6 +66,8 @@
     #x5d                ;; pop    %rbp                       14
     #xc3                ;; retq                              15
     ))
+
+(defconst *prog-len* (len *copyData*))
 
 ;; Some important registers:
 
@@ -158,12 +160,10 @@
 ;; ======================================================================
 
 (defun-nx source-bytes (k src-addr x86)
-  (mv-nth 1 (rb (create-canonical-address-list k (+ (- k) src-addr))
-                :r x86)))
+  (mv-nth 1 (rb k (+ (- k) src-addr) :r x86)))
 
 (defun-nx destination-bytes (k dst-addr x86)
-  (mv-nth 1 (rb (create-canonical-address-list k (+ (- k) dst-addr))
-                :r x86)))
+  (mv-nth 1 (rb k (+ (- k) dst-addr) :r x86)))
 
 (defun-nx loop-invariant (k m addr x86)
   ;; The initial value of m is (ash n 2), where n is the same n as defined in
@@ -175,6 +175,7 @@
   ;;    this will decrease by 4 in every iteration
 
   (and (x86p x86)
+       (64-bit-modep x86)
        (xr :programmer-level-mode 0 x86)
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
@@ -189,12 +190,7 @@
        (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
        ;; Return address of the copyData sub-routine is canonical.
        (canonical-address-p
-        (logext
-         64
-         (combine-bytes
-          (mv-nth 1
-                  (rb (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
-                      :r x86)))))
+        (logext 64 (mv-nth 1 (rb 8 (+ 8 (xr :rgf *rsp* x86)) :r x86))))
        ;; All the destination addresses are canonical.
        (canonical-address-p (+ (- k) (xr :rgf *rsi* x86)))
        (canonical-address-p (+ m (xr :rgf *rsi* x86)))
@@ -209,32 +205,31 @@
                 (equal (loghead 2 (xr :rgf *rdi* x86)) 0))
          t)
        ;; Memory locations of interest are disjoint.
-       (disjoint-p
+       (separate
         ;; Program addresses
-        (create-canonical-address-list (len *copyData*) addr)
+        :x *prog-len* addr
         ;; Destination addresses
-        (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
-       (disjoint-p
+        :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
+       (separate
         ;; Return Address
-        (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
+        :r 8 (+ 8 (xr :rgf *rsp* x86))
         ;; Destination Addresses
-        (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
+        :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
        ;; We could modify the following pre-condition to say the following:
        ;; either the source and destination addresses are completely disjoint
        ;; or they are equal. However, the equality of the source and
        ;; destination isn't what we are interested in for this program and so I
        ;; choose to leave that out.
-       (disjoint-p
+       (separate
         ;; Source Addresses
-        (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rdi* x86)))
+        :r (+ m k) (+ (- k) (xr :rgf *rdi* x86))
         ;; Destination Addresses
-        (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
+        :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
        ;; Program is located at addr.
        ;; All program addresses are canonical.
        (canonical-address-p addr)
-       (canonical-address-p (+ (len *copyData*) addr))
-       (program-at (create-canonical-address-list (len *copyData*) addr)
-                   *copyData* x86)
+       (canonical-address-p (+ *prog-len* addr))
+       (program-at addr *copyData* x86)
        ;; Values copied in the previous iterations of the loop are unaltered.
        ;; dst[(+ -k dst-addr) to dst-addr]  =  src[(+ -k src-addr) to src-addr]
        (equal (destination-bytes k (xr :rgf *rsi* x86) x86)
@@ -252,6 +247,7 @@
 (defthm loop-preconditions-fwd-chain-to-its-body
   (implies (loop-preconditions k m addr src-addr dst-addr x86)
            (and (x86p x86)
+                (64-bit-modep x86)
                 (xr :programmer-level-mode 0 x86)
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
@@ -261,17 +257,12 @@
                 (equal (mod k 4) 0)
                 (unsigned-byte-p 34 (+ m k))
                 (equal (xr :rgf *rax* x86) m)
-                ;; Stack address is canonical.
+                ;; Stack addresses are canonical.
                 (canonical-address-p (xr :rgf *rsp* x86))
                 (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
                 ;; Return address of the copyData sub-routine is canonical.
                 (canonical-address-p
-                 (logext
-                  64
-                  (combine-bytes
-                   (mv-nth 1
-                           (rb (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
-                               :r x86)))))
+                 (logext 64 (mv-nth 1 (rb 8 (+ 8 (xr :rgf *rsp* x86)) :r x86))))
                 ;; All the destination addresses are canonical.
                 (canonical-address-p (+ (- k) (xr :rgf *rsi* x86)))
                 (canonical-address-p (+ m (xr :rgf *rsi* x86)))
@@ -280,31 +271,41 @@
                 (canonical-address-p (+ m (xr :rgf *rdi* x86)))
                 ;; Alignment Checking
                 (if (alignment-checking-enabled-p x86)
+                    ;; rsi and rdi point to doublewords (four bytes), so their
+                    ;; natural boundary will be addresses divisible by 4.
                     (and (equal (loghead 2 (xr :rgf *rsi* x86)) 0)
                          (equal (loghead 2 (xr :rgf *rdi* x86)) 0))
                   t)
                 ;; Memory locations of interest are disjoint.
-                (disjoint-p
+                (separate
                  ;; Program addresses
-                 (create-canonical-address-list (len *copyData*) addr)
+                 :x *prog-len* addr
                  ;; Destination addresses
-                 (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
-                (disjoint-p
-                 ;; Return Addresses
-                 (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
+                 :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
+                (separate
+                 ;; Return Address
+                 :r 8 (+ 8 (xr :rgf *rsp* x86))
                  ;; Destination Addresses
-                 (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
-                (disjoint-p
+                 :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
+                ;; We could modify the following pre-condition to say the following:
+                ;; either the source and destination addresses are completely disjoint
+                ;; or they are equal. However, the equality of the source and
+                ;; destination isn't what we are interested in for this program and so I
+                ;; choose to leave that out.
+                (separate
                  ;; Source Addresses
-                 (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rdi* x86)))
+                 :r (+ m k) (+ (- k) (xr :rgf *rdi* x86))
                  ;; Destination Addresses
-                 (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
+                 :w (+ m k) (+ (- k) (xr :rgf *rsi* x86)))
                 ;; Program is located at addr.
                 ;; All program addresses are canonical.
                 (canonical-address-p addr)
-                (canonical-address-p (+ (len *copyData*) addr))
-                (program-at (create-canonical-address-list (len *copyData*) addr)
-                            *copyData* x86)
+                (canonical-address-p (+ *prog-len* addr))
+                (program-at addr *copyData* x86)
+                ;; Values copied in the previous iterations of the loop are unaltered.
+                ;; dst[(+ -k dst-addr) to dst-addr]  =  src[(+ -k src-addr) to src-addr]
+                (equal (destination-bytes k (xr :rgf *rsi* x86) x86)
+                       (source-bytes      k (xr :rgf *rdi* x86) x86))
                 ;; Values copied in the previous iterations of the loop are unaltered.
                 ;; dst[(+ -k dst-addr) to dst-addr]  =  src[(+ -k src-addr) to src-addr]
                 (equal (destination-bytes k (xr :rgf *rsi* x86) x86)
@@ -362,19 +363,19 @@
     :rule-classes (:rewrite :linear)))
 
 (encapsulate
- ()
+  ()
 
- (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+  (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
- (defthm mod-thm-1
-   (implies (and (equal (mod m 4) 0)
-                 (posp m))
-            (<= 4 m))
-   :rule-classes (:forward-chaining))
+  (defthm mod-thm-1
+    (implies (and (equal (mod m 4) 0)
+                  (posp m))
+             (<= 4 m))
+    :rule-classes (:forward-chaining))
 
- (defthm mod-thm-2
-   (implies (natp n)
-            (equal (mod (ash n 2) 4) 0))
-   :hints (("Goal" :in-theory (e/d* (ash) ())))))
+  (defthm mod-thm-2
+    (implies (natp n)
+             (equal (mod (ash n 2) 4) 0))
+    :hints (("Goal" :in-theory (e/d* (ash) ())))))
 
 ;; ======================================================================

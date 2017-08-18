@@ -273,6 +273,8 @@
 
 (defun remove-guard-holders1 (changedp0 term)
 
+; Warning: If you change this function, consider changing :DOC guard-holders.
+
 ; We return (mv changedp new-term), where new-term is provably equal to term,
 ; and where if changedp is nil, then changedp0 is nil and new-term is identical
 ; to term.  The second part can be restated as follows: if changedp0 is true
@@ -300,6 +302,8 @@
 ; remove-guard-holders had been applied to it, and hence RETURN-LAST,
 ; MV-LIST, and CONS-WITH-HINT appear in *non-instantiable-primitives*.
 
+  (declare (xargs :guard (pseudo-termp term)
+                  :measure (acl2-count term)))
   (cond
    ((variablep term) (mv changedp0 term))
    ((fquotep term) (mv changedp0 term))
@@ -331,7 +335,13 @@
         val)
        (remove-guard-holders1 t val))
       ((('LAMBDA formals ('RETURN-LAST ''MBE1-RAW & logic))
-        . args) ; pattern for equality variants
+        . args)
+
+; This case handles equality variants.  For example, the macroexpansion of
+; (member x y) matches this pattern, and we return (member-equal x y).  The
+; goal here is to deal with the uses of let-mbe in macro definitions of
+; equality variants, as for member.
+
        (mv-let
         (changedp1 args1)
         (remove-guard-holders1-lst args)
@@ -371,7 +381,9 @@
              (t (mv t (mcons-term (ffn-symb term) args))))))))
 
 (defun remove-guard-holders1-lst (lst)
-  (cond ((null lst) (mv nil nil))
+  (declare (xargs :guard (pseudo-term-listp lst)
+                  :measure (acl2-count lst)))
+  (cond ((endp lst) (mv nil nil))
         (t (mv-let (changedp1 a)
                    (remove-guard-holders1 nil (car lst))
                    (mv-let (changedp2 b)
@@ -386,6 +398,7 @@
 ; Return a term equal to term, but slightly simplified.  See also the warning
 ; in remove-guard-holders1.
 
+  (declare (xargs :guard (pseudo-termp term)))
   (mv-let (changedp result)
           (remove-guard-holders1 nil term)
           (declare (ignore changedp))
@@ -8766,15 +8779,33 @@
          (cons (car pairs) (acceptable-tau-rules (cdr pairs) wrld)))
         (t (acceptable-tau-rules (cdr pairs) wrld))))
 
-(defun cross-prod1 (a lst2)
-  (cond ((endp lst2) nil)
-        (t (cons (append a (car lst2))
-                 (cross-prod1 a (cdr lst2))))))
+(defun cross-prod1 (lst lst-lst acc)
+  (cond ((endp lst-lst) acc)
+        (t (cross-prod1 lst
+                        (cdr lst-lst)
+                        (cons (append lst (car lst-lst))
+                              acc)))))
+
+(defun cross-prod2 (lst1 lst2 acc)
+  (cond ((endp lst1) (reverse acc))
+        (t (cross-prod2 (cdr lst1)
+                        lst2
+                        (cross-prod1 (car lst1) lst2 acc)))))
 
 (defun cross-prod (lst1 lst2)
-  (cond ((endp lst1) nil)
-        (t (append (cross-prod1 (car lst1) lst2)
-                   (cross-prod (cdr lst1) lst2)))))
+
+; Lst1 and lst2 are both lists of lists.  Return:
+
+;   (loop for a in lst1
+;         append
+;         (loop for b in lst2
+;               collect
+;               (append a b)))
+
+; We compute this by accumulating all such (append a b) in reverse order, so
+; that the functions are tail-recursive.
+
+  (cross-prod2 lst1 lst2 nil))
 
 (defun cnf-dnf (sign term cnfp)
 

@@ -3115,9 +3115,11 @@
     `(let ((state *the-live-state*)
            (,sym (f-get-global 'acl2-raw-mode-p *the-live-state*)))
        (declare (ignorable state))
-       ,@(cond ((eq (car r) :state-global-bindings)
-                (cddr r))
-               (t r))
+       (unwind-protect
+           (progn
+             ,@(cond ((eq (car r) :state-global-bindings)
+                      (cddr r))
+                     (t r)))
 
 ; Notice that we don't need to use state-global-let* to protect against the
 ; possibility that the resetting of acl2-raw-mode-p never gets executed below.
@@ -3133,8 +3135,7 @@
 ; consider whether we need our solution to work outside the ACL2 loop, and if
 ; so, then whether it actually does work.
 
-       (f-put-global 'acl2-raw-mode-p ,sym state)
-       (value nil))))
+         (f-put-global 'acl2-raw-mode-p ,sym state)))))
 
 ; The LD Specials
 

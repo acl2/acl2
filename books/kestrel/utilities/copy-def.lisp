@@ -11,10 +11,6 @@
 
 (in-package "ACL2")
 
-; This could be included with each use of make-flag, but it seems reasonable to
-; include it just once, here.
-(include-book "tools/flag" :dir :system)
-
 ; The following function might be moved to a more general utilities book.
 (defun symbol-package-name-safe (sym)
 
@@ -289,6 +285,7 @@
            (local (make-flag ,flag-name ,fn))
            ,encap
            (local (in-theory '((:induction ,flag-name)
+                               ,(flag::equivalences-name flag-name)
                                ,@runes)))
            ,@(and hyps-preserved-thm-names
                   `((local (set-default-hints

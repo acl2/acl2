@@ -8,10 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file defines a package for APT (Automated Program Transformations).
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
@@ -20,6 +16,7 @@
 
 (defpkg "APT" (append *std-pkg-symbols*
                       '(add-numbered-name-in-use
+                        add-suffix-to-fn
                         alist-to-doublets
                         all-calls
                         apply-term
@@ -56,6 +53,7 @@
                         ensure-list-subset$
                         ensure-named-formulas
                         ensure-symbol$
+                        ensure-symbol-different$
                         ensure-symbol-list$
                         ensure-symbol-new-event-name$
                         ensure-term$
@@ -92,6 +90,7 @@
                         pseudo-tests-and-call-listp
                         recursive-calls
                         recursivep
+                        remove-keyword
                         remove-lambdas
                         resolve-numbered-name-wildcard
                         run-when
@@ -103,7 +102,9 @@
                         subst-var
                         symbol-symbol-alistp
                         term-guard-obligation
+                        tests-and-call
                         theorem-intro-macro
+                        ubody
                         untranslate-lst
                         unwrapped-nonexec-body
                         variablep

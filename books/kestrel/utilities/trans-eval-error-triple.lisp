@@ -2,12 +2,14 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Thanks to Eric Smith for requesting such utilities.
+
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc trans-eval-error-triple
-  :parents (system-utilities)
+  :parents (kestrel-utilities system-utilities)
   :short "An ACL2 evaluator for forms that return @(see error-triple)s"
   :long "@({
  General Form:
@@ -26,7 +28,7 @@
  require @('form') to evaluate to an error-triple.</p>")
 
 (defxdoc trans-eval-state
-  :parents (system-utilities)
+  :parents (kestrel-utilities system-utilities)
   :short "An ACL2 evaluator that returns @(see state)"
   :long "@({
  General Form:

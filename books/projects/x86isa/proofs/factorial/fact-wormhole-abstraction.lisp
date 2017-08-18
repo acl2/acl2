@@ -153,13 +153,11 @@
        (equal (ms x86) nil)
        (equal (fault x86) nil)
        (equal n (rgfi *rdi* x86))
+       (64-bit-modep x86)
        (programmer-level-mode x86)
        (canonical-address-p addr)
        (canonical-address-p (+ addr (len *factorial_recursive*)))
-       (program-at (create-canonical-address-list
-                    (len *factorial_recursive*) addr)
-                   *factorial_recursive*
-                   x86)))
+       (program-at addr *factorial_recursive* x86)))
 
 (defthm fact-init-x86-state-forward-chaining
   (implies (fact-init-x86-state n addr x86)
@@ -169,13 +167,11 @@
                 (equal (ms x86) nil)
                 (equal (fault x86) nil)
                 (equal n (rgfi *rdi* x86))
+                (64-bit-modep x86)
                 (programmer-level-mode x86)
                 (canonical-address-p addr)
                 (canonical-address-p (+ addr (len *factorial_recursive*)))
-                (program-at (create-canonical-address-list
-                             (len *factorial_recursive*) addr)
-                            *factorial_recursive*
-                            x86)))
+                (program-at addr *factorial_recursive* x86)))
   :rule-classes :forward-chaining)
 
 (in-theory (e/d () (fact-init-x86-state)))

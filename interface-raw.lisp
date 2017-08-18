@@ -8131,8 +8131,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; The next token, :INITIALIZED, is used in GNUmakefile; keep in sync.
 
                                :INITIALIZED))))
-; If you want the final image to have infixp = t, then put the following
-; form here:
+
+; If you want the final image to have infixp = t (and have feature :acl2-infix
+; set), then put the following form here:
 ;    (f-put-global 'infixp t *the-live-state*)
 
      t)))
@@ -8582,8 +8583,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                 *standard-co*
                 state
                 nil)
-           (let ((old-infixp (f-get-global 'infixp *the-live-state*)))
-             (f-put-global 'infixp nil *the-live-state*)
+           (let (#+acl2-infix (old-infixp
+                               (f-get-global 'infixp *the-live-state*)))
+             #+acl2-infix (f-put-global 'infixp nil *the-live-state*)
              (with-suppression ; package locks, not just warnings, for read
               (state-free-global-let*
                ((connected-book-directory
@@ -8596,6 +8598,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                         (f-get-ld-specials *the-live-state*)))
                       *the-live-state*
                       nil)))
+             #+acl2-infix
              (f-put-global 'infixp old-infixp *the-live-state*)))))
        (let ((val (getenv$-raw "ACL2_CHECK_INVARIANT_RISK")))
          (when (and val (not (equal val "")))

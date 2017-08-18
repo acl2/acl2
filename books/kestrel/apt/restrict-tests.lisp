@@ -8,13 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides tests for
-; the domain restriction transformation,
-; which restricts the effective domain of a function,
-; e.g. to enable further optimizations.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/testing" :dir :system)
@@ -136,7 +129,10 @@
  ;; non-guard-verified functions:
  (must-succeed*
   (defun r (x) (declare (xargs :verify-guards nil)) x)
-  (must-fail (restrict nfix (natp (r x))))))
+  (must-fail (restrict nfix (natp (r x)))))
+
+ ;; call to target function:
+ (must-fail (restrict nfix (> (nfix x) 10))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,6 +180,58 @@
                      :guard (natp x) :verify-guards nil))
      (if (natp x) (and (not (zp x)) (f{1} (+ -1 x))) :undefined))
    (defthm f-~>-f{1} (implies (natp x) (equal (f x) (f{1} x)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :UNDEFINED option.")
+
+ ;; not a valid term:
+ (must-fail (restrict nfix (natp x) :undefined (cons x)))
+
+ ;; free variables that are not formal arguments of OLD:
+ (must-fail (restrict nfix (natp x) :undefined (ifix y)))
+
+ ;; program-mode functions:
+ (must-succeed*
+  (defun p (x) (declare (xargs :mode :program)) x)
+  (must-fail (restrict nfix (natp x) :undefined (p x))))
+
+ ;; multiple values:
+ (must-fail (restrict nfix (natp x) :undefined (mv x x)))
+
+ ;; output stobjs:
+ (must-succeed*
+  (defstobj x)
+  (must-fail (restrict nfix t :undefined x)))
+
+ ;; call to target function:
+ (must-fail (restrict nfix (natp x) :undefined (nfix x)))
+
+ ;; default:
+ (must-succeed*
+  (restrict nfix (natp x))
+  (defthm undefined (implies (not (natp x))
+                             (equal (nfix{1} x) :undefined))))
+
+ ;; constant:
+ (must-succeed*
+  (restrict nfix (natp x) :undefined 50)
+  (defthm undefined (implies (not (natp x))
+                             (equal (nfix{1} x) 50))))
+
+ ;; non-constant:
+ (must-succeed*
+  (restrict nfix (natp x) :undefined (ifix x))
+  (defthm undefined (implies (not (natp x))
+                             (equal (nfix{1} x) (ifix x)))))
+
+ ;; non-guard-verifiable in itself:
+ (must-succeed*
+  (restrict nfix (natp x) :undefined (+ x "abc"))
+  (defthm undefined (implies (not (natp x))
+                             (equal (nfix{1} x) (+ x "abc"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -555,3 +603,115 @@
   (assert! (function-namep 'nfix{1} (w state))))
 
  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test handling of redundancy.")
+
+ ;; initial call without :VERBOSE and without :SHOW-ONLY:
+ (must-succeed*
+  (restrict nfix (natp x))
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE T and without :SHOW-ONLY:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose t)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE NIL and without :SHOW-ONLY:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose nil)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call without :VERBOSE and with :SHOW-ONLY T:
+ (must-succeed*
+  (restrict nfix (natp x) :show-only t)
+  (must-fail-local (must-be-redundant (restrict nfix (natp x)))))
+
+ ;; initial call without :VERBOSE and with :SHOW-ONLY NIL:
+ (must-succeed*
+  (restrict nfix (natp x) :show-only nil)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE T and with :SHOW-ONLY T:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose t :show-only t)
+  (must-fail-local (must-be-redundant (restrict nfix (natp x)))))
+
+ ;; initial call with :VERBOSE T and with :SHOW-ONLY NIL:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose t :show-only nil)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE NIL and with :SHOW-ONLY T:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose nil :show-only t)
+  (must-fail-local (must-be-redundant (restrict nfix (natp x)))))
+
+ ;; initial call with :VERBOSE NIL and with :SHOW-ONLY NIL:
+ (must-succeed*
+  (restrict nfix (natp x) :verbose nil :show-only nil)
+  (must-be-redundant (restrict nfix (natp x)))
+  (must-be-redundant (restrict nfix (natp x) :verbose t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil))
+  (must-be-redundant (restrict nfix (natp x) :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :verbose t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :verbose nil :show-only nil)))
+
+ ;; non-redundant calls:
+ (must-succeed*
+  (restrict nfix (natp x))
+  ;; different target:
+  (must-fail-local (must-be-redundant (restrict len (true-listp x))))
+  ;; different restriction:
+  (must-fail-local (must-be-redundant (restrict nfix (integerp x))))
+  ;; different options:
+  (must-fail-local
+   (must-be-redundant (restrict nfix (natp x) :verify-guards nil)))
+  (must-fail-local
+   (must-be-redundant (restrict nfix (natp x) :new-name nfix-new)))))

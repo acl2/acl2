@@ -1004,8 +1004,6 @@
 
  (verify-guards strict-merge-sort-symbol-<)
 
- (verify-termination-boot-strap strict-symbol-<-sortedp) ; and guards
-
  (verify-termination-boot-strap sort-symbol-listp) ; and guards
 
  )
@@ -1037,9 +1035,10 @@
                   (union-theories
 
 ; Without the :executable-counterpart of force, the use of (theory
-; 'minimal-theory) will produce the warning "Forcing has transitioned
-; from enabled to disabled", at least if forcing is enabled (as is the
-; default).
+; 'minimal-theory) will produce the warning "Forcing has transitioned from
+; enabled to disabled", at least if forcing is enabled (as is the default).
+; Moreover, it's not unreasonable to leave forcing on in the minimal-theory,
+; for example in case it's useful for linear arithmetic.
 
                    '((:executable-counterpart force))
                    (theory 'executable-counterpart-minimal-theory))))
@@ -1393,17 +1392,18 @@
 ; For example, cdr of the entry for "system/top" is produced by evaluating:
 ; (include-book "system/top" :dir :system).
 ; The indicated books need to be certified using an ACL2 executable that was
-; built with feature :acl2-devel set, but this should take only a couple of
-; minutes or so.  It assumes that the only alist entry below is for
-; "system/top" and that ACL2 is your ACL2 sources directory.  Note: Replace
-; "saved_acl2d" as necessary, e.g., "ccl-saved_acl2d".
+; built with feature :acl2-devel set (typically with "make ACL2_DEVEL=t"), but
+; this should take only a couple of minutes or so.  It assumes that the only
+; alist entry below is for "system/top" and that ACL2 is your ACL2 sources
+; directory.  Note: Replace "ccl-saved_acl2d" as necessary, e.g.,
+; "saved_acl2d".
 
 ; cd ACL2
-; make clean-books ACL2=`pwd`/saved_acl2d
+; make clean-books
 ; cd books
-; (time nice ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert)
+; (time ./build/cert.pl -j 8 --acl2 `pwd`/../ccl-saved_acl2d system/top.cert)
 ; cd ACL2
-; make devel-check ACL2=`pwd`/saved_acl2d
+; make devel-check ACL2=`pwd`/ccl-saved_acl2d
 
 ; Note that it is not necessary to do a full regression with an :acl2-devel
 ; executable; only the books in the keys of this alist need to be certified.
@@ -1419,11 +1419,16 @@
      (ARGLISTP1 ACL2-COUNT LST)
      (ARITIES-OKP ACL2-COUNT USER-TABLE)
      (ARITY)
+     (CLEAN-BRR-STACK)
+     (CLEAN-BRR-STACK1 ACL2-COUNT STACK)
      (COLLECT-BY-POSITION ACL2-COUNT FULL-DOMAIN)
      (CONS-TERM1-MV2)
      (DEFUN-MODE)
+     (DEREF-MACRO-NAME)
      (DOUBLET-LISTP ACL2-COUNT X)
      (DUMB-NEGATE-LIT)
+     (ENS)
+     (ER-CMP-FN)
      (FETCH-DCL-FIELD)
      (FETCH-DCL-FIELDS ACL2-COUNT LST)
      (FETCH-DCL-FIELDS1 ACL2-COUNT LST)
@@ -1434,10 +1439,14 @@
                    (BINARY-+ (LENGTH FULL-PATHNAME)
                              (UNARY-- I)))
      (FIND-FIRST-BAD-ARG ACL2-COUNT ARGS)
+     (FNUME)
      (FORMALIZED-VARLISTP ACL2-COUNT VARLIST)
      (IMPLICATE)
      (LAMBDA-KEYWORDP)
+     (LAMBDA-SUBTERMP ACL2-COUNT TERM)
+     (LAMBDA-SUBTERMP-LST ACL2-COUNT TERMLIST)
      (LATEST-BODY)
+     (LEGAL-CONSTANTP)
      (LEGAL-CONSTANTP1)
      (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
      (LEGAL-VARIABLEP)
@@ -1447,6 +1456,7 @@
      (LOGIC-TERM-LIST-LISTP)
      (LOGIC-TERM-LISTP)
      (LOGIC-TERMP)
+     (LOGICAL-NAMEP)
      (MACRO-ARGS)
      (MAKE-LAMBDA-APPLICATION)
      (MERGE-SORT-TERM-ORDER ; . (STEPS-TO-NIL L)
@@ -1457,12 +1467,19 @@
      (META-EXTRACT-GLOBAL-FACT+)
      (META-EXTRACT-RW+-TERM)
      (MSGP)
+     (NEWLINE)
+     (OVERRIDE-HINTS)
      (PLAUSIBLE-DCLSP ACL2-COUNT LST)
      (PLAUSIBLE-DCLSP1 ACL2-COUNT LST)
      (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
+     (REMOVE-GUARD-HOLDERS)
+     (REMOVE-GUARD-HOLDERS1 ACL2-COUNT TERM)
+     (REMOVE-GUARD-HOLDERS1-LST ACL2-COUNT LST)
      (REMOVE-LAMBDAS)
      (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
      (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
+     (RUNEP)
+     (STOBJP)
      (STOBJS-OUT)
      (STRIP-CADRS ACL2-COUNT X)
      (STRIP-DCLS ACL2-COUNT LST)
@@ -1489,7 +1506,9 @@
      (TERMP ACL2-COUNT X)
      (THROW-NONEXEC-ERROR-P)
      (THROW-NONEXEC-ERROR-P1)
-     (WORLD-EVISCERATION-ALIST))))
+     (TRANSLATE-ABBREV-RUNE)
+     (WORLD-EVISCERATION-ALIST)
+     (WRITE-FOR-READ))))
 
 (defconst *len-system-verify-guards-alist*
   (length *system-verify-guards-alist*))

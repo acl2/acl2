@@ -5,8 +5,8 @@
 
 (include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
 
-(include-book "centaur/gl/gl" :dir :system)
-(include-book "centaur/bitops/ihs-extensions" :dir :system)
+(local (include-book "centaur/gl/gl" :dir :system))
+(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
 ;; ======================================================================
@@ -47,6 +47,8 @@
     #x5d                               ;; pop    %rbp
     #xc3                               ;; retq
     ))
+
+(defconst *l* (len *program*))
 
 (encapsulate
   ()
@@ -104,47 +106,65 @@
              (power-of-2-p x))
     :hints (("Goal" :in-theory (e/d* (expt) ())))))
 
-(def-gl-thm program-effects-helper-1
-  :hyp (and (unsigned-byte-p 64 x)
-            (power-of-2-p x))
-  :concl (equal (logand x (+ -1 x)) 0)
-  :g-bindings
-  `((x    (:g-number ,(gl-int 0 1 65)))))
+(local
+ (def-gl-thm program-effects-helper-1
+   :hyp (and (unsigned-byte-p 64 x)
+             (power-of-2-p x))
+   :concl (equal (logand x (+ -1 x)) 0)
+   :g-bindings
+   `((x    (:g-number ,(gl-int 0 1 65))))))
 
-(def-gl-thm program-effects-helper-2
-  :hyp (and (unsigned-byte-p 64 x)
-            (not (equal x 0))
-            (not (power-of-2-p x)))
-  :concl (equal (equal (logand x (+ -1 x)) 0) nil)
-  :g-bindings
-  `((x    (:g-number ,(gl-int 0 1 65)))))
+(local
+ (def-gl-thm program-effects-helper-2
+   :hyp (and (unsigned-byte-p 64 x)
+             (not (equal x 0))
+             (not (power-of-2-p x)))
+   :concl (equal (equal (logand x (+ -1 x)) 0) nil)
+   :g-bindings
+   `((x    (:g-number ,(gl-int 0 1 65))))))
 
-(def-gl-thm program-effects-helper-3
-  :hyp (and (signed-byte-p 64 x)
-            (power-of-2-p (loghead 64 x)))
-  :concl (equal (logand (loghead 64 x)
-                        (loghead 64 (+ -1 x)))
-                0)
-  :g-bindings
-  `((x    (:g-number ,(gl-int 0 1 65)))))
+(local
+ (def-gl-thm program-effects-helper-3
+   :hyp (and (signed-byte-p 64 x)
+             (power-of-2-p (loghead 64 x)))
+   :concl (equal (logand (loghead 64 x)
+                         (loghead 64 (+ -1 x)))
+                 0)
+   :g-bindings
+   `((x    (:g-number ,(gl-int 0 1 65))))))
 
-(def-gl-thm program-effects-helper-4
-  :hyp (and (signed-byte-p 64 x)
-            (< 0 (loghead 64 x))
-            (not (power-of-2-p (loghead 64 x))))
-  :concl (not (equal (logand (loghead 64 x)
-                             (loghead 64 (+ -1 x)))
-                     0))
-  :g-bindings
-  `((x    (:g-number ,(gl-int 0 1 65)))))
+(local
+ (def-gl-thm program-effects-helper-4
+   :hyp (and (signed-byte-p 64 x)
+             (< 0 (loghead 64 x))
+             (not (power-of-2-p (loghead 64 x))))
+   :concl (not (equal (logand (loghead 64 x)
+                              (loghead 64 (+ -1 x)))
+                      0))
+   :g-bindings
+   `((x    (:g-number ,(gl-int 0 1 65))))))
 
-(def-gl-thm power-of-2-p-result-helper
-  :hyp (and (unsigned-byte-p 64 x)
-            (power-of-2-p x))
-  :concl (equal (loghead 8 (logior 1 (logext 64 (bitops::logsquash 8 (+ -1 x)))))
-                1)
-  :g-bindings
-  `((x    (:g-number ,(gl-int 0 1 65)))))
+(local
+ (def-gl-thm power-of-2-p-result-helper-1
+   :hyp (unsigned-byte-p 64 x)
+   :concl (equal (loghead 8 (logior 1 (logext 64 (bitops::logsquash 8 (+ -1 x)))))
+                 1)
+   :g-bindings
+   `((x    (:g-number ,(gl-int 0 1 65))))))
+
+(local
+ (def-gl-thm power-of-2-p-result-helper-2
+   :hyp (signed-byte-p 64 x)
+   :concl (signed-byte-p 64 (logior 1 (bitops::logsquash 8 (logext 64 (+ -1 x)))))
+   :g-bindings
+   `((x    (:g-number ,(gl-int 0 1 65))))))
+
+(local
+ (def-gl-thm power-of-2-p-result-helper-3
+   :hyp (signed-byte-p 64 x)
+   :concl (signed-byte-p 64 (bitops::logsquash 8 (logext 64 (+ -1 x))))
+   :g-bindings
+   `((x    (:g-number ,(gl-int 0 1 65))))))
 
 ;; ======================================================================
 
@@ -154,12 +174,13 @@
    (x86p x86)
    ;; Alignment checking is turned off.
    (not (alignment-checking-enabled-p x86))
+   ;; The model is operating in 64-bit mode.
+   (64-bit-modep x86)
    ;; The model is operating in the programmer-level mode.
    (programmer-level-mode x86)
    ;; The program is located at linear addresses ranging from (rip
    ;; x86) to (+ -1 (len *program*) (rip x86)).
-   (program-at (create-canonical-address-list (len *program*) (rip x86))
-               *program* x86)
+   (program-at (rip x86) *program* x86)
    ;; The addresses where the program is located are canonical.
    (canonical-address-p (rip x86))
    (canonical-address-p (+ (len *program*) (rip x86)))
@@ -172,18 +193,11 @@
    (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
    ;; Return address is canonical.
    (canonical-address-p
-    (logext
-     64
-     (combine-bytes
-      (mv-nth 1
-              (rb (create-canonical-address-list 8 (xr :rgf *rsp* x86))
-                  :r x86)))))
-   ;; Stack and program are disjoint.
-   (disjoint-p
-    (create-canonical-address-list
-     (len *program*) (xr :rip 0 x86))
-    (create-canonical-address-list
-     8 (+ -8 (xr :rgf *rsp* x86))))
+    (logext 64 (mv-nth 1 (rb 8 (xr :rgf *rsp* x86) :r x86))))
+   ;; Program and stack are disjoint.
+   (separate
+    :x *l* (xr :rip 0 x86)
+    :w  8  (+ -8 (xr :rgf *rsp* x86)))
    (unsigned-byte-p 64 (rr64 *rdi* x86))))
 
 (defun is-power-of-2-clock () 10)
@@ -228,8 +242,8 @@
                              ;; Flags
                              write-user-rflags
                              zf-spec)
-                            (create-canonical-address-list
-                             (create-canonical-address-list))))))
+                            (canonical-address-p
+                             signed-byte-p)))))
 
 (defthm not-power-of-2-p-result
   (implies (and (preconditions x86)
@@ -272,7 +286,8 @@
                              ;; Flags
                              write-user-rflags
                              zf-spec)
-                            (create-canonical-address-list
-                             (create-canonical-address-list))))))
+                            (canonical-address-p
+                             not
+                             signed-byte-p)))))
 
 ;; ======================================================================

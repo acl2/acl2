@@ -1,0 +1,14 @@
+A verified resolution checker
+Matt Kaufmann and Sol Swords (see each book's header for authorship)
+
+This checker was used at Centaur Technology for checking resolution
+proofs.  The file zz.lisp has been modified, however, because the
+backend (SAT solver etc.) is not included here.
+
+These books give an example of how to set up two-pass certification
+with SAT solving and proof recording in the first pass and proof
+checking without ttags in the second pass.  The top-level book of
+these is zz-two-pass.lisp.  The way to use it in a certified book is
+to first invoke (zz-two-pass-start), do whatever events use SAT
+solving (using e.g.  zzv-sat or zzv-batch-sat), and call
+(zz-two-pass-stop) at the end of the book.

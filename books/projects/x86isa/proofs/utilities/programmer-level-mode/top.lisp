@@ -63,7 +63,7 @@
     <li>When monitoring other rules above indicates that an
     instruction is not being fetched successfully using @(see rb):
     <br/>
-    Monitor @('rb-in-terms-of-nth-and-pos').
+    Monitor @('one-read-with-rb-from-program-at').
     </li>
 
    <li>When monitoring other rules above indicates that ACL2 can't
@@ -76,22 +76,12 @@
     is not being relieved.
    </li>
 
-   <li>When inferring the canonical nature of a linear address:<br/>
-    Monitor @('member-p-canonical-address-listp'). <br/>
-    <br/>
-    This is useful if you believe that the canonical nature of a
-    linear address should be inferable from the canonical nature of a
-    list of addresses, of which that address is a member.  An instance
-    of where monitoring this rule
-    might be helpful is when the @('member-p') hypothesis of
-    @('rb-in-terms-of-nth-and-pos') is not
-    being relieved.
-   </li>
-
    <li>When reasoning about disjointness/overlap of memory regions: <br/>
    @('rb-wb-disjoint') <br/>
    @('rb-wb-subset') <br/>
-   @('rb-wb-equal')
+   @('rb-wb-equal') <br/>
+   @('separate-smaller-regions') <br/>
+   @('separate-contiguous-regions')
    </li>
 
   </ul>
@@ -132,18 +122,16 @@
 
  <h3>Rules related to instruction fetches and program location</h3>
 
- @(def rb-in-terms-of-nth-and-pos)
+ @(def one-read-with-rb-from-program-at)
 
  @(def program-at-wb-disjoint)
-
- <h3>Rules related to canonical linear addresses</h3>
-
- @(def member-p-canonical-address-listp)
 
  <h3>Rules related to disjointness/overlap of memory regions</h3>
 
  @(def rb-wb-disjoint)
  @(def rb-wb-subset)
  @(def rb-wb-equal)
+ @(def separate-smaller-regions)
+ @(def separate-contiguous-regions)
  "
   )

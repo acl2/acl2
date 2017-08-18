@@ -35,6 +35,7 @@
 ;; when debugging the release note markup.
 (include-book "centaur/nrev/portcullis" :dir :system)
 (include-book "centaur/vl/portcullis" :dir :system)
+(include-book "centaur/ipasir/portcullis" :dir :system)
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)
 (include-book "centaur/bed/portcullis" :dir :system)
@@ -75,6 +76,12 @@
 
 (defxdoc note-7-5-books
 
+; Note: To see all git log entries with a given author, for example Joe
+; Q. Bignerd, you can issue a command such as the following (use a substring of
+; the author name) and then look at the new file, tmp:
+
+;    git log -n 1000 --name-only --author='gnerd' > tmp
+
 ; Shilpi Goel: As discussed in the ACL2 2017 Workshop, I am adding
 ; this doc topic in the hopes that the members of the ACL2 community
 ; will track changes to their books as they go by logging them here.
@@ -106,17 +113,159 @@
 
  <h3>New Libraries</h3>
 
+ <h4>Supporting materials for the 2017 ACL2 Workshop</h4>
+
+ <p>See the new directory, @('workshops/2017/') &mdash; specifically, its
+ @('README') file.</p>
+
+ <h4>SAT proof-checker for cube-and-conquer</h4>
+
+ <p>The new directory is @('projects/sat/lrat/cube/').  See file @('README') in
+ that directory.</p>
+
+ <h4>SAT proof-checker from 2011</h4>
+
+ <p>An early SAT proof-checker based on resolution may be found in directory
+ @('books/projects/sat/zz-resolution-checker/'); see the @('README') in that
+ directory.  It was sufficiently efficient to get limited use in industry, but
+ ultimately was superseded by much more efficient clause-based
+ proof-checking (see directory @('books/projects/sat/lrat/')).</p>
+
+ <h4>EDIF conversion</h4>
+
+ <p>See @('projects/async/tools/convert-edif.lisp') for tools to convert
+ between EDIF format and corresponding convenient s-expressions.</p>
+
+ <h4>try-gl-concls</h4>
+
+ <p>See @('centaur/misc/try-gl-concls') for a small but convenient utility to
+ find all the true conclusions (if any) from a user-provided list of possible
+ conclusions using @(see GL::GL).</p>
+
+ <h4>GLMC</h4>
+
+ <p>GLMC (in directory centaur/glmc) is a connection from ACL2 to AIG-based
+ hardware model checkers, via @(see gl::gl); this can be used to prove safety
+ properties without finding an inductive invariant.  See @(see gl::glmc) for
+ details.</p>
+
+ <h4>Truth</h4>
+
+ <p>Directory centaur/truth contains a library for using integers as a
+ representation for Boolean functions with small (single-digit) numbers of
+ variables, expressing the functions as truth tables.  Truth tables for 5 or
+ fewer variables are especially efficient since the formulas are represented as
+ fixnums (at least in 64-bit lisps).</p>
+
+ <h4>Ipasir</h4>
+
+ <p>The @(see ipasir::ipasir) library (in directory centaur/ipasir) contains an
+ axiomatized interface for using incremental SAT solver libraries in ACL2.  A
+ solver object is represented as an abstract stobj, and actual solver functions
+ from a suitable shared library can be called as the implementation.
+ Integration with @(see aignet::aignet) is also provided in the book
+ \"centaur/aignet/ipasir\".</p>
+
+
  <h3>Changes to Existing Libraries</h3>
+
+ <h4>@(see std/io)</h4>
 
  <p>The @(see std/io) library now contains lemmas to help users prove
  that opened input and output channels remain open until closed, to
  aid guard theorem proofs.  See @(see open-channel-lemmas).</p>
 
+ <h4>Miscellaneous @(see std) changes</h4>
+
+ <p>The @('why') and @('why-explain') convenience macros in
+ @('std/std-customization.lsp') now support rule classes other than
+ @(':rewrite').</p>
+
+ <h4>@(see kestrel-utilities)</h4>
+
+ <p>Improved an error message for @('verify-guards-program') (thanks to Eric
+ Smith for feedback); see
+ @('kestrel/utilities/verify-guards-program.lisp').</p>
+
+ <p>Added utilities @(tsee trans-eval-state) and @(tsee
+ trans-eval-error-triple), which provide convenient interfaces to the ACL2
+ evaluator, @(tsee trans-eval).</p>
+
+ <p>Improved the utility, @(tsee directed-untranslate), especially for handling
+ @(tsee let) and @(tsee mv-let) expressions (and @('lambda') expressions) and
+ towards ensuring executability of its results.</p>
+
+ <p>Improved the utility, @('copy-def'), to avoid failures for some functions
+ defined by @(tsee mutual-recursion).  Thanks to Eric Smith for a helpful bug
+ report.</p>
+
+ <p>The macro @(tsee must-fail) has a new keyword option, @(':expected'), to
+ indicate the kind of error that is expected.  New macros @(tsee
+ ensure-soft-error), @(tsee ensure-hard-error), and @(tsee ensure-error)
+ provide nice interfaces to @('must-fail') with the legal values of this new
+ option.  See @(see must-fail).  Thanks to Eric Smith for discussions leading
+ to these changes.</p>
+
+ <p>Added utility @(tsee er-soft+) for producing soft errors with @(':')@(tsee
+ logic) mode code, returning a specified @(see error-triple).  The new utility
+ @(tsee er-soft-logic) is similar but a bit simpler, for use when the only
+ property needed of the returned @(see error-triple) is that its error
+ component is not @('nil').</p>
+
+ <p>New utility @(tsee manage-screen-output) is an improved version of @(tsee
+ control-screen-output) (which may eventually be removed).</p>
+
+ <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
+ fails, then to evaluate a second event.</p>
+
+ <p>Added other utilities, for example world queries (in the book
+ @('world-queries.lisp')) and error checking utilities (in the new book
+ @('error-checking.lisp')).</p>
+
+ <h4>The apply books</h4>
+
+ <p>Updated books pertaining to @('apply$'); see @('projects/apply-model/') and
+ @('projects/apply/').</p>
+
+ <h4>SAT proof-checker</h4>
+
+ <p>Additions and improvements have been made to the SAT proof-checker
+ directories, under @('projects/sat/lrat/').  In particular, the proof was
+ completed for the incremental checker (subdirectory @('incremental/') with an
+ improved soundness theorem; a new directory was addded (@('cube/'), as
+ mentioned above); and renamed subdirectory @('main/') to @('sorted/').  The
+ key subdirectory is @('incremental/'); a new top-level book @('top.lisp')
+ includes the top-level book in that subdirectory.</p>
+
+ <h4>Aignet library</h4>
+
+ <p>A few new verified <see topic='@(url aignet::aignet-comb-transforms)'>
+ combinational logic transforms</see> have been
+ added to aignet, most notably <see topic='@(url aignet::fraig)'>fraiging</see>
+ and DAG-aware and-tree <see topic='@(url aignet::balance)'>balancing</see>.
+ These can be used as preprocessors for SAT solving with GL via @(see
+ gl::gl-simplify-satlink-mode).</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
 
+ <p>Improved books cleaning slightly, in @('books/GNUmakefile').</p>
+
+ <p>Also see @(see note-7-5), specifically the section on ``Changes at the
+ System Level''.</p>
+
  <h3>Miscellaneous</h3>
+
+ <p>Added file @('system/to-do.txt') to list some potential developer
+ tasks.</p>
+
+ <p>Fixed @('misc/profiling.lisp') for newer distributions of CCL (Clozure
+ Common Lisp), both from SVN and from GitHub.</p>
+
+ <p>The macro @(tsee defconsts) now provides a better error message when given
+ a symbol that does not have the syntax of a constant.</p>
+
  ")
 
 (defxdoc note-7-2-books

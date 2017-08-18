@@ -142,8 +142,8 @@
      (and (stringp (car fn))
           (alistp (cdr fn))) ; character-alistp isn't defined yet...
      fn))
-   (t (msg "ACL2 cannot ev the call of undefined function ~x0 on argument ~
-            list:~|~%~x1~@2~|~%~@3"
+   (t (msg "ACL2 cannot ev the call of non-executable function ~x0 on ~
+            argument list:~|~%~x1~@2~|~%~@3"
            fn
            args
            (ignored-attachment-msg ignored-attachment)
@@ -780,7 +780,7 @@
 ;                   (FMT-SOFT-RIGHT-MARGIN . 65)
 ;                   (GSTACKP)
 ;                   (GUARD-CHECKING-ON . T)
-;                   (INFIXP)
+;                   #+acl2-infix (INFIXP)
 ;                   (INHIBIT-OUTPUT-LST SUMMARY)
 ;                   (IN-LOCAL-FLG . NIL)
 ;                   (LD-LEVEL . 0)
@@ -6492,6 +6492,9 @@
         (t nil)))
 
 (defun deref-macro-name (macro-name macro-aliases)
+  (declare (xargs :guard (if (symbolp macro-name)
+                             (alistp macro-aliases)
+                           (symbol-alistp macro-aliases))))
   (let ((entry (assoc-eq macro-name macro-aliases)))
     (if entry
         (cdr entry)
@@ -8033,9 +8036,8 @@
     (cond ((or (not (consp (car x)))
                (not (eq (caar x) 'lambda)))
            (trans-er ctx
-                     "Function applications in ACL2 must begin with a ~
-                      symbol or LAMBDA expression.  ~x0 is not of ~
-                      this form."
+                     "Function applications in ACL2 must begin with a symbol ~
+                      or LAMBDA expression.  ~x0 is not of this form."
                      x))
           ((or (not (true-listp (car x)))
                (not (>= (length (car x)) 3))
@@ -8112,9 +8114,9 @@
             (cond
              ((not (no-duplicatesp (collect-non-x nil new-stobjs-out)))
               (trans-er ctx
-                        "It is illegal to return more than one ~
-                         reference to a given single-threaded object ~
-                         in an MV form.  The form ~x0 is thus illegal."
+                        "It is illegal to return more than one reference to a ~
+                         given single-threaded object in an MV form.  The ~
+                         form ~x0 is thus illegal."
                         x))
              (t
               (mv-let
@@ -9163,7 +9165,8 @@
                             (let ((set-fn (intern-in-package-of-symbol
                                            (concatenate 'string
                                                         "SET-"
-                                                        (symbol-name (cadr (cadr x))))
+                                                        (symbol-name
+                                                         (cadr (cadr x))))
                                            (cadr (cadr x)))))
                               (cond ((function-symbolp set-fn wrld)
                                      (msg "~|There is a function ~x0, which ~
@@ -9192,10 +9195,9 @@
                                ctx wrld state-vars)))))
    ((arity (car x) wrld)
     (trans-er ctx
-              "~x0 takes ~#1~[no arguments~/1 argument~/~x2 ~
-               arguments~] but in the call ~x3 it is given ~#4~[no ~
-               arguments~/1 argument~/~x5 arguments~].   The formal ~
-               parameters list for ~x0 is ~X67."
+              "~x0 takes ~#1~[no arguments~/1 argument~/~x2 arguments~] but ~
+               in the call ~x3 it is given ~#4~[no arguments~/1 argument~/~x5 ~
+               arguments~].  The formal parameters list for ~x0 is ~X67."
               (car x)
               (zero-one-or-more (arity (car x) wrld))
               (arity (car x) wrld)
@@ -9206,15 +9208,14 @@
               nil))
    ((eq (car x) 'declare)
     (trans-er ctx
-              "It is illegal to use DECLARE as a function symbol, as ~
-               in ~x0.  DECLARE forms are permitted only in very ~
-               special places, e.g., before the bodies of function ~
-               definitions, LETs, and MV-LETs.  DECLARE forms are ~
-               never permitted in places in which their ``values'' ~
-               are relevant.  If you already knew this, it is likely ~
-               you have made a typographical mistake, e.g., including ~
-               the body in the DECLARE form or closing the superior ~
-               form before typing the body."
+              "It is illegal to use DECLARE as a function symbol, as in ~x0.  ~
+               DECLARE forms are permitted only in very special places, e.g., ~
+               before the bodies of function definitions, LETs, and MV-LETs.  ~
+               DECLARE forms are never permitted in places in which their ~
+               ``values'' are relevant.  If you already knew this, it is ~
+               likely you have made a typographical mistake, e.g., including ~
+               the body in the DECLARE form or closing the superior form ~
+               before typing the body."
               x))
    (t (let ((syms (macros-and-functions-in-other-packages
                    (car x)

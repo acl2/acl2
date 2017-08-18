@@ -8,12 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides a utility to create an event
-; that installs the non-normalized definition of a function,
-; ensuring that the name of the theorem will not cause a conflict.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "misc/install-not-normalized" :dir :system)
@@ -31,10 +25,11 @@
                (name "A @(tsee symbolp): the name of the theorem."))
   :mode :program
   :parents (kestrel-utilities system-utilities install-not-normalized)
-  :short "Event form to
+  :short "Create an event form to
           <see topic='@(url install-not-normalized)'>install
           the non-normalized definition</see>
-          of a function."
+          of a function,
+          ensuring that the name of the theorem will not cause a conflict."
   :long
   "<p>
    Ensure that the name of the theorem is not already in use

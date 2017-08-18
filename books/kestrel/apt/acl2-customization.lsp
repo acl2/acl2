@@ -8,10 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file provides customization for APT (Automated Program Transformations),
-; according to the recommendations in the WORKING-WITH-PACKAGES manual page.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; This follows the recommendations in the WORKING-WITH-PACKAGES manual page.
 
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 

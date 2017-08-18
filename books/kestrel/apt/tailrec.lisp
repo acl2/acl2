@@ -8,12 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file implements the tail recursion transformation,
-; which turns a recursive function that is not tail-recursive
-; into an equivalent tail-recursive function.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "APT")
 
 (include-book "kestrel/utilities/doublets" :dir :system)
@@ -184,7 +178,8 @@
                       and after replacing the calls to ~x0 ~
                       with a fresh variable ~x1, ~
                       the recursive branch ~x2 of the target function ~x0"
-                     old-fn-name r combine-nonrec)))
+                     old-fn-name r combine-nonrec)
+                t nil))
        ((mv found nonrec combine)
         (tailrec-find-nonrec-term combine-nonrec combine-nonrec r q))
        ((unless found)
@@ -236,45 +231,54 @@
    </p>"
   (b* ((wrld (w state))
        ((er old-fn-name) (ensure-function-name-or-numbered-wildcard$
-                          old "The first input"))
+                          old "The first input" t nil))
        (description (msg "The target function ~x0" old-fn-name))
-       ((er &) (ensure-function-logic-mode$ old-fn-name description))
-       ((er &) (ensure-function-defined$ old-fn-name description))
-       ((er &) (ensure-function-number-of-results$ old-fn-name 1 description))
-       ((er &) (ensure-function-no-stobjs$ old-fn-name description))
-       ((er &) (ensure-function-singly-recursive$ old-fn-name description))
-       ((er &) (ensure-function-known-measure$ old-fn-name description))
+       ((er &) (ensure-function-logic-mode$ old-fn-name description t nil))
+       ((er &) (ensure-function-defined$ old-fn-name description t nil))
+       ((er &) (ensure-function-number-of-results$ old-fn-name 1
+                                                   description t nil))
+       ((er &) (ensure-function-no-stobjs$ old-fn-name description t nil))
+       ((er &) (ensure-function-singly-recursive$ old-fn-name
+                                                  description t nil))
+       ((er &) (ensure-function-known-measure$ old-fn-name description t nil))
        (body (if (non-executablep old-fn-name wrld)
                  (unwrapped-nonexec-body old-fn-name wrld)
-               (body old-fn-name nil wrld)))
+               (ubody old-fn-name wrld)))
        (body (remove-lambdas body))
        ((er (list test base combine-nonrec-reccall))
         (ensure-term-if-call$ body
                               (msg "After translation and LET expansion, ~
                                     the body ~x0 of the target function ~x1"
-                                   body old-fn-name)))
+                                   body old-fn-name)
+                              t nil))
        ((er &) (ensure-term-does-not-call$
-                test old-fn-name (msg "After translation and LET expansion, ~
-                                       the exit test ~x0 ~
-                                       of the target function ~x1"
-                                      test old-fn-name)))
+                test old-fn-name
+                (msg "After translation and LET expansion, ~
+                      the exit test ~x0 ~
+                      of the target function ~x1"
+                     test old-fn-name)
+                t nil))
        ((er &) (ensure-term-does-not-call$
-                base old-fn-name (msg "After translation and LET expansion, ~
-                                       the first branch ~x0 ~
-                                       of the target function ~x1"
-                                      base old-fn-name)))
+                base old-fn-name
+                (msg "After translation and LET expansion, ~
+                      the first branch ~x0 ~
+                      of the target function ~x1"
+                     base old-fn-name)
+                t nil))
        ((er &) (if (member-eq variant '(:monoid :monoid-alt))
                    (ensure-term-ground$
-                    base (msg "Since the :VARIANT input is ~s0~x1, ~
-                               after translation and LET expansion, ~
-                               the first branch ~x2 ~
-                               of the target function ~x3"
-                              (if (eq variant :monoid)
-                                  "(perhaps by default) "
-                                "")
-                              variant
-                              base
-                              old-fn-name))
+                    base
+                    (msg "Since the :VARIANT input is ~s0~x1, ~
+                          after translation and LET expansion, ~
+                          the first branch ~x2 ~
+                          of the target function ~x3"
+                         (if (eq variant :monoid)
+                             "(perhaps by default) "
+                           "")
+                         variant
+                         base
+                         old-fn-name)
+                    t nil)
                  (value nil)))
        ((er (list nonrec updates combine q r))
         (tailrec-decompose-recursive-branch
@@ -283,9 +287,11 @@
                    (ensure-function-guard-verified$
                     old-fn-name
                     (msg "Since the :VERIFY-GUARDS input is T, ~
-                          the target function ~x0" old-fn-name))
+                          the target function ~x0" old-fn-name)
+                    t nil)
                  (value nil)))
        ((run-when verbose)
+        (cw "~%")
         (cw "Components of the target function ~x0:~%" old-fn-name)
         (cw "- Exit test: ~x0.~%" (untranslate test nil wrld))
         (cw "- Base value: ~x0.~%" (untranslate base nil wrld))
@@ -293,8 +299,7 @@
         (cw "- Argument updates: ~x0.~%" (untranslate-lst updates nil wrld))
         (cw "- Combination operator: ~x0.~%" (untranslate combine nil wrld))
         (cw "- Fresh variable for non-recursive computation: ~x0.~%" q)
-        (cw "- Fresh variable for recursive call: ~x0.~%" r)
-        (cw "~%")))
+        (cw "- Fresh variable for recursive call: ~x0.~%" r)))
     (value (list old-fn-name test base nonrec updates combine q r))))
 
 (std::defenum tailrec-variantp (:assoc :monoid :monoid-alt)
@@ -304,8 +309,8 @@
   ((variant "Input to the transformation."))
   "Ensure that the @('variant') input to the transformation is valid."
   (((tailrec-variantp variant)
-    "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." acl2::description))
-  (nothing "Always @('nil')."))
+    "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." description))
+  (val "@('nil') or @('error-val')."))
 
 (define tailrec-check-domain
   ((domain "Input to the transformation.")
@@ -337,24 +342,34 @@
    Show the domain being used if @('verbose') is non-@('nil').
    </p>"
   (b* (((er (list fn/lambda stobjs-in stobjs-out description))
-        (ensure-function/macro/lambda$ domain "The :DOMAIN input"))
-       ((er &) (ensure-function/lambda-logic-mode$ fn/lambda description))
-       ((er &) (ensure-function/lambda-arity$ stobjs-in 1 description))
-       ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out
-                                                               1
-                                                               description))
+        (ensure-function/macro/lambda$ domain "The :DOMAIN input" t nil))
+       ((er &) (ensure-function/lambda-logic-mode$ fn/lambda description t nil))
+       ((er &) (ensure-function/lambda-arity$ stobjs-in 1 description t nil))
+       ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
+                                                               description
+                                                               t nil))
        ((er &) (ensure-function/lambda-no-stobjs$ stobjs-in
                                                   stobjs-out
-                                                  description))
-       ((er &) (ensure-function/lambda-closed$ fn/lambda description))
+                                                  description t nil))
+       ((er &) (ensure-function/lambda-closed$ fn/lambda description t nil))
        ((er &) (if do-verify-guards
                    (ensure-function/lambda-guard-verified-exec-fns$
                     fn/lambda
                     (msg "Since either the :VERIFY-GUARDS input is T, ~
                           or it is (perhaps by default) :AUTO ~
                           and the target function ~x0 is guard-verified, ~@1"
-                         old-fn-name (msg-downcase-first description)))
-                 (value nil))))
+                         old-fn-name (msg-downcase-first description))
+                    t nil)
+                 (value nil)))
+       ((er &) (if (symbolp fn/lambda)
+                   (ensure-symbol-different$ fn/lambda
+                                             old-fn-name
+                                             (msg "the target function ~x0"
+                                                  old-fn-name)
+                                             description t nil)
+                 (ensure-term-does-not-call$ (lambda-body fn/lambda)
+                                             old-fn-name
+                                             description t nil))))
     (value fn/lambda)))
 
 (define tailrec-check-new-name
@@ -370,7 +385,7 @@
                state)
   :mode :program
   :short "Ensure that the @(':new-name') input to the transformation is valid."
-  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input"))
+  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
        (name (if (eq new-name :auto)
                  (next-numbered-name old-fn-name (w state))
                new-name))
@@ -381,7 +396,7 @@
                               since the :NEW-NAME input ~
                               is (perhaps by default) :AUTO"
                            "supplied as the :NEW-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description)))
+       ((er &) (ensure-symbol-new-event-name$ name description t nil)))
     (value name)))
 
 (define tailrec-check-wrapper-name
@@ -398,9 +413,9 @@
   :mode :program
   :short "Ensure that the @(':wrapper-name') input to the transformation
           is valid."
-  (b* (((er &) (ensure-symbol$ wrapper-name "The :WRAPPER-NAME input"))
+  (b* (((er &) (ensure-symbol$ wrapper-name "The :WRAPPER-NAME input" t nil))
        (name (if (eq wrapper-name :auto)
-                 (packn (list new-fn-name '-wrapper))
+                 (add-suffix-to-fn new-fn-name "-WRAPPER")
                wrapper-name))
        (description (msg "The name ~x0 of the wrapper function, ~@1,"
                          name
@@ -409,7 +424,7 @@
                               since the :WRAPPER-NAME input ~
                               is (perhaps by default) :AUTO"
                            "supplied as the :WRAPPER-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description))
+       ((er &) (ensure-symbol-new-event-name$ name description t nil))
        ((when (eq name new-fn-name))
         (er soft ctx
             "~@0 must differ from the name ~x1 of the new function ~
@@ -434,14 +449,18 @@
   :mode :program
   :short "Ensure that the @(':thm-name') input to the transformation
           is valid."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input"))
-       (name (cond ((eq thm-name :arrow)
-                    (packn (list old-fn-name '-~>- wrapper-fn-name)))
-                   ((eq thm-name :becomes)
-                    (packn (list old-fn-name '-becomes- wrapper-fn-name)))
-                   ((eq thm-name :is)
-                    (packn (list old-fn-name '-is- wrapper-fn-name)))
-                   (t thm-name)))
+  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
+       (name (if (member-eq thm-name '(:arrow :becomes :is))
+                 (b* ((separator (case thm-name
+                                   (:arrow "-~>-")
+                                   (:becomes "-BECOMES-")
+                                   (:is "-IS-")
+                                   (otherwise (impossible))))
+                      (string (str::cat (symbol-name old-fn-name)
+                                        separator
+                                        (symbol-name wrapper-fn-name))))
+                   (intern-in-package-of-symbol string old-fn-name))
+               thm-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the target function ~x1 ~
                           to the wrapper function ~x2 ~
@@ -452,7 +471,7 @@
                               since the :THM-NAME input ~
                               is (perhaps by default) :ARROW, :BECOMES, or :IS"
                            "supplied as the :THM-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description))
+       ((er &) (ensure-symbol-new-event-name$ name description t nil))
        ((when (eq name new-fn-name))
         (er soft ctx
             "~@0 must differ from the name ~x1 of the new function ~
@@ -520,18 +539,18 @@
    may be in any package,
    so long as their names match the applicability condition names.
    </p>"
-  (b* (((er &) (ensure-doublet-list$ hints "The :HINTS input"))
+  (b* (((er &) (ensure-doublet-list$ hints "The :HINTS input" t nil))
        (alist (doublets-to-alist hints))
        (keys (strip-cars alist))
        (vals (strip-cdrs alist))
        (description
         (msg "The list ~x0 of the first components of the :HINTS input" keys))
-       ((er &) (ensure-symbol-list$ keys description))
+       ((er &) (ensure-symbol-list$ keys description t nil))
        (keys (intern-list (symbol-list-names keys)
                           (pkg-witness "APT")))
-       ((er &) (ensure-list-no-duplicates$ keys description))
+       ((er &) (ensure-list-no-duplicates$ keys description t nil))
        ((er &) (ensure-list-subset$ keys *tailrec-app-cond-names*
-                                    description)))
+                                    description t nil)))
     (value (pairlis$ keys vals))))
 
 (define tailrec-check-inputs ((old "Input to the transformation.")
@@ -626,7 +645,7 @@
    but it is only tested for equality with @('t')
    (see @(tsee tailrec-check-old)).
    </p>"
-  (b* (((er &) (ensure-boolean$ verbose "The :VERBOSE input"))
+  (b* (((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
        ((er (list old-fn-name
                   test
                   base
@@ -636,11 +655,11 @@
                   q
                   r)) (tailrec-check-old
                        old variant verify-guards verbose ctx state))
-       ((er &) (tailrec-check-variant$ variant "The :VARIANT input"))
+       ((er &) (tailrec-check-variant$ variant "The :VARIANT input" t nil))
        ((er do-verify-guards) (ensure-boolean-or-auto-and-return-boolean$
                                verify-guards
                                (guard-verified-p old-fn-name (w state))
-                               "The :VERIFY-GUARDS input"))
+                               "The :VERIFY-GUARDS input" t nil))
        ((er domain$) (tailrec-check-domain
                       domain old-fn-name do-verify-guards ctx state))
        ((er new-fn-name) (tailrec-check-new-name
@@ -648,21 +667,22 @@
        ((er new-fn-enable) (ensure-boolean-or-auto-and-return-boolean$
                             new-enable
                             (fundef-enabledp old state)
-                            "The :NEW-ENABLE input"))
+                            "The :NEW-ENABLE input" t nil))
        ((er wrapper-fn-name) (tailrec-check-wrapper-name
                               wrapper-name new-fn-name ctx state))
-       ((er &) (ensure-boolean$ wrapper-enable "The :WRAPPER-ENABLE input"))
+       ((er &) (ensure-boolean$ wrapper-enable
+                                "The :WRAPPER-ENABLE input" t nil))
        ((er old-to-wrapper-thm-name) (tailrec-check-thm-name
                                       thm-name
                                       old-fn-name new-fn-name wrapper-fn-name
                                       ctx state))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input"))
+       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
        ((er make-non-executable) (ensure-boolean-or-auto-and-return-boolean$
                                   non-executable
                                   (non-executablep old (w state))
-                                  "The :NON-EXECUTABLE input"))
+                                  "The :NON-EXECUTABLE input" t nil))
        ((er hints-alist) (tailrec-check-hints hints ctx state))
-       ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input")))
+       ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
     (value (list old-fn-name
                  test
                  base
@@ -1671,7 +1691,9 @@
    (hints-alist symbol-alistp "Result of @(tsee tailrec-check-inputs).")
    (show-only booleanp "Input to the transformation, after validation.")
    (app-conds symbol-alistp "Result of @(tsee tailrec-app-conds).")
-   (call pseudo-event-formp "Call to the transformation.")
+   (call-w/o-verbose-showonly pseudo-event-formp
+                              "Call to the transformation,
+                               without @(':verbose') and @(':show-only').")
    (wrld plist-worldp))
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
@@ -1728,7 +1750,9 @@
    </p>
    <p>
    The @(tsee encapsulate) is stored into the transformation table,
-   associated to the call to the transformation.
+   associated to the call to the transformation
+   (without @(':verbose') and @(':show-only'), if any,
+   because they only affect the transformation's screen output).
    Thus, the table event and the screen output events
    (which are in the @(tsee progn) but not in the @(tsee encapsulate))
    are not stored into the transformation table,
@@ -1868,15 +1892,18 @@
                              ,new-fn-numbered-name-event
                              ,wrapper-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
-       ((when show-only) `(value-triple ',encapsulate))
+       ((when show-only) `(progn
+                            (cw-event "~x0~|" ',encapsulate)
+                            (value-triple ':invisible)))
        (transformation-table-event `(table transformation-table
-                                      ',call ',encapsulate))
-       (new-fn-show-event `(cw-event "~x0~|~%"
+                                      ',call-w/o-verbose-showonly
+                                      ',encapsulate))
+       (new-fn-show-event `(cw-event "~x0~|"
                                      ',new-fn-exported-event))
-       (wrapper-fn-show-event `(cw-event "~x0~|~%"
+       (wrapper-fn-show-event `(cw-event "~x0~|"
                                          ',wrapper-fn-exported-event))
        (old-to-wrapper-thm-show-event `(cw-event
-                                        "~x0~|~%"
+                                        "~x0~|"
                                         ',old-to-wrapper-thm-exported-event)))
     `(progn
        ,encapsulate
@@ -1916,11 +1943,28 @@
   :long
   "<p>
    If this call to the transformation is redundant,
-   show @(':redundant') on screen, as customary in ACL2.
+   a message to that effect is shown on screen.
+   Redundancy is checked
+   after removing @(':verbose') and @(':show-only') from the call,
+   because those two options only affect screen output.
+   If the transformation is redundant and @(':show-only') is @('t'),
+   the @(tsee encapsulate), retrieved from the table, is shown on screen.
    </p>"
-  (b* (((when (assoc-equal call
-                           (table-alist 'transformation-table (w state))))
-        (value '(value-triple :redundant)))
+  (b* ((number-of-required-args-plus-1 2)
+       (call-options (nthcdr number-of-required-args-plus-1 call))
+       (call-options (remove-keyword :verbose call-options))
+       (call-options (remove-keyword :show-only call-options))
+       (call-w/o-verbose-showonly
+        (append (take number-of-required-args-plus-1 call) call-options))
+       (table (table-alist 'transformation-table (w state)))
+       (encapsulate? (cdr (assoc-equal call-w/o-verbose-showonly table)))
+       ((when encapsulate?)
+        (value `(progn
+                  ,@(and show-only
+                         `((cw-event "~x0~|" ',encapsulate?)))
+                  (cw-event "~%The transformation ~x0 is redundant.~%"
+                            ',call)
+                  (value-triple :invisible))))
        ((er (list old-fn-name
                   test
                   base
@@ -1963,11 +2007,11 @@
                wrapper-fn-name wrapper-enable
                old-to-wrapper-thm-name thm-enable
                make-non-executable do-verify-guards hints-alist show-only app-conds
-               call (w state))))
+               call-w/o-verbose-showonly (w state))))
     (value event)))
 
 (defsection tailrec-implementation
-  :parents (tailrec)
+  :parents (implementation tailrec)
   :short "Implementation of the tail recursion transformation."
   :long
   "<p>

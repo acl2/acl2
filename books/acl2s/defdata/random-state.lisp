@@ -363,7 +363,7 @@
                               (integerp hi)
                               (signed-byte-p 30 lo)
                               (signed-byte-p 30 hi)
-                              (posp (- hi lo)))))
+                              (natp (- hi lo)))))
   (mv-let (num seed.)
           (genrandom-seed (1+ (- hi lo)) seed.)
           (mv (+ lo num) seed.)))
@@ -398,3 +398,68 @@
 
 (defmacro random-number-between-seed (lo hi seed. &key type)
   `(random-number-between-seed-fn ,lo ,hi ,seed. (or ,type 'acl2s::acl2-number)))
+
+
+#|
+(defstub (sampling-dist-rec * *) => *
+  :formals (min max)
+  :guard (and (natp min) (posp max) (<= min max)))
+|#
+(logic)
+(encapsulate
+ (((sampling-dist-rec * *) => * :formals (min max) :guard (and (natp min) (posp max) (<= min max))))
+ (local (defun sampling-dist-rec (min max)
+          (declare (xargs :guard (and (natp min) (posp max) (<= min max))))
+          (list min max))))
+
+
+(defun sampling-dist-rec-builtin (min max)
+  (declare (xargs :guard (and (natp min)
+                              (posp max)
+                              (<= min max))))
+`((1 :eq ,min)
+  (1 :eq ,max)
+  (30 :geometric :geq ,min)
+  (65 :uniform ,min ,max)
+  (2 :geometric :geq ,(1+ max))
+  (1 :geometric :leq ,(1- min))))
+
+(defattach sampling-dist-rec sampling-dist-rec-builtin)
+(include-book "switchnat")
+(defun choose-size (min max seed.)
+  (declare (type (unsigned-byte 31) seed.)
+           (type (signed-byte 30) min)
+           (type (signed-byte 30) max))
+  (declare (xargs :verify-guards nil
+                  :guard (and (unsigned-byte-p 31 seed.)
+                              (natp min)
+                              (natp max)
+                              (signed-byte-p 30 min)
+                              (signed-byte-p 30 max)
+                              )))
+  (b* ((ctx 'choose-size)
+       ((mv idx (the (unsigned-byte 31) seed.))
+        (defdata::random-index-seed 100 seed.))
+       (sampling-dist (sampling-dist-rec min max))
+       (weights (strip-cars sampling-dist))
+       ((mv choice &) (defdata::weighted-switch-nat weights idx))
+       (chosen (nth choice sampling-dist))
+       (sp (cdr chosen))
+       ((mv n (the (unsigned-byte 31) seed.))
+        (random-small-natural-seed seed.))
+       ((mv uniform-n (the (unsigned-byte 31) seed.))
+        (defdata::random-integer-between-seed min max seed.))
+       (size (case-match sp ;sampling type dispatch
+               ((':eq x) x)
+               ((':geometric ':leq x)     (nfix (- x n)))
+               ((':geometric ':geq x)     (mod (+ x n) (1+ max)))
+               ((':uniform & &)         uniform-n)
+               (& (er hard ctx "~| Unsupported case ~x0.~%" sp))))
+       ;(- (cw  "~| Chosen size is ~x0~%" size))
+       )
+    (mv size (the (unsigned-byte 31) seed.))))
+
+
+      
+         
+    

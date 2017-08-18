@@ -146,6 +146,7 @@
                             " that is laid down by defun-nx"))))))))
 
 (defun translate-bodies (non-executablep names arglists bodies known-stobjs-lst
+                                         reclassifying-all-programp
                                          ctx wrld state)
 
 ; Translate the bodies given and return a pair consisting of their translations
@@ -161,7 +162,20 @@
                              names bodies
                              (pairlis$ names names)
                              known-stobjs-lst
-                             ctx wrld (default-state-vars t))
+                             ctx wrld
+                             (default-state-vars t
+
+; For the applyication of verify-termination to a function that has already
+; been admitted, we avoid failure due to an untouchable function or variable.
+
+                               :temp-touchable-fns
+                               (or reclassifying-all-programp
+                                   (f-get-global 'temp-touchable-fns
+                                                 state))
+                               :temp-touchable-vars
+                               (or reclassifying-all-programp
+                                   (f-get-global 'temp-touchable-vars
+                                                 state))))
           (er-progn
            (cond (erp ; erp is a ctx, lst is a msg
                   (er soft erp "~@0" lst))
@@ -712,6 +726,39 @@
 ; When we succeed in proving termination, we will store the
 ; justification properties.
 
+(defun normalize-ruler-extenders (ruler-extenders checkp)
+
+; The ruler-extenders supplied to a defun may be :all, :basic, :lambdas, or a
+; list of symbols.  The :basic value is equivalent to the list of symbols in
+; *basic-ruler-extenders*.  The :lambdas value is equivalent to the list
+; consisting of the symbol :lambdas and the symbols in *basic-ruler-extenders*.
+; This function normalizes ruler-extenders by expanding the :basic and :lambdas
+; values into lists, and by sorting and deduplicating list.  The value :all is
+; left unchanged.  This function is used in putprop-justification-lst to
+; normalize the ruler-extenders stored into the properties of a function, and
+; is used in non-identical-defp to normalize the ruler-extenders of a proposed
+; function for redundancy check, allowing a simple equality test for that
+; redundancy check.  Note that the default ruler-extenders are not stored in
+; normalized form, since they are not checked for redundancy.
+
+; If checkp is t then we are careful not to assume that ruler-extenders is
+; valid.  If it is not valid, then we return it unchanged.  Thus, when using
+; this function to compare proposed invalid ruler-extenders against the
+; ruler-extenders of an existing function (see non-identical-defp), we know
+; that they will differ.  But when using this function to store ruler-extenders
+; that have already been checked for legality (see putprop-justification-lst),
+; we avoid the needless check for a list of symbols.  Of course, this may be
+; overkill since probably it is never expensive to check that ruler-extenders
+; is a symbol-listp.
+
+  (cond ((eq ruler-extenders :all) :all)
+        ((eq ruler-extenders :basic) *basic-ruler-extenders*)
+        ((eq ruler-extenders :lambdas) *basic-ruler-extenders-plus-lambdas*)
+        ((or (null checkp) ; presumably no need to check for symbol-listp
+             (symbol-listp ruler-extenders))
+         (sort-symbol-listp ruler-extenders))
+        (t ruler-extenders)))
+
 (defun putprop-justification-lst (measure-alist subset-lst mp rel
                                                 ruler-extenders-lst
                                                 subversive-p wrld)
@@ -737,7 +784,13 @@
                            :mp mp
                            :rel rel
                            :measure (cdar measure-alist)
-                           :ruler-extenders (car ruler-extenders-lst))
+
+; We normalize ruler-extenders prior to storing them.  See
+; normalize-ruler-extenders for an explanation.
+
+                           :ruler-extenders (normalize-ruler-extenders
+                                             (car ruler-extenders-lst)
+                                             nil))
                      wrld)))))
 
 (defun union-equal-to-end (x y)
@@ -4949,13 +5002,12 @@
   (when-logic
    "VERIFY-GUARDS"
    (with-ctx-summarized
-    (if (output-in-infixp state)
-        event-form
-        (cond ((and (null hints)
-                    (null otf-flg))
-               (msg "( VERIFY-GUARDS ~x0)"
-                    name))
-              (t (cons 'verify-guards name))))
+    (make-ctx-for-event event-form
+                        (cond ((and (null hints)
+                                    (null otf-flg))
+                               (msg "( VERIFY-GUARDS ~x0)"
+                                    name))
+                              (t (cons 'verify-guards name))))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list* 'verify-guards
@@ -5926,8 +5978,14 @@
                              (getpropc (car def2) 'justification nil wrld)))
          (all-but-body1 (butlast (cddr def1) 1))
          (ruler-extenders1-lst (fetch-dcl-field :ruler-extenders all-but-body1))
+
+; We normalize the ruler-extenders of the proposed definition def1 prior to
+; comparing them below.  See normalize-ruler-extenders for an explanation.
+
          (ruler-extenders1 (if ruler-extenders1-lst
-                               (car ruler-extenders1-lst)
+                               (normalize-ruler-extenders
+                                (car ruler-extenders1-lst)
+                                t)
                              (default-ruler-extenders wrld))))
     (cond
      ((and justification
@@ -6677,7 +6735,19 @@
                                         stobjs-in-lst
                                         ctx wrld default-state-vars)
                      (declare (ignore bindings))
-                     (cond (erp ans)
+                     (cond (erp
+
+; This error could be due to an untouchable variable or function in one of the
+; bodies.  In that case, we return the result returned by
+; redundant-or-reclassifying-defunsp0 above, without possibly converting it to
+; nil as may be done below.  That's OK; then we will not make an additional
+; check that we are truly doing redefinition.  As discussed above, such
+; perfection here is not required; in particular, we then simply consider the
+; definition redundant here just as if redefinition were off.  However, it
+; should be perfectly OK to consider the definition not to be redundant in that
+; case.
+
+                            ans)
                            ((eq (symbol-class (car names) wrld)
                                 :program)
                             (let ((old-defs (recover-defs-lst (car names)
@@ -6699,7 +6769,17 @@
                                     (cond ((and (null erp)
                                                 (equal lst old-lst))
                                            ans)
-                                          (t nil))))))
+                                          (t
+
+; If erp is true then we consider this to be true redefinition.  That is the
+; opposite decision from what is made in the case above when translate-bodies1
+; returns an error.  Which is the right decision: consider redefinition (vs.,
+; say, redundancy) or not when there is an error in translate-bodies1?  The
+; answer is that either is acceptable, as discussed above.  But as of this
+; writing (August 2017) the code has probably been this way for a long time, we
+; leave it alone, at least for now.
+
+                                           nil))))))
 
 ; Otherwise we expect to be dealing with :logic mode functions.
 
@@ -7792,6 +7872,7 @@
                              arglists
                              (get-bodies fives)
                              stobjs-in-lst ; see "slight abuse" comment below
+                             reclassifying-all-programp
                              ctx wrld2 state)))
          (let* ((bodies (car bodies-and-bindings))
                 (bindings
@@ -7967,8 +8048,7 @@
                                    non-executablep
                                    guard-debug
                                    measure-debug
-                                   split-types-terms
-                                   ))))))))))))))))
+                                   split-types-terms))))))))))))))))
 
 (defun conditionally-memoized-fns (fns memoize-table)
   (declare (xargs :guard (and (symbol-listp fns)
@@ -8707,22 +8787,23 @@
                       wrld)))
 
 (defun defun-ctx (def-lst state event-form #+:non-standard-analysis std-p)
-  (if (output-in-infixp state)
-      event-form
-    (cond ((atom def-lst)
-           (msg "( DEFUNS ~x0)"
-                def-lst))
-          ((atom (car def-lst))
-           (cons 'defuns (car def-lst)))
-          ((null (cdr def-lst))
-           #+:non-standard-analysis
-           (if std-p
-               (cons 'defun-std (caar def-lst))
-             (cons 'defun (caar def-lst)))
-           #-:non-standard-analysis
-           (cons 'defun (caar def-lst)))
-          (t (msg *mutual-recursion-ctx-string*
-                  (caar def-lst))))))
+  #-acl2-infix (declare (ignore event-form state))
+  (make-ctx-for-event
+   event-form
+   (cond ((atom def-lst)
+          (msg "( DEFUNS ~x0)"
+               def-lst))
+         ((atom (car def-lst))
+          (cons 'defuns (car def-lst)))
+         ((null (cdr def-lst))
+          #+:non-standard-analysis
+          (if std-p
+              (cons 'defun-std (caar def-lst))
+            (cons 'defun (caar def-lst)))
+          #-:non-standard-analysis
+          (cons 'defun (caar def-lst)))
+         (t (msg *mutual-recursion-ctx-string*
+                 (caar def-lst))))))
 
 (defun install-event-defuns (names event-form def-lst0 symbol-class
                                    reclassifyingp non-executablep pair ctx wrld
@@ -8918,7 +8999,8 @@
               (chk-assumption-free-ttree (cdr pair) ctx state)
               (install-event-defuns names event-form def-lst0 symbol-class
                                     reclassifyingp non-executablep pair ctx wrld
-                                    state))))))))))))
+                                    state))))))))))
+        :event-type 'defun))
 
 (defun defun-fn (def state event-form #+:non-standard-analysis std-p)
 

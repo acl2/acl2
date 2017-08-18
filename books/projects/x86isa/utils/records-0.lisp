@@ -6,6 +6,10 @@
 ;; TO-DO@Shilpi: Make this book more efficient for symbolic simulation
 ;; using GL.
 
+;; Differences between this book and books/misc/records.lisp:
+;; - This book uses 0 instead of NIL for absent fields and for the empty record.
+;; - This book uses ILL-FORMED-KEY instead of NIL as the "bad key".
+
 (in-package "X86ISA")
 
 (include-book "misc/total-order" :dir :system)
