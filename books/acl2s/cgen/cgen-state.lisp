@@ -345,12 +345,21 @@ cgen-state"
 
 ; [2016-04-03 Sun] Added placeholder for fixer-arrangement which gives back a
 ; fixer/elim-binding as a b*-binding that can be used in simple-search
-(defstub fixer-arrangement (* * * * state) => (mv * * state))
+(defstub fixer-arrangement (* * * *  state) => (mv * * state))
 (defun fixer-arrangement/dummy (hyps concl vl ctx state)
   (declare (ignore hyps concl vl ctx))
   (declare (xargs :stobjs (state)))
   (mv nil (list nil nil) state))
 (defattach (fixer-arrangement fixer-arrangement/dummy))
+
+; [2017-08-17 Thu] This can be either attached to a gl backend or a greedy algo.
+(defstub fxri-let*-soln (* * * * * state) => (mv * * state))
+(defun fxri-let*-soln/dummy (flits term->f-lits-lst relevant-terms fxri{} vl state)
+  (declare (ignore flits term->f-lits-lst relevant-terms fxri{} vl))
+  (declare (xargs :stobjs (state)))
+  (mv nil (list nil nil) state))
+(defattach (fxri-let*-soln fxri-let*-soln/dummy))
+
 
 
 ; other basic functionality
