@@ -91,16 +91,22 @@
                             is stored in the SV modules when they are generated
                             by @(see vl-design->svex-design).")
 
-   (enum-constraints booleanp
-                     "Generate constraints for variables of @('enum') datatypes,
+   (enum-constraints "Generate constraints for variables of @('enum') datatypes,
                       or compound datatypes that have @('enum') subfields. These
                       constraints are saved in the SV modules when they are generated
                       by @(see vl-design->svex-design).  Each constraint says that
                       an enum field's value is one of the proper values of an enum
-                      type.")
+                      type.  If NIL (the default), these constraints are not generated.
+                      If T or any nonnil object other than the keyword :ALL, then
+                      the constraints are generated except for port variables.
+                       If :ALL, then these are generated for ports as well.")
 
-   (enum-constraints-no-ports booleanp
-                              "Skip generating enum constraints for port variables.")
+   (enum-fixups "Generate fixups for variables of @('enum') datatypes, or compound
+                 datatypes that have @('enum') subfields. These cause svex compilation
+                 to fix up enum values to be X if not one of the allowed values.
+                 If NIL (the default), this fixing will not be done.  Similar to
+                 the @('enum-constraints') option, fixups are only done for non-port
+                 variables unless this option is set to the keyword :ALL.")
 
    (sv-simplify booleanp :default t
                 "Apply svex rewriting to the results of compiling procedural blocks.")

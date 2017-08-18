@@ -423,6 +423,7 @@ of adding the namespace.</p>"
   ((wires      wirelist)
    (insts      modinstlist)
    (assigns    assigns)
+   (fixups     assigns)
    (constraints constraintlist)
    ;; (delays svar-map)
    (aliaspairs lhspairs)))
@@ -433,6 +434,7 @@ of adding the namespace.</p>"
   (b* (((module x)))
     (append (assigns-vars x.assigns)
             (constraintlist-vars x.constraints)
+            (assigns-vars x.fixups)
             ;; (svar-map-vars x.delays)
             (lhspairs-vars x.aliaspairs)))
   ///
@@ -444,6 +446,11 @@ of adding the namespace.</p>"
   (defthm vars-of-module->constraints
     (implies (not (member v (module-vars x)))
              (not (member v (constraintlist-vars (module->constraints x)))))
+    :hints(("Goal" :in-theory (enable module-vars))))
+
+  (defthm vars-of-module->fixups
+    (implies (not (member v (module-vars x)))
+             (not (member v (assigns-vars (module->fixups x)))))
     :hints(("Goal" :in-theory (enable module-vars))))
 
   ;; (defthm vars-of-module->delays
@@ -460,10 +467,11 @@ of adding the namespace.</p>"
     (implies (and (not (member v (lhspairs-vars aliases)))
                   (not (member v (assigns-vars assigns)))
                   (not (member v (constraintlist-vars constraints)))
+                  (not (member v (assigns-vars fixups)))
                   ;; (not (member v (svar-map-vars delays)))
                   )
              (not (member v (module-vars
-                             (module wires insts assigns constraints aliases)))))
+                             (module wires insts assigns fixups constraints aliases)))))
     :hints(("Goal" :in-theory (enable module-vars)))))
 
 (define module-addr-p ((x module-p))
@@ -473,11 +481,14 @@ of adding the namespace.</p>"
   (mbe :logic (svarlist-addr-p (module-vars x))
        :exec (b* (((module x)))
                (and (assigns-addr-p x.assigns)
+                    (assigns-addr-p x.fixups)
                     (constraintlist-addr-p x.constraints)
                     (lhspairs-addr-p x.aliaspairs))))
   ///
   (verify-guards module-addr-p
-    :hints(("Goal" :in-theory (enable module-vars)))))
+    :hints(("Goal" :in-theory (e/d (module-vars)
+                                   (acl2::member-equal-append
+                                    sv::svarlist-addr-p-by-badguy))))))
 
 
 (fty::defmap modalist

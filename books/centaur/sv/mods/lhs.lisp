@@ -2702,10 +2702,42 @@ bits of @('foo'):</p>
 (defprod lhs-override
   ((lhs lhs-p)
    (test svex-p)
-   (val svex-p)))
+   (val svex-p))
+  :layout :tree)
 
 (deflist lhs-overridelist :elt-type lhs-override)
 
+(define lhs-override-vars ((x lhs-override-p))
+  :returns (vars svarlist-p)
+  (b* (((lhs-override x)))
+    (append (svex-vars x.test)
+            (svex-vars x.val)))
+  ///
+  (defthm vars-of-lhs-override->test
+    (implies (not (member v (lhs-override-vars x)))
+             (not (member v (svex-vars (lhs-override->test x))))))
+  (defthm vars-of-lhs-override->val
+    (implies (not (member v (lhs-override-vars x)))
+             (not (member v (svex-vars (lhs-override->val x))))))
+
+  (defthm vars-of-lhs-override
+    (implies (and (not (member v (svex-vars test)))
+                  (not (member v (svex-vars val))))
+             (not (member v (lhs-override-vars (lhs-override lhs test val)))))))
+
+(define lhs-overridelist-vars ((x lhs-overridelist-p))
+  :returns (vars svarlist-p)
+  (if (atom x)
+      nil
+    (append (lhs-override-vars (car x))
+            (lhs-overridelist-vars (cdr x)))))
+
+(define lhs-overridelist-keys ((x lhs-overridelist-p))
+  :returns (vars svarlist-p)
+  (if (atom x)
+      nil
+    (append (lhs-vars (lhs-override->lhs (car x)))
+            (lhs-overridelist-keys (cdr x)))))
 
 
 

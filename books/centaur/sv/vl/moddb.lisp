@@ -525,7 +525,6 @@ constructed separately.)</p>"
 
 (deftagsum vl-portinfo
   (:bad   ())
-  (:blank ())
   ;; (:interface ((portname stringp)
   ;;              (interface vl-interface-p)
   ;;              (argindex natp)
@@ -539,12 +538,12 @@ constructed separately.)</p>"
                (port-dir vl-maybe-direction-p)
                ;; (argindex natp)
                ;; (port-expr vl-expr-p)
-               (conn-expr vl-expr-p)
+               (conn-expr vl-maybe-expr-p "nil if the port connection is blank")
                (port-lhs
                 sv::lhs-p
                 "Translation of the actual port expression.  Not scoped by the
-                 instance name.")
-               (conn-svex sv::svex-p)
+                 instance name.  Empty if the port expression is blank.")
+               (conn-svex sv::svex-p "Z if port connection is blank")
                (port-size posp)
                ;; (conn-size posp)
                (replicatedp)
@@ -1010,7 +1009,6 @@ constructed separately.)</p>"
        ;; (ss (vl-scopestack-fix conf))
        ;; (inst-ss (vl-scopestack-fix inst-ss))
        (vttree nil)
-       ((unless x.expr) (mv vttree (make-vl-portinfo-blank)))
 
        ;; ((when (not y.name))
        ;;  (cw "Warning! No name for port ~x0, module ~s1~%" y inst-modname)
@@ -1018,6 +1016,18 @@ constructed separately.)</p>"
        (portexpr (vl-idexpr portname))
        (port-lhs (svex-lhs-from-name portname))
        (port-type *vl-plain-old-logic-type*)
+
+       ((unless x.expr)
+        (mv vttree
+            (make-vl-portinfo-regular
+             :portname portname
+             :port-dir (vl-direction-fix portdir)
+             :conn-expr nil ;; blank!
+             :port-lhs port-lhs
+             :conn-svex (sv::svex-z)
+             :port-size 1
+             :replicatedp (and arraysize t))))
+
        ((vmv vttree x-svex x-type ?x-size type-err)
         (vl-expr-to-svex-maybe-typed
          x.expr
@@ -1167,13 +1177,13 @@ constructed separately.)</p>"
        ;; (inst-ss (vl-scopestack-fix inst-ss))
        (?inst-modname (string-fix inst-modname))
        (vttree nil)
-       ((unless x.expr)
-        ;; It wouldn't be OK for an interface port to be blank, but we check
-        ;; that in argresolve so we aren't checking it here.
-        (mv vttree (make-vl-portinfo-blank)))
 
        ((when (eq (tag y) :vl-interfaceport))
-        (b* (((vl-interfaceport y))
+        (b* (((unless x.expr)
+              ;; It wouldn't be OK for an interface port to be blank, but we check
+              ;; that in argresolve so we aren't checking it here.
+              (mv vttree (make-vl-portinfo-bad)))
+             ((vl-interfaceport y))
              ((when (and (consp y.udims)
                          (or (consp (cdr y.udims))
                              (b* ((dim (car y.udims)))
@@ -1322,19 +1332,62 @@ constructed separately.)</p>"
        ;;  (mv nil nil))
        ((vl-regularport y))
        (y.name (or y.name (cat "unnamed_port_" (natstr argindex))))
-       ((unless y.expr)
-        (mv vttree (make-vl-portinfo-blank)))
        (vttree nil)
+       ((unless (or y.expr x.expr))
+        ;; Blank port connected to blank connection.
+        (mv vttree
+            (make-vl-portinfo-regular
+             :portname y.name
+             :port-dir x.dir
+             :conn-expr nil
+             :port-lhs nil
+             :conn-svex (sv::svex-z)
+             :port-size 1
+             :replicatedp (and arraysize t))))
+       
        ((vmv vttree y-lhs y-type)
-        (vl-expr-to-svex-lhs y.expr inst-ss inst-scopes))
-       ((unless y-type)
+        (if y.expr
+            (vl-expr-to-svex-lhs y.expr inst-ss inst-scopes)
+          (mv vttree nil nil)))
+       ((unless (or (not y.expr) y-type))
         ;; already warned
         (fail vttree))
+       ((unless x.expr)
+        (b* (((mv err y-size) (vl-datatype-size y-type))
+             ((when (or err (not y-size) (eql 0 y-size)))
+              (fail (vfatal :type :vl-plainarg->svex-fail
+                     :msg "~@0"
+                     :args (list (vmsg "Couldn't size datatype ~a0 for ~s1 port expression ~a2"
+                                       (vl-datatype-fix y-type) (string-fix y.name) (vl-expr-fix y.expr)))))))
+          (mv vttree
+              ;; BOZO this previously fell under the blankport paradigm and it
+              ;; might be better not to lump it in with regular connections
+              ;; BOZO also this does something dumb to output ports that are left blank
+              (make-vl-portinfo-regular
+               :portname y.name
+               :port-dir x.dir
+               :conn-expr nil
+               :port-lhs y-lhs
+               :conn-svex (sv::svex-z)
+               :port-size y-size
+               :replicatedp (and arraysize t)))))
        ((vmv vttree x-svex x-type ?x-size type-err)
         (vl-expr-to-svex-maybe-typed
          x.expr (if arraysize nil y-type) ss scopes :compattype :assign))
        
-       ((wvmv vttree) (vl-port-type-err-warn y.name x.dir x y-type type-err ss))
+       ((unless y.expr)
+        (mv vttree
+            (make-vl-portinfo-regular
+             :portname y.name
+             :port-dir x.dir
+             :conn-expr x.expr
+             :port-lhs nil
+             :conn-svex x-svex
+             :port-size 1
+             :replicatedp (and arraysize t))))
+
+       ((wvmv vttree)
+        (vl-port-type-err-warn y.name x.dir x y-type type-err ss))
 
        ((unless x-type) (fail vttree))
        ((mv err ?multi ?x-size ?y-size)
@@ -1524,18 +1577,23 @@ constructed separately.)</p>"
   :guard (and (sv::svarlist-addr-p (vl-portinfo-vars x))
               (vl-maybe-range-resolved-p range))
   :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable sv::name-p))))
+                     '(:in-theory (enable sv::name-p)
+                       :do-not-induct t)))
+  :prepwork ((local (in-theory (disable sv::lhs-vars-when-consp))))
+
   (b* ((instname (string-fix instname))
        (range (vl-maybe-range-fix range))
        (warnings nil))
     (vl-portinfo-case x
       :bad (mv (ok) nil nil)
-      :blank (mv (ok) nil nil )
       ;; :interface
       ;; (b* ((port-lhs-scoped (sv::lhs-add-namespace instname x.port-lhs)))
       ;;   (mv (ok) nil (list (cons port-lhs-scoped x.conn-lhs))))
       :regular
-      (b* ((lhsp (sv::lhssvex-p x.conn-svex))
+      (b* (((when (and (not x.conn-expr) (not x.port-lhs)))
+            ;; Blank port connected to blank expr
+            (mv (ok) nil nil))
+           (lhsp (sv::lhssvex-p x.conn-svex))
            ((when (and (not lhsp) x.interfacep))
             (mv (fatal :type :vl-interfaceport-bad-connection
                        :msg "Non-LHS connection on interfaceport: .~s0(~a1)"
@@ -1546,7 +1604,19 @@ constructed separately.)</p>"
                                :msg  "Non-LHS expression ~a1 on output port ~s0"
                                :args (list x.portname x.conn-expr))
                        (ok)))
-           (conn (if lhsp (sv::svex->lhs x.conn-svex) (sv::make-driver :value x.conn-svex))))
+           ((when (not x.port-lhs))
+            ;; Blank port expression.  Assign Z to the connection if LHS, otherwise don't do anything.
+            (mv (ok)
+                (and lhsp
+                     (list (cons (sv::svex->lhs x.conn-svex)
+                                 (sv::make-driver :value (sv::svex-z)))))
+                nil))
+           ;; In all other cases we're either going to create an alias or else
+           ;; an assignment with the port expression on the LHS.
+           (alias? (and lhsp x.conn-expr)) ;; when connection is blank, assign, don't alias!
+           (conn (if alias?
+                     (sv::svex->lhs x.conn-svex)
+                   (sv::make-driver :value x.conn-svex))))
         (if range
             (b* ((size (vl-range-size range))
                  ;; LSB first since this is used to generate an svex-lhs in the
@@ -1556,7 +1626,7 @@ constructed separately.)</p>"
                  (incr (if (vl-range-revp range) -1 1)))
               (if x.replicatedp
                   ;; connection aliased/assigned to each of the port array LHSes
-                  (if lhsp
+                  (if alias?
                       (mv (ok) nil (vl-instarray-replicated-port-aliases
                                     x.port-lhs instname conn lsb size incr))
                     (mv (ok)
@@ -1566,11 +1636,11 @@ constructed separately.)</p>"
                 ;; connection aliased or assigned to concatenation of port array LHSes
                 (b* ((port-lhs (vl-instarray-nonreplicated-port-lhs
                                 x.port-lhs instname lsb size incr)))
-                  (if lhsp
+                  (if alias?
                       (mv (ok) nil (list (cons conn port-lhs)))
                     (mv (ok) (list (cons port-lhs conn)) nil)))))
           (b* ((port-lhs (sv::lhs-add-namespace instname x.port-lhs)))
-            (if lhsp
+            (if alias?
                 (mv (ok) nil (list (cons port-lhs conn)))
               (mv (ok) (list (cons port-lhs conn)) nil)))))))
                                     
@@ -3942,6 +4012,391 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                (not (member v (sv::svex-vars constraint))))
       :hints ('(:expand (<call>)))
       :fn vl-structmemberlist-constraint)))
+
+
+(defines vl-datatype-fixup
+  (define vl-datatype-fixup ((x vl-datatype-p)
+                                  (var sv::svar-p)
+                                  (shift natp))
+    :guard (and (vl-datatype-resolved-p x)
+                (b* (((mv err size) (vl-datatype-size x)))
+                  (and (not err) size)))
+    :returns (mv (fixups sv::assigns-p)
+                 (size (equal size (mv-nth 1 (vl-datatype-size x)))))
+    :well-founded-relation acl2::nat-list-<
+    :measure (list (vl-datatype-count x) 10 0 0)
+    :verify-guards nil
+    (b* (((unless (vl-datatype-has-enum-constraints x))
+          (b* (((mv & size) (vl-datatype-size x)))
+            (mv nil size)))
+         (dims (append-without-guard (vl-datatype->udims x)
+                                     (vl-datatype->pdims x))))
+      (mbe :logic (b* (((mv fixups &)
+                        (vl-datatype-dims-fixup dims x var shift))
+                       ((mv & size) (vl-datatype-size x)))
+                    (mv fixups size))
+           :exec
+           (vl-datatype-dims-fixup dims x var shift))))
+
+  (define vl-datatype-dims-fixup ((dims vl-packeddimensionlist-p)
+                                       (x vl-datatype-p)
+                                       (var sv::svar-p)
+                                       (shift natp))
+    
+    :guard (and (vl-datatype-resolved-p x)
+                (b* (((mv err size) (vl-datatype-size x)))
+                  (and (not err) size))
+                (vl-packeddimensionlist-resolved-p dims)
+                (vl-packeddimensionlist-total-size dims))
+    :returns (mv (fixups sv::assigns-p)
+                 (size (equal size (* (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x)))
+                                      (vl-packeddimensionlist-total-size dims)))))
+    :measure (list (vl-datatype-count x) 9 (len dims) 0)
+    (b* (((when (atom dims))
+          (mbe :logic (b* (((mv fixups &) (vl-datatype-nodims-fixup x var shift))
+                           ((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
+                           (dim-size (vl-packeddimensionlist-total-size dims)))
+                        (mv fixups (* size dim-size)))
+               :exec (vl-datatype-nodims-fixup x var shift)))
+         (dim1 (car dims))
+         ((vl-range range) (vl-packeddimension->range dim1)))
+      (mbe :logic (b* (((mv fixups &)
+                        (vl-datatype-dim-fixup (vl-resolved->val range.msb)
+                                  (vl-resolved->val range.lsb)
+                                  (cdr dims) x var shift))
+                       ((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
+                       (dim-size (vl-packeddimensionlist-total-size dims)))
+                    (mv fixups (* size dim-size)))
+           :exec
+           (vl-datatype-dim-fixup (vl-resolved->val range.msb)
+                                       (vl-resolved->val range.lsb)
+                                       (cdr dims) x var shift))))
+
+  (define vl-datatype-dim-fixup ((range-msb integerp)
+                                      (range-lsb integerp)
+                                      (dims vl-packeddimensionlist-p)
+                                      (x vl-datatype-p)
+                                      (var sv::svar-p)
+                                      (shift natp))
+    :guard (and (vl-datatype-resolved-p x)
+                (b* (((mv err size) (vl-datatype-size x)))
+                  (and (not err) size))
+                (vl-packeddimensionlist-resolved-p dims)
+                (vl-packeddimensionlist-total-size dims))
+    :returns (mv (fixups sv::assigns-p)
+                 (size (equal size (* (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x)))
+                                      (vl-packeddimensionlist-total-size dims)
+                                      (+ 1 (abs (- (ifix range-msb) (ifix range-lsb))))))
+                       ))
+    :measure (list (vl-datatype-count x) 9 (len dims)
+                   (+ 1 (abs (- (ifix range-msb) (ifix range-lsb)))))
+
+    (b* ((range-msb (lifix range-msb))
+         (range-lsb (lifix range-lsb))
+         ((mv fix1 size1) (vl-datatype-dims-fixup dims x var shift))
+         ((when (eql range-msb range-lsb))
+          (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
+                           (dims-size (vl-packeddimensionlist-total-size dims))
+                           (dim1-size (+ 1 (abs (- (ifix range-msb) (ifix range-lsb))))))
+                        (mv fix1 (* size dims-size dim1-size)))
+               :exec (mv fix1 size1)))
+         (new-range-lsb (+ (if (< range-lsb range-msb) 1 -1) range-lsb))
+         ((mv fix2 size2)
+          (vl-datatype-dim-fixup range-msb new-range-lsb dims x var (+ (lnfix shift) size1))))
+      (mv (append-without-guard fix1 fix2)
+          (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
+                           (dims-size (vl-packeddimensionlist-total-size dims))
+                           (dim1-size (+ 1 (abs (- (ifix range-msb) (ifix range-lsb))))))
+                        (* size dims-size dim1-size))
+               :exec (+ size1 size2)))))
+
+  (define vl-datatype-nodims-fixup ((x vl-datatype-p)
+                                         (var sv::svar-p)
+                                         (shift natp))
+    :guard (and (vl-datatype-resolved-p x)
+                (b* (((mv err size) (vl-datatype-size x)))
+                  (and (not err) size)))
+    :returns (mv (fixups sv::assigns-p)
+                 (size (equal size (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x))))
+                       :hints ('(:expand ((vl-datatype-update-dims nil nil x)))
+                               (and stable-under-simplificationp
+                                    '(:in-theory (enable vl-datatype-size))))))
+    :measure (list (vl-datatype-count x) 8 0 0)
+    (vl-datatype-case x
+      :vl-coretype (b* (((vl-coredatatype-info typinfo) (vl-coretypename->info x.name)))
+                     (mv nil (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x))))
+                                          size)
+                                 :exec typinfo.size)))
+      :vl-struct (b* (((mv fixups size) (vl-structmemberlist-fixup x.members var shift)))
+                   (mv fixups
+                       (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x))))
+                                          size)
+                            :exec size)))
+                            
+      :vl-union (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x))))
+                  (mv nil size))
+      :vl-enum (b* (((mv & size) (vl-datatype-size x.basetype))
+                    ((when (eql (expt 2 size) (len x.values)))
+                     (mv nil (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x))))
+                                          size)
+                                 :exec size)))
+                    (signedp (vl-enum-basetype-signedp x.basetype))
+                    (subexp (if signedp
+                                (sv::svex-signx size (sv::svex-rsh shift (sv::svex-var var)))
+                              (sv::svex-zerox size (sv::svex-rsh shift (sv::svex-var var)))))
+                    (constraint (vl-enumvalues->constraint subexp x.values))
+                    (fixups (if (eql size 0)
+                                nil
+                              (list (cons
+                                     (list (sv::make-lhrange 
+                                            :w size
+                                            :atom (sv::make-lhatom-var
+                                                   :name var
+                                                   :rsh shift)))
+                                     (sv::make-driver
+                                      :value (sv::svcall sv::? constraint subexp (svex-x))))))))
+                                                
+                 (mv fixups
+                     (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x))))
+                                   size)
+                          :exec size)))
+      :vl-usertype (if (mbt (and x.res t))
+                       (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
+                                        ((mv fixups &) (vl-datatype-fixup x.res var shift)))
+                                     (mv fixups size))
+                            :exec (vl-datatype-fixup x.res var shift))
+                     (mv nil nil))))
+
+  (define vl-structmemberlist-fixup ((x vl-structmemberlist-p)
+                                          (var sv::svar-p)
+                                          (shift natp))
+    
+    :guard (and (vl-structmemberlist-resolved-p x)
+                (b* (((mv err sizes) (vl-structmemberlist-sizes x)))
+                  (and (not err)
+                       (not (member nil sizes)))))
+    :returns (mv (fixups sv::assigns-p)
+                 (size (equal size (sum-nats (mv-nth 1 (vl-structmemberlist-sizes x))))
+                       :hints ('(:expand ((vl-structmemberlist-sizes x))))))
+    
+    :measure (list (vl-structmemberlist-count x) 8 0 0)
+    
+    (b* (((when (atom x)) (mv nil 0))
+         ((mv rest-fixups rest-size) (vl-structmemberlist-fixup (cdr x) var shift))
+         (shift (+ rest-size (lnfix shift)))
+         ((mv fixups1 size1)
+          (vl-datatype-fixup (vl-structmember->type (car x)) var shift)))
+      (mv (append-without-guard fixups1 rest-fixups)
+          (+ rest-size size1))))
+  :prepwork
+  ((local (defthmd replace-ifix-with-decrement
+            (implies (equal (ifix x) (+ -1 (ifix y)))
+                     (equal (ifix y) (+ 1 (ifix x))))))
+   (local (defthmd distrib
+            (equal (* n (+ a b) m)
+                   (* (+ (* n a) (* n b)) m))))
+   )
+                     
+  ///
+
+  (local (in-theory (disable vl-datatype-dim-fixup)))
+
+  (local (defthm dimensionlist-size-of-append
+           (iff (vl-packeddimensionlist-total-size (append a b))
+                (and (vl-packeddimensionlist-total-size a)
+                     (vl-packeddimensionlist-total-size b)))
+           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-total-size)))))
+
+  (local (defthm dimensionlist-resolved-p-of-append
+           (iff (vl-packeddimensionlist-resolved-p (append a b))
+                (and (vl-packeddimensionlist-resolved-p a)
+                     (vl-packeddimensionlist-resolved-p b)))
+           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-resolved-p)))))
+
+  (local (defthm udims-size-when-datatype-size
+           (implies (mv-nth 1 (vl-datatype-size x))
+                    (vl-packeddimensionlist-total-size (vl-datatype->udims x)))
+           :hints(("Goal" :expand ((vl-datatype-size x))))))
+
+  (local (defthm pdims-size-when-datatype-size
+           (implies (mv-nth 1 (vl-datatype-size x))
+                    (vl-packeddimensionlist-total-size (vl-datatype->pdims x)))
+           :hints(("Goal" :expand ((vl-datatype-size x))))))
+
+  
+  (local (defthm udims-resolved-p-when-datatype-resolved-p
+           (implies (mv-nth 1 (vl-datatype-size x))
+                    (vl-packeddimensionlist-resolved-p (vl-datatype->udims x)))
+           :hints(("Goal" :expand ((vl-datatype-size x))))))
+
+  (local (defthm pdims-resolved-p-when-datatype-resolved-p
+           (implies (mv-nth 1 (vl-datatype-size x))
+                    (vl-packeddimensionlist-resolved-p (vl-datatype->pdims x)))
+           :hints(("Goal" :expand ((vl-datatype-size x))))))
+
+  (local (defthm vl-datatype-dims-fixup-equal-list
+           (equal (equal (list a b) (vl-datatype-dims-fixup dims x var shift))
+                  (and (Equal a (mv-nth 0 (vl-datatype-dims-fixup dims x var shift)))
+                       (equal b (mv-nth 1 (vl-datatype-dims-fixup dims x var shift)))))
+           :hints(("Goal" :expand ((vl-datatype-dims-fixup dims x var shift))))))
+
+  (local (defthm vl-datatype-fixup-equal-list
+           (equal (equal (list a b) (vl-datatype-fixup x var shift))
+                  (and (Equal a (mv-nth 0 (vl-datatype-fixup x var shift)))
+                       (equal b (mv-nth 1 (vl-datatype-fixup x var shift)))))
+           :hints(("Goal" :expand ((vl-datatype-fixup x var shift))))))
+
+  (local (defthm vl-datatype-nodims-fixup-equal-list
+           (equal (equal (list a b) (vl-datatype-nodims-fixup x var shift))
+                  (and (Equal a (mv-nth 0 (vl-datatype-nodims-fixup x var shift)))
+                       (equal b (mv-nth 1 (vl-datatype-nodims-fixup x var shift)))))
+           :hints(("Goal" :expand ((vl-datatype-nodims-fixup x var shift))
+                   :in-theory (disable return-type-of-vl-datatype-nodims-fixup.size
+                                       return-type-of-vl-structmemberlist-fixup.size)))))
+
+  (local (defthmd equal-of-cons
+           (equal (equal (cons a b) c)
+                  (and (consp c)
+                       (equal (car c) a)
+                       (equal (cdr c) b)))))
+
+  (local (defthm vl-datatype-dim-fixup-equal-list
+           (equal (equal (list a b) (vl-datatype-dim-fixup msb lsb dims x var shift))
+                  (and (Equal a (mv-nth 0 (vl-datatype-dim-fixup msb lsb dims x var shift)))
+                       (equal b (mv-nth 1 (vl-datatype-dim-fixup msb lsb dims x var shift)))))
+           :hints(("Goal" :expand ((vl-datatype-dim-fixup msb lsb dims x var shift))
+                   :in-theory (enable equal-of-cons)))))
+
+  (local (defthm vl-packeddimensionlist-total-size-of-append
+           (implies (and (vl-packeddimensionlist-total-size a)
+                         (vl-packeddimensionlist-total-size b))
+                    (equal (vl-packeddimensionlist-total-size (append a b))
+                           (* (vl-packeddimensionlist-total-size a)
+                              (vl-packeddimensionlist-total-size b))))
+           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-total-size)))))
+
+
+  (local (defthm props-of-vl-datatype-update-dims
+           (b* ((y (vl-datatype-update-dims pdims udims x)))
+             (and (equal (vl-datatype-kind y) (vl-datatype-kind x))
+                  (implies (vl-datatype-case x :vl-coretype)
+                           (b* (((vl-coretype x)) ((vl-coretype y)))
+                             (and (equal y.name x.name)
+                                  (equal y.signedp x.signedp))))
+                  (implies (vl-datatype-case x :vl-struct)
+                           (b* (((vl-struct x)) ((vl-struct y)))
+                             (and (equal y.members x.members)
+                                  (equal y.signedp x.signedp)
+                                  (equal y.packedp x.packedp))))
+                  (implies (vl-datatype-case x :vl-union)
+                           (b* (((vl-union x)) ((vl-union y)))
+                             (and (equal y.members x.members)
+                                  (equal y.signedp x.signedp)
+                                  (equal y.packedp x.packedp)
+                                  (equal y.taggedp x.taggedp))))
+                  (implies (vl-datatype-case x :vl-enum)
+                           (b* (((vl-enum x)) ((vl-enum y)))
+                             (and (equal y.basetype x.basetype)
+                                  (equal y.items x.items)
+                                  (equal y.values x.values))))
+                  (implies (vl-datatype-case x :vl-usertype)
+                           (b* (((vl-usertype x)) ((vl-usertype y)))
+                             (and (equal y.name x.name)
+                                  (equal y.res x.res))))))
+           :hints(("Goal" :in-theory (enable vl-datatype-update-dims)))))
+
+  (local (defthm size-of-remove-dims-times-dim-size
+           (implies (mv-nth 1 (vl-datatype-size x))
+                    (equal (* (vl-packeddimensionlist-total-size (vl-datatype->pdims x))
+                              (vl-packeddimensionlist-total-size (vl-datatype->udims x))
+                              (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x))))
+                           (mv-nth 1 (vl-datatype-size x))))
+           :hints (("goal" :expand ((vl-datatype-size x)
+                                    (vl-datatype-size (vl-datatype-update-dims nil nil x)))))))
+
+
+  (local (Defthm datatype-size-implies-no-structmemberlist-sizes-error
+           (implies (and (mv-nth 1 (vl-datatype-size x))
+                         (equal (vl-datatype-kind x) :vl-struct))
+                    (not (mv-nth 0 (vl-structmemberlist-sizes (vl-struct->members x)))))
+           :hints(("Goal" :in-theory (enable vl-datatype-size)))))
+
+  (local (Defthm datatype-size-implies-no-usertype-res-size-error
+           (implies (and (mv-nth 1 (vl-datatype-size x))
+                         (equal (vl-datatype-kind x) :vl-usertype)
+                         (vl-usertype->res x))
+                    (not (mv-nth 0 (vl-datatype-size (vl-usertype->res x)))))
+           :hints(("Goal" :in-theory (enable vl-datatype-size)))))
+
+
+  (local (defthm vl-datatype-size-of-remove-dims-when-vl-datatype-size
+           (implies (mv-nth 1 (vl-datatype-size x))
+                    (natp (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x)))))
+           :hints (("goal" :expand ((vl-datatype-size x)
+                                    (vl-datatype-size (vl-datatype-update-dims nil nil x)))))
+           :rule-classes :type-prescription))
+
+
+  (local (defun has-vl-datatype-kind-hyp (clause)
+           (if (atom clause)
+               nil
+             (let ((lit (car clause)))
+               (case-match lit
+                 (('equal '(vl-datatype-kind$inline x) ('quote &)) t)
+                 (('not ('equal '(vl-datatype-kind$inline x) ('quote &))) t)
+                 (& (has-vl-datatype-kind-hyp (cdr clause))))))))
+
+
+  (verify-guards vl-datatype-fixup
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((vl-structmemberlist-sizes x)
+                            (vl-packeddimensionlist-resolved-p dims)
+                            (vl-packeddimensionlist-total-size dims)
+                            ;; (vl-datatype-resolved-p x)
+                            ;; (vl-structmemberlist-resolved-p x)
+                            ;; (vl-datatype-update-dims nil nil x)
+                            )
+                   :in-theory (enable vl-range-size)))
+            (and stable-under-simplificationp
+                 (has-vl-datatype-kind-hyp clause)
+                 '(:expand ((vl-datatype-size (vl-datatype-update-dims nil nil x))
+                            (vl-datatype-size x)))))
+    :guard-debug t
+    :otf-flg t)
+
+  (std::defret-mutual vars-of-vl-datatype-fixup
+    (defret vars-of-vl-datatype-fixup
+      (implies (not (equal v (sv::svar-fix var)))
+               (not (member v (sv::assigns-vars fixups))))
+      :hints ('(:expand (<call>)))
+      :fn vl-datatype-fixup)
+    (defret vars-of-vl-datatype-dims-fixup
+      (implies (not (equal v (sv::svar-fix var)))
+               (not (member v (sv::assigns-vars fixups))))
+      :hints ('(:expand (<call>)))
+      :fn vl-datatype-dims-fixup)
+    (defret vars-of-vl-datatype-dims-fixup
+      (implies (not (equal v (sv::svar-fix var)))
+               (not (member v (sv::assigns-vars fixups))))
+      :hints ('(:expand (<call>)))
+      :fn vl-datatype-dims-fixup)
+    (defret vars-of-vl-datatype-dim-fixup
+      (implies (not (equal v (sv::svar-fix var)))
+               (not (member v (sv::assigns-vars fixups))))
+      :hints ('(:expand (<call>)))
+      :fn vl-datatype-dim-fixup)
+    (defret vars-of-vl-datatype-nodims-fixup
+      (implies (not (equal v (sv::svar-fix var)))
+               (not (member v (sv::assigns-vars fixups))))
+      :hints ('(:expand (<call>
+                         (:free (a b) (sv::assigns-vars (cons a b))))
+                :in-theory (enable sv::lhatom-vars)))
+      :fn vl-datatype-nodims-fixup)
+    (defret vars-of-vl-structmemberlist-fixup
+      (implies (not (equal v (sv::svar-fix var)))
+               (not (member v (sv::assigns-vars fixups))))
+      :hints ('(:expand (<call>)))
+      :fn vl-structmemberlist-fixup)))
       
     
 
@@ -3960,7 +4415,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
        ((vl-vardecl x))
        (vttree nil)
        ((unless config.enum-constraints) vttree)
-       ((unless (or (not config.enum-constraints-no-ports)
+       ((unless (or (eq config.enum-constraints :all)
                     (hons-get x.name portdecls)))
         vttree)
        ((mv constraint &) (vl-datatype-constraint x.type (sv::make-simple-svar x.name) 0))
@@ -3973,6 +4428,28 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                                 vttree)
       vttree)))
 
+(define vl-vardecl-enum-fixup ((x vl-vardecl-p)
+                               (portdecls)
+                               (config vl-simpconfig-p))
+  :returns (fixups sv::assigns-p)
+  :guard (b* (((vl-vardecl x)))
+           (and (vl-datatype-resolved-p x.type)
+                (b* (((mv err size) (vl-datatype-size x.type)))
+                  (and (not err) size))))
+  :prepwork ((local (in-theory (enable sv::svar-p sv::name-p))))
+  (b* (((vl-simpconfig config))
+       ((vl-vardecl x))
+       (vttree nil)
+       ((unless config.enum-fixups) vttree)
+       ((unless (or (eq config.enum-fixups :all)
+                    (hons-get x.name portdecls)))
+        nil)
+       ((mv fixups &) (vl-datatype-fixup x.type (sv::make-simple-svar x.name) 0)))
+    fixups)
+  ///
+  (defret vars-of-vl-vardecl-enum-fixup
+    (sv::svarlist-addr-p (sv::Assigns-vars fixups))))
+
 (define vl-vardecl->svex ((x vl-vardecl-p)
                           (portdecls)
                           (modalist sv::modalist-p)
@@ -3984,6 +4461,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                             (sv::svarlist-addr-p (sv::constraintlist-vars (vttree->constraints vttree)))))
                (width natp :rule-classes :type-prescription)
                (wires sv::wirelist-p)
+               (fixups sv::assigns-p)
                (aliases sv::lhspairs-p)
                (modinsts sv::modinstlist-p)
                (modalist1 sv::modalist-p))
@@ -3996,33 +4474,36 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
         (mv (vfatal :type :vl-vardecl->svex-fail
                    :msg "~a0: Failed to resolve usertypes"
                    :args (list x))
-            0 nil nil nil modalist))
+            0 nil nil nil nil modalist))
        ((mv err size) (vl-datatype-size x.type))
        ((when (or err (not size)))
         (mv (vfatal :type :vl-vardecl->svex-fail
                    :msg "~a0: Failed to size datatype ~a1: ~@2"
                    :args (list x x.type
                                (if err err "exact error unknown")))
-            0 nil nil nil modalist))
+            0 nil nil nil nil modalist))
        ((mv err subwire datamod modalist)
         (vl-datatype->mods x.type modalist))
        ((when err)
         (mv (vfatal :type :vl-vardecl->svex-fail
                    :msg "~a0: Failed to process datatype ~a1: ~@2"
                    :args (list x x.type err))
-            0 nil nil nil modalist))
+            0 nil nil nil nil modalist))
        ((vmv vttree) (vl-vardecl-enum-constraint x portdecls config))
+       (fixups (vl-vardecl-enum-fixup x portdecls config))
        ((mv wire insts aliases)
         (vl-datatype-elem->mod-components x.name subwire self-lsb datamod)))
     (mv vttree size
-        (list wire) aliases insts modalist))
+        (list wire) fixups aliases insts modalist))
   ///
-  (more-returns
-   (modalist1 :name vars-of-vl-vardecl->svex-modalist
-              (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                       (sv::svarlist-addr-p (sv::modalist-vars modalist1))))
-   (aliases :name vars-of-vl-vardecl->svex-aliases
-            (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))))
+  (defret vars-of-vl-vardecl->svex-modalist
+    (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+             (sv::svarlist-addr-p (sv::modalist-vars modalist1))))
+  (defret vars-of-vl-vardecl->svex-aliases
+    (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+
+  (defret vars-of-vl-vardecl->svex-fixups
+    (sv::svarlist-addr-p (sv::assigns-vars fixups))))
 
 
 
@@ -4042,29 +4523,34 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                        :hints(("Goal" :in-theory (enable sv::constraintlist-vars))))
                (width natp :rule-classes :type-prescription)
                (wires sv::wirelist-p)
+               (fixups sv::assigns-p)
                (aliases sv::lhspairs-p)
                (modinsts sv::modinstlist-p)
                (modalist1 sv::modalist-p))
-  (b* (((when (atom x)) (mv nil 0 nil nil nil (sv::modalist-fix modalist)))
+  :verify-guards nil
+  (b* (((when (atom x)) (mv nil 0 nil nil nil nil (sv::modalist-fix modalist)))
        (vttree nil)
-       ((vmv vttree width2 wires2 aliases2 modinsts2 modalist)
+       ((vmv vttree width2 wires2 fixups2 aliases2 modinsts2 modalist)
         (vl-vardecllist->svex (cdr x) portdecls modalist interfacep config))
-       ((vmv vttree width1 wire1 aliases1 modinsts1 modalist)
+       ((vmv vttree width1 wire1 fixups1 aliases1 modinsts1 modalist)
         (vl-vardecl->svex (car x) portdecls modalist (and interfacep width2) config)))
     (mv vttree
         (+ width1 width2)
         (append-without-guard wire1 wires2)
+        (append-without-guard fixups1 fixups2)
         (append-without-guard aliases1 aliases2)
         (append-without-guard modinsts1 modinsts2)
         modalist))
   ///
+  (verify-guards vl-vardecllist->svex)
 
-  (more-returns
-   (modalist1 :name vars-of-vl-vardecllist->svex-modalist
-              (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
-                       (sv::svarlist-addr-p (sv::modalist-vars modalist1))))
-   (aliases :name vars-of-vl-vardecllist->svex-aliases
-            (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))))
+  (defret vars-of-vl-vardecllist->svex-modalist
+    (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
+             (sv::svarlist-addr-p (sv::modalist-vars modalist1))))
+  (defret vars-of-vl-vardecllist->svex-aliases
+    (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
+  (defret vars-of-vl-vardecllist->svex-fixups
+    (sv::svarlist-addr-p (sv::assigns-vars fixups))))
 
 
 ;; (define vl-delay-primitive->svex-module ((x vl-atts-p) (modname stringp))
@@ -4273,7 +4759,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          (scopes (vl-elabindex->scopes))
 
          (portalist (vl-portdecllist-alist x.portdecls nil))
-         ((vmv vttree vars-width wires aliases datainsts modalist)
+         ((vmv vttree vars-width wires fixups aliases datainsts modalist)
           (with-fast-alist portalist
             (vl-vardecllist->svex x.vardecls
                                   portalist
@@ -4318,6 +4804,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                                   :insts (append-without-guard ifportinsts datainsts ginsts insts gen-insts)
                                   :assigns (append-without-guard always-assigns assigns)
                                   :aliaspairs (append-without-guard ifportaliases aliases gen-aliases)
+                                  :fixups fixups
                                   :constraints (vttree->constraints vttree)))
          (modalist (hons-shrink-alist arraymod-alist modalist))
          (elabindex (vl-elabindex-undo)))

@@ -491,38 +491,6 @@ svex-assigns-compose)).</li>
 
 
 
-(define lhs-override-vars ((x lhs-override-p))
-  :returns (vars svarlist-p)
-  (b* (((lhs-override x)))
-    (append (svex-vars x.test)
-            (svex-vars x.val)))
-  ///
-  (defthm vars-of-lhs-override->test
-    (implies (not (member v (lhs-override-vars x)))
-             (not (member v (svex-vars (lhs-override->test x))))))
-  (defthm vars-of-lhs-override->val
-    (implies (not (member v (lhs-override-vars x)))
-             (not (member v (svex-vars (lhs-override->val x))))))
-
-  (defthm vars-of-lhs-override
-    (implies (and (not (member v (svex-vars test)))
-                  (not (member v (svex-vars val))))
-             (not (member v (lhs-override-vars (lhs-override lhs test val)))))))
-
-(define lhs-overridelist-vars ((x lhs-overridelist-p))
-  :returns (vars svarlist-p)
-  (if (atom x)
-      nil
-    (append (lhs-override-vars (car x))
-            (lhs-overridelist-vars (cdr x)))))
-
-(define lhs-overridelist-keys ((x lhs-overridelist-p))
-  :returns (vars svarlist-p)
-  (if (atom x)
-      nil
-    (append (lhs-vars (lhs-override->lhs (car x)))
-            (lhs-overridelist-keys (cdr x)))))
-
 (define svex-override-lhrange ((x lhrange-p)
                                (override-test svex-p)
                                (offset natp)
@@ -619,6 +587,49 @@ svex-assigns-compose)).</li>
                       (not (svex-lookup v assigns1)))
              :hints(("Goal" :in-theory (enable lhs-overridelist-keys))))))
 
+
+(define assigns-to-overrides-nrev ((x assigns-p)
+                                   nrev)
+  :measure (len (assigns-fix x))
+  (b* ((x (assigns-fix x))
+       ((when (atom x)) (acl2::nrev-fix nrev))
+       ((cons lhs (driver rhs)) (car x))
+       (ans (make-lhs-override :lhs lhs :test 1 :val rhs.value))
+       (nrev (acl2::nrev-push ans nrev)))
+    (assigns-to-overrides-nrev (cdr x) nrev)))
+  
+
+(define assigns-to-overrides ((x assigns-p))
+  :returns (override lhs-overridelist-p)
+  :measure (len (assigns-fix x))
+  :verify-guards nil
+  (mbe :logic (b* ((x (assigns-fix x))
+                   ((when (atom x)) nil)
+                   ((cons lhs (driver rhs)) (car x))
+                   (ans (make-lhs-override :lhs lhs :test 1 :val rhs.value)))
+                (cons ans (assigns-to-overrides (cdr x))))
+       :exec (if (atom x)
+                 nil
+               (acl2::with-local-nrev
+                 (assigns-to-overrides-nrev x acl2::nrev))))
+  ///
+  (local (defthm assigns-to-overrides-nrev-elim
+           (equal (assigns-to-overrides-nrev x nrev)
+                  (append nrev (assigns-to-overrides x)))
+           :hints(("Goal" :in-theory (enable assigns-to-overrides-nrev)))))
+
+  (verify-guards assigns-to-overrides)
+
+  (defret vars-of-assigns-to-overrides
+    (implies (not (member v (assigns-vars x)))
+             (and (not (member v (lhs-overridelist-vars override)))
+                  (not (member v (lhs-overridelist-keys override)))))
+    :hints(("Goal" :in-theory (enable lhs-overridelist-vars
+                                      assigns-vars
+                                      lhs-overridelist-keys
+                                      lhs-override-vars)))))
+  
+
 ;; (define svex-overrides-boundedp ((x svex-overridelist-p) (bound natp))
 ;;   (if (atom x)
 ;;       t
@@ -705,6 +716,7 @@ svex-assigns-compose)).</li>
                              ((aliases "overwritten") 'aliases))
   :returns (mv err
                (flat-assigns assigns-p)
+               (flat-fixups assigns-p)
                (flat-constraints constraintlist-p)
                ;; (flat-delays svar-map-p)
                (new-moddb (and (moddb-basics-ok new-moddb)
@@ -725,7 +737,7 @@ svex-assigns-compose)).</li>
        ((unless (cwtime (modhier-loopfree-p topmod modalist)))
         (mv
          (msg "Module ~s0 has an instance loop!~%" topmod)
-         nil nil moddb aliases))
+         nil nil nil moddb aliases))
 
        ;; Create a moddb structure from the module hierarchy.
        ;; This involves enumerating the modules, instances, and wires.
@@ -749,28 +761,28 @@ svex-assigns-compose)).</li>
        ((mv err modalist) (cwtime (modalist-named->indexed modalist moddb :quiet t)))
        ((when err)
         (mv (msg "Error indexing wire names: ~@0~%" err)
-            nil nil moddb aliases))
+            nil nil nil moddb aliases))
 
        ((with-fast modalist))
 
        (scope (make-modscope-top :modidx modidx))
 
        ;; Gather the full flattened lists of aliases and assignments from the module DB.
-       ((mv modfails varfails flat-aliases flat-assigns flat-constraints)
+       ((mv modfails varfails flat-aliases flat-assigns flat-fixups flat-constraints)
         (cwtime (svex-mod->flatten scope modalist moddb)))
        ((when modfails)
         (mv (msg "Module names referenced but not found: ~x0~%" modfails)
-            nil nil moddb aliases))
+            nil nil nil moddb aliases))
        ((when varfails)
         (mv (msg "Variable names malformed/unresolved: ~x0~%" varfails)
-            nil nil moddb aliases))
+            nil nil nil moddb aliases))
 
        ;; Compute a normal form for each variable by running a
        ;; union/find-like algorithm on the list of alias pairs.  This
        ;; populates aliases, which maps each wire's index to its canonical form.
        (aliases (cwtime (svex-mod->initial-aliases modidx 0 moddb aliases)))
        (aliases (cwtime (canonicalize-alias-pairs flat-aliases aliases))))
-    (mv nil flat-assigns flat-constraints moddb aliases))
+    (mv nil flat-assigns flat-fixups flat-constraints moddb aliases))
   ///
 
   (verify-guards svex-design-flatten-fn)
@@ -791,16 +803,14 @@ svex-assigns-compose)).</li>
                            (natp (moddb-modname-get-index (design->top x) new-moddb))))))
 
   (defret assigns-boundedp-of-svex-design-flatten
-      (and (svarlist-boundedp (assigns-vars flat-assigns)
-                              (moddb-mod-totalwires
-                               (moddb-modname-get-index (design->top x) new-moddb)
-                               new-moddb))
-           (svarlist-boundedp (constraintlist-vars flat-constraints)
-                              (moddb-mod-totalwires
-                               (moddb-modname-get-index (design->top x) new-moddb)
-                               new-moddb))
+    (b* ((bound (moddb-mod-totalwires
+                 (moddb-modname-get-index (design->top x) new-moddb)
+                 new-moddb)))
+      (and (svarlist-boundedp (assigns-vars flat-assigns) bound)
+           (svarlist-boundedp (constraintlist-vars flat-constraints) bound)
+           (svarlist-boundedp (assigns-vars flat-fixups) bound)
            ;; (svarlist-boundedp (svar-map-vars res-delays) (len aliases))
-           )))
+           ))))
 
 
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
@@ -816,11 +826,34 @@ svex-assigns-compose)).</li>
             :in-theory (disable vars-of-get-svex
                                 ACL2::NATP-WHEN-GTE-0)))))
 
+(local (defthm svex-alist-p-of-fast-alist-fork
+         (implies (and (svex-alist-p x)
+                       (svex-alist-p y))
+                  (svex-alist-p (fast-alist-fork x y)))))
+
+(define assigns-compose ((x assigns-p)
+                         (alist svex-alist-p))
+  :returns (new-x sv::assigns-p)
+  :measure (len (sv::assigns-fix x))
+  (b* ((x (sv::assigns-fix x))
+       ((when (atom x)) nil)
+       ((cons key (driver dr)) (car x)))
+    (cons (cons key (change-driver dr :value (svex-compose dr.value alist)))
+          (assigns-compose (cdr x) alist)))
+  ///
+  (defret vars-of-assigns-compose
+    (implies (and (not (member v (assigns-vars x)))
+                  (not (member v (svex-alist-vars alist))))
+             (not (member v (assigns-vars new-x))))
+    :hints(("Goal" :in-theory (enable assigns-vars)))))
+
 (define svex-normalize-assigns ((assigns assigns-p)
+                                (fixups assigns-p)
                                 (constraints constraintlist-p)
                                 (aliases))
   :guard (and ;; (svarlist-boundedp (svar-map-vars delays) (aliass-length aliases))
           (svarlist-boundedp (assigns-vars assigns) (aliass-length aliases))
+          (svarlist-boundedp (assigns-vars fixups) (aliass-length aliases))
           (svarlist-boundedp (constraintlist-vars constraints) (aliass-length aliases))
           ;; (svarlist-addr-p (aliases-vars aliases))
           )
@@ -828,7 +861,9 @@ svex-assigns-compose)).</li>
   :returns (mv (res-assigns svex-alist-p)
                (res-delays svar-map-p)
                (res-constraints constraintlist-p))
-  :prepwork ()
+  :prepwork ((local (defthm cdr-last-of-svex-alist
+                      (implies (svex-alist-p x)
+                               (not (cdr (last x)))))))
   (b* (
        ;; The alias table contains LHSes, which are a different data
        ;; structure than SVEXes but can be translated to them.  We populate
@@ -841,6 +876,7 @@ svex-assigns-compose)).</li>
 
        ;; Canonicalize the assigns list by substituting variables for their canonical forms.
        (norm-assigns (cwtime (assigns-subst assigns aliases svexarr)))
+       (norm-fixups (cwtime (assigns-subst fixups aliases svexarr)))
        (norm-constraints (cwtime (constraintlist-subst-from-svexarr constraints aliases svexarr)))
        ;; (norm-delays  (cwtime (svar-map-subst delays aliases svexarr)))
 
@@ -857,12 +893,19 @@ svex-assigns-compose)).</li>
        ;; (- (sneaky-save 'net-assigns net-assigns))
 
        ;; Resolve together multiple assignments to the same wire.
-       (res-assigns (cwtime (netassigns->resolves net-assigns)))
+       (res-assigns (make-fast-alist (cwtime (netassigns->resolves net-assigns))))
+
+       ;; compose norm-fixups with res-assigns
+       (final-fixups (assigns-compose norm-fixups res-assigns))
+
+       (final-assigns (fast-alist-free
+                       (fast-alist-clean
+                        (svex-apply-overrides (assigns-to-overrides final-fixups) res-assigns))))
 
        ;; Collect all variables referenced and add delays as needed.
        (delayvars (svarlist-collect-delays (svexlist-collect-vars (svex-alist-vals res-assigns))))
        (res-delays (delay-svarlist->delays delayvars)))
-    (mv res-assigns res-delays norm-constraints svexarr))
+    (mv final-assigns res-delays norm-constraints svexarr))
   ///
   (deffixequiv svex-normalize-assigns)
 
@@ -1005,7 +1048,7 @@ should address this again later.</p>"
                (new-aliases))
   :guard (modalist-addr-p (design->modalist x))
   :verify-guards nil
-  (b* (((mv err assigns constraints moddb aliases)
+  (b* (((mv err assigns fixups constraints moddb aliases)
         (svex-design-flatten x))
        ((when err)
         (mv err nil nil nil moddb aliases))
@@ -1017,7 +1060,7 @@ should address this again later.</p>"
                                                   moddb)
                           :mintime 1)))
        ((mv res-assigns res-delays res-constraints)
-        (svex-normalize-assigns assigns constraints aliases)))
+        (svex-normalize-assigns assigns fixups constraints aliases)))
     (mv nil res-assigns res-delays res-constraints moddb aliases))
   ///
   (verify-guards svex-design-flatten-and-normalize-fn
