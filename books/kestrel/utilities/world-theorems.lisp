@@ -4,7 +4,9 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Eric Smith (eric.smith@kestrel.edu)
+; Authors:
+;   Alessandro Coglio (coglio@kestrel.edu)
+;   Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,7 +22,8 @@
           defined outside the Kestrel Books."
   :long
   "@(def arity-iff)
-   @(def plist-worldp-when-plist-worldp-with-formals-cheap)")
+   @(def plist-worldp-when-plist-worldp-with-formals-cheap)
+   @(def alistp-of-getprops)")
 
 (defthm arity-iff
   (iff (arity fn wrld)
@@ -32,3 +35,7 @@
   (implies (not (plist-worldp wrld))
            (not (plist-worldp-with-formals wrld)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm alistp-of-getprops
+  (alistp (getprops key world-name w))
+  :hints (("Goal" :in-theory (enable symbol-<))))
