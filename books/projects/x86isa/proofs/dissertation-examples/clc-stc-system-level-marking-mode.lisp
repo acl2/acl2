@@ -60,7 +60,6 @@
                              (mv-nth 2
                                      (las-to-pas 1 (xr :rip 0 x86) :x x86))))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
-                                    64-bit-modep
                                     rm08
                                     pos
                                     mv-nth-0-las-to-pas-subset-p
@@ -78,7 +77,6 @@
                              (mv-nth 2
                                      (las-to-pas 2 (xr :rip 0 x86) :x x86))))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
-                                    64-bit-modep
                                     rm08
                                     pos
                                     mv-nth-0-las-to-pas-subset-p

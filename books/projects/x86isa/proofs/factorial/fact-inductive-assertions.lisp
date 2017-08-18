@@ -423,7 +423,7 @@
                          x86))
            (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
-           :in-theory (e/d* (64-bit-modep)
+           :in-theory (e/d* ()
                             (get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
                              get-prefixes-opener-lemma-group-3-prefix
@@ -432,7 +432,6 @@
           ("Subgoal 2"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
-                        64-bit-modep
 
                         gpr-and-spec-4
                         jcc/cmovcc/setcc-spec
@@ -487,7 +486,6 @@
           ("Subgoal 1"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
-                        64-bit-modep
 
                         gpr-and-spec-4
                         jcc/cmovcc/setcc-spec
@@ -549,7 +547,6 @@
   :hints (("Goal" :in-theory
            (e/d*
             (instruction-decoding-and-spec-rules
-             64-bit-modep
 
              gpr-and-spec-4
              jcc/cmovcc/setcc-spec
@@ -581,7 +578,6 @@
             ()))
           ("Subgoal 2"
            :in-theory (e/d (x86-fetch-decode-execute
-                            64-bit-modep
                             rr32)
                            ()))))
 

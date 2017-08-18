@@ -50,7 +50,7 @@
   (implies (preconditions x86)
            (equal (x86-run 2 x86)
                   (!rip (+ 2 (rip x86)) (!flgi *cf* 1 x86))))
-  :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std 64-bit-modep)
+  :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std)
                                    (create-canonical-address-list
                                     (create-canonical-address-list))))))
 

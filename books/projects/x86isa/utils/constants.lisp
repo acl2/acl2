@@ -85,6 +85,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
                               (true-listp names)
                               (true-listp indices))
                   :verify-guards nil))
+  ;; the output list is reversed w.r.t. the input list,
+  ;; but the result is only used
+  ;; in DEFCONSTS  (where order does not really matter)
+  ;; and in LAYOUT-NAMES (which reverses the list)
   (if (endp alst)
       (mv names indices)
     (if (symbolp (caar alst))
@@ -116,16 +120,26 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 ;; ======================================================================
 
+; Intel manual, Mar'17, Vol. 3A, Figure 3-7
 (defconst *hidden-segment-register-layout*
   '((:base-addr  0  64) ;; Segment Base Address
     (:limit     64  32) ;; Segment Limit
     (:attr      96  16) ;; Attributes
     ))
+; These fields are "cached" from the segment descriptor (Figure 3-8):
+; - The Segment Base is 32 bits in the segment descriptor,
+;   so the 64 bits in :BASE-ADDR above can hold it.
+; - The Segment Limit is 20 bits in the segment descriptor,
+;   and based on the G (granularity) flag it covers up to 4 GiB,
+;   so the 32 bits in :LIMIT above can hold it.
+; - There are 12 remaining bits in the segment descriptor,
+;   so the 16 bits in :ATTR above can hold them.
 
 (defthm segment-register-ok
   (layout-constant-alistp *hidden-segment-register-layout* 0 112)
   :rule-classes nil)
 
+; Intel manual, Mar'17, Vol. 3A, Figure 3-6
 (defconst *segment-selector-layout*
   '((:rpl        0  2) ;; Requestor Privilege Level (RPL)
     (:ti         2  1) ;; Table Indicator (0 = GDT, 1 = LDT)
@@ -207,6 +221,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
                    22)
   :rule-classes nil)
 
+; Intel manual, Mar'17, Vol. 3A, Section 10.8.6
 (defconst *cr8-layout*
   '(
     ;; Task Priority Level (width = 4). This sets
@@ -230,6 +245,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
                    )
   :rule-classes nil)
 
+; Intel manual, Mar'17, Vol. 3A, Figure 2-8
 (defconst *xcr0-layout*
 
   ;; Software can access XCR0 only if CR4.OSXSAVE[bit 18] = 1. (This bit
@@ -385,8 +401,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 ;; Segmentation:
 
-;; Source: AMD Manual (Volume 2, System Programming): Chapter
-;;         4 (p. 88-95)
+;; Source: AMD Manual, Apr'16, Vol. 2, Section 4.8
 
 ;; User-level descriptors:
 
@@ -585,6 +600,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (layout-constant-alistp *interrupt/trap-gate-descriptor-attributes-layout* 0 16)
   :rule-classes nil)
 
+; AMD manual, Apr'16, Vol. 2, Figure 4-8
 (defconst *gdtr/idtr-layout*
   '((:base-addr    0 64) ;; Segment Base Address
     (:limit       64 16) ;; Segment Limit
@@ -594,7 +610,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (layout-constant-alistp *gdtr/idtr-layout* 0 80)
   :rule-classes nil)
 
-; Paging:
+; Paging (Intel manual, Mar'17, Vol. 3A, Tables 4-14 through 4-19, Figure 4-11):
 
 (defconst *ia32e-page-tables-layout*
 

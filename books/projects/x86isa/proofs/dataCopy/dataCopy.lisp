@@ -601,7 +601,6 @@
                                      (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86))))))
             16 X86)))))))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
-                                    64-bit-modep
 
                                     gpr-and-spec-4
                                     jcc/cmovcc/setcc-spec

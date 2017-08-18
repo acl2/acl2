@@ -216,7 +216,6 @@
            (equal (rgfi *rax* (x86-run 15 x86))
                   (logcount (xr :rgf *rdi* x86))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
-                                    64-bit-modep
 
                                     shr-spec
                                     shr-spec-32
@@ -862,7 +861,6 @@
             (equal (rgfi *rax* (x86-run 16 (x86-run 18 x86)))
                    (logcount n)))
    :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
-                                     64-bit-modep
 
                                      shr-spec
                                      shr-spec-32

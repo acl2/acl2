@@ -1243,9 +1243,11 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   :parents (decoding-utilities)
   :short "Returns @('t') if at least one operand of an opcode requires
   a @('ModR/M') byte"
+  ;; Example inputs are OP_NUM = 2 and OP_LIST = '((E b) (G b)), extracted from
+  ;; '("ADD" 2 (E b) (G b)) entry in the *ONE-BYTE-OPCODE-MAP-LST* table.
+  ;; Only called by COMPUTE-MODR/M-FOR-AN-OPCODE.
   (b* (((when (not (equal (len op_list) op_num)))
         (er hard? "Expected length of ~x0 was ~x1." op_list op_num)))
-
       (if (zp op_num)
           bool
         (b* ((char (caar op_list))

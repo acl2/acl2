@@ -35,6 +35,7 @@
 ;; when debugging the release note markup.
 (include-book "centaur/nrev/portcullis" :dir :system)
 (include-book "centaur/vl/portcullis" :dir :system)
+(include-book "centaur/ipasir/portcullis" :dir :system)
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)
 (include-book "centaur/bed/portcullis" :dir :system)
@@ -141,6 +142,31 @@
  find all the true conclusions (if any) from a user-provided list of possible
  conclusions using @(see GL::GL).</p>
 
+ <h4>GLMC</h4>
+
+ <p>GLMC (in directory centaur/glmc) is a connection from ACL2 to AIG-based
+ hardware model checkers, via @(see gl::gl); this can be used to prove safety
+ properties without finding an inductive invariant.  See @(see gl::glmc) for
+ details.</p>
+
+ <h4>Truth</h4>
+
+ <p>Directory centaur/truth contains a library for using integers as a
+ representation for Boolean functions with small (single-digit) numbers of
+ variables, expressing the functions as truth tables.  Truth tables for 5 or
+ fewer variables are especially efficient since the formulas are represented as
+ fixnums (at least in 64-bit lisps).</p>
+
+ <h4>Ipasir</h4>
+
+ <p>The @(see ipasir::ipasir) library (in directory centaur/ipasir) contains an
+ axiomatized interface for using incremental SAT solver libraries in ACL2.  A
+ solver object is represented as an abstract stobj, and actual solver functions
+ from a suitable shared library can be called as the implementation.
+ Integration with @(see aignet::aignet) is also provided in the book
+ \"centaur/aignet/ipasir\".</p>
+
+
  <h3>Changes to Existing Libraries</h3>
 
  <h4>@(see std/io)</h4>
@@ -210,6 +236,15 @@
  mentioned above); and renamed subdirectory @('main/') to @('sorted/').  The
  key subdirectory is @('incremental/'); a new top-level book @('top.lisp')
  includes the top-level book in that subdirectory.</p>
+
+ <h4>Aignet library</h4>
+
+ <p>A few new verified <see topic='@(url aignet::aignet-comb-transforms)'>
+ combinational logic transforms</see> have been
+ added to aignet, most notably <see topic='@(url aignet::fraig)'>fraiging</see>
+ and DAG-aware and-tree <see topic='@(url aignet::balance)'>balancing</see>.
+ These can be used as preprocessors for SAT solving with GL via @(see
+ gl::gl-simplify-satlink-mode).</p>
 
  <h3>Licensing Changes</h3>
 

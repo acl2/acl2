@@ -19768,6 +19768,26 @@
               (declare (ignore unify-subst))
               ans)))
 
+(defun obviously-equal-lambda-args (x-formals-tail x-args-tail y-formals
+                                                   y-args)
+
+; At the top level, x-formals-tail and x-args-tail are the formals and
+; arguments of a lambda application; let's call these x-formals and x-args.  We
+; know that x-formals and y-formals have the same length, and we want to check
+; that y-formals is a permutation of x-formals and, moreover: when the
+; arguments are correspondingly permutated, then the respective members of
+; x-args and y-args are equal.
+
+  (cond ((endp x-formals-tail) t)
+        (t (let ((posn (position-eq (car x-formals-tail) y-formals)))
+             (and
+              posn
+              (and (equal (car x-args-tail)
+                          (nth posn y-args))
+                   (obviously-equal-lambda-args (cdr x-formals-tail)
+                                                (cdr x-args-tail)
+                                                y-formals y-args)))))))
+
 (mutual-recursion
 
 (defun obviously-equiv-terms (x y iff-flg)
@@ -19791,8 +19811,10 @@
             ((or (fquotep x)
                  (fquotep y))
              (and iff-flg
-                  (equal (equal x *nil*)
-                         (equal y *nil*))))
+                  (fquotep x)
+                  (fquotep y)
+                  (unquote x)
+                  (unquote y)))
             ((flambda-applicationp x)
              (and (flambda-applicationp y)
 
@@ -19818,6 +19840,10 @@
 
 ; But it is more complicated to handle this combination in full generality, so
 ; we content ourselves with (1) and (2).
+
+; We could also relax (2) by checking that the respective arguments are merely
+; obviously-equiv-terms, rather than requiring equality, but at this point we
+; see no need for that generalization.
 
                   (let ((x-fn (ffn-symb x))
                         (y-fn (ffn-symb y))
@@ -19882,23 +19908,6 @@
   (cond ((endp x) t)
         (t (and (obviously-equiv-terms (car x) (car y) nil)
                 (obviously-equiv-terms-lst (cdr x) (cdr y))))))
-
-(defun obviously-equal-lambda-args (x-formals-tail x-args-tail y-formals
-                                                   y-args)
-
-; We know that y-formals is a permutation of x-formals.  We recur through
-; x-formals and x-args, checking that correspond arguments are equal.
-
-  (cond ((endp x-formals-tail) t)
-        (t (let ((posn (position-eq (car x-formals-tail) y-formals)))
-             (assert$
-              posn
-              (and (equal (car x-args-tail)
-                          (nth posn y-args))
-                   (obviously-equal-lambda-args (cdr x-formals-tail)
-                                                (cdr x-args-tail)
-                                                y-formals y-args)))))))
-
 )
 
 (defun obviously-iff-equiv-terms (x y)

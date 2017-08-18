@@ -178,7 +178,7 @@
   ;; implementing that instruction.
 
 
-  `((#x00
+  '((#x00
      "LLDT: 0F 00/2"
      (if (64-bit-modep x86)
          (case (mrm-reg modr/m)
@@ -1434,7 +1434,7 @@
   ;; there is an opcode-extension or it is a call to the function
   ;; implementing that instruction.
 
-  `(
+  '(
     (#x00
      "(ADD Eb Gb)"
      (if (64-bit-modep x86)
@@ -3642,10 +3642,9 @@
   @('start-rip') points to the first byte of an instruction,
   potentially a legacy prefix.</p>
 
-  <p>Note that the initial value of @('cnt') should be 5 so that if 4
-  prefixes are encountered, the next byte can also be fetched and
-  stored in the accumulated return value, the @('prefixes')
-  argument.</p>
+  <p>Note that the initial value of @('cnt') should be 15 so that
+  the result @('(- 15 cnt)') returned at the end of the recursion
+  is the correct number of prefix bytes parsed.</p>
 
   <p>Important note:</p>
 

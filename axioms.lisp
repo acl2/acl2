@@ -21089,6 +21089,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore x))
   nil)
 
+(defun get-enforce-redundancy (wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (alistp (table-alist 'acl2-defaults-table
+                                                   wrld)))))
+  (cdr (assoc-eq :enforce-redundancy
+                 (table-alist 'acl2-defaults-table wrld))))
+
 (defmacro default-verify-guards-eagerness-from-table (alist)
   `(or (cdr (assoc-eq :verify-guards-eagerness ,alist))
        1))
