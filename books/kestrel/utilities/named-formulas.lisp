@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "er-soft-plus")
 (include-book "event-forms")
 (include-book "fresh-names")
 (include-book "prove-interface")
@@ -133,21 +134,26 @@
    (named-hints symbol-true-list-alistp "Alist from names of formulas
                                          to proof hints to prove the formulas.")
    (verbose booleanp "Print progress messages or not.")
+   (error-erp "Flag to return in case of error.")
+   (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url error-triple)'>error triple</see>.")
-               (nothing "Always @('nil').")
+  :returns (mv (erp "@('error-erp') or @('nil').")
+               (val "@('error-val') or @('nil').")
                state)
   :mode :program
   :short "Cause a soft error if the proof of any named formula fails."
   :long
   "<p>
    Use the message from the named formula proof failure as error message.
+   </p>
+   <p>
+   In case of error, use @(tsee er-soft+)
+   with the error flag and value passed as arguments.
    </p>"
   (b* (((mv success msg state)
         (prove-named-formulas named-formulas named-hints verbose state))
-       ((unless success) (er soft ctx "~@0" msg)))
+       ((unless success) (er-soft+ ctx error-erp error-val "~@0" msg)))
     (value nil)))
 
 (define named-formula-to-thm-event

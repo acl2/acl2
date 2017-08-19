@@ -133,6 +133,8 @@
                           (false . (equal x y)))
                         nil ; named-hints
                         nil ; verbose
+                        t ; error-erp
+                        nil ; error-val
                         'top ; ctx
                         state))
 
@@ -143,6 +145,8 @@
                            (need-hints . (equal (f x) x)))
                          '((need-hints . (("Goal" :in-theory (enable f)))))
                          nil ; verbose
+                         t ; error-erp
+                         nil ; error-val
                          'top ; ctx
                          state)))
 

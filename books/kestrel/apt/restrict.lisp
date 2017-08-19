@@ -1054,7 +1054,8 @@
                                       restriction$
                                       do-verify-guards
                                       state))
-       ((er &) (ensure-named-formulas app-conds hints-alist verbose ctx state))
+       ((er &) (ensure-named-formulas
+                app-conds hints-alist verbose t nil ctx state))
        (event (restrict-event old-fn-name
                               restriction$
                               undefined$

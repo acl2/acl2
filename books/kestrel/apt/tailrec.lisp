@@ -1999,7 +1999,8 @@
                    old-fn-name test base nonrec combine q r variant domain$
                    do-verify-guards
                    state))
-       ((er &) (ensure-named-formulas app-conds hints-alist verbose ctx state))
+       ((er &) (ensure-named-formulas
+                app-conds hints-alist verbose t nil ctx state))
        (event (tailrec-event
                old-fn-name test base nonrec updates combine q r
                variant domain$
