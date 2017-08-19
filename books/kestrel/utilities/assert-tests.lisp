@@ -1,4 +1,4 @@
-; Assertion Utilities
+; Assertions -- Tests
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
