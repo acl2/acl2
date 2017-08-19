@@ -667,7 +667,7 @@
                      or a lambda expression.  ~
                      Since ~x1 is not a symbol, ~
                      it must be a lambda expression.  ~
-                     But ~@2"
+                     ~@2"
                     description x tlambda/msg))
                   (tlambda tlambda/msg)
                   (stobjs-in
@@ -720,7 +720,7 @@
   (b* (((mv term/msg stobjs-out) (check-user-term x (w state))))
     (if (msgp term/msg)
         (er-soft+ ctx error-erp error-val
-                  "~@0 must be a term. But ~@1"
+                  "~@0 must be a term.  ~@1"
                   description term/msg)
       (value (list term/msg stobjs-out))))
   ///
