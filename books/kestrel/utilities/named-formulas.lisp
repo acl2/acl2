@@ -174,8 +174,15 @@
    If the name of the formula is not in use and not among the names to avoid,
    it is used as the name of the theorem event.
    Otherwise, it is made fresh by appending @('$') signs.
+   If the initial name is a keyword,
+   it is interned into the \"ACL2\" package
+   before calling @(tsee fresh-name-in-world-with-$s),
+   whose guard forbids keywords.
    </p>"
   (b* ((defthm/defthmd (theorem-intro-macro enabled))
+       (name (if (keywordp name)
+                 (intern (symbol-name name) "ACL2")
+               name))
        (thm-name (fresh-name-in-world-with-$s name names-to-avoid wrld))
        (thm-event `(,defthm/defthmd ,thm-name
                      ,formula
