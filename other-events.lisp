@@ -19778,6 +19778,10 @@
 ; arguments are correspondingly permutated, then the respective members of
 ; x-args and y-args are equal.
 
+  (declare (xargs :guard (and (symbol-listp x-formals-tail)
+                              (pseudo-term-listp x-args-tail)
+                              (symbol-listp y-formals)
+                              (pseudo-term-listp y-args))))
   (cond ((endp x-formals-tail) t)
         (t (let ((posn (position-eq (car x-formals-tail) y-formals)))
              (and
@@ -19804,6 +19808,8 @@
 ; ground-zero theory) unless iff-flg is true, in which case (iff x y) is a
 ; theorem.
 
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (pseudo-termp y))))
   (or (equal x y) ; common case
       (cond ((or (variablep x)
                  (variablep y))
@@ -19905,12 +19911,16 @@
 
 ; X and y are true-lists of the same length.
 
+  (declare (xargs :guard (and (pseudo-term-listp x)
+                              (pseudo-term-listp y))))
   (cond ((endp x) t)
         (t (and (obviously-equiv-terms (car x) (car y) nil)
                 (obviously-equiv-terms-lst (cdr x) (cdr y))))))
 )
 
 (defun obviously-iff-equiv-terms (x y)
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (pseudo-termp y))))
   (obviously-equiv-terms x y t))
 
 (defun chk-defabsstobj-method-lemmas (method st st$c st$ap corr-fn
