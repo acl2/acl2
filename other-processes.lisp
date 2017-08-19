@@ -1444,11 +1444,11 @@
             state
             (term-evisc-tuple nil state)))
       (t
-       (fms "The destructor term~#p~[~/s~] ~*0 can be eliminated.  Furthermore, ~
-             ~#p~[that term is~/those terms are~] at the root of a ~
-             chain of ~n1 rounds of destructor elimination. ~*2  ~
-             These steps produce ~#3~[no nontautological goals~/the ~
-             following goal~/the following ~n4 goals~].~|"
+       (fms "The destructor term~#p~[~/s~] ~*0 can be eliminated.  ~
+             Furthermore, ~#p~[that term is~/those terms are~] at the root of ~
+             a chain of ~n1 rounds of destructor elimination.  ~*2These steps ~
+             produce ~#3~[no nontautological goals~/the following goal~/the ~
+             following ~n4 goals~].~|"
             (list (cons #\p (nth 3 (car lst)))
                   (cons #\0 (tilde-*-untranslate-lst-phrase
                              (strip-cars (nth 3 (car lst)))

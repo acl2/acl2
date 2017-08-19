@@ -41,6 +41,7 @@
 function wrapXdocFragment(str)
 {
     var wrap = "<!DOCTYPE xdoc [";
+    wrap += "<!ENTITY ndash \"&#8211;\">";
     wrap += "<!ENTITY mdash \"&#8212;\">";
     wrap += "<!ENTITY rarr \"&#8594;\">";
     wrap += "<!ENTITY nbsp \"&#160;\">";

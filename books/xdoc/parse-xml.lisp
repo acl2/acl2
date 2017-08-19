@@ -65,7 +65,7 @@
 ;
 ;    (:ENTITY TYPE) represents entities like &amp;
 ;
-;      - TYPE is :AMP, :LT, :GT, :APOS, :NBSP, :MDASH, :RARR, LSQUO, RSQUO, LDQUO, or RDQUO
+;      - TYPE is :AMP, :LT, :GT, :APOS, :NBSP, :NDASH, :MDASH, :RARR, LSQUO, RSQUO, LDQUO, or RDQUO
 
 (defun opentok-p (x) (eq (first x) :OPEN))
 (defun opentok-name (x) (second x))
@@ -279,6 +279,7 @@
        ((when (equal str "quot")) (mv nil n '(:ENTITY :QUOT)))
        ((when (equal str "apos")) (mv nil n '(:ENTITY :APOS)))
        ((when (equal str "nbsp")) (mv nil n '(:ENTITY :NBSP)))
+       ((when (equal str "ndash")) (mv nil n '(:ENTITY :NDASH)))
        ((when (equal str "mdash")) (mv nil n '(:ENTITY :MDASH)))
        ((when (equal str "rarr")) (mv nil n '(:ENTITY :RARR)))
        ((when (equal str "lsquo")) (mv nil n '(:ENTITY :LSQUO)))
@@ -330,6 +331,7 @@
     (:QUOT  "&quot;")
     (:APOS  "&apos;")
     (:NBSP  "&nbsp;")
+    (:NDASH "&ndash;")
     (:MDASH "&mdash;")
     (:RARR  "&rarr;")
     (:LSQUO "&lsquo;")
@@ -346,6 +348,7 @@
     (:QUOT  "\"")
     (:APOS  "'")
     (:NBSP  " ")
+    (:NDASH "--")
     (:MDASH "---")
     (:RARR  "-->")
     (:LSQUO "`")
