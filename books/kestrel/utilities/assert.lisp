@@ -32,6 +32,8 @@
    </p>
    <p>
    All the arguments of this macro are evaluated.
+   The (evaluated) context must be a symbol.
+   The (evaluated) message must have type @(tsee msgp).
    </p>"
 
   (defmacro assert? (test form &optional ctx msg)
