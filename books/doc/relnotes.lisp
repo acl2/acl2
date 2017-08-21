@@ -246,6 +246,37 @@
  These can be used as preprocessors for SAT solving with GL via @(see
  gl::gl-simplify-satlink-mode).</p>
 
+ <h4>VL/SV libraries</h4>
+
+ <ul>
+
+ <li>SystemVerilog @('unique case') and @('unique0 case') can now optionally be
+ treated differently from regular @('case') statements: either a constraint may
+ be generated off to the side expressing the one-hot constraint, or logic may be
+ added that assigns @('X') instead of the stated values when the one-hot constraint
+ is violated.</li>
+
+ <li>Somewhat similarly, @('enum') type variables may optionally either
+ generate constraints stating that they take proper enum values, or may generate
+ extra logic that forces them to @('X') when assigned an improper value.</p>
+
+ <li>When composing together 0-delay update functions, if bit-level
+ combinational loops are present, these are composed together to a fixpoint.</li>
+
+ </ul>
+
+ <h4>Miscellaneous Books</h4>
+
+ <p>The book \"clause-processors/use-by-hint\" now contains an additional
+ utility, @(see use-termhint), that helps structure hints in a way that
+ coincides with the structure of a proof and allows hints to contain terms that
+ have been simplified along with the goal.</p>
+
+ <p>A new book \"tools/symlet\" introduces a macro @('let-syms') and @('b*')
+ binder @('symlet') that simply replace occurrences of some symbols with some
+ corresponding terms in the enclosed term.  Like Common Lisp's
+ @('symbol-macrolet') but much less smart.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
