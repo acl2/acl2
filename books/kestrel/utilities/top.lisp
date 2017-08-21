@@ -12,6 +12,7 @@
 
 (include-book "acceptable-rewrite-rule-p")
 (include-book "all-vars-theorems")
+(include-book "assert")
 (include-book "auto-termination")
 (include-book "bytes")
 (include-book "characters")

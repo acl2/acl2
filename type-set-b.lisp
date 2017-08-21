@@ -2502,20 +2502,21 @@
 ;; RAG - I added an entry for *ts-complex-non-rational*.
 
 (defun type-set-imagpart (ts ttree ttree0)
-  (cond #+:non-standard-analysis
-        ((ts-subsetp ts *ts-complex-non-rational*)
+  (cond ((ts-subsetp ts *ts-complex-rational*)
+         (mv (ts-union *ts-positive-rational*
+                       *ts-negative-rational*)
+             (puffert ttree)))
+        #+:non-standard-analysis
+        ((ts-subsetp ts *ts-complex*)
          (mv (ts-union *ts-positive-real*
                        *ts-negative-real*)
              (puffert ttree)))
         #+:non-standard-analysis
         ((ts-intersectp ts *ts-complex-non-rational*)
          (mv *ts-real* (puffert ttree0)))
-        ((ts-subsetp ts *ts-complex-rational*)
-         (mv (ts-union *ts-positive-rational*
-                       *ts-negative-rational*)
-             (puffert ttree)))
         ((ts-intersectp ts *ts-complex-rational*)
-         (mv *ts-rational* (puffert ttree0)))
+         (mv *ts-rational* (puffert #+:non-standard-analysis ttree
+                                    #-:non-standard-analysis ttree0)))
         (t
          (mv *ts-zero* (puffert ttree)))))
 

@@ -86,6 +86,7 @@
 
 (defconst *xml-entity-stuff*
   "<!DOCTYPE xdoc [
+  <!ENTITY ndash \"&#8211;\">
   <!ENTITY mdash \"&#8212;\">
   <!ENTITY rarr \"&#8594;\">
   <!ENTITY nbsp \"&#160;\">
