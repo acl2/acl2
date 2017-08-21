@@ -6697,15 +6697,24 @@
 ; We now develop the most trivial event we have: deflabel.  It
 ; illustrates the basic structure of our event code.
 
-(defun chk-virgin (name new-type ctx wrld state)
+(defun chk-virgin-msg (name new-type wrld state)
   #-acl2-loop-only
-  (chk-virgin2 name new-type ctx wrld state)
+  (mv (chk-virgin-msg2 name new-type wrld state)
+      state)
   #+acl2-loop-only
-  (declare (ignore name new-type ctx wrld))
+  (declare (ignore name new-type wrld))
   #+acl2-loop-only
   (mv-let (erp val state)
     (read-acl2-oracle state)
-    (mv (or erp val) nil state)))
+    (let ((msg (or erp val)))
+      (mv (and (msgp msg) msg)
+          state))))
+
+(defun chk-virgin (name new-type ctx wrld state)
+  (mv-let (msg state)
+    (chk-virgin-msg name new-type wrld state)
+    (cond (msg (er soft ctx "~@0" msg))
+          (t (value nil)))))
 
 (defun chk-boot-strap-redefineable-namep (name ctx wrld state)
   (cond ((global-val 'boot-strap-pass-2 wrld)

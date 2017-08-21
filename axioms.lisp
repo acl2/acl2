@@ -12554,7 +12554,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     include-book-fn
     set-w ; retract-world1, extend-world1, ...
     prove-loop ; *deep-gstack*
-    chk-virgin ; chk-virgin2
+    chk-virgin-msg
     w-of-any-state ; live-state-p
     ld-fn-body ; reset-parallelism-variables, *first-entry-to-ld-fn-body-flg*
     untranslate ; *the-live-state*
