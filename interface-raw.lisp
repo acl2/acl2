@@ -6782,20 +6782,21 @@
            (not (boundp name))
          t)))
 
-(defun-one-output chk-virgin2 (name new-type ctx wrld state)
-  (cond ((virginp name new-type) (value nil))
-        ((f-get-global 'boot-strap-flg *the-live-state*)
+(defun-one-output chk-virgin-msg2 (name new-type wrld state)
+  (cond ((virginp name new-type) nil)
+        ((f-get-global 'boot-strap-flg state)
 
 ; The test above is equivalent to (global-val 'boot-strap-flg wrld).
 
-         (value (setf (get name '*predefined*) t)))
+         (setf (get name '*predefined*) t)
+         nil)
 
 ; A name regains its true virginity the moment we decide to give it a
 ; 'redefined property, which only happens just after the user has said that
 ; it's OK to redefine it.
 
         ((getpropc name 'redefined nil wrld)
-         (value nil))
+         nil)
         (t
          (let ((reason
                 (cond ((not (symbolp name)) "it is not a symbol")
@@ -6836,7 +6837,7 @@
                         (t ; (member-eq new-type '(const stobj
 ;                       stobj-live-var t))
                          str)))))
-           (er soft ctx
+           (msg
             "It is illegal to define ~x0 because ~@1 in raw Common Lisp.~@2"
             name
             reason
@@ -6860,8 +6861,9 @@
 ; restrictions, which axiomatically always returns t but may cause this hard
 ; error (which can be thought of as a resource error).
 
-; Note: The "2" in the name stems from chk-virgin2, which plays a similar role
-; in chk-virgin.  Chk-virgin1 has been lost in the mist of time, but
+; Note: The "2" in the name stems from chk-virgin2, which formerly played a
+; similar role in chk-virgin but has been replaced by chk-virgin-msg.
+; Chk-virgin1 has been lost in the mist of time, but
 ; chk-package-reincarnation-import-restrictions1 has never existed!
 
   (let ((pkg (find-package name))
