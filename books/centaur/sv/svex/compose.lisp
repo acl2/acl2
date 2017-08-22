@@ -2014,7 +2014,7 @@ we've seen before with a mask that overlaps with that one.</p>"
        (vars (svexlist-collect-vars updates-vals))
        (updates (pairlis$ (svex-alist-keys updates) updates-vals))
        (upd-subset (with-fast-alist updates (svars-extract-updates vars updates)))
-       ;; (- (acl2::sneaky-save 'updates updates))
+       ;; (- (acl2::sneaky-save 'simple-updates updates))
        (- (cw "Looping subset count: ~x0~%" (cwtime (svexlist-opcount (svex-alist-vals upd-subset)))))
        (- (cw "Mask bits count (starting): ~x0~%" (svexlist-masks-measure vars masks)))
        ((acl2::with-fast updates))
@@ -2031,6 +2031,9 @@ we've seen before with a mask that overlaps with that one.</p>"
        (next-updates (with-fast-alist rest
                        (svex-alist-compose* updates rest)))
 
+       
+       ;; (- (acl2::sneaky-save 'next-updates next-updates))
+
        (- (cw "~x0 loop vars~%" (len loop-var-alist))
           ;; (cw "rest: ~x0~%keys: ~x1~%"
           ;;     (len rest) (alist-keys (take (min 20 (len rest)) rest)))
@@ -2044,13 +2047,15 @@ we've seen before with a mask that overlaps with that one.</p>"
               (make-svex-scc-consts :final-masks final-masks
                                     :updates next-updates
                                     :loop-vars loop-var-alist))))))
+       ;; (- (acl2::sneaky-save 'looped-updates looped-updates))
        (- (fast-alist-free loop-var-alist))
        (- (fast-alist-free final-masks))
        (- (and err
                (raise "Error while composing bit-level loops: ~@0" err)))
 
        (res-updates1 (with-fast-alist looped-updates
-                       (svex-alist-compose* updates looped-updates)))
+                       (svex-alist-compose* next-updates looped-updates)))
+       ;; (- (acl2::sneaky-save 'res-updates1 res-updates1))
 
        ;; (res1-updates (svex-compose-keep-nonzero-mask-updates res1 final-masks))
        ;; This attempts to resolve apparent combinational loops by adding

@@ -175,13 +175,16 @@
 (define svexlist-let*-abstract ((x svexlist-p)
                                 &key
                                 ((basename stringp) '"__X_")
-                                ((pkgsym symbolp) ''sv::foo))
+                                ((pkgsym symbolp) ''sv::foo)
+                                (all-subtrees 'nil))
   :returns (mv (abs-alist svex-alist-p)
                (new-x svexlist-p))
   :hooks nil
   (b* (((mv seen multiref) (svexlist-multirefs-postorder x nil nil))
        (- (fast-alist-free seen))
-       (multirefs (svex-key-alist-collect-ordered (alist-keys seen) multiref))
+       (multirefs (if all-subtrees
+                      (alist-keys seen)
+                    (svex-key-alist-collect-ordered (alist-keys seen) multiref)))
        (- (fast-alist-free multiref))
        (vars (make-n-svars (len multirefs) basename pkgsym))
        (subst (pairlis$ multirefs (svarlist->svexes vars)))
@@ -258,9 +261,10 @@
                                       (env svex-env-p)
                                       &key
                                       ((basename stringp) '"__X_")
-                                      ((pkgsym symbolp) ''sv::foo))
+                                      ((pkgsym symbolp) ''sv::foo)
+                                      (all-subtrees 'nil))
   (b* (((mv abs-alist (cons new-x &))
-        (svexlist-let*-abstract (list x) :basename basename :pkgsym pkgsym))
+        (svexlist-let*-abstract (list x) :basename basename :pkgsym pkgsym :all-subtrees all-subtrees))
        (env (make-fast-alist env))
        (eval-env (svex-let*-eval-final-env abs-alist env))
        (eval-alist (svex-alist-eval abs-alist eval-env))

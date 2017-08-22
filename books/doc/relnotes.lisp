@@ -258,7 +258,7 @@
 
  <li>Somewhat similarly, @('enum') type variables may optionally either
  generate constraints stating that they take proper enum values, or may generate
- extra logic that forces them to @('X') when assigned an improper value.</p>
+ extra logic that forces them to @('X') when assigned an improper value.</li>
 
  <li>When composing together 0-delay update functions, if bit-level
  combinational loops are present, these are composed together to a fixpoint.</li>
