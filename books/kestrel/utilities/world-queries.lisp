@@ -525,7 +525,7 @@
           a legal new name."
   :long
   "<p>
-   This helper function for @(see tfresh-namep-msg) avoids the ``virginity''
+   This helper function for @(see fresh-namep-msg) avoids the ``virginity''
    check ensuring that the name is not already defined in raw Lisp.  See @(see
    fresh-namep-msg).
    </p>"
