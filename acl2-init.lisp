@@ -1855,8 +1855,8 @@ implementations.")
 ; Example:
 ; (export SBCL_USER_ARGS="--lose-on-corruption" ; ./sbcl-saved_acl2)
 
-        "~s --dynamic-space-size ~s --control-stack-size 64 --core ~s~a ~
-         ${SBCL_USER_ARGS} ~
+        "~s --dynamic-space-size ~s --control-stack-size 64 ~
+         --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
          --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
         prog
         *sbcl-dynamic-space-size*
