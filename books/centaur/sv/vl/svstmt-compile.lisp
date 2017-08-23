@@ -1022,14 +1022,6 @@ exists there.</p>"
              (svstates-compatible new-st st))))
 
 
-(defprojection 4veclist-quote ((x 4veclist-p))
-  :returns (svexes svexlist-p)
-  (svex-quote x)
-  ///
-  (defret vars-of-4veclist-quote
-    (equal (svexlist-vars svexes) nil)
-    :hints(("Goal" :in-theory (enable svexlist-vars)))))
-
 
 ;; Procedure for performing an assignment.
 ;; We have an RHS expression (any svex), an LHS static and dynamic select

@@ -32,6 +32,7 @@
 (include-book "eval")
 (include-book "vars")
 (include-book "nrev")
+(include-book "std/util/defprojection" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -688,3 +689,13 @@ substitution are left in place."
                   (not (member v (svex-alist-vars a))))
              (not (member v (constraintlist-vars new-x))))
     :hints(("Goal" :in-theory (enable constraintlist-vars)))))
+
+
+(defprojection 4veclist-quote ((x 4veclist-p))
+  :returns (svexes svexlist-p)
+  (svex-quote x)
+  ///
+  (defret vars-of-4veclist-quote
+    (equal (svexlist-vars svexes) nil)
+    :hints(("Goal" :in-theory (enable svexlist-vars)))))
+
