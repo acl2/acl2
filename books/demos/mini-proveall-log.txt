@@ -1,0 +1,2674 @@
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(ASSIGN SCRIPT-MODE T)
+ T
+ACL2 !>>(MINI-PROVEALL)
+ACL2 !>>>:LOGIC
+
+The event ( TABLE ACL2-DEFAULTS-TABLE ...) is redundant.  See :DOC
+redundant-events.
+ACL2 !>>>(THM (IMPLIES (AND (TRUE-LISTP X) (TRUE-LISTP Y))
+                       (EQUAL (REVAPPEND (APPEND X Y) Z)
+                              (REVAPPEND Y (REVAPPEND X Z)))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Five induction schemes are suggested
+by this conjecture.  These merge into two derived induction schemes.
+However, one of these is flawed and so we are left with one viable
+candidate.  
+
+We will induct according to a scheme suggested by (REVAPPEND X Z),
+but modified to accommodate (APPEND X Y).  These suggestions were produced
+using the :induction rules BINARY-APPEND, REVAPPEND and TRUE-LISTP.
+If we let (:P X Y Z) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (NOT (ENDP X))
+                   (:P (CDR X) Y (CONS (CAR X) Z)))
+              (:P X Y Z))
+     (IMPLIES (ENDP X) (:P X Y Z))).
+This induction is justified by the same argument used to admit REVAPPEND.
+Note, however, that the unmeasured variable Z is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:DEFINITION REVAPPEND)
+        (:DEFINITION TRUE-LISTP)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:INDUCTION REVAPPEND)
+        (:INDUCTION TRUE-LISTP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+
+Proof succeeded.
+ACL2 !>>>(DEFUN APP (X Y)
+                (IF (CONSP X)
+                    (CONS (CAR X) (APP (CDR X) Y))
+                    Y))
+
+The admission of APP is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of APP is described by the
+theorem (OR (CONSP (APP X Y)) (EQUAL (APP X Y) Y)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN APP ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ APP
+ACL2 !>>>(DEFTHM ASSOC-OF-APP
+                 (EQUAL (APP (APP A B) C)
+                        (APP A (APP B C))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to two.
+However, one of these is flawed and so we are left with one viable
+candidate.  
+
+We will induct according to a scheme suggested by (APP A B).  This
+suggestion was produced using the :induction rule APP.  If we let (:P A B C)
+denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP A)) (:P A B C))
+     (IMPLIES (AND (CONSP A) (:P (CDR A) B C))
+              (:P A B C))).
+This induction is justified by the same argument used to admit APP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ASSOC-OF-APP ...)
+Rules: ((:DEFINITION APP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION APP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+ ASSOC-OF-APP
+ACL2 !>>>(DEFUN REV (X)
+                (IF (CONSP X)
+                    (APP (REV (CDR X)) (CONS (CAR X) NIL))
+                    NIL))
+
+The admission of REV is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of REV is described by the
+theorem (OR (CONSP (REV X)) (EQUAL (REV X) NIL)).  We used primitive
+type reasoning and the :type-prescription rule APP.
+
+Summary
+Form:  ( DEFUN REV ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION APP))
+ REV
+ACL2 !>>>(DEFTHM TRUE-LISTP-REV (TRUE-LISTP (REV X))
+                 :RULE-CLASSES (:REWRITE :GENERALIZE))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (REV X).  This suggestion
+was produced using the :induction rule REV.  If we let (:P X) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X)) (:P X))
+     (IMPLIES (AND (CONSP X) (:P (CDR X)))
+              (:P X))).
+This induction is justified by the same argument used to admit REV.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+Subgoal *1/1'''
+Subgoal *1/1'4'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/1'
+(IMPLIES (AND (CONSP X)
+              (TRUE-LISTP (REV (CDR X))))
+         (TRUE-LISTP (APP (REV (CDR X)) (LIST (CAR X)))))
+
+*1.1 (Subgoal *1/1'4') is pushed for proof by induction.
+
+])
+
+So we now return to *1.1, which is
+
+(IMPLIES (TRUE-LISTP RV)
+         (TRUE-LISTP (APP RV (LIST X1)))).
+Subgoal *1.1/3
+Subgoal *1.1/2
+Subgoal *1.1/1
+
+*1.1 and *1 are COMPLETED!
+Thus key checkpoints Subgoal *1/1' and Goal are COMPLETED!
+
+Q.E.D.
+
+The storage of TRUE-LISTP-REV depends upon the :type-prescription rule
+TRUE-LISTP.
+
+Summary
+Form:  ( DEFTHM TRUE-LISTP-REV ...)
+Rules: ((:DEFINITION APP)
+        (:DEFINITION REV)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION APP)
+        (:INDUCTION REV)
+        (:INDUCTION TRUE-LISTP)
+        (:TYPE-PRESCRIPTION APP)
+        (:TYPE-PRESCRIPTION TRUE-LISTP))
+ TRUE-LISTP-REV
+ACL2 !>>>(DEFTHM REV-APP-PROOF-BUILDER
+                 (EQUAL (REV (APP A B))
+                        (APP (REV B) (REV A)))
+                 :RULE-CLASSES NIL
+                 :INSTRUCTIONS (:INDUCT :BASH :INDUCT :BASH :SPLIT (:DV 1)
+                                        :X :NX (:DV 1)
+                                        :X
+                                        :TOP :S
+                                        :BASH (:DIVE 1 1)
+                                        := (:DROP 2)
+                                        :TOP :BASH))
+
+Entering the proof-builder....
+
+->: :INDUCT
+***** Now entering the theorem prover *****
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+We have been told to use induction.  Three induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to two.  However,
+one of these is flawed and so we are left with one viable candidate.
+
+We will induct according to a scheme suggested by (APP A B).  This
+suggestion was produced using the :induction rules APP and REV.  If
+we let (:P A B) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (NOT (CONSP A)) (:P A B))
+     (IMPLIES (AND (CONSP A) (:P (CDR A) B))
+              (:P A B))).
+This induction is justified by the same argument used to admit APP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2
+(IMPLIES (NOT (CONSP A))
+         (EQUAL (REV (APP A B))
+                (APP (REV B) (REV A))))
+
+Subgoal *1/2 is subsumed by a goal yet to be proved.
+
+])
+Subgoal *1/1
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/1
+(IMPLIES (AND (CONSP A)
+              (EQUAL (REV (APP (CDR A) B))
+                     (APP (REV B) (REV (CDR A)))))
+         (EQUAL (REV (APP A B))
+                (APP (REV B) (REV A))))
+
+Subgoal *1/1 is subsumed by a goal yet to be proved.
+
+])
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+
+Creating two new goals:  (MAIN . 1) and (MAIN . 2).
+
+The proof of the current goal, MAIN, has been completed.  However,
+the following subgoals remain to be proved:
+  (MAIN . 1) and (MAIN . 2).
+Now proving (MAIN . 1).
+->: :BASH
+***** Now entering the theorem prover *****
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (NOT (CONSP A))
+         (EQUAL (REV B) (APP (REV B) NIL)))
+
+Goal' is subsumed by a goal yet to be proved.
+
+])
+
+Q.E.D.
+
+
+Creating one new goal:  ((MAIN . 1) . 1).
+
+The proof of the current goal, (MAIN . 1), has been completed.  However,
+the following subgoals remain to be proved:
+  ((MAIN . 1) . 1).
+Now proving ((MAIN . 1) . 1).
+->: :INDUCT
+***** Now entering the theorem prover *****
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+We have been told to use induction.  Two induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to one.  
+
+We will induct according to a scheme suggested by (REV B).  This suggestion
+was produced using the :induction rule REV.  If we let (:P A B) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP B)) (:P A B))
+     (IMPLIES (AND (CONSP B) (:P A (CDR B)))
+              (:P A B))).
+This induction is justified by the same argument used to admit REV.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2
+(IMPLIES (NOT (CONSP B))
+         (IMPLIES (NOT (CONSP A))
+                  (EQUAL (REV B) (APP (REV B) NIL))))
+
+Subgoal *1/2 is subsumed by a goal yet to be proved.
+
+])
+Subgoal *1/1
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/1
+(IMPLIES (AND (CONSP B)
+              (IMPLIES (NOT (CONSP A))
+                       (EQUAL (REV (CDR B))
+                              (APP (REV (CDR B)) NIL))))
+         (IMPLIES (NOT (CONSP A))
+                  (EQUAL (REV B) (APP (REV B) NIL))))
+
+Subgoal *1/1 is subsumed by a goal yet to be proved.
+
+])
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+
+Creating two new goals:  (((MAIN . 1) . 1) . 1) and (((MAIN . 1) . 1) . 2).
+
+The proof of the current goal, ((MAIN . 1) . 1), has been completed.
+However, the following subgoals remain to be proved:
+  (((MAIN . 1) . 1) . 1) and (((MAIN . 1) . 1) . 2).
+Now proving (((MAIN . 1) . 1) . 1).
+->: :BASH
+***** Now entering the theorem prover *****
+Goal'
+
+Q.E.D.
+
+
+The proof of the current goal, (((MAIN . 1) . 1) . 1), has been completed,
+as have all of its subgoals.
+Now proving (((MAIN . 1) . 1) . 2).
+->: :SPLIT
+***** Now entering the theorem prover *****
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES (AND (CONSP B)
+              (EQUAL (REV (CDR B))
+                     (APP (REV (CDR B)) NIL))
+              (NOT (CONSP A)))
+         (EQUAL (REV B) (APP (REV B) NIL)))
+
+Goal'' is subsumed by a goal yet to be proved.
+
+])
+
+Q.E.D.
+
+
+Creating one new goal:  ((((MAIN . 1) . 1) . 2) . 1).
+
+The proof of the current goal, (((MAIN . 1) . 1) . 2), has been completed.
+However, the following subgoals remain to be proved:
+  ((((MAIN . 1) . 1) . 2) . 1).
+Now proving ((((MAIN . 1) . 1) . 2) . 1).
+->: (:DV 1)
+->: :X
+#->: (EXPAND T)
+#->: (SUCCEED (S))
+##->: (S)
+->: :NX
+#->: UP
+#->: 2
+->: (:DV 1)
+->: :X
+#->: (EXPAND T)
+#->: (SUCCEED (S))
+##->: (S)
+->: :TOP
+->: :S
+
+The proof of the current goal, ((((MAIN . 1) . 1) . 2) . 1), has been
+completed, as have all of its subgoals.
+Now proving (MAIN . 2).
+->: :BASH
+***** Now entering the theorem prover *****
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (AND (CONSP A)
+              (EQUAL (REV (APP (CDR A) B))
+                     (APP (REV B) (REV (CDR A)))))
+         (EQUAL (APP (REV (APP (CDR A) B))
+                     (LIST (CAR A)))
+                (APP (REV B)
+                     (APP (REV (CDR A)) (LIST (CAR A))))))
+
+Goal' is subsumed by a goal yet to be proved.
+
+])
+
+Q.E.D.
+
+
+Creating one new goal:  ((MAIN . 2) . 1).
+
+The proof of the current goal, (MAIN . 2), has been completed.  However,
+the following subgoals remain to be proved:
+  ((MAIN . 2) . 1).
+Now proving ((MAIN . 2) . 1).
+->: (:DIVE 1 1)
+->: :=
+Using hypothesis #2.
+->: (:DROP 2)
+->: :TOP
+->: :BASH
+***** Now entering the theorem prover *****
+
+Q.E.D.
+
+*!*!*!*!*!*!* All goals have been proved! *!*!*!*!*!*!*
+
+Summary
+Form:  ( DEFTHM REV-APP-PROOF-BUILDER ...)
+Rules: ((:DEFINITION APP)
+        (:DEFINITION NOT)
+        (:DEFINITION REV)
+        (:EXECUTABLE-COUNTERPART APP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION APP)
+        (:INDUCTION REV)
+        (:REWRITE ASSOC-OF-APP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+ REV-APP-PROOF-BUILDER
+ACL2 !>>>(DEFTHM REV-APP
+                 (EQUAL (REV (APP A B))
+                        (APP (REV B) (REV A))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to two.
+However, one of these is flawed and so we are left with one viable
+candidate.  
+
+We will induct according to a scheme suggested by (APP A B).  This
+suggestion was produced using the :induction rules APP and REV.  If
+we let (:P A B) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (NOT (CONSP A)) (:P A B))
+     (IMPLIES (AND (CONSP A) (:P (CDR A) B))
+              (:P A B))).
+This induction is justified by the same argument used to admit APP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/2'''
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2'
+(IMPLIES (NOT (CONSP A))
+         (EQUAL (REV B) (APP (REV B) NIL)))
+
+*1.1 (Subgoal *1/2''') is pushed for proof by induction.
+
+])
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+Subgoal *1/1'''
+Subgoal *1/1'4'
+
+So we now return to *1.1, which is
+
+(IMPLIES (TRUE-LISTP RV)
+         (EQUAL RV (APP RV NIL))).
+Subgoal *1.1/3
+Subgoal *1.1/2
+Subgoal *1.1/1
+
+*1.1 and *1 are COMPLETED!
+Thus key checkpoints Subgoal *1/2' and Goal are COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM REV-APP ...)
+Rules: ((:DEFINITION APP)
+        (:DEFINITION REV)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART APP)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:GENERALIZE TRUE-LISTP-REV)
+        (:INDUCTION APP)
+        (:INDUCTION REV)
+        (:INDUCTION TRUE-LISTP)
+        (:REWRITE ASSOC-OF-APP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE CONS-CAR-CDR))
+ REV-APP
+ACL2 !>>>(DEFTHM REV-REV
+                 (IMPLIES (TRUE-LISTP X)
+                          (EQUAL (REV (REV X)) X)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to one.  
+
+We will induct according to a scheme suggested by (REV X).  This suggestion
+was produced using the :induction rules REV and TRUE-LISTP.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X)) (:P X))
+     (IMPLIES (AND (CONSP X) (:P (CDR X)))
+              (:P X))).
+This induction is justified by the same argument used to admit REV.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM REV-REV ...)
+Rules: ((:DEFINITION APP)
+        (:DEFINITION REV)
+        (:DEFINITION TRUE-LISTP)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART REV)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION REV)
+        (:INDUCTION TRUE-LISTP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE CONS-CAR-CDR)
+        (:REWRITE REV-APP))
+ REV-REV
+ACL2 !>>>(ENCAPSULATE (((LT * *) => *))
+                      (LOCAL (DEFUN LT (X Y)
+                                    (DECLARE (IGNORE X Y))
+                                    NIL))
+                      (DEFTHM LT-NON-SYMMETRIC
+                              (IMPLIES (LT X Y) (NOT (LT Y X)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>>(LOCAL (DEFUN LT (X Y)
+                        (DECLARE (IGNORE X Y))
+                        NIL))
+
+Since LT is non-recursive, its admission is trivial.  We observe that
+the type of LT is described by the theorem (EQUAL (LT X Y) NIL).  
+
+Summary
+Form:  ( DEFUN LT ...)
+Rules: NIL
+LT
+
+
+ACL2 !>>>>(DEFTHM LT-NON-SYMMETRIC
+                  (IMPLIES (LT X Y) (NOT (LT Y X))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM LT-NON-SYMMETRIC ...):  A :REWRITE
+rule generated from LT-NON-SYMMETRIC will be triggered only by terms
+containing the non-recursive function symbol LT.  Unless this function
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM LT-NON-SYMMETRIC ...):  The previously
+added rule LT subsumes a newly proposed :REWRITE rule generated from
+LT-NON-SYMMETRIC, in the sense that the old rule rewrites a more general
+target.  Because the new rule will be tried first, it may nonetheless
+find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM LT-NON-SYMMETRIC ...)
+Rules: ((:TYPE-PRESCRIPTION LT))
+Warnings:  Subsume and Non-rec
+LT-NON-SYMMETRIC
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function LT:
+
+(IMPLIES (LT X Y) (NOT (LT Y X)))
+
+Summary
+Form:  ( ENCAPSULATE (((LT * ...) ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+ T
+ACL2 !>>>(DEFUN INSERT (X LST)
+                (COND ((ATOM LST) (LIST X))
+                      ((LT X (CAR LST)) (CONS X LST))
+                      (T (CONS (CAR LST) (INSERT X (CDR LST))))))
+
+The admission of INSERT is trivial, using the relation O< (which is
+known to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT LST).  We observe that the type of INSERT is described
+by the theorem (CONSP (INSERT X LST)).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN INSERT ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ INSERT
+ACL2 !>>>(DEFUN INSERT-SORT (LST)
+                (COND ((ATOM LST) NIL)
+                      (T (INSERT (CAR LST)
+                                 (INSERT-SORT (CDR LST))))))
+
+The admission of INSERT-SORT is trivial, using the relation O< (which
+is known to be well-founded on the domain recognized by O-P) and the
+measure (ACL2-COUNT LST).  We observe that the type of INSERT-SORT
+is described by the theorem 
+(OR (CONSP (INSERT-SORT LST)) (EQUAL (INSERT-SORT LST) NIL)).  We used
+the :type-prescription rule INSERT.
+
+Summary
+Form:  ( DEFUN INSERT-SORT ...)
+Rules: ((:TYPE-PRESCRIPTION INSERT))
+ INSERT-SORT
+ACL2 !>>>(DEFUN DEL (X LST)
+                (COND ((ATOM LST) NIL)
+                      ((EQUAL X (CAR LST)) (CDR LST))
+                      (T (CONS (CAR LST) (DEL X (CDR LST))))))
+
+The admission of DEL is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT LST).  We could deduce no constraints on the type of DEL.
+
+Summary
+Form:  ( DEFUN DEL ...)
+Rules: NIL
+ DEL
+ACL2 !>>>(DEFUN MEM (X LST)
+                (COND ((ATOM LST) NIL)
+                      ((EQUAL X (CAR LST)) T)
+                      (T (MEM X (CDR LST)))))
+
+The admission of MEM is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT LST).  We observe that the type of MEM is described by
+the theorem (OR (EQUAL (MEM X LST) T) (EQUAL (MEM X LST) NIL)).  
+
+Summary
+Form:  ( DEFUN MEM ...)
+Rules: NIL
+ MEM
+ACL2 !>>>(DEFUN PERM (LST1 LST2)
+                (COND ((ATOM LST1) (ATOM LST2))
+                      ((MEM (CAR LST1) LST2)
+                       (PERM (CDR LST1) (DEL (CAR LST1) LST2)))
+                      (T NIL)))
+
+The admission of PERM is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT LST1).  We observe that the type of PERM is described by
+the theorem (OR (EQUAL (PERM LST1 LST2) T) (EQUAL (PERM LST1 LST2) NIL)).
+
+Summary
+Form:  ( DEFUN PERM ...)
+Rules: NIL
+ PERM
+ACL2 !>>>(DEFTHM PERM-REFLEXIVE (PERM X X))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (PERM X X).  This
+suggestion was produced using the :induction rule PERM.  If we let
+(:P X) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (MEM (CAR X) X)))
+              (:P X))
+     (IMPLIES (AND (NOT (ATOM X))
+                   (MEM (CAR X) X)
+                   (:P (CDR X)))
+              (:P X))
+     (IMPLIES (ATOM X) (:P X))).
+This induction is justified by the same argument used to admit PERM.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+The storage of PERM-REFLEXIVE depends upon the :type-prescription rule
+PERM.
+
+Summary
+Form:  ( DEFTHM PERM-REFLEXIVE ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION DEL)
+        (:DEFINITION MEM)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION PERM)
+        (:TYPE-PRESCRIPTION PERM))
+ PERM-REFLEXIVE
+ACL2 !>>>(DEFTHM PERM-CONS
+                 (IMPLIES (MEM A X)
+                          (EQUAL (PERM X (CONS A Y))
+                                 (PERM (DEL A X) Y)))
+                 :HINTS (("Goal" :INDUCT (PERM X Y))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+We have been told to use induction.  One induction scheme is suggested
+by the induction hint.  
+
+We will induct according to a scheme suggested by (PERM X Y).  This
+suggestion was produced using the :induction rule PERM.  If we let
+(:P A X Y) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (MEM (CAR X) Y)))
+              (:P A X Y))
+     (IMPLIES (AND (NOT (ATOM X))
+                   (MEM (CAR X) Y)
+                   (:P A (CDR X) (DEL (CAR X) Y)))
+              (:P A X Y))
+     (IMPLIES (ATOM X) (:P A X Y))).
+This induction is justified by the same argument used to admit PERM.
+Note, however, that the unmeasured variable Y is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/3'''
+Subgoal *1/2
+Subgoal *1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1/2' (2 subgoals).
+  if-intro: ((:DEFINITION DEL) (:DEFINITION MEM))
+
+Subgoal *1/2.2
+Subgoal *1/2.1
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PERM-CONS ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION DEL)
+        (:DEFINITION MEM)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION PERM)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION MEM))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DEL) (:DEFINITION MEM))
+ PERM-CONS
+ACL2 !>>>(DEFTHM PERM-SYMMETRIC
+                 (IMPLIES (PERM X Y) (PERM Y X)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  We will choose arbitrarily among these.  
+
+We will induct according to a scheme suggested by (PERM X Y).  This
+suggestion was produced using the :induction rule PERM.  If we let
+(:P X Y) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (MEM (CAR X) Y)))
+              (:P X Y))
+     (IMPLIES (AND (NOT (ATOM X))
+                   (MEM (CAR X) Y)
+                   (:P (CDR X) (DEL (CAR X) Y)))
+              (:P X Y))
+     (IMPLIES (ATOM X) (:P X Y))).
+This induction is justified by the same argument used to admit PERM.
+Note, however, that the unmeasured variable Y is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/3'''
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+The storage of PERM-SYMMETRIC depends upon the :type-prescription rule
+PERM.
+
+Summary
+Form:  ( DEFTHM PERM-SYMMETRIC ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION PERM)
+        (:REWRITE PERM-CONS)
+        (:TYPE-PRESCRIPTION MEM)
+        (:TYPE-PRESCRIPTION PERM))
+ PERM-SYMMETRIC
+ACL2 !>>>(DEFTHM MEM-DEL
+                 (IMPLIES (MEM A (DEL B X)) (MEM A X))
+                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (MEM A X), but modified
+to accommodate (DEL B X).  These suggestions were produced using the
+:induction rules DEL and MEM.  If we let (:P A B X) denote *1 above
+then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (EQUAL A (CAR X)))
+                   (:P A B (CDR X)))
+              (:P A B X))
+     (IMPLIES (AND (NOT (ATOM X)) (EQUAL A (CAR X)))
+              (:P A B X))
+     (IMPLIES (ATOM X) (:P A B X))).
+This induction is justified by the same argument used to admit MEM.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+The storage of MEM-DEL depends upon the :type-prescription rule MEM.
+
+Summary
+Form:  ( DEFTHM MEM-DEL ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION DEL)
+        (:DEFINITION MEM)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DEL)
+        (:INDUCTION MEM)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION MEM))
+ MEM-DEL
+ACL2 !>>>(DEFTHM PERM-MEM
+                 (IMPLIES (AND (PERM X Y) (MEM A X))
+                          (MEM A Y))
+                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  However, one of these is flawed and so we are left with one
+viable candidate.  
+
+We will induct according to a scheme suggested by (MEM A X), but modified
+to accommodate (PERM X Y).  These suggestions were produced using the
+:induction rules MEM and PERM.  If we let (:P A X Y) denote *1 above
+then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (EQUAL A (CAR X)))
+                   (:P A (CDR X) (DEL (CAR X) Y)))
+              (:P A X Y))
+     (IMPLIES (AND (NOT (ATOM X)) (EQUAL A (CAR X)))
+              (:P A X Y))
+     (IMPLIES (ATOM X) (:P A X Y))).
+This induction is justified by the same argument used to admit MEM.
+Note, however, that the unmeasured variable Y is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/5'
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+The storage of PERM-MEM depends upon the :type-prescription rule MEM.
+
+Summary
+Form:  ( DEFTHM PERM-MEM ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION MEM)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION MEM)
+        (:INDUCTION PERM)
+        (:REWRITE MEM-DEL)
+        (:TYPE-PRESCRIPTION MEM))
+ PERM-MEM
+ACL2 !>>>(DEFTHM MEM-DEL2
+                 (IMPLIES (AND (MEM A X) (NOT (EQUAL A B)))
+                          (MEM A (DEL B X))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (DEL B X), but modified
+to accommodate (MEM A X).  These suggestions were produced using the
+:induction rules DEL and MEM.  If we let (:P A B X) denote *1 above
+then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (EQUAL B (CAR X)))
+                   (:P A B (CDR X)))
+              (:P A B X))
+     (IMPLIES (AND (NOT (ATOM X)) (EQUAL B (CAR X)))
+              (:P A B X))
+     (IMPLIES (ATOM X) (:P A B X))).
+This induction is justified by the same argument used to admit DEL.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+The storage of MEM-DEL2 depends upon the :type-prescription rule MEM.
+
+Summary
+Form:  ( DEFTHM MEM-DEL2 ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION DEL)
+        (:DEFINITION MEM)
+        (:DEFINITION NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DEL)
+        (:INDUCTION MEM)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION MEM))
+ MEM-DEL2
+ACL2 !>>>(DEFTHM COMM-DEL
+                 (EQUAL (DEL A (DEL B X))
+                        (DEL B (DEL A X))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (DEL A X), but modified
+to accommodate (DEL B X).  These suggestions were produced using the
+:induction rule DEL.  If we let (:P A B X) denote *1 above then the
+induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (EQUAL A (CAR X)))
+                   (:P A B (CDR X)))
+              (:P A B X))
+     (IMPLIES (AND (NOT (ATOM X)) (EQUAL A (CAR X)))
+              (:P A B X))
+     (IMPLIES (ATOM X) (:P A B X))).
+This induction is justified by the same argument used to admit DEL.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/2
+Subgoal *1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1/2' (2 subgoals).
+  if-intro: ((:DEFINITION DEL))
+
+Subgoal *1/2.2
+Subgoal *1/2.1
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM COMM-DEL ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION DEL)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DEL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DEL))
+ COMM-DEL
+ACL2 !>>>(DEFTHM PERM-DEL
+                 (IMPLIES (PERM X Y)
+                          (PERM (DEL A X) (DEL A Y))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  However, one of these is flawed and so we are left with one
+viable candidate.  
+
+We will induct according to a scheme suggested by (DEL A X), but modified
+to accommodate (PERM X Y).  These suggestions were produced using the
+:induction rules DEL and PERM.  If we let (:P A X Y) denote *1 above
+then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (EQUAL A (CAR X)))
+                   (:P A (CDR X) (DEL (CAR X) Y)))
+              (:P A X Y))
+     (IMPLIES (AND (NOT (ATOM X)) (EQUAL A (CAR X)))
+              (:P A X Y))
+     (IMPLIES (ATOM X) (:P A X Y))).
+This induction is justified by the same argument used to admit DEL.
+Note, however, that the unmeasured variable Y is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+The storage of PERM-DEL depends upon the :type-prescription rule PERM.
+
+Summary
+Form:  ( DEFTHM PERM-DEL ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION DEL)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:EXECUTABLE-COUNTERPART PERM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DEL)
+        (:INDUCTION PERM)
+        (:REWRITE COMM-DEL)
+        (:REWRITE MEM-DEL2)
+        (:REWRITE PERM-CONS)
+        (:REWRITE PERM-SYMMETRIC)
+        (:TYPE-PRESCRIPTION MEM)
+        (:TYPE-PRESCRIPTION PERM))
+ PERM-DEL
+ACL2 !>>>(DEFTHM PERM-TRANSITIVE
+                 (IMPLIES (AND (PERM X Y) (PERM Y Z))
+                          (PERM X Z))
+                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  However, one of these is flawed and so we are left with one
+viable candidate.  
+
+We will induct according to a scheme suggested by (PERM X Z), but modified
+to accommodate (PERM X Y).  These suggestions were produced using the
+:induction rule PERM.  If we let (:P X Y Z) denote *1 above then the
+induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (MEM (CAR X) Z)))
+              (:P X Y Z))
+     (IMPLIES (AND (NOT (ATOM X))
+                   (MEM (CAR X) Z)
+                   (:P (CDR X)
+                       (DEL (CAR X) Y)
+                       (DEL (CAR X) Z)))
+              (:P X Y Z))
+     (IMPLIES (ATOM X) (:P X Y Z))).
+This induction is justified by the same argument used to admit PERM.
+Note, however, that the unmeasured variables Y and Z are being instantiated.
+When applied to the goal at hand the above induction scheme produces
+five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/5'
+Subgoal *1/5''
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+The storage of PERM-TRANSITIVE depends upon the :type-prescription
+rule PERM.
+
+Summary
+Form:  ( DEFTHM PERM-TRANSITIVE ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:INDUCTION PERM)
+        (:REWRITE PERM-DEL)
+        (:REWRITE PERM-MEM)
+        (:REWRITE PERM-SYMMETRIC)
+        (:TYPE-PRESCRIPTION MEM)
+        (:TYPE-PRESCRIPTION PERM))
+ PERM-TRANSITIVE
+ACL2 !>>>(DEFEQUIV PERM)
+
+ACL2 Warning [Equiv] in ( DEFTHM PERM-IS-AN-EQUIVALENCE ...):  Any
+lemma about (PERM X Y), proved before PERM is marked as an equivalence
+relation, is stored so as to rewrite (PERM X Y) to T.  After PERM is
+known to be an equivalence relation, such a rule would rewrite the
+left-hand side to the right-hand side, preserving PERM.  You have previously
+proved one possibly problematic rule about PERM, namely PERM-DEL. 
+After PERM is marked as an equivalence relation you should reconsider
+this problematic rule.  If the rule is merely in support of establishing
+that PERM is an equivalence relation, it may be appropriate to disable
+it permanently hereafter.  If the rule is now intended to rewrite left
+to right, you must prove the lemma again after PERM is known to be
+an equivalence relation.
+
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PERM-IS-AN-EQUIVALENCE ...)
+Rules: ((:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:REWRITE PERM-REFLEXIVE)
+        (:REWRITE PERM-SYMMETRIC)
+        (:REWRITE PERM-TRANSITIVE)
+        (:TYPE-PRESCRIPTION PERM))
+Warnings:  Equiv
+ PERM-IS-AN-EQUIVALENCE
+ACL2 !>>>(IN-THEORY (DISABLE PERM PERM-REFLEXIVE
+                             PERM-SYMMETRIC PERM-TRANSITIVE))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>>(DEFCONG PERM PERM (CONS X Y) 2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PERM-IMPLIES-PERM-CONS-2 ...)
+Rules: ((:DEFINITION DEL)
+        (:DEFINITION MEM)
+        (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE PERM-CONS))
+ PERM-IMPLIES-PERM-CONS-2
+ACL2 !>>>(DEFCONG PERM IFF (MEM X Y) 2)
+
+ACL2 Warning [Equiv] in ( DEFTHM PERM-IMPLIES-IFF-MEM-2 ...):  The
+:CONGRUENCE rule PERM-IMPLIES-IFF-MEM-2 can be strengthened by replacing
+the outer equivalence relation, IFF, by EQUAL.  See :DOC congruence,
+in particular (near the end) the Remark on Replacing IFF by EQUAL.
+
+Goal'
+Goal''
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PERM-IMPLIES-IFF-MEM-2 ...)
+Rules: ((:DEFINITION IFF)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE PERM-MEM)
+        (:TYPE-PRESCRIPTION MEM))
+Warnings:  Equiv
+ PERM-IMPLIES-IFF-MEM-2
+ACL2 !>>>(DEFTHM ATOM-PERM
+                 (IMPLIES (NOT (CONSP X)) (PERM X NIL))
+                 :RULE-CLASSES :FORWARD-CHAINING
+                 :HINTS (("Goal" :IN-THEORY (ENABLE PERM))))
+
+ACL2 Observation in ( DEFTHM ATOM-PERM ...):  The :TRIGGER-TERMS for
+the :FORWARD-CHAINING rule ATOM-PERM will consist of the list containing
+(CONSP X).
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ATOM-PERM ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:EXECUTABLE-COUNTERPART CONSP))
+ ATOM-PERM
+ACL2 !>>>(DEFTHM INSERT-IS-CONS
+                 (PERM (INSERT A X) (CONS A X)))
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM INSERT-IS-CONS ...):  In
+a :REWRITE rule generated from INSERT-IS-CONS, equivalence relation
+PERM is maintained at one problematic occurrence of variable X in the
+right-hand side, but not at any binding occurrence of X.  Consider
+replacing that occurrence of X in the right-hand side with 
+(DOUBLE-REWRITE X).  See :doc double-rewrite for more information on
+this issue.
+
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (INSERT A X).  This
+suggestion was produced using the :induction rule INSERT.  If we let
+(:P A X) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (LT A (CAR X)))
+                   (:P A (CDR X)))
+              (:P A X))
+     (IMPLIES (AND (NOT (ATOM X)) (LT A (CAR X)))
+              (:P A X))
+     (IMPLIES (ATOM X) (:P A X))).
+This induction is justified by the same argument used to admit INSERT.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+
+Splitter note (see :DOC splitter) for Subgoal *1/3' (2 subgoals).
+  if-intro: ((:DEFINITION DEL))
+
+Subgoal *1/3.2
+Subgoal *1/3.1
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM INSERT-IS-CONS ...)
+Rules: ((:CONGRUENCE PERM-IMPLIES-IFF-MEM-2)
+        (:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
+        (:DEFINITION ATOM)
+        (:DEFINITION DEL)
+        (:DEFINITION INSERT)
+        (:DEFINITION MEM)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART PERM)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ATOM-PERM)
+        (:INDUCTION INSERT)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE CONS-CAR-CDR)
+        (:REWRITE PERM-CONS)
+        (:REWRITE PERM-MEM))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DEL))
+Warnings:  Double-rewrite
+ INSERT-IS-CONS
+ACL2 !>>>(DEFTHM INSERT-SORT-IS-ID
+                 (PERM (INSERT-SORT X) X))
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM INSERT-SORT-IS-ID ...): 
+In a :REWRITE rule generated from INSERT-SORT-IS-ID, equivalence relation
+PERM is maintained at one problematic occurrence of variable X in the
+right-hand side, but not at any binding occurrence of X.  Consider
+replacing that occurrence of X in the right-hand side with 
+(DOUBLE-REWRITE X).  See :doc double-rewrite for more information on
+this issue.
+
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (INSERT-SORT X).
+This suggestion was produced using the :induction rule INSERT-SORT.
+If we let (:P X) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (NOT (ATOM X)) (:P (CDR X)))
+              (:P X))
+     (IMPLIES (ATOM X) (:P X))).
+This induction is justified by the same argument used to admit INSERT-SORT.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM INSERT-SORT-IS-ID ...)
+Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
+        (:DEFINITION ATOM)
+        (:DEFINITION INSERT-SORT)
+        (:DEFINITION NOT)
+        (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
+        (:EXECUTABLE-COUNTERPART PERM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ATOM-PERM)
+        (:INDUCTION INSERT-SORT)
+        (:REWRITE CONS-CAR-CDR)
+        (:REWRITE INSERT-IS-CONS))
+Warnings:  Double-rewrite
+ INSERT-SORT-IS-ID
+ACL2 !>>>(DEFCONG PERM PERM (APP X Y) 2)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (APP X Y-EQUIV),
+but modified to accommodate (APP X Y).  These suggestions were produced
+using the :induction rule APP.  If we let (:P X Y Y-EQUIV) denote *1
+above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X))
+              (:P X Y Y-EQUIV))
+     (IMPLIES (AND (CONSP X) (:P (CDR X) Y Y-EQUIV))
+              (:P X Y Y-EQUIV))).
+This induction is justified by the same argument used to admit APP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PERM-IMPLIES-PERM-APP-2 ...)
+Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
+        (:DEFINITION APP)
+        (:DEFINITION DEL)
+        (:DEFINITION MEM)
+        (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION APP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE PERM-CONS))
+ PERM-IMPLIES-PERM-APP-2
+ACL2 !>>>(DEFTHM APP-CONS
+                 (PERM (APP A (CONS B C))
+                       (CONS B (APP A C))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to one.  
+
+We will induct according to a scheme suggested by (APP A C).  This
+suggestion was produced using the :induction rule APP.  If we let (:P A B C)
+denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP A)) (:P A B C))
+     (IMPLIES (AND (CONSP A) (:P (CDR A) B C))
+              (:P A B C))).
+This induction is justified by the same argument used to admit APP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+Subgoal *1/1'''
+Subgoal *1/1'4'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM APP-CONS ...)
+Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
+        (:DEFINITION APP)
+        (:DEFINITION DEL)
+        (:DEFINITION MEM)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION APP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE PERM-CONS))
+ APP-CONS
+ACL2 !>>>(DEFTHM APP-COMMUTES (PERM (APP A B) (APP B A)))
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM APP-COMMUTES ...):  In a
+:REWRITE rule generated from APP-COMMUTES, equivalence relation PERM is
+maintained at one problematic occurrence of variable A in the right-
+hand side, but not at any binding occurrence of A.  Consider replacing
+that occurrence of A in the right-hand side with (DOUBLE-REWRITE A).
+See :doc double-rewrite for more information on this issue.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM APP-COMMUTES ...):  A newly proposed
+:REWRITE rule generated from APP-COMMUTES probably subsumes the previously
+added :REWRITE rule APP-CONS, in the sense that the new rule will now
+probably be applied whenever the old rule would have been.
+
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  We will choose arbitrarily among these.  
+
+We will induct according to a scheme suggested by (APP A B).  This
+suggestion was produced using the :induction rule APP.  If we let (:P A B)
+denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP A)) (:P A B))
+     (IMPLIES (AND (CONSP A) (:P (CDR A) B))
+              (:P A B))).
+This induction is justified by the same argument used to admit APP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2'
+(IMPLIES (NOT (CONSP A))
+         (PERM B (APP B NIL)))
+
+*1.1 (Subgoal *1/2'') is pushed for proof by induction.
+
+])
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+Subgoal *1/1'''
+
+So we now return to *1.1, which is
+
+(PERM B (APP B NIL)).
+Subgoal *1.1/2
+Subgoal *1.1/1
+
+*1.1 and *1 are COMPLETED!
+Thus key checkpoints Subgoal *1/2' and Goal are COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM APP-COMMUTES ...)
+Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-APP-2)
+        (:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
+        (:DEFINITION APP)
+        (:DEFINITION NOT)
+        (:ELIM CAR-CDR-ELIM)
+        (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
+        (:EXECUTABLE-COUNTERPART PERM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ATOM-PERM)
+        (:INDUCTION APP)
+        (:REWRITE APP-CONS)
+        (:REWRITE CONS-CAR-CDR))
+Warnings:  Subsume and Double-rewrite
+ APP-COMMUTES
+ACL2 !>>>(DEFCONG PERM PERM (APP X Y)
+                  1
+                  :HINTS (("Goal" :INDUCT (APP Y X))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+We have been told to use induction.  One induction scheme is suggested
+by the induction hint.  
+
+We will induct according to a scheme suggested by (APP Y X).  This
+suggestion was produced using the :induction rule APP.  If we let 
+(:P X X-EQUIV Y) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (NOT (CONSP Y))
+              (:P X X-EQUIV Y))
+     (IMPLIES (AND (CONSP Y) (:P X X-EQUIV (CDR Y)))
+              (:P X X-EQUIV Y))).
+This induction is justified by the same argument used to admit APP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+Subgoal *1/1'''
+Subgoal *1/1'4'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PERM-IMPLIES-PERM-APP-1 ...)
+Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-APP-2)
+        (:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
+        (:DEFINITION APP)
+        (:DEFINITION DEL)
+        (:DEFINITION MEM)
+        (:DEFINITION NOT)
+        (:ELIM CAR-CDR-ELIM)
+        (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ATOM-PERM)
+        (:INDUCTION APP)
+        (:REWRITE APP-COMMUTES)
+        (:REWRITE APP-CONS)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE PERM-CONS))
+ PERM-IMPLIES-PERM-APP-1
+ACL2 !>>>(DEFTHM REV-IS-ID (PERM (REV X) X))
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM REV-IS-ID ...):  In a :REWRITE
+rule generated from REV-IS-ID, equivalence relation PERM is maintained
+at one problematic occurrence of variable X in the right-hand side,
+but not at any binding occurrence of X.  Consider replacing that occurrence
+of X in the right-hand side with (DOUBLE-REWRITE X).  See :doc double-
+rewrite for more information on this issue.
+
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (REV X).  This suggestion
+was produced using the :induction rule REV.  If we let (:P X) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X)) (:P X))
+     (IMPLIES (AND (CONSP X) (:P (CDR X)))
+              (:P X))).
+This induction is justified by the same argument used to admit REV.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM REV-IS-ID ...)
+Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-APP-1)
+        (:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
+        (:DEFINITION APP)
+        (:DEFINITION REV)
+        (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART PERM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ATOM-PERM)
+        (:INDUCTION REV)
+        (:REWRITE APP-COMMUTES)
+        (:REWRITE APP-CONS)
+        (:REWRITE CONS-CAR-CDR))
+Warnings:  Double-rewrite
+ REV-IS-ID
+ACL2 !>>>(DEFUN == (X Y)
+                (IF (CONSP X)
+                    (IF (CONSP Y)
+                        (AND (EQUAL (CAR X) (CAR Y))
+                             (== (CDR X) (CDR Y)))
+                        NIL)
+                    (NOT (CONSP Y))))
+
+The admission of == is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of == is described by the
+theorem (OR (EQUAL (== X Y) T) (EQUAL (== X Y) NIL)).  
+
+Summary
+Form:  ( DEFUN == ...)
+Rules: NIL
+ ==
+ACL2 !>>>(DEFTHM ==-SYMMETRIC (== X X))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (== X X).  This suggestion
+was produced using the :induction rule ==.  If we let (:P X) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X)) (:P X))
+     (IMPLIES (AND (CONSP X)
+                   (CONSP X)
+                   (NOT (EQUAL (CAR X) (CAR X))))
+              (:P X))
+     (IMPLIES (AND (CONSP X)
+                   (CONSP X)
+                   (EQUAL (CAR X) (CAR X))
+                   (:P (CDR X)))
+              (:P X))).
+This induction is justified by the same argument used to admit ==.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+The storage of ==-SYMMETRIC depends upon the :type-prescription rule
+==.
+
+Summary
+Form:  ( DEFTHM ==-SYMMETRIC ...)
+Rules: ((:DEFINITION ==)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION ==)
+        (:TYPE-PRESCRIPTION ==))
+ ==-SYMMETRIC
+ACL2 !>>>(DEFTHM ==-REFLEXIVE
+                 (IMPLIES (== X Y) (== Y X)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (== Y X).  This suggestion
+was produced using the :induction rule ==.  If we let (:P X Y) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP Y)) (:P X Y))
+     (IMPLIES (AND (CONSP Y) (NOT (CONSP X)))
+              (:P X Y))
+     (IMPLIES (AND (CONSP Y)
+                   (CONSP X)
+                   (NOT (EQUAL (CAR Y) (CAR X))))
+              (:P X Y))
+     (IMPLIES (AND (CONSP Y)
+                   (CONSP X)
+                   (EQUAL (CAR Y) (CAR X))
+                   (:P (CDR X) (CDR Y)))
+              (:P X Y))).
+This induction is justified by the same argument used to admit ==.
+Note, however, that the unmeasured variable X is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+The storage of ==-REFLEXIVE depends upon the :type-prescription rule
+==.
+
+Summary
+Form:  ( DEFTHM ==-REFLEXIVE ...)
+Rules: ((:DEFINITION ==)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION ==)
+        (:TYPE-PRESCRIPTION ==))
+ ==-REFLEXIVE
+ACL2 !>>>(DEFEQUIV ==)
+Subgoal 2
+Subgoal 1
+
+([ A key checkpoint:
+
+Subgoal 1
+(IMPLIES (AND (== X Y) (== Y Z))
+         (== X Z))
+
+*1 (Subgoal 1) is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by (== X Z), but modified
+to accommodate (== Y Z) and (== X Y).  These suggestions were produced
+using the :induction rule ==.  If we let (:P X Y Z) denote *1 above
+then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X)) (:P X Y Z))
+     (IMPLIES (AND (CONSP X) (NOT (CONSP Z)))
+              (:P X Y Z))
+     (IMPLIES (AND (CONSP X)
+                   (CONSP Z)
+                   (NOT (EQUAL (CAR X) (CAR Z))))
+              (:P X Y Z))
+     (IMPLIES (AND (CONSP X)
+                   (CONSP Z)
+                   (EQUAL (CAR X) (CAR Z))
+                   (:P (CDR X) (CDR Y) (CDR Z)))
+              (:P X Y Z))).
+This induction is justified by the same argument used to admit ==.
+Note, however, that the unmeasured variables Y and Z are being instantiated.
+When applied to the goal at hand the above induction scheme produces
+six nontautological subgoals.
+Subgoal *1/6
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Subgoal 1 is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ==-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION ==)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION ==)
+        (:REWRITE ==-REFLEXIVE)
+        (:REWRITE ==-SYMMETRIC)
+        (:TYPE-PRESCRIPTION ==))
+ ==-IS-AN-EQUIVALENCE
+ACL2 !>>>(IN-THEORY (DISABLE ==-SYMMETRIC ==-REFLEXIVE))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>>(DEFCONG == == (CONS X Y) 2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ==-IMPLIES-==-CONS-2 ...)
+Rules: ((:DEFINITION ==)
+        (:EQUIVALENCE ==-IS-AN-EQUIVALENCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+ ==-IMPLIES-==-CONS-2
+ACL2 !>>>(DEFCONG == IFF (CONSP X) 1)
+
+ACL2 Warning [Equiv] in ( DEFTHM ==-IMPLIES-IFF-CONSP-1 ...):  The
+:CONGRUENCE rule ==-IMPLIES-IFF-CONSP-1 can be strengthened by replacing
+the outer equivalence relation, IFF, by EQUAL.  See :DOC congruence,
+in particular (near the end) the Remark on Replacing IFF by EQUAL.
+
+Goal'
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ==-IMPLIES-IFF-CONSP-1 ...)
+Rules: ((:DEFINITION ==) (:DEFINITION IFF))
+Warnings:  Equiv
+ ==-IMPLIES-IFF-CONSP-1
+ACL2 !>>>(DEFCONG == == (APP X Y) 2)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  However, one of these is flawed and so we are left with one
+viable candidate.  
+
+We will induct according to a scheme suggested by (APP X Y-EQUIV),
+but modified to accommodate (APP X Y).  These suggestions were produced
+using the :induction rule APP.  If we let (:P X Y Y-EQUIV) denote *1
+above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X))
+              (:P X Y Y-EQUIV))
+     (IMPLIES (AND (CONSP X) (:P (CDR X) Y Y-EQUIV))
+              (:P X Y Y-EQUIV))).
+This induction is justified by the same argument used to admit APP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ==-IMPLIES-==-APP-2 ...)
+Rules: ((:CONGRUENCE ==-IMPLIES-==-CONS-2)
+        (:DEFINITION ==)
+        (:DEFINITION APP)
+        (:EQUIVALENCE ==-IS-AN-EQUIVALENCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION APP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+ ==-IMPLIES-==-APP-2
+ACL2 !>>>(DEFCONG == == (APP X Y) 1)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by (APP X-EQUIV Y),
+but modified to accommodate (APP X Y) and (== X X-EQUIV).  These suggestions
+were produced using the :induction rules == and APP.  If we let 
+(:P X X-EQUIV Y) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (NOT (CONSP X-EQUIV))
+              (:P X X-EQUIV Y))
+     (IMPLIES (AND (CONSP X-EQUIV)
+                   (:P (CDR X) (CDR X-EQUIV) Y))
+              (:P X X-EQUIV Y))).
+This induction is justified by the same argument used to admit APP.
+Note, however, that the unmeasured variable X is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ==-IMPLIES-==-APP-1 ...)
+Rules: ((:CONGRUENCE ==-IMPLIES-==-CONS-2)
+        (:CONGRUENCE ==-IMPLIES-IFF-CONSP-1)
+        (:DEFINITION ==)
+        (:DEFINITION APP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION ==)
+        (:INDUCTION APP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+ ==-IMPLIES-==-APP-1
+ACL2 !>>>(DEFTHM REV-REV-AGAIN (== (REV (REV X)) X))
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM REV-REV-AGAIN ...):  In a
+:REWRITE rule generated from REV-REV-AGAIN, equivalence relation == is
+maintained at one problematic occurrence of variable X in the right-
+hand side, but not at any binding occurrence of X.  Consider replacing
+that occurrence of X in the right-hand side with (DOUBLE-REWRITE X).
+See :doc double-rewrite for more information on this issue.
+
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (REV X).  This suggestion
+was produced using the :induction rule REV.  If we let (:P X) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X)) (:P X))
+     (IMPLIES (AND (CONSP X) (:P (CDR X)))
+              (:P X))).
+This induction is justified by the same argument used to admit REV.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM REV-REV-AGAIN ...)
+Rules: ((:CONGRUENCE ==-IMPLIES-==-APP-2)
+        (:DEFINITION ==)
+        (:DEFINITION APP)
+        (:DEFINITION REV)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART REV)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION REV)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE CONS-CAR-CDR)
+        (:REWRITE REV-APP))
+Warnings:  Double-rewrite
+ REV-REV-AGAIN
+ACL2 !>>>(DEFUN ENDS-IN-A-0 (X)
+                (DECLARE (XARGS :GUARD T))
+                (IF (CONSP X)
+                    (ENDS-IN-A-0 (CDR X))
+                    (EQUAL X 0)))
+
+The admission of ENDS-IN-A-0 is trivial, using the relation O< (which
+is known to be well-founded on the domain recognized by O-P) and the
+measure (ACL2-COUNT X).  We observe that the type of ENDS-IN-A-0 is
+described by the theorem 
+(OR (EQUAL (ENDS-IN-A-0 X) T) (EQUAL (ENDS-IN-A-0 X) NIL)).  We used
+primitive type reasoning.
+
+Computing the guard conjecture for ENDS-IN-A-0....
+
+The guard conjecture for ENDS-IN-A-0 is trivial to prove.  ENDS-IN-A-0
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN ENDS-IN-A-0 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ ENDS-IN-A-0
+ACL2 !>>>(DEFUN APP0 (X Y)
+                (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
+                (IF (ENDS-IN-A-0 X)
+                    (IF (EQUAL X 0)
+                        Y (CONS (CAR X) (APP0 (CDR X) Y)))
+                    'DEFAULT))
+
+For the admission of APP0 we will use the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  The non-trivial part of the measure conjecture is
+
+Goal
+(IMPLIES (AND (ENDS-IN-A-0 X) (NOT (EQUAL X 0)))
+         (O< (ACL2-COUNT (CDR X))
+             (ACL2-COUNT X))).
+Goal'
+Goal''
+Goal'''
+Goal'4'
+
+Q.E.D.
+
+That completes the proof of the measure theorem for APP0.  Thus, we
+admit this function under the principle of definition.  We observe
+that the type of APP0 is described by the theorem 
+(OR (OR (CONSP (APP0 X Y))
+        (AND (SYMBOLP (APP0 X Y))
+             (NOT (EQUAL (APP0 X Y) T))
+             (NOT (EQUAL (APP0 X Y) NIL))))
+    (EQUAL (APP0 X Y) Y)).
+We used primitive type reasoning.
+
+Computing the guard conjecture for APP0....
+
+The non-trivial part of the guard conjecture for APP0 is
+
+Goal
+(AND (IMPLIES (AND (ENDS-IN-A-0 X) (NOT (EQUAL X 0)))
+              (ENDS-IN-A-0 (CDR X)))
+     (IMPLIES (AND (ENDS-IN-A-0 X)
+                   (NOT (EQUAL X 0))
+                   (NOT (CONSP X)))
+              (EQUAL X NIL))).
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the guard theorem for APP0.  APP0 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN APP0 ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION ENDS-IN-A-0)
+        (:DEFINITION NOT)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O<)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION ACL2-COUNT))
+ APP0
+ACL2 !>>>(DEFUN REV0 (X)
+                (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
+                (IF (ENDS-IN-A-0 X)
+                    (IF (EQUAL X 0)
+                        0
+                        (APP0 (REV0 (CDR X)) (CONS (CAR X) 0)))
+                    'DEFAULT))
+
+For the admission of REV0 we will use the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  The non-trivial part of the measure conjecture is
+
+Goal
+(IMPLIES (AND (ENDS-IN-A-0 X) (NOT (EQUAL X 0)))
+         (O< (ACL2-COUNT (CDR X))
+             (ACL2-COUNT X))).
+Goal'
+Goal''
+Goal'''
+Goal'4'
+
+Q.E.D.
+
+That completes the proof of the measure theorem for REV0.  Thus, we
+admit this function under the principle of definition.  We observe
+that the type of REV0 is described by the theorem 
+(OR (EQUAL (REV0 X) 0)
+    (CONSP (REV0 X))
+    (AND (SYMBOLP (REV0 X))
+         (NOT (EQUAL (REV0 X) T))
+         (NOT (EQUAL (REV0 X) NIL)))).
+We used primitive type reasoning and the :type-prescription rule APP0.
+
+Computing the guard conjecture for REV0....
+
+The non-trivial part of the guard conjecture for REV0 is
+
+Goal
+(AND (IMPLIES (AND (ENDS-IN-A-0 X) (NOT (EQUAL X 0)))
+              (ENDS-IN-A-0 (CDR X)))
+     (IMPLIES (AND (ENDS-IN-A-0 X) (NOT (EQUAL X 0)))
+              (ENDS-IN-A-0 (REV0 (CDR X))))
+     (IMPLIES (AND (ENDS-IN-A-0 X)
+                   (NOT (EQUAL X 0))
+                   (NOT (CONSP X)))
+              (EQUAL X NIL))).
+Subgoal 3
+Subgoal 2
+Subgoal 2'
+Subgoal 2''
+Subgoal 2'''
+
+([ A key checkpoint:
+
+Subgoal 2'
+(IMPLIES (AND (CONSP X) (ENDS-IN-A-0 (CDR X)))
+         (ENDS-IN-A-0 (REV0 (CDR X))))
+
+*1 (Subgoal 2''') is pushed for proof by induction:
+(IMPLIES (ENDS-IN-A-0 X2)
+         (ENDS-IN-A-0 (REV0 X2))).
+
+])
+Subgoal 1
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (REV0 X2).  This
+suggestion was produced using the :induction rules ENDS-IN-A-0 and
+REV0.  If we let (:P X2) denote *1 above then the induction scheme
+we'll use is
+(AND (IMPLIES (NOT (ENDS-IN-A-0 X2)) (:P X2))
+     (IMPLIES (AND (ENDS-IN-A-0 X2)
+                   (NOT (EQUAL X2 0))
+                   (:P (CDR X2)))
+              (:P X2))
+     (IMPLIES (AND (ENDS-IN-A-0 X2) (EQUAL X2 0))
+              (:P X2))).
+This induction is justified by the same argument used to admit REV0.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/3'''
+Subgoal *1/3'4'
+Subgoal *1/3'5'
+
+([ A key checkpoint while proving *1 (descended from Subgoal 2'):
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP X2)
+              (ENDS-IN-A-0 (CDR X2))
+              (ENDS-IN-A-0 (REV0 (CDR X2))))
+         (ENDS-IN-A-0 (APP0 (REV0 (CDR X2))
+                            (CONS (CAR X2) 0))))
+
+*1.1 (Subgoal *1/3'5') is pushed for proof by induction.
+
+])
+Subgoal *1/2
+Subgoal *1/1
+
+So we now return to *1.1, which is
+
+(IMPLIES (ENDS-IN-A-0 R0)
+         (ENDS-IN-A-0 (APP0 R0 (CONS X3 0)))).
+Subgoal *1.1/3
+Subgoal *1.1/2
+Subgoal *1.1/1
+
+*1.1 and *1 are COMPLETED!
+Thus key checkpoints Subgoal *1/3' and Subgoal 2' are COMPLETED!
+
+Q.E.D.
+
+That completes the proof of the guard theorem for REV0.  REV0 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN REV0 ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION APP0)
+        (:DEFINITION ENDS-IN-A-0)
+        (:DEFINITION NOT)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O<)
+        (:DEFINITION REV0)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART ENDS-IN-A-0)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART REV0)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION APP0)
+        (:INDUCTION ENDS-IN-A-0)
+        (:INDUCTION REV0)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION ACL2-COUNT)
+        (:TYPE-PRESCRIPTION APP0)
+        (:TYPE-PRESCRIPTION ENDS-IN-A-0))
+ REV0
+ACL2 !>>>(DEFTHM APP0-RIGHT-ID
+                 (IMPLIES (FORCE (ENDS-IN-A-0 X))
+                          (EQUAL (APP0 X 0) X)))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (ENDS-IN-A-0 X)
+         (EQUAL (APP0 X 0) X))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (APP0 X 0).  This
+suggestion was produced using the :induction rules APP0 and ENDS-IN-A-0.
+If we let (:P X) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (NOT (ENDS-IN-A-0 X)) (:P X))
+     (IMPLIES (AND (ENDS-IN-A-0 X)
+                   (NOT (EQUAL X 0))
+                   (:P (CDR X)))
+              (:P X))
+     (IMPLIES (AND (ENDS-IN-A-0 X) (EQUAL X 0))
+              (:P X))).
+This induction is justified by the same argument used to admit APP0.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM APP0-RIGHT-ID ...)
+Rules: ((:DEFINITION APP0)
+        (:DEFINITION ENDS-IN-A-0)
+        (:DEFINITION FORCE)
+        (:EXECUTABLE-COUNTERPART APP0)
+        (:EXECUTABLE-COUNTERPART ENDS-IN-A-0)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION APP0)
+        (:INDUCTION ENDS-IN-A-0)
+        (:REWRITE CONS-CAR-CDR)
+        (:TYPE-PRESCRIPTION ENDS-IN-A-0))
+ APP0-RIGHT-ID
+ACL2 !>>>(DEFUN ENDS-IN-A-ZERO (X)
+                (ENDS-IN-A-0 X))
+
+Since ENDS-IN-A-ZERO is non-recursive, its admission is trivial.  We
+observe that the type of ENDS-IN-A-ZERO is described by the theorem
+(OR (EQUAL (ENDS-IN-A-ZERO X) T) (EQUAL (ENDS-IN-A-ZERO X) NIL)). 
+We used the :type-prescription rule ENDS-IN-A-0.
+
+Summary
+Form:  ( DEFUN ENDS-IN-A-ZERO ...)
+Rules: ((:TYPE-PRESCRIPTION ENDS-IN-A-0))
+ ENDS-IN-A-ZERO
+ACL2 !>>>(DEFTHM ENDS-IN-A-ZERO-APP0
+                 (IMPLIES (FORCE (ENDS-IN-A-ZERO X))
+                          (ENDS-IN-A-0 (APP0 X (CONS Y 0)))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (ENDS-IN-A-0 X)
+         (ENDS-IN-A-0 (APP0 X (CONS Y 0))))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (APP0 X (CONS Y 0)).
+This suggestion was produced using the :induction rules APP0 and ENDS-IN-A-0.
+If we let (:P X Y) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (NOT (ENDS-IN-A-0 X)) (:P X Y))
+     (IMPLIES (AND (ENDS-IN-A-0 X)
+                   (NOT (EQUAL X 0))
+                   (:P (CDR X) Y))
+              (:P X Y))
+     (IMPLIES (AND (ENDS-IN-A-0 X) (EQUAL X 0))
+              (:P X Y))).
+This induction is justified by the same argument used to admit APP0.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal' is COMPLETED!
+
+Q.E.D.
+
+The storage of ENDS-IN-A-ZERO-APP0 depends upon the :type-prescription
+rule ENDS-IN-A-0.
+
+Summary
+Form:  ( DEFTHM ENDS-IN-A-ZERO-APP0 ...)
+Rules: ((:DEFINITION APP0)
+        (:DEFINITION ENDS-IN-A-0)
+        (:DEFINITION ENDS-IN-A-ZERO)
+        (:DEFINITION FORCE)
+        (:EXECUTABLE-COUNTERPART ENDS-IN-A-0)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION APP0)
+        (:INDUCTION ENDS-IN-A-0)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION ENDS-IN-A-0))
+ ENDS-IN-A-ZERO-APP0
+ACL2 !>>>(IN-THEORY (DISABLE ENDS-IN-A-ZERO))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>>(DEFTHM FORCE-TEST
+                 (AND (IMPLIES (ENDS-IN-A-0 X)
+                               (EQUAL (APP0 (REV0 X) 0) (REV0 X)))
+                      (IMPLIES (ENDS-IN-A-0 Y)
+                               (EQUAL (APP0 (REV0 Y) 0) (REV0 Y)))
+                      (IMPLIES (ENDS-IN-A-0 Z)
+                               (EQUAL (APP0 (REV0 Z) 0) (REV0 Z))))
+                 :HINTS (("[2]Goal" :IN-THEORY (ENABLE ENDS-IN-A-ZERO))))
+Subgoal 3
+
+Forcing Round 1 is pending (caused first by Subgoal 3).
+Subgoal 2
+Subgoal 1
+
+q.e.d. (given three forced hypotheses)
+
+Modulo three forced goals, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Subgoal 3 was forced in Subgoal 1 by applying (:REWRITE APP0-RIGHT-ID).
+
+[1]Subgoal 2 was forced in Subgoal 2 by applying (:REWRITE APP0-RIGHT-ID).
+
+[1]Subgoal 1 was forced in Subgoal 3 by applying (:REWRITE APP0-RIGHT-ID).
+
+We now undertake Forcing Round 1.
+[1]Subgoal 3
+
+([ A key checkpoint:
+
+[1]Subgoal 3
+(IMPLIES (ENDS-IN-A-0 Z)
+         (ENDS-IN-A-0 (REV0 Z)))
+
+[1]*1 ([1]Subgoal 3) is pushed for proof by induction.
+
+])
+[1]Subgoal 2
+
+([ A key checkpoint:
+
+[1]Subgoal 2
+(IMPLIES (ENDS-IN-A-0 Y)
+         (ENDS-IN-A-0 (REV0 Y)))
+
+[1]*2 ([1]Subgoal 2) is pushed for proof by induction.
+
+])
+[1]Subgoal 1
+
+([ A key checkpoint:
+
+[1]Subgoal 1
+(IMPLIES (ENDS-IN-A-0 X)
+         (ENDS-IN-A-0 (REV0 X)))
+
+[1]*3 ([1]Subgoal 1) is pushed for proof by induction.
+
+])
+
+But the formula above is subsumed by [1]*2, which we'll try to prove
+later.  We therefore regard [1]*3 as proved (pending the proof of the
+more general [1]*2).
+
+[1]Subgoal 1 COMPLETED!
+
+But the formula above is subsumed by [1]*1, which we'll try to prove
+later.  We therefore regard [1]*2 as proved (pending the proof of the
+more general [1]*1).
+
+[1]Subgoal 2 COMPLETED!
+
+Perhaps we can prove [1]*1 by induction.  Two induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by (REV0 Z).  This suggestion
+was produced using the :induction rules ENDS-IN-A-0 and REV0.  If we
+let (:P Z) denote [1]*1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (ENDS-IN-A-0 Z)) (:P Z))
+     (IMPLIES (AND (ENDS-IN-A-0 Z)
+                   (NOT (EQUAL Z 0))
+                   (:P (CDR Z)))
+              (:P Z))
+     (IMPLIES (AND (ENDS-IN-A-0 Z) (EQUAL Z 0))
+              (:P Z))).
+This induction is justified by the same argument used to admit REV0.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+[1]Subgoal *1/3
+
+Forcing Round 2 is pending (caused first by [1]Subgoal *1/3).
+[1]Subgoal *1/2
+[1]Subgoal *1/1
+
+[1]*1 is COMPLETED!
+Thus key checkpoint [1]Subgoal 3 is COMPLETED!
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one newly forced goal, that completes Forcing Round 1.  See
+:DOC forcing-round.
+
+[2]Goal was forced in [1]Subgoal *1/3 by applying 
+(:REWRITE ENDS-IN-A-ZERO-APP0).
+
+We now undertake Forcing Round 2.
+[2]Goal
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FORCE-TEST ...)
+Rules: ((:DEFINITION ENDS-IN-A-0)
+        (:DEFINITION ENDS-IN-A-ZERO)
+        (:DEFINITION NOT)
+        (:DEFINITION REV0)
+        (:EXECUTABLE-COUNTERPART ENDS-IN-A-0)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART REV0)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION ENDS-IN-A-0)
+        (:INDUCTION REV0)
+        (:REWRITE APP0-RIGHT-ID)
+        (:REWRITE ENDS-IN-A-ZERO-APP0)
+        (:TYPE-PRESCRIPTION ENDS-IN-A-0))
+ FORCE-TEST
+ACL2 !>>>(DEFUN PROPER-CONS-NEST-P (X)
+                (DECLARE (XARGS :GUARD (PSEUDO-TERMP X)))
+                (COND ((SYMBOLP X) NIL)
+                      ((FQUOTEP X) (TRUE-LISTP (CADR X)))
+                      ((EQ (FFN-SYMB X) 'CONS)
+                       (PROPER-CONS-NEST-P (FARGN X 2)))
+                      (T NIL)))
+
+For the admission of PROPER-CONS-NEST-P we will use the relation O<
+(which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT X).  The non-trivial part of the measure
+conjecture is
+
+Goal
+(IMPLIES (AND (NOT (SYMBOLP X))
+              (EQ (CAR X) 'CONS))
+         (O< (ACL2-COUNT (CADDR X))
+             (ACL2-COUNT X))).
+Goal'
+Goal''
+Subgoal 4
+Subgoal 3
+Subgoal 3'
+Subgoal 3''
+Subgoal 2
+Subgoal 2'
+Subgoal 2''
+Subgoal 1
+Subgoal 1'
+Subgoal 1''
+
+Q.E.D.
+
+That completes the proof of the measure theorem for PROPER-CONS-NEST-P.
+Thus, we admit this function under the principle of definition.  We
+observe that the type of PROPER-CONS-NEST-P is described by the theorem
+(OR (EQUAL (PROPER-CONS-NEST-P X) T) (EQUAL (PROPER-CONS-NEST-P X) NIL)).
+
+Computing the guard conjecture for PROPER-CONS-NEST-P....
+
+The non-trivial part of the guard conjecture for PROPER-CONS-NEST-P
+is
+
+Goal
+(AND (IMPLIES (AND (PSEUDO-TERMP X)
+                   (NOT (SYMBOLP X))
+                   (NOT (CONSP X)))
+              (EQUAL X NIL))
+     (IMPLIES (AND (PSEUDO-TERMP X)
+                   (NOT (SYMBOLP X))
+                   (EQ (CAR X) 'CONS))
+              (PSEUDO-TERMP (CADDR X)))
+     (IMPLIES (AND (PSEUDO-TERMP X)
+                   (NOT (SYMBOLP X))
+                   (EQ (CAR X) 'CONS)
+                   (NOT (CONSP (CDDR X))))
+              (EQUAL (CDDR X) NIL))
+     (IMPLIES (AND (PSEUDO-TERMP X)
+                   (NOT (SYMBOLP X))
+                   (EQ (CAR X) 'CONS)
+                   (NOT (CONSP (CDR X))))
+              (EQUAL (CDR X) NIL))
+     (IMPLIES (AND (PSEUDO-TERMP X)
+                   (NOT (SYMBOLP X))
+                   (EQ 'QUOTE (CAR X))
+                   (NOT (CONSP (CDR X))))
+              (EQUAL (CDR X) NIL))).
+Subgoal 5
+Subgoal 4
+Subgoal 4'
+Subgoal 4''
+Subgoal 4.2
+Subgoal 4.2'
+Subgoal 4.1
+Subgoal 4.1'
+Subgoal 3
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the guard theorem for PROPER-CONS-NEST-P.
+PROPER-CONS-NEST-P is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN PROPER-CONS-NEST-P ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION EQ)
+        (:DEFINITION FIX)
+        (:DEFINITION NOT)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O<)
+        (:DEFINITION PSEUDO-TERM-LISTP)
+        (:DEFINITION PSEUDO-TERMP)
+        (:DEFINITION SYNP)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART ACL2-COUNT)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PSEUDO-TERM-LISTP)
+        (:EXECUTABLE-COUNTERPART PSEUDO-TERMP)
+        (:EXECUTABLE-COUNTERPART SYMBOLP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING PSEUDO-TERM-LISTP-FORWARD-TO-TRUE-LISTP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE DEFAULT-CAR)
+        (:REWRITE DEFAULT-CDR)
+        (:REWRITE FOLD-CONSTS-IN-+)
+        (:REWRITE UNICITY-OF-0)
+        (:TYPE-PRESCRIPTION ACL2-COUNT)
+        (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP))
+ PROPER-CONS-NEST-P
+ACL2 !>>>(DEFTHM
+          ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST
+          (IMPLIES (AND (ORDERED-SYMBOL-ALISTP L)
+                        (SYMBOLP KEY)
+                        (ASSOC-EQ KEY L))
+                   (ORDERED-SYMBOL-ALISTP (DELETE-ASSOC-EQ KEY L)))
+          :HINTS
+          (("Goal"
+                :IN-THEORY (DISABLE ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ))))
+
+ACL2 Warning [Subsume] in ( DEFTHM 
+ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST ...):  The previously added
+rule ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ subsumes a newly proposed
+:REWRITE rule generated from ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST depends upon
+the :type-prescription rule ORDERED-SYMBOL-ALISTP.
+
+Summary
+Form:  ( DEFTHM ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST ...)
+Rules: ((:DEFINITION ASSOC-EQ-EXEC$GUARD-CHECK)
+        (:DEFINITION DELETE-ASSOC-EQ-EXEC$GUARD-CHECK)
+        (:DEFINITION RETURN-LAST)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:TYPE-PRESCRIPTION ORDERED-SYMBOL-ALISTP))
+Warnings:  Subsume
+ ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST
+ACL2 !>>>(VALUE-TRIPLE "Mini-proveall completed successfully.")
+ "Mini-proveall completed successfully."
+ACL2 !>>>Bye.
+ :EOF
+ACL2 !>>Bye.

@@ -286,6 +286,28 @@
  <p>Also see @(see note-7-5), specifically the section on ``Changes at the
  System Level''.</p>
 
+ <h3>Scripts</h3>
+
+ <p>The utility @(tsee run-script) supports testing of evaluation of the forms
+ in a given file, to check that the output is as expected.  So far, several
+ existing scripts have been adapted to take advantage of this utility:</p>
+
+ <ul>
+
+ <li>@('books/demos/mini-proveall-input.lsp') &mdash; a long-standing, small
+ basic test of ACL2</li>
+
+ <li>@('books/demos/marktoberdorf-08/') &mdash; based on material originally
+ presented by J Moore in 2008 at the Marktoberdorf Summer School; see the
+ @('README') file in that directory</li>
+
+ <li>@('books/demos/big-proof-talks/') &mdash; based on material about ACL2
+ presented by J Moore on July 6 and 7, 2017, at the <a
+ href='https://www.newton.ac.uk/event/bpr'>Big Proof workshop</a> at the Isaac
+ Newton Institute for Mathematical Sciences in Cambridge, England</li>
+
+ </ul>
+
  <h3>Miscellaneous</h3>
 
  <p>Added file @('system/to-do.txt') to list some potential developer

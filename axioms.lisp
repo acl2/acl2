@@ -13283,6 +13283,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (saved-output-p . nil)
     (saved-output-reversed . nil)
     (saved-output-token-lst . nil)
+    (script-mode . nil)
     (serialize-character . nil)
     (serialize-character-system . nil) ; set for #+hons in LP
     (show-custom-keyword-hint-expansion . nil)

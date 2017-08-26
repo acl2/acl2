@@ -1,0 +1,7 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "mini-proveall")
+
+; Help dependency scanner.
+#||
+(depends-on "mini-proveall-log.txt")
+||#
