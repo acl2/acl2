@@ -513,7 +513,8 @@
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
                (hints-alist "A @('symbol-alistp') that is
-                             the alist form of the list of doublets @('hints').")
+                             the alist form of
+                             the list of doublets @('hints').")
                state)
   :mode :program
   :short "Ensure that the @(':hints') input to the transformation is valid."
@@ -1098,7 +1099,8 @@
                               (:assoc (apply-term* combine-op r base))
                               (t (impossible))))
              (rec-branch (subcor-var (cons r (formals old-fn-name wrld))
-                                     (cons (apply-term* combine-op r nonrec) updates)
+                                     (cons (apply-term* combine-op r nonrec)
+                                           updates)
                                      (apply-term new-fn-name formals)))
              (body `(if ,test
                         ,nonrec-branch
@@ -1168,7 +1170,8 @@
                 (combine-guard-thm
                  (cdr (assoc-eq 'combine-guard app-cond-thm-names)))
                 (domain-of-nonrec-when-guard-thm
-                 (cdr (assoc-eq 'domain-of-nonrec-when-guard app-cond-thm-names)))
+                 (cdr (assoc-eq 'domain-of-nonrec-when-guard
+                                app-cond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
                              :extra-bindings-ok
@@ -2007,7 +2010,8 @@
                new-fn-name new-fn-enable
                wrapper-fn-name wrapper-enable
                old-to-wrapper-thm-name thm-enable
-               make-non-executable do-verify-guards hints-alist show-only app-conds
+               make-non-executable do-verify-guards
+               hints-alist show-only app-conds
                call-w/o-verbose-showonly (w state))))
     (value event)))
 
