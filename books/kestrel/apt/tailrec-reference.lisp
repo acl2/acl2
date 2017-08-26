@@ -700,12 +700,12 @@
                 (domain nonrec<x1,...,xn>))
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid') or @(':assoc').
      </p>
+
+     </blockquote>
 
    <p>
    @('domain-of-combine')
@@ -723,12 +723,12 @@
                 (domain combine<u,v>))
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid') or @(':assoc').
      </p>
+
+     </blockquote>
 
    <p>
    @('domain-of-combine-uncond')
@@ -744,12 +744,12 @@
        (domain combine<u,v>)
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid-alt').
      </p>
+
+     </blockquote>
 
    <p>
    @('combine-associativity')
@@ -769,12 +769,12 @@
                        combine<combine<u,v>,w>))
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid') or @(':assoc').
      </p>
+
+     </blockquote>
 
    <p>
    @('combine-associativity-uncond')
@@ -791,12 +791,12 @@
               combine<combine<u,v>,w>)
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid-alt').
      </p>
+
+     </blockquote>
 
    <p>
    @('combine-left-identity')
@@ -817,7 +817,7 @@
 
      <p>
      This applicability condition is present iff
-     the @(':variant') input is @(':monoid').
+     the @(':variant') input is @(':monoid') or @(':monoid-alt').
      </p>
 
      </blockquote>
@@ -841,7 +841,7 @@
 
      <p>
      This applicability condition is present iff
-     the @(':variant') input is @(':monoid').
+     the @(':variant') input is @(':monoid') or @(':monoid-alt').
      </p>
 
      </blockquote>
@@ -928,14 +928,14 @@
      where @('old-guard<x1,...,xn>') is the guard term of @('old').
      </p>
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the generated functions are guard-verified
      (which is determined by the @(':verify-guards') input)
      and the @(':variant') input is @(':monoid-alt').
      </p>
+
+     </blockquote>
 
    <p>
    When present, @('combine-left-identity') and @('combine-right-identity'),
