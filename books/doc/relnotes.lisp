@@ -303,8 +303,11 @@
 
  <li>@('books/demos/big-proof-talks/') &mdash; based on material about ACL2
  presented by J Moore on July 6 and 7, 2017, at the <a
- href='https://www.newton.ac.uk/event/bpr'>Big Proof workshop</a> at the Isaac
- Newton Institute for Mathematical Sciences in Cambridge, England</li>
+ href='https://www.newton.ac.uk/event/bpr'>Big Proof workshop</a>; see the
+ @('README') file in that directory</li>
+
+ <li>@('books/projects/paco/books/proveall-input.lsp'), formerly named
+ @('proveall.lsp')</li>
 
  </ul>
 
