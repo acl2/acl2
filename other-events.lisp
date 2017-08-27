@@ -856,7 +856,8 @@
                (er-let*
                    ((tguard (translate
                              (conjoin-untranslated-terms
-                              (get-guards1 edcls '(guards types) wrld1))
+                              (get-guards1 edcls '(guards types)
+                                           nil name wrld1))
                              '(nil) nil nil ctx wrld1 state)))
                  (mv-let
                   (ctx1 tbody)

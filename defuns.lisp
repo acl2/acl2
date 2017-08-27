@@ -5988,6 +5988,12 @@
                                 t)
                              (default-ruler-extenders wrld))))
     (cond
+     ((cdr ruler-extenders1-lst)
+      (msg "the proposed definition for ~x0 specifies more than one ~
+            ruler-extenders declaration, which is illegal."
+           (car def1)
+           ruler-extenders1
+           (access justification justification :ruler-extenders)))
      ((and justification
            (not (equal (access justification justification :ruler-extenders)
                        ruler-extenders1)))

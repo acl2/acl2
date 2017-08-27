@@ -44,11 +44,14 @@
 
  <li>@('NAME-book.acl2') &mdash; a file containing the following, where the
  indicated zero or more @(tsee include-book) forms are exactly those that are
- in @('NAME-input.lsp'):
+ in @('NAME-input.lsp') (note that the form @('(ubu 1)') can perhaps be omitted
+ but is needed in some cases, e.g., see
+ @('books/projects/paco/books/proveall-book.acl2'))
 
  @({
  (include-book \"tools/run-script\" :dir :system)
  (run-script \"NAME\") ; optionally add keyword arguments
+ (ubu 1)
 
  ; Help dependency scanner.
  #||

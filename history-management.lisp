@@ -8239,7 +8239,10 @@
 ; set-verify-guards-eagerness accordingly.
 
   (cond ((null lst) nil)
-        ((get-guards1 (fourth (car lst)) '(guards types) wrld) t)
+        ((get-guards1 (fourth (car lst)) '(guards types)
+                      nil nil ; any implicit state-p call is irrelevant here
+                      wrld)
+         t)
         (t (get-guardsp (cdr lst) wrld))))
 
 (defconst *no-measure*
@@ -8392,7 +8395,7 @@
 ; :RULER-EXTENDERS is specified within the edcls of a given element of lst.
 
 ; If symbol-class is program, we ignore the contents of lst and simply return
-; all *no-ruler-extenders.  See the comment in chk-acceptable-defuns where
+; all *no-ruler-extenders*.  See the comment in chk-acceptable-defuns where
 ; get-ruler-extenders is called.
 
   (cond
