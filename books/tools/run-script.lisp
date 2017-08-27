@@ -19,12 +19,13 @@
 
  @({
  (run-script NAME
-             :inhibited-summary-types i-s-t ; default '(time steps)
-             :inhibit-output-lst      i-o-l ; default '(proof-tree)
+             :inhibited-summary-types i-s-t  ; default '(time steps)
+             :inhibit-output-lst      i-o-l  ; default '(proof-tree)
+             :ld-error-action         action ; default ':continue
              )
  })
 
- <p>where @('i-s-t') and @('i-o-l') are evaluated.</p>
+ <p>where the keyword arguments are evaluated.</p>
 
  <p>Example form:</p>
 
@@ -127,7 +128,8 @@
 
 (defmacro run-script (name &key
                            (inhibited-summary-types ''(time steps))
-                           (inhibit-output-lst ''(proof-tree)))
+                           (inhibit-output-lst ''(proof-tree))
+                           (ld-error-action ':continue))
 
 ; Input file should be NAME-input.lsp.  Then (run-script NAME) writes the
 ; standard and proofs output from LD of that input file to NAME-log.out.
@@ -140,5 +142,5 @@
            .
            ,input-file)
          :ld-verbose nil ; avoid absolute pathname printed for cbd
-         :ld-pre-eval-print t :ld-error-action :continue
+         :ld-pre-eval-print t :ld-error-action ,ld-error-action 
          :standard-co ,output-file :proofs-co ,output-file)))

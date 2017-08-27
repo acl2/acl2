@@ -1,0 +1,1127 @@
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(ASSIGN SCRIPT-MODE T)
+ T
+ACL2 !>>(INCLUDE-BOOK "../paco")
+
+Summary
+Form:  ( INCLUDE-BOOK "../paco" ...)
+Rules: NIL
+ "../paco.lisp"
+ACL2 !>>(IN-PACKAGE "PACO")
+ "PACO"
+PACO !>>(ACL2::TABLE ACL2::THEORY-INVARIANT-TABLE
+                     NIL NIL :CLEAR)
+
+Summary
+Form:  ( ACL2::TABLE ACL2::THEORY-INVARIANT-TABLE ...)
+Rules: NIL
+ ACL2::THEORY-INVARIANT-TABLE
+PACO !>>(ACL2::SET-MATCH-FREE-ERROR NIL)
+<state>
+PACO !>>(DEFUN APP (X Y)
+               (IF (ENDP X)
+                   Y (CONS (CAR X) (APP (CDR X) Y))))
+
+The admission of APP is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of APP is
+described by the theorem (OR (CONSP (APP X Y)) (EQUAL (APP X Y) Y)).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN APP ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ APP
+PACO !>>(DEFUN RV (X)
+               (IF (ENDP X)
+                   NIL (APP (RV (CDR X)) (LIST (CAR X)))))
+
+The admission of RV is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of RV is
+described by the theorem (OR (CONSP (RV X)) (EQUAL (RV X) NIL)).  We
+used primitive type reasoning and the :type-prescription rule APP.
+
+Summary
+Form:  ( DEFUN RV ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION APP))
+ RV
+PACO !>>(DTHM ASSOC-OF-APP
+              (EQUAL (APP (APP A B) C)
+                     (APP A (APP B C))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM ASSOC-OF-APP ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM TRUE-LISTP-APP
+              (IFF (TRUE-LISTP (APP A B))
+                   (TRUE-LISTP B)))
+
+The storage of TRUE-LISTP-APP depends upon the :type-prescription rule
+TRUE-LISTP.
+
+Summary
+Form:  ( ACL2::DEFAXIOM TRUE-LISTP-APP ...)
+Rules: ((:TYPE-PRESCRIPTION TRUE-LISTP))
+ :QED
+PACO !>>(DTHM TRUE-LISTP-RV (TRUE-LISTP (RV A)))
+
+The storage of TRUE-LISTP-RV depends upon the :type-prescription rule
+TRUE-LISTP.
+
+Summary
+Form:  ( ACL2::DEFAXIOM TRUE-LISTP-RV ...)
+Rules: ((:TYPE-PRESCRIPTION TRUE-LISTP))
+ :QED
+PACO !>>(DTHM APP-RIGHT-ID
+              (IMPLIES (TRUE-LISTP A)
+                       (EQUAL (APP A NIL) A)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM APP-RIGHT-ID ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM RV-APP-XFERT-BRIDGE
+              (IMPLIES (EQUAL XXX (APP A B))
+                       (EQUAL (APP XXX C) (APP A (APP B C)))))
+
+ACL2 Warning [Free] in ( ACL2::DEFAXIOM RV-APP-XFERT-BRIDGE ...): 
+A :REWRITE rule generated from RV-APP-XFERT-BRIDGE contains the free
+variables B and A.  These variables will be chosen by searching for
+an instance of (EQUAL XXX (APP A B)) in the context of the term being
+rewritten.  This is generally a severe restriction on the applicability
+of a :REWRITE rule.  See :DOC free-variables.
+
+
+Summary
+Form:  ( ACL2::DEFAXIOM RV-APP-XFERT-BRIDGE ...)
+Rules: NIL
+Warnings:  Free
+ :QED
+PACO !>>(DTHM RV-APP
+              (EQUAL (RV (APP A B))
+                     (APP (RV B) (RV A))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM RV-APP ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM RV-RV
+              (IMPLIES (TRUE-LISTP X)
+                       (EQUAL (RV (RV X)) X)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM RV-RV ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM LEN-APP
+              (EQUAL (LEN (APP A B))
+                     (+ (LEN A) (LEN B))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM LEN-APP ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM MEMBER-APP
+              (IFF (MEMBER E (APP A B))
+                   (OR (MEMBER E A) (MEMBER E B))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM MEMBER-APP ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM MEMBER-RV
+              (IFF (MEMBER E (RV X)) (MEMBER E X)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM MEMBER-RV ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM MEMBER-EQUAL-UNION-EQUAL-LEMMA
+              (IMPLIES (MEMBER-EQUAL E B)
+                       (MEMBER-EQUAL E (UNION-EQUAL A B))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM MEMBER-EQUAL-UNION-EQUAL-LEMMA ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM MEMBER-EQUAL-UNION-EQUAL
+              (IFF (MEMBER-EQUAL E (UNION-EQUAL A B))
+                   (OR (MEMBER-EQUAL E A)
+                       (MEMBER-EQUAL E B))))
+
+ACL2 Warning [Subsume] in ( ACL2::DEFAXIOM MEMBER-EQUAL-UNION-EQUAL
+...):  A newly proposed :REWRITE rule generated from 
+MEMBER-EQUAL-UNION-EQUAL probably subsumes the previously added :REWRITE
+rule MEMBER-EQUAL-UNION-EQUAL-LEMMA, in the sense that the new rule
+will now probably be applied whenever the old rule would have been.
+
+
+Summary
+Form:  ( ACL2::DEFAXIOM MEMBER-EQUAL-UNION-EQUAL ...)
+Rules: NIL
+Warnings:  Subsume
+ :QED
+PACO !>>(DEFUN INTERSECTION-EQUAL (X Y)
+               (COND ((ENDP X) NIL)
+                     ((MEMBER-EQUAL (CAR X) Y)
+                      (CONS (CAR X)
+                            (INTERSECTION-EQUAL (CDR X) Y)))
+                     (T (INTERSECTION-EQUAL (CDR X) Y))))
+
+The admission of INTERSECTION-EQUAL is trivial, using the relation
+ACL2::O< (which is known to be well-founded on the domain recognized
+by ACL2::O-P) and the measure (ACL2-COUNT X).  We observe that the
+type of INTERSECTION-EQUAL is described by the theorem 
+(TRUE-LISTP (INTERSECTION-EQUAL X Y)).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN INTERSECTION-EQUAL ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ INTERSECTION-EQUAL
+PACO !>>(DTHM MEMBER-EQUAL-INTERSECTION-EQUAL-LEMMA
+              (IMPLIES (NOT (MEMBER-EQUAL E B))
+                       (NOT (MEMBER-EQUAL E (INTERSECTION-EQUAL A B)))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM MEMBER-EQUAL-INTERSECTION-EQUAL-LEMMA ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM MEMBER-EQUAL-INTERSECTION-EQUAL
+              (IFF (MEMBER-EQUAL E (INTERSECTION-EQUAL A B))
+                   (AND (MEMBER-EQUAL E A)
+                        (MEMBER-EQUAL E B))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM MEMBER-EQUAL-INTERSECTION-EQUAL ...)
+Rules: NIL
+ :QED
+PACO !>>(DEFUN FLATTEN (X)
+               (COND ((ATOM X) (LIST X))
+                     (T (APP (FLATTEN (CAR X))
+                             (FLATTEN (CDR X))))))
+
+The admission of FLATTEN is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of FLATTEN
+is described by the theorem (CONSP (FLATTEN X)).  We used primitive
+type reasoning and the :type-prescription rule APP.
+
+Summary
+Form:  ( DEFUN FLATTEN ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION APP))
+ FLATTEN
+PACO !>>(DEFUN MC-FLATTEN (X A)
+               (COND ((ATOM X) (CONS X A))
+                     (T (MC-FLATTEN (CAR X)
+                                    (MC-FLATTEN (CDR X) A)))))
+
+The admission of MC-FLATTEN is trivial, using the relation ACL2::O<
+(which is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of MC-FLATTEN
+is described by the theorem (CONSP (MC-FLATTEN X A)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN MC-FLATTEN ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ MC-FLATTEN
+PACO !>>(DTHM MC-FLATTEN-IS-FLATTEN-GEN
+              (EQUAL (MC-FLATTEN X A)
+                     (APP (FLATTEN X) A)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM MC-FLATTEN-IS-FLATTEN-GEN ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM TRUE-LISTP-FLATTEN
+              (TRUE-LISTP (FLATTEN X)))
+
+The storage of TRUE-LISTP-FLATTEN depends upon the :type-prescription
+rule TRUE-LISTP.
+
+Summary
+Form:  ( ACL2::DEFAXIOM TRUE-LISTP-FLATTEN ...)
+Rules: ((:TYPE-PRESCRIPTION TRUE-LISTP))
+ :QED
+PACO !>>(DTHM MC-FLATTEN-IS-FLATTEN
+              (EQUAL (MC-FLATTEN X NIL) (FLATTEN X)))
+
+ACL2 Warning [Subsume] in ( ACL2::DEFAXIOM MC-FLATTEN-IS-FLATTEN ...):
+The previously added rule MC-FLATTEN-IS-FLATTEN-GEN subsumes a newly
+proposed :REWRITE rule generated from MC-FLATTEN-IS-FLATTEN, in the
+sense that the old rule rewrites a more general target.  Because the
+new rule will be tried first, it may nonetheless find application.
+
+
+Summary
+Form:  ( ACL2::DEFAXIOM MC-FLATTEN-IS-FLATTEN ...)
+Rules: NIL
+Warnings:  Subsume
+ :QED
+PACO !>>(DEFUN INSERT (E X)
+               (COND ((ENDP X) (CONS E X))
+                     ((<= E (CAR X)) (CONS E X))
+                     (T (CONS (CAR X) (INSERT E (CDR X))))))
+
+The admission of INSERT is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of INSERT
+is described by the theorem (CONSP (INSERT E X)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN INSERT ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ INSERT
+PACO !>>(DEFUN ORDEREDP (X)
+               (COND ((ENDP X) T)
+                     ((ENDP (CDR X)) T)
+                     ((<= (CAR X) (CADR X))
+                      (ORDEREDP (CDR X)))
+                     (T NIL)))
+
+The admission of ORDEREDP is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of ORDEREDP
+is described by the theorem 
+(OR (EQUAL (ORDEREDP X) T) (EQUAL (ORDEREDP X) NIL)).  
+
+Summary
+Form:  ( DEFUN ORDEREDP ...)
+Rules: NIL
+ ORDEREDP
+PACO !>>(DEFTHM ARITHMETIC-PROPERTY-1
+                (IMPLIES (< I J) (NOT (< J I))))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ARITHMETIC-PROPERTY-1 ...)
+Rules: ((:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART ACL2::TAU-SYSTEM))
+ ARITHMETIC-PROPERTY-1
+PACO !>>(DTHM CAR-INSERT
+              (EQUAL (CAR (INSERT E X))
+                     (IF (ENDP X)
+                         E (IF (<= E (CAR X)) E (CAR X)))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM CAR-INSERT ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM ORDERED-INSERT
+              (IMPLIES (ORDEREDP X)
+                       (ORDEREDP (INSERT E X))))
+
+The storage of ORDERED-INSERT depends upon the :type-prescription rule
+ORDEREDP.
+
+Summary
+Form:  ( ACL2::DEFAXIOM ORDERED-INSERT ...)
+Rules: ((:TYPE-PRESCRIPTION ORDEREDP))
+ :QED
+PACO !>>(DEFUN ISORT (X)
+               (COND ((ENDP X) NIL)
+                     (T (INSERT (CAR X) (ISORT (CDR X))))))
+
+The admission of ISORT is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of ISORT
+is described by the theorem (OR (CONSP (ISORT X)) (EQUAL (ISORT X) NIL)).
+We used the :type-prescription rule INSERT.
+
+Summary
+Form:  ( DEFUN ISORT ...)
+Rules: ((:TYPE-PRESCRIPTION INSERT))
+ ISORT
+PACO !>>(DTHM ORDEREDP-ISORT (ORDEREDP (ISORT X)))
+
+The storage of ORDEREDP-ISORT depends upon the :type-prescription rule
+ORDEREDP.
+
+Summary
+Form:  ( ACL2::DEFAXIOM ORDEREDP-ISORT ...)
+Rules: ((:TYPE-PRESCRIPTION ORDEREDP))
+ :QED
+PACO !>>(DTHM INSERT-IDENTITY
+              (IMPLIES (AND (CONSP X) (<= E (CAR X)))
+                       (EQUAL (INSERT E X) (CONS E X))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM INSERT-IDENTITY ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM ISORT-IDENTITY-LEMMA
+              (IMPLIES (EQUAL XXX (CDR X))
+                       (EQUAL (INSERT E XXX)
+                              (INSERT E (CDR X)))))
+
+ACL2 Warning [Free] in ( ACL2::DEFAXIOM ISORT-IDENTITY-LEMMA ...):
+A :REWRITE rule generated from ISORT-IDENTITY-LEMMA contains the free
+variable X.  This variable will be chosen by searching for an instance
+of (EQUAL XXX (CDR X)) in the context of the term being rewritten.
+This is generally a severe restriction on the applicability of a :REWRITE
+rule.  See :DOC free-variables.
+
+
+Summary
+Form:  ( ACL2::DEFAXIOM ISORT-IDENTITY-LEMMA ...)
+Rules: NIL
+Warnings:  Free
+ :QED
+PACO !>>(DTHM ISORT-IDENTITY
+              (IMPLIES (AND (ORDEREDP X) (TRUE-LISTP X))
+                       (EQUAL (ISORT X) X)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM ISORT-IDENTITY ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM TRUE-LISTP-INSERT
+              (IFF (TRUE-LISTP (INSERT E X))
+                   (TRUE-LISTP X)))
+
+The storage of TRUE-LISTP-INSERT depends upon the :type-prescription
+rule TRUE-LISTP.
+
+Summary
+Form:  ( ACL2::DEFAXIOM TRUE-LISTP-INSERT ...)
+Rules: ((:TYPE-PRESCRIPTION TRUE-LISTP))
+ :QED
+PACO !>>(DTHM TRUE-LISTP-ISORT (TRUE-LISTP (ISORT X)))
+
+The storage of TRUE-LISTP-ISORT depends upon the :type-prescription
+rule TRUE-LISTP.
+
+Summary
+Form:  ( ACL2::DEFAXIOM TRUE-LISTP-ISORT ...)
+Rules: ((:TYPE-PRESCRIPTION TRUE-LISTP))
+ :QED
+PACO !>>(DTHM IDEMPOTENT-ISORT
+              (EQUAL (ISORT (ISORT X)) (ISORT X)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM IDEMPOTENT-ISORT ...)
+Rules: NIL
+ :QED
+PACO !>>(DEFUN DEL (X LST)
+               (COND ((ATOM LST) NIL)
+                     ((EQUAL X (CAR LST)) (CDR LST))
+                     (T (CONS (CAR LST) (DEL X (CDR LST))))))
+
+The admission of DEL is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT LST).  We could deduce no constraints on
+the type of DEL.
+
+Summary
+Form:  ( DEFUN DEL ...)
+Rules: NIL
+ DEL
+PACO !>>(DEFUN MEM (X LST)
+               (COND ((ATOM LST) NIL)
+                     ((EQUAL X (CAR LST)) T)
+                     (T (MEM X (CDR LST)))))
+
+The admission of MEM is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT LST).  We observe that the type of MEM
+is described by the theorem 
+(OR (EQUAL (MEM X LST) T) (EQUAL (MEM X LST) NIL)).  
+
+Summary
+Form:  ( DEFUN MEM ...)
+Rules: NIL
+ MEM
+PACO !>>(DEFUN PERM (LST1 LST2)
+               (COND ((ATOM LST1) (ATOM LST2))
+                     ((MEM (CAR LST1) LST2)
+                      (PERM (CDR LST1) (DEL (CAR LST1) LST2)))
+                     (T NIL)))
+
+The admission of PERM is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT LST1).  We observe that the type of PERM
+is described by the theorem 
+(OR (EQUAL (PERM LST1 LST2) T) (EQUAL (PERM LST1 LST2) NIL)).  
+
+Summary
+Form:  ( DEFUN PERM ...)
+Rules: NIL
+ PERM
+PACO !>>(DTHM PERM-REFLEXIVE (PERM X X))
+
+The storage of PERM-REFLEXIVE depends upon the :type-prescription rule
+PERM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-REFLEXIVE ...)
+Rules: ((:TYPE-PRESCRIPTION PERM))
+ :QED
+PACO !>>(DTHM PERM-X-CONS-A-OPENER
+              (IMPLIES (MEM A X)
+                       (EQUAL (PERM X (CONS A Y))
+                              (IF (MEM (CAR X) (CONS A Y))
+                                  (PERM (CDR X) (DEL (CAR X) (CONS A Y)))
+                                  NIL))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-X-CONS-A-OPENER ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM CAR-DEL
+              (EQUAL (CAR (DEL A X))
+                     (IF (CONSP X)
+                         (IF (EQUAL A (CAR X))
+                             (CAR (CDR X))
+                             (CAR X))
+                         NIL)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM CAR-DEL ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM CDR-DEL
+              (EQUAL (CDR (DEL A X))
+                     (IF (CONSP X)
+                         (IF (EQUAL A (CAR X))
+                             (CDR (CDR X))
+                             (DEL A (CDR X)))
+                         NIL)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM CDR-DEL ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM CONSP-DEL
+              (EQUAL (CONSP (DEL A X))
+                     (IF (CONSP X)
+                         (IF (EQUAL A (CAR X)) (CONSP (CDR X)) T)
+                         NIL)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM CONSP-DEL ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM PERM-CONS
+              (IMPLIES (AND (CONSP Z) (MEM (CAR Z) X))
+                       (EQUAL (PERM X Z)
+                              (PERM (DEL (CAR Z) X) (CDR Z))))
+              :HINTS ((NIL :INDUCT T)))
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-CONS ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM PERM-SYMMETRIC
+              (IMPLIES (PERM X Y) (PERM Y X)))
+
+The storage of PERM-SYMMETRIC depends upon the :type-prescription rule
+PERM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-SYMMETRIC ...)
+Rules: ((:TYPE-PRESCRIPTION PERM))
+ :QED
+PACO !>>(DTHM MEM-DEL
+              (IMPLIES (MEM A (DEL B X)) (MEM A X)))
+
+ACL2 Warning [Free] in ( ACL2::DEFAXIOM MEM-DEL ...):  A :REWRITE rule
+generated from MEM-DEL contains the free variable B.  This variable
+will be chosen by searching for an instance of (MEM A (DEL B X)) in
+the context of the term being rewritten.  This is generally a severe
+restriction on the applicability of a :REWRITE rule.  See :DOC free-
+variables.
+
+
+The storage of MEM-DEL depends upon the :type-prescription rule MEM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM MEM-DEL ...)
+Rules: ((:TYPE-PRESCRIPTION MEM))
+Warnings:  Free
+ :QED
+PACO !>>(DTHM PERM-MEM
+              (IMPLIES (AND (PERM X Y) (MEM A X))
+                       (MEM A Y)))
+
+ACL2 Warning [Free] in ( ACL2::DEFAXIOM PERM-MEM ...):  A :REWRITE
+rule generated from PERM-MEM contains the free variable X.  This variable
+will be chosen by searching for an instance of (PERM X Y) in the context
+of the term being rewritten.  This is generally a severe restriction
+on the applicability of a :REWRITE rule.  See :DOC free-variables.
+
+
+The storage of PERM-MEM depends upon the :type-prescription rule MEM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-MEM ...)
+Rules: ((:TYPE-PRESCRIPTION MEM))
+Warnings:  Free
+ :QED
+PACO !>>(DTHM MEM-DEL2
+              (IMPLIES (AND (MEM A X) (NOT (EQUAL A B)))
+                       (MEM A (DEL B X))))
+
+The storage of MEM-DEL2 depends upon the :type-prescription rule MEM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM MEM-DEL2 ...)
+Rules: ((:TYPE-PRESCRIPTION MEM))
+ :QED
+PACO !>>(DTHM COMM-DEL
+              (EQUAL (DEL A (DEL B X))
+                     (DEL B (DEL A X))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM COMM-DEL ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM PERM-DEL
+              (IMPLIES (PERM X Y)
+                       (PERM (DEL A X) (DEL A Y))))
+
+The storage of PERM-DEL depends upon the :type-prescription rule PERM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-DEL ...)
+Rules: ((:TYPE-PRESCRIPTION PERM))
+ :QED
+PACO !>>(DTHM PERM-TRANSITIVE
+              (IMPLIES (AND (PERM X Y) (PERM Y Z))
+                       (PERM X Z)))
+
+ACL2 Warning [Free] in ( ACL2::DEFAXIOM PERM-TRANSITIVE ...):  A :REWRITE
+rule generated from PERM-TRANSITIVE contains the free variable Y. 
+This variable will be chosen by searching for an instance of (PERM X Y)
+in the context of the term being rewritten.  This is generally a severe
+restriction on the applicability of a :REWRITE rule.  See :DOC free-
+variables.
+
+
+The storage of PERM-TRANSITIVE depends upon the :type-prescription
+rule PERM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-TRANSITIVE ...)
+Rules: ((:TYPE-PRESCRIPTION PERM))
+Warnings:  Free
+ :QED
+PACO !>>(DTHM PERM-CONS-CONGRUENCE
+              (IMPLIES (PERM X Y)
+                       (PERM (CONS A X) (CONS A Y))))
+
+The storage of PERM-CONS-CONGRUENCE depends upon the :type-prescription
+rule PERM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-CONS-CONGRUENCE ...)
+Rules: ((:TYPE-PRESCRIPTION PERM))
+ :QED
+PACO !>>(DTHM PERM-ATOM
+              (IMPLIES (NOT (CONSP X)) (PERM X NIL)))
+
+The storage of PERM-ATOM depends upon the :type-prescription rule PERM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-ATOM ...)
+Rules: ((:TYPE-PRESCRIPTION PERM))
+ :QED
+PACO !>>(DTHM PERM-INSERT
+              (PERM (INSERT A X) (CONS A X)))
+
+The storage of PERM-INSERT depends upon the :type-prescription rule
+PERM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-INSERT ...)
+Rules: ((:TYPE-PRESCRIPTION PERM))
+ :QED
+PACO !>>(DTHM
+           TRANS-INSTANCE
+           (IMPLIES (AND (PERM (INSERT (CAR X) (ISORT (CDR X)))
+                               (CONS (CAR X) (ISORT (CDR X))))
+                         (PERM (CONS (CAR X) (ISORT (CDR X))) X))
+                    (PERM (INSERT (CAR X) (ISORT (CDR X)))
+                          X))
+           :HINTS ((NIL :USE ((:INSTANCE PERM-TRANSITIVE
+                                         (X (INSERT (CAR X) (ISORT (CDR X))))
+                                         (Y (CONS (CAR X) (ISORT (CDR X))))
+                                         (Z X))))))
+
+The storage of TRANS-INSTANCE depends upon the :type-prescription rule
+PERM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM TRANS-INSTANCE ...)
+Rules: ((:TYPE-PRESCRIPTION PERM))
+ :QED
+PACO !>>(DTHM PERM-ISORT (PERM (ISORT X) X))
+
+The storage of PERM-ISORT depends upon the :type-prescription rule
+PERM.
+
+Summary
+Form:  ( ACL2::DEFAXIOM PERM-ISORT ...)
+Rules: ((:TYPE-PRESCRIPTION PERM))
+ :QED
+PACO !>>(DEFUN XOR (A B) (IF A (IF B NIL T) B))
+
+Since XOR is non-recursive, its admission is trivial.  We observe that
+the type of XOR is described by the theorem 
+(OR (OR (EQUAL (XOR A B) T) (EQUAL (XOR A B) NIL)) (EQUAL (XOR A B) B)).
+
+Summary
+Form:  ( DEFUN XOR ...)
+Rules: NIL
+ XOR
+PACO !>>(DEFUN ADDER (X Y C)
+               (DECLARE (XARGS :MEASURE (+ (ACL2-COUNT X) (ACL2-COUNT Y))))
+               (COND ((AND (ENDP X) (ENDP Y)) (LIST C))
+                     (T (CONS (XOR (CAR X) (XOR (CAR Y) C))
+                              (ADDER (CDR X)
+                                     (CDR Y)
+                                     (OR (AND (CAR X) (CAR Y))
+                                         (AND (CAR X) C)
+                                         (AND (CAR Y) C)))))))
+
+For the admission of ADDER we will use the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (+ (ACL2-COUNT X) (ACL2-COUNT Y)).  The non-trivial
+part of the measure conjecture is
+
+Goal
+(AND (ACL2::O-P (+ (ACL2-COUNT X) (ACL2-COUNT Y)))
+     (IMPLIES (NOT (AND (ENDP X) (ENDP Y)))
+              (ACL2::O< (+ (ACL2-COUNT (CDR X))
+                           (ACL2-COUNT (CDR Y)))
+                        (+ (ACL2-COUNT X) (ACL2-COUNT Y))))).
+Subgoal 2
+Subgoal 1
+
+Splitter note (see :DOC splitter) for Subgoal 1 (2 subgoals).
+  if-intro: ((:DEFINITION ENDP))
+
+Subgoal 1.2
+Subgoal 1.1
+
+Q.E.D.
+
+That completes the proof of the measure theorem for ADDER.  Thus, we
+admit this function under the principle of definition.  We observe
+that the type of ADDER is described by the theorem 
+(AND (CONSP (ADDER X Y C)) (TRUE-LISTP (ADDER X Y C))).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN ADDER ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ENDP)
+        (:DEFINITION ACL2::O-FINP)
+        (:DEFINITION ACL2::O-P)
+        (:DEFINITION ACL2::O<)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:LINEAR TYPE-SET-ADMISSION-LEMMA2)
+        (:LINEAR TYPE-SET-ADMISSION-LEMMA4)
+        (:TYPE-PRESCRIPTION ACL2-COUNT))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION ENDP))
+ ADDER
+PACO !>>(DEFUN NAT (X)
+               (IF (ENDP X)
+                   0
+                   (+ (IF (CAR X) 1 0)
+                      (* 2 (NAT (CDR X))))))
+
+The admission of NAT is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of NAT is
+described by the theorem (AND (INTEGERP (NAT X)) (<= 0 (NAT X))). 
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN NAT ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ NAT
+PACO !>>(DEFTHM NAT-ADDER-LEMMA1
+                (IMPLIES (EQUAL XXX (+ 1 N))
+                         (EQUAL (* 2 XXX) (+ 1 1 (* 2 N)))))
+
+ACL2 Warning [Free] in ( DEFTHM NAT-ADDER-LEMMA1 ...):  A :REWRITE
+rule generated from NAT-ADDER-LEMMA1 contains the free variable N.
+This variable will be chosen by searching for an instance of 
+(EQUAL XXX (+ 1 N)) in the context of the term being rewritten.  This
+is generally a severe restriction on the applicability of a :REWRITE
+rule.  See :DOC free-variables.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM NAT-ADDER-LEMMA1 ...):  The previously
+added rule ACL2::COMMUTATIVITY-OF-* subsumes a newly proposed :REWRITE
+rule generated from NAT-ADDER-LEMMA1, in the sense that the old rule
+rewrites a more general target.  Because the new rule will be tried
+first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM NAT-ADDER-LEMMA1 ...)
+Rules: ((:EXECUTABLE-COUNTERPART ACL2::TAU-SYSTEM))
+Warnings:  Subsume and Free
+ NAT-ADDER-LEMMA1
+PACO !>>(DTHM NAT-ADDER-LEMMA2
+              (AND (EQUAL (NAT (ADDER X NIL NIL)) (NAT X))
+                   (IMPLIES C
+                            (EQUAL (NAT (ADDER X NIL C))
+                                   (+ 1 (NAT X))))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM NAT-ADDER-LEMMA2 ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM NAT-ADDER-LEMMA3
+              (IMPLIES (EQUAL XXX (+ I J))
+                       (EQUAL (* 2 XXX) (+ (* 2 I) (* 2 J)))))
+
+ACL2 Warning [Free] in ( ACL2::DEFAXIOM NAT-ADDER-LEMMA3 ...):  A :REWRITE
+rule generated from NAT-ADDER-LEMMA3 contains the free variables J
+and I.  These variables will be chosen by searching for an instance
+of (EQUAL XXX (+ I J)) in the context of the term being rewritten.
+This is generally a severe restriction on the applicability of a :REWRITE
+rule.  See :DOC free-variables.
+
+
+ACL2 Warning [Subsume] in ( ACL2::DEFAXIOM NAT-ADDER-LEMMA3 ...): 
+A newly proposed :REWRITE rule generated from NAT-ADDER-LEMMA3 probably
+subsumes the previously added :REWRITE rule NAT-ADDER-LEMMA1, in the
+sense that the new rule will now probably be applied whenever the old
+rule would have been.
+
+
+ACL2 Warning [Subsume] in ( ACL2::DEFAXIOM NAT-ADDER-LEMMA3 ...): 
+The previously added rule ACL2::COMMUTATIVITY-OF-* subsumes a newly
+proposed :REWRITE rule generated from NAT-ADDER-LEMMA3, in the sense
+that the old rule rewrites a more general target.  Because the new
+rule will be tried first, it may nonetheless find application.
+
+
+Summary
+Form:  ( ACL2::DEFAXIOM NAT-ADDER-LEMMA3 ...)
+Rules: NIL
+Warnings:  Subsume and Free
+ :QED
+PACO !>>(DTHM NAT-ADDER
+              (EQUAL (NAT (ADDER X Y C))
+                     (+ (NAT X) (NAT Y) (IF C 1 0)))
+              :HINTS ((NIL :INDUCT T)))
+
+ACL2 Warning [Double-rewrite] in ( ACL2::DEFAXIOM NAT-ADDER ...): 
+In a :REWRITE rule generated from NAT-ADDER, equivalence relation IFF is
+maintained at one problematic occurrence of variable C in the right-
+hand side, but not at any binding occurrence of C.  Consider replacing
+that occurrence of C in the right-hand side with (ACL2::DOUBLE-REWRITE C).
+See :doc double-rewrite for more information on this issue.
+
+
+ACL2 Warning [Subsume] in ( ACL2::DEFAXIOM NAT-ADDER ...):  A newly
+proposed :REWRITE rule generated from NAT-ADDER probably subsumes the
+previously added :REWRITE rules NAT-ADDER-LEMMA2 and NAT-ADDER-LEMMA2,
+in the sense that the new rule will now probably be applied whenever
+the old rules would have been.
+
+
+Summary
+Form:  ( ACL2::DEFAXIOM NAT-ADDER ...)
+Rules: NIL
+Warnings:  Subsume and Double-rewrite
+ :QED
+PACO !>>(DEFUN MULTIPLIER (X Y A)
+               (COND ((ENDP X) A)
+                     ((CAR X)
+                      (MULTIPLIER (CDR X)
+                                  (CONS NIL Y)
+                                  (ADDER Y A NIL)))
+                     (T (MULTIPLIER (CDR X) (CONS NIL Y) A))))
+
+The admission of MULTIPLIER is trivial, using the relation ACL2::O<
+(which is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of MULTIPLIER
+is described by the theorem 
+(OR (AND (CONSP (MULTIPLIER X Y A))
+         (TRUE-LISTP (MULTIPLIER X Y A)))
+    (EQUAL (MULTIPLIER X Y A) A)).
+We used the :type-prescription rule ADDER.
+
+Summary
+Form:  ( DEFUN MULTIPLIER ...)
+Rules: ((:TYPE-PRESCRIPTION ADDER))
+ MULTIPLIER
+PACO !>>(DTHM NAT-MULTIPLIER
+              (EQUAL (NAT (MULTIPLIER X Y A))
+                     (+ (* (NAT X) (NAT Y)) (NAT A))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM NAT-MULTIPLIER ...)
+Rules: NIL
+ :QED
+PACO !>>(DEFUN CONC (X Y)
+               (IF (ENDP X)
+                   Y (CONS (CAR X) (CONC (CDR X) Y))))
+
+The admission of CONC is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of CONC is
+described by the theorem (OR (CONSP (CONC X Y)) (EQUAL (CONC X Y) Y)).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN CONC ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ CONC
+PACO !>>(DEFUN RVE (X)
+               (IF (ENDP X)
+                   NIL
+                   (CONC (RVE (CDR X)) (LIST (CAR X)))))
+
+The admission of RVE is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of RVE is
+described by the theorem (OR (CONSP (RVE X)) (EQUAL (RVE X) NIL)).
+We used primitive type reasoning and the :type-prescription rule CONC.
+
+Summary
+Form:  ( DEFUN RVE ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION CONC))
+ RVE
+PACO !>>(DEFUN RV1 (X A)
+               (IF (ENDP X)
+                   A (RV1 (CDR X) (CONS (CAR X) A))))
+
+The admission of RV1 is trivial, using the relation ACL2::O< (which
+is known to be well-founded on the domain recognized by ACL2::O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of RV1 is
+described by the theorem (OR (CONSP (RV1 X A)) (EQUAL (RV1 X A) A)).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN RV1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ RV1
+PACO !>>(DTHM ASSOCIATIVITY-OF-CONC
+              (EQUAL (CONC (CONC A B) C)
+                     (CONC A (CONC B C))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM ASSOCIATIVITY-OF-CONC ...)
+Rules: NIL
+ :QED
+PACO !>>(IN-THEORY (DISABLE ASSOCIATIVITY-OF-CONC))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+PACO !>>(DTHM TEST-1
+              (EQUAL (CONC (CONC A A) A)
+                     (CONC A (CONC A A)))
+              :RULE-CLASSES NIL
+              :HINTS ((NIL :USE ((:INSTANCE ASSOCIATIVITY-OF-CONC (A A)
+                                            (B A)
+                                            (C A))))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM TEST-1 ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM
+         TEST-2
+         (EQUAL (CONC (CONC A A) A)
+                (CONC A (CONC A A)))
+         :RULE-CLASSES NIL
+         :HINTS ((NIL :IN-THEORY (ENABLE (:REWRITE ASSOCIATIVITY-OF-CONC)))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM TEST-2 ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM TEST-3
+              (EQUAL (CONC (CONC A A) A)
+                     (CONC A (CONC A A)))
+              :RULE-CLASSES NIL
+              :HINTS ((NIL :IN-THEORY (E/D ((:REWRITE ASSOCIATIVITY-OF-CONC))
+                                           NIL))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM TEST-3 ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM
+             RV-RV1-A
+             (EQUAL (RV1 X A) (CONC (RVE X) A))
+             :HINTS (((2)
+                      :IN-THEORY (ENABLE (:REWRITE ASSOCIATIVITY-OF-CONC)))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM RV-RV1-A ...)
+Rules: NIL
+ :QED
+PACO !>>(DEFUN RV1TOP (X) (RV1 X NIL))
+
+Since RV1TOP is non-recursive, its admission is trivial.  We observe
+that the type of RV1TOP is described by the theorem 
+(OR (CONSP (RV1TOP X)) (EQUAL (RV1TOP X) NIL)).  We used the :type-
+prescription rule RV1.
+
+Summary
+Form:  ( DEFUN RV1TOP ...)
+Rules: ((:TYPE-PRESCRIPTION RV1))
+ RV1TOP
+PACO !>>(DTHM
+             CONC-RV-NIL
+             (EQUAL (CONC (RVE X) NIL) (RVE X))
+             :HINTS (((2)
+                      :IN-THEORY (ENABLE (:REWRITE ASSOCIATIVITY-OF-CONC)))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM CONC-RV-NIL ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM TEST-4 (EQUAL (RV1TOP X) (RVE X))
+              :RULE-CLASSES NIL
+              :HINTS ((NIL :IN-THEORY (DISABLE (:DEFINITION RV)
+                                               (:DEFINITION RV1)
+                                               (:DEFINITION RV1TOP))
+                           :EXPAND ((RV1TOP X)))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM TEST-4 ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM TEST-5
+              (EQUAL (CONC (RVE (CONS A A)) NIL)
+                     (RVE (CONS A A)))
+              :RULE-CLASSES NIL
+              :HINTS ((NIL :HANDS-OFF (RVE))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM TEST-5 ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM TEST-6
+              (EQUAL (RV1 (CONC A B) C)
+                     (RV1 B (RV1 A C)))
+              :RULE-CLASSES NIL
+              :HINTS ((NIL :INDUCT (RV1 A C))
+                      ((1 2)
+                       :IN-THEORY (E/D ((:REWRITE ASSOCIATIVITY-OF-CONC))
+                                       NIL))))
+
+Summary
+Form:  ( ACL2::DEFAXIOM TEST-6 ...)
+Rules: NIL
+ :QED
+PACO !>>(DTHM TEST-7
+              (EQUAL (NAT (ADDER X Y C))
+                     (+ (NAT X) (NAT Y) (IF C 1 0)))
+              :HINTS ((NIL :IN-THEORY (DISABLE (:REWRITE NAT-ADDER))
+                           :DO-NOT (SIMPLIFY-CLAUSE))
+                      ((1 2) :DO-NOT NIL)
+                      ((1 1) :DO-NOT NIL)))
+
+ACL2 Warning [Double-rewrite] in ( ACL2::DEFAXIOM TEST-7 ...):  In
+a :REWRITE rule generated from TEST-7, equivalence relation IFF is
+maintained at one problematic occurrence of variable C in the right-
+hand side, but not at any binding occurrence of C.  Consider replacing
+that occurrence of C in the right-hand side with (ACL2::DOUBLE-REWRITE C).
+See :doc double-rewrite for more information on this issue.
+
+
+ACL2 Warning [Subsume] in ( ACL2::DEFAXIOM TEST-7 ...):  A newly proposed
+:REWRITE rule generated from TEST-7 probably subsumes the previously
+added :REWRITE rules NAT-ADDER, NAT-ADDER-LEMMA2 and NAT-ADDER-LEMMA2,
+in the sense that the new rule will now probably be applied whenever
+the old rules would have been.
+
+
+ACL2 Warning [Subsume] in ( ACL2::DEFAXIOM TEST-7 ...):  The previously
+added rule NAT-ADDER subsumes a newly proposed :REWRITE rule generated
+from TEST-7, in the sense that the old rule rewrites a more general
+target.  Because the new rule will be tried first, it may nonetheless
+find application.
+
+
+Summary
+Form:  ( ACL2::DEFAXIOM TEST-7 ...)
+Rules: NIL
+Warnings:  Subsume and Double-rewrite
+ :QED
+PACO !>>(INCLUDE-BOOK "models/jvm/m5/jvm-fact-setup"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "models/jvm/m5/jvm-fact-setup" ...)
+Rules: NIL
+ "[books]/models/jvm/m5/jvm-fact-setup.lisp"
+PACO !>>(IN-PACKAGE "M5")
+ "M5"
+M5 !>>(DEFTHM INT-LEMMA0-REWRITE
+              (IMPLIES (INTP X) (INTEGERP X)))
+
+ACL2 Warning [Subsume] in ( DEFTHM INT-LEMMA0-REWRITE ...):  A newly
+proposed :REWRITE rule generated from INT-LEMMA0-REWRITE probably subsumes
+the previously added :REWRITE rule INT-LEMMA0, in the sense that the
+new rule will now probably be applied whenever the old rule would have
+been.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM INT-LEMMA0-REWRITE ...):  The previously
+added rule INT-LEMMA0 subsumes a newly proposed :REWRITE rule generated
+from INT-LEMMA0-REWRITE, in the sense that the old rule rewrites a
+more general target.  Because the new rule will be tried first, it
+may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM INT-LEMMA0-REWRITE ...)
+Rules: ((:FORWARD-CHAINING INT-LEMMA0)
+        (:TYPE-PRESCRIPTION INTP))
+Warnings:  Subsume
+ INT-LEMMA0-REWRITE
+M5 !>>(DEFTHM ZP-PROP1
+              (IMPLIES (AND (ZP X) (INTEGERP X))
+                       (EQUAL (< 0 X) NIL)))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ZP-PROP1 ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ ZP-PROP1
+M5 !>>(PACO::DTHM
+          FACT-IS-CORRECT
+          (IMPLIES
+               (POISED-TO-INVOKE-FACT TH S N)
+               (EQUAL (RUN (FACT-SCHED TH N) S)
+                      (MODIFY TH S
+                              :PC (+ 3 (PC (TOP-FRAME TH S)))
+                              :STACK (PUSH (INT-FIX (! N))
+                                           (POP (STACK (TOP-FRAME TH S)))))))
+          :HINTS ((NIL :INDUCT (INDUCTION-HINT TH S N))))
+
+Summary
+Form:  ( DEFAXIOM FACT-IS-CORRECT ...)
+Rules: NIL
+ :QED
+M5 !>>Bye.
