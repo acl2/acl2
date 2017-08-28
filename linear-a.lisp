@@ -1480,7 +1480,8 @@
 ; present in the community books are representative this
 ; is sufficient.  Perhaps this should be reconsidered later.
 
-;; RAG - I thought about adding lines here for real numbers, but since we
+;; Historical Comment from Ruben Gamboa:
+;; I thought about adding lines here for real numbers, but since we
 ;; cannot construct actual real constants, I don't think this is
 ;; needed here.  Besides, I'm not sure what the right value would be
 ;; for a real number!
@@ -1994,7 +1995,8 @@
 ; and abs.  We know, however, that we will only apply them to acl2-numberps
 ; so we do not need to consider fixing the arguments.
 
-;; RAG - I changed rational to real in the test to use < as the comparator.
+;; Historical Comment from Ruben Gamboa:
+;; I changed rational to real in the test to use < as the comparator.
 
 (defun logical-< (x y)
   (declare (xargs :guard (and (acl2-numberp x) (acl2-numberp y))))
@@ -2006,7 +2008,8 @@
         (t (and (= (realpart x) (realpart y))
                 (< (imagpart x) (imagpart y))))))
 
-;; RAG - Another change of rational to real in the test to use <= as the
+;; Historical Comment from Ruben Gamboa:
+;; Another change of rational to real in the test to use <= as the
 ;; comparator.
 
 (defun logical-<= (x y)

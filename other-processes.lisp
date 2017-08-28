@@ -69,7 +69,8 @@
 ; symbols.  Arbitrary overlaps between the types and between the
 ; symbols are permitted.
 
-;; RAG - I changed rational to real and complex-rational to complex in
+;; Historical Comment from Ruben Gamboa:
+;; I changed rational to real and complex-rational to complex in
 ;; the list below, since the new types are supersets of the old types,
 ;; so it should be harmless.
 

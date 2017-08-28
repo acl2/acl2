@@ -392,10 +392,12 @@
 (defmacro defstub (name &rest args)
   (defstub-fn name args))
 
-;; RAG - I changed the primitive guard for the < function, and the
+;; Historical Comment from Ruben Gamboa:
+;; I changed the primitive guard for the < function, and the
 ;; complex function.  Added the functions complexp, realp, and floor1.
 
-;; RAG - I subsequently changed this to add the non-standard functions
+;; Historical Comment from Ruben Gamboa:
+;; I subsequently changed this to add the non-standard functions
 ;; standardp, standard-part and i-large-integer.  I had some
 ;; questions as to whether these functions should appear on this list
 ;; or not.  After considering carefully, I decided that was the right

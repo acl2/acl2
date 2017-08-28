@@ -99,7 +99,10 @@
 
  @({
  touch NAME-log.txt
- })")
+ })
+
+ <p>NOTE for ACL2(r) users: The prompt is set by @('run-script') so that the
+ usual \"(r)\" is not printed.</p>")
 
 (include-book "xdoc/top" :dir :system)
 
@@ -139,11 +142,13 @@
 
   (let ((input-file (concatenate 'string name "-input.lsp"))
         (output-file (concatenate 'string name "-log.out")))
-    `(ld '((set-inhibited-summary-types ,inhibited-summary-types)
+    `(ld '((assign script-mode t)
+           (set-ld-prompt t state)
+           (set-inhibited-summary-types ,inhibited-summary-types)
            (set-inhibit-output-lst ,inhibit-output-lst)
-           (assign script-mode t)
            .
            ,input-file)
+         :ld-prompt nil ; for (assign script-mode t)
          :ld-verbose nil ; avoid absolute pathname printed for cbd
          :ld-pre-eval-print t :ld-error-action ,ld-error-action 
          :standard-co ,output-file :proofs-co ,output-file)))

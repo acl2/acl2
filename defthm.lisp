@@ -11248,7 +11248,8 @@
               set to T."
              event-form)))
 
-;; RAG - this trio of functions adds the hypothesis "(standardp x)"
+;; Historical Comment from Ruben Gamboa:
+;; this trio of functions adds the hypothesis "(standardp x)"
 ;; for each variable x in the theorem.
 
 #+:non-standard-analysis

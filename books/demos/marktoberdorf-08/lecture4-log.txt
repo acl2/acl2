@@ -1,9 +1,11 @@
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
 ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
  (TIME STEPS)
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
-ACL2 !>>(ASSIGN SCRIPT-MODE T)
- T
 ACL2 !>>(SET-GUARD-CHECKING NIL)
 ACL2 >>(SET-GAG-MODE NIL)
 <state>
@@ -652,40 +654,6 @@ M1 >>>(LOCAL
                             |G-INV-arity-1-defpun-fn|
                             (:TYPE-PRESCRIPTION |G-INV-arity-1-defpun-fn|))))
 
-ACL2 Warning [Theory] in ( IN-THEORY (QUOTE ...)):  The :DEFINITION
-rules for DOUBLE-REWRITE, MV-NTH, THE-CHECK, CONS-WITH-HINT, IFF, 
-WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP, ZEROP, LISTP, SYNP, CASE-SPLIT,
-FORCE, /=, =, RETURN-LAST, NULL, ENDP, ATOM, EQL, NOT, IMPLIES and
-EQ are disabled by the theory expression 
-'(|G-INV-arity-1| |G-INV-arity-1-defpun-test|
-                  |G-INV-arity-1-defpun-base|
-                  |G-INV-arity-1-step|
-                  |G-INV-arity-1-defpun-stn|
-                  |G-INV-arity-1-defpun-fn|
-                  (:TYPE-PRESCRIPTION |G-INV-arity-1-defpun-fn|)),
-but because these built-in functions are given certain special handling,
-some expansions of their calls may still occur.  See :DOC theories-
-and-primitives.
-
-
-ACL2 Warning [Theory] in ( IN-THEORY (QUOTE ...)):  The :EXECUTABLE-
-COUNTERPART rules for NOT, SYMBOLP, SYMBOL-PACKAGE-NAME, SYMBOL-NAME,
-STRINGP, REALPART, RATIONALP, PKG-WITNESS, PKG-IMPORTS, NUMERATOR,
-INTERN-IN-PACKAGE-OF-SYMBOL, INTEGERP, IMAGPART, IF, EQUAL, DENOMINATOR,
-CONSP, CONS, COERCE, COMPLEX-RATIONALP, COMPLEX, CODE-CHAR, CHARACTERP,
-CHAR-CODE, CDR, CAR, <, UNARY-/, UNARY--, BINARY-+, BINARY-* and 
-ACL2-NUMBERP are disabled by the theory expression 
-'(|G-INV-arity-1| |G-INV-arity-1-defpun-test|
-                  |G-INV-arity-1-defpun-base|
-                  |G-INV-arity-1-step|
-                  |G-INV-arity-1-defpun-stn|
-                  |G-INV-arity-1-defpun-fn|
-                  (:TYPE-PRESCRIPTION |G-INV-arity-1-defpun-fn|)),
-but because these built-in functions are given certain special handling,
-some evaluations of their calls may still occur.  See :DOC theories-
-and-primitives.
-
-
 ACL2 Warning [Disable] in ( IN-THEORY (QUOTE ...)):  Forcing has transitioned
 from enabled to disabled.
 See :DOC force.
@@ -694,7 +662,7 @@ See :DOC force.
 Summary
 Form:  ( IN-THEORY (QUOTE ...))
 Rules: NIL
-Warnings:  Disable and Theory
+Warnings:  Disable
 :CURRENT-THEORY-UPDATED
 
 
@@ -1233,7 +1201,7 @@ The following constraint is associated with the function |G-INV-arity-1|:
 Summary
 Form:  ( ENCAPSULATE ((|G-INV-arity-1| ...) ...) ...)
 Rules: NIL
-Warnings:  Disable and Theory
+Warnings:  Disable
 T
 
 
@@ -1537,7 +1505,7 @@ The following constraint is associated with the function G-INV:
 Summary
 Form:  ( ENCAPSULATE ((G-INV ...) ...) ...)
 Rules: NIL
-Warnings:  Subsume, Non-rec, Disable and Theory
+Warnings:  Subsume, Non-rec and Disable
 T
 
 
@@ -2154,7 +2122,7 @@ PARTIAL-CORRECTNESS-OF-PROGRAM-G
 Summary
 Form:  ( PROGN (DEFPUN G-INV ...) ...)
 Rules: NIL
-Warnings:  Subsume, Non-rec, Disable and Theory
+Warnings:  Subsume, Non-rec and Disable
  PARTIAL-CORRECTNESS-OF-PROGRAM-G
 M1 >>(DEFTHM COROLLARY
              (LET ((SK (RUN SCHED S0)))
@@ -2707,40 +2675,6 @@ M1 >>>(LOCAL
                             |H-INV-arity-1-defpun-fn|
                             (:TYPE-PRESCRIPTION |H-INV-arity-1-defpun-fn|))))
 
-ACL2 Warning [Theory] in ( IN-THEORY (QUOTE ...)):  The :DEFINITION
-rules for DOUBLE-REWRITE, MV-NTH, THE-CHECK, CONS-WITH-HINT, IFF, 
-WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP, ZEROP, LISTP, SYNP, CASE-SPLIT,
-FORCE, /=, =, RETURN-LAST, NULL, ENDP, ATOM, EQL, NOT, IMPLIES and
-EQ are disabled by the theory expression 
-'(|H-INV-arity-1| |H-INV-arity-1-defpun-test|
-                  |H-INV-arity-1-defpun-base|
-                  |H-INV-arity-1-step|
-                  |H-INV-arity-1-defpun-stn|
-                  |H-INV-arity-1-defpun-fn|
-                  (:TYPE-PRESCRIPTION |H-INV-arity-1-defpun-fn|)),
-but because these built-in functions are given certain special handling,
-some expansions of their calls may still occur.  See :DOC theories-
-and-primitives.
-
-
-ACL2 Warning [Theory] in ( IN-THEORY (QUOTE ...)):  The :EXECUTABLE-
-COUNTERPART rules for NOT, SYMBOLP, SYMBOL-PACKAGE-NAME, SYMBOL-NAME,
-STRINGP, REALPART, RATIONALP, PKG-WITNESS, PKG-IMPORTS, NUMERATOR,
-INTERN-IN-PACKAGE-OF-SYMBOL, INTEGERP, IMAGPART, IF, EQUAL, DENOMINATOR,
-CONSP, CONS, COERCE, COMPLEX-RATIONALP, COMPLEX, CODE-CHAR, CHARACTERP,
-CHAR-CODE, CDR, CAR, <, UNARY-/, UNARY--, BINARY-+, BINARY-* and 
-ACL2-NUMBERP are disabled by the theory expression 
-'(|H-INV-arity-1| |H-INV-arity-1-defpun-test|
-                  |H-INV-arity-1-defpun-base|
-                  |H-INV-arity-1-step|
-                  |H-INV-arity-1-defpun-stn|
-                  |H-INV-arity-1-defpun-fn|
-                  (:TYPE-PRESCRIPTION |H-INV-arity-1-defpun-fn|)),
-but because these built-in functions are given certain special handling,
-some evaluations of their calls may still occur.  See :DOC theories-
-and-primitives.
-
-
 ACL2 Warning [Disable] in ( IN-THEORY (QUOTE ...)):  Forcing has transitioned
 from enabled to disabled.
 See :DOC force.
@@ -2749,7 +2683,7 @@ See :DOC force.
 Summary
 Form:  ( IN-THEORY (QUOTE ...))
 Rules: NIL
-Warnings:  Disable and Theory
+Warnings:  Disable
 :CURRENT-THEORY-UPDATED
 
 
@@ -3496,7 +3430,7 @@ The following constraint is associated with the function |H-INV-arity-1|:
 Summary
 Form:  ( ENCAPSULATE ((|H-INV-arity-1| ...) ...) ...)
 Rules: NIL
-Warnings:  Disable and Theory
+Warnings:  Disable
 T
 
 
@@ -3875,7 +3809,7 @@ The following constraint is associated with the function H-INV:
 Summary
 Form:  ( ENCAPSULATE ((H-INV ...) ...) ...)
 Rules: NIL
-Warnings:  Subsume, Non-rec, Disable and Theory
+Warnings:  Subsume, Non-rec and Disable
 T
 
 
@@ -4547,7 +4481,7 @@ PARTIAL-CORRECTNESS-OF-PROGRAM-H
 Summary
 Form:  ( PROGN (DEFPUN H-INV ...) ...)
 Rules: NIL
-Warnings:  Subsume, Non-rec, Disable and Theory
+Warnings:  Subsume, Non-rec and Disable
  PARTIAL-CORRECTNESS-OF-PROGRAM-H
 M1 >>(DEFTHM H-COROLLARY
              (IMPLIES (AND (NATP (N S0))

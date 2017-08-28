@@ -978,7 +978,8 @@
 (defun-*1* complex-rationalp (x)
   (complexp x))
 
-;; RAG - I added this function to recognize the complex numbers.
+;; Historical Comment from Ruben Gamboa:
+;; I added this function to recognize the complex numbers.
 
 #+:non-standard-analysis
 (defun-*1* complexp (x)
@@ -1015,7 +1016,8 @@
 #+:non-standard-analysis
 (defun-*1* floor1 (x)
 
-;; RAG - I added this function to evaluate the special floor1
+;; Historical Comment from Ruben Gamboa:
+;; I added this function to evaluate the special floor1
 ;; function, which computes floor with a modulus of 1.
 
   (if (rationalp x)
@@ -1059,7 +1061,8 @@
 (defun-*1* rationalp (x)
   (rationalp x))
 
-;; RAG - I added realp to recognize real numbers.
+;; Historical Comment from Ruben Gamboa:
+;; I added realp to recognize real numbers.
 
 #+:non-standard-analysis
 (defun-*1* realp (x)
@@ -1087,7 +1090,8 @@
 (defun-*1* symbolp (x)
   (symbolp x))
 
-;; RAG - I added *1*-defns for the non-standard predicates.  Note,
+;; Historical Comment from Ruben Gamboa:
+;; I added *1*-defns for the non-standard predicates.  Note,
 ;; however, that the non-standard predicates do NOT have an executable
 ;; counterpart.  (Actually, that's too hasty.  Standard-part could be
 ;; defined as "identity" and standardp could be "t".

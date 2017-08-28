@@ -1677,7 +1677,8 @@
                     *acl2-property-unbound*
                     wrld))))))
 
-;; RAG - Hmmm, this code assumes it knows all of the properties stored
+;; Historical Comment from Ruben Gamboa:
+;; Hmmm, this code assumes it knows all of the properties stored
 ;; on a function symbol.  Sad.  I added 'CLASSICALP to the list.
 
 (defun renew-name/overwrite (name old-getprops wrld)
@@ -9682,7 +9683,8 @@
                            (merge-sort-symbol-< (odds l))
                            nil))))
 
-;; RAG - I added the non-standard primitives here.
+;; Historical Comment from Ruben Gamboa:
+;; I added the non-standard primitives here.
 
 (defconst *non-instantiable-primitives*
 
@@ -9867,7 +9869,8 @@
     (cons (car alist)
           (extend-sorted-symbol-alist pair (cdr alist))))))
 
-;; RAG - This checks to see whether two function symbols are both
+;; Historical Comment from Ruben Gamboa:
+;; This checks to see whether two function symbols are both
 ;; classical or both non-classical
 
 #+:non-standard-analysis
@@ -9886,7 +9889,8 @@
         (if cp1 0 1)
         (if cp2 0 1)))))
 
-;; RAG - I modified the following, so that we do not allow substn to
+;; Historical Comment from Ruben Gamboa:
+;; I modified the following, so that we do not allow substn to
 ;; map a non-classical constrained function into a classical function
 ;; or vice versa.
 

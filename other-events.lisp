@@ -1646,7 +1646,8 @@
   (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
                   *boot-strap-invariant-risk-symbols* wrld))
 
-;; RAG - I added the treatment of *non-standard-primitives*
+;; Historical Comment from Ruben Gamboa:
+;; I added the treatment of *non-standard-primitives*
 
 (defun primordial-world (operating-system)
 
@@ -5051,7 +5052,10 @@
                     (cons #\4 (car ev-lst))
                     (cons #\5 (term-evisc-tuple nil state))
                     (cons #\r
-                          #+:non-standard-analysis "(r)"
+                          #+:non-standard-analysis
+                          (if (f-get-global 'script-mode state)
+                              ""
+                            "(r)")
                           #-:non-standard-analysis ""))
                    channel state nil))))
        (mv-let
@@ -5222,7 +5226,8 @@
        (equal (caddr insig1) (caddr insig2))
        (equal (cadddr insig1) (cadddr insig2))))
 
-;; RAG - I changed this so that non-classical witness functions are
+;; Historical Comment from Ruben Gamboa:
+;; I changed this so that non-classical witness functions are
 ;; not allowed.  The functions introduced by encapsulate are
 ;; implicitly taken to be classical, so a non-classical witness
 ;; function presents a (non-obvious) signature violation.

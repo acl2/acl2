@@ -1938,8 +1938,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-:non-standard-analysis
   `(complex-rationalp ,x))
 
-; Comments labeled "RAG" are from Ruben Gamboa, pertaining to his work
-; in creating ACL2(r) (see :doc real).
+; Comments labeled "Historical Comment from Ruben Gamboa" are from Ruben
+; Gamboa, pertaining to his work in creating ACL2(r) (see :doc real).
 
 (defun true-listp (x)
   (declare (xargs :guard t :mode :logic))
@@ -3564,7 +3564,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((null (cdr rst)) (list 'binary-* 1 (car rst)))
         (t (xxxjoin 'binary-* rst))))
 
-;; RAG - This function was modified to accept all complex arguments,
+;; Historical Comment from Ruben Gamboa:
+;; This function was modified to accept all complex arguments,
 ;; not just the complex-rationalps
 
 #+acl2-loop-only
@@ -3716,7 +3717,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (not (< 0 (- x)))))
   :rule-classes nil)
 
-;; RAG - This axiom was weakened to accomodate real x and y
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was weakened to accomodate real x and y
 
 (defaxiom Positive
   (and (implies (and (< 0 x) (< 0 y))
@@ -3752,14 +3754,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (implies (rationalp x) (realp x))
   :rule-classes nil)
 
-;; RAG - This axiom was weakened to accomodate the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was weakened to accomodate the reals.
 
 (defaxiom complex-implies1
   (and (real/rationalp (realpart x))
        (real/rationalp (imagpart x)))
   :rule-classes nil)
 
-;; RAG - This axiom was strengthened to include the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was strengthened to include the reals.
 ; (Note: We turned this into a disabled rewrite rule after ACL2 7.4.)
 
 (defaxiom complex-definition
@@ -3769,7 +3773,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (+ x (* #c(0 1) y)))))
 (in-theory (disable complex-definition))
 
-;; RAG - This axiom was weakened to accomodate the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was weakened to accomodate the reals.
 
 ; This rule was called complex-rationalp-has-nonzero-imagpart before
 ; Version_2.5.
@@ -3785,7 +3790,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We think that the following two axioms can be proved from the others.
 
-;; RAG - This axiom was strengthened to include the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was strengthened to include the reals.
 
 (defaxiom realpart-complex
   (implies (and (real/rationalp x)
@@ -3793,7 +3799,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (equal (realpart (complex x y))
                   x)))
 
-;; RAG - This axiom was also strengthened to include the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was also strengthened to include the reals.
 
 (defaxiom imagpart-complex
   (implies (and (real/rationalp x)
@@ -3801,7 +3808,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (equal (imagpart (complex x y))
                   y)))
 
-;; RAG - Another axiom strengthened to include the reals.
+;; Historical Comment from Ruben Gamboa:
+;; Another axiom strengthened to include the reals.
 
 (defthm complex-equal
   (implies (and (real/rationalp x1)
@@ -3833,14 +3841,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; See the comment in check-built-in-constants.
 
-;; RAG - As promised by the comment above, this number had to be
+;; Historical Comment from Ruben Gamboa:
+;; As promised by the comment above, this number had to be
 ;; changed to get ACL2 to compile.  The number "104" is magical.  I
 ;; figured it out by compiling ACL2, getting the error message that
 ;; said *force-xnume* should be "104" but wasn't, and then changed the
 ;; definition here.  The comment in check-built-in-constants explains
 ;; why we need to play this (apparently silly) game.
 
-;; RAG - After adding the non-standard predicates, this number grew to 110.
+;; Historical Comment from Ruben Gamboa:
+;; After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
   (let ((x 129))
@@ -3860,11 +3870,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; See the comment in check-built-in-constants.
 
-;; RAG - The value of "107" was modified as suggested during the
+;; Historical Comment from Ruben Gamboa:
+;; The value of "107" was modified as suggested during the
 ;; compilation of ACL2.  It's magic.  See the comment in
 ;; check-built-in-constants to find out more.
 
-;; RAG - After adding the non-standard predicates, this changed to 113.
+;; Historical Comment from Ruben Gamboa:
+;; After adding the non-standard predicates, this changed to 113.
 
 (defconst *immediate-force-modep-xnume*
   (+ *force-xnume* 3))
@@ -4094,7 +4106,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Eventually we will replace some of these axioms by theorems.  But not now
 ; because things are too fluid.
 
-;; RAG - This axiom was strengthened to include the reals.  Amusingly,
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was strengthened to include the reals.  Amusingly,
 ;; it was also weakened, since it leaves open the possibility that for
 ;; rational x, x*x is irrational.  Luckily, the type-system knows this
 ;; isn't the case, so hopefully we have not weakened ACL2.
@@ -4838,7 +4851,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard t))
   (if (rationalp x) x 0))
 
-;; RAG - I added "realfix" to coerce numbers into reals.  I would have
+;; Historical Comment from Ruben Gamboa:
+;; I added "realfix" to coerce numbers into reals.  I would have
 ;; liked to use "rfix" for it, but "rfix" was taken for the
 ;; rationals.  "ifix" as in "irrational-fix" would be a misnomer,
 ;; since it's the identity functions for rationals as well as
@@ -7436,8 +7450,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+(and :non-standard-analysis (not acl2-loop-only))
 (defun floor1 (x)
 
-; See "RAG" comment in the definition of floor for an explanation of why we
-; need this function.
+; See "Historical Comment from Ruben Gamboa" comment in the definition of floor
+; for an explanation of why we need this function.
 
   (floor x 1))
 
@@ -7446,7 +7460,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun floor (i j)
 
-;; RAG - This function had to be modified in a major way.  It was
+;; Historical Comment from Ruben Gamboa:
+;; This function had to be modified in a major way.  It was
 ;; originally defined only for rationals, and it used the fact that
 ;; the floor of "p/q" could be found by repeatedly subtracting "q"
 ;; from "p" (roughly speaking).  This same trick, sadly, does not work
@@ -7480,7 +7495,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (t (+ (- (nonnegative-integer-quotient (- n) d)) -1))))
   )
 
-;; RAG - This function was also modified to fit in the reals.  It's
+;; Historical Comment from Ruben Gamboa:
+;; This function was also modified to fit in the reals.  It's
 ;; also defined in terms of the _undefined_ function floor1 (which
 ;; corresponds to the usual unary floor function).
 
@@ -7510,7 +7526,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (t (- (nonnegative-integer-quotient (- n) d)))))
   )
 
-;; RAG - Another function  modified to fit in the reals, using floor1.
+;; Historical Comment from Ruben Gamboa:
+;; Another function  modified to fit in the reals, using floor1.
 
 (defun truncate (i j)
   (declare (xargs :guard (and (real/rationalp i)
@@ -7538,7 +7555,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (t (- (nonnegative-integer-quotient (- n) d)))))
   )
 
-;; RAG - Another function  modified to fit in the reals, using floor1.
+;; Historical Comment from Ruben Gamboa:
+;; Another function  modified to fit in the reals, using floor1.
 
 (defun round (i j)
   (declare (xargs :guard (and (real/rationalp i)
@@ -7568,7 +7586,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                             (t (+ cl -1)))))))))
   )
 
-;; RAG - I only had to modify the guards here to allow the reals,
+;; Historical Comment from Ruben Gamboa:
+;; I only had to modify the guards here to allow the reals,
 ;; since this function is defined in terms of the previous ones.
 
 (defun mod (x y)
@@ -7596,21 +7615,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   :guard (acl2-numberp x)))
   (eql x 0))
 
-;; RAG - Only the guard changed here.
+;; Historical Comment from Ruben Gamboa:
+;; Only the guard changed here.
 
 (defun plusp (x)
   (declare (xargs :mode :logic
                   :guard (real/rationalp x)))
   (> x 0))
 
-;; RAG - Only the guard changed here.
+;; Historical Comment from Ruben Gamboa:
+;; Only the guard changed here.
 
 (defun minusp (x)
   (declare (xargs :mode :logic
                   :guard (real/rationalp x)))
   (< x 0))
 
-;; RAG - Only the guard changed here.
+;; Historical Comment from Ruben Gamboa:
+;; Only the guard changed here.
 
 (defun min (x y)
   (declare (xargs :guard (and (real/rationalp x)
@@ -7619,7 +7641,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       x
     y))
 
-;; RAG - Only the guard changed here.
+;; Historical Comment from Ruben Gamboa:
+;; Only the guard changed here.
 
 (defun max (x y)
   (declare (xargs :guard (and (real/rationalp x)
@@ -7628,7 +7651,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       x
     y))
 
-;; RAG - Only the guard changed here.  The docstring below says that
+;; Historical Comment from Ruben Gamboa:
+;; Only the guard changed here.  The docstring below says that
 ;; abs must not be used on complex arguments, since that could result
 ;; in a non-ACL2 object.
 
@@ -7739,7 +7763,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (not (equal (expt r i) 0)))
   :rule-classes :type-prescription)
 
-;; RAG - I added the following lemma, similar to the rational case.
+;; Historical Comment from Ruben Gamboa:
+;; I added the following lemma, similar to the rational case.
 
 #+:non-standard-analysis
 (defthm realp-expt-type-prescription
@@ -9956,7 +9981,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (equal (length x) 2)
        (symbolp (cadr x))))
 
-;; RAG - I added entries for 'real and 'complex.  Guards with 'complex
+;; Historical Comment from Ruben Gamboa:
+;; I added entries for 'real and 'complex.  Guards with 'complex
 ;; have CHANGED SEMANTICS!  Yikes!  Before, the moniker 'complex had
 ;; the semantics of complex-rationalp.  Now, it has the semantics of
 ;; complexp.  I added a new declaration, 'complex-rational, to stand
@@ -10144,7 +10170,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (mutual-recursion
 
-;; RAG - This was modified to change the moniker 'complex to use
+;; Historical Comment from Ruben Gamboa:
+;; This was modified to change the moniker 'complex to use
 ;; complexp instead of complex-rationalp.
 
 (defun translate-declaration-to-guard (x var wrld)
@@ -12272,7 +12299,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (acl2-number-listp x))
   :rule-classes :forward-chaining)
 
-;; RAG - This function is analogous to rational-listp.
+;; Historical Comment from Ruben Gamboa:
+;; This function is analogous to rational-listp.
 
 #+:non-standard-analysis
 (defun real-listp (l)
@@ -12282,7 +12310,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (and (realp (car l))
                 (real-listp (cdr l))))))
 
-;; RAG - Standard forward chaining theorem about <type>-listp.
+;; Historical Comment from Ruben Gamboa:
+;; Standard forward chaining theorem about <type>-listp.
 
 #+:non-standard-analysis
 (defthm real-listp-forward-to-acl2-number-listp
@@ -12314,7 +12343,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (integer-listp x))
   :rule-classes :forward-chaining)
 
-;; RAG - Analogous to the forward rule from integers to rationals.
+;; Historical Comment from Ruben Gamboa:
+;; Analogous to the forward rule from integers to rationals.
 
 #+:non-standard-analysis
 (defthm rational-listp-forward-to-real-listp
@@ -20417,6 +20447,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     global-enabled-structure
     cert-data
     verify-termination-on-raw-program-okp
+    prompt-memo
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,
@@ -22868,7 +22899,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (equal x 0))
            (equal (/ x) 0)))
 
-;; RAG - This axiom was strengthened to include the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was strengthened to include the reals.
 
 (defaxiom completion-of-<
   (equal (< x y)
@@ -22960,7 +22992,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (code-char 0)))
   :hints (("Goal" :use completion-of-code-char)))
 
-;; RAG - This axiom was strengthened to include the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was strengthened to include the reals.
 
 (defaxiom completion-of-complex
   (equal (complex x y)
@@ -22968,7 +23001,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (if (real/rationalp y) y 0)))
   :rule-classes nil)
 
-;; RAG - This axiom was weakened to include the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was weakened to include the reals.
 
 (defthm default-complex-1
   (implies (not (real/rationalp x))
@@ -22976,7 +23010,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (complex 0 y)))
   :hints (("Goal" :use completion-of-complex)))
 
-;; RAG - This axiom was weakened to include the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was weakened to include the reals.
 
 (defthm default-complex-2
   (implies (not (real/rationalp y))
@@ -22985,7 +23020,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :hints (("Goal" :use ((:instance completion-of-complex)
                         (:instance complex-definition (y 0))))))
 
-;; RAG - This axiom was modified to include the reals.
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was modified to include the reals.
 
 (defthm complex-0
   (equal (complex x 0)
@@ -23074,7 +23110,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   1))
   :hints (("Goal" :use completion-of-denominator)))
 
-;; RAG - The following axioms give the rules for working with the
+;; Historical Comment from Ruben Gamboa:
+;; The following axioms give the rules for working with the
 ;; undefined predicate floor1.  We start with the completion axiom,
 ;; which says floor1 is only useful for real numbers.
 
@@ -23086,7 +23123,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            0))
   :rule-classes nil)
 
-;; RAG - The second axiom about floor1 is that it returns 0 for any
+;; Historical Comment from Ruben Gamboa:
+;; The second axiom about floor1 is that it returns 0 for any
 ;; invalid argument.
 
 #+:non-standard-analysis
@@ -23095,14 +23133,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (equal (floor1 x)
                   0)))
 
-;; RAG - We also know that floor1 is the identity function for the integers.
+;; Historical Comment from Ruben Gamboa:
+;; We also know that floor1 is the identity function for the integers.
 
 #+:non-standard-analysis
 (defaxiom floor1-integer-x
   (implies (integerp x)
            (equal (floor1 x) x)))
 
-;; RAG - And, we know that the floor1 of x is no larger than x itself.
+;; Historical Comment from Ruben Gamboa:
+;; And, we know that the floor1 of x is no larger than x itself.
 
 #+:non-standard-analysis
 (defaxiom floor1-x-<=-x
@@ -23110,7 +23150,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (<= (floor1 x) x))
   :rule-classes :linear)
 
-;; RAG - Finally, we know that the floor1 of x is larger than x-1.
+;; Historical Comment from Ruben Gamboa:
+;; Finally, we know that the floor1 of x is larger than x-1.
 
 #+:non-standard-analysis
 (defaxiom x-<-add1-floor1-x
@@ -23118,7 +23159,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (< x (1+ (floor1 x))))
   :rule-classes :linear)
 
-;; RAG - This theorem is useful for proving the value of floor1 is a
+;; Historical Comment from Ruben Gamboa:
+;; This theorem is useful for proving the value of floor1 is a
 ;; specific value.  It is probably only useful when instantiated
 ;; manually, so we do not make it a rewrite rule.
 
@@ -23212,7 +23254,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   ""))
   :hints (("Goal" :use completion-of-symbol-package-name)))
 
-;; RAG - Here, I put in the basic theory that we will use for
+;; Historical Comment from Ruben Gamboa:
+;; Here, I put in the basic theory that we will use for
 ;; non-standard analysis.
 
 #+:non-standard-analysis
@@ -23247,7 +23290,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Now, we have some axioms about standardp.  Standardp
 ; behaves reasonably with respect to the arithmetic operators.
-; RAGTODO: Some of these are theorems now, and should be introduced
+; Historical Comment from Ruben Gamboa:
+; TODO: Some of these are theorems now, and should be introduced
 ; as theorems instead of axioms.
 
 (defaxiom standardp-plus

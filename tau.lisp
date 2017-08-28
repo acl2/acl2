@@ -482,7 +482,8 @@
 ; operates by finding the largest recognized type set group and knocks it out
 ; of the type set.
 
-;; RAG - I added a rule for realp, non-zero real, non-negative real,
+;; Historical Comment from Ruben Gamboa:
+;; I added a rule for realp, non-zero real, non-negative real,
 ;; non-positive real, positive real, negative real, irrational,
 ;; negative irrational, positive irrational, and complex.
 
@@ -7113,7 +7114,8 @@
 
            t wrld))
 
-;; RAG - This function tests whether a list of names is made up purely
+;; Historical Comment from Ruben Gamboa:
+;; This function tests whether a list of names is made up purely
 ;; of classical function names (i.e., not descended from the
 ;; non-standard function symbols)
 

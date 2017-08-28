@@ -1,9 +1,11 @@
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
 ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
  (TIME STEPS)
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
-ACL2 !>>(ASSIGN SCRIPT-MODE T)
- T
 ACL2 !>>(SET-GAG-MODE NIL)
 <state>
 ACL2 !>>(SET-GUARD-CHECKING :ALL)
@@ -2488,7 +2490,7 @@ ACL2 !>>(PE 'LOGCOUNT)
                      (T (1+ (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2))))))
 
 Additional events for the logical name LOGCOUNT:
-       -6863  (PROGN (DEFUN EXPT # ...)
+       -6864  (PROGN (DEFUN EXPT # ...)
                      (DEFUN LOGCOUNT # ...)
                      ...)
               \

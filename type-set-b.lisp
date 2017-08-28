@@ -20,7 +20,8 @@
 
 (in-package "ACL2")
 
-;; RAG - I changed this value from 7 to 10 to make room for the
+;; Historical Comment from Ruben Gamboa:
+;; I changed this value from 7 to 10 to make room for the
 ;; positive-, negative-, and complex-irrationals.
 
 (defconst *number-of-numeric-type-set-bits*
@@ -53,7 +54,8 @@
   (compress2 'type-set-binary-*-table
              *type-set-binary-*-table-list*))
 
-;; RAG - As a consequence of the extra numeric arguments, I had to
+;; Historical Comment from Ruben Gamboa:
+;; As a consequence of the extra numeric arguments, I had to
 ;; change this table from 6 to 8, to make room for the positive
 ;; and negative irrationals.
 
@@ -2053,7 +2055,8 @@
          ,ts
        (ts-union numeric-ts-use-nowhere-else *ts-zero*))))
 
-;; RAG - I added this function analogously to rational-type-set.
+;; Historical Comment from Ruben Gamboa:
+;; I added this function analogously to rational-type-set.
 
 #+:non-standard-analysis
 (defmacro real-type-set (ts)
@@ -2252,7 +2255,8 @@
                                         (cdr type-alist))))))))
              (& (type-set-<-1 r arg2 commutedp (cdr type-alist))))))))
 
-;; RAG - I changed complex-rational to complex below.
+;; Historical Comment from Ruben Gamboa:
+;; I changed complex-rational to complex below.
 
 (defun type-set-< (arg1 arg2 ts1 ts2 type-alist ttree ttree0 pot-lst pt)
 
@@ -2413,7 +2417,8 @@
                                       (access poly contradictionp :ttree))
                                 (mv *ts-boolean* ttree0))))))))))))))
 
-;; RAG - I added entries for real and complex irrationals.
+;; Historical Comment from Ruben Gamboa:
+;; I added entries for real and complex irrationals.
 
 (defun type-set-unary-- (ts ttree ttree0)
   (let ((ts1 (numeric-type-set ts)))
@@ -2437,7 +2442,8 @@
                       (*ts-complex-non-rational* *ts-complex-non-rational*))
           (puffert ttree))))))
 
-;; RAG - I added entries for real and complex irrationals.
+;; Historical Comment from Ruben Gamboa:
+;; I added entries for real and complex irrationals.
 
 (defun type-set-unary-/ (ts ttree ttree0)
   (let* ((ts1 (numeric-type-set ts))
@@ -2485,7 +2491,8 @@
            (mv *ts-positive-integer* (puffert ttree0)))
           (t (mv ans (puffert ttree))))))
 
-;; RAG - I added an entry for *ts-complex-non-rational*.  Note that
+;; Historical Comment from Ruben Gamboa:
+;; I added an entry for *ts-complex-non-rational*.  Note that
 ;; since we don't know whether the type in non-rational because of an
 ;; irrational real or imaginary part, all we can say is that the
 ;; result is real, not necessarily irrational.
@@ -2499,7 +2506,8 @@
         (t
          (mv (numeric-type-set ts) (puffert ttree)))))
 
-;; RAG - I added an entry for *ts-complex-non-rational*.
+;; Historical Comment from Ruben Gamboa:
+;; I added an entry for *ts-complex-non-rational*.
 
 (defun type-set-imagpart (ts ttree ttree0)
   (cond ((ts-subsetp ts *ts-complex-rational*)
@@ -2520,7 +2528,8 @@
         (t
          (mv *ts-zero* (puffert ttree)))))
 
-;; RAG - I allowed reals as well as rationals below for the type of
+;; Historical Comment from Ruben Gamboa:
+;; I allowed reals as well as rationals below for the type of
 ;; ts1 and ts2.
 
 (defun type-set-complex (ts1 ts2 ttree ttree0)
@@ -2558,12 +2567,17 @@
                          (cond ((and (ts-subsetp ts1 *ts-rational*)
                                      (ts-subsetp ts2 *ts-rational*))
                                 *ts-complex-rational*)
+                               ((or (ts-subsetp ts1 *ts-non-ratio*)
+                                    (ts-subsetp ts2 (ts-union *ts-non-ratio*
+                                                              *ts-zero*)))
+                                *ts-complex-non-rational*)
                                (t *ts-complex*))
                          #-:non-standard-analysis
                          *ts-complex-rational*)
                (puffert ttree))))))
 
-;; RAG - I added this function to account for the new built-in floor1.
+;; Historical Comment from Ruben Gamboa:
+;; I added this function to account for the new built-in floor1.
 
 #+:non-standard-analysis
 (defun type-set-floor1 (ts ttree ttree0)
@@ -2579,7 +2593,8 @@
            (mv *ts-integer* (puffert ttree0)))
           (t (mv ans (puffert ttree))))))
 
-;; RAG - I added this function to account for the new built-in standard-part.
+;; Historical Comment from Ruben Gamboa:
+;; I added this function to account for the new built-in standard-part.
 
 #+:non-standard-analysis
 (defun type-set-standard-part (ts ttree ttree0)
@@ -2600,7 +2615,8 @@
                      ttree0
                      ttree)))))
 
-;; RAG - I added this function to account for the new built-in standardp.
+;; Historical Comment from Ruben Gamboa:
+;; I added this function to account for the new built-in standardp.
 
 #+:non-standard-analysis
 (defun type-set-standardp (ts ttree ttree0)
@@ -2728,7 +2744,8 @@
 ; we'll naturally fall back on the next most recently still-enabled
 ; one.
 
-;; RAG - I added recognizers for realp and complexp.
+;; Historical Comment from Ruben Gamboa:
+;; I added recognizers for realp and complexp.
 
 (defconst *initial-recognizer-alist*
   (list (make recognizer-tuple
@@ -2964,7 +2981,8 @@
          (mv *ts-boolean* (puffert ttree0)))
         (t (mv *ts-nil* (puffert ttree)))))
 
-;; RAG - I added entries here for realp evg.  This is probably not
+;; Historical Comment from Ruben Gamboa:
+;; I added entries here for realp evg.  This is probably not
 ;; needed, since we can't construct realp numbers!
 
 (defun type-set-quote (evg)
@@ -7056,7 +7074,8 @@
                       (t ,body)))
               (t form))))))
 
-;; RAG - Changed the assumptions based on rational to realp.
+;; Historical Comment from Ruben Gamboa:
+;; Changed the assumptions based on rational to realp.
 
 (defun assume-true-false-<
   (not-flg arg1 arg2 ts1 ts2 type-alist ttree xttree w)
@@ -8745,7 +8764,8 @@
                                   ttree1)
                               pot-lst pt backchain-limit extended-p))))))
 
-;; RAG - I added an entry for floor1, which is the only primitive
+;; Historical Comment from Ruben Gamboa:
+;; I added an entry for floor1, which is the only primitive
 ;; non-recognizer function we added for the reals.  [Ruben added entries for
 ;; some other non-standard primitives too.]
 
@@ -9293,7 +9313,8 @@
 ; comments in preprocess-clause beginning ``Note: Once upon a time (in
 ; Version 1.5)'' for more on this.
 
-;; RAG - In this function, I relaxed the tests for rational to include
+;; Historical Comment from Ruben Gamboa:
+;; In this function, I relaxed the tests for rational to include
 ;; realp as well.
 
 (defun assume-true-false-if (not-flg x xttree force-flg dwp

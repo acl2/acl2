@@ -3640,7 +3640,8 @@
                  (untranslate1-lst (cdr lst) iff-flg untrans-tbl preprocess-fn
                                    wrld)))))
 
-;; RAG - I relaxed the guards for < and complex to use realp instead
+;; Historical Comment from Ruben Gamboa:
+;; I relaxed the guards for < and complex to use realp instead
 ;; of rationalp.  I also added complexp, realp, and floor1.
 
 )
