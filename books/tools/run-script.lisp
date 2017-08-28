@@ -7,7 +7,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc run-script
-  :parents (macro-libraries)
+  :parents (testing-utilities)
   :short "Run a script"
   :long "<p>@('Run-script') is a utility for testing evaluation of the forms in
  a given file, to check that the output is as expected.  The forms need not be
@@ -150,5 +150,5 @@
            ,input-file)
          :ld-prompt nil ; for (assign script-mode t)
          :ld-verbose nil ; avoid absolute pathname printed for cbd
-         :ld-pre-eval-print t :ld-error-action ,ld-error-action 
+         :ld-pre-eval-print t :ld-error-action ,ld-error-action
          :standard-co ,output-file :proofs-co ,output-file)))

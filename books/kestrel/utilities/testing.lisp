@@ -17,15 +17,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc testing-utilities
-  :parents (kestrel-utilities)
-  :short "Utilities for testing.")
+(defxdoc kestrel-testing-utilities
+  :parents (kestrel-utilities testing-utilities)
+  :short "Utilities for testing that are part of the @(see kestrel-books).")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-succeed*
 
-  :parents (testing-utilities errors)
+  :parents (testing-utilities kestrel-testing-utilities errors must-succeed)
 
   :short "A variant of @(tsee must-succeed) that accepts multiple forms."
 
@@ -85,7 +85,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-be-redundant
-  :parents (testing-utilities errors)
+  :parents (testing-utilities kestrel-testing-utilities errors)
   :short "A top-level @(tsee assert$)-like command
           to ensure that given forms are redundant."
   :long
@@ -103,7 +103,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-fail-local
-  :parents (testing-utilities errors must-fail)
+  :parents (testing-utilities kestrel-testing-utilities errors must-fail)
   :short "A @(see local) variant of @(tsee must-fail)."
   :long
   "<p>
@@ -117,7 +117,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection assert-equal
-  :parents (testing-utilities errors)
+  :parents (testing-utilities kestrel-testing-utilities errors)
   :short "Abbreviation for calling @(tsee assert!) on an equality."
   :long "@(def assert-equal)"
   (defmacro assert-equal (x y)

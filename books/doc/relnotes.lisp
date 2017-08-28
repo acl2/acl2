@@ -286,7 +286,13 @@
  <p>Also see @(see note-7-5), specifically the section on ``Changes at the
  System Level''.</p>
 
- <h3>Scripts</h3>
+ <h3>Testing</h3>
+
+ <p>The documentation topics for testing have been reorganized, with
+ introduction of a new topic, @(see kestrel-testing-utilities), as a parent of
+ the testing utilities that are part of the @(see kestrel-books), so that now
+ the topic @(see testing-utilities) is the top-level topic for the testing
+ utilities.</p>
 
  <p>The utility @(tsee run-script) supports testing of evaluation of the forms
  in a given file, to check that the output is as expected.  So far, several
