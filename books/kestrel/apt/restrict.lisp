@@ -218,7 +218,7 @@
        ((when (eq name new-fn-name))
         (er soft ctx
             "~@0 must differ from the name ~x1 of the new function ~
-             (determined by the :THM-NAME input)."
+             (determined by the :NEW-NAME input)."
             description new-fn-name)))
     (value name)))
 
