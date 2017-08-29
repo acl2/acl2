@@ -158,14 +158,16 @@
   (b* ((rec-calls (all-calls (list old-fn-name) rec-branch nil nil))
        (rec-calls (remove-duplicates-equal rec-calls))
        ((when (/= (len rec-calls) 1))
-        (er soft ctx
-            "After translation and LET expansion, ~
-             the recursive branch ~x0 of the target function ~x1 ~
-             must not contain different calls to ~x1." rec-branch old-fn-name))
+        (er-soft+ ctx t nil
+                  "After translation and LET expansion, ~
+                   the recursive branch ~x0 of the target function ~x1 ~
+                   must not contain different calls to ~x1."
+                  rec-branch old-fn-name))
        (rec-call (car rec-calls))
        ((when (equal rec-call rec-branch))
-        (er soft ctx
-            "The target function ~x0 is already tail-recursive." old-fn-name))
+        (er-soft+ ctx t nil
+                  "The target function ~x0 is already tail-recursive."
+                  old-fn-name))
        (updates (fargs rec-call))
        (formals (formals old-fn-name (w state)))
        (r (genvar old-fn-name "R" nil formals))
@@ -183,9 +185,9 @@
        ((mv found nonrec combine)
         (tailrec-find-nonrec-term combine-nonrec combine-nonrec r q))
        ((unless found)
-        (er soft ctx
-            "Unable to decompose the recursive branch ~x0 ~
-             of the target function ~x1." rec-branch old-fn-name)))
+        (er-soft+ ctx t nil
+                  "Unable to decompose the recursive branch ~x0 ~
+                   of the target function ~x1." rec-branch old-fn-name)))
     (value (list nonrec updates combine q r))))
 
 (define tailrec-check-old
@@ -425,11 +427,12 @@
                               is (perhaps by default) :AUTO"
                            "supplied as the :WRAPPER-NAME input")))
        ((er &) (ensure-symbol-new-event-name$ name description t nil))
-       ((when (eq name new-fn-name))
-        (er soft ctx
-            "~@0 must differ from the name ~x1 of the new function ~
-             (determined by the :NEW-NAME input)."
-            description new-fn-name)))
+       ((er &) (ensure-symbol-different$
+                name new-fn-name
+                (msg "the name ~x0 of the new function ~
+                      (determined by the :NEW-NAME input)." new-fn-name)
+                description
+                t nil)))
     (value name)))
 
 (define tailrec-check-thm-name
@@ -472,16 +475,18 @@
                               is (perhaps by default) :ARROW, :BECOMES, or :IS"
                            "supplied as the :THM-NAME input")))
        ((er &) (ensure-symbol-new-event-name$ name description t nil))
-       ((when (eq name new-fn-name))
-        (er soft ctx
-            "~@0 must differ from the name ~x1 of the new function ~
-             (determined by the :NEW-NAME input)."
-            description new-fn-name))
-       ((when (eq name wrapper-fn-name))
-        (er soft ctx
-            "~@0 must differ from the name ~x1 of the wrapper function ~
-             (determined by the :WRAPPER-NAME input)."
-            description wrapper-fn-name)))
+       ((er &) (ensure-symbol-different$
+                name new-fn-name
+                (msg "the name ~x0 of the new function ~
+                      (determined by the :NEW-NAME input)." new-fn-name)
+                description
+                t nil))
+       ((er &) (ensure-symbol-different$
+                name wrapper-fn-name
+                (msg "the name ~x0 of the wrapper function ~
+                      (determined by the :WRAPPER-NAME input)." wrapper-fn-name)
+                description
+                t nil)))
     (value name)))
 
 (defval *tailrec-app-cond-names*
