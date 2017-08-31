@@ -86,6 +86,14 @@
 
 (gl::gl-satlink-mode)
 
+;; configure satlink to use base glucose
+(local (progn (defun my-satlink-config ()
+                (declare (Xargs :guard t))
+                (satlink::make-config
+                 :cmdline "glucose -model"
+                 :verbose t
+                 :mintime 1))
+              (defattach gl::gl-satlink-config my-satlink-config)))
 
 (gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
 
