@@ -18,8 +18,8 @@
 
 (defxdoc theorems-about-world-related-functions
   :parents (theorems-about-non-kestrel-books system-utilities)
-  :short "Theorems about world-related functions
-          defined outside the Kestrel Books."
+  :short "Theorems about world-related functions defined outside the
+          <see topic='@(url kestrel-books)'>Kestrel Books</see>."
   :long
   "@(def arity-iff)
    @(def plist-worldp-when-plist-worldp-with-formals-cheap)

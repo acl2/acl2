@@ -75,4 +75,5 @@
 
 (defxdoc theorems-about-non-kestrel-books
   :parents (kestrel-utilities)
-  :short "Theorems about functions defined outside the Kestrel Books.")
+  :short "Theorems about functions defined outside the
+          <see topic='@(url kestrel-books)'>Kestrel Books</see>.")
