@@ -3571,10 +3571,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+acl2-loop-only
 (defun conjugate (x)
   (declare (xargs :guard (acl2-numberp x)))
-  (if (complex/complex-rationalp x)
-      (complex (realpart x)
-               (- (imagpart x)))
-      x))
+  (complex (realpart x)
+           (- (imagpart x))))
 
 (defun add-suffix (sym str)
   (declare (xargs :guard (and (symbolp sym)
@@ -23025,10 +23023,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defthm complex-0
   (equal (complex x 0)
-         #+:non-standard-analysis
-         (realfix x)
-         #-:non-standard-analysis
-         (rfix x))
+         (realfix x))
   :hints (("Goal" :use ((:instance complex-definition (y 0))))))
 
 (defthm add-def-complex

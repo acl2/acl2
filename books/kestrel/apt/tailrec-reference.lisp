@@ -663,7 +663,7 @@
    </h3>
 
    <p>
-   The following conditions must be provable
+   The following conditions must be proved
    in order for the transformation to apply.
    </p>
 
