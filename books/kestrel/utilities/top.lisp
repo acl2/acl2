@@ -46,6 +46,7 @@
 (include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")
+(include-book "paired-names")
 (include-book "prove-interface")
 (include-book "strings")
 (include-book "symbol-symbol-alists")
