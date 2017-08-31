@@ -213,7 +213,7 @@ including a book (because of the way that @('must-fail') is implemented using
   :parents (errors)
   :short "Ensure that an error occurs"
 
-  :long "<p>Evaluation of @('(ensure-error <form>)' returns without error
+  :long "<p>Evaluation of @('(ensure-error <form>)') returns without error
  exactly when evaluation of @('<form>') causes an error.</p>
 
  <p>See @(see must-fail) for more details, as @('ensure-error') abbreviates
@@ -227,7 +227,7 @@ including a book (because of the way that @('must-fail') is implemented using
   :parents (errors)
   :short "Ensure that a soft error occurs"
 
-  :long "<p>Evaluation of @('(ensure-error <form>)' returns without error
+  :long "<p>Evaluation of @('(ensure-soft-error <form>)') returns without error
  exactly when evaluation of @('<form>') causes a soft error.</p>
 
  <p>See @(see must-fail) for more details, as @('ensure-soft-error')
@@ -241,7 +241,7 @@ including a book (because of the way that @('must-fail') is implemented using
   :parents (errors)
   :short "Ensure that a hard error occurs"
 
-  :long "<p>Evaluation of @('(ensure-error <form>)' returns without error
+  :long "<p>Evaluation of @('(ensure-hard-error <form>)') returns without error
  exactly when evaluation of @('<form>') causes a hard error.</p>
 
  <p>See @(see must-fail) for more details, as @('ensure-hard-error')
