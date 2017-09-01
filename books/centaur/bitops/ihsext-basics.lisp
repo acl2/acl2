@@ -3012,13 +3012,11 @@ off looking at the source code.</p>")
                     :pattern (signed-byte-p bits x)
                     :scheme (signed-byte-p-ind bits x))))
 
-  (defthmd signed-byte-p-incr
+  (defthm signed-byte-p-incr
     (implies (and (signed-byte-p a x)
                   (natp b)
                   (<= a b))
              (signed-byte-p b x)))
-
-  (local (in-theory (enable signed-byte-p-incr)))
 
   (defthmd signed-byte-p-logcons
     (implies (and (signed-byte-p a x)
