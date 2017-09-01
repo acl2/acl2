@@ -3852,7 +3852,7 @@
                                      acl2::ash-0
                                      unsigned-byte-p-of-logior
                                      acl2::zip-open
-                                     bitops::unsigned-byte-p-when-unsigned-byte-p-less))))
+                                     bitops::unsigned-byte-p-incr))))
     :rule-classes :type-prescription)
 
   (defthm-usb n44p-get-prefixes
