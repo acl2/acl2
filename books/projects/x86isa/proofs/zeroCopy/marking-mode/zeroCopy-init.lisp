@@ -423,7 +423,7 @@
     (:rewrite member-p-of-subset-is-member-p-of-superset)
     (:linear rgfi-is-i64p)
     (:rewrite member-p-cdr)
-    (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+    (:rewrite bitops::unsigned-byte-p-incr)
     (:rewrite acl2::difference-unsigned-byte-p)
     (:rewrite acl2::append-when-not-consp)
     (:linear rip-is-i48p)
