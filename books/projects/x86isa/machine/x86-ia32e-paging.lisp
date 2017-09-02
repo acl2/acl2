@@ -700,7 +700,7 @@ accesses.</p>
                             acl2::ifix-negative-to-negp
                             (:rewrite default-<-1)
                             (:rewrite default-<-2)
-                            bitops::unsigned-byte-p-when-unsigned-byte-p-less
+                            bitops::unsigned-byte-p-incr
                             weed-out-irrelevant-logand-when-first-operand-constant
                             negative-logand-to-positive-logand-with-integerp-x)))))
 

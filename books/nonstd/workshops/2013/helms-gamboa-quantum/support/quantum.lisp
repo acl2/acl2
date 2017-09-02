@@ -756,8 +756,11 @@
 	 (* (conjugate x)
 	    (conjugate y)))
   :hints (("Goal"
-	   :use ((:instance *-real-complex-is-real->-must-be-zero (x x) (y y))
-		 (:instance *-real-complex-is-real->-must-be-zero (x y) (y x)))
+; Matt K. mod: required with the change after v7-4 to the definition of conjugate
+;	   :use ((:instance *-real-complex-is-real->-must-be-zero (x x) (y y))
+;		 (:instance *-real-complex-is-real->-must-be-zero (x y) (y x)))
+           :cases ((and (complex/complex-rationalp x)
+                        (complex/complex-rationalp y)))
 	   :in-theory (enable conjugate))
 	   )
   )

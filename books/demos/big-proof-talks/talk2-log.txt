@@ -1,0 +1,3286 @@
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(SET-GAG-MODE NIL)
+<state>
+ACL2 !>>(SET-GUARD-CHECKING :ALL)
+ACL2 !>>(DEFUN AP (X Y)
+               (IF (ENDP X)
+                   Y (CONS (CAR X) (AP (CDR X) Y))))
+
+The admission of AP is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of AP is described by the
+theorem (OR (CONSP (AP X Y)) (EQUAL (AP X Y) Y)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN AP ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ AP
+ACL2 !>>(AP '(1 2 3) '(4 5 6))
+(1 2 3 4 5 6)
+ACL2 !>>(DEFTHM AP-IS-ASSOCIATIVE
+                (EQUAL (AP (AP A B) C) (AP A (AP B C))))
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to two.
+However, one of these is flawed and so we are left with one viable
+candidate.  
+
+We will induct according to a scheme suggested by (AP A B).  This suggestion
+was produced using the :induction rule AP.  If we let (:P A B C) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP A)) (:P (CDR A) B C))
+              (:P A B C))
+     (IMPLIES (ENDP A) (:P A B C))).
+This induction is justified by the same argument used to admit AP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ENDP A))
+              (EQUAL (AP (AP (CDR A) B) C)
+                     (AP (CDR A) (AP B C))))
+         (EQUAL (AP (AP A B) C)
+                (AP A (AP B C)))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/2'
+(IMPLIES (AND (CONSP A)
+              (EQUAL (AP (AP (CDR A) B) C)
+                     (AP (CDR A) (AP B C))))
+         (EQUAL (AP (AP A B) C)
+                (AP A (AP B C)))).
+
+But simplification reduces this to T, using the :definition AP, primitive
+type reasoning and the :rewrite rules CAR-CONS and CDR-CONS.
+
+Subgoal *1/1
+(IMPLIES (ENDP A)
+         (EQUAL (AP (AP A B) C)
+                (AP A (AP B C)))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/1'
+(IMPLIES (NOT (CONSP A))
+         (EQUAL (AP (AP A B) C)
+                (AP A (AP B C)))).
+
+But simplification reduces this to T, using the :definition AP and
+primitive type reasoning.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM AP-IS-ASSOCIATIVE ...)
+Rules: ((:DEFINITION AP)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION AP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+ AP-IS-ASSOCIATIVE
+ACL2 !>>(DEFUN LTE (X Y)
+               (IF (ENDP X)
+                   T
+                   (IF (ENDP Y)
+                       NIL (LTE (CDR X) (CDR Y)))))
+
+The admission of LTE is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of LTE is described by the
+theorem (OR (EQUAL (LTE X Y) T) (EQUAL (LTE X Y) NIL)).  
+
+Summary
+Form:  ( DEFUN LTE ...)
+Rules: NIL
+ LTE
+ACL2 !>>(LTE '(A B C) '(D E F G))
+T
+ACL2 !>>(LTE '(A B C) '(D E))
+NIL
+ACL2 !>>(THM (IMPLIES (AND (LTE A B) (LTE B C))
+                      (LTE A C)))
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by (LTE A C), but modified
+to accommodate (LTE B C) and (LTE A B).  These suggestions were produced
+using the :induction rule LTE.  If we let (:P A B C) denote *1 above
+then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP A))
+                   (NOT (ENDP C))
+                   (:P (CDR A) (CDR B) (CDR C)))
+              (:P A B C))
+     (IMPLIES (AND (NOT (ENDP A)) (ENDP C))
+              (:P A B C))
+     (IMPLIES (ENDP A) (:P A B C))).
+This induction is justified by the same argument used to admit LTE.
+Note, however, that the unmeasured variables B and C are being instantiated.
+When applied to the goal at hand the above induction scheme produces
+five nontautological subgoals.
+
+Subgoal *1/5
+(IMPLIES (AND (NOT (ENDP A))
+              (NOT (ENDP C))
+              (LTE (CDR A) (CDR C))
+              (LTE A B)
+              (LTE B C))
+         (LTE A C)).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/5'
+(IMPLIES (AND (CONSP A)
+              (CONSP C)
+              (LTE (CDR A) (CDR C))
+              (LTE A B)
+              (LTE B C))
+         (LTE A C)).
+
+But simplification reduces this to T, using the :definition LTE and
+the :type-prescription rule LTE.
+
+Subgoal *1/4
+(IMPLIES (AND (NOT (ENDP A))
+              (NOT (ENDP C))
+              (NOT (LTE (CDR B) (CDR C)))
+              (LTE A B)
+              (LTE B C))
+         (LTE A C)).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/4'
+(IMPLIES (AND (CONSP A)
+              (CONSP C)
+              (NOT (LTE (CDR B) (CDR C)))
+              (LTE A B)
+              (LTE B C))
+         (LTE A C)).
+
+But simplification reduces this to T, using the :definition LTE.
+
+Subgoal *1/3
+(IMPLIES (AND (NOT (ENDP A))
+              (NOT (ENDP C))
+              (NOT (LTE (CDR A) (CDR B)))
+              (LTE A B)
+              (LTE B C))
+         (LTE A C)).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP A)
+              (CONSP C)
+              (NOT (LTE (CDR A) (CDR B)))
+              (LTE A B)
+              (LTE B C))
+         (LTE A C)).
+
+But simplification reduces this to T, using the :definition LTE.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ENDP A))
+              (ENDP C)
+              (LTE A B)
+              (LTE B C))
+         (LTE A C)).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/2'
+(IMPLIES (AND (CONSP A)
+              (NOT (CONSP C))
+              (LTE A B)
+              (LTE B C))
+         (LTE A C)).
+
+But simplification reduces this to T, using the :definition LTE.
+
+Subgoal *1/1
+(IMPLIES (AND (ENDP A) (LTE A B) (LTE B C))
+         (LTE A C)).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/1'
+(IMPLIES (AND (NOT (CONSP A))
+              (LTE A B)
+              (LTE B C))
+         (LTE A C)).
+
+But simplification reduces this to T, using the :definition LTE.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ENDP)
+        (:DEFINITION LTE)
+        (:DEFINITION NOT)
+        (:INDUCTION LTE)
+        (:TYPE-PRESCRIPTION LTE))
+
+Proof succeeded.
+ACL2 !>>(DEFUN INSERT (E X)
+               (IF (ENDP X)
+                   (CONS E X)
+                   (IF (LEXORDER E (CAR X))
+                       (CONS E X)
+                       (CONS (CAR X) (INSERT E (CDR X))))))
+
+The admission of INSERT is trivial, using the relation O< (which is
+known to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of INSERT is described by
+the theorem (CONSP (INSERT E X)).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN INSERT ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ INSERT
+ACL2 !>>(INSERT 'BOB '(ALICE CATHY))
+(ALICE BOB CATHY)
+ACL2 !>>(DEFUN ISORT (X)
+               (IF (ENDP X)
+                   X (INSERT (CAR X) (ISORT (CDR X)))))
+
+The admission of ISORT is trivial, using the relation O< (which is
+known to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We could deduce no constraints on the type of ISORT.
+
+Summary
+Form:  ( DEFUN ISORT ...)
+Rules: NIL
+ ISORT
+ACL2 !>>(ISORT '(BOB CATHY ALICE))
+(ALICE BOB CATHY)
+ACL2 !>>(DEFUN ORDERED (X)
+               (OR (ENDP X)
+                   (ENDP (CDR X))
+                   (AND (LEXORDER (CAR X) (CAR (CDR X)))
+                        (ORDERED (CDR X)))))
+
+The admission of ORDERED is trivial, using the relation O< (which is
+known to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of ORDERED is described by
+the theorem (OR (EQUAL (ORDERED X) T) (EQUAL (ORDERED X) NIL)).  
+
+Summary
+Form:  ( DEFUN ORDERED ...)
+Rules: NIL
+ ORDERED
+ACL2 !>>(DEFTHM ORDERED-ISORT (ORDERED (ISORT X)))
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (ISORT X).  This
+suggestion was produced using the :induction rule ISORT.  If we let
+(:P X) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X)))
+              (:P X))
+     (IMPLIES (ENDP X) (:P X))).
+This induction is justified by the same argument used to admit ISORT.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ENDP X))
+              (ORDERED (ISORT (CDR X))))
+         (ORDERED (ISORT X))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/2'
+(IMPLIES (AND (CONSP X)
+              (ORDERED (ISORT (CDR X))))
+         (ORDERED (ISORT X))).
+
+This simplifies, using the :definition ISORT, to
+
+Subgoal *1/2''
+(IMPLIES (AND (CONSP X)
+              (ORDERED (ISORT (CDR X))))
+         (ORDERED (INSERT (CAR X) (ISORT (CDR X))))).
+
+The destructor terms (CAR X) and (CDR X) can be eliminated by using
+CAR-CDR-ELIM to replace X by (CONS X1 X2), (CAR X) by X1 and (CDR X)
+by X2.  This produces the following goal.
+
+Subgoal *1/2'''
+(IMPLIES (AND (CONSP (CONS X1 X2))
+              (ORDERED (ISORT X2)))
+         (ORDERED (INSERT X1 (ISORT X2)))).
+
+This simplifies, using primitive type reasoning, to
+
+Subgoal *1/2'4'
+(IMPLIES (ORDERED (ISORT X2))
+         (ORDERED (INSERT X1 (ISORT X2)))).
+
+We generalize this conjecture, replacing (ISORT X2) by IT.  This produces
+
+Subgoal *1/2'5'
+(IMPLIES (ORDERED IT)
+         (ORDERED (INSERT X1 IT))).
+
+Name the formula above *1.1.
+
+Subgoal *1/1
+(IMPLIES (ENDP X) (ORDERED (ISORT X))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/1'
+(IMPLIES (NOT (CONSP X))
+         (ORDERED (ISORT X))).
+
+But simplification reduces this to T, using the :definitions ISORT
+and ORDERED.
+
+So we now return to *1.1, which is
+
+(IMPLIES (ORDERED IT)
+         (ORDERED (INSERT X1 IT))).
+
+Perhaps we can prove *1.1 by induction.  Two induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by (INSERT X1 IT). 
+This suggestion was produced using the :induction rules INSERT and
+ORDERED.  If we let (:P IT X1) denote *1.1 above then the induction
+scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP IT))
+                   (NOT (LEXORDER X1 (CAR IT)))
+                   (:P (CDR IT) X1))
+              (:P IT X1))
+     (IMPLIES (AND (NOT (ENDP IT))
+                   (LEXORDER X1 (CAR IT)))
+              (:P IT X1))
+     (IMPLIES (ENDP IT) (:P IT X1))).
+This induction is justified by the same argument used to admit INSERT.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+
+Subgoal *1.1/4
+(IMPLIES (AND (NOT (ENDP IT))
+              (NOT (LEXORDER X1 (CAR IT)))
+              (ORDERED (INSERT X1 (CDR IT)))
+              (ORDERED IT))
+         (ORDERED (INSERT X1 IT))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1.1/4'
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (ORDERED (INSERT X1 (CDR IT)))
+              (ORDERED IT))
+         (ORDERED (INSERT X1 IT))).
+
+This simplifies, using the :definitions INSERT and ORDERED (if-intro),
+primitive type reasoning, the :rewrite rules CAR-CONS and CDR-CONS
+and the :type-prescription rules INSERT, LEXORDER and ORDERED, to the
+following two conjectures.
+
+Subgoal *1.1/4.2
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (ORDERED (INSERT X1 (CDR IT)))
+              (NOT (CONSP (CDR IT))))
+         (LEXORDER (CAR IT)
+                   (CAR (INSERT X1 (CDR IT))))).
+
+But simplification reduces this to T, using the :definitions INSERT
+and ORDERED, primitive type reasoning, the :forward-chaining rule 
+LEXORDER-TOTAL, the :rewrite rules CAR-CONS, CDR-CONS, LEXORDER-REFLEXIVE
+and LEXORDER-TRANSITIVE and the :type-prescription rule LEXORDER.
+
+Subgoal *1.1/4.1
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (ORDERED (INSERT X1 (CDR IT)))
+              (LEXORDER (CAR IT) (CADR IT))
+              (ORDERED (CDR IT)))
+         (LEXORDER (CAR IT)
+                   (CAR (INSERT X1 (CDR IT))))).
+
+The destructor terms (CAR IT) and (CDR IT) can be eliminated.  Furthermore,
+those terms are at the root of a chain of two rounds of destructor
+elimination.  (1) Use CAR-CDR-ELIM to replace IT by (CONS IT1 IT2),
+(CAR IT) by IT1 and (CDR IT) by IT2.  (2) Use CAR-CDR-ELIM, again,
+to replace IT2 by (CONS IT3 IT4), (CAR IT2) by IT3 and (CDR IT2) by
+IT4.  These steps produce the following two goals.
+
+Subgoal *1.1/4.1.2
+(IMPLIES (AND (NOT (CONSP IT2))
+              (CONSP (CONS IT1 IT2))
+              (NOT (LEXORDER X1 IT1))
+              (ORDERED (INSERT X1 IT2))
+              (LEXORDER IT1 (CAR IT2))
+              (ORDERED IT2))
+         (LEXORDER IT1 (CAR (INSERT X1 IT2)))).
+
+But simplification reduces this to T, using the :definitions INSERT
+and ORDERED, primitive type reasoning, the :forward-chaining rule 
+LEXORDER-TOTAL, the :rewrite rules CAR-CONS, CDR-CONS, DEFAULT-CAR,
+LEXORDER-REFLEXIVE and LEXORDER-TRANSITIVE and the :type-prescription
+rule LEXORDER.
+
+Subgoal *1.1/4.1.1
+(IMPLIES (AND (CONSP (CONS IT3 IT4))
+              (CONSP (LIST* IT1 IT3 IT4))
+              (NOT (LEXORDER X1 IT1))
+              (ORDERED (INSERT X1 (CONS IT3 IT4)))
+              (LEXORDER IT1 IT3)
+              (ORDERED (CONS IT3 IT4)))
+         (LEXORDER IT1 (CAR (INSERT X1 (CONS IT3 IT4))))).
+
+But simplification reduces this to T, using the :definitions INSERT
+and ORDERED, primitive type reasoning, the :forward-chaining rule 
+LEXORDER-TOTAL, the :rewrite rules CAR-CONS, CDR-CONS, LEXORDER-REFLEXIVE
+and LEXORDER-TRANSITIVE and the :type-prescription rule LEXORDER.
+
+Subgoal *1.1/3
+(IMPLIES (AND (NOT (ENDP IT))
+              (NOT (LEXORDER X1 (CAR IT)))
+              (NOT (ORDERED (CDR IT)))
+              (ORDERED IT))
+         (ORDERED (INSERT X1 IT))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1.1/3'
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (NOT (ORDERED (CDR IT)))
+              (ORDERED IT))
+         (ORDERED (INSERT X1 IT))).
+
+This simplifies, using the :definitions INSERT and ORDERED (if-intro),
+primitive type reasoning, the :rewrite rules CAR-CONS and CDR-CONS
+and the :type-prescription rule INSERT, to the following two conjectures.
+
+Subgoal *1.1/3.2
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (NOT (ORDERED (CDR IT)))
+              (NOT (CONSP (CDR IT))))
+         (LEXORDER (CAR IT)
+                   (CAR (INSERT X1 (CDR IT))))).
+
+But simplification reduces this to T, using the :definition ORDERED.
+
+Subgoal *1.1/3.1
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (NOT (ORDERED (CDR IT)))
+              (NOT (CONSP (CDR IT))))
+         (ORDERED (INSERT X1 (CDR IT)))).
+
+But simplification reduces this to T, using the :definition ORDERED.
+
+Subgoal *1.1/2
+(IMPLIES (AND (NOT (ENDP IT))
+              (LEXORDER X1 (CAR IT))
+              (ORDERED IT))
+         (ORDERED (INSERT X1 IT))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1.1/2'
+(IMPLIES (AND (CONSP IT)
+              (LEXORDER X1 (CAR IT))
+              (ORDERED IT))
+         (ORDERED (INSERT X1 IT))).
+
+But simplification reduces this to T, using the :definitions INSERT
+and ORDERED, primitive type reasoning, the :rewrite rules CAR-CONS,
+CDR-CONS, LEXORDER-REFLEXIVE and LEXORDER-TRANSITIVE and the :type-
+prescription rules LEXORDER and ORDERED.
+
+Subgoal *1.1/1
+(IMPLIES (AND (ENDP IT) (ORDERED IT))
+         (ORDERED (INSERT X1 IT))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1.1/1'
+(IMPLIES (AND (NOT (CONSP IT)) (ORDERED IT))
+         (ORDERED (INSERT X1 IT))).
+
+But simplification reduces this to T, using the :definitions INSERT
+and ORDERED, primitive type reasoning and the :rewrite rule CDR-CONS.
+
+That completes the proofs of *1.1 and *1.
+
+Q.E.D.
+
+The storage of ORDERED-ISORT depends upon the :type-prescription rule
+ORDERED.
+
+Summary
+Form:  ( DEFTHM ORDERED-ISORT ...)
+Rules: ((:DEFINITION ENDP)
+        (:DEFINITION INSERT)
+        (:DEFINITION ISORT)
+        (:DEFINITION NOT)
+        (:DEFINITION ORDERED)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING LEXORDER-TOTAL)
+        (:INDUCTION INSERT)
+        (:INDUCTION ISORT)
+        (:INDUCTION ORDERED)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE DEFAULT-CAR)
+        (:REWRITE LEXORDER-REFLEXIVE)
+        (:REWRITE LEXORDER-TRANSITIVE)
+        (:TYPE-PRESCRIPTION INSERT)
+        (:TYPE-PRESCRIPTION LEXORDER)
+        (:TYPE-PRESCRIPTION ORDERED))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION ORDERED))
+ ORDERED-ISORT
+ACL2 !>>(DEFUN REMARKABLY-FAST-SORT (X)
+               (DECLARE (IGNORE X))
+               '(ALICE BOB CATHY))
+
+Since REMARKABLY-FAST-SORT is non-recursive, its admission is trivial.
+We observe that the type of REMARKABLY-FAST-SORT is described by the
+theorem 
+(AND (CONSP (REMARKABLY-FAST-SORT X)) (TRUE-LISTP (REMARKABLY-FAST-SORT X))).
+
+Summary
+Form:  ( DEFUN REMARKABLY-FAST-SORT ...)
+Rules: NIL
+ REMARKABLY-FAST-SORT
+ACL2 !>>(REMARKABLY-FAST-SORT '(CATHY ALICE BOB))
+(ALICE BOB CATHY)
+ACL2 !>>(DEFTHM ORDERED-REMARKABLY-FAST-SORT
+                (ORDERED (REMARKABLY-FAST-SORT X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM ORDERED-REMARKABLY-FAST-SORT ...):
+A :REWRITE rule generated from ORDERED-REMARKABLY-FAST-SORT will be
+triggered only by terms containing the non-recursive function symbol
+REMARKABLY-FAST-SORT.  Unless this function is disabled, this rule
+is unlikely ever to be used.
+
+
+But we reduce the conjecture to T, by the simple :definition 
+REMARKABLY-FAST-SORT and the :executable-counterpart of ORDERED.
+
+Q.E.D.
+
+The storage of ORDERED-REMARKABLY-FAST-SORT depends upon the :type-
+prescription rule ORDERED.
+
+Summary
+Form:  ( DEFTHM ORDERED-REMARKABLY-FAST-SORT ...)
+Rules: ((:DEFINITION REMARKABLY-FAST-SORT)
+        (:EXECUTABLE-COUNTERPART ORDERED)
+        (:TYPE-PRESCRIPTION ORDERED))
+Warnings:  Non-rec
+ ORDERED-REMARKABLY-FAST-SORT
+ACL2 !>>(REMARKABLY-FAST-SORT '(JIM SUSAN))
+(ALICE BOB CATHY)
+ACL2 !>>(INCLUDE-BOOK "sorting/perm"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "sorting/perm" ...)
+Rules: NIL
+ "[books]/sorting/perm.lisp"
+ACL2 !>>(PERM '(CATHY ALICE BOB)
+              '(ALICE BOB CATHY))
+T
+ACL2 !>>(PERM '(CATHY ALICE BOB)
+              '(CATHY CATHY ALICE))
+NIL
+ACL2 !>>(PE 'PERM)
+          11:x(INCLUDE-BOOK "sorting/perm" :DIR ...)
+              \
+              [Included books, outermost to innermost:
+               "[books]/sorting/perm.lisp"
+              ]
+              \
+>L             (DEFUN PERM (X Y)
+                      (IF (CONSP X)
+                          (AND (MEMB (CAR X) Y)
+                               (PERM (CDR X) (RM (CAR X) Y)))
+                          (NOT (CONSP Y))))
+ACL2 !>>(DEFTHM PERM-ISORT (PERM (ISORT X) X))
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM PERM-ISORT ...):  In a :REWRITE
+rule generated from PERM-ISORT, equivalence relation PERM is maintained
+at one problematic occurrence of variable X in the right-hand side,
+but not at any binding occurrence of X.  Consider replacing that occurrence
+of X in the right-hand side with (DOUBLE-REWRITE X).  See :doc double-
+rewrite for more information on this issue.
+
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (ISORT X).  This
+suggestion was produced using the :induction rule ISORT.  If we let
+(:P X) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X)))
+              (:P X))
+     (IMPLIES (ENDP X) (:P X))).
+This induction is justified by the same argument used to admit ISORT.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ENDP X))
+              (PERM (ISORT (CDR X)) (CDR X)))
+         (PERM (ISORT X) X)).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/2'
+(IMPLIES (AND (CONSP X)
+              (PERM (ISORT (CDR X)) (CDR X)))
+         (PERM (ISORT X) X)).
+
+This simplifies, using the :definition ISORT, to
+
+Subgoal *1/2''
+(IMPLIES (AND (CONSP X)
+              (PERM (ISORT (CDR X)) (CDR X)))
+         (PERM (INSERT (CAR X) (ISORT (CDR X)))
+               X)).
+
+The destructor terms (CAR X) and (CDR X) can be eliminated by using
+CAR-CDR-ELIM to replace X by (CONS X1 X2), (CAR X) by X1 and (CDR X)
+by X2.  This produces the following goal.
+
+Subgoal *1/2'''
+(IMPLIES (AND (CONSP (CONS X1 X2))
+              (PERM (ISORT X2) X2))
+         (PERM (INSERT X1 (ISORT X2))
+               (CONS X1 X2))).
+
+This simplifies, using primitive type reasoning, to
+
+Subgoal *1/2'4'
+(IMPLIES (PERM (ISORT X2) X2)
+         (PERM (INSERT X1 (ISORT X2))
+               (CONS X1 X2))).
+
+We generalize this conjecture, replacing (ISORT X2) by IT.  This produces
+
+Subgoal *1/2'5'
+(IMPLIES (PERM IT X2)
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+Name the formula above *1.1.
+
+Subgoal *1/1
+(IMPLIES (ENDP X) (PERM (ISORT X) X)).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/1'
+(IMPLIES (NOT (CONSP X))
+         (PERM (ISORT X) X)).
+
+But simplification reduces this to T, using the :definitions ISORT
+and PERM.
+
+So we now return to *1.1, which is
+
+(IMPLIES (PERM IT X2)
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+Perhaps we can prove *1.1 by induction.  Two induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by (INSERT X1 IT), but
+modified to accommodate (PERM IT X2).  These suggestions were produced
+using the :induction rules INSERT and PERM.  If we let (:P IT X1 X2)
+denote *1.1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP IT))
+                   (NOT (LEXORDER X1 (CAR IT)))
+                   (:P (CDR IT) X1 (RM (CAR IT) X2)))
+              (:P IT X1 X2))
+     (IMPLIES (AND (NOT (ENDP IT))
+                   (LEXORDER X1 (CAR IT)))
+              (:P IT X1 X2))
+     (IMPLIES (ENDP IT) (:P IT X1 X2))).
+This induction is justified by the same argument used to admit INSERT.
+Note, however, that the unmeasured variable X2 is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+
+Subgoal *1.1/4
+(IMPLIES (AND (NOT (ENDP IT))
+              (NOT (LEXORDER X1 (CAR IT)))
+              (PERM (INSERT X1 (CDR IT))
+                    (CONS X1 (RM (CAR IT) X2)))
+              (PERM IT X2))
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1.1/4'
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (PERM (INSERT X1 (CDR IT))
+                    (CONS X1 (RM (CAR IT) X2)))
+              (PERM IT X2))
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+This simplifies, using the :definitions INSERT, MEMB, PERM (if-intro)
+and RM (if-intro), the :equivalence rule PERM-IS-AN-EQUIVALENCE, primitive
+type reasoning, the :rewrite rules CAR-CONS and CDR-CONS and the :type-
+prescription rule MEMB, to the following two conjectures.
+
+Subgoal *1.1/4.2
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (PERM (INSERT X1 (CDR IT))
+                    (CONS X1 (RM (CAR IT) X2)))
+              (MEMB (CAR IT) X2)
+              (PERM (CDR IT) (RM (CAR IT) X2))
+              (EQUAL (CAR IT) X1))
+         (PERM (INSERT X1 (CDR IT)) X2)).
+
+But simplification reduces this to T, using primitive type reasoning
+and the :forward-chaining rule LEXORDER-TOTAL.
+
+Subgoal *1.1/4.1
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (PERM (INSERT X1 (CDR IT))
+                    (CONS X1 (RM (CAR IT) X2)))
+              (MEMB (CAR IT) X2)
+              (PERM (CDR IT) (RM (CAR IT) X2))
+              (NOT (EQUAL (CAR IT) X1)))
+         (PERM (INSERT X1 (CDR IT))
+               (INSERT X1 (CDR IT)))).
+
+But we reduce the conjecture to T, by the :executable-counterpart of
+TAU-SYSTEM.
+
+Subgoal *1.1/3
+(IMPLIES (AND (NOT (ENDP IT))
+              (NOT (LEXORDER X1 (CAR IT)))
+              (NOT (PERM (CDR IT) (RM (CAR IT) X2)))
+              (PERM IT X2))
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1.1/3'
+(IMPLIES (AND (CONSP IT)
+              (NOT (LEXORDER X1 (CAR IT)))
+              (NOT (PERM (CDR IT) (RM (CAR IT) X2)))
+              (PERM IT X2))
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+But simplification reduces this to T, using the :definition PERM and
+primitive type reasoning.
+
+Subgoal *1.1/2
+(IMPLIES (AND (NOT (ENDP IT))
+              (LEXORDER X1 (CAR IT))
+              (PERM IT X2))
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1.1/2'
+(IMPLIES (AND (CONSP IT)
+              (LEXORDER X1 (CAR IT))
+              (PERM IT X2))
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+But simplification reduces this to T, using the :definitions INSERT,
+MEMB, PERM and RM, primitive type reasoning, the :rewrite rules CAR-CONS,
+CDR-CONS, LEXORDER-REFLEXIVE and LEXORDER-TRANSITIVE and the :type-
+prescription rules LEXORDER and MEMB.
+
+Subgoal *1.1/1
+(IMPLIES (AND (ENDP IT) (PERM IT X2))
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1.1/1'
+(IMPLIES (AND (NOT (CONSP IT)) (PERM IT X2))
+         (PERM (INSERT X1 IT) (CONS X1 X2))).
+
+But simplification reduces this to T, using the :definitions INSERT,
+MEMB, PERM and RM, primitive type reasoning and the :rewrite rules
+CAR-CONS and CDR-CONS.
+
+That completes the proofs of *1.1 and *1.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PERM-ISORT ...)
+Rules: ((:DEFINITION ENDP)
+        (:DEFINITION INSERT)
+        (:DEFINITION ISORT)
+        (:DEFINITION MEMB)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:DEFINITION RM)
+        (:ELIM CAR-CDR-ELIM)
+        (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING LEXORDER-TOTAL)
+        (:INDUCTION INSERT)
+        (:INDUCTION ISORT)
+        (:INDUCTION PERM)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE LEXORDER-REFLEXIVE)
+        (:REWRITE LEXORDER-TRANSITIVE)
+        (:TYPE-PRESCRIPTION LEXORDER)
+        (:TYPE-PRESCRIPTION MEMB))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION PERM) (:DEFINITION RM))
+Warnings:  Double-rewrite
+ PERM-ISORT
+ACL2 !>>(DEFTHM PERM-REMARKABLY-FAST-SORT
+                (PERM (REMARKABLY-FAST-SORT X) X))
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM PERM-REMARKABLY-FAST-SORT
+...):  In a :REWRITE rule generated from PERM-REMARKABLY-FAST-SORT,
+equivalence relation PERM is maintained at one problematic occurrence
+of variable X in the right-hand side, but not at any binding occurrence
+of X.  Consider replacing that occurrence of X in the right-hand side
+with (DOUBLE-REWRITE X).  See :doc double-rewrite for more information
+on this issue.
+
+
+ACL2 Warning [Non-rec] in ( DEFTHM PERM-REMARKABLY-FAST-SORT ...):
+A :REWRITE rule generated from PERM-REMARKABLY-FAST-SORT will be triggered
+only by terms containing the non-recursive function symbol 
+REMARKABLY-FAST-SORT.  Unless this function is disabled, this rule
+is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM PERM-REMARKABLY-FAST-SORT ...):
+The previously added rule REMARKABLY-FAST-SORT subsumes a newly proposed
+:REWRITE rule generated from PERM-REMARKABLY-FAST-SORT, in the sense
+that the old rule rewrites a more general target.  Because the new
+rule will be tried first, it may nonetheless find application.
+
+
+By the simple :definition REMARKABLY-FAST-SORT we reduce the conjecture
+to
+
+Goal'
+(PERM '(ALICE BOB CATHY) X).
+
+This simplifies, using the :definition PERM (if-intro) and the :executable-
+counterparts of CAR, CDR and CONSP, to the following four conjectures.
+
+Subgoal 4
+(MEMB 'ALICE X).
+
+Name the formula above *1.
+
+Subgoal 3
+(MEMB 'CATHY (RM 'BOB (RM 'ALICE X))).
+
+Normally we would attempt to prove Subgoal 3 by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( DEFTHM PERM-REMARKABLY-FAST-SORT ...)
+Rules: ((:DEFINITION PERM)
+        (:DEFINITION REMARKABLY-FAST-SORT)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION PERM))
+Warnings:  Subsume, Non-rec and Double-rewrite
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoints before reverting to proof by induction: ***
+
+Subgoal 4
+(MEMB 'ALICE X)
+
+Subgoal 3
+(MEMB 'CATHY (RM 'BOB (RM 'ALICE X)))
+
+ACL2 Error in ( DEFTHM PERM-REMARKABLY-FAST-SORT ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>'(END OF DEMO 1)
+(END OF DEMO 1)
+ACL2 !>>(SET-GAG-MODE :GOALS)
+<state>
+ACL2 !>>(DEFTHM PERM-AP (PERM (AP A B) (AP B A)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  We will choose arbitrarily among these.  
+
+We will induct according to a scheme suggested by (AP A B).  This suggestion
+was produced using the :induction rule AP.  If we let (:P A B) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP A)) (:P (CDR A) B))
+              (:P A B))
+     (IMPLIES (ENDP A) (:P A B))).
+This induction is justified by the same argument used to admit AP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1/2' (2 subgoals).
+  if-intro: ((:DEFINITION PERM))
+
+Subgoal *1/2.2
+Subgoal *1/2.2'
+Subgoal *1/2.2''
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2.2
+(IMPLIES (AND (CONSP A)
+              (PERM (AP (CDR A) B) (AP B (CDR A))))
+         (MEMB (CAR A) (AP B A)))
+
+*1.1 (Subgoal *1/2.2'') is pushed for proof by induction.
+
+])
+Subgoal *1/2.1
+Subgoal *1/2.1'
+Subgoal *1/2.1''
+Subgoal *1/2.1'''
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2.1
+(IMPLIES (AND (CONSP A)
+              (PERM (AP (CDR A) B) (AP B (CDR A))))
+         (PERM (AP B (CDR A))
+               (RM (CAR A) (AP B A))))
+
+*1.2 (Subgoal *1/2.1''') is pushed for proof by induction.
+
+])
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/1''
+(IMPLIES (NOT (CONSP A))
+         (PERM B (AP B A)))
+
+*1.3 (Subgoal *1/1'') is pushed for proof by induction.
+
+])
+
+So we now return to *1.3, which is
+
+(IMPLIES (NOT (CONSP A))
+         (PERM B (AP B A))).
+Subgoal *1.3/3
+Subgoal *1.3/2
+Subgoal *1.3/1
+
+*1.3 is COMPLETED!
+Thus key checkpoint Subgoal *1/1'' is COMPLETED!
+
+We therefore turn our attention to *1.2, which is
+
+(PERM (AP B A2)
+      (RM A1 (AP B (CONS A1 A2)))).
+Subgoal *1.2/2
+Subgoal *1.2/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1.2/2' (4 subgoals).
+  if-intro: ((:DEFINITION PERM) (:DEFINITION RM))
+
+Subgoal *1.2/2.4
+Subgoal *1.2/2.4'
+Subgoal *1.2/2.4''
+Subgoal *1.2/2.4'''
+Subgoal *1.2/2.4'4'
+
+*1.2.1 (Subgoal *1.2/2.4'4') is pushed for proof by induction.
+Subgoal *1.2/2.3
+Subgoal *1.2/2.2
+Subgoal *1.2/2.1
+Subgoal *1.2/1
+Subgoal *1.2/1'
+
+So we now return to *1.2.1, which is
+
+(IMPLIES (AND (CONSP L)
+              (PERM (AP B2 A2) (RM B1 L)))
+         (MEMB B1 L)).
+Subgoal *1.2.1/4
+Subgoal *1.2.1/3
+Subgoal *1.2.1/3'
+Subgoal *1.2.1/3''
+Subgoal *1.2.1/3'''
+Subgoal *1.2.1/3'4'
+
+Splitter note (see :DOC splitter) for Subgoal *1.2.1/3'4' (2 subgoals).
+  if-intro: ((:DEFINITION PERM))
+
+Subgoal *1.2.1/3.2
+
+*1.2.1.1 (Subgoal *1.2.1/3.2) is pushed for proof by induction.
+Subgoal *1.2.1/3.1
+Subgoal *1.2.1/3.1'
+
+*1.2.1.2 (Subgoal *1.2.1/3.1') is pushed for proof by induction.
+Subgoal *1.2.1/2
+Subgoal *1.2.1/2'
+Subgoal *1.2.1/2''
+Subgoal *1.2.1/2'''
+Subgoal *1.2.1/2'4'
+Subgoal *1.2.1/2'5'
+
+*1.2.1.3 (Subgoal *1.2.1/2'5') is pushed for proof by induction.
+Subgoal *1.2.1/1
+
+So we now return to *1.2.1.3, which is
+
+(IMPLIES (NOT (EQUAL B1 L1))
+         (NOT (PERM (AP B2 A2) (LIST L1)))).
+Subgoal *1.2.1.3/2
+Subgoal *1.2.1.3/2'
+Subgoal *1.2.1.3/2''
+Subgoal *1.2.1.3/2'''
+Subgoal *1.2.1.3/2'4'
+Subgoal *1.2.1.3/2'5'
+Subgoal *1.2.1.3/2'6'
+
+*1.2.1.3.1 (Subgoal *1.2.1.3/2'6') is pushed for proof by induction.
+Subgoal *1.2.1.3/1
+Subgoal *1.2.1.3/1'
+Subgoal *1.2.1.3/1''
+Subgoal *1.2.1.3/1'''
+Subgoal *1.2.1.3/1'4'
+
+A goal of NIL, Subgoal *1.2.1.3/1'4', has been generated!  Obviously,
+the proof attempt has failed.
+
+Summary
+Form:  ( DEFTHM PERM-AP ...)
+Rules: ((:DEFINITION AP)
+        (:DEFINITION ENDP)
+        (:DEFINITION MEMB)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:DEFINITION RM)
+        (:ELIM CAR-CDR-ELIM)
+        (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION AP)
+        (:INDUCTION MEMB)
+        (:INDUCTION PERM)
+        (:INDUCTION RM)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION AP)
+        (:TYPE-PRESCRIPTION MEMB))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION PERM) (:DEFINITION RM))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(PERM (AP A B) (AP B A))
+
+*** Key checkpoints under a top-level induction
+    before generating a goal of NIL (see :DOC nil-goal): ***
+
+Subgoal *1/2.2
+(IMPLIES (AND (CONSP A)
+              (PERM (AP (CDR A) B) (AP B (CDR A))))
+         (MEMB (CAR A) (AP B A)))
+
+Subgoal *1/2.1
+(IMPLIES (AND (CONSP A)
+              (PERM (AP (CDR A) B) (AP B (CDR A))))
+         (PERM (AP B (CDR A))
+               (RM (CAR A) (AP B A))))
+
+ACL2 Error in ( DEFTHM PERM-AP ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFTHM MEMB-AP
+                (EQUAL (MEMB E (AP A B))
+                       (OR (MEMB E A) (MEMB E B))))
+Subgoal 2
+Subgoal 2'
+
+([ A key checkpoint:
+
+Subgoal 2'
+(IMPLIES (MEMB E A) (MEMB E (AP A B)))
+
+*1 (Subgoal 2') is pushed for proof by induction.
+
+])
+Subgoal 1
+
+([ A key checkpoint:
+
+Subgoal 1
+(IMPLIES (NOT (MEMB E A))
+         (EQUAL (MEMB E (AP A B)) (MEMB E B)))
+
+Normally we would attempt to prove Subgoal 1 by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+Perhaps we can prove *1 by induction.  Four induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to three.  These
+merge into two derived induction schemes.  However, one of these is
+flawed and so we are left with one viable candidate.  
+
+We will induct according to a scheme suggested by (MEMB E A), but modified
+to accommodate (AP A B).  These suggestions were produced using the
+:induction rules AP and MEMB.  If we let (:P A B E) denote *1 above
+then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP A)) (:P A B E))
+     (IMPLIES (AND (CONSP A)
+                   (NOT (EQUAL E (CAR A)))
+                   (:P (CDR A) B E))
+              (:P A B E))
+     (IMPLIES (AND (CONSP A) (EQUAL E (CAR A)))
+              (:P A B E))).
+This induction is justified by the same argument used to admit MEMB.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM MEMB-AP ...)
+Rules: ((:DEFINITION AP)
+        (:DEFINITION MEMB)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION AP)
+        (:INDUCTION MEMB)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION MEMB))
+ MEMB-AP
+ACL2 !>>(DEFTHM PERM-AP (PERM (AP A B) (AP B A)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  We will choose arbitrarily among these.  
+
+We will induct according to a scheme suggested by (AP A B).  This suggestion
+was produced using the :induction rule AP.  If we let (:P A B) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP A)) (:P (CDR A) B))
+              (:P A B))
+     (IMPLIES (ENDP A) (:P A B))).
+This induction is justified by the same argument used to admit AP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/2'''
+Subgoal *1/2'4'
+Subgoal *1/2'5'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2''
+(IMPLIES (AND (CONSP A)
+              (PERM (AP (CDR A) B) (AP B (CDR A))))
+         (PERM (AP B (CDR A))
+               (RM (CAR A) (AP B A))))
+
+*1.1 (Subgoal *1/2'5') is pushed for proof by induction.
+
+])
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/1''
+(IMPLIES (NOT (CONSP A))
+         (PERM B (AP B A)))
+
+*1.2 (Subgoal *1/1'') is pushed for proof by induction.
+
+])
+
+So we now return to *1.2, which is
+
+(IMPLIES (NOT (CONSP A))
+         (PERM B (AP B A))).
+Subgoal *1.2/3
+Subgoal *1.2/2
+Subgoal *1.2/1
+
+*1.2 is COMPLETED!
+Thus key checkpoint Subgoal *1/1'' is COMPLETED!
+
+We therefore turn our attention to *1.1, which is
+
+(PERM (AP B A2)
+      (RM A1 (AP B (CONS A1 A2)))).
+Subgoal *1.1/2
+Subgoal *1.1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1/2' (4 subgoals).
+  if-intro: ((:DEFINITION PERM) (:DEFINITION RM))
+
+Subgoal *1.1/2.4
+Subgoal *1.1/2.3
+Subgoal *1.1/2.2
+Subgoal *1.1/2.1
+Subgoal *1.1/2.1'
+Subgoal *1.1/2.1''
+Subgoal *1.1/2.1'''
+Subgoal *1.1/2.1'4'
+Subgoal *1.1/2.1'5'
+Subgoal *1.1/2.1'6'
+Subgoal *1.1/2.1'7'
+
+*1.1.1 (Subgoal *1.1/2.1'7') is pushed for proof by induction.
+Subgoal *1.1/1
+Subgoal *1.1/1'
+
+So we now return to *1.1.1, which is
+
+(IMPLIES (AND (MEMB L1 (RM A1 (AP B2 (CONS A1 A2))))
+              (NOT (EQUAL A1 B1))
+              (NOT (MEMB L1 B2)))
+         (MEMB L1 A2)).
+Subgoal *1.1.1/4
+Subgoal *1.1.1/3
+Subgoal *1.1.1/2
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1/2 (2 subgoals).
+  if-intro: ((:DEFINITION RM))
+
+Subgoal *1.1.1/2.2
+Subgoal *1.1.1/2.1
+Subgoal *1.1.1/1
+
+*1.1.1, *1.1 and *1 are COMPLETED!
+Thus key checkpoints Subgoal *1/2'' and Goal are COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PERM-AP ...)
+Rules: ((:DEFINITION AP)
+        (:DEFINITION ENDP)
+        (:DEFINITION MEMB)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:DEFINITION RM)
+        (:ELIM CAR-CDR-ELIM)
+        (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION AP)
+        (:INDUCTION MEMB)
+        (:INDUCTION PERM)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE MEMB-AP)
+        (:TYPE-PRESCRIPTION MEMB))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION PERM) (:DEFINITION RM))
+ PERM-AP
+ACL2 !>>(DEFTHM ISORT-IDEMPOTENT
+                (EQUAL (ISORT (ISORT X)) (ISORT X)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to one.  
+
+We will induct according to a scheme suggested by (ISORT X).  This
+suggestion was produced using the :induction rule ISORT.  If we let
+(:P X) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X)))
+              (:P X))
+     (IMPLIES (ENDP X) (:P X))).
+This induction is justified by the same argument used to admit ISORT.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/2'''
+Subgoal *1/2'4'
+Subgoal *1/2'5'
+Subgoal *1/2'6'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2''
+(IMPLIES (AND (CONSP X)
+              (EQUAL (ISORT (ISORT (CDR X)))
+                     (ISORT (CDR X))))
+         (EQUAL (ISORT (INSERT (CAR X) (ISORT (CDR X))))
+                (INSERT (CAR X) (ISORT (CDR X)))))
+
+*1.1 (Subgoal *1/2'6') is pushed for proof by induction.
+
+])
+Subgoal *1/1
+Subgoal *1/1'
+
+So we now return to *1.1, which is
+
+(EQUAL (ISORT (INSERT X1 IT))
+       (INSERT X1 (ISORT IT))).
+Subgoal *1.1/3
+Subgoal *1.1/3'
+Subgoal *1.1/3''
+Subgoal *1.1/3'''
+Subgoal *1.1/3'4'
+Subgoal *1.1/3'5'
+
+*1.1.1 (Subgoal *1.1/3'5') is pushed for proof by induction.
+Subgoal *1.1/2
+Subgoal *1.1/2'
+Subgoal *1.1/2''
+Subgoal *1.1/1
+Subgoal *1.1/1'
+
+So we now return to *1.1.1, which is
+
+(IMPLIES (NOT (LEXORDER X1 IT1))
+         (EQUAL (INSERT IT1 (ISORT (INSERT X1 IT2)))
+                (INSERT X1 (INSERT IT1 (ISORT IT2))))).
+Subgoal *1.1.1/3
+Subgoal *1.1.1/3'
+Subgoal *1.1.1/3''
+Subgoal *1.1.1/3'''
+Subgoal *1.1.1/3'4'
+Subgoal *1.1.1/3'5'
+Subgoal *1.1.1/3'6'
+Subgoal *1.1.1/3'7'
+
+*1.1.1.1 (Subgoal *1.1.1/3'7') is pushed for proof by induction.
+Subgoal *1.1.1/2
+Subgoal *1.1.1/2'
+Subgoal *1.1.1/2''
+Subgoal *1.1.1/2'''
+Subgoal *1.1.1/2'4'
+Subgoal *1.1.1/2'5'
+Subgoal *1.1.1/2'6'
+Subgoal *1.1.1/2'7'
+
+*1.1.1.2 (Subgoal *1.1.1/2'7') is pushed for proof by induction.
+Subgoal *1.1.1/1
+Subgoal *1.1.1/1'
+
+So we now return to *1.1.1.2, which is
+
+(IMPLIES (AND (CONSP L)
+              (LEXORDER X1 IT3)
+              (NOT (LEXORDER X1 IT1)))
+         (EQUAL (INSERT IT1 (INSERT X1 L))
+                (INSERT X1 (INSERT IT1 L)))).
+Subgoal *1.1.1.2/4
+Subgoal *1.1.1.2/4'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.2/4' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.2/4.2
+Subgoal *1.1.1.2/4.1
+Subgoal *1.1.1.2/3
+Subgoal *1.1.1.2/3'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.2/3' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.2/3.2
+Subgoal *1.1.1.2/3.1
+Subgoal *1.1.1.2/2
+Subgoal *1.1.1.2/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.2/2' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.2/2.2
+Subgoal *1.1.1.2/2.1
+Subgoal *1.1.1.2/1
+
+*1.1.1.2 is COMPLETED!
+
+We therefore turn our attention to *1.1.1.1, which is
+
+(IMPLIES (AND (NOT (LEXORDER X1 IT3))
+              (EQUAL (INSERT IT1 IT0)
+                     (INSERT X1 (INSERT IT1 IT)))
+              (NOT (LEXORDER X1 IT1)))
+         (EQUAL (INSERT IT1 (INSERT IT3 IT0))
+                (INSERT X1 (INSERT IT1 (INSERT IT3 IT))))).
+Subgoal *1.1.1.1/4
+Subgoal *1.1.1.1/4'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1/4' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1/4.2
+Subgoal *1.1.1.1/4.2'
+Subgoal *1.1.1.1/4.2''
+Subgoal *1.1.1.1/4.2'''
+
+*1.1.1.1.1 (Subgoal *1.1.1.1/4.2''') is pushed for proof by induction.
+Subgoal *1.1.1.1/4.1
+Subgoal *1.1.1.1/4.1'
+Subgoal *1.1.1.1/4.1''
+
+*1.1.1.1.2 (Subgoal *1.1.1.1/4.1'') is pushed for proof by induction.
+Subgoal *1.1.1.1/3
+Subgoal *1.1.1.1/3'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1/3' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1/3.2
+Subgoal *1.1.1.1/3.2'
+Subgoal *1.1.1.1/3.2''
+Subgoal *1.1.1.1/3.2'''
+
+*1.1.1.1.3 (Subgoal *1.1.1.1/3.2''') is pushed for proof by induction.
+Subgoal *1.1.1.1/3.1
+Subgoal *1.1.1.1/3.1'
+Subgoal *1.1.1.1/3.1''
+Subgoal *1.1.1.1/3.1'''
+
+*1.1.1.1.4 (Subgoal *1.1.1.1/3.1''') is pushed for proof by induction.
+Subgoal *1.1.1.1/2
+Subgoal *1.1.1.1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1/2' (4 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1/2.4
+Subgoal *1.1.1.1/2.4'
+Subgoal *1.1.1.1/2.4''
+Subgoal *1.1.1.1/2.4'''
+
+*1.1.1.1.5 (Subgoal *1.1.1.1/2.4''') is pushed for proof by induction.
+Subgoal *1.1.1.1/2.3
+Subgoal *1.1.1.1/2.3'
+Subgoal *1.1.1.1/2.3''
+Subgoal *1.1.1.1/2.3'''
+
+*1.1.1.1.6 (Subgoal *1.1.1.1/2.3''') is pushed for proof by induction.
+Subgoal *1.1.1.1/2.2
+Subgoal *1.1.1.1/2.1
+Subgoal *1.1.1.1/2.1'
+Subgoal *1.1.1.1/2.1''
+Subgoal *1.1.1.1/2.1'''
+
+*1.1.1.1.7 (Subgoal *1.1.1.1/2.1''') is pushed for proof by induction.
+Subgoal *1.1.1.1/1
+Subgoal *1.1.1.1/1'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1/1' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1/1.2
+
+*1.1.1.1.8 (Subgoal *1.1.1.1/1.2) is pushed for proof by induction.
+Subgoal *1.1.1.1/1.1
+
+*1.1.1.1.9 (Subgoal *1.1.1.1/1.1) is pushed for proof by induction.
+
+So we now return to *1.1.1.1.9, which is
+
+(IMPLIES (AND (NOT (CONSP IT0))
+              (NOT (LEXORDER X1 IT3))
+              (EQUAL (CONS IT1 IT0)
+                     (INSERT X1 (INSERT IT1 IT)))
+              (NOT (LEXORDER X1 IT1))
+              (NOT (LEXORDER IT1 IT3)))
+         (EQUAL (LIST* IT3 IT1 IT0)
+                (INSERT X1 (INSERT IT1 (INSERT IT3 IT))))).
+Subgoal *1.1.1.1.9/4
+Subgoal *1.1.1.1.9/4'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1.9/4' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1.9/4.2
+Subgoal *1.1.1.1.9/4.1
+Subgoal *1.1.1.1.9/3
+Subgoal *1.1.1.1.9/3'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1.9/3' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1.9/3.2
+Subgoal *1.1.1.1.9/3.1
+Subgoal *1.1.1.1.9/2
+Subgoal *1.1.1.1.9/2'
+Subgoal *1.1.1.1.9/2''
+Subgoal *1.1.1.1.9/1
+Subgoal *1.1.1.1.9/1'
+
+*1.1.1.1.9 is COMPLETED!
+
+We therefore turn our attention to *1.1.1.1.8, which is
+
+(IMPLIES (AND (NOT (CONSP IT0))
+              (NOT (LEXORDER X1 IT3))
+              (EQUAL (CONS IT1 IT0)
+                     (INSERT X1 (INSERT IT1 IT)))
+              (NOT (LEXORDER X1 IT1))
+              (LEXORDER IT1 IT3))
+         (EQUAL (LIST* IT1 IT3 IT0)
+                (INSERT X1 (INSERT IT1 (INSERT IT3 IT))))).
+Subgoal *1.1.1.1.8/4
+Subgoal *1.1.1.1.8/4'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1.8/4' (4 subgoals).
+  if-intro: ((:DEFINITION INSERT)
+             (:REWRITE CONS-EQUAL))
+
+Subgoal *1.1.1.1.8/4.4
+Subgoal *1.1.1.1.8/4.3
+Subgoal *1.1.1.1.8/4.2
+Subgoal *1.1.1.1.8/4.1
+Subgoal *1.1.1.1.8/3
+Subgoal *1.1.1.1.8/3'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1.8/3' (4 subgoals).
+  if-intro: ((:DEFINITION INSERT)
+             (:REWRITE CONS-EQUAL))
+
+Subgoal *1.1.1.1.8/3.4
+Subgoal *1.1.1.1.8/3.3
+Subgoal *1.1.1.1.8/3.2
+Subgoal *1.1.1.1.8/3.1
+Subgoal *1.1.1.1.8/2
+Subgoal *1.1.1.1.8/2'
+Subgoal *1.1.1.1.8/1
+Subgoal *1.1.1.1.8/1'
+
+*1.1.1.1.8 is COMPLETED!
+
+We therefore turn our attention to *1.1.1.1.7, which is
+
+(IMPLIES (AND (LEXORDER IT3 IT2)
+              (NOT (LEXORDER X1 IT3))
+              (NOT (LEXORDER IT1 IT2))
+              (NOT (LEXORDER X1 IT1))
+              (NOT (LEXORDER IT1 IT3)))
+         (EQUAL (CONS IT3 (INSERT X1 (INSERT IT1 IT)))
+                (INSERT X1 (INSERT IT1 (INSERT IT3 IT))))).
+Subgoal *1.1.1.1.7/3
+Subgoal *1.1.1.1.7/3'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1.7/3' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1.7/3.2
+Subgoal *1.1.1.1.7/3.1
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1.7/3.1 (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1.7/3.1.2
+Subgoal *1.1.1.1.7/3.1.1
+Subgoal *1.1.1.1.7/3.1.1'
+Subgoal *1.1.1.1.7/3.1.1''
+Subgoal *1.1.1.1.7/3.1.1'''
+
+*1.1.1.1.7.1 (Subgoal *1.1.1.1.7/3.1.1''') is pushed for proof by induction.
+Subgoal *1.1.1.1.7/2
+Subgoal *1.1.1.1.7/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1.7/2' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1.7/2.2
+Subgoal *1.1.1.1.7/2.1
+Subgoal *1.1.1.1.7/1
+Subgoal *1.1.1.1.7/1'
+
+So we now return to *1.1.1.1.7.1, which is
+
+(IMPLIES (AND (NOT (LEXORDER IT3 IT4))
+              (EQUAL (CONS IT3 (INSERT X1 (INSERT IT1 IT5)))
+                     (INSERT X1 (INSERT IT1 (INSERT IT3 IT5))))
+              (LEXORDER IT3 IT2)
+              (NOT (LEXORDER X1 IT3))
+              (NOT (LEXORDER IT1 IT2))
+              (NOT (LEXORDER X1 IT1))
+              (NOT (LEXORDER IT1 IT3))
+              (NOT (LEXORDER IT1 IT4))
+              (NOT (LEXORDER X1 IT4)))
+         (EQUAL IT3 IT4)).
+Subgoal *1.1.1.1.7.1/3
+Subgoal *1.1.1.1.7.1/3'
+Subgoal *1.1.1.1.7.1/3''
+Subgoal *1.1.1.1.7.1/3'''
+Subgoal *1.1.1.1.7.1/3'4'
+Subgoal *1.1.1.1.7.1/2
+Subgoal *1.1.1.1.7.1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1.1.7.1/2' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1.1.7.1/2.2
+Subgoal *1.1.1.1.7.1/2.2'
+Subgoal *1.1.1.1.7.1/2.2''
+Subgoal *1.1.1.1.7.1/2.2'''
+
+*1.1.1.1.7.1.1 (Subgoal *1.1.1.1.7.1/2.2''') is pushed for proof by
+induction.
+Subgoal *1.1.1.1.7.1/2.1
+Subgoal *1.1.1.1.7.1/2.1'
+Subgoal *1.1.1.1.7.1/2.1''
+Subgoal *1.1.1.1.7.1/2.1'''
+
+*1.1.1.1.7.1.2 (Subgoal *1.1.1.1.7.1/2.1''') is pushed for proof by
+induction.
+Subgoal *1.1.1.1.7.1/1
+Subgoal *1.1.1.1.7.1/1'
+Subgoal *1.1.1.1.7.1/1''
+Subgoal *1.1.1.1.7.1/1'''
+
+*1.1.1.1.7.1.3 (Subgoal *1.1.1.1.7.1/1''') is pushed for proof by induction.
+
+So we now return to *1.1.1.1.7.1.3, which is
+
+(IMPLIES (AND (NOT (LEXORDER IT3 IT4))
+              (LEXORDER IT3 IT2)
+              (NOT (LEXORDER X1 IT3))
+              (NOT (LEXORDER IT1 IT2))
+              (NOT (LEXORDER X1 IT1))
+              (NOT (LEXORDER IT1 IT3))
+              (NOT (LEXORDER IT1 IT4))
+              (NOT (LEXORDER X1 IT4)))
+         (EQUAL IT3 IT4)).
+
+But the formula above is subsumed by *1.1.1.1.7.1.2, which we'll try
+to prove later.  We therefore regard *1.1.1.1.7.1.3 as proved (pending
+the proof of the more general *1.1.1.1.7.1.2).
+
+We next consider *1.1.1.1.7.1.2, which is
+
+(IMPLIES (AND (LEXORDER IT3 IT6)
+              (NOT (LEXORDER IT3 IT4))
+              (NOT (LEXORDER IT1 IT6))
+              (LEXORDER IT3 IT2)
+              (NOT (LEXORDER X1 IT3))
+              (NOT (LEXORDER IT1 IT2))
+              (NOT (LEXORDER X1 IT1))
+              (NOT (LEXORDER IT1 IT3))
+              (NOT (LEXORDER IT1 IT4))
+              (NOT (LEXORDER X1 IT4)))
+         (EQUAL IT3 IT4)).
+
+No induction schemes are suggested by *1.1.1.1.7.1.2.  Consequently,
+the proof attempt has failed.
+
+Summary
+Form:  ( DEFTHM ISORT-IDEMPOTENT ...)
+Rules: ((:DEFINITION ENDP)
+        (:DEFINITION INSERT)
+        (:DEFINITION ISORT)
+        (:DEFINITION NOT)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING LEXORDER-TOTAL)
+        (:INDUCTION INSERT)
+        (:INDUCTION ISORT)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE CONS-EQUAL)
+        (:REWRITE LEXORDER-REFLEXIVE)
+        (:REWRITE LEXORDER-TRANSITIVE)
+        (:TYPE-PRESCRIPTION INSERT)
+        (:TYPE-PRESCRIPTION LEXORDER))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION INSERT)
+             (:REWRITE CONS-EQUAL))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(EQUAL (ISORT (ISORT X)) (ISORT X))
+
+*** Key checkpoint under a top-level induction: ***
+
+Subgoal *1/2''
+(IMPLIES (AND (CONSP X)
+              (EQUAL (ISORT (ISORT (CDR X)))
+                     (ISORT (CDR X))))
+         (EQUAL (ISORT (INSERT (CAR X) (ISORT (CDR X))))
+                (INSERT (CAR X) (ISORT (CDR X)))))
+
+ACL2 Error in ( DEFTHM ISORT-IDEMPOTENT ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFTHM ISORT-IDENTITY
+                (IMPLIES (ORDERED X)
+                         (EQUAL (ISORT X) X)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to one.  
+
+We will induct according to a scheme suggested by (ORDERED X).  This
+suggestion was produced using the :induction rules ISORT and ORDERED.
+If we let (:P X) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (NOT (ENDP X))
+                   (NOT (ENDP (CDR X)))
+                   (NOT (LEXORDER (CAR X) (CADR X))))
+              (:P X))
+     (IMPLIES (AND (NOT (ENDP X))
+                   (NOT (ENDP (CDR X)))
+                   (LEXORDER (CAR X) (CADR X))
+                   (:P (CDR X)))
+              (:P X))
+     (IMPLIES (AND (NOT (ENDP X)) (ENDP (CDR X)))
+              (:P X))
+     (IMPLIES (ENDP X) (:P X))).
+This induction is justified by the same argument used to admit ORDERED.
+When applied to the goal at hand the above induction scheme produces
+five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/5'
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ISORT-IDENTITY ...)
+Rules: ((:DEFINITION ENDP)
+        (:DEFINITION INSERT)
+        (:DEFINITION ISORT)
+        (:DEFINITION NOT)
+        (:DEFINITION ORDERED)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION ISORT)
+        (:INDUCTION ORDERED)
+        (:REWRITE CONS-CAR-CDR)
+        (:REWRITE LEXORDER-REFLEXIVE)
+        (:REWRITE LEXORDER-TRANSITIVE)
+        (:TYPE-PRESCRIPTION LEXORDER))
+ ISORT-IDENTITY
+ACL2 !>>(DEFTHM ISORT-IDEMPOTENT
+                (EQUAL (ISORT (ISORT X)) (ISORT X)))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ISORT-IDEMPOTENT ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE ISORT-IDENTITY)
+        (:REWRITE ORDERED-ISORT))
+ ISORT-IDEMPOTENT
+ACL2 !>>(DEFTHM MEMB-CONGRUENCE
+                (IMPLIES (PERM A B)
+                         (EQUAL (MEMB E A) (MEMB E B)))
+                :RULE-CLASSES :CONGRUENCE)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  However, one of these is flawed and so we are left with one
+viable candidate.  
+
+We will induct according to a scheme suggested by (MEMB E A), but modified
+to accommodate (PERM A B).  These suggestions were produced using the
+:induction rules MEMB and PERM.  If we let (:P A B E) denote *1 above
+then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP A)) (:P A B E))
+     (IMPLIES (AND (CONSP A)
+                   (NOT (EQUAL E (CAR A)))
+                   (:P (CDR A) (RM (CAR A) B) E))
+              (:P A B E))
+     (IMPLIES (AND (CONSP A) (EQUAL E (CAR A)))
+              (:P A B E))).
+This induction is justified by the same argument used to admit MEMB.
+Note, however, that the unmeasured variable B is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/3'''
+Subgoal *1/3'4'
+Subgoal *1/3'5'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP A)
+              (NOT (EQUAL E (CAR A)))
+              (EQUAL (MEMB E (CDR A))
+                     (MEMB E (RM (CAR A) B)))
+              (MEMB (CAR A) B)
+              (PERM (CDR A) (RM (CAR A) B)))
+         (EQUAL (MEMB E (CDR A)) (MEMB E B)))
+
+*1.1 (Subgoal *1/3'5') is pushed for proof by induction.
+
+])
+Subgoal *1/2
+Subgoal *1/1
+
+So we now return to *1.1, which is
+
+(IMPLIES (AND (NOT (EQUAL E A1)) (MEMB A1 B))
+         (EQUAL (MEMB E (RM A1 B)) (MEMB E B))).
+Subgoal *1.1/4
+Subgoal *1.1/3
+Subgoal *1.1/3'
+Subgoal *1.1/2
+Subgoal *1.1/1
+
+*1.1 and *1 are COMPLETED!
+Thus key checkpoints Subgoal *1/3' and Goal are COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM MEMB-CONGRUENCE ...)
+Rules: ((:DEFINITION MEMB)
+        (:DEFINITION PERM)
+        (:DEFINITION RM)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION MEMB)
+        (:INDUCTION PERM)
+        (:INDUCTION RM)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION MEMB))
+ MEMB-CONGRUENCE
+ACL2 !>>(PE 'PERM-ISORT)
+          12  (DEFTHM PERM-ISORT (PERM (ISORT X) X))
+ACL2 !>>(DEFTHM THIS-IS-NOT-A-THEOREM
+                (MEMB E (ISORT A)))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(MEMB E A)
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (MEMB E A).  This
+suggestion was produced using the :induction rule MEMB.  If we let
+(:P A E) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP A)) (:P A E))
+     (IMPLIES (AND (CONSP A)
+                   (NOT (EQUAL E (CAR A)))
+                   (:P (CDR A) E))
+              (:P A E))
+     (IMPLIES (AND (CONSP A) (EQUAL E (CAR A)))
+              (:P A E))).
+This induction is justified by the same argument used to admit MEMB.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+
+([ A key checkpoint while proving *1 (descended from Goal'):
+
+Subgoal *1/3'
+(CONSP A)
+
+A goal of NIL, Subgoal *1/3'', has been generated!  Obviously, the
+proof attempt has failed.
+
+])
+
+Summary
+Form:  ( DEFTHM THIS-IS-NOT-A-THEOREM ...)
+Rules: ((:CONGRUENCE MEMB-CONGRUENCE)
+        (:DEFINITION MEMB)
+        (:INDUCTION MEMB)
+        (:REWRITE PERM-ISORT))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(MEMB E A)
+
+*** Key checkpoint under a top-level induction
+    before generating a goal of NIL (see :DOC nil-goal): ***
+
+Subgoal *1/3'
+(CONSP A)
+
+ACL2 Error in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>'(END OF DEMO 2)
+(END OF DEMO 2)
+ACL2 !>>(DEFUN FIB1 (N)
+               (DECLARE (XARGS :GUARD (NATP N)
+                               :VERIFY-GUARDS NIL))
+               (IF (ZP N)
+                   0
+                   (IF (EQUAL N 1)
+                       1 (+ (FIB1 (- N 1)) (FIB1 (- N 2))))))
+
+For the admission of FIB1 we will use the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT N).  The non-trivial part of the measure conjecture is
+
+Goal
+(IMPLIES (AND (NOT (ZP N)) (NOT (EQUAL N 1)))
+         (O< (ACL2-COUNT (+ -2 N))
+             (ACL2-COUNT N))).
+Goal'
+
+Splitter note (see :DOC splitter) for Goal' (2 subgoals).
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION O<))
+
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the measure theorem for FIB1.  Thus, we
+admit this function under the principle of definition.  We observe
+that the type of FIB1 is described by the theorem 
+(AND (INTEGERP (FIB1 N)) (<= 0 (FIB1 N))).  We used primitive type
+reasoning.
+
+Summary
+Form:  ( DEFUN FIB1 ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION NOT)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O<)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION O<))
+ FIB1
+ACL2 !>>(FIB1 1)
+1
+ACL2 !>>(FIB1 2)
+1
+ACL2 !>>(FIB1 3)
+2
+ACL2 !>>(FIB1 4)
+3
+ACL2 !>>(FIB1 5)
+5
+ACL2 !>>(TIME$ (FIB1 10))
+55
+ACL2 !>>(TIME$ (FIB1 20))
+6765
+ACL2 !>>(TIME$ (FIB1 30))
+832040
+ACL2 !>>(TIME$ (FIB1 40))
+102334155
+ACL2 !>>(VERIFY-GUARDS FIB1)
+
+Computing the guard conjecture for FIB1....
+
+The non-trivial part of the guard conjecture for FIB1, given the :compound-
+recognizer rules NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER,
+primitive type reasoning and the :type-prescription rule FIB1, is
+
+Goal
+(IMPLIES (AND (NATP N)
+              (NOT (ZP N))
+              (NOT (EQUAL N 1)))
+         (NATP (+ -2 N))).
+Goal'
+Goal''
+
+Q.E.D.
+
+That completes the proof of the guard theorem for FIB1.  FIB1 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS FIB1)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION FIB1))
+ FIB1
+ACL2 !>>(TIME$ (FIB1 40))
+102334155
+ACL2 !>>(DEFUN FIB2 (N J K)
+               (DECLARE (XARGS :GUARD (AND (NATP N) (NATP J) (NATP K))))
+               (IF (ZP N)
+                   J
+                   (IF (EQUAL N 1)
+                       K (FIB2 (- N 1) K (+ J K)))))
+
+The admission of FIB2 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT N).  We observe that the type of FIB2 is described by the
+theorem 
+(OR (ACL2-NUMBERP (FIB2 N J K))
+    (EQUAL (FIB2 N J K) J)
+    (EQUAL (FIB2 N J K) K)).
+We used primitive type reasoning.
+
+Computing the guard conjecture for FIB2....
+
+The guard conjecture for FIB2 is trivial to prove, given the :compound-
+recognizer rules NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER
+and primitive type reasoning.  FIB2 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN FIB2 ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FIB2
+ACL2 !>>(TIME$ (FIB2 40 0 1))
+102334155
+ACL2 !>>(DEFTHM FIB2-V-FIB1
+                (IMPLIES (AND (NATP I)
+                              (NATP J)
+                              (NATP K)
+                              (<= 1 I))
+                         (EQUAL (FIB2 I J K)
+                                (+ (* (FIB1 (- I 1)) J)
+                                   (* (FIB1 I) K)))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K)
+              (<= 1 I))
+         (EQUAL (FIB2 I J K)
+                (+ (* K (FIB1 I))
+                   (* J (FIB1 (+ -1 I))))))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (FIB1 I), but modified
+to accommodate (FIB2 I J K).  These suggestions were produced using
+the :induction rules FIB1 and FIB2.  If we let (:P I J K) denote *1
+above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ZP I))
+                   (NOT (EQUAL I 1))
+                   (:P (+ -1 I) K (+ J K))
+                   (:P (+ -2 I) J K))
+              (:P I J K))
+     (IMPLIES (AND (NOT (ZP I)) (EQUAL I 1))
+              (:P I J K))
+     (IMPLIES (ZP I) (:P I J K))).
+This induction is justified by the same argument used to admit FIB1.
+Note, however, that the unmeasured variables J and K are being instantiated.
+When applied to the goal at hand the above induction scheme produces
+26 nontautological subgoals.
+Subgoal *1/26
+Subgoal *1/25
+Subgoal *1/24
+Subgoal *1/23
+Subgoal *1/22
+Subgoal *1/21
+Subgoal *1/20
+Subgoal *1/20'
+Subgoal *1/19
+Subgoal *1/18
+Subgoal *1/17
+Subgoal *1/16
+Subgoal *1/15
+Subgoal *1/14
+Subgoal *1/13
+Subgoal *1/12
+Subgoal *1/11
+Subgoal *1/10
+Subgoal *1/9
+Subgoal *1/8
+Subgoal *1/7
+Subgoal *1/6
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FIB2-V-FIB1 ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION FIB1)
+        (:DEFINITION FIB2)
+        (:DEFINITION FIX)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FIB1)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION FIB1)
+        (:INDUCTION FIB2)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DISTRIBUTIVITY)
+        (:REWRITE FOLD-CONSTS-IN-+)
+        (:REWRITE UNICITY-OF-1))
+ FIB2-V-FIB1
+ACL2 !>>(DEFUN FIB (N)
+               (DECLARE (XARGS :GUARD (NATP N)))
+               (MBE :LOGIC (FIB1 N)
+                    :EXEC (FIB2 N 0 1)))
+
+Since FIB is non-recursive, its admission is trivial.  We observe that
+the type of FIB is described by the theorem 
+(AND (INTEGERP (FIB N)) (<= 0 (FIB N))).  We used the :type-prescription
+rule FIB1.
+
+Computing the guard conjecture for FIB....
+
+The non-trivial part of the guard conjecture for FIB, given the :executable-
+counterpart of NATP, is
+
+Goal
+(IMPLIES (NATP N)
+         (EQUAL (FIB1 N) (FIB2 N 0 1))).
+Goal'
+
+Splitter note (see :DOC splitter) for Goal' (2 subgoals).
+  if-intro: ((:DEFINITION FIB2))
+
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the guard theorem for FIB.  FIB is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FIB ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION FIB1)
+        (:DEFINITION FIB2)
+        (:DEFINITION FIX)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FIB1)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE FIB2-V-FIB1)
+        (:REWRITE FOLD-CONSTS-IN-+)
+        (:REWRITE UNICITY-OF-1)
+        (:TYPE-PRESCRIPTION FIB1))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION FIB2))
+ FIB
+ACL2 !>>(TIME$ (FIB 5000))
+3878968454388325633701916308325905312082127714646245106160597214895550139044037097010822916462210669479293452858882973813483102008954982940361430156911478938364216563944106910214505634133706558656238254656700712525929903854933813928836378347518908762970712033337052923107693008518093849801803847813996748881765554653788291644268912980384613778969021502293082475666346224923071883324803280375039130352903304505842701147635242270210934637699104006714174883298422891491273104054328753298044273676822977244987749874555691907703880637046832794811358973739993110106219308149018570815397854379195305617510761053075688783766033667355445258844886241619210553457493675897849027988234351023599844663934853256411952221859563060475364645470760330902420806382584929156452876291575759142343809142302917491088984155209854432486594079793571316841692868039545309545388698114665082066862897420639323438488465240988742395873801976993820317174208932265468879364002630797780058759129671389634214252579116872755600360311370547754724604639987588046985178408674382863125
+ACL2 !>>(THM (IMPLIES (AND (NATP N) (EQUAL (FIB N) 0))
+                      (EQUAL N 0)))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (AND (INTEGERP N)
+              (<= 0 N)
+              (EQUAL (FIB1 N) 0))
+         (EQUAL N 0))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (FIB1 N).  This suggestion
+was produced using the :induction rule FIB1.  If we let (:P N) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ZP N))
+                   (NOT (EQUAL N 1))
+                   (:P (+ -1 N))
+                   (:P (+ -2 N)))
+              (:P N))
+     (IMPLIES (AND (NOT (ZP N)) (EQUAL N 1))
+              (:P N))
+     (IMPLIES (ZP N) (:P N))).
+This induction is justified by the same argument used to admit FIB1.
+When applied to the goal at hand the above induction scheme produces
+18 nontautological subgoals.
+Subgoal *1/18
+Subgoal *1/17
+Subgoal *1/16
+Subgoal *1/15
+Subgoal *1/14
+Subgoal *1/13
+Subgoal *1/12
+Subgoal *1/11
+Subgoal *1/10
+Subgoal *1/9
+Subgoal *1/8
+Subgoal *1/7
+Subgoal *1/6
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION FIB)
+        (:DEFINITION FIB1)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FIB1)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION FIB1)
+        (:TYPE-PRESCRIPTION FIB1))
+
+Proof succeeded.
+ACL2 !>>(TIME$ (FIB1 40))
+102334155
+ACL2 !>>(MEMOIZE 'FIB1)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'FIB1
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN T)
+                     (CONS :INLINE T)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS :DEFAULT)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+MEMOIZE-TABLE
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'FIB1
+                                         (MACRO-ALIASES (W STATE))))
+FIB1
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+ FIB1
+ACL2 !>>(TIME$ (FIB1 5000))
+3878968454388325633701916308325905312082127714646245106160597214895550139044037097010822916462210669479293452858882973813483102008954982940361430156911478938364216563944106910214505634133706558656238254656700712525929903854933813928836378347518908762970712033337052923107693008518093849801803847813996748881765554653788291644268912980384613778969021502293082475666346224923071883324803280375039130352903304505842701147635242270210934637699104006714174883298422891491273104054328753298044273676822977244987749874555691907703880637046832794811358973739993110106219308149018570815397854379195305617510761053075688783766033667355445258844886241619210553457493675897849027988234351023599844663934853256411952221859563060475364645470760330902420806382584929156452876291575759142343809142302917491088984155209854432486594079793571316841692868039545309545388698114665082066862897420639323438488465240988742395873801976993820317174208932265468879364002630797780058759129671389634214252579116872755600360311370547754724604639987588046985178408674382863125
+ACL2 !>>'(END OF DEMO 3)
+(END OF DEMO 3)
+ACL2 !>>(INCLUDE-BOOK "centaur/gl/gl"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "centaur/gl/gl" ...)
+Rules: NIL
+ "[books]/centaur/gl/gl.lisp"
+ACL2 !>>(DEFUN 32* (X Y)
+               (LOGAND (* X Y) (- (EXPT 2 32) 1)))
+
+Since 32* is non-recursive, its admission is trivial.  We observe that
+the type of 32* is described by the theorem (INTEGERP (32* X Y)). 
+We used the :type-prescription rule BINARY-LOGAND.
+
+Summary
+Form:  ( DEFUN 32* ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-LOGAND))
+ 32*
+ACL2 !>>(DEFUN FAST-LOGCOUNT-32 (V)
+               (LET* ((V (- V (LOGAND (ASH V -1) 1431655765)))
+                      (V (+ (LOGAND V 858993459)
+                            (LOGAND (ASH V -2) 858993459))))
+                     (ASH (32* (LOGAND (+ V (ASH V -4)) 252645135)
+                               16843009)
+                          -24)))
+
+Since FAST-LOGCOUNT-32 is non-recursive, its admission is trivial.
+We observe that the type of FAST-LOGCOUNT-32 is described by the theorem
+(INTEGERP (FAST-LOGCOUNT-32 V)).  We used the :type-prescription rule
+ASH.
+
+Summary
+Form:  ( DEFUN FAST-LOGCOUNT-32 ...)
+Rules: ((:TYPE-PRESCRIPTION ASH))
+ FAST-LOGCOUNT-32
+ACL2 !>>(PE 'LOGCOUNT)
+        -790  (PROGN (DEFUN EXPT # ...)
+                     (DEFUN LOGCOUNT # ...)
+                     ...)
+              \
+>V             (DEFUN
+                LOGCOUNT (X)
+                (DECLARE (XARGS :GUARD (INTEGERP X)))
+                (COND
+                     ((ZIP X) 0)
+                     ((< X 0) (LOGCOUNT (LOGNOT X)))
+                     ((EVENP X)
+                      (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2)))
+                     (T (1+ (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2))))))
+
+Additional events for the logical name LOGCOUNT:
+       -6864  (PROGN (DEFUN EXPT # ...)
+                     (DEFUN LOGCOUNT # ...)
+                     ...)
+              \
+>PV            (DEFUN
+                LOGCOUNT (X)
+                (DECLARE (XARGS :GUARD (INTEGERP X)))
+                (COND
+                     ((ZIP X) 0)
+                     ((< X 0) (LOGCOUNT (LOGNOT X)))
+                     ((EVENP X)
+                      (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2)))
+                     (T (1+ (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2))))))
+ACL2 !>>(LOGCOUNT 41)
+3
+ACL2 !>>(FAST-LOGCOUNT-32 41)
+3
+ACL2 !>>(DEF-GL-THM
+             FAST-LOGCOUNT-32-CORRECT
+             :HYP (UNSIGNED-BYTE-P 32 X)
+             :CONCL (EQUAL (FAST-LOGCOUNT-32 X)
+                           (LOGCOUNT X))
+             :G-BINDINGS (CONS (CONS 'X (CONS (GL::G-INT 0 1 33) 'NIL))
+                               'NIL))
+
+ACL2 Warning [Non-rec] in ( DEFTHM FAST-LOGCOUNT-32-CORRECT ...): 
+A :REWRITE rule generated from FAST-LOGCOUNT-32-CORRECT will be triggered
+only by terms containing the non-recursive function symbol FAST-LOGCOUNT-32.
+Unless this function is disabled, this rule is unlikely ever to be
+used.
+
+Subgoal 5
+Subgoal 4
+Subgoal 3
+Subgoal 2
+
+ACL2 Warning [Theory] in a computed hint for "Subgoal 2'":  The computed
+hint 
+(LIST NIL
+      '(:COMPUTED-HINT-REPLACEMENT ((AND STABLE-UNDER-SIMPLIFICATIONP #))
+                                   :IN-THEORY (UNION-THEORIES NIL (E/D** #))
+                                   :DO-NOT-INDUCT T)
+      STATE)
+produced the non-nil result
+(:COMPUTED-HINT-REPLACEMENT
+  ((AND STABLE-UNDER-SIMPLIFICATIONP
+        (LET (#) (CASE-MATCH LAST #))))
+  :IN-THEORY
+  (UNION-THEORIES NIL
+                  (E/D** ((:RULESET GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN))))
+  :DO-NOT-INDUCT T).
+Regarding this value
+(See :DOC set-iprint to be able to see elided values in this message.):
+The :DEFINITION rules for DOUBLE-REWRITE, THE-CHECK, CONS-WITH-HINT,
+IFF, WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP, ZEROP, LISTP, SYNP, CASE-SPLIT,
+FORCE, /=, =, RETURN-LAST, NULL, ENDP, ATOM, NOT, IMPLIES and EQ are
+disabled by the theory expression 
+(UNION-THEORIES NIL
+                (E/D** ((:RULESET GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN)))),
+but because these built-in functions are given certain special handling,
+some expansions of their calls may still occur.  See :DOC theories-
+and-primitives.
+
+
+ACL2 Warning [Theory] in a computed hint for "Subgoal 2'":  The computed
+hint 
+(LIST NIL
+      '(:COMPUTED-HINT-REPLACEMENT ((AND STABLE-UNDER-SIMPLIFICATIONP #))
+                                   :IN-THEORY (UNION-THEORIES NIL (E/D** #))
+                                   :DO-NOT-INDUCT T)
+      STATE)
+produced the non-nil result
+(:COMPUTED-HINT-REPLACEMENT
+  ((AND STABLE-UNDER-SIMPLIFICATIONP
+        (LET (#) (CASE-MATCH LAST #))))
+  :IN-THEORY
+  (UNION-THEORIES NIL
+                  (E/D** ((:RULESET GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN))))
+  :DO-NOT-INDUCT T).
+Regarding this value
+(See :DOC set-iprint to be able to see elided values in this message.):
+The :EXECUTABLE-COUNTERPART rules for NOT, SYMBOLP, SYMBOL-PACKAGE-NAME,
+SYMBOL-NAME, STRINGP, REALPART, RATIONALP, PKG-WITNESS, PKG-IMPORTS,
+NUMERATOR, INTERN-IN-PACKAGE-OF-SYMBOL, IMAGPART, IF, EQUAL, DENOMINATOR,
+CONS, COERCE, COMPLEX-RATIONALP, COMPLEX, CODE-CHAR, CHARACTERP, CHAR-CODE,
+<, UNARY-/, BINARY-* and ACL2-NUMBERP are disabled by the theory expression
+(UNION-THEORIES NIL
+                (E/D** ((:RULESET GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN)))),
+but because these built-in functions are given certain special handling,
+some evaluations of their calls may still occur.  See :DOC theories-
+and-primitives.
+
+Subgoal 2'
+
+ACL2 Warning [Disable] in ( DEFTHM FAST-LOGCOUNT-32-CORRECT ...): 
+Forcing has transitioned from enabled to disabled.
+See :DOC force.
+
+Subgoal 2''
+Subgoal 1
+Subgoal 1'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FAST-LOGCOUNT-32-CORRECT ...)
+Rules: ((:DEFINITION INTEGER-RANGE-P)
+        (:DEFINITION UNSIGNED-BYTE-P)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART EXPT)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN-INTEGER-1)
+        (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+Hint-events: ((:BY LOGCOUNT-FOR-GL-CORRECT)
+              (:CLAUSE-PROCESSOR GL::GLCP)
+              (:CLAUSE-PROCESSOR REMOVE-FIRST-HYP-CP))
+Warnings:  Disable, Theory and Non-rec
+ACL2 !>>'(END OF DEMO 4)
+(END OF DEMO 4)
+ACL2 !>>(UBT! 'ISORT-IDENTITY)
+          14:x(DEFTHM PERM-AP ...)
+ACL2 !>>(DEFUN LEQUAL (X Y)
+               (COND ((ATOM X) (ATOM Y))
+                     ((ATOM Y) NIL)
+                     (T (AND (EQUAL (CAR X) (CAR Y))
+                             (LEQUAL (CDR X) (CDR Y))))))
+
+The admission of LEQUAL is trivial, using the relation O< (which is
+known to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of LEQUAL is described by
+the theorem (OR (EQUAL (LEQUAL X Y) T) (EQUAL (LEQUAL X Y) NIL)). 
+
+Summary
+Form:  ( DEFUN LEQUAL ...)
+Rules: NIL
+ LEQUAL
+ACL2 !>>(DEFEQUIV LEQUAL)
+Subgoal 3
+
+([ A key checkpoint:
+
+Subgoal 3
+(LEQUAL X X)
+
+*1 (Subgoal 3) is pushed for proof by induction.
+
+])
+Subgoal 2
+
+([ A key checkpoint:
+
+Subgoal 2
+(IMPLIES (LEQUAL X Y) (LEQUAL Y X))
+
+Normally we would attempt to prove Subgoal 2 by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+Perhaps we can prove *1 by induction.  Seven induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to five.
+These merge into one derived induction scheme.  
+
+We will induct according to a scheme suggested by (LEQUAL X Z), but
+modified to accommodate (LEQUAL Y Z) and (LEQUAL Y X).  These suggestions
+were produced using the :induction rule LEQUAL.  If we let (:P X Y Z)
+denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (ATOM Z))
+                   (NOT (EQUAL (CAR X) (CAR Z))))
+              (:P X Y Z))
+     (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (ATOM Z))
+                   (EQUAL (CAR X) (CAR Z))
+                   (:P (CDR X) (CDR Y) (CDR Z)))
+              (:P X Y Z))
+     (IMPLIES (AND (NOT (ATOM X)) (ATOM Z))
+              (:P X Y Z))
+     (IMPLIES (ATOM X) (:P X Y Z))).
+This induction is justified by the same argument used to admit LEQUAL.
+Note, however, that the unmeasured variables Y and Z are being instantiated.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/4'
+
+Splitter note (see :DOC splitter) for Subgoal *1/4' (2 subgoals).
+  if-intro: ((:DEFINITION LEQUAL))
+
+Subgoal *1/4.2
+Subgoal *1/4.2'
+Subgoal *1/4.2''
+Subgoal *1/4.2'''
+Subgoal *1/4.2'4'
+Subgoal *1/4.2'5'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/4.2
+(IMPLIES (AND (CONSP X)
+              (CONSP Z)
+              (NOT (EQUAL (CAR X) (CAR Z))))
+         (LEQUAL (CDR X) (CDR X)))
+
+*1.1 (Subgoal *1/4.2'5') is pushed for proof by induction.
+
+])
+Subgoal *1/4.1
+Subgoal *1/4.1'
+Subgoal *1/4.1''
+Subgoal *1/4.1'''
+Subgoal *1/4.1'4'
+Subgoal *1/4.1'5'
+Subgoal *1/4.1'6'
+Subgoal *1/4.1'7'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/4.1
+(IMPLIES (AND (CONSP X)
+              (CONSP Z)
+              (NOT (EQUAL (CAR X) (CAR Z)))
+              (CONSP Y)
+              (EQUAL (CAR X) (CAR Y))
+              (LEQUAL (CDR X) (CDR Y)))
+         (LEQUAL (CDR Y) (CDR X)))
+
+*1.2 (Subgoal *1/4.1'7') is pushed for proof by induction.
+
+])
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1/2' (2 subgoals).
+  if-intro: ((:DEFINITION LEQUAL))
+
+Subgoal *1/2.2
+Subgoal *1/2.2'
+Subgoal *1/2.2''
+Subgoal *1/2.2'''
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2.2
+(IMPLIES (AND (CONSP X) (NOT (CONSP Z)))
+         (LEQUAL (CDR X) (CDR X)))
+
+*1.3 (Subgoal *1/2.2''') is pushed for proof by induction.
+
+])
+Subgoal *1/2.1
+Subgoal *1/2.1'
+Subgoal *1/2.1''
+Subgoal *1/2.1'''
+Subgoal *1/2.1'4'
+Subgoal *1/2.1'5'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2.1
+(IMPLIES (AND (CONSP X)
+              (NOT (CONSP Z))
+              (CONSP Y)
+              (EQUAL (CAR X) (CAR Y))
+              (LEQUAL (CDR X) (CDR Y)))
+         (LEQUAL (CDR Y) (CDR X)))
+
+*1.4 (Subgoal *1/2.1'5') is pushed for proof by induction.
+
+])
+Subgoal *1/1
+Subgoal *1/1'
+
+So we now return to *1.4, which is
+
+(IMPLIES (LEQUAL X2 Y2) (LEQUAL Y2 X2)).
+
+But the formula above is subsumed by *1.2, which we'll try to prove
+later.  We therefore regard *1.4 as proved (pending the proof of the
+more general *1.2).
+
+Subgoal *1/2.1 COMPLETED!
+
+We next consider *1.3, which is
+
+(LEQUAL X2 X2).
+
+But the formula above is subsumed by *1.1, which we'll try to prove
+later.  We therefore regard *1.3 as proved (pending the proof of the
+more general *1.1).
+
+Subgoal *1/2.2 COMPLETED!
+
+We next consider *1.2, which is
+
+(IMPLIES (LEQUAL X2 Y2) (LEQUAL Y2 X2)).
+Subgoal *1.2/5
+Subgoal *1.2/5'
+Subgoal *1.2/4
+Subgoal *1.2/4'
+Subgoal *1.2/3
+Subgoal *1.2/3'
+Subgoal *1.2/2
+Subgoal *1.2/2'
+Subgoal *1.2/1
+Subgoal *1.2/1'
+
+*1.2 is COMPLETED!
+Thus key checkpoint Subgoal *1/4.1 is COMPLETED!
+
+We therefore turn our attention to *1.1, which is
+
+(LEQUAL X2 X2).
+Subgoal *1.1/3
+Subgoal *1.1/2
+Subgoal *1.1/2'
+Subgoal *1.1/1
+Subgoal *1.1/1'
+
+*1.1 and *1 are COMPLETED!
+Thus key checkpoints Subgoal *1/4.2 and Goal are COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM LEQUAL-IS-AN-EQUIVALENCE ...)
+Rules: ((:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ATOM)
+        (:DEFINITION LEQUAL)
+        (:DEFINITION NOT)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART BOOLEANP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION LEQUAL)
+        (:TYPE-PRESCRIPTION LEQUAL))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION LEQUAL))
+ LEQUAL-IS-AN-EQUIVALENCE
+ACL2 !>>(DEFCONG LEQUAL LEQUAL (INSERT E X) 2)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by (INSERT E X-EQUIV),
+but modified to accommodate (INSERT E X) and (LEQUAL X X-EQUIV).  These
+suggestions were produced using the :induction rules INSERT and LEQUAL.
+If we let (:P E X X-EQUIV) denote *1 above then the induction scheme
+we'll use is
+(AND (IMPLIES (AND (NOT (ENDP X-EQUIV))
+                   (NOT (LEXORDER E (CAR X-EQUIV)))
+                   (:P E (CDR X) (CDR X-EQUIV)))
+              (:P E X X-EQUIV))
+     (IMPLIES (AND (NOT (ENDP X-EQUIV))
+                   (LEXORDER E (CAR X-EQUIV)))
+              (:P E X X-EQUIV))
+     (IMPLIES (ENDP X-EQUIV)
+              (:P E X X-EQUIV))).
+This induction is justified by the same argument used to admit INSERT.
+Note, however, that the unmeasured variable X is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/4'
+
+Splitter note (see :DOC splitter) for Subgoal *1/4' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT)
+             (:DEFINITION LEQUAL))
+
+Subgoal *1/4.2
+Subgoal *1/4.1
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM LEQUAL-IMPLIES-LEQUAL-INSERT-2 ...)
+Rules: ((:DEFINITION ENDP)
+        (:DEFINITION INSERT)
+        (:DEFINITION LEQUAL)
+        (:DEFINITION NOT)
+        (:EQUIVALENCE LEQUAL-IS-AN-EQUIVALENCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION INSERT)
+        (:INDUCTION LEQUAL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE LEXORDER-REFLEXIVE)
+        (:REWRITE LEXORDER-TRANSITIVE)
+        (:TYPE-PRESCRIPTION LEXORDER))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION INSERT)
+             (:DEFINITION LEQUAL))
+ LEQUAL-IMPLIES-LEQUAL-INSERT-2
+ACL2 !>>(DEFCONG PERM LEQUAL (ISORT X) 1)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  However, one of these is flawed and so we are left with one
+viable candidate.  
+
+We will induct according to a scheme suggested by (ISORT X), but modified
+to accommodate (PERM X X-EQUIV).  These suggestions were produced using
+the :induction rules ISORT and PERM.  If we let (:P X X-EQUIV) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP X))
+                   (:P (CDR X) (RM (CAR X) X-EQUIV)))
+              (:P X X-EQUIV))
+     (IMPLIES (ENDP X) (:P X X-EQUIV))).
+This induction is justified by the same argument used to admit ISORT.
+Note, however, that the unmeasured variable X-EQUIV is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/3'''
+Subgoal *1/3'4'
+Subgoal *1/3'5'
+Subgoal *1/3'6'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/3''
+(IMPLIES (AND (CONSP X)
+              (LEQUAL (ISORT (CDR X))
+                      (ISORT (RM (CAR X) X-EQUIV)))
+              (MEMB (CAR X) X-EQUIV)
+              (PERM (CDR X) (RM (CAR X) X-EQUIV)))
+         (LEQUAL (INSERT (CAR X) (ISORT (CDR X)))
+                 (ISORT X-EQUIV)))
+
+*1.1 (Subgoal *1/3'6') is pushed for proof by induction.
+
+])
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+So we now return to *1.1, which is
+
+(IMPLIES (MEMB X1 X-EQUIV)
+         (LEQUAL (INSERT X1 (ISORT (RM X1 X-EQUIV)))
+                 (ISORT X-EQUIV))).
+Subgoal *1.1/3
+Subgoal *1.1/3'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1/3' (2 subgoals).
+  if-intro: ((:DEFINITION MEMB) (:DEFINITION RM))
+
+Subgoal *1.1/3.2
+Subgoal *1.1/3.1
+Subgoal *1.1/3.1'
+Subgoal *1.1/3.1''
+Subgoal *1.1/3.1'''
+Subgoal *1.1/3.1'4'
+Subgoal *1.1/3.1'5'
+Subgoal *1.1/3.1'6'
+
+*1.1.1 (Subgoal *1.1/3.1'6') is pushed for proof by induction.
+Subgoal *1.1/2
+Subgoal *1.1/2'
+Subgoal *1.1/1
+Subgoal *1.1/1'
+
+So we now return to *1.1.1, which is
+
+(IMPLIES (AND (MEMB X1 X-EQUIV2)
+              (NOT (EQUAL X1 X-EQUIV1)))
+         (LEQUAL (INSERT X1 (INSERT X-EQUIV1 IT))
+                 (INSERT X-EQUIV1 (INSERT X1 IT)))).
+Subgoal *1.1.1/3
+Subgoal *1.1.1/3'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1/3' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1/3.2
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1/3.2 (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1/3.2.2
+Subgoal *1.1.1/3.2.1
+Subgoal *1.1.1/3.1
+Subgoal *1.1.1/2
+Subgoal *1.1.1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1/2' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1/2.2
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1/2.2 (4 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1/2.2.4
+Subgoal *1.1.1/2.2.3
+Subgoal *1.1.1/2.2.2
+Subgoal *1.1.1/2.2.1
+Subgoal *1.1.1/2.1
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1/2.1 (8 subgoals).
+  if-intro: ((:DEFINITION INSERT)
+             (:DEFINITION LEQUAL))
+
+Subgoal *1.1.1/2.1.8
+Subgoal *1.1.1/2.1.8'
+Subgoal *1.1.1/2.1.7
+Subgoal *1.1.1/2.1.7'
+Subgoal *1.1.1/2.1.6
+Subgoal *1.1.1/2.1.6'
+Subgoal *1.1.1/2.1.5
+Subgoal *1.1.1/2.1.5'
+Subgoal *1.1.1/2.1.4
+Subgoal *1.1.1/2.1.3
+Subgoal *1.1.1/2.1.2
+Subgoal *1.1.1/2.1.2'
+Subgoal *1.1.1/2.1.1
+Subgoal *1.1.1/2.1.1'
+Subgoal *1.1.1/1
+Subgoal *1.1.1/1'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1.1/1' (4 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1.1/1.4
+Subgoal *1.1.1/1.3
+Subgoal *1.1.1/1.2
+Subgoal *1.1.1/1.1
+
+*1.1.1, *1.1 and *1 are COMPLETED!
+Thus key checkpoints Subgoal *1/3'' and Goal are COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PERM-IMPLIES-LEQUAL-ISORT-1 ...)
+Rules: ((:CONGRUENCE LEQUAL-IMPLIES-LEQUAL-INSERT-2)
+        (:DEFINITION ENDP)
+        (:DEFINITION INSERT)
+        (:DEFINITION ISORT)
+        (:DEFINITION LEQUAL)
+        (:DEFINITION MEMB)
+        (:DEFINITION NOT)
+        (:DEFINITION PERM)
+        (:DEFINITION RM)
+        (:ELIM CAR-CDR-ELIM)
+        (:EQUIVALENCE LEQUAL-IS-AN-EQUIVALENCE)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING LEXORDER-ANTI-SYMMETRIC)
+        (:FORWARD-CHAINING LEXORDER-TOTAL)
+        (:INDUCTION INSERT)
+        (:INDUCTION ISORT)
+        (:INDUCTION MEMB)
+        (:INDUCTION PERM)
+        (:INDUCTION RM)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE LEXORDER-REFLEXIVE)
+        (:REWRITE LEXORDER-TRANSITIVE)
+        (:TYPE-PRESCRIPTION INSERT)
+        (:TYPE-PRESCRIPTION LEXORDER))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION INSERT)
+             (:DEFINITION LEQUAL)
+             (:DEFINITION MEMB)
+             (:DEFINITION RM))
+ PERM-IMPLIES-LEQUAL-ISORT-1
+ACL2 !>>(DEFTHM ISORT-IDEMPOTENT-LEQUAL
+                (LEQUAL (ISORT (ISORT X)) (ISORT X)))
+
+ACL2 Warning [Double-rewrite] in ( DEFTHM ISORT-IDEMPOTENT-LEQUAL ...):
+In a :REWRITE rule generated from ISORT-IDEMPOTENT-LEQUAL, equivalence
+relation PERM is maintained at one problematic occurrence of variable
+X in the right-hand side, but not at any binding occurrence of X. 
+Consider replacing that occurrence of X in the right-hand side with
+(DOUBLE-REWRITE X).  See :doc double-rewrite for more information on
+this issue.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ISORT-IDEMPOTENT-LEQUAL ...)
+Rules: ((:CONGRUENCE PERM-IMPLIES-LEQUAL-ISORT-1)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:REWRITE PERM-ISORT))
+Warnings:  Double-rewrite
+ ISORT-IDEMPOTENT-LEQUAL
+ACL2 !>>(DEFUN TERMINAL-MARKER (X)
+               (COND ((ATOM X) X)
+                     (T (TERMINAL-MARKER (CDR X)))))
+
+The admission of TERMINAL-MARKER is trivial, using the relation O<
+(which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT X).  We observe that the type of TERMINAL-MARKER
+is described by the theorem (NOT (CONSP (TERMINAL-MARKER X))).  
+
+Summary
+Form:  ( DEFUN TERMINAL-MARKER ...)
+Rules: NIL
+ TERMINAL-MARKER
+ACL2 !>>(DEFTHM TERMINAL-MARKER-ISORT
+                (EQUAL (TERMINAL-MARKER (ISORT X))
+                       (TERMINAL-MARKER X)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (TERMINAL-MARKER X).
+This suggestion was produced using the :induction rules ISORT and 
+TERMINAL-MARKER.  If we let (:P X) denote *1 above then the induction
+scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM X)) (:P (CDR X)))
+              (:P X))
+     (IMPLIES (ATOM X) (:P X))).
+This induction is justified by the same argument used to admit 
+TERMINAL-MARKER.  When applied to the goal at hand the above induction
+scheme produces two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/2'''
+Subgoal *1/2'4'
+Subgoal *1/2'5'
+Subgoal *1/2'6'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2''
+(IMPLIES (AND (CONSP X)
+              (EQUAL (TERMINAL-MARKER (ISORT (CDR X)))
+                     (TERMINAL-MARKER (CDR X))))
+         (EQUAL (TERMINAL-MARKER (INSERT (CAR X) (ISORT (CDR X))))
+                (TERMINAL-MARKER (CDR X))))
+
+*1.1 (Subgoal *1/2'6') is pushed for proof by induction.
+
+])
+Subgoal *1/1
+Subgoal *1/1'
+
+So we now return to *1.1, which is
+
+(EQUAL (TERMINAL-MARKER (INSERT X1 IT))
+       (TERMINAL-MARKER IT)).
+Subgoal *1.1/2
+Subgoal *1.1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1.1/2' (2 subgoals).
+  if-intro: ((:DEFINITION INSERT))
+
+Subgoal *1.1/2.2
+Subgoal *1.1/2.1
+Subgoal *1.1/1
+Subgoal *1.1/1'
+
+*1.1 and *1 are COMPLETED!
+Thus key checkpoints Subgoal *1/2'' and Goal are COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM TERMINAL-MARKER-ISORT ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION INSERT)
+        (:DEFINITION ISORT)
+        (:DEFINITION NOT)
+        (:DEFINITION TERMINAL-MARKER)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION INSERT)
+        (:INDUCTION ISORT)
+        (:INDUCTION TERMINAL-MARKER)
+        (:REWRITE CDR-CONS))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION INSERT))
+ TERMINAL-MARKER-ISORT
+ACL2 !>>(DEFTHM LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL
+                (IMPLIES (AND (EQUAL (TERMINAL-MARKER A)
+                                     (TERMINAL-MARKER B))
+                              (LEQUAL A B))
+                         (EQUAL A B))
+                :RULE-CLASSES NIL)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to one.
+
+We will induct according to a scheme suggested by (LEQUAL A B).  This
+suggestion was produced using the :induction rules LEQUAL and 
+TERMINAL-MARKER.  If we let (:P A B) denote *1 above then the induction
+scheme we'll use is
+(AND (IMPLIES (AND (NOT (ATOM A))
+                   (NOT (ATOM B))
+                   (NOT (EQUAL (CAR A) (CAR B))))
+              (:P A B))
+     (IMPLIES (AND (NOT (ATOM A))
+                   (NOT (ATOM B))
+                   (EQUAL (CAR A) (CAR B))
+                   (:P (CDR A) (CDR B)))
+              (:P A B))
+     (IMPLIES (AND (NOT (ATOM A)) (ATOM B))
+              (:P A B))
+     (IMPLIES (ATOM A) (:P A B))).
+This induction is justified by the same argument used to admit LEQUAL.
+Note, however, that the unmeasured variable B is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+six nontautological subgoals.
+Subgoal *1/6
+Subgoal *1/6'
+Subgoal *1/5
+Subgoal *1/5'
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LEQUAL)
+        (:DEFINITION NOT)
+        (:DEFINITION TERMINAL-MARKER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION LEQUAL)
+        (:INDUCTION TERMINAL-MARKER))
+ LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL
+ACL2 !>>(DEFTHM
+         ISORT-IDEMPOTENT
+         (EQUAL (ISORT (ISORT X)) (ISORT X))
+         :HINTS
+         (("Goal" :USE (:INSTANCE LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL
+                                  (A (ISORT (ISORT X)))
+                                  (B (ISORT X))))))
+
+ACL2 Warning [Subsume] in ( DEFTHM ISORT-IDEMPOTENT ...):  A newly
+proposed :REWRITE rule generated from ISORT-IDEMPOTENT probably subsumes
+the previously added :REWRITE rule ISORT-IDEMPOTENT-LEQUAL, in the
+sense that the new rule will now probably be applied whenever the old
+rule would have been.
+
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ISORT-IDEMPOTENT ...)
+Rules: ((:CONGRUENCE PERM-IMPLIES-LEQUAL-ISORT-1)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:REWRITE PERM-ISORT)
+        (:REWRITE TERMINAL-MARKER-ISORT))
+Hint-events: ((:USE LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL))
+Warnings:  Subsume
+ ISORT-IDEMPOTENT
+ACL2 !>>Bye.

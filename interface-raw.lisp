@@ -978,7 +978,8 @@
 (defun-*1* complex-rationalp (x)
   (complexp x))
 
-;; RAG - I added this function to recognize the complex numbers.
+;; Historical Comment from Ruben Gamboa:
+;; I added this function to recognize the complex numbers.
 
 #+:non-standard-analysis
 (defun-*1* complexp (x)
@@ -1015,7 +1016,8 @@
 #+:non-standard-analysis
 (defun-*1* floor1 (x)
 
-;; RAG - I added this function to evaluate the special floor1
+;; Historical Comment from Ruben Gamboa:
+;; I added this function to evaluate the special floor1
 ;; function, which computes floor with a modulus of 1.
 
   (if (rationalp x)
@@ -1059,7 +1061,8 @@
 (defun-*1* rationalp (x)
   (rationalp x))
 
-;; RAG - I added realp to recognize real numbers.
+;; Historical Comment from Ruben Gamboa:
+;; I added realp to recognize real numbers.
 
 #+:non-standard-analysis
 (defun-*1* realp (x)
@@ -1087,7 +1090,8 @@
 (defun-*1* symbolp (x)
   (symbolp x))
 
-;; RAG - I added *1*-defns for the non-standard predicates.  Note,
+;; Historical Comment from Ruben Gamboa:
+;; I added *1*-defns for the non-standard predicates.  Note,
 ;; however, that the non-standard predicates do NOT have an executable
 ;; counterpart.  (Actually, that's too hasty.  Standard-part could be
 ;; defined as "identity" and standardp could be "t".
@@ -6782,20 +6786,21 @@
            (not (boundp name))
          t)))
 
-(defun-one-output chk-virgin2 (name new-type ctx wrld state)
-  (cond ((virginp name new-type) (value nil))
-        ((f-get-global 'boot-strap-flg *the-live-state*)
+(defun-one-output chk-virgin-msg2 (name new-type wrld state)
+  (cond ((virginp name new-type) nil)
+        ((f-get-global 'boot-strap-flg state)
 
 ; The test above is equivalent to (global-val 'boot-strap-flg wrld).
 
-         (value (setf (get name '*predefined*) t)))
+         (setf (get name '*predefined*) t)
+         nil)
 
 ; A name regains its true virginity the moment we decide to give it a
 ; 'redefined property, which only happens just after the user has said that
 ; it's OK to redefine it.
 
         ((getpropc name 'redefined nil wrld)
-         (value nil))
+         nil)
         (t
          (let ((reason
                 (cond ((not (symbolp name)) "it is not a symbol")
@@ -6836,7 +6841,7 @@
                         (t ; (member-eq new-type '(const stobj
 ;                       stobj-live-var t))
                          str)))))
-           (er soft ctx
+           (msg
             "It is illegal to define ~x0 because ~@1 in raw Common Lisp.~@2"
             name
             reason
@@ -6860,8 +6865,9 @@
 ; restrictions, which axiomatically always returns t but may cause this hard
 ; error (which can be thought of as a resource error).
 
-; Note: The "2" in the name stems from chk-virgin2, which plays a similar role
-; in chk-virgin.  Chk-virgin1 has been lost in the mist of time, but
+; Note: The "2" in the name stems from chk-virgin2, which formerly played a
+; similar role in chk-virgin but has been replaced by chk-virgin-msg.
+; Chk-virgin1 has been lost in the mist of time, but
 ; chk-package-reincarnation-import-restrictions1 has never existed!
 
   (let ((pkg (find-package name))
@@ -8383,6 +8389,70 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
   (lw:start-tty-listener))
 
+(defconstant *our-standard-io*
+
+; We bind *debug-io* to this constant inside LP to ensure that when the
+; debugger is invoked, it will write to the standard output rather than to the
+; terminal (unless *debug-io* is rebound, as in community books file
+; books/centaur/vl2014/server/server-raw.lsp).  Formerly we bound *debug-io* to
+; *standard-output* in LP, which would cause an infinite loop in the SBCL
+; debugger as described below.  We thank Keshav Kini for the current approach,
+; and for bringing this problem to our attention.  As described below, this
+; approach ensures that debugger output is printed to standard output, not to
+; the terminal, but without binding *debug-io* to an output-only stream.
+
+; Below is some discussion showing how we formerly got this wrong and
+; progressed towards the current solution.  Before making changes
+; related to this constant, be sure to understand the issues raised in
+; that discussion.
+
+; (1) Git commit 26013676ec22cd68e29be0a43f9cbf2aeee2114e on Feb 5, 2016
+;     provided a fix for problem described in the following quote from :doc
+;     note-7-3.
+
+;       It was possible for a backtrace to be printed to the terminal by SBCL
+;       and CMUCL, even when output is redirected to a file. This has been
+;       fixed.
+
+;     The fix was for ACL2 function print-call-history to print backtraces to
+;     *standard-output*, rather than to the default stream, *debug-io*.
+; 
+; BUT that fix caused a problem:
+; 
+; (2) Commit 6d7ad53ecdaaec9dcf3e3d05c19832b97fa7062a on Aug 26, 2016 provided
+;     a fix for GitHub Issue 634 (https://github.com/acl2/acl2/issues/634),
+;     namely, printing of a backtrace to the terminal.  The problem had been
+;     that for SBCL (and CMUCL), print-call-history was sending its output to
+;     *standard-output* instead of *debug-io*, so the rebinding of *debug-io*
+;     in community books file books/centaur/vl2014/server/server-raw.lsp had no
+;     effect on where print-call-history sent its output: that output was going
+;     to *standard-output*, hence to a .cert.out file.  The fix was to avoid
+;     the use of *standard-output* in print-call-history, instead binding
+;     *debug-io* to *standard-output* in LP.  That solution still handles (1)
+;     by sending backtraces to *standard-output* by default; but now, the
+;     redirection in server-raw.lsp, by rebinding *debug-io*, works as
+;     intended.
+
+; BUT that fix caused a problem: with *debug-io* bound to *standard-output*, a
+; horrible infinite loop could occur in SBCL when trying to read from
+; *debug-io*, as shown in this item, formerly in community books file
+; books/system/to-do.txt, for obtaining that infinite loop in ACL2 but not in
+; pure SBCL:
+
+; (value :q)
+; (LP!) ; only in ACL2
+; #+acl2-loop-only (program)
+; (defun foo (x) (declare (optimize (safety 0))) (car x))
+; #+acl2-loop-only (set-debugger-enable t)
+; (foo 3)
+; 
+; So now, in LP we bind *debug-io* to *our-standard-io* instead of
+; *standard-output*, thus guaranteeing that debugger output is sent to standard
+; output rather than the terminal, without the mistake of binding *debug-io* to
+; an output-only stream.
+
+  (make-two-way-stream *standard-input* *standard-output*))
+
 (defun lp (&rest args)
 
 ; This function can only be called from within raw lisp, because no ACL2
@@ -8433,7 +8503,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
    (let ((state *the-live-state*)
          #+(and gcl (not cltl2))
          (system::*break-enable* (debugger-enabledp *the-live-state*))
-         (*debug-io* *standard-output*))
+         (*debug-io* *our-standard-io*))
      (cond
       ((> *ld-level* 0)
        (when (raw-mode-p *the-live-state*)

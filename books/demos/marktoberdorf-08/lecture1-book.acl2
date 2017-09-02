@@ -1,0 +1,10 @@
+; See :DOC run-script.
+
+(include-book "tools/run-script" :dir :system)
+(run-script "lecture1")
+
+; Help dependency scanner.
+#||
+(depends-on "lecture1-log.txt")
+(include-book "perm")
+||#

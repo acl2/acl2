@@ -60,10 +60,6 @@
 ; All of the arguments except :with-output are evaluated.  The result is
 ; (mv nil t state) if the proof is successful, otherwise (mv nil nil state).
 
-; There is no :step-limit option because, unfortunately, step-limit failures
-; cause an error that isn't "soft", hence can't be "caught".  This may change
-; in future ACL2 versions.
-
   (let* ((form `(prove$-fn ,term state ,hints ,otf-flg))
          (form (if with-output
                    `(with-output$ ,@with-output ,form)
@@ -88,6 +84,6 @@
          hints
          otf-flg
          with-output ; :off, :all, :gag-mode, or the default, nil
-         step-limit
-         time-limit)
+         time-limit
+         step-limit)
  })")

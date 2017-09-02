@@ -3849,6 +3849,41 @@
           (logbitp-reasoning)))
 
 
+(local (defthm 4vec-mask-to-zero-preserves-[=
+         (implies (4vec-[= x y)
+                  (4vec-[= (4vec-mask-to-zero mask x)
+                           (4vec-mask-to-zero mask y)))
+         :hints(("Goal" :in-theory (e/d (4vec-[= 4vec-mask-to-zero)
+                                        ((tau-system))))
+                (logbitp-reasoning))))
+
+(local
+ (defthmd uor-under-mask-lemma
+   (implies (bind-free '((env . env)) (env))
+            (equal (equal (4vec-mask-to-zero mask (svex-xeval x)) 0)
+                   (and (Equal (4vec-mask-to-zero mask (svex-eval x env)) 0)
+                        (hide (equal (4vec-mask-to-zero mask (svex-xeval x)) 0)))))
+   :hints(("Goal" :use ((:instance 4vec-mask-to-zero-preserves-[=
+                         (x (svex-xeval x)) (y (svex-eval x env))))
+           :in-theory (disable 4vec-mask-to-zero-preserves-[=)
+           :expand ((:free (x) (hide x)))))))
+
+(def-svex-rewrite uor-under-mask-1
+  :lhs (uor x)
+  :checks ((equal mask 1)
+           (equal (4vec-mask-to-zero -2 (svex-xeval x)) 0))
+  :rhs (unfloat x)
+  :hints (("goal" :in-theory (enable svex-apply uor-under-mask-lemma))
+          (and stable-under-simplificationp
+               '(:in-theory (enable 4vec-reduction-or 3vec-reduction-or
+                                    3vec-fix svex-apply 4vec-mask 4vec-mask-to-zero)))
+          (svex-generalize-lookups)
+          (bitops::logbitp-reasoning
+           :prune-examples nil
+           :add-hints (:in-theory (enable* bitops::bool->bit
+                                           bitops::logbitp-case-splits)))))
+
+
 
 (def-svex-rewrite concat-redundant-tail
   :lhs (concat width x y)
@@ -4032,6 +4067,7 @@
   (b* ((xeval (svex-xeval (svex-call fn args)))
        ((when (4vec-xfree-under-mask xeval mask))
         (mv t (svex-quote (4vec-mask-to-zero mask xeval)) nil)))
+    nil 
     (svex-rewrite-cases mask
                         (mbe :logic (fnsym-fix fn) :exec fn)
                         args

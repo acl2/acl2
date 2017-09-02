@@ -138,7 +138,7 @@
    @('combine-right-identity')
    are slightly stronger than @($D{}b$), @($L{}I$), and @($R{}I$):
    they omit the hypothesis @('test<x1,...,xn>').
-   Furthermore, the requirement above that @('base<x1,...,xn>') be a ground term
+   Furthermore, the requirement that @('base<x1,...,xn>') be a ground term
    when the variant is @(':monoid') or @(':monoid-alt'),
    is not present in the design notes.
    The reason for these additional restrictions is to avoid, for now,

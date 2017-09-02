@@ -74,6 +74,9 @@
       (then svstmtlist)
       (else svstmtlist))
      :layout :tree)
+    (:xcond
+     ((cond svex)
+      (body svstmtlist)))
     (:while
      ((cond svex)
       (body svstmtlist)
@@ -83,6 +86,8 @@
              But if there is a continue statement, we need to jump to after the
              body but before the next, because in a for loop the increment still
              happens after a continue.")))
+    (:constraints
+     ((constraints constraintlist-p)))
     (:scope
      ((locals svarlist)
       (body svstmtlist)))
@@ -128,6 +133,10 @@
               (svex-vars x.cond)
               (svstmtlist-vars x.body)
               (svstmtlist-vars x.next))
+      :xcond (append-without-guard
+              (svex-vars x.cond)
+              (svstmtlist-vars x.body))
+      :constraints (constraintlist-vars x.constraints)
       :scope (append-without-guard
               (svarlist-fix x.locals)
               (svstmtlist-vars x.body))
@@ -166,6 +175,17 @@
                    (svstmtlist-vars body)
                    (svstmtlist-vars next)))
     :hints (("goal" :expand ((svstmt-vars (svstmt-while cond body next))))))
+
+  (defthm svstmt-vars-of-xcond
+    (equal (svstmt-vars (svstmt-xcond cond body))
+           (append (svex-vars cond)
+                   (svstmtlist-vars body)))
+    :hints (("goal" :expand ((svstmt-vars (svstmt-xcond cond body))))))
+
+  (defthm svstmt-vars-of-constraint
+    (equal (svstmt-vars (svstmt-constraints constraints))
+           (constraintlist-vars constraints))
+    :hints (("goal" :expand ((svstmt-vars (svstmt-constraints constraints))))))
 
   (defthm svstmt-vars-of-scope
     (equal (svstmt-vars (svstmt-scope locals body))

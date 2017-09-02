@@ -305,6 +305,7 @@ $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
 $(info ACL2_HOST_LISP    := $(ACL2_HOST_LISP))
 $(info OS_HAS_ABC        := $(OS_HAS_ABC))
+$(info OS_HAS_GLUCOSE    := $(OS_HAS_GLUCOSE))
 $(info OS_HAS_IPASIR     := $(OS_HAS_IPASIR))
 $(info OS_HAS_SMTLINK    := $(OS_HAS_SMTLINK))
 $(info USE_QUICKLISP     := $(USE_QUICKLISP))
@@ -414,8 +415,13 @@ OK_CERTS := $(filter-out $(CERT_PL_ANSI_ONLY), $(OK_CERTS))
 endif # ifeq ($(ACL2_HAS_ANSI), )
 
 ifeq ($(OS_HAS_ABC), )
-$(info Excluding books that need Abc: [$(CERT_PL_USES_ABC)])
+$(info Excluding books that need ABC: [$(CERT_PL_USES_ABC)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_ABC), $(OK_CERTS))
+endif
+
+ifeq ($(OS_HAS_GLUCOSE), )
+$(info Excluding books that need Glucose: [$(CERT_PL_USES_GLUCOSE)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_GLUCOSE), $(OK_CERTS))
 endif
 
 ifeq ($(OS_HAS_IPASIR), )
@@ -624,7 +630,7 @@ OK_CERTS := $(filter-out $(SLOW_BOOKS) models/y86/%, $(OK_CERTS))
 
 # Books that currently don't certify (or don't certify on some
 # systems), and that we want to work around for the moment:
-BROKEN_BOOKS := centaur/sv/tutorial/counter.cert
+BROKEN_BOOKS := 
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 
 ##############################

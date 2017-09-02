@@ -676,7 +676,7 @@
         (mv svtv moddb aliases))
        ;; Make a moddb, canonical alias table, and flattened, alias-normalized
        ;; assignments from the design.
-       ((mv err assigns delays moddb aliases)
+       ((mv err assigns delays ?constraints moddb aliases)
         (svex-design-flatten-and-normalize design))
        ((when err) (raise "Error flattening design: ~@0" err)
         (mv nil moddb aliases))
@@ -728,8 +728,9 @@
        ;; Compose together the final (gate-level) assignments to get full
        ;; update formulas (in terms of PIs and current states), and compose
        ;; delays with these to get next states.
-       ((mv updates next-states) (svex-compose-assigns/delays overridden-assigns delays
-                                                              :rewrite pre-simplify))
+       ((mv updates next-states ?constraints)
+        (svex-compose-assigns/delays overridden-assigns delays nil
+                                     :rewrite pre-simplify))
 
        ;; Compute an initial state of all Xes, or nil (meaning don't substitute
        ;; the states) if free-initst

@@ -856,7 +856,8 @@
                (er-let*
                    ((tguard (translate
                              (conjoin-untranslated-terms
-                              (get-guards1 edcls '(guards types) wrld1))
+                              (get-guards1 edcls '(guards types)
+                                           nil name wrld1))
                              '(nil) nil nil ctx wrld1 state)))
                  (mv-let
                   (ctx1 tbody)
@@ -1645,7 +1646,8 @@
   (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
                   *boot-strap-invariant-risk-symbols* wrld))
 
-;; RAG - I added the treatment of *non-standard-primitives*
+;; Historical Comment from Ruben Gamboa:
+;; I added the treatment of *non-standard-primitives*
 
 (defun primordial-world (operating-system)
 
@@ -3220,21 +3222,25 @@
        (let* ((ens1 (ens state))
               (force-xnume-en1 (enabled-numep *force-xnume* ens1))
               (imm-xnume-en1 (enabled-numep *immediate-force-modep-xnume* ens1))
-              (wrld1 (update-current-theory theory0 wrld)))
+              (wrld1 (update-current-theory theory0 wrld))
+              (val (if (f-get-global 'script-mode state)
+                       :CURRENT-THEORY-UPDATED
+                     (list :NUMBER-OF-ENABLED-RUNES (length theory0)))))
 
 ; Note:  We do not permit IN-THEORY to be made redundant.  If this
 ; is changed, change the text of the :doc for redundant-events.
 
          (er-let*
-          ((val (install-event (length theory0)
-                                event-form
-                                'in-theory
-                                0
-                                nil
-                                nil
-                                :protect
-                                nil
-                                wrld1 state)))
+          ((val ; same as input val, if successful
+            (install-event val
+                           event-form
+                           'in-theory
+                           0
+                           nil
+                           nil
+                           :protect
+                           nil
+                           wrld1 state)))
           (pprogn (if (member-equal
                        expr
                        '((enable (:EXECUTABLE-COUNTERPART
@@ -3249,7 +3255,7 @@
                     (maybe-warn-about-theory
                      ens1 force-xnume-en1 imm-xnume-en1
                      (ens state) ctx wrld state))
-                  (value (list :NUMBER-OF-ENABLED-RUNES val))))))))))
+                  (value val)))))))))
 
 (defun in-arithmetic-theory-fn (expr state event-form)
 
@@ -5046,7 +5052,10 @@
                     (cons #\4 (car ev-lst))
                     (cons #\5 (term-evisc-tuple nil state))
                     (cons #\r
-                          #+:non-standard-analysis "(r)"
+                          #+:non-standard-analysis
+                          (if (f-get-global 'script-mode state)
+                              ""
+                            "(r)")
                           #-:non-standard-analysis ""))
                    channel state nil))))
        (mv-let
@@ -5217,7 +5226,8 @@
        (equal (caddr insig1) (caddr insig2))
        (equal (cadddr insig1) (cadddr insig2))))
 
-;; RAG - I changed this so that non-classical witness functions are
+;; Historical Comment from Ruben Gamboa:
+;; I changed this so that non-classical witness functions are
 ;; not allowed.  The functions introduced by encapsulate are
 ;; implicitly taken to be classical, so a non-classical witness
 ;; function presents a (non-obvious) signature violation.
@@ -9424,38 +9434,9 @@
 ; We now develop code to "fix" the commands in the certification world before
 ; placing them in the portcullis of the certificate, in order to eliminate
 ; relative pathnames in include-book forms.  See the comment in
-; fix-portcullis-cmds.
-
-(defun string-prefixp-1 (str1 i str2)
-  (declare (type string str1 str2)
-           (type (unsigned-byte 29) i)
-           (xargs :guard (and (<= i (length str1))
-                              (<= i (length str2)))))
-  (cond ((zpf i) t)
-        (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte 29) i))
-             (cond ((eql (the character (char str1 i))
-                         (the character (char str2 i)))
-                    (string-prefixp-1 str1 i str2))
-                   (t nil))))))
-
-(defun string-prefixp (root string)
-
-; We return a result propositionally equivalent to
-;   (and (<= (length root) (length string))
-;        (equal root (subseq string 0 (length root))))
-; but, unlike subseq, without allocating memory.
-
-; At one time this was a macro that checked `(eql 0 (search ,root ,string
-; :start2 0)).  But it seems potentially inefficient to search for any match,
-; only to insist at the end that the match is at 0.
-
-  (declare (type string root string)
-           (xargs :guard (<= (length root) (fixnum-bound))))
-  (let ((len (length root)))
-    (and (<= len (length string))
-         (assert$ (<= len (fixnum-bound))
-                  (string-prefixp-1 root len string)))))
+; fix-portcullis-cmds.  Note: code supporting the function relativize-book-path
+; has been moved to history-management.lisp to support the function
+; print-book-path.
 
 #-acl2-loop-only ; actually only needed for ccl
 (defun *1*-symbolp (x)
@@ -9464,28 +9445,6 @@
          (and pkg-name
               (string-prefixp *1*-pkg-prefix* ; i.e., *1*-package-prefix*
                               pkg-name)))))
-
-(defun relativize-book-path (filename system-books-dir)
-
-; System-books-dir is presumably the value of state global 'system-books-dir.
-; If the given filename is an absolute pathname extending the absolute
-; directory name system-books-dir, then return (:system . suffix), where suffix
-; is a relative pathname that points to the same file with respect to
-; system-books-dir.
-
-  (declare (xargs :guard (and (stringp filename)
-                              (stringp system-books-dir))))
-  (cond ((and (stringp filename) ; could already be (:system . fname)
-              (string-prefixp system-books-dir filename))
-         (cons :system (subseq filename (length system-books-dir) nil)))
-        (t filename)))
-
-(defun relativize-book-path-lst (lst root)
-  (declare (xargs :guard (and (string-listp lst)
-                              (stringp root))))
-  (cond ((endp lst) nil)
-        (t (cons (relativize-book-path (car lst) root)
-                 (relativize-book-path-lst (cdr lst) root)))))
 
 (defun sysfile-p (x)
   (and (consp x)
@@ -9497,7 +9456,9 @@
   (cdr x))
 
 (defun filename-to-sysfile (filename state)
-  (relativize-book-path filename (f-get-global 'system-books-dir state)))
+  (relativize-book-path filename
+                        (f-get-global 'system-books-dir state)
+                        :make-cons))
 
 (defun sysfile-to-filename (x state)
   (cond ((sysfile-p x)
@@ -9842,7 +9803,8 @@
 ; (as is done as of August 2010 by Debian ACL2 release and ACL2s).
 
                   (relativize-book-path-lst (package-entry-book-path e)
-                                            system-books-dir)))
+                                            system-books-dir
+                                            :make-cons)))
             (mv-let (erp pair state)
 
 ; It's perfectly OK for erp to be non-nil here.  That case is handled below.
@@ -10054,7 +10016,8 @@
            (tterm (package-entry-tterm e))
            (book-path (relativize-book-path-lst
                        (package-entry-book-path e)
-                       system-books-dir)))
+                       system-books-dir
+                       :make-cons)))
       (mv-let
        (erp pair state)
        (simple-translate-and-eval body nil nil
@@ -13099,6 +13062,7 @@
                                         full-book-name
                                         directory-name
                                         familiar-name
+                                        dir
                                         cddr-event-form)
 
 ; Input expansion-alist/cert-data is nil except when this call is from an
@@ -13744,8 +13708,16 @@
                                 (install-event
                                  (if behalf-of-certify-flg
                                      declaim-list
-                                   (or cert-full-book-name
-                                       full-book-name))
+                                   (let ((path (or cert-full-book-name
+                                                   full-book-name)))
+                                     (if (f-get-global 'script-mode state)
+                                         (relativize-book-path
+                                          path
+                                          (f-get-global 'system-books-dir
+                                                        state)
+                                          (and (null dir)
+                                               user-book-name))
+                                       path)))
                                  (list* 'include-book
 
 ; We use the the unique representative of the full book name provided by the
@@ -13964,7 +13936,7 @@
                     ttags
 ; The following were bound above:
                     ctx full-book-name directory-name familiar-name
-                    cddr-event-form))
+                    dir cddr-event-form))
                   (t
                    (let #+acl2-loop-only ()
                         #-acl2-loop-only
@@ -13983,7 +13955,7 @@
                          ttags
 ; The following were bound above:
                          ctx full-book-name directory-name familiar-name
-                         cddr-event-form)))))))))))))
+                         dir cddr-event-form)))))))))))))
 
 (defun spontaneous-decertificationp1 (ibalist alist files)
 
@@ -19778,6 +19750,10 @@
 ; arguments are correspondingly permutated, then the respective members of
 ; x-args and y-args are equal.
 
+  (declare (xargs :guard (and (symbol-listp x-formals-tail)
+                              (pseudo-term-listp x-args-tail)
+                              (symbol-listp y-formals)
+                              (pseudo-term-listp y-args))))
   (cond ((endp x-formals-tail) t)
         (t (let ((posn (position-eq (car x-formals-tail) y-formals)))
              (and
@@ -19804,6 +19780,8 @@
 ; ground-zero theory) unless iff-flg is true, in which case (iff x y) is a
 ; theorem.
 
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (pseudo-termp y))))
   (or (equal x y) ; common case
       (cond ((or (variablep x)
                  (variablep y))
@@ -19905,12 +19883,16 @@
 
 ; X and y are true-lists of the same length.
 
+  (declare (xargs :guard (and (pseudo-term-listp x)
+                              (pseudo-term-listp y))))
   (cond ((endp x) t)
         (t (and (obviously-equiv-terms (car x) (car y) nil)
                 (obviously-equiv-terms-lst (cdr x) (cdr y))))))
 )
 
 (defun obviously-iff-equiv-terms (x y)
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (pseudo-termp y))))
   (obviously-equiv-terms x y t))
 
 (defun chk-defabsstobj-method-lemmas (method st st$c st$ap corr-fn

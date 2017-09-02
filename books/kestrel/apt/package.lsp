@@ -64,6 +64,7 @@
                         ensure-term-if-call$
                         ensure-term-logic-mode$
                         ensure-term-no-stobjs$
+                        er-soft+
                         fargs
                         formals
                         fquotep

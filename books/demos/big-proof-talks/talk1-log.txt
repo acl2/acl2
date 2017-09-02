@@ -1,0 +1,1452 @@
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(SET-GAG-MODE NIL)
+<state>
+ACL2 !>>(SET-IRRELEVANT-FORMALS-OK T)
+ T
+ACL2 !>>(+ 2 3)
+5
+ACL2 !>>(CONS 'MONDAY
+              (CONS 'TUESDAY (CONS 'WEDNESDAY NIL)))
+(MONDAY TUESDAY WEDNESDAY)
+ACL2 !>>(INCLUDE-BOOK "models/jvm/m1/m1"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "models/jvm/m1/m1" ...)
+Rules: NIL
+ "[books]/models/jvm/m1/m1.lisp"
+ACL2 !>>(IN-PACKAGE "M1")
+ "M1"
+M1 !>>(DEFUN SQ (X) (* X X))
+
+Since SQ is non-recursive, its admission is trivial.  We observe that
+the type of SQ is described by the theorem (ACL2-NUMBERP (SQ X)). 
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN SQ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ SQ
+M1 !>>(SQ 7)
+49
+M1 !>>(DEFUN ^ (I J)
+             (IF (ZP J) 1 (* I (^ I (- J 1)))))
+
+The admission of ^ is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT J).  We observe that the type of ^ is described by the
+theorem (ACL2-NUMBERP (^ I J)).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN ^ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ ^
+M1 !>>(^ 2 5)
+32
+M1 !>>(THM (IMPLIES (AND (NATP I) (NATP J) (NATP K))
+                    (EQUAL (^ I (+ J K))
+                           (* (^ I J) (^ I K)))))
+
+By the simple :definition NATP we reduce the conjecture to
+
+Goal'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (^ I (+ J K))
+                (* (^ I J) (^ I K)))).
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  We will choose arbitrarily among these.  
+
+We will induct according to a scheme suggested by (^ I J).  This suggestion
+was produced using the :induction rule ^.  If we let (:P I J K) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ZP J)) (:P I (+ -1 J) K))
+              (:P I J K))
+     (IMPLIES (ZP J) (:P I J K))).
+This induction is justified by the same argument used to admit ^. 
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+
+Subgoal *1/4
+(IMPLIES (AND (NOT (ZP J))
+              (EQUAL (^ I (+ (+ -1 J) K))
+                     (* (^ I (+ -1 J)) (^ I K)))
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (^ I (+ J K))
+                (* (^ I J) (^ I K)))).
+
+By the simple :rewrite rule ACL2::|(+ (+ x y) z)| we reduce the conjecture
+to
+
+Subgoal *1/4'
+(IMPLIES (AND (NOT (ZP J))
+              (EQUAL (^ I (+ -1 J K))
+                     (* (^ I (+ -1 J)) (^ I K)))
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (^ I (+ J K))
+                (* (^ I J) (^ I K)))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::ZP-COMPOUND-RECOGNIZER, the :definitions SYNP and ^, primitive
+type reasoning and the :rewrite rules ACL2::|(* (* x y) z)|, ACL2::|(* y x)|
+and ACL2::REMOVE-WEAK-INEQUALITIES.
+
+Subgoal *1/3
+(IMPLIES (AND (NOT (ZP J))
+              (< (+ -1 J) 0)
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (^ I (+ J K))
+                (* (^ I J) (^ I K)))).
+
+But we reduce the conjecture to T, by the :compound-recognizer rule
+ACL2::ZP-COMPOUND-RECOGNIZER and primitive type reasoning.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ZP J))
+              (NOT (INTEGERP (+ -1 J)))
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (^ I (+ J K))
+                (* (^ I J) (^ I K)))).
+
+But we reduce the conjecture to T, by the :compound-recognizer rule
+ACL2::ZP-COMPOUND-RECOGNIZER.
+
+Subgoal *1/1
+(IMPLIES (AND (ZP J)
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (^ I (+ J K))
+                (* (^ I J) (^ I K)))).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::ZP-COMPOUND-RECOGNIZER, the :executable-counterparts of <, INTEGERP,
+NOT and ZP and linear arithmetic, to
+
+Subgoal *1/1'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (^ I (+ 0 K))
+                (* (^ I 0) (^ I K)))).
+
+But simplification reduces this to T, using the :definition ^, the
+:executable-counterpart of ZP, primitive type reasoning, the :rewrite
+rules ACL2::|(* 1 x)| and ACL2::|(+ 0 x)| and the :type-prescription
+rule ^.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION SYNP)
+        (:DEFINITION ^)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION ^)
+        (:REWRITE ACL2::|(* (* x y) z)|)
+        (:REWRITE ACL2::|(* 1 x)|)
+        (:REWRITE ACL2::|(* y x)|)
+        (:REWRITE ACL2::|(+ (+ x y) z)|)
+        (:REWRITE ACL2::|(+ 0 x)|)
+        (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
+        (:TYPE-PRESCRIPTION ^))
+
+Proof succeeded.
+M1 !>>'(END OF DEMO 1)
+(END OF DEMO 1)
+M1 !>>(DEFCONST *P*
+                '((ILOAD 1)
+                  (IFEQ 10)
+                  (ILOAD 0)
+                  (ILOAD 2)
+                  (IMUL)
+                  (ISTORE 2)
+                  (ILOAD 1)
+                  (ICONST -1)
+                  (IADD)
+                  (ISTORE 1)
+                  (GOTO -10)
+                  (ILOAD 2)
+                  (HALT)))
+
+Summary
+Form:  ( DEFCONST *P* ...)
+Rules: NIL
+ *P*
+M1 !>>(DEFUN MS (I J K)
+             (MAKE-STATE 0 (LIST I J K) NIL *P*))
+
+Since MS is non-recursive, its admission is trivial.  We observe that
+the type of MS is described by the theorem 
+(AND (CONSP (MS I J K)) (TRUE-LISTP (MS I J K))).  We used the :type-
+prescription rule MAKE-STATE.
+
+Summary
+Form:  ( DEFUN MS ...)
+Rules: ((:TYPE-PRESCRIPTION MAKE-STATE))
+ MS
+M1 !>>(TOP (STACK (M1 (MS 2 5 1) 1000)))
+32
+M1 !>>(TOP (STACK (M1 (MS 2 64 1) 1000)))
+18446744073709551616
+M1 !>>(^ 2 64)
+18446744073709551616
+M1 !>>(DEFUN CLK (I J K)
+             (IF (ZP J)
+                 3 (CLK+ 11 (CLK I (- J 1) (* I K)))))
+
+The admission of CLK is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT J).  We observe that the type of CLK is described by the
+theorem (AND (INTEGERP (CLK I J K)) (<= 0 (CLK I J K))).  We used the
+:type-prescription rule BINARY-CLK+.
+
+Summary
+Form:  ( DEFUN CLK ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-CLK+))
+ CLK
+M1 !>>(CLK 2 5 1)
+58
+M1 !>>(CLK 2 1000 1)
+11003
+M1 !>>(TOP (STACK (M1 (MS 2 1000 1) (CLK 2 1000 1))))
+10715086071862673209484250490600018105614048117055336074437503883703510511249361224931983788156958581275946729175531468251871452856923140435984577574698574803934567774824230985421074605062371141877954182153046474983581941267398767559165543946077062914571196477686542167660429831652624386837205668069376
+M1 !>>(DEFTHM CODE-IS-CORRECT
+              (IMPLIES (AND (NATP I) (NATP J) (NATP K))
+                       (EQUAL (M1 (MS I J K) (CLK I J K))
+                              (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                                          (PUSH (* K (^ I J)) NIL)
+                                          *P*))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM CODE-IS-CORRECT ...):  A :REWRITE
+rule generated from CODE-IS-CORRECT will be triggered only by terms
+containing the non-recursive function symbol MS.  Unless this function
+is disabled, this rule is unlikely ever to be used.
+
+
+By the simple :definitions MS and NATP we reduce the conjecture to
+
+Goal'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I J K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    (CLK I J K))
+                (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                            (PUSH (* K (^ I J)) NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT))))).
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to one.
+
+We will induct according to a scheme suggested by (CLK I J K).  This
+suggestion was produced using the :induction rules CLK and ^.  If we
+let (:P I J K) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (NOT (ZP J))
+                   (:P I (+ -1 J) (* I K)))
+              (:P I J K))
+     (IMPLIES (ZP J) (:P I J K))).
+This induction is justified by the same argument used to admit CLK.
+Note, however, that the unmeasured variable K is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+six nontautological subgoals.
+
+Subgoal *1/6
+(IMPLIES (AND (NOT (ZP J))
+              (EQUAL (M1 (MAKE-STATE 0 (LIST I (+ -1 J) (* I K))
+                                     NIL
+                                     '((ILOAD 1)
+                                       (IFEQ 10)
+                                       (ILOAD 0)
+                                       (ILOAD 2)
+                                       (IMUL)
+                                       (ISTORE 2)
+                                       (ILOAD 1)
+                                       (ICONST -1)
+                                       (IADD)
+                                       (ISTORE 1)
+                                       (GOTO -10)
+                                       (ILOAD 2)
+                                       (HALT)))
+                         (CLK I (+ -1 J) (* I K)))
+                     (MAKE-STATE 12 (LIST I 0 (* (* I K) (^ I (+ -1 J))))
+                                 (PUSH (* (* I K) (^ I (+ -1 J))) NIL)
+                                 '((ILOAD 1)
+                                   (IFEQ 10)
+                                   (ILOAD 0)
+                                   (ILOAD 2)
+                                   (IMUL)
+                                   (ISTORE 2)
+                                   (ILOAD 1)
+                                   (ICONST -1)
+                                   (IADD)
+                                   (ISTORE 1)
+                                   (GOTO -10)
+                                   (ILOAD 2)
+                                   (HALT))))
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I J K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    (CLK I J K))
+                (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                            (PUSH (* K (^ I J)) NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT))))).
+
+By the simple :rewrite rule ACL2::|(* (* x y) z)| we reduce the conjecture
+to
+
+Subgoal *1/6'
+(IMPLIES (AND (NOT (ZP J))
+              (EQUAL (M1 (MAKE-STATE 0 (LIST I (+ -1 J) (* I K))
+                                     NIL
+                                     '((ILOAD 1)
+                                       (IFEQ 10)
+                                       (ILOAD 0)
+                                       (ILOAD 2)
+                                       (IMUL)
+                                       (ISTORE 2)
+                                       (ILOAD 1)
+                                       (ICONST -1)
+                                       (IADD)
+                                       (ISTORE 1)
+                                       (GOTO -10)
+                                       (ILOAD 2)
+                                       (HALT)))
+                         (CLK I (+ -1 J) (* I K)))
+                     (MAKE-STATE 12 (LIST I 0 (* I K (^ I (+ -1 J))))
+                                 (PUSH (* I K (^ I (+ -1 J))) NIL)
+                                 '((ILOAD 1)
+                                   (IFEQ 10)
+                                   (ILOAD 0)
+                                   (ILOAD 2)
+                                   (IMUL)
+                                   (ISTORE 2)
+                                   (ILOAD 1)
+                                   (ICONST -1)
+                                   (IADD)
+                                   (ISTORE 1)
+                                   (GOTO -10)
+                                   (ILOAD 2)
+                                   (HALT))))
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I J K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    (CLK I J K))
+                (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                            (PUSH (* K (^ I J)) NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rules ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER,
+the :definitions CLK, DO-INST, EXECUTE-GOTO, EXECUTE-IADD, EXECUTE-ICONST,
+EXECUTE-IFEQ, EXECUTE-ILOAD, EXECUTE-IMUL, EXECUTE-ISTORE, NEXT-INST,
+NTH, SYNP, UPDATE-NTH and ^, the :executable-counterparts of ARG1,
+BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP, primitive type reasoning
+and the :rewrite rules ACL2::|(* y (* x z))|, ACL2::|(+ y x)|, CAR-CONS,
+CDR-CONS, M1-CLK+, M1-OPENER, NTH-ADD1!, ACL2::REMOVE-WEAK-INEQUALITIES,
+STACKS, STATES and STEP-OPENER.
+
+Subgoal *1/5
+(IMPLIES (AND (NOT (ZP J))
+              (< (* I K) 0)
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I J K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    (CLK I J K))
+                (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                            (PUSH (* K (^ I J)) NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT))))).
+
+But we reduce the conjecture to T, by primitive type reasoning.
+
+Subgoal *1/4
+(IMPLIES (AND (NOT (ZP J))
+              (NOT (INTEGERP (* I K)))
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I J K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    (CLK I J K))
+                (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                            (PUSH (* K (^ I J)) NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT))))).
+
+But we reduce the conjecture to T, by primitive type reasoning.
+
+Subgoal *1/3
+(IMPLIES (AND (NOT (ZP J))
+              (< (+ -1 J) 0)
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I J K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    (CLK I J K))
+                (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                            (PUSH (* K (^ I J)) NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT))))).
+
+But we reduce the conjecture to T, by the :compound-recognizer rule
+ACL2::ZP-COMPOUND-RECOGNIZER and primitive type reasoning.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ZP J))
+              (NOT (INTEGERP (+ -1 J)))
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I J K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    (CLK I J K))
+                (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                            (PUSH (* K (^ I J)) NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT))))).
+
+But we reduce the conjecture to T, by the :compound-recognizer rule
+ACL2::ZP-COMPOUND-RECOGNIZER.
+
+Subgoal *1/1
+(IMPLIES (AND (ZP J)
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I J K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    (CLK I J K))
+                (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                            (PUSH (* K (^ I J)) NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT))))).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::ZP-COMPOUND-RECOGNIZER, the :executable-counterparts of <, INTEGERP,
+NOT and ZP and linear arithmetic, to
+
+Subgoal *1/1'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I 0 K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    (CLK I 0 K))
+                (MAKE-STATE 12 (LIST I 0 (* K (^ I 0)))
+                            (PUSH (* K (^ I 0)) NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions CLK, DO-INST,
+EXECUTE-IFEQ, EXECUTE-ILOAD, NEXT-INST, NTH and ^, the :executable-
+counterparts of ARG1, BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP,
+primitive type reasoning and the :rewrite rules ACL2::|(* 1 x)|, 
+ACL2::|(* y x)|, CAR-CONS, CDR-CONS, M1-OPENER, NTH-ADD1!, STACKS,
+STATES and STEP-OPENER.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CODE-IS-CORRECT ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION CLK)
+        (:DEFINITION DO-INST)
+        (:DEFINITION EXECUTE-GOTO)
+        (:DEFINITION EXECUTE-IADD)
+        (:DEFINITION EXECUTE-ICONST)
+        (:DEFINITION EXECUTE-IFEQ)
+        (:DEFINITION EXECUTE-ILOAD)
+        (:DEFINITION EXECUTE-IMUL)
+        (:DEFINITION EXECUTE-ISTORE)
+        (:DEFINITION MS)
+        (:DEFINITION NATP)
+        (:DEFINITION NEXT-INST)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION SYNP)
+        (:DEFINITION UPDATE-NTH)
+        (:DEFINITION ^)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ARG1)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OP-CODE)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION CLK)
+        (:INDUCTION ^)
+        (:REWRITE ACL2::|(* (* x y) z)|)
+        (:REWRITE ACL2::|(* 1 x)|)
+        (:REWRITE ACL2::|(* y (* x z))|)
+        (:REWRITE ACL2::|(* y x)|)
+        (:REWRITE ACL2::|(+ y x)|)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE M1-CLK+)
+        (:REWRITE M1-OPENER)
+        (:REWRITE NTH-ADD1!)
+        (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-OPENER))
+Warnings:  Non-rec
+ CODE-IS-CORRECT
+M1 !>>(DEFTHM CORR
+              (IMPLIES (AND (NATP I) (NATP J) (NATP K))
+                       (LET ((FIN-ST (M1 (MS I J K) (CLK I J K))))
+                            (AND (HALTEDP FIN-ST)
+                                 (EQUAL (TOP (STACK FIN-ST))
+                                        (* K (^ I J)))))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM CORR ...):  A :REWRITE rule generated
+from CORR will be triggered only by terms containing the non-recursive
+function symbols HALTEDP and MS.  Unless these functions are disabled,
+this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM CORR ...):  The previously added
+rule HALTEDP subsumes a newly proposed :REWRITE rule generated from
+CORR, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+ACL2 Warning [Non-rec] in ( DEFTHM CORR ...):  A :REWRITE rule generated
+from CORR will be triggered only by terms containing the non-recursive
+function symbol MS.  Unless this function is disabled, this rule is
+unlikely ever to be used.
+
+
+By the simple :definitions HALTEDP, MS and NATP we reduce the conjecture
+to
+
+Goal'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (LET ((FIN-ST (M1 (MAKE-STATE 0 (LIST I J K)
+                                       NIL
+                                       '((ILOAD 1)
+                                         (IFEQ 10)
+                                         (ILOAD 0)
+                                         (ILOAD 2)
+                                         (IMUL)
+                                         (ISTORE 2)
+                                         (ILOAD 1)
+                                         (ICONST -1)
+                                         (IADD)
+                                         (ISTORE 1)
+                                         (GOTO -10)
+                                         (ILOAD 2)
+                                         (HALT)))
+                           (CLK I J K))))
+              (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+                   (EQUAL (TOP (STACK FIN-ST))
+                          (* K (^ I J)))))).
+
+This simplifies, using the :definition NEXT-INST, to the following
+two conjectures.
+
+Subgoal 2
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (NTH (PC (M1 (MAKE-STATE 0 (LIST I J K)
+                                         NIL
+                                         '((ILOAD 1)
+                                           (IFEQ 10)
+                                           (ILOAD 0)
+                                           (ILOAD 2)
+                                           (IMUL)
+                                           (ISTORE 2)
+                                           (ILOAD 1)
+                                           (ICONST -1)
+                                           (IADD)
+                                           (ISTORE 1)
+                                           (GOTO -10)
+                                           (ILOAD 2)
+                                           (HALT)))
+                             (CLK I J K)))
+                     (PROGRAM (M1 (MAKE-STATE 0 (LIST I J K)
+                                              NIL
+                                              '((ILOAD 1)
+                                                (IFEQ 10)
+                                                (ILOAD 0)
+                                                (ILOAD 2)
+                                                (IMUL)
+                                                (ISTORE 2)
+                                                (ILOAD 1)
+                                                (ICONST -1)
+                                                (IADD)
+                                                (ISTORE 1)
+                                                (GOTO -10)
+                                                (ILOAD 2)
+                                                (HALT)))
+                                  (CLK I J K))))
+                '(HALT))).
+
+Name the formula above *1.
+
+Subgoal 1
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (TOP (STACK (M1 (MAKE-STATE 0 (LIST I J K)
+                                            NIL
+                                            '((ILOAD 1)
+                                              (IFEQ 10)
+                                              (ILOAD 0)
+                                              (ILOAD 2)
+                                              (IMUL)
+                                              (ISTORE 2)
+                                              (ILOAD 1)
+                                              (ICONST -1)
+                                              (IADD)
+                                              (ISTORE 1)
+                                              (GOTO -10)
+                                              (ILOAD 2)
+                                              (HALT)))
+                                (CLK I J K))))
+                (* K (^ I J)))).
+
+Normally we would attempt to prove Subgoal 1 by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (CLK I J K).  This
+suggestion was produced using the :induction rule CLK.  If we let (:P I J K)
+denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ZP J))
+                   (:P I (+ -1 J) (* I K)))
+              (:P I J K))
+     (IMPLIES (ZP J) (:P I J K))).
+This induction is justified by the same argument used to admit CLK.
+Note, however, that the unmeasured variable K is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ZP J))
+              (IMPLIES (AND (NATP I)
+                            (NATP (+ -1 J))
+                            (NATP (* I K)))
+                       (LET ((FIN-ST (M1 (MS I (+ -1 J) (* I K))
+                                         (CLK I (+ -1 J) (* I K))))
+                             (J (+ -1 J))
+                             (K (* I K)))
+                            (AND (HALTEDP FIN-ST)
+                                 (EQUAL (TOP (STACK FIN-ST))
+                                        (* K (^ I J)))))))
+         (IMPLIES (AND (NATP I) (NATP J) (NATP K))
+                  (LET ((FIN-ST (M1 (MS I J K) (CLK I J K))))
+                       (AND (HALTEDP FIN-ST)
+                            (EQUAL (TOP (STACK FIN-ST))
+                                   (* K (^ I J))))))).
+
+By the simple :definitions HALTEDP, MS and NATP we reduce the conjecture
+to
+
+Subgoal *1/2'
+(IMPLIES
+     (AND (NOT (ZP J))
+          (IMPLIES (AND (NATP I)
+                        (NATP (+ -1 J))
+                        (NATP (* I K)))
+                   (LET ((FIN-ST (M1 (MAKE-STATE 0 (LIST I (+ -1 J) (* I K))
+                                                 NIL
+                                                 '((ILOAD 1)
+                                                   (IFEQ 10)
+                                                   (ILOAD 0)
+                                                   (ILOAD 2)
+                                                   (IMUL)
+                                                   (ISTORE 2)
+                                                   (ILOAD 1)
+                                                   (ICONST -1)
+                                                   (IADD)
+                                                   (ISTORE 1)
+                                                   (GOTO -10)
+                                                   (ILOAD 2)
+                                                   (HALT)))
+                                     (CLK I (+ -1 J) (* I K))))
+                         (J (+ -1 J))
+                         (K (* I K)))
+                        (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+                             (EQUAL (TOP (STACK FIN-ST))
+                                    (* K (^ I J))))))
+          (INTEGERP I)
+          (<= 0 I)
+          (INTEGERP J)
+          (<= 0 J)
+          (INTEGERP K)
+          (<= 0 K))
+     (LET ((FIN-ST (M1 (MAKE-STATE 0 (LIST I J K)
+                                   NIL
+                                   '((ILOAD 1)
+                                     (IFEQ 10)
+                                     (ILOAD 0)
+                                     (ILOAD 2)
+                                     (IMUL)
+                                     (ISTORE 2)
+                                     (ILOAD 1)
+                                     (ICONST -1)
+                                     (IADD)
+                                     (ISTORE 1)
+                                     (GOTO -10)
+                                     (ILOAD 2)
+                                     (HALT)))
+                       (CLK I J K))))
+          (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+               (EQUAL (TOP (STACK FIN-ST))
+                      (* K (^ I J)))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rules ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER,
+the :definitions CLK, DO-INST, EXECUTE-GOTO, EXECUTE-IADD, EXECUTE-ICONST,
+EXECUTE-IFEQ, EXECUTE-ILOAD, EXECUTE-IMUL, EXECUTE-ISTORE, NEXT-INST,
+NTH, SYNP, UPDATE-NTH and ^, the :executable-counterparts of ARG1,
+BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP, primitive type reasoning
+and the :rewrite rules ACL2::|(* (* x y) z)|, ACL2::|(* y (* x z))|,
+ACL2::|(+ y x)|, CAR-CONS, CDR-CONS, M1-CLK+, M1-OPENER, NTH-ADD1!,
+ACL2::REMOVE-WEAK-INEQUALITIES, STACKS, STATES and STEP-OPENER.
+
+Subgoal *1/1
+(IMPLIES (ZP J)
+         (IMPLIES (AND (NATP I) (NATP J) (NATP K))
+                  (LET ((FIN-ST (M1 (MS I J K) (CLK I J K))))
+                       (AND (HALTEDP FIN-ST)
+                            (EQUAL (TOP (STACK FIN-ST))
+                                   (* K (^ I J))))))).
+
+By the simple :definitions HALTEDP, MS and NATP we reduce the conjecture
+to
+
+Subgoal *1/1'
+(IMPLIES (AND (ZP J)
+              (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (LET ((FIN-ST (M1 (MAKE-STATE 0 (LIST I J K)
+                                       NIL
+                                       '((ILOAD 1)
+                                         (IFEQ 10)
+                                         (ILOAD 0)
+                                         (ILOAD 2)
+                                         (IMUL)
+                                         (ISTORE 2)
+                                         (ILOAD 1)
+                                         (ICONST -1)
+                                         (IADD)
+                                         (ISTORE 1)
+                                         (GOTO -10)
+                                         (ILOAD 2)
+                                         (HALT)))
+                           (CLK I J K))))
+              (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+                   (EQUAL (TOP (STACK FIN-ST))
+                          (* K (^ I J)))))).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::ZP-COMPOUND-RECOGNIZER, the :executable-counterparts of <, INTEGERP,
+NOT and ZP and linear arithmetic, to
+
+Subgoal *1/1''
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP K)
+              (<= 0 K))
+         (LET ((FIN-ST (M1 (MAKE-STATE 0 (LIST I 0 K)
+                                       NIL
+                                       '((ILOAD 1)
+                                         (IFEQ 10)
+                                         (ILOAD 0)
+                                         (ILOAD 2)
+                                         (IMUL)
+                                         (ISTORE 2)
+                                         (ILOAD 1)
+                                         (ICONST -1)
+                                         (IADD)
+                                         (ISTORE 1)
+                                         (GOTO -10)
+                                         (ILOAD 2)
+                                         (HALT)))
+                           (CLK I 0 K)))
+               (J 0))
+              (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+                   (EQUAL (TOP (STACK FIN-ST))
+                          (* K (^ I J)))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions CLK, DO-INST,
+EXECUTE-IFEQ, EXECUTE-ILOAD, NEXT-INST, NTH and ^, the :executable-
+counterparts of ARG1, BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP,
+primitive type reasoning and the :rewrite rules ACL2::|(* 1 x)|, 
+ACL2::|(* y x)|, CAR-CONS, CDR-CONS, M1-OPENER, NTH-ADD1!, STACKS,
+STATES and STEP-OPENER.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+The storage of CORR depends upon the :type-prescription rule HALTEDP.
+
+Summary
+Form:  ( DEFTHM CORR ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION CLK)
+        (:DEFINITION DO-INST)
+        (:DEFINITION EXECUTE-GOTO)
+        (:DEFINITION EXECUTE-IADD)
+        (:DEFINITION EXECUTE-ICONST)
+        (:DEFINITION EXECUTE-IFEQ)
+        (:DEFINITION EXECUTE-ILOAD)
+        (:DEFINITION EXECUTE-IMUL)
+        (:DEFINITION EXECUTE-ISTORE)
+        (:DEFINITION HALTEDP)
+        (:DEFINITION MS)
+        (:DEFINITION NATP)
+        (:DEFINITION NEXT-INST)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION SYNP)
+        (:DEFINITION UPDATE-NTH)
+        (:DEFINITION ^)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ARG1)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OP-CODE)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION CLK)
+        (:REWRITE ACL2::|(* (* x y) z)|)
+        (:REWRITE ACL2::|(* 1 x)|)
+        (:REWRITE ACL2::|(* y (* x z))|)
+        (:REWRITE ACL2::|(* y x)|)
+        (:REWRITE ACL2::|(+ y x)|)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE M1-CLK+)
+        (:REWRITE M1-OPENER)
+        (:REWRITE NTH-ADD1!)
+        (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-OPENER)
+        (:TYPE-PRESCRIPTION HALTEDP))
+Warnings:  Subsume and Non-rec
+ CORR
+M1 !>>'(DEMO OF SYMBOLIC EXECUATION)
+(DEMO OF SYMBOLIC EXECUATION)
+M1 !>>(DEFTHM THIS-IS-NOT-A-THEOREM
+              (IMPLIES (AND (NATP I) (NATP J) (NATP K))
+                       (EQUAL (M1 (MS I J K) 11) XXX)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  A :REWRITE
+rule generated from THIS-IS-NOT-A-THEOREM will be triggered only by
+terms containing the non-recursive function symbol MS.  Unless this
+function is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Free] in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  A :REWRITE
+rule generated from THIS-IS-NOT-A-THEOREM contains the the free variable
+XXX on the right-hand side of the rule, which is not bound on the left-
+hand side or in any hypothesis.  This can cause new variables to be
+introduced into the proof, which may surprise you.
+
+
+By the simple :definitions MS and NATP we reduce the conjecture to
+
+Goal'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (M1 (MAKE-STATE 0 (LIST I J K)
+                                NIL
+                                '((ILOAD 1)
+                                  (IFEQ 10)
+                                  (ILOAD 0)
+                                  (ILOAD 2)
+                                  (IMUL)
+                                  (ISTORE 2)
+                                  (ILOAD 1)
+                                  (ICONST -1)
+                                  (IADD)
+                                  (ISTORE 1)
+                                  (GOTO -10)
+                                  (ILOAD 2)
+                                  (HALT)))
+                    11)
+                XXX)).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST (if-intro),
+EXECUTE-IFEQ (if-intro), EXECUTE-ILOAD, NEXT-INST and NTH, the :executable-
+counterparts of <, ARG1, BINARY-+, CONSP, EQUAL, INTEGERP, NOT, NTH,
+OP-CODE and ZP and the :rewrite rules CAR-CONS, CDR-CONS, M1-OPENER,
+NTH-ADD1!, STACKS, STATES and STEP-OPENER, to the following two conjectures.
+
+Subgoal 2
+(IMPLIES
+ (AND (INTEGERP I)
+      (<= 0 I)
+      (INTEGERP K)
+      (<= 0 K)
+      (EQUAL J 0))
+ (EQUAL
+  (STEP
+   (STEP
+    (STEP (STEP (STEP (STEP (STEP (STEP (STEP (MAKE-STATE 11 (LIST I 0 K)
+                                                          NIL
+                                                          '((ILOAD 1)
+                                                            (IFEQ 10)
+                                                            (ILOAD 0)
+                                                            (ILOAD 2)
+                                                            (IMUL)
+                                                            (ISTORE 2)
+                                                            (ILOAD 1)
+                                                            (ICONST -1)
+                                                            (IADD)
+                                                            (ISTORE 1)
+                                                            (GOTO -10)
+                                                            (ILOAD 2)
+                                                            (HALT))))))))))))
+  XXX)).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, EXECUTE-ILOAD,
+NEXT-INST and NTH, the :executable-counterparts of ARG1, BINARY-+,
+CONSP, EQUAL, NTH, OP-CODE and ZP and the :rewrite rules CAR-CONS,
+CDR-CONS, NTH-ADD1!, STATES and STEP-OPENER, to
+
+Subgoal 2'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (MAKE-STATE 12 (LIST I 0 K)
+                            (PUSH K NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT)))
+                XXX)).
+
+Name the formula above *1.
+
+Subgoal 1
+(IMPLIES
+ (AND (INTEGERP I)
+      (<= 0 I)
+      (INTEGERP J)
+      (<= 0 J)
+      (INTEGERP K)
+      (<= 0 K)
+      (NOT (EQUAL J 0)))
+ (EQUAL
+  (STEP
+   (STEP
+    (STEP (STEP (STEP (STEP (STEP (STEP (STEP (MAKE-STATE 2 (LIST I J K)
+                                                          NIL
+                                                          '((ILOAD 1)
+                                                            (IFEQ 10)
+                                                            (ILOAD 0)
+                                                            (ILOAD 2)
+                                                            (IMUL)
+                                                            (ISTORE 2)
+                                                            (ILOAD 1)
+                                                            (ICONST -1)
+                                                            (IADD)
+                                                            (ISTORE 1)
+                                                            (GOTO -10)
+                                                            (ILOAD 2)
+                                                            (HALT))))))))))))
+  XXX)).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, EXECUTE-GOTO,
+EXECUTE-IADD, EXECUTE-ICONST, EXECUTE-ILOAD, EXECUTE-IMUL, EXECUTE-ISTORE,
+NEXT-INST, NTH and UPDATE-NTH, the :executable-counterparts of ARG1,
+BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP and the :rewrite rules
+ACL2::|(+ y x)|, CAR-CONS, CDR-CONS, NTH-ADD1!, STACKS, STATES and
+STEP-OPENER, to
+
+Subgoal 1'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K)
+              (NOT (EQUAL J 0)))
+         (EQUAL (MAKE-STATE 0 (LIST I (+ -1 J) (* I K))
+                            NIL
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT)))
+                XXX)).
+
+Normally we would attempt to prove Subgoal 1' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( DEFTHM THIS-IS-NOT-A-THEOREM ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION DO-INST)
+        (:DEFINITION EXECUTE-GOTO)
+        (:DEFINITION EXECUTE-IADD)
+        (:DEFINITION EXECUTE-ICONST)
+        (:DEFINITION EXECUTE-IFEQ)
+        (:DEFINITION EXECUTE-ILOAD)
+        (:DEFINITION EXECUTE-IMUL)
+        (:DEFINITION EXECUTE-ISTORE)
+        (:DEFINITION MS)
+        (:DEFINITION NATP)
+        (:DEFINITION NEXT-INST)
+        (:DEFINITION NTH)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ARG1)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OP-CODE)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:REWRITE ACL2::|(+ y x)|)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE M1-OPENER)
+        (:REWRITE NTH-ADD1!)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-OPENER))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO-INST)
+             (:DEFINITION EXECUTE-IFEQ))
+Warnings:  Free and Non-rec
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoints before reverting to proof by induction: ***
+
+Subgoal 2'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP K)
+              (<= 0 K))
+         (EQUAL (MAKE-STATE 12 (LIST I 0 K)
+                            (PUSH K NIL)
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT)))
+                XXX))
+
+Subgoal 1'
+(IMPLIES (AND (INTEGERP I)
+              (<= 0 I)
+              (INTEGERP J)
+              (<= 0 J)
+              (INTEGERP K)
+              (<= 0 K)
+              (NOT (EQUAL J 0)))
+         (EQUAL (MAKE-STATE 0 (LIST I (+ -1 J) (* I K))
+                            NIL
+                            '((ILOAD 1)
+                              (IFEQ 10)
+                              (ILOAD 0)
+                              (ILOAD 2)
+                              (IMUL)
+                              (ISTORE 2)
+                              (ILOAD 1)
+                              (ICONST -1)
+                              (IADD)
+                              (ISTORE 1)
+                              (GOTO -10)
+                              (ILOAD 2)
+                              (HALT)))
+                XXX))
+
+ACL2 Error in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  See :DOC failure.
+
+******** FAILED ********
+M1 !>>'(END OF DEMO 2)
+(END OF DEMO 2)
+M1 !>>Bye.

@@ -602,6 +602,7 @@ shown.</p>"
        (design (xf-cwtime (vl-design-logicassign design)))
 
 
+       (simpconfig (make-vl-simpconfig :sv-simplify nil))
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually
@@ -610,7 +611,7 @@ shown.</p>"
        ;;(design (cwtime (vl-design-follow-hids design)))
        ;; (design (cwtime (vl-design-clean-params design)))
        ;; (design (cwtime (vl-design-check-good-paramdecls design)))
-       (design (xf-cwtime (vl-design-elaborate design)))
+       (design (xf-cwtime (vl-design-elaborate design :config simpconfig)))
 
        ;; these are part of elaboration now
        ;;(design (cwtime (vl-design-rangeresolve design)))
@@ -672,7 +673,7 @@ shown.</p>"
        ;;           design))
 
        ((mv reportcard ?modalist) (xf-cwtime (vl-design->svex-modalist
-                                              design :config (make-vl->sv-config :simplify nil))))
+                                              design :config simpconfig)))
        (design (xf-cwtime (vl-apply-reportcard design reportcard)))
 
        (design (xf-cwtime (vl-design-remove-unnecessary-modules config.topmods design)))

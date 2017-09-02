@@ -1929,8 +1929,32 @@
                                        guards-acc)))
         (t (get-guards2 (cdr edcls) targets wrld stobjs-acc guards-acc))))
 
-(defun get-guards1 (edcls targets wrld)
-  (get-guards2 edcls targets wrld nil nil))
+(defun get-guards1 (edcls targets args name wrld)
+
+; We compute the guards but add (state-p name) when necessary:
+
+; When a function definition has a state argument but does not explicitly
+; include state among its :stobjs declarations (presumably because
+; (set-state-ok t) has been executed), the conjuncts returned by get-guards2 do
+; not include (state-p state).  Thus, we add this conjunct when (1) targets
+; includes the symbol, guards; (2) the formal arguments, args, include state;
+; (3) (state-p state) is not already in the result of get-guards2; and (4) the
+; function symbol in question, name, is not state-p itself, whose guard is
+; truly t.  If the (state-p state) conjunct is added, it is added in front of
+; the other conjuncts, consistently with the order described in :DOC
+; guard-miscellany.
+
+; Note that we may pass in args = nil to avoid adding a state-p call, for
+; example when defining a macro.  In that case name is ignored, so it is safe
+; to pass in name = nil.
+
+  (let ((conjuncts (get-guards2 edcls targets wrld nil nil)))
+    (cond ((and (member-eq 'guards targets) ; (1)
+                (member-eq 'state args) ; (2)
+                (not (member-equal '(state-p state) conjuncts)) ; (3)
+                (not (eq name 'state-p))) ; (4)
+           (cons (fcons-term* 'state-p 'state) conjuncts))
+          (t conjuncts))))
 
 (defun get-guards (lst split-types-lst split-types-p wrld)
 
@@ -1973,8 +1997,11 @@
                               (t '(guards types)))))
                    (conjoin-untranslated-terms
                     (and targets ; optimization
-                         (get-guards2 (fourth (car lst)) targets wrld
-                                      nil nil))))
+                         (get-guards1 (fourth (car lst))
+                                      targets
+                                      (second (car lst))
+                                      (first (car lst))
+                                      wrld))))
                  (get-guards (cdr lst) (cdr split-types-lst) split-types-p
                              wrld)))))
 
@@ -2000,6 +2027,8 @@
 ; terribly wrong!
 
                                     '(guards))))
+                  (cadr def) ; args
+                  (car def) ; name
                   wrld))
          (guard (cond ((null guards) t)
                       ((null (cdr guards)) (car guards))
@@ -3611,7 +3640,8 @@
                  (untranslate1-lst (cdr lst) iff-flg untrans-tbl preprocess-fn
                                    wrld)))))
 
-;; RAG - I relaxed the guards for < and complex to use realp instead
+;; Historical Comment from Ruben Gamboa:
+;; I relaxed the guards for < and complex to use realp instead
 ;; of rationalp.  I also added complexp, realp, and floor1.
 
 )

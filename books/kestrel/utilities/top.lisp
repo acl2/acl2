@@ -12,6 +12,7 @@
 
 (include-book "acceptable-rewrite-rule-p")
 (include-book "all-vars-theorems")
+(include-book "assert")
 (include-book "auto-termination")
 (include-book "bytes")
 (include-book "characters")
@@ -45,6 +46,7 @@
 (include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")
+(include-book "paired-names")
 (include-book "prove-interface")
 (include-book "strings")
 (include-book "symbol-symbol-alists")
@@ -73,4 +75,5 @@
 
 (defxdoc theorems-about-non-kestrel-books
   :parents (kestrel-utilities)
-  :short "Theorems about functions defined outside the Kestrel Books.")
+  :short "Theorems about functions defined outside the
+          <see topic='@(url kestrel-books)'>Kestrel Books</see>.")

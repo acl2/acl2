@@ -5782,7 +5782,7 @@
                               (:rewrite default-+-2)
                               (:type-prescription acl2::|x < y  =>  0 < -x+y|)
                               (:rewrite acl2::equal-of-booleans-rewrite)
-                              (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+                              (:rewrite bitops::unsigned-byte-p-incr)
                               (:rewrite loghead-negative)
                               (:linear rip-is-i48p)
                               (:type-prescription subset-p)

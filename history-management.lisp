@@ -1677,7 +1677,8 @@
                     *acl2-property-unbound*
                     wrld))))))
 
-;; RAG - Hmmm, this code assumes it knows all of the properties stored
+;; Historical Comment from Ruben Gamboa:
+;; Hmmm, this code assumes it knows all of the properties stored
 ;; on a function symbol.  Sad.  I added 'CLASSICALP to the list.
 
 (defun renew-name/overwrite (name old-getprops wrld)
@@ -6200,6 +6201,77 @@
                  (list (cons #\0 (print-indented-list-msg objects indent nil)))
                  0 channel state evisc-tuple))))
 
+(defun string-prefixp-1 (str1 i str2)
+  (declare (type string str1 str2)
+           (type (unsigned-byte 29) i)
+           (xargs :guard (and (<= i (length str1))
+                              (<= i (length str2)))))
+  (cond ((zpf i) t)
+        (t (let ((i (1-f i)))
+             (declare (type (unsigned-byte 29) i))
+             (cond ((eql (the character (char str1 i))
+                         (the character (char str2 i)))
+                    (string-prefixp-1 str1 i str2))
+                   (t nil))))))
+
+(defun string-prefixp (root string)
+
+; We return a result propositionally equivalent to
+;   (and (<= (length root) (length string))
+;        (equal root (subseq string 0 (length root))))
+; but, unlike subseq, without allocating memory.
+
+; At one time this was a macro that checked `(eql 0 (search ,root ,string
+; :start2 0)).  But it seems potentially inefficient to search for any match,
+; only to insist at the end that the match is at 0.
+
+  (declare (type string root string)
+           (xargs :guard (<= (length root) (fixnum-bound))))
+  (let ((len (length root)))
+    (and (<= len (length string))
+         (assert$ (<= len (fixnum-bound))
+                  (string-prefixp-1 root len string)))))
+
+(defun relativize-book-path (filename system-books-dir action)
+
+; System-books-dir is presumably the value of state global 'system-books-dir.
+; There are three possibilities, depending on action, which should either be
+; :make-cons (the default), nil, or a book name as supplied to include-book
+; (hence without the .lisp extension).
+
+; First suppose that the given filename is an absolute pathname extending the
+; absolute directory name system-books-dir.  Then if action is :make-cons,
+; return (:system . suffix), where suffix is a relative pathname that points to
+; the same file with respect to system-books-dir.  Otherwise return action.lisp
+; if action is non-nil, and otherwise, a suitable pathname relative to the
+; community books directory, prefixed by "[books]/".
+
+; Otherwise, return action.lisp if action is a string, else the given filename.
+
+  (declare (xargs :guard (and (stringp filename)
+                              (stringp system-books-dir))))
+  (cond ((and (stringp filename) ; could already be (:system . fname)
+              (string-prefixp system-books-dir filename))
+         (let ((relative-pathname
+                (subseq filename (length system-books-dir) nil)))
+           (cond
+            ((eq action :make-cons)
+             (cons :system relative-pathname))
+            (action
+             (concatenate 'string action ".lisp"))
+            (t
+             (concatenate 'string "[books]/" relative-pathname)))))
+        ((stringp action)
+         (concatenate 'string action ".lisp"))
+        (t filename)))
+
+(defun relativize-book-path-lst (lst root action)
+  (declare (xargs :guard (and (string-listp lst)
+                              (stringp root))))
+  (cond ((endp lst) nil)
+        (t (cons (relativize-book-path (car lst) root action)
+                 (relativize-book-path-lst (cdr lst) root action)))))
+
 (defun print-book-path (book-path indent channel state)
   (assert$
    book-path
@@ -6209,7 +6281,13 @@
            0 channel state nil)
      (declare (ignore col))
      (mv-let (col state)
-       (print-indented-list book-path (1+ indent) 0 channel nil state)
+       (print-indented-list
+        (cond ((f-get-global 'script-mode state)
+               (relativize-book-path-lst book-path
+                                         (f-get-global 'system-books-dir state)
+                                         nil))
+              (t book-path))
+        (1+ indent) 0 channel nil state)
        (pprogn (if (eql col 0)
                    (spaces indent col channel state)
                  state)
@@ -6697,15 +6775,24 @@
 ; We now develop the most trivial event we have: deflabel.  It
 ; illustrates the basic structure of our event code.
 
-(defun chk-virgin (name new-type ctx wrld state)
+(defun chk-virgin-msg (name new-type wrld state)
   #-acl2-loop-only
-  (chk-virgin2 name new-type ctx wrld state)
+  (mv (chk-virgin-msg2 name new-type wrld state)
+      state)
   #+acl2-loop-only
-  (declare (ignore name new-type ctx wrld))
+  (declare (ignore name new-type wrld))
   #+acl2-loop-only
   (mv-let (erp val state)
     (read-acl2-oracle state)
-    (mv (or erp val) nil state)))
+    (let ((msg (or erp val)))
+      (mv (and (msgp msg) msg)
+          state))))
+
+(defun chk-virgin (name new-type ctx wrld state)
+  (mv-let (msg state)
+    (chk-virgin-msg name new-type wrld state)
+    (cond (msg (er soft ctx "~@0" msg))
+          (t (value nil)))))
 
 (defun chk-boot-strap-redefineable-namep (name ctx wrld state)
   (cond ((global-val 'boot-strap-pass-2 wrld)
@@ -8153,7 +8240,10 @@
 ; set-verify-guards-eagerness accordingly.
 
   (cond ((null lst) nil)
-        ((get-guards1 (fourth (car lst)) '(guards types) wrld) t)
+        ((get-guards1 (fourth (car lst)) '(guards types)
+                      nil nil ; any implicit state-p call is irrelevant here
+                      wrld)
+         t)
         (t (get-guardsp (cdr lst) wrld))))
 
 (defconst *no-measure*
@@ -8306,7 +8396,7 @@
 ; :RULER-EXTENDERS is specified within the edcls of a given element of lst.
 
 ; If symbol-class is program, we ignore the contents of lst and simply return
-; all *no-ruler-extenders.  See the comment in chk-acceptable-defuns where
+; all *no-ruler-extenders*.  See the comment in chk-acceptable-defuns where
 ; get-ruler-extenders is called.
 
   (cond
@@ -9577,19 +9667,24 @@
   (list 'pf-fn name 'state))
 
 (defun merge-symbol-< (l1 l2 acc)
-  (cond ((null l1) (revappend acc l2))
-        ((null l2) (revappend acc l1))
+  (declare (xargs :guard (and (symbol-listp l1)
+                              (symbol-listp l2)
+                              (true-listp acc))))
+  (cond ((endp l1) (revappend acc l2))
+        ((endp l2) (revappend acc l1))
         ((symbol-< (car l1) (car l2))
          (merge-symbol-< (cdr l1) l2 (cons (car l1) acc)))
         (t (merge-symbol-< l1 (cdr l2) (cons (car l2) acc)))))
 
 (defun merge-sort-symbol-< (l)
-  (cond ((null (cdr l)) l)
+  (declare (xargs :guard (symbol-listp l)))
+  (cond ((endp (cdr l)) l)
         (t (merge-symbol-< (merge-sort-symbol-< (evens l))
                            (merge-sort-symbol-< (odds l))
                            nil))))
 
-;; RAG - I added the non-standard primitives here.
+;; Historical Comment from Ruben Gamboa:
+;; I added the non-standard primitives here.
 
 (defconst *non-instantiable-primitives*
 
@@ -9774,7 +9869,8 @@
     (cons (car alist)
           (extend-sorted-symbol-alist pair (cdr alist))))))
 
-;; RAG - This checks to see whether two function symbols are both
+;; Historical Comment from Ruben Gamboa:
+;; This checks to see whether two function symbols are both
 ;; classical or both non-classical
 
 #+:non-standard-analysis
@@ -9793,7 +9889,8 @@
         (if cp1 0 1)
         (if cp2 0 1)))))
 
-;; RAG - I modified the following, so that we do not allow substn to
+;; Historical Comment from Ruben Gamboa:
+;; I modified the following, so that we do not allow substn to
 ;; map a non-classical constrained function into a classical function
 ;; or vice versa.
 

@@ -3522,7 +3522,12 @@ flops, and to set up other simulation events.  A simple example would be:</p>
                 functions.")
 
    (function   sv::maybe-svex-p
-               "The svex expression for the value of the function, if it has been computed.")
+               "The svex expression for the value of the function, if it has been
+                computed, which happens during elaboration")
+
+   (constraints sv::constraintlist-p
+                "Constraints that must hold of the function inputs, or the result
+                 may be undefined; computed during elaboration")
 
    (lifetime   vl-lifetime-p
                "Indicates whether an explicit @('automatic') or @('static')

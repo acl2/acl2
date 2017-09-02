@@ -215,11 +215,12 @@
                               is (perhaps by default) :ARROW, :BECOMES, or :IS"
                            "supplied as the :THM-NAME input")))
        ((er &) (ensure-symbol-new-event-name$ name description t nil))
-       ((when (eq name new-fn-name))
-        (er soft ctx
-            "~@0 must differ from the name ~x1 of the new function ~
-             (determined by the :THM-NAME input)."
-            description new-fn-name)))
+       ((er &) (ensure-symbol-different$
+                name new-fn-name
+                (msg "the name ~x0 of the new function ~
+                      (determined by the :NEW-NAME input)." new-fn-name)
+                description
+                t nil)))
     (value name)))
 
 (defval *restrict-app-cond-names*
@@ -1054,7 +1055,8 @@
                                       restriction$
                                       do-verify-guards
                                       state))
-       ((er &) (ensure-named-formulas app-conds hints-alist verbose ctx state))
+       ((er &) (ensure-named-formulas
+                app-conds hints-alist verbose t nil ctx state))
        (event (restrict-event old-fn-name
                               restriction$
                               undefined$

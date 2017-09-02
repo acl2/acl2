@@ -3165,7 +3165,8 @@
         (t nil)))
 )
 
-;; RAG - I added realp and complexp to the list of function names
+;; Historical Comment from Ruben Gamboa:
+;; I added realp and complexp to the list of function names
 ;; simplification can decide.
 
 (defun probably-not-validp (cl)

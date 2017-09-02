@@ -492,7 +492,8 @@
                                             (access poly poly2 :parents))))))
         (t (list (list poly1) (list poly2)))))
 
-;; RAG - I changed complex-rational to complex, and rational to real,
+;; Historical Comment from Ruben Gamboa:
+;; I changed complex-rational to complex, and rational to real,
 ;; to stand for the non-zero numbers.
 
 (defun linearize1 (term positivep type-alist ens force-flg wrld ttree state)
