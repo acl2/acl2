@@ -569,7 +569,7 @@
  ;; in the main Lisp package:
  (must-fail (tailrec f :thm-name cons))
 
- ;; keyword (other than :ARROW, :BECOMES, and :IS):
+ ;; keyword (other than :AUTO):
  (must-fail (tailrec f :thm-name :f))
 
  ;; name that already exists:
@@ -590,15 +590,10 @@
   (tailrec f)
   (assert! (theorem-namep 'f-~>-f{1}-wrapper (w state))))
 
- ;; becomes:
+ ;; automatic:
  (must-succeed*
-  (tailrec f :thm-name :becomes)
-  (assert! (theorem-namep 'f-becomes-f{1}-wrapper (w state))))
-
- ;; is:
- (must-succeed*
-  (tailrec f :thm-name :is)
-  (assert! (theorem-namep 'f-is-f{1}-wrapper (w state))))
+  (tailrec f :thm-name :auto)
+  (assert! (theorem-namep 'f-~>-f{1}-wrapper (w state))))
 
  ;; specified:
  (must-succeed*

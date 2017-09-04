@@ -337,7 +337,7 @@
  ;; in the main Lisp package:
  (must-fail (restrict nfix (natp x) :thm-name cons))
 
- ;; keyword (other than :ARROW, :BECOMES, and :IS):
+ ;; keyword (other than :AUTO):
  (must-fail (restrict nfix (natp x) :thm-name :f))
 
  ;; name that already exists:
@@ -358,20 +358,10 @@
   (restrict nfix (natp x))
   (assert! (theorem-namep 'nfix-~>-nfix{1} (w state))))
 
- ;; arrow:
+ ;; automatic:
  (must-succeed*
-  (restrict nfix (natp x) :thm-name :arrow)
+  (restrict nfix (natp x) :thm-name :auto)
   (assert! (theorem-namep 'nfix-~>-nfix{1} (w state))))
-
- ;; becomes:
- (must-succeed*
-  (restrict nfix (natp x) :thm-name :becomes)
-  (assert! (theorem-namep 'nfix-becomes-nfix{1} (w state))))
-
- ;; is:
- (must-succeed*
-  (restrict nfix (natp x) :thm-name :is)
-  (assert! (theorem-namep 'nfix-is-nfix{1} (w state))))
 
  ;; specified:
  (must-succeed*

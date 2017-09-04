@@ -20,6 +20,7 @@
 (include-book "kestrel/utilities/error-checking" :dir :system)
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/named-formulas" :dir :system)
+(include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/strings/symbols" :dir :system)
 
@@ -193,26 +194,18 @@
   :short "Ensure that the @(':thm-name') input to the transformation
           is valid."
   (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
-       (name (if (member-eq thm-name '(:arrow :becomes :is))
-                 (b* ((separator (case thm-name
-                                   (:arrow "-~>-")
-                                   (:becomes "-BECOMES-")
-                                   (:is "-IS-")
-                                   (otherwise (impossible))))
-                      (string (str::cat (symbol-name old-fn-name)
-                                        separator
-                                        (symbol-name new-fn-name))))
-                   (intern-in-package-of-symbol string old-fn-name))
+       (name (if (eq thm-name :auto)
+                 (make-paired-name old-fn-name new-fn-name 2 (w state))
                thm-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the target function ~x1 ~
                           to the new function ~x2, ~
                           ~@3,"
                          name old-fn-name new-fn-name
-                         (if (member-eq thm-name '(:arrow :becomes :is))
+                         (if (eq thm-name :auto)
                              "automatically generated ~
                               since the :THM-NAME input ~
-                              is (perhaps by default) :ARROW, :BECOMES, or :IS"
+                              is (perhaps by default) :AUTO"
                            "supplied as the :THM-NAME input")))
        ((er &) (ensure-symbol-new-event-name$ name description t nil))
        ((er &) (ensure-symbol-different$
@@ -1092,7 +1085,7 @@
                       (undefined ':undefined)
                       (new-name ':auto)
                       (new-enable ':auto)
-                      (thm-name ':arrow)
+                      (thm-name ':auto)
                       (thm-enable 't)
                       (non-executable ':auto)
                       (verify-guards ':auto)

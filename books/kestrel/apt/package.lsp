@@ -79,6 +79,7 @@
                         lambda-body
                         lambda-formals
                         make-lambda
+                        make-paired-name
                         measure
                         msg-downcase-first
                         named-formulas-to-thm-events

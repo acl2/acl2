@@ -53,7 +53,7 @@
               :new-enable      ; default :auto
               :wrapper-name    ; default :auto
               :wrapper-enable  ; default t
-              :thm-name        ; default :arrow
+              :thm-name        ; default :auto
               :thm-enable      ; default t
               :non-executable  ; default :auto
               :verify-guards   ; default :auto
@@ -404,7 +404,7 @@
      </blockquote>
 
    <p>
-   @(':thm-name') &mdash; default @(':arrow')
+   @(':thm-name') &mdash; default @(':auto')
    </p>
 
      <blockquote>
@@ -416,27 +416,11 @@
      <ul>
 
        <li>
-       @(':arrow'),
-       to use the concatenation of
-       the name of @('old'),
-       @('-~>-'),
-       and the name of @('wrapper').
-       </li>
-
-       <li>
-       @(':becomes'),
-       to use the concatenation of
-       the name of @('old'),
-       @('-becomes-'),
-       and the name of @('wrapper').
-       </li>
-
-       <li>
-       @(':is'),
-       to use the concatenation of
-       the name of @('old'),
-       @('-is-'),
-       and the name of @('wrapper').
+       @(':auto'),
+       to use the <see topic='@(url acl2:paired-names)'>paired name</see>
+       obtaining by <see topic='@(url make-paired-name)'>pairing</see>
+       the name of @('old') and the name of @('new'),
+       putting the result into the same package as @('new').
        </li>
 
        <li>
