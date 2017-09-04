@@ -298,7 +298,7 @@
 
        <li>
        @(':auto'),
-       to use the <see topic='@(url acl2:paired-names)'>paired name</see>
+       to use the <see topic='@(url acl2::paired-names)'>paired name</see>
        obtaining by <see topic='@(url make-paired-name)'>pairing</see>
        the name of @('old') and the name of @('new'),
        putting the result into the same package as @('new').
