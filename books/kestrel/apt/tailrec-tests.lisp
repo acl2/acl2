@@ -795,16 +795,16 @@
 
  ;; duplicate applicability condition names:
  (must-fail
-  (tailrec f :hints ((domain-of-base
+  (tailrec f :hints ((:domain-of-base
                       (("Goal" :in-theory (enable atom))))
-                     (domain-of-base
+                     (:domain-of-base
                       (("Goal" :in-theory (enable len)))))))
 
  ;; valid but unnecessary hints:
  (must-succeed
-  (tailrec f :hints ((domain-of-base
+  (tailrec f :hints ((:domain-of-base
                       (("Goal" :in-theory (enable natp))))
-                     (domain-of-nonrec
+                     (:domain-of-nonrec
                       (("Goal" :in-theory (enable natp)))))))
 
  ;; necessary hints:
@@ -813,9 +813,9 @@
   (must-fail (tailrec f))
   (tailrec f
            :hints
-           ((combine-associativity (("Goal" :in-theory (enable lub))))
-            (combine-left-identity (("Goal" :in-theory (enable lub))))
-            (combine-right-identity (("Goal" :in-theory (enable lub))))))))
+           ((:combine-associativity (("Goal" :in-theory (enable lub))))
+            (:combine-left-identity (("Goal" :in-theory (enable lub))))
+            (:combine-right-identity (("Goal" :in-theory (enable lub))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

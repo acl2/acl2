@@ -520,17 +520,17 @@
  ;; duplicate applicability condition names:
  (must-fail
   (restrict nfix (natp x)
-            :hints ((restriction-of-rec-calls
+            :hints ((:restriction-of-rec-calls
                      (("Goal" :in-theory (enable atom))))
-                    (restriction-of-rec-calls
+                    (:restriction-of-rec-calls
                      (("Goal" :in-theory (enable len)))))))
 
  ;; valid but unnecessary hints:
  (must-succeed
   (restrict nfix (natp x)
-            :hints ((restriction-guard
+            :hints ((:restriction-guard
                      (("Goal" :in-theory (enable natp))))
-                    (restriction-of-rec-calls
+                    (:restriction-of-rec-calls
                      (("Goal" :in-theory (enable natp)))))))
 
  ;; necessary hints:
@@ -545,7 +545,7 @@
   (defun r (x) (declare (xargs :guard (q x) :verify-guards t)) x)
   (must-fail (restrict f (r x)))
   (restrict f (r x)
-            :hints ((restriction-guard (("Goal" :in-theory (enable p=>q))))))))
+            :hints ((:restriction-guard (("Goal" :in-theory (enable p=>q))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

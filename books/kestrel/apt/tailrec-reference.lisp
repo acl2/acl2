@@ -532,7 +532,7 @@
      <p>
      It must be a list of doublets
      @('((appcond1 hints1) ... (appcondp hintsp))')
-     where each @('appcondk') is a symbol (in any package)
+     where each @('appcondk') is a keyword
      that names one of the applicability conditions below,
      and each @('hintsk') consists of hints as may appear
      just after @(':hints') in a @(tsee defthm).
@@ -652,7 +652,7 @@
    </p>
 
    <p>
-   @('domain-of-base')
+   @(':domain-of-base')
    </p>
 
      <blockquote>
@@ -668,7 +668,7 @@
      </blockquote>
 
    <p>
-   @('domain-of-nonrec')
+   @(':domain-of-nonrec')
    </p>
 
      <blockquote>
@@ -692,7 +692,7 @@
      </blockquote>
 
    <p>
-   @('domain-of-combine')
+   @(':domain-of-combine')
    </p>
 
      <blockquote>
@@ -715,7 +715,7 @@
      </blockquote>
 
    <p>
-   @('domain-of-combine-uncond')
+   @(':domain-of-combine-uncond')
    </p>
 
      <blockquote>
@@ -736,7 +736,7 @@
      </blockquote>
 
    <p>
-   @('combine-associativity')
+   @(':combine-associativity')
    </p>
 
      <blockquote>
@@ -761,7 +761,7 @@
      </blockquote>
 
    <p>
-   @('combine-associativity-uncond')
+   @(':combine-associativity-uncond')
    </p>
 
      <blockquote>
@@ -783,7 +783,7 @@
      </blockquote>
 
    <p>
-   @('combine-left-identity')
+   @(':combine-left-identity')
    </p>
 
      <blockquote>
@@ -807,7 +807,7 @@
      </blockquote>
 
    <p>
-   @('combine-right-identity')
+   @(':combine-right-identity')
    </p>
 
      <blockquote>
@@ -831,7 +831,7 @@
      </blockquote>
 
    <p>
-   @('domain-guard')
+   @(':domain-guard')
    </p>
 
      <blockquote>
@@ -860,7 +860,7 @@
      </blockquote>
 
    <p>
-   @('combine-guard')
+   @(':combine-guard')
    </p>
 
      <blockquote>
@@ -890,7 +890,7 @@
      </blockquote>
 
    <p>
-   @('domain-of-nonrec-when-guard')
+   @(':domain-of-nonrec-when-guard')
    </p>
 
      <blockquote>
@@ -922,17 +922,17 @@
      </blockquote>
 
    <p>
-   When present, @('combine-left-identity') and @('combine-right-identity'),
+   When present, @(':combine-left-identity') and @(':combine-right-identity'),
    together with
-   either @('combine-associative') or @('combine-associative-uncond')
+   either @(':combine-associativity') or @(':combine-associativity-uncond')
    (one of them is always present),
    and together with
-   either @('domain-of-combine') or @('domain-of-combine-uncond')
+   either @(':domain-of-combine') or @(':domain-of-combine-uncond')
    (one of them is always present),
    mean that the domain has the algebraic structure of a monoid,
    with the combination operator as the binary operator
    and with the base value of the recursion as identity.
-   When @('combine-left-identity') and @('combine-right-identity') are absent,
+   When @(':combine-left-identity') and @(':combine-right-identity') are absent,
    the domain has the algebraic structure of a semigroup.
    </p>
 

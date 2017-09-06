@@ -16,7 +16,6 @@
 (include-book "kestrel/utilities/named-formulas" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "std/strings/symbols" :dir :system)
 
 (local (xdoc::set-default-parents tailrec-implementation))
 
@@ -484,17 +483,17 @@
 
 (defval *tailrec-app-cond-names*
   :short "Names of all the applicability conditions."
-  '(domain-of-base
-    domain-of-nonrec
-    domain-of-combine
-    domain-of-combine-uncond
-    combine-associativity
-    combine-associativity-uncond
-    combine-left-identity
-    combine-right-identity
-    domain-guard
-    combine-guard
-    domain-of-nonrec-when-guard)
+  '(:domain-of-base
+    :domain-of-nonrec
+    :domain-of-combine
+    :domain-of-combine-uncond
+    :combine-associativity
+    :combine-associativity-uncond
+    :combine-left-identity
+    :combine-right-identity
+    :domain-guard
+    :combine-guard
+    :domain-of-nonrec-when-guard)
   ///
 
   (defruled symbol-listp-of-*tailrec-app-cond-names*
@@ -524,19 +523,6 @@
    The second components of the doublets
    are checked to be well-formed hints not here,
    but implicitly when attempting prove the applicability conditions.
-   </p>
-   <p>
-   The symbols that name the applicability conditions in this input
-   are put into the \"APT\" package (a no-op if they are already there)
-   prior to checking them and later processing them.
-   Thus, when calling this transformation from outside the \"APT\" package,
-   it is not necessary to qualify the names of the applicability conditions
-   with the @('apt::') package prefix
-   in the @(':hints') input to the transformation.
-   As stated in the documentation, the @('appcondk') symbols
-   passed in the @(':hints') input
-   may be in any package,
-   so long as their names match the applicability condition names.
    </p>"
   (b* (((er &) (ensure-doublet-list$ hints "The :HINTS input" t nil))
        (alist (doublets-to-alist hints))
@@ -545,8 +531,6 @@
        (description
         (msg "The list ~x0 of the first components of the :HINTS input" keys))
        ((er &) (ensure-symbol-list$ keys description t nil))
-       (keys (intern-list (symbol-list-names keys)
-                          (pkg-witness "APT")))
        ((er &) (ensure-list-no-duplicates$ keys description t nil))
        ((er &) (ensure-list-subset$ keys *tailrec-app-cond-names*
                                     description t nil)))
@@ -704,7 +688,7 @@
   :returns (u "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('u') to use
-          in the @('domain-of-combine') and @('combine-associativity')
+          in the @(':domain-of-combine') and @(':combine-associativity')
           applicability conditions."
   (genvar old-fn-name "U" nil nil))
 
@@ -713,7 +697,7 @@
   :returns (v "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('v') to use
-          in the @('domain-of-combine') and @('combine-associativity')
+          in the @(':domain-of-combine') and @(':combine-associativity')
           applicability conditions."
   (genvar old-fn-name "V" nil nil))
 
@@ -722,7 +706,7 @@
   :returns (w "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('w') to use
-          in the @('domain-of-combine') and @('combine-associativity')
+          in the @(':domain-of-combine') and @(':combine-associativity')
           applicability conditions."
   (genvar old-fn-name "W" nil nil))
 
@@ -732,7 +716,7 @@
   :returns (u "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('u') to use
-          in the @('combine-left-identity') and @('combine-right-identity')
+          in the @(':combine-left-identity') and @(':combine-right-identity')
           applicability conditions."
   :long
   "<p>
@@ -776,23 +760,23 @@
        (u1 (tailrec-id-var-u old-fn-name wrld))
        (combine-op (tailrec-combine-op combine q r)))
     (case name
-      (domain-of-base
+      (:domain-of-base
        (untranslate (apply-term* domain$ base) t wrld))
-      (domain-of-nonrec
+      (:domain-of-nonrec
        (untranslate (implicate (dumb-negate-lit test)
                                (apply-term* domain$ nonrec))
                     t wrld))
-      (domain-of-combine
+      (:domain-of-combine
        (untranslate (implicate (conjoin2 (apply-term* domain$ u)
                                          (apply-term* domain$ v))
                                (apply-term* domain$
                                             (apply-term* combine-op u v)))
                     t wrld))
-      (domain-of-combine-uncond
+      (:domain-of-combine-uncond
        (untranslate (apply-term* domain$
                                  (apply-term* combine-op u v))
                     t wrld))
-      (combine-associativity
+      (:combine-associativity
        (untranslate (implicate
                      (conjoin (list (apply-term* domain$ u)
                                     (apply-term* domain$ v)
@@ -804,7 +788,7 @@
                                            (apply-term* combine-op u v)
                                            w)))
                     t wrld))
-      (combine-associativity-uncond
+      (:combine-associativity-uncond
        (untranslate `(equal ,(apply-term* combine-op
                                           u
                                           (apply-term* combine-op v w))
@@ -812,28 +796,28 @@
                                           (apply-term* combine-op u v)
                                           w))
                     t wrld))
-      (combine-left-identity
+      (:combine-left-identity
        (untranslate (implicate (apply-term* domain$ u1)
                                `(equal ,(apply-term* combine-op base u1)
                                        ,u1))
                     t wrld))
-      (combine-right-identity
+      (:combine-right-identity
        (untranslate (implicate (apply-term* domain$ u1)
                                `(equal ,(apply-term* combine-op u1 base)
                                        ,u1))
                     t wrld))
-      (domain-guard
+      (:domain-guard
        (if (symbolp domain$)
            (untranslate (guard domain$ nil wrld)
                         t wrld)
          (untranslate (term-guard-obligation (lambda-body domain$) state)
                       t wrld)))
-      (combine-guard
+      (:combine-guard
        (untranslate (implicate (conjoin2 (apply-term* domain$ q)
                                          (apply-term* domain$ r))
                                (term-guard-obligation combine state))
                     t wrld))
-      (domain-of-nonrec-when-guard
+      (:domain-of-nonrec-when-guard
        (untranslate (implicate (conjoin2 (guard old-fn-name nil wrld)
                                          (dumb-negate-lit test))
                                (apply-term* domain$ nonrec))
@@ -848,19 +832,19 @@
   :returns (yes/no booleanp :hyp (booleanp do-verify-guards))
   :short "Check if the named applicability condition is present."
   (case name
-    (domain-of-base t)
-    ((domain-of-nonrec
-      domain-of-combine
-      combine-associativity) (if (member-eq variant '(:monoid :assoc)) t nil))
-    ((domain-of-combine-uncond
-      combine-associativity-uncond) (eq variant :monoid-alt))
-    ((combine-left-identity
-      combine-right-identity) (if (member-eq variant '(:monoid :monoid-alt))
-                                  t nil))
-    ((domain-guard
-      combine-guard) do-verify-guards)
-    (domain-of-nonrec-when-guard (and (eq variant :monoid-alt)
-                                      do-verify-guards))
+    (:domain-of-base t)
+    ((:domain-of-nonrec
+      :domain-of-combine
+      :combine-associativity) (if (member-eq variant '(:monoid :assoc)) t nil))
+    ((:domain-of-combine-uncond
+      :combine-associativity-uncond) (eq variant :monoid-alt))
+    ((:combine-left-identity
+      :combine-right-identity) (if (member-eq variant '(:monoid :monoid-alt))
+                                   t nil))
+    ((:domain-guard
+      :combine-guard) do-verify-guards)
+    (:domain-of-nonrec-when-guard (and (eq variant :monoid-alt)
+                                       do-verify-guards))
     (t (impossible))))
 
 (define tailrec-app-conds
@@ -969,11 +953,11 @@
         (case variant
           ((:monoid :assoc)
            (b* ((domain-of-base-thm
-                 (cdr (assoc-eq 'domain-of-base app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
                 (domain-of-nonrec-thm
-                 (cdr (assoc-eq 'domain-of-nonrec app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
                 (domain-of-combine-thm
-                 (cdr (assoc-eq 'domain-of-combine app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine app-cond-thm-names)))
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
                              :extra-bindings-ok
@@ -990,9 +974,9 @@
                        ,domain-of-combine-instance)))))
           (:monoid-alt
            (b* ((domain-of-base-thm
-                 (cdr (assoc-eq 'domain-of-base app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
                 (domain-of-combine-uncond-thm
-                 (cdr (assoc-eq 'domain-of-combine-uncond app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine-uncond app-cond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
                              :extra-bindings-ok
@@ -1118,15 +1102,15 @@
                             (formals domain$ wrld)
                           (lambda-formals domain$))))
                 (domain-of-base-thm
-                 (cdr (assoc-eq 'domain-of-base app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
                 (domain-of-nonrec-thm
-                 (cdr (assoc-eq 'domain-of-nonrec app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
                 (domain-of-combine-thm
-                 (cdr (assoc-eq 'domain-of-combine app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine app-cond-thm-names)))
                 (domain-guard-thm
-                 (cdr (assoc-eq 'domain-guard app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-guard app-cond-thm-names)))
                 (combine-guard-thm
-                 (cdr (assoc-eq 'combine-guard app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-guard app-cond-thm-names)))
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
                              :extra-bindings-ok
@@ -1160,15 +1144,15 @@
                             (formals domain$ wrld)
                           (lambda-formals domain$))))
                 (domain-of-base-thm
-                 (cdr (assoc-eq 'domain-of-base app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
                 (domain-of-combine-uncond-thm
-                 (cdr (assoc-eq 'domain-of-combine-uncond app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine-uncond app-cond-thm-names)))
                 (domain-guard-thm
-                 (cdr (assoc-eq 'domain-guard app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-guard app-cond-thm-names)))
                 (combine-guard-thm
-                 (cdr (assoc-eq 'combine-guard app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-guard app-cond-thm-names)))
                 (domain-of-nonrec-when-guard-thm
-                 (cdr (assoc-eq 'domain-of-nonrec-when-guard
+                 (cdr (assoc-eq :domain-of-nonrec-when-guard
                                 app-cond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
@@ -1269,7 +1253,7 @@
    <p>
    The hints follow the proofs in the design notes.
    Note that @('combine-right-identity-thm?') is @('nil') iff
-   the @('combine-right-identity') applicability condition is absent,
+   the @(':combine-right-identity') applicability condition is absent,
    which happens exactly when
    the @(':variant') input to the transformation is @(':assoc').
    In this case, no instance of that applicability condition
@@ -1295,13 +1279,13 @@
         (case variant
           ((:monoid :assoc)
            (b* ((domain-of-nonrec-thm
-                 (cdr (assoc-eq 'domain-of-nonrec app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
                 (domain-of-combine-thm
-                 (cdr (assoc-eq 'domain-of-combine app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine app-cond-thm-names)))
                 (combine-associativity-thm
-                 (cdr (assoc-eq 'combine-associativity app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-associativity app-cond-thm-names)))
                 (combine-right-identity-thm?
-                 (cdr (assoc-eq 'combine-right-identity app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-right-identity app-cond-thm-names)))
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
                              :extra-bindings-ok
@@ -1338,12 +1322,12 @@
                        ,combine-associativity-instance)))))
           (:monoid-alt
            (b* ((domain-of-combine-uncond-thm
-                 (cdr (assoc-eq 'domain-of-combine-uncond app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine-uncond app-cond-thm-names)))
                 (combine-associativity-uncond-thm
-                 (cdr (assoc-eq 'combine-associativity-uncond
+                 (cdr (assoc-eq :combine-associativity-uncond
                                 app-cond-thm-names)))
                 (combine-right-identity-thm
-                 (cdr (assoc-eq 'combine-right-identity app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-right-identity app-cond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
                              :extra-bindings-ok
@@ -1455,7 +1439,7 @@
    </p>
    <p>
    For the @(':monoid') and @(':monoid-alt') variants,
-   since the @('domain-of-base') and @('combine-left-identity')
+   since the @(':domain-of-base') and @(':combine-left-identity')
    applicabiilty conditions are unconditional
    (unlike @($D{}b$) and @($L{}I$) in the design notes),
    we can use these two applicability conditions in the proofs,
@@ -1477,9 +1461,9 @@
         (case variant
           ((:monoid :monoid-alt)
            (b* ((domain-of-base-thm
-                 (cdr (assoc-eq 'domain-of-base app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
                 (combine-left-identity-thm
-                 (cdr (assoc-eq 'combine-left-identity app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-left-identity app-cond-thm-names)))
                 (combine-left-identity-instance
                  `(:instance ,combine-left-identity-thm
                              :extra-bindings-ok
@@ -1499,7 +1483,7 @@
           (:assoc
            (b* ((formals (formals old-fn-name wrld))
                 (domain-of-nonrec-thm
-                 (cdr (assoc-eq 'domain-of-nonrec app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
                 (new-to-old-thm-instance
                  `(:instance ,new-to-old-thm-name
                              :extra-bindings-ok
@@ -1571,9 +1555,9 @@
    Since we do not use the @($\\beta$) function described in the design notes
    (as explained in the documentation of the transformation),
    the proof for the case in which left identity holds
-   uses the @('domain-of-base') applicability condition
+   uses the @(':domain-of-base') applicability condition
    instead of the @($D{}\\beta$) theorem in the design notes.
-   The @('domain-of-nonrec') applicability condition theorem is used
+   The @(':domain-of-nonrec') applicability condition theorem is used
    iff the applicability condition is present,
    i.e. iff the @(':variant') input to the transformation
    is @(':monoid') or @(':assoc');
@@ -1588,9 +1572,9 @@
        (guard (untranslate (guard old-fn-name nil wrld) t wrld))
        (guard-hints
         (b* ((domain-of-base-thm
-              (cdr (assoc-eq 'domain-of-base app-cond-thm-names)))
+              (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
              (domain-of-nonrec-thm?
-              (cdr (assoc-eq 'domain-of-nonrec app-cond-thm-names))))
+              (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names))))
           `(("Goal"
              :in-theory nil
              :use ((:guard-theorem ,old-fn-name)

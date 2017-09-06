@@ -413,7 +413,7 @@
      <p>
      It must be a list of doublets
      @('((appcond1 hints1) ... (appcondp hintsp))')
-     where each @('appcondk') is a symbol (in any package)
+     where each @('appcondk') is a keyword
      that names one of the applicability conditions below,
      and each @('hintsk') consists of hints as may appear
      just after @(':hints') in a @(tsee defthm).
@@ -491,7 +491,7 @@
    </p>
 
    <p>
-   @('restriction-of-rec-calls')
+   @(':restriction-of-rec-calls')
    </p>
 
      <blockquote>
@@ -521,7 +521,7 @@
      </blockquote>
 
    <p>
-   @('restriction-guard')
+   @(':restriction-guard')
    </p>
 
      <blockquote>
