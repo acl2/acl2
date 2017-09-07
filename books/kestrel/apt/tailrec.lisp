@@ -687,8 +687,11 @@
   ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs)."))
   :returns (u "A @(tsee symbolp).")
   :mode :program
-  :short "The variable @('u') to use
-          in the @(':domain-of-combine') and @(':combine-associativity')
+  :short "The variable @('u') to use in the
+          @(':domain-of-combine'),
+          @(':domain-of-combine-uncond'),
+          @(':combine-associativity'), and
+          @(':combine-associativity-uncond')
           applicability conditions."
   (genvar old-fn-name "U" nil nil))
 
@@ -696,8 +699,11 @@
   ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs)."))
   :returns (v "A @(tsee symbolp).")
   :mode :program
-  :short "The variable @('v') to use
-          in the @(':domain-of-combine') and @(':combine-associativity')
+  :short "The variable @('u') to use in the
+          @(':domain-of-combine'),
+          @(':domain-of-combine-uncond'),
+          @(':combine-associativity'), and
+          @(':combine-associativity-uncond')
           applicability conditions."
   (genvar old-fn-name "V" nil nil))
 
@@ -705,8 +711,9 @@
   ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs)."))
   :returns (w "A @(tsee symbolp).")
   :mode :program
-  :short "The variable @('w') to use
-          in the @(':domain-of-combine') and @(':combine-associativity')
+  :short "The variable @('u') to use in the
+          @(':combine-associativity') and
+          @(':combine-associativity-uncond')
           applicability conditions."
   (genvar old-fn-name "W" nil nil))
 
@@ -715,8 +722,9 @@
    (wrld plist-worldp))
   :returns (u "A @(tsee symbolp).")
   :mode :program
-  :short "The variable @('u') to use
-          in the @(':combine-left-identity') and @(':combine-right-identity')
+  :short "The variable @('u') to use in the
+          @(':combine-left-identity') and
+          @(':combine-right-identity')
           applicability conditions."
   :long
   "<p>
@@ -861,8 +869,7 @@
    state)
   :returns (app-conds "A @(tsee symbol-alistp).")
   :mode :program
-  :short "Generate the applicability conditions that must hold,
-          based on the @(':variant') input to the transformation."
+  :short "Generate the applicability conditions that must hold."
   (tailrec-app-conds-aux *tailrec-app-cond-names*
                          old-fn-name test base nonrec combine q r
                          variant domain$ do-verify-guards

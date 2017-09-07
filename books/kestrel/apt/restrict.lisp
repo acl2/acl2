@@ -393,10 +393,7 @@
                    restriction<updatem-x1<x1,...,xn>,
                                ...,
                                updatem-xn<x1,...,xn>>))
-   })
-   <p>
-   This function is called iff the old function is recursive.
-   </p>"
+   })"
   (conjoin
    (restrict-restriction-of-rec-calls-consequent-aux old-fn-name
                                                      rec-calls-with-tests
@@ -752,10 +749,6 @@
    without implementation-specific proof hints
    that may refer to local events of the @(tsee encapsulate)
    that do not exist in the history after the transformation.
-   </p>
-   <p>
-   This function is called iff
-   the guards of the new function must be verified.
    </p>"
   (b* ((recursive (recursivep old-fn-name nil wrld))
        (hints (if recursive
