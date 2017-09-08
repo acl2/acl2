@@ -131,6 +131,8 @@
           (+ (fib1 (- n 1))
              (fib1 (- n 2))))))
 
+(comp t) ; needed for some Lisps in order to do the bigger computations
+
 (fib1 1)
 (fib1 2)
 (fib1 3)
