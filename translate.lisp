@@ -8710,8 +8710,9 @@
                  "It is illegal to call ~x0 because it has been placed on ~
                   untouchable-fns."
                  (car x)))
-     ((and (eq (car x) 'ld)
-           (not (member-eq stobjs-out '(t :stobjs-out)))
+     ((and (eq (car x) 'ld) ; next check if we're in a definition body
+           (not (or (eq stobjs-out t)
+                    (assoc-eq :stobjs-out bindings)))
 
 ; Here we enforce the requirement that a call of LD in a user definition body
 ; must specify :ld-user-stobjs-modified-warning.  This requirement forces the
