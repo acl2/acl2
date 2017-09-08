@@ -3639,6 +3639,21 @@
     (f-put-global 'ld-verbose val state)
     (value val))))
 
+(defun chk-ld-user-stobjs-modified-warning (val ctx state)
+  (cond ((member-eq val '(nil t :same))
+         (value nil))
+        (t (er soft ctx *ld-special-error*
+               'ld-user-stobjs-modified-warning val))))
+
+(defun set-ld-user-stobjs-modified-warning (val state)
+  (er-progn
+   (chk-ld-user-stobjs-modified-warning val
+                                        'set-ld-user-stobjs-modified-warning
+                                        state)
+   (pprogn
+    (f-put-global 'ld-user-stobjs-modified-warning val state)
+    (value val))))
+
 (defconst *nqthm-to-acl2-primitives*
 
 ; Keep this list in sync with documentation for nqthm-to-acl2.

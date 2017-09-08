@@ -14173,7 +14173,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-query-control-alist . nil)
     (ld-verbose . "~sv.  Level ~Fl.  Cbd ~xc.~|System books ~
                    directory ~xb.~|Type :help for help.~%Type (good-bye) to ~
-                   quit completely out of ACL2.~|~%")))
+                   quit completely out of ACL2.~|~%")
+    (ld-user-stobjs-modified-warning . nil)))
 
 (defun always-boundp-global (x)
   (declare (xargs :guard (symbolp x)))
@@ -26709,6 +26710,12 @@ Lisp definition."
                           (f-get-global 'temp-touchable-fns state))))
 
 (defun oracle-apply (fn args state)
+
+; WARNING: Do not allow stobj arguments among args!  This is naturally enforced
+; since stobjs may not belong to lists.  It is important since otherwise
+; single-threadedness may be violated, which could lead to unsoundness since
+; this is a :logic mode functions.  (For somewhat related discussion, see :doc
+; user-stobjs-modified-warnings.)
 
 ; The use of an oracle is important for the logical story.  For example, we can
 ; imagine the following sort of situation without an oracle.

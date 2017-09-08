@@ -128,10 +128,16 @@
       ((eq prompt-fn 'default-print-prompt)
        (default-print-prompt output-channel state))
       (t (mv-let (erp trans-ans state)
-           (trans-eval (list prompt-fn
-                             (list 'quote output-channel)
-                             'state)
-                       'print-prompt state t)
+
+; We could call trans-eval-no-warning here instead, to avoid horrible warnings
+; appearing as the prompt is printed.  But if that printing modifies a user
+; stobj, then probably it would be most appropriate for the superior call of ld
+; to specify :ld-user-stobjs-modified-warning nil.
+
+           (trans-eval-default-warning (list prompt-fn
+                                             (list 'quote output-channel)
+                                             'state)
+                                       'print-prompt state t)
 
 ; If erp is non-nil, trans-ans is of the form (stobjs-out . valx).  We
 ; strongly expect that stobjs-out is (nil state).  (That is true if
@@ -365,6 +371,9 @@
                      (value pair)))
           (ld-verbose
            (er-progn (chk-ld-verbose val ctx state)
+                     (value pair)))
+          (ld-user-stobjs-modified-warning
+           (er-progn (chk-ld-user-stobjs-modified-warning val ctx state)
                      (value pair)))
           (otherwise
            (er soft ctx
@@ -618,6 +627,10 @@
          (f-put-global 'ld-query-control-alist (cdar alist) state))
         (ld-verbose
          (f-put-global 'ld-verbose (cdar alist) state))
+        (ld-user-stobjs-modified-warning
+         (if (eq (cdar alist) :same)
+             state
+           (f-put-global 'ld-user-stobjs-modified-warning (cdar alist) state)))
         (otherwise
          (let ((x (er hard 'f-put-ld-specials
                       "Someone is using ~x0 as an unauthorized LD-special."
@@ -664,7 +677,9 @@
         (cons 'ld-query-control-alist
               (f-get-global 'ld-query-control-alist state))
         (cons 'ld-verbose
-              (f-get-global 'ld-verbose state))))
+              (f-get-global 'ld-verbose state))
+        (cons 'ld-user-stobjs-modified-warning
+              (f-get-global 'ld-user-stobjs-modified-warning state))))
 
 (defun ld-read-keyword-command1 (n state)
   (cond
@@ -1104,7 +1119,8 @@
                      (mv-let (error-flg trans-ans state)
                              (if (raw-mode-p state)
                                  (acl2-raw-eval form state)
-                               (trans-eval form 'top-level state t))
+                               (trans-eval-default-warning form 'top-level
+                                                           state t))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
@@ -1690,7 +1706,8 @@
               (ld-error-triples 'same ld-error-triplesp)
               (ld-error-action 'same ld-error-actionp)
               (ld-query-control-alist 'same ld-query-control-alistp)
-              (ld-verbose 'same ld-verbosep))
+              (ld-verbose 'same ld-verbosep)
+              (ld-user-stobjs-modified-warning ':same))
   `(ld-fn
     (list ,@(append
              (list `(cons 'standard-oi ,standard-oi))
@@ -1742,7 +1759,11 @@
                  nil)
              (if ld-verbosep
                  (list `(cons 'ld-verbose ,ld-verbose))
-                 nil)))
+                 nil)
+             (if (eq ld-user-stobjs-modified-warning :same)
+                 nil
+               (list `(cons 'ld-user-stobjs-modified-warning
+                            ,ld-user-stobjs-modified-warning)))))
     state
     t))
 
@@ -1768,7 +1789,12 @@
            :rule-classes :type-prescription)
          (defthm rev-rev (implies (true-listp x) (equal (rev (rev x)) x))))
        :ld-pre-eval-print t
-       :ld-error-action :return))
+       :ld-error-action :return
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+       :ld-user-stobjs-modified-warning :same))
 
 (defun wormhole-prompt (channel state)
   (fmt1 "Wormhole ~s0~sr ~@1~*2"
@@ -3111,7 +3137,7 @@
            (mv-let (error-flg trans-ans state)
                    (if (raw-mode-p state)
                        (acl2-raw-eval form state)
-                     (trans-eval form 'top-level state t))
+                     (trans-eval-default-warning form 'top-level state t))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
@@ -4447,9 +4473,15 @@
         (value :invisible))
        ((or (eq io-markers :all)
             (member-equal io-marker io-markers))
-        (er-progn (trans-eval (access io-record (car io-record-lst)
-                                      :form)
-                              ctx state t)
+        (er-progn (trans-eval
+
+; We could call trans-eval-default-warning here instead of trans-eval.  But if
+; a user stobj is modified simply by printing output, we should probably know
+; about it (and someone will likely complain loudly).
+
+                   (access io-record (car io-record-lst)
+                           :form)
+                   ctx state t)
                   (print-saved-output-lst (cdr io-record-lst)
                                           (if stop-markers
                                               :all ; print till we're stopped
@@ -4477,9 +4509,15 @@
                            :io-marker)
                    :ctx)))
       (er-progn (if saved-output
-                    (trans-eval (access io-record (car saved-output)
-                                        :form)
-                                ctx state t)
+                    (trans-eval
+
+; We could call trans-eval-default-warning here instead of trans-eval.  But if
+; a user stobj is modified simply by printing output, we should probably know
+; about it (and someone will likely complain loudly).
+
+                     (access io-record (car saved-output)
+                             :form)
+                     ctx state t)
                   (value nil))
                 (pprogn (fms "There is no saved output to print.  ~
                               See :DOC set-saved-output.~|"

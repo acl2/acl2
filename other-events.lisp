@@ -4552,9 +4552,19 @@
           (value :invisible)))
 
 (defmacro set-raw-mode-on! ()
+
+; If this is to be used in code, then   Presumably the value of that keyword is
+; irrelevant.  But 
+
   '(er-progn (ld '((defttag :raw-mode-hack)
                    (set-raw-mode-on state))
-                 :ld-prompt nil :ld-verbose nil :ld-post-eval-print nil)
+                 :ld-prompt nil :ld-verbose nil :ld-post-eval-print nil
+
+; Do we want to allow raw mode to be set inside code?  Since this macro
+; traffics in trust tags, we might as well allow it.  So we need to specify a
+; value for the following keyword.
+
+                 :ld-user-stobjs-modified-warning :same)
              (value :invisible)))
 
 (defmacro set-raw-mode (flg)
@@ -4784,7 +4794,14 @@
 
 #+acl2-loop-only
 (defun acl2-raw-eval (form state)
-  (trans-eval form 'top-level state t))
+
+; We never execute this code in practice, since the raw code will run instead.
+; But for consistency with the raw code, we avoid the
+; user-stobjs-modified-warning.  Raw-mode is so far from maintaining soundness
+; that we feel no need to implement the user-stobjs-modified-warningv in the raw
+; code.
+
+  (trans-eval-no-warning form 'top-level state t))
 
 (defun get-and-chk-last-make-event-expansion (form wrld ctx state names)
   (let ((expansion (f-get-global 'last-make-event-expansion state)))
@@ -5084,7 +5101,15 @@
            (pprogn (f-put-global 'last-make-event-expansion nil state)
                    (if (raw-mode-p state)
                        (acl2-raw-eval form state)
-                     (trans-eval form ctx state t)))
+
+; We avoid the user-stobjs-modified-warning here, since it seems unreasonable
+; to warn about the event's result if a user stobj is changed.  Rather, if the
+; event itself does evaluation that changes a user stobjs, then that event
+; should be held responsible for any such warning.  Thus, make-event takes such
+; responsibility for its expansion phase; it is sensitive to LD special
+; ld-user-stobjs-modified-warning (see protected-eval and make-event-fn2).
+
+                     (trans-eval-no-warning form ctx state t)))
 
 ; If erp is nil, trans-ans is
 ; ((nil nil state) . (erp' val' replaced-state))
@@ -5775,7 +5800,13 @@
                       ,@(and pbt succ label
                              `('(pprogn (newline (proofs-co state)
                                                  state)
-                                        (pbt ',label)))))))))))
+                                        (pbt ',label)))))
+
+; It seems a bit dodgy to call redo-flat from within code, but we see no reason
+; to prohibit it.  In that case we need to specify a value for the following
+; keyword.
+
+                :ld-user-stobjs-modified-warning :same))))))
 
 (defun cert-op (state)
 
@@ -10579,9 +10610,9 @@
                  (case-match form
                    (('defpkg & & & & 't) t)
                    (& nil)))
-            (er-progn (trans-eval form ctx state
+            (er-progn (trans-eval-default-warning form ctx state
 ; Perhaps aok could be t, but we use nil just to be conservative.
-                                  nil)
+                                                  nil)
                       (get-cmds-from-portcullis1
                        eval-hidden-defpkgs ch ctx state (cons form ans))))
            (t (get-cmds-from-portcullis1
@@ -10630,7 +10661,7 @@
       (if events
           (state-global-let*
            ((inhibit-output-lst (remove1-eq 'error *valid-output-names*)))
-           (trans-eval (cons 'er-progn events) ctx state t))
+           (trans-eval-default-warning (cons 'er-progn events) ctx state t))
         (value nil))
       (mv-let
        (erp val state)
@@ -10682,13 +10713,13 @@
             (value (reverse ans)))
            (t (mv-let
                (error-flg trans-ans state)
-               (trans-eval form
-                           (msg (if port-file-p
-                                    "the .port file for ~x0"
-                                  "the portcullis for ~x0")
-                                file1)
-                           state
-                           t)
+               (trans-eval-default-warning form
+                                           (msg (if port-file-p
+                                                    "the .port file for ~x0"
+                                                  "the portcullis for ~x0")
+                                                file1)
+                                           state
+                                           t)
 
 ; If error-flg is nil, trans-ans is of the form
 ; ((nil nil state) . (erp' val' replaced-state))
@@ -22085,7 +22116,12 @@
              nil *standard-co* state nil))
       (if (eql 0 (f-get-global 'ld-level state))
           (ld '((trace$-lst ',trace-specs 'trace$ state))
-              :ld-verbose nil)
+              :ld-verbose nil
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+              :ld-user-stobjs-modified-warning :same)
         (trace$-lst ',trace-specs 'trace$ state))))))
 
 (defmacro with-ubt! (form)
@@ -22106,7 +22142,12 @@
                     :ld-prompt nil
                     :ld-pre-eval-print nil
                     :ld-post-eval-print nil
-                    :ld-error-action :error))
+                    :ld-error-action :error
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+                    :ld-user-stobjs-modified-warning :same))
                (value :invisible))))
 
 (defmacro trace! (&rest fns)
@@ -22130,7 +22171,12 @@
 ; calling break-on-error.  Of course, no trust tag note will be printed in raw
 ; Lisp -- but all bets are off anyhow in raw Lisp!
 
-    `(ld '(,form))
+    `(ld '(,form)
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+         :ld-user-stobjs-modified-warning :same)
     #+acl2-loop-only
     form))
 
@@ -24472,7 +24518,7 @@
                                        conjunct ; tguard
                                        f1 a1 nil substitute ctx state)))
           (mv-let (erp stobjs-out/replaced-val state)
-            (trans-eval form ctx state t)
+            (trans-eval-default-warning form ctx state t)
             (cond (erp
                    (value (msg "Evaluation causes an error:~|~x0"
                                conjunct)))
@@ -25059,7 +25105,12 @@
                         (value :invisible)))
                      :ld-post-eval-print :command-conventions
                      :ld-error-action :return
-                     :ld-error-triples t)
+                     :ld-error-triples t
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+                     :ld-user-stobjs-modified-warning :same)
                  (with-output
                   :off :all
                   :on error
@@ -25069,7 +25120,9 @@
                :ld-error-action :error ; in case top-level-fn fails
                :ld-error-triples t
                :ld-verbose nil
-               :ld-prompt nil)
+               :ld-prompt nil
+; See comment above about :ld-user-stobjs-modified-warning.
+               :ld-user-stobjs-modified-warning :same)
            (declare (ignore erp val))
            (mv (@ top-level-errorp) :invisible state)))
 
@@ -28671,6 +28724,8 @@
 
 (defun protected-eval (form on-behalf-of ctx state aok)
 
+; This evaluator is intended to be used for make-event expansion.
+
 ; We assume that this is executed under a revert-world-on-error, so that we do
 ; not have to protect the world here in case of error, though we do set the
 ; world back to the starting world when returning a non-erroneous error triple.
@@ -28680,10 +28735,18 @@
 ; known-package-alist and value of world global 'ttags-seen immediately after
 ; form is evaluated; and if not, we return a soft error.
 
+; See the comment at the call of trans-eval-default-warning, below.
+
   (let ((original-wrld (w state)))
     (protect-system-state-globals
      (er-let*
       ((result
+
+; We call trans-eval-default-warning here, so that if make-event modifies
+; stobjs, we issue a warning if and only if the current setting of LD special
+; ld-user-stobjs-modified-warning says to issue that warning.  That seems
+; reasonable since make-event may only be called in event contexts.  See :DOC
+; user-stobjs-modified-warning.
 
 ; It would be nice to add (state-global-let* ((safe-mode t)) here.  But some
 ; *1* functions need always to call their raw Lisp counterparts.  Although we
@@ -28695,7 +28758,7 @@
 ; safe-mode for make-event will require addition".  Those comments are
 ; associated with membership tests that, for now, we avoid for efficiency.
 
-        (trans-eval form ctx state aok)))
+        (trans-eval-default-warning form ctx state aok)))
       (let* ((new-kpa (known-package-alist state))
              (new-ttags-seen (global-val 'ttags-seen (w state)))
              (stobjs-out (car result))
@@ -28805,7 +28868,7 @@
               (stobjs-out-and-raw-result
                (do-proofs?
                 do-proofsp
-                (trans-eval
+                (trans-eval-default-warning
 
 ; Note that expansion1b is guaranteed to be an embedded event form, which (as
 ; checked just below) must evaluate to an error triple.

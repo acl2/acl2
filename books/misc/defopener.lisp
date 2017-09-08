@@ -347,7 +347,17 @@
                           state)))
           (mv-let (erp val state)
                   (with-output :off :all (ld '(,deflabel-form)
-                                             :ld-error-action :error))
+                                             :ld-error-action :error
+                                             :ld-user-stobjs-modified-warning
+
+; Matt K. mod: ACL2 now requires keyword :ld-user-stobjs-modified-warning in
+; code.  If this macro is only to be evaluated at the top level, that keyword
+; isn't needed.  But I'm including it, with value :same to preserve existing
+; behavior, just in case someone uses it in code.  Perhaps more thought should
+; be given to whether or not we want a warning here when a user stobj is
+; modified.
+
+                                             :same))
                   (declare (ignore val))
                   (if erp
                       (mv-let

@@ -7146,7 +7146,8 @@
     (ld-error-triples . t)
     (ld-error-action . ,ld-error-action)
     (ld-query-control-alist . t)
-    (ld-verbose . t)))
+    (ld-verbose . t)
+    (ld-user-stobjs-modified-warning . nil)))
 
 (defun enter-boot-strap-pass-2 ()
 ; We must provide set-w a frame on which to push its undo forms.
