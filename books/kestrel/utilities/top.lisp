@@ -31,6 +31,7 @@
 (include-book "fresh-names")
 (include-book "install-not-norm-event")
 (include-book "integers-from-to")
+(include-book "keyword-value-lists")
 (include-book "list-set-theorems")
 (include-book "list-theorems")
 (include-book "make-executable")
