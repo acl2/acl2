@@ -1,3 +1,9 @@
+; Only allow Lisps that compile on-the-fly, because of (fib 40) call:
+; cert_param: (non-cmucl)
+; cert_param: (non-lispworks)
+; cert_param: (non-allegro)
+; cert_param: (non-gcl)
+
 ; Initially, submit each of the following forms at the top level, and then:
 
 ; mv talk2-log.out talk2-log.txt

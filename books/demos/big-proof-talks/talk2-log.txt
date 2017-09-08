@@ -2074,8 +2074,6 @@ Splitter rules (see :DOC splitter):
              (:DEFINITION INTEGER-ABS)
              (:DEFINITION O<))
  FIB1
-ACL2 !>>(COMP T)
- T
 ACL2 !>>(FIB1 1)
 1
 ACL2 !>>(FIB1 2)
