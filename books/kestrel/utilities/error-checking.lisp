@@ -432,8 +432,10 @@
 
 (def-error-checker ensure-doublet-list
   ((x "Value to check."))
-  "Cause an error if a value is not a list of doublets."
-  (((doublet-listp x) "~@0 must be a list of doublets." description)))
+  "Cause an error if a value is not a @('nil')-terminated list of doublets."
+  (((doublet-listp x)
+    "~@0 must be a NIL-terminated list of doublets."
+    description)))
 
 (def-error-checker ensure-keyword-value-list
   ((x "Value to check."))
