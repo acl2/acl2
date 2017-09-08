@@ -133,24 +133,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (term-no-stobjs-p '(binary-+ x (cons y '#\a)) (w state)))
-
-(must-succeed*
- (defun f (state) (declare (xargs :stobjs state)) state)
- (assert! (not (term-no-stobjs-p '(list (f state)) (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert!
- (lambda-no-stobjs-p '(lambda (x y) (binary-+ x (cons y '#\a))) (w state)))
-
-(must-succeed*
- (defun f (state) (declare (xargs :stobjs state)) state)
- (assert!
-  (not (lambda-no-stobjs-p '(lambda (state) (list (f state))) (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (guard-verified-fnsp '(cons (len a) '3) (w state)))
 
 (must-succeed*
