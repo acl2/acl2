@@ -13,6 +13,10 @@
 (include-book "implementation")
 (include-book "kestrel/utilities/testing" :dir :system)
 
+; Matt K. mod: Avoid ACL2(p) error from fvmeas-i (clause-processor returns more
+; than two values).
+(set-waterfall-parallelism nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; GitHub Issue #690 (https://github.com/acl2/acl2/issues/690):

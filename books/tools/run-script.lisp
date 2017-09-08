@@ -142,7 +142,8 @@
 
   (let ((input-file (concatenate 'string name "-input.lsp"))
         (output-file (concatenate 'string name "-log.out")))
-    `(ld '((assign script-mode t)
+    `(ld '((set-waterfall-parallelism nil) ; avoid different output in ACL2(p)
+           (assign script-mode t)
            (set-ld-prompt t state)
            (set-inhibited-summary-types ,inhibited-summary-types)
            (set-inhibit-output-lst ,inhibit-output-lst)
