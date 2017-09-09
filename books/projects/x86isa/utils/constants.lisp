@@ -135,7 +135,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 ; - There are 12 remaining bits in the segment descriptor,
 ;   so the 16 bits in :ATTR above can hold them.
 
-(defthm segment-register-ok
+(defthm hidden-segment-register-layout-ok
   (layout-constant-alistp *hidden-segment-register-layout* 0 112)
   :rule-classes nil)
 
@@ -146,7 +146,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:index      3 13) ;; Index of descriptor in GDT or LDT
     ))
 
-(defthm segment-selector-ok
+(defthm segment-selector-layout-ok
   (layout-constant-alistp *segment-selector-layout* 0 16)
   :rule-classes nil)
 
