@@ -132,6 +132,14 @@
 (defmacro identical-files-p (file1 file2)
   `(identical-files-p-fn ,file1 ,file2 state))
 
+(defmacro unset-waterfall-parallelism ()
+
+; This is just set-waterfall-parallelism, but with the same return value(s) in
+; ACL2 as in ACL2(p).
+
+  '(er-progn (set-waterfall-parallelism1 nil)
+             (value :invisible)))
+
 (defmacro run-script (name &key
                            (inhibited-summary-types ''(time steps))
                            (inhibit-output-lst ''(proof-tree))
@@ -142,7 +150,8 @@
 
   (let ((input-file (concatenate 'string name "-input.lsp"))
         (output-file (concatenate 'string name "-log.out")))
-    `(ld '((assign script-mode t)
+    `(ld '((unset-waterfall-parallelism) ; avoid different output in ACL2(p)
+           (assign script-mode t)
            (set-ld-prompt t state)
            (set-inhibited-summary-types ,inhibited-summary-types)
            (set-inhibit-output-lst ,inhibit-output-lst)

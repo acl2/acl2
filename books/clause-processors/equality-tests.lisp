@@ -7,6 +7,10 @@
 
 (include-book "equality")
 
+; Matt K. mod: Avoid ACL2(p) error from p-thm (clause-processor returns more
+; than two values).
+(set-waterfall-parallelism nil)
+
 ; Here is an application contributed by Erik Reeber (which we make local so
 ; that it's not exported).
 

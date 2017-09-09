@@ -2422,7 +2422,9 @@
 ; evaluators in rules of class :meta or :clause-processor, so that we can use
 ; aok = t here.
 
-                            t)
+                            t
+                            (f-get-global 'ld-user-stobjs-modified-warning
+                                          state))
        (cond
         (erp (mv (msg "Evaluation failed for the :clause-processor hint.")
                  nil))
