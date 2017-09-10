@@ -179,7 +179,7 @@
         (mv nil state)))
     (mv lines state)))
 
-(defconsts (*err* *updates* *nextstates* *assigns* *delays* moddb aliases)
+(defconsts (*err* *updates* *nextstates* *constraints* *assigns* *delays* *flat-constraints* moddb aliases)
   (svex-design-compile *svex-design*))
 
 (make-event

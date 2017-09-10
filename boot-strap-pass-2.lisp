@@ -1035,9 +1035,10 @@
                   (union-theories
 
 ; Without the :executable-counterpart of force, the use of (theory
-; 'minimal-theory) will produce the warning "Forcing has transitioned
-; from enabled to disabled", at least if forcing is enabled (as is the
-; default).
+; 'minimal-theory) will produce the warning "Forcing has transitioned from
+; enabled to disabled", at least if forcing is enabled (as is the default).
+; Moreover, it's not unreasonable to leave forcing on in the minimal-theory,
+; for example in case it's useful for linear arithmetic.
 
                    '((:executable-counterpart force))
                    (theory 'executable-counterpart-minimal-theory))))
@@ -1458,8 +1459,10 @@
      (LOGICAL-NAMEP)
      (MACRO-ARGS)
      (MAKE-LAMBDA-APPLICATION)
+     (MERGE-SORT-SYMBOL-< ACL2-COUNT L)
      (MERGE-SORT-TERM-ORDER ; . (STEPS-TO-NIL L)
       :? L)
+     (MERGE-SYMBOL-< BINARY-+ (LEN L1) (LEN L2))
      (MERGE-TERM-ORDER ; . (BINARY-+ (STEPS-TO-NIL L1) (STEPS-TO-NIL L2))
       :? L2 L1)
      (META-EXTRACT-CONTEXTUAL-FACT)

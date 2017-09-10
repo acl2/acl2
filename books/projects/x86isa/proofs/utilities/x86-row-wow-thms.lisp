@@ -97,7 +97,7 @@
 
 (defthm read-x86-file-des-wb-1
   (implies (programmer-level-mode x86)
-           (equal (read-x86-file-des id (mv-nth 1 (wb-1 addr-bytes-alist x86)))
+           (equal (read-x86-file-des id (mv-nth 1 (wb-1 n addr w value x86)))
                   (read-x86-file-des id x86)))
   :hints (("Goal"
            :in-theory (e/d* (read-x86-file-des read-x86-file-des-logic)
@@ -105,7 +105,7 @@
 
 (defthm read-x86-file-des-wb
   (implies (programmer-level-mode x86)
-           (equal (read-x86-file-des id (mv-nth 1 (wb addr-bytes-alist x86)))
+           (equal (read-x86-file-des id (mv-nth 1 (wb n addr w value x86)))
                   (read-x86-file-des id x86)))
   :hints (("Goal"
            :use ((:instance read-x86-file-des-wb-1))
@@ -114,15 +114,15 @@
 
 (defthm write-x86-file-des-wb
   (implies (programmer-level-mode x86)
-           (equal (write-x86-file-des i v (mv-nth 1 (wb addr-bytes-alst x86)))
-                  (mv-nth 1 (wb addr-bytes-alst (write-x86-file-des i v x86)))))
+           (equal (write-x86-file-des i v (mv-nth 1 (wb n addr w value x86)))
+                  (mv-nth 1 (wb n addr w value (write-x86-file-des i v x86)))))
   :hints (("Goal"
            :in-theory (e/d* (write-x86-file-des write-x86-file-des-logic)
                             ()))))
 
 (defthm read-x86-file-contents-wb-1
   (implies (programmer-level-mode x86)
-           (equal (read-x86-file-contents id (mv-nth 1 (wb-1 addr-bytes-alist x86)))
+           (equal (read-x86-file-contents id (mv-nth 1 (wb-1 n addr w value x86)))
                   (read-x86-file-contents id x86)))
   :hints (("Goal"
            :in-theory (e/d* (read-x86-file-contents read-x86-file-contents-logic)
@@ -130,7 +130,7 @@
 
 (defthm read-x86-file-contents-wb
   (implies (programmer-level-mode x86)
-           (equal (read-x86-file-contents id (mv-nth 1 (wb addr-bytes-alist x86)))
+           (equal (read-x86-file-contents id (mv-nth 1 (wb n addr w value x86)))
                   (read-x86-file-contents id x86)))
   :hints (("Goal"
            :use ((:instance read-x86-file-contents-wb-1))

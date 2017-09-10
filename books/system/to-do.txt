@@ -130,32 +130,6 @@ ERC>
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Do a better job of going into the debugger in ACL2 based on SBCL (and maybe others).}}
-
-[This could be a bit tricky, but might be a good one for Lisp hackers.]
-
-Keshav Kini sent this example:
-
-(set-debugger-enable t)
-(untranslate '(3 . 4) nil nil)
-
-I was able to extract the following example, which can be run either
-in ACL2 or in pure SBCL, if directions are followed.  Both above and
-below, ACL2 doesn't do well -- lots of recursive entries, it seems,
-into the debugger.  But in pure SBCL things work nicely.  So probably
-our handling of raw Lisp errors in ACL2 doesn't work well for SBCL.
-Not sure about other Lisps (though I'm not aware of any problems with
-CCL).
-
-(value :q)
-(LP!) ; only in ACL2
-#+acl2-loop-only (program)
-(defun foo (x) (declare (optimize (safety 0))) (car x))
-#+acl2-loop-only (set-debugger-enable t)
-(foo 3)
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
 {{Fix summary to record :use of :guard-theorem and (probably) :termination-theorem.}}
 
 After giving this hint
@@ -202,16 +176,6 @@ fatal error encountered in SBCL pid 14538(tid 0x7ffff7fd4740):
 
 Welcome to LDB, a low-level debugger for the Lisp runtime environment.
 ldb>
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
-{{Improve redundancy for :stobjs state.}}
-
-The last is not redundant, but probably should be:
-
-(set-state-ok t)
-(defun foo (state) state)
-(defun foo (state) (declare (xargs :stobjs state)) state)
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 

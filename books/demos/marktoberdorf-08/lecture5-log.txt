@@ -1,0 +1,99 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(INCLUDE-BOOK "m1-fast")
+
+Summary
+Form:  ( INCLUDE-BOOK "m1-fast" ...)
+Rules: NIL
+ "m1-fast.lisp"
+ACL2 !>>(IN-PACKAGE "M1")
+ "M1"
+M1 !>>'(END OF SETUP)
+(END OF SETUP)
+M1 !>>(CORRECT "ABCXDBC" "xxxxABCxxxGxABCXDBC")
+12
+M1 !>>(FAST "ABCXDBC" "xxxxABCxxxGxABCXDBC")
+12
+M1 !>>(DEFUN RUN-FAST (PAT TXT)
+             (TOP (STACK (RUN (M1-BOYER-MOORE-SCHED PAT TXT)
+                              (MAKE-STATE 0
+                                          (LIST PAT (- (LENGTH PAT) 1)
+                                                TXT (- (LENGTH PAT) 1)
+                                                (LENGTH PAT)
+                                                (LENGTH TXT)
+                                                (PREPROCESS PAT)
+                                                0)
+                                          NIL *M1-BOYER-MOORE-PROGRAM*)))))
+
+Since RUN-FAST is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of RUN-FAST.
+
+Summary
+Form:  ( DEFUN RUN-FAST ...)
+Rules: NIL
+ RUN-FAST
+M1 !>>(RUN-FAST
+       "trafficked"
+       "Located in the very center of the campus the
+Computer Sciences Complex will be a hub of
+education, research, and outreach activities of
+the UT Department of Computer Sciences.  This
+expansive computing complex will provide offices
+for faculty, professional researchers, visitors,
+and postdoctoral assistants; space for graduate
+students; prime research laboratory space;
+undergraduate instructional laboratory space,
+together with classrooms, electronic seminar
+rooms, and lecture halls.  Space for staff,
+administrative support, and student organizations
+will also be included.  The new complex will
+connect to the Applied Computational and
+Administrative Sciences (ACES) building,
+supporting the continued synergy between the
+fundamental computer science of the Department of
+Computer Sciences and the interdisciplinary
+applications in ACES.  The complex will be
+~236,000 Gross Square Feet (~144,400 Assignable
+Square Feet) and consist of a North Building, a
+South Building, and an Atrium that extends up five
+floors and connects the two Buildings.  Each
+Building includes a basement level plus six full
+floors.  The complex will be surrounded by
+high-trafficked areas including a courtyard and
+plazas.")
+1154
+M1 !>>(PE 'M1-BOYER-MOORE-IS-CORRECT)
+   d       2  (INCLUDE-BOOK "m1-fast")
+              \
+              [Included books, outermost to innermost:
+               "[books]/demos/marktoberdorf-08/m1-fast.lisp"
+              ]
+              \
+>              (DEFTHM
+                M1-BOYER-MOORE-IS-CORRECT
+                (IMPLIES
+                 (AND (STRINGP PAT) (STRINGP TXT))
+                 (EQUAL
+                  (TOP
+                     (STACK (RUN (M1-BOYER-MOORE-SCHED PAT TXT)
+                                 (MAKE-STATE 0
+                                             (LIST PAT (- (LENGTH PAT) 1)
+                                                   TXT (- (LENGTH PAT) 1)
+                                                   (LENGTH PAT)
+                                                   (LENGTH TXT)
+                                                   (PREPROCESS PAT)
+                                                   0)
+                                             NIL *M1-BOYER-MOORE-PROGRAM*))))
+                  (CORRECT PAT TXT))))
+M1 !>>'(END OF DEMO)
+(END OF DEMO)
+M1 !>>'(THE END)
+(THE END)
+M1 !>>Bye.

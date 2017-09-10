@@ -7,6 +7,7 @@
 
 (include-book "instructions/x86-instructions"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "std/strings/hexify" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -177,7 +178,7 @@
   ;; implementing that instruction.
 
 
-  `((#x00
+  '((#x00
      "LLDT: 0F 00/2"
      (if (64-bit-modep x86)
          (case (mrm-reg modr/m)
@@ -1373,7 +1374,7 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :non-canonical-address-encountered temp-rip))
 
        (modr/m? (x86-two-byte-opcode-ModR/M-p opcode))
@@ -1391,7 +1392,7 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :temp-rip-too-large temp-rip))
 
        (sib? (and modr/m?
@@ -1410,10 +1411,10 @@
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :virtual-address-error temp-rip)))
-      (two-byte-opcode-execute start-rip temp-rip prefixes rex-byte
-                               opcode modr/m sib x86))
+    (two-byte-opcode-execute start-rip temp-rip prefixes rex-byte
+                             opcode modr/m sib x86))
 
   ///
 
@@ -1433,7 +1434,7 @@
   ;; there is an opcode-extension or it is a call to the function
   ;; implementing that instruction.
 
-  `(
+  '(
     (#x00
      "(ADD Eb Gb)"
      (if (64-bit-modep x86)
@@ -3641,10 +3642,9 @@
   @('start-rip') points to the first byte of an instruction,
   potentially a legacy prefix.</p>
 
-  <p>Note that the initial value of @('cnt') should be 5 so that if 4
-  prefixes are encountered, the next byte can also be fetched and
-  stored in the accumulated return value, the @('prefixes')
-  argument.</p>
+  <p>Note that the initial value of @('cnt') should be 15 so that
+  the result @('(- 15 cnt)') returned at the end of the recursion
+  is the correct number of prefix bytes parsed.</p>
 
   <p>Important note:</p>
 
@@ -3852,7 +3852,7 @@
                                      acl2::ash-0
                                      unsigned-byte-p-of-logior
                                      acl2::zip-open
-                                     bitops::unsigned-byte-p-when-unsigned-byte-p-less))))
+                                     bitops::unsigned-byte-p-incr))))
     :rule-classes :type-prescription)
 
   (defthm-usb n44p-get-prefixes
@@ -4010,8 +4010,7 @@
 
   (defthm get-prefixes-opener-lemma-group-1-prefix
     (implies (and (or (programmer-level-mode x86)
-                      (and (not (programmer-level-mode x86))
-                           (not (page-structure-marking-mode x86))))
+                      (not (page-structure-marking-mode x86)))
                   (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
@@ -4028,7 +4027,8 @@
                                                    prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
+                                     (rb
+                                      unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
@@ -4052,7 +4052,8 @@
                                                    prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
+                                     (rb
+                                      unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
@@ -4076,7 +4077,8 @@
                                                    prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
+                                     (rb
+                                      unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
@@ -4100,7 +4102,8 @@
                                                    prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
-                                     (unsigned-byte-p
+                                     (rb
+                                      unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
                                       negative-logand-to-positive-logand-with-integerp-x))))))
 
@@ -4117,7 +4120,6 @@ address indicated by the instruction pointer @('rip'), decodes that
 instruction, and dispatches control to the appropriate instruction
 semantic function.</p>"
 
-  :guard-debug t
   :prepwork
   ((local (in-theory (e/d* () (unsigned-byte-p not)))))
 
@@ -4156,7 +4158,7 @@ semantic function.</p>"
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :non-canonical-address-encountered temp-rip))
 
        ;; If opcode/rex/escape-byte is a rex byte, it is filed away in
@@ -4164,7 +4166,7 @@ semantic function.</p>"
        ((the (unsigned-byte 8) rex-byte)
         (if (and ;; 64-bit-mode
              (equal (the (unsigned-byte 4)
-                      (ash opcode/rex/escape-byte -4))
+                         (ash opcode/rex/escape-byte -4))
                     4))
             opcode/rex/escape-byte
           0))
@@ -4187,7 +4189,7 @@ semantic function.</p>"
             (if (mbe :logic (canonical-address-p temp-rip)
                      :exec (< (the (signed-byte
                                     #.*max-linear-address-size+1*)
-                                temp-rip)
+                                   temp-rip)
                               #.*2^47*))
                 (mv nil temp-rip)
               (mv t temp-rip)))))
@@ -4249,7 +4251,7 @@ semantic function.</p>"
               (if (mbe :logic (canonical-address-p temp-rip)
                        :exec (< (the (signed-byte
                                       #.*max-linear-address-size+1*)
-                                  temp-rip)
+                                     temp-rip)
                                 #.*2^47*))
                   (mv nil temp-rip)
                 (mv t temp-rip)))
@@ -4273,12 +4275,12 @@ semantic function.</p>"
         (if sib?
             (let ((temp-rip
                    (the (signed-byte #.*max-linear-address-size+2*)
-                     (1+ temp-rip))))
+                        (1+ temp-rip))))
               ;; We need to check whether (1+ temp-rip) is canonical.
               (if (mbe :logic (canonical-address-p temp-rip)
                        :exec (< (the (signed-byte
                                       #.*max-linear-address-size+2*)
-                                  temp-rip)
+                                     temp-rip)
                                 #.*2^47*))
                   (mv nil temp-rip)
                 (mv t temp-rip)))
@@ -4288,7 +4290,6 @@ semantic function.</p>"
 
        ((when flg6)
         (!!ms-fresh :virtual-address-error temp-rip)))
-
     (top-level-opcode-execute
      start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
 
@@ -4351,7 +4352,13 @@ semantic function.</p>"
           (and (canonical-address-p temp-rip3)
                (not (mv-nth 0 (rm08 temp-rip2 :x x86))))
         t)
-      (x86p x86))
+      (x86p x86)
+      ;; Print the rip and the first opcode byte of the instruction
+      ;; under consideration after all the non-trivial hyps (above) of
+      ;; this rule have been relieved:
+      (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+                    (not (cw "              op0: ~s0 ] ~%"
+                             (str::hexify (unquote opcode/escape-byte)))))))
      (equal (x86-fetch-decode-execute x86)
             (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
                                       opcode/escape-byte modr/m sib x86)))

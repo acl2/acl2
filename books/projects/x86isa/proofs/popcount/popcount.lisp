@@ -3,8 +3,8 @@
 
 (in-package "X86ISA")
 
-(include-book "projects/x86isa/proofs/utilities/programmer-level-mode/programmer-level-memory-utils" :dir :system :ttags :all)
-(include-book "projects/x86isa/tools/execution/x86-init-state" :dir :system :ttags :all)
+(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "../../tools/execution/x86-init-state" :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "misc/eval" :dir :system)
 
@@ -274,18 +274,11 @@
               (halt-address #x400643)
               (x86 (!programmer-level-mode t (create-x86)))
               ((mv flg x86)
-               (init-x86-state
+               (init-x86-state-64
                 nil start-address halt-address
-                nil nil nil 0
+                nil nil nil nil nil 0
                 *popcount-64*
                 x86))
-              ;; The following two updates to X86 make 64-BIT-MODEP true.
-              ;; The resulting state does not necessarily satisfy
-              ;; expected invariants of the processor state,
-              ;; but it suffices for the proof to go through.
-              (x86 (!msri
-                    *ia32_efer-idx* (expt 2 10) x86)) ; set IA32_EFER.LMA to 1
-              (x86 (!seg-hiddeni *cs* (expt 2 105) x86)) ; set CS.L to 1
               (x86 (wr32 *rdi* n x86))
               (count 300)
               (x86 (x86-run count x86)))
@@ -309,18 +302,11 @@
               (halt-address #x4006c2)
               (x86 (!programmer-level-mode t (create-x86)))
               ((mv flg x86)
-               (init-x86-state
+               (init-x86-state-64
                 nil start-address halt-address
-                nil nil nil 0
+                nil nil nil nil nil 0
                 *popcount-64*
                 x86))
-              ;; The following two updates to X86 make 64-BIT-MODEP true.
-              ;; The resulting state does not necessarily satisfy
-              ;; expected invariants of the processor state,
-              ;; but it suffices for the proof to go through.
-              (x86 (!msri
-                    *ia32_efer-idx* (expt 2 10) x86)) ; set IA32_EFER.LMA to 1
-              (x86 (!seg-hiddeni *cs* (expt 2 105) x86)) ; set CS.L to 1
               (x86 ;; (!rgfi *rdi* n x86)
                ;; Shilpi: It's important to use wr64 instead of !rgfi
                ;; because wr64 converts unsigned numbers to signed
@@ -350,9 +336,9 @@
 ;;               (halt-address #x4006c2)
 ;;               (x86 (!programmer-level-mode t (create-x86)))
 ;;               ((mv flg x86)
-;;                (init-x86-state
+;;                (init-x86-state-64
 ;;                 nil start-address halt-address
-;;                 nil nil nil 0
+;;                 nil nil nil nil nil 0
 ;;                 *popcount-64*
 ;;                 x86))
 ;;               (x86
@@ -480,18 +466,11 @@
                (halt-address #x400643)
                (x86 (!programmer-level-mode t (create-x86)))
                ((mv flg x86)
-                (init-x86-state
+                (init-x86-state-64
                  nil start-address halt-address
-                 nil nil nil 0
+                 nil nil nil nil nil 0
                  *popcount-32-buggy*
                  x86))
-               ;; The following two updates to X86 make 64-BIT-MODEP true.
-               ;; The resulting state does not necessarily satisfy
-               ;; expected invariants of the processor state,
-               ;; but it suffices for the proof to go through.
-               (x86 (!msri
-                     *ia32_efer-idx* (expt 2 10) x86)) ; set IA32_EFER.LMA to 1
-               (x86 (!seg-hiddeni *cs* (expt 2 105) x86)) ; set CS.L to 1
                (x86 (wr32 *rdi* n x86))
                (count 300)
                (x86 (x86-run count x86)))
@@ -512,9 +491,9 @@
      (halt-address #x400643)
      (x86 (!programmer-level-mode t x86))
      ((mv ?flg x86)
-      (init-x86-state
+      (init-x86-state-64
        nil start-address halt-address
-       nil nil nil 0
+       nil nil nil nil nil 0
        *popcount-32-buggy*
        x86))
      (x86 (wr32 *rdi* #x80000000  x86))
@@ -527,9 +506,9 @@
      (halt-address #x400643)
      (x86 (!programmer-level-mode t x86))
      ((mv ?flg x86)
-      (init-x86-state
+      (init-x86-state-64
        nil start-address halt-address
-       nil nil nil 0
+       nil nil nil nil nil 0
        *popcount-32-buggy*
        x86))
      (x86 (wr32 *rdi* #xFFFFFFFF  x86))
@@ -548,18 +527,11 @@
               (halt-address #x400643)
               (x86 (!programmer-level-mode t (create-x86)))
               ((mv flg x86)
-               (init-x86-state
+               (init-x86-state-64
                 nil start-address halt-address
-                nil nil nil 0
+                nil nil nil nil nil 0
                 *popcount-32-buggy*
                 x86))
-              ;; The following two updates to X86 make 64-BIT-MODEP true.
-              ;; The resulting state does not necessarily satisfy
-              ;; expected invariants of the processor state,
-              ;; but it suffices for the proof to go through.
-              (x86 (!msri
-                    *ia32_efer-idx* (expt 2 10) x86)) ; set IA32_EFER.LMA to 1
-              (x86 (!seg-hiddeni *cs* (expt 2 105) x86)) ; set CS.L to 1
               (x86 (wr32 *rdi* n x86))
               (count 300)
               (x86 (x86-run count x86)))

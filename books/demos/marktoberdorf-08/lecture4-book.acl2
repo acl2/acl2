@@ -1,0 +1,17 @@
+; See :DOC run-script.
+
+(include-book "tools/run-script" :dir :system)
+; Here we avoid verbose theory warnings, which differ between ACL2 and ACL2(r).
+; We conclude with (ubu 1) so that a local event won't be in the portcullis
+; commands.  Alternatively, we could use set-inhibit-warnings!; but that would
+; cause warnings to be inhibited when the book is included.
+(set-inhibit-warnings "theory")
+(run-script "lecture4")
+(ubu 1)
+
+; Help dependency scanner.
+#||
+(depends-on "lecture4-log.txt")
+(include-book "m1")
+(include-book "misc/defpun" :dir :system)
+||#

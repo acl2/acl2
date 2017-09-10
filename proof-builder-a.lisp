@@ -818,10 +818,10 @@
       (t
        (mv-let
         (erp stobjs-out/vals state)
-        (trans-eval (list (car instr)
-                          (list 'quote (cdr instr))
-                          'state)
-                    'pc-single-step state t)
+        (trans-eval-default-warning (list (car instr)
+                                          (list 'quote (cdr instr))
+                                          'state)
+                                    'pc-single-step state t)
         (let ((vals (cdr stobjs-out/vals)))
 
 ; Vals is (x replaced-state), where x is a pc-state or nil.
@@ -1051,11 +1051,12 @@
 ; here, rather than xtrans-eval, so that the effects of meta commands are not
 ; erased.  But then we have to disallow meta commands during replay.
 
-                                   (trans-eval (list (car instr)
-                                                     (list 'quote (cdr instr))
-                                                     'state)
-                                               'pc-single-step
-                                               state t)
+                                   (trans-eval-default-warning
+                                    (list (car instr)
+                                          (list 'quote (cdr instr))
+                                          'state)
+                                    'pc-single-step
+                                    state t)
                                    (assert$
                                     (equal (car stobjs-out/vals)
                                            *error-triple-sig*)
@@ -1077,7 +1078,9 @@
             (pprogn (print-no-change "Undefined instruction, ~x0."
                                      (list (cons #\0
                                                  (make-pretty-pc-instr instr))))
-                    ;; maybe I should cause an error below -- but then I should handle it too
+
+; Maybe we should cause an error below -- but then we should handle it too.
+
                     (value nil)))))))
 
 (defun union-lastn-pc-tag-trees (n ss acc)

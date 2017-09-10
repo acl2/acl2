@@ -162,3 +162,7 @@ AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
   :parents (top)
   :short "Tools, utilities, and strategies for dealing with particular kinds
 of proofs.")
+
+(defxdoc testing-utilities
+  :parents (top)
+  :short "Tools for developing and running tests.")

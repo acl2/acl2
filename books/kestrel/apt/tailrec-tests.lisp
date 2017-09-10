@@ -304,7 +304,13 @@
   (must-succeed*
    (defun p (a) (declare (xargs :verify-guards nil)) (natp a))
    (must-fail (tailrec f :domain p))
-   (must-fail (tailrec f :domain (lambda (a) (or (p a) (natp a)))))))
+   (must-fail (tailrec f :domain (lambda (a) (or (p a) (natp a))))))
+
+  ;; same as OLD:
+  (must-fail (tailrec f :domain f))
+
+  ;; calls OLD:
+  (must-fail (tailrec f :domain (lambda (a) (equal (f a) 3)))))
 
  ;; successful applications:
  (must-succeed*
@@ -563,7 +569,7 @@
  ;; in the main Lisp package:
  (must-fail (tailrec f :thm-name cons))
 
- ;; keyword (other than :ARROW, :BECOMES, and :IS):
+ ;; keyword (other than :AUTO):
  (must-fail (tailrec f :thm-name :f))
 
  ;; name that already exists:
@@ -584,15 +590,10 @@
   (tailrec f)
   (assert! (theorem-namep 'f-~>-f{1}-wrapper (w state))))
 
- ;; becomes:
+ ;; automatic:
  (must-succeed*
-  (tailrec f :thm-name :becomes)
-  (assert! (theorem-namep 'f-becomes-f{1}-wrapper (w state))))
-
- ;; is:
- (must-succeed*
-  (tailrec f :thm-name :is)
-  (assert! (theorem-namep 'f-is-f{1}-wrapper (w state))))
+  (tailrec f :thm-name :auto)
+  (assert! (theorem-namep 'f-~>-f{1}-wrapper (w state))))
 
  ;; specified:
  (must-succeed*
@@ -794,16 +795,16 @@
 
  ;; duplicate applicability condition names:
  (must-fail
-  (tailrec f :hints ((domain-of-base
+  (tailrec f :hints ((:domain-of-base
                       (("Goal" :in-theory (enable atom))))
-                     (domain-of-base
+                     (:domain-of-base
                       (("Goal" :in-theory (enable len)))))))
 
  ;; valid but unnecessary hints:
  (must-succeed
-  (tailrec f :hints ((domain-of-base
+  (tailrec f :hints ((:domain-of-base
                       (("Goal" :in-theory (enable natp))))
-                     (domain-of-nonrec
+                     (:domain-of-nonrec
                       (("Goal" :in-theory (enable natp)))))))
 
  ;; necessary hints:
@@ -812,9 +813,9 @@
   (must-fail (tailrec f))
   (tailrec f
            :hints
-           ((combine-associativity (("Goal" :in-theory (enable lub))))
-            (combine-left-identity (("Goal" :in-theory (enable lub))))
-            (combine-right-identity (("Goal" :in-theory (enable lub))))))))
+           ((:combine-associativity (("Goal" :in-theory (enable lub))))
+            (:combine-left-identity (("Goal" :in-theory (enable lub))))
+            (:combine-right-identity (("Goal" :in-theory (enable lub))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -884,6 +885,130 @@
   (assert! (function-namep 'f{1} (w state))))
 
  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(must-succeed*
+
+ (test-title "Test handling of redundancy.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; initial call without :VERBOSE and without :SHOW-ONLY:
+ (must-succeed*
+  (tailrec f)
+  (must-be-redundant (tailrec f))
+  (must-be-redundant (tailrec f :verbose t))
+  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :show-only t))
+  (must-be-redundant (tailrec f :show-only nil))
+  (must-be-redundant (tailrec f :verbose t :show-only t))
+  (must-be-redundant (tailrec f :verbose nil :show-only t))
+  (must-be-redundant (tailrec f :verbose t :show-only nil))
+  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE T and without :SHOW-ONLY:
+ (must-succeed*
+  (tailrec f :verbose t)
+  (must-be-redundant (tailrec f))
+  (must-be-redundant (tailrec f :verbose t))
+  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :show-only t))
+  (must-be-redundant (tailrec f :show-only nil))
+  (must-be-redundant (tailrec f :verbose t :show-only t))
+  (must-be-redundant (tailrec f :verbose nil :show-only t))
+  (must-be-redundant (tailrec f :verbose t :show-only nil))
+  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE NIL and without :SHOW-ONLY:
+ (must-succeed*
+  (tailrec f :verbose nil)
+  (must-be-redundant (tailrec f))
+  (must-be-redundant (tailrec f :verbose t))
+  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :show-only t))
+  (must-be-redundant (tailrec f :show-only nil))
+  (must-be-redundant (tailrec f :verbose t :show-only t))
+  (must-be-redundant (tailrec f :verbose nil :show-only t))
+  (must-be-redundant (tailrec f :verbose t :show-only nil))
+  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+
+ ;; initial call without :VERBOSE and with :SHOW-ONLY T:
+ (must-succeed*
+  (tailrec f :show-only t)
+  (must-fail-local (must-be-redundant (tailrec f))))
+
+ ;; initial call without :VERBOSE and with :SHOW-ONLY NIL:
+ (must-succeed*
+  (tailrec f :show-only nil)
+  (must-be-redundant (tailrec f))
+  (must-be-redundant (tailrec f :verbose t))
+  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :show-only t))
+  (must-be-redundant (tailrec f :show-only nil))
+  (must-be-redundant (tailrec f :verbose t :show-only t))
+  (must-be-redundant (tailrec f :verbose nil :show-only t))
+  (must-be-redundant (tailrec f :verbose t :show-only nil))
+  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE T and with :SHOW-ONLY T:
+ (must-succeed*
+  (tailrec f :verbose t :show-only t)
+  (must-fail-local (must-be-redundant (tailrec f))))
+
+ ;; initial call with :VERBOSE T and with :SHOW-ONLY NIL:
+ (must-succeed*
+  (tailrec f :verbose t :show-only nil)
+  (must-be-redundant (tailrec f))
+  (must-be-redundant (tailrec f :verbose t))
+  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :show-only t))
+  (must-be-redundant (tailrec f :show-only nil))
+  (must-be-redundant (tailrec f :verbose t :show-only t))
+  (must-be-redundant (tailrec f :verbose nil :show-only t))
+  (must-be-redundant (tailrec f :verbose t :show-only nil))
+  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+
+ ;; initial call with :VERBOSE NIL and with :SHOW-ONLY T:
+ (must-succeed*
+  (tailrec f :verbose nil :show-only t)
+  (must-fail-local (must-be-redundant (tailrec f))))
+
+ ;; initial call with :VERBOSE NIL and with :SHOW-ONLY NIL:
+ (must-succeed*
+  (tailrec f :verbose nil :show-only nil)
+  (must-be-redundant (tailrec f))
+  (must-be-redundant (tailrec f :verbose t))
+  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :show-only t))
+  (must-be-redundant (tailrec f :show-only nil))
+  (must-be-redundant (tailrec f :verbose t :show-only t))
+  (must-be-redundant (tailrec f :verbose nil :show-only t))
+  (must-be-redundant (tailrec f :verbose t :show-only nil))
+  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+
+ ;; non-redundant calls:
+ (must-succeed*
+  (tailrec f)
+  ;; different target:
+  (must-succeed*
+   (defun g (x) (if (atom x) nil (lub (car x) (g (cdr x)))))
+   (must-fail-local (must-be-redundant (tailrec g))))
+  ;; different domain:
+  (must-fail-local (must-be-redundant (tailrec f :domain natp)))
+  ;; different options:
+  (must-fail-local
+   (must-be-redundant (tailrec f :verify-guards nil)))
+  (must-fail-local
+   (must-be-redundant (tailrec f :new-name f-new)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

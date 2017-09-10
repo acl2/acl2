@@ -392,10 +392,12 @@
 (defmacro defstub (name &rest args)
   (defstub-fn name args))
 
-;; RAG - I changed the primitive guard for the < function, and the
+;; Historical Comment from Ruben Gamboa:
+;; I changed the primitive guard for the < function, and the
 ;; complex function.  Added the functions complexp, realp, and floor1.
 
-;; RAG - I subsequently changed this to add the non-standard functions
+;; Historical Comment from Ruben Gamboa:
+;; I subsequently changed this to add the non-standard functions
 ;; standardp, standard-part and i-large-integer.  I had some
 ;; questions as to whether these functions should appear on this list
 ;; or not.  After considering carefully, I decided that was the right
@@ -3635,6 +3637,21 @@
    (chk-ld-verbose val 'set-ld-verbose state)
    (pprogn
     (f-put-global 'ld-verbose val state)
+    (value val))))
+
+(defun chk-ld-user-stobjs-modified-warning (val ctx state)
+  (cond ((member-eq val '(nil t :same))
+         (value nil))
+        (t (er soft ctx *ld-special-error*
+               'ld-user-stobjs-modified-warning val))))
+
+(defun set-ld-user-stobjs-modified-warning (val state)
+  (er-progn
+   (chk-ld-user-stobjs-modified-warning val
+                                        'set-ld-user-stobjs-modified-warning
+                                        state)
+   (pprogn
+    (f-put-global 'ld-user-stobjs-modified-warning val state)
     (value val))))
 
 (defconst *nqthm-to-acl2-primitives*

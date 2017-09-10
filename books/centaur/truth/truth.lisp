@@ -45,7 +45,11 @@
 ;; NUMVARS is the maximum number of variables we'll use.  Truth tables are
 ;; integers of 2^NUMVARS bits.
 
-;; 
+;;
+
+; Matt K. mod: Avoid ACL2(p) error from logapp-right-assoc (clause-processor
+; returns more than two values).
+(set-waterfall-parallelism nil)
 
 (define true  () -1)
 (define false () 0)
@@ -77,7 +81,7 @@
            (xor (truth-eval x env numvars)
                 (truth-eval y env numvars)))
   :hints(("Goal" :in-theory (enable truth-eval)))))
-  
+
 
 (define env-lookup ((var natp) (env natp))
   (logbitp (lnfix var) (lnfix env)))
@@ -115,7 +119,7 @@
 
 (local (encapsulate nil
          (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-         
+
          (defthm mod-when-less
            (implies (and (natp n) (natp w)
                          (< n w))
@@ -204,7 +208,7 @@
            (loghead width data))
     :hints (("goal" :expand ((logrepeat 1 width data)) )))
 
-  
+
   (local (defun mod-less-ind (n width)
            (declare (Xargs :measure (nfix n)))
            (if (zp n)
@@ -425,7 +429,7 @@
   ;;                   (equal (logapp n x z)
   ;;                          (logapp n y z)))))
 
-  ;; (local (in-theory (disable loghead-when-less-than-ash))) 
+  ;; (local (in-theory (disable loghead-when-less-than-ash)))
 
   ;; (local (defthm logapp-of-ash-when-unsigned-byte-p
   ;;          (implies (And (natp m)
@@ -434,7 +438,7 @@
   ;;                   (equal (ash (logapp nn val val2) m)
   ;;                          (logapp nn (ash val m) (ash val2 m))))
   ;;          :hints ((bitops::logbitp-reasoning :prune-examples nil))))
-                    
+
 
   ;; (local (defthm ash-of-logapp-lemma
   ;;          (implies (and (equal (loghead nn (lognot val))
@@ -631,7 +635,7 @@
            (equal (+ n (- (* 2 n)) m)
                   (+ (- n) m))))
 
-  
+
 
   (defret var-negated-masked-size
     (implies (and (< (nfix n) numvars)
@@ -953,7 +957,7 @@
            (equal (- (logcons a b))
                   (logcons a (+ (b-not a) (lognot b))))
            :hints(("Goal" :in-theory (enable logcons lognot b-not)))))
-  
+
   (local (defthm logbitp-n-of-minus-ash-1-n
            (implies (integerp x)
                     (equal (logbitp n (+ (- (ash 1 (nfix n))) x))
@@ -1111,7 +1115,7 @@
                  (& (find-equal-logand-terms (cdr clause))))))))
 
   (local (in-theory (enable loghead-less-than-ash)))
-           
+
 
   ;; (local (defthm install-bit-redundant
   ;;          (implies (equal (logbit n x) (bfix val))
@@ -1130,7 +1134,7 @@
   (local (in-theory (enable bitops::logbitp-of-loghead-split
                             ash-1-monotonic)))
 
-  
+
 
   (local (defthm gte-ash-when-logbitp
            (implies (and (logbitp n x)
@@ -1197,8 +1201,8 @@
                            (truth (lognot (negative-cofactor n truth numvars)))))
              :in-theory (disable truth-eval-of-truth-norm)
              :cases ((env-lookup n env))))))
-         
-  
+
+
 ;; (define swap-vars ((n natp) (m natp) (truth integerp) (numvars natp))
 ;;   :guard (and (< n numvars) (< m numvars))
 ;;   :returns (swapped-truth integerp :rule-classes :type-prescription)
@@ -1379,7 +1383,7 @@
      :hints (("goal" :induct (logbitp-ash-ind n m x)
               :in-theory (enable* ihsext-recursive-redefs logcons))))
 
-   
+
    (defthm loghead-of-plus-ash-unset-2
      (implies (and (integerp x)
                    (natp m)
@@ -1406,7 +1410,7 @@
             :hints(("Goal" :use ((:instance bitops::logcdr-of-logcons
                                   (x (- x)) (b 0)))
                     :in-theory (e/d (logcons) (bitops::logcdr-of-logcons))))))
-   
+
    (defthm loghead-of-minus-ash-set
      (implies (and (integerp x)
                    (natp m)
@@ -1549,7 +1553,7 @@
            :hints(("Goal" :in-theory (enable loghead
                                              bitops::ash-is-expt-*-x)))))
 
-  
+
 
   (local (defthm logbitp-when-bounded-lemma
            (implies (and (< b (+ (ash 1 n) (- (ash 1 m))))
@@ -1592,7 +1596,7 @@
                  '(:cases ((< bitops::wbit0 (- (ash 1 n) (ash 1 (nfix m))))))))
     :otf-flg t)
 
-  
+
   (local (defthm ash-of-logand
            (equal (ash (logand a b) sh)
                   (logand (ash a sh) (ash b sh)))
@@ -1706,7 +1710,7 @@
                                               logcar-when-not-integerp
                                               logcdr-when-not-integerp)))))
 
-  
+
 
   (local (defthmd install-bit-0-when-set
            (implies (logbitp n x)
@@ -1730,7 +1734,7 @@
                                   (pos n) (i env) (size numvars)))
                     :in-theory (e/d (logbitp-when-less-than-ash)
                                     (bitops::logbitp-of-loghead-in-bounds))))
-           :rule-classes :linear)) 
+           :rule-classes :linear))
 
 
   (local (defthmd swap-bits-is-add
@@ -1761,7 +1765,7 @@
                   (logand (ash a sh) (ash b sh)))
            :hints(("Goal" :in-theory (enable* ihsext-inductions
                                               ihsext-recursive-redefs)))))
-  
+
   (local (in-theory (disable BITOPS::INSTALL-BIT-OF-INSTALL-BIT-DIFF
                              BITOPS::LOGTAIL-OF-LOGHEAD)))
 
@@ -1870,7 +1874,7 @@
   ;;                 (logapp n val (logapp 1 (bfix bit) (logtail (+ 1 (nfix n))
   ;;                                                             val))))
   ;;          :hints ((logbitp-reasoning))))
-  
+
   ;; (local (encapsulate nil
   ;;          (defthm lemma4
   ;;            (equal (logapp 1 (bool->bit (logbitp n x)) y)
@@ -1896,7 +1900,7 @@
   ;;                                    x)))
   ;;            :hints ((logbitp-reasoning)))))
 
-  
+
   ;; (defretd env-move-var-up-arith
   ;;   (implies (<= (nfix m) (nfix n))
   ;;            (equal perm-env
@@ -1954,7 +1958,7 @@
     :hints(("Goal" :in-theory (enable* arith-equiv-forwarding)
             :induct (lookup-in-env-move-var-down-ind m n k env))))
 
-    
+
 
   (defthm env-move-var-down-of-env-move-var-up
     (implies (<= (nfix m) (nfix n))
@@ -2077,7 +2081,7 @@
         (env-move-var-up count n env)
       env))
   ///
-  
+
   (defret normalize-count-of-env-permute-stretch
     (implies (syntaxp (not (equal count ''nil)))
              (equal <call>
@@ -2180,7 +2184,7 @@
               env)))
     (env-permute-shrink (1+ n) (+ bit count) mask env numvars))
   ///
-  
+
   (defret normalize-count-of-env-permute-shrink
     (implies (syntaxp (not (equal count ''nil)))
              (equal <call>
@@ -2199,7 +2203,7 @@
   (defthm env-permute-stretch-of-env-permute-shrink
     (equal (env-permute-stretch n count1 mask (env-permute-shrink n count mask env numvars) numvars)
            (nfix env))
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct (env-permute-shrink n count mask env numvars)
             :expand ((:free (count env) (env-permute-stretch n count mask env numvars))
                      (:free (count) (env-permute-shrink n count mask env numvars))))))
@@ -2378,7 +2382,7 @@
                                             ihsext-recursive-redefs
                                             logcount**)
                                            (logcount-of-logcdr))))
-           :rule-classes :linear))           
+           :rule-classes :linear))
 
   (local (defthm nth-set-bit-pos-of-logcount-of-loghead-lemma
            (implies (and (logbitp n x)
@@ -2554,8 +2558,8 @@
                       ;;                   (LOGHEAD (+ NUMVARS (- (NFIX N)))
                       ;;                            (LOGTAIL N (NFIX MASK)))))
                       )))))
-                           
-                  
+
+
 
 
 
@@ -2644,7 +2648,7 @@
               truth)))
     (permute-shrink (1+ n) (+ bit count) mask truth numvars))
   ///
-  
+
   (defret normalize-count-of-permute-shrink
     (implies (syntaxp (not (equal count ''nil)))
              (equal <call>

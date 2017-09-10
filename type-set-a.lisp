@@ -38,7 +38,8 @@
 ; and also update *initial-type-set-inverter-rules* which must contain
 ; a rule for every primitive bit!
 
-;; RAG - I added *ts-positive-non-ratio*, *ts-negative-non-ratio*, and
+;; Historical Comment from Ruben Gamboa:
+;; I added *ts-positive-non-ratio*, *ts-negative-non-ratio*, and
 ;; *ts-complex-non-rational*.
 
 (def-basic-type-sets
@@ -139,7 +140,8 @@
                                    *ts-positive-ratio*
                                    *ts-negative-ratio*))
 
-;; RAG - I added the *ts-real* type, analogous to *ts-rational*.
+;; Historical Comment from Ruben Gamboa:
+;; I added the *ts-real* type, analogous to *ts-rational*.
 
 #+:non-standard-analysis
 (defconst *ts-real* (ts-union0 *ts-integer*
@@ -148,14 +150,16 @@
                                *ts-negative-ratio*
                                *ts-negative-non-ratio*))
 
-;; RAG - I added *ts-complex* to include the complex-rationals and
+;; Historical Comment from Ruben Gamboa:
+;; I added *ts-complex* to include the complex-rationals and
 ;; non-rationals.
 
 #+:non-standard-analysis
 (defconst *ts-complex* (ts-union0 *ts-complex-rational*
                                   *ts-complex-non-rational*))
 
-;; RAG - I changed the type *ts-acl2-number* to include the new reals
+;; Historical Comment from Ruben Gamboa:
+;; I changed the type *ts-acl2-number* to include the new reals
 ;; and complex numbers as well as the old rational numbers.  I added
 ;; the types *ts-rational-acl2-number* to stand for the old
 ;; *ts-acl2-number*, and I added *ts-non-rational-acl2-number* to
@@ -192,7 +196,8 @@
 
 (defconst *ts-bit* (ts-union0 *ts-zero* *ts-one*))
 
-;; RAG - I added the types *ts-non-ratio*, *ts-negative-real*,
+;; Historical Comment from Ruben Gamboa:
+;; I added the types *ts-non-ratio*, *ts-negative-real*,
 ;; *ts-positive-real*, *ts-non-positive-real*, and
 ;; *ts-non-negative-real*, to mimic their *...-rational*
 ;; counterparts.
@@ -237,7 +242,8 @@
 
 (defconst *ts-unknown* -1)
 
-;; RAG - In accordance with the comment above on adding new basic type
+;; Historical Comment from Ruben Gamboa:
+;; In accordance with the comment above on adding new basic type
 ;; sets, I added *ts-positive-non-ratio*, *ts-negative-non-ratio*, and
 ;; *ts-complex-non-rational* to this recognizer.  I wonder if the
 ;; speed difference is still faster than logcount.  Seems like if it
@@ -275,7 +281,8 @@
 ; The following fancier versions of the ts functions and macros will serve us
 ; well below and in type-set-b.lisp.
 
-;; RAG - I added here the new type sets that I had defined:
+;; Historical Comment from Ruben Gamboa:
+;; I added here the new type sets that I had defined:
 ;; *ts-rational-acl2-number*, *ts-non-rational-acl2-number*,
 ;; *ts-real*, *ts-non-positive-real*, *ts-non-negative-real*,
 ;; *ts-negative-real*, *ts-positive-real*, *ts-non-ratio*,
@@ -464,7 +471,8 @@
                         ts1 ts2))
         '(ts= (ts-intersection ts1 ts2) ts1)))
 
-;; RAG - I modified this to include cases for the irrationals and
+;; Historical Comment from Ruben Gamboa:
+;; I modified this to include cases for the irrationals and
 ;; complex numbers.
 
 (defun type-set-binary-+-alist-entry (ts1 ts2)
@@ -640,7 +648,8 @@
         (t (type-set-binary-+-alist (1- i) j
                              (type-set-binary-+-alist1 i j lst)))))
 
-;; RAG - I modified this to include cases for the irrationals and
+;; Historical Comment from Ruben Gamboa:
+;; I modified this to include cases for the irrationals and
 ;; complex numbers.
 
 (defun type-set-binary-*-alist-entry (ts1 ts2)
@@ -800,7 +809,8 @@
         (t (type-set-binary-*-alist (1- i) j
                              (type-set-binary-*-alist1 i j lst)))))
 
-;; RAG - I modified this to include cases for the irrationals and
+;; Historical Comment from Ruben Gamboa:
+;; I modified this to include cases for the irrationals and
 ;; complex numbers.
 
 (defun type-set-<-alist-entry (ts1 ts2)

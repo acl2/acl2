@@ -1665,6 +1665,13 @@ several related AIGs.)</p>"
             :induct t
             :in-theory (enable aig-env-lookup)))))
 
+(define aig-restrict-list-acc (x sigma (acc true-listp))
+  (if (atom x)
+      (revappend acc nil)
+    (aig-restrict-list-acc
+     (cdr x) sigma
+     (cons (aig-restrict (car x) sigma) acc))))
+
 (define aig-restrict-list
   :parents (aig-substitution)
   :short "@(call aig-restrict-list) substitutes into a list of AIGs."
@@ -1673,10 +1680,20 @@ several related AIGs.)</p>"
            aig-restrict)."))
   :returns aig-list
   :enabled t
-  (if (atom x)
-      nil
-    (cons (aig-restrict (car x) sigma)
-          (aig-restrict-list (cdr x) sigma))))
+  :verify-guards nil
+  (mbe :logic
+       (if (atom x)
+           nil
+         (cons (aig-restrict (car x) sigma)
+               (aig-restrict-list (cdr x) sigma)))
+       :exec (aig-restrict-list-acc x sigma nil))
+  ///
+  (local (defthm aig-restrict-list-acc-elim
+           (equal (aig-restrict-list-acc x sigma acc)
+                  (revappend acc (aig-restrict-list x sigma)))
+           :hints(("Goal" :in-theory (enable aig-restrict-list-acc)))))
+
+  (verify-guards aig-restrict-list))
 
 (define aig-restrict-alist
   :parents (aig-substitution)

@@ -1,10 +1,12 @@
 ; Theorems about World-Related Functions
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Eric Smith (eric.smith@kestrel.edu)
+; Authors:
+;   Alessandro Coglio (coglio@kestrel.edu)
+;   Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -16,11 +18,12 @@
 
 (defxdoc theorems-about-world-related-functions
   :parents (theorems-about-non-kestrel-books system-utilities)
-  :short "Theorems about world-related functions
-          defined outside the Kestrel Books."
+  :short "Theorems about world-related functions defined outside the
+          <see topic='@(url kestrel-books)'>Kestrel Books</see>."
   :long
   "@(def arity-iff)
-   @(def plist-worldp-when-plist-worldp-with-formals-cheap)")
+   @(def plist-worldp-when-plist-worldp-with-formals-cheap)
+   @(def alistp-of-getprops)")
 
 (defthm arity-iff
   (iff (arity fn wrld)
@@ -32,3 +35,7 @@
   (implies (not (plist-worldp wrld))
            (not (plist-worldp-with-formals wrld)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm alistp-of-getprops
+  (alistp (getprops key world-name w))
+  :hints (("Goal" :in-theory (enable symbol-<))))

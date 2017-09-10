@@ -85,6 +85,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
                               (true-listp names)
                               (true-listp indices))
                   :verify-guards nil))
+  ;; the output list is reversed w.r.t. the input list,
+  ;; but the result is only used
+  ;; in DEFCONSTS  (where order does not really matter)
+  ;; and in LAYOUT-NAMES (which reverses the list)
   (if (endp alst)
       (mv names indices)
     (if (symbolp (caar alst))
@@ -116,23 +120,33 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 ;; ======================================================================
 
+; Intel manual, Mar'17, Vol. 3A, Figure 3-7
 (defconst *hidden-segment-register-layout*
   '((:base-addr  0  64) ;; Segment Base Address
     (:limit     64  32) ;; Segment Limit
     (:attr      96  16) ;; Attributes
     ))
+; These fields are "cached" from the segment descriptor (Figure 3-8):
+; - The Segment Base is 32 bits in the segment descriptor,
+;   so the 64 bits in :BASE-ADDR above can hold it.
+; - The Segment Limit is 20 bits in the segment descriptor,
+;   and based on the G (granularity) flag it covers up to 4 GiB,
+;   so the 32 bits in :LIMIT above can hold it.
+; - There are 12 remaining bits in the segment descriptor,
+;   so the 16 bits in :ATTR above can hold them.
 
-(defthm segment-register-ok
+(defthm hidden-segment-register-layout-ok
   (layout-constant-alistp *hidden-segment-register-layout* 0 112)
   :rule-classes nil)
 
+; Intel manual, Mar'17, Vol. 3A, Figure 3-6
 (defconst *segment-selector-layout*
   '((:rpl        0  2) ;; Requestor Privilege Level (RPL)
     (:ti         2  1) ;; Table Indicator (0 = GDT, 1 = LDT)
     (:index      3 13) ;; Index of descriptor in GDT or LDT
     ))
 
-(defthm segment-selector-ok
+(defthm segment-selector-layout-ok
   (layout-constant-alistp *segment-selector-layout* 0 16)
   :rule-classes nil)
 
@@ -207,6 +221,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
                    22)
   :rule-classes nil)
 
+; Intel manual, Mar'17, Vol. 3A, Section 10.8.6
 (defconst *cr8-layout*
   '(
     ;; Task Priority Level (width = 4). This sets
@@ -230,6 +245,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
                    )
   :rule-classes nil)
 
+; Intel manual, Mar'17, Vol. 3A, Figure 2-8
 (defconst *xcr0-layout*
 
   ;; Software can access XCR0 only if CR4.OSXSAVE[bit 18] = 1. (This bit
@@ -385,8 +401,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 ;; Segmentation:
 
-;; Source: AMD Manual (Volume 2, System Programming): Chapter
-;;         4 (p. 88-95)
+;; Source: AMD Manual, Apr'16, Vol. 2, Section 4.8
 
 ;; User-level descriptors:
 
@@ -395,12 +410,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   '((:limit15-0        0  16)  ;; Ignored in 64-bit mode
     (:base15-0         16 16)  ;; Ignored in 64-bit mode
     (:base23-16        32  8)  ;; Ignored in 64-bit mode
-    (:type             40  4)  ;; For Code-Segment descriptors, the
-                               ;; MSB bit of the type field is 1.
-                               ;; Also, the second MSB is the "C
-                               ;; bit" or conforming bit, which is
-                               ;; not ignored.  Third and fourth MSBs
-                               ;; are ignored.
+    (:a                40  1)  ;; Ignored in 64-bit mode
+    (:r                41  1)  ;; Ignored in 64-bit mode
+    (:c                42  1)
+    (:msb-of-type      43  1)  ;; must be 1
     (:s                44  1)  ;; S = 1 in 64-bit mode (code/data segment)
     (:dpl              45  2)
     (:p                47  1)
@@ -413,7 +426,6 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:l                53  1)
     (:d                54  1)
     (:g                55  1)  ;; Ignored in 64-bit mode
-                               ;; Ignored in 64-bit mode
                                ;; As per AMD manuals, this is ignored
                                ;; in 64-bit mode but the Intel manuals
                                ;; say it's not.  We're following the
@@ -426,7 +438,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   :rule-classes nil)
 
 (defconst *code-segment-descriptor-attributes-layout*
-  '((:type             0  4)
+  '((:a                0  1)
+    (:r                1  1)
+    (:c                2  1)
+    (:msb-of-type      3  1) ;; must be 1
     (:s                4  1) ;; S = 1 in 64-bit mode
     (:dpl              5  2)
     (:p                7  1)
@@ -442,20 +457,21 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defconst *data-segment-descriptor-layout*
 
-  '((:limit15-0        0  16) ;; Ignored in 64-bit mode
-    (:base15-0         16 16) ;; Ignored in 64-bit mode
-    (:base23-16        32  8) ;; Ignored in 64-bit mode
-    (:type             40  4) ;; For Data-Segment descriptors, the
-                              ;; MSB bit of the type field is 0.
-                              ;; All other bits are ignored.
-    (:s                44  1) ;; S = 1 in 64-bit mode (code/data segment)
-    (:dpl              45  2) ;; Ignored in 64-bit mode
-    (:p                47  1) ;; !! NOT IGNORED: Segment present bit !!
-    (:limit19-16       48  4) ;; Ignored in 64-bit mode
+  '((:limit15-0        0  16)  ;; Ignored in 64-bit mode
+    (:base15-0         16 16)  ;; Ignored in 64-bit mode
+    (:base23-16        32  8)  ;; Ignored in 64-bit mode
+    (:a                40  1)  ;; Ignored in 64-bit mode
+    (:w                41  1)  ;; Ignored in 64-bit mode
+    (:e                42  1)  ;; Ignored in 64-bit mode
+    (:msb-of-type      43  1)  ;; must be 0
+    (:s                44  1)  ;; S = 1 in 64-bit mode (code/data segment)
+    (:dpl              45  2)  ;; Ignored in 64-bit mode
+    (:p                47  1)  ;; !! NOT IGNORED: Segment present bit !!
+    (:limit19-16       48  4)  ;; Ignored in 64-bit mode
     (:avl              52  1)
-    (1                 53  1)
+    (:l                53  1)  ;; L = 1 in 64-bit mode
     (:d/b              54  1)  ;; Ignored in 64-bit mode
-    (:g                55  1)
+    (:g                55  1)  ;; Ignored in 64-bit mode
     (:base31-24        56  8)) ;; Ignored in 64-bit mode
   )
 
@@ -464,13 +480,17 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   :rule-classes nil)
 
 (defconst *data-segment-descriptor-attributes-layout*
-  '((:type             0  4)
+  '((:a                0  1)
+    (:w                1  1)
+    (:e                2  1)
+    (:msb-of-type      3  1) ;; must be 0
     (:s                4  1) ;; S = 1 in 64-bit mode
     (:dpl              5  2)
     (:p                7  1)
     (:avl              8  1)
-    (:d/b              9  1)
-    (:g               10  1)
+    (:l                9  1)
+    (:d/b             10  1)
+    (:g               11  1)
     ))
 
 (defthm data-segment-descriptor-attributes-layout-ok
@@ -585,6 +605,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (layout-constant-alistp *interrupt/trap-gate-descriptor-attributes-layout* 0 16)
   :rule-classes nil)
 
+; AMD manual, Apr'16, Vol. 2, Figure 4-8
 (defconst *gdtr/idtr-layout*
   '((:base-addr    0 64) ;; Segment Base Address
     (:limit       64 16) ;; Segment Limit
@@ -594,7 +615,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (layout-constant-alistp *gdtr/idtr-layout* 0 80)
   :rule-classes nil)
 
-; Paging:
+; Paging (Intel manual, Mar'17, Vol. 3A, Tables 4-14 through 4-19, Figure 4-11):
 
 (defconst *ia32e-page-tables-layout*
 

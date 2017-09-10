@@ -32,6 +32,7 @@
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
 
 (define vl-reportcardkey-p (x)
   :parents (vl-reportcard)

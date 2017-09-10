@@ -119,4 +119,8 @@ executed on the real ACL2 @(see state).</p>"
   (defthm file-measure-of-read-object-rw
     (implies (not (mv-nth 0 (read-object channel state)))
              (equal (file-measure channel (mv-nth 2 (read-object channel state)))
-                    (1- (file-measure channel state))))))
+                    (1- (file-measure channel state)))))
+
+  (defthm file-measure-type
+    (natp (file-measure channel state))
+    :rule-classes :type-prescription))

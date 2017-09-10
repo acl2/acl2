@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "lhs")
+(include-book "../svex/constraints")
 (include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -1172,6 +1173,53 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
                   (svarlist-addr-p (aliases-vars aliases)))
              (svarlist-addr-p (assigns-vars (assigns-subst x aliases svexarr))))
     :hints(("Goal" :in-theory (enable assigns-vars)))))
+
+
+(define constraintlist-subst-from-svexarr-nrev ((x constraintlist-p) aliases svexarr nrev)
+  :guard (and (svarlist-boundedp (constraintlist-vars x) (aliass-length aliases))
+              (svarlist-boundedp (constraintlist-vars x) (svexs-length svexarr)))
+  :guard-hints (("goal" :expand ((constraintlist-vars x))))
+  (b* (((when (atom x)) (acl2::nrev-fix nrev))
+       ((constraint x1) (car x))
+       (cond (svex-subst-from-svexarr x1.cond svexarr))
+       (nrev (acl2::nrev-push (change-constraint x1 :cond cond) nrev)))
+    (constraintlist-subst-from-svexarr-nrev (cdr x) aliases svexarr nrev)))
+
+(define constraintlist-subst-from-svexarr ((x constraintlist-p) aliases svexarr)
+  :guard (and (svarlist-boundedp (constraintlist-vars x) (aliass-length aliases))
+              (svarlist-boundedp (constraintlist-vars x) (svexs-length svexarr)))
+  :returns (xx constraintlist-p)
+  :verify-guards nil
+  (mbe :logic (b* (((when (atom x)) nil)
+                   ((constraint x1) (car x))
+                   (cond (svex-subst-from-svexarr x1.cond svexarr)))
+                (cons (change-constraint x1 :cond cond)
+                      (constraintlist-subst-from-svexarr (cdr x) aliases svexarr)))
+       :exec (if (atom x)
+                 nil
+               (with-local-stobj nrev
+                 (mv-let (ans nrev)
+                   (b* ((nrev (constraintlist-subst-from-svexarr-nrev x aliases svexarr nrev))
+                        ((mv ans nrev) (acl2::nrev-finish nrev)))
+                     (mv ans nrev))
+                   ans))))
+  ///
+  (local (defthm constraintlist-subst-from-svexarr-nrev-elim
+           (equal (constraintlist-subst-from-svexarr-nrev x aliases svexarr nrev)
+                  (append nrev (constraintlist-subst-from-svexarr x aliases svexarr)))
+           :hints(("Goal" :in-theory (enable constraintlist-subst-from-svexarr-nrev acl2::rcons)))))
+
+  (verify-guards constraintlist-subst-from-svexarr :hints (("goal" :expand ((constraintlist-vars x)))))
+
+  (deffixequiv constraintlist-subst-from-svexarr)
+
+  (local (in-theory (disable svarlist-addr-p-by-badguy)))
+
+  (defthm svarlist-addr-p-of-constraintlist-subst-from-svexarr
+    (implies (and (svarlist-addr-p (svexarr-vars svexarr))
+                  (svarlist-addr-p (aliases-vars aliases)))
+             (svarlist-addr-p (constraintlist-vars (constraintlist-subst-from-svexarr x aliases svexarr))))
+    :hints(("Goal" :in-theory (enable constraintlist-vars)))))
 
 
 

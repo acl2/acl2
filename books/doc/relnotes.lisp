@@ -35,6 +35,7 @@
 ;; when debugging the release note markup.
 (include-book "centaur/nrev/portcullis" :dir :system)
 (include-book "centaur/vl/portcullis" :dir :system)
+(include-book "centaur/ipasir/portcullis" :dir :system)
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)
 (include-book "centaur/bed/portcullis" :dir :system)
@@ -135,6 +136,37 @@
  <p>See @('projects/async/tools/convert-edif.lisp') for tools to convert
  between EDIF format and corresponding convenient s-expressions.</p>
 
+ <h4>try-gl-concls</h4>
+
+ <p>See @('centaur/misc/try-gl-concls') for a small but convenient utility to
+ find all the true conclusions (if any) from a user-provided list of possible
+ conclusions using @(see GL::GL).</p>
+
+ <h4>GLMC</h4>
+
+ <p>GLMC (in directory centaur/glmc) is a connection from ACL2 to AIG-based
+ hardware model checkers, via @(see gl::gl); this can be used to prove safety
+ properties without finding an inductive invariant.  See @(see gl::glmc) for
+ details.</p>
+
+ <h4>Truth</h4>
+
+ <p>Directory centaur/truth contains a library for using integers as a
+ representation for Boolean functions with small (single-digit) numbers of
+ variables, expressing the functions as truth tables.  Truth tables for 5 or
+ fewer variables are especially efficient since the formulas are represented as
+ fixnums (at least in 64-bit lisps).</p>
+
+ <h4>Ipasir</h4>
+
+ <p>The @(see ipasir::ipasir) library (in directory centaur/ipasir) contains an
+ axiomatized interface for using incremental SAT solver libraries in ACL2.  A
+ solver object is represented as an abstract stobj, and actual solver functions
+ from a suitable shared library can be called as the implementation.
+ Integration with @(see aignet::aignet) is also provided in the book
+ \"centaur/aignet/ipasir\".</p>
+
+
  <h3>Changes to Existing Libraries</h3>
 
  <h4>@(see std/io)</h4>
@@ -205,6 +237,46 @@
  key subdirectory is @('incremental/'); a new top-level book @('top.lisp')
  includes the top-level book in that subdirectory.</p>
 
+ <h4>Aignet library</h4>
+
+ <p>A few new verified <see topic='@(url aignet::aignet-comb-transforms)'>
+ combinational logic transforms</see> have been
+ added to aignet, most notably <see topic='@(url aignet::fraig)'>fraiging</see>
+ and DAG-aware and-tree <see topic='@(url aignet::balance)'>balancing</see>.
+ These can be used as preprocessors for SAT solving with GL via @(see
+ gl::gl-simplify-satlink-mode).</p>
+
+ <h4>VL/SV libraries</h4>
+
+ <ul>
+
+ <li>SystemVerilog @('unique case') and @('unique0 case') can now optionally be
+ treated differently from regular @('case') statements: either a constraint may
+ be generated off to the side expressing the one-hot constraint, or logic may be
+ added that assigns @('X') instead of the stated values when the one-hot constraint
+ is violated.</li>
+
+ <li>Somewhat similarly, @('enum') type variables may optionally either
+ generate constraints stating that they take proper enum values, or may generate
+ extra logic that forces them to @('X') when assigned an improper value.</li>
+
+ <li>When composing together 0-delay update functions, if bit-level
+ combinational loops are present, these are composed together to a fixpoint.</li>
+
+ </ul>
+
+ <h4>Miscellaneous Books</h4>
+
+ <p>The book \"clause-processors/use-by-hint\" now contains an additional
+ utility, @(see use-termhint), that helps structure hints in a way that
+ coincides with the structure of a proof and allows hints to contain terms that
+ have been simplified along with the goal.</p>
+
+ <p>A new book \"tools/symlet\" introduces a macro @('let-syms') and @('b*')
+ binder @('symlet') that simply replace occurrences of some symbols with some
+ corresponding terms in the enclosed term.  Like Common Lisp's
+ @('symbol-macrolet') but much less smart.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
@@ -213,6 +285,37 @@
 
  <p>Also see @(see note-7-5), specifically the section on ``Changes at the
  System Level''.</p>
+
+ <h3>Testing</h3>
+
+ <p>The documentation topics for testing have been reorganized, with
+ introduction of a new topic, @(see kestrel-testing-utilities), as a parent of
+ the testing utilities that are part of the @(see kestrel-books), so that now
+ the topic @(see testing-utilities) is the top-level topic for the testing
+ utilities.</p>
+
+ <p>The utility @(tsee run-script) supports testing of evaluation of the forms
+ in a given file, to check that the output is as expected.  So far, several
+ existing scripts have been adapted to take advantage of this utility:</p>
+
+ <ul>
+
+ <li>@('books/demos/mini-proveall-input.lsp') &mdash; a long-standing, small
+ basic test of ACL2</li>
+
+ <li>@('books/demos/marktoberdorf-08/') &mdash; based on material originally
+ presented by J Moore in 2008 at the Marktoberdorf Summer School; see the
+ @('README') file in that directory</li>
+
+ <li>@('books/demos/big-proof-talks/') &mdash; based on material about ACL2
+ presented by J Moore on July 6 and 7, 2017, at the <a
+ href='https://www.newton.ac.uk/event/bpr'>Big Proof workshop</a>; see the
+ @('README') file in that directory</li>
+
+ <li>@('books/projects/paco/books/proveall-input.lsp'), formerly named
+ @('proveall.lsp')</li>
+
+ </ul>
 
  <h3>Miscellaneous</h3>
 

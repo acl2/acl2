@@ -1,3 +1,6 @@
+;; AUTHOR:
+;; Shilpi Goel <shigoel@cs.utexas.edu>
+
 (in-package "X86ISA")
 
 (include-book "system-level-mode/marking-mode-top" :dir :proof-utils :ttags :all)
@@ -28,21 +31,14 @@
    (page-structure-marking-mode x86)
    ;; The program is located at linear addresses ranging from (rip
    ;; x86) to (+ -1 (len *program*) (rip x86)).
-   (program-at (create-canonical-address-list (len *program*) (rip x86))
-               *program* x86)
+   (program-at (rip x86) *program* x86)
    ;; No error is encountered when translating the program's linear
    ;; addresses to physical addresses.
-   (not (mv-nth 0
-                (las-to-pas
-                 (create-canonical-address-list (len *program*) (rip x86))
-                 :x (cpl x86) x86)))
+   (not (mv-nth 0 (las-to-pas (len *program*) (rip x86) :x x86)))
    ;; The program's physical addresses are disjoint from the physical
    ;; addresses of the paging structures.  .
-   (disjoint-p
-    (mv-nth 1
-            (las-to-pas (create-canonical-address-list
-                         (len *program*) (rip x86))
-                        :x (cpl x86) x86))
+   (disjoint-p$
+    (mv-nth 1 (las-to-pas (len *program*) (rip x86) :x x86))
     (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
    ;; The addresses where the program is located are canonical.
    (canonical-address-p (rip x86))
@@ -53,16 +49,17 @@
 
 ;; (acl2::why x86-fetch-decode-execute-opener-in-marking-mode)
 ;; (acl2::why get-prefixes-alt-opener-lemma-no-prefix-byte)
-;; (acl2::why rb-alt-in-terms-of-nth-and-pos-in-system-level-mode)
+;; (acl2::why one-read-with-rb-alt-from-program-at-alt-in-marking-mode)
+;; (acl2::why many-reads-with-rb-alt-from-program-at-alt-in-marking-mode)
 
 (defthm program-effects-1
   (implies (preconditions x86)
            (equal (x86-run 1 x86)
-                  (!rip (+ 1 (xr :rip 0 x86))
-                        (!flgi *cf* 0
-                               (mv-nth 2 (las-to-pas (list (rip x86)) :x (cpl x86) x86))))))
+                  (xw :rip 0 (+ 1 (xr :rip 0 x86))
+                      (!flgi *cf* 0
+                             (mv-nth 2
+                                     (las-to-pas 1 (xr :rip 0 x86) :x x86))))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
-                                    64-bit-modep
                                     rm08
                                     pos
                                     mv-nth-0-las-to-pas-subset-p
@@ -75,12 +72,11 @@
 (defthm program-effects-2
   (implies (preconditions x86)
            (equal (x86-run 2 x86)
-                  (!rip (+ 2 (xr :rip 0 x86))
-                        (!flgi *cf* 1
-                               (mv-nth 2
-                                       (las-to-pas (list (xr :rip 0 x86) (+ 1 (xr :rip 0 x86))) :x (cpl x86) x86))))))
+                  (xw :rip 0 (+ 2 (xr :rip 0 x86))
+                      (!flgi *cf* 1
+                             (mv-nth 2
+                                     (las-to-pas 2 (xr :rip 0 x86) :x x86))))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
-                                    64-bit-modep
                                     rm08
                                     pos
                                     mv-nth-0-las-to-pas-subset-p

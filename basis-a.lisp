@@ -335,7 +335,8 @@
                          (ld-error-triples 'same ld-error-triplesp)
                          (ld-error-action 'same ld-error-actionp)
                          (ld-query-control-alist 'same ld-query-control-alistp)
-                         (ld-verbose 'same ld-verbosep))
+                         (ld-verbose 'same ld-verbosep)
+                         (ld-user-stobjs-modified-warning ':same))
   `(with-wormhole-lock
     (prog2$
      (wormhole-eval ,name ,entry-lambda
@@ -387,6 +388,10 @@
             nil)
           (if ld-verbosep
               (list `(cons 'ld-verbose ,ld-verbose))
+            nil)
+          (if (eq ld-user-stobjs-modified-warning :same)
+              (list `(cons 'ld-user-stobjs-modified-warning
+                           ,ld-user-stobjs-modified-warning))
             nil)))))))
 
 (defun legal-constantp1 (name)
@@ -4999,12 +5004,12 @@
 ; regression.
 ;   "Invariant-risk"
 
-; The above are included because of soundness.  But "Compiled file", below, is
-; included so that we can see it even when inside include-book, since messages
-; printed by missing-compiled-book may assume that such warnings are not
-; inhibited.
+; The above are included because of soundness.  But the following are included
+; so that we can see them even when inside include-book, since messages printed
+; by missing-compiled-book may assume that such warnings are not inhibited.
 
-    "Compiled file"))
+    "Compiled file"
+    "User-stobjs-modified"))
 
 (defun member-string-equal (str lst)
   (cond

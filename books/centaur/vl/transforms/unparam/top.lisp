@@ -186,7 +186,9 @@ with, we can safely remove @('plus') from our module list.</p>")
              "Scope of the overrides -- read-only")
    (outer-scope-path vl-elabtraversal-p "How to get to the scopes for the override context")
    (final-params-acc vl-paramdecllist-p)
-   (warnings vl-warninglist-p))
+   (warnings vl-warninglist-p)
+   &key
+   ((config vl-simpconfig-p) 'config))
   :prepwork ((local (in-theory (e/d (vl-paramdecloverridelist-fix)
                                     (append
                                      acl2::append-when-not-consp)))))
@@ -259,7 +261,9 @@ with, we can safely remove @('plus') from our module list.</p>")
    (elabindex "in the scope of the instantiated module.  Warning: this function
                returns an elabindex with a somewhat mangled scopestack.")
    (outer-ss vl-scopestack-p)
-   (outer-scope-path vl-elabtraversal-p "How to get to the scopes for the override context"))
+   (outer-scope-path vl-elabtraversal-p "How to get to the scopes for the override context")
+   &key
+   ((config vl-simpconfig-p) 'config))
   :returns (mv (successp)
                (warnings vl-warninglist-p)
                (elabindex "with the overridden parameter values")
@@ -872,7 +876,9 @@ for each usertype is stored in the res field.</p>"
    (elabindex "at the instanting context")
    (ledger  vl-unparam-ledger-p)
    (warnings vl-warninglist-p
-             "Warnings accumulator for the submodule."))
+             "Warnings accumulator for the submodule.")
+   &key
+   ((config vl-simpconfig-p) 'config))
   :guard-debug t
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
@@ -1049,7 +1055,9 @@ for each usertype is stored in the res field.</p>"
    (ledger         vl-unparam-ledger-p)
    (warnings vl-warninglist-p
              "Warnings accumulator for the submodule.")
-   (keylist  vl-unparam-instkeylist-p "Accumulator"))
+   (keylist  vl-unparam-instkeylist-p "Accumulator")
+   &key
+   ((config vl-simpconfig-p) 'config))
   :returns (mv (successp booleanp :rule-classes :type-prescription)
                (warnings vl-warninglist-p)
                (insts    vl-modinstlist-p
@@ -1265,7 +1273,9 @@ for each usertype is stored in the res field.</p>"
                                 (elabindex
                                  "without the genblob's scope")
                                 (ledger vl-unparam-ledger-p)
-                                (warnings vl-warninglist-p))
+                                (warnings vl-warninglist-p)
+                                &key
+                                ((config vl-simpconfig-p) 'config))
       :returns (mv (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-x vl-genblob-p)
@@ -1297,7 +1307,9 @@ for each usertype is stored in the res field.</p>"
     (define vl-genblock-resolve ((x vl-genblock-p)
                                  (elabindex "without the genblock's scope")
                                  (ledger vl-unparam-ledger-p)
-                                 (warnings vl-warninglist-p))
+                                 (warnings vl-warninglist-p)
+                                 &key
+                                 ((config vl-simpconfig-p) 'config))
       :returns (mv (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-x vl-genblock-p)
@@ -1318,7 +1330,9 @@ for each usertype is stored in the res field.</p>"
                                             (orig-x vl-genelement-p)
                                             (elabindex)
                                             (ledger vl-unparam-ledger-p)
-                                            (warnings vl-warninglist-p))
+                                            (warnings vl-warninglist-p)
+                                            &key
+                                            ((config vl-simpconfig-p) 'config))
       :returns (mv (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-elem vl-genelement-p)
@@ -1375,7 +1389,9 @@ for each usertype is stored in the res field.</p>"
       ((x vl-genelement-p "The generate block to resolve")
        (elabindex)
        (ledger vl-unparam-ledger-p)
-       (warnings vl-warninglist-p))
+       (warnings vl-warninglist-p)
+       &key
+       ((config vl-simpconfig-p) 'config))
       :returns (mv (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-x vl-genelement-p)
@@ -1487,7 +1503,9 @@ for each usertype is stored in the res field.</p>"
     (define vl-generatelist-resolve ((x vl-genelementlist-p)
                                      (elabindex)
                                      (ledger vl-unparam-ledger-p)
-                                     (warnings vl-warninglist-p))
+                                     (warnings vl-warninglist-p)
+                                     &key
+                                     ((config vl-simpconfig-p) 'config))
       :returns (mv (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-elems vl-genelementlist-p)
@@ -1510,7 +1528,9 @@ for each usertype is stored in the res field.</p>"
                                     (orig-x vl-genelement-p)
                                     (elabindex)
                                     (ledger vl-unparam-ledger-p)
-                                    (warnings vl-warninglist-p))
+                                    (warnings vl-warninglist-p)
+                                    &key
+                                    ((config vl-simpconfig-p) 'config))
       :guard (eq (vl-genelement-kind orig-x) :vl-gencase)
       :returns (mv (errmsg (iff (vl-msg-p errmsg) errmsg))
                    (warnings1 vl-warninglist-p)
@@ -1545,7 +1565,9 @@ for each usertype is stored in the res field.</p>"
                                 (continue vl-expr-p)
                                 (elabindex)
                                 (ledger vl-unparam-ledger-p)
-                                (warnings vl-warninglist-p))
+                                (warnings vl-warninglist-p)
+                                &key
+                                ((config vl-simpconfig-p) 'config))
       :returns (mv (errmsg (iff (vl-msg-p errmsg) errmsg))
                    (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
@@ -1624,7 +1646,7 @@ for each usertype is stored in the res field.</p>"
                                vl-genloop-resolve (:t vl-genloop-resolve)
                                acl2::mv-nth-cons-meta)))
 
-    (verify-guards vl-generate-resolve
+    (verify-guards vl-generate-resolve-fn
       :hints (("goal" :expand ((vl-gencaselist-p x))))
       :guard-debug t)
 
@@ -1689,7 +1711,9 @@ for each usertype is stored in the res field.</p>"
    (final-paramdecls vl-paramdecllist-p)
    (final-ports vl-portlist-p)
    (elabindex "at global level")
-   (ledger   vl-unparam-ledger-p))
+   (ledger   vl-unparam-ledger-p)
+   &key
+   ((config vl-simpconfig-p) 'config))
   :returns (mv (new-mod vl-module-p)
                (keylist vl-unparam-instkeylist-p "signatures for this module")
                (new-elabindex)
@@ -1724,7 +1748,9 @@ for each usertype is stored in the res field.</p>"
    (final-paramdecls vl-paramdecllist-p)
    (final-ports vl-portlist-p)
    (elabindex "at global scope")
-   (ledger   vl-unparam-ledger-p))
+   (ledger   vl-unparam-ledger-p)
+   &key
+   ((config vl-simpconfig-p) 'config))
 
   :returns (mv (new-mod vl-interface-p)
                (keylist vl-unparam-instkeylist-p "signatures for this interface")
@@ -1764,7 +1790,9 @@ for each usertype is stored in the res field.</p>"
      (donelist vl-unparam-donelist-p "fast alist of previously-seen signatures")
      (depthlimit natp "termination counter")
      (elabindex "global scope")
-     (ledger   vl-unparam-ledger-p))
+     (ledger   vl-unparam-ledger-p)
+     &key
+     ((config vl-simpconfig-p) 'config))
     :measure (two-nats-measure depthlimit 0)
     :verify-guards nil
     :returns (mv (warnings vl-warninglist-p)
@@ -1825,7 +1853,9 @@ for each usertype is stored in the res field.</p>"
                                        (donelist vl-unparam-donelist-p)
                                        (depthlimit natp)
                                        (elabindex "global scope")
-                                       (ledger  vl-unparam-ledger-p))
+                                       (ledger  vl-unparam-ledger-p)
+                                       &key
+                                       ((config vl-simpconfig-p) 'config))
     :measure (two-nats-measure depthlimit (len keys))
     :returns (mv (warnings vl-warninglist-p)
                  (new-mods vl-modulelist-p)
@@ -1884,13 +1914,13 @@ for each usertype is stored in the res field.</p>"
       :rule-classes :type-prescription
       :flag vl-unparameterize-main-list))
 
-  (verify-guards vl-unparameterize-main)
+  (verify-guards+ vl-unparameterize-main)
 
   (deffixequiv-mutual vl-unparameterize-main
     :hints ((and stable-under-simplificationp
                  (flag::expand-calls-computed-hint
-                  clause '(vl-unparameterize-main
-                           vl-unparameterize-main-list))))))
+                  clause '(vl-unparameterize-main-fn
+                           vl-unparameterize-main-list-fn))))))
 
 ;; BOZO.  If the interfaceports of a top-level module themselves have
 ;; interfaceports, we currently don't pick up those dependencies; really,
@@ -1900,7 +1930,9 @@ for each usertype is stored in the res field.</p>"
 (define vl-interfaceport-default-signature ((port vl-interfaceport-p)
                                             (warnings vl-warninglist-p)
                                             (elabindex "global scope")
-                                            (ledger vl-unparam-ledger-p))
+                                            (ledger vl-unparam-ledger-p)
+                                            &key
+                                            ((config vl-simpconfig-p) 'config))
   :returns (mv (ok)
                (instkey (implies ok (vl-unparam-instkey-p instkey)))
                (warnings vl-warninglist-p)
@@ -1942,7 +1974,9 @@ for each usertype is stored in the res field.</p>"
 (define vl-portlist-interface-signatures ((x vl-portlist-p)
                                           (warnings vl-warninglist-p)
                                           (elabindex "global scope")
-                                          (ledger vl-unparam-ledger-p))
+                                          (ledger vl-unparam-ledger-p)
+                                          &key
+                                          ((config vl-simpconfig-p) 'config))
     :returns (mv (ok)
                (instkeys vl-unparam-instkeylist-p)
                (warnings vl-warninglist-p)
@@ -1969,7 +2003,9 @@ for each usertype is stored in the res field.</p>"
 (define vl-toplevel-default-signature ((modname stringp)
                                        (warnings vl-warninglist-p)
                                        (elabindex "global scope")
-                                       (ledger vl-unparam-ledger-p))
+                                       (ledger vl-unparam-ledger-p)
+                                       &key
+                                       ((config vl-simpconfig-p) 'config))
   :returns (mv (ok)
                (instkeys vl-unparam-instkeylist-p)
                (warnings vl-warninglist-p)
@@ -2026,7 +2062,9 @@ for each usertype is stored in the res field.</p>"
 (define vl-toplevel-default-signatures ((names string-listp)
                                         (warnings vl-warninglist-p)
                                         (elabindex "design level")
-                                        (ledger vl-unparam-ledger-p))
+                                        (ledger vl-unparam-ledger-p)
+                                        &key
+                                        ((config vl-simpconfig-p) 'config))
   :returns (mv (instkeys vl-unparam-instkeylist-p)
                (warnings vl-warninglist-p)
                (new-elabindex)
@@ -2052,7 +2090,9 @@ for each usertype is stored in the res field.</p>"
 ||#
 (define vl-package-elaborate ((x        vl-package-p)
                               (elabindex "design level")
-                              (warnings vl-warninglist-p))
+                              (warnings vl-warninglist-p)
+                              &key
+                              ((config vl-simpconfig-p) 'config))
   :prepwork ((local (in-theory (enable (vl-context-p) vl-context-p))))
   :short "Resolve parameters in packages."
   :long "<p>Assumption: packages reference each other only in reverse parse
@@ -2096,7 +2136,9 @@ scopestacks.</p>"
 
 (define vl-packagelist-elaborate ((x vl-packagelist-p)
                                   (elabindex "design level")
-                                  (warnings vl-warninglist-p))
+                                  (warnings vl-warninglist-p)
+                                  &key
+                                  ((config vl-simpconfig-p) 'config))
   :returns (mv (ok)
                (warnings1 vl-warninglist-p)
                (new-elabindex)
@@ -2177,7 +2219,8 @@ scopestacks.</p>"
    &key ((name-without-default-params
           booleanp
           "Omit default parameters when creating module names.")
-         'nil))
+         'nil)
+   ((config vl-simpconfig-p) 'config))
   :returns (new-x vl-design-p)
   :prepwork ((local (defthm string-listp-of-scopedef-alist-key
                       (implies (vl-scopedef-alist-p x)

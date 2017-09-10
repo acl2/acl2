@@ -208,7 +208,7 @@
       fast-alist
       fast-alists
 
-      )
+      symlet)
 
     #!VL
     '(warnings

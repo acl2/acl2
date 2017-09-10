@@ -169,7 +169,7 @@
 ; is the place-holder for the random-seed or BE arg 
   (if (defdata::possible-constant-value-p type)
       (acl2::make enum-info% :domain-size 1 :min-rec-depth 0 :max-rec-depth 1
-                  :category :singleton :expr type :expr2 `(mv ',type seed.)) 
+                  :category :singleton :expr type :expr2 `(mv ',type seed.))
 ;ALSO HANDLE SINGLETON TYPES DIRECTLY
     
     (let ((entry (assoc-eq type (table-alist 'defdata::type-metadata-table wrld))))
@@ -185,7 +185,7 @@
              (TI.min (cdr (assoc-eq :min-rec-depth al)))
              (TI.max (cdr (assoc-eq :max-rec-depth al)))
              
-             (TI.ndef (cdr (assoc-eq :normalized-def al)))
+             (TI.def (cdr (assoc-eq :def al)))
              ((unless (or (eq 't TI.size)
                          (posp TI.size)))
               (prog2$
@@ -203,18 +203,18 @@
 ; interesting numeric type, like 4divp, primep, arithmetic
 ; progression, etc. But you can use / constructor to define some
 ; interesting types, so I need to think about how to make this more general!! TODO
-             ((when (and (and (eq 'ACL2S::RANGE (car TI.ndef))
+             ((when (and (and (consp TI.def) (eq 'ACL2S::RANGE (car TI.def))
                               (defdata::range-subtype-p
                                 range
-                                (defdata::get-tau-int (cadr TI.ndef) (third TI.ndef))))
+                                (defdata::get-tau-int (cadr TI.def) (third TI.def))))
                          (defdata::subtype-p TI.pred 'integerp wrld)
                          (non-empty-non-universal-interval-p range)))
               (make-range-enum-info% 'acl2s::integer range (list entry)))
 
-             ((when (and (and (eq 'ACL2S::RANGE (car TI.ndef))
+             ((when (and (and (consp TI.def) (eq 'ACL2S::RANGE (car TI.def))
                               (defdata::range-subtype-p
                                 range
-                                (defdata::get-tau-int (cadr TI.ndef) (third TI.ndef))))
+                                (defdata::get-tau-int (cadr TI.def) (third TI.def))))
                          (defdata::subtype-p TI.pred 'acl2-numberp wrld)
                          (non-empty-non-universal-interval-p range)))
               (make-range-enum-info% type range (list entry))))

@@ -393,10 +393,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
     (if (eql code-or-call-gate? 0) ;; Code Segment:
 
-        (if (equal (part-select
-                    (code-segment-descriptor-layout-slice
-                     :type descriptor)
-                    :low 2 :width 1)
+        (if (equal (code-segment-descriptor-layout-slice :c descriptor)
                    1)
 
             ;; Conforming Code Segment:
@@ -585,10 +582,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
            ;; Checking the privileges of the code segment:
            (cs-dpl (code-segment-descriptor-layout-slice :dpl cs-descriptor))
-           (c-bit (part-select
-                   (code-segment-descriptor-layout-slice
-                    :type cs-descriptor)
-                   :low 2 :width 1))
+           (c-bit (code-segment-descriptor-layout-slice :c cs-descriptor))
            ((when (or (and ;; Conforming code segment
                        (equal c-bit 1)
                        (not (<= cs-dpl cpl)))

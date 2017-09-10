@@ -1,0 +1,17 @@
+This directory contains material about ACL2 presented by J Moore on
+July 6 and 7, 2017, at the Big Proof workshop
+<https://www.newton.ac.uk/event/bpr> at the Isaac Newton Institute for
+Mathematical Sciences in Cambridge, England.
+
+There are two sets of files, for the two talks ("talk1" and "talk2").
+The *.pdf files are the slides from the two talks.  Each talk included
+several demonstrations of a live ACL2 session.  The scripts for each
+demo are in the *-input.lsp files, which consist of ACL2 commands,
+definitions, theorems, etc., which were submitted to ACL2 during the
+demos.  The slides have occasional headers named ``Demo 1'', ``Demo
+2'', etc., and each corresponds to a sequences of commands in the
+talk1 or talk2 lisp files.  The two *-log.txt files show the entire
+sessions (user input and ACL2 output), omitting from summaries the
+"Time" and "Prover steps counted" fields.  We expect the scripts will
+re-play in future ACL2 versions.  The *-book.* files are artifacts of
+the ACL2 regression test mechanism, and can be ignored by readers.
