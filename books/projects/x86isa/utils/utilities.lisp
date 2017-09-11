@@ -423,19 +423,11 @@ least a two-digit natural number; @('8') is represented as
       (unsigned-byte-p W x))
 })</li>
 
-<li> @('nW') There are two definitions. The current definition (:DEFINITION nW)
-belongs to @('nw-defs') ruleset. The legacy definition (:DEFINITION nW-legacy)
-belongs to @('nw-legacy-defs') ruleset.
+<li> @('nW') belongs to @('nw-defs') ruleset.
 @({
     (define nW ((x integerp))
       (mbe :logic (loghead W x)
            :exec (logand 2^W-1 x)))
-})
-@({
-    (defthmd nW-legacy
-      (equal (nW x)
-             (part-select x :low 0 :width W))
-      :rule-classes :definition)
 })</li>
 
 <li> @('iWp') belongs to @('iwp-defs') ruleset.
@@ -516,7 +508,6 @@ constants and functions; it also proves some associated lemmas.</p>"
 
 (def-ruleset nwp-defs       nil)
 (def-ruleset nw-defs        nil)
-(def-ruleset nw-legacy-defs nil)
 (def-ruleset iwp-defs       nil)
 (def-ruleset iw-defs        nil)
 (def-ruleset nw-to-iw-defs  nil)
@@ -533,9 +524,8 @@ constants and functions; it also proves some associated lemmas.</p>"
          (2^XY           (mk-name "*2^" digits "*"))
          (nXYp           (mk-name "N" str-n "P"))
          (nXY            (mk-name "N" str-n))
-         (nXY-legacy     (mk-name "N" str-n "-LEGACY"))
-         (iXY            (mk-name "I" str-n))
          (iXYp           (mk-name "I" str-n "P"))
+         (iXY            (mk-name "I" str-n))
          (ntoi           (mk-name "N" str-n "-TO-I" str-n))
          (iton           (mk-name "I" str-n "-TO-N" str-n)))
     (list
@@ -559,22 +549,7 @@ constants and functions; it also proves some associated lemmas.</p>"
         :enabled t
         :parents (constants-conversions-and-bounds)
         (mbe :logic (loghead ,n x)
-             :exec (logand ,(1- (expt 2 n)) x))
-
-        ///
-
-        (defthmd ,nXY-legacy
-          ;; Legacy
-          (equal (,nXY x)
-                 (part-select x :low 0 :width ,n))
-          :rule-classes :definition)
-
-        (defthm-usb ,(mk-name nXYp "-" nXY)
-          :hyp t
-          :bound ,n
-          :concl (,nXY x)
-          :gen-type nil
-          :gen-linear t))
+             :exec (logand ,(1- (expt 2 n)) x)))
 
      `(define ,iXYp (x)
         :inline t
@@ -591,16 +566,7 @@ constants and functions; it also proves some associated lemmas.</p>"
         :inline t
         :enabled t
         :parents (constants-conversions-and-bounds)
-        (logext ,n x)
-
-        ///
-
-        (defthm-sb ,(mk-name iXYp "-" iXY)
-          :hyp t
-          :bound ,n
-          :concl (,iXY x)
-          :gen-type nil
-          :gen-linear t))
+        (logext ,n x))
 
      `(define ,ntoi
         :inline t
@@ -613,16 +579,7 @@ constants and functions; it also proves some associated lemmas.</p>"
         (mbe :logic (logext ,n x)
              :exec (if (< x ,(expt 2 (1- n)))
                        x
-                     (- x ,(expt 2 n))))
-
-        ///
-
-        (defthm-sb ,(mk-name iXYp "-" ntoi)
-          :hyp t
-          :bound ,n
-          :concl (,ntoi x)
-          :gen-type nil
-          :gen-linear t))
+                     (- x ,(expt 2 n)))))
 
      `(define ,iton
         :inline t
@@ -634,20 +591,10 @@ constants and functions; it also proves some associated lemmas.</p>"
         (mbe :logic (loghead ,n x)
              :exec (if (>= x 0)
                        x
-                     (+ x ,(expt 2 n))))
-
-        ///
-
-        (defthm-usb ,(mk-name nXYp "-" iton)
-          :hyp t
-          :bound ,n
-          :concl (,iton x)
-          :gen-type nil
-          :gen-linear t))
+                     (+ x ,(expt 2 n)))))
 
      `(add-to-ruleset nwp-defs       '(,nXYp))
      `(add-to-ruleset nw-defs        '(,nXY))
-     `(add-to-ruleset nw-legacy-defs '(,nXY-legacy))
      `(add-to-ruleset iwp-defs       '(,iXYp))
      `(add-to-ruleset iw-defs        '(,iXY))
      `(add-to-ruleset nw-to-iw-defs  '(,ntoi))
