@@ -1365,7 +1365,7 @@
                    p-addrs value (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (mv-nth 2 (ia32e-la-to-pa
                              lin-addr r-w-x
-                             (write-to-physical-memory p-addrs value x86)))))
+                             (write-to-physical-memory p-addrs value (double-rewrite x86))))))
   :hints (("Goal"
            :induct (write-to-physical-memory p-addrs value x86)
            :in-theory (e/d* (disjoint-p) ()))))
@@ -1379,7 +1379,8 @@
         (x86p x86))
    (equal
     (write-to-physical-memory p-addrs value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
-    (mv-nth 2 (las-to-pas n lin-addr r-w-x (write-to-physical-memory p-addrs value x86)))))
+    (mv-nth 2 (las-to-pas n lin-addr r-w-x
+                          (write-to-physical-memory p-addrs value (double-rewrite x86))))))
   :hints
   (("Goal" :induct (cons (las-to-pas n lin-addr r-w-x x86)
                          (write-to-physical-memory p-addrs value x86))
