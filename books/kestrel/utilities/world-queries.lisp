@@ -273,48 +273,133 @@
 (define measure ((fn (and (logic-function-namep fn wrld)
                           (recursivep fn nil wrld)))
                  (wrld plist-worldp))
-  :returns (measure "A @(tsee pseudo-termp).")
-  :verify-guards nil
+  :returns (measure pseudo-termp)
   :parents (world-queries)
   :short "Measure expression of a logic-mode recursive function."
   :long
   "<p>
    See @(see xargs) for a discussion of the @(':measure') keyword.
+   </p>
+   <p>
+   The checks that the justification property is well-formed
+   and that the measure is a pseudo-term
+   should always succeed,
+   but they allow us to verify the guards of this function
+   and to prove the return type theorem for this function,
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
    </p>"
-  (access justification (getpropc fn 'justification nil wrld) :measure))
+  (b* ((justification (getpropc fn 'justification nil wrld))
+       ((unless (weak-justification-p justification))
+        (raise "Internal error: ~
+                the justification ~x0 of ~x1 is not well-formed."
+               justification fn))
+       (measure (access justification justification :measure))
+       ((unless (pseudo-termp measure))
+        (raise "Internal error: ~
+                the measure ~x0 of ~x1 is not a pseudo-term."
+               measure fn)))
+    measure))
 
 (define measured-subset ((fn (and (logic-function-namep fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
-  :returns (measured-subset "A @(tsee symbol-listp).")
-  :verify-guards nil
+  :returns (measured-subset symbol-listp)
   :parents (world-queries)
   :short "Subset of the formal arguments of a logic-mode recursive function
           that occur in its @(see measure) expression."
-  (access justification (getpropc fn 'justification nil wrld) :subset))
+  :long
+  "<p>
+   The checks that the justification property is well-formed
+   and that the measured subset is a @('nil')-terminated list of symbols
+   should always succeed,
+   but they allow us to verify the guards of this function
+   and to prove the return type theorem for this function,
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((justification (getpropc fn 'justification nil wrld))
+       ((unless (weak-justification-p justification))
+        (raise "Internal error: ~
+                the justification ~x0 of ~x1 is not well-formed."
+               justification fn))
+       (measured-subset (access justification justification :subset))
+       ((unless (symbol-listp measured-subset))
+        (raise "Internal error: ~
+                the measured subset ~x0 of ~x1 is not ~
+                a NIL-terminated list of symbols."
+               measured-subset fn)))
+    measured-subset))
 
 (define well-founded-relation ((fn (and (logic-function-namep fn wrld)
                                         (recursivep fn nil wrld)))
                                (wrld plist-worldp))
-  :returns (well-founded-relation "A @(tsee symbolp).")
-  :verify-guards nil
+  :returns (well-founded-relation symbolp)
   :parents (world-queries)
   :short "Well-founded relation of a logic-mode recursive function."
   :long
-  "<p>See @(see well-founded-relation-rule)
+  "<p>
+   See @(see well-founded-relation-rule)
    for a discussion of well-founded relations in ACL2,
-   including the @(':well-founded-relation') rule class.</p>"
-  (access justification (getpropc fn 'justification nil wrld) :rel))
+   including the @(':well-founded-relation') rule class.
+   </p>
+   <p>
+   The checks that the justification property is well-formed
+   and that the well-founded relation is a symbol
+   should always succeed,
+   but they allow us to verify the guards of this function
+   and to prove the return type theorem for this function,
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((justification (getpropc fn 'justification nil wrld))
+       ((unless (weak-justification-p justification))
+        (raise "Internal error: ~
+                the justification ~x0 of ~x1 is not well-formed."
+               justification fn))
+       (well-founded-relation (access justification justification :rel))
+       ((unless (symbolp well-founded-relation))
+        (raise "Internal error: ~
+                the well-founded relation ~x0 of ~x1 is not a symbol."
+               well-founded-relation fn)))
+    well-founded-relation))
 
 (define ruler-extenders ((fn (and (logic-function-namep fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
-  :returns (ruler-extenders "A @(tsee symbol-listp) or @(':all').")
-  :verify-guards nil
+  :returns (ruler-extenders (or (symbol-listp ruler-extenders)
+                                (equal ruler-extenders :all)))
   :parents (world-queries)
   :short "Ruler-extenders of a logic-mode recursive function
           (see @(see rulers) for background)."
-  (access justification (getpropc fn 'justification nil wrld) :ruler-extenders))
+  :long
+  "<p>
+   The checks that the justification property is well-formed
+   and that the ruler-extenders are
+   a @('nil')-terminated list of symbols or @(':all')
+   should always succeed,
+   but they allow us to verify the guards of this function
+   and to prove the return type theorem for this function,
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((justification (getpropc fn 'justification nil wrld))
+       ((unless (weak-justification-p justification))
+        (raise "Internal error: ~
+                the justification ~x0 of ~x1 is not well-formed."
+               justification fn))
+       (ruler-extenders (access justification justification :ruler-extenders))
+       ((unless (or (symbol-listp ruler-extenders)
+                    (eq ruler-extenders :all)))
+        (raise "Internal error: ~
+                the well-founded relation ~x0 of ~x1 is not ~
+                a NIL-terminated list of symbols or :ALL."
+               ruler-extenders fn)))
+    ruler-extenders))
 
 (define macro-required-args ((mac (macro-namep mac wrld)) (wrld plist-worldp))
   :returns (required-args symbol-listp)

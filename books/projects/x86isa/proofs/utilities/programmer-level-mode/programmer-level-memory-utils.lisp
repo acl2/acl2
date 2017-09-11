@@ -581,7 +581,7 @@
                    (prog-addr bytes))
         (program-at prog-addr bytes x86)
         (<= prog-addr addr)
-        (< (+ n addr) (+ (len bytes) prog-addr))
+        (<= (+ n addr) (+ (len bytes) prog-addr))
         (canonical-address-p addr)
         (posp n)
         (byte-listp bytes)
