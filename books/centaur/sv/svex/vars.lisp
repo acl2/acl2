@@ -1029,3 +1029,70 @@ Correctness is stated in terms of @(see svexlist-vars):</p>
     vars)
   ///
   (deffixequiv svexlist-opcount))
+
+
+(defines svex-opcount1-limit
+  :verify-guards nil
+  (define svex-opcount1-limit ((x svex-p) (seen) (count natp) (limit natp))
+    :returns (mv seen1 (count1 natp :rule-classes :type-prescription))
+    :measure (svex-count x)
+    (b* ((x (svex-fix x))
+         (count (lnfix count))
+         ((when (>= count (lnfix limit)))
+          (mv seen count)))
+      (svex-case x
+        :quote (mv seen count)
+        :var (mv seen count)
+        :call (if (hons-get x seen)
+                  (mv seen count)
+                (b* ((seen (hons-acons x t seen)))
+                  (svexlist-opcount1-limit x.args seen (1+ count) limit))))))
+  (define svexlist-opcount1-limit ((x svexlist-p) (seen) (count natp) (limit natp))
+    :returns (mv seen1 (count1 natp :rule-classes :type-prescription))
+    :measure (svexlist-count x)
+    (if (atom x)
+        (mv seen (lnfix count))
+      (b* (((mv seen count) (svex-opcount1-limit (car x) seen count limit)))
+        (svexlist-opcount1-limit (cdr x) seen count limit))))
+  ///
+  (verify-guards svex-opcount1-limit)
+  (deffixequiv-mutual svex-opcount1-limit
+    ;; :hints ((and stable-under-simplificationp
+    ;;              (equal (car id) '(0 1))
+    ;;              (b* ((lit (car (last clause))))
+    ;;                `(:expand (,(cadr lit)
+    ;;                           ,(caddr lit))))))
+    ))
+
+
+(define svex-opcount-limit ((x svex-p) (limit natp))
+  :returns (count natp :rule-classes :type-prescription)
+  (b* (((mv seen count) (svex-opcount1-limit x nil 0 limit)))
+    (fast-alist-free seen)
+    count)
+  ///
+  (deffixequiv svex-opcount-limit))
+
+(define svexlist-opcount-limit ((x svexlist-p) (limit natp))
+  :returns (count natp :rule-classes :type-prescription)
+  (b* (((mv seen count) (svexlist-opcount1-limit x nil 0 limit)))
+    (fast-alist-free seen)
+    count)
+  ///
+  (deffixequiv svexlist-opcount-limit))
+
+
+
+
+(define constraintlist-vars ((x constraintlist-p))
+  :returns (vars svarlist-p)
+  (if (atom x)
+      nil
+    (append (svex-vars (constraint->cond (car x)))
+            (constraintlist-vars (cdr x))))
+  ///
+  (defthm constraintlist-vars-of-append
+    (equal (constraintlist-vars (append a b))
+           (append (constraintlist-vars a)
+                   (constraintlist-vars b)))))
+

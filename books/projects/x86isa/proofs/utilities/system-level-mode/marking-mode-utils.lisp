@@ -1964,7 +1964,7 @@
                       (:linear size-of-combine-bytes-of-take)
                       (:linear size-of-combine-bytes)
                       (:linear bitops::expt-2-lower-bound-by-logbitp)
-                      (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+                      (:rewrite bitops::unsigned-byte-p-incr)
                       (:linear size-of-rb)
                       (:rewrite
                        all-mem-except-paging-structures-equal-aux-and-xr-mem-from-rest-of-memory)

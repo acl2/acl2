@@ -5988,6 +5988,12 @@
                                 t)
                              (default-ruler-extenders wrld))))
     (cond
+     ((cdr ruler-extenders1-lst)
+      (msg "the proposed definition for ~x0 specifies more than one ~
+            ruler-extenders declaration, which is illegal."
+           (car def1)
+           ruler-extenders1
+           (access justification justification :ruler-extenders)))
      ((and justification
            (not (equal (access justification justification :ruler-extenders)
                        ruler-extenders1)))
@@ -7338,7 +7344,8 @@
               (t (chk-logic-subfunctions names0 (cdr names) (cdr terms)
                                              wrld str ctx state)))))))
 
-;; RAG - This function strips out the functions which are
+;; Historical Comment from Ruben Gamboa:
+;; This function strips out the functions which are
 ;; non-classical in a chk-acceptable-defuns "fives" structure.
 
 #+:non-standard-analysis
@@ -7350,7 +7357,8 @@
                         (cons (car names) fns-sofar))))
              (get-non-classical-fns-from-list (cdr names) wrld fns)))))
 
-;; RAG - This function takes in a list of terms and returns any
+;; Historical Comment from Ruben Gamboa:
+;; This function takes in a list of terms and returns any
 ;; non-classical functions referenced in the terms.
 
 #+:non-standard-analysis
@@ -7366,7 +7374,8 @@
             (get-non-classical-fns-from-list
              (all-fnnames (car lst)) wrld fns-sofar)))))
 
-;; RAG - this function checks that the measures used to accept the definition
+;; Historical Comment from Ruben Gamboa:
+;; this function checks that the measures used to accept the definition
 ;; are classical.  Note, *no-measure* is a signal that the default measure is
 ;; being used (see get-measures1) -- and in that case, we know it's classical,
 ;; since it's just the acl2-count of some tuple consisting of variables in the
@@ -7397,7 +7406,8 @@
                `("<MissingFunction>" "~x*," "~x* and " "~x*, "
                  ,non-classical-fns))))))
 
-;; RAG - This function checks that non-classical functions only appear
+;; Historical Comment from Ruben Gamboa:
+;; This function checks that non-classical functions only appear
 ;; on non-recursive functions.
 
 #+:non-standard-analysis
@@ -8065,7 +8075,8 @@
                    (conditionally-memoized-fns (cdr fns) memoize-table)))
             (t (conditionally-memoized-fns (cdr fns) memoize-table)))))))
 
-;; RAG - I modified the function below to check for recursive
+;; Historical Comment from Ruben Gamboa:
+;; I modified the function below to check for recursive
 ;; definitions using non-classical predicates.
 
 (defun chk-acceptable-defuns (lst ctx wrld state #+:non-standard-analysis std-p)

@@ -550,7 +550,6 @@
                              gc-clk-main-before-call
 
                              instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-add-spec-4
                              gpr-add-spec-8
@@ -694,8 +693,7 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
            (equal (64-bit-modep (x86-run (gc-clk-main-before-call) x86))
-                  (64-bit-modep x86)))
-  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+                  (64-bit-modep x86))))
 
 (local
  (defthm loop-preconditions-effects-to-gc-helper
@@ -1126,7 +1124,6 @@
                              gc-clk
 
                              instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-add-spec-4
                              gpr-add-spec-8
@@ -1409,7 +1406,6 @@
            :in-theory (e/d* (env-assumptions
                              top-level-opcode-execute
                              instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-add-spec-4
                              gpr-sub-spec-4
@@ -2070,7 +2066,6 @@
            :in-theory (e/d* (env-assumptions
                              top-level-opcode-execute
                              instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-sub-spec-4
                              jcc/cmovcc/setcc-spec
@@ -2274,8 +2269,7 @@
                 (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*)))
            (equal (64-bit-modep (x86-run (gc-clk-no-eof) x86))
-                  (64-bit-modep x86)))
-  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+                  (64-bit-modep x86))))
 
 (defthmd effects-eof-not-encountered-prelim-for-composition
   (implies (and (loop-preconditions addr x86)
@@ -2442,7 +2436,6 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -2700,8 +2693,7 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (64-bit-modep (x86-run (gc-clk-newline) x86))
-                  (64-bit-modep x86)))
-  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+                  (64-bit-modep x86))))
 
 (defthm loop-preconditions-newline-encountered
   (implies (and (loop-preconditions addr x86)
@@ -2879,7 +2871,6 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -3125,8 +3116,7 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *space*))
            (equal (64-bit-modep (x86-run (gc-clk-space) x86))
-                  (64-bit-modep x86)))
-  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+                  (64-bit-modep x86))))
 
 (defthm loop-preconditions-space-encountered
   (implies (and (loop-preconditions addr x86)
@@ -3297,7 +3287,6 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (top-level-opcode-execute
                              instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -3538,8 +3527,7 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *tab*))
            (equal (64-bit-modep (x86-run (gc-clk-tab) x86))
-                  (64-bit-modep x86)))
-  :hints (("Goal" :in-theory (enable 64-bit-modep))))
+                  (64-bit-modep x86))))
 
 (defthm loop-preconditions-tab-encountered
   (implies (and (loop-preconditions addr x86)
@@ -3828,7 +3816,6 @@
 
                              top-level-opcode-execute
                              instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -4268,7 +4255,7 @@
                 (equal (word-state x86 x86) *out*))
            (equal (64-bit-modep (x86-run (gc-clk-otherwise-out) x86))
                   (64-bit-modep x86)))
-  :hints (("Goal" :in-theory (e/d* (64-bit-modep)
+  :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
                                     subset-p
                                     (:definition acl2::take-redefinition)
@@ -4598,7 +4585,6 @@
 
                              top-level-opcode-execute
                              instruction-decoding-and-spec-rules
-                             64-bit-modep
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -4977,7 +4963,7 @@
                 (not (equal (word-state x86 x86) *out*)))
            (equal (64-bit-modep (x86-run (gc-clk-otherwise-in) x86))
                   (64-bit-modep x86)))
-  :hints (("Goal" :in-theory (e/d* (64-bit-modep)
+  :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
                                     loop-preconditions-forward-chain-addresses-info
                                     negative-logand-to-positive-logand-with-integerp-x

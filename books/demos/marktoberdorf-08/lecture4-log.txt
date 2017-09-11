@@ -1,0 +1,4860 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(SET-GUARD-CHECKING NIL)
+ACL2 >>(SET-GAG-MODE NIL)
+<state>
+ACL2 >>(INCLUDE-BOOK "m1")
+
+Summary
+Form:  ( INCLUDE-BOOK "m1" ...)
+Rules: NIL
+ "m1.lisp"
+ACL2 >>(INCLUDE-BOOK "misc/defpun"
+                     :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "misc/defpun" ...)
+Rules: NIL
+ "[books]/misc/defpun.lisp"
+ACL2 >>(IN-PACKAGE "M1")
+ "M1"
+M1 >>(DEFMACRO DEFPUN (G ARGS &REST TAIL)
+               (CONS 'ACL2::DEFPUN
+                     (CONS G (CONS ARGS TAIL))))
+
+Summary
+Form:  ( DEFMACRO DEFPUN ...)
+Rules: NIL
+ DEFPUN
+M1 >>(DEFMACRO
+      DEFSPEC
+      (NAME PROG
+            INPUTS PRE-PC POST-PC ANNOTATION-ALIST)
+      (LET
+       ((INV (INTERN-IN-PACKAGE-OF-SYMBOL (CONCATENATE 'STRING
+                                                       (SYMBOL-NAME NAME)
+                                                       "-INV")
+                                          'RUN))
+        (INV-DEF (INTERN-IN-PACKAGE-OF-SYMBOL (CONCATENATE 'STRING
+                                                           (SYMBOL-NAME NAME)
+                                                           "-INV-DEF")
+                                              'RUN))
+        (INV-OPENER
+             (INTERN-IN-PACKAGE-OF-SYMBOL (CONCATENATE 'STRING
+                                                       (SYMBOL-NAME NAME)
+                                                       "-INV-OPENER")
+                                          'RUN))
+        (INV-STEP
+             (INTERN-IN-PACKAGE-OF-SYMBOL (CONCATENATE 'STRING
+                                                       (SYMBOL-NAME NAME)
+                                                       "-INV-STEP")
+                                          'RUN))
+        (INV-RUN (INTERN-IN-PACKAGE-OF-SYMBOL (CONCATENATE 'STRING
+                                                           (SYMBOL-NAME NAME)
+                                                           "-INV-RUN")
+                                              'RUN))
+        (CORRECTNESS (INTERN-IN-PACKAGE-OF-SYMBOL
+                          (CONCATENATE 'STRING
+                                       "PARTIAL-CORRECTNESS-OF-PROGRAM-"
+                                       (SYMBOL-NAME NAME))
+                          'RUN)))
+       (CONS
+        'PROGN
+        (CONS
+         (CONS
+          'DEFPUN
+          (CONS
+           INV
+           (CONS
+            (APPEND INPUTS (CONS 'S 'NIL))
+            (CONS
+             (CONS
+              'IF
+              (CONS
+                (CONS 'MEMBER
+                      (CONS (CONS 'PC (CONS 'S 'NIL))
+                            (CONS (CONS 'QUOTE
+                                        (CONS (STRIP-CARS ANNOTATION-ALIST)
+                                              'NIL))
+                                  'NIL)))
+                (CONS (CONS 'AND
+                            (CONS (CONS 'EQUAL
+                                        (CONS (CONS 'PROGRAM (CONS 'S 'NIL))
+                                              (CONS PROG 'NIL)))
+                                  (CONS (CONS 'CASE
+                                              (CONS (CONS 'PC (CONS 'S 'NIL))
+                                                    ANNOTATION-ALIST))
+                                        'NIL)))
+                      (CONS (CONS INV
+                                  (APPEND INPUTS
+                                          (CONS (CONS 'STEP (CONS 'S 'NIL))
+                                                'NIL)))
+                            'NIL))))
+             'NIL))))
+         (CONS
+          (CONS
+           'DEFTHM
+           (CONS
+            INV-OPENER
+            (CONS
+             (CONS
+              'IMPLIES
+              (CONS
+               (CONS
+                'AND
+                (CONS
+                 (CONS 'EQUAL
+                       (CONS 'PC
+                             (CONS (CONS 'PC (CONS 'S 'NIL)) 'NIL)))
+                 (CONS
+                  (CONS 'SYNTAXP
+                        (CONS (CONS 'QUOTEP (CONS 'PC 'NIL))
+                              'NIL))
+                  (CONS
+                   (CONS
+                    'NOT
+                    (CONS
+                     (CONS
+                        'MEMBER
+                        (CONS 'PC
+                              (CONS (CONS 'QUOTE
+                                          (CONS (STRIP-CARS ANNOTATION-ALIST)
+                                                'NIL))
+                                    'NIL)))
+                     'NIL))
+                   'NIL))))
+               (CONS
+                (CONS
+                  'EQUAL
+                  (CONS (CONS INV (APPEND INPUTS (CONS 'S 'NIL)))
+                        (CONS (CONS INV
+                                    (APPEND INPUTS
+                                            (CONS (CONS 'STEP (CONS 'S 'NIL))
+                                                  'NIL)))
+                              'NIL)))
+                'NIL)))
+             'NIL)))
+          (CONS
+           (CONS
+            'DEFTHM
+            (CONS
+             INV-STEP
+             (CONS
+              (CONS
+                  'IMPLIES
+                  (CONS (CONS INV (APPEND INPUTS (CONS 'S 'NIL)))
+                        (CONS (CONS INV
+                                    (APPEND INPUTS
+                                            (CONS (CONS 'STEP (CONS 'S 'NIL))
+                                                  'NIL)))
+                              'NIL)))
+              'NIL)))
+           (CONS
+            (CONS
+             'DEFTHM
+             (CONS
+              INV-RUN
+              (CONS
+               (CONS
+                'IMPLIES
+                (CONS
+                 (CONS INV (APPEND INPUTS (CONS 'S 'NIL)))
+                 (CONS
+                  (CONS
+                       INV
+                       (APPEND INPUTS
+                               (CONS (CONS 'RUN (CONS 'SCHED (CONS 'S 'NIL)))
+                                     'NIL)))
+                  'NIL)))
+               (CONS
+                ':RULE-CLASSES
+                (CONS
+                 'NIL
+                 (CONS
+                  ':HINTS
+                  (CONS
+                   (CONS
+                    (CONS
+                     '"Goal"
+                     (CONS
+                          ':IN-THEORY
+                          (CONS (CONS 'E/D
+                                      (CONS (CONS 'RUN 'NIL)
+                                            (CONS (CONS INV-DEF 'NIL) 'NIL)))
+                                'NIL)))
+                    'NIL)
+                   'NIL)))))))
+            (CONS
+             (CONS
+              'DEFTHM
+              (CONS
+               CORRECTNESS
+               (CONS
+                (CONS
+                 'LET*
+                 (CONS
+                  (CONS (CONS 'SK
+                              (CONS (CONS 'RUN
+                                          (CONS 'SCHED (CONS 'S0 'NIL)))
+                                    'NIL))
+                        'NIL)
+                  (CONS
+                   (CONS
+                    'IMPLIES
+                    (CONS
+                     (CONS
+                      'AND
+                      (CONS
+                       (CONS
+                           'LET
+                           (CONS (CONS (CONS 'S (CONS 'S0 'NIL)) 'NIL)
+                                 (CONS (CADR (ASSOC PRE-PC ANNOTATION-ALIST))
+                                       'NIL)))
+                       (CONS
+                        (CONS 'EQUAL
+                              (CONS (CONS 'PC (CONS 'S0 'NIL))
+                                    (CONS PRE-PC 'NIL)))
+                        (CONS
+                         (CONS
+                          'EQUAL
+                          (CONS (CONS 'LOCALS (CONS 'S0 'NIL))
+                                (CONS (CONS 'LIST*
+                                            (APPEND INPUTS (CONS 'ANY 'NIL)))
+                                      'NIL)))
+                         (CONS (CONS 'EQUAL
+                                     (CONS (CONS 'PROGRAM (CONS 'S0 'NIL))
+                                           (CONS PROG 'NIL)))
+                               (CONS (CONS 'EQUAL
+                                           (CONS (CONS 'PC (CONS 'SK 'NIL))
+                                                 (CONS POST-PC 'NIL)))
+                                     'NIL))))))
+                     (CONS
+                      (CONS
+                          'LET
+                          (CONS (CONS (CONS 'S (CONS 'SK 'NIL)) 'NIL)
+                                (CONS (CADR (ASSOC POST-PC ANNOTATION-ALIST))
+                                      'NIL)))
+                      'NIL)))
+                   'NIL)))
+                (CONS
+                 ':HINTS
+                 (CONS
+                  (CONS
+                   (CONS
+                    '"Goal"
+                    (CONS
+                     ':USE
+                     (CONS
+                      (CONS
+                       ':INSTANCE
+                       (CONS
+                         INV-RUN
+                         (APPEND (PAIRLIS$ INPUTS (PAIRLIS-X2 INPUTS NIL))
+                                 (CONS (CONS 'S (CONS 'S0 'NIL))
+                                       (CONS (CONS 'SCHED (CONS 'SCHED 'NIL))
+                                             'NIL)))))
+                      'NIL)))
+                   'NIL)
+                  (CONS ':RULE-CLASSES
+                        (CONS 'NIL 'NIL)))))))
+             'NIL))))))))
+
+Summary
+Form:  ( DEFMACRO DEFSPEC ...)
+Rules: NIL
+ DEFSPEC
+M1 >>(DEFUN F (N)
+            (IF (ZP N) 1 (* N (F (- N 1)))))
+
+The admission of F is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT N).  We observe that the type of F is described by the
+theorem (AND (INTEGERP (F N)) (< 0 (F N))).  We used the :compound-
+recognizer rule ACL2::ZP-COMPOUND-RECOGNIZER and primitive type reasoning.
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F
+M1 >>(DEFCONST *G*
+               '((PUSH 1)
+                 (STORE 1)
+                 (LOAD 0)
+                 (IFLE 10)
+                 (LOAD 0)
+                 (LOAD 1)
+                 (MUL)
+                 (STORE 1)
+                 (LOAD 0)
+                 (PUSH 1)
+                 (SUB)
+                 (STORE 0)
+                 (GOTO -10)
+                 (LOAD 1)
+                 (RETURN)))
+
+Summary
+Form:  ( DEFCONST *G* ...)
+Rules: NIL
+ *G*
+M1 >>'(END OF SETUP)
+(END OF SETUP)
+M1 >>(DEFUN N (S) (NTH 0 (LOCALS S)))
+
+Since N is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of N.
+
+Summary
+Form:  ( DEFUN N ...)
+Rules: NIL
+ N
+M1 >>(DEFUN A (S) (NTH 1 (LOCALS S)))
+
+Since A is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of A.
+
+Summary
+Form:  ( DEFUN A ...)
+Rules: NIL
+ A
+M1 >>(DEFSPEC G *G* (N0 A0)
+              0 14
+              ((0 (AND (EQUAL N0 (N S)) (NATP N0)))
+               (2 (AND (NATP N0)
+                       (NATP (N S))
+                       (NATP (NTH 1 (LOCALS S)))
+                       (<= (N S) N0)
+                       (EQUAL (F N0) (* (F (N S)) (A S)))))
+               (14 (EQUAL (TOP (STACK S)) (F N0)))))
+
+
+M1 >>>(DEFPUN G-INV (N0 A0 S)
+              (IF (MEMBER (PC S) '(0 2 14))
+                  (AND (EQUAL (PROGRAM S) *G*)
+                       (CASE (PC S)
+                             (0 (AND (EQUAL N0 (N S)) (NATP N0)))
+                             (2 (AND (NATP N0)
+                                     (NATP (N S))
+                                     (NATP (NTH 1 (LOCALS S)))
+                                     (<= (N S) N0)
+                                     (EQUAL (F N0) (* (F (N S)) (A S)))))
+                             (14 (EQUAL (TOP (STACK S)) (F N0)))))
+                  (G-INV N0 A0 (STEP S))))
+
+To verify that the eight encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+M1 >>>(SET-IGNORE-OK T)
+T
+
+
+M1 >>>(SET-IRRELEVANT-FORMALS-OK T)
+T
+
+
+M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC |G-INV-arity-1-defpun-test| (ACL2::X)
+                                  (LET ((N0 (CAR ACL2::X))
+                                        (A0 (CAR (CDR ACL2::X)))
+                                        (S (CAR (CDR (CDR ACL2::X)))))
+                                       (MEMBER (PC S) '(0 2 14)))))
+
+Since |G-INV-arity-1-defpun-test| is non-recursive, its admission is
+trivial.  We observe that the type of |G-INV-arity-1-defpun-test| is
+described by the theorem 
+(OR (CONSP (|G-INV-arity-1-defpun-test| ACL2::X))
+    (EQUAL (|G-INV-arity-1-defpun-test| ACL2::X)
+           NIL)).
+We used the :type-prescription rule MEMBER-EQUAL.
+
+Summary
+Form:  ( DEFUN |G-INV-arity-1-defpun-test| ...)
+Rules: ((:TYPE-PRESCRIPTION MEMBER-EQUAL))
+|G-INV-arity-1-defpun-test|
+
+
+M1 >>>(LOCAL
+           (ACL2::DEFUN-NONEXEC
+                |G-INV-arity-1-defpun-base| (ACL2::X)
+                (LET ((N0 (CAR ACL2::X))
+                      (A0 (CAR (CDR ACL2::X)))
+                      (S (CAR (CDR (CDR ACL2::X)))))
+                     (AND (EQUAL (PROGRAM S) *G*)
+                          (CASE (PC S)
+                                (0 (AND (EQUAL N0 (N S)) (NATP N0)))
+                                (2 (AND (NATP N0)
+                                        (NATP (N S))
+                                        (NATP (NTH 1 (LOCALS S)))
+                                        (<= (N S) N0)
+                                        (EQUAL (F N0) (* (F (N S)) (A S)))))
+                                (14 (EQUAL (TOP (STACK S)) (F N0))))))))
+
+Since |G-INV-arity-1-defpun-base| is non-recursive, its admission is
+trivial.  We observe that the type of |G-INV-arity-1-defpun-base| is
+described by the theorem 
+(OR (EQUAL (|G-INV-arity-1-defpun-base| ACL2::X)
+           T)
+    (EQUAL (|G-INV-arity-1-defpun-base| ACL2::X)
+           NIL)).
+We used the :compound-recognizer rule ACL2::NATP-COMPOUND-RECOGNIZER
+and primitive type reasoning.
+
+Summary
+Form:  ( DEFUN |G-INV-arity-1-defpun-base| ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+|G-INV-arity-1-defpun-base|
+
+
+M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC |G-INV-arity-1-step| (ACL2::X)
+                                  (LET ((N0 (CAR ACL2::X))
+                                        (A0 (CAR (CDR ACL2::X)))
+                                        (S (CAR (CDR (CDR ACL2::X)))))
+                                       (LIST N0 A0 (STEP S)))))
+
+Since |G-INV-arity-1-step| is non-recursive, its admission is trivial.
+We observe that the type of |G-INV-arity-1-step| is described by the
+theorem 
+(AND (CONSP (|G-INV-arity-1-step| ACL2::X))
+     (TRUE-LISTP (|G-INV-arity-1-step| ACL2::X))).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN |G-INV-arity-1-step| ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+|G-INV-arity-1-step|
+
+
+M1 >>>(LOCAL
+       (ENCAPSULATE
+        ((|G-INV-arity-1| (ACL2::X) T))
+        (LOCAL (IN-THEORY (DISABLE |G-INV-arity-1-defpun-test|
+                                   |G-INV-arity-1-defpun-base|
+                                   |G-INV-arity-1-step|)))
+        (LOCAL
+          (ACL2::DEFUN-NONEXEC
+               |G-INV-arity-1-defpun-stn|
+               (ACL2::X ACL2::N)
+               (IF (ZP ACL2::N)
+                   ACL2::X
+                   (|G-INV-arity-1-defpun-stn| (|G-INV-arity-1-step| ACL2::X)
+                                               (1- ACL2::N)))))
+        (LOCAL
+             (DEFCHOOSE |G-INV-arity-1-fch| (ACL2::N)
+                        (ACL2::X)
+                        (|G-INV-arity-1-defpun-test|
+                             (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N))))
+        (LOCAL
+           (ACL2::DEFUN-NONEXEC
+                |G-INV-arity-1-defpun-fn|
+                (ACL2::X ACL2::N)
+                (DECLARE (XARGS :MEASURE (NFIX ACL2::N)))
+                (IF (OR (ZP ACL2::N)
+                        (|G-INV-arity-1-defpun-test| ACL2::X))
+                    (|G-INV-arity-1-defpun-base| ACL2::X)
+                    (|G-INV-arity-1-defpun-fn| (|G-INV-arity-1-step| ACL2::X)
+                                               (1- ACL2::N)))))
+        (LOCAL
+         (ACL2::DEFUN-NONEXEC
+          |G-INV-arity-1| (ACL2::X)
+          (IF
+            (|G-INV-arity-1-defpun-test|
+                 (|G-INV-arity-1-defpun-stn|
+                      ACL2::X (|G-INV-arity-1-fch| ACL2::X)))
+            (|G-INV-arity-1-defpun-fn| ACL2::X (|G-INV-arity-1-fch| ACL2::X))
+            NIL)))
+        (LOCAL
+         (IN-THEORY
+          '(|G-INV-arity-1| |G-INV-arity-1-defpun-test|
+                            |G-INV-arity-1-defpun-base|
+                            |G-INV-arity-1-step|
+                            |G-INV-arity-1-defpun-stn|
+                            |G-INV-arity-1-defpun-fn|
+                            (:TYPE-PRESCRIPTION |G-INV-arity-1-defpun-fn|))))
+        (DEFTHM
+           |G-INV-arity-1-DEF|
+           (EQUAL (|G-INV-arity-1| ACL2::X)
+                  (IF (|G-INV-arity-1-defpun-test| ACL2::X)
+                      (|G-INV-arity-1-defpun-base| ACL2::X)
+                      (|G-INV-arity-1| (|G-INV-arity-1-step| ACL2::X))))
+           :HINTS
+           (("Goal" :USE (:FUNCTIONAL-INSTANCE
+                              ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F
+                              (ACL2::DEFPUN-F |G-INV-arity-1|)
+                              (ACL2::DEFPUN-TEST |G-INV-arity-1-defpun-test|)
+                              (ACL2::DEFPUN-BASE |G-INV-arity-1-defpun-base|)
+                              (ACL2::DEFPUN-ST |G-INV-arity-1-step|)
+                              (ACL2::DEFPUN-STN |G-INV-arity-1-defpun-stn|)
+                              (ACL2::FCH |G-INV-arity-1-fch|)
+                              (ACL2::DEFPUN-FN |G-INV-arity-1-defpun-fn|)))
+            ("Subgoal 2" :USE |G-INV-arity-1-fch|))
+           :RULE-CLASSES NIL)))
+
+To verify that the seven encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+M1 >>>(LOCAL (IN-THEORY (DISABLE |G-INV-arity-1-defpun-test|
+                                 |G-INV-arity-1-defpun-base|
+                                 |G-INV-arity-1-step|)))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+:CURRENT-THEORY-UPDATED
+
+
+M1 >>>(LOCAL
+          (ACL2::DEFUN-NONEXEC
+               |G-INV-arity-1-defpun-stn|
+               (ACL2::X ACL2::N)
+               (IF (ZP ACL2::N)
+                   ACL2::X
+                   (|G-INV-arity-1-defpun-stn| (|G-INV-arity-1-step| ACL2::X)
+                                               (1- ACL2::N)))))
+
+The admission of |G-INV-arity-1-defpun-stn| is trivial, using the relation
+O< (which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT ACL2::N).  We observe that the type of
+|G-INV-arity-1-defpun-stn| is described by the theorem 
+(OR (AND (CONSP (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N))
+         (TRUE-LISTP (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N)))
+    (EQUAL (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N)
+           ACL2::X)).
+We used the :type-prescription rule |G-INV-arity-1-step|.
+
+Summary
+Form:  ( DEFUN |G-INV-arity-1-defpun-stn| ...)
+Rules: ((:TYPE-PRESCRIPTION |G-INV-arity-1-step|))
+|G-INV-arity-1-defpun-stn|
+
+
+M1 >>>(LOCAL (DEFCHOOSE |G-INV-arity-1-fch| (ACL2::N)
+                        (ACL2::X)
+                        (|G-INV-arity-1-defpun-test|
+                             (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N))))
+
+Summary
+Form:  ( DEFCHOOSE |G-INV-arity-1-fch| ...)
+Rules: NIL
+|G-INV-arity-1-fch|
+
+
+M1 >>>(LOCAL
+           (ACL2::DEFUN-NONEXEC
+                |G-INV-arity-1-defpun-fn|
+                (ACL2::X ACL2::N)
+                (DECLARE (XARGS :MEASURE (NFIX ACL2::N)))
+                (IF (OR (ZP ACL2::N)
+                        (|G-INV-arity-1-defpun-test| ACL2::X))
+                    (|G-INV-arity-1-defpun-base| ACL2::X)
+                    (|G-INV-arity-1-defpun-fn| (|G-INV-arity-1-step| ACL2::X)
+                                               (1- ACL2::N)))))
+
+For the admission of |G-INV-arity-1-defpun-fn| we will use the relation
+O< (which is known to be well-founded on the domain recognized by O-P)
+and the measure (NFIX ACL2::N).  The non-trivial part of the measure
+conjecture is
+
+Goal
+(AND (O-P (NFIX ACL2::N))
+     (IMPLIES (NOT (OR (ZP ACL2::N)
+                       (|G-INV-arity-1-defpun-test| ACL2::X)))
+              (O< (NFIX (+ -1 ACL2::N))
+                  (NFIX ACL2::N)))).
+
+By case analysis we reduce the conjecture to the following two conjectures.
+
+Subgoal 2
+(O-P (NFIX ACL2::N)).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER and the :definitions NFIX, O-FINP
+and O-P.
+
+Subgoal 1
+(IMPLIES (NOT (OR (ZP ACL2::N)
+                  (|G-INV-arity-1-defpun-test| ACL2::X)))
+         (O< (NFIX (+ -1 ACL2::N))
+             (NFIX ACL2::N))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::ZP-COMPOUND-RECOGNIZER, the :definitions NFIX, O-FINP and
+O<, primitive type reasoning, the :meta rule ACL2::CANCEL_PLUS-LESSP-CORRECT
+and the :rewrite rule ACL2::<-+-NEGATIVE-0-1.
+
+Q.E.D.
+
+That completes the proof of the measure theorem for 
+|G-INV-arity-1-defpun-fn|.  Thus, we admit this function under the
+principle of definition.  We observe that the type of 
+|G-INV-arity-1-defpun-fn| is described by the theorem 
+(OR (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+           T)
+    (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+           NIL)).
+We used the :compound-recognizer rule ACL2::ZP-COMPOUND-RECOGNIZER
+and the :type-prescription rule |G-INV-arity-1-defpun-base|.
+
+Summary
+Form:  ( DEFUN |G-INV-arity-1-defpun-fn| ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION NFIX)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O-P)
+        (:DEFINITION O<)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
+        (:REWRITE ACL2::<-+-NEGATIVE-0-1)
+        (:TYPE-PRESCRIPTION |G-INV-arity-1-defpun-base|))
+|G-INV-arity-1-defpun-fn|
+
+
+M1 >>>(LOCAL
+       (ACL2::DEFUN-NONEXEC
+        |G-INV-arity-1| (ACL2::X)
+        (IF
+         (|G-INV-arity-1-defpun-test|
+          (|G-INV-arity-1-defpun-stn| ACL2::X (|G-INV-arity-1-fch| ACL2::X)))
+         (|G-INV-arity-1-defpun-fn| ACL2::X (|G-INV-arity-1-fch| ACL2::X))
+         NIL)))
+
+Since |G-INV-arity-1| is non-recursive, its admission is trivial. 
+We observe that the type of |G-INV-arity-1| is described by the theorem
+(OR (EQUAL (|G-INV-arity-1| ACL2::X) T)
+    (EQUAL (|G-INV-arity-1| ACL2::X) NIL)).
+We used the :type-prescription rule |G-INV-arity-1-defpun-fn|.
+
+Summary
+Form:  ( DEFUN |G-INV-arity-1| ...)
+Rules: ((:TYPE-PRESCRIPTION |G-INV-arity-1-defpun-fn|))
+|G-INV-arity-1|
+
+
+M1 >>>(LOCAL
+       (IN-THEORY
+          '(|G-INV-arity-1| |G-INV-arity-1-defpun-test|
+                            |G-INV-arity-1-defpun-base|
+                            |G-INV-arity-1-step|
+                            |G-INV-arity-1-defpun-stn|
+                            |G-INV-arity-1-defpun-fn|
+                            (:TYPE-PRESCRIPTION |G-INV-arity-1-defpun-fn|))))
+
+ACL2 Warning [Disable] in ( IN-THEORY (QUOTE ...)):  Forcing has transitioned
+from enabled to disabled.
+See :DOC force.
+
+
+Summary
+Form:  ( IN-THEORY (QUOTE ...))
+Rules: NIL
+Warnings:  Disable
+:CURRENT-THEORY-UPDATED
+
+
+M1 >>>(DEFTHM
+           |G-INV-arity-1-DEF|
+           (EQUAL (|G-INV-arity-1| ACL2::X)
+                  (IF (|G-INV-arity-1-defpun-test| ACL2::X)
+                      (|G-INV-arity-1-defpun-base| ACL2::X)
+                      (|G-INV-arity-1| (|G-INV-arity-1-step| ACL2::X))))
+           :HINTS
+           (("Goal" :USE (:FUNCTIONAL-INSTANCE
+                              ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F
+                              (ACL2::DEFPUN-F |G-INV-arity-1|)
+                              (ACL2::DEFPUN-TEST |G-INV-arity-1-defpun-test|)
+                              (ACL2::DEFPUN-BASE |G-INV-arity-1-defpun-base|)
+                              (ACL2::DEFPUN-ST |G-INV-arity-1-step|)
+                              (ACL2::DEFPUN-STN |G-INV-arity-1-defpun-stn|)
+                              (ACL2::FCH |G-INV-arity-1-fch|)
+                              (ACL2::DEFPUN-FN |G-INV-arity-1-defpun-fn|)))
+            ("Subgoal 2" :USE |G-INV-arity-1-fch|))
+           :RULE-CLASSES NIL)
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be derived from ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F
+via functional instantiation, provided we can establish the four constraints
+generated; the constraints can be simplified using case analysis. 
+We are left with the following four subgoals.
+
+Subgoal 4
+(EQUAL
+ (|G-INV-arity-1| ACL2::X)
+ (AND
+     (|G-INV-arity-1-defpun-test|
+          (|G-INV-arity-1-defpun-stn| ACL2::X (|G-INV-arity-1-fch| ACL2::X)))
+     (|G-INV-arity-1-defpun-fn| ACL2::X
+                                (|G-INV-arity-1-fch| ACL2::X)))).
+
+But simplification reduces this to T, using the :definitions |G-INV-arity-1|
+and |G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3
+(EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+       (IF (OR (ZP ACL2::N)
+               (|G-INV-arity-1-defpun-test| ACL2::X))
+           (|G-INV-arity-1-defpun-base| ACL2::X)
+           (|G-INV-arity-1-defpun-fn| (|G-INV-arity-1-step| ACL2::X)
+                                      (+ -1 ACL2::N)))).
+
+This simplifies, using the :definitions |G-INV-arity-1-defpun-base|
+(if-intro), |G-INV-arity-1-defpun-test| and |G-INV-arity-1-step|, to
+the following 21 conjectures.
+
+Subgoal 3.21
+(IMPLIES (AND (NOT (ZP ACL2::N))
+              (NOT (MEMBER-EQUAL (PC (CADDR ACL2::X))
+                                 '(0 2 14))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (|G-INV-arity-1-defpun-fn| (LIST (CAR ACL2::X)
+                                                 (CADR ACL2::X)
+                                                 (STEP (CADDR ACL2::X)))
+                                           (+ -1 ACL2::N)))).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-fn|, |G-INV-arity-1-defpun-test| and 
+|G-INV-arity-1-step| and primitive type reasoning.
+
+Subgoal 3.20
+(IMPLIES (AND (ZP ACL2::N)
+              (NOT (EQUAL (PROGRAM (CADDR ACL2::X))
+                          '((PUSH 1)
+                            (STORE 1)
+                            (LOAD 0)
+                            (IFLE 10)
+                            (LOAD 0)
+                            (LOAD 1)
+                            (MUL)
+                            (STORE 1)
+                            (LOAD 0)
+                            (PUSH 1)
+                            (SUB)
+                            (STORE 0)
+                            (GOTO -10)
+                            (LOAD 1)
+                            (RETURN)))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.19
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PROGRAM (CADDR ACL2::X))
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADDR ACL2::X)) 14))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (EQUAL (TOP (STACK (CADDR ACL2::X)))
+                       (F (CAR ACL2::X))))).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.18
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PROGRAM (CADDR ACL2::X))
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADDR ACL2::X)) 0)
+              (EQUAL (CAR ACL2::X)
+                     (N (CADDR ACL2::X))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (NATP (CAR ACL2::X)))).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.17
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PROGRAM (CADDR ACL2::X))
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (NATP (CAR ACL2::X))
+              (NATP (N (CADDR ACL2::X)))
+              (NATP (NTH 1 (LOCALS (CADDR ACL2::X))))
+              (<= (N (CADDR ACL2::X)) (CAR ACL2::X)))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (EQUAL (F (CAR ACL2::X))
+                       (* (F (N (CADDR ACL2::X)))
+                          (A (CADDR ACL2::X)))))).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.16
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADDR ACL2::X)) 0)
+              (NOT (EQUAL (CAR ACL2::X)
+                          (N (CADDR ACL2::X)))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.15
+(IMPLIES (AND (ZP ACL2::N)
+              (NOT (EQUAL (PC (CADDR ACL2::X)) 0))
+              (NOT (EQUAL (PC (CADDR ACL2::X)) 2))
+              (NOT (EQUAL (PC (CADDR ACL2::X)) 14)))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.14
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (NOT (NATP (NTH 1 (LOCALS (CADDR ACL2::X))))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.13
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (< (CAR ACL2::X) (N (CADDR ACL2::X))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.12
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (NOT (NATP (CAR ACL2::X))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.11
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (NOT (NATP (N (CADDR ACL2::X)))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base| and |G-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.10
+(IMPLIES (AND (MEMBER-EQUAL (PC (CADDR ACL2::X))
+                            '(0 2 14))
+              (NOT (EQUAL (PROGRAM (CADDR ACL2::X))
+                          '((PUSH 1)
+                            (STORE 1)
+                            (LOAD 0)
+                            (IFLE 10)
+                            (LOAD 0)
+                            (LOAD 1)
+                            (MUL)
+                            (STORE 1)
+                            (LOAD 0)
+                            (PUSH 1)
+                            (SUB)
+                            (STORE 0)
+                            (GOTO -10)
+                            (LOAD 1)
+                            (RETURN)))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.9
+(IMPLIES (AND (MEMBER-EQUAL 14 '(0 2 14))
+              (EQUAL (PROGRAM (CADDR ACL2::X))
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADDR ACL2::X)) 14))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (EQUAL (TOP (STACK (CADDR ACL2::X)))
+                       (F (CAR ACL2::X))))).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.8
+(IMPLIES (AND (MEMBER-EQUAL 0 '(0 2 14))
+              (EQUAL (PROGRAM (CADDR ACL2::X))
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADDR ACL2::X)) 0)
+              (EQUAL (CAR ACL2::X)
+                     (N (CADDR ACL2::X))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (NATP (CAR ACL2::X)))).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.7
+(IMPLIES (AND (MEMBER-EQUAL 2 '(0 2 14))
+              (EQUAL (PROGRAM (CADDR ACL2::X))
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (NATP (CAR ACL2::X))
+              (NATP (N (CADDR ACL2::X)))
+              (NATP (NTH 1 (LOCALS (CADDR ACL2::X))))
+              (<= (N (CADDR ACL2::X)) (CAR ACL2::X)))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (EQUAL (F (CAR ACL2::X))
+                       (* (F (N (CADDR ACL2::X)))
+                          (A (CADDR ACL2::X)))))).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.6
+(IMPLIES (AND (MEMBER-EQUAL 2 '(0 2 14))
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (NOT (NATP (NTH 1 (LOCALS (CADDR ACL2::X))))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.5
+(IMPLIES (AND (MEMBER-EQUAL 2 '(0 2 14))
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (< (CAR ACL2::X) (N (CADDR ACL2::X))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.4
+(IMPLIES (AND (MEMBER-EQUAL 2 '(0 2 14))
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (NOT (NATP (N (CADDR ACL2::X)))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.3
+(IMPLIES (AND (MEMBER-EQUAL 2 '(0 2 14))
+              (EQUAL (PC (CADDR ACL2::X)) 2)
+              (NOT (NATP (CAR ACL2::X))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.2
+(IMPLIES (AND (MEMBER-EQUAL (PC (CADDR ACL2::X))
+                            '(0 2 14))
+              (NOT (EQUAL (PC (CADDR ACL2::X)) 0))
+              (NOT (EQUAL (PC (CADDR ACL2::X)) 2))
+              (NOT (EQUAL (PC (CADDR ACL2::X)) 14)))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.1
+(IMPLIES (AND (MEMBER-EQUAL 0 '(0 2 14))
+              (EQUAL (PC (CADDR ACL2::X)) 0)
+              (NOT (EQUAL (CAR ACL2::X)
+                          (N (CADDR ACL2::X)))))
+         (EQUAL (|G-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
+|G-INV-arity-1-defpun-test| and primitive type reasoning.
+
+[Note:  A hint was supplied for our processing of the goal below. 
+Thanks!]
+
+Subgoal 2
+(IMPLIES
+   (|G-INV-arity-1-defpun-test| (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N))
+   (|G-INV-arity-1-defpun-test|
+        (|G-INV-arity-1-defpun-stn| ACL2::X
+                                    (|G-INV-arity-1-fch| ACL2::X)))).
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be obtained from |G-INV-arity-1-fch|.  We are left
+with the following subgoal.
+
+Subgoal 2'
+(IMPLIES
+ (AND
+  (IMPLIES
+   (|G-INV-arity-1-defpun-test| (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N))
+   (LET ((ACL2::N (|G-INV-arity-1-fch| ACL2::X)))
+        (|G-INV-arity-1-defpun-test|
+             (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N))))
+  (|G-INV-arity-1-defpun-test| (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N)))
+ (|G-INV-arity-1-defpun-test|
+      (|G-INV-arity-1-defpun-stn| ACL2::X
+                                  (|G-INV-arity-1-fch| ACL2::X)))).
+
+By case analysis we reduce the conjecture to
+
+Subgoal 2''
+(IMPLIES
+ (AND
+  (IMPLIES
+   (|G-INV-arity-1-defpun-test| (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N))
+   (|G-INV-arity-1-defpun-test|
+        (|G-INV-arity-1-defpun-stn| ACL2::X (|G-INV-arity-1-fch| ACL2::X))))
+  (|G-INV-arity-1-defpun-test| (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N)))
+ (|G-INV-arity-1-defpun-test|
+      (|G-INV-arity-1-defpun-stn| ACL2::X
+                                  (|G-INV-arity-1-fch| ACL2::X)))).
+
+But we reduce the conjecture to T, by case analysis.
+
+Subgoal 1
+(EQUAL (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N)
+       (IF (ZP ACL2::N)
+           ACL2::X
+           (|G-INV-arity-1-defpun-stn| (|G-INV-arity-1-step| ACL2::X)
+                                       (+ -1 ACL2::N)))).
+
+This simplifies, using the :definition |G-INV-arity-1-step|, to the
+following two conjectures.
+
+Subgoal 1.2
+(IMPLIES (ZP ACL2::N)
+         (EQUAL (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N)
+                ACL2::X)).
+
+But simplification reduces this to T, using the :definition 
+|G-INV-arity-1-defpun-stn| and primitive type reasoning.
+
+Subgoal 1.1
+(IMPLIES (NOT (ZP ACL2::N))
+         (EQUAL (|G-INV-arity-1-defpun-stn| ACL2::X ACL2::N)
+                (|G-INV-arity-1-defpun-stn| (LIST (CAR ACL2::X)
+                                                  (CADR ACL2::X)
+                                                  (STEP (CADDR ACL2::X)))
+                                            (+ -1 ACL2::N)))).
+
+But simplification reduces this to T, using the :definitions 
+|G-INV-arity-1-defpun-stn| and |G-INV-arity-1-step| and primitive type
+reasoning.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM |G-INV-arity-1-DEF| ...)
+Rules: ((:DEFINITION |G-INV-arity-1|)
+        (:DEFINITION |G-INV-arity-1-defpun-base|)
+        (:DEFINITION |G-INV-arity-1-defpun-fn|)
+        (:DEFINITION |G-INV-arity-1-defpun-stn|)
+        (:DEFINITION |G-INV-arity-1-defpun-test|)
+        (:DEFINITION |G-INV-arity-1-step|)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+Hint-events: ((:USE |G-INV-arity-1-fch|)
+              (:USE ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION |G-INV-arity-1-defpun-base|))
+|G-INV-arity-1-DEF|
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function |G-INV-arity-1|:
+
+(EQUAL (|G-INV-arity-1| ACL2::X)
+       (IF (|G-INV-arity-1-defpun-test| ACL2::X)
+           (|G-INV-arity-1-defpun-base| ACL2::X)
+           (|G-INV-arity-1| (|G-INV-arity-1-step| ACL2::X))))
+
+Summary
+Form:  ( ENCAPSULATE ((|G-INV-arity-1| ...) ...) ...)
+Rules: NIL
+Warnings:  Disable
+T
+
+
+M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC G-INV (N0 A0 S)
+                                  (|G-INV-arity-1| (LIST N0 A0 S))))
+
+Since G-INV is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of G-INV.
+
+Summary
+Form:  ( DEFUN G-INV ...)
+Rules: NIL
+G-INV
+
+
+M1 >>>(DEFTHM
+           G-INV-DEF
+           (EQUAL (G-INV N0 A0 S)
+                  (IF (MEMBER (PC S) '(0 2 14))
+                      (AND (EQUAL (PROGRAM S) *G*)
+                           (CASE (PC S)
+                                 (0 (AND (EQUAL N0 (N S)) (NATP N0)))
+                                 (2 (AND (NATP N0)
+                                         (NATP (N S))
+                                         (NATP (NTH 1 (LOCALS S)))
+                                         (<= (N S) N0)
+                                         (EQUAL (F N0) (* (F (N S)) (A S)))))
+                                 (14 (EQUAL (TOP (STACK S)) (F N0)))))
+                      (G-INV N0 A0 (STEP S))))
+           :HINTS (("Goal" :USE (:INSTANCE |G-INV-arity-1-DEF|
+                                           (ACL2::X (LIST N0 A0 S)))))
+           :RULE-CLASSES :DEFINITION)
+
+ACL2 Warning [Non-rec] in ( DEFTHM G-INV-DEF ...):  A :DEFINITION rule
+generated from G-INV-DEF will be triggered only by terms containing
+the non-recursive function symbol G-INV.  Unless this function is disabled,
+this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM G-INV-DEF ...):  A newly proposed
+:DEFINITION rule generated from G-INV-DEF probably subsumes the previously
+added :REWRITE rule G-INV, in the sense that the new rule will now
+probably be applied whenever the old rule would have been.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM G-INV-DEF ...):  The previously
+added rule G-INV subsumes a newly proposed :DEFINITION rule generated
+from G-INV-DEF, in the sense that the old rule rewrites a more general
+target.  Because the new rule will be tried first, it may nonetheless
+find application.
+
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be derived from |G-INV-arity-1-DEF| via instantiation.
+We are left with the following subgoal.
+
+Goal'
+(IMPLIES
+ (EQUAL (|G-INV-arity-1| (LIST N0 A0 S))
+        (IF (|G-INV-arity-1-defpun-test| (LIST N0 A0 S))
+            (|G-INV-arity-1-defpun-base| (LIST N0 A0 S))
+            (|G-INV-arity-1| (|G-INV-arity-1-step| (LIST N0 A0 S)))))
+ (EQUAL
+  (G-INV N0 A0 S)
+  (IF
+   (LET
+      ((ACL2::X (PC S)) (ACL2::L '(0 2 14)))
+      (ACL2::MBE1 (ACL2::MEMBER-EQL-EXEC ACL2::X ACL2::L)
+                  (PROG2$ (ACL2::MEMBER-EQL-EXEC$GUARD-CHECK ACL2::X ACL2::L)
+                          (MEMBER-EQUAL ACL2::X ACL2::L))))
+   (AND (EQUAL (PROGRAM S)
+               '((PUSH 1)
+                 (STORE 1)
+                 (LOAD 0)
+                 (IFLE 10)
+                 (LOAD 0)
+                 (LOAD 1)
+                 (MUL)
+                 (STORE 1)
+                 (LOAD 0)
+                 (PUSH 1)
+                 (SUB)
+                 (STORE 0)
+                 (GOTO -10)
+                 (LOAD 1)
+                 (RETURN)))
+        (LET ((ACL2::CASE-DO-NOT-USE-ELSEWHERE (PC S)))
+             (CASE ACL2::CASE-DO-NOT-USE-ELSEWHERE
+                   (0 (AND (EQUAL N0 (N S)) (NATP N0)))
+                   (2 (AND (NATP N0)
+                           (NATP (N S))
+                           (NATP (NTH 1 (LOCALS S)))
+                           (<= (N S) N0)
+                           (EQUAL (F N0) (* (F (N S)) (A S)))))
+                   (14 (EQUAL (TOP (STACK S)) (F N0)))
+                   (OTHERWISE NIL))))
+   (G-INV N0 A0 (STEP S))))).
+
+By the simple :definitions A, EQL, G-INV, ACL2::MEMBER-EQL-EXEC$GUARD-CHECK,
+N and RETURN-LAST we reduce the conjecture to
+
+Goal''
+(IMPLIES (EQUAL (|G-INV-arity-1| (LIST N0 A0 S))
+                (IF (|G-INV-arity-1-defpun-test| (LIST N0 A0 S))
+                    (|G-INV-arity-1-defpun-base| (LIST N0 A0 S))
+                    (|G-INV-arity-1| (|G-INV-arity-1-step| (LIST N0 A0 S)))))
+         (EQUAL (|G-INV-arity-1| (LIST N0 A0 S))
+                (IF (MEMBER-EQUAL (PC S) '(0 2 14))
+                    (AND (EQUAL (PROGRAM S)
+                                '((PUSH 1)
+                                  (STORE 1)
+                                  (LOAD 0)
+                                  (IFLE 10)
+                                  (LOAD 0)
+                                  (LOAD 1)
+                                  (MUL)
+                                  (STORE 1)
+                                  (LOAD 0)
+                                  (PUSH 1)
+                                  (SUB)
+                                  (STORE 0)
+                                  (GOTO -10)
+                                  (LOAD 1)
+                                  (RETURN)))
+                         (LET ((ACL2::CASE-DO-NOT-USE-ELSEWHERE (PC S)))
+                              (CASE ACL2::CASE-DO-NOT-USE-ELSEWHERE
+                                    (0 (AND (EQUAL N0 (NTH 0 (LOCALS S)))
+                                            (NATP N0)))
+                                    (2 (AND (NATP N0)
+                                            (NATP (NTH 0 (LOCALS S)))
+                                            (NATP (NTH 1 (LOCALS S)))
+                                            (<= (NTH 0 (LOCALS S)) N0)
+                                            (EQUAL (F N0)
+                                                   (* (F (NTH 0 (LOCALS S)))
+                                                      (NTH 1 (LOCALS S))))))
+                                    (14 (EQUAL (TOP (STACK S)) (F N0)))
+                                    (OTHERWISE NIL))))
+                    (|G-INV-arity-1| (LIST N0 A0 (STEP S)))))).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions A, 
+|G-INV-arity-1-defpun-base| (if-intro), |G-INV-arity-1-defpun-test|,
+|G-INV-arity-1-step|, MEMBER-EQUAL (if-intro), N and NTH (if-intro),
+the :executable-counterparts of CAR, CDR, CONSP, EQUAL, MEMBER-EQUAL,
+NATP, NOT and ZP, primitive type reasoning and the :rewrite rules CAR-CONS,
+CDR-CONS, COMMUTATIVITY-OF-* and NTH-ADD1!, to the following two conjectures.
+
+Subgoal 2
+(IMPLIES (AND (EQUAL (PC S) 2)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (NATP (CAR (LOCALS S)))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (<= (CAR (LOCALS S)) N0)
+              (EQUAL (|G-INV-arity-1| (LIST N0 A0 S))
+                     (EQUAL (F N0)
+                            (* (F (CAR (LOCALS S)))
+                               (CADR (LOCALS S)))))
+              (EQUAL (F N0)
+                     (* (CADR (LOCALS S))
+                        (F (CAR (LOCALS S))))))
+         (EQUAL (|G-INV-arity-1| (LIST N0 A0 S))
+                T)).
+
+But simplification reduces this to T, using primitive type reasoning
+and the :rewrite rule COMMUTATIVITY-OF-*.
+
+Subgoal 1
+(IMPLIES (AND (EQUAL (PC S) 2)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (NATP (CAR (LOCALS S)))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (<= (CAR (LOCALS S)) N0)
+              (EQUAL (|G-INV-arity-1| (LIST N0 A0 S))
+                     (EQUAL (F N0)
+                            (* (F (CAR (LOCALS S)))
+                               (CADR (LOCALS S)))))
+              (NOT (EQUAL (F N0)
+                          (* (CADR (LOCALS S))
+                             (F (CAR (LOCALS S)))))))
+         (NOT (|G-INV-arity-1| (LIST N0 A0 S)))).
+
+But simplification reduces this to T, using primitive type reasoning
+and the :rewrite rule COMMUTATIVITY-OF-*.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G-INV-DEF ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION A)
+        (:DEFINITION EQL)
+        (:DEFINITION G-INV)
+        (:DEFINITION |G-INV-arity-1-defpun-base|)
+        (:DEFINITION |G-INV-arity-1-defpun-test|)
+        (:DEFINITION |G-INV-arity-1-step|)
+        (:DEFINITION ACL2::MEMBER-EQL-EXEC$GUARD-CHECK)
+        (:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION N)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION RETURN-LAST)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE NTH-ADD1!))
+Hint-events: ((:USE |G-INV-arity-1-DEF|))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION |G-INV-arity-1-defpun-base|)
+             (:DEFINITION MEMBER-EQUAL)
+             (:DEFINITION NTH))
+Warnings:  Subsume and Non-rec
+G-INV-DEF
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function G-INV:
+
+(EQUAL (G-INV N0 A0 S)
+       (IF (MEMBER-EQUAL (PC S) '(0 2 14))
+           (AND (EQUAL (PROGRAM S)
+                       '((PUSH 1)
+                         (STORE 1)
+                         (LOAD 0)
+                         (IFLE 10)
+                         (LOAD 0)
+                         (LOAD 1)
+                         (MUL)
+                         (STORE 1)
+                         (LOAD 0)
+                         (PUSH 1)
+                         (SUB)
+                         (STORE 0)
+                         (GOTO -10)
+                         (LOAD 1)
+                         (RETURN)))
+                (LET ((ACL2::CASE-DO-NOT-USE-ELSEWHERE (PC S)))
+                     (CASE ACL2::CASE-DO-NOT-USE-ELSEWHERE
+                           (0 (AND (EQUAL N0 (N S)) (NATP N0)))
+                           (2 (AND (NATP N0)
+                                   (NATP (N S))
+                                   (NATP (NTH 1 (LOCALS S)))
+                                   (<= (N S) N0)
+                                   (EQUAL (F N0) (* (F (N S)) (A S)))))
+                           (14 (EQUAL (TOP (STACK S)) (F N0)))
+                           (OTHERWISE NIL))))
+           (G-INV N0 A0 (STEP S))))
+
+Summary
+Form:  ( ENCAPSULATE ((G-INV ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume, Non-rec and Disable
+T
+
+
+M1 >>>(DEFTHM G-INV-OPENER
+              (IMPLIES (AND (EQUAL PC (PC S))
+                            (SYNTAXP (QUOTEP PC))
+                            (NOT (MEMBER PC '(0 2 14))))
+                       (EQUAL (G-INV N0 A0 S)
+                              (G-INV N0 A0 (STEP S)))))
+
+By the simple :definitions ACL2::MEMBER-EQL-EXEC$GUARD-CHECK and RETURN-LAST
+and the :executable-counterpart of SYNP we reduce the conjecture to
+
+Goal'
+(IMPLIES (AND (EQUAL PC (PC S))
+              (NOT (MEMBER-EQUAL PC '(0 2 14))))
+         (EQUAL (G-INV N0 A0 S)
+                (G-INV N0 A0 (STEP S)))).
+
+But simplification reduces this to T, using the :definitions G-INV-DEF
+and MEMBER-EQUAL, the :executable-counterparts of CAR, CDR and CONSP
+and primitive type reasoning.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G-INV-OPENER ...)
+Rules: ((:DEFINITION G-INV-DEF)
+        (:DEFINITION ACL2::MEMBER-EQL-EXEC$GUARD-CHECK)
+        (:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION NOT)
+        (:DEFINITION RETURN-LAST)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART SYNP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+G-INV-OPENER
+
+
+M1 >>>(DEFTHM G-INV-STEP
+              (IMPLIES (G-INV N0 A0 S)
+                       (G-INV N0 A0 (STEP S))))
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions A, DO-INST (if-intro),
+EXECUTE-IFLE (if-intro), EXECUTE-LOAD, EXECUTE-PUSH, EXECUTE-STORE,
+FIX, G-INV-DEF (if-intro), MEMBER-EQUAL (if-intro), N, NEXT-INST, NTH
+(if-intro), SYNP and UPDATE-NTH, the :executable-counterparts of ARG1,
+BINARY-+, CAR, CDR, CONSP, EQUAL, MEMBER-EQUAL, NATP, NOT, NTH, OPCODE
+and ZP, primitive type reasoning, the :rewrite rules CDR-CONS, 
+COMMUTATIVITY-OF-*, G-INV-OPENER, NTH-0-CONS, NTH-ADD1!, STACKS, STATES,
+STEP-OPENER, UNICITY-OF-1 and UPDATE-NTH-ADD1! and the :type-prescription
+rule F, to the following three conjectures.
+
+Subgoal 3
+(IMPLIES (AND (EQUAL (PC S) 0)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (CONSP (LOCALS S))
+              (EQUAL N0 (CAR (LOCALS S)))
+              (NATP N0))
+         (<= N0 N0)).
+
+But we reduce the conjecture to T, by the :executable-counterpart of
+TAU-SYSTEM.
+
+Subgoal 2
+(IMPLIES (AND (EQUAL (PC S) 2)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (NATP (CAR (LOCALS S)))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (<= (CAR (LOCALS S)) N0)
+              (EQUAL (F N0)
+                     (* (F (CAR (LOCALS S)))
+                        (CADR (LOCALS S))))
+              (< 0 (CAR (LOCALS S))))
+         (G-INV N0 A0
+                (MAKE-STATE 4 (LOCALS S)
+                            (STACK S)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions A, DO-INST, EXECUTE-GOTO,
+EXECUTE-LOAD, EXECUTE-MUL, EXECUTE-PUSH, EXECUTE-STORE, EXECUTE-SUB,
+G-INV-DEF (if-intro), N, NEXT-INST, NTH, SYNP and UPDATE-NTH, the :executable-
+counterparts of ARG1, BINARY-+, CONSP, EQUAL, MEMBER-EQUAL, NTH, OPCODE,
+UNARY-- and ZP, primitive type reasoning and the :rewrite rules CDR-CONS,
+ACL2::COMMUTATIVITY-2-OF-*, COMMUTATIVITY-OF-*, COMMUTATIVITY-OF-+,
+G-INV-OPENER, NTH-0-CONS, NTH-ADD1!, STACKS, STATES, STEP-OPENER and
+UPDATE-NTH-ADD1!, to the following two conjectures.
+
+Subgoal 2.2
+(IMPLIES (AND (EQUAL (PC S) 2)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (NATP (CAR (LOCALS S)))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (<= (CAR (LOCALS S)) N0)
+              (EQUAL (F N0)
+                     (* (CADR (LOCALS S))
+                        (F (CAR (LOCALS S)))))
+              (< 0 (CAR (LOCALS S))))
+         (<= (+ -1 (CAR (LOCALS S))) N0)).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, linear arithmetic and primitive
+type reasoning.
+
+Subgoal 2.1
+(IMPLIES (AND (EQUAL (PC S) 2)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (NATP (CAR (LOCALS S)))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (<= (CAR (LOCALS S)) N0)
+              (EQUAL (F N0)
+                     (* (CADR (LOCALS S))
+                        (F (CAR (LOCALS S)))))
+              (< 0 (CAR (LOCALS S))))
+         (EQUAL (F N0)
+                (* (CAR (LOCALS S))
+                   (CADR (LOCALS S))
+                   (F (+ -1 (CAR (LOCALS S))))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rules ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER,
+the :definition F, primitive type reasoning and the :rewrite rule 
+ACL2::COMMUTATIVITY-2-OF-*.
+
+Subgoal 1
+(IMPLIES (AND (EQUAL (PC S) 2)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (NATP (CAR (LOCALS S)))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (<= (CAR (LOCALS S)) N0)
+              (EQUAL (F N0)
+                     (* (F (CAR (LOCALS S)))
+                        (CADR (LOCALS S))))
+              (<= (CAR (LOCALS S)) 0))
+         (G-INV N0 A0
+                (MAKE-STATE 13 (LOCALS S)
+                            (STACK S)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :executable-counterparts of <,
+F, NATP and NOT, linear arithmetic and the :forward-chaining rule 
+ACL2::NATP-FC-1, to
+
+Subgoal 1'
+(IMPLIES (AND (EQUAL (CAR (LOCALS S)) 0)
+              (EQUAL (PC S) 2)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (<= 0 N0)
+              (EQUAL (F N0) (* 1 (CADR (LOCALS S)))))
+         (G-INV N0 A0
+                (MAKE-STATE 13 (LOCALS S)
+                            (STACK S)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+By the simple :rewrite rule UNICITY-OF-1 we reduce the conjecture to
+
+Subgoal 1''
+(IMPLIES (AND (EQUAL (CAR (LOCALS S)) 0)
+              (EQUAL (PC S) 2)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (<= 0 N0)
+              (EQUAL (F N0) (FIX (CADR (LOCALS S)))))
+         (G-INV N0 A0
+                (MAKE-STATE 13 (LOCALS S)
+                            (STACK S)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, EXECUTE-LOAD,
+FIX, G-INV-DEF, NEXT-INST, NTH and SYNP, the :executable-counterparts
+of ARG1, BINARY-+, CONSP, EQUAL, MEMBER-EQUAL, NTH, OPCODE and ZP,
+primitive type reasoning and the :rewrite rules G-INV-OPENER, NTH-ADD1!,
+STACKS, STATES and STEP-OPENER.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G-INV-STEP ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION A)
+        (:DEFINITION DO-INST)
+        (:DEFINITION EXECUTE-GOTO)
+        (:DEFINITION EXECUTE-IFLE)
+        (:DEFINITION EXECUTE-LOAD)
+        (:DEFINITION EXECUTE-MUL)
+        (:DEFINITION EXECUTE-PUSH)
+        (:DEFINITION EXECUTE-STORE)
+        (:DEFINITION EXECUTE-SUB)
+        (:DEFINITION F)
+        (:DEFINITION FIX)
+        (:DEFINITION G-INV-DEF)
+        (:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION N)
+        (:DEFINITION NEXT-INST)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION SYNP)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ARG1)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART F)
+        (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OPCODE)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ACL2::NATP-FC-1)
+        (:REWRITE CDR-CONS)
+        (:REWRITE ACL2::COMMUTATIVITY-2-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE G-INV-OPENER)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE NTH-ADD1!)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-OPENER)
+        (:REWRITE UNICITY-OF-1)
+        (:REWRITE UPDATE-NTH-ADD1!)
+        (:TYPE-PRESCRIPTION F))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO-INST)
+             (:DEFINITION EXECUTE-IFLE)
+             (:DEFINITION G-INV-DEF)
+             (:DEFINITION MEMBER-EQUAL)
+             (:DEFINITION NTH))
+G-INV-STEP
+
+
+M1 >>>(DEFTHM G-INV-RUN
+              (IMPLIES (G-INV N0 A0 S)
+                       (G-INV N0 A0 (RUN SCHED S)))
+              :RULE-CLASSES NIL
+              :HINTS (("Goal" :IN-THEORY (E/D (RUN) (G-INV-DEF)))))
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (RUN SCHED S).  This
+suggestion was produced using the :induction rule RUN.  If we let 
+(:P A0 N0 S SCHED) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (NOT (ENDP SCHED))
+                   (:P A0 N0 (STEP S) (CDR SCHED)))
+              (:P A0 N0 S SCHED))
+     (IMPLIES (ENDP SCHED)
+              (:P A0 N0 S SCHED))).
+This induction is justified by the same argument used to admit RUN.
+Note, however, that the unmeasured variable S is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+
+Subgoal *1/3
+(IMPLIES (AND (NOT (ENDP SCHED))
+              (G-INV N0 A0 (RUN (CDR SCHED) (STEP S)))
+              (G-INV N0 A0 S))
+         (G-INV N0 A0 (RUN SCHED S))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP SCHED)
+              (G-INV N0 A0 (RUN (CDR SCHED) (STEP S)))
+              (G-INV N0 A0 S))
+         (G-INV N0 A0 (RUN SCHED S))).
+
+But simplification reduces this to T, using the :definition RUN.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ENDP SCHED))
+              (NOT (G-INV N0 A0 (STEP S)))
+              (G-INV N0 A0 S))
+         (G-INV N0 A0 (RUN SCHED S))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/2'
+(IMPLIES (AND (CONSP SCHED)
+              (NOT (G-INV N0 A0 (STEP S)))
+              (G-INV N0 A0 S))
+         (G-INV N0 A0 (RUN SCHED S))).
+
+But simplification reduces this to T, using the :rewrite rule G-INV-STEP.
+
+Subgoal *1/1
+(IMPLIES (AND (ENDP SCHED) (G-INV N0 A0 S))
+         (G-INV N0 A0 (RUN SCHED S))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/1'
+(IMPLIES (AND (NOT (CONSP SCHED))
+              (G-INV N0 A0 S))
+         (G-INV N0 A0 (RUN SCHED S))).
+
+But simplification reduces this to T, using the :definition RUN.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G-INV-RUN ...)
+Rules: ((:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:DEFINITION RUN)
+        (:INDUCTION RUN)
+        (:REWRITE G-INV-STEP))
+G-INV-RUN
+
+
+M1 >>>(DEFTHM PARTIAL-CORRECTNESS-OF-PROGRAM-G
+              (LET* ((SK (RUN SCHED S0)))
+                    (IMPLIES (AND (LET ((S S0))
+                                       (AND (EQUAL N0 (N S)) (NATP N0)))
+                                  (EQUAL (PC S0) 0)
+                                  (EQUAL (LOCALS S0) (LIST* N0 A0 ANY))
+                                  (EQUAL (PROGRAM S0) *G*)
+                                  (EQUAL (PC SK) 14))
+                             (LET ((S SK))
+                                  (EQUAL (TOP (STACK S)) (F N0)))))
+              :HINTS (("Goal" :USE (:INSTANCE G-INV-RUN (N0 N0)
+                                              (A0 A0)
+                                              (S S0)
+                                              (SCHED SCHED))))
+              :RULE-CLASSES NIL)
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be derived from G-INV-RUN via instantiation.  We
+are left with the following subgoal.
+
+Goal'
+(IMPLIES (IMPLIES (G-INV N0 A0 S0)
+                  (G-INV N0 A0 (RUN SCHED S0)))
+         (LET ((SK (RUN SCHED S0)))
+              (IMPLIES (AND (LET ((S S0))
+                                 (AND (EQUAL N0 (N S)) (NATP N0)))
+                            (EQUAL (PC S0) 0)
+                            (EQUAL (LOCALS S0) (LIST* N0 A0 ANY))
+                            (EQUAL (PROGRAM S0)
+                                   '((PUSH 1)
+                                     (STORE 1)
+                                     (LOAD 0)
+                                     (IFLE 10)
+                                     (LOAD 0)
+                                     (LOAD 1)
+                                     (MUL)
+                                     (STORE 1)
+                                     (LOAD 0)
+                                     (PUSH 1)
+                                     (SUB)
+                                     (STORE 0)
+                                     (GOTO -10)
+                                     (LOAD 1)
+                                     (RETURN)))
+                            (EQUAL (PC SK) 14))
+                       (LET ((S SK))
+                            (EQUAL (TOP (STACK S)) (F N0)))))).
+
+By the simple :definition N we reduce the conjecture to
+
+Goal''
+(IMPLIES (AND (IMPLIES (G-INV N0 A0 S0)
+                       (G-INV N0 A0 (RUN SCHED S0)))
+              (EQUAL N0 (NTH 0 (LOCALS S0)))
+              (NATP N0)
+              (EQUAL (PC S0) 0)
+              (EQUAL (LOCALS S0) (LIST* N0 A0 ANY))
+              (EQUAL (PROGRAM S0)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (RUN SCHED S0)) 14))
+         (EQUAL (TOP (STACK (RUN SCHED S0)))
+                (F N0))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions G-INV-DEF, N
+and NTH, the :executable-counterparts of EQUAL, MEMBER-EQUAL and ZP
+and primitive type reasoning.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PARTIAL-CORRECTNESS-OF-PROGRAM-G ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION G-INV-DEF)
+        (:DEFINITION N)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+Hint-events: ((:USE G-INV-RUN))
+PARTIAL-CORRECTNESS-OF-PROGRAM-G
+
+Summary
+Form:  ( PROGN (DEFPUN G-INV ...) ...)
+Rules: NIL
+Warnings:  Subsume, Non-rec and Disable
+ PARTIAL-CORRECTNESS-OF-PROGRAM-G
+M1 >>(DEFTHM COROLLARY
+             (LET ((SK (RUN SCHED S0)))
+                  (IMPLIES (AND (EQUAL N0 (N S0))
+                                (NATP N0)
+                                (EQUAL (PC S0) 0)
+                                (EQUAL (LOCALS S0) (LIST* N0 A0 ANY))
+                                (EQUAL (PROGRAM S0) *G*)
+                                (EQUAL (PC SK) 14))
+                           (EQUAL (TOP (STACK SK)) (F N0))))
+             :HINTS (("Goal" :USE PARTIAL-CORRECTNESS-OF-PROGRAM-G)))
+
+ACL2 Warning [Free] in ( DEFTHM COROLLARY ...):  A :REWRITE rule generated
+from COROLLARY contains the free variables ANY and A0.  These variables
+will be chosen by searching for an instance of 
+(EQUAL (LOCALS S0) (LIST* N0 A0 ANY)) in the context of the term being
+rewritten.  This is generally a severe restriction on the applicability
+of a :REWRITE rule.  See :DOC free-variables.
+
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be obtained from PARTIAL-CORRECTNESS-OF-PROGRAM-G.
+We are left with the following subgoal.
+
+Goal'
+(IMPLIES (LET ((SK (RUN SCHED S0)))
+              (IMPLIES (AND (LET ((S S0))
+                                 (AND (EQUAL N0 (N S)) (NATP N0)))
+                            (EQUAL (PC S0) 0)
+                            (EQUAL (LOCALS S0) (LIST* N0 A0 ANY))
+                            (EQUAL (PROGRAM S0)
+                                   '((PUSH 1)
+                                     (STORE 1)
+                                     (LOAD 0)
+                                     (IFLE 10)
+                                     (LOAD 0)
+                                     (LOAD 1)
+                                     (MUL)
+                                     (STORE 1)
+                                     (LOAD 0)
+                                     (PUSH 1)
+                                     (SUB)
+                                     (STORE 0)
+                                     (GOTO -10)
+                                     (LOAD 1)
+                                     (RETURN)))
+                            (EQUAL (PC SK) 14))
+                       (LET ((S SK))
+                            (EQUAL (TOP (STACK S)) (F N0)))))
+         (LET ((SK (RUN SCHED S0)))
+              (IMPLIES (AND (EQUAL N0 (N S0))
+                            (NATP N0)
+                            (EQUAL (PC S0) 0)
+                            (EQUAL (LOCALS S0) (LIST* N0 A0 ANY))
+                            (EQUAL (PROGRAM S0)
+                                   '((PUSH 1)
+                                     (STORE 1)
+                                     (LOAD 0)
+                                     (IFLE 10)
+                                     (LOAD 0)
+                                     (LOAD 1)
+                                     (MUL)
+                                     (STORE 1)
+                                     (LOAD 0)
+                                     (PUSH 1)
+                                     (SUB)
+                                     (STORE 0)
+                                     (GOTO -10)
+                                     (LOAD 1)
+                                     (RETURN)))
+                            (EQUAL (PC SK) 14))
+                       (EQUAL (TOP (STACK SK)) (F N0))))).
+
+By the simple :definition N we reduce the conjecture to
+
+Goal''
+(IMPLIES (AND (LET ((SK (RUN SCHED S0)))
+                   (IMPLIES (AND (LET ((S S0))
+                                      (AND (EQUAL N0 (NTH 0 (LOCALS S)))
+                                           (NATP N0)))
+                                 (EQUAL (PC S0) 0)
+                                 (EQUAL (LOCALS S0) (LIST* N0 A0 ANY))
+                                 (EQUAL (PROGRAM S0)
+                                        '((PUSH 1)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (IFLE 10)
+                                          (LOAD 0)
+                                          (LOAD 1)
+                                          (MUL)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (PUSH 1)
+                                          (SUB)
+                                          (STORE 0)
+                                          (GOTO -10)
+                                          (LOAD 1)
+                                          (RETURN)))
+                                 (EQUAL (PC SK) 14))
+                            (EQUAL (TOP (STACK SK)) (F N0))))
+              (EQUAL N0 (NTH 0 (LOCALS S0)))
+              (NATP N0)
+              (EQUAL (PC S0) 0)
+              (EQUAL (LOCALS S0) (LIST* N0 A0 ANY))
+              (EQUAL (PROGRAM S0)
+                     '((PUSH 1)
+                       (STORE 1)
+                       (LOAD 0)
+                       (IFLE 10)
+                       (LOAD 0)
+                       (LOAD 1)
+                       (MUL)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 1)
+                       (SUB)
+                       (STORE 0)
+                       (GOTO -10)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (RUN SCHED S0)) 14))
+         (EQUAL (TOP (STACK (RUN SCHED S0)))
+                (F N0))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definition NTH, the :executable-
+counterparts of EQUAL and ZP and primitive type reasoning.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM COROLLARY ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION N)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+Hint-events: ((:USE PARTIAL-CORRECTNESS-OF-PROGRAM-G))
+Warnings:  Free
+ COROLLARY
+M1 >>'(END OF DEMO 1)
+(END OF DEMO 1)
+M1 >>(DEFCONST *H*
+               '((PUSH 0)
+                 (STORE 1)
+                 (GOTO 9)
+                 (LOAD 1)
+                 (PUSH 1)
+                 (ADD)
+                 (STORE 1)
+                 (LOAD 0)
+                 (PUSH 2)
+                 (SUB)
+                 (STORE 0)
+                 (LOAD 0)
+                 (IFNE -9)
+                 (LOAD 1)
+                 (RETURN)))
+
+Summary
+Form:  ( DEFCONST *H* ...)
+Rules: NIL
+ *H*
+M1 >>(DEFUN RUN-H (N)
+            (RUN (REPEAT 0 10000)
+                 (MAKE-STATE 0 (LIST N 0) NIL *H*)))
+
+Since RUN-H is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of RUN-H.
+
+Summary
+Form:  ( DEFUN RUN-H ...)
+Rules: NIL
+ RUN-H
+M1 >>(RUN-H 216)
+(14 (0 108)
+    (108)
+    ((PUSH 0)
+     (STORE 1)
+     (GOTO 9)
+     (LOAD 1)
+     (PUSH 1)
+     (ADD)
+     (STORE 1)
+     (LOAD 0)
+     (PUSH 2)
+     (SUB)
+     (STORE 0)
+     (LOAD 0)
+     (IFNE -9)
+     (LOAD 1)
+     (RETURN)))
+M1 >>(RUN-H 215)
+(8 (-1783 1000)
+   (-1783)
+   ((PUSH 0)
+    (STORE 1)
+    (GOTO 9)
+    (LOAD 1)
+    (PUSH 1)
+    (ADD)
+    (STORE 1)
+    (LOAD 0)
+    (PUSH 2)
+    (SUB)
+    (STORE 0)
+    (LOAD 0)
+    (IFNE -9)
+    (LOAD 1)
+    (RETURN)))
+M1 >>(DEFSPEC H *H* (N0)
+              0 14
+              ((0 (AND (EQUAL (N S) N0) (NATP N0)))
+               (11 (AND (NATP N0)
+                        (INTEGERP (N S))
+                        (IF (AND (NATP (A S)) (EVENP (N S)))
+                            (EQUAL (+ (A S) (/ (N S) 2)) (/ N0 2))
+                            (NOT (EVENP (N S))))
+                        (IFF (EVENP N0) (EVENP (N S)))))
+               (14 (AND (EVENP N0)
+                        (EQUAL (TOP (STACK S)) (/ N0 2))))))
+
+
+M1 >>>(DEFPUN
+           H-INV (N0 S)
+           (IF (MEMBER (PC S) '(0 11 14))
+               (AND (EQUAL (PROGRAM S) *H*)
+                    (CASE (PC S)
+                          (0 (AND (EQUAL (N S) N0) (NATP N0)))
+                          (11 (AND (NATP N0)
+                                   (INTEGERP (N S))
+                                   (IF (AND (NATP (A S)) (EVENP (N S)))
+                                       (EQUAL (+ (A S) (/ (N S) 2)) (/ N0 2))
+                                       (NOT (EVENP (N S))))
+                                   (IFF (EVENP N0) (EVENP (N S)))))
+                          (14 (AND (EVENP N0)
+                                   (EQUAL (TOP (STACK S)) (/ N0 2))))))
+               (H-INV N0 (STEP S))))
+
+To verify that the eight encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+M1 >>>(SET-IGNORE-OK T)
+T
+
+
+M1 >>>(SET-IRRELEVANT-FORMALS-OK T)
+T
+
+
+M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC |H-INV-arity-1-defpun-test| (ACL2::X)
+                                  (LET ((N0 (CAR ACL2::X))
+                                        (S (CAR (CDR ACL2::X))))
+                                       (MEMBER (PC S) '(0 11 14)))))
+
+Since |H-INV-arity-1-defpun-test| is non-recursive, its admission is
+trivial.  We observe that the type of |H-INV-arity-1-defpun-test| is
+described by the theorem 
+(OR (CONSP (|H-INV-arity-1-defpun-test| ACL2::X))
+    (EQUAL (|H-INV-arity-1-defpun-test| ACL2::X)
+           NIL)).
+We used the :type-prescription rule MEMBER-EQUAL.
+
+Summary
+Form:  ( DEFUN |H-INV-arity-1-defpun-test| ...)
+Rules: ((:TYPE-PRESCRIPTION MEMBER-EQUAL))
+|H-INV-arity-1-defpun-test|
+
+
+M1 >>>(LOCAL
+       (ACL2::DEFUN-NONEXEC
+          |H-INV-arity-1-defpun-base| (ACL2::X)
+          (LET ((N0 (CAR ACL2::X))
+                (S (CAR (CDR ACL2::X))))
+               (AND (EQUAL (PROGRAM S) *H*)
+                    (CASE (PC S)
+                          (0 (AND (EQUAL (N S) N0) (NATP N0)))
+                          (11 (AND (NATP N0)
+                                   (INTEGERP (N S))
+                                   (IF (AND (NATP (A S)) (EVENP (N S)))
+                                       (EQUAL (+ (A S) (/ (N S) 2)) (/ N0 2))
+                                       (NOT (EVENP (N S))))
+                                   (IFF (EVENP N0) (EVENP (N S)))))
+                          (14 (AND (EVENP N0)
+                                   (EQUAL (TOP (STACK S)) (/ N0 2)))))))))
+
+Since |H-INV-arity-1-defpun-base| is non-recursive, its admission is
+trivial.  We observe that the type of |H-INV-arity-1-defpun-base| is
+described by the theorem 
+(OR (EQUAL (|H-INV-arity-1-defpun-base| ACL2::X)
+           T)
+    (EQUAL (|H-INV-arity-1-defpun-base| ACL2::X)
+           NIL)).
+We used the :compound-recognizer rule ACL2::NATP-COMPOUND-RECOGNIZER,
+primitive type reasoning and the :type-prescription rules EVENP and
+IFF.
+
+Summary
+Form:  ( DEFUN |H-INV-arity-1-defpun-base| ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION EVENP)
+        (:TYPE-PRESCRIPTION IFF))
+|H-INV-arity-1-defpun-base|
+
+
+M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC |H-INV-arity-1-step| (ACL2::X)
+                                  (LET ((N0 (CAR ACL2::X))
+                                        (S (CAR (CDR ACL2::X))))
+                                       (LIST N0 (STEP S)))))
+
+Since |H-INV-arity-1-step| is non-recursive, its admission is trivial.
+We observe that the type of |H-INV-arity-1-step| is described by the
+theorem 
+(AND (CONSP (|H-INV-arity-1-step| ACL2::X))
+     (TRUE-LISTP (|H-INV-arity-1-step| ACL2::X))).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN |H-INV-arity-1-step| ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+|H-INV-arity-1-step|
+
+
+M1 >>>(LOCAL
+       (ENCAPSULATE
+        ((|H-INV-arity-1| (ACL2::X) T))
+        (LOCAL (IN-THEORY (DISABLE |H-INV-arity-1-defpun-test|
+                                   |H-INV-arity-1-defpun-base|
+                                   |H-INV-arity-1-step|)))
+        (LOCAL
+          (ACL2::DEFUN-NONEXEC
+               |H-INV-arity-1-defpun-stn|
+               (ACL2::X ACL2::N)
+               (IF (ZP ACL2::N)
+                   ACL2::X
+                   (|H-INV-arity-1-defpun-stn| (|H-INV-arity-1-step| ACL2::X)
+                                               (1- ACL2::N)))))
+        (LOCAL
+             (DEFCHOOSE |H-INV-arity-1-fch| (ACL2::N)
+                        (ACL2::X)
+                        (|H-INV-arity-1-defpun-test|
+                             (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N))))
+        (LOCAL
+           (ACL2::DEFUN-NONEXEC
+                |H-INV-arity-1-defpun-fn|
+                (ACL2::X ACL2::N)
+                (DECLARE (XARGS :MEASURE (NFIX ACL2::N)))
+                (IF (OR (ZP ACL2::N)
+                        (|H-INV-arity-1-defpun-test| ACL2::X))
+                    (|H-INV-arity-1-defpun-base| ACL2::X)
+                    (|H-INV-arity-1-defpun-fn| (|H-INV-arity-1-step| ACL2::X)
+                                               (1- ACL2::N)))))
+        (LOCAL
+         (ACL2::DEFUN-NONEXEC
+          |H-INV-arity-1| (ACL2::X)
+          (IF
+            (|H-INV-arity-1-defpun-test|
+                 (|H-INV-arity-1-defpun-stn|
+                      ACL2::X (|H-INV-arity-1-fch| ACL2::X)))
+            (|H-INV-arity-1-defpun-fn| ACL2::X (|H-INV-arity-1-fch| ACL2::X))
+            NIL)))
+        (LOCAL
+         (IN-THEORY
+          '(|H-INV-arity-1| |H-INV-arity-1-defpun-test|
+                            |H-INV-arity-1-defpun-base|
+                            |H-INV-arity-1-step|
+                            |H-INV-arity-1-defpun-stn|
+                            |H-INV-arity-1-defpun-fn|
+                            (:TYPE-PRESCRIPTION |H-INV-arity-1-defpun-fn|))))
+        (DEFTHM
+           |H-INV-arity-1-DEF|
+           (EQUAL (|H-INV-arity-1| ACL2::X)
+                  (IF (|H-INV-arity-1-defpun-test| ACL2::X)
+                      (|H-INV-arity-1-defpun-base| ACL2::X)
+                      (|H-INV-arity-1| (|H-INV-arity-1-step| ACL2::X))))
+           :HINTS
+           (("Goal" :USE (:FUNCTIONAL-INSTANCE
+                              ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F
+                              (ACL2::DEFPUN-F |H-INV-arity-1|)
+                              (ACL2::DEFPUN-TEST |H-INV-arity-1-defpun-test|)
+                              (ACL2::DEFPUN-BASE |H-INV-arity-1-defpun-base|)
+                              (ACL2::DEFPUN-ST |H-INV-arity-1-step|)
+                              (ACL2::DEFPUN-STN |H-INV-arity-1-defpun-stn|)
+                              (ACL2::FCH |H-INV-arity-1-fch|)
+                              (ACL2::DEFPUN-FN |H-INV-arity-1-defpun-fn|)))
+            ("Subgoal 2" :USE |H-INV-arity-1-fch|))
+           :RULE-CLASSES NIL)))
+
+To verify that the seven encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+M1 >>>(LOCAL (IN-THEORY (DISABLE |H-INV-arity-1-defpun-test|
+                                 |H-INV-arity-1-defpun-base|
+                                 |H-INV-arity-1-step|)))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+:CURRENT-THEORY-UPDATED
+
+
+M1 >>>(LOCAL
+          (ACL2::DEFUN-NONEXEC
+               |H-INV-arity-1-defpun-stn|
+               (ACL2::X ACL2::N)
+               (IF (ZP ACL2::N)
+                   ACL2::X
+                   (|H-INV-arity-1-defpun-stn| (|H-INV-arity-1-step| ACL2::X)
+                                               (1- ACL2::N)))))
+
+The admission of |H-INV-arity-1-defpun-stn| is trivial, using the relation
+O< (which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT ACL2::N).  We observe that the type of
+|H-INV-arity-1-defpun-stn| is described by the theorem 
+(OR (AND (CONSP (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N))
+         (TRUE-LISTP (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N)))
+    (EQUAL (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N)
+           ACL2::X)).
+We used the :type-prescription rule |H-INV-arity-1-step|.
+
+Summary
+Form:  ( DEFUN |H-INV-arity-1-defpun-stn| ...)
+Rules: ((:TYPE-PRESCRIPTION |H-INV-arity-1-step|))
+|H-INV-arity-1-defpun-stn|
+
+
+M1 >>>(LOCAL (DEFCHOOSE |H-INV-arity-1-fch| (ACL2::N)
+                        (ACL2::X)
+                        (|H-INV-arity-1-defpun-test|
+                             (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N))))
+
+Summary
+Form:  ( DEFCHOOSE |H-INV-arity-1-fch| ...)
+Rules: NIL
+|H-INV-arity-1-fch|
+
+
+M1 >>>(LOCAL
+           (ACL2::DEFUN-NONEXEC
+                |H-INV-arity-1-defpun-fn|
+                (ACL2::X ACL2::N)
+                (DECLARE (XARGS :MEASURE (NFIX ACL2::N)))
+                (IF (OR (ZP ACL2::N)
+                        (|H-INV-arity-1-defpun-test| ACL2::X))
+                    (|H-INV-arity-1-defpun-base| ACL2::X)
+                    (|H-INV-arity-1-defpun-fn| (|H-INV-arity-1-step| ACL2::X)
+                                               (1- ACL2::N)))))
+
+For the admission of |H-INV-arity-1-defpun-fn| we will use the relation
+O< (which is known to be well-founded on the domain recognized by O-P)
+and the measure (NFIX ACL2::N).  The non-trivial part of the measure
+conjecture is
+
+Goal
+(AND (O-P (NFIX ACL2::N))
+     (IMPLIES (NOT (OR (ZP ACL2::N)
+                       (|H-INV-arity-1-defpun-test| ACL2::X)))
+              (O< (NFIX (+ -1 ACL2::N))
+                  (NFIX ACL2::N)))).
+
+By case analysis we reduce the conjecture to the following two conjectures.
+
+Subgoal 2
+(O-P (NFIX ACL2::N)).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER and the :definitions NFIX, O-FINP
+and O-P.
+
+Subgoal 1
+(IMPLIES (NOT (OR (ZP ACL2::N)
+                  (|H-INV-arity-1-defpun-test| ACL2::X)))
+         (O< (NFIX (+ -1 ACL2::N))
+             (NFIX ACL2::N))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::ZP-COMPOUND-RECOGNIZER, the :definitions NFIX, O-FINP and
+O<, primitive type reasoning, the :meta rule ACL2::CANCEL_PLUS-LESSP-CORRECT
+and the :rewrite rule ACL2::<-+-NEGATIVE-0-1.
+
+Q.E.D.
+
+That completes the proof of the measure theorem for 
+|H-INV-arity-1-defpun-fn|.  Thus, we admit this function under the
+principle of definition.  We observe that the type of 
+|H-INV-arity-1-defpun-fn| is described by the theorem 
+(OR (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+           T)
+    (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+           NIL)).
+We used the :compound-recognizer rule ACL2::ZP-COMPOUND-RECOGNIZER
+and the :type-prescription rule |H-INV-arity-1-defpun-base|.
+
+Summary
+Form:  ( DEFUN |H-INV-arity-1-defpun-fn| ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION NFIX)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O-P)
+        (:DEFINITION O<)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
+        (:REWRITE ACL2::<-+-NEGATIVE-0-1)
+        (:TYPE-PRESCRIPTION |H-INV-arity-1-defpun-base|))
+|H-INV-arity-1-defpun-fn|
+
+
+M1 >>>(LOCAL
+       (ACL2::DEFUN-NONEXEC
+        |H-INV-arity-1| (ACL2::X)
+        (IF
+         (|H-INV-arity-1-defpun-test|
+          (|H-INV-arity-1-defpun-stn| ACL2::X (|H-INV-arity-1-fch| ACL2::X)))
+         (|H-INV-arity-1-defpun-fn| ACL2::X (|H-INV-arity-1-fch| ACL2::X))
+         NIL)))
+
+Since |H-INV-arity-1| is non-recursive, its admission is trivial. 
+We observe that the type of |H-INV-arity-1| is described by the theorem
+(OR (EQUAL (|H-INV-arity-1| ACL2::X) T)
+    (EQUAL (|H-INV-arity-1| ACL2::X) NIL)).
+We used the :type-prescription rule |H-INV-arity-1-defpun-fn|.
+
+Summary
+Form:  ( DEFUN |H-INV-arity-1| ...)
+Rules: ((:TYPE-PRESCRIPTION |H-INV-arity-1-defpun-fn|))
+|H-INV-arity-1|
+
+
+M1 >>>(LOCAL
+       (IN-THEORY
+          '(|H-INV-arity-1| |H-INV-arity-1-defpun-test|
+                            |H-INV-arity-1-defpun-base|
+                            |H-INV-arity-1-step|
+                            |H-INV-arity-1-defpun-stn|
+                            |H-INV-arity-1-defpun-fn|
+                            (:TYPE-PRESCRIPTION |H-INV-arity-1-defpun-fn|))))
+
+ACL2 Warning [Disable] in ( IN-THEORY (QUOTE ...)):  Forcing has transitioned
+from enabled to disabled.
+See :DOC force.
+
+
+Summary
+Form:  ( IN-THEORY (QUOTE ...))
+Rules: NIL
+Warnings:  Disable
+:CURRENT-THEORY-UPDATED
+
+
+M1 >>>(DEFTHM
+           |H-INV-arity-1-DEF|
+           (EQUAL (|H-INV-arity-1| ACL2::X)
+                  (IF (|H-INV-arity-1-defpun-test| ACL2::X)
+                      (|H-INV-arity-1-defpun-base| ACL2::X)
+                      (|H-INV-arity-1| (|H-INV-arity-1-step| ACL2::X))))
+           :HINTS
+           (("Goal" :USE (:FUNCTIONAL-INSTANCE
+                              ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F
+                              (ACL2::DEFPUN-F |H-INV-arity-1|)
+                              (ACL2::DEFPUN-TEST |H-INV-arity-1-defpun-test|)
+                              (ACL2::DEFPUN-BASE |H-INV-arity-1-defpun-base|)
+                              (ACL2::DEFPUN-ST |H-INV-arity-1-step|)
+                              (ACL2::DEFPUN-STN |H-INV-arity-1-defpun-stn|)
+                              (ACL2::FCH |H-INV-arity-1-fch|)
+                              (ACL2::DEFPUN-FN |H-INV-arity-1-defpun-fn|)))
+            ("Subgoal 2" :USE |H-INV-arity-1-fch|))
+           :RULE-CLASSES NIL)
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be derived from ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F
+via functional instantiation, provided we can establish the four constraints
+generated; the constraints can be simplified using case analysis. 
+We are left with the following four subgoals.
+
+Subgoal 4
+(EQUAL
+ (|H-INV-arity-1| ACL2::X)
+ (AND
+     (|H-INV-arity-1-defpun-test|
+          (|H-INV-arity-1-defpun-stn| ACL2::X (|H-INV-arity-1-fch| ACL2::X)))
+     (|H-INV-arity-1-defpun-fn| ACL2::X
+                                (|H-INV-arity-1-fch| ACL2::X)))).
+
+But simplification reduces this to T, using the :definitions |H-INV-arity-1|
+and |H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3
+(EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+       (IF (OR (ZP ACL2::N)
+               (|H-INV-arity-1-defpun-test| ACL2::X))
+           (|H-INV-arity-1-defpun-base| ACL2::X)
+           (|H-INV-arity-1-defpun-fn| (|H-INV-arity-1-step| ACL2::X)
+                                      (+ -1 ACL2::N)))).
+
+This simplifies, using the :definitions |H-INV-arity-1-defpun-base|
+(if-intro), |H-INV-arity-1-defpun-test| and |H-INV-arity-1-step|, to
+the following 25 conjectures.
+
+Subgoal 3.25
+(IMPLIES (AND (ZP ACL2::N)
+              (NOT (EQUAL (PROGRAM (CADR ACL2::X))
+                          '((PUSH 0)
+                            (STORE 1)
+                            (GOTO 9)
+                            (LOAD 1)
+                            (PUSH 1)
+                            (ADD)
+                            (STORE 1)
+                            (LOAD 0)
+                            (PUSH 2)
+                            (SUB)
+                            (STORE 0)
+                            (LOAD 0)
+                            (IFNE -9)
+                            (LOAD 1)
+                            (RETURN)))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.24
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 0)
+              (EQUAL (N (CADR ACL2::X))
+                     (CAR ACL2::X)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (NATP (CAR ACL2::X)))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.23
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 14)
+              (EVENP (CAR ACL2::X)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (EQUAL (TOP (STACK (CADR ACL2::X)))
+                       (* (CAR ACL2::X) 1/2)))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.22
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NATP (CAR ACL2::X))
+              (INTEGERP (N (CADR ACL2::X)))
+              (NOT (EVENP (N (CADR ACL2::X)))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (IFF (EVENP (CAR ACL2::X)) NIL))).
+
+By the :executable-counterpart of IF we reduce the conjecture to
+
+Subgoal 3.22'
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NATP (CAR ACL2::X))
+              (INTEGERP (N (CADR ACL2::X)))
+              (NOT (EVENP (N (CADR ACL2::X)))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (NOT (EVENP (CAR ACL2::X))))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.21
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NATP (CAR ACL2::X))
+              (INTEGERP (N (CADR ACL2::X)))
+              (NATP (A (CADR ACL2::X)))
+              (EVENP (N (CADR ACL2::X)))
+              (EQUAL (+ (A (CADR ACL2::X))
+                        (* (N (CADR ACL2::X)) 1/2))
+                     (* (CAR ACL2::X) 1/2)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (IFF (EVENP (CAR ACL2::X)) T))).
+
+By the :executable-counterpart of IF we reduce the conjecture to
+
+Subgoal 3.21'
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NATP (CAR ACL2::X))
+              (INTEGERP (N (CADR ACL2::X)))
+              (NATP (A (CADR ACL2::X)))
+              (EVENP (N (CADR ACL2::X)))
+              (EQUAL (+ (A (CADR ACL2::X))
+                        (* (N (CADR ACL2::X)) 1/2))
+                     (* (CAR ACL2::X) 1/2)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (AND (EVENP (CAR ACL2::X)) T))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.20
+(IMPLIES (AND (NOT (ZP ACL2::N))
+              (NOT (MEMBER-EQUAL (PC (CADR ACL2::X))
+                                 '(0 11 14))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (|H-INV-arity-1-defpun-fn| (LIST (CAR ACL2::X)
+                                                 (STEP (CADR ACL2::X)))
+                                           (+ -1 ACL2::N)))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-fn|, |H-INV-arity-1-defpun-test| and 
+|H-INV-arity-1-step| and primitive type reasoning.
+
+Subgoal 3.19
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NOT (NATP (CAR ACL2::X))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.18
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NOT (INTEGERP (N (CADR ACL2::X)))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.17
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NOT (NATP (A (CADR ACL2::X))))
+              (EVENP (N (CADR ACL2::X))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.16
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (EVENP (N (CADR ACL2::X)))
+              (NOT (EQUAL (+ (A (CADR ACL2::X))
+                             (* (N (CADR ACL2::X)) 1/2))
+                          (* (CAR ACL2::X) 1/2))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.15
+(IMPLIES (AND (ZP ACL2::N)
+              (NOT (EQUAL (PC (CADR ACL2::X)) 0))
+              (NOT (EQUAL (PC (CADR ACL2::X)) 11))
+              (NOT (EQUAL (PC (CADR ACL2::X)) 14)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.14
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADR ACL2::X)) 14)
+              (NOT (EVENP (CAR ACL2::X))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.13
+(IMPLIES (AND (ZP ACL2::N)
+              (EQUAL (PC (CADR ACL2::X)) 0)
+              (NOT (EQUAL (N (CADR ACL2::X))
+                          (CAR ACL2::X))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base| and |H-INV-arity-1-defpun-fn| and primitive
+type reasoning.
+
+Subgoal 3.12
+(IMPLIES (AND (MEMBER-EQUAL (PC (CADR ACL2::X))
+                            '(0 11 14))
+              (NOT (EQUAL (PROGRAM (CADR ACL2::X))
+                          '((PUSH 0)
+                            (STORE 1)
+                            (GOTO 9)
+                            (LOAD 1)
+                            (PUSH 1)
+                            (ADD)
+                            (STORE 1)
+                            (LOAD 0)
+                            (PUSH 2)
+                            (SUB)
+                            (STORE 0)
+                            (LOAD 0)
+                            (IFNE -9)
+                            (LOAD 1)
+                            (RETURN)))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.11
+(IMPLIES (AND (MEMBER-EQUAL 14 '(0 11 14))
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 14)
+              (EVENP (CAR ACL2::X)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (EQUAL (TOP (STACK (CADR ACL2::X)))
+                       (* (CAR ACL2::X) 1/2)))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.10
+(IMPLIES (AND (MEMBER-EQUAL 0 '(0 11 14))
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 0)
+              (EQUAL (N (CADR ACL2::X))
+                     (CAR ACL2::X)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (NATP (CAR ACL2::X)))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.9
+(IMPLIES (AND (MEMBER-EQUAL 11 '(0 11 14))
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NATP (CAR ACL2::X))
+              (INTEGERP (N (CADR ACL2::X)))
+              (NOT (EVENP (N (CADR ACL2::X)))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (IFF (EVENP (CAR ACL2::X)) NIL))).
+
+By the :executable-counterpart of IF we reduce the conjecture to
+
+Subgoal 3.9'
+(IMPLIES (AND (MEMBER-EQUAL 11 '(0 11 14))
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NATP (CAR ACL2::X))
+              (INTEGERP (N (CADR ACL2::X)))
+              (NOT (EVENP (N (CADR ACL2::X)))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (NOT (EVENP (CAR ACL2::X))))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.8
+(IMPLIES (AND (MEMBER-EQUAL 11 '(0 11 14))
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NATP (CAR ACL2::X))
+              (INTEGERP (N (CADR ACL2::X)))
+              (NATP (A (CADR ACL2::X)))
+              (EVENP (N (CADR ACL2::X)))
+              (EQUAL (+ (A (CADR ACL2::X))
+                        (* (N (CADR ACL2::X)) 1/2))
+                     (* (CAR ACL2::X) 1/2)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (IFF (EVENP (CAR ACL2::X)) T))).
+
+By the :executable-counterpart of IF we reduce the conjecture to
+
+Subgoal 3.8'
+(IMPLIES (AND (MEMBER-EQUAL 11 '(0 11 14))
+              (EQUAL (PROGRAM (CADR ACL2::X))
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NATP (CAR ACL2::X))
+              (INTEGERP (N (CADR ACL2::X)))
+              (NATP (A (CADR ACL2::X)))
+              (EVENP (N (CADR ACL2::X)))
+              (EQUAL (+ (A (CADR ACL2::X))
+                        (* (N (CADR ACL2::X)) 1/2))
+                     (* (CAR ACL2::X) 1/2)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                (AND (EVENP (CAR ACL2::X)) T))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.7
+(IMPLIES (AND (MEMBER-EQUAL 0 '(0 11 14))
+              (EQUAL (PC (CADR ACL2::X)) 0)
+              (NOT (EQUAL (N (CADR ACL2::X))
+                          (CAR ACL2::X))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.6
+(IMPLIES (AND (MEMBER-EQUAL (PC (CADR ACL2::X))
+                            '(0 11 14))
+              (NOT (EQUAL (PC (CADR ACL2::X)) 0))
+              (NOT (EQUAL (PC (CADR ACL2::X)) 11))
+              (NOT (EQUAL (PC (CADR ACL2::X)) 14)))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.5
+(IMPLIES (AND (MEMBER-EQUAL 11 '(0 11 14))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NOT (NATP (CAR ACL2::X))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.4
+(IMPLIES (AND (MEMBER-EQUAL 11 '(0 11 14))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NOT (INTEGERP (N (CADR ACL2::X)))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.3
+(IMPLIES (AND (MEMBER-EQUAL 11 '(0 11 14))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (NOT (NATP (A (CADR ACL2::X))))
+              (EVENP (N (CADR ACL2::X))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.2
+(IMPLIES (AND (MEMBER-EQUAL 11 '(0 11 14))
+              (EQUAL (PC (CADR ACL2::X)) 11)
+              (EVENP (N (CADR ACL2::X)))
+              (NOT (EQUAL (+ (A (CADR ACL2::X))
+                             (* (N (CADR ACL2::X)) 1/2))
+                          (* (CAR ACL2::X) 1/2))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+Subgoal 3.1
+(IMPLIES (AND (MEMBER-EQUAL 14 '(0 11 14))
+              (EQUAL (PC (CADR ACL2::X)) 14)
+              (NOT (EVENP (CAR ACL2::X))))
+         (EQUAL (|H-INV-arity-1-defpun-fn| ACL2::X ACL2::N)
+                NIL)).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
+|H-INV-arity-1-defpun-test| and primitive type reasoning.
+
+[Note:  A hint was supplied for our processing of the goal below. 
+Thanks!]
+
+Subgoal 2
+(IMPLIES
+   (|H-INV-arity-1-defpun-test| (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N))
+   (|H-INV-arity-1-defpun-test|
+        (|H-INV-arity-1-defpun-stn| ACL2::X
+                                    (|H-INV-arity-1-fch| ACL2::X)))).
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be obtained from |H-INV-arity-1-fch|.  We are left
+with the following subgoal.
+
+Subgoal 2'
+(IMPLIES
+ (AND
+  (IMPLIES
+   (|H-INV-arity-1-defpun-test| (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N))
+   (LET ((ACL2::N (|H-INV-arity-1-fch| ACL2::X)))
+        (|H-INV-arity-1-defpun-test|
+             (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N))))
+  (|H-INV-arity-1-defpun-test| (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N)))
+ (|H-INV-arity-1-defpun-test|
+      (|H-INV-arity-1-defpun-stn| ACL2::X
+                                  (|H-INV-arity-1-fch| ACL2::X)))).
+
+By case analysis we reduce the conjecture to
+
+Subgoal 2''
+(IMPLIES
+ (AND
+  (IMPLIES
+   (|H-INV-arity-1-defpun-test| (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N))
+   (|H-INV-arity-1-defpun-test|
+        (|H-INV-arity-1-defpun-stn| ACL2::X (|H-INV-arity-1-fch| ACL2::X))))
+  (|H-INV-arity-1-defpun-test| (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N)))
+ (|H-INV-arity-1-defpun-test|
+      (|H-INV-arity-1-defpun-stn| ACL2::X
+                                  (|H-INV-arity-1-fch| ACL2::X)))).
+
+But we reduce the conjecture to T, by case analysis.
+
+Subgoal 1
+(EQUAL (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N)
+       (IF (ZP ACL2::N)
+           ACL2::X
+           (|H-INV-arity-1-defpun-stn| (|H-INV-arity-1-step| ACL2::X)
+                                       (+ -1 ACL2::N)))).
+
+This simplifies, using the :definition |H-INV-arity-1-step|, to the
+following two conjectures.
+
+Subgoal 1.2
+(IMPLIES (ZP ACL2::N)
+         (EQUAL (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N)
+                ACL2::X)).
+
+But simplification reduces this to T, using the :definition 
+|H-INV-arity-1-defpun-stn| and primitive type reasoning.
+
+Subgoal 1.1
+(IMPLIES (NOT (ZP ACL2::N))
+         (EQUAL (|H-INV-arity-1-defpun-stn| ACL2::X ACL2::N)
+                (|H-INV-arity-1-defpun-stn| (LIST (CAR ACL2::X)
+                                                  (STEP (CADR ACL2::X)))
+                                            (+ -1 ACL2::N)))).
+
+But simplification reduces this to T, using the :definitions 
+|H-INV-arity-1-defpun-stn| and |H-INV-arity-1-step| and primitive type
+reasoning.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM |H-INV-arity-1-DEF| ...)
+Rules: ((:DEFINITION |H-INV-arity-1|)
+        (:DEFINITION |H-INV-arity-1-defpun-base|)
+        (:DEFINITION |H-INV-arity-1-defpun-fn|)
+        (:DEFINITION |H-INV-arity-1-defpun-stn|)
+        (:DEFINITION |H-INV-arity-1-defpun-test|)
+        (:DEFINITION |H-INV-arity-1-step|)
+        (:DEFINITION IFF)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+Hint-events: ((:USE ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F)
+              (:USE |H-INV-arity-1-fch|))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION |H-INV-arity-1-defpun-base|))
+|H-INV-arity-1-DEF|
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function |H-INV-arity-1|:
+
+(EQUAL (|H-INV-arity-1| ACL2::X)
+       (IF (|H-INV-arity-1-defpun-test| ACL2::X)
+           (|H-INV-arity-1-defpun-base| ACL2::X)
+           (|H-INV-arity-1| (|H-INV-arity-1-step| ACL2::X))))
+
+Summary
+Form:  ( ENCAPSULATE ((|H-INV-arity-1| ...) ...) ...)
+Rules: NIL
+Warnings:  Disable
+T
+
+
+M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC H-INV (N0 S)
+                                  (|H-INV-arity-1| (LIST N0 S))))
+
+Since H-INV is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of H-INV.
+
+Summary
+Form:  ( DEFUN H-INV ...)
+Rules: NIL
+H-INV
+
+
+M1 >>>(DEFTHM
+       H-INV-DEF
+       (EQUAL
+           (H-INV N0 S)
+           (IF (MEMBER (PC S) '(0 11 14))
+               (AND (EQUAL (PROGRAM S) *H*)
+                    (CASE (PC S)
+                          (0 (AND (EQUAL (N S) N0) (NATP N0)))
+                          (11 (AND (NATP N0)
+                                   (INTEGERP (N S))
+                                   (IF (AND (NATP (A S)) (EVENP (N S)))
+                                       (EQUAL (+ (A S) (/ (N S) 2)) (/ N0 2))
+                                       (NOT (EVENP (N S))))
+                                   (IFF (EVENP N0) (EVENP (N S)))))
+                          (14 (AND (EVENP N0)
+                                   (EQUAL (TOP (STACK S)) (/ N0 2))))))
+               (H-INV N0 (STEP S))))
+       :HINTS (("Goal" :USE (:INSTANCE |H-INV-arity-1-DEF|
+                                       (ACL2::X (LIST N0 S)))))
+       :RULE-CLASSES :DEFINITION)
+
+ACL2 Warning [Non-rec] in ( DEFTHM H-INV-DEF ...):  A :DEFINITION rule
+generated from H-INV-DEF will be triggered only by terms containing
+the non-recursive function symbol H-INV.  Unless this function is disabled,
+this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM H-INV-DEF ...):  A newly proposed
+:DEFINITION rule generated from H-INV-DEF probably subsumes the previously
+added :REWRITE rule H-INV, in the sense that the new rule will now
+probably be applied whenever the old rule would have been.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM H-INV-DEF ...):  The previously
+added rule H-INV subsumes a newly proposed :DEFINITION rule generated
+from H-INV-DEF, in the sense that the old rule rewrites a more general
+target.  Because the new rule will be tried first, it may nonetheless
+find application.
+
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be derived from |H-INV-arity-1-DEF| via instantiation.
+We are left with the following subgoal.
+
+Goal'
+(IMPLIES
+ (EQUAL (|H-INV-arity-1| (LIST N0 S))
+        (IF (|H-INV-arity-1-defpun-test| (LIST N0 S))
+            (|H-INV-arity-1-defpun-base| (LIST N0 S))
+            (|H-INV-arity-1| (|H-INV-arity-1-step| (LIST N0 S)))))
+ (EQUAL
+  (H-INV N0 S)
+  (IF
+   (LET
+      ((ACL2::X (PC S)) (ACL2::L '(0 11 14)))
+      (ACL2::MBE1 (ACL2::MEMBER-EQL-EXEC ACL2::X ACL2::L)
+                  (PROG2$ (ACL2::MEMBER-EQL-EXEC$GUARD-CHECK ACL2::X ACL2::L)
+                          (MEMBER-EQUAL ACL2::X ACL2::L))))
+   (AND (EQUAL (PROGRAM S)
+               '((PUSH 0)
+                 (STORE 1)
+                 (GOTO 9)
+                 (LOAD 1)
+                 (PUSH 1)
+                 (ADD)
+                 (STORE 1)
+                 (LOAD 0)
+                 (PUSH 2)
+                 (SUB)
+                 (STORE 0)
+                 (LOAD 0)
+                 (IFNE -9)
+                 (LOAD 1)
+                 (RETURN)))
+        (LET ((ACL2::CASE-DO-NOT-USE-ELSEWHERE (PC S)))
+             (CASE ACL2::CASE-DO-NOT-USE-ELSEWHERE
+                   (0 (AND (EQUAL (N S) N0) (NATP N0)))
+                   (11 (AND (NATP N0)
+                            (INTEGERP (N S))
+                            (IF (AND (NATP (A S)) (EVENP (N S)))
+                                (EQUAL (+ (A S) (* (N S) (/ 2)))
+                                       (* N0 (/ 2)))
+                                (NOT (EVENP (N S))))
+                            (IFF (EVENP N0) (EVENP (N S)))))
+                   (14 (AND (EVENP N0)
+                            (EQUAL (TOP (STACK S)) (* N0 (/ 2)))))
+                   (OTHERWISE NIL))))
+   (H-INV N0 (STEP S))))).
+
+By the simple :definitions A, EQL, EVENP, H-INV, 
+ACL2::MEMBER-EQL-EXEC$GUARD-CHECK, N and RETURN-LAST we reduce the
+conjecture to
+
+Goal''
+(IMPLIES
+ (EQUAL (|H-INV-arity-1| (LIST N0 S))
+        (IF (|H-INV-arity-1-defpun-test| (LIST N0 S))
+            (|H-INV-arity-1-defpun-base| (LIST N0 S))
+            (|H-INV-arity-1| (|H-INV-arity-1-step| (LIST N0 S)))))
+ (EQUAL
+  (|H-INV-arity-1| (LIST N0 S))
+  (IF
+   (MEMBER-EQUAL (PC S) '(0 11 14))
+   (AND (EQUAL (PROGRAM S)
+               '((PUSH 0)
+                 (STORE 1)
+                 (GOTO 9)
+                 (LOAD 1)
+                 (PUSH 1)
+                 (ADD)
+                 (STORE 1)
+                 (LOAD 0)
+                 (PUSH 2)
+                 (SUB)
+                 (STORE 0)
+                 (LOAD 0)
+                 (IFNE -9)
+                 (LOAD 1)
+                 (RETURN)))
+        (LET ((ACL2::CASE-DO-NOT-USE-ELSEWHERE (PC S)))
+             (CASE ACL2::CASE-DO-NOT-USE-ELSEWHERE
+                   (0 (AND (EQUAL (NTH 0 (LOCALS S)) N0)
+                           (NATP N0)))
+                   (11 (AND (NATP N0)
+                            (INTEGERP (NTH 0 (LOCALS S)))
+                            (IF (AND (NATP (NTH 1 (LOCALS S)))
+                                     (INTEGERP (* (NTH 0 (LOCALS S)) 1/2)))
+                                (EQUAL (+ (NTH 1 (LOCALS S))
+                                          (* (NTH 0 (LOCALS S)) 1/2))
+                                       (* N0 1/2))
+                                (NOT (INTEGERP (* (NTH 0 (LOCALS S)) 1/2))))
+                            (COND ((INTEGERP (* N0 1/2))
+                                   (AND (INTEGERP (* (NTH 0 (LOCALS S)) 1/2))
+                                        T))
+                                  ((INTEGERP (* (NTH 0 (LOCALS S)) 1/2))
+                                   NIL)
+                                  (T T))))
+                   (14 (AND (INTEGERP (* N0 1/2))
+                            (EQUAL (TOP (STACK S)) (* N0 1/2))))
+                   (OTHERWISE NIL))))
+   (|H-INV-arity-1| (LIST N0 (STEP S)))))).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions A, EVENP, FIX (if-
+intro), |H-INV-arity-1-defpun-base| (if-intro), |H-INV-arity-1-defpun-test|,
+|H-INV-arity-1-step|, IFF (if-intro), MEMBER-EQUAL (if-intro), N, NOT
+(if-intro), NTH (if-intro) and SYNP, the :executable-counterparts of
+ACL2-NUMBERP, BINARY-*, CAR, CDR, CONSP, EQUAL, INTEGERP, MEMBER-EQUAL,
+NATP, NOT and ZP, primitive type reasoning and the :rewrite rules CAR-CONS,
+CDR-CONS, COMMUTATIVITY-OF-*, COMMUTATIVITY-OF-+, DEFAULT-*-1, 
+DISTRIBUTIVITY, ACL2::EQUAL-*-/-1 (if-intro), ACL2::FOLD-CONSTS-IN-*,
+NTH-ADD1! and UNICITY-OF-1, to the following two conjectures.
+
+Subgoal 2
+(IMPLIES (AND (EQUAL (PC S) 14)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (INTEGERP (* 1/2 N0))
+              (ACL2-NUMBERP (TOP (STACK S)))
+              (NOT (ACL2-NUMBERP N0))
+              (EQUAL (|H-INV-arity-1| (LIST N0 S)) T)
+              (EQUAL 0 (* 2 (TOP (STACK S)))))
+         (EQUAL (EQUAL (TOP (STACK S)) 0) T)).
+
+But simplification reduces this to T, using the :definition FIX, the
+:executable-counterparts of EQUAL, FIX and INTEGERP, primitive type
+reasoning and the :rewrite rules DEFAULT-*-2 and 
+ACL2::ZERO-IS-ONLY-ZERO-DIVISOR.
+
+Subgoal 1
+(IMPLIES (AND (EQUAL (PC S) 11)
+              (CONSP (CDR (LOCALS S)))
+              (INTEGERP (* 1/2 (CAR (LOCALS S))))
+              (NOT (EQUAL N0
+                          (+ (CAR (LOCALS S))
+                             (* 2 (CADR (LOCALS S))))))
+              (EQUAL (|H-INV-arity-1| (LIST N0 S))
+                     NIL)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (INTEGERP (CAR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (EQUAL N0
+                     (+ (* 2 (CADR (LOCALS S)))
+                        (CAR (LOCALS S)))))
+         (NOT (INTEGERP (* 1/2 N0)))).
+
+By case analysis we reduce the conjecture to
+
+Subgoal 1'
+(IMPLIES (AND (EQUAL (PC S) 11)
+              (CONSP (CDR (LOCALS S)))
+              (INTEGERP (* 1/2 (CAR (LOCALS S))))
+              (NOT (EQUAL N0
+                          (+ (CAR (LOCALS S))
+                             (* 2 (CADR (LOCALS S))))))
+              (NOT (|H-INV-arity-1| (LIST N0 S)))
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (INTEGERP (CAR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (EQUAL N0
+                     (+ (* 2 (CADR (LOCALS S)))
+                        (CAR (LOCALS S)))))
+         (NOT (INTEGERP (* 1/2 N0)))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, linear arithmetic and primitive
+type reasoning.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM H-INV-DEF ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION A)
+        (:DEFINITION EQL)
+        (:DEFINITION EVENP)
+        (:DEFINITION FIX)
+        (:DEFINITION H-INV)
+        (:DEFINITION |H-INV-arity-1-defpun-base|)
+        (:DEFINITION |H-INV-arity-1-defpun-test|)
+        (:DEFINITION |H-INV-arity-1-step|)
+        (:DEFINITION IFF)
+        (:DEFINITION ACL2::MEMBER-EQL-EXEC$GUARD-CHECK)
+        (:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION N)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART ACL2-NUMBERP)
+        (:EXECUTABLE-COUNTERPART BINARY-*)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FIX)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DEFAULT-*-1)
+        (:REWRITE DEFAULT-*-2)
+        (:REWRITE DISTRIBUTIVITY)
+        (:REWRITE ACL2::EQUAL-*-/-1)
+        (:REWRITE ACL2::FOLD-CONSTS-IN-*)
+        (:REWRITE NTH-ADD1!)
+        (:REWRITE UNICITY-OF-1)
+        (:REWRITE ACL2::ZERO-IS-ONLY-ZERO-DIVISOR))
+Hint-events: ((:USE |H-INV-arity-1-DEF|))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION FIX)
+             (:DEFINITION |H-INV-arity-1-defpun-base|)
+             (:DEFINITION IFF)
+             (:DEFINITION MEMBER-EQUAL)
+             (:DEFINITION NOT)
+             (:DEFINITION NTH)
+             (:REWRITE ACL2::EQUAL-*-/-1))
+Warnings:  Subsume and Non-rec
+H-INV-DEF
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function H-INV:
+
+(EQUAL (H-INV N0 S)
+       (IF (MEMBER-EQUAL (PC S) '(0 11 14))
+           (AND (EQUAL (PROGRAM S)
+                       '((PUSH 0)
+                         (STORE 1)
+                         (GOTO 9)
+                         (LOAD 1)
+                         (PUSH 1)
+                         (ADD)
+                         (STORE 1)
+                         (LOAD 0)
+                         (PUSH 2)
+                         (SUB)
+                         (STORE 0)
+                         (LOAD 0)
+                         (IFNE -9)
+                         (LOAD 1)
+                         (RETURN)))
+                (LET ((ACL2::CASE-DO-NOT-USE-ELSEWHERE (PC S)))
+                     (CASE ACL2::CASE-DO-NOT-USE-ELSEWHERE
+                           (0 (AND (EQUAL (N S) N0) (NATP N0)))
+                           (11 (AND (NATP N0)
+                                    (INTEGERP (N S))
+                                    (IF (AND (NATP (A S)) (EVENP (N S)))
+                                        (EQUAL (+ (A S) (* (N S) 1/2))
+                                               (* N0 1/2))
+                                        (NOT (EVENP (N S))))
+                                    (IFF (EVENP N0) (EVENP (N S)))))
+                           (14 (AND (EVENP N0)
+                                    (EQUAL (TOP (STACK S)) (* N0 1/2))))
+                           (OTHERWISE NIL))))
+           (H-INV N0 (STEP S))))
+
+Summary
+Form:  ( ENCAPSULATE ((H-INV ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume, Non-rec and Disable
+T
+
+
+M1 >>>(DEFTHM H-INV-OPENER
+              (IMPLIES (AND (EQUAL PC (PC S))
+                            (SYNTAXP (QUOTEP PC))
+                            (NOT (MEMBER PC '(0 11 14))))
+                       (EQUAL (H-INV N0 S)
+                              (H-INV N0 (STEP S)))))
+
+By the simple :definitions ACL2::MEMBER-EQL-EXEC$GUARD-CHECK and RETURN-LAST
+and the :executable-counterpart of SYNP we reduce the conjecture to
+
+Goal'
+(IMPLIES (AND (EQUAL PC (PC S))
+              (NOT (MEMBER-EQUAL PC '(0 11 14))))
+         (EQUAL (H-INV N0 S)
+                (H-INV N0 (STEP S)))).
+
+But simplification reduces this to T, using the :definitions H-INV-DEF
+and MEMBER-EQUAL, the :executable-counterparts of CAR, CDR and CONSP
+and primitive type reasoning.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM H-INV-OPENER ...)
+Rules: ((:DEFINITION H-INV-DEF)
+        (:DEFINITION ACL2::MEMBER-EQL-EXEC$GUARD-CHECK)
+        (:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION NOT)
+        (:DEFINITION RETURN-LAST)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART SYNP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+H-INV-OPENER
+
+
+M1 >>>(DEFTHM H-INV-STEP
+              (IMPLIES (H-INV N0 S)
+                       (H-INV N0 (STEP S))))
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions A, DO-INST (if-intro),
+EVENP, EXECUTE-GOTO, EXECUTE-IFNE (if-intro), EXECUTE-LOAD, EXECUTE-PUSH,
+EXECUTE-STORE, FIX (if-intro), H-INV-DEF (if-intro), IFF (if-intro),
+MEMBER-EQUAL (if-intro), N, NEXT-INST, NTH (if-intro), SYNP and UPDATE-NTH,
+the :executable-counterparts of ARG1, BINARY-*, BINARY-+, CAR, CDR,
+CONSP, EQUAL, IFF, INTEGERP, MEMBER-EQUAL, NATP, NOT, NTH, OPCODE and
+ZP, primitive type reasoning and the :rewrite rules CDR-CONS, 
+COMMUTATIVITY-OF-*, COMMUTATIVITY-OF-+, DEFAULT-*-1, DISTRIBUTIVITY,
+ACL2::EQUAL-*-/-1 (if-intro), ACL2::FOLD-CONSTS-IN-*, H-INV-OPENER,
+NTH-0-CONS, NTH-ADD1!, STACKS, STATES, STEP-OPENER, UNICITY-OF-0, 
+UNICITY-OF-1 and UPDATE-NTH-ADD1!, to the following four conjectures.
+
+Subgoal 4
+(IMPLIES (AND (EQUAL (PC S) 14)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (INTEGERP (* 1/2 N0))
+              (ACL2-NUMBERP (TOP (STACK S)))
+              (NOT (ACL2-NUMBERP N0))
+              (EQUAL 0 (* 2 (TOP (STACK S)))))
+         (EQUAL (TOP (STACK S)) 0)).
+
+But we reduce the conjecture to T, by the :executable-counterpart of
+TAU-SYSTEM.
+
+Subgoal 3
+(IMPLIES (AND (EQUAL (PC S) 11)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (EQUAL N0 (+ 0 (* 2 (CADR (LOCALS S)))))
+              (INTEGERP (* 1/2 N0))
+              (EQUAL (CAR (LOCALS S)) 0))
+         (H-INV N0
+                (MAKE-STATE 13 (LOCALS S)
+                            (STACK S)
+                            '((PUSH 0)
+                              (STORE 1)
+                              (GOTO 9)
+                              (LOAD 1)
+                              (PUSH 1)
+                              (ADD)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 2)
+                              (SUB)
+                              (STORE 0)
+                              (LOAD 0)
+                              (IFNE -9)
+                              (LOAD 1)
+                              (RETURN))))).
+
+By the simple :rewrite rule UNICITY-OF-0 we reduce the conjecture to
+
+Subgoal 3'
+(IMPLIES (AND (EQUAL (PC S) 11)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (EQUAL N0 (FIX (* 2 (CADR (LOCALS S)))))
+              (INTEGERP (* 1/2 N0))
+              (EQUAL (CAR (LOCALS S)) 0))
+         (H-INV N0
+                (MAKE-STATE 13 (LOCALS S)
+                            (STACK S)
+                            '((PUSH 0)
+                              (STORE 1)
+                              (GOTO 9)
+                              (LOAD 1)
+                              (PUSH 1)
+                              (ADD)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 2)
+                              (SUB)
+                              (STORE 0)
+                              (LOAD 0)
+                              (IFNE -9)
+                              (LOAD 1)
+                              (RETURN))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, EVENP,
+EXECUTE-LOAD, FIX, H-INV-DEF, NEXT-INST, NTH and SYNP, the :executable-
+counterparts of ARG1, BINARY-*, BINARY-+, CONSP, EQUAL, MEMBER-EQUAL,
+NTH, OPCODE and ZP, primitive type reasoning and the :rewrite rules
+COMMUTATIVITY-OF-*, ACL2::FOLD-CONSTS-IN-*, H-INV-OPENER, NTH-ADD1!,
+STACKS, STATES, STEP-OPENER and UNICITY-OF-1.
+
+Subgoal 2
+(IMPLIES (AND (EQUAL (PC S) 11)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (INTEGERP (CAR (LOCALS S)))
+              (CONSP (CDR (LOCALS S)))
+              (NATP (CADR (LOCALS S)))
+              (INTEGERP (* 1/2 (CAR (LOCALS S))))
+              (EQUAL N0
+                     (+ (CAR (LOCALS S))
+                        (* 2 (CADR (LOCALS S)))))
+              (INTEGERP (* 1/2 N0))
+              (NOT (EQUAL (CAR (LOCALS S)) 0)))
+         (H-INV N0
+                (MAKE-STATE 3 (LOCALS S)
+                            (STACK S)
+                            '((PUSH 0)
+                              (STORE 1)
+                              (GOTO 9)
+                              (LOAD 1)
+                              (PUSH 1)
+                              (ADD)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 2)
+                              (SUB)
+                              (STORE 0)
+                              (LOAD 0)
+                              (IFNE -9)
+                              (LOAD 1)
+                              (RETURN))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions A, DO-INST, EVENP,
+EXECUTE-ADD, EXECUTE-LOAD, EXECUTE-PUSH, EXECUTE-STORE, EXECUTE-SUB,
+FIX, H-INV-DEF, N, NEXT-INST, NTH, SYNP and UPDATE-NTH, the :executable-
+counterparts of ARG1, BINARY-*, BINARY-+, CONSP, EQUAL, IFF, MEMBER-EQUAL,
+NTH, OPCODE, UNARY-- and ZP, primitive type reasoning and the :rewrite
+rules CDR-CONS, ACL2::COMMUTATIVITY-2-OF-+, COMMUTATIVITY-OF-*, 
+COMMUTATIVITY-OF-+, DISTRIBUTIVITY, ACL2::FOLD-CONSTS-IN-*, 
+ACL2::FOLD-CONSTS-IN-+, H-INV-OPENER, NTH-0-CONS, NTH-ADD1!, STACKS,
+STATES, STEP-OPENER, UNICITY-OF-0, UNICITY-OF-1 and UPDATE-NTH-ADD1!.
+
+Subgoal 1
+(IMPLIES (AND (EQUAL (PC S) 11)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (INTEGERP (CAR (LOCALS S)))
+              (NOT (INTEGERP (* 1/2 (CAR (LOCALS S)))))
+              (NOT (INTEGERP (* 1/2 N0)))
+              (NOT (EQUAL (CAR (LOCALS S)) 0)))
+         (H-INV N0
+                (MAKE-STATE 3 (LOCALS S)
+                            (STACK S)
+                            '((PUSH 0)
+                              (STORE 1)
+                              (GOTO 9)
+                              (LOAD 1)
+                              (PUSH 1)
+                              (ADD)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 2)
+                              (SUB)
+                              (STORE 0)
+                              (LOAD 0)
+                              (IFNE -9)
+                              (LOAD 1)
+                              (RETURN))))).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST (if-intro),
+EXECUTE-LOAD, NEXT-INST, NTH (if-intro) and SYNP, the :executable-
+counterparts of ARG1, BINARY-+, CONSP, EQUAL, MEMBER-EQUAL, NTH, OPCODE
+and ZP and the :rewrite rules H-INV-OPENER, NTH-ADD1!, STATES and 
+STEP-OPENER, to the following two conjectures.
+
+Subgoal 1.2
+(IMPLIES (AND (EQUAL (PC S) 11)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (INTEGERP (CAR (LOCALS S)))
+              (NOT (INTEGERP (* 1/2 (CAR (LOCALS S)))))
+              (NOT (INTEGERP (* 1/2 N0)))
+              (NOT (EQUAL (CAR (LOCALS S)) 0))
+              (CONSP (CDR (LOCALS S))))
+         (H-INV N0
+                (STEP (MAKE-STATE 4 (LOCALS S)
+                                  (PUSH (CADR (LOCALS S)) (STACK S))
+                                  '((PUSH 0)
+                                    (STORE 1)
+                                    (GOTO 9)
+                                    (LOAD 1)
+                                    (PUSH 1)
+                                    (ADD)
+                                    (STORE 1)
+                                    (LOAD 0)
+                                    (PUSH 2)
+                                    (SUB)
+                                    (STORE 0)
+                                    (LOAD 0)
+                                    (IFNE -9)
+                                    (LOAD 1)
+                                    (RETURN)))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions A, DO-INST, EVENP,
+EXECUTE-ADD, EXECUTE-LOAD, EXECUTE-PUSH, EXECUTE-STORE, EXECUTE-SUB,
+H-INV-DEF, N, NEXT-INST, SYNP and UPDATE-NTH, the :executable-counterparts
+of ARG1, BINARY-*, BINARY-+, CONSP, EQUAL, IFF, MEMBER-EQUAL, NTH,
+OPCODE, UNARY-- and ZP, primitive type reasoning and the :rewrite rules
+CDR-CONS, COMMUTATIVITY-OF-*, COMMUTATIVITY-OF-+, DISTRIBUTIVITY, 
+H-INV-OPENER, NTH-0-CONS, NTH-ADD1!, STACKS, STATES, STEP-OPENER and
+UPDATE-NTH-ADD1!.
+
+Subgoal 1.1
+(IMPLIES (AND (EQUAL (PC S) 11)
+              (EQUAL (PROGRAM S)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (NATP N0)
+              (CONSP (LOCALS S))
+              (INTEGERP (CAR (LOCALS S)))
+              (NOT (INTEGERP (* 1/2 (CAR (LOCALS S)))))
+              (NOT (INTEGERP (* 1/2 N0)))
+              (NOT (EQUAL (CAR (LOCALS S)) 0))
+              (NOT (CONSP (CDR (LOCALS S)))))
+         (H-INV N0
+                (STEP (MAKE-STATE 4 (LOCALS S)
+                                  (PUSH NIL (STACK S))
+                                  '((PUSH 0)
+                                    (STORE 1)
+                                    (GOTO 9)
+                                    (LOAD 1)
+                                    (PUSH 1)
+                                    (ADD)
+                                    (STORE 1)
+                                    (LOAD 0)
+                                    (PUSH 2)
+                                    (SUB)
+                                    (STORE 0)
+                                    (LOAD 0)
+                                    (IFNE -9)
+                                    (LOAD 1)
+                                    (RETURN)))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions A, DO-INST, EVENP,
+EXECUTE-ADD, EXECUTE-LOAD, EXECUTE-PUSH, EXECUTE-STORE, EXECUTE-SUB,
+H-INV-DEF, N, NEXT-INST, SYNP and UPDATE-NTH, the :executable-counterparts
+of ARG1, BINARY-*, BINARY-+, CONS, CONSP, EQUAL, IFF, MEMBER-EQUAL,
+NATP, NTH, OPCODE, UNARY-- and ZP, primitive type reasoning and the
+:rewrite rules CDR-CONS, COMMUTATIVITY-OF-*, COMMUTATIVITY-OF-+, DEFAULT-CDR,
+DISTRIBUTIVITY, H-INV-OPENER, NTH-0-CONS, NTH-ADD1!, STACKS, STATES,
+STEP-OPENER and UPDATE-NTH-ADD1!.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM H-INV-STEP ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION A)
+        (:DEFINITION DO-INST)
+        (:DEFINITION EVENP)
+        (:DEFINITION EXECUTE-ADD)
+        (:DEFINITION EXECUTE-GOTO)
+        (:DEFINITION EXECUTE-IFNE)
+        (:DEFINITION EXECUTE-LOAD)
+        (:DEFINITION EXECUTE-PUSH)
+        (:DEFINITION EXECUTE-STORE)
+        (:DEFINITION EXECUTE-SUB)
+        (:DEFINITION FIX)
+        (:DEFINITION H-INV-DEF)
+        (:DEFINITION IFF)
+        (:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION N)
+        (:DEFINITION NEXT-INST)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION SYNP)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART ARG1)
+        (:EXECUTABLE-COUNTERPART BINARY-*)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART IFF)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OPCODE)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CDR-CONS)
+        (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DEFAULT-*-1)
+        (:REWRITE DEFAULT-CDR)
+        (:REWRITE DISTRIBUTIVITY)
+        (:REWRITE ACL2::EQUAL-*-/-1)
+        (:REWRITE ACL2::FOLD-CONSTS-IN-*)
+        (:REWRITE ACL2::FOLD-CONSTS-IN-+)
+        (:REWRITE H-INV-OPENER)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE NTH-ADD1!)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-OPENER)
+        (:REWRITE UNICITY-OF-0)
+        (:REWRITE UNICITY-OF-1)
+        (:REWRITE UPDATE-NTH-ADD1!))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO-INST)
+             (:DEFINITION EXECUTE-IFNE)
+             (:DEFINITION FIX)
+             (:DEFINITION H-INV-DEF)
+             (:DEFINITION IFF)
+             (:DEFINITION MEMBER-EQUAL)
+             (:DEFINITION NTH)
+             (:REWRITE ACL2::EQUAL-*-/-1))
+H-INV-STEP
+
+
+M1 >>>(DEFTHM H-INV-RUN
+              (IMPLIES (H-INV N0 S)
+                       (H-INV N0 (RUN SCHED S)))
+              :RULE-CLASSES NIL
+              :HINTS (("Goal" :IN-THEORY (E/D (RUN) (H-INV-DEF)))))
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (RUN SCHED S).  This
+suggestion was produced using the :induction rule RUN.  If we let 
+(:P N0 S SCHED) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (NOT (ENDP SCHED))
+                   (:P N0 (STEP S) (CDR SCHED)))
+              (:P N0 S SCHED))
+     (IMPLIES (ENDP SCHED) (:P N0 S SCHED))).
+This induction is justified by the same argument used to admit RUN.
+Note, however, that the unmeasured variable S is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+
+Subgoal *1/3
+(IMPLIES (AND (NOT (ENDP SCHED))
+              (H-INV N0 (RUN (CDR SCHED) (STEP S)))
+              (H-INV N0 S))
+         (H-INV N0 (RUN SCHED S))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP SCHED)
+              (H-INV N0 (RUN (CDR SCHED) (STEP S)))
+              (H-INV N0 S))
+         (H-INV N0 (RUN SCHED S))).
+
+But simplification reduces this to T, using the :definition RUN.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ENDP SCHED))
+              (NOT (H-INV N0 (STEP S)))
+              (H-INV N0 S))
+         (H-INV N0 (RUN SCHED S))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/2'
+(IMPLIES (AND (CONSP SCHED)
+              (NOT (H-INV N0 (STEP S)))
+              (H-INV N0 S))
+         (H-INV N0 (RUN SCHED S))).
+
+But simplification reduces this to T, using the :rewrite rule H-INV-STEP.
+
+Subgoal *1/1
+(IMPLIES (AND (ENDP SCHED) (H-INV N0 S))
+         (H-INV N0 (RUN SCHED S))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/1'
+(IMPLIES (AND (NOT (CONSP SCHED)) (H-INV N0 S))
+         (H-INV N0 (RUN SCHED S))).
+
+But simplification reduces this to T, using the :definition RUN.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM H-INV-RUN ...)
+Rules: ((:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:DEFINITION RUN)
+        (:INDUCTION RUN)
+        (:REWRITE H-INV-STEP))
+H-INV-RUN
+
+
+M1 >>>(DEFTHM PARTIAL-CORRECTNESS-OF-PROGRAM-H
+              (LET* ((SK (RUN SCHED S0)))
+                    (IMPLIES (AND (LET ((S S0))
+                                       (AND (EQUAL (N S) N0) (NATP N0)))
+                                  (EQUAL (PC S0) 0)
+                                  (EQUAL (LOCALS S0) (LIST* N0 ANY))
+                                  (EQUAL (PROGRAM S0) *H*)
+                                  (EQUAL (PC SK) 14))
+                             (LET ((S SK))
+                                  (AND (EVENP N0)
+                                       (EQUAL (TOP (STACK S)) (/ N0 2))))))
+              :HINTS (("Goal" :USE (:INSTANCE H-INV-RUN (N0 N0)
+                                              (S S0)
+                                              (SCHED SCHED))))
+              :RULE-CLASSES NIL)
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be derived from H-INV-RUN via instantiation.  We
+are left with the following subgoal.
+
+Goal'
+(IMPLIES (IMPLIES (H-INV N0 S0)
+                  (H-INV N0 (RUN SCHED S0)))
+         (LET ((SK (RUN SCHED S0)))
+              (IMPLIES (AND (LET ((S S0))
+                                 (AND (EQUAL (N S) N0) (NATP N0)))
+                            (EQUAL (PC S0) 0)
+                            (EQUAL (LOCALS S0) (CONS N0 ANY))
+                            (EQUAL (PROGRAM S0)
+                                   '((PUSH 0)
+                                     (STORE 1)
+                                     (GOTO 9)
+                                     (LOAD 1)
+                                     (PUSH 1)
+                                     (ADD)
+                                     (STORE 1)
+                                     (LOAD 0)
+                                     (PUSH 2)
+                                     (SUB)
+                                     (STORE 0)
+                                     (LOAD 0)
+                                     (IFNE -9)
+                                     (LOAD 1)
+                                     (RETURN)))
+                            (EQUAL (PC SK) 14))
+                       (LET ((S SK))
+                            (AND (EVENP N0)
+                                 (EQUAL (TOP (STACK S))
+                                        (* N0 (/ 2)))))))).
+
+By the simple :definitions EVENP and N we reduce the conjecture to
+
+Goal''
+(IMPLIES (AND (IMPLIES (H-INV N0 S0)
+                       (H-INV N0 (RUN SCHED S0)))
+              (EQUAL (NTH 0 (LOCALS S0)) N0)
+              (NATP N0)
+              (EQUAL (PC S0) 0)
+              (EQUAL (LOCALS S0) (CONS N0 ANY))
+              (EQUAL (PROGRAM S0)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (RUN SCHED S0)) 14))
+         (LET ((S (RUN SCHED S0)))
+              (AND (INTEGERP (* N0 1/2))
+                   (EQUAL (TOP (STACK S)) (* N0 1/2))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions EVENP, FIX, H-INV-DEF,
+N and NTH, the :executable-counterparts of EQUAL, MEMBER-EQUAL and
+ZP, primitive type reasoning and the :rewrite rules COMMUTATIVITY-OF-*
+and ACL2::EQUAL-*-/-1.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PARTIAL-CORRECTNESS-OF-PROGRAM-H ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION EVENP)
+        (:DEFINITION FIX)
+        (:DEFINITION H-INV-DEF)
+        (:DEFINITION N)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE ACL2::EQUAL-*-/-1))
+Hint-events: ((:USE H-INV-RUN))
+PARTIAL-CORRECTNESS-OF-PROGRAM-H
+
+Summary
+Form:  ( PROGN (DEFPUN H-INV ...) ...)
+Rules: NIL
+Warnings:  Subsume, Non-rec and Disable
+ PARTIAL-CORRECTNESS-OF-PROGRAM-H
+M1 >>(DEFTHM H-COROLLARY
+             (IMPLIES (AND (NATP (N S0))
+                           (EQUAL (PC S0) 0)
+                           (EQUAL (PROGRAM S0) *H*)
+                           (EQUAL SK (RUN SCHED S0))
+                           (EQUAL (PC SK) 14))
+                      (AND (EVENP (N S0))
+                           (EQUAL (TOP (STACK SK)) (/ (N S0) 2))))
+             :HINTS (("Goal" :USE (:INSTANCE PARTIAL-CORRECTNESS-OF-PROGRAM-H
+                                             (N0 (N S0))
+                                             (ANY (CDR (LOCALS S0)))))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM H-COROLLARY ...):  A :REWRITE rule
+generated from H-COROLLARY will be triggered only by terms containing
+the non-recursive function symbols EVENP and N.  Unless these functions
+are disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Free] in ( DEFTHM H-COROLLARY ...):  A :REWRITE rule
+generated from H-COROLLARY contains the free variables SCHED and SK.
+These variables will be chosen by searching for an instance of 
+(EQUAL SK (RUN SCHED S0)) in the context of the term being rewritten.
+This is generally a severe restriction on the applicability of a :REWRITE
+rule.  See :DOC free-variables.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM H-COROLLARY ...):  The previously
+added rule EVENP subsumes a newly proposed :REWRITE rule generated
+from H-COROLLARY, in the sense that the old rule rewrites a more general
+target.  Because the new rule will be tried first, it may nonetheless
+find application.
+
+
+ACL2 Warning [Free] in ( DEFTHM H-COROLLARY ...):  A :REWRITE rule
+generated from H-COROLLARY contains the free variables S0 and SCHED.
+These variables will be chosen by searching for instances of (NATP (N S0))
+and (EQUAL SK (RUN SCHED S0)) in the context of the term being rewritten.
+This is generally a severe restriction on the applicability of a :REWRITE
+rule.  See :DOC free-variables.
+
+
+ACL2 Warning [Non-rec] in ( DEFTHM H-COROLLARY ...):  As noted, we
+will instantiate the free variables, S0 and SCHED, of a :REWRITE rule
+generated from H-COROLLARY, by searching for the set of hypotheses
+shown above.  However, these hypotheses mention the function symbol
+N, which is defun'd non-recursively.  Unless disabled, this function
+symbol is unlikely to occur in the conjecture being proved and hence
+the search for the required hypotheses will likely fail.
+
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be derived from PARTIAL-CORRECTNESS-OF-PROGRAM-H
+via instantiation.  We are left with the following subgoal.
+
+Goal'
+(IMPLIES (LET ((SK (RUN SCHED S0))
+               (ANY (CDR (LOCALS S0)))
+               (N0 (N S0)))
+              (IMPLIES (AND (LET ((S S0))
+                                 (AND (EQUAL (N S) N0) (NATP N0)))
+                            (EQUAL (PC S0) 0)
+                            (EQUAL (LOCALS S0) (CONS N0 ANY))
+                            (EQUAL (PROGRAM S0)
+                                   '((PUSH 0)
+                                     (STORE 1)
+                                     (GOTO 9)
+                                     (LOAD 1)
+                                     (PUSH 1)
+                                     (ADD)
+                                     (STORE 1)
+                                     (LOAD 0)
+                                     (PUSH 2)
+                                     (SUB)
+                                     (STORE 0)
+                                     (LOAD 0)
+                                     (IFNE -9)
+                                     (LOAD 1)
+                                     (RETURN)))
+                            (EQUAL (PC SK) 14))
+                       (LET ((S SK))
+                            (AND (EVENP N0)
+                                 (EQUAL (TOP (STACK S)) (* N0 (/ 2)))))))
+         (IMPLIES (AND (NATP (N S0))
+                       (EQUAL (PC S0) 0)
+                       (EQUAL (PROGRAM S0)
+                              '((PUSH 0)
+                                (STORE 1)
+                                (GOTO 9)
+                                (LOAD 1)
+                                (PUSH 1)
+                                (ADD)
+                                (STORE 1)
+                                (LOAD 0)
+                                (PUSH 2)
+                                (SUB)
+                                (STORE 0)
+                                (LOAD 0)
+                                (IFNE -9)
+                                (LOAD 1)
+                                (RETURN)))
+                       (EQUAL SK (RUN SCHED S0))
+                       (EQUAL (PC SK) 14))
+                  (AND (EVENP (N S0))
+                       (EQUAL (TOP (STACK SK))
+                              (* (N S0) (/ 2)))))).
+
+By the simple :definitions EVENP and N and the :executable-counterpart
+of UNARY-/ we reduce the conjecture to
+
+Goal''
+(IMPLIES (AND (LET ((SK (RUN SCHED S0))
+                    (ANY (CDR (LOCALS S0)))
+                    (N0 (NTH 0 (LOCALS S0))))
+                   (IMPLIES (AND (LET ((S S0))
+                                      (AND (EQUAL (NTH 0 (LOCALS S)) N0)
+                                           (NATP N0)))
+                                 (EQUAL (PC S0) 0)
+                                 (EQUAL (LOCALS S0) (CONS N0 ANY))
+                                 (EQUAL (PROGRAM S0)
+                                        '((PUSH 0)
+                                          (STORE 1)
+                                          (GOTO 9)
+                                          (LOAD 1)
+                                          (PUSH 1)
+                                          (ADD)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (PUSH 2)
+                                          (SUB)
+                                          (STORE 0)
+                                          (LOAD 0)
+                                          (IFNE -9)
+                                          (LOAD 1)
+                                          (RETURN)))
+                                 (EQUAL (PC SK) 14))
+                            (LET ((S SK))
+                                 (AND (INTEGERP (* N0 1/2))
+                                      (EQUAL (TOP (STACK S)) (* N0 1/2))))))
+              (NATP (NTH 0 (LOCALS S0)))
+              (EQUAL (PC S0) 0)
+              (EQUAL (PROGRAM S0)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL SK (RUN SCHED S0))
+              (EQUAL (PC SK) 14))
+         (AND (INTEGERP (* (NTH 0 (LOCALS S0)) 1/2))
+              (EQUAL (TOP (STACK SK))
+                     (* (NTH 0 (LOCALS S0)) 1/2)))).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions FIX and NTH (if-intro),
+the :executable-counterparts of NATP and ZP and the :rewrite rules
+COMMUTATIVITY-OF-* and ACL2::EQUAL-*-/-1 (if-intro), to the following
+three conjectures.
+
+Subgoal 3
+(IMPLIES (AND (CONSP (LOCALS S0))
+              (LET ((SK (RUN SCHED S0))
+                    (ANY (CDR (LOCALS S0)))
+                    (N0 (CAR (LOCALS S0))))
+                   (IMPLIES (AND (LET ((S S0))
+                                      (AND (EQUAL (NTH 0 (LOCALS S)) N0)
+                                           (NATP N0)))
+                                 (EQUAL (PC S0) 0)
+                                 (EQUAL (LOCALS S0) (CONS N0 ANY))
+                                 (EQUAL (PROGRAM S0)
+                                        '((PUSH 0)
+                                          (STORE 1)
+                                          (GOTO 9)
+                                          (LOAD 1)
+                                          (PUSH 1)
+                                          (ADD)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (PUSH 2)
+                                          (SUB)
+                                          (STORE 0)
+                                          (LOAD 0)
+                                          (IFNE -9)
+                                          (LOAD 1)
+                                          (RETURN)))
+                                 (EQUAL (PC SK) 14))
+                            (LET ((S SK))
+                                 (AND (INTEGERP (* N0 1/2))
+                                      (EQUAL (TOP (STACK S)) (* N0 1/2))))))
+              (NATP (CAR (LOCALS S0)))
+              (EQUAL (PC S0) 0)
+              (EQUAL (PROGRAM S0)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (RUN SCHED S0)) 14))
+         (INTEGERP (* 1/2 (CAR (LOCALS S0))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definition NTH, the :executable-
+counterparts of EQUAL and ZP, primitive type reasoning and the :rewrite
+rules COMMUTATIVITY-OF-* and ACL2::CONS-CAR-CDR.
+
+Subgoal 2
+(IMPLIES (AND (CONSP (LOCALS S0))
+              (LET ((SK (RUN SCHED S0))
+                    (ANY (CDR (LOCALS S0)))
+                    (N0 (CAR (LOCALS S0))))
+                   (IMPLIES (AND (LET ((S S0))
+                                      (AND (EQUAL (NTH 0 (LOCALS S)) N0)
+                                           (NATP N0)))
+                                 (EQUAL (PC S0) 0)
+                                 (EQUAL (LOCALS S0) (CONS N0 ANY))
+                                 (EQUAL (PROGRAM S0)
+                                        '((PUSH 0)
+                                          (STORE 1)
+                                          (GOTO 9)
+                                          (LOAD 1)
+                                          (PUSH 1)
+                                          (ADD)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (PUSH 2)
+                                          (SUB)
+                                          (STORE 0)
+                                          (LOAD 0)
+                                          (IFNE -9)
+                                          (LOAD 1)
+                                          (RETURN)))
+                                 (EQUAL (PC SK) 14))
+                            (LET ((S SK))
+                                 (AND (INTEGERP (* N0 1/2))
+                                      (EQUAL (TOP (STACK S)) (* N0 1/2))))))
+              (NATP (CAR (LOCALS S0)))
+              (EQUAL (PC S0) 0)
+              (EQUAL (PROGRAM S0)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (RUN SCHED S0)) 14))
+         (EQUAL (CAR (LOCALS S0))
+                (* 2 (TOP (STACK (RUN SCHED S0)))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions FIX and NTH,
+the :executable-counterparts of EQUAL and ZP, primitive type reasoning
+and the :rewrite rules COMMUTATIVITY-OF-*, ACL2::CONS-CAR-CDR and 
+ACL2::EQUAL-*-/-1.
+
+Subgoal 1
+(IMPLIES (AND (CONSP (LOCALS S0))
+              (LET ((SK (RUN SCHED S0))
+                    (ANY (CDR (LOCALS S0)))
+                    (N0 (CAR (LOCALS S0))))
+                   (IMPLIES (AND (LET ((S S0))
+                                      (AND (EQUAL (NTH 0 (LOCALS S)) N0)
+                                           (NATP N0)))
+                                 (EQUAL (PC S0) 0)
+                                 (EQUAL (LOCALS S0) (CONS N0 ANY))
+                                 (EQUAL (PROGRAM S0)
+                                        '((PUSH 0)
+                                          (STORE 1)
+                                          (GOTO 9)
+                                          (LOAD 1)
+                                          (PUSH 1)
+                                          (ADD)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (PUSH 2)
+                                          (SUB)
+                                          (STORE 0)
+                                          (LOAD 0)
+                                          (IFNE -9)
+                                          (LOAD 1)
+                                          (RETURN)))
+                                 (EQUAL (PC SK) 14))
+                            (LET ((S SK))
+                                 (AND (INTEGERP (* N0 1/2))
+                                      (EQUAL (TOP (STACK S)) (* N0 1/2))))))
+              (NATP (CAR (LOCALS S0)))
+              (EQUAL (PC S0) 0)
+              (EQUAL (PROGRAM S0)
+                     '((PUSH 0)
+                       (STORE 1)
+                       (GOTO 9)
+                       (LOAD 1)
+                       (PUSH 1)
+                       (ADD)
+                       (STORE 1)
+                       (LOAD 0)
+                       (PUSH 2)
+                       (SUB)
+                       (STORE 0)
+                       (LOAD 0)
+                       (IFNE -9)
+                       (LOAD 1)
+                       (RETURN)))
+              (EQUAL (PC (RUN SCHED S0)) 14))
+         (ACL2-NUMBERP (TOP (STACK (RUN SCHED S0))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definition NTH, the :executable-
+counterparts of EQUAL and ZP, primitive type reasoning and the :rewrite
+rules COMMUTATIVITY-OF-* and ACL2::CONS-CAR-CDR.
+
+Q.E.D.
+
+The storage of H-COROLLARY depends upon the :type-prescription rule
+EVENP.
+
+Summary
+Form:  ( DEFTHM H-COROLLARY ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION EVENP)
+        (:DEFINITION FIX)
+        (:DEFINITION N)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART UNARY-/)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE ACL2::CONS-CAR-CDR)
+        (:REWRITE ACL2::EQUAL-*-/-1)
+        (:TYPE-PRESCRIPTION EVENP))
+Hint-events: ((:USE PARTIAL-CORRECTNESS-OF-PROGRAM-H))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION NTH)
+             (:REWRITE ACL2::EQUAL-*-/-1))
+Warnings:  Subsume, Free and Non-rec
+ H-COROLLARY
+M1 >>'(END OF DEMO 2)
+(END OF DEMO 2)
+M1 >>'(THE END)
+(THE END)
+M1 >>Bye.

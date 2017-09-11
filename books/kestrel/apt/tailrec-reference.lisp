@@ -53,7 +53,7 @@
               :new-enable      ; default :auto
               :wrapper-name    ; default :auto
               :wrapper-enable  ; default t
-              :thm-name        ; default :arrow
+              :thm-name        ; default :auto
               :thm-enable      ; default t
               :non-executable  ; default :auto
               :verify-guards   ; default :auto
@@ -404,7 +404,7 @@
      </blockquote>
 
    <p>
-   @(':thm-name') &mdash; default @(':arrow')
+   @(':thm-name') &mdash; default @(':auto')
    </p>
 
      <blockquote>
@@ -416,27 +416,11 @@
      <ul>
 
        <li>
-       @(':arrow'),
-       to use the concatenation of
-       the name of @('old'),
-       @('-~>-'),
-       and the name of @('wrapper').
-       </li>
-
-       <li>
-       @(':becomes'),
-       to use the concatenation of
-       the name of @('old'),
-       @('-becomes-'),
-       and the name of @('wrapper').
-       </li>
-
-       <li>
-       @(':is'),
-       to use the concatenation of
-       the name of @('old'),
-       @('-is-'),
-       and the name of @('wrapper').
+       @(':auto'),
+       to use the <see topic='@(url acl2::paired-names)'>paired name</see>
+       obtaining by <see topic='@(url make-paired-name)'>pairing</see>
+       the name of @('old') and the name of @('new'),
+       putting the result into the same package as @('new').
        </li>
 
        <li>
@@ -548,7 +532,7 @@
      <p>
      It must be a list of doublets
      @('((appcond1 hints1) ... (appcondp hintsp))')
-     where each @('appcondk') is a symbol (in any package)
+     where each @('appcondk') is a keyword
      that names one of the applicability conditions below,
      and each @('hintsk') consists of hints as may appear
      just after @(':hints') in a @(tsee defthm).
@@ -663,12 +647,12 @@
    </h3>
 
    <p>
-   The following conditions must be provable
+   The following conditions must be proved
    in order for the transformation to apply.
    </p>
 
    <p>
-   @('domain-of-base')
+   @(':domain-of-base')
    </p>
 
      <blockquote>
@@ -684,7 +668,7 @@
      </blockquote>
 
    <p>
-   @('domain-of-nonrec')
+   @(':domain-of-nonrec')
    </p>
 
      <blockquote>
@@ -700,15 +684,15 @@
                 (domain nonrec<x1,...,xn>))
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid') or @(':assoc').
      </p>
 
+     </blockquote>
+
    <p>
-   @('domain-of-combine')
+   @(':domain-of-combine')
    </p>
 
      <blockquote>
@@ -723,15 +707,15 @@
                 (domain combine<u,v>))
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid') or @(':assoc').
      </p>
 
+     </blockquote>
+
    <p>
-   @('domain-of-combine-uncond')
+   @(':domain-of-combine-uncond')
    </p>
 
      <blockquote>
@@ -744,15 +728,15 @@
        (domain combine<u,v>)
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid-alt').
      </p>
 
+     </blockquote>
+
    <p>
-   @('combine-associativity')
+   @(':combine-associativity')
    </p>
 
      <blockquote>
@@ -769,15 +753,15 @@
                        combine<combine<u,v>,w>))
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid') or @(':assoc').
      </p>
 
+     </blockquote>
+
    <p>
-   @('combine-associativity-uncond')
+   @(':combine-associativity-uncond')
    </p>
 
      <blockquote>
@@ -791,15 +775,15 @@
               combine<combine<u,v>,w>)
      })
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the @(':variant') input is @(':monoid-alt').
      </p>
 
+     </blockquote>
+
    <p>
-   @('combine-left-identity')
+   @(':combine-left-identity')
    </p>
 
      <blockquote>
@@ -817,13 +801,13 @@
 
      <p>
      This applicability condition is present iff
-     the @(':variant') input is @(':monoid').
+     the @(':variant') input is @(':monoid') or @(':monoid-alt').
      </p>
 
      </blockquote>
 
    <p>
-   @('combine-right-identity')
+   @(':combine-right-identity')
    </p>
 
      <blockquote>
@@ -841,13 +825,13 @@
 
      <p>
      This applicability condition is present iff
-     the @(':variant') input is @(':monoid').
+     the @(':variant') input is @(':monoid') or @(':monoid-alt').
      </p>
 
      </blockquote>
 
    <p>
-   @('domain-guard')
+   @(':domain-guard')
    </p>
 
      <blockquote>
@@ -876,7 +860,7 @@
      </blockquote>
 
    <p>
-   @('combine-guard')
+   @(':combine-guard')
    </p>
 
      <blockquote>
@@ -906,7 +890,7 @@
      </blockquote>
 
    <p>
-   @('domain-of-nonrec-when-guard')
+   @(':domain-of-nonrec-when-guard')
    </p>
 
      <blockquote>
@@ -928,8 +912,6 @@
      where @('old-guard<x1,...,xn>') is the guard term of @('old').
      </p>
 
-     </blockquote>
-
      <p>
      This applicability condition is present iff
      the generated functions are guard-verified
@@ -937,18 +919,20 @@
      and the @(':variant') input is @(':monoid-alt').
      </p>
 
+     </blockquote>
+
    <p>
-   When present, @('combine-left-identity') and @('combine-right-identity'),
+   When present, @(':combine-left-identity') and @(':combine-right-identity'),
    together with
-   either @('combine-associative') or @('combine-associative-uncond')
+   either @(':combine-associativity') or @(':combine-associativity-uncond')
    (one of them is always present),
    and together with
-   either @('domain-of-combine') or @('domain-of-combine-uncond')
+   either @(':domain-of-combine') or @(':domain-of-combine-uncond')
    (one of them is always present),
    mean that the domain has the algebraic structure of a monoid,
    with the combination operator as the binary operator
    and with the base value of the recursion as identity.
-   When @('combine-left-identity') and @('combine-right-identity') are absent,
+   When @(':combine-left-identity') and @(':combine-right-identity') are absent,
    the domain has the algebraic structure of a semigroup.
    </p>
 

@@ -64,6 +64,7 @@
                         ensure-term-if-call$
                         ensure-term-logic-mode$
                         ensure-term-no-stobjs$
+                        er-soft+
                         fargs
                         formals
                         fquotep
@@ -78,6 +79,7 @@
                         lambda-body
                         lambda-formals
                         make-lambda
+                        make-paired-name
                         measure
                         msg-downcase-first
                         named-formulas-to-thm-events

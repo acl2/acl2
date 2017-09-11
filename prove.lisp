@@ -2251,7 +2251,14 @@
 ; evaluators in rules of class :meta or :clause-processor, so that we can use
 ; aok = t here.
 
-                           t)
+; Note that unlike trans-eval, ev-for-trans-eval never prints a warning when a
+; user-defined stobj is modified.  Our feeling is that such warnings would be
+; very distracting, since they would appear in the middle of proofs as
+; clause-processor hints are processed.
+
+                           t
+                           (f-get-global 'ld-user-stobjs-modified-warning
+                                         state))
         (cond
          (erp (mv (msg "Evaluation failed for the :clause-processor hint.")
                   nil
@@ -2415,7 +2422,9 @@
 ; evaluators in rules of class :meta or :clause-processor, so that we can use
 ; aok = t here.
 
-                            t)
+                            t
+                            (f-get-global 'ld-user-stobjs-modified-warning
+                                          state))
        (cond
         (erp (mv (msg "Evaluation failed for the :clause-processor hint.")
                  nil))

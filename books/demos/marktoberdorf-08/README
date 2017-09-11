@@ -1,0 +1,23 @@
+This is an updated copy of the material at
+
+http://www.cs.utexas.edu/users/moore/publications/talks/marktoberdorf-08/
+
+which was originally presented in 2008 at the Marktoberdorf Summer
+School.
+
+There are five sets of files, lecture*, each used in the corresponding
+slides lecture*.pdf.  The demos are in files lecture*-input.lsp.  The
+lecture*-log.txt files show the entire sessions (user input and ACL2
+output), omitting from summaries the "Time" and "Prover steps counted"
+fields.  The *-book.* files are artifacts of the ACL2 regression test
+mechanism, and can be ignored by readers.
+
+As a complete aside, note that among the books are some are probably
+ancestors of books now in the ACL2 Community Books, but preserved so
+that the demos will continue work even if someone changed those books.
+As a matter of principle it's probably wise to keep copies of books
+used in demos.  For example, if m1 had been changed significantly one
+might have had to rewrite the m1 code for the Boyer-Moore fast string
+searching algorithm which is verified here.  As it is, that proof just
+uses the really simple machine called m1 back then (which may or may
+not be exactly what we call it today).

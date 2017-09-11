@@ -20,8 +20,8 @@
 (include-book "kestrel/utilities/error-checking" :dir :system)
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/named-formulas" :dir :system)
+(include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "std/strings/symbols" :dir :system)
 
 (local (xdoc::set-default-parents restrict-implementation))
 
@@ -193,39 +193,32 @@
   :short "Ensure that the @(':thm-name') input to the transformation
           is valid."
   (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
-       (name (if (member-eq thm-name '(:arrow :becomes :is))
-                 (b* ((separator (case thm-name
-                                   (:arrow "-~>-")
-                                   (:becomes "-BECOMES-")
-                                   (:is "-IS-")
-                                   (otherwise (impossible))))
-                      (string (str::cat (symbol-name old-fn-name)
-                                        separator
-                                        (symbol-name new-fn-name))))
-                   (intern-in-package-of-symbol string old-fn-name))
+       (name (if (eq thm-name :auto)
+                 (make-paired-name old-fn-name new-fn-name 2 (w state))
                thm-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the target function ~x1 ~
                           to the new function ~x2, ~
                           ~@3,"
                          name old-fn-name new-fn-name
-                         (if (member-eq thm-name '(:arrow :becomes :is))
+                         (if (eq thm-name :auto)
                              "automatically generated ~
                               since the :THM-NAME input ~
-                              is (perhaps by default) :ARROW, :BECOMES, or :IS"
+                              is (perhaps by default) :AUTO"
                            "supplied as the :THM-NAME input")))
        ((er &) (ensure-symbol-new-event-name$ name description t nil))
-       ((when (eq name new-fn-name))
-        (er soft ctx
-            "~@0 must differ from the name ~x1 of the new function ~
-             (determined by the :THM-NAME input)."
-            description new-fn-name)))
+       ((er &) (ensure-symbol-different$
+                name new-fn-name
+                (msg "the name ~x0 of the new function ~
+                      (determined by the :NEW-NAME input)." new-fn-name)
+                description
+                t nil)))
     (value name)))
 
 (defval *restrict-app-cond-names*
   :short "Names of all the applicability conditions."
-  '(restriction-of-rec-calls
-    restriction-guard)
+  '(:restriction-of-rec-calls
+    :restriction-guard)
   ///
 
   (defruled symbol-listp-of-*restrict-app-cond-names*
@@ -254,19 +247,6 @@
    The second components of the doublets
    are checked to be well-formed hints not here,
    but implicitly when attempting to prove the applicability conditions.
-   </p>
-   <p>
-   The symbols that name the applicability conditions in this input
-   are put into the \"APT\" package (a no-op if they are already there)
-   prior to checking them and later processing them.
-   Thus, when calling this transformation from outside the \"APT\" package,
-   it is not necessary to qualify the names of the applicability conditions
-   with the @('apt::') package prefix
-   in the @(':hints') input to the transformation.
-   As stated in the documentation, the @('appcondk') symbols
-   passed in the @(':hints') input
-   may be in any package,
-   so long as their names match the applicability condition names.
    </p>"
   (b* (((er &) (ensure-doublet-list$ hints "The :HINTS input" t nil))
        (alist (doublets-to-alist hints))
@@ -275,8 +255,6 @@
        (description
         (msg "The list ~x0 of the first components of the :HINTS input" keys))
        ((er &) (ensure-symbol-list$ keys description t nil))
-       (keys (intern-list (symbol-list-names keys)
-                          (pkg-witness "APT")))
        ((er &) (ensure-list-no-duplicates$ keys description t nil))
        ((er &) (ensure-list-subset$ keys *restrict-app-cond-names*
                                     description t nil)))
@@ -400,7 +378,7 @@
   :returns (consequent "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Consequent of the
-          @('restriction-of-rec-calls') applicability condition."
+          @(':restriction-of-rec-calls') applicability condition."
   :long
   "<p>
    This is the term
@@ -415,10 +393,7 @@
                    restriction<updatem-x1<x1,...,xn>,
                                ...,
                                updatem-xn<x1,...,xn>>))
-   })
-   <p>
-   This function is called iff the old function is recursive.
-   </p>"
+   })"
   (conjoin
    (restrict-restriction-of-rec-calls-consequent-aux old-fn-name
                                                      rec-calls-with-tests
@@ -463,13 +438,13 @@
   :short "Formula of the named applicability condition."
   (let ((wrld (w state)))
     (case name
-      (restriction-of-rec-calls
+      (:restriction-of-rec-calls
        (b* ((rec-calls-with-tests (recursive-calls old-fn-name wrld))
             (consequent (restrict-restriction-of-rec-calls-consequent
                          old-fn-name rec-calls-with-tests restriction$ wrld))
             (formula-trans (implicate restriction$ consequent)))
          (untranslate formula-trans t wrld)))
-      (restriction-guard
+      (:restriction-guard
        (b* ((old-guard (guard old-fn-name nil wrld))
             (restriction-guard (term-guard-obligation restriction$ state))
             (formula-trans (implicate old-guard restriction-guard)))
@@ -485,8 +460,8 @@
   :returns (yes/no booleanp :hyp (booleanp do-verify-guards))
   :short "Check if the named applicability condition is present."
   (case name
-    (restriction-of-rec-calls (if (recursivep old-fn-name nil wrld) t nil))
-    (restriction-guard do-verify-guards)
+    (:restriction-of-rec-calls (if (recursivep old-fn-name nil wrld) t nil))
+    (:restriction-guard do-verify-guards)
     (t (impossible))))
 
 (define restrict-app-conds
@@ -698,7 +673,7 @@
    in the theory consisting of
    the two theorems that install the non-normalized definitions of the functions
    and the induction rule of the old function,
-   and using the @('restriction-of-rec-calls') applicability condition.
+   and using the @(':restriction-of-rec-calls') applicability condition.
    </p>"
   (b* ((macro (theorem-intro-macro thm-enable))
        (formals (formals old-fn-name wrld))
@@ -713,7 +688,7 @@
                                   ,new-fn-unnorm-name
                                   (:induction ,old-fn-name))
                      :induct (,old-fn-name ,@formals))
-                    '(:use ,(cdr (assoc-eq 'restriction-of-rec-calls
+                    '(:use ,(cdr (assoc-eq :restriction-of-rec-calls
                                            app-cond-thm-names))))
                 `(("Goal"
                    :in-theory '(,old-fn-unnorm-name
@@ -755,10 +730,10 @@
    <p>
    Following the design notes, the guards are verified
    using the guard theorem of the old function
-   and the @('restriction-guard') applicability condition.
+   and the @(':restriction-guard') applicability condition.
    This suffices for the non-recursive case (in the empty theory).
    For the recursive case,
-   we also use the @('restriction-of-rec-calls') applicability condition,
+   we also use the @(':restriction-of-rec-calls') applicability condition,
    and we carry out the proof in the theory consisting of
    the theorem that relates the old and new functions:
    this theorem rewrites all the recursive calls of the old function,
@@ -774,24 +749,20 @@
    without implementation-specific proof hints
    that may refer to local events of the @(tsee encapsulate)
    that do not exist in the history after the transformation.
-   </p>
-   <p>
-   This function is called iff
-   the guards of the new function must be verified.
    </p>"
   (b* ((recursive (recursivep old-fn-name nil wrld))
        (hints (if recursive
                   `(("Goal"
                      :in-theory '(,old-to-new-thm-name)
                      :use ((:guard-theorem ,old-fn-name)
-                           ,(cdr (assoc-eq 'restriction-guard
+                           ,(cdr (assoc-eq :restriction-guard
                                            app-cond-thm-names))
-                           ,(cdr (assoc-eq 'restriction-of-rec-calls
+                           ,(cdr (assoc-eq :restriction-of-rec-calls
                                            app-cond-thm-names)))))
                 `(("Goal"
                    :in-theory nil
                    :use ((:guard-theorem ,old-fn-name)
-                         ,(cdr (assoc-eq 'restriction-guard
+                         ,(cdr (assoc-eq :restriction-guard
                                          app-cond-thm-names)))))))
        (event `(local (verify-guards ,new-fn-name :hints ,hints))))
     event))
@@ -1054,7 +1025,8 @@
                                       restriction$
                                       do-verify-guards
                                       state))
-       ((er &) (ensure-named-formulas app-conds hints-alist verbose ctx state))
+       ((er &) (ensure-named-formulas
+                app-conds hints-alist verbose t nil ctx state))
        (event (restrict-event old-fn-name
                               restriction$
                               undefined$
@@ -1090,7 +1062,7 @@
                       (undefined ':undefined)
                       (new-name ':auto)
                       (new-enable ':auto)
-                      (thm-name ':arrow)
+                      (thm-name ':auto)
                       (thm-enable 't)
                       (non-executable ':auto)
                       (verify-guards ':auto)

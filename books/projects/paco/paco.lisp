@@ -25,7 +25,7 @@ v27
 ; To test
 
 (ld  ;; newline to fool dependency scanner
- "books/proveall.lsp" :ld-pre-eval-print t)
+ "books/proveall-input.lsp" :ld-pre-eval-print t)
 
 ; ---------------------------------------------------------------------------
 ; To change the "PACO" package definition

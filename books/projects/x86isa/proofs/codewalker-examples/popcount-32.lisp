@@ -136,7 +136,6 @@
  )
 
 (local (in-theory (e/d* (instruction-decoding-and-spec-rules
-                         64-bit-modep
 
                          shr-spec
                          shr-spec-32

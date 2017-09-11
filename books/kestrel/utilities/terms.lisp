@@ -206,44 +206,6 @@
   (logic-fnsp (lambda-body lambd) wrld)
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
-(defines term-no-stobjs-p
-  :mode :program
-  :parents (term-utilities)
-  :short "Check if a term has no @(see stobj)s."
-  :long
-  "<p>
-   A term containing functions in @('*stobjs-out-invalid*')
-   (on which @(tsee no-stobjs-p) would cause a guard violation),
-   is regarded as having no stobjs,
-   if all its other functions have no stobjs.
-   </p>"
-
-  (define term-no-stobjs-p ((term pseudo-termp) (wrld plist-worldp))
-    :returns (yes/no "A @(tsee booleanp).")
-    (or (variablep term)
-        (fquotep term)
-        (and (terms-no-stobjs-p (fargs term) wrld)
-             (let ((fn (ffn-symb term)))
-               (if (symbolp fn)
-                   (or (member fn *stobjs-out-invalid*)
-                       (no-stobjs-p fn wrld))
-                 (term-no-stobjs-p (lambda-body fn) wrld))))))
-
-  (define terms-no-stobjs-p ((terms pseudo-term-listp) (wrld plist-worldp))
-    :returns (yes/no "A @(tsee booleanp).")
-    (or (endp terms)
-        (and (term-no-stobjs-p (car terms) wrld)
-             (terms-no-stobjs-p (cdr terms) wrld)))))
-
-(define lambda-no-stobjs-p
-  ((lambd pseudo-lambdap) (wrld plist-worldp))
-  :returns (yes/no "A @(tsee booleanp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "Check if a lambda expression has no @(see stobj)s,
-          i.e. its body has no stobjs."
-  (term-no-stobjs-p (lambda-body lambd) wrld))
-
 (defines guard-verified-fnsp
   :parents (term-utilities)
   :short "Check if a term calls only guard-verified functions."

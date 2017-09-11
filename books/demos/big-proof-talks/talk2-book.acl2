@@ -1,0 +1,16 @@
+; Only allow Lisps that compile on-the-fly, because of (fib 40) call:
+; cert_param: ( non-cmucl , non-lispworks , non-allegro , non-gcl )
+
+; Initially, submit each of the following forms at the top level, and then:
+
+; mv talk2-log.out talk2-log.txt
+
+(include-book "tools/run-script" :dir :system)
+(run-script "talk2")
+
+; Help dependency scanner.
+#||
+(depends-on "talk2-log.txt")
+(include-book "sorting/perm" :dir :system)
+(include-book "centaur/gl/gl" :dir :system)
+||#

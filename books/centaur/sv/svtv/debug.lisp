@@ -325,7 +325,7 @@ nextstate and update functions given a timing diagram.</p>
        ;; Make a moddb, canonical alias table, and flattened, alias-normalized
        ;; assignments from the design.  :Indexedp nil leaves wires expressed in
        ;; terms of absolute moddb indices rather than paths.
-       ((mv err assigns delays moddb aliases)
+       ((mv err assigns delays ?constraints moddb aliases)
         (svex-design-flatten-and-normalize design :indexedp nil))
 
        ((when err)
@@ -401,13 +401,13 @@ nextstate and update functions given a timing diagram.</p>
                           (svtv-max-length outs))))
        (overrides (svtv-expand-lines overrides nphases))
 
-       ((mv updates next-states)
+       ((mv updates next-states ?constraints)
         (b* (((when (and (eq debugdata.status :composed)
                          (equal debugdata.overrides overrides)))
               ;; Presumably we're just updating some inputs or outputs.  We
               ;; don't need to compose assigns/delays again, which is an
               ;; expensive part of the operation.
-              (mv debugdata.updates debugdata.nextstates))
+              (mv debugdata.updates debugdata.nextstates nil))
 
              ;; Each override has a unique test variable (determining if the override
              ;; happens in a given phase) and override value variable.  This
@@ -433,6 +433,7 @@ nextstate and update functions given a timing diagram.</p>
           ;; delays with these to get next states.
           (svex-compose-assigns/delays overridden-assigns
                                        debugdata.delays
+                                       nil
                                        :rewrite rewrite)))
 
        (debugdata (set-debugdata->updates updates debugdata))

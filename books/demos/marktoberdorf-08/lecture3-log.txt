@@ -1,0 +1,1108 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(SET-GUARD-CHECKING NIL)
+ACL2 >>(SET-GAG-MODE NIL)
+<state>
+ACL2 >>(INCLUDE-BOOK "m1")
+
+Summary
+Form:  ( INCLUDE-BOOK "m1" ...)
+Rules: NIL
+ "m1.lisp"
+ACL2 >>(INCLUDE-BOOK "compile")
+
+Summary
+Form:  ( INCLUDE-BOOK "compile" ...)
+Rules: NIL
+ "compile.lisp"
+ACL2 >>(IN-PACKAGE "M1")
+ "M1"
+M1 >>(DEFUN F (N)
+            (IF (ZP N) 1 (* N (F (- N 1)))))
+
+The admission of F is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT N).  We observe that the type of F is described by the
+theorem (AND (INTEGERP (F N)) (< 0 (F N))).  We used the :compound-
+recognizer rule ACL2::ZP-COMPOUND-RECOGNIZER and primitive type reasoning.
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F
+M1 >>(DEFUN G (N A)
+            (IF (ZP N) A (G (- N 1) (* N A))))
+
+The admission of G is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT N).  We observe that the type of G is described by the
+theorem (OR (ACL2-NUMBERP (G N A)) (EQUAL (G N A) A)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ G
+M1 >>(DEFCONST *G*
+               '((PUSH 1)
+                 (STORE 1)
+                 (LOAD 0)
+                 (IFLE 10)
+                 (LOAD 0)
+                 (LOAD 1)
+                 (MUL)
+                 (STORE 1)
+                 (LOAD 0)
+                 (PUSH 1)
+                 (SUB)
+                 (STORE 0)
+                 (GOTO -10)
+                 (LOAD 1)
+                 (RETURN)))
+
+Summary
+Form:  ( DEFCONST *G* ...)
+Rules: NIL
+ *G*
+M1 >>(DEFUN G-SCHED-LOOP (N)
+            (IF (ZP N)
+                (REPEAT 0 4)
+                (APPEND (REPEAT 0 11)
+                        (G-SCHED-LOOP (- N 1)))))
+
+The admission of G-SCHED-LOOP is trivial, using the relation O< (which
+is known to be well-founded on the domain recognized by O-P) and the
+measure (ACL2-COUNT N).  We observe that the type of G-SCHED-LOOP is
+described by the theorem (TRUE-LISTP (G-SCHED-LOOP N)).  We used the
+:type-prescription rules BINARY-APPEND, REPEAT and ACL2::TRUE-LISTP-APPEND.
+
+Summary
+Form:  ( DEFUN G-SCHED-LOOP ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-APPEND)
+        (:TYPE-PRESCRIPTION REPEAT)
+        (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND))
+ G-SCHED-LOOP
+M1 >>(DEFUN G-SCHED (N)
+            (APPEND (REPEAT 0 2) (G-SCHED-LOOP N)))
+
+Since G-SCHED is non-recursive, its admission is trivial.  We observe
+that the type of G-SCHED is described by the theorem 
+(TRUE-LISTP (G-SCHED N)).  We used the :type-prescription rules G-SCHED-LOOP
+and ACL2::TRUE-LISTP-APPEND.
+
+Summary
+Form:  ( DEFUN G-SCHED ...)
+Rules: ((:TYPE-PRESCRIPTION G-SCHED-LOOP)
+        (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND))
+ G-SCHED
+M1 >>'(END OF SETUP)
+(END OF SETUP)
+M1 >>(THM (EQUAL (RUN (REPEAT 0 9)
+                      (MAKE-STATE 4 (LIST N A) STK *G*))
+                 ???))
+
+By the :executable-counterpart of REPEAT and the simple :rewrite rule
+RUN-OPENER we reduce the conjecture to
+
+Goal'
+(EQUAL
+ (STEP
+  (STEP
+   (STEP
+        (STEP (STEP (STEP (STEP (STEP (STEP (MAKE-STATE 4 (LIST N A)
+                                                        STK
+                                                        '((PUSH 1)
+                                                          (STORE 1)
+                                                          (LOAD 0)
+                                                          (IFLE 10)
+                                                          (LOAD 0)
+                                                          (LOAD 1)
+                                                          (MUL)
+                                                          (STORE 1)
+                                                          (LOAD 0)
+                                                          (PUSH 1)
+                                                          (SUB)
+                                                          (STORE 0)
+                                                          (GOTO -10)
+                                                          (LOAD 1)
+                                                          (RETURN))))))))))))
+ ???).
+
+This simplifies, using the :compound-recognizer rule 
+ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, EXECUTE-GOTO,
+EXECUTE-LOAD, EXECUTE-MUL, EXECUTE-PUSH, EXECUTE-STORE, EXECUTE-SUB,
+NEXT-INST and UPDATE-NTH, the :executable-counterparts of ARG1, BINARY-+,
+CONSP, EQUAL, NTH, OPCODE, UNARY-- and ZP and the :rewrite rules CAR-CONS,
+CDR-CONS, COMMUTATIVITY-OF-*, COMMUTATIVITY-OF-+, NTH-0-CONS, NTH-ADD1!,
+STACKS, STATES, STEP-OPENER and UPDATE-NTH-ADD1!, to
+
+Goal''
+(EQUAL (MAKE-STATE 2 (LIST (+ -1 N) (* A N))
+                   STK
+                   '((PUSH 1)
+                     (STORE 1)
+                     (LOAD 0)
+                     (IFLE 10)
+                     (LOAD 0)
+                     (LOAD 1)
+                     (MUL)
+                     (STORE 1)
+                     (LOAD 0)
+                     (PUSH 1)
+                     (SUB)
+                     (STORE 0)
+                     (GOTO -10)
+                     (LOAD 1)
+                     (RETURN)))
+       ???).
+
+Name the formula above *1.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION DO-INST)
+        (:DEFINITION EXECUTE-GOTO)
+        (:DEFINITION EXECUTE-LOAD)
+        (:DEFINITION EXECUTE-MUL)
+        (:DEFINITION EXECUTE-PUSH)
+        (:DEFINITION EXECUTE-STORE)
+        (:DEFINITION EXECUTE-SUB)
+        (:DEFINITION NEXT-INST)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART ARG1)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OPCODE)
+        (:EXECUTABLE-COUNTERPART REPEAT)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE NTH-ADD1!)
+        (:REWRITE RUN-OPENER)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-OPENER)
+        (:REWRITE UPDATE-NTH-ADD1!))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (MAKE-STATE 2 (LIST (+ -1 N) (* A N))
+                   STK
+                   '((PUSH 1)
+                     (STORE 1)
+                     (LOAD 0)
+                     (IFLE 10)
+                     (LOAD 0)
+                     (LOAD 1)
+                     (MUL)
+                     (STORE 1)
+                     (LOAD 0)
+                     (PUSH 1)
+                     (SUB)
+                     (STORE 0)
+                     (GOTO -10)
+                     (LOAD 1)
+                     (RETURN)))
+       ???)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+M1 >>'(END OF DEMO 1)
+(END OF DEMO 1)
+M1 >>(THM (EQUAL (RUN (APPEND A B) S)
+                 (RUN B (RUN A S)))
+          :HINTS (("Goal" :IN-THEORY (DISABLE RUN-APPEND))))
+
+[Note:  A hint was supplied for our processing of the goal above. 
+Thanks!]
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  However, one of these is flawed and so we are left with one
+viable candidate.  
+
+We will induct according to a scheme suggested by (RUN A S), but modified
+to accommodate (APPEND A B).  These suggestions were produced using
+the :induction rules BINARY-APPEND and RUN.  If we let (:P A B S) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP A))
+                   (:P (CDR A) B (STEP S)))
+              (:P A B S))
+     (IMPLIES (ENDP A) (:P A B S))).
+This induction is justified by the same argument used to admit RUN.
+Note, however, that the unmeasured variable S is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ENDP A))
+              (EQUAL (RUN (APPEND (CDR A) B) (STEP S))
+                     (RUN B (RUN (CDR A) (STEP S)))))
+         (EQUAL (RUN (APPEND A B) S)
+                (RUN B (RUN A S)))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/2'
+(IMPLIES (AND (CONSP A)
+              (EQUAL (RUN (APPEND (CDR A) B) (STEP S))
+                     (RUN B (RUN (CDR A) (STEP S)))))
+         (EQUAL (RUN (APPEND A B) S)
+                (RUN B (RUN A S)))).
+
+But simplification reduces this to T, using the :definitions BINARY-APPEND
+and RUN, primitive type reasoning and the :rewrite rule RUN-OPENER.
+
+Subgoal *1/1
+(IMPLIES (ENDP A)
+         (EQUAL (RUN (APPEND A B) S)
+                (RUN B (RUN A S)))).
+
+By the simple :definition ENDP we reduce the conjecture to
+
+Subgoal *1/1'
+(IMPLIES (NOT (CONSP A))
+         (EQUAL (RUN (APPEND A B) S)
+                (RUN B (RUN A S)))).
+
+But simplification reduces this to T, using the :definitions BINARY-APPEND
+and RUN and primitive type reasoning.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:DEFINITION RUN)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:INDUCTION RUN)
+        (:REWRITE RUN-OPENER))
+
+Proof succeeded.
+M1 >>'(END OF DEMO 2)
+(END OF DEMO 2)
+M1 >>(DEFTHM STEP-1-[LOOP]
+             (IMPLIES (AND (NATP N) (NATP A))
+                      (EQUAL (RUN (G-SCHED-LOOP N)
+                                  (MAKE-STATE 2 (LIST N A) STK *G*))
+                             (MAKE-STATE 14 (LIST 0 (G N A))
+                                         (PUSH (G N A) STK)
+                                         *G*))))
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to one.
+
+We will induct according to a scheme suggested by (G N A).  This suggestion
+was produced using the :induction rules G and G-SCHED-LOOP.  If we
+let (:P A N STK) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (NOT (ZP N))
+                   (:P (* N A) (+ -1 N) STK))
+              (:P A N STK))
+     (IMPLIES (ZP N) (:P A N STK))).
+This induction is justified by the same argument used to admit G. 
+Note, however, that the unmeasured variable A is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+
+Subgoal *1/4
+(IMPLIES (AND (NOT (ZP N))
+              (EQUAL (RUN (G-SCHED-LOOP (+ -1 N))
+                          (MAKE-STATE 2 (LIST (+ -1 N) (* N A))
+                                      STK
+                                      '((PUSH 1)
+                                        (STORE 1)
+                                        (LOAD 0)
+                                        (IFLE 10)
+                                        (LOAD 0)
+                                        (LOAD 1)
+                                        (MUL)
+                                        (STORE 1)
+                                        (LOAD 0)
+                                        (PUSH 1)
+                                        (SUB)
+                                        (STORE 0)
+                                        (GOTO -10)
+                                        (LOAD 1)
+                                        (RETURN))))
+                     (MAKE-STATE 14 (LIST 0 (G (+ -1 N) (* N A)))
+                                 (PUSH (G (+ -1 N) (* N A)) STK)
+                                 '((PUSH 1)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (IFLE 10)
+                                   (LOAD 0)
+                                   (LOAD 1)
+                                   (MUL)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (PUSH 1)
+                                   (SUB)
+                                   (STORE 0)
+                                   (GOTO -10)
+                                   (LOAD 1)
+                                   (RETURN))))
+              (NATP N)
+              (NATP A))
+         (EQUAL (RUN (G-SCHED-LOOP N)
+                     (MAKE-STATE 2 (LIST N A)
+                                 STK
+                                 '((PUSH 1)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (IFLE 10)
+                                   (LOAD 0)
+                                   (LOAD 1)
+                                   (MUL)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (PUSH 1)
+                                   (SUB)
+                                   (STORE 0)
+                                   (GOTO -10)
+                                   (LOAD 1)
+                                   (RETURN))))
+                (MAKE-STATE 14 (LIST 0 (G N A))
+                            (PUSH (G N A) STK)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rules ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER,
+the :definitions BINARY-APPEND, DO-INST, EXECUTE-GOTO, EXECUTE-IFLE,
+EXECUTE-LOAD, EXECUTE-MUL, EXECUTE-PUSH, EXECUTE-STORE, EXECUTE-SUB,
+G, G-SCHED-LOOP, NEXT-INST and UPDATE-NTH, the :executable-counterparts
+of ARG1, BINARY-+, CAR, CDR, CONSP, EQUAL, NTH, OPCODE, REPEAT, UNARY--
+and ZP, primitive type reasoning and the :rewrite rules CAR-CONS, CDR-CONS,
+COMMUTATIVITY-OF-*, COMMUTATIVITY-OF-+, NTH-0-CONS, NTH-ADD1!, RUN-OPENER,
+STACKS, STATES, STEP-OPENER and UPDATE-NTH-ADD1!.
+
+Subgoal *1/3
+(IMPLIES (AND (NOT (ZP N))
+              (NOT (NATP (* N A)))
+              (NATP N)
+              (NATP A))
+         (EQUAL (RUN (G-SCHED-LOOP N)
+                     (MAKE-STATE 2 (LIST N A)
+                                 STK
+                                 '((PUSH 1)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (IFLE 10)
+                                   (LOAD 0)
+                                   (LOAD 1)
+                                   (MUL)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (PUSH 1)
+                                   (SUB)
+                                   (STORE 0)
+                                   (GOTO -10)
+                                   (LOAD 1)
+                                   (RETURN))))
+                (MAKE-STATE 14 (LIST 0 (G N A))
+                            (PUSH (G N A) STK)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+But we reduce the conjecture to T, by the :compound-recognizer rules
+ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER and
+primitive type reasoning.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ZP N))
+              (NOT (NATP (+ -1 N)))
+              (NATP N)
+              (NATP A))
+         (EQUAL (RUN (G-SCHED-LOOP N)
+                     (MAKE-STATE 2 (LIST N A)
+                                 STK
+                                 '((PUSH 1)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (IFLE 10)
+                                   (LOAD 0)
+                                   (LOAD 1)
+                                   (MUL)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (PUSH 1)
+                                   (SUB)
+                                   (STORE 0)
+                                   (GOTO -10)
+                                   (LOAD 1)
+                                   (RETURN))))
+                (MAKE-STATE 14 (LIST 0 (G N A))
+                            (PUSH (G N A) STK)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+But we reduce the conjecture to T, by the :compound-recognizer rules
+ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER and
+primitive type reasoning.
+
+Subgoal *1/1
+(IMPLIES (AND (ZP N) (NATP N) (NATP A))
+         (EQUAL (RUN (G-SCHED-LOOP N)
+                     (MAKE-STATE 2 (LIST N A)
+                                 STK
+                                 '((PUSH 1)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (IFLE 10)
+                                   (LOAD 0)
+                                   (LOAD 1)
+                                   (MUL)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (PUSH 1)
+                                   (SUB)
+                                   (STORE 0)
+                                   (GOTO -10)
+                                   (LOAD 1)
+                                   (RETURN))))
+                (MAKE-STATE 14 (LIST 0 (G N A))
+                            (PUSH (G N A) STK)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+This simplifies, using the :compound-recognizer rules 
+ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER, the
+:executable-counterparts of G-SCHED-LOOP, NATP, NOT and ZP, linear
+arithmetic and the :forward-chaining rule ACL2::NATP-FC-1, to
+
+Subgoal *1/1'
+(IMPLIES (NATP A)
+         (EQUAL (RUN '(0 0 0 0)
+                     (MAKE-STATE 2 (LIST 0 A)
+                                 STK
+                                 '((PUSH 1)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (IFLE 10)
+                                   (LOAD 0)
+                                   (LOAD 1)
+                                   (MUL)
+                                   (STORE 1)
+                                   (LOAD 0)
+                                   (PUSH 1)
+                                   (SUB)
+                                   (STORE 0)
+                                   (GOTO -10)
+                                   (LOAD 1)
+                                   (RETURN))))
+                (MAKE-STATE 14 (LIST 0 (G 0 A))
+                            (PUSH (G 0 A) STK)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+By the simple :rewrite rule RUN-OPENER we reduce the conjecture to
+
+Subgoal *1/1''
+(IMPLIES (NATP A)
+         (EQUAL (STEP (STEP (STEP (STEP (MAKE-STATE 2 (LIST 0 A)
+                                                    STK
+                                                    '((PUSH 1)
+                                                      (STORE 1)
+                                                      (LOAD 0)
+                                                      (IFLE 10)
+                                                      (LOAD 0)
+                                                      (LOAD 1)
+                                                      (MUL)
+                                                      (STORE 1)
+                                                      (LOAD 0)
+                                                      (PUSH 1)
+                                                      (SUB)
+                                                      (STORE 0)
+                                                      (GOTO -10)
+                                                      (LOAD 1)
+                                                      (RETURN)))))))
+                (MAKE-STATE 14 (LIST 0 (G 0 A))
+                            (PUSH (G 0 A) STK)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, EXECUTE-IFLE,
+EXECUTE-LOAD, G and NEXT-INST, the :executable-counterparts of <, ARG1,
+BINARY-+, CONSP, EQUAL, NTH, OPCODE and ZP, primitive type reasoning
+and the :rewrite rules CDR-CONS, NTH-0-CONS, NTH-ADD1!, STACKS, STATES
+and STEP-OPENER.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM STEP-1-[LOOP] ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION BINARY-APPEND)
+        (:DEFINITION DO-INST)
+        (:DEFINITION EXECUTE-GOTO)
+        (:DEFINITION EXECUTE-IFLE)
+        (:DEFINITION EXECUTE-LOAD)
+        (:DEFINITION EXECUTE-MUL)
+        (:DEFINITION EXECUTE-PUSH)
+        (:DEFINITION EXECUTE-STORE)
+        (:DEFINITION EXECUTE-SUB)
+        (:DEFINITION G)
+        (:DEFINITION G-SCHED-LOOP)
+        (:DEFINITION NEXT-INST)
+        (:DEFINITION NOT)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ARG1)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART G-SCHED-LOOP)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OPCODE)
+        (:EXECUTABLE-COUNTERPART REPEAT)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ACL2::NATP-FC-1)
+        (:INDUCTION G)
+        (:INDUCTION G-SCHED-LOOP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE NTH-ADD1!)
+        (:REWRITE RUN-OPENER)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-OPENER)
+        (:REWRITE UPDATE-NTH-ADD1!))
+ STEP-1-[LOOP]
+M1 >>'(END OF DEMO 3)
+(END OF DEMO 3)
+M1 >>(DEFTHM STEP-1
+             (IMPLIES (NATP N)
+                      (EQUAL (RUN (G-SCHED N)
+                                  (MAKE-STATE 0 (LIST N A) STK *G*))
+                             (MAKE-STATE 14 (LIST 0 (G N 1))
+                                         (PUSH (G N 1) STK)
+                                         *G*))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM STEP-1 ...):  A :REWRITE rule generated
+from STEP-1 will be triggered only by terms containing the non-recursive
+function symbol G-SCHED.  Unless this function is disabled, this rule
+is unlikely ever to be used.
+
+
+By the simple :definition G-SCHED, the :executable-counterpart of REPEAT
+and the simple :rewrite rules RUN-APPEND and RUN-OPENER we reduce the
+conjecture to
+
+Goal'
+(IMPLIES (NATP N)
+         (EQUAL (RUN (G-SCHED-LOOP N)
+                     (STEP (STEP (MAKE-STATE 0 (LIST N A)
+                                             STK
+                                             '((PUSH 1)
+                                               (STORE 1)
+                                               (LOAD 0)
+                                               (IFLE 10)
+                                               (LOAD 0)
+                                               (LOAD 1)
+                                               (MUL)
+                                               (STORE 1)
+                                               (LOAD 0)
+                                               (PUSH 1)
+                                               (SUB)
+                                               (STORE 0)
+                                               (GOTO -10)
+                                               (LOAD 1)
+                                               (RETURN))))))
+                (MAKE-STATE 14 (LIST 0 (G N 1))
+                            (PUSH (G N 1) STK)
+                            '((PUSH 1)
+                              (STORE 1)
+                              (LOAD 0)
+                              (IFLE 10)
+                              (LOAD 0)
+                              (LOAD 1)
+                              (MUL)
+                              (STORE 1)
+                              (LOAD 0)
+                              (PUSH 1)
+                              (SUB)
+                              (STORE 0)
+                              (GOTO -10)
+                              (LOAD 1)
+                              (RETURN))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, EXECUTE-PUSH,
+EXECUTE-STORE, NEXT-INST and UPDATE-NTH, the :executable-counterparts
+of ARG1, BINARY-+, CONS, CONSP, EQUAL, NTH, OPCODE and ZP, primitive
+type reasoning and the :rewrite rules CAR-CONS, CDR-CONS, STACKS, STATES,
+STEP-1-[LOOP], STEP-OPENER and UPDATE-NTH-ADD1!.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM STEP-1 ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION DO-INST)
+        (:DEFINITION EXECUTE-PUSH)
+        (:DEFINITION EXECUTE-STORE)
+        (:DEFINITION G-SCHED)
+        (:DEFINITION NEXT-INST)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART ARG1)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OPCODE)
+        (:EXECUTABLE-COUNTERPART REPEAT)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE RUN-APPEND)
+        (:REWRITE RUN-OPENER)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-1-[LOOP])
+        (:REWRITE STEP-OPENER)
+        (:REWRITE UPDATE-NTH-ADD1!))
+Warnings:  Non-rec
+ STEP-1
+M1 >>(IN-THEORY (DISABLE G-SCHED))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+M1 >>'(END OF DEMO 4)
+(END OF DEMO 4)
+M1 >>(DEFTHM STEP-2
+             (IMPLIES (NATP A)
+                      (EQUAL (G N A) (* A (F N)))))
+
+Name the formula above *1.
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to one.  
+
+We will induct according to a scheme suggested by (G N A).  This suggestion
+was produced using the :induction rules F and G.  If we let (:P A N)
+denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ZP N)) (:P (* N A) (+ -1 N)))
+              (:P A N))
+     (IMPLIES (ZP N) (:P A N))).
+This induction is justified by the same argument used to admit G. 
+Note, however, that the unmeasured variable A is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+
+Subgoal *1/3
+(IMPLIES (AND (NOT (ZP N))
+              (EQUAL (G (+ -1 N) (* N A))
+                     (* (* N A) (F (+ -1 N))))
+              (NATP A))
+         (EQUAL (G N A) (* A (F N)))).
+
+By the simple :rewrite rule ASSOCIATIVITY-OF-* we reduce the conjecture
+to
+
+Subgoal *1/3'
+(IMPLIES (AND (NOT (ZP N))
+              (EQUAL (G (+ -1 N) (* N A))
+                     (* N A (F (+ -1 N))))
+              (NATP A))
+         (EQUAL (G N A) (* A (F N)))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::ZP-COMPOUND-RECOGNIZER, the :definitions F and G, primitive
+type reasoning and the :rewrite rule ACL2::COMMUTATIVITY-2-OF-*.
+
+Subgoal *1/2
+(IMPLIES (AND (NOT (ZP N))
+              (NOT (NATP (* N A)))
+              (NATP A))
+         (EQUAL (G N A) (* A (F N)))).
+
+But we reduce the conjecture to T, by the :compound-recognizer rules
+ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER and
+primitive type reasoning.
+
+Subgoal *1/1
+(IMPLIES (AND (ZP N) (NATP A))
+         (EQUAL (G N A) (* A (F N)))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rules ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER,
+the :definitions F, FIX and G, primitive type reasoning and the :rewrite
+rules COMMUTATIVITY-OF-* and UNICITY-OF-1.
+
+That completes the proof of *1.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM STEP-2 ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION F)
+        (:DEFINITION FIX)
+        (:DEFINITION G)
+        (:DEFINITION NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION F)
+        (:INDUCTION G)
+        (:REWRITE ASSOCIATIVITY-OF-*)
+        (:REWRITE ACL2::COMMUTATIVITY-2-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE UNICITY-OF-1))
+ STEP-2
+M1 >>(DEFTHM MAIN
+             (IMPLIES (NATP N)
+                      (EQUAL (RUN (G-SCHED N)
+                                  (MAKE-STATE 0 (LIST N A) STK *G*))
+                             (MAKE-STATE 14 (LIST 0 (F N))
+                                         (PUSH (F N) STK)
+                                         *G*))))
+
+ACL2 Warning [Subsume] in ( DEFTHM MAIN ...):  A newly proposed :REWRITE
+rule generated from MAIN probably subsumes the previously added :REWRITE
+rule STEP-1, in the sense that the new rule will now probably be applied
+whenever the old rule would have been.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM MAIN ...):  The previously added
+rule STEP-1 subsumes a newly proposed :REWRITE rule generated from
+MAIN, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definition FIX, primitive
+type reasoning, the :rewrite rules STEP-1, STEP-2 and UNICITY-OF-1
+and the :type-prescription rule F.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM MAIN ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION FIX)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE STEP-1)
+        (:REWRITE STEP-2)
+        (:REWRITE UNICITY-OF-1)
+        (:TYPE-PRESCRIPTION F))
+Warnings:  Subsume
+ MAIN
+M1 >>(DEFTHM COROLLARY1
+             (LET ((S_FIN (RUN (G-SCHED N)
+                               (MAKE-STATE 0 (LIST N A) STK *G*))))
+                  (IMPLIES (NATP N)
+                           (AND (EQUAL (TOP (STACK S_FIN)) (F N))
+                                (HALTEDP S_FIN)))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM COROLLARY1 ...):  A :REWRITE rule
+generated from COROLLARY1 will be triggered only by terms containing
+the non-recursive function symbol HALTEDP.  Unless this function is
+disabled, this rule is unlikely ever to be used.
+
+
+By case analysis we reduce the conjecture to
+
+Goal'
+(IMPLIES (NATP N)
+         (AND (EQUAL (TOP (STACK (RUN (G-SCHED N)
+                                      (MAKE-STATE 0 (LIST N A)
+                                                  STK
+                                                  '((PUSH 1)
+                                                    (STORE 1)
+                                                    (LOAD 0)
+                                                    (IFLE 10)
+                                                    (LOAD 0)
+                                                    (LOAD 1)
+                                                    (MUL)
+                                                    (STORE 1)
+                                                    (LOAD 0)
+                                                    (PUSH 1)
+                                                    (SUB)
+                                                    (STORE 0)
+                                                    (GOTO -10)
+                                                    (LOAD 1)
+                                                    (RETURN))))))
+                     (F N))
+              (HALTEDP (RUN (G-SCHED N)
+                            (MAKE-STATE 0 (LIST N A)
+                                        STK
+                                        '((PUSH 1)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (IFLE 10)
+                                          (LOAD 0)
+                                          (LOAD 1)
+                                          (MUL)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (PUSH 1)
+                                          (SUB)
+                                          (STORE 0)
+                                          (GOTO -10)
+                                          (LOAD 1)
+                                          (RETURN))))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, HALTEDP
+and NEXT-INST, the :executable-counterparts of CONSP, EQUAL, NTH and
+OPCODE, primitive type reasoning and the :rewrite rules MAIN, STACKS,
+STATES and STEP-OPENER.
+
+Q.E.D.
+
+The storage of COROLLARY1 depends upon the :type-prescription rule
+HALTEDP.
+
+Summary
+Form:  ( DEFTHM COROLLARY1 ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION DO-INST)
+        (:DEFINITION HALTEDP)
+        (:DEFINITION NEXT-INST)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OPCODE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE MAIN)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-OPENER)
+        (:TYPE-PRESCRIPTION HALTEDP))
+Warnings:  Non-rec
+ COROLLARY1
+M1 >>(DEFTHM COROLLARY2
+             (LET ((S_FIN (RUN (G-SCHED N)
+                               (MAKE-STATE 0 (LIST N A)
+                                           STK
+                                           (COMPILE '(N)
+                                                    '((A = 1)
+                                                      (WHILE (N > 0)
+                                                             (A = (N * A))
+                                                             (N = (N - 1)))
+                                                      (RETURN A)))))))
+                  (IMPLIES (NATP N)
+                           (AND (EQUAL (TOP (STACK S_FIN)) (F N))
+                                (HALTEDP S_FIN)))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM COROLLARY2 ...):  A :REWRITE rule
+generated from COROLLARY2 will be triggered only by terms containing
+the non-recursive function symbol COMPILE.  Unless this function is
+disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Non-rec] in ( DEFTHM COROLLARY2 ...):  A :REWRITE rule
+generated from COROLLARY2 will be triggered only by terms containing
+the non-recursive function symbols HALTEDP and COMPILE.  Unless these
+functions are disabled, this rule is unlikely ever to be used.
+
+
+By the :executable-counterpart of COMPILE we reduce the conjecture
+to
+
+Goal'
+(IMPLIES (NATP N)
+         (AND (EQUAL (TOP (STACK (RUN (G-SCHED N)
+                                      (MAKE-STATE 0 (LIST N A)
+                                                  STK
+                                                  '((PUSH 1)
+                                                    (STORE 1)
+                                                    (LOAD 0)
+                                                    (IFLE 10)
+                                                    (LOAD 0)
+                                                    (LOAD 1)
+                                                    (MUL)
+                                                    (STORE 1)
+                                                    (LOAD 0)
+                                                    (PUSH 1)
+                                                    (SUB)
+                                                    (STORE 0)
+                                                    (GOTO -10)
+                                                    (LOAD 1)
+                                                    (RETURN))))))
+                     (F N))
+              (HALTEDP (RUN (G-SCHED N)
+                            (MAKE-STATE 0 (LIST N A)
+                                        STK
+                                        '((PUSH 1)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (IFLE 10)
+                                          (LOAD 0)
+                                          (LOAD 1)
+                                          (MUL)
+                                          (STORE 1)
+                                          (LOAD 0)
+                                          (PUSH 1)
+                                          (SUB)
+                                          (STORE 0)
+                                          (GOTO -10)
+                                          (LOAD 1)
+                                          (RETURN))))))).
+
+But simplification reduces this to T, using the :compound-recognizer
+rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, HALTEDP
+and NEXT-INST, the :executable-counterparts of CONSP, EQUAL, NTH and
+OPCODE, primitive type reasoning and the :rewrite rules MAIN, STACKS,
+STATES and STEP-OPENER.
+
+Q.E.D.
+
+The storage of COROLLARY2 depends upon the :type-prescription rule
+HALTEDP.
+
+Summary
+Form:  ( DEFTHM COROLLARY2 ...)
+Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION DO-INST)
+        (:DEFINITION HALTEDP)
+        (:DEFINITION NEXT-INST)
+        (:EXECUTABLE-COUNTERPART COMPILE)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART OPCODE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE MAIN)
+        (:REWRITE STACKS)
+        (:REWRITE STATES)
+        (:REWRITE STEP-OPENER)
+        (:TYPE-PRESCRIPTION HALTEDP))
+Warnings:  Non-rec
+ COROLLARY2
+M1 >>'(END OF DEMO 5)
+(END OF DEMO 5)
+M1 >>'(THE END)
+(THE END)
+M1 >>Bye.

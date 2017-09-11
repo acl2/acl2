@@ -1,0 +1,12 @@
+; Initially, submit each of the following forms at the top level, and then:
+
+; mv talk1-log.out talk1-log.txt
+
+(include-book "tools/run-script" :dir :system)
+(run-script "talk1")
+
+; Help dependency scanner.
+#||
+(depends-on "talk1-log.txt")
+(include-book "models/jvm/m1/m1" :dir :system)
+||#

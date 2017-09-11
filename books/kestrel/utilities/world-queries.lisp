@@ -159,10 +159,23 @@
 (define ubody ((fn (and (logic-function-namep fn wrld)
                         (definedp fn wrld)))
                (wrld plist-worldp))
-  :returns (body "A @(tsee pseudo-termp).")
+  :returns (body pseudo-termp)
   :parents (world-queries)
   :short "Unnormalized body of a logic-mode defined function."
-  (getpropc fn 'unnormalized-body nil wrld))
+  :long
+  "<p>
+   The check that the body is a pseudo-term should always succeed,
+   but it allows us to prove the return type theorem for this function
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((body (getpropc fn 'unnormalized-body nil wrld)))
+    (if (pseudo-termp body)
+        body
+      (raise "Internal error: ~
+              the unnormalized body ~x0 of ~x1 is not a pseudo-term."
+             body fn))))
 
 (define guard-verified-p ((fn/thm (or (function-namep fn/thm wrld)
                                       (theorem-namep fn/thm wrld)))
@@ -502,7 +515,7 @@
           ((consp namex) namex) ; list of names
           (t (list namex))))) ; single name
 
-(define fresh-namep-msg (name type (wrld plist-worldp))
+(define fresh-namep-msg-weak (name type (wrld plist-worldp))
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
   :returns (msg/nil "A message (see @(see msg)) or @('nil').")
@@ -512,18 +525,9 @@
           a legal new name."
   :long
   "<p>
-   Returns either @('nil') or a message (see @(see msg)) indicating why the
-   given name is not legal for a definition of the given type: @('function')
-   for @(tsee defun), @('macro') for @(tsee defmacro), @('const') for @(tsee
-   defconst), @('stobj') for @(tsee defstobj), @('constrained-function') for
-   @(tsee defchoose), and otherwise @('nil') (for other kinds of @(see events),
-   for example @(tsee defthm) and @(tsee deflabel)).  See @(see name).  For a
-   utility that makes a slightly stronger check, see @(see chk-fresh-namep).
-   </p>
-
-   <p>
-   WARNING: This is an incomplete check in the case of a stobj name, because
-   the field names are not supplied.
+   This helper function for @(see fresh-namep-msg) avoids the ``virginity''
+   check ensuring that the name is not already defined in raw Lisp.  See @(see
+   fresh-namep-msg).
    </p>"
 
   (flet ((not-new-namep-msg (name wrld)
@@ -564,6 +568,48 @@
                 (not-new-namep-msg (the-live-var name) wrld)))
           (t nil))))))
 
+(define fresh-namep-msg (name type (wrld plist-worldp) state)
+  :guard (member-eq type
+                    '(function macro const stobj constrained-function nil))
+  :returns (mv (erp "Always @('nil')")
+               (msg/nil "A message (see @(see msg)) or @('nil').")
+               state)
+  :mode :program
+  :parents (world-queries)
+  :short "Returns either @('nil') or a message indicating why the name is not ~
+          a legal new name."
+  :long
+  "<p>
+   Returns an @('error-triple') @('(mv nil msg/nil state)'), where @('msg/nil')
+   is either @('nil') or a message (see @(see msg)) indicating why the given
+   name is not legal for a definition of the given type: @('function') for
+   @(tsee defun), @('macro') for @(tsee defmacro), @('const') for @(tsee
+   defconst), @('stobj') for @(tsee defstobj), @('constrained-function') for
+   @(tsee defchoose), and otherwise @('nil') (for other kinds of @(see events),
+   for example @(tsee defthm) and @(tsee deflabel)).  See @(see name).
+   </p>
+
+   <p>
+   WARNING: This is an incomplete check in the case of a stobj name, because
+   the field names required for a more complete check are not supplied as
+   inputs.
+   </p>
+
+   <p>
+   Implementation Note.  This function modifies @(see state), because the check
+   for legality of new definitions (carried out by ACL2 source function
+   @('chk-virgin-msg')) modifies state.  That modification is necessary because
+   for all we know, raw Lisp is adding or removing function definitions that we
+   don't know about without our having modified state; so logically, we pop the
+   oracle when making this check.  End of Implementation Note.
+   </p>"
+
+  (let ((msg (fresh-namep-msg-weak name type wrld)))
+    (cond (msg (value msg))
+          (t (mv-let (msg state)
+               (chk-virgin-msg name type wrld state)
+               (value msg))))))
+
 (define chk-fresh-namep (name type ctx (wrld plist-worldp) state)
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
@@ -580,20 +626,11 @@
    </p>
 
    <p>
-   For more information about legality of new names see @(see fresh-namep-msg).
-   That utility returns a single value but is less aggressive than
-   @('chk-fresh-namep'), which checks that functions and macros aren't already
-   defined in raw Lisp.
-   </p>
-
-   <p>
-   Implementation Note.  The extra check requires modification of state,
-   because the check for legality of new definitions (carried out by ACL2
-   source function @('chk-virgin')) modifies state.  That modification is
-   necessary because for all we know, raw Lisp is defining functions we don't
-   know about without our having modified state; so we need to pop the oracle
-   when checking virginity.  End of Implementation Note.
+   For more information about legality of new names see @(see fresh-namep-msg),
+   which returns an @(see error-triple), @('(mv nil msg/nil state)').  When
+   non-@('nil'), the value @('msg/nil') provides the message printed by
+   @('chk-fresh-namep').
    </p>"
-  (let ((msg (fresh-namep-msg name type wrld)))
+  (er-let* ((msg (fresh-namep-msg name type wrld state))) ; never an error
     (cond (msg (er soft ctx "~@0" msg))
-          (t (chk-virgin name type ctx wrld state)))))
+          (t (value nil)))))

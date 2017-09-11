@@ -216,7 +216,6 @@
            (equal (rgfi *rax* (x86-run 15 x86))
                   (logcount (xr :rgf *rdi* x86))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
-                                    64-bit-modep
 
                                     shr-spec
                                     shr-spec-32
@@ -832,7 +831,7 @@
                    (:type-prescription posp)
                    (:rewrite x86-run-halted)
                    (:type-prescription acl2::logtail$inline)
-                   (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+                   (:rewrite bitops::unsigned-byte-p-incr)
                    (:linear bitops::upper-bound-of-logand . 1)
                    (:linear bitops::logand->=-0-linear-1)
                    (:rewrite rb-returns-x86-in-non-marking-mode-if-no-error)
@@ -862,7 +861,6 @@
             (equal (rgfi *rax* (x86-run 16 (x86-run 18 x86)))
                    (logcount n)))
    :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
-                                     64-bit-modep
 
                                      shr-spec
                                      shr-spec-32

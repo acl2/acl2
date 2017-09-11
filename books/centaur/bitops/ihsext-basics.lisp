@@ -2438,13 +2438,11 @@ off looking at the source code.</p>")
                     :pattern (unsigned-byte-p bits x)
                     :scheme (unsigned-byte-p-ind bits x))))
 
-  (defthmd unsigned-byte-p-incr
+  (defthm unsigned-byte-p-incr
     (implies (and (unsigned-byte-p a x)
                   (natp b)
                   (<= a b))
              (unsigned-byte-p b x)))
-
-  (local (in-theory (enable unsigned-byte-p-incr)))
 
   (defthmd unsigned-byte-p-logcons
     (implies (and (unsigned-byte-p (1- b) x)
@@ -2504,12 +2502,6 @@ off looking at the source code.</p>")
                     (unsigned-byte-p (+ size1 (nfix size)) (ifix i))))
     :hints (("goal" :induct (and (logtail size i)
                                  (logtail size1 i)))))
-
-  (defthm unsigned-byte-p-when-unsigned-byte-p-less
-    (implies (and (unsigned-byte-p n x)
-                  (natp m)
-                  (<= n m))
-             (unsigned-byte-p m x)))
 
   (encapsulate
     nil
@@ -3020,13 +3012,11 @@ off looking at the source code.</p>")
                     :pattern (signed-byte-p bits x)
                     :scheme (signed-byte-p-ind bits x))))
 
-  (defthmd signed-byte-p-incr
+  (defthm signed-byte-p-incr
     (implies (and (signed-byte-p a x)
                   (natp b)
                   (<= a b))
              (signed-byte-p b x)))
-
-  (local (in-theory (enable signed-byte-p-incr)))
 
   (defthmd signed-byte-p-logcons
     (implies (and (signed-byte-p a x)

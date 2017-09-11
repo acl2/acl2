@@ -49,7 +49,12 @@
          ;; gets disabled somehow.
          (with-guard-checking-error-triple
           t
-          (trans-eval sexpr 'unsound-eval state t)))
+
+; Matt K. mod, 9/8/2017: replacing trans-eval by the trans-eval-no-warning, to
+; avoid the new "User-stobjs-modified" warnings.  Suppressing such warnings
+; seems in the spirit of unsound-eval.
+
+          (trans-eval-no-warning sexpr 'unsound-eval state t)))
         ((when err)
          (mv (msg "Failed to evaluate ~x0; trans eval failed? ~x1." sexpr err)
              nil state))

@@ -80,11 +80,11 @@
       (mutual-recursion
 
         (defun f (x)
-          (declare (xargs :guard (two-nats-measure (acl2-count x) 0)))
+          (declare (xargs :measure (two-nats-measure (acl2-count x) 0)))
           ...)
 
         (defun g (x)
-          (declare (xargs :guard (two-nats-measure (acl2-count x) 1)))
+          (declare (xargs :measure (two-nats-measure (acl2-count x) 1)))
           ...))
   })
 

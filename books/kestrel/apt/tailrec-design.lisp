@@ -67,47 +67,47 @@
      </li>
 
      <li>
-     @($D{}b$) corresponds to @('domain-of-base').
+     @($D{}b$) corresponds to @(':domain-of-base').
      </li>
 
      <li>
-     @($D{}c$) corresponds to @('domain-of-nonrec').
+     @($D{}c$) corresponds to @(':domain-of-nonrec').
      </li>
 
      <li>
-     @($D\\!*$) corresponds to @('domain-of-combine').
+     @($D\\!*$) corresponds to @(':domain-of-combine').
      </li>
 
      <li>
-     @($D\\!*'$) corresponds to @('domain-of-combine-uncond').
+     @($D\\!*'$) corresponds to @(':domain-of-combine-uncond').
      </li>
 
      <li>
-     @($A{}S{}C$) corresponds to @('combine-associativity').
+     @($A{}S{}C$) corresponds to @(':combine-associativity').
      </li>
 
      <li>
-     @($A{}S{}C'$) corresponds to @('combine-associativity-uncond').
+     @($A{}S{}C'$) corresponds to @(':combine-associativity-uncond').
      </li>
 
      <li>
-     @($L{}I$) corresponds to @('combine-left-identity').
+     @($L{}I$) corresponds to @(':combine-left-identity').
      </li>
 
      <li>
-     @($R{}I$) corresponds to @('combine-right-identity').
+     @($R{}I$) corresponds to @(':combine-right-identity').
      </li>
 
      <li>
-     @($G{}D$) corresponds to @('domain-guard').
+     @($G{}D$) corresponds to @(':domain-guard').
      </li>
 
      <li>
-     @($G\\!*$) corresponds to @('combine-guard').
+     @($G\\!*$) corresponds to @(':combine-guard').
      </li>
 
      <li>
-     @($G{}D{}c$) corresponds to @('domain-of-nonrec-when-guard').
+     @($G{}D{}c$) corresponds to @(':domain-of-nonrec-when-guard').
      </li>
 
      <li>
@@ -133,12 +133,12 @@
 
    <p>
    The applicability conditions
-   @('domain-of-base'),
-   @('combine-left-identity'), and
-   @('combine-right-identity')
+   @(':domain-of-base'),
+   @(':combine-left-identity'), and
+   @(':combine-right-identity')
    are slightly stronger than @($D{}b$), @($L{}I$), and @($R{}I$):
    they omit the hypothesis @('test<x1,...,xn>').
-   Furthermore, the requirement above that @('base<x1,...,xn>') be a ground term
+   Furthermore, the requirement that @('base<x1,...,xn>') be a ground term
    when the variant is @(':monoid') or @(':monoid-alt'),
    is not present in the design notes.
    The reason for these additional restrictions is to avoid, for now,

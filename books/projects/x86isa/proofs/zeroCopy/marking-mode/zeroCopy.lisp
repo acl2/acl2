@@ -19,7 +19,6 @@
  (in-theory
   ;; For the effects theorems:
   (e/d* (instruction-decoding-and-spec-rules
-         64-bit-modep
          shr-spec
          shr-spec-64
          sal/shl-spec
@@ -3936,7 +3935,7 @@
                               (:rewrite default-+-2)
                               (:type-prescription acl2::|x < y  =>  0 < -x+y|)
                               (:rewrite acl2::equal-of-booleans-rewrite)
-                              (:rewrite bitops::unsigned-byte-p-when-unsigned-byte-p-less)
+                              (:rewrite bitops::unsigned-byte-p-incr)
                               (:rewrite loghead-negative)
                               (:linear rip-is-i48p)
                               (:type-prescription subset-p)

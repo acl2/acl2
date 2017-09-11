@@ -112,11 +112,13 @@
   (defthm vl-datatype-resolved-p-of-make-enum
     (equal (vl-datatype-resolved-p (make-vl-enum :basetype basetype
                                                  :items items
+                                                 :values values
                                                  :pdims pdims
                                                  :udims udims))
            (vl-datatype-resolved-p basetype))
     :hints (("goal" :expand (vl-datatype-resolved-p (make-vl-enum :basetype basetype
                                                                   :items items
+                                                                  :values values
                                                                   :pdims pdims
                                                                   :udims udims)))))
 

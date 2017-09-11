@@ -5613,7 +5613,8 @@
 ; initial world.  When adding new records, it is best to use
 ; (all-fnnames-subsumer cl (w state)) to get the :all-fnnames field below.
 
-;; RAG - I changed the clauses about e0-ord-< [v2-8 and beyond: o<] reducing on
+;; Historical Comment from Ruben Gamboa:
+;; I changed the clauses about e0-ord-< [v2-8 and beyond: o<] reducing on
 ;; complex-rationalps to reducing on any complexp.
 
 (defconst *initial-built-in-clauses*

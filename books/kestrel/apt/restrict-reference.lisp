@@ -49,7 +49,7 @@
                :undefined       ; default :undefined
                :new-name        ; default :auto
                :new-enable      ; default :auto
-               :thm-name        ; default :arrow
+               :thm-name        ; default :auto
                :thm-enable      ; default t
                :non-executable  ; default :auto
                :verify-guards   ; default :auto
@@ -285,7 +285,7 @@
      </blockquote>
 
    <p>
-   @(':thm-name') &mdash; default @(':arrow')
+   @(':thm-name') &mdash; default @(':auto')
    </p>
 
      <blockquote>
@@ -297,27 +297,11 @@
      <ul>
 
        <li>
-       @(':arrow'),
-       to use the concatenation of
-       the name of @('old'),
-       @('-~>-'),
-       and the name of @('new').
-       </li>
-
-       <li>
-       @(':becomes'),
-       to use the concatenation of
-       the name of @('old'),
-       @('-becomes-'),
-       and the name of @('new').
-       </li>
-
-       <li>
-       @(':is'),
-       to use the concatenation of
-       the name of @('old'),
-       @('-is-'),
-       and the name of @('new').
+       @(':auto'),
+       to use the <see topic='@(url acl2::paired-names)'>paired name</see>
+       obtaining by <see topic='@(url make-paired-name)'>pairing</see>
+       the name of @('old') and the name of @('new'),
+       putting the result into the same package as @('new').
        </li>
 
        <li>
@@ -429,7 +413,7 @@
      <p>
      It must be a list of doublets
      @('((appcond1 hints1) ... (appcondp hintsp))')
-     where each @('appcondk') is a symbol (in any package)
+     where each @('appcondk') is a keyword
      that names one of the applicability conditions below,
      and each @('hintsk') consists of hints as may appear
      just after @(':hints') in a @(tsee defthm).
@@ -502,12 +486,12 @@
    </h3>
 
    <p>
-   The following conditions must be provable
+   The following conditions must be proved
    in order for the transformation to apply.
    </p>
 
    <p>
-   @('restriction-of-rec-calls')
+   @(':restriction-of-rec-calls')
    </p>
 
      <blockquote>
@@ -537,7 +521,7 @@
      </blockquote>
 
    <p>
-   @('restriction-guard')
+   @(':restriction-guard')
    </p>
 
      <blockquote>

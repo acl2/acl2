@@ -125,8 +125,7 @@
     :var-names nil
     )
 
-   (local (in-theory (e/d* (x86-cmc/clc/stc/cld/std
-                            64-bit-modep)
+   (local (in-theory (e/d* (x86-cmc/clc/stc/cld/std)
                            (create-canonical-address-list
                             (create-canonical-address-list)))))
 

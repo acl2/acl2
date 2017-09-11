@@ -133,6 +133,8 @@
                           (false . (equal x y)))
                         nil ; named-hints
                         nil ; verbose
+                        t ; error-erp
+                        nil ; error-val
                         'top ; ctx
                         state))
 
@@ -143,6 +145,8 @@
                            (need-hints . (equal (f x) x)))
                          '((need-hints . (("Goal" :in-theory (enable f)))))
                          nil ; verbose
+                         t ; error-erp
+                         nil ; error-val
                          'top ; ctx
                          state)))
 
@@ -241,6 +245,25 @@
    (assert! (rune-disabledp '(:type-prescription cons$) state)))
  (assert! (runep '(:type-prescription cons$) (w state)))
  (assert! (rune-disabledp '(:type-prescription cons$) state)))
+
+(must-succeed*
+ (encapsulate
+   ()
+   (make-event
+    (b* (((mv event &)
+          (named-formula-to-thm-event :mythm ; keyword
+                                      '(acl2-numberp (+ x y))
+                                      nil ; hints
+                                      :type-prescription
+                                      nil ; enabled
+                                      nil ; local
+                                      nil ; named-to-avoid
+                                      (w state))))
+      event))
+   (assert! (runep '(:type-prescription mythm) (w state)))
+   (assert! (rune-disabledp '(:type-prescription mythm) state)))
+ (assert! (runep '(:type-prescription mythm) (w state)))
+ (assert! (rune-disabledp '(:type-prescription mythm) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

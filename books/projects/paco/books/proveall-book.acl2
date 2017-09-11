@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "proveall" :ld-error-action :error)
+(ubu 1)
+
+; Help dependency scanner.
+#||
+(depends-on "proveall-log.txt")
+(include-book "../paco")
+(include-book "models/jvm/m5/jvm-fact-setup" :dir :system)
+||#

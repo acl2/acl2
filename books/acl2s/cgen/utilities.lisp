@@ -570,7 +570,12 @@
               "Global variables, such as ~&0, are not allowed. See ~
                :DOC ASSIGN and :DOC @."
               (acl2::non-stobjps vars t (w state)))) ;;; known-stobjs = t
-         (t (acl2::ev-for-trans-eval trans vars nil ctx state t))))))))) 
+         (t (acl2::ev-for-trans-eval trans vars nil ctx state t
+
+; Matt K. mod: Added conservative value of new argument,
+; user-stobjs-modified-warning.
+
+                                     t))))))))) 
 
 ;returns (cdr (cons translated-term value)) == value of term under bindings
 (defun trans-eval-single-value-with-bindings (term bindings ctx state)

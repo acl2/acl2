@@ -856,7 +856,8 @@
                (er-let*
                    ((tguard (translate
                              (conjoin-untranslated-terms
-                              (get-guards1 edcls '(guards types) wrld1))
+                              (get-guards1 edcls '(guards types)
+                                           nil name wrld1))
                              '(nil) nil nil ctx wrld1 state)))
                  (mv-let
                   (ctx1 tbody)
@@ -1645,7 +1646,8 @@
   (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
                   *boot-strap-invariant-risk-symbols* wrld))
 
-;; RAG - I added the treatment of *non-standard-primitives*
+;; Historical Comment from Ruben Gamboa:
+;; I added the treatment of *non-standard-primitives*
 
 (defun primordial-world (operating-system)
 
@@ -3220,21 +3222,25 @@
        (let* ((ens1 (ens state))
               (force-xnume-en1 (enabled-numep *force-xnume* ens1))
               (imm-xnume-en1 (enabled-numep *immediate-force-modep-xnume* ens1))
-              (wrld1 (update-current-theory theory0 wrld)))
+              (wrld1 (update-current-theory theory0 wrld))
+              (val (if (f-get-global 'script-mode state)
+                       :CURRENT-THEORY-UPDATED
+                     (list :NUMBER-OF-ENABLED-RUNES (length theory0)))))
 
 ; Note:  We do not permit IN-THEORY to be made redundant.  If this
 ; is changed, change the text of the :doc for redundant-events.
 
          (er-let*
-          ((val (install-event (length theory0)
-                                event-form
-                                'in-theory
-                                0
-                                nil
-                                nil
-                                :protect
-                                nil
-                                wrld1 state)))
+          ((val ; same as input val, if successful
+            (install-event val
+                           event-form
+                           'in-theory
+                           0
+                           nil
+                           nil
+                           :protect
+                           nil
+                           wrld1 state)))
           (pprogn (if (member-equal
                        expr
                        '((enable (:EXECUTABLE-COUNTERPART
@@ -3249,7 +3255,7 @@
                     (maybe-warn-about-theory
                      ens1 force-xnume-en1 imm-xnume-en1
                      (ens state) ctx wrld state))
-                  (value (list :NUMBER-OF-ENABLED-RUNES val))))))))))
+                  (value val)))))))))
 
 (defun in-arithmetic-theory-fn (expr state event-form)
 
@@ -4546,9 +4552,19 @@
           (value :invisible)))
 
 (defmacro set-raw-mode-on! ()
+
+; If this is to be used in code, then   Presumably the value of that keyword is
+; irrelevant.  But 
+
   '(er-progn (ld '((defttag :raw-mode-hack)
                    (set-raw-mode-on state))
-                 :ld-prompt nil :ld-verbose nil :ld-post-eval-print nil)
+                 :ld-prompt nil :ld-verbose nil :ld-post-eval-print nil
+
+; Do we want to allow raw mode to be set inside code?  Since this macro
+; traffics in trust tags, we might as well allow it.  So we need to specify a
+; value for the following keyword.
+
+                 :ld-user-stobjs-modified-warning :same)
              (value :invisible)))
 
 (defmacro set-raw-mode (flg)
@@ -4778,7 +4794,14 @@
 
 #+acl2-loop-only
 (defun acl2-raw-eval (form state)
-  (trans-eval form 'top-level state t))
+
+; We never execute this code in practice, since the raw code will run instead.
+; But for consistency with the raw code, we avoid the
+; user-stobjs-modified-warning.  Raw-mode is so far from maintaining soundness
+; that we feel no need to implement the user-stobjs-modified-warningv in the raw
+; code.
+
+  (trans-eval-no-warning form 'top-level state t))
 
 (defun get-and-chk-last-make-event-expansion (form wrld ctx state names)
   (let ((expansion (f-get-global 'last-make-event-expansion state)))
@@ -5046,7 +5069,10 @@
                     (cons #\4 (car ev-lst))
                     (cons #\5 (term-evisc-tuple nil state))
                     (cons #\r
-                          #+:non-standard-analysis "(r)"
+                          #+:non-standard-analysis
+                          (if (f-get-global 'script-mode state)
+                              ""
+                            "(r)")
                           #-:non-standard-analysis ""))
                    channel state nil))))
        (mv-let
@@ -5075,7 +5101,15 @@
            (pprogn (f-put-global 'last-make-event-expansion nil state)
                    (if (raw-mode-p state)
                        (acl2-raw-eval form state)
-                     (trans-eval form ctx state t)))
+
+; We avoid the user-stobjs-modified-warning here, since it seems unreasonable
+; to warn about the event's result if a user stobj is changed.  Rather, if the
+; event itself does evaluation that changes a user stobjs, then that event
+; should be held responsible for any such warning.  Thus, make-event takes such
+; responsibility for its expansion phase; it is sensitive to LD special
+; ld-user-stobjs-modified-warning (see protected-eval and make-event-fn2).
+
+                     (trans-eval-no-warning form ctx state t)))
 
 ; If erp is nil, trans-ans is
 ; ((nil nil state) . (erp' val' replaced-state))
@@ -5217,7 +5251,8 @@
        (equal (caddr insig1) (caddr insig2))
        (equal (cadddr insig1) (cadddr insig2))))
 
-;; RAG - I changed this so that non-classical witness functions are
+;; Historical Comment from Ruben Gamboa:
+;; I changed this so that non-classical witness functions are
 ;; not allowed.  The functions introduced by encapsulate are
 ;; implicitly taken to be classical, so a non-classical witness
 ;; function presents a (non-obvious) signature violation.
@@ -5765,7 +5800,13 @@
                       ,@(and pbt succ label
                              `('(pprogn (newline (proofs-co state)
                                                  state)
-                                        (pbt ',label)))))))))))
+                                        (pbt ',label)))))
+
+; It seems a bit dodgy to call redo-flat from within code, but we see no reason
+; to prohibit it.  In that case we need to specify a value for the following
+; keyword.
+
+                :ld-user-stobjs-modified-warning :same))))))
 
 (defun cert-op (state)
 
@@ -9424,38 +9465,9 @@
 ; We now develop code to "fix" the commands in the certification world before
 ; placing them in the portcullis of the certificate, in order to eliminate
 ; relative pathnames in include-book forms.  See the comment in
-; fix-portcullis-cmds.
-
-(defun string-prefixp-1 (str1 i str2)
-  (declare (type string str1 str2)
-           (type (unsigned-byte 29) i)
-           (xargs :guard (and (<= i (length str1))
-                              (<= i (length str2)))))
-  (cond ((zpf i) t)
-        (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte 29) i))
-             (cond ((eql (the character (char str1 i))
-                         (the character (char str2 i)))
-                    (string-prefixp-1 str1 i str2))
-                   (t nil))))))
-
-(defun string-prefixp (root string)
-
-; We return a result propositionally equivalent to
-;   (and (<= (length root) (length string))
-;        (equal root (subseq string 0 (length root))))
-; but, unlike subseq, without allocating memory.
-
-; At one time this was a macro that checked `(eql 0 (search ,root ,string
-; :start2 0)).  But it seems potentially inefficient to search for any match,
-; only to insist at the end that the match is at 0.
-
-  (declare (type string root string)
-           (xargs :guard (<= (length root) (fixnum-bound))))
-  (let ((len (length root)))
-    (and (<= len (length string))
-         (assert$ (<= len (fixnum-bound))
-                  (string-prefixp-1 root len string)))))
+; fix-portcullis-cmds.  Note: code supporting the function relativize-book-path
+; has been moved to history-management.lisp to support the function
+; print-book-path.
 
 #-acl2-loop-only ; actually only needed for ccl
 (defun *1*-symbolp (x)
@@ -9464,28 +9476,6 @@
          (and pkg-name
               (string-prefixp *1*-pkg-prefix* ; i.e., *1*-package-prefix*
                               pkg-name)))))
-
-(defun relativize-book-path (filename system-books-dir)
-
-; System-books-dir is presumably the value of state global 'system-books-dir.
-; If the given filename is an absolute pathname extending the absolute
-; directory name system-books-dir, then return (:system . suffix), where suffix
-; is a relative pathname that points to the same file with respect to
-; system-books-dir.
-
-  (declare (xargs :guard (and (stringp filename)
-                              (stringp system-books-dir))))
-  (cond ((and (stringp filename) ; could already be (:system . fname)
-              (string-prefixp system-books-dir filename))
-         (cons :system (subseq filename (length system-books-dir) nil)))
-        (t filename)))
-
-(defun relativize-book-path-lst (lst root)
-  (declare (xargs :guard (and (string-listp lst)
-                              (stringp root))))
-  (cond ((endp lst) nil)
-        (t (cons (relativize-book-path (car lst) root)
-                 (relativize-book-path-lst (cdr lst) root)))))
 
 (defun sysfile-p (x)
   (and (consp x)
@@ -9497,7 +9487,9 @@
   (cdr x))
 
 (defun filename-to-sysfile (filename state)
-  (relativize-book-path filename (f-get-global 'system-books-dir state)))
+  (relativize-book-path filename
+                        (f-get-global 'system-books-dir state)
+                        :make-cons))
 
 (defun sysfile-to-filename (x state)
   (cond ((sysfile-p x)
@@ -9842,7 +9834,8 @@
 ; (as is done as of August 2010 by Debian ACL2 release and ACL2s).
 
                   (relativize-book-path-lst (package-entry-book-path e)
-                                            system-books-dir)))
+                                            system-books-dir
+                                            :make-cons)))
             (mv-let (erp pair state)
 
 ; It's perfectly OK for erp to be non-nil here.  That case is handled below.
@@ -10054,7 +10047,8 @@
            (tterm (package-entry-tterm e))
            (book-path (relativize-book-path-lst
                        (package-entry-book-path e)
-                       system-books-dir)))
+                       system-books-dir
+                       :make-cons)))
       (mv-let
        (erp pair state)
        (simple-translate-and-eval body nil nil
@@ -10616,9 +10610,9 @@
                  (case-match form
                    (('defpkg & & & & 't) t)
                    (& nil)))
-            (er-progn (trans-eval form ctx state
+            (er-progn (trans-eval-default-warning form ctx state
 ; Perhaps aok could be t, but we use nil just to be conservative.
-                                  nil)
+                                                  nil)
                       (get-cmds-from-portcullis1
                        eval-hidden-defpkgs ch ctx state (cons form ans))))
            (t (get-cmds-from-portcullis1
@@ -10667,7 +10661,7 @@
       (if events
           (state-global-let*
            ((inhibit-output-lst (remove1-eq 'error *valid-output-names*)))
-           (trans-eval (cons 'er-progn events) ctx state t))
+           (trans-eval-default-warning (cons 'er-progn events) ctx state t))
         (value nil))
       (mv-let
        (erp val state)
@@ -10719,13 +10713,13 @@
             (value (reverse ans)))
            (t (mv-let
                (error-flg trans-ans state)
-               (trans-eval form
-                           (msg (if port-file-p
-                                    "the .port file for ~x0"
-                                  "the portcullis for ~x0")
-                                file1)
-                           state
-                           t)
+               (trans-eval-default-warning form
+                                           (msg (if port-file-p
+                                                    "the .port file for ~x0"
+                                                  "the portcullis for ~x0")
+                                                file1)
+                                           state
+                                           t)
 
 ; If error-flg is nil, trans-ans is of the form
 ; ((nil nil state) . (erp' val' replaced-state))
@@ -13099,6 +13093,7 @@
                                         full-book-name
                                         directory-name
                                         familiar-name
+                                        dir
                                         cddr-event-form)
 
 ; Input expansion-alist/cert-data is nil except when this call is from an
@@ -13744,8 +13739,16 @@
                                 (install-event
                                  (if behalf-of-certify-flg
                                      declaim-list
-                                   (or cert-full-book-name
-                                       full-book-name))
+                                   (let ((path (or cert-full-book-name
+                                                   full-book-name)))
+                                     (if (f-get-global 'script-mode state)
+                                         (relativize-book-path
+                                          path
+                                          (f-get-global 'system-books-dir
+                                                        state)
+                                          (and (null dir)
+                                               user-book-name))
+                                       path)))
                                  (list* 'include-book
 
 ; We use the the unique representative of the full book name provided by the
@@ -13964,7 +13967,7 @@
                     ttags
 ; The following were bound above:
                     ctx full-book-name directory-name familiar-name
-                    cddr-event-form))
+                    dir cddr-event-form))
                   (t
                    (let #+acl2-loop-only ()
                         #-acl2-loop-only
@@ -13983,7 +13986,7 @@
                          ttags
 ; The following were bound above:
                          ctx full-book-name directory-name familiar-name
-                         cddr-event-form)))))))))))))
+                         dir cddr-event-form)))))))))))))
 
 (defun spontaneous-decertificationp1 (ibalist alist files)
 
@@ -19768,6 +19771,30 @@
               (declare (ignore unify-subst))
               ans)))
 
+(defun obviously-equal-lambda-args (x-formals-tail x-args-tail y-formals
+                                                   y-args)
+
+; At the top level, x-formals-tail and x-args-tail are the formals and
+; arguments of a lambda application; let's call these x-formals and x-args.  We
+; know that x-formals and y-formals have the same length, and we want to check
+; that y-formals is a permutation of x-formals and, moreover: when the
+; arguments are correspondingly permutated, then the respective members of
+; x-args and y-args are equal.
+
+  (declare (xargs :guard (and (symbol-listp x-formals-tail)
+                              (pseudo-term-listp x-args-tail)
+                              (symbol-listp y-formals)
+                              (pseudo-term-listp y-args))))
+  (cond ((endp x-formals-tail) t)
+        (t (let ((posn (position-eq (car x-formals-tail) y-formals)))
+             (and
+              posn
+              (and (equal (car x-args-tail)
+                          (nth posn y-args))
+                   (obviously-equal-lambda-args (cdr x-formals-tail)
+                                                (cdr x-args-tail)
+                                                y-formals y-args)))))))
+
 (mutual-recursion
 
 (defun obviously-equiv-terms (x y iff-flg)
@@ -19784,6 +19811,8 @@
 ; ground-zero theory) unless iff-flg is true, in which case (iff x y) is a
 ; theorem.
 
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (pseudo-termp y))))
   (or (equal x y) ; common case
       (cond ((or (variablep x)
                  (variablep y))
@@ -19791,8 +19820,10 @@
             ((or (fquotep x)
                  (fquotep y))
              (and iff-flg
-                  (equal (equal x *nil*)
-                         (equal y *nil*))))
+                  (fquotep x)
+                  (fquotep y)
+                  (unquote x)
+                  (unquote y)))
             ((flambda-applicationp x)
              (and (flambda-applicationp y)
 
@@ -19818,6 +19849,10 @@
 
 ; But it is more complicated to handle this combination in full generality, so
 ; we content ourselves with (1) and (2).
+
+; We could also relax (2) by checking that the respective arguments are merely
+; obviously-equiv-terms, rather than requiring equality, but at this point we
+; see no need for that generalization.
 
                   (let ((x-fn (ffn-symb x))
                         (y-fn (ffn-symb y))
@@ -19879,29 +19914,16 @@
 
 ; X and y are true-lists of the same length.
 
+  (declare (xargs :guard (and (pseudo-term-listp x)
+                              (pseudo-term-listp y))))
   (cond ((endp x) t)
         (t (and (obviously-equiv-terms (car x) (car y) nil)
                 (obviously-equiv-terms-lst (cdr x) (cdr y))))))
-
-(defun obviously-equal-lambda-args (x-formals-tail x-args-tail y-formals
-                                                   y-args)
-
-; We know that y-formals is a permutation of x-formals.  We recur through
-; x-formals and x-args, checking that correspond arguments are equal.
-
-  (cond ((endp x-formals-tail) t)
-        (t (let ((posn (position-eq (car x-formals-tail) y-formals)))
-             (assert$
-              posn
-              (and (equal (car x-args-tail)
-                          (nth posn y-args))
-                   (obviously-equal-lambda-args (cdr x-formals-tail)
-                                                (cdr x-args-tail)
-                                                y-formals y-args)))))))
-
 )
 
 (defun obviously-iff-equiv-terms (x y)
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (pseudo-termp y))))
   (obviously-equiv-terms x y t))
 
 (defun chk-defabsstobj-method-lemmas (method st st$c st$ap corr-fn
@@ -22094,7 +22116,12 @@
              nil *standard-co* state nil))
       (if (eql 0 (f-get-global 'ld-level state))
           (ld '((trace$-lst ',trace-specs 'trace$ state))
-              :ld-verbose nil)
+              :ld-verbose nil
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+              :ld-user-stobjs-modified-warning :same)
         (trace$-lst ',trace-specs 'trace$ state))))))
 
 (defmacro with-ubt! (form)
@@ -22115,7 +22142,12 @@
                     :ld-prompt nil
                     :ld-pre-eval-print nil
                     :ld-post-eval-print nil
-                    :ld-error-action :error))
+                    :ld-error-action :error
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+                    :ld-user-stobjs-modified-warning :same))
                (value :invisible))))
 
 (defmacro trace! (&rest fns)
@@ -22139,7 +22171,12 @@
 ; calling break-on-error.  Of course, no trust tag note will be printed in raw
 ; Lisp -- but all bets are off anyhow in raw Lisp!
 
-    `(ld '(,form))
+    `(ld '(,form)
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+         :ld-user-stobjs-modified-warning :same)
     #+acl2-loop-only
     form))
 
@@ -24481,7 +24518,7 @@
                                        conjunct ; tguard
                                        f1 a1 nil substitute ctx state)))
           (mv-let (erp stobjs-out/replaced-val state)
-            (trans-eval form ctx state t)
+            (trans-eval-default-warning form ctx state t)
             (cond (erp
                    (value (msg "Evaluation causes an error:~|~x0"
                                conjunct)))
@@ -25068,7 +25105,12 @@
                         (value :invisible)))
                      :ld-post-eval-print :command-conventions
                      :ld-error-action :return
-                     :ld-error-triples t)
+                     :ld-error-triples t
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+                     :ld-user-stobjs-modified-warning :same)
                  (with-output
                   :off :all
                   :on error
@@ -25078,7 +25120,9 @@
                :ld-error-action :error ; in case top-level-fn fails
                :ld-error-triples t
                :ld-verbose nil
-               :ld-prompt nil)
+               :ld-prompt nil
+; See comment above about :ld-user-stobjs-modified-warning.
+               :ld-user-stobjs-modified-warning :same)
            (declare (ignore erp val))
            (mv (@ top-level-errorp) :invisible state)))
 
@@ -28680,6 +28724,8 @@
 
 (defun protected-eval (form on-behalf-of ctx state aok)
 
+; This evaluator is intended to be used for make-event expansion.
+
 ; We assume that this is executed under a revert-world-on-error, so that we do
 ; not have to protect the world here in case of error, though we do set the
 ; world back to the starting world when returning a non-erroneous error triple.
@@ -28689,10 +28735,18 @@
 ; known-package-alist and value of world global 'ttags-seen immediately after
 ; form is evaluated; and if not, we return a soft error.
 
+; See the comment at the call of trans-eval-default-warning, below.
+
   (let ((original-wrld (w state)))
     (protect-system-state-globals
      (er-let*
       ((result
+
+; We call trans-eval-default-warning here, so that if make-event modifies
+; stobjs, we issue a warning if and only if the current setting of LD special
+; ld-user-stobjs-modified-warning says to issue that warning.  That seems
+; reasonable since make-event may only be called in event contexts.  See :DOC
+; user-stobjs-modified-warning.
 
 ; It would be nice to add (state-global-let* ((safe-mode t)) here.  But some
 ; *1* functions need always to call their raw Lisp counterparts.  Although we
@@ -28704,7 +28758,7 @@
 ; safe-mode for make-event will require addition".  Those comments are
 ; associated with membership tests that, for now, we avoid for efficiency.
 
-        (trans-eval form ctx state aok)))
+        (trans-eval-default-warning form ctx state aok)))
       (let* ((new-kpa (known-package-alist state))
              (new-ttags-seen (global-val 'ttags-seen (w state)))
              (stobjs-out (car result))
@@ -28814,7 +28868,7 @@
               (stobjs-out-and-raw-result
                (do-proofs?
                 do-proofsp
-                (trans-eval
+                (trans-eval-default-warning
 
 ; Note that expansion1b is guaranteed to be an embedded event form, which (as
 ; checked just below) must evaluate to an error triple.

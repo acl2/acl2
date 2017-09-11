@@ -429,12 +429,14 @@ typically be @(see memoize)d in some way or another.</p>"
   :short "Like @(see alist-keys) but with proper @(see fty-discipline) for @(see svex-alist)s."
   :prepwork ((local (in-theory (enable svex-alist-p))))
   :returns (keys svarlist-p)
-  (if (atom x)
-      nil
-    (if (mbt (and (consp (car x)) (svar-p (caar x))))
-        (cons (caar x)
-              (svex-alist-keys (cdr x)))
-      (svex-alist-keys (cdr x))))
+  (mbe :logic
+       (if (atom x)
+           nil
+         (if (mbt (and (consp (car x)) (svar-p (caar x))))
+             (cons (caar x)
+                   (svex-alist-keys (cdr x)))
+           (svex-alist-keys (cdr x))))
+       :exec (strip-cars x))
   ///
   (deffixequiv svex-alist-keys
     :hints (("goal" :expand ((svex-alist-fix x)))))
@@ -455,18 +457,19 @@ typically be @(see memoize)d in some way or another.</p>"
            (svarlist-filter x))
     :hints(("Goal" :in-theory (enable svarlist-filter pairlis$ svex-alist-keys)))))
 
-
 (define svex-alist-vals ((x svex-alist-p))
   :parents (svex-alist)
   :short "Like @(see alist-vals) but with proper @(see fty-discipline) for @(see svex-alist)s."
   :prepwork ((local (in-theory (enable svex-alist-p))))
   :returns (vals svexlist-p)
-  (if (atom x)
-      nil
-    (if (mbt (and (consp (car x)) (svar-p (caar x))))
-        (cons (mbe :logic (svex-fix (cdar x)) :exec (cdar x))
-              (svex-alist-vals (cdr x)))
-      (svex-alist-vals (cdr x))))
+  (mbe :logic
+       (if (atom x)
+           nil
+         (if (mbt (and (consp (car x)) (svar-p (caar x))))
+             (cons (mbe :logic (svex-fix (cdar x)) :exec (cdar x))
+                   (svex-alist-vals (cdr x)))
+           (svex-alist-vals (cdr x))))
+       :exec (strip-cdrs x))
   ///
   (deffixequiv svex-alist-vals
     :hints (("goal" :expand ((svex-alist-fix x)))))
@@ -507,4 +510,16 @@ typically be @(see memoize)d in some way or another.</p>"
   :enabled t
   (and (eq (svex-kind x) :quote)
        (2vec-p (svex-quote->val x))))
+
+
+
+;; Needed in VL
+(fty::defprod constraint
+  ((name)
+   (cond svex-p))
+  :layout :tree)
+
+(fty::deflist constraintlist
+  :elt-type constraint
+  :true-listp t)
 

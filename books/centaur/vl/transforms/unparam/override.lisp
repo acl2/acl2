@@ -305,7 +305,9 @@ types.</p>"
                                       if any -- should be elaborated already")
    (ov-ss         vl-scopestack-p     "Scopestack for the override context")
    (ov-scope-path vl-elabtraversal-p "How to get to the scopes for the override context")
-   (warnings vl-warninglist-p      "Warnings accumulator for the submodule."))
+   (warnings vl-warninglist-p      "Warnings accumulator for the submodule.")
+   &key
+   ((config vl-simpconfig-p) 'config))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
                (new-param vl-paramdecl-p "On success, final (coerced) value to
