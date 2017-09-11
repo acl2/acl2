@@ -64,10 +64,9 @@
   :parents (ia32e-segmentation)
   :short "Recognizer for a valid code segment descriptor"
 
-  (b* ((type (code-segment-descriptor-layout-slice :type descriptor))
-       (msb-of-type (part-select type :low 3 :width 1))
-
-       ((when (not (equal msb-of-type 1)))
+  (b* (((when (not (equal (code-segment-descriptor-layout-slice :msb-of-type
+                                                                descriptor)
+                          1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
        ;; User segment?
@@ -95,10 +94,9 @@
   :parents (ia32e-segmentation)
   :short "Recognizer for a valid data segment descriptor"
 
-  (b* ((type (data-segment-descriptor-layout-slice :type descriptor))
-       (msb-of-type (part-select type :low 3 :width 1))
-
-       ((when (not (equal msb-of-type 0)))
+  (b* (((when (not (equal (data-segment-descriptor-layout-slice :msb-of-type
+                                                                descriptor)
+                          0)))
         (mv nil (cons :Invalid-Type descriptor)))
 
        ;; User segment?
@@ -107,7 +105,11 @@
 
        ;; Segment is present.
        ((when (not (equal (data-segment-descriptor-layout-slice :p descriptor) 1)))
-        (mv nil (cons :Segment-Not-Present descriptor))))
+        (mv nil (cons :Segment-Not-Present descriptor)))
+
+       ;; IA32e Mode is on?
+       ((when (not (equal (data-segment-descriptor-layout-slice :l descriptor) 1)))
+        (mv nil (cons :IA32e-Mode-Off descriptor))))
       (mv t 0)))
 
 ;; Predicates to determine valid system descriptors (in IA32e mode):
@@ -243,8 +245,14 @@
 
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
-  (b* ((type
-        (code-segment-descriptor-layout-slice :type descriptor))
+  (b* ((a
+        (code-segment-descriptor-layout-slice :a descriptor))
+       (r
+        (code-segment-descriptor-layout-slice :r descriptor))
+       (c
+        (code-segment-descriptor-layout-slice :c descriptor))
+       (msb-of-type
+        (code-segment-descriptor-layout-slice :msb-of-type descriptor))
        (s
         (code-segment-descriptor-layout-slice :s descriptor))
        (dpl
@@ -259,23 +267,29 @@
         (code-segment-descriptor-layout-slice :g descriptor)))
 
     (!code-segment-descriptor-attributes-layout-slice
-     :type type
+     :a a
      (!code-segment-descriptor-attributes-layout-slice
-      :s s
+      :r r
       (!code-segment-descriptor-attributes-layout-slice
-       :dpl dpl
+       :c c
        (!code-segment-descriptor-attributes-layout-slice
-        :p p
+        :msb-of-type msb-of-type
         (!code-segment-descriptor-attributes-layout-slice
-         :avl avl
+         :s s
          (!code-segment-descriptor-attributes-layout-slice
-          :l l
+          :dpl dpl
           (!code-segment-descriptor-attributes-layout-slice
-           :g g
-           0))))))))
+           :p p
+           (!code-segment-descriptor-attributes-layout-slice
+            :avl avl
+            (!code-segment-descriptor-attributes-layout-slice
+             :l l
+             (!code-segment-descriptor-attributes-layout-slice
+              :g g
+              0)))))))))))
 
-  ///  
-  
+  ///
+
   (defthm-usb n16p-make-code-segment-attr
     :hyp (unsigned-byte-p 64 descriptor)
     :bound 16
@@ -292,8 +306,14 @@
 
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
-  (b* ((type
-        (data-segment-descriptor-layout-slice :type descriptor))
+  (b* ((a
+        (data-segment-descriptor-layout-slice :a descriptor))
+       (w
+        (data-segment-descriptor-layout-slice :w descriptor))
+       (e
+        (data-segment-descriptor-layout-slice :e descriptor))
+       (msb-of-type
+        (data-segment-descriptor-layout-slice :msb-of-type descriptor))
        (s
         (data-segment-descriptor-layout-slice :s descriptor))
        (dpl
@@ -302,26 +322,36 @@
         (data-segment-descriptor-layout-slice :p descriptor))
        (avl
         (data-segment-descriptor-layout-slice :avl descriptor))
+       (l
+        (code-segment-descriptor-layout-slice :l descriptor))
        (d/b
         (data-segment-descriptor-layout-slice :d/b descriptor))
        (g
         (data-segment-descriptor-layout-slice :g descriptor)))
 
     (!data-segment-descriptor-attributes-layout-slice
-     :type type
+     :a a
      (!data-segment-descriptor-attributes-layout-slice
-      :s s
+      :w w
       (!data-segment-descriptor-attributes-layout-slice
-       :dpl dpl
+       :e e
        (!data-segment-descriptor-attributes-layout-slice
-        :p p
+        :msb-of-type msb-of-type
         (!data-segment-descriptor-attributes-layout-slice
-         :avl avl
+         :s s
          (!data-segment-descriptor-attributes-layout-slice
-          :d/b d/b
+          :dpl dpl
           (!data-segment-descriptor-attributes-layout-slice
-           :g g
-           0))))))))
+           :p p
+           (!data-segment-descriptor-attributes-layout-slice
+            :avl avl
+            (!data-segment-descriptor-attributes-layout-slice
+             :d/b d/b
+             (!data-segment-descriptor-attributes-layout-slice
+              :l l
+              (!data-segment-descriptor-attributes-layout-slice
+               :g g
+               0))))))))))))
 
   ///
 
