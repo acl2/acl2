@@ -769,6 +769,7 @@
        :rewrite ...
        :quant-ok ...
        :skolem-name ...
+       :thm-name ...
        :witness-dcls ...
        :strengthen ...)
    })
@@ -877,6 +878,19 @@
      </blockquote>
 
    <p>
+   @(':thm-name ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the name of the rewrite rule,
+     as in @(tsee defun-sk).
+     </p>
+
+     </blockquote>
+
+   <p>
    @(':witness-dcls ...')
    </p>
 
@@ -902,12 +916,6 @@
 
      </blockquote>
 
-   <p>
-   Currently @(tsee defun-sk2) does not support a @(':thm-name') option
-   as in @(tsee defun-sk).
-   Support for @(':thm-name') will be added to @(tsee defun-sk2).
-   </p>
-
    <h3>Generated Events</h3>
 
    @({
@@ -916,6 +924,7 @@
        :rewrite ...
        :quant-ok ...
        :skolem-name ...
+       :thm-name ...
        :witness-dcls ...
        :strengthen ...)
    })
@@ -959,6 +968,7 @@
        (sofun (ffvar1 . fun1) ... (ffvarM . funM))
        :verify-guards ...
        :skolem-name ...
+       :thm-name ...
        :rewrite ...)
    })
 
@@ -1072,6 +1082,21 @@
 
      <p>
      An option to customize the name of the witness function of @('fun').
+     This may be present
+     only if @('sofun') was introduced via @(tsee defun-sk2).
+     If present, it is passed to the @(tsee defun-sk) generated for @('fun').
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':thm-name')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the name of the rewrite rule of @('fun').
      This may be present
      only if @('sofun') was introduced via @(tsee defun-sk2).
      If present, it is passed to the @(tsee defun-sk) generated for @('fun').
