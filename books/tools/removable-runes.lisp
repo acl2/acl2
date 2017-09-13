@@ -11,8 +11,7 @@
   :short "Compute @(see rune)s to @(see disable)"
   :long "@({
 
- Example Form
-   (try this after :mini-proveall and (:ubt proper-cons-nest-p)):
+ Example Form:
  (removable-runes (defun proper-cons-nest-p (x)
                     (declare (xargs :guard (pseudo-termp x)))
                     (cond ((symbolp x) nil)
@@ -31,16 +30,16 @@
 
  <p>where @('event-form') is an embeddable event (see @(see events)); @('v') is
  @('nil'), @(':minimal'), @(':normal'), or @('t'); and @('m') is a positive
- rational number not exceeding 1.  The value returned is an @(see error-triple)
- @('(mv erp runes state)'), where @('erp') is typically @('nil') and @('runes')
- is a list of @(see rune)s that can be @(see disable)d for the indicated
- @('event-form'), such that the event is admitted with fewer prover
- steps.  (See @(see set-prover-step-limit) for a discussion of prover steps.)
- For example, if the list of runes returned for an event form is
- @('((:definition f1) (:rewrite thm1))'), then the proof of that event form was
- performed successfully &mdash; and with fewer steps &mdash; when first
- evaluating the event @('(in-theory (disable (:definition f1) (:rewrite
- thm1)))').</p>
+ rational number.  The value returned is an @(see error-triple) @('(mv erp
+ runes state)'), where @('erp') is typically @('nil') and @('runes') is a list
+ of @(see rune)s that can be @(see disable)d for the indicated @('event-form');
+ moreover, if the multiplier @('m') is less than 1, then the event is admitted
+ with fewer prover steps.  (See @(see set-prover-step-limit) for a discussion
+ of prover steps.)  For example, if the list of runes returned for an event
+ form is @('((:definition f1) (:rewrite thm1))'), then the proof of that event
+ form was performed successfully &mdash; and, for the default @('m') = 1, with
+ no more prover steps &mdash; if we first evaluate the event
+ @('(in-theory (disable (:definition f1) (:rewrite thm1)))').</p>
 
  <p>We now describe the two keyword arguments in turn, and in doing so, we
  explain how the tool works.</p>
@@ -52,8 +51,8 @@
  lists the steps for the original proof attempt.</p>
 
  @({
- Steps: [steps]
- Steps saved: [steps saved]
+ New steps: [steps]
+ Old steps: [steps] (Initially: [steps])
  Time: [time]
  Removed: [rune]
  Removable:
@@ -61,41 +60,40 @@
  [progress line]
  })
 
- <p>The ``@('Steps')'' field has the number of prover steps taken by that
- round's proof attempt, where the initial ``@('Steps')'' is the number of
- prover steps reported for the original form.  The corresponding ``@('Steps
- saved')'', ``@('Time')'', ``@('Removed')'', and ``@('Removable')'' fields
- state the following, respectively: the difference between the @('Steps') for
- the previous and current round (and in parentheses, the difference between the
- @('Steps') for the initial event and the current round); the time taken for
- the new event (by default, the run time; see @(see get-internal-time)); the
- rune that was newly disabled for the current round; and the list of runes
- disabled for the current round, which extends the previous round's
- @('Removable') field with that newly disabled rune.  For each round, the event
- was admitted with the @('Removable') runes first disabled by an @(tsee
- in-theory) event.  Finally, the progress line shows attempts to decrease the
- number of steps by disabling one rune per attempt, using @(''.'')  for a
- failed such attempt and @(''+'') for a success.  Each such rune is chosen from
- the list of runes reported for the previous round.</p>
+ <p>The ``@('New Steps')'' field has the number of prover steps taken by that
+ round's proof attempt.  The ``@('Old Steps')'', ``@('Time')'',
+ ``@('Removed')'', and ``@('Removable')'' fields state the following,
+ respectively: the number of prover steps for the previous round and for the
+ initial round (but this line is omitted for the initial round); the time taken
+ for the new event (by default, the run time; see @(see get-internal-time));
+ the rune that was newly disabled for the current round; and the list of runes
+ disabled after the current round, which extends the previous round's
+ @('Removable') field with that newly disabled rune.  For all but the initial
+ round, the event was admitted in the previous round after disabling the
+ @('Removable') runes (with an @(tsee in-theory) event), resulting in a set
+ @('S') of runes reported for that event.  The progress line shows attempts in
+ the current round to decrease the number of steps by disabling one rune from
+ @('S') per attempt, using @(''.'') for a failed such attempt and @(''+'') for
+ a success.  Each such rune is chosen from the list of runes reported for the
+ previous round.</p>
 
  <p>If @(':verbose-p = :minimal'), then the output will be as described above
  except that the @('Removable') fields are omitted.  If @(':verbose-p = nil'),
  then there is no output.  Finally, if @(':verbose-p = t'), then all the fields
  are printed, but in addition you will see the usual output for each attempt,
- each (except for the initial event) preceded by the corresponding in-theory
- event.</p>
+ each (except for the initial event) preceded by the corresponding @('tsee
+ in-theory) event.</p>
 
  <p>We now say a bit more about the tool's algorithm as we describe the
- @(':multiplier') argument, which is 1 by default but can also be any rational
- number between 0 and 1.  Recall that each round is an attempt to find a rune
- to disable: specifically, one provides the fewest number of resulting prover
- steps.  The number of steps thus computed for that round is required to be
- less than the number of steps computed for the previous round (or, in the case
- of the first round, less than the number of steps for the initial proof
- attempt).  The multipler says how much less is required: if @('s0') is the
- number of steps for the preceding (or initial) round, then the number of steps
- for the next round is not allowed to exceed @('(1- (ceiling (* m s0) 1))'),
- where @('m') is the value of the @(':multipler') keyword.</p>
+ @(':multiplier') argument, which is 1 by default but can also be any positive
+ rational number.  Recall that each round is an attempt to find a rune to
+ disable: specifically, one that provides the fewest number of resulting prover
+ steps.  The multiplier provides a bound on the number of prover steps: if
+ @('s0') is the number of steps for the preceding (or initial) round, then the
+ number of steps for the next round is not allowed to exceed @('(floor (* m s0)
+ 1)'), where @('m') is the value of the @(':multiplier') keyword.  If this
+ bound reaches 0 (which can only happen if @('m < 1'), the algorithm
+ terminates.</p>
 
  <p>Finally, we expand on a point made above.  When a rune is chosen to add to
  the evolving list of disables, the corresponding proof attempt might actually
@@ -210,7 +208,8 @@
           ,form)
          (t state)))
 
-(defun removable-runes-next (form steps runes best-rune best-used best-time
+(defun removable-runes-next (form steps-bound runes
+                                  best-rune best-used best-time ; initially nil
                                   disables verbose-p ignored-runes channel
                                   state)
 
@@ -224,10 +223,10 @@
   (cond
    ((endp runes)
     (value (and best-rune
-                (list* steps best-rune best-used best-time))))
+                (list* steps-bound best-rune best-used best-time))))
    (t
     (mv-let (erp steps/runes/time state)
-      (event-steps-runes+ form steps (cons (car runes) disables)
+      (event-steps-runes+ form steps-bound (cons (car runes) disables)
                           verbose-p ignored-runes state)
       (let ((steps2 (car steps/runes/time))
             (runes2 (cadr steps/runes/time))
@@ -237,11 +236,11 @@
           (value (abort!)))
          ((or erp
               (eql steps2 :error) ; see event-steps-runes-form
-              (> steps2 steps)    ; impossible?
+              (> steps2 steps-bound)    ; impossible?
               )
           (pprogn
            (rrv :minimal (princ$ #\. channel state))
-           (removable-runes-next form steps (cdr runes)
+           (removable-runes-next form steps-bound (cdr runes)
                                  best-rune best-used best-time
                                  disables verbose-p ignored-runes channel
                                  state))) 
@@ -255,7 +254,7 @@
                                  disables verbose-p ignored-runes channel
                                  state)))))))))
 
-(defun removable-runes-print-status (s d d-total r time
+(defun removable-runes-print-status (s s-old r init-s time
                                        disables verbose-p channel state)
   (mv-let
     (erp time-string state)
@@ -267,17 +266,17 @@
      (cond
       ((null r) ; initial
        (rrv :minimal
-            (fms "Steps: ~x0 (initial attempt)~|Time: ~s1~|"
+            (fms "New steps: ~x0 (initial attempt)~|Time: ~s1~|"
                  (list (cons #\0 s)
                        (cons #\1 time-string))
                  channel state nil)))
       (t
        (pprogn (rrv :minimal
-                    (fms "Steps: ~x0~|Steps saved: ~x1 (cumulative: ~
+                    (fms "New steps: ~x0~|Old steps: ~x1 (Initially: ~
                           ~x2)~|Time: ~s3~|Removed: ~x4"
                          (list (cons #\0 s)
-                               (cons #\1 d)
-                               (cons #\2 d-total)
+                               (cons #\1 s-old)
+                               (cons #\2 init-s)
                                (cons #\3 time-string)
                                (cons #\4 r))
                          channel state nil))
@@ -289,17 +288,18 @@
                       (newline channel state))
                      (t state))))))))
 
-(defun removable-runes-loop (form steps previous-steps init-steps
+(defun removable-runes-loop (form steps-bound previous-steps init-steps
                                   runes disables seen verbose-p
                                   ignored-runes multiplier channel state)
   (cond
-   ((null runes)
+   ((or (null runes)
+        (zerop steps-bound))
     (pprogn (rrv :minimal (newline channel state))
             (value disables)))
    (t
     (er-let* ((s/r/used/time
                (removable-runes-next
-                form steps runes nil nil nil
+                form steps-bound runes nil nil nil
                 disables verbose-p ignored-runes channel state)))
       (cond
        ((null s/r/used/time)
@@ -313,20 +313,20 @@
                (disables (cons r disables)))
           (pprogn
            (removable-runes-print-status s
-                                         (- previous-steps s)
-                                         (- init-steps s)
+                                         previous-steps
                                          r
+                                         init-steps
                                          time
                                          disables verbose-p channel state)
            (assert$
             (and (member-equal r seen)
-                 (<= s steps))
+                 (<= s steps-bound))
             (cond
              ((zp s) (value disables))
              (t
               (removable-runes-loop
                form
-               (1- (ceiling (* multiplier s) 1))
+               (floor (* multiplier s) 1)
                s init-steps
                (union-equal (set-difference-equal used seen)
                             (remove1-equal r runes))
@@ -364,7 +364,7 @@
                                               verbose-p channel state)
                 (removable-runes-loop
                  form
-                 (1- (ceiling (* multiplier steps2) 1))
+                 (floor (* multiplier steps2) 1)
                  steps2
                  steps2
                  runes2
@@ -378,6 +378,5 @@
 
   (declare (xargs :guard (and (member-eq verbose-p *rrv-levels*)
                               (rationalp multiplier)
-                              (< 0 multiplier)
-                              (<= multiplier 1))))
+                              (< 0 multiplier))))
   `(removable-runes-fn ',form ,verbose-p ,multiplier 'minimize-theory state))
