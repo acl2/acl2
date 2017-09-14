@@ -402,7 +402,7 @@
     ruler-extenders))
 
 (define macro-required-args ((mac (macro-namep mac wrld)) (wrld plist-worldp))
-  :returns (required-args symbol-listp)
+  :returns (required-args "A @(tsee symbol-listp).")
   :verify-guards nil
   :parents (world-queries)
   :short "Required arguments of a macro, in order."
@@ -412,7 +412,8 @@
    optionally starts with @('&whole') followed by another symbol,
    continues with zero or more symbols that do not start with @('&')
    which are the required arguments,
-   and possibly ends with a symbol starting with @('&') followed by more symbols.
+   and possibly ends with
+   a symbol starting with @('&') followed by more things.
    </p>
    <p>
    After removing @('&whole') and the symbol following it
@@ -429,15 +430,15 @@
         (macro-required-args-aux all-args nil))))
 
   :prepwork
-  ((define macro-required-args-aux ((args symbol-listp)
+  ((define macro-required-args-aux ((args true-listp)
                                     (rev-result symbol-listp))
-     :returns (final-result symbol-listp :hyp (symbol-listp rev-result))
+     :returns (final-result "A @(tsee symbol-listp).")
+     :verify-guards nil
      (if (endp args)
          (reverse rev-result)
-       (let ((arg (mbe :logic (if (symbolp (car args)) (car args) nil)
-                       :exec (car args))))
+       (let ((arg (car args)))
          (if (lambda-keywordp arg)
-             rev-result
+             (reverse rev-result)
            (macro-required-args-aux (cdr args)
                                     (cons arg rev-result))))))))
 
