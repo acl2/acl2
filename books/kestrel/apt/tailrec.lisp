@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking" :dir :system)
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
+(include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/named-formulas" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
@@ -517,24 +518,21 @@
   :short "Ensure that the @(':hints') input to the transformation is valid."
   :long
   "<p>
-   Here we only check that the input is a list of doublets
-   whose first components are unique
-   and include only names of applicability conditions.
-   The second components of the doublets
+   Here we only check that the input is a keyword-value list
+   whose keywords are unique and include only names of applicability conditions.
+   The values of the keyword-value list
    are checked to be well-formed hints not here,
    but implicitly when attempting prove the applicability conditions.
    </p>"
-  (b* (((er &) (ensure-doublet-list$ hints "The :HINTS input" t nil))
-       (alist (doublets-to-alist hints))
+  (b* (((er &) (ensure-keyword-value-list$ hints "The :HINTS input" t nil))
+       (alist (keyword-value-list-to-alist hints))
        (keys (strip-cars alist))
-       (vals (strip-cdrs alist))
        (description
-        (msg "The list ~x0 of the first components of the :HINTS input" keys))
-       ((er &) (ensure-symbol-list$ keys description t nil))
+        (msg "The list ~x0 of keywords of the :HINTS input" keys))
        ((er &) (ensure-list-no-duplicates$ keys description t nil))
        ((er &) (ensure-list-subset$ keys *tailrec-app-cond-names*
                                     description t nil)))
-    (value (pairlis$ keys vals))))
+    (value alist)))
 
 (define tailrec-check-inputs ((old "Input to the transformation.")
                               (variant "Input to the transformation.")

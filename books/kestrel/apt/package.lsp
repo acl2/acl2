@@ -49,6 +49,7 @@
                         ensure-function/lambda-no-stobjs$
                         ensure-function/lambda/term-number-of-results$
                         ensure-function/macro/lambda$
+                        ensure-keyword-value-list$
                         ensure-list-no-duplicates$
                         ensure-list-subset$
                         ensure-named-formulas
@@ -76,6 +77,7 @@
                         implicate
                         impossible
                         install-not-norm-event
+                        keyword-value-list-to-alist
                         lambda-body
                         lambda-formals
                         make-lambda
