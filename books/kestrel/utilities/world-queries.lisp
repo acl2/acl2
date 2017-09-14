@@ -189,17 +189,30 @@
 (define non-executablep ((fn (and (logic-function-namep fn wrld)
                                   (definedp fn wrld)))
                          (wrld plist-worldp))
-  :returns (yes/no "A @(tsee booleanp).")
+  :returns (yes/no booleanp)
   :parents (world-queries)
   :short "The @(tsee non-executable) status of a logic-mode defined function."
-  (getpropc fn 'non-executablep nil wrld)
+  :long
+  "<p>
+   The check that the non-executable status is a boolean should always succeed,
+   but it allows us to prove the return type theorem for this function
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((non-executablep (getpropc fn 'non-executablep nil wrld)))
+    (if (booleanp non-executablep)
+        non-executablep
+      (raise "Internal error: ~
+              the non-executable status ~x0 of ~x1 is not a boolean."
+             non-executablep fn)))
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
 (define unwrapped-nonexec-body ((fn (and (logic-function-namep fn wrld)
                                          (definedp fn wrld)
                                          (non-executablep fn wrld)))
                                 (wrld plist-worldp))
-  :returns (unwrapped-body "A @(tsee pseudo-termp).")
+  :returns (unwrapped-body pseudo-termp)
   :verify-guards nil
   :parents (world-queries)
   :short "Body of a logic-mode defined non-executable function,
@@ -228,17 +241,32 @@
    <p>
    The code of this system utility defensively ensures that
    the body of @('fn') has the form above.
+   </p>
+   <p>
+   The check that the unwrapped body is a pseudo-term should always succeed,
+   but it allows us to prove the return type theorem for this function
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
    </p>"
   (let ((body (ubody fn wrld)))
     (if (throw-nonexec-error-p body fn (formals fn wrld))
-        (fourth body)
-      (raise "The body ~x0 of the non-executable function ~x1 ~
-              does not have the expected wrapper." body fn))))
+        (let ((unwrapped-body (fourth body)))
+          (if (pseudo-termp unwrapped-body)
+              unwrapped-body
+            (raise "Internal error: ~
+                    the unwrapped body ~x0 of the non-executable function ~x1 ~
+                    is not a pseudo-term."
+                   unwrapped-body fn)))
+      (raise "Internal error: ~
+              the body ~x0 of the non-executable function ~x1 ~
+              does not have the expected wrapper."
+             body fn))))
 
 (define number-of-results ((fn (function-namep fn wrld))
                            (wrld plist-worldp))
   :guard (not (member-eq fn *stobjs-out-invalid*))
-  :returns (n "A @(tsee posp).")
+  :returns (n natp "Actually a @(tsee posp).")
   :parents (world-queries)
   :short "Number of values returned by a function."
   :long
@@ -447,7 +475,7 @@
   :mode :program
   :parents (world-queries)
   :short "Check if the definition of a function is disabled."
-  (member-equal `(:definition ,fn) (disabledp fn)))
+  (if (member-equal `(:definition ,fn) (disabledp fn)) t nil))
 
 (define fundef-enabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
@@ -461,7 +489,7 @@
   :mode :program
   :parents (world-queries)
   :short "Check if a @(see rune) is disabled."
-  (member-equal rune (disabledp (cadr rune))))
+  (if (member-equal rune (disabledp (cadr rune))) t nil))
 
 (define rune-enabledp ((rune (runep rune (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
@@ -482,7 +510,6 @@
                                     (= 1 (len (recursivep fn nil wrld)))))
                            (wrld plist-worldp))
   :returns (machine "A @('pseudo-induction-machinep') for @('fn').")
-  :verify-guards nil
   :parents (world-queries)
   :short "Induction machine of a (singly) recursive logic-mode function."
   :long
