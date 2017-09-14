@@ -202,7 +202,8 @@
     (:prop term nil :prop)
     (:state-hyp-method st-hyp-method :mcheck :st-hyp-method)
     (:constraint term t :constr)
-    (:check-vacuity boolean t (:check-vacuous))))
+    (:check-vacuity boolean t (:check-vacuous))
+    (:ctrex-transform function (lambda (x) x) (:ctrex-transform))))
 
 (defun glmc-hint-translate-bindings (bindings ctx state)
   (declare (xargs :stobjs state :mode :program))
@@ -267,6 +268,14 @@
              (mv (msg "~x0 should be one of ~v1, but was ~x2"
                       user-kwd '(:inductive-clause :inductive-sat :mcheck)
                       user-val)
+                 nil state)))
+
+          (function
+           (if (or (symbolp user-val)
+                   (and (consp user-val) (eq (car user-val) 'lambda)))
+               (mv nil `(,(car config-kwds) ',user-val) state)
+             (mv (msg "~x0 should be a function symbol or lambda form, but was ~x1"
+                      user-kwd user-val)
                  nil state)))
 
           ((nil) ;;ignore

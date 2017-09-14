@@ -4,8 +4,10 @@
 (include-book "bfr-mcheck")
 (include-book "centaur/aignet/from-hons-aig" :dir :system)
 (include-book "centaur/aignet/aiger" :dir :system)
-(include-book "centaur/aignet/copying" :dir :system)
+(include-book "centaur/aignet/prune" :dir :system)
 (include-book "centaur/aignet/abc" :dir :system)
+(include-book "centaur/aignet/eval" :dir :system)
+(include-book "centaur/aignet/transform-utils" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :system))
 
@@ -170,14 +172,13 @@
                   (bfr-mode)
                   (no-duplicatesp (alist-keys updates))
                   (< (nfix k) (len (stobjs::2darr->rows frames))))
-             (equal (aignet::lit-eval-seq k (aignet::fanin :co (aignet::lookup-stype 0 :po new-aignet))
-                                         frames nil new-aignet)
+             (equal (aignet::output-eval-seq k 0 frames nil new-aignet)
                     (acl2::bool->bit (nth 0 (nth k (aignet::aig-fsm-run
                                                     (list prop) updates init-st
                                                     (aignet::aignet-frames-to-aig-envs
                                                      frames invars)))))))
     :hints (("goal" :do-not-induct t
-             :in-theory (disable nth))))
+             :in-theory (e/d (aignet::output-eval-seq) (nth)))))
 
   (std::defret num-outs-of-aig-mcheck-to-aignet
     (equal (aignet::stype-count :po new-aignet) 1))
@@ -223,6 +224,19 @@
 (in-theory (disable aig-fsm-run-prop-ok-necc
                     aig-fsm-run-prop-ok))
 
+
+#!aignet
+(define aignet-check-ctrex (aignet frames)
+  :guard (and (equal 1 (num-outs aignet))
+              (<= (num-ins aignet) (frames-ncols frames)))
+  :returns (out-bit bitp :rule-classes :type-prescription)
+  (b* (((acl2::local-stobjs vals initsts)
+        (mv ans vals initsts))
+       (initsts (resize-bits (num-regs aignet) initsts))
+       (vals (aignet-sim-frames vals frames initsts aignet))
+       (out-id (outnum->id 0 aignet)))
+    (mv (get-bit out-id vals) vals initsts)))
+
 (define abc-mcheck-simple (prop (updates bfr-updates-p) init-st)
   :returns (mv result ctrex)
   (bfr-case
@@ -233,8 +247,11 @@
                (mv result ctrex aignet aignet2 frames))
               (updates (fast-alist-clean (bfr-updates-fix updates)))
               ((mv aignet in-vars) (aig-mcheck-to-aignet (bfr-not prop) updates init-st aignet))
-              ((mv status ?aignet2 frames)
-               (aignet::aignet-abc aignet aignet2 frames
+              (- (aignet::print-aignet-stats "Abc-mcheck-simple initial aignet" aignet))
+              (aignet2 (aignet::aignet-prune-seq aignet (aignet::mk-gatesimp 4 t) aignet2))
+              (- (aignet::print-aignet-stats "Abc-mcheck-simple pruned aignet" aignet2))
+              ((mv status ?aignet frames)
+               (aignet::aignet-abc aignet2 aignet frames
                                    (gl-abc-mcheck-script "gl-abc-input.aig" "gl-abc-ctrex")
                                    :script-filename "gl-abc-script"
                                    :input-filename "gl-abc-input.aig"
@@ -243,6 +260,10 @@
                                    :axiom :seq-prove))
               ((unless (eq status :refuted))
                (mv status nil aignet aignet2 frames))
+              (- (if (equal 0 (aignet::aignet-check-ctrex aignet2 frames))
+                     (std::raise
+                         "Error: Counterexample from ABC was not confirmed on aignet~%")
+                   (cw "Counterexample from ABC confirmed on aignet~%")))
               (ctrex-inputs (aignet::aignet-frames-to-aig-envs frames in-vars)))
            (mv :refuted ctrex-inputs aignet aignet2 frames)))
   ///
@@ -285,6 +306,17 @@
                    :induct (nth k ins)
                    :expand ((:free (prrops) (aignet::aig-fsm-run prop updates init-st ins)))))))
 
+  (local
+   #!aignet
+   (defthm rewrite-to-output-eval-seq
+     (implies (< (nfix n) (num-outs aignet))
+              (equal (lit-eval-seq k (fanin :co (lookup-stype n :po aignet))
+                                   frames
+                                   initsts
+                                   aignet)
+                     (output-eval-seq k n frames initsts aignet)))
+     :hints(("Goal" :in-theory (enable output-eval-seq)))))
+
   (std::defret aig-fsm-run-when-abc-mcheck-simple
     (implies (and (equal result :proved)
                   (< (nfix k) (len ins))
@@ -296,7 +328,9 @@
                                                        init-st ins)))
                     t))
     :hints(("Goal" :use ((:instance aignet::aignet-abc-seq-prove-correct
-                          (input-aignet (mv-nth 0 (aig-mcheck-to-aignet (bfr-not prop) (fast-alist-clean (bfr-updates-fix updates)) init-st nil)))
+                          (input-aignet (aignet::aignet-prune-seq
+                                         (mv-nth 0 (aig-mcheck-to-aignet (bfr-not prop) (fast-alist-clean (bfr-updates-fix updates)) init-st nil))
+                                          (aignet::mk-gatesimp 4 t) aignet2))
                           (output-aignet nil)
                           (frames '(0))
                           (script (gl-abc-mcheck-script "gl-abc-input.aig" "gl-abc-ctrex"))
@@ -531,12 +565,13 @@
        ((unless (and (eq status :refuted) (consp ctrex)))
         (mv status nil nil))
        (first-ins (make-fast-alist (car ctrex)))
-       (ctrex-initst (bfr-ins-to-initst (acl2::hons-set-diff (bfr-updates->states updates)
-                                                             (bfr-updates->states initst1))
-                                        (+ 1 (lnfix max-bvar))
-                                        first-ins)))
+       (ctrex-initst1 (bfr-ins-to-initst (acl2::hons-set-diff (bfr-updates->states updates)
+                                                              (bfr-updates->states initst1))
+                                         (+ 1 (lnfix max-bvar))
+                                         first-ins))
+       (ctrex-initst2 (hons-shrink-alist initst2 ctrex-initst1)))
     (fast-alist-free first-ins)
-    (mv :refuted ctrex-initst ctrex))
+    (mv :refuted ctrex-initst2 ctrex))
   ///
 
   (defthm aig-fsm-run-prop-ok-when-abc-mcheck-simple-rw

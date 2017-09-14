@@ -301,7 +301,8 @@
             pathcond config.glcp-config interp-st bvar-db state))
           ((when er)
            (mv nil
-               (msg "Error extracting the shape spec bits from the next state object: ~@0" er)
+               (msg "Error extracting the shape spec bits from the next state object: ~@0"
+                    (if (or (stringp er) (consp er)) er (msg "~x0" er)))
                pathcond interp-st bvar-db state))
 
           ((mv gvar-updates er pathcond interp-st bvar-db state)
@@ -309,7 +310,8 @@
             gvar-bindings st-alist pathcond config.glcp-config interp-st bvar-db state))
           ((when er)
            (mv nil
-               (msg "Error extracting the shape spec variables from the next state object: ~@0" er)
+               (msg "Error extracting the shape spec variables from the next state object: ~@0"
+                    (if (or (stringp er) (consp er)) er (msg "~x0" er)))
                pathcond interp-st bvar-db state))
 
           (bvar-db-alist (glmc-bvar-db-to-state-updates (base-bvar bvar-db) (alist-keys gvar-updates) bvar-db))
@@ -319,7 +321,8 @@
             bvar-db-alist gvar-updates pathcond config.glcp-config interp-st bvar-db state))
           ((when er)
            (mv nil
-               (msg "Error extracting bvar-db variable updates: ~@0" er)
+               (msg "Error extracting bvar-db variable updates: ~@0"
+                    (if (or (stringp er) (consp er)) er (msg "~x0" er)))
                pathcond interp-st bvar-db state))
 
           ((unless (equal (next-bvar bvar-db) next-bvar))
