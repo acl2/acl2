@@ -383,3 +383,13 @@ of the @('b*') form after that binder is the second hint.</p>")
 
 
 
+(defund mark-clause (x)
+  (declare (ignore x))
+  t)
+(in-theory (Disable (mark-clause) (:t mark-clause)))
+(defthm mark-clause-is-true
+  (mark-clause x)
+  :rule-classes nil)
+
+;; :use ((:instance mark-clause-is-true (x 'name-of-clause)))
+
