@@ -3608,8 +3608,11 @@ obviously 2-vectors.</p>"
         ;; ignore the error; it can't exist if the above doesn't
         (time$ (svexlist->a4vec-aig-env-for-varlist x svars boolmasks env)
                :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
-       (?ign (fast-alist-free env)))
-    (a4veclist-eval a4vecs aig-env))
+       (?ign (fast-alist-free env))
+       (aig-env (make-fast-alist aig-env))
+       (ans (a4veclist-eval a4vecs aig-env)))
+    (fast-alist-free aig-env)
+    ans)
   ///
   (defthm svexlist-eval-gl-is-svexlist-eval
     (equal (svexlist-eval-gl x env symbolic-params)
@@ -3640,14 +3643,14 @@ obviously 2-vectors.</p>"
 
 
 
-(define v2i-alt ((v true-listp))
-  :returns (v2i (equal v2i (gl::v2i v))
-                :hints(("Goal" :in-theory (enable gl::scdr gl::s-endp))))
-  :hooks nil
-  (if (atom (cdr v))
-      (gl::bool->sign (car v))
-    (logcons (acl2::bool->bit (car v))
-             (v2i-alt (cdr v)))))
+;; (define v2i-alt ((v true-listp))
+;;   :returns (v2i (equal v2i (gl::v2i v))
+;;                 :hints(("Goal" :in-theory (enable gl::scdr gl::s-endp))))
+;;   :hooks nil
+;;   (if (atom (cdr v))
+;;       (gl::bool->sign (car v))
+;;     (logcons (acl2::bool->bit (car v))
+;;              (v2i-alt (cdr v)))))
   
 
 (local (defthm v2i-of-aig-eval-list
@@ -3659,6 +3662,28 @@ obviously 2-vectors.</p>"
                           (aig-eval-list x env)
                           (:free (A b) (gl::v2i (cons a b))))))))
 
+(define v2i-first-n ((n natp) (v true-listp))
+  :returns (v2i (equal v2i (gl::v2i (take n v)))
+                :hints(("Goal" :in-theory (e/d (acl2::take-redefinition)
+                                               (take acl2::take-of-too-many))
+                        :induct t)))
+  :prepwork ((local (defthm v2i-of-singleton
+                      (equal (gl::v2i (list x))
+                             (gl::bool->sign x))
+                      :hints(("Goal" :in-theory (enable gl::s-endp gl::v2i)))))
+             (local (defthm v2i-of-cons
+                      (implies (consp y)
+                               (equal (gl::v2i (cons x y))
+                                      (logapp 1 (bool->bit x) (gl::v2i y))))
+                      :hints(("Goal" :in-theory (enable gl::v2i logapp** gl::s-endp gl::scdr))))))
+  (cond ((zp n)
+         (gl::bool->sign nil))
+        ((eql n 1)
+         (gl::bool->sign (car v)))
+        (t (logapp 1 (acl2::bool->bit (car v))
+                    (v2i-first-n (1- n) (cdr v))))))
+
+
 (define 4vec-from-bitlist ((upper-len natp) (lower-len natp) (bits true-listp))
   :hooks ((:fix :omit (bits)))
   :returns (mv (vec 4vec-p)
@@ -3667,12 +3692,11 @@ obviously 2-vectors.</p>"
                      :rule-classes :type-prescription))
   ;; note: list-fixing bits is bad here because it's not even linear in the
   ;; number of bits we're operating on
-  (b* ((upper-bits (take upper-len bits))
+  (b* ((upper (v2i-first-n upper-len bits))
        (rest (nthcdr upper-len bits))
-       (lower-bits (take lower-len rest))
+       (lower (v2i-first-n lower-len rest))
        (rest (nthcdr lower-len rest)))
-    (mv (4vec (v2i-alt upper-bits)
-              (v2i-alt lower-bits))
+    (mv (4vec upper lower)
         rest))
   ///
   (defthm 4vec-from-bitlist-correct
