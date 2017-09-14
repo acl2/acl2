@@ -44,6 +44,7 @@
 (include-book "general-objects")
 (include-book "glcp-config")
 (include-book "centaur/misc/hons-extra" :dir :system)
+(include-book "std/alists/alist-defuns" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (set-state-ok t)
 
@@ -193,7 +194,6 @@
         (b* (((list formals body) look))
           (mv t formals body))))
     (acl2::fn-get-def fn state)))
-
 
 
 (mutual-recursion
@@ -685,6 +685,775 @@
              (pseudo-term-listp (magic-ev-partial-lst x alist state hard-errp aokp)))
     :flag magic-ev-partial-lst))
 
+
+(encapsulate nil
+  (local (defthm consp-cdr-when-quote
+           (implies (and (equal (car x) 'quote)
+                         (pseudo-termp x))
+                    (consp (cdr x)))
+           :hints(("Goal" :in-theory (enable pseudo-termp)))))
+  (verify-guards magic-ev-partial))
+
+
+
+
+
+
+
+(define glcp-ctrex-subst-lhses ((subst alistp) pairs)
+  :returns (new-lhses (implies (acl2::pseudo-term-substp subst)
+                               (pseudo-term-listp new-lhses)))
+  (if (atom pairs)
+      nil
+    (b* (((unless (and (consp (car pairs))
+                       (pseudo-termp (caar pairs))))
+          (glcp-ctrex-subst-lhses subst (cdr pairs)))
+         (lhs (caar pairs)))
+      (cons (hons-copy (acl2::substitute-into-term lhs subst))
+            ;; (acl2::substitute-into-list (car pairs) subst)
+            (glcp-ctrex-subst-lhses subst (cdr pairs))))))
+
+#!acl2
+(defthm symbol-alistp-of-unify-const
+  (implies (and (symbol-alistp alist)
+                (pseudo-termp pat))
+           (symbol-alistp (mv-nth 1 (unify-const pat term alist))))
+  :hints(("Goal" :in-theory (enable unify-const))))
+
+#!acl2
+(defthm-simple-one-way-unify-flag symbol-alistp-of-simple-one-way-unify
+  (defthm symbol-alistp-of-simple-one-way-unify
+    (implies (and (symbol-alistp alist)
+                  (pseudo-termp pat))
+             (symbol-alistp (mv-nth 1 (simple-one-way-unify
+                                       pat term alist))))
+    :hints ('(:expand ((:free (term) (simple-one-way-unify pat term alist))
+                       (:free (term) (simple-one-way-unify nil term alist)))))
+    :flag simple-one-way-unify)
+  (defthm symbol-alistp-of-simple-one-way-unify-lst
+    (implies (and (symbol-alistp alist)
+                  (pseudo-term-listp pat))
+             (symbol-alistp (mv-nth 1 (simple-one-way-unify-lst
+                                       pat term alist))))
+    :hints ('(:expand ((simple-one-way-unify-lst pat term alist)
+                       (simple-one-way-unify-lst nil term alist))))
+    :flag simple-one-way-unify-lst))
+
+#!acl2
+(defthm pseudo-term-substp-of-unify-const
+  (implies (and (pseudo-term-substp alist)
+                (pseudo-termp pat))
+           (pseudo-term-substp (mv-nth 1 (unify-const pat term alist))))
+  :hints(("Goal" :in-theory (enable unify-const))))
+
+#!acl2
+(defthm-simple-one-way-unify-flag pseudo-term-substp-of-simple-one-way-unify
+  (defthm pseudo-term-substp-of-simple-one-way-unify
+    (implies (and (pseudo-term-substp alist)
+                  (pseudo-termp pat)
+                  (pseudo-termp term))
+             (pseudo-term-substp (mv-nth 1 (simple-one-way-unify
+                                       pat term alist))))
+    :hints ('(:expand ((:free (term) (simple-one-way-unify pat term alist))
+                       (:free (term) (simple-one-way-unify nil term alist)))))
+    :flag simple-one-way-unify)
+  (defthm pseudo-term-substp-of-simple-one-way-unify-lst
+    (implies (and (pseudo-term-substp alist)
+                  (pseudo-term-listp pat)
+                  (pseudo-term-listp term))
+             (pseudo-term-substp (mv-nth 1 (simple-one-way-unify-lst
+                                       pat term alist))))
+    :hints ('(:expand ((simple-one-way-unify-lst pat term alist)
+                       (simple-one-way-unify-lst nil term alist))))
+    :flag simple-one-way-unify-lst))
+
+;; This makes a graph which has an edge x,y if x matches the lhs of the "from"
+;; part of a ctrex rule and y is the corresponding substitution of the "to"
+;; part, and the :test (if any) is satisfied.
+
+;; For this to make sense, we are assuming that ctrex rewrite rules have
+;; relatively inconsequential RHSes: the RHS of the "from" doesn't occur in the
+;; LHS of the "to", and doesn't play any part in the test.  Existing ctrex
+;; rewrite rules seem to all satisfy these assumptions.  We will add checks to
+;; def-glcp-ctrex-rule to enforce them.
+
+(define glcp-ctrex-rule-dependencies ((lhs pseudo-termp) rule state)
+  :returns (new-lhses pseudo-term-listp)
+  (b* (((unless (and (consp rule)
+                     (consp (cdr rule))
+                     (consp (car rule))
+                     (consp (cdr (car rule)))))
+        nil)
+       ((list* (list pat-lhs ?pat-rhs) cond subst-pairs) rule)
+       ((unless (and (pseudo-termp pat-lhs)
+                     (pseudo-termp cond)
+                     (mbt (pseudo-termp lhs))))
+        nil)
+       ((mv ok alist) (acl2::simple-one-way-unify pat-lhs lhs nil))
+       ((unless ok) nil)
+       ((mv ev-err ok) (acl2::magic-ev cond alist state t t))
+       ((unless (and (not ev-err) ok)) nil))
+    (glcp-ctrex-subst-lhses alist subst-pairs)))
+
+(define glcp-ctrex-rules-dependencies ((lhs pseudo-termp) rules state)
+  :returns (new-lhses pseudo-term-listp)
+  (b* (((when (atom rules)) nil))
+    (append (glcp-ctrex-rule-dependencies lhs (car rules) state)
+            (glcp-ctrex-rules-dependencies lhs (cdr rules) state))))
+
+
+
+(defines glcp-ctrex-term-dependency-map
+  (define glcp-ctrex-term-dependency-map ((x pseudo-termp)
+                                          (reclimit natp)
+                                          (rule-table alistp)
+                                          (graph "mapping of terms to their dependencies")
+                                          (stack true-listp "for debugging")
+                                          state)
+    :well-founded-relation acl2::nat-list-<
+    :measure (list reclimit 0)
+    :returns (new-graph (implies (and (pseudo-term-list-listp graph)
+                                      (pseudo-termp x))
+                                 (pseudo-term-list-listp new-graph)))
+    (b* (((when (or (atom x) (eq (car x) 'quote))) graph)
+         ((when (hons-get x graph)) graph)
+         ((when (zp reclimit))
+          (cw "glcp-ctrex-term-dependency-map: recursion limit ran out -- loop
+               in rules?  Last 1000 stack entries: ~x0~%"
+              (take 1000 stack))
+          graph)
+         (fn (car x))
+         (rules (and (symbolp fn) ;; not lambda
+                     (cdr (assoc fn rule-table))))
+         (deps (glcp-ctrex-rules-dependencies x rules state))
+         (graph (hons-acons x deps graph))
+         (stack (cons x stack)))
+      (glcp-ctrex-termlist-dependency-map deps (1- reclimit) rule-table graph stack state)))
+  (define glcp-ctrex-termlist-dependency-map ((x pseudo-term-listp)
+                                              (reclimit natp)
+                                              (rule-table alistp)
+                                              (graph)
+                                              (stack true-listp)
+                                              state)
+    :measure (list reclimit (len x))
+    :returns (new-graph (implies (and (pseudo-term-list-listp graph)
+                                      (pseudo-term-listp x))
+                                 (pseudo-term-list-listp new-graph)))
+    (b* (((when (atom x)) graph)
+         (graph (glcp-ctrex-term-dependency-map (car x) reclimit rule-table graph stack state)))
+      (glcp-ctrex-termlist-dependency-map (cdr x) reclimit rule-table graph stack state))))
+
+
+
+
+(define glcp-ctrex-bvar-db-entry-to-term-dep-map ((n natp)
+                                                  ctrex-assign
+                                                  term-depgraph
+                                                  (rule-table alistp)
+                                                  bvar-db
+                                                  state)
+  :returns (mv (lhsterm pseudo-termp)
+               (new-term-depgraph (implies (pseudo-term-list-listp term-depgraph)
+                                           (pseudo-term-list-listp new-term-depgraph))))
+  :guard (and (<= (base-bvar bvar-db) n)
+              (< n (next-bvar bvar-db)))
+  (b* ((gobj (get-bvar->term n bvar-db))              ;; gobj to assign that value
+       (term (gobj->term-partial gobj ctrex-assign))  ;; term from that gobj with Boolean variable vals concretized
+       ((unless (pseudo-termp term))
+        (cw "Error: some object used in an IF produced an ill-formed term: ~x0~%" term)
+        (mv nil term-depgraph))
+       (lhsterm (hons-copy (magic-ev-partial term nil state t t)))   ;; evaluation of parts without variables
+       (term-depgraph
+        (glcp-ctrex-term-dependency-map lhsterm 100000 rule-table term-depgraph nil state)))
+    (mv lhsterm term-depgraph)))
+
+(define glcp-ctrex-bvar-db-to-term-dep-map ((n natp)
+                                            ctrex-assign
+                                            unparam-ctrex-assign
+                                            term-vals
+                                            term-depgraph
+                                            (rule-table alistp)
+                                            bvar-db
+                                            state)
+  :guard (and (<= (base-bvar bvar-db) n)
+              (<= n (next-bvar bvar-db)))
+  :measure (nfix (- (next-bvar bvar-db) (nfix n)))
+  :returns (mv (term-val-map (implies (alistp term-vals) (alistp term-val-map))
+                             "maps some terms from the term-map to Boolean values")
+               (new-term-depgraph (implies (pseudo-term-list-listp term-depgraph)
+                                           (pseudo-term-list-listp new-term-depgraph))))
+  (b* (((when (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
+                   :exec (eql (next-bvar bvar-db) n)))
+        (mv term-vals term-depgraph))
+       ((mv lhsterm term-depgraph)
+        (glcp-ctrex-bvar-db-entry-to-term-dep-map n ctrex-assign term-depgraph rule-table bvar-db state))
+       (bvar-val (bfr-lookup n unparam-ctrex-assign))
+       (term-vals (if lhsterm
+                      (cons (cons lhsterm bvar-val) term-vals)
+                    term-vals)))
+    (glcp-ctrex-bvar-db-to-term-dep-map
+     (1+ (lnfix n)) ctrex-assign unparam-ctrex-assign
+     term-vals term-depgraph rule-table bvar-db state)))
+
+
+(define glcp-ctrex-reverse-map-term-deps ((term pseudo-termp)
+                                          (deps pseudo-term-listp)
+                                          (term-revgraph pseudo-term-list-listp))
+  :returns (new-term-revgraph pseudo-term-list-listp :hyp :guard)
+  :prepwork ((local (defthm pseudo-term-listp-of-lookup
+                      (implies (pseudo-term-list-listp x)
+                               (pseudo-term-listp (cdr (hons-assoc-equal k x))))
+                      :hints(("Goal" :in-theory (enable hons-assoc-equal))))))
+  (b* (((when (atom deps)) term-revgraph)
+       (term-revgraph (hons-acons (car deps)
+                                  (cons term (cdr (hons-get (car deps) term-revgraph)))
+                                  term-revgraph)))
+    (glcp-ctrex-reverse-map-term-deps term (cdr deps) term-revgraph)))
+       
+
+(define glcp-ctrex-reverse-term-dep-map ((term-depgraph pseudo-term-list-listp)
+                                         (term-revgraph pseudo-term-list-listp))
+  :returns (new-term-revgraph pseudo-term-list-listp :hyp :guard)
+  :prepwork ((local (defthm pseudo-term-list-listp-of-fast-alist-fork
+                      (implies (and (pseudo-term-list-listp x)
+                                    (pseudo-term-list-listp y))
+                               (pseudo-term-list-listp (fast-alist-fork x y)))))
+             (local (defthm cdr-last-when-pseudo-term-list-listp
+                      (implies (pseudo-term-list-listp x)
+                               (equal (cdr (last x)) nil)))))
+  (b* (((when (atom term-depgraph))
+        (fast-alist-clean term-revgraph))
+       ((cons term deps) (car term-depgraph))
+       (term-revgraph (glcp-ctrex-reverse-map-term-deps term deps term-revgraph)))
+    (glcp-ctrex-reverse-term-dep-map (cdr term-depgraph) term-revgraph)))
+
+
+
+
+(defines glcp-ctrex-dep-value-eval
+  (define glcp-ctrex-dep-value-eval ((term pseudo-termp)
+                                     (x pseudo-termp)
+                                     (val)
+                                     (term-vals alistp)
+                                     state)
+    :measure (acl2-count term)
+    (b* (((when (quotep term)) (cadr term))
+         ((when (equal term x)) val)
+         (look (hons-get term term-vals))
+         ((when look) (cdr look))
+         ((when (atom term))
+          (cw "glcp-ctrex-dep-value-eval: not found: ~x0~%" term))
+         (args (glcp-ctrex-dep-value-eval-list (cdr term) x val term-vals state))
+         ((mv err val)
+          (ec-call (magicer-ev (cons (car term) (kwote-lst args)) nil 10000 state t t)))
+         ((when err)
+          (cw "error evaluating call of ~x0 on args ~x1: ~@2~%"
+              (car term) args (if (eq err t) "(no error message)" err))))
+      val))
+
+  (define glcp-ctrex-dep-value-eval-list ((terms pseudo-term-listp)
+                                          (x pseudo-termp)
+                                          val
+                                          (term-vals alistp)
+                                          state)
+    (b* (((when (atom terms)) nil))
+      (cons (glcp-ctrex-dep-value-eval (car terms) x val term-vals state)
+            (glcp-ctrex-dep-value-eval-list (cdr terms) x val term-vals state)))))
+         
+         
+          
+
+
+
+;; This derives the constant substitution based on the unifying term
+;; substitution.  The input alist is transformed by replacing quote terms with
+;; the values, x with val, and any term bound in term-vals with its value.
+(define glcp-ctrex-dep-value-subst ((subst-alist acl2::pseudo-term-substp)
+                                    (x pseudo-termp)
+                                    (val)
+                                    (term-vals alistp)
+                                    state)
+  :returns (const-subst-alist symbol-alistp)
+  :guard-hints (("goal" :in-theory (enable acl2::pseudo-term-substp)))
+  (b* (((when (atom subst-alist)) nil)
+       ((unless (and (consp (car subst-alist))
+                     (mbt (symbolp (caar subst-alist)))))
+        (glcp-ctrex-dep-value-subst (cdr subst-alist) x val term-vals state))
+       ((cons var term) (car subst-alist))
+       ;; (term (hons-copy term))
+       (value (glcp-ctrex-dep-value-eval term x val term-vals state)))
+    (cons (cons var value)
+          (glcp-ctrex-dep-value-subst (cdr subst-alist) x val term-vals state))))
+
+(define glcp-ctrex-dep-derive-term-value-from-rule-substs ((x pseudo-termp)
+                                                           (val)
+                                                           (term-vals alistp)
+                                                           (subst-alist symbol-alistp)
+                                                           (const-subst-alist symbol-alistp)
+                                                           (subst-pairs)
+                                                           (rule)
+                                                           state)
+  (b* (((when (atom subst-pairs))
+        val)
+       ((unless (and (consp (car subst-pairs))
+                     (consp (cdr (car subst-pairs)))
+                     (pseudo-termp (caar subst-pairs))
+                     (pseudo-termp (cadar subst-pairs))))
+        (cw "Programming error: bad pair ~x0 in rule ~x1~%" (car subst-pairs) rule)
+        (glcp-ctrex-dep-derive-term-value-from-rule-substs
+         x val term-vals subst-alist const-subst-alist (cdr subst-pairs) rule state))
+       ((list lhs rhs) (car subst-pairs))
+       (lhs (acl2::substitute-into-term lhs subst-alist))
+       ((unless (hons-equal lhs x))
+        (glcp-ctrex-dep-derive-term-value-from-rule-substs
+         x val term-vals subst-alist const-subst-alist (cdr subst-pairs) rule state))
+       ;; To actually get the appropriate value for the RHS is tricky: The
+       ;; substitution alist binds variables found in the RHS to terms likely
+       ;; including the value that is being assigned to the original lhs and
+       ;; also x itself.  The const-subst-alist gives (hopefully) the
+       ;; appropriate valuations for these variables, derived by modifying the
+       ;; subst-alist to replace x with val and any terms present in term-vals
+       ;; with their values as well.
+       ((mv ev-err rhs-val) (ec-call (magicer-ev rhs const-subst-alist 10000 state t t)))
+       ((when ev-err)
+        (cw "Error evaluating RHS ~x0 in rule ~x1 in counterexample generation: ~@2~%"
+            rhs rule (if (eq ev-err t) "(no error message)" ev-err))
+        val))
+    (glcp-ctrex-dep-derive-term-value-from-rule-substs
+     x rhs-val term-vals subst-alist const-subst-alist (cdr subst-pairs) rule state)))
+
+
+(define glcp-ctrex-dep-derive-term-value-from-rule ((x pseudo-termp)
+                                                    (val)
+                                                    (dep-pair pseudo-term-listp)
+                                                    (term-vals alistp)
+                                                    rule
+                                                    state)
+  (b* (((unless (and (consp rule)
+                     (consp (cdr rule))
+                     (consp (car rule))
+                     (consp (cdr (car rule)))))
+        (cw "programming error: bad rule ~x0~%" rule)
+        val)
+       ((list* pair cond subst-pairs) rule)
+       ((unless (and (pseudo-term-listp pair)
+                     (pseudo-termp cond)
+                     (mbt (pseudo-termp x))))
+        (cw "programming error: bad rule (not pseudo-termps) ~x0~%" rule)
+        val)
+       ((mv ok alist) (acl2::simple-one-way-unify-lst pair dep-pair nil))
+       ((unless ok) val)
+       ((mv ev-err ok) (acl2::magic-ev cond alist state t t))
+       ((unless (and (not ev-err) ok))
+        val)
+       (const-alist (glcp-ctrex-dep-value-subst alist x val term-vals state)))
+    (glcp-ctrex-dep-derive-term-value-from-rule-substs
+     x val term-vals alist const-alist subst-pairs rule state)))
+
+
+
+(define glcp-ctrex-dep-derive-term-value-from-rules ((x pseudo-termp)
+                                                     (val)
+                                                     (dep-pair pseudo-term-listp)
+                                                     (term-vals alistp)
+                                                     rules
+                                                     state)
+  :returns (new-val)
+  (b* (((when (atom rules)) val)
+       (val (glcp-ctrex-dep-derive-term-value-from-rule
+             x val dep-pair term-vals (car rules) state)))
+    (glcp-ctrex-dep-derive-term-value-from-rules
+     x val dep-pair term-vals (cdr rules) state)))
+
+
+
+(define glcp-ctrex-dep-derive-term-value ((x pseudo-termp)
+                                          (val)
+                                          (dep pseudo-termp)
+                                          (term-vals alistp)
+                                          (rule-table alistp)
+                                          state)
+  :returns (new-val)
+  (b* (((when (or (atom dep)
+                  (eq (car dep) 'quote)
+                  (not (symbolp (car dep)))))
+        (cw "Programming error: ~x0 supposedly depends on ~x1 which is not a function call term~%"
+            x dep)
+        val)
+       (rules (cdr (assoc (car dep) rule-table)))
+       (dep-val (cdr (hons-get dep term-vals))))
+    (glcp-ctrex-dep-derive-term-value-from-rules
+     x val (list dep (list 'quote dep-val)) term-vals rules state)))
+
+
+(define glcp-ctrex-deps-derive-term-value ((x pseudo-termp)
+                                           (val)
+                                           (deps pseudo-term-listp)
+                                           (term-vals alistp)
+                                           (rule-table alistp)
+                                           state)
+  :returns (new-val)
+  (b* (((when (atom deps)) val)
+       (val (glcp-ctrex-dep-derive-term-value x val (car deps) term-vals
+                                              rule-table state)))
+    (glcp-ctrex-deps-derive-term-value x val (cdr deps) term-vals rule-table state)))
+ 
+       
+
+
+(define glcp-ctrex-check-term-values-check ((x pseudo-termp)
+                                            (term-vals alistp)
+                                            state)
+  :returns (mv mismatch eval-val)
+  (b* (((when (or (atom x)
+                  (eq (car x) 'quote)))
+        ;; no problem
+        (mv nil nil))
+       (assigned-val (cdr (hons-get x term-vals)))
+       (arg-vals (glcp-ctrex-dep-value-eval-list (cdr x) nil nil term-vals state))
+       ((mv ev-err eval-val)
+        (ec-call (magicer-ev (cons (car x) (kwote-lst arg-vals))
+                             nil 10000 state t t)))
+       ((when ev-err)
+        (cw "Error evaluating ~x0 on args ~x1 in glcp-ctrex-term-values-check ~@2~%"
+            (car x) arg-vals (if (eq ev-err t) "(no error message)" ev-err))
+        (mv t :evaluation-error))
+       ((when (equal eval-val assigned-val)) (mv nil nil)))
+    (mv t eval-val)))
+
+(local (defthm len-equal-0
+         (equal (equal (len x) 0)
+                (atom x))))
+
+(local (defthm len-set-difference-decreases-weak
+         (<= (len (set-difference$ a (cons c b)))
+             (len (set-difference$ a b)))
+         :hints(("Goal" :in-theory (enable set-difference$)))
+         :rule-classes :linear))
+
+(local (defthm len-set-difference-decreases-strong
+         (implies (and (not (member c b))
+                       (member c a))
+                  (< (len (set-difference$ a (cons c b)))
+                     (len (set-difference$ a b))))
+         :hints(("Goal" :in-theory (enable set-difference$)))
+         :rule-classes :linear))
+
+(local (defthmd len-set-difference-does-not-decrease-lemma
+         (implies (or (member c b)
+                      (not (member c a)))
+                  (equal (len (set-difference$ a (cons c b)))
+                         (len (set-difference$ a b))))
+         :hints(("Goal" :in-theory (enable set-difference$)))))
+
+(local (defthm len-set-difference-does-not-decrease-rw
+         (iff (equal (len (set-difference$ a (cons c b)))
+                     (len (set-difference$ a b)))
+              (or (member c b)
+                  (not (member c a))))
+         :hints(("Goal" :in-theory (enable set-difference$
+                                           len-set-difference-does-not-decrease-lemma)))))
+
+(local (defthm member-alist-keys
+         (iff (member k (alist-keys x))
+              (hons-assoc-equal k x))
+         :hints(("Goal" :in-theory (enable alist-keys)))))
+         
+(local (defthm pseudo-term-listp-of-lookup-in-pseudo-term-list-listp
+         (implies (pseudo-term-list-listp x)
+                  (pseudo-term-listp (cdr (hons-assoc-equal k x))))
+         :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
+
+(local (defthm len-set-difference-of-superset
+         (implies (subsetp a b)
+                  (<= (len (set-difference$ x b))
+                      (len (set-difference$ x a))))
+         :hints(("Goal" :in-theory (enable set-difference$)))
+         :rule-classes :linear))
+
+
+(defines glcp-ctrex-check-term-values
+  (define glcp-ctrex-check-term-values ((x pseudo-termp)
+                                        (term-revgraph pseudo-term-list-listp)
+                                        (seen)
+                                        (stack)
+                                        (term-vals alistp)
+                                        state)
+    :measure (list (len (set-difference$ (alist-keys term-revgraph)
+                                         (alist-keys seen)))
+                   0 1)
+    :well-founded-relation acl2::nat-list-<
+    :verify-guards nil
+    :returns (new-seen)
+    :hints(("Goal" :in-theory (enable alist-keys)))
+    (b* (((when (hons-get x seen))
+          seen)
+         (val-look (hons-get x term-vals))
+         ((unless val-look)
+          (cw "glcp-ctrex-check-term-values confusion: ~x0 hasn't been assigned yet~%" x)
+          seen)
+         (seen (hons-acons x nil seen))
+         ((mv mismatch eval-val) (glcp-ctrex-check-term-values-check x term-vals state))
+         ((unless mismatch)
+          ;; The evaluation was the same as the assignment, so we won't check
+          ;; dependencies.
+          seen)
+         (deps (cdr (hons-get x term-revgraph)))
+         ((unless deps)
+          ;; Terminal.  If there is a mismatch here, show the trace.
+          (cw "GLCP ctrex check: term ~x0 mismatched its assigned value ~x1; actual value ~x2.
+               Assignment stack: ~x3.  Assignment that caused this mismatch is at the bottom
+               of the stack."
+              x (cdr val-look) eval-val stack)
+          seen)
+         (stack (cons (list x (cdr val-look) eval-val) stack)))
+      (glcp-ctrex-check-termlist-values deps term-revgraph seen stack term-vals state)))
+  (define glcp-ctrex-check-termlist-values ((x pseudo-term-listp)
+                                            (term-revgraph pseudo-term-list-listp)
+                                            (seen)
+                                            (stack)
+                                            (term-vals alistp)
+                                            state)
+    :measure (list (len (set-difference$ (alist-keys term-revgraph)
+                                         (alist-keys seen)))
+                   (len x) 0)
+    :returns (new-seen)
+    (b* (((when (atom x)) seen)
+         (seen
+          (b* ((new-seen
+                (glcp-ctrex-check-term-values
+                 (car x) term-revgraph seen stack term-vals state)))
+            (if (mbt (<= (len (set-difference$ (alist-keys term-revgraph)
+                                               (alist-keys new-seen)))
+                         (len (set-difference$ (alist-keys term-revgraph)
+                                               (alist-keys seen)))))
+                new-seen
+              seen))))
+      (glcp-ctrex-check-termlist-values (cdr x) term-revgraph seen stack term-vals state)))
+  ///
+  (std::defret-mutual glcp-ctrex-check-term-values-seen-increases-lemma
+    (std::defret glcp-ctrex-check-term-values-seen-increases-lemma
+      (subsetp (alist-keys seen) (alist-keys new-seen))
+      :hints ('(:expand (<call>)
+                :in-theory (enable alist-keys)))
+      :fn glcp-ctrex-check-term-values)
+    (std::defret glcp-ctrex-check-termlist-values-seen-increases-lemma
+      (subsetp (alist-keys seen) (alist-keys new-seen))
+      :hints ('(:expand (<call>)))
+      :fn glcp-ctrex-check-termlist-values))
+
+  (std::defret glcp-ctrex-check-term-values-seen-increases
+    (<= (len (set-difference$ (alist-keys term-revgraph)
+                              (alist-keys new-seen)))
+        (len (set-difference$ (alist-keys term-revgraph)
+                              (alist-keys seen))))
+    :hints (("Goal" :use glcp-ctrex-check-term-values-seen-increases-lemma
+             :in-theory (disable glcp-ctrex-check-term-values-seen-increases-lemma)))
+    :fn glcp-ctrex-check-term-values
+    :rule-classes :linear)
+  
+  (verify-guards glcp-ctrex-check-term-values))
+
+(defines glcp-ctrex-resolve-term-values
+  (define glcp-ctrex-resolve-term-values ((x pseudo-termp)
+                                          (term-revgraph pseudo-term-list-listp)
+                                          (seen)
+                                          (term-vals alistp)
+                                          (rule-table alistp)
+                                          state)
+    :measure (list (len (set-difference$ (alist-keys term-revgraph)
+                                         (alist-keys seen)))
+                   0 1)
+    :well-founded-relation acl2::nat-list-<
+    :hints(("Goal" :in-theory (enable alist-keys)
+            :do-not-induct t))
+    :verify-guards nil
+    :returns (mv (new-seen)
+                 (new-term-vals (implies (alistp term-vals) (alistp new-term-vals))))
+    (b* (((when (hons-get x seen))
+          (mv seen term-vals))
+         (deps (cdr (hons-get x term-revgraph)))
+         (seen (hons-acons x nil seen))
+         ((mv seen term-vals)
+          (glcp-ctrex-resolve-termlist-values deps term-revgraph seen term-vals rule-table state))
+         (value-look (hons-get x term-vals))
+         (new-val (glcp-ctrex-deps-derive-term-value
+                   x
+                   (cdr value-look)
+                   deps term-vals rule-table state))
+         (- (and (consp value-look)
+                 (not (equal (cdr value-look) new-val))
+                 (cw "Warning: ~x0 was previously assigned value ~x1 but a dependency set it to ~x2 instead.~%"
+                     x (cdr value-look) new-val)))
+         (term-vals (if value-look term-vals (hons-acons x new-val term-vals))))
+      ;; Check the assignment to see if it ruins anything...
+      (fast-alist-free (glcp-ctrex-check-termlist-values deps
+                                                         term-revgraph nil
+                                                         (list (list x new-val))
+                                                         term-vals state))
+      (mv seen term-vals)))
+  (define glcp-ctrex-resolve-termlist-values ((x pseudo-term-listp)
+                                              (term-revgraph pseudo-term-list-listp)
+                                              (seen)
+                                              (term-vals alistp)
+                                              (rule-table alistp)
+                                              state)
+    :measure (list (len (set-difference$ (alist-keys term-revgraph)
+                                         (alist-keys seen)))
+                   (len x) 0)
+    :returns (mv (new-seen)
+                 (new-term-vals (implies (alistp term-vals) (alistp new-term-vals))))
+    (b* (((when (atom x)) (mv seen term-vals))
+         ((mv seen term-vals)
+          (b* (((mv new-seen new-term-vals)
+                (glcp-ctrex-resolve-term-values
+                 (car x) term-revgraph seen term-vals rule-table state)))
+            (if (mbt (<= (len (set-difference$ (alist-keys term-revgraph)
+                                               (alist-keys new-seen)))
+                         (len (set-difference$ (alist-keys term-revgraph)
+                                               (alist-keys seen)))))
+                (mv new-seen new-term-vals)
+              (mv seen term-vals)))))
+      (glcp-ctrex-resolve-termlist-values (cdr x) term-revgraph seen term-vals rule-table state)))
+  ///
+  
+  (std::defret-mutual glcp-ctrex-resolve-term-values-seen-increases-lemma
+    (std::defret glcp-ctrex-resolve-term-values-seen-increases-lemma
+      (subsetp (alist-keys seen) (alist-keys new-seen))
+      :hints ('(:expand (<call>)
+                :in-theory (enable alist-keys)))
+      :fn glcp-ctrex-resolve-term-values)
+    (std::defret glcp-ctrex-resolve-termlist-values-seen-increases-lemma
+      (subsetp (alist-keys seen) (alist-keys new-seen))
+      :hints ('(:expand (<call>)))
+      :fn glcp-ctrex-resolve-termlist-values))
+
+  (std::defret glcp-ctrex-resolve-term-values-seen-increases
+    (<= (len (set-difference$ (alist-keys term-revgraph)
+                              (alist-keys new-seen)))
+        (len (set-difference$ (alist-keys term-revgraph)
+                              (alist-keys seen))))
+    :hints (("Goal" :use glcp-ctrex-resolve-term-values-seen-increases-lemma
+             :in-theory (disable glcp-ctrex-resolve-term-values-seen-increases-lemma)))
+    :fn glcp-ctrex-resolve-term-values
+    :rule-classes :linear)
+
+  (verify-guards glcp-ctrex-resolve-term-values))
+
+
+
+(define glcp-ctrex-collect-bad-terminal-terms (term-depgraph
+                                               bad-terms-acc)
+  (b* (((when (atom term-depgraph)) bad-terms-acc)
+       (bad-terms-acc
+        (if (or (atom (car term-depgraph))
+                (atom (caar term-depgraph))
+                (consp (cdar term-depgraph)))
+            bad-terms-acc
+          (cons (caar term-depgraph) bad-terms-acc))))
+    (glcp-ctrex-collect-bad-terminal-terms (cdr term-depgraph) bad-terms-acc)))
+
+(define glcp-ctrex-collect-var-alist (term-vals var-alist-acc)
+  (b* (((when (atom term-vals)) var-alist-acc)
+       (var-alist-acc
+        (if (or (atom (car term-vals))
+                (not (symbolp (caar term-vals))))
+            var-alist-acc
+          (cons (car term-vals) var-alist-acc))))
+    (glcp-ctrex-collect-var-alist (cdr term-vals) var-alist-acc)))
+
+(define glcp-ctrex-revmap-variable-keys ((x pseudo-term-list-listp)
+                                         (acc symbol-listp))
+  :returns (res symbol-listp :hyp (symbol-listp acc))
+  (if (atom x)
+      acc
+    (glcp-ctrex-revmap-variable-keys
+     (cdr x)
+     (if (and (consp (car x))
+              (symbolp (caar x)))
+         (cons (caar x) acc)
+       acc))))
+
+
+(define glcp-ctrex-process-bvar-db-depgraph ((ctrex-assign)
+                                             (unparam-ctrex-assign)
+                                             bvar-db
+                                             state)
+  :prepwork ((local (defthm pseudo-term-listp-of-hons-union1
+                      (implies (and (pseudo-term-listp acc)
+                                    (pseudo-term-listp x))
+                               (pseudo-term-listp (acl2::hons-union1 x al acc)))))
+             (local (defthm pseudo-term-listp-of-hons-union2
+                      (implies (and (pseudo-term-listp acc)
+                                    (pseudo-term-listp x))
+                               (pseudo-term-listp (acl2::hons-union2 x y acc)))))
+             (local (defthm pseudo-term-listp-of-hons-union
+                      (implies (and (pseudo-term-listp x)
+                                    (pseudo-term-listp y))
+                               (pseudo-term-listp (acl2::hons-union x y)))
+                      :hints(("Goal" :in-theory (enable acl2::hons-union)))))
+
+             (local (defthm pseudo-term-listp-alist-keys-of-pseudo-term-list-listp
+                      (implies (pseudo-term-list-listp x)
+                               (pseudo-term-listp (alist-keys x)))
+                      :hints(("Goal" :in-theory (enable alist-keys)))))
+             (local (in-theory (enable get-global)))
+             (local (defthm pseudo-term-listp-when-symbol-listp
+                      (implies (symbol-listp x)
+                               (pseudo-term-listp x)))))
+  (b* ((rule-table (table-alist 'glcp-ctrex-rewrite (w state)))
+       (rule-table (if (alistp rule-table)
+                       rule-table
+                     (pairlis$ (alist-keys rule-table)
+                               (alist-vals rule-table))))
+       ((mv term-vals      ;; maps top-level bvar-db terms to values
+            term-depgraph) ;; maps terms to other terms whose value they induce via rules
+        (glcp-ctrex-bvar-db-to-term-dep-map
+         (base-bvar bvar-db) ctrex-assign unparam-ctrex-assign
+         nil nil rule-table bvar-db state))
+       (term-vals (make-fast-alist term-vals))
+       ;; (- (cw "term-vals first 1000: ~x0~%" (take 1000 term-vals)))
+       (term-revgraph ;; maps terms to other terms that might affect their value
+        (glcp-ctrex-reverse-term-dep-map term-depgraph nil))
+       (- (cw "stats:~%depgraph length: ~x0~%revgraph length: ~x1~%bvar-db entries: ~x2~%"
+              (len term-depgraph) (len term-revgraph) (len term-vals)))
+       ((mv seen term-vals)
+        (glcp-ctrex-resolve-termlist-values (glcp-ctrex-revmap-variable-keys term-revgraph nil)
+                                            term-revgraph
+                                            nil ;; seen
+                                            term-vals
+                                            rule-table
+                                            state))
+       (- (cw "nodes traversed: ~x0~%updates: ~x1~%" (len seen) (len term-vals)))
+       (- (fast-alist-free seen))
+       (term-vals (fast-alist-clean term-vals))
+       (- (cw "number of terms assigned values: ~x0~%" (len term-vals)))
+       (var-alist (glcp-ctrex-collect-var-alist term-vals nil))
+       ;; (bad-terminals (glcp-ctrex-collect-bad-terminal-terms term-depgraph nil))
+       ;; (- (and bad-terminals
+       ;;         (cw "The following non-variable terms had no rules allowing them
+       ;;               to induce values on other terms -- so they are goo ~
+       ;;               candidates for additional counterexample rewrite rules: ~
+       ;;               ~x0~%"
+       ;;             bad-terminals)))
+       )
+    (fast-alist-free term-vals)
+    (make-fast-alist var-alist)))
+
+
+
+
+
+
+
+
+
+
+;; Legacy version of glcp-ctrex-process-bvar-db
+
+
+
+
 (defun glcp-ctrex-subst-pairs (subst pairs)
   (if (atom pairs)
       nil
@@ -759,12 +1528,6 @@
         (glcp-ctrex-update-assigns (cdr pairs) var-alist state)))
     (glcp-ctrex-update-assigns (cdr pairs) (hons-acons lhs rhs-val var-alist) state)))
 
-#||
-
-(trace$ #!gl (glcp-ctrex-update-assigns :entry (list 'glcp-ctrex-update-assigns (car pairs) var-alist)))
-(trace$ #!gl (magicer-ev))
-||#
-
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 ;; Iterates up the bvar-db list chronologically, given a counterexample
 ;; assignment (a bfr environment).  Builds up a variable alist by applying
@@ -796,6 +1559,20 @@
 ;;              gregs3 gregs3-new pair assign-pairs gobj))
 ;;     var-alist))
 
+
+(defun glcp-ctrex-set-one-var (n ctrex-assign unparam-ctrex-assign
+                                 rule-table var-alist bvar-db state)
+  (declare (xargs :stobjs (state bvar-db)
+                  :guard (natp n)
+                  :verify-guards nil))
+  (b* ((bvar-val (bfr-lookup n unparam-ctrex-assign)) ;; value of Boolean variable from ctrex
+       (gobj (get-bvar->term n bvar-db))              ;; gobj to assign that value
+       (term (gobj->term-partial gobj ctrex-assign))  ;; term from that gobj with Boolean variable vals concretized
+       (lhs1 (magic-ev-partial term nil state t t))   ;; evaluation of parts without variables
+       (pair (list lhs1 (kwote bvar-val)))
+       (assign-pairs (glcp-ctrex-rewrite 10000 pair rule-table state)))
+    (glcp-ctrex-update-assigns assign-pairs var-alist state)))
+
 ;; For each boolean var -> term assigned in the bvar db, rewrite the term<-val
 ;; assignment to get some number of gvar<-val assignments, and collect them.
 (defun glcp-ctrex-set-vars1 (n ctrex-assign unparam-ctrex-assign
@@ -810,32 +1587,29 @@
        (n (1- n))
        (var-alist (glcp-ctrex-set-vars1
                    n ctrex-assign unparam-ctrex-assign
-                   rule-table var-alist bvar-db state))
-       (bvar-val (bfr-lookup n unparam-ctrex-assign))
-       (gobj (get-bvar->term n bvar-db))
-       (term (gobj->term-partial gobj ctrex-assign))
-       (lhs1 (magic-ev-partial term nil state t t))
-       (pair (list lhs1 (kwote bvar-val)))
-       (assign-pairs (glcp-ctrex-rewrite 10000 pair rule-table state)))
-    (glcp-ctrex-update-assigns assign-pairs var-alist state)))
+                   rule-table var-alist bvar-db state)))
+    (glcp-ctrex-set-one-var n ctrex-assign unparam-ctrex-assign
+                            rule-table var-alist bvar-db state)))
 
 ;; Tries to assign values to G variables based on their assignments to Boolean
 ;; values in the bvar-db.  Makes two passes, since the values assigned to
 ;; variables may affect other variables.  Could do more, but two seems like a
 ;; sensible choice.  The initial var-alist is usually empty but in special
 ;; cases may contain pre-set gvars.
-(defun glcp-ctrex-set-vars (ctrex-assign unparam-assign var-alist bvar-db state)
+(defun glcp-ctrex-process-bvar-db-legacy (ctrex-assign unparam-assign bvar-db state)
   (declare (xargs :stobjs (bvar-db state)
                   :verify-guards nil))
   (b* ((rule-table (table-alist 'glcp-ctrex-rewrite (w state)))
        (var-alist (glcp-ctrex-set-vars1 (next-bvar bvar-db)
                                         ctrex-assign
                                         unparam-assign
-                                        rule-table var-alist bvar-db state)))
+                                        rule-table nil bvar-db state)))
     (glcp-ctrex-set-vars1 (next-bvar bvar-db)
                           ctrex-assign
                           unparam-assign
                           rule-table var-alist bvar-db state)))
+
+
 
 (defun glcp-apply-ctrex-transform-to-var-alist (var-alist transform state)
   (declare (xargs :stobjs (state) :guard t))
@@ -845,30 +1619,64 @@
                        transform (if (eq err t) "(t)" err) term))))
     (if err var-alist val)))
 
+
+
+
+
+(define glcp-ctrex-process-bvar-db ((ctrex-assign)
+                                    (unparam-ctrex-assign)
+                                    (config glcp-config-p)
+                                    bvar-db
+                                    state)
+  (b* (((glcp-config config)))
+    (if (eq config.term-level-counterexample-scheme :depgraph)
+        (glcp-ctrex-process-bvar-db-depgraph
+         ctrex-assign unparam-ctrex-assign bvar-db state)
+      (ec-call (glcp-ctrex-process-bvar-db-legacy
+                ctrex-assign unparam-ctrex-assign bvar-db state)))))
+                                     
+
+
 (defun glcp-ctrex-bits-to-objs (assign gobj-alist bvar-db config state)
   (declare (xargs :stobjs (bvar-db state)
-                  :guard (glcp-bit-ctrex-p assign)
+                  :guard (and (glcp-bit-ctrex-p assign)
+                              (glcp-config-p config))
                   :verify-guards nil))
   (b* (((glcp-bit-ctrex assign) assign)
        ((glcp-config config))
        (unparam-ctrex-assign (bfr-unparam-env config.param-bfr assign.env))
-       (var-alist (bfr-case :bdd (glcp-ctrex-set-vars assign.env unparam-ctrex-assign
-                                                      assign.gvar-alist
-                                                      bvar-db state)
-                            :aig (acl2::with-fast-alists
-                                  (assign.env unparam-ctrex-assign)
-                                   ;; same as above
-                                   (glcp-ctrex-set-vars assign.env unparam-ctrex-assign
-                                                        assign.gvar-alist
-                                                        bvar-db state))))
+       (var-alist (bfr-case :bdd (glcp-ctrex-process-bvar-db assign.env
+                                                             unparam-ctrex-assign
+                                                             config
+                                                             bvar-db
+                                                             state)
+                    :aig (acl2::with-fast-alists
+                           (assign.env unparam-ctrex-assign)
+                           ;; same as above
+                           (glcp-ctrex-process-bvar-db assign.env
+                                                       unparam-ctrex-assign
+                                                       config
+                                                       bvar-db
+                                                       state))))
        (transform-var-alist (glcp-apply-ctrex-transform-to-var-alist var-alist config.ctrex-transform state))
-       (env (cons assign.env transform-var-alist))
+       (env (cons assign.env (make-fast-alist transform-var-alist)))
        ((mv err alist) (magic-geval gobj-alist env state)))
     (make-glcp-obj-ctrex
      :descrip assign.descrip
      :genv env
      :obj-alist (if err :unknown alist)
      :dont-care-spec (inspec-show-assign-spec config.shape-spec-alist assign.dont-care-spec))))
+
+
+
+
+
+(defthm glcp-obj-ctrex-p-of-glcp-ctrex-bits-to-objs
+  (glcp-obj-ctrex-p (glcp-ctrex-bits-to-objs assign gobj-alist bvar-db config state))
+  :hints(("goal" :in-theory (disable glcp-ctrex-process-bvar-db
+                                     glcp-apply-ctrex-transform-to-var-alist
+                                     magic-geval
+                                     inspec-show-assign-spec))))
 
 
 

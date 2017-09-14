@@ -858,7 +858,7 @@ See :DOC GL::COVERAGE-PROOFS.
     :test-side-goals))
 
 (defconst *gl-thm-quoted-args*
-  '(:hyp :concl :param-hyp))
+  '(:hyp :concl :param-hyp :term-level-counterexample-scheme))
 
 (defun gl-hint-make-config-var-inner-bindings (vars)
   (if (atom vars)

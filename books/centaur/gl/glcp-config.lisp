@@ -45,6 +45,7 @@
    (overrides) ;;  acl2::interp-defs-alistp but might be too expensive to check
      ;;  the guards in clause processors
    (param-bfr :default t)
+   (term-level-counterexample-scheme symbolp :default :depgraph)
    top-level-term
    (shape-spec-alist shape-spec-bindingsp)
    run-before-cases
