@@ -80,6 +80,8 @@
    truncate
    rem
    acl2::bool-fix$inline
+   acl2::bool->bit$inline
+   bool->sign
    hons-assoc-equal
 
    ;; these are from the constant *expandable-boot-strap-non-rec-fns*.

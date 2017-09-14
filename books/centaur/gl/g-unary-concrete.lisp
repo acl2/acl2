@@ -104,6 +104,38 @@
 
 (logic)
 
+(local (defthm pbfr-list-depends-on-of-cons
+         (implies (and (not (pbfr-depends-on k p x1))
+                       (not (pbfr-list-depends-on k p x2)))
+                  (not (pbfr-list-depends-on k p (cons x1 x2))))
+         :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
+
+(local (defthm bfr-list->s-of-cons
+         (implies (consp x2)
+                  (equal (bfr-list->s (cons x1 x2) env)
+                         (logcons (bool->bit (bfr-eval x1 env))
+                                  (bfr-list->s x2 env))))
+         :hints(("Goal" :expand ((bfr-list->s (cons x1 x2) env))
+                 :in-theory (enable scdr s-endp)))))
+
+(local (defthm bfr-list->s-of-singleton
+         (equal (bfr-list->s (list x1) env)
+                (bool->sign (bfr-eval x1 env)))
+         :hints(("Goal" :expand ((bfr-list->s (cons x1 x2) env))
+                 :in-theory (enable scdr s-endp)))))
+
+(def-g-unary-concrete acl2::bool->bit$inline
+  :number-case (gret 1)
+  :boolean-case (gret (mk-g-number (list (g-boolean->bool x) nil)))
+  :cons-case (gret 1)
+  :hints((and stable-under-simplificationp
+              '(:in-theory (enable bool->bit)))))
+
+(def-g-unary-concrete bool->sign
+  :number-case (gret -1)
+  :boolean-case (gret (mk-g-number (list (g-boolean->bool x))))
+  :cons-case (gret -1))
+
 (def-g-unary-concrete symbol-name
   :number-case (gret "")
   :boolean-case (g-if (gret x) (gret "T") (gret "NIL"))
