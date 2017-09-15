@@ -42,6 +42,9 @@
 (include-book "centaur/bitops/portcullis" :dir :system)
 (include-book "build/portcullis" :dir :system)
 (include-book "rtl/rel11/portcullis" :dir :system)
+(include-book "kestrel/apt/portcullis" :dir :system)
+(include-book "kestrel/soft/portcullis" :dir :system)
+(include-book "kestrel/abnf/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -216,13 +219,6 @@
  defined by @(tsee mutual-recursion).  Thanks to Eric Smith for a helpful bug
  report.</p>
 
- <p>The macro @(tsee must-fail) has a new keyword option, @(':expected'), to
- indicate the kind of error that is expected.  New macros @(tsee
- ensure-soft-error), @(tsee ensure-hard-error), and @(tsee ensure-error)
- provide nice interfaces to @('must-fail') with the legal values of this new
- option.  See @(see must-fail).  Thanks to Eric Smith for discussions leading
- to these changes.</p>
-
  <p>Added utility @(tsee er-soft+) for producing soft errors with @(':')@(tsee
  logic) mode code, returning a specified @(see error-triple).  The new utility
  @(tsee er-soft-logic) is similar but a bit simpler, for use when the only
@@ -277,6 +273,9 @@
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
  about world-related functions</see> and <see topic='@(url
  theorems-about-lists)'>theorems about lists</see> have been added.</p>
+
+ <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs
+ macroexpansion when all macros to be expanded are in logic mode.</p>
 
  <h4>The apply books</h4>
 
@@ -350,6 +349,24 @@
  corresponding terms in the enclosed term.  Like Common Lisp's
  @('symbol-macrolet') but much less smart.</p>
 
+ <p>Fixed @('misc/profiling.lisp') for newer distributions of CCL (Clozure
+ Common Lisp), both from SVN and from GitHub.</p>
+
+ <p>The macro @(tsee defconsts) now provides a better error message when given
+ a symbol that does not have the syntax of a constant.</p>
+
+ <p>The macro @(tsee must-fail) has a new keyword option, @(':expected'), to
+ indicate the kind of error that is expected.  New macros @(tsee
+ ensure-soft-error), @(tsee ensure-hard-error), and @(tsee ensure-error)
+ provide nice interfaces to @('must-fail') with the legal values of this new
+ option.  See @(see must-fail).  Thanks to Eric Smith for discussions leading
+ to these changes.</p>
+
+ <p>Modified @(tsee removable-runes) to allow a multiplier greater than 1.
+ Modified output accordingly.  Also, the multiplier @('m') now provides
+ non-strict bounds @('(floor (* m steps) 1)') rather than the previous
+ strict bound @('(1- (ceiling (* m steps) 1))').</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
@@ -394,17 +411,6 @@
 
  <p>Added file @('system/to-do.txt') to list some potential developer
  tasks.</p>
-
- <p>Fixed @('misc/profiling.lisp') for newer distributions of CCL (Clozure
- Common Lisp), both from SVN and from GitHub.</p>
-
- <p>The macro @(tsee defconsts) now provides a better error message when given
- a symbol that does not have the syntax of a constant.</p>
-
- <p>Modified @(tsee removable-runes) to allow a multiplier greater than 1.
- Modified output accordingly.  Also, the multiplier @('m') now provides
- non-strict bounds @('(floor (* m steps) 1)') rather than the previous
- strict bound @('(1- (ceiling (* m steps) 1))').</p>
 
  ")
 

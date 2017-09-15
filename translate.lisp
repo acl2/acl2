@@ -4076,6 +4076,13 @@
 ; This function has the same effect as warning1, except that printing is in a
 ; wormhole and hence doesn't modify state.
 
+  (declare (xargs :guard (and (stringp summary)
+                              (standard-string-p summary)
+                              (alistp alist)
+                              (plist-worldp wrld)
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table wrld))
+                              (true-listp state-vars))))
   (warning1-form t))
 
 (defmacro warning$-cw1 (ctx summary str+ &rest fmt-args)
@@ -4117,7 +4124,12 @@
      (warning$-cw1 ,ctx nil ,@args)))
 
 (defun chk-length-and-keys (actuals form wrld)
-  (cond ((null actuals)
+  (declare (xargs :guard (and (true-listp actuals)
+                              (true-listp form)
+                              (symbolp (car form))
+                              (plist-worldp wrld))
+                  :measure (acl2-count actuals)))
+  (cond ((endp actuals)
          (value-cmp nil))
         ((null (cdr actuals))
          (er-cmp *macro-expansion-ctx*
@@ -4151,6 +4163,10 @@
   `(local (set-duplicate-keys-action! ,key ,action)))
 
 (defun duplicate-keys-action (key wrld)
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (symbol-alistp (table-alist 'duplicate-keys-action-table
+                                                   wrld)))))
   (let ((pair (assoc-eq key (table-alist 'duplicate-keys-action-table wrld))))
     (cond (pair (cdr pair))
           (t ; default
@@ -4160,12 +4176,182 @@
 
            :error))))
 
+;  We permit macros under the following constraints on the args.
+
+;  1.  No destructuring.  (Maybe some day.)
+;  2.  No &aux.           (LET* is better.)
+;  3.  Initforms must be quotes.  (Too hard for us to do evaluation right.)
+;  4.  No &environment.   (Just not clearly enough specified in CLTL.)
+;  5.  No nonstandard lambda-keywords.  (Of course.)
+;  6.  No multiple uses of :allow-other-keys.  (Implementations differ.)
+
+;  There are three nests of functions that have the same view of
+;  the subset of macro args that we support:  macro-vars...,
+;  chk-macro-arglist..., and bind-macro-args...  Of course, it is
+;  necessary to keep them all with the same view of the subset.
+
+; The following code is a ``pseudo'' translation of the functions between
+; chk-legal-init-msg and chk-macro-arglist.  Those checkers cause errors when
+; their requirements are violated and these functions are just predicates.
+; However, they are ``pseudo'' translations because they do not check, for
+; example, that alleged variable symbols really are legal variable symbols.
+; They are used in the guards for the functions leading up to and including
+; macro-vars, which recovers all the variable symbols used in the formals list
+; of an acceptable defmacro.
+
+(defun legal-initp (x)
+  (and (consp x)
+       (true-listp x)
+       (equal 2 (length x))
+       (eq (car x) 'quote)))
+
+; The following function is just the negation of chk-macro-arglist-keysp, when
+; applied to a true-listp args.  The reason it must be applied to a true-listp
+; is that macro-arglist-keysp terminates on an endp test and its counterpart
+; checker terminates on a null test and may recur one additional time on
+; non-true-lists.
+
+(defun macro-arglist-keysp (args keys-passed)
+  (declare (xargs :guard (and (true-listp args)
+                              (true-listp keys-passed))))
+  (cond ((endp args) t)
+        ((eq (car args) '&allow-other-keys)
+         (null (cdr args)))
+        ((atom (car args))
+         (cond ((symbolp (car args))
+                (let ((new (intern (symbol-name (car args)) "KEYWORD")))
+                  (and (not (member new keys-passed))
+                       (macro-arglist-keysp (cdr args)
+                                            (cons new keys-passed)))))
+               (t nil)))
+        ((or (not (true-listp (car args)))
+             (> (length (car args)) 3))
+         nil)
+        (t (and (or (symbolp (caar args))
+                    (and (true-listp (caar args))
+                         (equal (length (caar args)) 2)
+                         (keywordp (car (caar args)))
+                         (symbolp (cadr (caar args)))))
+                (implies (> (length (car args)) 1)
+                         (legal-initp (cadr (car args))))
+                (implies (> (length (car args)) 2)
+                         (symbolp (caddr (car args))))
+                (let ((new (cond ((symbolp (caar args))
+                                  (intern (symbol-name (caar args))
+                                          "KEYWORD"))
+                                 (t (car (caar args))))))
+                  (and (not (member new keys-passed))
+                       (macro-arglist-keysp (cdr args)
+                                            (cons new keys-passed))))))))
+
+(defun macro-arglist-after-restp (args)
+  (declare (xargs :guard (true-listp args)))
+  (cond ((endp args) t)
+        ((eq (car args) '&key)
+         (macro-arglist-keysp (cdr args) nil))
+        (t nil)))
+
+(defun macro-arglist-optionalp (args)
+  (declare (xargs :guard (true-listp args)))
+  (cond ((endp args) t)
+        ((member (car args) '(&rest &body))
+         (cond ((and (cdr args)
+                     (symbolp (cadr args))
+                     (not (lambda-keywordp (cadr args))))
+                (macro-arglist-after-restp (cddr args)))
+               (t nil)))
+        ((eq (car args) '&key)
+         (macro-arglist-keysp (cdr args) nil))
+        ((symbolp (car args))
+         (macro-arglist-optionalp (cdr args)))
+        ((or (atom (car args))
+             (not (true-listp (car args)))
+             (not (< (length (car args)) 4)))
+         nil)
+        ((not (symbolp (car (car args))))
+         nil)
+        ((and (> (length (car args)) 1)
+              (not (legal-initp (cadr (car args)))))
+         nil)
+        ((and (equal (length (car args)) 3)
+              (not (symbolp (caddr (car args)))))
+         nil)
+        (t (macro-arglist-optionalp (cdr args)))))
+
+(defun macro-arglist1p (args)
+  (declare (xargs :guard (true-listp args)))
+  (cond ((endp args) t)
+        ((not (symbolp (car args)))
+         nil)
+        ((member (car args) '(&rest &body))
+         (cond ((and (cdr args)
+                     (symbolp (cadr args))
+                     (not (lambda-keywordp (cadr args))))
+                (macro-arglist-after-restp (cddr args)))
+               (t nil)))
+        ((eq (car args) '&optional)
+         (macro-arglist-optionalp (cdr args)))
+        ((eq (car args) '&key)
+         (macro-arglist-keysp (cdr args) nil))
+        (t (macro-arglist1p (cdr args)))))
+
+(defun subsequencep (lst1 lst2)
+
+  (declare (xargs :guard (and (eqlable-listp lst1)
+                              (true-listp lst2))))
+
+; We return t iff lst1 is a subsequence of lst2, in the sense that
+; '(a c e) is a subsequence of '(a b c d e f) but '(a c b) is not.
+
+  (cond ((endp lst1) t)
+        (t (let ((tl (member (car lst1) lst2)))
+             (cond ((endp tl) nil)
+                   (t (subsequencep (cdr lst1) (cdr tl))))))))
+
+(defun collect-lambda-keywordps (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((lambda-keywordp (car lst))
+         (cons (car lst) (collect-lambda-keywordps (cdr lst))))
+        (t (collect-lambda-keywordps (cdr lst)))))
+
+(defun macro-args-structurep (args)
+  (declare (xargs :guard t))
+  (and (true-listp args)
+       (let ((lambda-keywords (collect-lambda-keywordps args)))
+         (and
+          (or (subsequencep lambda-keywords
+                            '(&whole &optional &rest &key &allow-other-keys))
+              (subsequencep lambda-keywords
+                            '(&whole &optional &body &key &allow-other-keys)))
+          (and (not (member-eq '&whole (cdr args)))
+               (implies (member-eq '&allow-other-keys args)
+                        (member-eq '&allow-other-keys
+                                   (member-eq '&key args)))
+               (implies (eq (car args) '&whole)
+                        (and (consp (cdr args))
+                             (symbolp (cadr args))
+                             (not (lambda-keywordp (cadr args)))
+                             (macro-arglist1p (cddr args))))
+               (macro-arglist1p args))))))
+
 (defun bind-macro-args-keys1 (args actuals allow-flg alist form wrld
                                    state-vars)
 
 ; We need parameter state-vars because of the call of warning$-cw1 below.
 
-  (cond ((null args)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (keyword-value-listp actuals)
+                              (symbol-alistp alist)
+                              (true-listp form)
+                              (symbolp (car form))
+                              (plist-worldp wrld)
+                              (symbol-alistp
+                               (table-alist 'duplicate-keys-action-table
+                                            wrld))
+                              (true-listp state-vars))))
+  (cond ((endp args)
          (cond ((or (null actuals) allow-flg)
                 (value-cmp alist))
                (t (er-cmp *macro-expansion-ctx*
@@ -4232,6 +4418,13 @@
                  form wrld state-vars))))))))
 
 (defun bind-macro-args-keys (args actuals alist form wrld state-vars)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (true-listp actuals)
+                              (symbol-alistp alist)
+                              (true-listp form)
+                              (plist-worldp wrld)
+                              (true-listp state-vars))))
   (er-progn-cmp
    (chk-length-and-keys actuals form wrld)
    (cond ((assoc-keyword :allow-other-keys
@@ -4250,8 +4443,15 @@
     alist form wrld state-vars)))
 
 (defun bind-macro-args-after-rest (args actuals alist form wrld state-vars)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (true-listp actuals)
+                              (symbol-alistp alist)
+                              (true-listp form)
+                              (plist-worldp wrld)
+                              (true-listp state-vars))))
   (cond
-   ((null args) (value-cmp alist))
+   ((endp args) (value-cmp alist))
    ((eq (car args) '&key)
     (bind-macro-args-keys (cdr args) actuals alist form wrld state-vars))
    (t (er-cmp *macro-expansion-ctx*
@@ -4260,7 +4460,14 @@
               form))))
 
 (defun bind-macro-args-optional (args actuals alist form wrld state-vars)
-  (cond ((null args)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (true-listp actuals)
+                              (symbol-alistp alist)
+                              (true-listp form)
+                              (plist-worldp wrld)
+                              (true-listp state-vars))))
+  (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
                (t (er-cmp *macro-expansion-ctx*
@@ -4295,7 +4502,13 @@
               form wrld state-vars)))))
 
 (defun bind-macro-args1 (args actuals alist form wrld state-vars)
-  (cond ((null args)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (true-listp form)
+                              (symbol-alistp alist)
+                              (plist-worldp wrld)
+                              (true-listp state-vars))))
+  (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
                (t (er-cmp *macro-expansion-ctx*
@@ -4321,6 +4534,10 @@
                              form wrld state-vars))))
 
 (defun bind-macro-args (args form wrld state-vars)
+  (declare (xargs :guard (and (macro-args-structurep args)
+                              (true-listp form)
+                              (plist-worldp wrld)
+                              (true-listp state-vars))))
   (cond ((and (consp args)
               (eq (car args) '&whole))
          (bind-macro-args1 (cddr args) (cdr form)

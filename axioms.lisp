@@ -4870,72 +4870,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       x
     0))
 
-(defun string-equal1 (str1 str2 i maximum)
-  (declare (xargs :guard (and (stringp str1)
-                              (standard-char-listp (coerce str1 'list))
-                              (stringp str2)
-                              (standard-char-listp (coerce str2 'list))
-                              (integerp i)
-                              (integerp maximum)
-                              (<= maximum (length str1))
-                              (<= maximum (length str2))
-                              (<= 0 i)
-                              (<= i maximum))
-
-; We make this function :program until we know enough about o-p
-; to prove its termination.
-
-                  :mode :program))
-  (let ((i (nfix i)))
-    (cond
-     ((>= i (ifix maximum))
-      t)
-     (t (and (char-equal (char str1 i)
-                         (char str2 i))
-             (string-equal1 str1 str2 (+ 1 i) maximum))))))
+; We make 1+ and 1- macros in order to head off the potentially common error of
+; using these as nonrecursive functions on left-hand sides of rewrite rules.
 
 #+acl2-loop-only
-(defun string-equal (str1 str2)
-  (declare (xargs :guard (and (stringp str1)
-                              (standard-char-listp (coerce str1 'list))
-                              (stringp str2)
-                              (standard-char-listp (coerce str2 'list)))
-                  :mode :program))
-  (let ((len1 (length str1)))
-    (and (= len1 (length str2))
-         (string-equal1 str1 str2 0 len1))))
+(defmacro 1+ (x)
+  (list '+ 1 x))
 
-(defun standard-string-alistp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (stringp (car (car x)))
-                (standard-char-listp (coerce (car (car x)) 'list))
-                (standard-string-alistp (cdr x))))))
-
-(defthm standard-string-alistp-forward-to-alistp
-  (implies (standard-string-alistp x)
-           (alistp x))
-  :rule-classes :forward-chaining)
-
-(defun assoc-string-equal (str alist)
-  (declare (xargs :guard (and (stringp str)
-                              (standard-char-listp (coerce str 'list))
-                              (standard-string-alistp alist))
-                  :mode :program))
-  (cond
-   ((endp alist)
-    nil)
-   ((string-equal str (car (car alist)))
-    (car alist))
-   (t (assoc-string-equal str (cdr alist)))))
-
-; Ordinal stuff.  It seems more or less impossible to get o<g and o< admitted
-; during boot-strapping unless we cheat by declaring them explicitly :mode
-; :logic so that they will be admitted in the first pass of the build.  But
-; then we also need to declare functions on which they depend to be :mode
-; :logic as well (since :logic mode functions cannot have :program mode
-; functions in their bodies).
+#+acl2-loop-only
+(defmacro 1- (x)
+  (list '- x 1))
 
 (defun natp (x)
   (declare (xargs :guard t :mode :logic))
@@ -4947,6 +4891,100 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (and (integerp x)
               (<= 0 x)))
   :rule-classes :compound-recognizer)
+
+(defun standard-string-p1 (x n)
+  (declare (xargs :guard (and (stringp x)
+                              (natp n)
+                              (<= n (length x)))))
+  (cond ((zp n) t)
+        (t (let ((n (1- n)))
+             (and (standard-char-p (char x n))
+                  (standard-string-p1 x n))))))
+
+(defun standard-string-p (x)
+  (declare (xargs :guard (stringp x)))
+  (standard-string-p1 x (length x)))
+
+(defun standard-string-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (stringp (car x))
+                (standard-string-p (car x))
+                (standard-string-listp (cdr x))))))
+
+(defun string-equal1 (str1 str2 i maximum)
+  (declare (xargs :guard (and (stringp str1)
+                              (standard-string-p str1)
+                              (stringp str2)
+                              (standard-string-p str2)
+                              (integerp i)
+                              (integerp maximum)
+                              (<= maximum (length str1))
+                              (<= maximum (length str2))
+                              (<= 0 i)
+                              (<= i maximum))
+                  :measure (nfix (- (ifix maximum) (nfix i)))
+                  :mode :program))
+  (let ((i (nfix i)))
+    (cond
+     ((>= i (ifix maximum))
+      t)
+     (t (and (char-equal (char str1 i)
+                         (char str2 i))
+             (string-equal1 str1 str2 (+ 1 i) maximum))))))
+
+#+acl2-loop-only ; Commented out for patch file
+(defun string-equal (str1 str2)
+  (declare (xargs :guard (and (stringp str1)
+                              (standard-string-p str1)
+                              (stringp str2)
+                              (standard-string-p str2))
+                  :mode :program))
+  (let ((len1 (length str1)))
+    (and (= len1 (length str2))
+         (string-equal1 str1 str2 0 len1))))
+
+(defun member-string-equal (str lst)
+  (declare (xargs :guard (and (stringp str)
+                              (standard-string-p str)
+                              (standard-string-listp lst))
+                  :mode :program))
+  (cond
+   ((endp lst) nil)
+   (t (or (string-equal str (car lst))
+          (member-string-equal str (cdr lst))))))
+
+(defun standard-string-alistp (x)
+  (declare (xargs :guard t))
+  (cond
+   ((atom x) (eq x nil))
+   (t (and (consp (car x))
+           (stringp (car (car x)))
+           (standard-string-p (car (car x)))
+           (standard-string-alistp (cdr x))))))
+
+(defthm standard-string-alistp-forward-to-alistp
+  (implies (standard-string-alistp x)
+           (alistp x))
+  :rule-classes :forward-chaining)
+
+(defun assoc-string-equal (str alist)
+  (declare
+   (xargs :guard (and (stringp str)
+                      (standard-string-p str)
+                      (standard-string-alistp alist))
+          :mode :program))
+  (cond ((endp alist) nil)
+        ((string-equal str (car (car alist)))
+         (car alist))
+        (t (assoc-string-equal str (cdr alist)))))
+
+; Ordinal stuff.  It seems more or less impossible to get o<g and o< admitted
+; during boot-strapping unless we cheat by declaring them explicitly :mode
+; :logic so that they will be admitted in the first pass of the build.  But
+; then we also need to declare functions on which they depend to be :mode
+; :logic as well (since :logic mode functions cannot have :program mode
+; functions in their bodies).
 
 (defun bitp (x)
   (declare (xargs :guard t :mode :logic))
@@ -5570,17 +5608,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (equal (character-listp (append x y))
                   (and (character-listp x)
                        (character-listp y)))))
-
-; We make 1+ and 1- macros in order to head off the potentially common error of
-; using these as nonrecursive functions on left-hand sides of rewrite rules.
-
-#+acl2-loop-only
-(defmacro 1+ (x)
-  (list '+ 1 x))
-
-#+acl2-loop-only
-(defmacro 1- (x)
-  (list '- x 1))
 
 (defun cons-with-hint (x y hint)
   (declare (xargs :guard t)
@@ -7684,17 +7711,26 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 )
 
-(defthm standard-char-p-nth
-  (implies (and (standard-char-listp chars)
-                (<= 0 i)
-                (< i (len chars)))
-           (standard-char-p (nth i chars)))
-  :hints (("Goal" :in-theory (enable standard-char-listp))))
+(encapsulate
+  ()
+  (local (defthm hack
+           (implies (integerp i)
+                    (equal (+ -1 1 i)
+                           i))))
+  (local
+   (defthm standard-string-p1-forward-to-standard-char-p
+     (implies (and (standard-string-p1 s n) ; n is free
+                   (stringp s)
+                   (integerp n)
+                   (natp i)
+                   (< i n))
+              (standard-char-p (nth i (coerce s 'list))))))
 
-(verify-termination-boot-strap (string-equal1
-                     (declare (xargs :measure (nfix (- maximum (nfix i)))))))
+  (verify-termination-boot-strap string-equal1))
+
 (verify-termination-boot-strap string-equal)
 (verify-termination-boot-strap assoc-string-equal)
+(verify-termination-boot-strap member-string-equal)
 (verify-termination-boot-strap xxxjoin)
 
 #+acl2-loop-only
@@ -26714,7 +26750,7 @@ Lisp definition."
 ; WARNING: Do not allow stobj arguments among args!  This is naturally enforced
 ; since stobjs may not belong to lists.  It is important since otherwise
 ; single-threadedness may be violated, which could lead to unsoundness since
-; this is a :logic mode functions.  (For somewhat related discussion, see :doc
+; this is a :logic mode function.  (For somewhat related discussion, see :doc
 ; user-stobjs-modified-warnings.)
 
 ; The use of an oracle is important for the logical story.  For example, we can

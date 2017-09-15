@@ -34,6 +34,7 @@
 (include-book "keyword-value-lists")
 (include-book "list-set-theorems")
 (include-book "list-theorems")
+(include-book "magic-macroexpand")
 (include-book "make-executable")
 (include-book "make-termination-theorem")
 (include-book "maybe-msgp")

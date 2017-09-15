@@ -5011,18 +5011,17 @@
     "Compiled file"
     "User-stobjs-modified"))
 
-(defun member-string-equal (str lst)
-  (cond
-   ((endp lst) nil)
-   (t (or (string-equal str (car lst))
-          (member-string-equal str (cdr lst))))))
-
 (defun warning-off-p1 (summary wrld ld-skip-proofsp)
 
 ; This function is used by warning$ to determine whether a given warning should
 ; be printed.  See also warning-disabled-p, which we can use to avoid needless
 ; computation on behalf of disabled warnings.
 
+  (declare (xargs :guard (and (stringp summary)
+                              (standard-string-p summary)
+                              (plist-worldp wrld)
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table wrld)))))
   (or (and summary
            (assoc-string-equal
             summary
@@ -6482,6 +6481,9 @@
 ; the form (QUOTE guts).  We return a term equivalent to (equal x
 ; const).
 
+  (declare (xargs :guard (and (consp const)
+                              (eq (car const) 'quote)
+                              (consp (cdr const)))))
   (let ((guts (cadr const)))
     (cond ((symbolp guts)
            (list 'eq x const))
@@ -6529,6 +6531,7 @@
 ; pattern.  Finally, the symbol & matches anything and causes no
 ; binding.
 
+  (declare (xargs :guard (symbol-doublet-listp bindings)))
   (cond
    ((symbolp pat)
     (cond
@@ -6557,7 +6560,9 @@
    ((atom pat)
     (mv (cons (equal-x-constant x (list 'quote pat)) tests)
         bindings))
-   ((eq (car pat) 'quote)
+   ((and (eq (car pat) 'quote)
+         (consp (cdr pat))
+         (null (cddr pat)))
     (mv (cons (equal-x-constant x pat) tests)
         bindings))
    (t (mv-let (tests1 bindings1)
@@ -6566,8 +6571,8 @@
                                   bindings)
         (match-tests-and-bindings (list 'cdr x) (cdr pat)
                                   tests1 bindings1)))))
-
 (defun match-clause (x pat forms)
+  (declare (xargs :guard t))
   (mv-let (tests bindings)
     (match-tests-and-bindings x pat nil nil)
     (list (if (null tests)
@@ -6576,6 +6581,7 @@
           (cons 'let (cons (reverse bindings) forms)))))
 
 (defun match-clause-list (x clauses)
+  (declare (xargs :guard (alistp clauses)))
   (cond ((consp clauses)
          (if (eq (caar clauses) '&)
              (list (match-clause x (caar clauses) (cdar clauses)))

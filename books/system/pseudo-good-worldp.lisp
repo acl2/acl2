@@ -685,13 +685,13 @@
 ; Cert-annotationsp is defined in the source code and uses ttag-alistp.
 ; We need to admit guard-verified versions of each.
 
-(verify-termination sysfile-p)
+(verify-termination sysfile-p) ; and guards
 
-(verify-termination sysfile-or-string-listp)
+(verify-termination sysfile-or-string-listp) ; and guards
 
-(verify-termination ttag-alistp)
+(verify-termination ttag-alistp) ; and guards
 
-(verify-termination cert-annotationsp)
+(verify-termination cert-annotationsp) ; and guards
 
 (defun pseudo-include-book-alist-entryp (entry)
   (case-match entry
@@ -1194,7 +1194,7 @@
 ; This is a symbol-alist pairing function names with lists of
 ; well-formedness-guarantees.
 
-(verify-termination arity-alistp)
+(verify-termination arity-alistp) ; and guards
 
 (defun well-formedness-guaranteep (x)
 
@@ -1484,8 +1484,8 @@
 ; whose elements is of the form (equiv pequiv1 ... pequivk), where equiv is
 ; some equivalence relation and each pequivi is a pequiv record.
 
-(verify-termination legal-variable-or-constant-namep)
-(verify-termination legal-variablep)
+(verify-termination legal-variable-or-constant-namep) ; and guards
+(verify-termination legal-variablep) ; and guards
 
 (defun pseudo-pequiv-pattern-p (p)
   (or (legal-variablep p)
@@ -2007,21 +2007,21 @@
 ;-----------------------------------------------------------------
 ; MACRO-ARGS
 
-(verify-termination legal-initp)
+(verify-termination legal-initp) ; and guards
 
-(verify-termination macro-arglist-keysp)
+(verify-termination macro-arglist-keysp) ; and guards
 
-(verify-termination macro-arglist-after-restp)
+(verify-termination macro-arglist-after-restp) ; and guards
 
-(verify-termination lambda-keywordp)
+(verify-termination lambda-keywordp) ; and guards
 
-(verify-termination macro-arglist-optionalp)
+(verify-termination macro-arglist-optionalp) ; and guards
 
-(verify-termination macro-arglist1p)
+(verify-termination macro-arglist1p) ; and guards
 
-(verify-termination subsequencep)
+(verify-termination subsequencep) ; and guards
 
-(verify-termination collect-lambda-keywordps)
+(verify-termination collect-lambda-keywordps) ; and guards
 
 ; We avoid exporting names that might conflict with names used in distributed
 ; books, so that we can use this book to check the well-formedness of the
@@ -2074,16 +2074,16 @@
 
 ; Thus ends the work for macro-vars-key.  Here it is:
 
-(verify-termination macro-vars-key)
+(verify-termination macro-vars-key) ; and guards
 
-(verify-termination macro-vars-after-rest)
+(verify-termination macro-vars-after-rest) ; and guards
 
 (defthm eqlable-listp-collect-lambda-keywordsp
   (eqlable-listp (collect-lambda-keywordps args)))
 
-(verify-termination macro-vars-optional)
+(verify-termination macro-vars-optional) ; and guards
 
-(verify-termination macro-args-structurep)
+(verify-termination macro-args-structurep) ; and guards
 
 (local
  (defthm true-listp-member-eq
@@ -2095,7 +2095,7 @@
 ; seconds; 10 subgoals are pushed and proved by induction (though some are
 ; subsumed by others).
 
-(verify-termination macro-vars)
+(verify-termination macro-vars) ; and guards
 
 ; The following function is a pseudo version of the negations of both
 ; chk-macro-arglist-msg and chk-macro-arglist.  The reason it is pseudo and not
@@ -2574,7 +2574,7 @@
 ;-----------------------------------------------------------------
 ; TYPE-PRESCRIPTIONS
 
-(verify-termination backchain-limit-listp)
+(verify-termination backchain-limit-listp) ; and guards
 
 (defun pseudo-type-prescriptionp (x)
   (case-match x
