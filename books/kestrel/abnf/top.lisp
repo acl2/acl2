@@ -61,7 +61,7 @@
      </li>
      <li>
      Executable operations on ABNF grammars,
-     e.g.\ to check their well-formedness and to compose them.
+     e.g. to check their well-formedness and to compose them.
      </li>
    </ul>
 
