@@ -268,7 +268,7 @@
  easier to reason about than its tail-recursive definition for execution (which
  has not changed).</p>
 
- <p>The <see topic='@(url worl-queries)'>world query</see>, <see topic='@(url
+ <p>The <see topic='@(url world-queries)'>world query</see>, <see topic='@(url
  term-utilities)'>term</see>, <see topic='@(url
  string-utilities)'>string</see>, and <see topic='@(url
  character-utilities)'>character</see> utilities have undergone a few
