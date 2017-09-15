@@ -166,6 +166,20 @@
  Integration with @(see aignet::aignet) is also provided in the book
  \"centaur/aignet/ipasir\".</p>
 
+ <h4>ABNF</h4>
+
+ <p>The <see topic='@(url abnf::abnf)'>ABNF (Augmented Backus-Naur Form)
+ library</see> provides (1) a formalization of the syntax and semantics of the
+ ABNF notation, (2) a verified parser that turns ABNF grammar text (e.g. from
+ the HTTP RFC) into a formal representation suitable for formal
+ specification (e.g. for HTTP parsing), and (3) executable operations on ABNF
+ grammars, e.g.  to check their well-formedness and to compose them.</p>
+
+ <h4>APT</h4>
+
+ <p>The <see topic='@(url apt::apt)'>APT (Automated Program Transformations)
+ library</see> provides tools to transform programs and program specifications
+ with automated support.</p>
 
  <h3>Changes to Existing Libraries</h3>
 
@@ -181,7 +195,10 @@
  @('std/std-customization.lsp') now support rule classes other than
  @(':rewrite').</p>
 
- <h4>@(see kestrel-utilities)</h4>
+ <h4>Kestrel Utilities</h4>
+
+ <p>The <see topic='@(url kestrel-utilities)'>Kestrel Utilities</see> have
+ undergone several improvements and extensions.</p>
 
  <p>Improved an error message for @('verify-guards-program') (thanks to Eric
  Smith for feedback); see
@@ -218,9 +235,48 @@
  <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
  fails, then to evaluate a second event.</p>
 
- <p>Added other utilities, for example world queries (in the book
- @('world-queries.lisp')) and error checking utilities (in the new book
- @('error-checking.lisp')).</p>
+ <p>The applicability condition utilities have been replaced with the <see
+ topic='@(url named-formulas)'>named formula utilities</see>, which are
+ slightly more general and include a few improvements.</p>
+
+ <p>New <see topic='@(url paired-names)'>paired name utilities</see> have been
+ added, to construct names consisting of two names separated by a global
+ customizable separator.</p>
+
+ <p>A new @(tsee add-const-to-untranslate-preprocess) utility has been added
+ that extend @(tsee untranslate-preprocess) to keep a constant unexpanded in
+ output.</p>
+
+ <p>New @(see error-checking) utilities have been added that check conditions
+ on data (e.g. user input) and provide informative and consistent error
+ messages. These utilities include a macro @(tsee def-error-checker) to
+ concisely define error-checking functions.</p>
+
+ <p>New macros @(tsee defubyte) and @(tsee defsbyte) have been added that
+ introduce <see topic='@(url fty)'>fixtypes</see> for unsigned and signed bytes
+ of specified sizes. A number of applications of these macros for common sizes
+ is also provided.</p>
+
+ <p>Utilities @(tsee doublets-to-alist) and @(tsee keyword-value-list-to-alist)
+ have been added that convert lists of doublets and keyword-value lists to
+ corresponding alists.</p>
+
+ <p>A utility @(tsee assert?) has been added that is a variant of @(tsee
+ assert$) with customizable context and message.</p>
+
+ <p>The @(tsee integers-from-to) utility now has a logical definition that is
+ easier to reason about than its tail-recursive definition for execution (which
+ has not changed).</p>
+
+ <p>The <see topic='@(url worl-queries)'>world query</see>, <see topic='@(url
+ term-utilities)'>term</see>, <see topic='@(url
+ string-utilities)'>string</see>, and <see topic='@(url
+ character-utilities)'>character</see> utilities have undergone a few
+ improvements and extensions.</p>
+
+ <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
+ about world-related functions</see> and <see topic='@(url
+ theorems-about-lists)'>theorems about lists</see> have been added.</p>
 
  <h4>The apply books</h4>
 
@@ -264,6 +320,23 @@
  combinational loops are present, these are composed together to a fixpoint.</li>
 
  </ul>
+
+ <h4>SOFT</h4>
+
+ <p>The <see topic='@(url soft::soft)'>SOFT (Second-Order Functions and
+ Theorems) library</see> has been improved in several ways. The @(':thm-name')
+ option is now fully supported for second-order quantifier functions and their
+ instances.  The treatment of user inputs is more robust. The implementation is
+ more streamlined. A more comprehensive test suite now exists.</p>
+
+ <h4>X86ISA</h4>
+
+ <p>The <see topic='@(url x86isa)'>X86ISA</see> has been slightly extended with
+ infrastructure to support 32-bit mode of operation; in particular, the
+ @('64-bit-modep') predicate is no longer always true. Some documentation
+ topics and some comments have been expanded and clarified. Some exceptions are
+ now being added to the fault field of the x86 state rather than the
+ model-specific field.</p>
 
  <h4>Miscellaneous Books</h4>
 
