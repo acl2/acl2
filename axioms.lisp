@@ -7728,6 +7728,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (verify-termination-boot-strap string-equal1))
 
+; The following was probably formerly needed for the event just above,
+; (verify-termination-boot-strap string-equal1).  It's no longer necessary for
+; that but it's a nice rule nonetheless.
+(defthm standard-char-p-nth
+  (implies (and (standard-char-listp chars)
+                (<= 0 i)
+                (< i (len chars)))
+           (standard-char-p (nth i chars)))
+  :hints (("Goal" :in-theory (enable standard-char-listp))))
+
 (verify-termination-boot-strap string-equal)
 (verify-termination-boot-strap assoc-string-equal)
 (verify-termination-boot-strap member-string-equal)
