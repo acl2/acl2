@@ -503,35 +503,37 @@
 
  (test-title "Test the :HINTS option.")
 
- ;; not a list of doublets:
+ ;; not a list:
  (must-fail (restrict nfix (natp x) :hints 8))
 
- ;; not all symbols as keys:
+ ;; not a keyword-value list:
  (must-fail
   (restrict nfix (natp x)
-            :hints ((33 (("Goal" :in-theory (enable len))))
-                    (symbol (("Goal" :in-theory (enable len)))))))
+            :hints (33
+                    (("Goal" :in-theory (enable len)))
+                    'symbol
+                    (("Goal" :in-theory (enable len))))))
 
  ;; not an applicability condition name:
  (must-fail
   (restrict nfix (natp x)
-            :hints ((not-an-app-cond (("Goal" :in-theory (enable len)))))))
+            :hints (:not-an-app-cond (("Goal" :in-theory (enable len))))))
 
  ;; duplicate applicability condition names:
  (must-fail
   (restrict nfix (natp x)
-            :hints ((:restriction-of-rec-calls
-                     (("Goal" :in-theory (enable atom))))
-                    (:restriction-of-rec-calls
-                     (("Goal" :in-theory (enable len)))))))
+            :hints (:restriction-of-rec-calls
+                    (("Goal" :in-theory (enable atom)))
+                    :restriction-of-rec-calls
+                    (("Goal" :in-theory (enable len))))))
 
  ;; valid but unnecessary hints:
  (must-succeed
   (restrict nfix (natp x)
-            :hints ((:restriction-guard
-                     (("Goal" :in-theory (enable natp))))
-                    (:restriction-of-rec-calls
-                     (("Goal" :in-theory (enable natp)))))))
+            :hints (:restriction-guard
+                    (("Goal" :in-theory (enable natp)))
+                    :restriction-of-rec-calls
+                    (("Goal" :in-theory (enable natp))))))
 
  ;; necessary hints:
  (must-succeed*
@@ -545,7 +547,7 @@
   (defun r (x) (declare (xargs :guard (q x) :verify-guards t)) x)
   (must-fail (restrict f (r x)))
   (restrict f (r x)
-            :hints ((:restriction-guard (("Goal" :in-theory (enable p=>q))))))))
+            :hints (:restriction-guard (("Goal" :in-theory (enable p=>q)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

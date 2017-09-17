@@ -351,7 +351,9 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
                         :corollary
                         ,(if (or (and (atom hyp-l) (atom hyp))
                                  (equal hyp-l 't))
-                             `(< ,concl ,2^bound-1)
+                             `(and
+                               (<= ,low-2^bound-1 ,concl)
+                               (< ,concl ,2^bound-1))
                            `(implies ,(or hyp-l hyp)
                                      (and
                                       (<= ,low-2^bound-1 ,concl)
@@ -409,16 +411,51 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
   :short "Definitions of commonly used constants and some functions to
   convert between @('natp') and @('integerp'), etc."
 
-  :long "<p>Definitions of constants (of the form @('2^N')) and
-functions/macros of the following form are defined (where N is at
+  :long "<p>Definitions of constants (of the form @('2^W')) and
+functions/macros grouped in @('ruleset')s of the following form are defined (where W is at
 least a two-digit natural number; @('8') is represented as
 @('08')):</p>
 
 <ul>
-<li> @('N')</li>
-<li> @('Np')</li>
-<li> @('iNp')</li>
-<li> @('nN-to-iN')</li>
+<li> @('nWp') belongs to @('nwp-defs') ruleset.
+@({
+    (define nWp (x)
+      (unsigned-byte-p W x))
+})</li>
+
+<li> @('nW') belongs to @('nw-defs') ruleset.
+@({
+    (define nW ((x integerp))
+      (mbe :logic (loghead W x)
+           :exec (logand 2^W-1 x)))
+})</li>
+
+<li> @('iWp') belongs to @('iwp-defs') ruleset.
+@({
+    (define iWp (x)
+      (signed-byte-p W x))
+})</li>
+
+<li> @('iW') belongs to @('iw-defs') ruleset.
+@({
+    (define iW ((x integerp))
+      (logext W x))
+})</li>
+
+<li> @('nW-to-iW') belongs to @('nw-to-iw-defs') ruleset.
+@({
+    (define nW-to-iW ((x nWp :type (unsigned-byte W)))
+        (mbe :logic (logext W x)
+             :exec (if (< x 2^(W-1)) x (- x 2^W))))
+})</li>
+
+<li> @('iW-to-nW') belongs to @('iw-to-nw-defs') ruleset.
+@({
+    (define iW-to-Nw ((x iWp :type (signed-byte W)))
+        (mbe :logic (logext W x)
+             :exec (if (>= x 0) x (+ x 2^W))))
+})</li>
+
 </ul>
 
 <p> The function @('np-def-n') is used to automatically create these
@@ -461,11 +498,23 @@ constants and functions; it also proves some associated lemmas.</p>"
                   (< x (expt 2 n)))
              (equal (logapp n x -1)
                     x))
-    :hints (("Goal" :in-theory (e/d (logapp logbitp) ()))))))
+    :hints (("Goal" :in-theory (e/d (logapp logbitp) ()))))
 
+  (defthm loghead-is-the-same-as-iton-helper
+    (implies (signed-byte-p n x)
+             (equal (loghead n x)
+                    (if (>= x 0) x (+ x (expt 2 n)))))
+    :hints (("Goal" :in-theory (enable loghead** logcons))))))
+
+(def-ruleset nwp-defs       nil)
+(def-ruleset nw-defs        nil)
+(def-ruleset iwp-defs       nil)
+(def-ruleset iw-defs        nil)
+(def-ruleset nw-to-iw-defs  nil)
+(def-ruleset iw-to-nw-defs  nil)
 
 (define np-def-n (n)
-  :mode :program ;; PACKN is a :program mode function
+  :mode :program ;; NP-DEF-N is a :program mode function
   :guard (posp n)
   :parents (constants-conversions-and-bounds)
   (let* ((str-n          (symbol-name (if (< n 10)
@@ -473,10 +522,12 @@ constants and functions; it also proves some associated lemmas.</p>"
                                         (acl2::packn (list n)))))
          (digits         (symbol-name (acl2::packn (list n))))
          (2^XY           (mk-name "*2^" digits "*"))
-         (nXY            (mk-name "N" str-n))
          (nXYp           (mk-name "N" str-n "P"))
+         (nXY            (mk-name "N" str-n))
          (iXYp           (mk-name "I" str-n "P"))
-         (ntoi           (mk-name "N" str-n "-TO-I" str-n)))
+         (iXY            (mk-name "I" str-n))
+         (ntoi           (mk-name "N" str-n "-TO-I" str-n))
+         (iton           (mk-name "I" str-n "-TO-N" str-n)))
     (list
 
      `(defconst ,2^XY
@@ -497,7 +548,7 @@ constants and functions; it also proves some associated lemmas.</p>"
         :inline t
         :enabled t
         :parents (constants-conversions-and-bounds)
-        (mbe :logic (part-select x :low 0 :width ,n)
+        (mbe :logic (loghead ,n x)
              :exec (logand ,(1- (expt 2 n)) x)))
 
      `(define ,iXYp (x)
@@ -507,29 +558,47 @@ constants and functions; it also proves some associated lemmas.</p>"
         ;; XY-bit integer recognizer
         (signed-byte-p ,n x))
 
+     `(define ,iXY ((x integerp))
+        ;; Truncate input to an XY-bit signed integer number
+        ;; This function can be used to convert, say a 32-bit natural number
+        ;; to a 32-bit integer.  We choose to keep this function
+        ;; enabled.
+        :inline t
+        :enabled t
+        :parents (constants-conversions-and-bounds)
+        (logext ,n x))
+
      `(define ,ntoi
         :inline t
         :enabled t
         :parents (constants-conversions-and-bounds)
         ;; Convert natural number to integer
-        :guard-hints (("Goal" :in-theory (e/d (logext)
-                                              (unsigned-byte-p))))
+        :guard-hints (("Goal" :in-theory (enable logext)))
         ((x ,nXYp :type (unsigned-byte ,n)))
 
         (mbe :logic (logext ,n x)
              :exec (if (< x ,(expt 2 (1- n)))
                        x
-                     (- x ,(expt 2 n))))
+                     (- x ,(expt 2 n)))))
 
-        ///
+     `(define ,iton
+        :inline t
+        :enabled t
+        :parents (constants-conversions-and-bounds)
+        ;; Convert integer to natural number
+        ((x ,iXYp :type (signed-byte ,n)))
 
-        (defthm-sb ,(mk-name iXYp "-" ntoi)
-          :hyp t
-          :bound ,n
-          :concl (,ntoi x)
-          :gen-type t
-          :gen-linear t))
+        (mbe :logic (loghead ,n x)
+             :exec (if (>= x 0)
+                       x
+                     (+ x ,(expt 2 n)))))
 
+     `(add-to-ruleset nwp-defs       '(,nXYp))
+     `(add-to-ruleset nw-defs        '(,nXY))
+     `(add-to-ruleset iwp-defs       '(,iXYp))
+     `(add-to-ruleset iw-defs        '(,iXY))
+     `(add-to-ruleset nw-to-iw-defs  '(,ntoi))
+     `(add-to-ruleset iw-to-nw-defs  '(,iton))
      )))
 
 (define np-defs (lst)

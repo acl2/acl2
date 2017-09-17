@@ -189,17 +189,30 @@
 (define non-executablep ((fn (and (logic-function-namep fn wrld)
                                   (definedp fn wrld)))
                          (wrld plist-worldp))
-  :returns (yes/no "A @(tsee booleanp).")
+  :returns (yes/no booleanp)
   :parents (world-queries)
   :short "The @(tsee non-executable) status of a logic-mode defined function."
-  (getpropc fn 'non-executablep nil wrld)
+  :long
+  "<p>
+   The check that the non-executable status is a boolean should always succeed,
+   but it allows us to prove the return type theorem for this function
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((non-executablep (getpropc fn 'non-executablep nil wrld)))
+    (if (booleanp non-executablep)
+        non-executablep
+      (raise "Internal error: ~
+              the non-executable status ~x0 of ~x1 is not a boolean."
+             non-executablep fn)))
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
 (define unwrapped-nonexec-body ((fn (and (logic-function-namep fn wrld)
                                          (definedp fn wrld)
                                          (non-executablep fn wrld)))
                                 (wrld plist-worldp))
-  :returns (unwrapped-body "A @(tsee pseudo-termp).")
+  :returns (unwrapped-body pseudo-termp)
   :verify-guards nil
   :parents (world-queries)
   :short "Body of a logic-mode defined non-executable function,
@@ -228,17 +241,32 @@
    <p>
    The code of this system utility defensively ensures that
    the body of @('fn') has the form above.
+   </p>
+   <p>
+   The check that the unwrapped body is a pseudo-term should always succeed,
+   but it allows us to prove the return type theorem for this function
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
    </p>"
   (let ((body (ubody fn wrld)))
     (if (throw-nonexec-error-p body fn (formals fn wrld))
-        (fourth body)
-      (raise "The body ~x0 of the non-executable function ~x1 ~
-              does not have the expected wrapper." body fn))))
+        (let ((unwrapped-body (fourth body)))
+          (if (pseudo-termp unwrapped-body)
+              unwrapped-body
+            (raise "Internal error: ~
+                    the unwrapped body ~x0 of the non-executable function ~x1 ~
+                    is not a pseudo-term."
+                   unwrapped-body fn)))
+      (raise "Internal error: ~
+              the body ~x0 of the non-executable function ~x1 ~
+              does not have the expected wrapper."
+             body fn))))
 
 (define number-of-results ((fn (function-namep fn wrld))
                            (wrld plist-worldp))
   :guard (not (member-eq fn *stobjs-out-invalid*))
-  :returns (n "A @(tsee posp).")
+  :returns (n natp "Actually a @(tsee posp).")
   :parents (world-queries)
   :short "Number of values returned by a function."
   :long
@@ -273,51 +301,136 @@
 (define measure ((fn (and (logic-function-namep fn wrld)
                           (recursivep fn nil wrld)))
                  (wrld plist-worldp))
-  :returns (measure "A @(tsee pseudo-termp).")
-  :verify-guards nil
+  :returns (measure pseudo-termp)
   :parents (world-queries)
   :short "Measure expression of a logic-mode recursive function."
   :long
   "<p>
    See @(see xargs) for a discussion of the @(':measure') keyword.
+   </p>
+   <p>
+   The checks that the justification property is well-formed
+   and that the measure is a pseudo-term
+   should always succeed,
+   but they allow us to verify the guards of this function
+   and to prove the return type theorem for this function,
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
    </p>"
-  (access justification (getpropc fn 'justification nil wrld) :measure))
+  (b* ((justification (getpropc fn 'justification nil wrld))
+       ((unless (weak-justification-p justification))
+        (raise "Internal error: ~
+                the justification ~x0 of ~x1 is not well-formed."
+               justification fn))
+       (measure (access justification justification :measure))
+       ((unless (pseudo-termp measure))
+        (raise "Internal error: ~
+                the measure ~x0 of ~x1 is not a pseudo-term."
+               measure fn)))
+    measure))
 
 (define measured-subset ((fn (and (logic-function-namep fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
-  :returns (measured-subset "A @(tsee symbol-listp).")
-  :verify-guards nil
+  :returns (measured-subset symbol-listp)
   :parents (world-queries)
   :short "Subset of the formal arguments of a logic-mode recursive function
           that occur in its @(see measure) expression."
-  (access justification (getpropc fn 'justification nil wrld) :subset))
+  :long
+  "<p>
+   The checks that the justification property is well-formed
+   and that the measured subset is a @('nil')-terminated list of symbols
+   should always succeed,
+   but they allow us to verify the guards of this function
+   and to prove the return type theorem for this function,
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((justification (getpropc fn 'justification nil wrld))
+       ((unless (weak-justification-p justification))
+        (raise "Internal error: ~
+                the justification ~x0 of ~x1 is not well-formed."
+               justification fn))
+       (measured-subset (access justification justification :subset))
+       ((unless (symbol-listp measured-subset))
+        (raise "Internal error: ~
+                the measured subset ~x0 of ~x1 is not ~
+                a NIL-terminated list of symbols."
+               measured-subset fn)))
+    measured-subset))
 
 (define well-founded-relation ((fn (and (logic-function-namep fn wrld)
                                         (recursivep fn nil wrld)))
                                (wrld plist-worldp))
-  :returns (well-founded-relation "A @(tsee symbolp).")
-  :verify-guards nil
+  :returns (well-founded-relation symbolp)
   :parents (world-queries)
   :short "Well-founded relation of a logic-mode recursive function."
   :long
-  "<p>See @(see well-founded-relation-rule)
+  "<p>
+   See @(see well-founded-relation-rule)
    for a discussion of well-founded relations in ACL2,
-   including the @(':well-founded-relation') rule class.</p>"
-  (access justification (getpropc fn 'justification nil wrld) :rel))
+   including the @(':well-founded-relation') rule class.
+   </p>
+   <p>
+   The checks that the justification property is well-formed
+   and that the well-founded relation is a symbol
+   should always succeed,
+   but they allow us to verify the guards of this function
+   and to prove the return type theorem for this function,
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((justification (getpropc fn 'justification nil wrld))
+       ((unless (weak-justification-p justification))
+        (raise "Internal error: ~
+                the justification ~x0 of ~x1 is not well-formed."
+               justification fn))
+       (well-founded-relation (access justification justification :rel))
+       ((unless (symbolp well-founded-relation))
+        (raise "Internal error: ~
+                the well-founded relation ~x0 of ~x1 is not a symbol."
+               well-founded-relation fn)))
+    well-founded-relation))
 
 (define ruler-extenders ((fn (and (logic-function-namep fn wrld)
                                   (recursivep fn nil wrld)))
                          (wrld plist-worldp))
-  :returns (ruler-extenders "A @(tsee symbol-listp) or @(':all').")
-  :verify-guards nil
+  :returns (ruler-extenders (or (symbol-listp ruler-extenders)
+                                (equal ruler-extenders :all)))
   :parents (world-queries)
   :short "Ruler-extenders of a logic-mode recursive function
           (see @(see rulers) for background)."
-  (access justification (getpropc fn 'justification nil wrld) :ruler-extenders))
+  :long
+  "<p>
+   The checks that the justification property is well-formed
+   and that the ruler-extenders are
+   a @('nil')-terminated list of symbols or @(':all')
+   should always succeed,
+   but they allow us to verify the guards of this function
+   and to prove the return type theorem for this function,
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((justification (getpropc fn 'justification nil wrld))
+       ((unless (weak-justification-p justification))
+        (raise "Internal error: ~
+                the justification ~x0 of ~x1 is not well-formed."
+               justification fn))
+       (ruler-extenders (access justification justification :ruler-extenders))
+       ((unless (or (symbol-listp ruler-extenders)
+                    (eq ruler-extenders :all)))
+        (raise "Internal error: ~
+                the well-founded relation ~x0 of ~x1 is not ~
+                a NIL-terminated list of symbols or :ALL."
+               ruler-extenders fn)))
+    ruler-extenders))
 
 (define macro-required-args ((mac (macro-namep mac wrld)) (wrld plist-worldp))
-  :returns (required-args symbol-listp)
+  :returns (required-args "A @(tsee symbol-listp).")
   :verify-guards nil
   :parents (world-queries)
   :short "Required arguments of a macro, in order."
@@ -327,7 +440,8 @@
    optionally starts with @('&whole') followed by another symbol,
    continues with zero or more symbols that do not start with @('&')
    which are the required arguments,
-   and possibly ends with a symbol starting with @('&') followed by more symbols.
+   and possibly ends with
+   a symbol starting with @('&') followed by more things.
    </p>
    <p>
    After removing @('&whole') and the symbol following it
@@ -344,15 +458,15 @@
         (macro-required-args-aux all-args nil))))
 
   :prepwork
-  ((define macro-required-args-aux ((args symbol-listp)
+  ((define macro-required-args-aux ((args true-listp)
                                     (rev-result symbol-listp))
-     :returns (final-result symbol-listp :hyp (symbol-listp rev-result))
+     :returns (final-result "A @(tsee symbol-listp).")
+     :verify-guards nil
      (if (endp args)
          (reverse rev-result)
-       (let ((arg (mbe :logic (if (symbolp (car args)) (car args) nil)
-                       :exec (car args))))
+       (let ((arg (car args)))
          (if (lambda-keywordp arg)
-             rev-result
+             (reverse rev-result)
            (macro-required-args-aux (cdr args)
                                     (cons arg rev-result))))))))
 
@@ -361,7 +475,7 @@
   :mode :program
   :parents (world-queries)
   :short "Check if the definition of a function is disabled."
-  (member-equal `(:definition ,fn) (disabledp fn)))
+  (if (member-equal `(:definition ,fn) (disabledp fn)) t nil))
 
 (define fundef-enabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
@@ -375,7 +489,7 @@
   :mode :program
   :parents (world-queries)
   :short "Check if a @(see rune) is disabled."
-  (member-equal rune (disabledp (cadr rune))))
+  (if (member-equal rune (disabledp (cadr rune))) t nil))
 
 (define rune-enabledp ((rune (runep rune (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
@@ -396,7 +510,6 @@
                                     (= 1 (len (recursivep fn nil wrld)))))
                            (wrld plist-worldp))
   :returns (machine "A @('pseudo-induction-machinep') for @('fn').")
-  :verify-guards nil
   :parents (world-queries)
   :short "Induction machine of a (singly) recursive logic-mode function."
   :long

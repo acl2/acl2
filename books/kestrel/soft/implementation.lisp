@@ -405,6 +405,7 @@
 ;     :QUANT-OK ...
 ;     :WITNESS-DCLS ...
 ;     :SKOLEM-NAME ...
+;     :THM-NAME ...
 ;     :REWRITE ...)
 ; where SOFUN is the name of the function,
 ; (FVAR1 ... FVARn) is a non-empty list without duplicates of function variables
@@ -412,7 +413,6 @@
 ; (VAR1 ... VARm) are the individual parameters as in DEFUN-SK,
 ; BODY is the body as in DEFUN-SK,
 ; and the keyed options are the same as in DEFUN-SK.
-; The keyed option :THM-NAME of DEFUN-SK is currently not supported by SOFT.
 ; As in DEFUN-SK, the keyed option :REWRITE may be present only if
 ; the quantifier is universal.
 ;
@@ -925,13 +925,14 @@
 ;     (SOFUN (F1 . G1) ... (Fm . Gm))
 ;     :VERIFY-GUARDS ...
 ;     :SKOLEM-NAME ...
+;     :THM-NAME ...
 ;     :REWRITE ...)
 ; where FUN is the name of the function instance,
 ; (FVAR1 ... FVARn) is an optional non-empty list without duplicates
 ; of function parameters of FUN (whose order is immaterial),
 ; SOFUN is the second-order function being instantiated,
 ; ((F1 . G1) ... (Fm . Gm)) is the instantiation that defines FUN,
-; and the optional :VERIFY-GUARDS, :SKOLEM-NAME, and :REWRITE
+; and the optional :VERIFY-GUARDS, :SKOLEM-NAME, :THM-NAME, and :REWRITE
 ; are explained below.
 ;
 ; If (FVAR1 ... FVARn) is present, FUN is a second-order function;
@@ -991,6 +992,10 @@
 ; the :QUANT-OK is set to T, in case it was set to T in the DEFUN-SK of SOFUN.
 ;
 ; The :SKOLEM-NAME option in DEFUN-INST can be used
+; only if SOFUN is a quantifier second-order function.
+; Its meaning is the same as in DEFUN-SK.
+;
+; The :THM-NAME option in DEFUN-INST can be used
 ; only if SOFUN is a quantifier second-order function.
 ; Its meaning is the same as in DEFUN-SK.
 ;
@@ -1157,10 +1162,10 @@
    (options keyword-value-listp)
    (wrld plist-worldp))
   :mode :program
-  (b* (;; the options must include only :SKOLEM-NAME and :REWRITE:
+  (b* (;; the options must include only :SKOLEM-NAME, :THM-NAME, and :REWRITE:
        ((unless (subsetp (keywords-of-keyword-value-list options)
-                         '(:skolem-name :rewrite)))
-        (raise "~x0 must include only :SKOLEM-NAME and :REWRITE, ~
+                         '(:skolem-name :thm-name :rewrite)))
+        (raise "~x0 must include only :SKOLEM-NAME, :THM-NAME, and :REWRITE, ~
                 because ~x1 is a quantifier second-order function."
                options sofun))
        ;; retrieve DEFUN-SK-specific constituents of SOFUN:
@@ -1197,6 +1202,12 @@
                       (if skolem-name-option
                           `(:skolem-name ,(cadr skolem-name-option))
                         nil)))
+       ;; :THM-NAME of FUN if supplied, otherwise NIL:
+       (thm-name (let ((thm-name-option
+                        (assoc-keyword :thm-name options)))
+                   (if thm-name-option
+                       `(:thm-name ,(cadr thm-name-option))
+                     nil)))
        ;; apply instantiation to the guard of SOFUN:
        (sofun-guard (guard sofun nil wrld))
        (fun-guard (fun-subst-term inst sofun-guard wrld))
@@ -1219,6 +1230,7 @@
         ,@(and (eq quant 'forall)
                (list :rewrite rewrite))
         ,@skolem-name
+        ,@thm-name
         :witness-dcls (,wit-dcl))
       ,@table-event
       (value-triple (check-qrewrite-rule-funvars ',fun (w state))))))
@@ -1325,8 +1337,6 @@
 ;   via macros that correspond to
 ;   DEFUND, DEFN, DEFND, DEFUN-NX, DEFUND-NX, DEFINE, DEFPUN, DEFP,
 ;   and MUTUAL-RECURSION.
-; - Support the :THM-NAME option in DEFUN-SK2,
-;   and in DEFUN-INST when applied to a quantifier function.
 ; - Allow instantiations to map function variable names to LAMBDA terms,
 ;   similarly to :FUNCTIONAL-INSTANCE.
 ; - Provide facilities to use (by functional instantiation)

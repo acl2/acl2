@@ -411,8 +411,9 @@
      </p>
 
      <p>
-     It must be a list of doublets
-     @('((appcond1 hints1) ... (appcondp hintsp))')
+     It must be a
+     <see topic='@(url keyword-value-listp)'>keyword-value list</see>
+     @('(appcond1 hints1 ... appcondp hintsp)')
      where each @('appcondk') is a keyword
      that names one of the applicability conditions below,
      and each @('hintsk') consists of hints as may appear

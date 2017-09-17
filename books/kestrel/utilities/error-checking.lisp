@@ -442,7 +442,7 @@
   "Cause an error if a value if not a @('nil')-terminated list of even length
    with keywords at its even-numbered positions (counting from 0)."
   (((keyword-value-listp x) "~@0 must a NIL-terminated list of even length ~
-                             with keywords at its even-numbers positions ~
+                             with keywords at its even-numbered positions ~
                              (counting from 0)." description)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

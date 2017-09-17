@@ -244,10 +244,16 @@
   :quant-ok nil)
 
 (progn
-  (defun-sk2 skname (?f ?g) (x y)
+  (defun-sk2 sk-name (?f ?g) (x y)
     (exists (z w) (equal (?f (?g x y)) (cons z w)))
     :skolem-name wit)
   (assert! (function-namep 'wit (w state))))
+
+(progn
+  (defun-sk2 thm-name (?f ?g) (x y)
+    (exists (z w) (equal (?f (?g x y)) (cons z w)))
+    :thm-name th)
+  (assert! (theorem-namep 'th (w state))))
 
 (defun-sk2 wit-dcl (?f ?g) (x y)
   (exists (z w) (equal (?f (?g x y)) (cons z w)))
@@ -309,6 +315,10 @@
 (must-fail ; bad option for plain 2nd-order function
  (defun-inst i (nonrec (?g . cons))
    :skolem-name wit))
+
+(must-fail ; bad option for plain 2nd-order function
+ (defun-inst i (nonrec (?g . cons))
+   :thm-name th))
 
 (must-fail ; bad option for plain 2nd-order function
  (defun-inst i (nonrec (?g . cons))
@@ -393,6 +403,10 @@
 
 (must-fail ; bad option for choice 2nd-order function
  (defun-inst i (?g) (choose (?g . cons))
+   :thm-name wit))
+
+(must-fail ; bad option for choice 2nd-order function
+ (defun-inst i (?g) (choose (?g . cons))
    :rewrite :direct))
 
 (defun-inst choose-i (?f) (choose (?g . cons)))
@@ -473,12 +487,19 @@
 
 (defun-inst not-qok-i (not-qok (?f . atom) (?g . cons)))
 
-(defun-inst skname-i (?f) (skname (?g . cons)))
+(defun-inst sk-name-i (?f) (sk-name (?g . cons)))
 
 (progn
-  (defun-inst skname-j (?f) (skname (?g . cons))
+  (defun-inst sk-name-j (?f) (sk-name (?g . cons))
     :skolem-name wit-j)
   (assert! (function-namep 'wit-j (w state))))
+
+(defun-inst thm-name-i (?f) (sk-name (?g . cons)))
+
+(progn
+  (defun-inst thm-name-j (?f) (thm-name (?g . cons))
+    :thm-name th-j)
+  (assert! (theorem-namep 'th-j (w state))))
 
 (defun-inst wit-dcl-i (wit-dcl (?f . atom) (?g . cons)))
 
