@@ -8134,7 +8134,9 @@
 (defun translate11 (x stobjs-out bindings known-stobjs flet-alist
                       cform ctx wrld state-vars)
 
-; Warning: Keep this in sync with macroexpand1*-cmp.
+; Warning: Keep this in sync with macroexpand1*-cmp.  Also, for any new special
+; operators (e.g., let and translate-and-test), consider extending
+; *special-ops* in community book books/misc/check-acl2-exports.lisp.
 
 ; Bindings is an alist binding symbols either to their corresponding STOBJS-OUT
 ; or to symbols.  The only symbols used are (about-to-be introduced) function
