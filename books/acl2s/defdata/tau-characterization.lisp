@@ -180,20 +180,33 @@ data last modified: [2014-08-06]
   (if (consp terms)
       (b* ((fes2 (find-x-terms->=-depth terms x 2)))
         (cond ((null fes2) ;no nesting, return simple or conj rule
-          (if (consp (cdr terms)) ;len > 1 
-              `(IMPLIES (AND . ,(cons (list P x) (dumber-negate-lit-lst (cdr terms)))) ,(car terms))
-            `(IMPLIES (,P ,x) ,(car terms))))
-         ((not (consp (cdr fes2))) ;exactly one sig-like term
-          (if (= (depth-var x (car fes2)) 2)
-              `(IMPLIES (AND . ,(cons (list P x) (dumber-negate-lit-lst (set-difference-equal terms fes2)))) ,(car fes2)) ;sig rule
-            "Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule"))
-         (t 
-"Multiple sig terms i.e. (P1 (f x1 ...)) OR (P2 (f x1 ...)) 
- not allowed in conclusion of signature rule")))
-    "Impossible: Empty clause"))
+               (cond ((endp (cdr terms)) `((IMPLIES (,P ,x) ,(car terms))))
+                     ((endp (cddr terms))
+                      `((IMPLIES (AND (,P ,x) (NOT ,(car terms))) ,(cadr terms))
+                        (IMPLIES (AND (,P ,x) (NOT ,(cadr terms))) ,(car terms))))
+                     ((endp (cdddr terms))
+                      `((IMPLIES (AND (,P ,x) (NOT ,(first terms)) (NOT ,(second terms))) ,(third terms))
+                        (IMPLIES (AND (,P ,x) (NOT ,(first terms)) (NOT ,(third terms))) ,(second terms))
+                        (IMPLIES (AND (,P ,x) (NOT ,(second terms)) (NOT ,(third terms))) ,(first terms))))
+                     (t
+                      ;; Although TAU is symmetric, the order below
+                      ;; only captures partial information in
+                      ;; forward-chaining rules
+                      `((IMPLIES (AND . ,(cons (list P x)
+                                               (dumber-negate-lit-lst (cdr terms))))
+                                 ,(car terms))))))
+              ((not (consp (cdr fes2))) ;exactly one sig-like term
+               (if (= (depth-var x (car fes2)) 2)
+                   ;;sig rule
+                   `((IMPLIES (AND . ,(cons (list P x) (dumber-negate-lit-lst (set-difference-equal terms fes2)))) ,(car fes2))) 
+                 (list "Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule")))
+              (t 
+               (list "Multiple sig terms i.e. (P1 (f x1 ...)) OR (P2 (f x1 ...)) 
+ not allowed in conclusion of signature rule"))))
+    (list "Impossible: Empty clause")))
 
 (defloop tau-rules-Px=>CNF (clauses Px)
-  (for ((cl in clauses)) (collect (tau-rules-Px=>OR-terms cl (car Px) (cadr Px)))))
+  (for ((cl in clauses)) (append (tau-rules-Px=>OR-terms cl (car Px) (cadr Px)))))
 
 (defun get-eq-constant (term wrld)
   "if term is a equality-with-constant, then return (equal e evg)"
