@@ -199,7 +199,7 @@ Why is ACL2 not good at this?
                           test-outcomes% gcs% cgen-state
                           ctx state)
   (decl :sig ((string pseudo-term-list pseudo-term symbol-list
-                      symbol-alist symbol-alist
+                      alist symbol-alist
                       boolean 
                       test-outcomes%-p gcs%-p cgen-state-p
                       symbol state)
@@ -317,7 +317,7 @@ Why is ACL2 not good at this?
                           cgen-state
                           ctx state)
   (decl :sig ((string pseudo-term-list pseudo-term 
-                      symbol-alist symbol-alist symbol-alist
+                      alist symbol-alist symbol-alist
                       boolean 
                       cgen-state-p
                       symbol state)
@@ -333,7 +333,7 @@ Why is ACL2 not good at this?
   - name :: name of subgoal or \"top\" if run from test?
   - H :: hyps - the list of terms constraining the cts and wts search
   - C :: conclusion
-  - type-alist :: types inferred by caller (using ACL2 forward-chain)
+  - type-alist :: ACL2 type-alist (from call of forward-chain)
   - tau-interval-alist :: tau interval inferred by caller
   - elide-map :: elide-map[v] = term for each elided variable v
   - programp :: T when form has a program mode fun or we are in :program

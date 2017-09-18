@@ -734,8 +734,9 @@ where
                     vl cgen-state
                     programp incremental-flag?
                     ctx state)
-  (decl :sig ((string pseudo-term-list pseudo-term symbol-list symbol-doublet-listp symbol-doublet-listp
-                      variable-alist variable-alist variable-alist
+  (decl :sig ((string pseudo-term-list pseudo-term symbol-list symbol-doublet-listp
+                      symbol-doublet-listp
+                      alist variable-alist variable-alist
                       test-outcomes% gcs%
                       fixnum cgen-state
                       boolean boolean
@@ -749,10 +750,9 @@ Use :simple search strategy to find counterexamples and witnesses.
 * What it does
   1. if form has no free variables exit with appropriate return val o.w
   2. make hypotheses-val conclusion-val,  attach them
-  3. take intersection of acl2 type-alist with top-level one from gcs%.
-  4. make next-sigma defun and attach it
-  5. call run-tests!.
-  6. store/record information (test-outcomes%,gcs%) and 
+  3. make next-sigma defun and attach it
+  4. call run-tests!.
+  5. store/record information (test-outcomes%,gcs%) and 
      returns (list stop? test-outcomes% gcs%) where stop? is T when
      stopping condition is satisfied and there was no error in ld.
 ")
@@ -790,17 +790,6 @@ Use :simple search strategy to find counterexamples and witnesses.
 ;       Order of hyps is important -- Values of each hyp is stored in seq
        (hyp-val-list-defuns (make-hyp-val-list-defuns hyps vars mv-sig-alist programp))
        
-       (wrld (w state))
-       ;; ((mv erp0 tr-res state) ;commented out after throwing graph-tc.lisp
-       ;;  (trans-eval `(mv-list 2 (meet-type-alist ',type-alist ',top-vt-alist ',vl ',wrld))
-       ;;              ctx state t))
-       
-       ((mv erp type-alist) (meet-type-alist type-alist (cget top-vt-alist) vl wrld))
-       ((when erp)
-        (prog2$
-         (cw? (normal-output-flag vl)
-              "~|CEgen/Error: Type intersection failed. Skip searching ~x0.~%" name)
-         (mv t (list NIL test-outcomes% gcs%) state)))
 
        ;;[2016-04-03 Sun] Added support for fixers
        ((mv erp fxr-res state)

@@ -274,7 +274,8 @@
        (hi-rel (acl2::access acl2::tau-interval interval :hi-rel))
        (P (defdata::predicate-name type (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld))))
     (case (acl2::access acl2::tau-interval interval :domain)
-      (acl2::integerp (or (and (defdata::subtype-p P 'ACL2::NATP wrld) ;use the fact that integers are squeezed (weak inequalities)
+      (acl2::integerp (or (and (defdata::subtype-p P 'ACL2::NATP wrld)
+;use the fact that integers are squeezed (weak inequalities)
                                (equal lo 0)
                                (null hi))
                           (and (defdata::subtype-p P 'ACL2::POSP wrld) 
@@ -319,7 +320,7 @@
 
 
 (def assimilate-apriori-type-information (vs type-alist tau-interval-alist vl wrld ans.)
-  (decl :sig ((symbol-list symbol-alist symbol-alist fixnum plist-world symbol-cs%-alist) 
+  (decl :sig ((symbol-list alist symbol-alist fixnum plist-world symbol-cs%-alist) 
               -> symbol-cs%-alist)
         :doc 
 "overwrite into v-cs%-alst. the type information in type-alist/tau-interval-alist.
@@ -334,13 +335,12 @@ into eq-constraint field and put interval into range constraint field")
   (if (endp vs)
       ans.
     (b* ((x (car vs))
-         (prior-t (assoc-eq x type-alist)) ;prior-t is consp assert!
-;type-alist of of form (listof (cons var (listof defdata-type)))
-;where defdata-type is possible-defdata-type-p. listof represents unions.
+         (ts-info (assoc-eq x type-alist))
+         (ts (and ts-info (cadr ts-info))) ;;TODO: approximation. there might be multiple entries!
+         (prior-t (and ts (get-type-list-from-type-set ts)))
+         ;; prior-t is a list of defdata typenames
          (- 
 ; TODO: Union types are ignored. Implement them.
-; But note that since we always get this through a meet-type-alist, we
-; throw away the union type information there itself.
            (cw? (and (verbose-stats-flag vl)
                      (consp prior-t)
                      (consp (cdr prior-t)) 
@@ -417,9 +417,11 @@ into eq-constraint field and put interval into range constraint field")
     (b* ((v-cs%-alst  (unconstrained-v-cs%-alst ordered-vars))
          (v-cs%-alst  (assimilate-apriori-type-information
                        ordered-vars type-alist tau-interval-alist
-                       vl wrld v-cs%-alst)))
+                       vl wrld v-cs%-alst))
+         ;; reify all hyps that are true in the ACL2 context.
+         (context-hyps (reify-type-alist-hyps type-alist)))
        
-     (v-cs%-alist-from-terms. hyps vl wrld v-cs%-alst))))
+     (v-cs%-alist-from-terms. (union-equal hyps context-hyps) vl wrld v-cs%-alst))))
 
 ; TODO: Right now we dont use ACL2's type-alist to full effect. For
 ; example, we might get that (len x) > 3 is non-nil in the type-alist

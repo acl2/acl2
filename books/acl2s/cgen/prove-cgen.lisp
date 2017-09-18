@@ -708,15 +708,15 @@ history s-hist.")
          (cgen-state (update-cgen-state-givens/user :user-supplied-term term
                                                     :start-time start-top  
                                                     :top-vt-alist d-typ-al))
-         (vt-acl2-alst (if programp 
-                           (make-dumb-type-alist vars)
-                         (get-acl2-type-alist (list term) vars)))
+         (type-alist (if programp 
+                         nil
+                       (get-acl2-type-alist (list term))))
          (tau-interval-alist (tau-interval-alist-clause (clausify-hyps-concl hyps concl) vars))
 
 ; put cgen-state in state, so that nested testing via events is caught and disallowed.
          (state (f-put-global 'cgen-state cgen-state state))
          ((mv ?error-or-timeoutp cgen-state state) (cgen-search-fn "top" hyps concl 
-                                                                   vt-acl2-alst tau-interval-alist '() 
+                                                                   type-alist tau-interval-alist '() 
                                                                    programp 
                                                                    cgen-state 
                                                                    ctx state))
