@@ -462,6 +462,9 @@ SAT(term) == \/ SAT(f-lits_i)
                     (list term)))))
 
 
+(defloop make-dummy-term-flits-alist (terms fnames)
+  (for ((term in terms) (fname in fnames))
+       (collect (cons term (acons fname (list term) nil)))))
 
 (defun instantiate-fixer-rules/terms-iter (hyps frules vl state term->flits{} W{} all-hyps fxri{})
 ;fixed-point iteration of above function
@@ -476,7 +479,7 @@ SAT(term) == \/ SAT(f-lits_i)
        (type-hyps (append type-hyps allp-hyps))
 
        (fxri0{} (make-dummy-cgen-builtin-frule-instances type-hyps wrld))
-       (term->flits0{} (pairlis$ type-hyps (pairlis$ (strip-cars fxri0{}) (singletonize type-hyps))))
+       (term->flits0{} (make-dummy-term-flits-alist type-hyps (strip-cars fxri0{})))
        (term->flits{} (union-equal term->flits0{} term->flits{}))
        (fxri{} (union-equal fxri0{} fxri{}))
        
@@ -856,8 +859,56 @@ should we completely be general?
 (defun preservation-rules-table (wrld)
   (table-alist 'PRESERVATION-RULES-TABLE wrld))
 
+(defun cweight (c Cwt{})
+  (or (get1 c Cwt{}) 0))
+(defun cweight-lst (cs Cwt{})
+  (if (endp Cwt{})
+      0
+    (+ (cweight (car cs) Cwt{})
+       (cweight-lst (cdr cs) Cwt{}))))
 
+(defloop filter-terms-without-vars (terms vars)
+  (for ((term in terms))
+       (append (and (not (intersectp-eq (acl2::all-vars term) vars))
+                    (list term)))))
 
+(defun pval (fname fxri{} flits term->flits{} Cwt{} vl)
+  (declare (ignorable vl term->flits{}))
+  (b* ((fruleI (get1 fname fxri{}))
+       (cterm (get1 :constraint-term fruleI))
+       (pterms (get1 :preserves fruleI))
+       (trivially-preserved-terms (filter-terms-without-vars flits (get1 :Out fruleI))))
+    (list (+ (cweight cterm Cwt{}) (cweight-lst pterms Cwt{}))
+          (cweight-lst trivially-preserved-terms Cwt{}))))
+       
+  
+#|
+UNFINISHED
+(defun fxri-let*-soln/greedy1 (term->flits{} var-clique-rep{} Cwt{} fxri{} vl state pval{} ans)
+  (declare (ignorable vl))
+  (if (or (endp term->flits{})
+          (endp fxri{}))
+      (value ans)
+    (b* ((pval{} (update-pval-alist pval{} fxri{} term->flits{} Cwt{}))
+         (fname (choose-maximal-pval-fxri pval{}))
+         (- (cw? (debug-flag vl) "~| Cgen/Debug: Maximal pvalued fixer: ~x0~%" fname))
+         (ans (cons (fxri-b*-entry (assoc-equal fname fxri{})) ans))
+         (fxri1{} (delete-assoc-equal fname fxri{}))
+         (fxri1{} (remove-unpreserved-fxrs fxri{} fname))
+         (term->flits1{} (remove-unpreserved-flits term->flits{} fname fxri{}))
+         )
+      (fxri-let*-soln/greedy1 term->flits1{} Cwt{} fxri1{} vl state pval{} ans))))
+|#
+         
+
+(defloop collect-flits0 (flits{})
+  (for ((fname--flits in flits{}))
+       (append (cdr fname--flits))))
+
+(defloop collect-flits (term->flits{})
+  (for ((term--flits{} in term->flits{}))
+       (append (collect-flits0 (cdr term--flits{})))))
+  
 
 (defun fixer-arrangement1 (terms all-terms vl ctx state)
 ; returns (mv erp (cons let*-soln-binding unsat-terms) state)
@@ -874,7 +925,7 @@ should we completely be general?
 
        (term->flits{} (remove-unfixable-constraints term->flits{} vl))
 
-       (flits (two-level-flatten (strip-cdrs (strip-cdrs term->flits{}))))
+       (flits (collect-flits term->flits{}))
 
        ((mv ?erp2 fxri{} state)
         (instantiate-pres-rules prules flits all-terms~ vl state fxri{}))
