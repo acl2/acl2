@@ -4393,10 +4393,6 @@
           (value :invisible)))
 
 (defmacro set-raw-mode-on! ()
-
-; If this is to be used in code, then   Presumably the value of that keyword is
-; irrelevant.  But 
-
   '(er-progn (ld '((defttag :raw-mode-hack)
                    (set-raw-mode-on state))
                  :ld-prompt nil :ld-verbose nil :ld-post-eval-print nil
