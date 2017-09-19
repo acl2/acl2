@@ -66,23 +66,13 @@ data last modified: [2017-06-26 Mon]
 
 ; for readability of functions with long parameter list
 (defmacro make-pred-I... (s x)
-  `(make-pred-body ,s ,x kwd-alist M C B wrld))
+  `(make-pred-I ,s ,x kwd-alist M C B wrld))
 (defmacro make-pred-Is... (ss xs)
   `(make-pred-Is ,ss ,xs kwd-alist M C B wrld))
 
 ;;TODO: simplify the predicate body with satisfies expr
 (mutual-recursion
  (defun make-pred-I (s x   kwd-alist M C B wrld)
-   "see below. Add a top-level satisfies-constraint to the predicate body"
-   (b* ((body (make-pred-body s x kwd-alist M C B wrld))
-        (satisfies-exprs (get-all :satisfies kwd-alist))
-        (satisfies-exprs (acl2::subst x 'acl2s::x satisfies-exprs)))
-     (if (consp satisfies-exprs)
-         `(AND ,body
-               ,@satisfies-exprs)
-       body)))
-
- (defun make-pred-body (s x   kwd-alist M C B wrld)
    "predicate interpretation/expression for core defdata exp s.
 x is the name of the expr that currently names the argument under question/predication
 kwd-alist gives some defaults.
@@ -114,7 +104,7 @@ B is the builtin combinator table."
                (binding (bind-names-vals (cdr s) dest-calls))
                (call-exprs (replace-calls-with-names dest-calls (cdr s)))
                (rst (make-pred-Is... (cdr s) call-exprs))
-
+               ;; add product-specific satisfies involving names here
                (recog-calls (list (list recog x))))
             (if binding
                 `(AND ,@recog-calls
@@ -146,6 +136,13 @@ B is the builtin combinator table."
 (defloop funcalls-append (fs args wrld)
   (for ((f in fs)) (append (funcall-w f args 'defdata-events wrld))))
 
+(defun satisfies-terms (xvar kwd-alist)
+  (b* ((satisfies-exprs (get-all :satisfies kwd-alist))
+       (satisfies-exprs (filter-terms-with-vars satisfies-exprs (list 'acl2s::x)))
+       (satisfies-exprs (acl2::subst xvar 'acl2s::x satisfies-exprs))
+       (satisfies-exprs (flatten-ANDs satisfies-exprs)))
+    satisfies-exprs))
+
 
 ;Generate predicate events
 
@@ -174,9 +171,20 @@ B is the builtin combinator table."
        (def (if (and (not recp) (get1 :disable-non-recursive-p kwd-alist))
                 'defund 
               'defun))
+
+       ;;[2017-09-19 Tue] Implement top-level :satisfies clause to defdata
+       (satisfies-exprs (satisfies-terms xvar kwd-alist))
+       (pred-name-aux (s+ pred-name "-AUX"))
+       (pred-body-aux (acl2::subst pred-name-aux pred-name pred-body))
+       (satisfies-pred-body `(AND (,pred-name-aux ,xvar)
+                                  ,@satisfies-exprs))
+
        )
-    
-    `((,def ,pred-name (,xvar) ,@pred-decls ,pred-body))))
+    (if (endp satisfies-exprs)
+        `((,def ,pred-name (,xvar) ,@pred-decls ,pred-body))
+      `((,def ,pred-name-aux (,xvar) ,@pred-decls ,pred-body-aux)
+        (,def ,pred-name (,xvar) ,@pred-decls ,satisfies-pred-body)))))
+
 
 
 (defloop pred-events (ps kwd-alist wrld)
@@ -212,7 +220,7 @@ B is the builtin combinator table."
        )
     
     (if (and (consp pred-events) (consp (cdr pred-events))) ;len = 2
-        `((mutual-recursion ,@pred-events))
+        `((mutual-recursion ,@pred-events)) ;;TODO -- only keep clique inside a mutual-recursion.
       (append already-defined-pred-defthm-events pred-events))))
 
 
