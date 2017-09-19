@@ -66,65 +66,73 @@ data last modified: [2017-06-26 Mon]
 
 ; for readability of functions with long parameter list
 (defmacro make-pred-I... (s x)
-  `(make-pred-I ,s ,x kwd-alist M C B wrld))
+  `(make-pred-body ,s ,x kwd-alist M C B wrld))
 (defmacro make-pred-Is... (ss xs)
   `(make-pred-Is ,ss ,xs kwd-alist M C B wrld))
 
-
+;;TODO: simplify the predicate body with satisfies expr
 (mutual-recursion
-(defun make-pred-I (s x   kwd-alist M C B wrld)
-  "predicate interpretation for core defdata exp s.
+ (defun make-pred-I (s x   kwd-alist M C B wrld)
+   "see below. Add a top-level satisfies-constraint to the predicate body"
+   (b* ((body (make-pred-body s x kwd-alist M C B wrld))
+        (satisfies-exprs (get-all :satisfies kwd-alist))
+        (satisfies-exprs (acl2::subst x 'acl2s::x satisfies-exprs)))
+     (if (consp satisfies-exprs)
+         `(AND ,body
+               ,@satisfies-exprs)
+       body)))
+
+ (defun make-pred-body (s x   kwd-alist M C B wrld)
+   "predicate interpretation/expression for core defdata exp s.
 x is the name of the expr that currently names the argument under question/predication
 kwd-alist gives some defaults.
 M is type metadata table + some basic info for the clique of types being defined.
 C is the constructor table + some basic info for new constructors.
 B is the builtin combinator table."
-  (cond ((possible-constant-value-p s) `(EQUAL ,x ,s))
+   (cond ((possible-constant-value-p s) `(EQUAL ,x ,s))
 
-        ((proper-symbolp s) (if (assoc-eq s M) ;this is fine, since names and typenames are disjoint
-                                `(,(predicate-name s M) ,x)
-                              `(EQUAL ,x ,s)))
+         ((proper-symbolp s) (if (assoc-eq s M) ;this is fine, since names and typenames are disjoint
+                                 `(,(predicate-name s M) ,x)
+                               `(EQUAL ,x ,s)))
 
-        ((not (true-listp s)) (make-pred-I... (cdr s) x)) ;name decl
+         ((not (true-listp s)) (make-pred-I... (cdr s) x)) ;name decl
 
-        ((assoc-eq (car s) B) ;builtin combinator
-         (b* ((pred-I-fn (get2 (car s) :pred-I B)))
-           (if pred-I-fn
-               ;special cases like range, member
-               (funcall-w pred-I-fn (list x s) 'make-pred-I wrld)
-             `(,(car s) . ,(make-pred-Is... (cdr s) (make-list (len (cdr s)) :initial-element x))))))
+         ((assoc-eq (car s) B) ;builtin combinator
+          (b* ((pred-I-fn (get2 (car s) :pred-I B)))
+            (if pred-I-fn
+;special cases like range, member
+                (funcall-w pred-I-fn (list x s) 'make-pred-I wrld)
+              `(,(car s) . ,(make-pred-Is... (cdr s) (make-list (len (cdr s)) :initial-element x))))))
 
-        ((assoc-eq (car s) C) ;constructor
-         (b* ((conx (car s))
-              ((mv recog dest-pred-alist) (mv (get2 conx :recog C) (get2 conx :dest-pred-alist C)))
-              (dest-calls (list-up-lists (strip-cars dest-pred-alist) (make-list (len (cdr s)) :initial-element x)))
-              (field-pred-alist (get2 conx :field-pred-alist C)) ;non-empty only for new-constructor (record)
-              (mget-dex-calls (and field-pred-alist (apply-mget-to-var-lst (strip-cars field-pred-alist) x)))
-              (dest-calls (or (and (get1 :recp kwd-alist) mget-dex-calls) dest-calls)) ;recursive new-constructors take precedence!
-              (binding (bind-names-vals (cdr s) dest-calls))
-              ;; BUG -- :satisfies x-expr needs to go at the top-level.
-              (satisfies-exprs (get-all :satisfies kwd-alist))
-              (satisfies-exprs (acl2::subst x 'acl2s::x satisfies-exprs))
-              (call-exprs (replace-calls-with-names dest-calls (cdr s)))
-              (rst (append (make-pred-Is... (cdr s) call-exprs)
-                           satisfies-exprs))
-              (recog-calls (list (list recog x))))
-           `(AND ,@recog-calls
-                 (LET ,binding
-                      (AND . ,rst)))))
-                                  
-        (t
-;TODO: maybe dependent expr...
-         `(,(car s) . ,(make-pred-Is... (cdr s) (make-list (len (cdr s)) :initial-element x))))))
+         ((assoc-eq (car s) C) ;constructor
+          (b* ((conx (car s))
+               ((mv recog dest-pred-alist) (mv (get2 conx :recog C) (get2 conx :dest-pred-alist C)))
+               (dest-calls (list-up-lists (strip-cars dest-pred-alist) (make-list (len (cdr s)) :initial-element x)))
+               (field-pred-alist (get2 conx :field-pred-alist C)) ;non-empty only for new-constructor (record)
+               (mget-dex-calls (and field-pred-alist (apply-mget-to-var-lst (strip-cars field-pred-alist) x)))
+               (dest-calls (or (and (get1 :recp kwd-alist) mget-dex-calls) dest-calls)) ;recursive new-constructors take precedence!
+               (binding (bind-names-vals (cdr s) dest-calls))
+               (call-exprs (replace-calls-with-names dest-calls (cdr s)))
+               (rst (make-pred-Is... (cdr s) call-exprs))
+
+               (recog-calls (list (list recog x))))
+            (if binding
+                `(AND ,@recog-calls
+                      (LET ,binding (AND . ,rst)))
+              `(AND ,@recog-calls ,@rst))))
          
-(defun make-pred-Is (texps xs   kwd-alist M C B wrld)
-  (if (endp texps)
-      '()
-    (cons (make-pred-I... (car texps) (car xs))
-          (make-pred-Is... (cdr texps) (cdr xs)))))
+         (t
+;TODO: maybe dependent expr...
+          `(,(car s) . ,(make-pred-Is... (cdr s) (make-list (len (cdr s)) :initial-element x))))))
+         
+ (defun make-pred-Is (texps xs   kwd-alist M C B wrld)
+   (if (endp texps)
+       '()
+     (cons (make-pred-I... (car texps) (car xs))
+           (make-pred-Is... (cdr texps) (cdr xs)))))
 )
          
-  
+
 
 (defun make-pred-declare-forms (xvar kwd-alist)
   (b* ((guard-lambda (get1 :pred-guard kwd-alist)) ;its a lambda

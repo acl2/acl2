@@ -135,7 +135,7 @@ data last modified: [2014-08-06]
                (cond (remaining-x-es
                       (prog2$ ;check this
                        (cw? nil "~| Presence of ~x0 precludes a tau characterization of ~x1~%" remaining-x-es P)
-"Multiple sig terms i.e. (P1 (f x1 ...)) \/ (P2 (f x1 ...)) 
+"Multiple sig terms i.e. (P1 (f x1 ...)) OR (P2 (f x1 ...)) 
  not allowed in conclusion of signature rule."))
                      ((nested-functional-terms-with-vars-p dest-es x1--xk)
                       (prog2$
