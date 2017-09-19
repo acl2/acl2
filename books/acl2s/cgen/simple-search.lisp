@@ -577,11 +577,13 @@ where
 (include-book "select")
 (def make-next-sigma-defuns (hyps concl
                                   partial-A elim-bindings
+                                  top-vt-alist
                                   type-alist tau-interval-alist
                                   programp vl state)
   (decl :sig ((pseudo-term-list pseudo-term
                                 symbol-doublet-listp symbol-doublet-listp
-                                symbol-alist symbol-alist
+                                symbol-doublet-listp
+                                alist symbol-alist
                                 boolean fixnum plist-worldp) 
               -> (mv erp all symbol-alist))
         :doc "return the defun forms defining next-sigma function, given a
@@ -630,7 +632,9 @@ where
          (ord-vs (vars-in-dependency-order hyps concl vl wrld))
          ;(- (cw "ord-vs is ~x0 and the freshly computed ord-vs1 is ~x1~%" ord-vs ord-vs1))
          (v-cs%-alst (collect-constraints% (cons (cgen-dumb-negate-lit concl) hyps)
-                                           ord-vs type-alist tau-interval-alist vl wrld))
+                                           ord-vs
+                                           top-vt-alist
+                                           type-alist tau-interval-alist vl wrld))
 
 
         ;; ((mv erp var-enumcalls-alist) (make-enumerator-calls-alist v-cs%-alst vl wrld '()))
@@ -808,11 +812,16 @@ Use :simple search strategy to find counterexamples and witnesses.
 ;       (new-fxr-vars (set-difference-equal (acl2::all-vars1-lst additional-fxr-hyps '()) vars))
        (- (cw? (and (verbose-stats-flag vl) additional-fxr-hyps)
                "~|CEgen/Note: Additional Hyps for fixers: ~x0~|" additional-fxr-hyps))
-       
+
+       (acl2-vt-dlist (var-types-alist-from-acl2-type-alist type-alist vars '()))
+       ((mv erp top+-vt-dlist) (meet-type-alist acl2-vt-dlist (cget top-vt-alist) vl (w state)))
+       (top+-vt-dlist (if erp (make-weakest-type-alist vars) top+-vt-dlist))
+
        ((mv erp next-sigma-defuns disp-enum-alist)
         (make-next-sigma-defuns (union-equal additional-fxr-hyps hyps) concl
 ;(append new-fxr-vars vars)  Compute it again afresh [2016-10-29 Sat]
                                 partial-A elim-bindings
+                                top+-vt-dlist
                                 type-alist tau-interval-alist
                                 t ; programp ;;Aug 2014 -- New defdata has program-mode enumerators
                                 vl state))

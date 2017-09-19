@@ -157,7 +157,7 @@
 
 
 
-(defun make-dumb-type-alist (vars)
+(defun make-weakest-type-alist (vars)
   "the default dumb type-alist with all variables associated with TOP i.e acl2s::all"
   (declare (xargs :guard (symbol-listp vars))) ;use proper-symbol-listp
   (pairlis$ vars (make-list (len vars)
@@ -379,7 +379,7 @@
 
 (def dumb-type-alist-infer-from-term (term vl wrld  ans.)
   (decl :sig ((pseudo-term-listp fixnum plist-worldp  symbol-alistp) 
-              -> symbol-alistp)
+              -> symbol-doublet-listp)
         :doc "main aux function to infer type-alist from term")
   (declare (xargs :verify-guards nil))
 ; ans. is a type alist and has type
@@ -436,7 +436,7 @@
 
 (def dumb-type-alist-infer-from-terms (H vl wrld  ans.)
   (decl :sig ((pseudo-term-listp fixnum plist-worldp  
-                                 symbol-alistp) -> symbol-alistp)
+                                 symbol-alistp) -> symbol-doublet-listp)
         :doc "aux function for dumb extraction of defdata types from terms in H")
   (declare (xargs :verify-guards nil))
   (if (endp H)
@@ -450,7 +450,7 @@
               -> symbol-alistp)
         :doc "dumb infer defdata types from terms in H")
   (declare (xargs :verify-guards nil))
-  (dumb-type-alist-infer-from-terms H vl wrld (make-dumb-type-alist vars)))
+  (dumb-type-alist-infer-from-terms H vl wrld (make-weakest-type-alist vars)))
 
 (defmacro   debug-flag  (vl)
   `(> ,vl 3))

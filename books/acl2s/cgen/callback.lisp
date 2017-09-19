@@ -390,7 +390,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
               ((mv H C) (cgen::clause-mv-hyps-concl gen-cl))
               (vars (vars-in-dependency-order H C vl wrld))
 
-              (vt-alist (make-dumb-type-alist vars))
+              (vt-alist (make-weakest-type-alist vars))
               ;; (term (if (null H)
               ;;           C
               ;;           `(implies (and ,@H) ,C)))
