@@ -1,4 +1,4 @@
-; ABNF Library
+; ABNF Library (Excluding Examples)
 ;
 ; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -62,6 +62,10 @@
      <li>
      Executable operations on ABNF grammars,
      e.g. to check their well-formedness and to compose them.
+     </li>
+     <li>
+     Examples of use of the parser, the abstractor, and some grammar operations
+     on a few real-world ABNF grammars (e.g. for HTTP).
      </li>
    </ul>
 
