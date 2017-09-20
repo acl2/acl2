@@ -165,7 +165,7 @@
                              ctx wrld
                              (default-state-vars t
 
-; For the applyication of verify-termination to a function that has already
+; For the application of verify-termination to a function that has already
 ; been admitted, we avoid failure due to an untouchable function or variable.
 
                                :temp-touchable-fns
@@ -1330,7 +1330,7 @@
                                tests))
                   (t tests0))))
 
-; THrough Version_7.1 we returned nil when (null tests), with the comment:
+; Through Version_7.1 we returned nil when (null tests), with the comment:
 ; "contradictory case".  However, that caused a bad error when a caller
 ; expected a tests-and-calls record, as in the following example.
 
@@ -1828,7 +1828,7 @@
   (let ((wrld1 (putprop-recursivep-lst names bodies wrld)))
 
 ; The put above stores a note on each function symbol as to whether it is
-; recursive or not.  An important question arises: have we inadventently
+; recursive or not.  An important question arises: have we inadvertently
 ; assumed something axiomatically about inadmissible functions?  We say no.
 ; None of the functions in question have bodies yet, so the simplifier doesn't
 ; care about properties such as 'recursivep.  However, we make use of this
@@ -2119,7 +2119,7 @@
 ; processing.  For example, as nqthm taught us, the measure conjectures
 ; generated from term' may be inadequate to justify the admission of a function
 ; whose body is term.  A classic example is (fn x) = (if (fn x) t t), where the
-; normalized body is just t.  The Hisorical Plaque below contains a proof that
+; normalized body is just t.  The Historical Plaque below contains a proof that
 ; if (fn x) = term' is admissible then there exists one and only one function
 ; satisfying (fn x) = term.  Thus, while the latter definition may not actually
 ; be admissible it at least will not get us into trouble and in the end the
@@ -2989,7 +2989,7 @@
 ; Probably it would be sound to return
 ; (mv *ts-empty* *ts-empty* nil (cons-tag-trees ts-ttree ttree)).
 ; Since the context is contradictory.  But this hasn't been an issue as far as
-; we know, so we'll avoid making an airtight soundnss argument until the need
+; we know, so we'll avoid making an airtight soundness argument until the need
 ; arises.
 
        (type-set-and-returned-formals (fargn term 2)
@@ -3304,7 +3304,7 @@
 ; earlier included book were sometimes causing horrendous slowdowns in those
 ; computations while including a later book; and, we can lose nice
 ; type-prescriptions that were inferred during the proof (first) pass of
-; certify-book using local rules, where a similarl problem can occur with
+; certify-book using local rules, where a similar problem can occur with
 ; encapsulate.
 
 ; In March 2016 we solved these problems by introducing "cert-data" structures,
@@ -4040,7 +4040,7 @@
 ; Observe that our notion doesn't include any inspection of the tests
 ; governing the recursions and it doesn't include any check of the
 ; subfunctions used.  E.g., the function that collects all the values of
-; Ackerman's functions is p.r. if it recurses on cdr's.
+; Ackermann's functions is p.r. if it recurses on cdr's.
 
   (cond ((null names) wrld)
         ((cdr names) wrld)
@@ -4398,7 +4398,7 @@
 ; name, as in the :ideal case, but subject to the check for
 ; :common-lisp-compliant subfunctions that we do in the :ideal case.
 
-; One might wonder when two peers in a clique can have different symbol-classs,
+; One might wonder when two peers in a clique can have different symbol-classes,
 ; e.g., how is it possible (as implied above) for name to be :ideal but for one
 ; of its peers to be :common-lisp-compliant or :program?  Redefinition.  For
 ; example, the clique could have been admitted as :logic and then later one
@@ -4770,7 +4770,7 @@
 
 ; Note: In a series of conversations started around 13 Jun 94, with Bishop
 ; Brock, we came up with a new proposal for the form of guard conjectures.
-; However, we have decided to delay the experiementation with this proposal
+; However, we have decided to delay the experimentation with this proposal
 ; until we evaluate the new logic of Version 1.8.  But, the basic idea is this.
 ; Consider two functions, f and g, with guards a and b, respectively.  Suppose
 ; (f (g x)) occurs in a context governed by q.  Then the current guard
@@ -4785,7 +4785,7 @@
 
 ; Now in the days when guards were part of the logic, this was a pretty
 ; compelling idea because we couldn't get at the definition of (g x) in (2)
-; without establisthing (b x) and thus formulation (2) forced us to prove
+; without establishing (b x) and thus formulation (2) forced us to prove
 ; (1) all over again during the proof of (2).  But it is not clear whether
 ; we care now, because the smart user will define (g x) to "do the right thing"
 ; for any x and thus f will approve of (g x).  So it is our expectation that
@@ -5615,7 +5615,7 @@
 
 ; In this case, we skip the polite check that state can be a formal without
 ; declaring it a stobj.  This way, verify-termination can succeed in the case
-; that the original :program mode defininition was evaluated in a world with
+; that the original :program mode definition was evaluated in a world with
 ; state-ok but the current definition is not.
 
                                   (value nil))
@@ -6630,7 +6630,7 @@
 
 ; We return 'redundant if the functions in def-lst are already identically
 ; defined with :mode defun-mode and class symbol-class.  We return
-; 'verify-guards if they are al identically defined with :mode :logic and class
+; 'verify-guards if they are all identically defined with :mode :logic and class
 ; :ideal, but this definition indicates promotion to :common-lisp-compliant.
 ; Finally, we return 'reclassifying if they are all identically defined in
 ; :mode :program and defun-mode is :logic.  We return nil otherwise.
@@ -6861,7 +6861,7 @@
 ; be irrelevant.
 
 ; For example, in (defun foo (x y) (if (zerop x) 0 (foo (1- x) (cons x y)))) we
-; intially guess that x is relevant and y is not.  The next iteration adds
+; initially guess that x is relevant and y is not.  The next iteration adds
 ; nothing, because y is not used in the x posn, so we are done.
 
 ; On the other hand, in (defun foo (x y) (if (< x 2) x (foo y 0))) we might
@@ -7071,7 +7071,7 @@
 ; We compute the relevant posns in an expanded clique alist (one in which the
 ; lambda expressions have been elevated to clique membership).  The list of
 ; relevant posns includes the relevant lambda posns.  We do it by iteratively
-; enlarging an iniital clique-alist until it is closed.
+; enlarging an initial clique-alist until it is closed.
 
   (let* ((clique-alist1 (relevant-posns-clique-init fns arglists guards
                                                     split-types-terms measures

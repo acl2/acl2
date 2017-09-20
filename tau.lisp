@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 
-; In this file we define the Tau system, a collection of data strutures and
+; In this file we define the Tau system, a collection of data structures and
 ; algorithms for reasoning quickly about monadic predicates.  However, we need
 ; certain basic facilities from the rest of ACL2's sources and we have put them
 ; all in the following ``prelude.''  See the Essay on the Tau System below for
@@ -71,7 +71,7 @@
 (defun member-neg-evgs (x neg-evg-lst)
 
 ; X is a singleton list and neg-evg-lst is a neg-evg list -- a list of
-; singletons ordered almsot with lexorder but with (nil) as the smallest item
+; singletons ordered almost with lexorder but with (nil) as the smallest item
 ; in the ordering.  We return t if x is a member of neg-evg-lst and nil
 ; otherwise.
 
@@ -238,7 +238,7 @@
 ; ((LAMBDA (VAR) (THE-CHECK (guard VAR) 'type VAR)) expr).  The-check is
 ; defined to have a guard that logically is its first argument, so when we
 ; generate guards for the translation above we generate the obligation to prove
-; (guard expr).  Futhermore, the definition of the-check is such that unless
+; (guard expr).  Furthermore, the definition of the-check is such that unless
 ; the value of state global 'guard-checking-on is :none, executing it in the
 ; *1* function tests (guard expr) at runtime and signals an error.
 
@@ -807,7 +807,7 @@
 ; Note:  It would be a major change to make this function force assumptions.
 ; If the returned ttree contains 'assumption tags then the primary use of
 ; this function, namely the expression of type-alists in clausal form so that
-; assumptions can be attacked as clauses, becomes problematic.  Don't glibbly
+; assumptions can be attacked as clauses, becomes problematic.  Don't glibly
 ; generalize type-set-inverter rules to force assumptions.
 
   (cond ((ts= ts *ts-unknown*) (mv *t* ttree))
@@ -1101,7 +1101,7 @@
 ; On Tau-Like Terms
 ; On Loops in Relieving Dependent Hyps in Tau Signature Rules
 ; On the Tau Msgp Protocol
-; On Removal of Ancestor Literals -- The Satriana Hack Prequel
+; On Removal of Ancestor Literals -- The Satriani Hack Prequel
 ; On the Motivation for Tau-Subrs
 ; On the Tau Completion Alist (calist)
 ; On Disjoining Tau
@@ -1136,7 +1136,7 @@
 ; We were tempted to call such a set a ``type'' of the term but felt that was
 ; inappropriate because the literature on types is so extensive and we have no
 ; interest in defending the proposition that our objects are ``types''.  We
-; really don't think of them as anythin more than sets of recognizers known
+; really don't think of them as anything more than sets of recognizers known
 ; known to be true.  We could not use the words ``sorts'' or ``kinds'' for
 ; similar reasons.  So we temporarily adopted the name ``recognizer sets''
 ; abbreviated ``rs.''  But this was an unfortunate acronym for two reasons:
@@ -1273,7 +1273,7 @@
 ; enabled status of the rune for TAU-SYSTEM.
 
 ; Our design allows for theorems to enter the tau database in either of two
-; ways, explicitly (because they have rule-classe :tau-system) or implicitly
+; ways, explicitly (because they have rule-classes :tau-system) or implicitly
 ; (because they are of the right syntactic shape).  Non-:tau-system theorems
 ; are swept up into the database implicitly only when the tau system is in
 ; ``automatic mode.''
@@ -2137,7 +2137,7 @@
 ; (defun IS-NATP (x) (NATP x))
 ; (defun IS-NOT-NATP (x) (not (NATP x)))
 
-; and then the meaning of the recogizer set containing both in pos-pairs is nil
+; and then the meaning of the recognizer set containing both in pos-pairs is nil
 ; but the tau is not obviously contradictory.  More complicated examples can be
 ; constructed involving the evgs and the pairs.  Pragmatically, the user should
 ; not define predicates as the negations of other predicates nor should
@@ -2197,7 +2197,7 @@
 
 ; We will be more precise about the database later, but Simple rules are used
 ; to populate the database, storing all the implications of a given
-; recognizer's truth or falsity.  These implications are just tau representing
+; recognizers truth or falsity.  These implications are just tau representing
 ; the set of all truths that follow.  For example, under NATP we will store the
 ; tau of all known recognizers implied by t/NATP, as well as all known
 ; recognizers implied by nil/NATP.  The database is used to collect known
@@ -2710,7 +2710,7 @@
 ; but avoids the consing of (list tau-pair).
 
 ; We sweep neg-evgs (a list of singleton lists containing evgs) and delete
-; those that are bad in the sense of being redundanct wrt to a particular
+; those that are bad in the sense of being redundant wrt to a particular
 ; signed recognizer.  We return (mv changedp result).
 
   (cond ((endp neg-evgs) (mv nil nil))
@@ -2753,7 +2753,7 @@
 (defun tau-pairs-near-subsetp (pairs1 pairs2 e)
 
 ; Pairs1 and pairs2 are duplicate-free ordered descending tau-pair lists.  We
-; determine whether there is exactly one elemnt of pairs1 not in pairs2.  We
+; determine whether there is exactly one element of pairs1 not in pairs2.  We
 ; return t if pairs1 is a subset of pairs2, nil if more than one element of
 ; pairs1 fails to be pairs2, and the missing tau-pair otherwise.
 
@@ -2764,7 +2764,7 @@
 ; workhorse, tau-pairs-near-subsetp1, and adding a top-level function to check
 ; for the short-cut) only saved about one half of one percent of the total
 ; number of calls of the workhorse over a test involving about 380 million
-; calls.  So we don't implement this optimation.
+; calls.  So we don't implement this optimization.
 
   (cond ((endp pairs1) (if e e t))
         ((endp pairs2)
@@ -4193,7 +4193,7 @@
 ; example, (< #c(5 -1) 5) but not (lexorder #c(5 -1) 5), because lexorder puts
 ; rationals before complex-rationals.  Thus, it is difficult to exploit the
 ; lexordering of neg-evgs here until we encounter the first non-acl2-numberp,
-; at which point we know that all remaining elements are coereced to 0 by <.
+; at which point we know that all remaining elements are coerced to 0 by <.
 
   (cond ((endp neg-evgs) nil)
         ((acl2-numberp (car (car neg-evgs)))
@@ -4291,7 +4291,7 @@
 
 (defun squeeze-k (upper-boundp rel k)
 
-; K is either NIL (the appopriate infinity) or a rational.  Consider some
+; K is either NIL (the appropriate infinity) or a rational.  Consider some
 ; interval with INTEGERP domain bounded (above or below as per upper-boundp) by
 ; rel and k.  If k is non-nil, we squeeze the given bound as per:
 
@@ -4417,7 +4417,7 @@
 ; appropriately filtered.  Finally, if condition (c) holds, there may be
 ; illegal elements of :neg-evgs but they will be removed here when we enforce
 ; upper-boundp, rel, k.  (For example, we may be adding domain = ACL2-NUMBERP
-; in respose to adding lower-bound 0 <.  In this case, we'll remove from
+; in response to adding lower-bound 0 <.  In this case, we'll remove from
 ; :neg-evgs all non-numeric elements because they fail 0 <.)
 
 ; Reminder: This is not all that must be done when adjusting a bound in a tau!
@@ -5075,7 +5075,7 @@
 ; ordering is such that (NIL), if present, precedes all rationals, all
 ; rationals precede all complex-rationals, and all complex-rationals precede
 ; everything else.  Integers and non-integer rationals are mixed by magnitude
-; with negatives first.  Thus, if we are looking for the intergers from -3 to
+; with negatives first.  Thus, if we are looking for the integers from -3 to
 ; 2, say, we can cdr our way through neg-evgs until we find them all or hit a
 ; rational bigger than hi or hit a non-rational.
 
@@ -6174,7 +6174,7 @@
 ;                            tau-mv-nth-synonyms    (fn1 ... fnk)
 ;                            tau-lost-runes         (rune1 rune2 ...)
 
-; The first three proeprties are called ``tau recognizer properties'' and the
+; The first three properties are called ``tau recognizer properties'' and the
 ; other fn specific properties are called ``tau function properties.''  A
 ; recognizer symbol may have both kinds of properties, e.g., it may be
 ; unevalable-but-known and may be a big-switch.
@@ -6213,7 +6213,7 @@
 
 ; Tau-put's treatment of p-->q is asymmetric. Even though p-->q and its
 ; contrapositive, -q-->-p are logically equivalent, we may do something in
-; response to the one and do nothing in respose to the other.  For example, (p
+; response to the one and do nothing in response to the other.  For example, (p
 ; x) --> (q x) causes updates to p's pos-implicants and its contrapositive
 ; causes updates to q's neg-implicants.  But there is only one thing we can
 ; learn from x='A --> (p x) and that is, at most, that p is unevalable but true
@@ -6232,7 +6232,7 @@
 ; theorem.  To make it easier to think about, we let p take on the following
 ; four forms (handling both signs explicitly later below).
 ;
-; (p x)    ; p represents some arbitray monadic Boolean function symbol
+; (p x)    ; p represents some arbitrary monadic Boolean function symbol
 ; (= x a)  ; = represents EQUAL and a stands for an arbitrary quoted constant
 ; (< x i)  ; i represents an arbitrary quoted rational constant
 ; (< i x)  ; i represents an arbitrary quoted rational constant
@@ -6490,7 +6490,7 @@
 
 ; A coding question: The table above guides our coding of tau-put below.  But
 ; when we say ``signal contradiction'' we mean we are logically justified in
-; signalling a contradiction.  We are also logically justified in just ignoring
+; signaling a contradiction.  We are also logically justified in just ignoring
 ; the situation: if the theory is inconsistent, it is still sound to not report
 ; it!  For example, consider lines 21--24.
 
@@ -7161,7 +7161,7 @@
 
 (defun putprop-if-different (sym prop val wrld)
 
-; Wrld must be the ACL2 logial world, not some user-defined world.  We store
+; Wrld must be the ACL2 logical world, not some user-defined world.  We store
 ; val as the property prop of sym unless it is already stored there.
 
 ; The following theorem (proved after calling verify-termination on the two
@@ -7190,7 +7190,7 @@
 ; scanning the world and we encounter a function introduction, i.e., a FORMALs
 ; property.  But the monadic primitives, like CONSP and SYMBOLP, are known to
 ; be Boolean and are so initialized when we begin regenerating the world, in an
-; immitation of what happens during boot-strap.  We do not want our encounter
+; imitation of what happens during boot-strap.  We do not want our encounter
 ; with their subsequent FORMALS binding to erase those tau properties.
 
   (cond
@@ -7331,7 +7331,7 @@
 ; However, we must first check that fn is not already known to be a tau
 ; predicate so that we don't re-initialize its tau properties and wipe out
 ; existing ones.  Sol Swords constructed a script in which proving that NATP
-; was BOOLEANP inadventently wiped out the bootstrap properties of NATP because
+; was BOOLEANP inadvertently wiped out the bootstrap properties of NATP because
 ; we failed to detect that we already knew NATP was BOOLEANP.
 
   (declare (ignore hyps))
@@ -8017,7 +8017,7 @@
 
 ; If v occurs freely in term and is a switch for term, then term must begin
 ; with an IF and the test must be a recognizer on v.  Thus, at most one
-; variable occuring freely in term is a switch for term.
+; variable occurring freely in term is a switch for term.
 
 ; We say an unconditional equation defines a ``big switch function'' if the
 ; equation is of the form
@@ -8900,7 +8900,7 @@
 
 (defun split-on-conjoined-disjunctions-in-hyps-of-pairs (pairs)
 
-; Pairs is a list of (hyps . concl) pairs as produced by unprettify.  We split
+; Pairs is a list of (hyps . concl) pairs as produced by unprettyify.  We split
 ; out the disjunctions in the hyps, producing another list of pairs.  E.g.,
 ; from these two pairs (((p (or q1 q2)) . concl1) ((r (or s1 s2)) . concl2))
 ; we get these four:
@@ -8956,7 +8956,7 @@
 
 ; Several of the functions that add tau rules obey the Tau Msgp Protocol.  In
 ; that protocol, we return (mv msgp wrld), where msgp is either nil or an error
-; message to be handled (signalled) by some caller of the function in question.
+; message to be handled (signaled) by some caller of the function in question.
 ; When msgp is nil, wrld is the properly extended wrld.  When msgp is non-nil,
 ; wrld is the original wrld passed into the function, not some partially
 ; updated extension.  That is, functions obeying the msgp protocol are No
@@ -8973,7 +8973,7 @@
 ; rule, where the explanation of the inadequacy of the syntactic check is due
 ; to it having been done in the first pass of an encapsulate that failed to
 ; export the Boolean property to the second pass where the error is to be
-; signalled.
+; signaled.
 
 (defun add-tau-rule1 (lost-rune-action rune pairs ens wrld wrld0)
 
@@ -9100,7 +9100,7 @@
 ; tau properties of a function symbol.  This is not necessary on the first
 ; visit to a DEFUN because we know the symbol is new.  Furthermore, on an
 ; ENCAPSULATE event, it is too late to initialize the tau properties of the
-; constrained functions when we see the encapuslate event!  So we visit
+; constrained functions when we see the encapsulate event!  So we visit
 ; function introductions when we see FORMALS properties stored on the world and
 ; we don't consider that part of the (re-)visits to events.
 
@@ -9158,7 +9158,7 @@
 
 ; Programming Note: At first we thought we could achieve No Change Loser status
 ; without passing in wrld0.  The idea is that add-tau-rule1 is a No Change
-; Loser and so if it signalled an error, we'd get back what we gave it.  But
+; Loser and so if it signaled an error, we'd get back what we gave it.  But
 ; because this function is recursive and maps over tp-lst, it could be that
 ; what we gave add-tau-rule1 has already been extended.
 
@@ -9420,7 +9420,7 @@
 ; Suppose lit1 and lit2 are terms and neither is of the form (NOT (NOT &)).
 ; Then we determine whether one is the complement of the other, i.e., one
 ; is (NOT lit) where lit is the other.  Note that we do not use any
-; commuativity knowledge.  Thus,
+; commutativity knowledge.  Thus,
 
 ; WARNING:  (EQUAL A B) and (NOT (EQUAL B A)) are *not* complementaryp, by
 ; this definition!
@@ -9481,7 +9481,7 @@
          (subsumes-but-for-one-negation hyps1 (cdr hyps2) ancestor-lits))
         (t nil)))
 
-; On Removal of Ancestor Literals -- The Satriana Hack Prequel
+; On Removal of Ancestor Literals -- The Satriani Hack Prequel
 
 ; Pair1 is a (hyps . concl) pair, say (hyps1 . concl1) and pairs is a list of
 ; such pairs.  We ``clean up'' pairs with a very limited one-pass
@@ -9539,7 +9539,7 @@
 ; One might wonder what gives us the right, subsequently, to remove the
 ; ancestor lit of pair2 from the next pair encountered, even though we just
 ; check that those hyps, which may be missing lit', are a subset of the next
-; pair.  The invariant insures we can.  But if this connundrum bothers you,
+; pair.  The invariant insures we can.  But if this conundrum bothers you,
 ; just add lit' as a hyp to pair2: it is never unsound to add a hypothesis to a
 ; theorem!  [The key part of the invariant is that, except for lit, the hyps of
 ; pair' are members of the hyps of pair2.]
@@ -9685,7 +9685,7 @@
 
 (defun remove-ancestor-literals-from-pairs1 (pair1 pairs ancestor-lits)
 
-; See the discussion above On Removal of Ancestor Literals -- The Satriana Hack
+; See the discussion above On Removal of Ancestor Literals -- The Satriani Hack
 ; Prequel
 
   (cond
@@ -9713,10 +9713,10 @@
 
 (defun remove-ancestor-literals-from-pairs (pairs)
 
-; See the discussion above On Removal of Ancestor Literals -- The Satriana Hack
+; See the discussion above On Removal of Ancestor Literals -- The Satriani Hack
 ; Prequel for a thorough treatment of this function.  Pairs is a list of (hyps
 ; . concl) pairs and we clean it up -- eliminating unnecessary hyps -- using a
-; very limited form of subsumption-replacement akin to the Satriana Hack.
+; very limited form of subsumption-replacement akin to the Satriani Hack.
 
   (cond ((endp pairs) nil)
         ((endp (cdr pairs)) pairs)
@@ -9764,7 +9764,7 @@
 ;   (implies (AB x) (AB (fn x)))
 ;   :rule-classes :tau-system)
 
-; We disable B to keep the example simple.  As an extra stresser on tau during
+; We disable B to keep the example simple.  As an extra stressor on tau during
 ; this experiment, we leave A enabled so that its (trivial) conjunctive nature
 ; must be also exploited by tau.
 
@@ -9976,7 +9976,7 @@
 ; and rune is its rune.  If tau-system-onlyp is on, we only collect such
 ; :tau-system rules, otherwise we collect all types of rules.  The given
 ; rule-classes have been ``truncated,'' which means that the :corollary has
-; been omited if the formula was the same as the 'theorem property of the
+; been omitted if the formula was the same as the 'theorem property of the
 ; event.  So this function is also given the theorem property of the event.
 
   (cond
@@ -10069,7 +10069,7 @@
 ; established by embedded defun/defthm events.
 
 ; DEFCHOOSE introduces a function symbol.  But at the time of this writing the
-; constraint cannot possibly be of itnterest to tau.  For example, could a
+; constraint cannot possibly be of interest to tau.  For example, could a
 ; defchoose event make fn a monadic Boolean?  Not syntactically.  We come close
 ; with:
 
@@ -11536,7 +11536,7 @@
 ; (T      NIL    NIL    NIL    T      NIL)       mbf!
 
 ; A contradiction was discovered when assuming term true, so it must be false.
-; This is confirmd by assuming the negation of term true and learning that the
+; This is confirmed by assuming the negation of term true and learning that the
 ; negation must be true.  This is a case of wasted work.
 
 ; ctr1   mbt1   mbf1   ctr2   mbt2   mbf2        short answer

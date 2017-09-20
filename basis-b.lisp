@@ -1454,7 +1454,7 @@
 ; check-sum.  We return a non-integer as the first value if (and only if) the
 ; obj is not composed entirely of conses, symbols, strings, rationals, complex
 ; rationals, and characters. If the first value is not an integer, it is one of
-; the offending objects encoutered.
+; the offending objects encountered.
 
 ; We typically used this function to compute checksums for .cert files.
 
@@ -4218,7 +4218,7 @@
         (ccl:set-lisp-heap-gc-threshold ; CCL requires a fixnum.
          (cond ((> new-threshold most-positive-fixnum)
                 (progn (cw "Requested value for set-gc-threshold$ must be a ~
-                            fixnum in CeCL, but ~x0 is greater than ~
+                            fixnum in CCL, but ~x0 is greater than ~
                             most-positive-fixnum (which is ~x1). Setting to ~
                             most-positive-fixnum instead.~|"
                            new-threshold most-positive-fixnum)

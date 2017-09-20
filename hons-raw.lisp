@@ -2071,9 +2071,9 @@
 ; in every call of hons!  On the other hand, we don't want to use a global hash
 ; table that never gets cleaned out, because such a table could grow very large
 ; over time.  Our first solution was to split norming into two functions.  An
-; auxilliary function did all the work, and freely used a hash table without
+; auxiliary function did all the work, and freely used a hash table without
 ; regard to how large it might grow.  Meanwhile, a top-level wrapper function
-; examined the hash table after the auxillary function was finished, and if the
+; examined the hash table after the auxiliary function was finished, and if the
 ; table had been resized, we threw it away and started over.
 ;
 ; Using a global Cache Table nicely solves this problem.  The Cache Table keeps
@@ -3118,7 +3118,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; reinstalled.
 ;
 ; The other arguments are the correspondingly named fields in the hons space,
-; which we assume are detatched from any hons space.  Because of this, we do
+; which we assume are detached from any hons space.  Because of this, we do
 ; not need to worry about interrupts and can freely update the fields in an
 ; order that violates the usual hons space invariants.
 
@@ -3260,7 +3260,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; STR-HT or (for static honsing) the OTHER-HT.
 ;
 ; The other fields are the corresponding fields from a Hons Space, but we
-; assume they are detatched from any Hons Space and do not need to be updated
+; assume they are detached from any Hons Space and do not need to be updated
 ; in a manner that maintains their invariants in the face of interrupts.
 ;
 ; Note that we don't bother to do anything about the ADDR-LIMIT in this
@@ -3989,7 +3989,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
              #-ccl
 
 ; Currently only CCL, SBCL, and LispWorks support ACL2(p) builds.  We do not
-; currently have sufficient confidents in worker-threads for SBCL and LispWorks
+; currently have sufficient confidence in worker-threads for SBCL and LispWorks
 ; (as per email from David Rager, 4/18/2015) to use the test above, so for
 ; those Lisps we simply insist on using hons-clear! instead when parallel
 ; execution is enabled.

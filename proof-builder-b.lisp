@@ -135,7 +135,7 @@
 
 ; If a user stobj changes when running this command, should we issue a warning?
 ; We take the position that this is much like calling some flavor of trans-eval
-; directly, since an arbitary form is evaluated.  But which flavor?  The
+; directly, since an arbitrary form is evaluated.  But which flavor?  The
 ; user-stobjs-modified warnings are heuristic in nature, so we choose to avoid
 ; them here if we are under an LD call that avoids them, since we expect that
 ; the preponderance of proof-checker invocations of the :lisp command will be
@@ -1589,7 +1589,7 @@
         (not (member-eq (car term) '(car cdr))))
     (er hard 'car/cdr^n
         "Illegal call: ~x0.~|If you encountered this call in the ~
-         proof-builder, please contact the ACL2 implemntors."
+         proof-builder, please contact the ACL2 implementors."
         `(car/cdr^n ,n ,term)))
    (t (car/cdr^n (1- n) (fargn term 1)))))
 

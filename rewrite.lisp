@@ -34,7 +34,7 @@
 ; that, read the Note on Tracking Equivalence Runes in subst-type-alist1.)
 
 ; (Note: Some of the parenthetical remarks in this code are extremely trite
-; observations -- to the ACL2 afficionado -- added when I sent this commented
+; observations -- to the ACL2 aficionado -- added when I sent this commented
 ; code off to friends to read.)
 
 ; We will allow the user to introduce new equivalence relations.  At the
@@ -205,7 +205,7 @@
 ; A literal interpretation of the lemma above suggests that one must maintain
 ; identity on the first argument of member in order to rely on the lemma in the
 ; second argument.  What then justifies our independent use of :CONGRUENCE
-; lemmas in distict argument positions?
+; lemmas in distinct argument positions?
 
 ; Congruence Theorem 1.  :CONGRUENCE lemmas for different argument positions of
 ; the same function can be used independently.  In particular, suppose equiv is
@@ -716,7 +716,7 @@
 ; other.  Roughly speaking we simply add the equivs of geneqv1 into
 ; those of geneqv2, not adding any that is a refinement and deleting
 ; any that is refined by a new one.  To make this process faster we
-; first annotate genquv2 by pairing each congruence rule in it with
+; first annotate geneqv2 by pairing each congruence rule in it with
 ; the non-id 'coarsenings property of its :equiv.  Union-geneqv1 does the
 ; work and returns such an annotated list of congruence rules.  We
 ; convert that back into a geneqv by stripping out the annotations.
@@ -803,7 +803,7 @@
 
 ;    (defun geneqv-lst (fn geneqv ens wrld)
 ;     (declare (ignore ens wrld))
-;   ; (setq genquv-cnt (1+ genquv-cnt))
+;   ; (setq geneqv-cnt (1+ geneqv-cnt))
 ;     (cond
 ;      ((and (eq fn 'IFF)
 ;            (equal geneqv *geneqv-iff*))
@@ -1007,7 +1007,7 @@
 
 ; Note: The relation between new and old is some primitive
 ; equivalence, i.e., equiv is a function symbol.  But the relation we
-; are trying to maintain is a generated equivalencd, i.e., a set of
+; are trying to maintain is a generated equivalence, i.e., a set of
 ; primitive equivs.  We could pursue the idea of generalizing equiv to
 ; a generated equivalence.  However, we don't, at the moment, see the
 ; value in that.  In the first place, this function is meant as a
@@ -1505,7 +1505,7 @@
 ; first call of some-consp in the formula just above.  One might thus expect to
 ; be able to apply the rule cons-is-nil to each of these arguments, reducing
 ; the first call above of some-consp to the second call, thus proving the
-; formul.  But the formula is clearly not provable; in fact, the first call of
+; formula.  But the formula is clearly not provable; in fact, the first call of
 ; some-consp is true but the second is false, by definition of some-consp!  We
 ; therefore must take care not to propagate such congruences independently in
 ; the arguments of a function call, unlike for example what we do with the
@@ -2285,7 +2285,7 @@
 
 ; We determine whether some function fn (possibly a lambda-expression)
 ; in fns is used as a function in term.  So this function is:
-; (exists fn in fns s.t. (ffnamep fn term)).
+; (exists fn in fns s.t. (ffnnamep fn term)).
 
   (cond ((variablep term) nil)
         ((fquotep term) nil)
@@ -2528,9 +2528,9 @@
 ;                    think of this as marking this point on the stack
 ;                    so that (push-local . n) fetches from here, offset
 ;                    back by n.
-; (go . n)           transfer control to the instruction labelled n
+; (go . n)           transfer control to the instruction labeled n
 ; (test . n)         pop and test the top of the stack and if nil,
-;                    transfer control to the instruction labelled n,
+;                    transfer control to the instruction labeled n,
 ;                    else execute the next instruction.
 ; (call fn . lst)    Lst is a list that is completely irrelevant
 ;                    except for its length, n.  Pop n things off
@@ -3263,7 +3263,7 @@
 ; this exercise was Joe Satriani's "Motorcycle Driver" on The Extremist album.
 ; That track was not just what I was listening to while this code was written;
 ; the structure of the music sort of inspired the code.  The music starts out
-; boringly repetitive and "slow."  A fairly decent guitar solo at 2:02 doesn`t
+; boringly repetitive and "slow."  A fairly decent guitar solo at 2:02 doesn't
 ; do the job, in the sense that after this attempted speedup the plodding drums
 ; still dominate and the repetitive theme reemerges.  But then, at 3:33 the
 ; guitar, spewing frustration, breaks out into a really wild solo that persists
@@ -3677,7 +3677,7 @@
 ; false, both sides are false.  If arg1 is true, then the equivalence
 ; reduces to arg2 <-> arg2 - {-x}.  But if arg1 is true, either x or
 ; arg1' is true.  If arg1' is true, then so is arg2 and arg2 - {-x}.
-; On the otherhand, if x is true, then -x is false, so the
+; On the other hand, if x is true, then -x is false, so the
 ; equivalence is the observation that we can throw out false
 ; disjuncts.
 
@@ -4025,7 +4025,7 @@
 ; It would be nice for clausify to know all sorts of things, like type-set and
 ; the removal of trivial equivalences.  The trouble is that if we do that, we
 ; need to track what was done with ttrees.  But if clausify returns a ttree
-; many of its callers have great difficulty accomodating it.  For example, in
+; many of its callers have great difficulty accommodating it.  For example, in
 ; the translation of :by hints, there is no provision for recording or
 ; reporting the rules used to "translate" the hint into a clause.  For this
 ; reason, we've left clausify "dumb."
@@ -5268,7 +5268,7 @@
 ; (> (ITERATE FOR ARG IN ARGS SUM (* (COUNT-IFS ARG) (OCCUR-CNT ARG VAL)))
 ;    (ITERATE FOR ARG IN ARGS SUM (COUNT-IFS ARG)))
 
-; where the OCCUR-CNT counted the number of times ARG occured in VAL.  The
+; where the OCCUR-CNT counted the number of times ARG occurred in VAL.  The
 ; heuristic was slightly optimized by observing that if no IFs occur in any arg
 ; then there is no point in doing the OCCUR-CNTs and that once the left hand
 ; side has been pushed beyond the right there is no point in continuing.  (We
@@ -5796,7 +5796,7 @@
   (call result controller-alist)
 
 ; Call and result are both applications of functions in the same
-; mutually recursive clique.  Controller-alist is an alistthat assigns
+; mutually recursive clique.  Controller-alist is an alist that assigns
 ; to each fn in the clique a controller pocket.  We determine whether
 ; that alist assigns controllers in such a way that the controllers of
 ; result are constant and the complexity of the non-controllers in
@@ -7154,7 +7154,7 @@
 ; NOT for use in general purpose calls of wormhole because it is involved with
 ; the local variable illusion associated with "break-rewrite".  A typical use
 ; is (get-brr-local 'unify-subst state) which fetches the local binding of
-; 'unify-subst in the frame of brr-stack that is labelled with the current
+; 'unify-subst in the frame of brr-stack that is labeled with the current
 ; brr-gstack.
 
   (let ((clean-stack (clean-brr-stack (get-brr-global 'brr-gstack state)
@@ -7164,7 +7164,7 @@
 (defun put-brr-local1 (gstack var val stack)
 
 ; See the Essay on "Break-Rewrite" and the comment in brr-@ above.  We assign
-; val to var in the frame labelled by gstack.  This function returns the
+; val to var in the frame labeled by gstack.  This function returns the
 ; resulting stack but does not side-effect state (obviously).  Dead frames at
 ; the top of the stack are removed by this operation.
 
@@ -7178,7 +7178,7 @@
 ; NOT for use in general purpose calls of wormhole because it is involved with
 ; the local variable illusion associated with "break-rewrite".  A typical use
 ; is (put-brr-local 'unify-subst val state) which stores val as the local
-; binding of 'unify-subst in the frame of brr-stack that is labelled with the
+; binding of 'unify-subst in the frame of brr-stack that is labeled with the
 ; current brr-gstack.
 
   (f-put-global 'brr-stack
@@ -7235,7 +7235,7 @@
 
 ; This function may be used inside code executed within "break-rewrite".  It
 ; pops the top-most frame off the brr-stack.  Actually, it pops all the frames
-; up through the one labelled with the current brr-gstack.
+; up through the one labeled with the current brr-gstack.
 
   (f-put-global 'brr-stack
                 (cdr (clean-brr-stack (get-brr-global 'brr-gstack state)
@@ -7790,7 +7790,7 @@
 
 ; Parallelism blemish: cause an error when a user tries to enable parallelism
 ; and brr is enabled.  Also cause an error when enabling brr and
-; waterfall-parallism is enabled.  We do not label this a "wart", because we
+; waterfall-parallelism is enabled.  We do not label this a "wart", because we
 ; have documented this lack of feature in
 ; unsupported-waterfall-parallelism-features.
 
@@ -8697,7 +8697,7 @@
 ; modeled (weakly) on ev-fncall-meta.
 
 ; This call to synp is the result of the macro-expansion of a syntaxp or
-; bind-free hyothesis.  Or at least it might as well be; we check in
+; bind-free hypothesis.  Or at least it might as well be; we check in
 ; bad-synp-hyp-msg (called in chk-acceptable-rewrite-rule2) that synp-term has
 ; a form that we know how to handle.
 
@@ -9691,7 +9691,7 @@
 ; "rw-cache-alist".  The :hyp-info field contains the :hyps field of the
 ; rewrite-rule, and the :step-limit is as above.  The following example
 ; illustrates the form of the :failure-reason.  Suppose we have a rewrite rule
-; whose left-hand side has variables x1 and x2, such that hypthesis 2 binds
+; whose left-hand side has variables x1 and x2, such that hypothesis 2 binds
 ; free variable y and hypothesis 6 binds free variable z.  Suppose that when
 ; binding x1 to a1 and x2 to a2 we find:
 
@@ -10409,7 +10409,7 @@
               (assert$ (member-eq (cadr failure-reason)
                                   '(syntaxp bind-free))
 
-; Quoting :doc bind-free (and similarly for syntaxp): "every variable occuring
+; Quoting :doc bind-free (and similarly for syntaxp): "every variable occurring
 ; freely in term occurs freely in lhs or in some hypi, i<n."  So the
 ; unify-subst for which we obtained this failure-reason will continue to yield
 ; this failure-reason in stronger contexts.
@@ -11460,7 +11460,7 @@
 ;      (equal (bar-3 x)
 ;             (or (< 4 x)
 ;                 (foo-3 (append x x)) ; optional extra challenge, since this
-;                                      ; doesn't rewrite to a consant
+;                                      ; doesn't rewrite to a constant
 ;                 (not (integerp x)))))
 ;
 ;    (defaxiom foo-3-thm
@@ -11897,7 +11897,7 @@
 ; of repetitious-assume-true-false.  See the Essay on Repetitive Typing.  This
 ; caused a terrible slowdown in the proof of the Nqthm package theorems (e.g.,
 ; the proof of AX-20-2 seemed never to complete but was not apparently
-; looping).  It was apprently due to the opening of MEMBER on a long constant
+; looping).  It was apparently due to the opening of MEMBER on a long constant
 ; list and each time doing a repetition on an increasingly long type-alist (but
 ; this is just speculation).  For a simple example of a problem that arises if
 ; repetition is used here, consider the example problem shown with the Satriani
@@ -12142,7 +12142,7 @@
                (mv step-limit *nil* ttree-equality))
 
 ; The commented-out case just below, here explicitly before we added the above
-; call of type-set-equalo, is handled by that call.
+; call of type-set-equal, is handled by that call.
 
 ;           ((ts-disjointp ts-lhs ts-rhs)
 ;            (mv *nil* (puffert ttree+)))
@@ -12445,7 +12445,7 @@
 
 ; Memo (called "allp" in other functions in this nest) can be an alist with
 ; entries of the form (n vars (subst0 . ttree0) ... (substk . ttreek)), where n
-; is a bkptr, vars is (all-vars hyp0), and ttreei is the result of succesfully
+; is a bkptr, vars is (all-vars hyp0), and ttreei is the result of successfully
 ; calling relieve-hyp with the following arguments: ttree=nil; bkptr=n;
 ; unify-subst is some substitution whose restriction to vars is substi; and the
 ; other arguments are the same.  In these cases substi should bind all the free
@@ -15246,7 +15246,7 @@
 ; Initially, it has an empty alist which we need to fill in.  Alist1 and const1
 ; are the alist and constant from the first poly, and alist2 and const2 are
 ; from the second poly.  We assume that at least one of these two polys is
-; rational-poly-p.  Here we constuct the alist for poly, finishing the process.
+; rational-poly-p.  Here we construct the alist for poly, finishing the process.
 
 ; If one thinks of the initial polys as
 
@@ -15287,7 +15287,7 @@
 ; which we will name In0, is weaker than the thm's conclusion above because
 ; under the thm's hypotheses, we have (< (* -4 x) -12) and (< (* -3 x) -12),
 ; and adding these inequalities to the thm's conclusion yields In0.  In0 is
-; stricly weaker than the thm's conclusion: consider x=13 and y=1, which makes
+; strictly weaker than the thm's conclusion: consider x=13 and y=1, which makes
 ; In0 true but makes the thm's conclusion false.  Of course, that example
 ; doesn't take into account the hypotheses on x and y above, so the following
 ; example may be more persuasive.  Consider abstracting (* x y) to a new
@@ -15773,7 +15773,7 @@
 ; By filtering the polys so that we avoid creating new pots, we can
 ; dramatically speed up proofs, for example the failure of the following.  (The
 ; result is reversed, but no matter.)  Robert Krug contributed this
-; modification, and expresses the opinoion that the extra consing done by
+; modification, and expresses the opinion that the extra consing done by
 ; polys-with-pots is quite likely less expensive in general than the effort it
 ; would take to see if any filtering actually occurs, especially since
 ; filtering probably does occur most of the time.
@@ -16023,7 +16023,7 @@
                                   rcnst gstack ttree)
 
 ; If new-var is a product, we try to find a set of pots whose labels,
-; when multiplied together, form new-var.  If we are succesful at
+; when multiplied together, form new-var.  If we are successful at
 ; gathering such a set of pot labels, we will multiply the polys in those
 ; pots and add them to the simplify-clause-pot-lst.
 
@@ -16078,7 +16078,7 @@
 ; new-var is a factor of any of its pot labels.  If so, we attempt to
 ; find a set of other pots (in pot-lst-to-look-in) whose labels are the
 ; remaining factors of the pot label found in pot-lst-to-step-down.
-; If we are succesful at gathering such a set of pot labels, we will
+; If we are successful at gathering such a set of pot labels, we will
 ; multiply the polys in those pots and add them to the simplify-clause-pot-lst.
 
 ; All the deal-with-xxx functions return four values: a new step-limit, the
@@ -16840,7 +16840,7 @@
 
 ; Historical Note: In nqthm we handled this problem by infecting the
 ; polys of lst1 with a special mark (a fresh cons) in the lemmas field
-; of the poly before we added them to te pot-lst.  If lst2 gave a
+; of the poly before we added them to the pot-lst.  If lst2 gave a
 ; contradiction, we scanned the pot-lst produced by lst1 looking for
 ; all polys containing that (eq) cons.  During the initial attempts to
 ; code linear applicatively we tried to mimic this by using a 'mark

@@ -133,7 +133,7 @@
 ; error-in-parallelism-mode@par in waterfall-step, it seems that they might not
 ; be; yet, regressions may have passed with them.  One possible outcome: If
 ; tests fail for contributed book directory books/bdd/, you might just modify
-; translate-bdd-hint to cause a nice error if watefall parallelism is enabled,
+; translate-bdd-hint to cause a nice error if waterfall parallelism is enabled,
 ; and also mention that (once again) in :doc
 ; unsupported-waterfall-parallelism-features.  Note that bdd-clause might be
 ; the function that actually performs the bdd hint, and that bdd-clause doesn't
@@ -254,7 +254,7 @@
 
 ; One might be tempted to insert (mf-multiprocessing val) here.  However, in
 ; ACL2(hp) -- which is where this code is run -- we really want to keep
-; multiprocessing on, since one can do mulithreaded computations (e.g., with
+; multiprocessing on, since one can do multithreaded computations (e.g., with
 ; pand) even with waterfall-parallelism disabled.
 
                (f-put-global 'waterfall-parallelism val state)
@@ -911,7 +911,7 @@
 ; occurs (but this costs performance).  Kaufmann suggests that we should also
 ; catch this particular Lisp error and instead cause an ACL2 error, similar to
 ; the error in function not-too-many-futures-already-in-existence.  This may be
-; harder than one might intially think, because our current mechanism for
+; harder than one might initially think, because our current mechanism for
 ; catching errors in child threads involves catching thrown tags and then
 ; rethrowing them in the thread who is that child's parent.
 

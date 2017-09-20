@@ -179,7 +179,7 @@
 ; that the proved theorem establishes cl2?  Yes.  Think of cl1 as a rewrite
 ; rule: (implies (not (equal x 'const1)) (iff (p x) t)).  Now consider
 ; rewriting (p A) in cl2.  You may assume the falsity of the other literals of
-; cl2.  So we have (equal A 'const2).  Backchain with cl1.  We msut prove (not
+; cl2.  So we have (equal A 'const2).  Backchain with cl1.  We must prove (not
 ; (equal A 'const1)), which is true because A is 'const2.
 
 ; So how extend subsumption to handle instantiation of an
@@ -410,7 +410,7 @@
 ; The following value is rather arbitrary, determined by experimentation so
 ; that subsumes doesn't run for more than a small fraction of a second on a
 ; 2.6GH P4 (depending on the underlying Lisp).  The following takes about 0.04
-; seconds to return '? (signalling that we have done 1,000,000 calls of
+; seconds to return '? (signaling that we have done 1,000,000 calls of
 ; one-way-unify1) on that machine using GCL 2.6.7 and about 0.17 seconds using
 ; Allegro CL 7.0.
 
@@ -492,7 +492,7 @@
 ; would feel obligated to track equivalence relations by passing back a tag
 ; ttree.)  The present function is essentially (member-equal cl cl-set), except
 ; that equality is tested using equal-mod-commuting-lst: thus, some member of
-; cl-set is identicial to cl except that literals can be commuted as explained
+; cl-set is identical to cl except that literals can be commuted as explained
 ; above.
 
   (cond ((endp cl-set) nil)
@@ -579,7 +579,7 @@
 ; with a reverse call in order to provide unchanged functionality.  Would we
 ; gain efficiency by eliminating tail recursion at the cost of that reverse
 ; call?  Maybe.  A clearer win would be to avoid the reverse call, which should
-; be logically OK but could change the prover's behavior, thus invaliding huge
+; be logically OK but could change the prover's behavior, thus invalidating huge
 ; portions of the regression suite.
 
 ; The alternate code is simply the following line, in place of all that
@@ -853,7 +853,7 @@
 ; though the choice is suggested on the eventual type-alist.  This
 ; actually happened in an example distilled by Dave Greve.  The obvious
 ; problem with leaving the relevant activation around, still blocked on
-; (FOOP x), is that we'll repeatedly re-discover the possiblity that x
+; (FOOP x), is that we'll repeatedly re-discover the possibility that x
 ; is (A).  In discussing how to avoid such redundancy, Dave suggested
 ; searching only the ``new'' part of each type-alist (new since the last
 ; attempt to guess free vars).  However, that idea doesn't work because
@@ -997,7 +997,7 @@
                                 (car hyps))
                         ,(cddr inst-hyp))
               `(:REASON ,inst-hyp))
-; with the current unify-sustitution:
+; with the current unify-substitution:
          (:UNIFY-SUBST ,pretty-subst))))))
 
 (defun prettyify-fc-activations (acts level)
@@ -1860,7 +1860,7 @@
 
 (defun set-fc-criteria-fn (x state)
 
-; Warning: Keep this in syc with set-waterfall-parallelism-fn.
+; Warning: Keep this in sync with set-waterfall-parallelism-fn.
 
   (er-let* ((criteria
              (cond
@@ -3907,7 +3907,7 @@
 ; those segments together with the remaining literals and any available
 ; conclusions produced by forward chaining.  Thus, to get the type-alist to be
 ; used while rewriting ``the current literal'' we assume the falsity of three
-; lists of literals: new-clause [the clause segement obtained from one path
+; lists of literals: new-clause [the clause segment obtained from one path
 ; through the previously rewritten literals], (cdr tail) [the rest of the
 ; unrewritten literals], and lits [the literals derived by forward chaining].
 ; We use the ordinary type-alist-clause to create the new type-alist.  The
@@ -3926,7 +3926,7 @@
 ; We have tried three approaches: (append lits new-clause (cdr tail)), (append
 ; new-clause (cdr tail) lits), and a ``smart'' approach in which we sort the
 ; literals to put the smaller ones first, thereby allowing their type-sets to
-; improve, perhaps, the type-sets computed for larger literals (like disjuctive
+; improve, perhaps, the type-sets computed for larger literals (like disjunctive
 ; ones (IF a a b)) involving the some of the smaller ones.  The code deleted
 ; below was part of this ``smart'' approach.  All of these reordering
 ; strategies must maintain the correspondence between the forward-chained
@@ -3944,7 +3944,7 @@
 ;  ; two properties: (a) it is fast to compute, though one might someday try to
 ;  ; speed it up via memoization, and (b) it has the property that if a and b are
 ;  ; two non-constant terms and term a occurs inside of term b, then the size of a
-;  ; is less than the size of b.  This is expoloited to reorder a clause so that
+;  ; is less than the size of b.  This is exploited to reorder a clause so that
 ;  ; the smaller literals come first during the process of sequentially assuming
 ;  ; their falsity to construct a type-alist to use in the rewriting of some other
 ;  ; literal.  See rewrite-clause-type-alist.
@@ -4223,7 +4223,7 @@
 ; simply because we had no forward chaining rules with more than one hyp
 ; in our tests.
 
-; However, in an effort to help software archeologists (not to mention
+; However, in an effort to help software archaeologists (not to mention
 ; the possibility that we might help ourselves avoid repetition of past
 ; mistakes) we inscribe here an extensive comment written last week:
 
@@ -4301,7 +4301,7 @@
 ; chaining rules:
 ;   name1: (state-p1 x) -> (p (nth 2 state))
 ;   name2: (state-p1 x) -> (p (nth 3 state)),
-; that can get in eachother's way.  If the first is used to add its
+; that can get in each other's way.  If the first is used to add its
 ; conclusion then the second cannot be used because its conclusion is
 ; worse than that just added.
 
@@ -4315,11 +4315,11 @@
 ; form (term namek termk ... name2 term2 name1 term1) and means that term
 ; was produced by a chain of k forward chaining steps: starting with
 ; term1 (which is in the initial set of assumptions) use name1 to derive
-; term2, use name2 to dervie term3, ..., and use namek to derive term.
+; term2, use name2 to derive term3, ..., and use namek to derive term.
 
 ; Our heuristic for deciding whether to keep a conclusion, concl, is if
 ; namek has not been used in this chain, keep concl; otherwise, if namek
-; has been used, then concl must be worse than nor equal to no termi in
+; has been used, then concl must be worse than nor equal to no xtermi in
 ; its chain.
 
 ; It is very inefficient to repeatedly hit all the assumptions with all
@@ -4823,7 +4823,7 @@
 ; it will give us a win.
 
 ; One might ask why we only disallow type-set from removing facts here.
-; Why not elswhere, and what about rewrite?  We do it this way because
+; Why not elsewhere, and what about rewrite?  We do it this way because
 ; it is only here that the user cannot prevent this removal from
 ; happening by manipulating the enabled structure.
 
@@ -5090,7 +5090,7 @@
 
 ; This function determines whether every occurrence of old in term is ``equiv
 ; hittable'' while maintaining geneqv.  This means that (subst-equiv-expr equiv
-; new old genequv term ens wrld state ttree) will remove all occurrences of old
+; new old geneqv term ens wrld state ttree) will remove all occurrences of old
 ; from term (assuming there are no occurrences of old in new and old is a
 ; variable).
 
@@ -5239,7 +5239,7 @@
 ; we don't expect to have screwed it up by continuing to substitute; and if the
 ; discovered lit just drops out, then our continued substitution is what we
 ; should have done.  (Aside: If we persist in our decision to reduce literals
-; when they are suffed with constants, then these cases will not arise and all
+; when they are stuffed with constants, then these cases will not arise and all
 ; of the above is irrelevant.)
 
 ; Recall our output spec from find-trivial-equivalence.  The six results we
@@ -5405,7 +5405,7 @@
 ; [2].  So we get:
 ; (implies (equal (foo a) 'evg)        [1]
 ;          (p (foo a) 'evg))
-; and the old admotion against using (equal (foo b) 'evg).  Here we find [1]
+; and the old admonition against using (equal (foo b) 'evg).  Here we find [1]
 ; ``again'' because it is no longer on the list of things to avoid.  Indeed, we
 ; can even use it to good effect.  Of course, once it is used both it and the
 ; old avoided literal are to be avoided.
@@ -5436,7 +5436,7 @@
 
 ; Very roughly speaking, this is just:
 ; (mv (add-literal lit cl nil)      ; add lit to clause cl
-;     (cons pt pt-lst)              ; add lit's parent tnree to pt-lst
+;     (cons pt pt-lst)              ; add lit's parent ttree to pt-lst
 ;     ttree)                        ; and pass up the ttree
 ; But it is complicated by the fact that the add-literal might not actually
 ; cons lit onto cl but reduce the clause to {t} or merge the literal with
@@ -6208,7 +6208,7 @@
 ; assumption into the ttree and go on.  Once upon a time we considered
 ; aborting, reporting assn as a bad-ass.  Observe that if the complement of
 ; term is on ancestors, then term is being assumed nil (because (not term) is
-; assumed true).  Doesn't that mean we coul rewrite term to nil?  No.  All we
+; assumed true).  Doesn't that mean we could rewrite term to nil?  No.  All we
 ; really know is that term is impossible to prove by rewriting using whatever
 ; lemmas we did this time.  Term might be provable.  Consider the fact that
 ; the user could have proved (implies term term) for any term, even a provable
@@ -7442,7 +7442,7 @@
 ; books/hints/basic-tests.lisp -- two occurrences
 
 ; Note: displayed-goal might no longer be necessary in our own sources.  But
-; community books have been using them, in particlar, books/acl2s/ccg/ccg.lisp.
+; community books have been using them, in particular, books/acl2s/ccg/ccg.lisp.
 ; So we keep that field.  To search the community books for "displayed-goal"
 ; (or other strings, by analogy):
 
@@ -7789,7 +7789,7 @@
 ; bother to detect that here because we want to report the specious
 ; simplification as though everything were ok and then pretend nothing
 ; happened.  This gives the user some indication of where the loop is.  In the
-; old days, we just signalled a 'miss if (member-equal cl clauses) and that
+; old days, we just signaled a 'miss if (member-equal cl clauses) and that
 ; caused a lot of confusion among experienced users, who saw simplifiable
 ; clauses being passed on to elim, etc.  See :DOC specious-simplification.
 
@@ -7836,7 +7836,7 @@
 
 ; Initially we attempted to fix the slowdown mentioned above (the one reported
 ; by Greve and Wilding) by eliminating completely the special treatment of
-; induction-hyp-terms.  However, lemma psuedo-termp-binary-op_tree in community
+; induction-hyp-terms.  However, lemma pseudo-termp-binary-op_tree in community
 ; book books/meta/pseudo-termp-lemmas.lisp showed the folly of this attempt.
 ; The relevant goal was as follows.
 
@@ -7859,7 +7859,7 @@
 ; induction-hyp-terms, the above binary-op_tree term was rewritten, and hence
 ; so was the pseudo-termp hypothesis.  The result seemed to give permission to
 ; the next hypothesis, (pseudo-term-listp l), to be rewritten much more
-; agressively than it was formerly, which bogged down the rewriter (perhaps
+; aggressively than it was formerly, which bogged down the rewriter (perhaps
 ; even in an infinite loop).
 
 ; A later attempt used the simple algorithm that we stop meddling once we have
@@ -8289,7 +8289,7 @@
 
 ; Note: Names is a tilde-* object that will print a conjoined list of names
 ; (possibly followed by parenthetical remarks for splitters).  We must
-; determine whether there is more than one name in the list.  The names printe
+; determine whether there is more than one name in the list.  The names printed
 ; are just those in (cdar alist), which we know is a non-empty true list of
 ; pairs.  Below we set pluralp to t if two or more names will be printed and to
 ; nil if exactly one name will be printed.
@@ -8549,7 +8549,7 @@
 ; and so the two uses of this function -- to generate stand-alone pool names
 ; and to generate parts of clause ids -- appear somewhat hidden.  But you will
 ; find calls of this function where the forcing-round supplied is 0 --
-; signallying that we want a pool name to use within a clause id -- even though
+; signaling that we want a pool name to use within a clause id -- even though
 ; the actual forcing-round at the time of call is non-0.
 
   (cond

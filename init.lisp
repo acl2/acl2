@@ -75,7 +75,7 @@
 ; books/misc/hons-tests.lisp had a stack overflow because of a memoized
 ; fibonacci function call; and a stack overflow for
 ; books/clause-processors/SULFA/books/sat-tests/sudoku.lisp was caused by
-; bad-lisp-objectp.  Another doubling fixed each of these, but wan't enough for
+; bad-lisp-objectp.  Another doubling fixed each of these, but wasn't enough for
 ; certifying books/centaur/aig/random-sim.lisp, again because of
 ; pkg-names-memoize.  So we now multiply by 8.  Camm Maguire has suggested that
 ; these problems might be solved by avoiding the use of interpreted code, and
