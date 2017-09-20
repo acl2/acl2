@@ -144,7 +144,7 @@
        ((mv erp cgen-state state)  (cgen-search-fn name hyps concl 
                                                    type-alist tau-interval-alist
                                                    ord-elide-map 
-                                                   NIL
+                                                   (eq (default-defun-mode (w state)) :program)
                                                    cgen-state
                                                    ctx state)))
     (mv erp cgen-state state)))

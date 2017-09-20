@@ -257,8 +257,9 @@ Why is ACL2 not good at this?
        ;;take care of var-var equalities [2016-10-29 Sat]
        (var-var-eq-hyps (var-var-eq-hyps H))
        ((mv elim-bindings H) (var-var-cc var-var-eq-hyps '() H))
-       (- (cw? (consp elim-bindings)
-               "DEBUG/cgen-search : elim-bindings:~x0  H:~x1~%" elim-bindings H))
+       (- (cw? (and (consp elim-bindings)
+                    (debug-flag vl))
+               "Cgen/Debug : cgen-search:: elim-bindings:~x0  H:~x1~%" elim-bindings H))
 
        (vars (vars-in-dependency-order H C vl (w state)))
        )
