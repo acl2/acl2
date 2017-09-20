@@ -631,15 +631,15 @@
 (define fresh-namep-msg-weak (name type (wrld plist-worldp))
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
-  :returns (msg/nil "A message (see @(see msg)) or @('nil').")
+  :returns (msg/nil "A message (see @(tsee msg)) or @('nil').")
   :mode :program
   :parents (world-queries)
   :short "Returns either @('nil') or a message indicating why the name is not ~
           a legal new name."
   :long
   "<p>
-   This helper function for @(see fresh-namep-msg) avoids the ``virginity''
-   check ensuring that the name is not already defined in raw Lisp.  See @(see
+   This helper function for @(tsee fresh-namep-msg) avoids the ``virginity''
+   check ensuring that the name is not already defined in raw Lisp.  See @(tsee
    fresh-namep-msg).
    </p>"
 
@@ -685,7 +685,7 @@
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
   :returns (mv (erp "Always @('nil')")
-               (msg/nil "A message (see @(see msg)) or @('nil').")
+               (msg/nil "A message (see @(tsee msg)) or @('nil').")
                state)
   :mode :program
   :parents (world-queries)
@@ -694,7 +694,7 @@
   :long
   "<p>
    Returns an @('error-triple') @('(mv nil msg/nil state)'), where @('msg/nil')
-   is either @('nil') or a message (see @(see msg)) indicating why the given
+   is either @('nil') or a message (see @(tsee msg)) indicating why the given
    name is not legal for a definition of the given type: @('function') for
    @(tsee defun), @('macro') for @(tsee defmacro), @('const') for @(tsee
    defconst), @('stobj') for @(tsee defstobj), @('constrained-function') for
@@ -739,7 +739,7 @@
    </p>
 
    <p>
-   For more information about legality of new names see @(see fresh-namep-msg),
+   For more information about legality of new names see @(tsee fresh-namep-msg),
    which returns an @(see error-triple), @('(mv nil msg/nil state)').  When
    non-@('nil'), the value @('msg/nil') provides the message printed by
    @('chk-fresh-namep').
