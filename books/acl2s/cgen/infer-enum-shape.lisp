@@ -416,9 +416,10 @@ into eq-constraint field and put interval into range constraint field")
                                                            top-vt-dlist tau-interval-alist
                                                            vl wrld v-cs%-alst))
          ;; reify all hyps that are true in the ACL2 context.
-         (context-hyps (reify-type-alist-hyps type-alist)))
+         (context-hyps (reify-type-alist-hyps type-alist))
+         (hyps+ (defdata::filter-terms-with-vars (union-equal context-hyps hyps) ordered-vars)))
        
-     (v-cs%-alist-from-terms. (union-equal context-hyps hyps) vl wrld v-cs%-alst))))
+     (v-cs%-alist-from-terms. hyps+ vl wrld v-cs%-alst))))
 
 ; TODO: Right now we dont use ACL2's type-alist to full effect. For
 ; example, we might get that (len x) > 3 is non-nil in the type-alist
