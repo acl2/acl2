@@ -472,34 +472,37 @@ data last modified: [2014-08-06]
        (pred-name (predicate-name name M))
        (Px `(,pred-name ,xvar))
        
-       ;; [2017-09-19 Tue] incorporate satisfies support
-       (pred-name-aux (s+ pred-name "-AUX"))
-       (pred-body-aux (acl2::subst pred-name-aux pred-name pred-body))
-       (Px-aux `(,pred-name-aux ,xvar))
-       (dep-exprs (satisfies-terms xvar kwd-alist))
+       ;; ;; [2017-09-19 Tue] incorporate satisfies support
+       ;; (pred-name-aux (s+ pred-name "-AUX"))
+       ;; (pred-body-aux (acl2::subst pred-name-aux pred-name pred-body))
+       ;; (Px-aux `(,pred-name-aux ,xvar))
+       ;; (dep-exprs (satisfies-terms xvar kwd-alist))
        
        (mon-fns (all-1-arity-fns new-constructors))
        (all-conx-fns-args (all-conx-fns-args new-constructors 'x))
        (current-preds (predicate-names (strip-cars new-types) new-types))
        (new-fns-and-args (append (list-up-lists current-preds (make-list (len current-preds) :initial-element 'x))
-                                 (and (consp dep-exprs) (list (list pred-name-aux 'x)))
+                                 ;; (and (consp dep-exprs) (list (list pred-name-aux 'x)))
                                  (and new-constructors all-conx-fns-args)
                                  (and new-constructors (list-up-lists mon-fns (make-list (len mon-fns) :initial-element 'x)))))
 
-       ((mv msgs<= rule-=>-Px)
-        (if (consp dep-exprs)
-            (mv-messages-rule
-             (append (tau-rules-form=>Px pred-body-aux Px-aux new-fns-and-args ctx C wrld)
-                     (tau-rules-form=>Px `(AND Px-aux ,@dep-exprs) Px new-fns-and-args ctx C wrld)))
-          (mv-messages-rule
-           (tau-rules-form=>Px pred-body Px new-fns-and-args ctx C wrld))))
+       ((mv msgs<= rule-=>-Px) (mv-messages-rule (tau-rules-form=>Px pred-body Px new-fns-and-args ctx C wrld)))
+       ((mv msgs=> rule-Px-=>) (mv-messages-rule (tau-rules-Px=>form pred-body Px ndef new-fns-and-args ctx C wrld)))
+     
+       ;; ((mv msgs<= rule-=>-Px)
+       ;;  (if (consp dep-exprs)
+       ;;      (mv-messages-rule
+       ;;       (append (tau-rules-form=>Px pred-body-aux Px-aux new-fns-and-args ctx C wrld)
+       ;;               (tau-rules-form=>Px `(AND Px-aux ,@dep-exprs) Px new-fns-and-args ctx C wrld)))
+       ;;    (mv-messages-rule
+       ;;     (tau-rules-form=>Px pred-body Px new-fns-and-args ctx C wrld))))
        
-       ((mv msgs=> rule-Px-=>)
-        (if (consp dep-exprs)
-            (mv-messages-rule
-             (tau-rules-Px=>form `(AND ,pred-body-aux ,@dep-exprs) Px ndef new-fns-and-args ctx C wrld))
-          (mv-messages-rule
-           (tau-rules-Px=>form pred-body Px ndef new-fns-and-args ctx C wrld))))
+       ;; ((mv msgs=> rule-Px-=>)
+       ;;  (if (consp dep-exprs)
+       ;;      (mv-messages-rule
+       ;;       (tau-rules-Px=>form `(AND ,pred-body-aux ,@dep-exprs) Px ndef new-fns-and-args ctx C wrld))
+       ;;    (mv-messages-rule
+       ;;     (tau-rules-Px=>form pred-body Px ndef new-fns-and-args ctx C wrld))))
           
 
 ; the following breaks because ndef has name declarations

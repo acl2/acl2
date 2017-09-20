@@ -172,19 +172,18 @@ B is the builtin combinator table."
                 'defund 
               'defun))
 
-       ;;[2017-09-19 Tue] Implement top-level :satisfies clause to defdata
-       (satisfies-exprs (satisfies-terms xvar kwd-alist))
-       (pred-name-aux (s+ pred-name "-AUX"))
-       (pred-body-aux (acl2::subst pred-name-aux pred-name pred-body))
-       (satisfies-pred-body `(AND (,pred-name-aux ,xvar)
-                                  ,@satisfies-exprs))
-
+       ;; :satisfies with defdata is a bad idea. at least the top-level version does not gel well with recursive types.
+       ;; Just use a separate predicate.
+       ;; [2017-09-19 Tue] Implement top-level :satisfies clause to defdata
+       ;; (satisfies-exprs (satisfies-terms xvar kwd-alist))
+       ;; (pred-name-aux (s+ pred-name "-AUX"))
+       ;; (pred-body-aux (acl2::subst pred-name-aux pred-name pred-body))
+       ;; (satisfies-pred-body `(AND (,pred-name-aux ,xvar)
+       ;;                            ,@satisfies-exprs))
+       
        )
-    (if (endp satisfies-exprs)
-        `((,def ,pred-name (,xvar) ,@pred-decls ,pred-body))
-      `((,def ,pred-name-aux (,xvar) ,@pred-decls ,pred-body-aux)
-        (,def ,pred-name (,xvar) ,@pred-decls ,satisfies-pred-body)))))
-
+    `((,def ,pred-name (,xvar) ,@pred-decls ,pred-body))))
+    
 
 
 (defloop pred-events (ps kwd-alist wrld)
