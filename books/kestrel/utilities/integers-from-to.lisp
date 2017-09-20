@@ -61,8 +61,7 @@
   (defrule integers-from-to-nil-when-min>max
     (implies (> (ifix min) (ifix max))
              (equal (integers-from-to min max)
-                    nil))
-    :enable integers-from-to)
+                    nil)))
 
   (defrule integers-from-to-iff-min<=max
     (iff (integers-from-to min max)
@@ -81,7 +80,7 @@
                    (integer-listp ints))
               (equal (integers-from-to-aux min max ints)
                      (append (integers-from-to min max) ints)))
-     :enable (integers-from-to-aux integers-from-to)))
+     :enable integers-from-to-aux))
 
   (local
    (defrule verify-guards-lemma-2
