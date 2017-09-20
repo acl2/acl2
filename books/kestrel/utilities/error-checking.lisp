@@ -74,7 +74,7 @@
                      (error-val \"Value to return in case of error.\")
                      (ctx \"Context for errors.\")
                      state)
-       :returns (mv (erp \"@('error-erp') or @('nil').\")
+       :returns (mv (erp \"@('nil') or @('error-erp').\")
                     <y>
                     state)
        :mode :program
@@ -298,7 +298,7 @@
               (,error-val "Value to return in case of error.")
               (ctx "Context for errors.")
               state)
-             :returns (mv (erp "@('error-erp') or @('nil').")
+             :returns (mv (erp "@('nil') or @('error-erp').")
                           ,y
                           state)
              :mode :program
@@ -539,7 +539,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val "A @(tsee symbolp) or @('error-val').")
                state)
   :mode :program
@@ -587,7 +587,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val
                 "A tuple @('(pfn stobjs-in stobjs-out new-description)')
                  consisting of
@@ -704,7 +704,7 @@
                      (error-val "Value to return in case of error.")
                      (ctx "Context for errors.")
                      state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val
                 "A tuple @('(term stobjs-out)')
                  consisting of
@@ -1051,7 +1051,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val "@('nil') or @('error-val').")
                state)
   :mode :program
@@ -1089,7 +1089,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val "@('nil') or @('error-val').")
                state)
   :mode :program
@@ -1129,7 +1129,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val "@('nil') or @('error-val').")
                state)
   :mode :program
