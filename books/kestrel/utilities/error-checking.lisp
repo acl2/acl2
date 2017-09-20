@@ -136,6 +136,7 @@
 
      <li>
      @('<short>') and @('<long>') are strings that document the function.
+     If @('<long>') is not supplied as argument, no @(':long') is generated.
      </li>
 
      <li>
@@ -145,7 +146,7 @@
      The conditions are checked in order.
      </li>
 
-    <li>
+     <li>
      Each @('<messagej>') is a list that consists of
      a <see topic='@(url fmt)'>format string</see>
      followed by up to 10 terms,
@@ -177,8 +178,8 @@
        ((<condition1> . <message1>) ... (<conditionm> . <messagem>))
        <y> ; optional - default is (val \"@('nil') or @('error-val').\")
        <result> ; optional - default is nil
-       :parents <parents> ; optional - default is :not-supplied
-       :long <long> ; optional - default is :not-supplied
+       :parents <parents> ; optional
+       :long <long> ; optional
        )
    })
 
@@ -271,11 +272,11 @@
                                 y
                                 (conditions-messages true-list-listp)
                                 result
-                                (parents (or (symbol-listp parents)
-                                             (eq parents :not-supplied)))
+                                (parents (symbol-listp parents))
+                                (parents-supplied-p booleanp)
                                 (short stringp)
-                                (long (or (stringp long)
-                                          (eq long :not-supplied)))
+                                (long (stringp long))
+                                (long-supplied-p booleanp)
                                 (def-error-checker-call pseudo-event-formp)
                                 state)
     :returns (function+macro pseudo-event-formp)
@@ -302,10 +303,10 @@
                           ,y
                           state)
              :mode :program
-             ,@(and (not (eq parents :not-supplied))
+             ,@(and parents-supplied-p
                     (list :parents parents))
              :short ,short
-             ,@(and (not (eq long :not-supplied))
+             ,@(and long-supplied-p
                     (list :long long))
              (b* ,(def-error-checker-bindings
                     conditions-messages error-erp error-val)
@@ -350,8 +351,8 @@
                                       (y '(val "@('nil') or @('error-val')."))
                                       (result 'nil)
                                       &key
-                                      (parents ':not-supplied)
-                                      (long ':not-supplied))
+                                      (parents 'nil parents-supplied-p)
+                                      (long '"" long-supplied-p))
     `(make-event (def-error-checker-fn
                    ',name
                    ',xs
@@ -359,8 +360,10 @@
                    ',conditions-messages
                    ',result
                    ',parents
+                   ',parents-supplied-p
                    ',short
                    ',long
+                   ',long-supplied-p
                    ',def-error-checker-call
                    state))))
 
