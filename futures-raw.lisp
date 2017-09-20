@@ -407,7 +407,7 @@
 
 (defvar *resource-and-timing-based-serializations*
   0
-  "Tracks the number of times that we do not parallize execution when
+  "Tracks the number of times that we do not parallelize execution when
   waterfall-parallelism is set to :resource-and-timing-based")
 
 (defvar *resource-based-parallelizations*
@@ -417,7 +417,7 @@
 
 (defvar *resource-based-serializations*
   0
-  "Tracks the number of times that we do not parallize execution when
+  "Tracks the number of times that we do not parallelize execution when
   waterfall-parallelism is set to :resource-based")
 
 (defun reset-future-queue-length-history ()
@@ -564,7 +564,7 @@
 ; performance, however, is that we avoid the cost of locks to try to remove
 ; bottlenecks.
 
-; In summary, it is unneccessary to acquire a lock, because we just don't care
+; In summary, it is unnecessary to acquire a lock, because we just don't care
 ; if we miss a few chances to parallelize, or parallelize a few extra times.
 
   (and (f-get-global 'parallel-execution-enabled *the-live-state*)

@@ -274,7 +274,7 @@
 ; All of ACL2 is written in Common Lisp and we expect that ACL2 will run in any
 ; Common Lisp except for those Common Lisps which fail the tests we execute
 ; upon loading this file, acl2.lisp.  With the exception of this and other
-; initialiation files, files *-raw.lisp, and those constructs after the
+; initialization files, files *-raw.lisp, and those constructs after the
 ; #-acl2-loop-only readtime conditional, ACL2 is written in the applicative
 ; Common Lisp for which ACL2 is a verification system.
 
@@ -537,7 +537,7 @@
 (setq ccl::*record-source-file* nil)
 
 ; Camm Maguire has suggested, on 9/22/2013, the following forms, which allowed
-; him to complete an ACL2 regresssion using 2.6.10pre.
+; him to complete an ACL2 regression using 2.6.10pre.
 #+gcl
 (progn
   (si::allocate 'contiguous 15000 t)
@@ -731,7 +731,7 @@
                 "~%~%Warning:  There is already a package with the ~
                  name ~a. ~%The ACL2 implementation depends upon ~
                  having complete knowledge of ~%and control over any ~
-                 packge whose name begins with the ~%four letters ``ACL2'', ~
+                 package whose name begins with the ~%four letters ``ACL2'', ~
                  so ACL2 may not work in this Lisp." (package-name p))
         (cond ((package-use-list p)
                (format t "~%~%Warning:  The package with name ~a ~
@@ -897,7 +897,7 @@
 ; check, if two books each contain a form (defconst *a* (hons-copy
 ; '<large_cons_tree>)) then when the compiled file for the second book is
 ; loaded, the check against the term (i.e. the first check below, as opposed to
-; the second check, which uses that term's value) could be intractible.  For a
+; the second check, which uses that term's value) could be intractable.  For a
 ; concrete example, see :doc note-7-2.
 
                         (or (let ((disc ,disc)
@@ -1792,7 +1792,7 @@ which is saved just in case it's needed later.")
 ; the user must then leave *features* alone (even though the
 ; implementors of ACL2 put :acl2-loop-only onto *features* during
 ; boot-strapping).  One bad consequence of our *features* policy is that
-; verified files will not in general be verifiable or useable in other
+; verified files will not in general be verifiable or usable in other
 ; Lisp implementations or installations unless the settings of
 ; *features* relevant to one's usages of the #+ and #- are the same in
 ; the two Lisp implementations.  One simple way to obtain peace of mind
@@ -1876,7 +1876,7 @@ which is saved just in case it's needed later.")
 ;
 ; Eventually, it will be best to define a read function for ACL2 solely in terms
 ; of ACL2 character reading primitives.  Common Lisp read is ambiguous.  There is
-; the ambiguity of backquote described above.  There is the abiguity of which
+; the ambiguity of backquote described above.  There is the ambiguity of which
 ; tokens get read as numbers.  To make matters a little more scary, there is
 ; nothing that prevents a Common Lisp implementation from adding, for example, a
 ; new # readmacro option that would provide something as potentially catastrophic
@@ -2031,7 +2031,7 @@ which is saved just in case it's needed later.")
 ; When use-acl2-proclaims is true, we are recompiling to take advantage of
 ; acl2-proclaims.lisp.  But if *do-proclaims* is false, then there shouldn't be
 ; such a file (or, it consists only of a comment), so there is no point in
-; recompiling, and we return immediatel.
+; recompiling, and we return immediately.
 
   #+gcl
   (unless (gcl-version->= 2 6 12)
@@ -2118,7 +2118,7 @@ You are using version ~s.~s.~s."
                                 (eq (read str nil)
 
 ; This check is insufficient to avoid running the check twice, but that's OK.
-; Seee the comment about ":CHECKED" in check-suitability-for-acl2.
+; See the comment about ":CHECKED" in check-suitability-for-acl2.
 
                                     :compiled)))
      (check-suitability-for-acl2))
@@ -2268,7 +2268,7 @@ You are using version ~s.~s.~s."
 
 ; Parallelism blemish: In ACL2(p), LispWorks 6.0.1 hasn't always successfully
 ; exited when exit-lisp was called.  The call below of stop-multiprocessing is
-; an attempt to improve the chance of a succesful exit.  In practice, the call
+; an attempt to improve the chance of a successful exit.  In practice, the call
 ; does not fix the problem.  However, we leave it for now since we don't think
 ; it can hurt.  If exit-lisp starts working reliably without the following
 ; calls to send-die-to-worker-threads and stop-multiprocessing, they should be

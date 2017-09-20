@@ -277,7 +277,7 @@
                         (table-alist 'badge-table
                                      wrld)))))))
       (cond
-       ((null bdg) ; fn is a function sybmol with no badge assigned
+       ((null bdg) ; fn is a function symbol with no badge assigned
         (cond ((null msgp) (mv t nil))
               (t (mv (msg "~x0 has not been warranted" fn)
                      nil))))
@@ -308,7 +308,7 @@
 ; TODO: If we believe that defun-overrides is ok if the definition has the
 ; kind of behavior described above, it might be good to add a comment to that
 ; effect in defun-overrides or provide a disciplined version of
-; ``defun-overrides-for-fns-that-implicitly-use-the-world-consistenty''.
+; ``defun-overrides-for-fns-that-implicitly-use-the-world-consistently''.
 
 ; Here is the STATE-free expansion of
 ; (defun-overrides concrete-badge-userfn (fn) ...)
@@ -418,7 +418,7 @@
 ; Note 2.  on throw-raw-ev-fncall: Throughout this function we cause errors
 ; when the answer is not determined by the known warrants.  The various errors
 ; are all equivalent to ``ACL2 cannot evaluate a call to the undefined
-; function....''  Once upon a time we signalled the errors by calling
+; function....''  Once upon a time we signaled the errors by calling
 ; (throw-without-attach nil fn formals) which expands in raw Lisp to
 
 ; `(throw-raw-ev-fncall
@@ -478,7 +478,7 @@
 
 ; We got past the (apply$ 'SQ ...) but now failed on (apply$ 'CUBE ...).
 
-; So we can't expect unchanged erroneous behavior because the compuation paths
+; So we can't expect unchanged erroneous behavior because the computation paths
 ; are just different in the two scenarios.
 
 ; End of Essay on A Misguided Desire...
@@ -945,7 +945,7 @@
 ; wrld.
 
 ; To check that a lambda body is compliant and unrestricted we
-; first confirm that all the funtions used in it are compliant and
+; first confirm that all the functions used in it are compliant and
 ; then we generate the guard obligations of the body and throw out
 ; the ones provable by the Tau System.  The resulting set must be empty
 ; for us to consider the LAMBDA compliant and unrestricted.
@@ -1424,7 +1424,7 @@
 ; Test 4.  So of course Test 5 is more expensive:  the lambda is bigger and we
 ; interpret both of them.
 
-; What is genuinely surprising is suprising how MUCH longer it takes!  But note
+; What is genuinely surprising is surprising how MUCH longer it takes!  But note
 ; that Test 5 cost 16 million more bytes than Test 4.  That's 16 bytes per call
 ; of apply$, all because of that extra FIX.
 
@@ -1681,7 +1681,7 @@
 ; scenario.
 
 ; (c) Fast-Alist Cache: (- 0.18 0.0229) = 0.1571 seconds
-; (d) Home-Grown Cahce: (- 0.12 0.0229) = 0.097 seconds
+; (d) Home-Grown Cache: (- 0.12 0.0229) = 0.097 seconds
 
 ; So (/ 0.1571 0.097) = 1.61
 
@@ -2817,7 +2817,7 @@
 ;        0))
 
 ; after simplifying (WEIGHT 'EV$) in the second component of (APPLY$!-MEASURE
-; 'EV$ ARGS) to 0.  Similiar to case [2], the FN/EXPR-ARGS term simplifies to
+; 'EV$ ARGS) to 0.  Similar to case [2], the FN/EXPR-ARGS term simplifies to
 ; (LIST (CAR ARGS)) and so the inequality becomes
 
 ; (< (WEIGHT (CAR ARGS)) (+ 1 (WEIGHT (CAR ARGS))))

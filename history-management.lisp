@@ -1114,7 +1114,7 @@
 ; names are used to denote times in the past, i.e., "Give me the list
 ; of all rules enabled when nm was introduced."  The second is in the
 ; various keyword commands available to the user to enquire about his
-; current state, i.e., "Show me the history around the time nmwas
+; current state, i.e., "Show me the history around the time nm was
 ; introduced."
 
 ; The latter use involves the much more sophisticated notion of
@@ -1224,7 +1224,7 @@
 
 ; Rather than store an entry for each event number we will store one
 ; for every 10th.  Actually, *event-index-interval* determines the
-; frequency.  This is a completely arbitrary decision.  A typical :ppe
+; frequency.  This is a completely arbitrary decision.  A typical :pe
 ; or :ubt will request a tail within 5 event of a saved one, on the
 ; average.  At 8 properties per event (the bootstrap right now is
 ; running 7.4 properties per event), that's about 40 tuples, each of
@@ -1278,7 +1278,7 @@
 ; For comparison purposes, we imagine the following scenario: The user
 ; starts with a world containing 2000 bootstrap events.  He adds
 ; another 3000 events of his own.  Every event, however, provokes
-; him to do 10 :ppes to look at old definitions.  (We are purposefully
+; him to do 10 :pes to look at old definitions.  (We are purposefully
 ; biasing the scenario toward fast lookup times.)  Given the
 ; convention of saving every 10th tail of world in the index, the
 ; scenario becomes: The user starts with a index containing 200
@@ -1917,7 +1917,7 @@
 ; redefined, then a query is made.  Provided the user approves, the system
 ; function is redefined and then this warning is printed because the action
 ; says :warn.  This is a bit odd since we try, in general, to avoid warning
-; if we have querried.  But we don't want to have to determine now if the
+; if we have queried.  But we don't want to have to determine now if the
 ; redefined names are system functions, so we warn regardless.
 
   (cond
@@ -2459,7 +2459,7 @@
 
 ; At first we followed the precedent set by erase-gag-state and tried only
 ; clearing the set of ACL2(p) checkpoints to print whenever this function is
-; called.  However, we noticed that succesful proof attempts then do not clear
+; called.  However, we noticed that successful proof attempts then do not clear
 ; the saved checkpoints.  As such, we also clear the checkpoints in defthm-fn1.
 
     (erase-acl2p-checkpoints-for-summary state))))
@@ -2506,7 +2506,7 @@
 ; events are in this category.  Defthm is not, since when a proof fails no
 ; output of type error is typically generated, and thus the only error
 ; generated for defthm is typically the failure message from print-failure1.
-; Defun is however in thie category, since proof failures result in error
+; Defun is however in this category, since proof failures result in error
 ; messages about guard proof failure or termination proof failure.
 
                           '(encapsulate progn make-event defun)))
@@ -3633,7 +3633,7 @@
 ; all the way to a command landmark.
 
 ; Finally we address the "different scheme" promised above for the use of
-; comman landmarks.  In a chat with Sol Swords we came to realize that it would
+; command landmarks.  In a chat with Sol Swords we came to realize that it would
 ; likely be more efficient to pop all the way back to the last command, and not
 ; extend that command world at all.  (Recall that each command is protected by
 ; ld-read-eval-print.)  For example, with the failure of non-thm above, its
@@ -4139,7 +4139,7 @@
 ; report.
 
 ; This macro initializes the timers for an event and then executes the supplied
-; body, which should return an error triple.  Whether an error is signalled or
+; body, which should return an error triple.  Whether an error is signaled or
 ; not, the macro prints the summary and then pass the error triple on up.  The
 ; stats must be available from the state.  In particular, we print redefinition
 ; warnings that are recovered from the currently installed world in state and
@@ -7314,7 +7314,7 @@
 ; Assuming that names has survived chk-all-but-new-names, we check that they
 ; are in fact all new.  We either cause an error or return the world, we are to
 ; use in the coming definition.  Observe that it is difficult for the caller to
-; tell whether redefinition is occuring.  In fact, inspection of world will
+; tell whether redefinition is occurring.  In fact, inspection of world will
 ; reveal the answer: sweep down world to the next event-landmark and see
 ; whether any 'redefined property is stored.  All names with such a property
 ; are being redefined by this event.  This sweep is actually done by
@@ -10811,7 +10811,7 @@
 
 ; In Version_3.0.2 we removed a "draconian restriction to avoid capture" that
 ; had been too aggressive in avoiding this problem, but total removal was also
-; too aggresive, as demonstrated by the following proof of nil using
+; too aggressive, as demonstrated by the following proof of nil using
 ; Version_7.3, the last version with this particular bug.
 
 ;   (defun f (n) (declare (ignore n)) 3)
@@ -10849,7 +10849,7 @@
 ; just an alpha-variant of the original, to which alist can safely be applied
 ; naively.  When we think of constraint-lst as an alpha-equivalence class of
 ; universally quantified sentences, it it clear that this renaming not cause a
-; problem for our maintainance of world global
+; problem for our maintenance of world global
 ; 'proved-functional-instances-alist; just view that global as saying which
 ; (properly applied) functional instances of the universally quantified formula
 ; are known to be valid.
@@ -10937,7 +10937,7 @@
                  (erp
 
 ; The following message is surprising in a situation where a variable is
-; captured by a binding to itself, sinced for example (let ((x x)) ...)
+; captured by a binding to itself, since for example (let ((x x)) ...)
 ; translates and then untranslates back to (let () ...).  Presumably we could
 ; detect such cases and not consider them to be captures.  But we keep it
 ; simple and simply expect and hope that such a misleading message is never
@@ -11469,7 +11469,7 @@
 
 ; Keep in sync with conjoin-clause-sets.
 
-; It is unfortunatel that each clause in cl-set2 is split into a prefix (of
+; It is unfortunate that each clause in cl-set2 is split into a prefix (of
 ; negated *extra-info-fn* calls) and the rest for EACH member of cl-set1.
 ; However, we expect the sizes of clause-sets to be relatively modest;
 ; otherwise presumably the simplifier would choke.  So even though we could
@@ -11627,7 +11627,7 @@
 ; verify-guards event.  The idea is that one calls (verify-guards name) and we
 ; will generate the guard conditions for all the functions in the mutually
 ; recursive clique with name, prove them, and then exploit those proofs by
-; resetting their symbol-classs.  This process is optionally available as part
+; resetting their symbol-class.  This process is optionally available as part
 ; of the defun event and hence we must define it before defun.
 
 ; But in fact, we define it here, to support the definition of guard-theorem.
@@ -11773,7 +11773,7 @@
 
 ; Instead of cl below, we could use (maybe-add-extra-info-lit debug-info term
 ; cl wrld).  But that can cause a large number of lambda (let) terms in the
-; output that are probabably more unhelpful (as noise) than helpful.
+; output that are probably more unhelpful (as noise) than helpful.
 
                               (list cl)))))
              (mv cl-set3 ttree)))))
@@ -12676,7 +12676,7 @@
 ; substitution, then one wrote :x and wrote the substitution "flat",
 ; without parentheses around the variable/term pairs.  In general, :x
 ; meant "the variable symbol in term whose symbol name was "x"."  We
-; enforced the restrictin that there was at most one variable symbol
+; enforced the restriction that there was at most one variable symbol
 ; in a stored formula with a given symbol name.
 
 ; At that time we denoted lemma instances with such notation as
@@ -12705,7 +12705,7 @@
 ; substitution.  We temporarily adopted the idea that the "keywords"
 ; in flat substitutions might not be keywords at all.  E.g., you could
 ; write ACL2-NQTHM::X as a domain element.  That might have put into
-; jeapardy their use to disambiguate :use hint.
+; jeopardy their use to disambiguate :use hint.
 
 ; But simultaneously we adopted the idea that lemma instances are
 ; written as (:instance assoc-of-append ...) or (:functional-instance
@@ -13689,7 +13689,7 @@
 ; we include it, because from looking at the code, David Rager perceives that
 ; it can't hurt and that it might help.  It may turn out that the change to
 ; translate-custom-keyword-hint (which performs a similar replacement),
-; supercedes this change, because that occurs earlier in the call stack (before
+; supersedes this change, because that occurs earlier in the call stack (before
 ; the waterfall).  David Rager suspects that the call to
 ; custom-keyword-hint-interpreter1@par is used inside the waterfall (perhaps
 ; when the custom keyword hint process it told to 'wait and deal with the hint
@@ -14317,7 +14317,7 @@
         (translate-backchain-limit-rw-hint@par arg ctx wrld state))
        (:error
 
-; We know this case never happens.  The error is caught and signalled
+; We know this case never happens.  The error is caught and signaled
 ; early by translate-hint.  But we include it here to remind us that
 ; :error is a legal keyword.  In fact the semantics given here --
 ; which causes an immediate error -- is also consistent with the

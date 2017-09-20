@@ -376,7 +376,7 @@
 ; #+sb-thread
 ; (defmacro with-potential-sbcl-timeout (&rest body &key timeout)
 ;
-; ; The below use of labels is only neccessary because we provide an implicit
+; ; The below use of labels is only necessary because we provide an implicit
 ; ; progn for the body of with-potential-sbcl-timeout.
 ;
 ;   (let ((correct-body
@@ -427,7 +427,7 @@
 ; though that signal occurred in the past.  Fortunately, this isn't a
 ; contradiction of the semantics of condition variables, since with condition
 ; variables there is no specification of how far into the future the waiting
-; thread will receive a signal from the signalling thread.
+; thread will receive a signal from the signaling thread.
 
 ; Note: Condition variables should not be used to store state.  They are only a
 ; signaling mechanism, and any state update implied by receiving a condition
@@ -580,7 +580,7 @@
 
 ; Followup: SBCL has recently (as of November 2010) implemented semaphores, and
 ; the parallelism code could be changed to reflect this.  However, since SBCL
-; does not implement semaphore-nofication-object's, we choose to stick with our
+; does not implement semaphore-notification-object's, we choose to stick with our
 ; own implementation of semaphores for now.
 
   (declare (ignore name))

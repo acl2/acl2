@@ -1979,7 +1979,7 @@
                                     (global-val 'known-package-alist w)))
                             w))
 
-; Defpkg adds an axiom, labelled ax below.  We make a :REWRITE rule out of ax.
+; Defpkg adds an axiom, labeled ax below.  We make a :REWRITE rule out of ax.
 ; Warning: If the axiom added by defpkg changes, be sure to consider the
 ; initial packages that are not defined with defpkg, e.g., "ACL2".  In
 ; particular, for each primitive package in *initial-known-package-alist* there
@@ -2059,7 +2059,7 @@
 ; "rule name designators" v. runes.
 
 ; (1) When our theory functions are getting input directly from the
-;     user we wish they did a throrough job of checking it and were
+;     user we wish they did a thorough job of checking it and were
 ;     forgiving about such things as order, e.g., sorted otherwise ok
 ;     lists, so that the user didn't need to worry about order.
 
@@ -2176,7 +2176,7 @@
 
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their union as an
-; unagumented runic theory.  See intersection-augmented-theories-fn1.
+; unaugmented runic theory.  See intersection-augmented-theories-fn1.
 
   (cond ((null lst1) (revappend ans (strip-cdrs lst2)))
         ((null lst2) (revappend ans (strip-cdrs lst1)))
@@ -2275,7 +2275,7 @@
 
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their set-difference as
-; an unagumented runic theory.  See intersection-augmented-theories-fn1.
+; an unaugmented runic theory.  See intersection-augmented-theories-fn1.
 
   (cond ((null lst1) (revappend ans nil))
         ((null lst2) (revappend ans (strip-cdrs lst1)))
@@ -2973,7 +2973,7 @@
 ; handled, that may or may not be correct.  In a recent version of
 ; ACL2, (universal-theory nil w), if used in an encapsulate, had the
 ; effect of computing all the names in the theory as of the last
-; world-chaning form executed by the top-level loop.  But because
+; world-changing form executed by the top-level loop.  But because
 ; encapsulate did not so mark each term as it executed them,
 ; universal-theory backed up to the point in w just before the
 ; encapsulate.  Thus, universal-theory could not be used to get the
@@ -3192,7 +3192,7 @@
 ; requirement wasn't noticed until somebody put a THEORY-INVARIANT
 ; event into a book and then the compiled book compiled the logical
 ; code below and thus loading the .o file essentially tried to
-; reexecute the table event after it had already been executed by the
+; re-execute the table event after it had already been executed by the
 ; .lisp code in the book.  A hard error was caused.
 
 ; Therefore, we also define this macro as a trivial no-op in raw Lisp.
@@ -4284,7 +4284,7 @@
 
 ; Because of the progn wrapper, chk-embedded-event-form is called on the
 ; make-event call with make-event-chk = nil.  So even if we were to avoid the
-; redefintion check below, we would not get an error here.  If you change
+; redefinition check below, we would not get an error here.  If you change
 ; anything here, consider changing the comment about redefinition in
 ; encapsulate-pass-2 and associated code.
 
@@ -4635,7 +4635,7 @@
 ; We never execute this code in practice, since the raw code will run instead.
 ; But for consistency with the raw code, we avoid the
 ; user-stobjs-modified-warning.  Raw-mode is so far from maintaining soundness
-; that we feel no need to implement the user-stobjs-modified-warningv in the raw
+; that we feel no need to implement the user-stobjs-modified-warning in the raw
 ; code.
 
   (trans-eval-no-warning form 'top-level state t))
@@ -4705,7 +4705,7 @@
 ; Can time$ really occur in an event context?  At one time we seemed to think
 ; that time$1 could, but it currently seems doubtful that either time$1 or
 ; time$ could occur in an event context.  It's harmless to leave the next line,
-; but it particulary makes no sense to us to use time$1, so we use time$
+; but it particularly makes no sense to us to use time$1, so we use time$
 ; instead.
 
                                  time$))
@@ -5547,7 +5547,7 @@
     (value nil))
 
 ; Otherwise, we call table-fn directly, rather than calling table by way of
-; eval-event-lst, to circumvent the restriction agains calling
+; eval-event-lst, to circumvent the restriction against calling
 ; acl2-defaults-table in the context of a LOCAL.
 
    (t (state-global-let*
@@ -6389,7 +6389,7 @@
 ; anything here, consider changing that comment and associated code.
 
 ; Note that when (not only-pass-p), we don't pass return an expansion-alist.
-; Consider here the first example from the aforemenioned ocmment in
+; Consider here the first example from the aforementioned comment in
 ; chk-embedded-event-form.
 
 ;   (redef!)
@@ -6398,7 +6398,7 @@
 ;     (local (defmacro foo () '(defun f (x) (cons x x))))
 ;     (foo))
 
-; Then after evaluating this event, we get the "expansion" by evluating
+; Then after evaluating this event, we get the "expansion" by evaluating
 ; (access-command-tuple-last-make-event-expansion (cddr (car (w state)))) with
 ; a result of nil, which is not the usual way to record expansions; for
 ; example, (make-event '(defun g (x) x)) similarly gives us an expansion of
@@ -7652,7 +7652,7 @@
 
 (defun known-package-alist-included-p (a1 a2)
 
-; Return true if every package-entry in a1 is present in a2, and moveover, is
+; Return true if every package-entry in a1 is present in a2, and moreover, is
 ; present non-hidden in a2 if present non-hidden in a1.
 
   (cond ((endp a1) t)
@@ -7680,7 +7680,7 @@
 ; in the first pass.  We rely on this fact in order to use the
 ; known-package-alist from the first pass as a basis for the alist returned, so
 ; that any package-entry present in the second pass's alist is present in the
-; result alist, and moveover is non-hidden in the result if non-hidden in the
+; result alist, and moreover is non-hidden in the result if non-hidden in the
 ; second pass's alist.
 
 ; In fact we believe that the known-package-alist at the end of the second pass
@@ -8690,7 +8690,7 @@
 
 ; First, a broad question:  how much security are we trying to provide?
 ; After all, one could always fake a .cert file, say by calling checksum
-; onesself.  Our claim is simply that we only fully "bless" certification runs,
+; oneself.  Our claim is simply that we only fully "bless" certification runs,
 ; from scratch, of entire collections of books, without intervention.  Thus,
 ; there is no soundness problem with using (include-book "hd:ab.lisp") in a
 ; book certified in a Unix file system and having it mean something completely
@@ -9441,7 +9441,7 @@
 ; need to convert to an absolute pathname.
 
 ; If we have an absolute pathname, either by conversion or because the
-; include-book originally referenced an absoluate pathname under the system
+; include-book originally referenced an absolute pathname under the system
 ; books directory, then we convert to using :dir :system.
 
 ; To summarize much of the above: if cbd is nil or if cbd and dir are equal, we
@@ -9867,7 +9867,7 @@
 
 (defun hidden-defpkg-events1 (kpa system-books-dir w ctx state acc)
 
-; Warning: Keep this in sync with hidden-depkg-events-simple.
+; Warning: Keep this in sync with hidden-defpkg-events-simple.
 
   (cond
    ((endp kpa) (value (reverse acc)))
@@ -10176,7 +10176,7 @@
 
 ; We assume that all necessary packages exist so that we can read the
 ; certificate file for full-book-name, without errors caused by unknown package
-; names in symbols occurring in the porcullis commands or make-event
+; names in symbols occurring in the portcullis commands or make-event
 ; expansions.  If that assumption may not hold, consider using
 ; post-alist-from-pcert1 instead.
 
@@ -10457,7 +10457,7 @@
 
 (defun hidden-defpkg-events-simple (kpa acc)
 
-; Warning: Keep this in sync with hidden-depkg-events.
+; Warning: Keep this in sync with hidden-defpkg-events.
 
   (cond
    ((endp kpa) (reverse acc))
@@ -11422,7 +11422,7 @@
 
 ; We make the convention that if a file has no certificate or has an invalid
 ; certificate, we will either assume it anyway or cause an error depending on
-; suspect-book-action-alist.  In the case that we pronouce this book
+; suspect-book-action-alist.  In the case that we pronounce this book
 ; uncertified, we return nil.
 
   (let ((dir (or dir
@@ -17211,7 +17211,7 @@
 ; our handling of Common Lisp compliance.
 
 ; The argument, non-memoizable, is the value of the :non-memoizable keyword of
-; the defstobj event intrducing name.  Let us consider whether there is a need
+; the defstobj event introducing name.  Let us consider whether there is a need
 ; to add a check about :non-memoizable for the case of a stobj with stobj
 ; fields.
 
@@ -17885,7 +17885,7 @@
 ; The *1* functions for the functions are all generated by oneifying
 ; the axiomatic defs.
 
-; To see the deconsts generated, invoke
+; To see the defconsts generated, invoke
 ;   (defstobj-defconsts
 ;     (strip-accessor-names (access defstobj-template template
 ;                                   :field-templates))
@@ -19615,7 +19615,7 @@
 ; arguments of a lambda application; let's call these x-formals and x-args.  We
 ; know that x-formals and y-formals have the same length, and we want to check
 ; that y-formals is a permutation of x-formals and, moreover: when the
-; arguments are correspondingly permutated, then the respective members of
+; arguments are correspondingly permuted, then the respective members of
 ; x-args and y-args are equal.
 
   (declare (xargs :guard (and (symbol-listp x-formals-tail)
@@ -24528,7 +24528,7 @@
   (cond ((iprint-enabledp state)
 
 ; A comment in rollover-iprint-ar explains conditions that allow a certain
-; multiplier of 4 to enable maintainance of the invariant that the
+; multiplier of 4 to enable maintenance of the invariant that the
 ; maximum-length of the iprint-ar is always at least four times the dimension.
 ; We support that reasoning here by making sure that we do not create
 ; successive entries with index 0.  Note that compress1 does not change the
@@ -24992,7 +24992,7 @@
 ; Standard Model: The standard model of Peano axioms is the set of natural
 ; numbers together with the usual operators.  In particular, there are no
 ; objects in the standard model that don't correspond with some natural, e.g.,
-; there is no object having an infinite number of predecesors as one could
+; there is no object having an infinite number of predecessors as one could
 ; arrange by adding the consistent infinite set of axioms of the form n < C,
 ; for every natural number n.  The standard model of ACL2 is just Common Lisp
 ; on a machine with unlimited memory and no ``bad atoms,'' e.g., the only
@@ -25189,7 +25189,7 @@
 ; event.  Yet after the defattach, (equal (f1 x) (g1 x)) is a theorem of the
 ; evaluation theory.
 
-; This example motivates an acylicity condition on functions and their
+; This example motivates an acyclicity condition on functions and their
 ; attachments, explained below, that is sufficient for supporting a
 ; characterization of defattach events in terms of evaluation histories.  We
 ; next provide some motivation, before presenting the appropriate foundational
@@ -25839,7 +25839,7 @@
                                   (cdr attach-pair)) ; attaching for execution
                               (not (and skip-checks-t
 
-; If skip-checks is tand we have a non-executable program-mode function, then
+; If skip-checks is t and we have a non-executable program-mode function, then
 ; it is legal to attach for execution, so we can move on to the next COND
 ; branch.
 
@@ -26222,7 +26222,7 @@
 ; of alists corresponding positionally to attachment-alist, each of which binds
 ; elements of *defattach-keys* to values to help with the respective proof.
 ; Like prove, we return an error triple; the non-erroneous value is a ttree
-; signalling the successful proof of all the goals.
+; signaling the successful proof of all the goals.
 
 ; Note that filter-for-attachment has been applied before calling this
 ; function.
@@ -26677,7 +26677,7 @@
 
 ;    h1  <+ ... <+ g1 <+ h0 <+ ... <+ g0 < h1
 
-; If h1 is not iself g-canonical, then will not find the merge below at a later
+; If h1 is not itself g-canonical, then will not find the merge below at a later
 ; step, because it requires merging two components both attached to the same
 ; record (with :g field g0), which we avoid for efficiency.
 
@@ -27765,7 +27765,7 @@
 ; ordinary ancestor of f or else <f,g> is an attachment pair (think: f is
 ; redefined to be g).  We say "roughly speaking" primarily because we traffic
 ; entirely in "canonical" function symbols, as explained in the Essay on
-; Defattach.  Morover, for our defattach implementation, we include guards in
+; Defattach.  Moreover, for our defattach implementation, we include guards in
 ; the calculation of canonical ancestors.  Guards are relevant in the sense
 ; that changing or (especially) removing an attachment used in a guard could
 ; invalidate a stored value, not logically, but in the sense that its
@@ -29053,7 +29053,7 @@
 ;                              (list 'quote ',(@ bad)))))))))
 ;
 
-; where "foo2" is as follows, with the indicated portullis command:
+; where "foo2" is as follows, with the indicated portcullis command:
 
 ; (in-package "ACL2")
 ;
@@ -29234,7 +29234,7 @@
 
 (defun read-file-into-string1 (channel state ans bound)
 
-; Channel is an open input characater channel.  We read all the characters in
+; Channel is an open input character channel.  We read all the characters in
 ; the file and return the list of them.
 
   (declare (xargs :stobjs state

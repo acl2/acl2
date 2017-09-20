@@ -64,7 +64,7 @@
 ; of those listed we prefer to use the variables given.  The first
 ; variable in each family is additionally used as the root for a
 ; gensym, should it come to that.  This list can be extended
-; arbitarily without affecting soundness, as long as (a) the car of
+; arbitrarily without affecting soundness, as long as (a) the car of
 ; each pair below is a type set and (b) the cdr is a true-list of
 ; symbols.  Arbitrary overlaps between the types and between the
 ; symbols are permitted.
@@ -1032,7 +1032,7 @@
 ; best rule on each round from scratch, Nqthm kept an ordered list of
 ; candidates (which it culled appropriately when eliminations removed some of
 ; them from the clause or when the crucial variables were no longer among
-; eliminables).  Finally, and most obscurely, Nqthm used an incrutable test on
+; eliminables).  Finally, and most obscurely, Nqthm used an inscrutable test on
 ; the "process history" (related to our elim-sequence) and a subtle invariant
 ; about the candidates to switch from our top-flg t mode to top-flg nil mode.
 ; We have spent about a week coding destructor elimination in ACL2 and we have
@@ -1191,7 +1191,7 @@
 ; removed from those two fixed sets the variables that occurred in the
 ; input clause.  Thereafter, if a variable was found to be in the (locally)
 ; fixed sets, it was known to be introduced by the given process.  The
-; limitation to a fixed set caused the famous set-dif-n error message
+; limitation to a fixed set caused the famous set-diff-n error message
 ; when the set was exhausted:
 
 ;    FATAL ERROR:  SET-DIFF-N called with inappropriate arguments.
