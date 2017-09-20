@@ -33,9 +33,9 @@
   :elementp-of-nil :unknown
   ///
 
-  (std::defruled list-in-congruence
-    (implies (equal (sfix set1) (sfix set2))
-             (equal (list-in x set1) (list-in x set2)))))
+  (std::defrule list-in-of-sfix-2
+    (equal (list-in list (sfix set))
+           (list-in list set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
