@@ -4200,13 +4200,26 @@
 
 (defun@par chk-theory-expr-value1 (lst wrld expr macro-aliases ctx state)
 
-; A theory expression must evaluate to a common theory, i.e., a
-; truelist of rule name designators.  A rule name designator, recall,
-; is something we can interpret as a set of runes and includes runes
-; themselves and the base symbols of runes, such as APP and
-; ASSOC-OF-APP.  We already have a predicate for this concept:
-; theoryp.  This checker checks for theoryp but with better error
-; reporting.
+; A theory expression must evaluate to a common theory, i.e., a truelist of
+; rule name designators.  A rule name designator, recall, is something we can
+; interpret as a set of runes and includes runes themselves and the base
+; symbols of runes, such as APP and ASSOC-OF-APP.  We already have a predicate
+; for this concept: theoryp.  This checker checks for theoryp but with better
+; error reporting.
+
+; Generally speaking, if a member of lst is not a rule name designator, then
+; some theory function (set-difference-theories, etc.) will have reported it,
+; using check-theory, before we get here.  Now check-theory not only reports
+; errors, but it warns when one is attempting to enable or disable a primitive
+; (either the definition or the executable-counterpart).  We do not warn here;
+; for example, if one submits (in-theory '(cons)) there will be no warning.  It
+; seems good enough to warn with (in-theory (enable cons)).
+
+; Remark.  An entirely different way to handle primitives would be not to
+; associate them with runes.  But as of this writing in Sept. 2017, those
+; primitives have had 'runic-mapping-pairs properties for a long time, and we
+; are nervous about either changing that or ignoring those properties when
+; producing theories (see for example function-theory-fn1).
 
   (cond ((atom lst)
          (cond ((null lst)

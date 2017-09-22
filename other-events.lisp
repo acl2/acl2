@@ -2144,18 +2144,162 @@
     (intersection-augmented-theories-fn1 (cdr lst1) lst2 ans))
    (t (intersection-augmented-theories-fn1 lst1 (cdr lst2) ans))))
 
-(defmacro check-theory (lst wrld ctx form)
-  `(cond ((theoryp! ,lst ,wrld)
-          ,form)
-         (t (er hard ,ctx
-                "A theory function has been called on an argument that does ~
-                 not represent a theory.  See the **NOTE**s above and see ~
-                 :DOC theories."))))
+(defun check-theory-msg1 (lst macro-aliases wrld bad macros theorems
+                              primitives)
 
-(defun intersection-theories-fn (lst1 lst2 wrld)
-  (check-theory
+; For background see check-theory-msg.  Parameters bad, macros, theorems, and
+; primitives are accumulators.  Bad contains members of lst that do not satisfy
+; rule-name-designatorp.  Macros and theorems are the subsets of bad consisting
+; of symbols that name a macro or a theorem, respectively.  Primitives is a
+; list of rule-name-designators.
+
+  (cond ((endp lst)
+         (mv bad macros theorems primitives))
+        (t
+         (let ((sym (rule-name-designatorp (car lst) macro-aliases wrld)))
+           (cond
+            (sym
+             (check-theory-msg1
+              (cdr lst) macro-aliases wrld bad macros theorems
+              (cond ((and sym
+                          (assoc-eq sym *primitive-formals-and-guards*))
+                     (cons sym primitives))
+                    (t primitives))))
+
+; Otherwise we add (car lst) to bad.  But we might also add (car lst) to one or
+; more of the other accumulators.
+
+            ((not (symbolp (car lst)))
+             (check-theory-msg1 (cdr lst) macro-aliases wrld
+                                (cons (car lst) bad)
+                                macros theorems primitives))
+            (t (let ((name (car lst)))
+                 (mv-let (macros theorems)
+                   (cond ((and (not (eq (getpropc name 'macro-args t wrld)
+                                        t))
+
+; Do not use the function macro-args above, as it can cause a hard error!  But
+; checking for a macro isn't enough -- we don't want to report that this is a
+; macro for which add-macro-alias if actually, the macro already aliases a
+; function but that function can't be disabled (e.g., because it's
+; constrained).
+
+                               (eq (deref-macro-name name macro-aliases)
+                                   name))
+                          (mv (cons name macros)
+                              theorems))
+                         ((or (body name nil wrld)
+                              (getpropc name 'theorem nil wrld)
+                              (getpropc name 'defchoose-axiom nil
+                                        wrld))
+                          (mv macros
+                              (cons name theorems)))
+                         (t (mv macros theorems)))
+                   (check-theory-msg1 (cdr lst) macro-aliases wrld
+                                      (cons name bad)
+                                      macros theorems primitives)))))))))
+
+(defun check-theory-msg (lst wrld)
+
+; This variant of theoryp1 returns (mv flg msg), where flg is true iff lst does
+; not represent a list of runes and msg is to be printed (as an error if flg is
+; true, else as a warning).
+
+  (let ((primitives-str
+         "~@0 ~&1 ~#1~[is a primitive~/are primitives~] without any ~
+          definition; any attempt to enable or disable rules based on a ~
+          primitive will have no effect.  "))
+    (cond
+     ((true-listp lst)
+      (mv-let (bad macros theorems primitives)
+        (check-theory-msg1 lst (macro-aliases wrld) wrld
+                           nil nil nil nil)
+        (cond
+         (bad
+          (mv t
+              (msg
+               "A theory function has been called on a list that contains ~
+                ~&0, which ~#0~[does~/do~] not designate a rule or a ~
+                non-empty list of rules.  ~@1~@2See :DOC theories."
+               bad
+               (cond
+                ((or macros theorems)
+                 (msg "Note that ~@0~@1~@2.  "
+                      (cond
+                       (macros
+                        (msg "~&0 ~#0~[is a macro~/are macros~]; see :DOC ~
+                              add-macro-alias to associate a macro with a ~
+                              function"
+                             macros))
+                       (t ""))
+                      (cond
+                       ((and macros theorems)
+                        ".  Also note that ")
+                       (t ""))
+                      (cond
+                       (theorems
+                        (msg "~&0 ~#0~[names a theorem~/name theorems~] but ~
+                              not any rules"
+                             theorems))
+                       (t ""))))
+                (t ""))
+               (cond
+                (primitives (msg primitives-str
+                                 (if (or macros theorems)
+                                     "Moreover,"
+                                   "Note that")
+                                 primitives))
+                (t "")))))
+         (primitives
+          (mv nil (msg primitives-str "Note that" primitives)))
+         (t (mv nil nil)))))
+     (t (mv t
+            (msg
+             "A theory function has been called on the following argument ~
+              that does not represent a theory because it is not a ~
+              true-list:~|~Y01.~|"
+             lst
+             (evisc-tuple 5 7 nil nil)))))))
+
+(defun check-theory-action (lst wrld ctx)
+
+; A theory expression must evaluate to a common theory, i.e., a truelist of
+; rule name designators.  A rule name designator, recall, is something we can
+; interpret as a set of runes and includes runes themselves and the base
+; symbols of runes, such as APP and ASSOC-OF-APP.  We already have a predicate
+; for this concept: theoryp.  This checker checks for theoryp but with better
+; error reporting.  It returns t if there is an error, else nil.
+
+  (mv-let (flg msg)
+    (check-theory-msg lst wrld)
+    (cond (flg (prog2$ (er hard ctx "~@0" msg)
+                       t))
+          (msg (prog2$ (warning1-cw ctx "Theory" "~@0"
+                                    (list (cons #\0 msg))
+                                    wrld
+                                    (default-state-vars nil))
+                       nil))
+          (t nil))))
+
+(defmacro check-theory (lst wrld ctx form)
+  `(if (check-theory-action ,lst ,wrld ,ctx)
+       nil
+     ,form))
+
+(defmacro maybe-check-theory (skip-check lst wrld ctx form)
+  `(if ,skip-check
+       ,form
+     (check-theory ,lst ,wrld ,ctx ,form)))
+
+(defun intersection-theories-fn (lst1 lst2
+                                      lst1-known-to-be-runic
+                                      lst2-known-to-be-runic
+                                      wrld)
+  (maybe-check-theory
+   lst1-known-to-be-runic
    lst1 wrld 'intersection-theories-fn
-   (check-theory
+   (maybe-check-theory
+    lst2-known-to-be-runic
     lst2 wrld 'intersection-theories-fn
     (intersection-augmented-theories-fn1 (augment-theory lst1 wrld)
                                          (augment-theory lst2 wrld)
@@ -2168,6 +2312,8 @@
   (list 'intersection-theories-fn
         lst1
         lst2
+        (theory-fn-callp lst1)
+        (theory-fn-callp lst2)
         'world))
 
 (defun union-augmented-theories-fn1 (lst1 lst2 ans)
@@ -2218,17 +2364,20 @@
 ; We make some effort to share structure with lst1 if it is a runic theory,
 ; else with lst2 if it is a runic theory.  Argument lst1-known-to-be-runic is
 ; an optimization: if it is true, then lst1 is known to be a runic theory, so
-; we can skip the runic-theoryp check.
+; we can skip its runic-theoryp check.  If furthermore lst1-known-to-be-runic
+; is 'both then lst2 is also knowwn to be a runic theory and we can skip its
+; check, too.
 
   (cond
    ((or lst1-known-to-be-runic
         (runic-theoryp lst1 wrld))
-    (check-theory lst2 wrld 'union-theories-fn
-                  (union-theories-fn1 lst1
-                                      (augment-theory lst2 wrld)
-                                      nil
-                                      wrld
-                                      nil)))
+    (maybe-check-theory (eq lst1-known-to-be-runic 'both)
+                        lst2 wrld 'union-theories-fn
+                        (union-theories-fn1 lst1
+                                            (augment-theory lst2 wrld)
+                                            nil
+                                            wrld
+                                            nil)))
    ((runic-theoryp lst2 wrld)
     (check-theory lst1 wrld 'union-theories-fn
                   (union-theories-fn1 lst2
@@ -2327,7 +2476,10 @@
                (t (set-difference-theories-fn1
                    lst1 (cdr lst2) nume wrld ans))))))))
 
-(defun set-difference-theories-fn (lst1 lst2 lst1-known-to-be-runic wrld)
+(defun set-difference-theories-fn (lst1 lst2
+                                        lst1-known-to-be-runic
+                                        lst2-known-to-be-runic
+                                        wrld)
 
 ; We make some effort to share structure with lst1 if it is a runic theory.
 ; Argument lst1-known-to-be-runic is an optimization: if it is true, then lst1
@@ -2336,16 +2488,19 @@
   (cond
    ((or lst1-known-to-be-runic
         (runic-theoryp lst1 wrld))
-    (check-theory lst2 wrld 'set-difference-theories-fn
-                  (set-difference-theories-fn1 lst1
-                                               (augment-theory lst2 wrld)
-                                               nil
-                                               wrld
-                                               nil)))
+    (maybe-check-theory
+     lst2-known-to-be-runic
+     lst2 wrld 'set-difference-theories-fn
+     (set-difference-theories-fn1 lst1
+                                  (augment-theory lst2 wrld)
+                                  nil
+                                  wrld
+                                  nil)))
    (t
     (check-theory
      lst1 wrld 'set-difference-theories-fn
-     (check-theory
+     (maybe-check-theory
+      lst2-known-to-be-runic
       lst2 wrld 'set-difference-theories-fn
       (set-difference-augmented-theories-fn1
 
@@ -2452,7 +2607,7 @@
          #+acl2-metering (setq meter-maid-cnt (1+ meter-maid-cnt))
          (current-theory1-augmented (cdr lst) ans redefined))))
 
-(defun union-current-theory-fn (lst2 wrld)
+(defun union-current-theory-fn (lst2 lst2-known-to-be-runic wrld)
 
 ; Warning: Keep this in sync with current-theory-fn and
 ; set-difference-current-theory-fn.
@@ -2460,7 +2615,8 @@
 ; This function returns, with an optimized computation, the value
 ; (union-theories-fn (current-theory :here) lst2 t wrld).
 
-  (check-theory
+  (maybe-check-theory
+   lst2-known-to-be-runic
    lst2 wrld 'union-current-theory-fn
    (let* ((wrld1 ; as in current-theory-fn, we apply decode-logical-name
            (scan-to-event wrld))
@@ -2480,16 +2636,20 @@
   (cond ((equal lst1 '(current-theory :here)) ; optimization
          (list 'union-current-theory-fn
                lst2
+               (theory-fn-callp lst2)
                'world))
         ((equal lst2 '(current-theory :here)) ; optimization
          (list 'union-current-theory-fn
                lst1
+               (theory-fn-callp lst1)
                'world))
         ((theory-fn-callp lst1)
          (list 'union-theories-fn
                lst1
                lst2
-               t
+               (if (theory-fn-callp lst2)
+                   ''both
+                 t)
                'world))
         ((theory-fn-callp lst2)
          (list 'union-theories-fn
@@ -2504,7 +2664,7 @@
                nil
                'world))))
 
-(defun set-difference-current-theory-fn (lst2 wrld)
+(defun set-difference-current-theory-fn (lst2 lst2-known-to-be-runic wrld)
 
 ; Warning: Keep this in sync with current-theory-fn and
 ; union-current-theory-fn.
@@ -2515,7 +2675,8 @@
 ;                             t ; (theory-fn-callp '(current-theory :here))
 ;                             wrld).
 
-  (check-theory
+  (maybe-check-theory
+   lst2-known-to-be-runic
    lst2 wrld 'set-difference-current-theory-fn
    (let* ((wrld1 ; as in current-theory-fn, we apply decode-logical-name
            (scan-to-event wrld))
@@ -2535,11 +2696,13 @@
   (cond ((equal lst1 '(current-theory :here)) ; optimization
          (list 'set-difference-current-theory-fn
                lst2
+               (theory-fn-callp lst2)
                'world))
         (t (list 'set-difference-theories-fn
                  lst1
                  lst2
                  (theory-fn-callp lst1)
+                 (theory-fn-callp lst2)
                  'world))))
 
 ; Now we define a few useful theories.

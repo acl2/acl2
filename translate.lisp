@@ -8284,15 +8284,16 @@
                             bindings)))))))))
    ((not (true-listp (cdr x)))
     (trans-er ctx
-              "Function applications in ACL2 must end in NIL.  ~x0 is ~
-               not of this form."
+              "Function (and macro) applications in ACL2 must end in NIL.  ~
+               ~x0 is not of this form."
               x))
    ((not (symbolp (car x)))
     (cond ((or (not (consp (car x)))
                (not (eq (caar x) 'lambda)))
            (trans-er ctx
-                     "Function applications in ACL2 must begin with a symbol ~
-                      or LAMBDA expression.  ~x0 is not of this form."
+                     "Function (and macro) applications in ACL2 must begin ~
+                      with a symbol or LAMBDA expression.  ~x0 is not of this ~
+                      form."
                      x))
           ((or (not (true-listp (car x)))
                (not (>= (length (car x)) 3))

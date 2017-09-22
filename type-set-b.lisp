@@ -363,48 +363,53 @@
 
 (defun rule-name-designatorp (x macro-aliases wrld)
 
-; A rule name designator is an object which denotes a set of runes.
-; We call that set of runes the "runic interpretation" of the
-; designator.  A rune, x, is a rule name designator, denoting {x}.  A
-; symbol, x, with a 'runic-mapping-pairs property is a designator and
-; denotes either {(:DEFINITION x)} or else the entire list of runes in
-; the runic-mapping-pairs, depending on whether there is a :DEFINITION
-; rune.  A symbol x that is a theory name is a designator and denotes
-; the runic theory value.  Finally, a singleton list, (fn), is a
-; designator if fn is a function symbol; it designates
-; {(:EXECUTABLE-COUNTERPART fn)}.
+; A rule name designator is an object which denotes a set of runes.  We call
+; that set of runes the "runic interpretation" of the designator.  A rune, x,
+; is a rule name designator, denoting {x}.  A symbol, x, with a
+; 'runic-mapping-pairs property is a designator and denotes either
+; {(:DEFINITION x)} or else the entire list of runes in the
+; runic-mapping-pairs, depending on whether there is a :DEFINITION rune.  A
+; symbol x that is a theory name is a designator and denotes the runic theory
+; value.  Finally, a singleton list, (fn), is a designator if fn is a function
+; symbol; it designates {(:EXECUTABLE-COUNTERPART fn)}.
 
-; For example, if APP is a function symbol then its runic
-; interpretation is {(:DEFINITION APP)}.  If ASSOC-OF-APP is a defthm
-; event with, say, three rule classes then its runic interpretation is
-; a set of three runes, one for each rule generated.  The idea here is
-; to maintain some consistency with the Nqthm way of disabling names.
-; If the user disables APP then only the symbolic definition is
-; disabled, not the executable-counterpart, while if ASSOC-OF-APP is
-; disabled, all such rules are disabled.
+; For example, if APP is a function symbol then its runic interpretation is
+; {(:DEFINITION APP)}.  If ASSOC-OF-APP is a defthm event with, say, three rule
+; classes then its runic interpretation is a set of three runes, one for each
+; rule generated.  The idea here is to maintain some consistency with the Nqthm
+; way of disabling names.  If the user disables APP then only the symbolic
+; definition is disabled, not the executable-counterpart, while if ASSOC-OF-APP
+; is disabled, all such rules are disabled.
 
-; Note: We purposely do not define a function "runic-interpretation"
-; which returns runic interpretation of a designator.  The reason is
-; that we would have to cons that set up for every designator except
-; theories.  The main reason we'd want such a function is to define
-; the runic theory corresponding to a common one.  We do that below
-; (in convert-theory-to-unordered-mapping-pairs1) and open-code "runic
+; When true, we return the symbol on which the set of rune is based.  This
+; information, which involves the application of deref-macro-name, can be
+; useful to callers; see check-theory-msg1.
+
+; Note: We purposely do not define a function "runic-interpretation" which
+; returns runic interpretation of a designator.  The reason is that we would
+; have to cons that set up for every designator except theories.  The main
+; reason we'd want such a function is to define the runic theory corresponding
+; to a common one.  We do that below (in
+; convert-theory-to-unordered-mapping-pairs1) and open-code "runic
 ; interpretation."
 
   (cond ((symbolp x)
-         (cond
-          ((getpropc (deref-macro-name x macro-aliases)
-                     'runic-mapping-pairs nil wrld)
-           t)
-          (t (not (eq (getpropc x 'theory t wrld) t)))))
+         (let ((x (deref-macro-name x macro-aliases)))
+           (cond
+            ((getpropc x 'runic-mapping-pairs nil wrld)
+             x)
+            (t (and (not (eq (getpropc x 'theory t wrld) t))
+                    x)))))
         ((and (consp x)
               (null (cdr x))
               (symbolp (car x)))
-         (let ((fn (deref-macro-name (car x) macro-aliases)))
+         (let* ((fn (deref-macro-name (car x) macro-aliases)))
            (and (function-symbolp fn wrld)
-                (runep (list :executable-counterpart fn) wrld))))
+                (runep (list :executable-counterpart fn) wrld)
+                fn)))
         (t (let ((x (translate-abbrev-rune x macro-aliases)))
-             (runep x wrld)))))
+             (and (runep x wrld)
+                  (base-symbol x))))))
 
 (defun theoryp1 (lst macro-aliases wrld)
   (cond ((atom lst) (null lst))
@@ -419,38 +424,6 @@
 ; theory).  That conversion is done by coerce-to-runic-theory.
 
   (theoryp1 lst (macro-aliases wrld) wrld))
-
-(defun theoryp!1 (lst fail-flg macro-aliases wrld)
-  (cond ((atom lst) (and (not fail-flg) (null lst)))
-        ((rule-name-designatorp (car lst) macro-aliases wrld)
-         (theoryp!1 (cdr lst) fail-flg macro-aliases wrld))
-        ((and (symbolp (car lst))
-
-; Do not use the function macro-args below, as it can cause a hard error!
-
-              (not (eq (getpropc (car lst) 'macro-args t wrld)
-                       t)))
-         (prog2$ (cw "~|~%**NOTE**:  The name ~x0 is a macro.  See :DOC ~
-                      add-macro-alias if you want it to be associated with a ~
-                      function name."
-                     (car lst))
-                 (theoryp!1 (cdr lst) t macro-aliases wrld)))
-        (t (prog2$ (let ((name (car lst)))
-                     (cw "~|~%**NOTE**:~%The name ~x0 does not designate a ~
-                          rule or non-empty list of rules~@1.  See :DOC ~
-                          rule-classes."
-                         name
-                         (cond ((and (symbolp name)
-                                     (or (body name nil wrld)
-                                         (getpropc name 'theorem nil wrld)
-                                         (getpropc name 'defchoose-axiom nil
-                                                   wrld)))
-                                " (though there is a theorem with that name)")
-                               (t ""))))
-                   (theoryp!1 (cdr lst) t macro-aliases wrld)))))
-
-(defun theoryp! (lst wrld)
-  (theoryp!1 lst nil (macro-aliases wrld) wrld))
 
 ; Now we define what a "runic theory" is.
 

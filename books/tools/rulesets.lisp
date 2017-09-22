@@ -372,10 +372,9 @@ runes of the indicated class (see @(see rule-classes)) in the value of
 })"
 
   (defmacro enable* (&rest x)
-    `(union-theories-fn
-      (current-theory :here)
+    `(union-current-theory-fn
       (expand-ruleset ',x world)
-      t world)))
+      nil world)))
 
 (defsection disable*
   :parents (rulesets)
@@ -390,10 +389,9 @@ runes of the indicated class (see @(see rule-classes)) in the value of
 })"
 
   (defmacro disable* (&rest x)
-    `(set-difference-theories-fn
-      (current-theory :here)
+    `(set-difference-current-theory-fn
       (expand-ruleset ',x world)
-      t world)))
+      nil world)))
 
 (defsection e/d*
   :parents (rulesets)

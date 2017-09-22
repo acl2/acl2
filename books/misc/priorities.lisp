@@ -127,11 +127,11 @@
 
 (defmacro disable-prioritized-runes nil
   '(in-theory
-    (set-difference-theories-fn (current-theory-fn ':here world)
-                                (all-prioritized-items
-                                 (table-alist 'priorities world))
-                                t
-                                world)))
+    (set-difference-current-theory-fn
+     (all-prioritized-items
+      (table-alist 'priorities world))
+     nil
+     world)))
 
 ; Here is how we will bump the current priority up to the next level.
 ; The function next-priority returns either the next priority or nil
