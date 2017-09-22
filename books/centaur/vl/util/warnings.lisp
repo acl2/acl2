@@ -413,7 +413,7 @@ particular interest.</p>"
                      (iff msg (or x1 x2))))
   (if x1
       (if x2
-          (vmsg "~@0~%@~1" x1 x2)
+          (vmsg "~@0~%~@1" x1 x2)
         (vl-msg-fix x1))
     (and x2 (vl-msg-fix x2))))
 
