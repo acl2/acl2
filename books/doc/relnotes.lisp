@@ -277,6 +277,9 @@
  <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs
  macroexpansion when all macros to be expanded are in logic mode.</p>
 
+ <p>There is a new @(see symbol-utilities) book (initially with a single
+ function, @(tsee symbol-package-name-safe)).</p>
+
  <h4>The apply books</h4>
 
  <p>Updated books pertaining to @('apply$'); see @('projects/apply-model/') and

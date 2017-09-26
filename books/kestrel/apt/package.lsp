@@ -15,20 +15,51 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "APT" (append *std-pkg-symbols*
-                      '(add-numbered-name-in-use
+                      '(*geneqv-iff*
+                        *nil*
+                        *t*
+                        add-numbered-name-in-use
+                        add-suffix
                         add-suffix-to-fn
                         alist-to-doublets
                         all-calls
+                        all-nils
+                        append-lst
+                        append?
                         apply-term
                         apply-term*
                         body
                         conjoin
+                        conjoin-untranslated-terms
                         conjoin2
+                        convert-soft-error
                         control-screen-output
+                        copy-def
                         cw-event
                         def-error-checker
+                        definedp
+                        defun-sk-check
+                        defun-sk-info->bound-vars
+                        defun-sk-info->matrix
+                        defun-sk-info->non-executable
+                        defun-sk-info->quantifier
+                        defun-sk-info->rewrite-kind
+                        defun-sk-info->rewrite-name
+                        defun-sk-info->strengthen
+                        defun-sk-info->untrans-matrix
+                        defun-sk-info->witness
+                        defun-sk2
+                        directed-untranslate
+                        directed-untranslate-no-lets
+                        disable*
+                        disjoin
                         doublets-to-alist
+                        drop-fake-runes
                         dumb-negate-lit
+                        e/d*
+                        enabled-runep
+                        encapsulate-report-errors
+                        ens
                         ensure-boolean$
                         ensure-boolean-or-auto-and-return-boolean$
                         ensure-doublet-list$
@@ -65,21 +96,47 @@
                         ensure-term-if-call$
                         ensure-term-logic-mode$
                         ensure-term-no-stobjs$
+                        equivalence-relationp
                         er-soft+
+                        ext-address-subterm-governors-lst
+                        ext-address-subterm-governors-lst-state
+                        ext-fdeposit-term
+                        ext-geneqv-at-subterm
                         fargs
+                        fcons-term
+                        fcons-term*
+                        ffn-symb
+                        ffn-symb-p
+                        ffnnamep
+                        flambda-applicationp
+                        flatten-ands-in-lit
+                        flatten-ands-in-lit-lst
+                        fn-copy-name
+                        fn-is-fn-copy-name
+                        fn-rune-nume
+                        fn-ubody
                         formals
                         fquotep
                         fresh-name-in-world-with-$s
                         function-intro-macro
+                        function-namep
                         fundef-enabledp
+                        geneqv-from-g?equiv
                         genvar
+                        get-event
+                        get-unnormalized-bodies
+                        guard-raw
                         guard-verified-p
                         implicate
+                        implicate-untranslated-terms
                         impossible
                         install-not-norm-event
+                        install-not-normalized
+                        install-not-normalized-name
                         keyword-value-list-to-alist
                         lambda-body
                         lambda-formals
+                        make-implication
                         make-lambda
                         make-paired-name
                         measure
@@ -88,6 +145,7 @@
                         next-numbered-name
                         non-executablep
                         packn
+                        pairlis-x1
                         pseudo-event-formp
                         pseudo-fn/lambda-p
                         pseudo-lambdap
@@ -96,19 +154,38 @@
                         recursivep
                         remove-keyword
                         remove-lambdas
+                        rename-fns
+                        rename-fns-lst
                         resolve-numbered-name-wildcard
+                        ruler-extenders-lst
                         run-when
+                        set-numbered-name-index-end
+                        set-numbered-name-index-start
+                        simplify-hyps
+                        sr-limit
+                        stobjs-out
+                        strip-cddrs
+                        strip-keyword-list
                         str::intern-list
                         str::symbol-list-names
                         subcor-var
                         subst-expr
                         subst-expr1
                         subst-var
+                        symbol-class
+                        symbol-package-name-safe
                         symbol-symbol-alistp
                         term-guard-obligation
+                        termify-clause-set
                         tests-and-call
                         theorem-intro-macro
+                        too-many-ifs-post-rewrite
+                        too-many-ifs-pre-rewrite
+                        tool2-fn
+                        trans-eval-error-triple
+                        translate-term-lst
                         ubody
+                        unnormalized-body
                         untranslate-lst
                         unwrapped-nonexec-body
                         variablep
