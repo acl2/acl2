@@ -96,7 +96,7 @@
 ; <entry trace-instructions> and <exit trace-instructions> print the
 ; arguments and returned values respectively.  A minor amount of
 ; cleaning up is done, such as printing |*STATE*| instead of the
-; entire state if it is one of the arguements or values.
+; entire state if it is one of the arguments or values.
 
 (defun trace-pre-process (lst)
   (let ((new-lst nil))

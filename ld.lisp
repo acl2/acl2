@@ -696,7 +696,7 @@
 
 ; Note: We take advantage of the fact that this function ALWAYS returns a list
 ; of quoted objects.  See the call of strip-cadrs in ld-read-keyword-command
-; below.  So if you optmize away some of the quotes, beware!
+; below.  So if you optimize away some of the quotes, beware!
 
                  (value (cons (list 'quote obj) rst)))))))))
 
@@ -875,7 +875,7 @@
                               may also answer R, meaning ``return ~
                               immediately from LD (without reading or ~
                               evaluating any more forms)'' or Q meaning ~
-                              ``return immediately from LD, signalling an ~
+                              ``return immediately from LD, signaling an ~
                               error.''"
                              :y t :n nil :r :return :q :error))
                        (list (cons #\0 (if (eq (ld-pre-eval-print state) t) 1 0))
@@ -907,7 +907,7 @@
 ; If ld-post-eval-print is nil we print nothing.  If it is t, we
 ; print with the standard evisceration (ld-evisc-tuple).  If it is
 ; :command-conventions, we hide error/value/state pairs by just printing
-; value and we don't print anyting when the value is :invisible.
+; value and we don't print anything when the value is :invisible.
 
   (let ((flg (ld-post-eval-print state))
         (output-channel (standard-co state)))
@@ -1214,7 +1214,7 @@
 ; handling of aborts in ld-fn forces us to call ld-fn-body again after each
 ; abort and we wish to suppress the header message after all entrances other
 ; than the first.  This only happens after an abort (all bets are off) and the
-; idea is to fool the user into thinking a normal error was signalled.
+; idea is to fool the user into thinking a normal error was signaled.
 
 #-acl2-loop-only
 (defvar *first-entry-to-ld-fn-body-flg*)
@@ -2207,9 +2207,9 @@
 ; This read is influenced by *package*, *readtable*, and *features*,
 ; as described in acl2.lisp.
 
-; The semantics of an ACL2 read-eval-print cycles is best desribed
-; from the logical point of view via the logic programming pradigm, to
-; which we degress momentarity.  In the Lisp paradigm, one thinks
+; The semantics of an ACL2 read-eval-print cycles is best described
+; from the logical point of view via the logic programming paradigm, to
+; which we digress momentarily.  In the Lisp paradigm, one thinks
 ; of an interaction as always being something like
 
 ; >  (fact 3) = ?
@@ -2235,13 +2235,13 @@
 ; (but non-Lispish) idea that the input to a computation need not
 ; always be given entirely in advance of the commencement of a
 ; computation.  In truth, even in regular Common Lisp, the input is not
-; really always given entirely in advance because the charcters that
+; really always given entirely in advance because the characters that
 ; may appear in *standard-input* or the file system need not be known
 ; before evaluation commences.  ACL2 employs this ``incompletely
 ; specified at evaluation commencement'' idea.
 
 ; From the logical point of view, an ACL2 ``state'' is any object in
-; the logic satifying the state-p predicate, q.v. in axioms.lisp.
+; the logic satisfying the state-p predicate, q.v. in axioms.lisp.
 ; There is a long comment in axioms.lisp under the heading STATE which
 ; describes the many fields that a state has.
 
@@ -2253,7 +2253,7 @@
 ; output channels (but not the characters read or written to those
 ; channels), (b) the symbols in the global table, (c) the t-stack, (d)
 ; the 32-bit stack, and (e) the file clock.  We say that an object o
-; satisfying state-p is ``consistent with the current paritial state''
+; satisfying state-p is ``consistent with the current partial state''
 ; provided that every fact revealed by (what-is-the-global-state) and
 ; by examination of the bound globals is true about o.
 

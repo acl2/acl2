@@ -31,6 +31,7 @@
                (acl2::universal-theory-fn from wrld)
                t ;; Tue Oct 31 09:22:52 2006. Hanbing. changed to accomodate
                  ;; the changes in ACL2 3.0.1
+               t ;; further change 9/2017 from Matt K
                wrld)))
     (collect-rewrites diff nil)))
 

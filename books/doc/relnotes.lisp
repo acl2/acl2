@@ -365,7 +365,9 @@
  <p>Modified @(tsee removable-runes) to allow a multiplier greater than 1.
  Modified output accordingly.  Also, the multiplier @('m') now provides
  non-strict bounds @('(floor (* m steps) 1)') rather than the previous
- strict bound @('(1- (ceiling (* m steps) 1))').</p>
+ strict bound @('(1- (ceiling (* m steps) 1))').  Moreover, a related new utility,
+ @(tsee minimal-runes), returns a list of runes to enable that is sufficient
+ for admitting the event.</p>
 
  <h3>Licensing Changes</h3>
 

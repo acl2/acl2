@@ -17,7 +17,7 @@
   (let ((diff (set-difference-theories-fn
                (universal-theory-fn to wrld)
                (universal-theory-fn from wrld)
-               t wrld)))
+               t t wrld)))
     (collect-rewrites diff nil)))
 
 (defmacro rewrite-theory (from &optional (to ':here))

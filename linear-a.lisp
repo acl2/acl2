@@ -562,7 +562,7 @@
 ; Previously, we stored the parents of a poly in the poly's :ttree field
 ; and used to-be-ignoredp.  However, tests have shown that under certain
 ; conditions to-be-ignoredp was taking up to 80% of the time spent by
-; add-poly.  We now store the poly's parents in a seperate field and
+; add-poly.  We now store the poly's parents in a separate field and
 ; use ignore-polyp.  The next few functions are used in the implementation
 ; of this change.
 
@@ -1005,7 +1005,7 @@
 
 ; The wonderful thing about this definition, is that it enjoys the algebraic
 ; laws we need to support linear arithmetic.  The "box" below contains the
-; complete listing of the algegraic laws supporting linear arithmetic
+; complete listing of the algebraic laws supporting linear arithmetic
 ; ("alsla").
 
 ; However, interspersed around them in the box are some events that ACL2's
@@ -1062,7 +1062,7 @@
 ; ; lessp have those properties.  We prove the properties, but we prove them from
 ; ; witnesses of plus and lessp that are ACL2's completed + and < supported by
 ; ; ACL2's linear arithmetic and hence, if the soundness of ACL2's arithmetic is
-; ; in doubt, as it is in this exercise, then no assurrance can be drawn from the
+; ; in doubt, as it is in this exercise, then no assurance can be drawn from the
 ; ; constructive nature of this axiomatization of rational arithmetic.
 ;
 ;              (local (defun plus (x y)
@@ -1851,7 +1851,7 @@
 ; by add-poly.)  See collect-parents and marry-parents for how we establish and
 ; maintain this relationship, and ignore-polyp for its use.
 
-; Rational-poly-p is a booolean flag used in non-linear arithmetic.  When it is
+; Rational-poly-p is a boolean flag used in non-linear arithmetic.  When it is
 ; true, then the right-hand side of the inequality (the polynomial) is known to
 ; have a rational number value.  (But note that for ACL2(r), i.e. for
 ; #+:non-standard-analysis, the value need only be real.  Through the linear
@@ -1934,7 +1934,7 @@
 ; Note: In Nqthm, we thought of polynomials being inequalities in a different
 ; logic, or at least, in an extension of the Nqthm logic that included the
 ; rationals.  In ACL2, we think of a poly as simply being an alternative
-; represention of a term, in which we have normalized by the use of certain
+; representation of a term, in which we have normalized by the use of certain
 ; algebraic laws governing the ACL2 function symbols <, <=, +, and *.  We
 ; noted these above (see ALSLA).  In addition, we think of the operations
 ; performed upon polys being just ordinary inferences within the logic,
@@ -3021,7 +3021,7 @@
 ; does not descend from a (not (equal & &)).  We know they have the same
 ; first-var.
 
-; We first determine whether they are complementary multiples of eachother
+; We first determine whether they are complementary multiples of each other
 ; and have not been used by find-equational-poly already.  If so, we
 ; return a ttree and two terms, as described by find-equational-poly.
 
@@ -3183,17 +3183,17 @@
 ; are now guaranteed to be 1.)  We do add a twist to the naive
 ; implementation though.  Rather than adding the two alists, and
 ; then normalizing the result, we calculate what would have been
-; the leading coeficient and normalize as we go (dividing by its
+; the leading coefficient and normalize as we go (dividing by its
 ; absolute value).
 
 ; We return two values.  The first indicates whether we have
 ; discovered a contradiction.  If the first result is non-nil then it
-; is the impossible poly formed by cancelling p1 and p2.  The ttree of
+; is the impossible poly formed by canceling p1 and p2.  The ttree of
 ; that poly will be interesting to our callers because it contains
 ; such things as the assumptions made and the lemmas used to get the
 ; contradiction.  When we return a contradiction, the second result is
 ; always nil.  Otherwise, the second result is either nil (meaning that
-; the cancellation yeilded a trivially true poly) or is the newly
+; the cancellation yielded a trivially true poly) or is the newly
 ; formed poly.
 
 ; Historical note: The affect of the newly (v2_8) introduced field,

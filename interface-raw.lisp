@@ -739,7 +739,7 @@
 ; Remark 2.  Consider, in the body of *1*fn, the case that <guard-checking-on>
 ; holds.  If we were to replace it with (or guard-checking-on program) then we
 ; would always check guards when in program mode, which would give backward
-; compatability: this scheme would behave exactly as the scheme from
+; compatibility: this scheme would behave exactly as the scheme from
 ; Version_2.5 for and before did when the new scheme is used in other than safe
 ; mode.  But we have decided that starting with Version_2.6, we will no longer
 ; check guards for :program mode functions when 'guard-checking-on has value
@@ -1890,7 +1890,7 @@
               (ignorable-vars (ignorable-vars dcls))
               (*1*guard (oneify guard nil wrld program-p))
 
-; We throw away most declararations and the doc string, keeping only ignore and
+; We throw away most declarations and the doc string, keeping only ignore and
 ; ignorable declarations.  Note that it is quite reasonable to ignore
 ; declarations when constructing ``slow'' functions.
 
@@ -2315,7 +2315,7 @@
 
 ; If we are under **1*-as-raw*, then our intention is that code executes just
 ; as it would in raw Lisp (i.e., without forcing execution via *1* function),
-; except that guards are checked for stobj primitives.  This speial treatment
+; except that guards are checked for stobj primitives.  This special treatment
 ; is only required in the invariant-risk case; see **1*-as-raw* and state
 ; global 'check-invariant-risk.  Moreover, we want the normal flow in the *1*
 ; function for stobj primitives, so we don't give this special treatment when
@@ -3063,7 +3063,7 @@
 ; EXTENDING AND RETRACTING PROPERTY LIST WORLDS
 
 ; We here sketch the entire world management scheme before diving into
-; the details.  The software archeologist might think these summaries
+; the details.  The software archaeologist might think these summaries
 ; were written just for his use but that is wrong.  In fact, these are
 ; design sketches and refresher courses to bring to mind the salient
 ; details before getting back down to work.  This particular one
@@ -3168,7 +3168,7 @@
 ; package.  This is what eventually drove us to implement the restric-
 ; tion described in :DOC package-reincarnation-import-restrictions.
 
-; Because of the possiblity of user interrupts, it is possible that we
+; Because of the possibility of user interrupts, it is possible that we
 ; can have effected some but not all of changes necessary to achieve a
 ; new state and then have the computation aborted.  To handle this,
 ; extend-world1 and retract-world1 both save the current world alist
@@ -3472,7 +3472,7 @@
 ; a net time of 0.50.
 
 ; From this experiment one can make the following conclusions: (a) In this
-; theorem, fgetprop is reponsible for less than 2% of the proof time.  Making
+; theorem, fgetprop is responsible for less than 2% of the proof time.  Making
 ; fgetprop instantaneous would reduce the 35.23 seconds to 34.73 seconds.
 
 ; By ordering the properties (in both senses) we can speed fgetprop up from
@@ -3483,16 +3483,16 @@
 ; end of the essay).  The lesson learned is that it may not be worth mucking
 ; around further with *current-acl2-world-key-ordering*.
 
-; In July 2002, during the development of Version_2.7, we modifed the use of
+; In July 2002, during the development of Version_2.7, we modified the use of
 ; the fnstack (specifically, being-openedp) so that for recursive functions we
 ; look up the representative of a clique, thus avoiding the need to look
 ; through all members every clique for the function at hand.  (A
 ; mutual-recursion nest with 4,786 defuns at AMD prompted this change.)  As a
 ; result we saw a 1.8% slowdown in the regression suite, reduced to 0.9% with
-; some optimizations.  Presumably the slowdown was due to the more frequest use
+; some optimizations.  Presumably the slowdown was due to the more frequent use
 ; of the RECURSIVEP property.  So we ran experiments using community books
 ; files books/certify-numbers.lisp and books/rtl/rel2/support/cert.lsp, though
-; we aborted the latter partway through lop3.lisp (during the proof of
+; we aborted the latter part way through lop3.lisp (during the proof of
 ; BITN-LAM0, which seemed to be bogging down).  The results using
 ; analyze-fgetprop-stats were as follows.
 
@@ -3580,7 +3580,7 @@
 
 ; March 2006: Here are some new numbers, listing in each case down to about 2
 ; orders of magnitude below the most-used property.  All were obtained with all
-; outpu inhibited.
+; output inhibited.
 
 ; ============================================================
 ;
@@ -4293,7 +4293,7 @@
 ; Hyperspec does not seem to specify fully which side effects may be caused by
 ; DEFUN.  Thus, although our approach will install symbol-functions, there
 ; seems to be no guarantee that it will allow other side-effects caused by
-; DEFUN.  No such side-effect is critical for ACL2.  Nevetheless, it is
+; DEFUN.  No such side-effect is critical for ACL2.  Nevertheless, it is
 ; fortunate that some such side-effects may still be handled, as illustrated by
 ; the following experiment in CCL.  First, load a compiled definition of
 ; function foo from a compiled file, save the symbol-function of foo in
@@ -4507,7 +4507,7 @@
 ; tables are populated during early include-books performed in raw Lisp.
 
 ; Note that we take a conservative approach, where memoization can make a
-; symbol unqualfied.  The consequence seems small, since as of this writing,
+; symbol unqualified.  The consequence seems small, since as of this writing,
 ; memoization is only done in the #+hons version, which is only for ACL2 built
 ; on CCL, and CCL compiles on-the-fly; so the marking of an add-trip symbol as
 ; unqualified will not result in interpreted code.  A future optimization might
@@ -4542,7 +4542,7 @@
 ;   form, thus avoiding a warning from GCL that can occur unless all defpackage
 ;   forms immediately follow the initial in-package form.  The
 ;   maybe-introduce-empty-pkg-2 forms use special variable *defpkg-virgins* to
-;   let ACL2 know to accept subsequent corressponding defpkg forms.
+;   let ACL2 know to accept subsequent corresponding defpkg forms.
 
 ; - Setq forms for the *hcomp-xxx-alist* variables as described above
 ;   (hcomp-init)
@@ -4818,7 +4818,7 @@
 ; loaded (not the compiled file), then we return TO-BE-COMPILED in that case.
 ; Otherwise we return INCOMPLETE, that is, either no load is attempted for the
 ; compiled or expansion file (because they don't exist or are out of date), or
-; else such a load but is aborted partway through, which can happen because of
+; else such a load but is aborted part way through, which can happen because of
 ; an incomplete load of a subsidiary include-book's compiled or expansion file.
 
 ; As suggested above, we may allow the corresponding expansion file to take the
@@ -6150,7 +6150,7 @@
 ; CMUCL versions 18e and 19e cannot seem to compile macros at the top level.
 ; Email from Raymond Toy on June 9, 2004 suggests that this appears to be a bug
 ; that exists in CMUCL 18e sources.  We'll thus give special treatment to any
-; version 18 or 19 of CMUCL, but we'll avod that for CMUCL version 20, since
+; version 18 or 19 of CMUCL, but we'll avoid that for CMUCL version 20, since
 ; 20D at least can compile macros.
 
                    #+(and cmu (or cmu18 cmu19))
@@ -6170,7 +6170,7 @@
 ; defparameter and then changed to defconst.  As things stand now,
 ; ACL2 supports defconst, which has the same effect at the raw lisp
 ; level (i.e., the cltl-command) as defparameter, and in addition
-; causes proclaim-file to exectute an appropriate proclamation for the
+; causes proclaim-file to execute an appropriate proclamation for the
 ; parameter, knowing as we do that it is really constant.  Here are
 ; some historical remarks that explain why we have gone down this
 ; path.
@@ -6190,7 +6190,7 @@
 ; says that it's illegal to redefine a Common Lisp function (as we did
 ; using setf, macro-function, and unwind-protect).
 
-; Another possibilty is to change defconstant-fn so that it really
+; Another possibility is to change defconstant-fn so that it really
 ; does create defconstants.  But the reason we use defparameter now is
 ; that when we undo we need to unbind (because we're always checking
 ; to see if something is already bound), and we can't unbind a
@@ -6333,7 +6333,7 @@
 ; even though they correspond to macros in raw Lisp (defined by defabbrev and
 ; defmacro, respectively).  We are relying on the fact that
 ; maybe-push-undo-stack handled defun and defmacro the same, so that the form
-; eveluated by maybe-pop-undo-stack will be appropriate even though the
+; evaluated by maybe-pop-undo-stack will be appropriate even though the
 ; "function" is actually a macro.
 
             (dolist (tuple (cdddr (cddr trip)))
@@ -6504,7 +6504,7 @@
 ; add world-key properties just to symbols in wrld); and (b): every
 ; symbol in old-wrld is a symbol in wrld (because wrld is an extension
 ; of old-wrld).  (Of course, by "symbol in" here we mean "symbol
-; occuring as the car of an element".)
+; occurring as the car of an element".)
 
           (dolist (trip new-trips)
             (add-trip name world-key trip))
@@ -6522,7 +6522,7 @@
 ; add world-key properties just to symbols in wrld); and (b): every
 ; symbol in old-wrld is a symbol in wrld (because wrld is an extension
 ; of old-wrld).  (Of course, by "symbol in" here we mean "symbol
-; occuring as the car of an element".)
+; occurring as the car of an element".)
 
        state)
 
@@ -6677,7 +6677,7 @@
 
 ; (a) at the time of any abort during the critical section, each symbol having
 ; the world-key property occurs as the car of some pair in universe, and (b)
-; each symbol occuring as the car of some pair in old-wrld occurs as the car of
+; each symbol occurring as the car of some pair in old-wrld occurs as the car of
 ; a pair in universe.
 
 ; The latter property is necessary to ensure that we can recover from an
@@ -7476,7 +7476,7 @@
 ; cannot know until the system is built!  Getting their values right requires
 ; some thought or experiment and even then subsequent changes to the system can
 ; render the values incorrect.  To guard against incorrect (obsolete) values
-; for these contants, this function causes an error if doesn't like what it
+; for these constants, this function causes an error if doesn't like what it
 ; sees.  We document only one such constant, *force-xnume*, which more or less
 ; describes the situation suffered by all of them.
 
@@ -8478,7 +8478,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 ; Remark for #+acl2-par.  Here we set the gc-threshold to a high number.  If
 ; the Lisps support it, this threshold could be based off the actual memory in
-; the system.  We peform this setting of the threshold in lp, because Lispworks
+; the system.  We perform this setting of the threshold in lp, because Lispworks
 ; doesn't save the GC configuration as part of the Lisp image.
 
 ; Parallelism no-fix: the threshold below may cause problems for machines with
@@ -9034,7 +9034,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                          chan state))))))
                    ((eq (cadr trip) 'redefined)
 
-; This case avoids redefining a macro back to an overritten function in the
+; This case avoids redefining a macro back to an overwritten function in the
 ; following example provided by Eric Smith.
 
 ; (defun foo (x) x)
@@ -9234,7 +9234,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; (creating very large TMP1.lisp file):
 ; 9893.870u 150.240s 2:54:22.62 95.9%   0+0k 0+0io 14528555pf+0w
 ;
-; Moroever, the saved_acl2.gcl file went from 43 MB, for the first two, to 104
+; Moreover, the saved_acl2.gcl file went from 43 MB, for the first two, to 104
 ; MB for the last.  So let's not write :program mode *1* functions to
 ; TMP1.lisp.  See the long comment about *fast-acl2-gcl-build* in add-trip.
 
@@ -9588,7 +9588,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; ; new:
 ; 33931.460u 1017.070s 1:43:24.28 563.2%	0+0k 392+1931656io 0pf+0w
 ; After restoring (start-sol-gc) in function acl2h-init, we regained the old
-; level of performance for a UT CS ACL2(h) regression, with the new memoizaion
+; level of performance for a UT CS ACL2(h) regression, with the new memoization
 ; code.
 
 (defun mf-looking-at (str1 str2 &key (start1 0) (start2 0))
@@ -9757,7 +9757,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
   (ccl::use-lisp-heap-gc-threshold)
 
-; Finally, still assuming 8G bytes of phyical memory, set the "threshold" to
+; Finally, still assuming 8G bytes of physical memory, set the "threshold" to
 ; (1/4)G.  This is how much the next GC will set aside as free memory -- at
 ; least initially, but then the post-gc hook will call this function.  As
 ; explained above, in the case that the current memory usage is less than

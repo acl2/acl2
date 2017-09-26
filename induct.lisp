@@ -992,7 +992,7 @@
 ; no antagonistic pairs, that every alist in lst1 has a mate somewhere in
 ; lst2, and that the process of merging alists from lst1 with their
 ; mates will not produce alists that are antagonistic with other alists
-; in lst1.  We now develop the code for merging nonantagonistic alists
+; in lst1.  We now develop the code for merging non-antagonistic alists
 ; and work up the structural hierarchy to merging lists of tests and alists.
 
 (defun merge-alist1-into-alist2 (alist1 alist2 vars)
@@ -1286,7 +1286,7 @@
 
 (defun induct-vars1 (lst wrld)
 
-; Lst is a list of terms.  We collect every variable symbol occuring in a
+; Lst is a list of terms.  We collect every variable symbol occurring in a
 ; controller slot of any term in lst.
 
   (cond ((null lst) nil)
@@ -1309,7 +1309,7 @@
 ; to the variables as "skos" (Skolem constants) suggests that it may
 ; date from the Interlisp version.  Meta comment: Perhaps someday some
 ; enterprising PhD student (in History?) will invent Software
-; Archeology, in which decrepit fragments of archive tapes are pieced
+; Archaeology, in which decrepit fragments of archive tapes are pieced
 ; together and scrutinized for clues as to the way people thought back
 ; in the early days.
 
@@ -1592,7 +1592,7 @@
 
 ; Without assuming any properties of fn, this function can be
 ; specified as follows: If the first element, x, of the unprocessed
-; bag, mates with some y in the rest of the uprocessed bag, then put
+; bag, mates with some y in the rest of the unprocessed bag, then put
 ; the merge of x and the first such y in place of x, delete that y,
 ; and iterate.  If the first element has no such mate, put it in the
 ; answer accumulator ans.  N, by the way, is the next available unique
@@ -1838,8 +1838,8 @@
 ; universe of objects in some order.  Then the full binary tree with
 ; depth |U| can be thought of as the powerset of U.  In particular,
 ; any branch through the tree, from top-most node to tip, represents a
-; subset of U by labelling the nodes at successive depth by the
-; successive elements of U (the topmost node being labelled with the
+; subset of U by labeling the nodes at successive depth by the
+; successive elements of U (the topmost node being labeled with the
 ; first element of U) and adopting the convention that taking a
 ; right-hand (cdr) branch at a node indicates that the label is in the
 ; subset and a left-hand (car) branch indicates that the label is not
@@ -1859,7 +1859,7 @@
 
 ; Observe that there is a correspondence between these trees and the
 ; function ps above for generating the power set.  The recursion
-; labelled "rhs" above is going down the right-hand side of the tree
+; labeled "rhs" above is going down the right-hand side of the tree
 ; and the "lhs" recursion is going down the left-hand side.  Note that
 ; we go down the rhs first.
 
@@ -1867,7 +1867,7 @@
 ; relationship between the right-hand subtree (rhs) and left-hand
 ; subtree (lhs) of any given node of the tree: lhs can be obtained
 ; from rhs by turning some nils into ts.  The reason is that the tips
-; of the lhs of a node labelled by x denote exactly the same subsets
+; of the lhs of a node labeled by x denote exactly the same subsets
 ; as the corresponding tips of the right-hand side, except that on the
 ; right x was present in the subset and on the left it is not.  So
 ; when we do the right hand side we come back with a tree and if we
@@ -2066,7 +2066,7 @@
 ; Cl is a clause in cl-set, which is a set of clauses we are proving
 ; by induction.  Ta-lst is the tests-and-alists-lst component of the
 ; induction candidate we are applying to prove cl-set.  We are now
-; focussed on the proof of cl, using the induction schema of ta-lst
+; focused on the proof of cl, using the induction schema of ta-lst
 ; but getting to assume all the clauses in cl-set in our induction
 ; hypothesis.  We will map across ta-lst, getting a set of tests and
 ; some alists at each stop, and for each stop add a bunch of clauses
@@ -2326,7 +2326,7 @@
 (defun all-vars1-lst-lst (lst ans)
 
 ; Lst is a list of lists of terms.  For example, it might be a set of
-; clauses.  We compute the set of all variables occuring in it.
+; clauses.  We compute the set of all variables occurring in it.
 
   (cond ((null lst) ans)
         (t (all-vars1-lst-lst (cdr lst)
@@ -3039,7 +3039,7 @@
 ; where p is a single term.  This eliminates the combinatoric
 ; explosion at the expense of making the rest of the theorem prover
 ; suffer through opening things back up.  The idea, however, is that
-; it is better to give the user something to look at, so he see's the
+; it is better to give the user something to look at, so he sees the
 ; problem blowing up in front of him in rewrite, than to just
 ; disappear into induction and never come out.  We have seen simple
 ; cases where failed guard conjectures would have led to inductions
@@ -3200,7 +3200,7 @@
 ; If p(x) is probably not valid then we consider it reasonable to ignore p(x) in
 ; the hope that q(y) may be valid, and indeed provable by ACL2.
 
-; See also the Essay on Alternate Heuristcs for Eliminate-Irrelevance.
+; See also the Essay on Alternate Heuristics for Eliminate-Irrelevance.
 
   (or (ffnnames-subsetp-listp cl '(not consp integerp rationalp
                                        #+:non-standard-analysis realp
@@ -3214,7 +3214,7 @@
         ((('not (& . args)))
 
 ; To understand why we require args to be non-nil, see the Essay on Alternate
-; Heuristcs for Eliminate-Irrelevance.
+; Heuristics for Eliminate-Irrelevance.
 
          (and args ; do not drop zero-ary call (see above)
               (all-variablep args)
@@ -3249,10 +3249,10 @@
 ; unmodified pspv.  (We return the fourth thing to adhere to the
 ; convention used by all clause processors in the waterfall (q.v.).)
 
-; Essay on Alternate Heuristcs for Eliminate-Irrelevance
+; Essay on Alternate Heuristics for Eliminate-Irrelevance
 
 ; The algorithm for dropping "irrelevant" literals is based on first
-; partiioning the literals of a clause into components with respect to the
+; partitioning the literals of a clause into components with respect to the
 ; symmetric binary relation defined by: two literals are related if and only if
 ; they share at least one free variable.  We consider two ways for a component
 ; to be irrelevant: either (A) its function symbols are all from among a small

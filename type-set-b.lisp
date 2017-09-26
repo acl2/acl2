@@ -239,7 +239,7 @@
 
 ; Note: The existence of this function and the next one suggest that
 ; runes are implemented abstractly.  Ooooo... we don't know how runes
-; are realy laid out.  But this just isn't true.  We use car to get
+; are really laid out.  But this just isn't true.  We use car to get
 ; the token of a rune and we use cddr to get x, above.  But for some
 ; reason we defined and began to use base-symbol to get the base
 ; symbol.  In any case, if the structure of runes is changed, all
@@ -363,48 +363,53 @@
 
 (defun rule-name-designatorp (x macro-aliases wrld)
 
-; A rule name designator is an object which denotes a set of runes.
-; We call that set of runes the "runic interpretation" of the
-; designator.  A rune, x, is a rule name designator, denoting {x}.  A
-; symbol, x, with a 'runic-mapping-pairs property is a designator and
-; denotes either {(:DEFINITION x)} or else the entire list of runes in
-; the runic-mapping-pairs, depending on whether there is a :DEFINITION
-; rune.  A symbol x that is a theory name is a designator and denotes
-; the runic theory value.  Finally, a singleton list, (fn), is a
-; designator if fn is a function symbol; it designates
-; {(:EXECUTABLE-COUNTERPART fn)}.
+; A rule name designator is an object which denotes a set of runes.  We call
+; that set of runes the "runic interpretation" of the designator.  A rune, x,
+; is a rule name designator, denoting {x}.  A symbol, x, with a
+; 'runic-mapping-pairs property is a designator and denotes either
+; {(:DEFINITION x)} or else the entire list of runes in the
+; runic-mapping-pairs, depending on whether there is a :DEFINITION rune.  A
+; symbol x that is a theory name is a designator and denotes the runic theory
+; value.  Finally, a singleton list, (fn), is a designator if fn is a function
+; symbol; it designates {(:EXECUTABLE-COUNTERPART fn)}.
 
-; For example, if APP is a function symbol then its runic
-; interpretation is {(:DEFINITION APP)}.  If ASSOC-OF-APP is a defthm
-; event with, say, three rule classes then its runic interpretation is
-; a set of three runes, one for each rule generated.  The idea here is
-; to maintain some consistency with the Nqthm way of disabling names.
-; If the user disables APP then only the symbolic definition is
-; disabled, not the executable-counterpart, while if ASSOC-OF-APP is
-; disabled, all such rules are disabled.
+; For example, if APP is a function symbol then its runic interpretation is
+; {(:DEFINITION APP)}.  If ASSOC-OF-APP is a defthm event with, say, three rule
+; classes then its runic interpretation is a set of three runes, one for each
+; rule generated.  The idea here is to maintain some consistency with the Nqthm
+; way of disabling names.  If the user disables APP then only the symbolic
+; definition is disabled, not the executable-counterpart, while if ASSOC-OF-APP
+; is disabled, all such rules are disabled.
 
-; Note: We purposely do not define a function "runic-interpretation"
-; which returns runic interpretation of a designator.  The reason is
-; that we would have to cons that set up for every designator except
-; theories.  The main reason we'd want such a function is to define
-; the runic theory corresponding to a common one.  We do that below
-; (in convert-theory-to-unordered-mapping-pairs1) and open-code "runic
+; When true, we return the symbol on which the set of rune is based.  This
+; information, which involves the application of deref-macro-name, can be
+; useful to callers; see check-theory-msg1.
+
+; Note: We purposely do not define a function "runic-interpretation" which
+; returns runic interpretation of a designator.  The reason is that we would
+; have to cons that set up for every designator except theories.  The main
+; reason we'd want such a function is to define the runic theory corresponding
+; to a common one.  We do that below (in
+; convert-theory-to-unordered-mapping-pairs1) and open-code "runic
 ; interpretation."
 
   (cond ((symbolp x)
-         (cond
-          ((getpropc (deref-macro-name x macro-aliases)
-                     'runic-mapping-pairs nil wrld)
-           t)
-          (t (not (eq (getpropc x 'theory t wrld) t)))))
+         (let ((x (deref-macro-name x macro-aliases)))
+           (cond
+            ((getpropc x 'runic-mapping-pairs nil wrld)
+             x)
+            (t (and (not (eq (getpropc x 'theory t wrld) t))
+                    x)))))
         ((and (consp x)
               (null (cdr x))
               (symbolp (car x)))
-         (let ((fn (deref-macro-name (car x) macro-aliases)))
+         (let* ((fn (deref-macro-name (car x) macro-aliases)))
            (and (function-symbolp fn wrld)
-                (runep (list :executable-counterpart fn) wrld))))
+                (runep (list :executable-counterpart fn) wrld)
+                fn)))
         (t (let ((x (translate-abbrev-rune x macro-aliases)))
-             (runep x wrld)))))
+             (and (runep x wrld)
+                  (base-symbol x))))))
 
 (defun theoryp1 (lst macro-aliases wrld)
   (cond ((atom lst) (null lst))
@@ -419,38 +424,6 @@
 ; theory).  That conversion is done by coerce-to-runic-theory.
 
   (theoryp1 lst (macro-aliases wrld) wrld))
-
-(defun theoryp!1 (lst fail-flg macro-aliases wrld)
-  (cond ((atom lst) (and (not fail-flg) (null lst)))
-        ((rule-name-designatorp (car lst) macro-aliases wrld)
-         (theoryp!1 (cdr lst) fail-flg macro-aliases wrld))
-        ((and (symbolp (car lst))
-
-; Do not use the function macro-args below, as it can cause a hard error!
-
-              (not (eq (getpropc (car lst) 'macro-args t wrld)
-                       t)))
-         (prog2$ (cw "~|~%**NOTE**:  The name ~x0 is a macro.  See :DOC ~
-                      add-macro-alias if you want it to be associated with a ~
-                      function name."
-                     (car lst))
-                 (theoryp!1 (cdr lst) t macro-aliases wrld)))
-        (t (prog2$ (let ((name (car lst)))
-                     (cw "~|~%**NOTE**:~%The name ~x0 does not designate a ~
-                          rule or non-empty list of rules~@1.  See :DOC ~
-                          rule-classes."
-                         name
-                         (cond ((and (symbolp name)
-                                     (or (body name nil wrld)
-                                         (getpropc name 'theorem nil wrld)
-                                         (getpropc name 'defchoose-axiom nil
-                                                   wrld)))
-                                " (though there is a theorem with that name)")
-                               (t ""))))
-                   (theoryp!1 (cdr lst) t macro-aliases wrld)))))
-
-(defun theoryp! (lst wrld)
-  (theoryp!1 lst nil (macro-aliases wrld) wrld))
 
 ; Now we define what a "runic theory" is.
 
@@ -484,7 +457,7 @@
 ; When we start manipulating theories, e.g., unioning them together,
 ; we will actually first convert common theories into runic theories.
 ; We keep runic theories ordered so it is easier to intersect and
-; union them.  However, this raises a slighly technical question,
+; union them.  However, this raises a slightly technical question,
 ; namely the inefficiency of repeatedly going to the property lists of
 ; the basic symbols of the runes to recover (by a search through the
 ; mapping pairs) the measures by which we compare runes (i.e., the
@@ -612,7 +585,7 @@
 ; the duplication problem.  For example, '(APP APP) is a common
 ; theory, but the result of replacing each designator by its rune,
 ; '((:DEFINITION app) (:DEFINITION app)), is not a runic theory!  It
-; gets worse.  Two distict designators might designate the same rune.
+; gets worse.  Two distinct designators might designate the same rune.
 ; For example, LEMMA might designate a collection of :REWRITE rules
 ; while (:REWRITE LEMMA . 3) designates one of those same rules.  To
 ; remove duplicates we actually convert the common theory first to a
@@ -1819,7 +1792,7 @@
 ; d, but the maximum index would be d-1, since indexing is 0-based.
 ; You set elements with (aset1 'name a i val).  That increases the
 ; length of a by 1.  When (length a) > m, a compress is done.  If an
-; array is never modified, then the mimimum acceptable m is in fact d.
+; array is never modified, then the minimum acceptable m is in fact d.
 
 ; Note:  Every call of this function should be followed by a call of
 ; maybe-warn-about-theory on the enabled structure passed in and the one
@@ -2719,10 +2692,10 @@
 ; *ts-rational*.  That means the false-ts for RATTREEP is the
 ; complement of the rationals.  If we were asked to get the type set
 ; of (RATTREEP x) where x is rational, we'd throw in a *ts-t* because
-; the type of x intersects the true-ts and we'd not throw in anythine
-; else (because the type of x does not interesect the false ts).  If
+; the type of x intersects the true-ts and we'd not throw in anything
+; else (because the type of x does not intersect the false ts).  If
 ; we were asked to assume (RATTREEP x) then on the true branch x's
-; type would be interesected with the conses and the rationals.  On
+; type would be intersected with the conses and the rationals.  On
 ; the false branch, the rationals would be deleted.
 
 ; Historical Note: In an earlier version of this code we did not allow
@@ -3161,7 +3134,7 @@
 ; Before that change, but after changing constraint-info to avoid calling
 ; remove-guard-holders on a definition body (a change in support of
 ; canonical-ancestors, for use of the Attachment Restriction Lemma in
-; justifying attachment to metafunctions and clause-procrocessors,
+; justifying attachment to metafunctions and clause-processors,
 ; cf. chk-evaluator-use-in-rule), the event (defsort :compare< << :prefix <<)
 ; failed from community book defsort/uniquep.lisp.
 
@@ -3270,7 +3243,7 @@
 ; current list of implicit symbols.  This list is used for heuristic reasons.
 ; Basically, a quick necessary condition for pat to one-way-unify with term is
 ; for the function symbols of pat (except for the implicit ones) to be a subset
-; of the function smbols of term.
+; of the function symbols of term.
 
 (defconst *one-way-unify1-implicit-fns*
   '(binary-+
@@ -3571,7 +3544,7 @@
 ; in term as instantiable.
 
 ; Note that the fact that this function returns nil should not be
-; taken as a sign that no substition makes pat equal to term in the
+; taken as a sign that no substitution makes pat equal to term in the
 ; current theory.  For example, we fail to unify (+ x x) with '2 even
 ; though '((x . 1)) does the job.
 
@@ -3619,7 +3592,7 @@
 (defun canonical-representative (equiv term type-alist)
 
 ; This function returns a tuple (mv occursp canonicalp term-canon ttree)
-; satifying the following description.
+; satisfying the following description.
 
 ; Occursp holds iff, for some x, (equiv term x) or (equiv x term) is bound in
 ; type-alist.
@@ -5983,7 +5956,7 @@
 ; (var . UNBOUND-FREE-var) and add that binding to alist.  Return the
 ; extended alist.  We use this function to instantiate free vars in
 ; FORCEd and CASE-SPLIT hypotheses.  In that application, vars will be
-; the list of all vars occuring in the hyp and alist will be the
+; the list of all vars occurring in the hyp and alist will be the
 ; unify-subst.  The name ``unbound free var'' is a little odd out of
 ; context but we hope it will make the user realize that the variable
 ; occurred freely and we couldn't find a binding for it to make the hyp
@@ -6315,7 +6288,7 @@
 ; (defun merge-accumulated-persistence-1 (rune entry alist)
 ;   (cond ((endp alist)
 ;          (er hard 'merge-accumulated-persistence-1
-;              "Implementation error: Unexpected end of list!  Please contacct ~
+;              "Implementation error: Unexpected end of list!  Please contact ~
 ;               the ACL2 implementors."))
 ;         ((rune= rune (access accp-entry (car alist) :rune))
 ;          (cons (make accp-entry
@@ -6455,10 +6428,10 @@
 
 (defmacro accumulated-persistence (flg)
 
-; Warning: Keep this in syc with set-waterfall-parallelism-fn.
+; Warning: Keep this in sync with set-waterfall-parallelism-fn.
 
 ; Our convention is that if accumulated persistence is enabled, the data of the
-; accumulated-persistence wormhole is non-nil.  If accummulated persistence is
+; accumulated-persistence wormhole is non-nil.  If accumulated persistence is
 ; not enabled, the data is nil.
 
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil :all ':all))))
@@ -6561,7 +6534,7 @@
 (defun show-accumulated-persistence-phrase1 (key alist mergep acc)
 
 ; Alist has element of the form (x . accp-entry), where x is the key upon which
-; we sorted.  Last-rune is true (initally t, generally a rune) if and only if
+; we sorted.  Last-rune is true (initially t, generally a rune) if and only if
 ; we are calling show-accumulated-persistence with display = :merge.
 
   (cond ((null alist) acc)
@@ -7456,7 +7429,7 @@
 ; (or (not (acl2-numberp y)) (integerp y)), so we return (mv (ts-complement
 ; *ts-acl2-number*) y) in that case.  Thus, the first argument serves both as a
 ; flag to indicate that something special is returned, and as a type-set that
-; the caller is responsibile for taking into account.
+; the caller is responsible for taking into account.
 
   (let ((arg (fargn x 1)))
     (case (ffn-symb x)
@@ -7776,7 +7749,7 @@
 ;   expand lambdas so aggressively.  This meant that type-set began to
 ;   see a lot more lambdas.  In that environment, the expansion of lambdas
 ;   here was taking lot of time and generating a lot of conses.  So now
-;   we take the efficient AND braindead approach of saying we simply
+;   we take the efficient AND brain-dead approach of saying we simply
 ;   don't know anything about a lambda application.
 
 ;      (type-set-finish x ts0 ttree0 *ts-unknown* ttree type-alist))
@@ -9643,7 +9616,7 @@
 ; Input ignore0 is generally nil, but can be :tta or :fta if we will ignore the
 ; resulting true-type-alist or false-type-alist, respectively.  The following
 ; example, essentially from Dave Greve, shows a roughly 4X speedup using these
-; flags, and saves nearly a billion bytes forcons cells (!), in an Allegro
+; flags, and saves nearly a billion bytes for cons cells (!), in an Allegro
 ; Common Lisp run.
 
 
@@ -11386,7 +11359,7 @@
 ; It is possible, even with hitp, for (equal type-alist type-alist0) to be
 ; true.  There is a comment to this effect, regarding type-alist invariants, in
 ; type-alist-equality-loop1.  We discovered this in Version_2.7 during
-; regression tests, specifically, with the last form in the comunity book
+; regression tests, specifically, with the last form in the community book
 ; books/workshops/2000/manolios/pipeline/pipeline/deterministic-systems/128/top/ma128-isa128.
 ; This function was being called differently because of a change in in
 ; built-in-clausep to use forward-chaining.
@@ -11536,7 +11509,7 @@
 ; As of v2-8, we reconsider-type-alist a second time if reconsidering
 ; once changed the type-alist and the pot-lst is not empty.  When we
 ; first constructed the type-alist, we did not use the pot-lst.  Thus,
-; this second call to reconsider-type-alist performes much the same
+; this second call to reconsider-type-alist performs much the same
 ; purpose relative to the pot-lst that the first (and originally, only)
 ; call plays with respect to the type-alist.  This type of heuristic
 ; is intimately tied up with the treatment of the DWP flag.
@@ -11767,7 +11740,7 @@
 
 ; However, we know some things about lhs and rhs that allow us to
 ; make this function answer ``I don't know'' more quickly and more
-; often than it might otherwise.  We assume tht lhs and rhs are not
+; often than it might otherwise.  We assume that lhs and rhs are not
 ; identical terms and we know they are not both quoted constants
 ; (though either may be) and we know that their type sets have a
 ; non-empty intersection.
@@ -11779,7 +11752,7 @@
 
 ; However, we don't want to do too much work exploring the two terms.
 ; For example, if they are both large explicit values we don't want to
-; look for them in eachother.  We know that we will eventually apply
+; look for them in each other.  We know that we will eventually apply
 ; the CONS-EQUAL axiom, which will rewrite the equality of two conses
 ; (constants or otherwise) to the conjoined equalities of their
 ; components.  Thus, if both lhs and rhs are CONS expressions (i.e., a

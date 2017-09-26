@@ -41,6 +41,13 @@
  no more prover steps &mdash; if we first evaluate the event
  @('(in-theory (disable (:definition f1) (:rewrite thm1)))').</p>
 
+ <p>For a related utility, see @(see minimal-runes).</p>
+
+ <p>WARNING: It is generally best to avoid using @(':')@(tsee in-theory) @(see
+ hints) in the form you supply to @('removable-runes') or its related utility,
+ @('minimal-runes').  We explain why below, after describing how the tool
+ works.</p>
+
  <p>We now describe the two keyword arguments in turn, and in doing so, we
  explain how the tool works.</p>
 
@@ -57,20 +64,23 @@
  Removed: [rune]
  Removable:
  [list of runes]
+ Used:
+ [list of runes]
  [progress line]
  })
 
  <p>The ``@('New Steps')'' field has the number of prover steps taken by that
  round's proof attempt.  The ``@('Old Steps')'', ``@('Time')'',
- ``@('Removed')'', and ``@('Removable')'' fields state the following,
- respectively: the number of prover steps for the previous round and for the
- initial round (but this line is omitted for the initial round); the time taken
- for the new event (by default, the run time; see @(see get-internal-time));
- the rune that was newly disabled for the current round; and the list of runes
- disabled after the current round, which extends the previous round's
- @('Removable') field with that newly disabled rune.  For all but the initial
- round, the event was admitted in the previous round after disabling the
- @('Removable') runes (with an @(tsee in-theory) event), resulting in a set
+ ``@('Removed')'', ``@('Removable')'', and ``@('Used')'' fields state the
+ following, respectively: the number of prover steps for the previous round and
+ for the initial round (but this line is omitted for the initial round); the
+ time taken for the new event (by default, the run time; see @(see
+ get-internal-time)); the rune that was newly disabled for the current round;
+ the list of runes disabled after the current round, which extends the previous
+ round's @('Removable') field with that newly disabled rune; and the list of
+ runes used automatically in the proof for the current round.  For all but the
+ initial round, the event was admitted in the previous round after disabling
+ the @('Removable') runes (with an @(tsee in-theory) event), resulting in a set
  @('S') of runes reported for that event.  The progress line shows attempts in
  the current round to decrease the number of steps by disabling one rune from
  @('S') per attempt, using @(''.'') for a failed such attempt and @(''+'') for
@@ -78,11 +88,11 @@
  previous round.</p>
 
  <p>If @(':verbose-p = :minimal'), then the output will be as described above
- except that the @('Removable') fields are omitted.  If @(':verbose-p = nil'),
- then there is no output.  Finally, if @(':verbose-p = t'), then all the fields
- are printed, but in addition you will see the usual output for each attempt,
- each (except for the initial event) preceded by the corresponding @('tsee
- in-theory) event.</p>
+ except that the @('Removable') and @('Used') fields are omitted.  If
+ @(':verbose-p = nil'), then there is no output.  Finally, if @(':verbose-p =
+ t'), then all the fields are printed, but in addition you will see the usual
+ output for each attempt, each (except for the initial event) preceded by the
+ corresponding @('tsee in-theory) event.</p>
 
  <p>We now say a bit more about the tool's algorithm as we describe the
  @(':multiplier') argument, which is 1 by default but can also be any positive
@@ -95,10 +105,110 @@
  bound reaches 0 (which can only happen if @('m < 1'), the algorithm
  terminates.</p>
 
+ <p>As promised above, we now explain why it is generally best to avoid using
+ @(':')@(tsee in-theory) @(see hints) in the form you supply to
+ @('removable-runes') or its related utility, @('minimal-runes').  To see why,
+ consider the following example.  First evaluate:</p>
+
+ @({
+ (include-book \"tools/removable-runes\" :dir :system)
+ (defund foo (x) (cons x x))
+ })
+
+ <p>Notice that @('foo') is now @(see disable)d; see @(see defund).  The
+ following example may seem surprising; an explanation is below.</p>
+
+ @({
+ ACL2 !>(removable-runes
+         (thm (equal (foo x) (cons x x))
+              :hints ((\"Goal\" :in-theory (enable foo)))))
+ -
+ New steps: 15 (initial attempt)
+ Time: 0.00
+ Used: ((:DEFINITION FOO))
+ +
+ New steps: 15
+ Old steps: 15 (Initially: 15)
+ Time: 0.00
+ Removed: (:DEFINITION FOO)
+ Removable:
+ ((:DEFINITION FOO))
+ Used:
+ ((:DEFINITION FOO))
+
+  ((:DEFINITION FOO))
+ ACL2 !>
+ })
+
+ <p>The result is that the definition of @('foo') is removable, i.e., can be
+ disabled; yet clearly that definition is needed for the proof!  To understand
+ this possibly surprising result, understand that @('removable-runes') precedes
+ each proof attempt by globally disabling the candidate set of removable runes.
+ So in essence the proof attempt when attempting to disable the definition of
+ @('foo') is really as follows.</p>
+
+ @({
+ (progn (in-theory (disable foo))
+        (thm (equal (foo x) (cons x x))
+             :hints ((\"Goal\" :in-theory (enable foo)))))
+ })
+
+ <p>Obviously the hint takes precedence over the initial @('in-theory') event,
+ which is why the proof succeeds.  The moral of the story is this: avoid
+ @(':in-theory') hints when using @('removable-runes') or its companion tool,
+ @(tsee minimal-runes).  Instead, you could do this, for example:</p>
+
+ @({
+ (in-theory (enable foo))
+ (removable-runes
+  (thm (equal (foo x) (cons x x))))
+ })
+
  <p>Finally, we expand on a point made above.  When a rune is chosen to add to
  the evolving list of disables, the corresponding proof attempt might actually
  involve runes that were not present in any earlier proof attempt.  Any new
  such runes are then considered for disabling in later rounds.</p>")
+
+(defxdoc minimal-runes
+  :parents (proof-automation debugging)
+  :short "Compute @(see rune)s to leave @(see enable)d"
+  :long "@({
+
+ Example Form:
+ (minimal-runes (defun proper-cons-nest-p (x)
+                  (declare (xargs :guard (pseudo-termp x)))
+                  (cond ((symbolp x) nil)
+                        ((fquotep x) (true-listp (cadr x)))
+                        ((eq (ffn-symb x) 'cons)
+                         (proper-cons-nest-p (fargn x 2)))
+                        (t nil)))
+                  :verbose-p :minimal)
+
+ General Form:
+ (minimal-runes event-form
+                :verbose-p  v ; default = :normal ;
+                :multiplier m ; default = 1 ;
+                :name       n ; default = nil ;
+                )
+ })
+
+ <p>where @('event-form') is an embeddable event (see @(see events)); @('v') is
+ @('nil'), @(':minimal'), @(':normal'), or @('t'); @('m') is a positive
+ rational number; and n is nil or a @(see logical-name).  The value returned is
+ an @(see error-triple) @('(mv erp runes state)'), where @('erp') is typically
+ @('nil') and @('runes') is a list of @(see rune)s that suffice to admit
+ the indicated @('event-form'); moreover, if the multiplier @('m') is less
+ than 1, then the event is admitted with fewer prover steps.</p>
+
+ <p>This utility is essentially identical to @('removable-runes') &mdash;
+ indeed, they share the same algorithm &mdash; except that instead of returning
+ a list of @(see rune)s to disable, it returns a list of runes sufficient for
+ admitting the event.  See @(see removable-runes) for detailed documentation.
+ There is one other difference: @('minimal-runes') has an extra keyword
+ argument, @(':name').  If @(':name') is supplied then its value must be a
+ symbol, @('n'), that is a @(see logical-name).  In that case, the list of
+ runes returned is modified by first removing all those in @('(current-theory
+ n)'); see @(see current-theory).</p>")
 
 (set-state-ok t)
 
@@ -254,7 +364,15 @@
                                  disables verbose-p ignored-runes channel
                                  state)))))))))
 
-(defun removable-runes-print-status (s s-old r init-s time
+(defun newline-when-minimal-rrv (verbose-p channel state)
+
+; Yuck; rrv isn't sufficiently flexible here, so I'll break that abstraction.
+
+  (cond ((eq verbose-p :minimal)
+         (newline channel state))
+        (t state)))
+
+(defun removable-runes-print-status (s s-old r used init-s time
                                        disables verbose-p channel state)
   (mv-let
     (erp time-string state)
@@ -265,11 +383,16 @@
      (null erp)
      (cond
       ((null r) ; initial
-       (rrv :minimal
-            (fms "New steps: ~x0 (initial attempt)~|Time: ~s1~|"
-                 (list (cons #\0 s)
-                       (cons #\1 time-string))
-                 channel state nil)))
+       (pprogn (rrv :minimal
+                    (fms "New steps: ~x0 (initial attempt)~|Time: ~s1"
+                         (list (cons #\0 s)
+                               (cons #\1 time-string))
+                         channel state nil))
+               (newline-when-minimal-rrv verbose-p channel state)
+               (rrv :normal
+                    (fms "Used: ~y0"
+                         (list (cons #\0 used))
+                         channel state nil))))
       (t
        (pprogn (rrv :minimal
                     (fms "New steps: ~x0~|Old steps: ~x1 (Initially: ~
@@ -280,22 +403,23 @@
                                (cons #\3 time-string)
                                (cons #\4 r))
                          channel state nil))
-               (rrv :normal (fms "Removable:~|~y0"
-                                 (list (cons #\0 disables))
+               (rrv :normal (fms "Removable:~|~y0Used:~|~y1"
+                                 (list (cons #\0 disables)
+                                       (cons #\1 used))
                                  channel state nil))
-; Yuck; rrv isn't sufficiently flexible here, so I'll break that abstraction.
-               (cond ((eq verbose-p :minimal)
-                      (newline channel state))
-                     (t state))))))))
+               (newline-when-minimal-rrv verbose-p channel state)))))))
 
-(defun removable-runes-loop (form steps-bound previous-steps init-steps
-                                  runes disables seen verbose-p
-                                  ignored-runes multiplier channel state)
+(defun removable-or-minimal-runes-loop
+    (form steps-bound previous-steps init-steps runes disables seen verbose-p
+          ignored-runes multiplier channel state flg)
+
+; Flg is t for removable-runes and nil for minimal-runes.
+
   (cond
    ((or (null runes)
         (zerop steps-bound))
     (pprogn (rrv :minimal (newline channel state))
-            (value disables)))
+            (value (if flg disables runes))))
    (t
     (er-let* ((s/r/used/time
                (removable-runes-next
@@ -304,7 +428,7 @@
       (cond
        ((null s/r/used/time)
         (pprogn (rrv :minimal (newline channel state))
-                (value disables)))
+                (value (if flg disables runes))))
        (t
         (let* ((s (car s/r/used/time))
                (r (cadr s/r/used/time))
@@ -315,6 +439,7 @@
            (removable-runes-print-status s
                                          previous-steps
                                          r
+                                         used
                                          init-steps
                                          time
                                          disables verbose-p channel state)
@@ -322,9 +447,9 @@
             (and (member-equal r seen)
                  (<= s steps-bound))
             (cond
-             ((zp s) (value disables))
+             ((zp s) (value (if flg disables used)))
              (t
-              (removable-runes-loop
+              (removable-or-minimal-runes-loop
                form
                (floor (* multiplier s) 1)
                s init-steps
@@ -332,9 +457,10 @@
                             (remove1-equal r runes))
                disables
                (union-equal used seen)
-               verbose-p ignored-runes multiplier channel state))))))))))))
+               verbose-p ignored-runes multiplier channel state
+               flg))))))))))))
 
-(defun removable-runes-fn (form verbose-p multiplier ctx state)
+(defun removable-or-minimal-runes-fn (form verbose-p multiplier ctx state flg)
   (let ((channel (proofs-co state))
         (ignored-runes (non-removable-runes (w state))))
     (er-let* ((steps/runes/time (event-steps-runes+ form nil nil verbose-p
@@ -358,11 +484,11 @@
                        (declare (ignore col))
                        state))
                 (removable-runes-print-status steps2
-                                              nil nil nil
+                                              nil nil runes2 nil
                                               time2
                                               nil
                                               verbose-p channel state)
-                (removable-runes-loop
+                (removable-or-minimal-runes-loop
                  form
                  (floor (* multiplier steps2) 1)
                  steps2
@@ -370,7 +496,19 @@
                  runes2
                  nil
                  runes2
-                 verbose-p ignored-runes multiplier channel state)))))))
+                 verbose-p ignored-runes multiplier channel state
+                 flg)))))))
+
+(defun minimal-runes-fn (form verbose-p multiplier ctx state name)
+  (er-let* ((theory (if name
+                        (let ((world (w state)))
+                          (value (current-theory name)))
+                      (value nil)))
+            (runes (removable-or-minimal-runes-fn form verbose-p multiplier ctx
+                                                  state nil)))
+    (value (if name ; optimization
+               (set-difference-equal runes theory)
+             runes))))
 
 (defmacro removable-runes (form &key (verbose-p ':normal) (multiplier '1))
 
@@ -379,4 +517,18 @@
   (declare (xargs :guard (and (member-eq verbose-p *rrv-levels*)
                               (rationalp multiplier)
                               (< 0 multiplier))))
-  `(removable-runes-fn ',form ,verbose-p ,multiplier 'minimize-theory state))
+  `(removable-or-minimal-runes-fn ',form ,verbose-p ,multiplier
+                                  'minimize-theory state t))
+
+(defmacro minimal-runes (form &key
+                                (verbose-p ':normal)
+                                (multiplier '1)
+                                name)
+
+; Note that multiplier is not evaluated.
+
+  (declare (xargs :guard (and (member-eq verbose-p *rrv-levels*)
+                              (rationalp multiplier)
+                              (< 0 multiplier))))
+  `(minimal-runes-fn ',form ,verbose-p ,multiplier 'minimize-theory state
+                     ',name))

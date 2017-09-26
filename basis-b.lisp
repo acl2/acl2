@@ -1454,7 +1454,7 @@
 ; check-sum.  We return a non-integer as the first value if (and only if) the
 ; obj is not composed entirely of conses, symbols, strings, rationals, complex
 ; rationals, and characters. If the first value is not an integer, it is one of
-; the offending objects encoutered.
+; the offending objects encountered.
 
 ; We typically used this function to compute checksums for .cert files.
 
@@ -2119,27 +2119,13 @@
 (defun formals (fn w)
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp w))))
-  (cond ((flambdap fn)
-
-; We formerly made the call (lambda-formals fn) here.  However, Alessandro
-; Coglio noticed that the guard implies (symbolp fn), and we noticed that in
-; fact this (flambdap fn) case was never evaluated during regression.  For now
-; we'll cause an explicit error in that case, so that if user code gets here
-; then a clear error message will be printed.  Eventually we'll likely
-; eliminate this case altogether.
-
-         (er hard! 'formals
-             "Found application of formals to lambda term:~|~X01"
-             fn
-             '(nil 4 5 nil) ; (evisc-tuple 4 5 nil nil)
-             ))
-        (t (let ((temp (getpropc fn 'formals t w)))
-             (cond ((eq temp t)
-                    (er hard? 'formals
-                        "Every function symbol is supposed to have a ~
-                         'FORMALS property but ~x0 does not!"
-                        fn))
-                   (t temp))))))
+  (let ((temp (getpropc fn 'formals t w)))
+    (cond ((eq temp t)
+           (er hard? 'formals
+               "Every function symbol is supposed to have a 'FORMALS property ~
+                but ~x0 does not!"
+               fn))
+          (t temp))))
 
 (defun plist-worldp-with-formals (alist)
 
@@ -4218,7 +4204,7 @@
         (ccl:set-lisp-heap-gc-threshold ; CCL requires a fixnum.
          (cond ((> new-threshold most-positive-fixnum)
                 (progn (cw "Requested value for set-gc-threshold$ must be a ~
-                            fixnum in CeCL, but ~x0 is greater than ~
+                            fixnum in CCL, but ~x0 is greater than ~
                             most-positive-fixnum (which is ~x1). Setting to ~
                             most-positive-fixnum instead.~|"
                            new-threshold most-positive-fixnum)

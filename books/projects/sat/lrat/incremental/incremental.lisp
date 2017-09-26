@@ -918,12 +918,6 @@
            (formula-p formula))
   :hints (("Goal" :in-theory (enable formula-p ordered-formula-p))))
 
-(defmacro er-soft-logic (&rest args)
-
-; This macro should be deleted once er-soft-logic makes it into *acl2-exports*.
-
-  (cons 'acl2::er-soft-logic args))
-
 (defun incl-valid-proofp$-top (cnf-file clrat-file incomplete-okp chunk-size
                                         debug ctx state)
   (declare (xargs :guard t :stobjs state))

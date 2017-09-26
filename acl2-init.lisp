@@ -150,7 +150,7 @@
 ; user complaints.  Finally, we use the phrase "Parallelism no-fix:" to label
 ; comments about known issues for the #+acl2-par build of ACL2 that we do not
 ; intend to fix, though we could reclassify these if there are sufficiently
-; strong user complaints.  Searching through the parallism warts, blemishes,
+; strong user complaints.  Searching through the parallelism warts, blemishes,
 ; and no-fixes could be useful when a user reports a bug in #+acl2-par that
 ; cannot be replicated in #-acl2-par.
 
@@ -160,7 +160,7 @@
 ; did not expect users to encounter parallelism hazards (because we should have
 ; programmed such that the hazards never occur).  However, in practice, these
 ; parallelism hazards are somewhat common and we have disabled the automatic
-; warning that occurs everytime a hazard occurs.  Once we re-enable that
+; warning that occurs every time a hazard occurs.  Once we re-enable that
 ; warning, in the event that users encounter a parallelism hazard, they will be
 ; asked to report the associated warning to the ACL2 maintainers.  For example,
 ; if state-global-let* is called while executing concurrently, we want to know
@@ -1516,7 +1516,7 @@ implementations.")
     (mp::stop-multiprocessing)
     (gc$))
   #+acl2-par
-  (when *lp-ever-entered-p* ; don't print during compliation
+  (when *lp-ever-entered-p* ; don't print during compilation
     (format t
             "If you wish to continue using this image, you will need to call ~%~
              'mp:initialize-multiprocessing' instead of calling 'lp'.  This ~%~
@@ -1645,7 +1645,7 @@ implementations.")
 ; In our testing for ACL2 Version_6.2 we found that certification failed for
 ; ACL2(h) built on CMUCL for the book tau/bounders/elementary-bounders.lisp,
 ; with the error: "CMUCL has run out of dynamic heap space (512 MB)."  This
-; failure doesn't seem to be fully reproduceable, but it seems safest to
+; failure doesn't seem to be fully reproducible, but it seems safest to
 ; increase the stack size.  Our CMUCL image, even though on 64-bit linux,
 ; reported the following when we tried a value of 2000 here:
 
@@ -1741,7 +1741,7 @@ implementations.")
 ; requested."
 
 ; On October 18, 2016, we found that even 16,000 is insufficient for building
-; the manual.  So we are increasin this value by 50%, to 24,000.
+; the manual.  So we are increasing this value by 50%, to 24,000.
 
 ; On August 16, 2017 we found that 24,000 was insufficient to build
 ; books/projects/x86isa/proofs/zeroCopy/marking-mode/zeroCopy.cert, so we

@@ -1979,7 +1979,7 @@
                                     (global-val 'known-package-alist w)))
                             w))
 
-; Defpkg adds an axiom, labelled ax below.  We make a :REWRITE rule out of ax.
+; Defpkg adds an axiom, labeled ax below.  We make a :REWRITE rule out of ax.
 ; Warning: If the axiom added by defpkg changes, be sure to consider the
 ; initial packages that are not defined with defpkg, e.g., "ACL2".  In
 ; particular, for each primitive package in *initial-known-package-alist* there
@@ -2059,7 +2059,7 @@
 ; "rule name designators" v. runes.
 
 ; (1) When our theory functions are getting input directly from the
-;     user we wish they did a throrough job of checking it and were
+;     user we wish they did a thorough job of checking it and were
 ;     forgiving about such things as order, e.g., sorted otherwise ok
 ;     lists, so that the user didn't need to worry about order.
 
@@ -2144,18 +2144,162 @@
     (intersection-augmented-theories-fn1 (cdr lst1) lst2 ans))
    (t (intersection-augmented-theories-fn1 lst1 (cdr lst2) ans))))
 
-(defmacro check-theory (lst wrld ctx form)
-  `(cond ((theoryp! ,lst ,wrld)
-          ,form)
-         (t (er hard ,ctx
-                "A theory function has been called on an argument that does ~
-                 not represent a theory.  See the **NOTE**s above and see ~
-                 :DOC theories."))))
+(defun check-theory-msg1 (lst macro-aliases wrld bad macros theorems
+                              primitives)
 
-(defun intersection-theories-fn (lst1 lst2 wrld)
-  (check-theory
+; For background see check-theory-msg.  Parameters bad, macros, theorems, and
+; primitives are accumulators.  Bad contains members of lst that do not satisfy
+; rule-name-designatorp.  Macros and theorems are the subsets of bad consisting
+; of symbols that name a macro or a theorem, respectively.  Primitives is a
+; list of rule-name-designators.
+
+  (cond ((endp lst)
+         (mv bad macros theorems primitives))
+        (t
+         (let ((sym (rule-name-designatorp (car lst) macro-aliases wrld)))
+           (cond
+            (sym
+             (check-theory-msg1
+              (cdr lst) macro-aliases wrld bad macros theorems
+              (cond ((and sym
+                          (assoc-eq sym *primitive-formals-and-guards*))
+                     (cons sym primitives))
+                    (t primitives))))
+
+; Otherwise we add (car lst) to bad.  But we might also add (car lst) to one or
+; more of the other accumulators.
+
+            ((not (symbolp (car lst)))
+             (check-theory-msg1 (cdr lst) macro-aliases wrld
+                                (cons (car lst) bad)
+                                macros theorems primitives))
+            (t (let ((name (car lst)))
+                 (mv-let (macros theorems)
+                   (cond ((and (not (eq (getpropc name 'macro-args t wrld)
+                                        t))
+
+; Do not use the function macro-args above, as it can cause a hard error!  But
+; checking for a macro isn't enough -- we don't want to report that this is a
+; macro for which add-macro-alias if actually, the macro already aliases a
+; function but that function can't be disabled (e.g., because it's
+; constrained).
+
+                               (eq (deref-macro-name name macro-aliases)
+                                   name))
+                          (mv (cons name macros)
+                              theorems))
+                         ((or (body name nil wrld)
+                              (getpropc name 'theorem nil wrld)
+                              (getpropc name 'defchoose-axiom nil
+                                        wrld))
+                          (mv macros
+                              (cons name theorems)))
+                         (t (mv macros theorems)))
+                   (check-theory-msg1 (cdr lst) macro-aliases wrld
+                                      (cons name bad)
+                                      macros theorems primitives)))))))))
+
+(defun check-theory-msg (lst wrld)
+
+; This variant of theoryp1 returns (mv flg msg), where flg is true iff lst does
+; not represent a list of runes and msg is to be printed (as an error if flg is
+; true, else as a warning).
+
+  (let ((primitives-str
+         "~@0 ~&1 ~#1~[is a primitive~/are primitives~] without any ~
+          definition; any attempt to enable or disable rules based on a ~
+          primitive will have no effect.  "))
+    (cond
+     ((true-listp lst)
+      (mv-let (bad macros theorems primitives)
+        (check-theory-msg1 lst (macro-aliases wrld) wrld
+                           nil nil nil nil)
+        (cond
+         (bad
+          (mv t
+              (msg
+               "A theory function has been called on a list that contains ~
+                ~&0, which ~#0~[does~/do~] not designate a rule or a ~
+                non-empty list of rules.  ~@1~@2See :DOC theories."
+               bad
+               (cond
+                ((or macros theorems)
+                 (msg "Note that ~@0~@1~@2.  "
+                      (cond
+                       (macros
+                        (msg "~&0 ~#0~[is a macro~/are macros~]; see :DOC ~
+                              add-macro-alias to associate a macro with a ~
+                              function"
+                             macros))
+                       (t ""))
+                      (cond
+                       ((and macros theorems)
+                        ".  Also note that ")
+                       (t ""))
+                      (cond
+                       (theorems
+                        (msg "~&0 ~#0~[names a theorem~/name theorems~] but ~
+                              not any rules"
+                             theorems))
+                       (t ""))))
+                (t ""))
+               (cond
+                (primitives (msg primitives-str
+                                 (if (or macros theorems)
+                                     "Moreover,"
+                                   "Note that")
+                                 primitives))
+                (t "")))))
+         (primitives
+          (mv nil (msg primitives-str "Note that" primitives)))
+         (t (mv nil nil)))))
+     (t (mv t
+            (msg
+             "A theory function has been called on the following argument ~
+              that does not represent a theory because it is not a ~
+              true-list:~|~Y01.~|"
+             lst
+             (evisc-tuple 5 7 nil nil)))))))
+
+(defun check-theory-action (lst wrld ctx)
+
+; A theory expression must evaluate to a common theory, i.e., a truelist of
+; rule name designators.  A rule name designator, recall, is something we can
+; interpret as a set of runes and includes runes themselves and the base
+; symbols of runes, such as APP and ASSOC-OF-APP.  We already have a predicate
+; for this concept: theoryp.  This checker checks for theoryp but with better
+; error reporting.  It returns t if there is an error, else nil.
+
+  (mv-let (flg msg)
+    (check-theory-msg lst wrld)
+    (cond (flg (prog2$ (er hard ctx "~@0" msg)
+                       t))
+          (msg (prog2$ (warning1-cw ctx "Theory" "~@0"
+                                    (list (cons #\0 msg))
+                                    wrld
+                                    (default-state-vars nil))
+                       nil))
+          (t nil))))
+
+(defmacro check-theory (lst wrld ctx form)
+  `(if (check-theory-action ,lst ,wrld ,ctx)
+       nil
+     ,form))
+
+(defmacro maybe-check-theory (skip-check lst wrld ctx form)
+  `(if ,skip-check
+       ,form
+     (check-theory ,lst ,wrld ,ctx ,form)))
+
+(defun intersection-theories-fn (lst1 lst2
+                                      lst1-known-to-be-runic
+                                      lst2-known-to-be-runic
+                                      wrld)
+  (maybe-check-theory
+   lst1-known-to-be-runic
    lst1 wrld 'intersection-theories-fn
-   (check-theory
+   (maybe-check-theory
+    lst2-known-to-be-runic
     lst2 wrld 'intersection-theories-fn
     (intersection-augmented-theories-fn1 (augment-theory lst1 wrld)
                                          (augment-theory lst2 wrld)
@@ -2168,6 +2312,8 @@
   (list 'intersection-theories-fn
         lst1
         lst2
+        (theory-fn-callp lst1)
+        (theory-fn-callp lst2)
         'world))
 
 (defun union-augmented-theories-fn1 (lst1 lst2 ans)
@@ -2176,7 +2322,7 @@
 
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their union as an
-; unagumented runic theory.  See intersection-augmented-theories-fn1.
+; unaugmented runic theory.  See intersection-augmented-theories-fn1.
 
   (cond ((null lst1) (revappend ans (strip-cdrs lst2)))
         ((null lst2) (revappend ans (strip-cdrs lst1)))
@@ -2218,17 +2364,20 @@
 ; We make some effort to share structure with lst1 if it is a runic theory,
 ; else with lst2 if it is a runic theory.  Argument lst1-known-to-be-runic is
 ; an optimization: if it is true, then lst1 is known to be a runic theory, so
-; we can skip the runic-theoryp check.
+; we can skip its runic-theoryp check.  If furthermore lst1-known-to-be-runic
+; is 'both then lst2 is also knowwn to be a runic theory and we can skip its
+; check, too.
 
   (cond
    ((or lst1-known-to-be-runic
         (runic-theoryp lst1 wrld))
-    (check-theory lst2 wrld 'union-theories-fn
-                  (union-theories-fn1 lst1
-                                      (augment-theory lst2 wrld)
-                                      nil
-                                      wrld
-                                      nil)))
+    (maybe-check-theory (eq lst1-known-to-be-runic 'both)
+                        lst2 wrld 'union-theories-fn
+                        (union-theories-fn1 lst1
+                                            (augment-theory lst2 wrld)
+                                            nil
+                                            wrld
+                                            nil)))
    ((runic-theoryp lst2 wrld)
     (check-theory lst1 wrld 'union-theories-fn
                   (union-theories-fn1 lst2
@@ -2275,7 +2424,7 @@
 
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their set-difference as
-; an unagumented runic theory.  See intersection-augmented-theories-fn1.
+; an unaugmented runic theory.  See intersection-augmented-theories-fn1.
 
   (cond ((null lst1) (revappend ans nil))
         ((null lst2) (revappend ans (strip-cdrs lst1)))
@@ -2327,7 +2476,10 @@
                (t (set-difference-theories-fn1
                    lst1 (cdr lst2) nume wrld ans))))))))
 
-(defun set-difference-theories-fn (lst1 lst2 lst1-known-to-be-runic wrld)
+(defun set-difference-theories-fn (lst1 lst2
+                                        lst1-known-to-be-runic
+                                        lst2-known-to-be-runic
+                                        wrld)
 
 ; We make some effort to share structure with lst1 if it is a runic theory.
 ; Argument lst1-known-to-be-runic is an optimization: if it is true, then lst1
@@ -2336,16 +2488,19 @@
   (cond
    ((or lst1-known-to-be-runic
         (runic-theoryp lst1 wrld))
-    (check-theory lst2 wrld 'set-difference-theories-fn
-                  (set-difference-theories-fn1 lst1
-                                               (augment-theory lst2 wrld)
-                                               nil
-                                               wrld
-                                               nil)))
+    (maybe-check-theory
+     lst2-known-to-be-runic
+     lst2 wrld 'set-difference-theories-fn
+     (set-difference-theories-fn1 lst1
+                                  (augment-theory lst2 wrld)
+                                  nil
+                                  wrld
+                                  nil)))
    (t
     (check-theory
      lst1 wrld 'set-difference-theories-fn
-     (check-theory
+     (maybe-check-theory
+      lst2-known-to-be-runic
       lst2 wrld 'set-difference-theories-fn
       (set-difference-augmented-theories-fn1
 
@@ -2452,7 +2607,7 @@
          #+acl2-metering (setq meter-maid-cnt (1+ meter-maid-cnt))
          (current-theory1-augmented (cdr lst) ans redefined))))
 
-(defun union-current-theory-fn (lst2 wrld)
+(defun union-current-theory-fn (lst2 lst2-known-to-be-runic wrld)
 
 ; Warning: Keep this in sync with current-theory-fn and
 ; set-difference-current-theory-fn.
@@ -2460,7 +2615,8 @@
 ; This function returns, with an optimized computation, the value
 ; (union-theories-fn (current-theory :here) lst2 t wrld).
 
-  (check-theory
+  (maybe-check-theory
+   lst2-known-to-be-runic
    lst2 wrld 'union-current-theory-fn
    (let* ((wrld1 ; as in current-theory-fn, we apply decode-logical-name
            (scan-to-event wrld))
@@ -2480,16 +2636,20 @@
   (cond ((equal lst1 '(current-theory :here)) ; optimization
          (list 'union-current-theory-fn
                lst2
+               (theory-fn-callp lst2)
                'world))
         ((equal lst2 '(current-theory :here)) ; optimization
          (list 'union-current-theory-fn
                lst1
+               (theory-fn-callp lst1)
                'world))
         ((theory-fn-callp lst1)
          (list 'union-theories-fn
                lst1
                lst2
-               t
+               (if (theory-fn-callp lst2)
+                   ''both
+                 t)
                'world))
         ((theory-fn-callp lst2)
          (list 'union-theories-fn
@@ -2504,7 +2664,7 @@
                nil
                'world))))
 
-(defun set-difference-current-theory-fn (lst2 wrld)
+(defun set-difference-current-theory-fn (lst2 lst2-known-to-be-runic wrld)
 
 ; Warning: Keep this in sync with current-theory-fn and
 ; union-current-theory-fn.
@@ -2515,7 +2675,8 @@
 ;                             t ; (theory-fn-callp '(current-theory :here))
 ;                             wrld).
 
-  (check-theory
+  (maybe-check-theory
+   lst2-known-to-be-runic
    lst2 wrld 'set-difference-current-theory-fn
    (let* ((wrld1 ; as in current-theory-fn, we apply decode-logical-name
            (scan-to-event wrld))
@@ -2535,11 +2696,13 @@
   (cond ((equal lst1 '(current-theory :here)) ; optimization
          (list 'set-difference-current-theory-fn
                lst2
+               (theory-fn-callp lst2)
                'world))
         (t (list 'set-difference-theories-fn
                  lst1
                  lst2
                  (theory-fn-callp lst1)
+                 (theory-fn-callp lst2)
                  'world))))
 
 ; Now we define a few useful theories.
@@ -2973,7 +3136,7 @@
 ; handled, that may or may not be correct.  In a recent version of
 ; ACL2, (universal-theory nil w), if used in an encapsulate, had the
 ; effect of computing all the names in the theory as of the last
-; world-chaning form executed by the top-level loop.  But because
+; world-changing form executed by the top-level loop.  But because
 ; encapsulate did not so mark each term as it executed them,
 ; universal-theory backed up to the point in w just before the
 ; encapsulate.  Thus, universal-theory could not be used to get the
@@ -3192,7 +3355,7 @@
 ; requirement wasn't noticed until somebody put a THEORY-INVARIANT
 ; event into a book and then the compiled book compiled the logical
 ; code below and thus loading the .o file essentially tried to
-; reexecute the table event after it had already been executed by the
+; re-execute the table event after it had already been executed by the
 ; .lisp code in the book.  A hard error was caused.
 
 ; Therefore, we also define this macro as a trivial no-op in raw Lisp.
@@ -4284,7 +4447,7 @@
 
 ; Because of the progn wrapper, chk-embedded-event-form is called on the
 ; make-event call with make-event-chk = nil.  So even if we were to avoid the
-; redefintion check below, we would not get an error here.  If you change
+; redefinition check below, we would not get an error here.  If you change
 ; anything here, consider changing the comment about redefinition in
 ; encapsulate-pass-2 and associated code.
 
@@ -4393,10 +4556,6 @@
           (value :invisible)))
 
 (defmacro set-raw-mode-on! ()
-
-; If this is to be used in code, then   Presumably the value of that keyword is
-; irrelevant.  But 
-
   '(er-progn (ld '((defttag :raw-mode-hack)
                    (set-raw-mode-on state))
                  :ld-prompt nil :ld-verbose nil :ld-post-eval-print nil
@@ -4639,7 +4798,7 @@
 ; We never execute this code in practice, since the raw code will run instead.
 ; But for consistency with the raw code, we avoid the
 ; user-stobjs-modified-warning.  Raw-mode is so far from maintaining soundness
-; that we feel no need to implement the user-stobjs-modified-warningv in the raw
+; that we feel no need to implement the user-stobjs-modified-warning in the raw
 ; code.
 
   (trans-eval-no-warning form 'top-level state t))
@@ -4709,7 +4868,7 @@
 ; Can time$ really occur in an event context?  At one time we seemed to think
 ; that time$1 could, but it currently seems doubtful that either time$1 or
 ; time$ could occur in an event context.  It's harmless to leave the next line,
-; but it particulary makes no sense to us to use time$1, so we use time$
+; but it particularly makes no sense to us to use time$1, so we use time$
 ; instead.
 
                                  time$))
@@ -5551,7 +5710,7 @@
     (value nil))
 
 ; Otherwise, we call table-fn directly, rather than calling table by way of
-; eval-event-lst, to circumvent the restriction agains calling
+; eval-event-lst, to circumvent the restriction against calling
 ; acl2-defaults-table in the context of a LOCAL.
 
    (t (state-global-let*
@@ -6393,7 +6552,7 @@
 ; anything here, consider changing that comment and associated code.
 
 ; Note that when (not only-pass-p), we don't pass return an expansion-alist.
-; Consider here the first example from the aforemenioned ocmment in
+; Consider here the first example from the aforementioned comment in
 ; chk-embedded-event-form.
 
 ;   (redef!)
@@ -6402,7 +6561,7 @@
 ;     (local (defmacro foo () '(defun f (x) (cons x x))))
 ;     (foo))
 
-; Then after evaluating this event, we get the "expansion" by evluating
+; Then after evaluating this event, we get the "expansion" by evaluating
 ; (access-command-tuple-last-make-event-expansion (cddr (car (w state)))) with
 ; a result of nil, which is not the usual way to record expansions; for
 ; example, (make-event '(defun g (x) x)) similarly gives us an expansion of
@@ -7656,7 +7815,7 @@
 
 (defun known-package-alist-included-p (a1 a2)
 
-; Return true if every package-entry in a1 is present in a2, and moveover, is
+; Return true if every package-entry in a1 is present in a2, and moreover, is
 ; present non-hidden in a2 if present non-hidden in a1.
 
   (cond ((endp a1) t)
@@ -7684,7 +7843,7 @@
 ; in the first pass.  We rely on this fact in order to use the
 ; known-package-alist from the first pass as a basis for the alist returned, so
 ; that any package-entry present in the second pass's alist is present in the
-; result alist, and moveover is non-hidden in the result if non-hidden in the
+; result alist, and moreover is non-hidden in the result if non-hidden in the
 ; second pass's alist.
 
 ; In fact we believe that the known-package-alist at the end of the second pass
@@ -8694,7 +8853,7 @@
 
 ; First, a broad question:  how much security are we trying to provide?
 ; After all, one could always fake a .cert file, say by calling checksum
-; onesself.  Our claim is simply that we only fully "bless" certification runs,
+; oneself.  Our claim is simply that we only fully "bless" certification runs,
 ; from scratch, of entire collections of books, without intervention.  Thus,
 ; there is no soundness problem with using (include-book "hd:ab.lisp") in a
 ; book certified in a Unix file system and having it mean something completely
@@ -9445,7 +9604,7 @@
 ; need to convert to an absolute pathname.
 
 ; If we have an absolute pathname, either by conversion or because the
-; include-book originally referenced an absoluate pathname under the system
+; include-book originally referenced an absolute pathname under the system
 ; books directory, then we convert to using :dir :system.
 
 ; To summarize much of the above: if cbd is nil or if cbd and dir are equal, we
@@ -9871,7 +10030,7 @@
 
 (defun hidden-defpkg-events1 (kpa system-books-dir w ctx state acc)
 
-; Warning: Keep this in sync with hidden-depkg-events-simple.
+; Warning: Keep this in sync with hidden-defpkg-events-simple.
 
   (cond
    ((endp kpa) (value (reverse acc)))
@@ -10180,7 +10339,7 @@
 
 ; We assume that all necessary packages exist so that we can read the
 ; certificate file for full-book-name, without errors caused by unknown package
-; names in symbols occurring in the porcullis commands or make-event
+; names in symbols occurring in the portcullis commands or make-event
 ; expansions.  If that assumption may not hold, consider using
 ; post-alist-from-pcert1 instead.
 
@@ -10461,7 +10620,7 @@
 
 (defun hidden-defpkg-events-simple (kpa acc)
 
-; Warning: Keep this in sync with hidden-depkg-events.
+; Warning: Keep this in sync with hidden-defpkg-events.
 
   (cond
    ((endp kpa) (reverse acc))
@@ -11426,7 +11585,7 @@
 
 ; We make the convention that if a file has no certificate or has an invalid
 ; certificate, we will either assume it anyway or cause an error depending on
-; suspect-book-action-alist.  In the case that we pronouce this book
+; suspect-book-action-alist.  In the case that we pronounce this book
 ; uncertified, we return nil.
 
   (let ((dir (or dir
@@ -17215,7 +17374,7 @@
 ; our handling of Common Lisp compliance.
 
 ; The argument, non-memoizable, is the value of the :non-memoizable keyword of
-; the defstobj event intrducing name.  Let us consider whether there is a need
+; the defstobj event introducing name.  Let us consider whether there is a need
 ; to add a check about :non-memoizable for the case of a stobj with stobj
 ; fields.
 
@@ -17889,7 +18048,7 @@
 ; The *1* functions for the functions are all generated by oneifying
 ; the axiomatic defs.
 
-; To see the deconsts generated, invoke
+; To see the defconsts generated, invoke
 ;   (defstobj-defconsts
 ;     (strip-accessor-names (access defstobj-template template
 ;                                   :field-templates))
@@ -19619,7 +19778,7 @@
 ; arguments of a lambda application; let's call these x-formals and x-args.  We
 ; know that x-formals and y-formals have the same length, and we want to check
 ; that y-formals is a permutation of x-formals and, moreover: when the
-; arguments are correspondingly permutated, then the respective members of
+; arguments are correspondingly permuted, then the respective members of
 ; x-args and y-args are equal.
 
   (declare (xargs :guard (and (symbol-listp x-formals-tail)
@@ -24532,7 +24691,7 @@
   (cond ((iprint-enabledp state)
 
 ; A comment in rollover-iprint-ar explains conditions that allow a certain
-; multiplier of 4 to enable maintainance of the invariant that the
+; multiplier of 4 to enable maintenance of the invariant that the
 ; maximum-length of the iprint-ar is always at least four times the dimension.
 ; We support that reasoning here by making sure that we do not create
 ; successive entries with index 0.  Note that compress1 does not change the
@@ -24996,7 +25155,7 @@
 ; Standard Model: The standard model of Peano axioms is the set of natural
 ; numbers together with the usual operators.  In particular, there are no
 ; objects in the standard model that don't correspond with some natural, e.g.,
-; there is no object having an infinite number of predecesors as one could
+; there is no object having an infinite number of predecessors as one could
 ; arrange by adding the consistent infinite set of axioms of the form n < C,
 ; for every natural number n.  The standard model of ACL2 is just Common Lisp
 ; on a machine with unlimited memory and no ``bad atoms,'' e.g., the only
@@ -25193,7 +25352,7 @@
 ; event.  Yet after the defattach, (equal (f1 x) (g1 x)) is a theorem of the
 ; evaluation theory.
 
-; This example motivates an acylicity condition on functions and their
+; This example motivates an acyclicity condition on functions and their
 ; attachments, explained below, that is sufficient for supporting a
 ; characterization of defattach events in terms of evaluation histories.  We
 ; next provide some motivation, before presenting the appropriate foundational
@@ -25843,7 +26002,7 @@
                                   (cdr attach-pair)) ; attaching for execution
                               (not (and skip-checks-t
 
-; If skip-checks is tand we have a non-executable program-mode function, then
+; If skip-checks is t and we have a non-executable program-mode function, then
 ; it is legal to attach for execution, so we can move on to the next COND
 ; branch.
 
@@ -26226,7 +26385,7 @@
 ; of alists corresponding positionally to attachment-alist, each of which binds
 ; elements of *defattach-keys* to values to help with the respective proof.
 ; Like prove, we return an error triple; the non-erroneous value is a ttree
-; signalling the successful proof of all the goals.
+; signaling the successful proof of all the goals.
 
 ; Note that filter-for-attachment has been applied before calling this
 ; function.
@@ -26681,7 +26840,7 @@
 
 ;    h1  <+ ... <+ g1 <+ h0 <+ ... <+ g0 < h1
 
-; If h1 is not iself g-canonical, then will not find the merge below at a later
+; If h1 is not itself g-canonical, then will not find the merge below at a later
 ; step, because it requires merging two components both attached to the same
 ; record (with :g field g0), which we avoid for efficiency.
 
@@ -27769,7 +27928,7 @@
 ; ordinary ancestor of f or else <f,g> is an attachment pair (think: f is
 ; redefined to be g).  We say "roughly speaking" primarily because we traffic
 ; entirely in "canonical" function symbols, as explained in the Essay on
-; Defattach.  Morover, for our defattach implementation, we include guards in
+; Defattach.  Moreover, for our defattach implementation, we include guards in
 ; the calculation of canonical ancestors.  Guards are relevant in the sense
 ; that changing or (especially) removing an attachment used in a guard could
 ; invalidate a stored value, not logically, but in the sense that its
@@ -29057,7 +29216,7 @@
 ;                              (list 'quote ',(@ bad)))))))))
 ;
 
-; where "foo2" is as follows, with the indicated portullis command:
+; where "foo2" is as follows, with the indicated portcullis command:
 
 ; (in-package "ACL2")
 ;
@@ -29238,7 +29397,7 @@
 
 (defun read-file-into-string1 (channel state ans bound)
 
-; Channel is an open input characater channel.  We read all the characters in
+; Channel is an open input character channel.  We read all the characters in
 ; the file and return the list of them.
 
   (declare (xargs :stobjs state

@@ -406,7 +406,7 @@
 ; **1*-as-raw* is bound to t when calling *1*foo, so we might expect that
 ; evaluation of the mbe form under (lgc st) would use the :exec form, leading
 ; erroneously to a successful proof!  However, we bind **1*-as-raw* to nil in
-; raw-ev-fncall precisely to avoid such a probem.
+; raw-ev-fncall precisely to avoid such a problem.
 
 ; To see why we need (d), see the example in a comment in oneify that starts
 ; with "(defun f-log".
@@ -1350,9 +1350,9 @@
 ; An event tuple is always a cons.  Except in the initial case created by
 ; primordial-world-globals, the car is always either a natural (denoting n and
 ; implying d=0) or a cons of two naturals, n and d.  Its cadr is either a
-; symbol, denoting its type and signalling that the cdr is the form, the
+; symbol, denoting its type and signaling that the cdr is the form, the
 ; symbol-class is :program and that the namex can be recovered from the form,
-; or else the cadr is the pair (ev-type namex . symbol-class) signalling that
+; or else the cadr is the pair (ev-type namex . symbol-class) signaling that
 ; the form is the cddr.
 
 ; Generally, the val encodes:
@@ -1847,7 +1847,7 @@
 
 ; Targets is a subset of (GUARDS TYPES), where we pick up expressions from
 ; :GUARD and :STOBJS XARGS declarations if GUARDS is in the list and we pick up
-; expressions corresponding to TYPE declaraions if TYPES is in the list.
+; expressions corresponding to TYPE declarations if TYPES is in the list.
 
 ; See get-guards for an example of what edcls looks like.  We require that
 ; edcls contains only valid type declarations, as explained in the comment
@@ -2860,7 +2860,7 @@
 ; push anything.
 
 ; The next problem, however, is what do we push?  In normal circumstances --
-; i.e., body terminating without an evaluation error but signalling an error --
+; i.e., body terminating without an evaluation error but signaling an error --
 ; cleanup1 is evaluated by ev.  But cleanup1 is evaluated in w, which may or
 ; may not be the installed world.  Hence, the meaning in w of the function
 ; symbol in the car of cleanup1 may be different from the raw lisp definition
@@ -2954,7 +2954,7 @@
 ; clean-latches because the cleanup form produces a state.
 
            (mv body-erp body-val clean-latches)))))
-       ((car body-val) ; "soft error," i.e., body signalled error
+       ((car body-val) ; "soft error," i.e., body signaled error
 
 ; We think this call of acl2-unwind is unnecessary.  It is here in
 ; case the evaluation of body pushed some additional forms onto the
@@ -2967,7 +2967,7 @@
 
 ; Because body is known to produce an error triple we know its car is
 ; the error flag, the cadr is the value, and the caddr is a state
-; The test above therefore detects that the body signalled an error.
+; The test above therefore detects that the body signaled an error.
 
         (mv-let
          (clean-erp clean-val clean-latches)
@@ -3454,7 +3454,7 @@
 
 ; We store the quotation of the original form of a syntaxp or bind-free
 ; hypothesis in the second arg of its expansion.  We do this so that we
-; can use it here and output something that the user will recognise.
+; can use it here and output something that the user will recognize.
 
            (cadr (fargn term 2)))
           ((and (eq (ffn-symb term) 'return-last)
@@ -5407,7 +5407,7 @@
 ; We mentioned a relaxation above for the case of congruent stobjs.  (See :DOC
 ; defstobj for an introduction to congruent stobjs.)  Consider again a function
 ; call.  Each argument corresponding to a non-nil stobj flag should be
-; a stobj that is congruent to that flag (a stobj).  Moreoever, no two such
+; a stobj that is congruent to that flag (a stobj).  Moreover, no two such
 ; arguments may be the same.
 
 ; We turn now from translation to evaluation in the logic (i.e., with *1*
@@ -5783,7 +5783,7 @@
 ; Provided every element of lst has a guard of t, the output has a guard of t.
 ; The intention here is that lst is a list of distinct variable names and
 ; name-dropper builds a translated term whose free-vars are those variables;
-; futhermore, it is cheap to evaluate and always has a guard of T.
+; furthermore, it is cheap to evaluate and always has a guard of T.
 ; The general form is either 'NIL, a single var, or a PROG2$ nest around
 ; the vars.
 
@@ -6067,7 +6067,7 @@
 
 ; Either return (mv binding nil nil ... nil) for some unsuitable binding in
 ; bindings, or else return the result of accumulating from bindings into the
-; other argments.  See parse-stobj-let.  Note that stobj is initially nil, but
+; other arguments.  See parse-stobj-let.  Note that stobj is initially nil, but
 ; is bound by the first recursive call and must be the same at every ensuing
 ; recursive call.
 
@@ -8134,7 +8134,9 @@
 (defun translate11 (x stobjs-out bindings known-stobjs flet-alist
                       cform ctx wrld state-vars)
 
-; Warning: Keep this in sync with macroexpand1*-cmp.
+; Warning: Keep this in sync with macroexpand1*-cmp.  Also, for any new special
+; operators (e.g., let and translate-and-test), consider extending
+; *special-ops* in community book books/misc/check-acl2-exports.lisp.
 
 ; Bindings is an alist binding symbols either to their corresponding STOBJS-OUT
 ; or to symbols.  The only symbols used are (about-to-be introduced) function
@@ -8168,7 +8170,7 @@
 ; But that is hard since the binding may come deep in some recursive
 ; call of translate.]
 
-; T always deferences to t and nothing else dereferences to t.  So you
+; T always dereferences to t and nothing else dereferences to t.  So you
 ; can check (eq stobjs-out t) without dereferencing to know whether we
 ; care about the stobjs-out conditions.
 
@@ -8282,15 +8284,16 @@
                             bindings)))))))))
    ((not (true-listp (cdr x)))
     (trans-er ctx
-              "Function applications in ACL2 must end in NIL.  ~x0 is ~
-               not of this form."
+              "Function (and macro) applications in ACL2 must end in NIL.  ~
+               ~x0 is not of this form."
               x))
    ((not (symbolp (car x)))
     (cond ((or (not (consp (car x)))
                (not (eq (caar x) 'lambda)))
            (trans-er ctx
-                     "Function applications in ACL2 must begin with a symbol ~
-                      or LAMBDA expression.  ~x0 is not of this form."
+                     "Function (and macro) applications in ACL2 must begin ~
+                      with a symbol or LAMBDA expression.  ~x0 is not of this ~
+                      form."
                      x))
           ((or (not (true-listp (car x)))
                (not (>= (length (car x)) 3))
@@ -9045,7 +9048,7 @@
 
 ; Robert Krug has mentioned the possibility that the known-stobjs below could
 ; perhaps be t.  This would allow a function called by synp to use, although
-; not change, stobjs.  If this is changed, change the referances to stobjs in
+; not change, stobjs.  If this is changed, change the references to stobjs in
 ; the documentation for syntaxp and bind-free as appropriate.  But before
 ; making such a change, consider this: no live user-defined stobj will ever
 ; appear in the unifying substitution that binds variables in the evg of
@@ -9755,7 +9758,7 @@
 (defun all-fnnames1 (flg x acc)
 
 ; Flg is nil for all-fnnames, t for all-fnnames-lst.  Note that this includes
-; function names occuring in the :exec part of an mbe.  Keep this in sync with
+; function names occurring in the :exec part of an mbe.  Keep this in sync with
 ; all-fnnames1-exec.
 
   (cond (flg ; x is a list of terms
@@ -10330,7 +10333,7 @@
 ; being returned and what they are.  The obvious thing for trans-eval
 ; to do is to list the results.  But if one of them is STATE or some
 ; other stobj, it cannot.  So trans-eval has a rather complicated
-; interface that permits the caller to determine the mulitplicity of
+; interface that permits the caller to determine the multiplicity of
 ; the result and whether and where the stobjs appear (or, more precisely,
 ; are supposed to appear) in the output vector.  See the documentation
 ; of trans-eval for its specification.
@@ -10605,7 +10608,7 @@
 ; function manipulating operations of Lisp in ACL2.  All these
 ; operations depend upon the function trans-eval.  These functions are
 ; at the moment not very efficient because they involve a runtime call
-; to translate.  Futhermore, proving interesting theorems about these
+; to translate.  Furthermore, proving interesting theorems about these
 ; functions would not be easy because they are tied up with the
 ; ``big-clock'' story which makes our evaluator primitive recursive.
 ; But nevertheless it is worth pointing out that this capability at

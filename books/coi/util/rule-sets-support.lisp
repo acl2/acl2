@@ -984,7 +984,7 @@
          (acl2::set-difference-theories-fn
           (d/e-list theory (cdr list) world)
           disable
-          t world)
+          t nil world)
          enable
          t world))
     (if (equal theory :here) (current-theory :here) (acl2::RUNIC-THEORY theory WORLD))))
