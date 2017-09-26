@@ -493,6 +493,14 @@
                                       write-x86-file-des-logic)
                                      ()))))
 
+  ;; Contributed by Alessandro Coglio
+  (defrule 64-bit-modep-of-write-x86-file-des
+    (equal (64-bit-modep (write-x86-file-des fd fd-field x86))
+           (64-bit-modep x86))
+    :hints (("Goal" :in-theory (e/d* (write-x86-file-des
+                                      write-x86-file-des-logic)
+                                     ()))))
+
   (defthm write-x86-file-des-xw
     (implies (not (equal fld :env))
              (equal (write-x86-file-des i v (xw fld index value x86))

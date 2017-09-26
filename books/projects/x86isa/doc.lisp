@@ -597,8 +597,9 @@
   x86-register-readers-and-writers
   Characterizing-undefined-behavior
   x86-physical-memory
-  ia32e-paging
-  ia32e-segmentation
+  x86-linear-memory
+  x86-paging
+  x86-segmentation
   x86-top-level-memory
   x86-environment
   x86-syscalls
