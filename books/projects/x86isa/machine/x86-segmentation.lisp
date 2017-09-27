@@ -144,12 +144,12 @@
    In 64-bit mode, the caller of this function supplies as @('eff-addr')
    the content of RIP,
    the content of RSP,
-   or the result of @(tsee x86-effective-address).
+   or the result of @(tsee x86-effective-addr).
    In 32-bit mode, the caller of this function supplies as @('eff-addr')
    the unsigned 32-bit or 16-bit truncation of
    the content of RIP (i.e. EIP or IP),
    the content of RSP (i.e. ESP or SP),
-   or the result of @(tsee x86-effective-address);
+   or the result of @(tsee x86-effective-addr);
    the choice between 32-bit and 16-bit is determined by
    default address size and override prefixes.
    </p>
