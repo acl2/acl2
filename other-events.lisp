@@ -16764,6 +16764,39 @@
                        (if bound-vars-flg 0 1)
                        args culprit explan)))))
 
+(defun without-warnings-fn (form)
+  `(state-global-let*
+    ((inhibit-output-lst (f-get-global 'inhibit-output-lst state)))
+    (pprogn
+     (f-put-global 'inhibit-output-lst
+                   (add-to-set-eq 'warning
+                                  (f-get-global 'inhibit-output-lst state))
+                   state)
+     ,form)))
+
+(defmacro without-warnings (form)
+  (without-warnings-fn form))
+
+(defmacro translate-without-warnings (&rest args)
+
+
+; To see why we may want to turn off warnings during translate, consider the
+; following example.
+
+;   (set-ignore-ok :warn)
+;   (defchoose foo (x) (y z) (< 0 y))
+
+; We expect a warning saying that x and z are unused.  But we don't want a
+; second warning like the following from defchoose-constraint's use of
+; translate, because it will make no sense to the user:
+
+;   ACL2 Warning [Ignored-variables] in ( DEFCHOOSE FOO ...):  The variable
+;   X is not used in the body of the LET expression that binds X.  But
+;   X is not declared IGNOREd or IGNORABLE.  See :DOC set-ignore-ok.
+
+
+  `(without-warnings (translate ,@args)))
+
 (defun defchoose-constraint-basic (fn bound-vars formals tbody ctx wrld state)
 
 ; It seems a pity to translate tbody, since it's already translated, but that
@@ -16772,7 +16805,7 @@
   (cond
    ((null (cdr bound-vars))
     (er-let*
-     ((consequent (translate
+     ((consequent (translate-without-warnings
                    `(let ((,(car bound-vars) ,(cons fn formals)))
                       ,tbody)
                    t t t ctx wrld state)))
@@ -16904,9 +16937,10 @@
            (cond
             (strengthen
              (er-let* ((extra
-                        (translate (defchoose-constraint-extra fn bound-vars
-                                     formals body)
-                                   t t t ctx wrld state)))
+                        (translate-without-warnings
+                         (defchoose-constraint-extra fn bound-vars formals
+                           body)
+                         t t t ctx wrld state)))
                (value (conjoin2 basic extra))))
             (t (value basic)))))
 
@@ -16964,113 +16998,110 @@
               (er-progn
                (chk-arglist-for-defchoose bound-vars t ctx state)
                (chk-arglist-for-defchoose formals nil ctx state)
-               (er-let*
-                ((tbody (translate body t t t ctx wrld state))
-                 (wrld (chk-just-new-name fn nil 'function nil ctx wrld
-                                          state)))
-                (cond
-                 ((intersectp-eq bound-vars formals)
-                  (er soft ctx
-                      "The bound and free variables of a defchoose form must ~
-                       not intersect, but their intersection for the form ~x0 ~
-                       is ~x1."
-                      event-form
-                      (intersection-eq bound-vars formals)))
-                 (t
-                  (let* ((body-vars (all-vars tbody))
-                         (bound-and-free-vars (append bound-vars formals))
-                         (diff (set-difference-eq bound-and-free-vars
-                                                  body-vars))
-                         (ignore-ok (cdr (assoc-eq
-                                          :ignore-ok
-                                          (table-alist 'acl2-defaults-table
-                                                       wrld)))))
-                    (cond
-                     ((not (subsetp-eq body-vars bound-and-free-vars))
-                      (er soft ctx
-                          "All variables in the body of a defchoose form must ~
-                           appear among the bound or free variables supplied ~
-                           in that form.  However, the ~#0~[variable ~x0 ~
-                           does~/variables ~&0 do~] not appear in the bound or ~
-                           free variables of the form ~x1, even though ~#0~[it ~
-                           appears~/they appear~] in its body."
-                          (set-difference-eq body-vars
-                                             (append bound-vars formals))
-                          event-form))
-                     ((and diff
-                           (null ignore-ok))
-                      (er soft ctx
-                          "The variable~#0~[ ~&0~ occurs~/s ~&0 occur~] in the ~
-                           body of the form ~x1.  However, ~#0~[this variable ~
-                           does~/these variables do~] not appear either in the ~
-                           bound variables or the formals of that form.  In ~
-                           order to avoid this error, see :DOC set-ignore-ok."
-                          diff
-                          event-form))
-                     (t
-                      (pprogn
-                       (cond
-                        ((eq ignore-ok :warn)
-                         (warning$ ctx "Ignored-variables"
-                                   "The variable~#0~[ ~&0 occurs~/s ~&0 ~
-                                    occur~] in the body of the following ~
-                                    defchoose form:~|~x1~|However, ~#0~[this ~
-                                    variable does~/these variables do~] not ~
-                                    appear either in the bound variables or ~
-                                    the formals of that form.  In order to ~
-                                    avoid this warning, see :DOC set-ignore-ok."
-                                   diff
-                                   event-form))
-                        (t state))
-                       (let* ((stobjs-in
-                               (compute-stobj-flags formals nil wrld))
-                              (stobjs-out
-                               (compute-stobj-flags bound-vars nil wrld))
-                              (wrld
-                               #+:non-standard-analysis
-                               (putprop
-                                fn 'classicalp
-                                (classical-fn-list-p (all-fnnames tbody) wrld)
-                                wrld)
-                               #-:non-standard-analysis
-                               wrld)
-                              (wrld
-                               (putprop
-                                fn 'constrainedp t
+               (er-let* ((tbody (translate body t t t ctx wrld state))
+                         (wrld (chk-just-new-name fn nil 'function nil ctx wrld
+                                                  state)))
+                 (cond
+                  ((intersectp-eq bound-vars formals)
+                   (er soft ctx
+                       "The bound and free variables of a defchoose form must ~
+                        not intersect, but their intersection for the form ~
+                        ~x0 is ~x1."
+                       event-form
+                       (intersection-eq bound-vars formals)))
+                  (t
+                   (let* ((body-vars (all-vars tbody))
+                          (bound-and-free-vars (append bound-vars formals))
+                          (ignored (set-difference-eq bound-and-free-vars
+                                                      body-vars))
+                          (ignore-ok (cdr (assoc-eq
+                                           :ignore-ok
+                                           (table-alist 'acl2-defaults-table
+                                                        wrld))))
+                          (ignored-vars-string
+                           "The variable~#0~[ ~&0~ does~/s ~&0 do~] not occur ~
+                            in the body of the form ~x1.  However, ~#0~[this ~
+                            variable~/each of these variables~] appears in ~
+                            the bound variables or the formals of that form.  ~
+                            In order to avoid this error, see :DOC ~
+                            set-ignore-ok."))
+                     (cond
+                      ((not (subsetp-eq body-vars bound-and-free-vars))
+                       (er soft ctx
+                           "All variables in the body of a defchoose form ~
+                            must appear among the bound or free variables ~
+                            supplied in that form.  However, the ~
+                            ~#0~[variable ~x0 does~/variables ~&0 do~] not ~
+                            appear in the bound or free variables of the form ~
+                            ~x1, even though ~#0~[it appears~/they appear~] ~
+                            in its body."
+                           (set-difference-eq body-vars bound-and-free-vars)
+                           event-form))
+                      ((and ignored
+                            (null ignore-ok))
+                       (er soft ctx
+                           ignored-vars-string
+                           ignored event-form))
+                      (t
+                       (pprogn
+                        (cond
+                         ((and ignored
+                               (eq ignore-ok :warn))
+                          (warning$ ctx "Ignored-variables"
+                                    ignored-vars-string
+                                    ignored event-form))
+                         (t state))
+                        (let* ((stobjs-in
+                                (compute-stobj-flags formals nil wrld))
+                               (stobjs-out
+                                (compute-stobj-flags bound-vars nil wrld))
+                               (wrld
+                                #+:non-standard-analysis
                                 (putprop
-                                 fn 'hereditarily-constrained-fnnames (list fn)
+                                 fn 'classicalp
+                                 (classical-fn-list-p (all-fnnames tbody) wrld)
+                                 wrld)
+                                #-:non-standard-analysis
+                                wrld)
+                               (wrld
+                                (putprop
+                                 fn 'constrainedp t
                                  (putprop
-                                  fn 'symbol-class
-                                  :common-lisp-compliant
-                                  (putprop-unless
-                                   fn 'stobjs-out stobjs-out nil
+                                  fn 'hereditarily-constrained-fnnames
+                                  (list fn)
+                                  (putprop
+                                   fn 'symbol-class
+                                   :common-lisp-compliant
                                    (putprop-unless
-                                    fn 'stobjs-in stobjs-in nil
-                                    (putprop
-                                     fn 'formals formals
-                                     wrld))))))))
-                         (er-let*
-                          ((constraint
-                            (defchoose-constraint
-                              fn bound-vars formals body tbody strengthen
-                              ctx wrld state)))
-                          (install-event fn
-                                         event-form
-                                         'defchoose
-                                         fn
-                                         nil
-                                         `(defuns nil nil
+                                    fn 'stobjs-out stobjs-out nil
+                                    (putprop-unless
+                                     fn 'stobjs-in stobjs-in nil
+                                     (putprop
+                                      fn 'formals formals
+                                      wrld))))))))
+                          (er-let*
+                              ((constraint
+                                (defchoose-constraint
+                                  fn bound-vars formals body tbody strengthen
+                                  ctx wrld state)))
+                            (install-event fn
+                                           event-form
+                                           'defchoose
+                                           fn
+                                           nil
+                                           `(defuns nil nil
 
 ; Keep the following in sync with intro-udf-lst2.
 
-                                            (,fn
-                                             ,formals
-                                             ,(null-body-er fn formals nil)))
-                                         :protect
-                                         ctx
-                                         (putprop
-                                          fn 'defchoose-axiom constraint wrld)
-                                         state))))))))))))))))))))))
+                                              (,fn
+                                               ,formals
+                                               ,(null-body-er fn formals nil)))
+                                           :protect
+                                           ctx
+                                           (putprop
+                                            fn 'defchoose-axiom constraint
+                                            wrld)
+                                           state))))))))))))))))))))))
 
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
