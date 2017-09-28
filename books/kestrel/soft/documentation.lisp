@@ -1867,7 +1867,7 @@
 
    <p>
    The types of function variables are currently limited to
-   <see topic='@(url acl2::signatures)'>signatures</see>
+   <see topic='@(url acl2::signature)'>signatures</see>
    with single-value results and with no stobjs.
    This could be extended to allow multiple-value results and stobjs.
    Instantiations will have to respect these additional type structures.
