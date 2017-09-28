@@ -198,6 +198,12 @@
  @('std/std-customization.lsp') now support rule classes other than
  @(':rewrite').</p>
 
+ <p>The rule @('sets-are-true-lists') has been split into three rules with the
+ same formula: a disabled @(see rewrite) rule of that name, a (@see
+ compound-recognizer) rule @('sets-are-true-lists-compound-recognizer'), and a
+ rewrite rule @('sets-are-true-lists-cheap') whose @(see backchain-limit) is
+ 1.</p>
+
  <h4>Kestrel Utilities</h4>
 
  <p>The <see topic='@(url kestrel-utilities)'>Kestrel Utilities</see> have
