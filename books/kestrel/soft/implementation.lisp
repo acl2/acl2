@@ -69,7 +69,7 @@
     (and (symbolp funvar)
          (not (null (assoc-eq funvar table))))))
 
-(define defunvar-event (funvar arguments arrow result)
+(define defunvar-fn (funvar arguments arrow result)
   :returns (event (or (pseudo-event-formp event) (null event)))
   :short "Validate the inputs to @(tsee defunvar)
           and generate the event form to submit."
@@ -99,7 +99,7 @@
    @(def acl2::defunvar)"
 
   (defmacro defunvar (funvar arguments arrow result)
-    `(make-event (defunvar-event ',funvar ',arguments ',arrow ',result)))
+    `(make-event (defunvar-fn ',funvar ',arguments ',arrow ',result)))
 
   (defmacro acl2::defunvar (&rest args)
     `(defunvar ,@args)))
@@ -112,7 +112,7 @@
    @(def acl2::show-defunvar)"
 
   (defmacro show-defunvar (funvar arguments arrow result)
-    `(defunvar-event ',funvar ',arguments ',arrow ',result))
+    `(defunvar-fn ',funvar ',arguments ',arrow ',result))
 
   (defmacro acl2::show-defunvar (&rest args)
     `(show-defunvar ,@args)))
@@ -443,7 +443,7 @@
                 the same function variables as the function body ~x1.~%"
                rule-body fun-body))))
 
-(define defun2-event (sofun fparams rest (wrld plist-worldp))
+(define defun2-fn (sofun fparams rest (wrld plist-worldp))
   :returns (event (or (pseudo-event-formp event) (null event)))
   :verify-guards nil
   :short "Validate some of the inputs to @(tsee defun2)
@@ -481,7 +481,7 @@
    @(def acl2::defun2)"
 
   (defmacro defun2 (sofun fparams &rest rest)
-    `(make-event (defun2-event ',sofun ',fparams ',rest (w state))))
+    `(make-event (defun2-fn ',sofun ',fparams ',rest (w state))))
 
   (defmacro acl2::defun2 (&rest args)
     `(defun2 ,@args)))
@@ -494,12 +494,12 @@
    @(def acl2::show-defun2)"
 
   (defmacro show-defun2 (sofun fparams &rest rest)
-    `(defun2-event ',sofun ',fparams ',rest (w state)))
+    `(defun2-fn ',sofun ',fparams ',rest (w state)))
 
   (defmacro acl2::show-defun2 (&rest args)
     `(show-defun2 ,@args)))
 
-(define defchoose2-event
+(define defchoose2-fn
   (sofun bvars fparams params body options (wrld plist-worldp))
   :returns (event (or (pseudo-event-formp event) (null event)))
   :verify-guards nil
@@ -539,7 +539,7 @@
 
   (defmacro defchoose2 (sofun bvars fparams vars body &rest options)
   `(make-event
-    (defchoose2-event
+    (defchoose2-fn
       ',sofun ',bvars ',fparams ',vars ',body ',options (w state))))
 
   (defmacro acl2::defchoose2 (&rest args)
@@ -553,13 +553,13 @@
    @(def acl2::show-defchoose2)"
 
   (defmacro show-defchoose2 (sofun bvars fparams vars body &rest options)
-    `(defchoose2-event
+    `(defchoose2-fn
        ',sofun ',bvars ',fparams ',vars ',body ',options (w state)))
 
   (defmacro acl2::show-defchoose2 (&rest args)
     `(show-defchoose2 ,@args)))
 
-(define defun-sk2-event (sofun fparams params body options (wrld plist-worldp))
+(define defun-sk2-fn (sofun fparams params body options (wrld plist-worldp))
   :returns (event (or (pseudo-event-formp event) (null event)))
   :verify-guards nil
   :short "Validate some of the inputs to @(tsee defun-sk2)
@@ -610,7 +610,7 @@
 
   (defmacro defun-sk2 (sofun fparams params body &rest options)
     `(make-event
-      (defun-sk2-event ',sofun ',fparams ',params ',body ',options (w state))))
+      (defun-sk2-fn ',sofun ',fparams ',params ',body ',options (w state))))
 
   (defmacro acl2::defun-sk2 (&rest args)
     `(defun-sk2 ,@args)))
@@ -623,7 +623,7 @@
    @(def acl2::show-defun-sk2)"
 
   (defmacro show-defun-sk2 (sofun fparams params body &rest options)
-    `(defun-sk2-event ',sofun ',fparams ',params ',body ',options (w state)))
+    `(defun-sk2-fn ',sofun ',fparams ',params ',body ',options (w state)))
 
   (defmacro acl2::show-defun-sk2 (&rest args)
     `(show-defun-sk2 ,@args)))
@@ -1117,7 +1117,7 @@
        (sothmp (car sothm-inst) wrld)
        (funvar-instp (cdr sothm-inst) wrld)))
 
-(define defthm-inst-event (thm sothm-inst rest (wrld plist-worldp))
+(define defthm-inst-fn (thm sothm-inst rest (wrld plist-worldp))
   :returns (event "A @(tsee pseudo-event-formp) or @('nil').")
   :mode :program
   :short "Validate the inputs to @(tsee defthm-inst)
@@ -1160,7 +1160,7 @@
 
   (defmacro defthm-inst (thm sothminst &rest rest)
     `(make-event
-      (defthm-inst-event ',thm ',sothminst ',rest (w state))))
+      (defthm-inst-fn ',thm ',sothminst ',rest (w state))))
 
   (defmacro acl2::defthm-inst (&rest args)
     `(defthm-inst ,@args)))
@@ -1173,7 +1173,7 @@
    @(def acl2::show-defthm-inst)"
 
   (defmacro show-defthm-inst (thm sothminst &rest rest)
-    `(defthm-inst-event ',thm ',sothminst ',rest (w state)))
+    `(defthm-inst-fn ',thm ',sothminst ',rest (w state)))
 
   (defmacro acl2::show-defthm-inst (&rest args)
     `(show-defthm-inst ,@args)))
@@ -1371,7 +1371,7 @@
       ,@table-event
       (value-triple (check-qrewrite-rule-funvars ',fun (w state))))))
 
-(define defun-inst-event (fun fparams-or-sofuninst rest (wrld plist-worldp))
+(define defun-inst-fn (fun fparams-or-sofuninst rest (wrld plist-worldp))
   :returns (event "A @(tsee pseudo-event-formp) or @('nil').")
   :mode :program
   :short "Validate some of the inputs to @(tsee defun-inst)
@@ -1453,7 +1453,7 @@
 
   (defmacro defun-inst (fun fparams-or-sofuninst &rest rest)
     `(make-event
-      (defun-inst-event ',fun ',fparams-or-sofuninst ',rest (w state))))
+      (defun-inst-fn ',fun ',fparams-or-sofuninst ',rest (w state))))
 
   (defmacro acl2::defun-inst (&rest args)
     `(defun-inst ,@args)))
@@ -1466,7 +1466,7 @@
    @(def acl2::show-defun-inst)"
 
   (defmacro show-defun-inst (fun fparams-or-sofuninst &rest rest)
-    `(defun-inst-event ',fun ',fparams-or-sofuninst ',rest (w state)))
+    `(defun-inst-fn ',fun ',fparams-or-sofuninst ',rest (w state)))
 
   (defmacro acl2::show-defun-inst (&rest args)
     `(show-defun-inst ,@args)))
