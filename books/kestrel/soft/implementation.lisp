@@ -21,10 +21,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Some possible improvements/extensions are discussed at the end of the file.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define *-listp (stars)
   :returns (yes/no booleanp)
   :short "Recognize @('nil')-terminated lists of @('*')s."
@@ -1474,47 +1470,3 @@
 
   (defmacro acl2::show-defun-inst (&rest args)
     `(show-defun-inst ,@args)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Some possible improvements/extensions:
-; - Generate instances of second-order functions and theorems
-;   with untranslated terms, which are more user-readable.
-; - Check that only the allowed options are used in each macro.
-; - Support the transitivity of instantiation,
-;   i.e. if F is an instance of G and G is an instance of H,
-;   then F is also an instance of H.
-; - Support more general types for function variables,
-;   e.g. including multiple-value results and stobjs.
-; - Support constrained function variables,
-;   i.e. function variables that satisfy certain conditions.
-; - Allow recursive second-order functions to use well-founded relations
-;   other than O<, and possibly second-order well-founded relations.
-; - Support the introduction of second-order functions
-;   via macros that correspond to
-;   DEFUND, DEFN, DEFND, DEFUN-NX, DEFUND-NX, DEFINE, DEFPUN, DEFP,
-;   and MUTUAL-RECURSION.
-; - Allow instantiations to map function variable names to LAMBDA terms,
-;   similarly to :FUNCTIONAL-INSTANCE.
-; - Provide facilities to use (by functional instantiation)
-;   proved guards of second-order functions
-;   to prove guards of instances of those second-order functions.
-;   The instances may have more proof obligations
-;   because function variables that have no obligations
-;   may be replaced with functions that have obligations.
-; - Provide facilities to trim guards of instances of second-order functions
-;   by using proved theorems.
-;   For instance, if the guard of a second-order function
-;   includes a conjunct that uses a non-executable quantifier function
-;   (e.g. expressing a condition on some function parameter),
-;   but the instance of this conjunct is a theorem
-;   (e.g. the first-order function that replaces that function parameter
-;   satisfies the condition expressed by conjunct),
-;   then that conjunct does not need to appear in the guard
-;   of the instance of the second-order function,
-;   making the guard executable and allowing the instance to run.
-; - Currently the default :RULE-CLASSES
-;   of an instance of a second-order theorem is (:REWRITE),
-;   but perhaps the default should be the :RULE-CLASSES
-;   of the second-order theorem that is being instantiated.
-; - Support program-mode second-order functions.
