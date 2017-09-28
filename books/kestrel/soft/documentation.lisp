@@ -376,7 +376,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defunvar fvar (* ... *) => *)
@@ -463,7 +463,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defun2 sofun (fvar1 ... fvarN) (var1 ... varM)
@@ -635,7 +635,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defchoose2 sofun (bvar1 ... bvarP) (fvar1 ... fvarN) (var1 ... varM)
@@ -761,7 +761,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defun-sk sofun (fvar1 ... fvarN) (var1 ... varM)
@@ -961,7 +961,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defun-inst fun (fvar1 ... fvarN)
@@ -1376,7 +1376,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defthm sothm
@@ -1567,7 +1567,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defthm-inst thm
