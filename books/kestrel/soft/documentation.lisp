@@ -1942,7 +1942,7 @@
    <p>
    Instances of second-order functions and theorems
    are currently generated with
-   <see topic='@(url term)'>translated terms</see>.
+   <see topic='@(url acl2::term)'>translated terms</see>.
    Generating untranslated terms instead
    would result in more readable functions and theorems.
    </p>")
