@@ -58,7 +58,7 @@
 (local (in-theory (enable weak-insert-induction-helper-2)))
 (local (in-theory (enable weak-insert-induction-helper-3)))
 
-(local (in-theory (disable (:compound-recognizer sets-are-true-lists))))
+(local (in-theory (disable (:compound-recognizer sets-are-true-lists-compound-recognizer))))
 
 (defund multicons (a X)
   (declare (xargs :guard (setp X)
