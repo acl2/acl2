@@ -1197,6 +1197,7 @@
      <see topic='@(url function-variable-instantiation)'>applying
      the instantiation</see>
      to the body of @('sofun').
+     The @(':strengthen') value of @('fun') is the same as @('sofun').
      </p>
      </li>
 
@@ -1213,6 +1214,7 @@
      <see topic='@(url function-variable-instantiation)'>applying
      the instantiation</see>
      to the body of @('sofun').
+     The @(':strengthen') value of @('fun') is the same as @('sofun').
      </p>
      </li>
 
@@ -1229,6 +1231,9 @@
      <see topic='@(url function-variable-instantiation)'>applying
      the instantiation</see>
      to the body and guard of @('sofun').
+     The guard of @('fun') is not verified.
+     The @(':strengthen') value of @('fun') is the same as @('sofun').
+     The @(':quant-ok') value of @('fun') is @('t').
      </p>
      </li>
 
@@ -1245,6 +1250,9 @@
      <see topic='@(url function-variable-instantiation)'>applying
      the instantiation</see>
      to the body and guard of @('sofun').
+     The guard of @('fun') is not verified.
+     The @(':strengthen') value of @('fun') is the same as @('sofun').
+     The @(':quant-ok') value of @('fun') is @('t').
      </p>
      </li>
 
@@ -1736,3 +1744,11 @@
    to enclose each function variable in square brackets,
    e.g. @('sofun[?f][?g][?h]').
    </p>")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc soft-implementation
+
+  :parents (soft)
+
+  :short "Implementation of SOFT.")

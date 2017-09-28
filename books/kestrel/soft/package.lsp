@@ -28,6 +28,7 @@
                          defun-sk-info->strengthen
                          defun-sk-info->witness
                          defun-sk-quantifier-p
+                         doublet-listp
                          fargs
                          flambdap
                          fn-symb
@@ -39,6 +40,7 @@
                          make-lambda
                          measure
                          o<
+                         pseudo-event-formp
                          recursivep
                          restrict-alist
                          strip-keyword-list
