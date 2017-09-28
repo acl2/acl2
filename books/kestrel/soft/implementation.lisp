@@ -302,6 +302,7 @@
    Note that if the function is recursive,
    the variable @('measure') in the following code is @('nil'),
    and @(tsee funvars-of-term) applied to that yields @('nil').
+   </p>
    <p>
    The returned list may contain duplicates.
    </p>
