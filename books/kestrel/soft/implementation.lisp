@@ -42,7 +42,7 @@
          (equal (symbol-name (car stars)) "*")
          (*-listp (cdr stars)))))
 
-(defsection function-variables
+(defsection function-variables-table
   :short "Table of function variables."
   :long
   "<p>
@@ -166,7 +166,7 @@
   :returns (yes/no booleanp)
   :verify-guards nil
   :short "Recognize the information associated to second-order function names
-          in the @(tsee second-order-functions) table."
+          in the table of second-order functions."
   :long
   "<p>
    This records the function's kind and function parameters.
@@ -176,7 +176,7 @@
        (sofun-kindp (first info))
        (funvar-setp (second info) wrld)))
 
-(defsection second-order-functions
+(defsection second-order-functions-table
   :short "Table of second-order functions."
   :long
   "<p>
@@ -745,7 +745,7 @@
   (declare (ignore wrld)) ; only used in guard
   (acons inst fun instmap))
 
-(defsection sof-instance
+(defsection sof-instances-table
   :short "Table of instances of second-order functions."
   :long
   "<p>
