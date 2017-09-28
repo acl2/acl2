@@ -82,26 +82,26 @@ or odd, using a flag-based mutual recursion scheme.</p>
 @({
     (defun even/odd-p (flg x)
       (declare (xargs :guard (and (or (eq flg 'even)
-                      (eq flg 'odd))
-                  (natp x))))
+                                      (eq flg 'odd))
+                                  (natp x))))
       (if (eq flg 'even)
-      (if (zp x)
-          t
-        (even/odd-p 'odd (1- x)))
-    (if (zp x)
-        nil
-      (even/odd-p 'even (1- x)))))
+          (if (zp x)
+              t
+            (even/odd-p 'odd (1- x)))
+        (if (zp x)
+            nil
+          (even/odd-p 'even (1- x)))))
 })
 
 <p>Something simple you might want to do with this is 'hide' the flag function
 with macros such as the following:</p>
 
 @({
-     (defmacro even-p (x)
-       `(even/odd-p 'even ,x))
+    (defmacro even-p (x)
+      `(even/odd-p 'even ,x))
 
-     (defmacro odd-p (x)
-       `(even/odd-p 'odd ,x))
+    (defmacro odd-p (x)
+      `(even/odd-p 'odd ,x))
 })
 
 <p>But of course in proofs you will still see the flag functions.  To hide
@@ -109,8 +109,8 @@ these flags, you can call the macro @('add-untranslate-pattern') as
 follows:</p>
 
 @({
-     (add-untranslate-pattern (even/odd-p 'even ?x) (even-p ?x))
-     (add-untranslate-pattern (even/odd-p 'odd ?x)  (odd-p ?x))
+    (add-untranslate-pattern (even/odd-p 'even ?x) (even-p ?x))
+    (add-untranslate-pattern (even/odd-p 'odd ?x)  (odd-p ?x))
 })
 
 <p>The effect of these patterns can be seen by submitting the following
@@ -118,11 +118,11 @@ commands.  We first disable the type prescription of @('even/odd-p') and its
 definition, so that ACL2 will generate terms involving @('even/odd-p').</p>
 
 @({
-     (in-theory (disable (:definition even/odd-p)
-             (:type-prescription even/odd-p)))
+    (in-theory (disable (:definition even/odd-p)
+                        (:type-prescription even/odd-p)))
 
-     (thm (equal (+ (even-p x) (even-p y))
-         (+ (odd-p y) (odd-p x))))
+    (thm (equal (+ (even-p x) (even-p y))
+                (+ (odd-p y) (odd-p x))))
 })
 
 <p>Some of the proof output generated is now as follows:</p>
@@ -130,18 +130,18 @@ definition, so that ACL2 will generate terms involving @('even/odd-p').</p>
 @({
     Subgoal *1/2
     (IMPLIES (AND (NOT (EQ 'ODD 'EVEN))
-              (NOT (ZP X))
-              (EQUAL (+ (EVEN-P (+ -1 X)) (EVEN-P Y))
-                 (+ (ODD-P (+ -1 X)) (ODD-P Y))))
-         (EQUAL (+ (EVEN-P X) (EVEN-P Y))
-            (+ (ODD-P X) (ODD-P Y)))).
+                  (NOT (ZP X))
+                  (EQUAL (+ (EVEN-P (+ -1 X)) (EVEN-P Y))
+                         (+ (ODD-P (+ -1 X)) (ODD-P Y))))
+             (EQUAL (+ (EVEN-P X) (EVEN-P Y))
+                    (+ (ODD-P X) (ODD-P Y)))).
 
     Subgoal *1/2'
     (IMPLIES (AND (NOT (ZP X))
-              (EQUAL (+ (EVEN-P (+ -1 X)) (EVEN-P Y))
-                 (+ (ODD-P (+ -1 X)) (ODD-P Y))))
-         (EQUAL (+ (EVEN-P X) (EVEN-P Y))
-            (+ (ODD-P X) (ODD-P Y)))).
+                  (EQUAL (+ (EVEN-P (+ -1 X)) (EVEN-P Y))
+                         (+ (ODD-P (+ -1 X)) (ODD-P Y))))
+             (EQUAL (+ (EVEN-P X) (EVEN-P Y))
+                    (+ (ODD-P X) (ODD-P Y)))).
 })
 
 <p>As you can see, @('even/odd-p') is now nicely untranslated into these macro
@@ -155,67 +155,67 @@ hand-written untranslation routine for the RTL library.  We begin with the
 following code:</p>
 
 @({
-      (defun foo$ (n $path)
-    (cons n $path))
+    (defun foo$ (n $path)
+      (cons n $path))
 
-      (defmacro foo (x)
-    `(foo$ ,x $path))
+    (defmacro foo (x)
+      `(foo$ ,x $path))
 
-      (add-macro-alias foo foo$)
-      (in-theory (disable foo))
+    (add-macro-alias foo foo$)
+    (in-theory (disable foo))
 })
 
 <p>The theorem Matt proposed looking at was the following:</p>
 
 @({
-      (thm (equal (list (foo x) (foo$ x $path) (foo$ x other-path))
-          (car (cons a b))))
+    (thm (equal (list (foo x) (foo$ x $path) (foo$ x other-path))
+                (car (cons a b))))
 })
 
 <p>With no support for untranslate, this theorem ends up producing the
 following goal:</p>
 
 @({
-      Goal'
-      (EQUAL (LIST (FOO$ X $PATH)
-           (FOO$ X $PATH)
-           (FOO$ X OTHER-PATH))
-         A).
+    Goal'
+    (EQUAL (LIST (FOO$ X $PATH)
+                 (FOO$ X $PATH)
+                 (FOO$ X OTHER-PATH))
+           A).
 })
 
 <p>The RTL untranslator can handle this given the following command:</p>
 
 @({
-     (table rtl-tbl 'sigs-btree
-       (symbol-alist-to-btree
-    (dollar-alist '(foo) nil)))
+    (table rtl-tbl 'sigs-btree
+           (symbol-alist-to-btree
+            (dollar-alist '(foo) nil)))
 })
 
 <p>This yields the following, nice goal:</p>
 
 @({
-      Goal'
-      (EQUAL (LIST (FOO X)
-           (FOO X)
-           (FOO$ X OTHER-PATH))
-         A).
+    Goal'
+    (EQUAL (LIST (FOO X)
+                 (FOO X)
+                 (FOO$ X OTHER-PATH))
+           A).
 })
 
 <p>Matt challenged me to come up with a system that would rewrite only $path.
 Using the untranslate pattern table, here is the command:</p>
 
 @({
-      (add-untranslate-pattern (foo$ ?n $path) (foo ?n))
+    (add-untranslate-pattern (foo$ ?n $path) (foo ?n))
 })
 
 <p>As you can see, it produces exactly the same output:</p>
 
 @({
-      Goal'
-      (EQUAL (LIST (FOO X)
-           (FOO X)
-           (FOO$ X OTHER-PATH))
-         A).
+    Goal'
+    (EQUAL (LIST (FOO X)
+                 (FOO X)
+                 (FOO$ X OTHER-PATH))
+           A).
 })
 
 
