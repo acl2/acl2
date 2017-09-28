@@ -256,33 +256,33 @@ whose second argument is exactly the variable $path.</p>")
 (defun untranslate-patterns-functions-btree (wrld)
   "Retrieve the untranslate patterns functions btree."
   (declare (xargs :guard (and (plist-worldp wrld)
-                  (alistp (table-alist 'untranslate-patterns-table
-                           wrld)))))
+                              (alistp (table-alist 'untranslate-patterns-table
+                                                   wrld)))))
   (cdr (assoc-eq 'functions-database
-         (table-alist 'untranslate-patterns-table wrld))))
+                 (table-alist 'untranslate-patterns-table wrld))))
 
 (defun untranslate-patterns-constants-alist (wrld)
   "Retrieve the untranslate patterns constants alist."
   (declare (xargs :guard (and (plist-worldp wrld)
-                  (alistp (table-alist 'untranslate-patterns-table
-                           wrld)))))
+                              (alistp (table-alist 'untranslate-patterns-table
+                                                   wrld)))))
   (cdr (assoc-eq 'constants-database
-         (table-alist 'untranslate-patterns-table wrld))))
+                 (table-alist 'untranslate-patterns-table wrld))))
 
 (defmacro add-untranslate-pattern-function (target replacement)
   "Add a new entry to the untranslate patterns functions btree."
   `(table untranslate-patterns-table 'functions-database
-      (let* ((function     ',(ffn-symb target))
-         (pat-database (untranslate-patterns-functions-btree world))
-         (curr-subs    (symbol-btree-lookup function pat-database))
-         (new-subs     (acons ',target ',replacement curr-subs)))
-        (symbol-btree-update function new-subs pat-database))))
+          (let* ((function     ',(ffn-symb target))
+                 (pat-database (untranslate-patterns-functions-btree world))
+                 (curr-subs    (symbol-btree-lookup function pat-database))
+                 (new-subs     (acons ',target ',replacement curr-subs)))
+            (symbol-btree-update function new-subs pat-database))))
 
 (defmacro add-untranslate-pattern-constant (target replacement)
   "Add a new entry to the untranslate patterns constants alist."
   `(table untranslate-patterns-table 'constants-database
-      (let* ((pat-database (untranslate-patterns-constants-alist world)))
-        (acons ',target ',replacement pat-database))))
+          (let* ((pat-database (untranslate-patterns-constants-alist world)))
+            (acons ',target ',replacement pat-database))))
 
 (defsection add-untranslate-pattern
   :parents (untranslate-patterns)
@@ -312,8 +312,8 @@ that the printing of @('(f$ x y yourstobj)') will not be altered.</p>"
 
   (defmacro add-untranslate-pattern (target replacement)
     (if (and (consp target)
-         (eq (car target) 'quote))
-    `(add-untranslate-pattern-constant ,(cadr target) ,replacement)
+             (eq (car target) 'quote))
+        `(add-untranslate-pattern-constant ,(cadr target) ,replacement)
       `(add-untranslate-pattern-function ,target ,replacement))))
 
 
@@ -334,12 +334,12 @@ ensure that untranslation is being done as efficiently as possible.</p>"
   (defmacro optimize-untranslate-patterns ()
     `(progn
        (table untranslate-patterns-table 'functions-database
-          (rebalance-symbol-btree
-           (untranslate-patterns-functions-btree world)))
+              (rebalance-symbol-btree
+               (untranslate-patterns-functions-btree world)))
        (table untranslate-patterns-table 'constants-database
-          (clean-up-alist
-           (untranslate-patterns-constants-alist world)
-           nil)))))
+              (clean-up-alist
+               (untranslate-patterns-constants-alist world)
+               nil)))))
 
 
 ; UNTRANSLATE EXTENSION -------------------------------------------------------
@@ -351,8 +351,8 @@ ensure that untranslation is being done as efficiently as possible.</p>"
   (declare (xargs :mode :program))
   (and (symbolp x)
        (let ((name (symbol-name x)))
-     (and (not (equal name ""))
-          (equal (char name 0) #\?)))))
+         (and (not (equal name ""))
+              (equal (char name 0) #\?)))))
 
 
 
@@ -372,40 +372,40 @@ ensure that untranslation is being done as efficiently as possible.</p>"
    (declare (xargs :mode :program))
    (if (atom pattern)
        (if (jared-variablep pattern)
-       (let ((value (assoc-eq pattern sublist)))
-         (if (consp value)
-         (if (equal term (cdr value))
+           (let ((value (assoc-eq pattern sublist)))
+             (if (consp value)
+                 (if (equal term (cdr value))
+                     (mv t sublist)
+                   (mv nil nil))
+               (mv t (acons pattern term sublist))))
+         (if (equal term pattern)
              (mv t sublist)
-           (mv nil nil))
-           (mv t (acons pattern term sublist))))
-     (if (equal term pattern)
-         (mv t sublist)
-       (mv nil nil)))
+           (mv nil nil)))
      (if (or (atom term)
-         (not (eq (car term) (car pattern))))
-     (mv nil nil)
+             (not (eq (car term) (car pattern))))
+         (mv nil nil)
        (if (eq (car term) 'quote) ; hence also (eq (car pattern) 'quote)
-       (if (equal term pattern)
-           (mv t sublist)
-         (mv nil nil))
-     (jared-unify-list (cdr pattern) (cdr term) sublist)))))
+           (if (equal term pattern)
+               (mv t sublist)
+             (mv nil nil))
+         (jared-unify-list (cdr pattern) (cdr term) sublist)))))
 
  (defun jared-unify-list (pattern-list term-list sublist)
    (declare (xargs :mode :program))
    (if (or (atom term-list)
-       (atom pattern-list))
+           (atom pattern-list))
        (if (equal term-list pattern-list) ; same atom
-       (mv t sublist)
-     (mv nil nil))
+           (mv t sublist)
+         (mv nil nil))
      (mv-let (successp new-sublist)
-         (jared-unify-term (car pattern-list)
-                   (car term-list)
-                   sublist)
-         (if successp
-         (jared-unify-list (cdr pattern-list)
-                   (cdr term-list)
-                   new-sublist)
-           (mv nil nil)))))
+       (jared-unify-term (car pattern-list)
+                         (car term-list)
+                         sublist)
+       (if successp
+           (jared-unify-list (cdr pattern-list)
+                             (cdr term-list)
+                             new-sublist)
+         (mv nil nil)))))
  )
 
 
@@ -424,8 +424,8 @@ ensure that untranslation is being done as efficiently as possible.</p>"
   (if (endp sublist)
       term
     (let* ((old (car (car sublist)))
-       (new (cdr (car sublist)))
-       (result (subst new old term)))
+           (new (cdr (car sublist)))
+           (result (subst new old term)))
       (jared-substitute (cdr sublist) result))))
 
 
@@ -438,55 +438,55 @@ ensure that untranslation is being done as efficiently as possible.</p>"
 ; For Example:
 ;
 ;   (jared-rewrite1 '(predicate ?x)
-;                      '(not (predicate ?x))
-;                      '(if (predicate (car x)) t nil))
+;                   '(not (predicate ?x))
+;                   '(if (predicate (car x)) t nil))
 ;   =>
 ;   (if (not (predicate (car x))) t nil)
 
 (mutual-recursion
 
-  (defun jared-rewrite1 (pat repl term)
-    (declare (xargs :mode :program))
-    (mv-let (successful sublist)
-        (jared-unify-term pat term nil)
-        (if successful
-        (jared-substitute sublist repl)
-          (cond
-           ((atom term) term)
-           ((eq (car term) 'quote) term)
-           ((eq (car term) 'cond)
-        (let* ((cond-pairs   (cdr term))
-               (tests        (strip-cars cond-pairs))
-               (bodies       (strip-cadrs cond-pairs))
-               (tests-prime  (jared-rewrite-lst1 pat repl tests))
-               (bodies-prime (jared-rewrite-lst1 pat repl bodies)))
-          (cons 'cond (pairlis$ tests-prime (pairlis$ bodies-prime nil)))))
-           ((member (car term) '(let let*))
-        (let* ((names         (strip-cars (second term)))
-               (actuals       (strip-cadrs (second term)))
-               (actuals-prime (jared-rewrite-lst1 pat repl actuals))
-               (length        (length term))
-               (nils          (make-list length))
-               (ignore        (if (= length 3) nil (third term)))
-               (body          (if (= length 3) (third term) (fourth term)))
-               (body-prime    (jared-rewrite1 pat repl body))
-               (result        (cons (car term)
-                        (cons (pairlis$ names (pairlis$ actuals-prime nils))
-                          (if ignore
-                              (cons ignore (cons body-prime nil))
-                            (cons body-prime nil))))))
-          result))
-           (t (cons (car term)
-            (jared-rewrite-lst1 pat repl (cdr term))))))))
+ (defun jared-rewrite1 (pat repl term)
+   (declare (xargs :mode :program))
+   (mv-let (successful sublist)
+     (jared-unify-term pat term nil)
+     (if successful
+         (jared-substitute sublist repl)
+       (cond
+        ((atom term) term)
+        ((eq (car term) 'quote) term)
+        ((eq (car term) 'cond)
+         (let* ((cond-pairs   (cdr term))
+                (tests        (strip-cars cond-pairs))
+                (bodies       (strip-cadrs cond-pairs))
+                (tests-prime  (jared-rewrite-lst1 pat repl tests))
+                (bodies-prime (jared-rewrite-lst1 pat repl bodies)))
+           (cons 'cond (pairlis$ tests-prime (pairlis$ bodies-prime nil)))))
+        ((member (car term) '(let let*))
+         (let* ((names         (strip-cars (second term)))
+                (actuals       (strip-cadrs (second term)))
+                (actuals-prime (jared-rewrite-lst1 pat repl actuals))
+                (length        (length term))
+                (nils          (make-list length))
+                (ignore        (if (= length 3) nil (third term)))
+                (body          (if (= length 3) (third term) (fourth term)))
+                (body-prime    (jared-rewrite1 pat repl body))
+                (result        (cons (car term)
+                                     (cons (pairlis$ names (pairlis$ actuals-prime nils))
+                                           (if ignore
+                                               (cons ignore (cons body-prime nil))
+                                             (cons body-prime nil))))))
+           result))
+        (t (cons (car term)
+                 (jared-rewrite-lst1 pat repl (cdr term))))))))
 
-  (defun jared-rewrite-lst1 (pat repl lst)
-    (declare (xargs :mode :program))
-    (if (endp lst)
-    nil
-      (cons (jared-rewrite1 pat repl (car lst))
-        (jared-rewrite-lst1 pat repl (cdr lst)))))
+ (defun jared-rewrite-lst1 (pat repl lst)
+   (declare (xargs :mode :program))
+   (if (endp lst)
+       nil
+     (cons (jared-rewrite1 pat repl (car lst))
+           (jared-rewrite-lst1 pat repl (cdr lst)))))
 
-)
+ )
 
 
 
@@ -497,21 +497,21 @@ ensure that untranslation is being done as efficiently as possible.</p>"
 ; using each substitution.
 
 (defun jared-rewrite-aux (term subs)
-   (declare (xargs :mode :program))
-   (if (endp subs)
-       term
-     (let* ((first-sub (car subs))
-        (newterm (jared-rewrite1 (car first-sub)
-                     (cdr first-sub)
-                     term)))
-       (jared-rewrite-aux newterm (cdr subs)))))
+  (declare (xargs :mode :program))
+  (if (endp subs)
+      term
+    (let* ((first-sub (car subs))
+           (newterm (jared-rewrite1 (car first-sub)
+                                    (cdr first-sub)
+                                    term)))
+      (jared-rewrite-aux newterm (cdr subs)))))
 
 (defun jared-rewrite (term subs)
-   (declare (xargs :mode :program))
-   (let ((rw-pass (jared-rewrite-aux term subs)))
-     (if (equal rw-pass term)
-     term
-       (jared-rewrite rw-pass subs))))
+  (declare (xargs :mode :program))
+  (let ((rw-pass (jared-rewrite-aux term subs)))
+    (if (equal rw-pass term)
+        term
+      (jared-rewrite rw-pass subs))))
 
 
 
@@ -540,9 +540,9 @@ ensure that untranslation is being done as efficiently as possible.</p>"
                       (getprop macro 'macro-args nil 'current-acl2-world world)))
                  (and macro-args
                       (mv-let (ok newargs)
-                              (acl2::untrans-macro-args (cdr term) macro-args nil)
-                              (and ok
-                                   (cons macro newargs)))))
+                        (acl2::untrans-macro-args (cdr term) macro-args nil)
+                        (and ok
+                             (cons macro newargs)))))
 
              (let* ((patterns (untranslate-patterns-functions-btree world))
                     (subs     (symbol-btree-lookup (ffn-symb term) patterns)))
@@ -579,14 +579,14 @@ Here is a little script you can try.
 
 (defun even/odd-p (flg x)
   (declare (xargs :guard (and (or (eq flg 'even)
-                  (eq flg 'odd))
-                  (natp x))))
+                                  (eq flg 'odd))
+                              (natp x))))
   (if (eq flg 'even)
       (if (zp x)
-      t
-    (even/odd-p 'odd (1- x)))
+          t
+        (even/odd-p 'odd (1- x)))
     (if (zp x)
-    nil
+        nil
       (even/odd-p 'even (1- x)))))
 
 (defmacro even-p (x)
@@ -613,8 +613,8 @@ Here is a little script you can try.
 
 
 (in-theory (disable (:definition even/odd-p)
-            (:type-prescription even/odd-p)
-            foo))
+                    (:type-prescription even/odd-p)
+                    foo))
 
 
 
@@ -627,21 +627,21 @@ Here is a little script you can try.
 
 (thm
  (implies (and (foo *const*)
-           (foo$ *const2* other-path))
-      (equal (+ (even-p x) (even-p y))
-         (+ (odd-p y) (odd-p x)))))
+               (foo$ *const2* other-path))
+          (equal (+ (even-p x) (even-p y))
+                 (+ (odd-p y) (odd-p x)))))
 
 
 ;; here's an example of the goal it prints
 
 Subgoal *1/2''
 (IMPLIES (AND (NOT (ZP X))
-          (EQUAL (+ (EVEN-P Y) (EVEN-P (+ -1 X)))
-             (+ (ODD-P Y) (ODD-P (+ -1 X))))
-          (FOO *CONST*)
-          (FOO$ *CONST2* OTHER-PATH))
-     (EQUAL (+ (EVEN-P X) (EVEN-P Y))
-        (+ (ODD-P X) (ODD-P Y))))
+              (EQUAL (+ (EVEN-P Y) (EVEN-P (+ -1 X)))
+                     (+ (ODD-P Y) (ODD-P (+ -1 X))))
+              (FOO *CONST*)
+              (FOO$ *CONST2* OTHER-PATH))
+         (EQUAL (+ (EVEN-P X) (EVEN-P Y))
+                (+ (ODD-P X) (ODD-P Y))))
 
 
 |#
