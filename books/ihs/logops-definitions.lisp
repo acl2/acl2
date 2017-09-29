@@ -157,12 +157,11 @@
                   (< i (expt 2 bits))))
     :rule-classes :forward-chaining)
 
-  (defthm unsigned-byte-p-unsigned-byte-p
+  (defthmd unsigned-byte-p-unsigned-byte-p
     (implies (and (unsigned-byte-p size i)
                   (integerp size1)
                   (>= size1 size))
              (unsigned-byte-p size1 i))
-    :rule-classes nil
     :hints (("Goal" :in-theory (disable expt-is-weakly-increasing-for-base>1)
              :use ((:instance expt-is-weakly-increasing-for-base>1
                     (r 2) (i size) (j size1)))))))
