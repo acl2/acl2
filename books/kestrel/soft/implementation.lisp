@@ -758,7 +758,7 @@
                                            (sof-instancesp acl2::val world))))
 
 (define sof-instances ((sofun (sofunp sofun wrld)) (wrld plist-worldp))
-  :returns (instmap "A @(tsee sof-instancep).")
+  :returns (instmap "A @(tsee sof-instancesp).")
   :verify-guards nil
   :short "Known instances of a second-order function."
   (let ((table (table-alist 'sof-instances wrld)))
@@ -782,7 +782,7 @@
    applying @('I') to the term @('(cons (f x) (ff y))')
    should yield the term @('(cons (g x) (gg y))'),
    where @('gg') is the instance that results form applying @('I') to @('ff').
-   The @(tsee sof-instance) table is used to find @('gg'):
+   The @(tsee sof-instances) table is used to find @('gg'):
    @('I') is restricted to the function parameters of @('ff')
    before searching the map of instances of @('ff');
    if the restriction is empty, @('gg') is @('ff'),
@@ -946,9 +946,8 @@
           (choice (ext-fun-subst-term (defchoose-body fun wrld) fsbs wrld)))))
      (t fsbs))))
 
-
 (define sothm-inst-pairs ((fsbs fun-substp) (wrld plist-worldp))
-  :returns (pairs "A @(tsee doublet-listp).")
+  :returns (pairs "A @('doublet-listp').")
   :mode :program
   :short "Create a list of doublets for functional instantiation."
   :long
