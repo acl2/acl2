@@ -546,16 +546,16 @@ etc., are overwritten with whatever is in the genblob.</p>"
 
 (program)
 (set-state-ok t)
-(defun formals->fixes (names formals fty-table)
+(defun formals->fixes (names formals fty-table wrld)
   (declare (xargs :mode :program))
   (b* (((when (atom names)) nil)
        (first (fty::find-formal-by-name (car names) formals))
-       (type (fty::fixequiv-type-from-guard (std::formal->guard first)))
+       (type (fty::fixequiv-type-from-guard (std::formal->guard first) wrld))
        (fixtype (fty::find-fixtype-for-pred type fty-table)))
     (if fixtype
         (cons `(,(car names) (,(fty::fixtype->fix fixtype) ,(car names)))
-              (formals->fixes (cdr names) formals fty-table))
-      (formals->fixes (cdr names) formals fty-table))))
+              (formals->fixes (cdr names) formals fty-table wrld))
+      (formals->fixes (cdr names) formals fty-table wrld))))
 
 
 
@@ -689,7 +689,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
 
        (return-names1 (append (suffix-syms extra-returns '|1| std::mksym-package-symbol) accumulators))
        (return-names2 (append (suffix-syms extra-returns '|2| std::mksym-package-symbol) accumulators))
-       (acc-fix-bindings (formals->fixes accumulators formal-infos (fty::get-fixtypes-alist wrld))))
+       (acc-fix-bindings (formals->fixes accumulators formal-infos (fty::get-fixtypes-alist wrld) wrld)))
     `(defines ,name
 
        (define ,name ((x vl-genblob-p) . ,raw-formals)

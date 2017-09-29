@@ -683,6 +683,20 @@ e.g.,</p>
 <p>The arguments beyond @(':fix') get passed to @(see deffixequiv), so see its
 documentation for more options.</p>")
 
+(defxdoc set-fixequiv-guard-override
+  :parents (deffixequiv)
+  :short "Override the type that is associated with a guard function for purposes
+          of determining automatic congruences with @(see deffixequiv)."
+  :long
+  "<p>The form:</p>
+@({
+ (set-fixequiv-guard-override my-guard my-type)
+ })
+
+<p>makes it so that @(see deffixequiv), @(see deffixequiv-mutual), and @(see
+fixequiv-hook) will prove congruences appropriate for @('my-type') for @(see
+define) formals guarded with @('my-guard').</p>")
+
 
 (defxdoc deftypes
   :parents (fty)
