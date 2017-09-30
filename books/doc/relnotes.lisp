@@ -344,7 +344,8 @@
  @('64-bit-modep') predicate is no longer always true. Some documentation
  topics and some comments have been expanded and clarified. Some exceptions are
  now being added to the fault field of the x86 state rather than the
- model-specific field.</p>
+ model-specific field. A more complete model of segment address translation has
+ been added.</p>
 
  <h4>Miscellaneous Books</h4>
 
