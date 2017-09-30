@@ -1460,3 +1460,23 @@
           (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv-let (x y) (foo2 x y) (bar2 x y))))
 )
+
+; ------------------------------
+
+; Example 7: List*
+
+(local-test
+
+(assert!
+ (equal (let ((uterm '(list* a (car (cons y y))))
+              (tterm '(cons a (car (cons y y))))
+              (sterm '(cons a y))
+              (iff-flg nil)
+              (stobjs-out '(nil))
+              (wrld (w state)))
+          (directed-untranslate
+           uterm tterm sterm iff-flg stobjs-out wrld))
+        '(list* a y)))
+)
+
+; ------------------------------

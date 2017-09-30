@@ -1585,7 +1585,7 @@
                                                                  b nil lflg wrld)))
                              (if (and (consp tmp2) (eq (car tmp2) 'list*))
                                  `(list* ,tmp1 ,@(cdr tmp2))
-                               `(cons ,tmp1 ,tmp2))))
+                               `(list* ,tmp1 ,tmp2))))
                           (& nil)))
                        (& nil))
 
