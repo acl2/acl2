@@ -15,7 +15,7 @@
 
 ;; Various lemmas for the guard proofs of rm* functions
 
-(def-gl-export rm16-guard-proof-helper
+(def-gl-export rml16-guard-proof-helper
   :hyp (and (n08p a)
             (n08p b))
   :concl (< (logior a (ash b 8)) *2^16*)
@@ -35,7 +35,7 @@
    (:mix (:nat a 8) (:nat b 8)) (:nat c 16))
   :rule-classes :linear)
 
-(def-gl-export rm32-guard-proof-helper
+(def-gl-export rml32-guard-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)
@@ -51,7 +51,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)))
   :rule-classes :linear)
 
-(def-gl-export rm48-guard-proof-helper
+(def-gl-export rml48-guard-proof-helper
   :hyp (and (n08p a) (n08p b) (n32p c))
   :concl (equal (logior a (ash b 8) (ash c 16))
                 (logior a (ash (logior b (ash c 8)) 8)))
@@ -60,7 +60,7 @@
    (:mix (:nat a 32) (:nat b 32) (:nat c 32)))
   :rule-classes :linear)
 
-(def-gl-export rb-and-rm48-helper-1
+(def-gl-export rb-and-rml48-helper-1
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f))
   :concl (equal (logior
@@ -83,7 +83,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8))))
 
-(def-gl-export rb-and-rm48-helper-2
+(def-gl-export rb-and-rml48-helper-2
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f))
   :concl (<
@@ -124,7 +124,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rm64-guard-proof-helper
+(def-gl-export rml64-guard-proof-helper
   :hyp (and (n32p a) (n32p b))
   :concl (< (logior a (ash b 32)) *2^64*)
   :g-bindings
@@ -132,7 +132,7 @@
    (:mix (:nat a 32) (:nat b 32)))
   :rule-classes :linear)
 
-(def-gl-export rm80-guard-proof-helper
+(def-gl-export rml80-guard-proof-helper
   :hyp (and (n08p a) (n08p b) (n64p c))
   :concl (equal (logior a (ash b 8) (ash c 16))
                 (logior a (ash (logior b (ash c 8)) 8)))
@@ -141,7 +141,7 @@
    (:mix (:nat a 64) (:nat b 64) (:nat c 64)))
   :rule-classes :linear)
 
-(def-gl-export rm80-in-system-level-mode-guard-proof-helper
+(def-gl-export rml80-in-system-level-mode-guard-proof-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e)
             (n08p f) (n08p g) (n08p h) (n08p i) (n08p j))
   :concl (<
@@ -178,17 +178,17 @@
                      (:nat j 8))))
 
 (in-theory (e/d ()
-                (rm16-guard-proof-helper
-                 rm48-guard-proof-helper
-                 rb-and-rm48-helper-1
-                 rb-and-rm48-helper-2
+                (rml16-guard-proof-helper
+                 rml48-guard-proof-helper
+                 rb-and-rml48-helper-1
+                 rb-and-rml48-helper-2
                  rb-and-rvm32-helper
-                 rm32-guard-proof-helper
+                 rml32-guard-proof-helper
                  rb-and-rvm64-helper
-                 rm64-guard-proof-helper
-                 rm80-in-system-level-mode-guard-proof-helper)))
+                 rml64-guard-proof-helper
+                 rml80-in-system-level-mode-guard-proof-helper)))
 
-(def-gl-export rm32-rb-system-level-mode-proof-helper
+(def-gl-export rml32-rb-system-level-mode-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)
@@ -199,7 +199,7 @@
   (gl::auto-bindings
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8))))
 
-;; (def-gl-export rm64-in-system-level-mode-guard-proof-helper
+;; (def-gl-export rml64-in-system-level-mode-guard-proof-helper
 ;;   :hyp (and (n08p a)
 ;;             (n08p b)
 ;;             (n08p c)
@@ -225,7 +225,7 @@
 ;;                      (:nat g 8)
 ;;                      (:nat h 8))))
 
-(def-gl-export rm64-to-rb-in-system-level-mode-helper
+(def-gl-export rml64-to-rb-in-system-level-mode-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl (equal
@@ -249,7 +249,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rm64-in-system-level-mode-guard-proof-helper
+(def-gl-export rml64-in-system-level-mode-guard-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)

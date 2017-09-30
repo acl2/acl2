@@ -63,7 +63,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rm64-direct-map-helper
+(def-gl-export rml64-direct-map-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl (equal
@@ -93,7 +93,7 @@
 
 (in-theory (e/d* () (rb-and-rm-low-64-for-direct-map-helper-1
                      rb-and-rm-low-64-for-direct-map-helper-2
-                     rm64-direct-map-helper)))
+                     rml64-direct-map-helper)))
 
 (defthm rb-and-rm-low-64-for-direct-map
   (implies (and
@@ -135,7 +135,7 @@
                              n08p
                              unsigned-byte-p
                              signed-byte-p
-                             rm64-direct-map-helper)
+                             rml64-direct-map-helper)
                             (rb-and-rm-low-64-for-direct-map-helper-1
                              rb-and-rm-low-64-for-direct-map-helper-2
                              xlate-equiv-memory-and-xr-mem-from-rest-of-memory

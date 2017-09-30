@@ -81,17 +81,17 @@
                              wr32
                              rr32
                              rr64
-                             rm32
-                             rm64
-                             wm32
-                             wm64
+                             rml32
+                             rml64
+                             wml32
+                             wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
-                             rim-size
-                             rim32
+                             riml-size
+                             riml32
                              n32-to-i32
                              n64-to-i64
-                             rim08
+                             riml08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              subset-p

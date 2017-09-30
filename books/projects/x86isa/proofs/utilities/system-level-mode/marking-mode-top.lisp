@@ -1397,7 +1397,7 @@
 
   (defthm get-prefixes-alt-opener-lemma-no-prefix-byte
     (implies (and (b* (((mv flg prefix-byte &)
-                        ;; (rm08 start-rip :x x86)
+                        ;; (rml08 start-rip :x x86)
                         (rb-alt 1 start-rip :x x86))
                        (prefix-byte-group-code (get-one-byte-prefix-array-code prefix-byte)))
                     (and (not flg)
@@ -1426,7 +1426,7 @@
               (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))
                      (let ((prefixes
                             (!prefixes-slice :next-byte
-                                             ;; (mv-nth 1 (rm08 start-rip :x x86))
+                                             ;; (mv-nth 1 (rml08 start-rip :x x86))
                                              (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                              prefixes)))
                        (!prefixes-slice :num-prefixes (- 15 cnt) prefixes)))))
@@ -1445,7 +1445,7 @@
       (not (zp cnt))
       (equal (prefixes-slice :group-1-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
-            ;; (rm08 start-rip :x x86)
+            ;; (rml08 start-rip :x x86)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
             (get-one-byte-prefix-array-code prefix-byte)))
@@ -1462,11 +1462,11 @@
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
                               (!prefixes-slice :group-1-prefix
-                                               ;; (mv-nth 1 (rm08 start-rip :x x86))
+                                               ;; (mv-nth 1 (rml08 start-rip :x x86))
                                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                                prefixes)
                               (+ -1 cnt)
-                              ;; (mv-nth 2 (rm08 start-rip :x x86))
+                              ;; (mv-nth 2 (rml08 start-rip :x x86))
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-group-1-prefix-in-marking-mode)
@@ -1500,7 +1500,7 @@
       (not (zp cnt))
       (equal (prefixes-slice :group-2-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
-            ;; (rm08 start-rip :x x86)
+            ;; (rml08 start-rip :x x86)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
             (get-one-byte-prefix-array-code prefix-byte)))
@@ -1517,11 +1517,11 @@
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
                               (!prefixes-slice :group-2-prefix
-                                               ;; (mv-nth 1 (rm08 start-rip :x x86))
+                                               ;; (mv-nth 1 (rml08 start-rip :x x86))
                                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                                prefixes)
                               (+ -1 cnt)
-                              ;; (mv-nth 2 (rm08 start-rip :x x86))
+                              ;; (mv-nth 2 (rml08 start-rip :x x86))
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-group-2-prefix-in-marking-mode)
@@ -1555,7 +1555,7 @@
       (not (zp cnt))
       (equal (prefixes-slice :group-3-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
-            ;; (rm08 start-rip :x x86)
+            ;; (rml08 start-rip :x x86)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
             (get-one-byte-prefix-array-code prefix-byte)))
@@ -1572,11 +1572,11 @@
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
                               (!prefixes-slice :group-3-prefix
-                                               ;; (mv-nth 1 (rm08 start-rip :x x86))
+                                               ;; (mv-nth 1 (rml08 start-rip :x x86))
                                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                                prefixes)
                               (+ -1 cnt)
-                              ;; (mv-nth 2 (rm08 start-rip :x x86))
+                              ;; (mv-nth 2 (rml08 start-rip :x x86))
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-group-3-prefix-in-marking-mode)
@@ -1610,7 +1610,7 @@
       (not (zp cnt))
       (equal (prefixes-slice :group-4-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
-            ;; (rm08 start-rip :x x86)
+            ;; (rml08 start-rip :x x86)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
             (get-one-byte-prefix-array-code prefix-byte)))
@@ -1627,11 +1627,11 @@
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
                               (!prefixes-slice :group-4-prefix
-                                               ;; (mv-nth 1 (rm08 start-rip :x x86))
+                                               ;; (mv-nth 1 (rml08 start-rip :x x86))
                                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                                prefixes)
                               (+ -1 cnt)
-                              ;; (mv-nth 2 (rm08 start-rip :x x86))
+                              ;; (mv-nth 2 (rml08 start-rip :x x86))
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-group-4-prefix-in-marking-mode)
@@ -1723,7 +1723,7 @@
     ;; errors are encountered.
     (implies
      (and (b* (((mv flg prefix-byte &)
-                ;; (rm08 start-rip :x x86)
+                ;; (rml08 start-rip :x x86)
                 (rb-alt 1 start-rip :x x86))
                (prefix-byte-group-code
                 (get-one-byte-prefix-array-code prefix-byte)))
@@ -1758,7 +1758,7 @@
     ()
 
     (local (in-theory (e/d (mv-nth-0-las-to-pas-subset-p)
-                           (xlate-equiv-memory-and-mv-nth-1-rm08))))
+                           (xlate-equiv-memory-and-mv-nth-1-rml08))))
 
     (defthm mv-nth-0-rb-and-xw-mem-in-system-level-mode
       (implies (and (disjoint-p
@@ -2095,7 +2095,7 @@
                (:linear bitops::upper-bound-of-logior-for-naturals)
                (:rewrite bitops::logsquash-of-logsquash-2)
                (:rewrite bitops::logsquash-of-logsquash-1)
-               (:linear n08p-mv-nth-1-rm08)
+               (:linear n08p-mv-nth-1-rml08)
                (:type-prescription n64p$inline)
                (:rewrite bitops::logand-of-logand-self-1)
                (:type-prescription bitops::lognot-natp)
@@ -2449,7 +2449,7 @@
             (equal three-vals-of-opcode/escape-byte
                    (if (equal rex-byte 0)
                        (mv nil opcode/rex/escape-byte x86-1)
-                     (rm08 temp-rip0 :x x86-1)))
+                     (rml08 temp-rip0 :x x86-1)))
             (equal flg-opcode/escape-byte (mv-nth 0 three-vals-of-opcode/escape-byte))
             (equal opcode/escape-byte (mv-nth 1 three-vals-of-opcode/escape-byte))
             (equal x86-2 (mv-nth 2 three-vals-of-opcode/escape-byte))
@@ -2459,7 +2459,7 @@
 
             ;; modr/m byte:
             (equal three-vals-of-modr/m
-                   (if modr/m? (rm08 temp-rip1 :x x86-2) (mv nil 0 x86-2)))
+                   (if modr/m? (rml08 temp-rip1 :x x86-2) (mv nil 0 x86-2)))
             (equal flg-modr/m (mv-nth 0 three-vals-of-modr/m))
             (equal modr/m (mv-nth 1 three-vals-of-modr/m))
             (equal x86-3 (mv-nth 2 three-vals-of-modr/m))
@@ -2469,7 +2469,7 @@
 
             ;; sib byte:
             (equal three-vals-of-sib
-                   (if sib? (rm08 temp-rip2 :x x86-3) (mv nil 0 x86-3)))
+                   (if sib? (rml08 temp-rip2 :x x86-3) (mv nil 0 x86-3)))
             (equal flg-sib (mv-nth 0 three-vals-of-sib))
             (equal sib (mv-nth 1 three-vals-of-sib))
             (equal x86-4 (mv-nth 2 three-vals-of-sib))
@@ -2529,9 +2529,9 @@
                             get-prefixes-alt)
                            (rewrite-get-prefixes-to-get-prefixes-alt
                             top-level-opcode-execute
-                            xlate-equiv-memory-and-mv-nth-0-rm08-cong
-                            xlate-equiv-memory-and-two-mv-nth-2-rm08-cong
-                            xlate-equiv-memory-and-mv-nth-2-rm08
+                            xlate-equiv-memory-and-mv-nth-0-rml08-cong
+                            xlate-equiv-memory-and-two-mv-nth-2-rml08-cong
+                            xlate-equiv-memory-and-mv-nth-2-rml08
                             signed-byte-p
                             not
                             member-equal

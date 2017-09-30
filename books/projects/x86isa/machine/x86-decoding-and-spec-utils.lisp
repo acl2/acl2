@@ -111,7 +111,7 @@ the @('fault') field instead.</li>
                  (increment-RIP-by natp :rule-classes :type-prescription)
                  (x86 x86p :hyp (force (x86p x86))))
 
-    :prepwork ((local (in-theory (e/d (rim-size) ()))))
+    :prepwork ((local (in-theory (e/d (riml-size) ()))))
 
     (b* ((b (sib-base sib))
          ((mv flg base displacement nrip-bytes x86)
@@ -120,23 +120,23 @@ the @('fault') field instead.</li>
 
             (0 (if (equal b 5)
                    (b* (((mv ?flg0 dword x86)
-                         (rim-size 4 temp-RIP :x x86)) ;; sign-extended
+                         (riml-size 4 temp-RIP :x x86)) ;; sign-extended
                         ((when flg0)
-                         (mv (cons flg0 'rim-size-error) 0 0 0 x86)))
+                         (mv (cons flg0 'riml-size-error) 0 0 0 x86)))
                        (mv nil 0 dword 4 x86))
                  (mv nil (rgfi (reg-index b rex-byte #.*b*) x86) 0 0 x86)))
 
             (1 (b* (((mv ?flg1 byte x86)
-                     (rim-size 1 temp-RIP :x x86)) ;; sign-extended
+                     (riml-size 1 temp-RIP :x x86)) ;; sign-extended
                     ((when flg1)
-                     (mv (cons flg1 'rim-size-error) 0 0 0 x86)))
+                     (mv (cons flg1 'riml-size-error) 0 0 0 x86)))
                    (mv nil (rgfi (reg-index b rex-byte #.*b*) x86)
                        byte 1 x86)))
 
             (2 (b* (((mv ?flg2 dword x86)
-                     (rim-size 4 temp-RIP :x x86)) ;; sign-extended
+                     (riml-size 4 temp-RIP :x x86)) ;; sign-extended
                     ((when flg2)
-                     (mv (cons flg2 'rim-size-error) 0 0 0 x86)))
+                     (mv (cons flg2 'riml-size-error) 0 0 0 x86)))
                    (mv nil (rgfi (reg-index b rex-byte #.*b*) x86)
                        dword 4 x86)))
 
@@ -163,13 +163,13 @@ the @('fault') field instead.</li>
       (equal (mv-nth 2 (x86-effective-addr-from-sib
                         temp-RIP rex-byte mod sib x86))
              0)
-      :hints (("Goal" :in-theory (e/d (rim-size) ()))))
+      :hints (("Goal" :in-theory (e/d (riml-size) ()))))
 
     (defthm x86-effective-addr-from-sib-returns-<=-increment-rip-bytes
       (<= (mv-nth 3 (x86-effective-addr-from-sib temp-RIP rex-byte mod
                                                  sib x86))
           4)
-      :hints (("Goal" :in-theory (e/d (rim-size) ())))
+      :hints (("Goal" :in-theory (e/d (riml-size) ())))
       :rule-classes :linear))
 
   (encapsulate
@@ -266,7 +266,7 @@ the @('fault') field instead.</li>
                     (b* (((mv ?flg0 dword x86)
                           ;; dword1 is the sign-extended displacement
                           ;; present in the instruction.
-                          (rim-size 4 temp-RIP :x x86))
+                          (riml-size 4 temp-RIP :x x86))
                          ;; next-rip is the rip of the next instruction.
                          ;; temp-RIP + 4 bytes of the displacement
                          ;; mentioned above + bytes of rest of the
@@ -289,7 +289,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg2 byte2 x86)
-                      (rim-size 1 temp-RIP :x x86)) ; sign-extended
+                      (riml-size 1 temp-RIP :x x86)) ; sign-extended
                      (reg (rgfi (reg-index r/m rex-byte #.*b*) x86)))
                     (mv flg2 reg byte2 1 x86)))))
 
@@ -303,7 +303,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg1 dword x86)
-                      (rim-size 4 temp-RIP :x x86)) ; sign-extended
+                      (riml-size 4 temp-RIP :x x86)) ; sign-extended
                      (reg (rgfi (reg-index r/m rex-byte #.*b*) x86)))
                     (mv flg1 reg dword 4 x86)))))
 
@@ -630,7 +630,7 @@ made from privilege level 3.</sf>"
             ;; The operand is being fetched from the memory, not the
             ;; instruction stream. That's why we have :r instead of :x
             ;; below.
-            (rm-size operand-size v-addr :r x86)))
+            (rml-size operand-size v-addr :r x86)))
          ((when flg2)
           (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
 
@@ -670,7 +670,7 @@ made from privilege level 3.</sf>"
                                 reg-type operand-size inst-ac?
                                 memory-ptr? p2 p4 temp-RIP rex-byte
                                 r/m mod sib num-imm-bytes x86))))
-      :hints (("Goal" :in-theory (e/d (rm-size) ())))
+      :hints (("Goal" :in-theory (e/d (rml-size) ())))
       :rule-classes :type-prescription)
 
     (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-linear<=4
@@ -679,7 +679,7 @@ made from privilege level 3.</sf>"
                               reg-type operand-size inst-ac?
                               memory-ptr? p2 p4 temp-RIP rex-byte r/m
                               mod sib num-imm-bytes x86)) 4))
-      :hints (("Goal" :in-theory (e/d (rm-size) ())))
+      :hints (("Goal" :in-theory (e/d (rml-size) ())))
       :rule-classes :linear)
 
     (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes
@@ -775,7 +775,7 @@ made from privilege level 3.</sf>"
           (mv t x86))
 
          ((mv flg x86)
-          (wm-size operand-size v-addr operand x86)))
+          (wml-size operand-size v-addr operand x86)))
       (mv flg x86))
 
     ///
@@ -838,7 +838,7 @@ made from privilege level 3.</sf>"
           (mv t x86))
 
          ((mv flg x86)
-          (wm-size operand-size v-addr operand x86)))
+          (wml-size operand-size v-addr operand x86)))
       (mv flg x86))
 
     ///

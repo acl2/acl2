@@ -1609,7 +1609,7 @@
                              x86-effective-addr-from-sib
                              x86-operand-to-reg/mem
                              rr08 rr32 rr64 wr08 wr32 wr64
-                             rim08 rim32 rim64
+                             riml08 riml32 riml64
                              !flgi-undefined
                              write-user-rflags
                              pos
@@ -1651,7 +1651,7 @@
      (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
            (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-  (def-gl-export rm64-direct-map-helper
+  (def-gl-export rml64-direct-map-helper
     :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
               (n08p e) (n08p f) (n08p g) (n08p h))
     :concl (equal
@@ -1697,7 +1697,7 @@
                                      ()))))
 
   (in-theory (e/d () (rb-and-rm-low-64-for-direct-map-helper
-                      rm64-direct-map-helper))))
+                      rml64-direct-map-helper))))
 
 (defthm ia32e-la-to-pa-page-dir-ptr-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
   (b* ((p-addrs (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)))

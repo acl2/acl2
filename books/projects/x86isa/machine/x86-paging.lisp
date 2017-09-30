@@ -2893,7 +2893,7 @@ accesses.</p>
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) ()))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-!=-all-ones
-  ;; This rule comes in useful during the guard proof of rm16.
+  ;; This rule comes in useful during the guard proof of rml16.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4095)
@@ -2959,7 +2959,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4093
-  ;; This rule comes in useful during the guard proof of rm32.
+  ;; This rule comes in useful during the guard proof of rml32.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4093)
@@ -2991,7 +2991,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4089
-  ;; This rule comes in useful during the guard proof of rm64.
+  ;; This rule comes in useful during the guard proof of rml64.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4089)
@@ -3023,7 +3023,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4089
-  ;; This rule comes in useful during the guard proof of rm64.
+  ;; This rule comes in useful during the guard proof of rml64.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (equal (loghead 12 lin-addr) 4089)
@@ -3055,7 +3055,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4090
-  ;; This rule comes in useful during the guard proof of rm64.
+  ;; This rule comes in useful during the guard proof of rml64.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (equal (loghead 12 lin-addr) 4090)
@@ -3086,7 +3086,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-<-4081
-  ;; This rule comes in useful during the guard proof of rm128.
+  ;; This rule comes in useful during the guard proof of rml128.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4081)
@@ -3118,7 +3118,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-=-4081
-  ;; This rule comes in useful during the guard proof of rm128.
+  ;; This rule comes in useful during the guard proof of rml128.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (equal (loghead 12 lin-addr) 4081)

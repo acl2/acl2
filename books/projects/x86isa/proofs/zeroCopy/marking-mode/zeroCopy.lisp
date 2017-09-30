@@ -37,7 +37,7 @@
          x86-effective-addr-from-sib
          x86-operand-to-reg/mem
          rr08 rr32 rr64 wr08 wr32 wr64
-         rim08 rim32 rim64
+         riml08 riml32 riml64
          !flgi-undefined
          write-user-rflags
 
@@ -4012,7 +4012,7 @@
                               (:type-prescription zip)
                               (:type-prescription gather-all-paging-structure-qword-addresses)
                               (:rewrite unsigned-byte-p-of-logtail)
-                              ;; (:linear combine-bytes-size-for-rm64-programmer-level-mode)
+                              ;; (:linear combine-bytes-size-for-rml64-programmer-level-mode)
                               (:rewrite acl2::subsetp-member . 2)
                               (:rewrite acl2::subsetp-member . 1)
                               (:rewrite acl2::logtail-identity)

@@ -32,11 +32,11 @@
   :long
   "<p>
    The effective address is translated to a linear address
-   and then @('rm08') is called.
+   and then @('rml08') is called.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
        ((when flg) (mv flg 0 x86)))
-    (rm08 lin-addr r-x x86))
+    (rml08 lin-addr r-x x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
 (define rime08
@@ -52,11 +52,11 @@
   :long
   "<p>
    The effective address is translated to a linear address
-   and then @('rim08') is called.
+   and then @('riml08') is called.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
        ((when flg) (mv flg 0 x86)))
-    (rim08 lin-addr r-x x86))
+    (riml08 lin-addr r-x x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
 (define wme08
@@ -70,11 +70,11 @@
   :long
   "<p>
    The effective address is translated to a linear address
-   and then @('wm08') is called.
+   and then @('wml08') is called.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
        ((when flg) (mv flg x86)))
-    (wm08 lin-addr val x86))
+    (wml08 lin-addr val x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
 (define wime08
@@ -88,11 +88,11 @@
   :long
   "<p>
    The effective address is translated to a linear address
-   and then @('wim08') is called.
+   and then @('wiml08') is called.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
        ((when flg) (mv flg x86)))
-    (wim08 lin-addr val x86))
+    (wiml08 lin-addr val x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
 ;; ======================================================================

@@ -49,7 +49,7 @@
   ;; since we have no memory operands.
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -68,9 +68,9 @@
        ;; instruction stream still qualifies as a code fetch
        ;; (double-check).
        ((mv flg0 (the (signed-byte 32) rel32) x86)
-        (rim32 temp-rip :x x86))
+        (riml32 temp-rip :x x86))
        ((when flg0)
-        (!!ms-fresh :rim32-error flg0))
+        (!!ms-fresh :riml32-error flg0))
        ((the (signed-byte #.*max-linear-address-size+1*) next-rip)
         (+ 4 temp-rip))
        ((when (mbe :logic (not (canonical-address-p next-rip))
@@ -134,7 +134,7 @@
   ;; Note that FF/2 r/m16 and r/m32 are N.E. in 64-bit mode.
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -249,7 +249,7 @@
   ;;        #xC3:    NP: Near return to calling procedure
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -272,10 +272,10 @@
         (if (equal opcode #xC3)
             (mv nil (+ (the (signed-byte #.*max-linear-address-size*) rsp) 8) x86)
           (b* (((mv flg0 (the (unsigned-byte 16) imm16) x86)
-                (rm16 temp-rip :x x86)))
+                (rml16 temp-rip :x x86)))
             (mv flg0 (+ (the (signed-byte #.*max-linear-address-size*) rsp) imm16) x86))))
        ((when flg0)
-        (!!ms-fresh :imm-rm16-error flg0))
+        (!!ms-fresh :imm-rml16-error flg0))
 
        ;; For #xC3: We don't need to check for valid length for
        ;; one-byte instructions.  The length will be more than 15 only
@@ -307,9 +307,9 @@
        ((when (and inst-ac? (not (equal (logand rsp 7) 0))))
         (!!ms-fresh :memory-access-unaligned rsp))
        ((mv flg (the (signed-byte 64) tos) x86)
-        (rim64 rsp :r x86))
+        (riml64 rsp :r x86))
        ((when flg)
-        (!!ms-fresh :rim64-error flg))
+        (!!ms-fresh :riml64-error flg))
        ((when (not (canonical-address-p tos)))
         (!!ms-fresh :invalid-return-address tos))
        ;; Update the x86 state:
@@ -337,7 +337,7 @@
   ;; increment the stack pointer appropriately)
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -364,11 +364,11 @@
        ((when (and inst-ac? (not (equal (logand rbp 7) 0))))
         (!!ms-fresh :memory-access-unaligned rbp))
        ((mv flg val x86)
-        (rm-size pop-bytes
+        (rml-size pop-bytes
                  (the (signed-byte #.*max-linear-address-size*) rbp)
                  :r x86))
        ((when flg)
-        (!!ms-fresh :rm-size-error flg))
+        (!!ms-fresh :rml-size-error flg))
        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
         (+ (the (signed-byte #.*max-linear-address-size*) rbp) pop-bytes))
        ((when (mbe :logic (not (canonical-address-p new-rsp))
