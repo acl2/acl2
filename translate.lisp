@@ -4082,7 +4082,7 @@
                               (plist-worldp wrld)
                               (standard-string-alistp
                                (table-alist 'inhibit-warnings-table wrld))
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (warning1-form t))
 
 (defmacro warning$-cw1 (ctx summary str+ &rest fmt-args)
@@ -4350,7 +4350,7 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond ((endp args)
          (cond ((or (null actuals) allow-flg)
                 (value-cmp alist))
@@ -4424,7 +4424,7 @@
                               (symbol-alistp alist)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (er-progn-cmp
    (chk-length-and-keys actuals form wrld)
    (cond ((assoc-keyword :allow-other-keys
@@ -4449,7 +4449,7 @@
                               (symbol-alistp alist)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond
    ((endp args) (value-cmp alist))
    ((eq (car args) '&key)
@@ -4466,7 +4466,7 @@
                               (symbol-alistp alist)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
@@ -4507,7 +4507,7 @@
                               (true-listp form)
                               (symbol-alistp alist)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
@@ -4537,7 +4537,7 @@
   (declare (xargs :guard (and (macro-args-structurep args)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond ((and (consp args)
               (eq (car args) '&whole))
          (bind-macro-args1 (cddr args) (cdr form)

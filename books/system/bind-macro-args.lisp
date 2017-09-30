@@ -38,7 +38,7 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
-                              (true-listp state-vars))
+                              (weak-state-vars-p state-vars))
                   :verify-guards nil))
   (cond ((endp args)
          (cond ((or (null actuals) allow-flg)
@@ -138,7 +138,7 @@
                               (symbol-alistp alist)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))
+                              (weak-state-vars-p state-vars))
                   :verify-guards nil))
   (er-progn-cmp
    (chk-length-and-keys actuals form wrld)
@@ -164,7 +164,7 @@
                               (symbol-alistp alist)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))
+                              (weak-state-vars-p state-vars))
                   :verify-guards nil))
   (cond
    ((endp args) (value-cmp alist))
@@ -182,7 +182,7 @@
                               (symbol-alistp alist)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))
+                              (weak-state-vars-p state-vars))
                   :verify-guards nil))
   (cond ((endp args)
          (cond ((null actuals)
@@ -224,7 +224,7 @@
                               (true-listp form)
                               (symbol-alistp alist)
                               (plist-worldp wrld)
-                              (true-listp state-vars))
+                              (weak-state-vars-p state-vars))
                   :verify-guards nil))
   (cond ((endp args)
          (cond ((null actuals)
@@ -255,7 +255,7 @@
   (declare (xargs :guard (and (macro-args-structurep args)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))
+                              (weak-state-vars-p state-vars))
                   :verify-guards nil))
   (cond ((and (consp args)
               (eq (car args) '&whole))
