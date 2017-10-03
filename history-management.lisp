@@ -9436,24 +9436,15 @@
          (cond ((member-eq arg '(:otf :otf-flg-override))
                 (value@par arg))
                ((keywordp arg)
-                (let ((name (symbol-name arg)))
-                  (cond ((and (<= 3 (length name))
-                              (equal (subseq name 0 3) "OTF"))
-                         (er@par soft ctx
-                           "We do not allow :do-not-induct hint values in the ~
-                            keyword package whose name starts with \"OTF\", ~
-                            unless the value is :OTF or :OTF-FLG-OVERRIDE, ~
-                            because we suspect you intended :OTF or ~
-                            :OTF-FLG-OVERRIDE in this case.  The value ~x0 is ~
-                            thus illegal."
-                           arg))
-                        (t (value@par arg)))))
+                (er@par soft ctx
+                  "We do not allow :do-not-induct hint values in the keyword ~
+                   package other than :OTF and :OTF-FLG-OVERRIDE.  The value ~
+                   ~x0 is thus illegal."
+                  arg))
                (t (value@par arg))))
         (t (er@par soft ctx
-             "The :do-not-induct hint should be followed by a symbol: either ~
-              T, :QUIT, or the root name to be used in the naming of any ~
-              clauses given byes.  ~x0 is an illegal root name.  See the ~
-              :do-not-induct discussion in :DOC hints."
+             "The :do-not-induct hint should be followed by a symbol.  ~x0 is ~
+              thus illegal.  See the :do-not-induct discussion in :DOC hints."
              arg))))
 
 (defun@par translate-hands-off-hint1 (arg ctx wrld state)
