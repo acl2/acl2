@@ -128,3 +128,10 @@
 (verify-termination implicate) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination add-suffix-to-fn)
+
+; For guard verification, we need to strengthen the guard of this function from
+; T to (AND (SYMBOLP SYM) (STRINGP SUFFIX)).
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
