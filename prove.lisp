@@ -9446,7 +9446,7 @@
                    (fms "To complete this proof you could try to admit the ~
                         following event~#0~[~/s~]:~|~%~*1~%See the discussion ~
                         of :by hints in :DOC hints regarding the ~
-                        name~#0~[~/s~] displayed above."
+                        name~#0~[~/s~] displayed above.~|"
                         (list (cons #\0 byes)
                               (cons #\1
                                     (list ""
