@@ -337,8 +337,7 @@
     (:LSQUO "&lsquo;")
     (:RSQUO "&rsquo;")
     (:LDQUO "&ldquo;")
-    (:RDQUO "&rdquo;")
-    ))
+    (:RDQUO "&rdquo;")))
 
 (defun entitytok-as-plaintext (x)
   (case (entitytok-type x)
