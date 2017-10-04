@@ -12,7 +12,7 @@
      Last modified 30 June 1998
    Modified by Jared Davis, January 2014, to add xdoc documentation.
 |#
-
+delme2
 (in-package "ACL2")
 
 (include-book "equalities")
