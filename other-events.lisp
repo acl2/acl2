@@ -19192,6 +19192,50 @@
                  (absstobj-correspondence-concl-lst
                   (cdr stobjs-out) (1+ i) st$c corr-fn)))))
 
+(defun flatten-ands-in-lit! (term)
+
+; This variant of flatten-ands-in-lit removes duplicates, always keeping the
+; first occurrence.  That seems best, rather than keeping the last occurrence.
+; Consider for example
+
+;   (and (and (integerp x) (< x 3))
+;        (and (integerp x) (> x -2)))
+
+; which translates to:
+
+;   (if (if (integerp x) (< x '3) 'nil)
+;       (if (integerp x) (< '-2 x) 'nil)
+;     'nil)
+
+; If we apply flatten-ands-in-lit, we obtain:
+
+;   ((INTEGERP X)
+;    (< X '3)
+;    (INTEGERP X)
+;    (< '-2 X))
+
+; If this is being generated to produce a guard, for example, it will be
+; important to keep the first occurrence of (INTEGERP X).  Even if we are doing
+; theorem proving, it seems plausible that the first occurrence is important as
+; a hypothesis for simplifying the rest.  Thus, if we apply
+; flatten-ands-in-lit! to the example above, we get this:
+
+;   ((INTEGERP X)
+;    (< X '3)
+;    (< '-2 X))
+
+  (case-match term
+    (('if t1 t2 t3)
+     (cond ((equal t2 *nil*)
+            (union-equal-to-end (flatten-ands-in-lit! (dumb-negate-lit t1))
+                                (flatten-ands-in-lit! t3)))
+           ((equal t3 *nil*)
+            (union-equal-to-end (flatten-ands-in-lit! t1)
+                                (flatten-ands-in-lit! t2)))
+           (t (list term))))
+    (& (cond ((equal term *t*) nil)
+             (t (list term))))))
+
 (defun absstobj-correspondence-formula (f$a f$c corr-fn formals guard-pre st
                                             st$c wrld)
 
@@ -19232,7 +19276,7 @@
       (fcons-term*
        'implies
        (conjoin (cons (fcons-term* corr-fn st$c st)
-                      (flatten-ands-in-lit guard-pre)))
+                      (flatten-ands-in-lit! guard-pre)))
        (cond ((null (cdr stobjs-out))
               (fcons-term* (if (eq (car stobjs-out) st$c)
                                corr-fn
@@ -19270,7 +19314,7 @@
       (fcons-term*
        'implies
        (conjoin (add-to-set-equal (fcons-term* st$ap st)
-                                  (flatten-ands-in-lit guard-pre)))
+                                  (flatten-ands-in-lit! guard-pre)))
 
 ; Note that the :preserved theorem is only generated if st$c is returned by the
 ; exec function.
@@ -20013,8 +20057,8 @@
                 (let* ((expected-guard-thm-formula
                         (make-implication
                          (cons (fcons-term* corr-fn st$c st)
-                               (flatten-ands-in-lit guard-pre))
-                         (conjoin (flatten-ands-in-lit
+                               (flatten-ands-in-lit! guard-pre))
+                         (conjoin (flatten-ands-in-lit!
                                    (guard exec t wrld)))))
                        (taut-p
                         (and (null guard-thm-p)
@@ -24423,6 +24467,8 @@
 ; creating a name in the "COMMON-LISP" package, since ACL2 won't allow such a
 ; name to be a function symbol.
 
+  (declare (xargs :guard (and (symbolp sym)
+                              (stringp suffix))))
   (if (equal (symbol-package-name sym)
              *main-lisp-package-name*)
       (intern (concatenate 'string (symbol-name sym) suffix)

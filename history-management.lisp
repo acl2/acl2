@@ -8322,7 +8322,7 @@
 
 (defconst *basic-ruler-extenders*
 
-; We ensure that these are sorted; see normalize-ruler-extenders.
+; We ensure that these are sorted, although this may no longer be important.
 
   (let ((lst '(mv-list return-last)))
     (assert$ (strict-symbol-<-sortedp lst)
@@ -8330,7 +8330,7 @@
 
 (defconst *basic-ruler-extenders-plus-lambdas*
 
-; We ensure that these are sorted; see normalize-ruler-extenders.
+; We ensure that these are sorted, although this may no longer be important.
 ; If we change *basic-ruler-extenders* so that the cons of :lambdas to the
 ; front is no longer sorted, then we will have to call sort-symbol-listp.  But
 ; here we got lucky.
