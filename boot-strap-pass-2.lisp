@@ -1043,6 +1043,12 @@
                    '((:executable-counterpart force))
                    (theory 'executable-counterpart-minimal-theory))))
 
+(defconst *acl2-primitives*
+  (strip-cars *primitive-formals-and-guards*))
+
+(deftheory acl2-primitives
+  (definition-runes *acl2-primitives* nil world))
+
 ; See the Essay on the Status of the Tau System During and After Bootstrapping
 ; in axioms.lisp where we discuss choices (1.a), (1.b), (2.a) and (2.b)
 ; related to the status of the tau system.  Here is where we implement

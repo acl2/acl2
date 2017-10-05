@@ -2144,27 +2144,20 @@
     (intersection-augmented-theories-fn1 (cdr lst1) lst2 ans))
    (t (intersection-augmented-theories-fn1 lst1 (cdr lst2) ans))))
 
-(defun check-theory-msg1 (lst macro-aliases wrld bad macros theorems
-                              primitives)
+(defun check-theory-msg1 (lst macro-aliases wrld bad macros theorems)
 
-; For background see check-theory-msg.  Parameters bad, macros, theorems, and
-; primitives are accumulators.  Bad contains members of lst that do not satisfy
+; For background see check-theory-msg.  Parameters bad, macros, and theorems
+; are accumulators.  Bad contains members of lst that do not satisfy n
 ; rule-name-designatorp.  Macros and theorems are the subsets of bad consisting
-; of symbols that name a macro or a theorem, respectively.  Primitives is a
-; list of rule-name-designators.
+; of symbols that name a macro or a theorem, respectively.
 
   (cond ((endp lst)
-         (mv bad macros theorems primitives))
+         (mv bad macros theorems))
         (t
          (let ((sym (rule-name-designatorp (car lst) macro-aliases wrld)))
            (cond
-            (sym
-             (check-theory-msg1
-              (cdr lst) macro-aliases wrld bad macros theorems
-              (cond ((and sym
-                          (assoc-eq sym *primitive-formals-and-guards*))
-                     (cons sym primitives))
-                    (t primitives))))
+            (sym (check-theory-msg1 (cdr lst) macro-aliases wrld bad macros
+                                    theorems))
 
 ; Otherwise we add (car lst) to bad.  But we might also add (car lst) to one or
 ; more of the other accumulators.
@@ -2172,7 +2165,7 @@
             ((not (symbolp (car lst)))
              (check-theory-msg1 (cdr lst) macro-aliases wrld
                                 (cons (car lst) bad)
-                                macros theorems primitives))
+                                macros theorems))
             (t (let ((name (car lst)))
                  (mv-let (macros theorems)
                    (cond ((and (not (eq (getpropc name 'macro-args t wrld)
@@ -2197,7 +2190,7 @@
                          (t (mv macros theorems)))
                    (check-theory-msg1 (cdr lst) macro-aliases wrld
                                       (cons name bad)
-                                      macros theorems primitives)))))))))
+                                      macros theorems)))))))))
 
 (defun check-theory-msg (lst wrld)
 
@@ -2205,61 +2198,39 @@
 ; not represent a list of runes and msg is to be printed (as an error if flg is
 ; true, else as a warning).
 
-  (let ((primitives-str
-         "~@0 ~&1 ~#1~[is a primitive~/are primitives~] without any ~
-          definition; any attempt to enable or disable rules based on a ~
-          primitive will have no effect.  "))
-    (cond
-     ((true-listp lst)
-      (mv-let (bad macros theorems primitives)
-        (check-theory-msg1 lst (macro-aliases wrld) wrld
-                           nil nil nil nil)
-        (cond
-         (bad
-          (mv t
-              (msg
-               "A theory function has been called on a list that contains ~
-                ~&0, which ~#0~[does~/do~] not designate a rule or a ~
-                non-empty list of rules.  ~@1~@2See :DOC theories."
-               bad
-               (cond
-                ((or macros theorems)
-                 (msg "Note that ~@0~@1~@2.  "
-                      (cond
-                       (macros
-                        (msg "~&0 ~#0~[is a macro~/are macros~]; see :DOC ~
-                              add-macro-alias to associate a macro with a ~
-                              function"
-                             macros))
-                       (t ""))
-                      (cond
-                       ((and macros theorems)
-                        ".  Also note that ")
-                       (t ""))
-                      (cond
-                       (theorems
-                        (msg "~&0 ~#0~[names a theorem~/name theorems~] but ~
-                              not any rules"
-                             theorems))
-                       (t ""))))
-                (t ""))
-               (cond
-                (primitives (msg primitives-str
-                                 (if (or macros theorems)
-                                     "Moreover,"
-                                   "Note that")
-                                 primitives))
-                (t "")))))
-         (primitives
-          (mv nil (msg primitives-str "Note that" primitives)))
-         (t (mv nil nil)))))
-     (t (mv t
-            (msg
-             "A theory function has been called on the following argument ~
-              that does not represent a theory because it is not a ~
-              true-list:~|~Y01.~|"
-             lst
-             (evisc-tuple 5 7 nil nil)))))))
+  (cond
+   ((true-listp lst)
+    (mv-let (bad macros theorems)
+      (check-theory-msg1 lst (macro-aliases wrld) wrld nil nil nil)
+      (cond (bad (msg
+                  "A theory function has been called on a list that contains ~
+                   ~&0, which ~#0~[does~/do~] not designate a rule or a ~
+                   non-empty list of rules.  ~@1See :DOC theories."
+                  bad
+                  (cond ((or macros theorems)
+                         (msg "Note that ~@0~@1@2.  "
+                              (cond
+                               (macros
+                                (msg "~&0 ~#0~[is a macro~/are macros~]; see ~
+                                      :DOC add-macro-alias to associate a ~
+                                      macro with a function"
+                                     macros))
+                               (t ""))
+                              (cond ((and macros theorems)
+                                     ".  Also note that ")
+                                    (t ""))
+                              (cond (theorems
+                                     (msg "~&0 ~#0~[names a theorem~/name ~
+                                           theorems~] but not any rules"
+                                          theorems))
+                                    (t ""))))
+                        (t ""))))
+            (t nil))))
+   (t (msg
+       "A theory function has been called on the following argument that does ~
+        not represent a theory because it is not a true-list:~|~Y01.~|"
+       lst
+       (evisc-tuple 5 7 nil nil)))))
 
 (defun check-theory-action (lst wrld ctx)
 
@@ -2270,15 +2241,9 @@
 ; for this concept: theoryp.  This checker checks for theoryp but with better
 ; error reporting.  It returns t if there is an error, else nil.
 
-  (mv-let (flg msg)
-    (check-theory-msg lst wrld)
-    (cond (flg (prog2$ (er hard ctx "~@0" msg)
+  (let ((msg (check-theory-msg lst wrld)))
+    (cond (msg (prog2$ (er hard ctx "~@0" msg)
                        t))
-          (msg (prog2$ (warning1-cw ctx "Theory" "~@0"
-                                    (list (cons #\0 msg))
-                                    wrld
-                                    (default-state-vars nil))
-                       nil))
           (t nil))))
 
 (defmacro check-theory (lst wrld ctx form)
