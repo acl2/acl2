@@ -782,7 +782,7 @@
 (define positive-cofactor ((n natp) (truth integerp) (numvars natp))
   :guard (< n numvars)
   :returns (cofactor integerp :rule-classes :type-prescription)
-  (B* ((mask (logand (var n numvars) truth)))
+  (B* ((mask (logand (var n numvars) (truth-norm truth numvars))))
     (logior mask (ash mask (- (ash 1 (lnfix n))))))
   ///
 
@@ -862,7 +862,8 @@
                     (truth-eval truth (env-update n t env) numvars)))
     :hints((and stable-under-simplificationp
                 '(:in-theory (enable env-lookup env-update truth-eval
-                                     bitops::logbitp-of-ash-split)))
+                                     bitops::logbitp-of-ash-split
+                                     truth-norm)))
            (and stable-under-simplificationp
                 '(:cases ((logbitp n (nfix env)))))
            (and stable-under-simplificationp
@@ -881,7 +882,17 @@
                   (natp numvars))
              (unsigned-byte-p m cofactor))
     :hints (("goal" :use positive-cofactor-size-basic
-             :in-theory (disable positive-cofactor-size-basic)))))
+             :in-theory (disable positive-cofactor-size-basic))))
+
+  (defthm positive-cofactor-of-truth-norm
+    (equal (positive-cofactor n (truth-norm truth numvars) numvars)
+           (positive-cofactor n truth numvars)))
+
+  (defthm truth-norm-of-positive-cofactor
+    (implies (< (nfix n) (nfix numvars))
+             (equal (truth-norm (positive-cofactor n truth numvars) numvars)
+                    (positive-cofactor n truth numvars)))
+    :hints(("Goal" :in-theory (e/d (truth-norm) (positive-cofactor))))))
 
 (define negative-cofactor ((n natp) (truth integerp) (numvars natp))
   :guard (< n numvars)
@@ -1046,7 +1057,18 @@
                   (natp numvars))
              (unsigned-byte-p m cofactor))
     :hints (("goal" :use negative-cofactor-size-basic
-             :in-theory (disable negative-cofactor-size-basic)))))
+             :in-theory (disable negative-cofactor-size-basic))))
+
+  (defthm negative-cofactor-of-truth-norm
+    (equal (negative-cofactor n (truth-norm truth numvars) numvars)
+           (negative-cofactor n truth numvars))
+    :hints(("Goal" :in-theory (enable truth-norm))))
+
+  (defthm truth-norm-of-negative-cofactor
+    (implies (< (nfix n) (nfix numvars))
+             (equal (truth-norm (negative-cofactor n truth numvars) numvars)
+                    (negative-cofactor n truth numvars)))
+    :hints(("Goal" :in-theory (e/d (truth-norm) (negative-cofactor))))))
 
 ;; (define depends-on ((n natp) (truth integerp) (numvars natp))
 ;;   :guard (< n numvars)
@@ -1586,7 +1608,11 @@
                           (:instance truth-eval-of-truth-norm
                            (truth (lognot (negative-cofactor n truth numvars)))))
              :in-theory (disable truth-eval-of-truth-norm)
-             :cases ((env-lookup n env))))))
+             :cases ((env-lookup n env)))))
+
+  (defthm is-xor-with-var-of-truth-norm
+    (equal (is-xor-with-var n (truth-norm truth numvars) numvars)
+           (is-xor-with-var n truth numvars))))
 
 
 ;; (define swap-vars ((n natp) (m natp) (truth integerp) (numvars natp))
@@ -2121,7 +2147,11 @@
 
   (defthm index-swap-self
     (equal (index-swap n n x)
-           (nfix x))))
+           (nfix x)))
+
+  (defthm index-swap-unique
+    (iff (equal (index-swap n m x) (index-swap n m y))
+         (equal (nfix x) (nfix y)))))
 
 (define env-swap-vars ((n natp "first element to swap")
                        (m natp "second element to swap")
@@ -2905,7 +2935,11 @@
                   (natp size)
                   (<= (ash 1 numvars) size))
              (unsigned-byte-p size perm-truth))
-    :hints(("Goal" :in-theory (enable truth-norm)))))
+    :hints(("Goal" :in-theory (enable truth-norm))))
+
+  (defthm permute-var-up-of-truth-norm
+    (equal (permute-var-up m n (truth-norm truth numvars) numvars)
+           (permute-var-up m n truth numvars))))
 
 
 
@@ -2945,7 +2979,11 @@
                   (natp size)
                   (<= (ash 1 numvars) size))
              (unsigned-byte-p size perm-truth))
-    :hints(("Goal" :in-theory (enable truth-norm)))))
+    :hints(("Goal" :in-theory (enable truth-norm))))
+
+  (defthm permute-var-down-of-truth-norm
+    (equal (permute-var-down m n (truth-norm truth numvars) numvars)
+           (permute-var-down m n truth numvars))))
 
 
 (define env-diff-index ((env1 natp) (env2 natp))
@@ -3192,7 +3230,11 @@
                   (?shr-env1 (env-permute-shrink 0 nil mask env1 numvars)))
                `'(:use ((:instance depends-on-witness-correct
                          (truth ,(hq perm))))
-                  :in-theory (disable depends-on-witness-correct)))))))
+                  :in-theory (disable depends-on-witness-correct))))))
+
+  (defthm permute-stretch-of-truth-norm
+    (equal (permute-stretch n count mask (truth-norm truth numvars) numvars)
+           (permute-stretch n count mask truth numvars))))
                   
 
 
@@ -3279,8 +3321,52 @@
                   (?shr-env1 (env-permute-stretch 0 nil mask env1 numvars)))
                `'(:use ((:instance depends-on-witness-correct
                          (truth ,(hq perm))))
-                  :in-theory (disable depends-on-witness-correct)))))))
+                  :in-theory (disable depends-on-witness-correct))))))
 
+  (defthm permute-shrink-of-truth-norm
+    (equal (permute-shrink n count mask (truth-norm truth numvars) numvars)
+           (permute-shrink n count mask truth numvars))))
+
+
+(define index-listp (x (numvars natp))
+  (if (atom x)
+      (eq x nil)
+    (and (natp (car x))
+         (< (car x) (lnfix numvars))
+         (index-listp (cdr x) numvars)))
+  ///
+  (defthmd natp-nth-of-index-listp
+    (implies (and (index-listp x numvars)
+                  (< (nfix n) (len x)))
+             (natp (nth n x))))
+
+  (defthmd nfix-nth-in-index-list-bound
+    (implies (and (index-listp x numvars)
+                  (posp numvars))
+             (< (nfix (nth n x)) numvars))
+    :rule-classes (:rewrite :linear))
+
+  (defthmd nth-in-index-list-bound
+    (implies (and (index-listp x numvars)
+                  (natp numvars)
+                  (natp (nth n x)))
+             (< (nth n x) numvars))
+    :rule-classes (:rewrite :linear))
+
+  (defthmd nat-listp-when-index-listp
+    (implies (index-listp x numvars)
+             (nat-listp x)))
+
+  (defthm true-listp-when-index-listp
+    (implies (index-listp x numvars)
+             (true-listp x))
+    :rule-classes :forward-chaining))
+
+
+(local (in-theory (enable nfix-nth-in-index-list-bound
+                          nth-in-index-list-bound
+                          nat-listp-when-index-listp
+                          natp-nth-of-index-listp)))
 
 (define index-perm ((n natp "current position in the list")
                     (perm nat-listp "indices to permute")
@@ -3294,7 +3380,19 @@
                    :exec (eql n numvars)))
         (lnfix x))
        (x (index-swap n (nth n perm) x)))
-    (index-perm (1+ (lnfix n)) perm x numvars)))
+    (index-perm (1+ (lnfix n)) perm x numvars))
+  ///
+  (defret bound-of-index-perm
+    (implies (and (< (nfix x) (nfix numvars))
+                  (index-listp perm numvars))
+             (< perm-idx (nfix numvars)))
+    :hints(("Goal" :in-theory (enable* index-swap acl2::arith-equiv-forwarding)))
+    :rule-classes :linear)
+
+  (defthm index-perm-unique
+    (iff (equal (index-perm n perm x numvars)
+                (index-perm n perm y numvars))
+         (equal (nfix x) (nfix y)))))
 
 (define index-perm-rev ((n natp "current position in the list")
                         (perm nat-listp "indices to permute")
@@ -3318,7 +3416,19 @@
   (defthm index-perm-rev-of-index-perm
     (equal (index-perm-rev n perm (index-perm n perm x numvars) numvars)
            (nfix x))
-    :hints(("Goal" :in-theory (enable index-perm)))))
+    :hints(("Goal" :in-theory (enable index-perm))))
+
+  (defret bound-of-index-perm-rev
+    (implies (and (< (nfix x) (nfix numvars))
+                  (index-listp perm numvars))
+             (< perm-idx (nfix numvars)))
+    :hints(("Goal" :in-theory (enable* index-swap acl2::arith-equiv-forwarding)))
+    :rule-classes :linear)
+
+  (defthm index-perm-rev-unique
+    (iff (equal (index-perm-rev n perm x numvars)
+                (index-perm-rev n perm y numvars))
+         (equal (nfix x) (nfix y)))))
 
 
 
@@ -3381,44 +3491,7 @@
     :hints(("Goal" :in-theory (enable env-perm)))))
 
 
-(define index-listp (x (numvars natp))
-  (if (atom x)
-      (eq x nil)
-    (and (natp (car x))
-         (< (car x) (lnfix numvars))
-         (index-listp (cdr x) numvars)))
-  ///
-  (defthmd natp-nth-of-index-listp
-    (implies (and (index-listp x numvars)
-                  (< (nfix n) (len x)))
-             (natp (nth n x))))
 
-  (defthmd nfix-nth-in-index-list-bound
-    (implies (and (index-listp x numvars)
-                  (posp numvars))
-             (< (nfix (nth n x)) numvars))
-    :rule-classes (:rewrite :linear))
-
-  (defthmd nth-in-index-list-bound
-    (implies (and (index-listp x numvars)
-                  (natp numvars)
-                  (natp (nth n x)))
-             (< (nth n x) numvars))
-    :rule-classes (:rewrite :linear))
-
-  (defthmd nat-listp-when-index-listp
-    (implies (index-listp x numvars)
-             (nat-listp x)))
-
-  (defthm true-listp-when-index-listp
-    (implies (index-listp x numvars)
-             (true-listp x))
-    :rule-classes :forward-chaining))
-
-(local (in-theory (enable nfix-nth-in-index-list-bound
-                          nth-in-index-list-bound
-                          nat-listp-when-index-listp
-                          natp-nth-of-index-listp)))
 
 
 (define truth-perm ((n natp "current position in the list")
@@ -3537,7 +3610,8 @@
 (define swap-polarity ((n natp) (truth integerp) (numvars natp))
   :guard (< n numvars)
   :returns (new-truth integerp :rule-classes :type-prescription)
-  (b* ((var (var n numvars))
+  (b* ((truth (truth-norm truth numvars))
+       (var (var n numvars))
        (shift (ash 1 (lnfix n))))
     (logior (ash (logand var truth) (- shift))
             (ash (logand (lognot var) (loghead (ash 1 (lnfix numvars)) truth))
@@ -3583,7 +3657,8 @@
                     (truth-eval truth (env-swap-polarity n env) numvars)))
     :hints((and stable-under-simplificationp
                 '(:in-theory (enable env-lookup env-swap-polarity env-update truth-eval
-                                     bitops::logbitp-of-ash-split)))))
+                                     bitops::logbitp-of-ash-split
+                                     truth-norm)))))
 
   (defthmd size-of-logand-by-size-of-loghead-2
     (implies (and (unsigned-byte-p m a)
@@ -3601,7 +3676,8 @@
     (implies (< (nfix n) (nfix numvars))
              (unsigned-byte-p (ash 1 numvars) new-truth))
     :hints(("Goal" :in-theory (enable size-of-logand-with-loghead
-                                      ash-1-monotonic)
+                                      ash-1-monotonic
+                                      truth-norm)
             :do-not-induct t)))
 
   (defret swap-polarity-size
@@ -3610,7 +3686,12 @@
                   (< (nfix n) (nfix numvars)))
              (unsigned-byte-p size new-truth))
     :hints (("goal" :use swap-polarity-size-basic
-             :in-theory (disable swap-polarity-size-basic)))))
+             :in-theory (disable swap-polarity-size-basic))))
+
+  (defthm swap-polarity-of-truth-norm
+    (equal (swap-polarity n (truth-norm truth numvars) numvars)
+           (swap-polarity n truth numvars))
+    :hints(("Goal" :in-theory (enable truth-norm)))))
 
 (define env-permute-polarity ((n natp)
                               (mask integerp)
@@ -3710,4 +3791,8 @@
 
   (defret permute-polarity-identity
     (equal (permute-polarity n 0 truth numvars)
-           (truth-norm truth numvars))))
+           (truth-norm truth numvars)))
+
+  (defthm permute-polarity-of-truth-norm
+    (equal (permute-polarity n mask (truth-norm truth numvars) numvars)
+           (permute-polarity n mask truth numvars))))

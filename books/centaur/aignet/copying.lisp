@@ -2307,7 +2307,6 @@ aignet when its initial value is the specified vector:</p>
 
 
 
-
 (defsection aignet-copy-dfs-rec
 
   (acl2::defstobj-clone mark bitarr :suffix "-MARK")
@@ -3016,4 +3015,3 @@ aignet when its initial value is the specified vector:</p>
                   (aignet-copies-in-bounds copy aignet2))
              (comb-equiv new-aignet2 aignet))
     :hints(("Goal" :in-theory (e/d (comb-equiv) (finish-copy-comb))))))
-

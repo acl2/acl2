@@ -69,6 +69,10 @@
 (defmacro set-prev-stobjs-correspondence (fn &key stobjs-out formals)
   `(table prev-stobjs-table ',fn '(,stobjs-out ,formals)))
 
+(set-prev-stobjs-correspondence update-nth :stobjs-out (stobj) :formals (n val stobj))
+(set-prev-stobjs-correspondence update-nth-array :stobjs-out (stobj) :formals (j k val stobj))
+(set-prev-stobjs-correspondence cons :stobjs-out (stobj) :formals (x stobj))
+
 
 (defun find-prev-stobj-binding (new-term state)
   (declare (xargs :guard (pseudo-termp new-term)
@@ -88,10 +92,6 @@
                   (eq function 'return-last)))
         ;; Can't call stobjs-out on either of these
         (mv nil nil))
-       ((when (and (eq function 'cons)
-                   (int= valnum 0)))
-        ;; special case for update-nth if it has expanded to conses
-        (mv t (nth 1 args)))
        (w (w state))
        ((mv stobjs-out formals) (prev-stobjs-correspondence function w))
        (stobj-out (nth valnum stobjs-out))
