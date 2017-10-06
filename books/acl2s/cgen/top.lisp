@@ -94,7 +94,7 @@
 ;        :sig ((any hints keyword-value-listp state) -> (mv erp any state))
   (b* ((ctx 'test?)
 
-       (cgen::cgen-state (cgen::make-cgen-state-fn form override-defaults (w state)))       
+       (cgen::cgen-state (cgen::make-cgen-state-fn form ctx override-defaults (w state)))       
 ;       (?defaults (cget params))
        ;(testing-enabled (cget testing-enabled))
        (vl              (cgen::cget verbosity-level))
@@ -469,13 +469,17 @@ information in a human-readable form. </p>
 
 
 ; [2016-04-03 Sun] Add fixers support to Cgen
-(defconst *fixers-enabled* t)
-(make-event
- (if *fixers-enabled*
-     '(progn
-        (include-book "fixers2" :ttags :all)
-        (include-book "fixers-gl-backend" :ttags :all)
-        (include-book "cgen-rules")
-        (gl::gl-satlink-mode)
-        )
-   '(value-triple :invisible)))
+;; (make-event
+;;  (if *fixers-enabled*
+;;      '(progn
+;;         (include-book "fixers2" :ttags :all)
+;;         (include-book "fixers-gl-backend" :ttags :all)
+;;         (include-book "cgen-rules")
+;;         (gl::gl-satlink-mode)
+;;         )
+;;    '(value-triple :invisible)))
+
+; [2017-10-06 Fri] Replaced GL backend with a greedy algorithm for
+; arranging fixers
+(include-book "fixers-greedy" :ttags :all)
+(include-book "cgen-rules")

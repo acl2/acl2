@@ -17,47 +17,13 @@
        (collect (get1 a x))))
        
 
-(defun cweight (c Cwt{})
-  (or (get1 c Cwt{})
-      0))
-
-(defun cweight-lst (cs Cwt{})
-  (if (endp cs)
-      0
-    (+ (cweight (car cs) Cwt{})
-       (cweight-lst (cdr cs) Cwt{}))))
 
 (defloop filter-terms-without-vars (terms vars)
   (for ((term in terms))
        (when (not (intersectp-eq (acl2::all-vars term) vars))
          (collect term))))
 
-(defun pval (fname fxri{} flits term->flits{} Cwt{} vl)
-  (declare (ignorable vl term->flits{}))
-  (b* ((fruleI (get1 fname fxri{}))
-       (cterm (get1 :constraint-term fruleI))
-       (pterms (get1 :preserves fruleI))
-       (trivially-preserved-terms (filter-terms-without-vars flits (get1 :Out fruleI))))
-    (list (+ (cweight cterm Cwt{}) (cweight-lst pterms Cwt{}))
-          (cweight-lst trivially-preserved-terms Cwt{}))))
        
-  
-;; (defun fxri-let*-soln/greedy1 (term->flits{} var-clique-rep{} Cwt{} fxri{} vl state pval{} ans)
-;;   (declare (ignorable vl))
-;;   (if (or (endp term->flits{})
-;;           (endp fxri{}))
-;;       (value ans)
-;;     (b* ((pval{} (update-pval-alist pval{} fxri{} term->flits{} Cwt{}))
-;;          (fname (choose-maximal-pval-fxri pval{}))
-;;          (- (cw? (debug-flag vl) "~| Cgen/Debug: Maximal pvalued fixer: ~x0~%" fname))
-;;          (ans (cons (fxri-b*-entry (assoc-equal fname fxri{})) ans))
-;;          (fxri1{} (delete-assoc-equal fname fxri{}))
-;;          (fxri1{} (remove-unpreserved-fxrs fxri{} fname))
-;;          (term->flits1{} (remove-unpreserved-flits term->flits{} fname fxri{}))
-;;          )
-;;       (fxri-let*-soln/greedy1 term->flits1{} Cwt{} fxri1{} vl state pval{} ans))))
-
-
 (program)
 (set-state-ok t)
 
@@ -374,7 +340,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        
 (include-book "acl2s/cgen/prove-cgen" :dir :system :ttags :all)
 
-(defun term-preserved-by-fxr-test? (pterm fixer-binding pterm-fxr-binding type-hyps vl state)
+(defun term-preserved-by-fxr-test? (pterm fixer-binding pterm-fxr-binding type-hyps vl ctx state)
   (declare (ignorable vl))
   (b* ((bound-vars (remove-duplicates-eq (strip-cars (append pterm-fxr-binding
                                                              fixer-binding))))
@@ -384,7 +350,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
                               (declare (ignorable ,@bound-vars))
                               ,pterm))) ;check if pterm is still true after update
        (cgen-state (make-cgen-state-fn
-                    query
+                    query ctx 
                     (list :testing-enabled :naive
                           :num-trials 1000
                           :search-strategy :simple
@@ -405,24 +371,38 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
     (value good-enough?)))
   
 
-;;; find the associated fixer let-binding for term in fxri{}
-(defloop assoc-fixer-binding (term fxri{})
+;;; find one associated fixer rule for term in fxri{}
+(defloop assoc-frule (term fxri{})
   (for ((fxri-entry in fxri{}))
        (when (equal term (get1 :constraint-term (cdr fxri-entry)))
-         (return (get1 :fixer-let-binding (cdr fxri-entry))))))
+         (return (cdr fxri-entry)))))
 
-;; Note that fxr F is represented as the fixer let-binding
-(defun filter-terms-preserved-by-fxr (pterms F fxri{} type-hyps vl state)
+;; find all fixer rules associated with term in fxri{}
+(defloop assoc-all-frules (term fxri{})
+  (for ((fxri-entry in fxri{}))
+       (when (equal term (get1 :constraint-term (cdr fxri-entry)))
+         (collect (cdr fxri-entry)))))
+
+
+(defloop assoc-frule-lst (terms fxri{})
+  (for ((term in terms))
+       (append (assoc-all-frules term fxri{}))))
+
+
+;; Note that fxr is represented as the fixer let-binding
+(defun filter-terms-preserved-by-fxr (pterms F-binding fxri{} type-hyps vl ctx state)
   (declare (ignorable vl))
   (b* (((when (endp pterms)) (value nil))
-       (pterm-F (assoc-fixer-binding (car pterms) fxri{}))
-       ((er yesp) (term-preserved-by-fxr-test? (car pterms) F pterm-F type-hyps vl state))
-       ((er rest) (filter-terms-preserved-by-fxr (cdr pterms) F fxri{} type-hyps vl state)))
+       (pterm-F-binding (get1 :fixer-let-binding (assoc-frule (car pterms) fxri{})))
+       ((er yesp) (term-preserved-by-fxr-test? (car pterms) F-binding
+                                               pterm-F-binding type-hyps vl ctx state))
+       ((er rest) (filter-terms-preserved-by-fxr (cdr pterms) F-binding
+                                                 fxri{} type-hyps vl ctx state)))
     (value (append (and yesp (list (car pterms)))
                    rest))))
 
 ;;; dynamically update :preserves field for each frule in fxri-entries
-(defun update-preservation-relation (fxri-entries cterms fxri{} type-hyps vl state)
+(defun update-preserves-relation (fxri-entries cterms fxri{} type-hyps vl ctx state)
   (declare (ignorable vl))
   (b* (((when (endp fxri-entries)) (value nil))
        ((cons nm frulei) (car fxri-entries))
@@ -430,9 +410,9 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (trivial-preserved-terms (set-difference-equal cterms pterms))
        ((er preserved-terms)
         (filter-terms-preserved-by-fxr pterms (get1 :fixer-let-binding frulei)
-                                       fxri{} type-hyps vl state))
+                                       fxri{} type-hyps vl ctx state))
        ((er rest-fxri-entries)
-        (update-preservation-relation (cdr fxri-entries) cterms fxri{} type-hyps vl state))
+        (update-preserves-relation (cdr fxri-entries) cterms fxri{} type-hyps vl ctx state))
        (frulei (put-assoc-eq :preserves (cons (get1 :constraint-term frulei)
                                               preserved-terms)
                              (put-assoc-eq :trivially-preserves trivial-preserved-terms
@@ -440,15 +420,121 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
     (value (cons (cons nm frulei) rest-fxri-entries))))
                                                 
        
+
+(defun cweight (c Cwt{})
+  (or (get1 c Cwt{})
+      0))
+
+(defun cweight-lst (cs Cwt{})
+  (if (endp cs)
+      0
+    (+ (cweight (car cs) Cwt{})
+       (cweight-lst (cdr cs) Cwt{}))))
+
+;; Compute pval of fixer fname that gives a measure of how many terms
+;; it preserves.
+(defun pval0 (fname cterms fxri{} Cwt{})
+  (b* ((fruleI (get1 fname fxri{}))
+       (cterm (get1 :constraint-term fruleI))
+       (pterms (intersection-equal (get1 :preserves fruleI) cterms))
+       (trivial-preserved-terms (intersection-equal (get1 :trivially-preserves fruleI) cterms)))
+    (+ (cweight cterm Cwt{})
+       (cweight-lst pterms Cwt{})
+       (cweight-lst trivial-preserved-terms Cwt{}))))
+
+(defun pval0-lst (fnames cterms fxri{} Cwt{})
+  (if (endp fnames)
+      0
+    (+ (pval0 (car fnames) cterms fxri{} Cwt{})
+       (pval0-lst (cdr fnames) cterms fxri{} Cwt{}))))
+
+(mutual-recursion 
+(defun pval-fxr (fname cterms fxri{} Cwt{})
+  (b* ((fruleI (get1 fname fxri{}))
+       (cterms (remove1-equal (get1 :constraint-term fruleI) cterms))
+       (pterms (intersection-equal (get1 :preserves fruleI) cterms))
+       (trivial-preserved-terms (intersection-equal (get1 :trivially-preserves fruleI) cterms))
+       (all-pterms (append pterms trivial-preserved-terms)))
+    (+ (pval0 fname cterms fxri{} Cwt{})
+       (pval-terms all-pterms all-pterms fxri{} Cwt{}))))
+
+(defun pval-fxr-max-lst (fnames cterms fxri{} Cwt{} ans)
+  (if (endp fnames)
+      ans
+    (pval-fxr-max-lst (cdr fnames) cterms fxri{} Cwt{}
+                      (max (pval-fxr (car fnames) cterms fxri{} Cwt{})
+                           ans))))
   
+(defun pval-terms (terms cterms fxri{} Cwt{})
+  (if (endp terms)
+      0
+    (b* ((term (car terms))
+         (fnames (get1-lst :name (assoc-all-frules term fxri{})))
+         (pval-max (pval-fxr-max-lst fnames cterms fxri{} Cwt{} 0)))
+      (+ pval-max
+         (pval-terms (cdr terms) cterms fxri{} Cwt{})))))
+)    
 
-;;; Compute a fixer circuit, in terms of let* binding, that satisfies
-;;; the maximum number of cterms.
-(defun maxsat-fxr-ckt (cterms Cwt{} fxri{} vl state)
-  (declare (ignorable cterms Cwt{} fxri{} vl state))
-  (value (list nil nil)))
+;; insert pval field into each frule in fxri-entries
+(defun assign-pval-scores (fxri-entries cterms fxri{} Cwt{})
+  (if (endp fxri-entries)
+      '()
+    (b* (((cons fname frule) (car fxri-entries))
+         (pval (pval-fxr fname cterms fxri{} Cwt{}))
+         (frule (put-assoc-eq :pval pval frule)))
+      (cons (cons fname frule)
+            (assign-pval-scores (cdr fxri-entries) cterms fxri{} Cwt{})))))
+         
+
+(defun max-pval-frule (fxri{} ans)
+  (if (endp fxri{})
+      ans
+    (max-pval-frule (cdr fxri{})
+                    (max ans (get1 :pval (cdar fxri{}))))))
 
 
+;; Delete all fixer rules associated with terms in fxri{}
+(defloop delete-frules (terms fxri{}) ;; -> fxri{}
+  (for ((fxri-entry in fxri{}))
+       (unless (member-equal (get1 :constraint-term (cdr fxri-entry)) terms)
+         (collect fxri-entry))))
+
+
+
+;;; 1. remove all fixer rules that fix the constraint term of frule
+;;; 2. remove all fixer rules that fix terms not preserved by fixer of frule
+(defun remove-chosen-fixer (frule cterms fxri{}) ;; -> fxri{}
+  (b* ((pterms (append (get1 :preserves frule)
+                       (get1 :trivially-preserves frule)))
+       (not-preserved-terms (set-difference-equal cterms pterms)))
+    (delete-frules (cons (get1 :constraint-term frule) not-preserved-terms)
+                   fxri{})))
+       
+(defun maxsat-fxr-ckt-aux (fxri{} cterms ans-fxri{} fixer-B)
+  (if (endp fxri{})
+      (mv ans-fxri{} fixer-B)
+    (b* ((frule (max-pval-frule fxri{} (cdar fxri{})))
+         (reduced-fxri{} (remove-chosen-fixer frule cterms fxri{})))
+      (maxsat-fxr-ckt-aux reduced-fxri{}
+                          cterms
+                          (acons (get1 :name frule) frule ans-fxri{})
+                          (append (get1 :fixer-let-binding frule)
+                                  fixer-B)))))
+
+;;; Compute a fixer circuit, as a let* binding, that greedily
+;;; satisfies the maximum number of constraint terms. Return also the
+;;; reduced fxri{} that has only the fixers that took part in the
+;;; solution.
+(defun maxsat-fxr-ckt (fxri{} cterms Cwt{})
+  ;; TODO: perhaps its better to update pval scores everytime fxri{} changes!?
+  (maxsat-fxr-ckt-aux (assign-pval-scores fxri{} cterms fxri{} Cwt{})
+                      cterms
+                      '() '()))
+
+(defloop filter-fxri-constraint-terms (cterms fxri{})
+  (for ((cterm in cterms))
+       (when (assoc-frule cterm fxri{})
+         (collect cterm))))
 
 (defun fixer-arrangement1 (terms all-terms Cwt{} vl ctx state)
 ; returns (mv erp (list let*-soln-binding new-hyps unsat-terms) state)
@@ -458,16 +544,16 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
 ; - new-hyps characterize new parameters introduced by applicable fixer rules
   (b* ((wrld (w state))
        (frules (strip-cdrs (fixer-rules-table wrld)))
-       (prules (strip-cdrs (preservation-rules-table wrld)))
+       (?prules (strip-cdrs (preservation-rules-table wrld)))
        (type-hyps (filter-type-hyps terms wrld))
        (cterms (set-difference-equal terms type-hyps))
        ((er fxri{}) (instantiate-fixer-rules frules cterms all-terms vl state '()))
        ;; ((er fxri{}) (instantiate-pres-rules prules cterms all-terms vl state fxri{}))
-       ((er fxri{}) (update-preservation-relation fxri{} cterms fxri{} type-hyps vl state))
-       (fixable-terms (filter-fixable-terms cterms fxri{}))
-       ((er (list let*-soln01 C_sat))
-        (maxsat-fxr-ckt fixable-terms Cwt{} fxri{} vl state))
-
+       ((er fxri{}) (update-preserves-relation fxri{} cterms fxri{} type-hyps vl ctx state))
+       (fixable-terms (filter-fxri-constraint-terms cterms fxri{}))
+       
+       ((mv let*-soln fxri{}) (maxsat-fxr-ckt fxri{} fixable-terms Cwt{}))
+       (C_sat (filter-fxri-constraint-terms fixable-terms fxri{}))
        (C_unsat (set-difference-equal fixable-terms C_sat))
        ;(b*-soln (to-b*-mv-binding let*-soln))
        ;(let*-soln (assoc-equal-lst vars let*-soln))
@@ -476,16 +562,16 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Unsat fixable terms: ~x0~%" C_unsat))
        ;; TODO check that this let* binding is sound/correct, i.e., it
        ;; satisfies all the hyps under fixer and pres rules.
-       (new-hyps (union-lsts (get1-lst :enum-hyps (strip-cdrs fxri{}))))
+       (new-hyps (union-lsts (get1-lst :enum-hyps (assoc-frule-lst C_sat fxri{}))))
        )
     (value (list let*-soln new-hyps C_unsat))))
 
-(defun fixer-arrangement1/repeat (C i all-terms vl ctx state B new-hyps)
+(defun fixer-arrangement1/repeat (C i all-terms Cwt{} vl ctx state B new-hyps)
   (if (endp C)
       (value (list B new-hyps '()))
     (b* ((- (cw? (verbose-stats-flag vl)
                  "~| Cgen/Note: Recursively fix (loop iteration: ~x0) ~x1~%" i C))
-         ((mv erp res state) (fixer-arrangement1 C all-terms vl ctx state))
+         ((mv erp res state) (fixer-arrangement1 C all-terms Cwt{} vl ctx state))
          ((when erp) (value (list B new-hyps C))) ;return current
 
          ((list B1 new-hyps1 C_unsat) res)
@@ -493,7 +579,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
          
          (B (append B1 B))
          (new-hyps (union-equal new-hyps1 new-hyps)))
-      (fixer-arrangement1/repeat C_unsat (1+ i) all-terms vl ctx state B new-hyps))))
+      (fixer-arrangement1/repeat C_unsat (1+ i) all-terms Cwt{} vl ctx state B new-hyps))))
          
 
 (logic)
@@ -582,12 +668,19 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
           (subst-b*-entry (caar B1) (cadr (car B1))
                           (collapse-b*-binding (cdr B1) B2)))))
 
-
+;; TODO: assign more weight to a term that is harder to satisfy by Cgen.
+(defloop heuristic-weights (terms wrld)
+  (for ((term in terms))
+       (collect (cond ((is-type-hyp term wrld) (cons term 0))
+                      ((monadic-term-p term)   (cons term 1))
+                      (t (cons term 2))))))
+  
 (defun fixer-arrangement-builtin (hyps concl vl ctx state)
   (b* ((terms (append hyps  (if (not (acl2::logic-termp concl (w state)))
                                 '()
                               (list (cgen-dumb-negate-lit concl)))))
-       ((mv erp res state) (fixer-arrangement1 terms terms vl ctx state))
+       (Cwt{} (heuristic-weights terms (w state)))
+       ((mv erp res state) (fixer-arrangement1 terms terms Cwt{} vl ctx state))
        ((when erp) (value (list nil nil)))
        
        ((list B new-hyps C_unsat) res)
@@ -595,7 +688,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        ((mv & (list B new-hyps C_unsat) state) ;does not return an error
         (if (and rec-fixp
                  (< (len C_unsat) (len terms)))
-            (fixer-arrangement1/repeat C_unsat 1 terms vl ctx state B new-hyps)
+            (fixer-arrangement1/repeat C_unsat 1 terms Cwt{} vl ctx state B new-hyps)
           (value (list B new-hyps C_unsat)))) ;o.w return current values
 
        (- (cw? (and (verbose-stats-flag vl) rec-fixp (consp C_unsat))

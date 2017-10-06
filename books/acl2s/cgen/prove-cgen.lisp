@@ -608,7 +608,7 @@ history s-hist.")
        (ans. (acons arg1 value ans.)))
     (make-cgen-params-from-args (cddr kwd-val-lst) ans.)))
 
-(defun make-cgen-state-fn (form kwd-val-lst wrld)
+(defun make-cgen-state-fn (form ctx-name kwd-val-lst wrld)
   (b* ((override-params (make-cgen-params-from-args kwd-val-lst '()))
        (params (acl2s::acl2s-defaults-value-alist. (table-alist 'ACL2S::ACL2S-DEFAULTS-TABLE wrld) override-params '())))
     (list (cons 'PARAMS params)
@@ -616,10 +616,10 @@ history s-hist.")
           (cons 'DISPLAYED-GOAL form)
           (cons 'START-TIME :undefined)
           (cons 'GCS *initial-gcs%*)
-          (cons 'TOP-CTX :user-defined))))
+          (cons 'TOP-CTX ctx-name))))
 
-(defmacro make-cgen-state (form &rest kwd-val-lst)
-  `(make-cgen-state-fn ',form ',kwd-val-lst (w state)))
+(defmacro make-cgen-state (form ctx-name &rest kwd-val-lst)
+  `(make-cgen-state-fn ',form ',ctx-name ',kwd-val-lst (w state)))
 
 (defun update-cgen-state-givens/user-fn (term start top-vt-alist cgen-state)
 ;  called from below macro
