@@ -291,29 +291,38 @@
          (!hidden-seg-reg-layout-slice
           :limit #xfffff cs-hidden-descriptor)))
 
-       ;; CS.Type <- 11;   (* Execute/read code, accessed *)
-       ;; CS.S    <- 1;
-       ;; CS.DPL  <- 0;
-       ;; CS.P    <- 1;
-       ;; CS.L    <- 1;   (* Entry is to 64-bit mode *)
-       ;; CS.D    <- 0;   (* Required if CS.L = 1 *)
-       ;; CS.G    <- 1;   (* 4-KByte granularity *)
+       ;; CS.A       <- 1;   (* Accessed. *)
+       ;; CS.R       <- 1;   (* Execute/read code. *)
+       ;; CS.C       <- 0;
+       ;; CS.TypeMSB <- 1;
+       ;; CS.S       <- 1;
+       ;; CS.DPL     <- 0;
+       ;; CS.P       <- 1;
+       ;; CS.L       <- 1;   (* Entry is to 64-bit mode *)
+       ;; CS.D       <- 0;   (* Required if CS.L = 1 *)
+       ;; CS.G       <- 1;   (* 4-KByte granularity *)
        (cs-attr
         (!code-segment-descriptor-attributes-layout-slice
-         :type 11
+         :a 1
          (!code-segment-descriptor-attributes-layout-slice
-          :s 1
+          :r 1
           (!code-segment-descriptor-attributes-layout-slice
-           :dpl 0
+           :c 0
            (!code-segment-descriptor-attributes-layout-slice
-            :p 1
+            :msb-of-type 1
             (!code-segment-descriptor-attributes-layout-slice
-             :l 1
+             :s 1
              (!code-segment-descriptor-attributes-layout-slice
-              :d 0
+              :dpl 0
               (!code-segment-descriptor-attributes-layout-slice
-               :g 1
-               cs-attr))))))))
+               :p 1
+               (!code-segment-descriptor-attributes-layout-slice
+                :l 1
+                (!code-segment-descriptor-attributes-layout-slice
+                 :d 0
+                 (!code-segment-descriptor-attributes-layout-slice
+                  :g 1
+                  cs-attr)))))))))))
 
        (cs-hidden-descriptor
         (!hidden-seg-reg-layout-slice
@@ -350,26 +359,35 @@
           :limit #xfffff ss-hidden-descriptor)))
        (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden-descriptor))
 
-       ;; SS.Type  <-  3;      (* Read/write data, accessed *)
-       ;; SS.S     <-  1;
-       ;; SS.DPL   <-  0;
-       ;; SS.P     <-  1;
-       ;; SS.B     <-  1;      (* 32-bit stack segment *)
-       ;; SS.G     <-  1;      (* 4-KByte granularity *)
+       ;; SS.A       <-  1;      (* Accessed. *)
+       ;; SS.W       <-  1;      (* Read/write data. *)
+       ;; SS.E       <-  0;
+       ;; SS.TypeMSB <-  0;
+       ;; SS.S       <-  1;
+       ;; SS.DPL     <-  0;
+       ;; SS.P       <-  1;
+       ;; SS.B       <-  1;      (* 32-bit stack segment *)
+       ;; SS.G       <-  1;      (* 4-KByte granularity *)
        (ss-attr
         (!data-segment-descriptor-attributes-layout-slice
-         :type 3
+         :a 1
          (!data-segment-descriptor-attributes-layout-slice
-          :s 1
+          :w 1
           (!data-segment-descriptor-attributes-layout-slice
-           :dpl 0
+           :e 0
            (!data-segment-descriptor-attributes-layout-slice
-            :p 1
+            :msb-of-type 0
             (!data-segment-descriptor-attributes-layout-slice
-             :d/b 1
+             :s 1
              (!data-segment-descriptor-attributes-layout-slice
-              :g 1
-              ss-attr)))))))
+              :dpl 0
+              (!data-segment-descriptor-attributes-layout-slice
+               :p 1
+               (!data-segment-descriptor-attributes-layout-slice
+                :d/b 1
+                (!data-segment-descriptor-attributes-layout-slice
+                 :g 1
+                 ss-attr))))))))))
 
        (ss-hidden-descriptor
         (!hidden-seg-reg-layout-slice
@@ -496,30 +514,39 @@ REX.W + 0F 07: SYSRET</p>
          (!hidden-seg-reg-layout-slice
           :limit #xfffff cs-hidden-descriptor)))
 
-       ;; CS.Type <- 11;          (* Execute/read code, accessed *)
-       ;; CS.S    <- 1;
-       ;; CS.DPL  <- 3;
-       ;; CS.P    <- 1;
+       ;; CS.A       <- 1;   (* Accessed. *)
+       ;; CS.R       <- 1;   (* Execute/read code. *)
+       ;; CS.C       <- 0;
+       ;; CS.TypeMSB <- 1;
+       ;; CS.S       <- 1;
+       ;; CS.DPL     <- 3;
+       ;; CS.P       <- 1;
        ;; (* Return to 64-Bit Mode *)
-       ;; CS.L    <- 1;           (* 64-bit code segment *)
-       ;; CS.D    <- 0;           (* Required if CS.L = 1 *)
-       ;; CS.G    <- 1;           (* 4-KByte granularity *)
+       ;; CS.L       <- 1;           (* 64-bit code segment *)
+       ;; CS.D       <- 0;           (* Required if CS.L = 1 *)
+       ;; CS.G       <- 1;           (* 4-KByte granularity *)
        (cs-attr
         (!code-segment-descriptor-attributes-layout-slice
-         :type 11
+         :a 1
          (!code-segment-descriptor-attributes-layout-slice
-          :s 1
+          :r 1
           (!code-segment-descriptor-attributes-layout-slice
-           :dpl 3
+           :c 0
            (!code-segment-descriptor-attributes-layout-slice
-            :p 1
+            :msb-of-type 1
             (!code-segment-descriptor-attributes-layout-slice
-             :l 1
+             :s 1
              (!code-segment-descriptor-attributes-layout-slice
-              :d 0
+              :dpl 3
               (!code-segment-descriptor-attributes-layout-slice
-               :g 1
-               cs-attr))))))))
+               :p 1
+               (!code-segment-descriptor-attributes-layout-slice
+                :l 1
+                (!code-segment-descriptor-attributes-layout-slice
+                 :d 0
+                 (!code-segment-descriptor-attributes-layout-slice
+                  :g 1
+                  cs-attr)))))))))))
 
        (cs-hidden-descriptor
         (!hidden-seg-reg-layout-slice
@@ -554,27 +581,36 @@ REX.W + 0F 07: SYSRET</p>
          (!hidden-seg-reg-layout-slice
           :limit #xfffff ss-hidden-descriptor)))
 
-       ;; SS.Type  <- 3;           (* Read/write data, accessed *)
-       ;; SS.S     <- 1;
-       ;; SS.DPL   <- 3;
-       ;; SS.P     <- 1;
-       ;; SS.B     <- 1;           (* 32-bit stack segment*)
-       ;; SS.G     <- 1;           (* 4-KByte granularity *)
+       ;; SS.A       <-  1;      (* Accessed. *)
+       ;; SS.W       <-  1;      (* Read/write data. *)
+       ;; SS.E       <-  0;
+       ;; SS.TypeMSB <-  0;
+       ;; SS.S       <- 1;
+       ;; SS.DPL     <- 3;
+       ;; SS.P       <- 1;
+       ;; SS.B       <- 1;           (* 32-bit stack segment*)
+       ;; SS.G       <- 1;           (* 4-KByte granularity *)
 
        (ss-attr
         (!data-segment-descriptor-attributes-layout-slice
-         :type 3
+         :a 1
          (!data-segment-descriptor-attributes-layout-slice
-          :s 1
+          :w 1
           (!data-segment-descriptor-attributes-layout-slice
-           :dpl 3
+           :e 0
            (!data-segment-descriptor-attributes-layout-slice
-            :p 1
+            :msb-of-type 0
             (!data-segment-descriptor-attributes-layout-slice
-             :d/b 1
+             :s 1
              (!data-segment-descriptor-attributes-layout-slice
-              :g 1
-              ss-attr)))))))
+              :dpl 3
+              (!data-segment-descriptor-attributes-layout-slice
+               :p 1
+               (!data-segment-descriptor-attributes-layout-slice
+                :d/b 1
+                (!data-segment-descriptor-attributes-layout-slice
+                 :g 1
+                 ss-attr))))))))))
 
        (ss-hidden-descriptor
         (!hidden-seg-reg-layout-slice

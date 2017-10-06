@@ -165,7 +165,7 @@
                              ctx wrld
                              (default-state-vars t
 
-; For the applyication of verify-termination to a function that has already
+; For the application of verify-termination to a function that has already
 ; been admitted, we avoid failure due to an untouchable function or variable.
 
                                :temp-touchable-fns
@@ -726,39 +726,6 @@
 ; When we succeed in proving termination, we will store the
 ; justification properties.
 
-(defun normalize-ruler-extenders (ruler-extenders checkp)
-
-; The ruler-extenders supplied to a defun may be :all, :basic, :lambdas, or a
-; list of symbols.  The :basic value is equivalent to the list of symbols in
-; *basic-ruler-extenders*.  The :lambdas value is equivalent to the list
-; consisting of the symbol :lambdas and the symbols in *basic-ruler-extenders*.
-; This function normalizes ruler-extenders by expanding the :basic and :lambdas
-; values into lists, and by sorting and deduplicating list.  The value :all is
-; left unchanged.  This function is used in putprop-justification-lst to
-; normalize the ruler-extenders stored into the properties of a function, and
-; is used in non-identical-defp to normalize the ruler-extenders of a proposed
-; function for redundancy check, allowing a simple equality test for that
-; redundancy check.  Note that the default ruler-extenders are not stored in
-; normalized form, since they are not checked for redundancy.
-
-; If checkp is t then we are careful not to assume that ruler-extenders is
-; valid.  If it is not valid, then we return it unchanged.  Thus, when using
-; this function to compare proposed invalid ruler-extenders against the
-; ruler-extenders of an existing function (see non-identical-defp), we know
-; that they will differ.  But when using this function to store ruler-extenders
-; that have already been checked for legality (see putprop-justification-lst),
-; we avoid the needless check for a list of symbols.  Of course, this may be
-; overkill since probably it is never expensive to check that ruler-extenders
-; is a symbol-listp.
-
-  (cond ((eq ruler-extenders :all) :all)
-        ((eq ruler-extenders :basic) *basic-ruler-extenders*)
-        ((eq ruler-extenders :lambdas) *basic-ruler-extenders-plus-lambdas*)
-        ((or (null checkp) ; presumably no need to check for symbol-listp
-             (symbol-listp ruler-extenders))
-         (sort-symbol-listp ruler-extenders))
-        (t ruler-extenders)))
-
 (defun putprop-justification-lst (measure-alist subset-lst mp rel
                                                 ruler-extenders-lst
                                                 subversive-p wrld)
@@ -784,13 +751,7 @@
                            :mp mp
                            :rel rel
                            :measure (cdar measure-alist)
-
-; We normalize ruler-extenders prior to storing them.  See
-; normalize-ruler-extenders for an explanation.
-
-                           :ruler-extenders (normalize-ruler-extenders
-                                             (car ruler-extenders-lst)
-                                             nil))
+                           :ruler-extenders (car ruler-extenders-lst))
                      wrld)))))
 
 (defun union-equal-to-end (x y)
@@ -1330,7 +1291,7 @@
                                tests))
                   (t tests0))))
 
-; THrough Version_7.1 we returned nil when (null tests), with the comment:
+; Through Version_7.1 we returned nil when (null tests), with the comment:
 ; "contradictory case".  However, that caused a bad error when a caller
 ; expected a tests-and-calls record, as in the following example.
 
@@ -1828,7 +1789,7 @@
   (let ((wrld1 (putprop-recursivep-lst names bodies wrld)))
 
 ; The put above stores a note on each function symbol as to whether it is
-; recursive or not.  An important question arises: have we inadventently
+; recursive or not.  An important question arises: have we inadvertently
 ; assumed something axiomatically about inadmissible functions?  We say no.
 ; None of the functions in question have bodies yet, so the simplifier doesn't
 ; care about properties such as 'recursivep.  However, we make use of this
@@ -2119,7 +2080,7 @@
 ; processing.  For example, as nqthm taught us, the measure conjectures
 ; generated from term' may be inadequate to justify the admission of a function
 ; whose body is term.  A classic example is (fn x) = (if (fn x) t t), where the
-; normalized body is just t.  The Hisorical Plaque below contains a proof that
+; normalized body is just t.  The Historical Plaque below contains a proof that
 ; if (fn x) = term' is admissible then there exists one and only one function
 ; satisfying (fn x) = term.  Thus, while the latter definition may not actually
 ; be admissible it at least will not get us into trouble and in the end the
@@ -2989,7 +2950,7 @@
 ; Probably it would be sound to return
 ; (mv *ts-empty* *ts-empty* nil (cons-tag-trees ts-ttree ttree)).
 ; Since the context is contradictory.  But this hasn't been an issue as far as
-; we know, so we'll avoid making an airtight soundnss argument until the need
+; we know, so we'll avoid making an airtight soundness argument until the need
 ; arises.
 
        (type-set-and-returned-formals (fargn term 2)
@@ -3304,7 +3265,7 @@
 ; earlier included book were sometimes causing horrendous slowdowns in those
 ; computations while including a later book; and, we can lose nice
 ; type-prescriptions that were inferred during the proof (first) pass of
-; certify-book using local rules, where a similarl problem can occur with
+; certify-book using local rules, where a similar problem can occur with
 ; encapsulate.
 
 ; In March 2016 we solved these problems by introducing "cert-data" structures,
@@ -4040,7 +4001,7 @@
 ; Observe that our notion doesn't include any inspection of the tests
 ; governing the recursions and it doesn't include any check of the
 ; subfunctions used.  E.g., the function that collects all the values of
-; Ackerman's functions is p.r. if it recurses on cdr's.
+; Ackermann's functions is p.r. if it recurses on cdr's.
 
   (cond ((null names) wrld)
         ((cdr names) wrld)
@@ -4398,7 +4359,7 @@
 ; name, as in the :ideal case, but subject to the check for
 ; :common-lisp-compliant subfunctions that we do in the :ideal case.
 
-; One might wonder when two peers in a clique can have different symbol-classs,
+; One might wonder when two peers in a clique can have different symbol-classes,
 ; e.g., how is it possible (as implied above) for name to be :ideal but for one
 ; of its peers to be :common-lisp-compliant or :program?  Redefinition.  For
 ; example, the clique could have been admitted as :logic and then later one
@@ -4770,7 +4731,7 @@
 
 ; Note: In a series of conversations started around 13 Jun 94, with Bishop
 ; Brock, we came up with a new proposal for the form of guard conjectures.
-; However, we have decided to delay the experiementation with this proposal
+; However, we have decided to delay the experimentation with this proposal
 ; until we evaluate the new logic of Version 1.8.  But, the basic idea is this.
 ; Consider two functions, f and g, with guards a and b, respectively.  Suppose
 ; (f (g x)) occurs in a context governed by q.  Then the current guard
@@ -4785,7 +4746,7 @@
 
 ; Now in the days when guards were part of the logic, this was a pretty
 ; compelling idea because we couldn't get at the definition of (g x) in (2)
-; without establisthing (b x) and thus formulation (2) forced us to prove
+; without establishing (b x) and thus formulation (2) forced us to prove
 ; (1) all over again during the proof of (2).  But it is not clear whether
 ; we care now, because the smart user will define (g x) to "do the right thing"
 ; for any x and thus f will approve of (g x).  So it is our expectation that
@@ -5615,7 +5576,7 @@
 
 ; In this case, we skip the polite check that state can be a formal without
 ; declaring it a stobj.  This way, verify-termination can succeed in the case
-; that the original :program mode defininition was evaluated in a world with
+; that the original :program mode definition was evaluated in a world with
 ; state-ok but the current definition is not.
 
                                   (value nil))
@@ -5977,32 +5938,30 @@
   (let* ((justification (and chk-measure-p ; optimization
                              (getpropc (car def2) 'justification nil wrld)))
          (all-but-body1 (butlast (cddr def1) 1))
-         (ruler-extenders1-lst (fetch-dcl-field :ruler-extenders all-but-body1))
+         (all-but-body2 (butlast (cddr def2) 1))
 
-; We normalize the ruler-extenders of the proposed definition def1 prior to
-; comparing them below.  See normalize-ruler-extenders for an explanation.
+; We insist on the syntactic identity of the :ruler-extenders, and then check
+; that the default ruler-extenders in the two cases do not ruin the equality of
+; the two ruler-extenders.  Default ruler-extenders may ruin that equality only
+; if both definitions have no explicit ruler-extenders.
 
-         (ruler-extenders1 (if ruler-extenders1-lst
-                               (normalize-ruler-extenders
-                                (car ruler-extenders1-lst)
-                                t)
-                             (default-ruler-extenders wrld))))
+         (ruler-extenders1-lst (fetch-dcl-field :ruler-extenders
+                                                all-but-body1))
+         (ruler-extenders2-lst (fetch-dcl-field :ruler-extenders
+                                                all-but-body2)))
     (cond
-     ((cdr ruler-extenders1-lst)
-      (msg "the proposed definition for ~x0 specifies more than one ~
-            ruler-extenders declaration, which is illegal."
-           (car def1)
-           ruler-extenders1
-           (access justification justification :ruler-extenders)))
      ((and justification
-           (not (equal (access justification justification :ruler-extenders)
-                       ruler-extenders1)))
+           (or (not (equal ruler-extenders1-lst ruler-extenders2-lst))
+               (and (null ruler-extenders1-lst)
+                    (not (equal (access justification
+                                        justification
+                                        :ruler-extenders)
+                                (default-ruler-extenders wrld))))))
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-            ruler-extenders (see :DOC ruler-extenders).  The proposed value ~
-            of ruler-extenders is ~x1, while the value for the existing ~
-            definition of ~x0 is ~x2."
+            ruler-extenders (see :DOC ruler-extenders).  The proposed ~
+            ruler-extenders value does not match the existing ruler-extenders ~
+            for ~x0, namely, ~x1."
            (car def1)
-           ruler-extenders1
            (access justification justification :ruler-extenders)))
      ((equal def1 def2) ; optimization
       nil)
@@ -6018,35 +5977,32 @@
       (msg "the proposed body for ~x0,~|~%~p1,~|~%differs from the existing ~
             body,~|~%~p2.~|~%"
            (car def1) (car (last def1)) (car (last def2))))
-     (t
-      (let ((all-but-body2 (butlast (cddr def2) 1)))
-        (cond
-         ((not (equal (fetch-dcl-field :non-executable all-but-body1)
-                      (fetch-dcl-field :non-executable all-but-body2)))
-          (msg "the proposed and existing definitions for ~x0 differ on their ~
+     ((not (equal (fetch-dcl-field :non-executable all-but-body1)
+                  (fetch-dcl-field :non-executable all-but-body2)))
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
                 :non-executable declarations."
-               (car def1)))
-         ((flet ((normalize-value
-                  (x)
-                  (cond ((equal x '(nil))
-                         nil)
-                        ((or (equal x '(t))
-                             (null x))
-                         t)
-                        (t (er hard 'non-identical-defp
-                               "Internal error: Unexpected value when ~
+           (car def1)))
+     ((flet ((normalize-value
+              (x)
+              (cond ((equal x '(nil))
+                     nil)
+                    ((or (equal x '(t))
+                         (null x))
+                     t)
+                    (t (er hard 'non-identical-defp
+                           "Internal error: Unexpected value when ~
                                 processing :normalize xargs keyword, ~x0.  ~
                                 Please contact the ACL2 implementors."
-                               x)))))
+                           x)))))
             (not (equal (normalize-value
                          (fetch-dcl-field :normalize all-but-body1))
                         (normalize-value
                          (fetch-dcl-field :normalize all-but-body2)))))
-          (msg "the proposed and existing definitions for ~x0 differ on the ~
+      (msg "the proposed and existing definitions for ~x0 differ on the ~
                 values supplied by :normalize declarations."
-               (car def1)))
-         ((not (equal (fetch-dcl-field :stobjs all-but-body1)
-                      (fetch-dcl-field :stobjs all-but-body2)))
+           (car def1)))
+     ((not (equal (fetch-dcl-field :stobjs all-but-body1)
+                  (fetch-dcl-field :stobjs all-but-body2)))
 
 ; We insist that the :STOBJS of the two definitions be identical.  Vernon
 ; Austel pointed out the following bug.
@@ -6072,11 +6028,11 @@
 ; (my-callee-is-stobjless 3) is a well-formed :program mode term
 ; that treats 3 as a stobj.
 
-          (msg "the proposed and existing definitions for ~x0 differ on their ~
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
                 :stobj declarations."
-               (car def1)))
-         ((not (equal (fetch-dcl-field 'type all-but-body1)
-                      (fetch-dcl-field 'type all-but-body2)))
+           (car def1)))
+     ((not (equal (fetch-dcl-field 'type all-but-body1)
+                  (fetch-dcl-field 'type all-but-body2)))
 
 ; Once we removed the restriction that the type and :guard fields of the defs
 ; be equal.  But imagine that we have a strong guard on foo in our current ACL2
@@ -6089,25 +6045,25 @@
 ; calls of foo, but now that foo has a stronger guard than it did when the book
 ; was certified, this might not always be the case.
 
-          (msg "the proposed and existing definitions for ~x0 differ on their ~
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
                 type declarations."
-               (car def1)))
-         ((let* ((guards1 (fetch-dcl-field :guard all-but-body1))
-                 (guards1-trivial-p (or (null guards1) (equal guards1 '(t))))
-                 (guards2 (fetch-dcl-field :guard all-but-body2))
-                 (guards2-trivial-p (or (null guards2) (equal guards2 '(t)))))
+           (car def1)))
+     ((let* ((guards1 (fetch-dcl-field :guard all-but-body1))
+             (guards1-trivial-p (or (null guards1) (equal guards1 '(t))))
+             (guards2 (fetch-dcl-field :guard all-but-body2))
+             (guards2-trivial-p (or (null guards2) (equal guards2 '(t)))))
 
 ; See the comment above on type and :guard fields.  Here, we comprehend the
 ; fact that omission of a guard is equivalent to :guard t.  Of course, it is
 ; also equivalent to :guard 't and even to :guard (not nil), but we see no need
 ; to be that generous with our notion of redundancy.
 
-            (cond ((and guards1-trivial-p guards2-trivial-p)
-                   nil)
-                  ((not (equal guards1 guards2))
-                   (msg "the proposed and existing definitions for ~x0 differ ~
+        (cond ((and guards1-trivial-p guards2-trivial-p)
+               nil)
+              ((not (equal guards1 guards2))
+               (msg "the proposed and existing definitions for ~x0 differ ~
                          on their :guard declarations."
-                        (car def1)))
+                    (car def1)))
 
 ; So now we know that the guards are equal and non-trivial.  If the types are
 ; non-trivial too then we need to make sure that the combined order of guards
@@ -6127,41 +6083,41 @@
 ;
 ; (foo 3) ; hard raw Lisp error!
 
-                  ((not (equal (fetch-dcl-fields '(type :guard) all-but-body1)
-                               (fetch-dcl-fields '(type :guard)
-                                                 all-but-body2)))
-                   (msg "although the proposed and existing definitions for ~
+              ((not (equal (fetch-dcl-fields '(type :guard) all-but-body1)
+                           (fetch-dcl-fields '(type :guard)
+                                             all-but-body2)))
+               (msg "although the proposed and existing definitions for ~
                          ~x0 agree on the their type and :guard declarations, ~
                          they disagree on the combined orders of those ~
                          declarations.")))))
-         ((let ((split-types1 (fetch-dcl-field :split-types all-but-body1))
-                (split-types2 (fetch-dcl-field :split-types all-but-body2)))
-            (or (not (eq (all-nils split-types1) (all-nils split-types2)))
+     ((let ((split-types1 (fetch-dcl-field :split-types all-but-body1))
+            (split-types2 (fetch-dcl-field :split-types all-but-body2)))
+        (or (not (eq (all-nils split-types1) (all-nils split-types2)))
 
 ; Catch the case of illegal values in the proposed definition.
 
-                (not (boolean-listp split-types1))
-                (and (member-eq nil split-types1)
-                     (member-eq t split-types1))))
-          (msg "the proposed and existing definitions for ~x0 differ on their ~
+            (not (boolean-listp split-types1))
+            (and (member-eq nil split-types1)
+                 (member-eq t split-types1))))
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
                 :split-types declarations."
-               (car def1)))
-         ((not chk-measure-p)
-          nil)
-         ((null justification)
+           (car def1)))
+     ((not chk-measure-p)
+      nil)
+     ((null justification)
 
 ; The old definition (def2) was non-recursive.  Then since the names and bodies
 ; are identical (as checked above), the new definition (def1) is also
 ; non-recursive.  In this case we don't care about the measures; see the
 ; comment above about "syntactically illegal".
 
-          nil)
-         (t
-          (non-identical-defp-chk-measures
-           (car def1)
-           (fetch-dcl-field :measure all-but-body1)
-           (fetch-dcl-field :measure all-but-body2)
-           justification))))))))
+      nil)
+     (t
+      (non-identical-defp-chk-measures
+       (car def1)
+       (fetch-dcl-field :measure all-but-body1)
+       (fetch-dcl-field :measure all-but-body2)
+       justification)))))
 
 (defun identical-defp (def1 def2 chk-measure-p wrld)
 
@@ -6630,7 +6586,7 @@
 
 ; We return 'redundant if the functions in def-lst are already identically
 ; defined with :mode defun-mode and class symbol-class.  We return
-; 'verify-guards if they are al identically defined with :mode :logic and class
+; 'verify-guards if they are all identically defined with :mode :logic and class
 ; :ideal, but this definition indicates promotion to :common-lisp-compliant.
 ; Finally, we return 'reclassifying if they are all identically defined in
 ; :mode :program and defun-mode is :logic.  We return nil otherwise.
@@ -6861,7 +6817,7 @@
 ; be irrelevant.
 
 ; For example, in (defun foo (x y) (if (zerop x) 0 (foo (1- x) (cons x y)))) we
-; intially guess that x is relevant and y is not.  The next iteration adds
+; initially guess that x is relevant and y is not.  The next iteration adds
 ; nothing, because y is not used in the x posn, so we are done.
 
 ; On the other hand, in (defun foo (x y) (if (< x 2) x (foo y 0))) we might
@@ -7071,7 +7027,7 @@
 ; We compute the relevant posns in an expanded clique alist (one in which the
 ; lambda expressions have been elevated to clique membership).  The list of
 ; relevant posns includes the relevant lambda posns.  We do it by iteratively
-; enlarging an iniital clique-alist until it is closed.
+; enlarging an initial clique-alist until it is closed.
 
   (let* ((clique-alist1 (relevant-posns-clique-init fns arglists guards
                                                     split-types-terms measures

@@ -188,7 +188,7 @@
   ;; 0F B1: CMPXCHG r/m16/32/64, r16/32/64
 
   :parents (two-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -299,7 +299,7 @@
   ;; prefix anyway.
 
   :parents (two-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -357,7 +357,7 @@
 ;;   ;; 90
 
 ;;   :parents (one-byte-opcodes)
-;;   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+;;   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
 ;;   :returns (x86 x86p :hyp (and (x86p x86)
 ;;                                (canonical-address-p temp-rip)))

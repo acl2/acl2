@@ -81,92 +81,6 @@ the @('fault') field instead.</li>
              x86))
   )
 
-;; Extended by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
-;; Extended from always T to discriminating between 64-bit and 32-bit mode.
-(define 64-bit-modep (x86)
-  :parents (x86-decoding-and-spec-utils)
-  :short "Check whether we are in 64-bit mode."
-  :long
-  "<p>
-   For now we do not model in detail all the processor modes and transitions
-   (see Figure 2-3 in Intel Volume 3A).
-   We implicitly assume that the processor
-   is always in one of the following modes:
-   </p>
-   <ul>
-     <li>Protected mode.</li>
-     <li>Compatibility mode (sub-mode of IA-32e mode).</li>
-     <li>64-bit mode (sub-mode of IA-32e mode).</li>
-   </ul>
-   <p>
-   No real-address mode, virtual-8086 mode, or system management mode for now.
-   </p>
-   <p>
-   Given the above assumption, this predicate discriminates between
-   64-bit mode and the other two modes (collectively, 32-bit mode).
-   Based on Section 2.2 of in Intel Volume 3A (near Figure 2-3),
-   the discrimination is based on the IA32_EFER.LME and CS.L bits:
-   if they are both 1, we are in 64-bit mode,
-   otherwise we are in 32-bit mode
-   (protected mode if IA32_EFER.LME is 0,
-   compatibility mode if IA32_EFER.LME is 1 and CS.L is 0;
-   note that when IA32_EFER.LME is 0, CS.L should be 0,
-   according to Section 3.4.5 of Intel Volume 3A).
-   </p>
-   <p>
-   This predicate does not include state invariants such as
-   the constraints imposed by the 64-bit mode consistency checks
-   described in Section 9.8.5 of Intel Volume 3A.
-   </p>
-   <p>
-   This predicate is useful as a hypothesis of theorems
-   about either 64-bit or 32-bit mode.
-   </p>
-   <p>
-   Since @('(xr :msr ... x86)') returns a 64-bit value
-   but the IA32_EFER register consists of 12 bits.
-   So we use @(tsee n12) to make @('ia32_efer-slice') applicable.
-   </p>"
-  (b* ((ia32_efer (n12 (xr :msr *ia32_efer-idx* x86)))
-       (ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
-       (cs-hidden (xr :seg-hidden *cs* x86))
-       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-       (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
-    (and (equal ia32_efer.lma 1)
-         (equal cs.l 1)))
-  ///
-
-  (defrule 64-bit-modep-of-xw ; contributed by Eric Smith
-    (implies (and (not (equal fld :msr))
-                  (not (equal fld :seg-hidden)))
-             (equal (64-bit-modep (xw fld index value x86))
-                    (64-bit-modep x86))))
-
-  (defrule 64-bit-modep-of-mv-nth-1-of-wb ; contributed by Eric Smith
-    (equal (64-bit-modep (mv-nth 1 (wb n addr w value x86)))
-           (64-bit-modep x86)))
-
-  (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
-    (equal (64-bit-modep (!flgi flag val x86))
-           (64-bit-modep x86)))
-
-  (defrule 64-bit-modep-of-!flgi-undefined
-    (equal (64-bit-modep (!flgi-undefined flg x86))
-           (64-bit-modep x86))
-    :enable !flgi-undefined)
-
-  (defrule 64-bit-modep-of-write-user-rflags
-    (equal (64-bit-modep (write-user-rflags vector mask x86))
-           (64-bit-modep x86)))
-
-  (defrule 64-bit-modep-of-las-to-pas
-    (equal (64-bit-modep (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
-           (64-bit-modep x86)))
-
-  (defrule 64-bit-modep-of-write-x86-file-des
-    (equal (64-bit-modep (write-x86-file-des fd fd-field x86))
-           (64-bit-modep x86))))
-
 ;; ======================================================================
 
 (defsection effective-address-computations
@@ -197,7 +111,7 @@ the @('fault') field instead.</li>
                  (increment-RIP-by natp :rule-classes :type-prescription)
                  (x86 x86p :hyp (force (x86p x86))))
 
-    :prepwork ((local (in-theory (e/d (rim-size) ()))))
+    :prepwork ((local (in-theory (e/d (riml-size) ()))))
 
     (b* ((b (sib-base sib))
          ((mv flg base displacement nrip-bytes x86)
@@ -206,23 +120,23 @@ the @('fault') field instead.</li>
 
             (0 (if (equal b 5)
                    (b* (((mv ?flg0 dword x86)
-                         (rim-size 4 temp-RIP :x x86)) ;; sign-extended
+                         (riml-size 4 temp-RIP :x x86)) ;; sign-extended
                         ((when flg0)
-                         (mv (cons flg0 'rim-size-error) 0 0 0 x86)))
+                         (mv (cons flg0 'riml-size-error) 0 0 0 x86)))
                        (mv nil 0 dword 4 x86))
                  (mv nil (rgfi (reg-index b rex-byte #.*b*) x86) 0 0 x86)))
 
             (1 (b* (((mv ?flg1 byte x86)
-                     (rim-size 1 temp-RIP :x x86)) ;; sign-extended
+                     (riml-size 1 temp-RIP :x x86)) ;; sign-extended
                     ((when flg1)
-                     (mv (cons flg1 'rim-size-error) 0 0 0 x86)))
+                     (mv (cons flg1 'riml-size-error) 0 0 0 x86)))
                    (mv nil (rgfi (reg-index b rex-byte #.*b*) x86)
                        byte 1 x86)))
 
             (2 (b* (((mv ?flg2 dword x86)
-                     (rim-size 4 temp-RIP :x x86)) ;; sign-extended
+                     (riml-size 4 temp-RIP :x x86)) ;; sign-extended
                     ((when flg2)
-                     (mv (cons flg2 'rim-size-error) 0 0 0 x86)))
+                     (mv (cons flg2 'riml-size-error) 0 0 0 x86)))
                    (mv nil (rgfi (reg-index b rex-byte #.*b*) x86)
                        dword 4 x86)))
 
@@ -249,13 +163,13 @@ the @('fault') field instead.</li>
       (equal (mv-nth 2 (x86-effective-addr-from-sib
                         temp-RIP rex-byte mod sib x86))
              0)
-      :hints (("Goal" :in-theory (e/d (rim-size) ()))))
+      :hints (("Goal" :in-theory (e/d (riml-size) ()))))
 
     (defthm x86-effective-addr-from-sib-returns-<=-increment-rip-bytes
       (<= (mv-nth 3 (x86-effective-addr-from-sib temp-RIP rex-byte mod
                                                  sib x86))
           4)
-      :hints (("Goal" :in-theory (e/d (rim-size) ())))
+      :hints (("Goal" :in-theory (e/d (riml-size) ())))
       :rule-classes :linear))
 
   (encapsulate
@@ -352,7 +266,7 @@ the @('fault') field instead.</li>
                     (b* (((mv ?flg0 dword x86)
                           ;; dword1 is the sign-extended displacement
                           ;; present in the instruction.
-                          (rim-size 4 temp-RIP :x x86))
+                          (riml-size 4 temp-RIP :x x86))
                          ;; next-rip is the rip of the next instruction.
                          ;; temp-RIP + 4 bytes of the displacement
                          ;; mentioned above + bytes of rest of the
@@ -375,7 +289,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg2 byte2 x86)
-                      (rim-size 1 temp-RIP :x x86)) ; sign-extended
+                      (riml-size 1 temp-RIP :x x86)) ; sign-extended
                      (reg (rgfi (reg-index r/m rex-byte #.*b*) x86)))
                     (mv flg2 reg byte2 1 x86)))))
 
@@ -389,7 +303,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg1 dword x86)
-                      (rim-size 4 temp-RIP :x x86)) ; sign-extended
+                      (riml-size 4 temp-RIP :x x86)) ; sign-extended
                      (reg (rgfi (reg-index r/m rex-byte #.*b*) x86)))
                     (mv flg1 reg dword 4 x86)))))
 
@@ -716,7 +630,7 @@ made from privilege level 3.</sf>"
             ;; The operand is being fetched from the memory, not the
             ;; instruction stream. That's why we have :r instead of :x
             ;; below.
-            (rm-size operand-size v-addr :r x86)))
+            (rml-size operand-size v-addr :r x86)))
          ((when flg2)
           (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
 
@@ -756,7 +670,7 @@ made from privilege level 3.</sf>"
                                 reg-type operand-size inst-ac?
                                 memory-ptr? p2 p4 temp-RIP rex-byte
                                 r/m mod sib num-imm-bytes x86))))
-      :hints (("Goal" :in-theory (e/d (rm-size) ())))
+      :hints (("Goal" :in-theory (e/d (rml-size) ())))
       :rule-classes :type-prescription)
 
     (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-linear<=4
@@ -765,7 +679,7 @@ made from privilege level 3.</sf>"
                               reg-type operand-size inst-ac?
                               memory-ptr? p2 p4 temp-RIP rex-byte r/m
                               mod sib num-imm-bytes x86)) 4))
-      :hints (("Goal" :in-theory (e/d (rm-size) ())))
+      :hints (("Goal" :in-theory (e/d (rml-size) ())))
       :rule-classes :linear)
 
     (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes
@@ -861,7 +775,7 @@ made from privilege level 3.</sf>"
           (mv t x86))
 
          ((mv flg x86)
-          (wm-size operand-size v-addr operand x86)))
+          (wml-size operand-size v-addr operand x86)))
       (mv flg x86))
 
     ///
@@ -924,7 +838,7 @@ made from privilege level 3.</sf>"
           (mv t x86))
 
          ((mv flg x86)
-          (wm-size operand-size v-addr operand x86)))
+          (wml-size operand-size v-addr operand x86)))
       (mv flg x86))
 
     ///

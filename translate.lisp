@@ -406,7 +406,7 @@
 ; **1*-as-raw* is bound to t when calling *1*foo, so we might expect that
 ; evaluation of the mbe form under (lgc st) would use the :exec form, leading
 ; erroneously to a successful proof!  However, we bind **1*-as-raw* to nil in
-; raw-ev-fncall precisely to avoid such a probem.
+; raw-ev-fncall precisely to avoid such a problem.
 
 ; To see why we need (d), see the example in a comment in oneify that starts
 ; with "(defun f-log".
@@ -1350,9 +1350,9 @@
 ; An event tuple is always a cons.  Except in the initial case created by
 ; primordial-world-globals, the car is always either a natural (denoting n and
 ; implying d=0) or a cons of two naturals, n and d.  Its cadr is either a
-; symbol, denoting its type and signalling that the cdr is the form, the
+; symbol, denoting its type and signaling that the cdr is the form, the
 ; symbol-class is :program and that the namex can be recovered from the form,
-; or else the cadr is the pair (ev-type namex . symbol-class) signalling that
+; or else the cadr is the pair (ev-type namex . symbol-class) signaling that
 ; the form is the cddr.
 
 ; Generally, the val encodes:
@@ -1847,7 +1847,7 @@
 
 ; Targets is a subset of (GUARDS TYPES), where we pick up expressions from
 ; :GUARD and :STOBJS XARGS declarations if GUARDS is in the list and we pick up
-; expressions corresponding to TYPE declaraions if TYPES is in the list.
+; expressions corresponding to TYPE declarations if TYPES is in the list.
 
 ; See get-guards for an example of what edcls looks like.  We require that
 ; edcls contains only valid type declarations, as explained in the comment
@@ -2860,7 +2860,7 @@
 ; push anything.
 
 ; The next problem, however, is what do we push?  In normal circumstances --
-; i.e., body terminating without an evaluation error but signalling an error --
+; i.e., body terminating without an evaluation error but signaling an error --
 ; cleanup1 is evaluated by ev.  But cleanup1 is evaluated in w, which may or
 ; may not be the installed world.  Hence, the meaning in w of the function
 ; symbol in the car of cleanup1 may be different from the raw lisp definition
@@ -2954,7 +2954,7 @@
 ; clean-latches because the cleanup form produces a state.
 
            (mv body-erp body-val clean-latches)))))
-       ((car body-val) ; "soft error," i.e., body signalled error
+       ((car body-val) ; "soft error," i.e., body signaled error
 
 ; We think this call of acl2-unwind is unnecessary.  It is here in
 ; case the evaluation of body pushed some additional forms onto the
@@ -2967,7 +2967,7 @@
 
 ; Because body is known to produce an error triple we know its car is
 ; the error flag, the cadr is the value, and the caddr is a state
-; The test above therefore detects that the body signalled an error.
+; The test above therefore detects that the body signaled an error.
 
         (mv-let
          (clean-erp clean-val clean-latches)
@@ -3454,7 +3454,7 @@
 
 ; We store the quotation of the original form of a syntaxp or bind-free
 ; hypothesis in the second arg of its expansion.  We do this so that we
-; can use it here and output something that the user will recognise.
+; can use it here and output something that the user will recognize.
 
            (cadr (fargn term 2)))
           ((and (eq (ffn-symb term) 'return-last)
@@ -3660,6 +3660,12 @@
                       latches hard-error-returns-nilp aok)))
 
 (defun ev (form alist state latches hard-error-returns-nilp aok)
+
+; WARNING: This function must never be in :logic mode, because it can violate
+; single-threadedness!  See :doc user-stobjs-modified-warnings.  Fortunately, t
+; has raw Lisp code and is thus (as of this writing) prevented from being
+; promoted to :logic mode.
+
   (declare (xargs :guard (and (state-p state)
                               (termp form (w state))
                               (symbol-alistp alist))))
@@ -4070,6 +4076,13 @@
 ; This function has the same effect as warning1, except that printing is in a
 ; wormhole and hence doesn't modify state.
 
+  (declare (xargs :guard (and (stringp summary)
+                              (standard-string-p summary)
+                              (alistp alist)
+                              (plist-worldp wrld)
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table wrld))
+                              (weak-state-vars-p state-vars))))
   (warning1-form t))
 
 (defmacro warning$-cw1 (ctx summary str+ &rest fmt-args)
@@ -4111,7 +4124,12 @@
      (warning$-cw1 ,ctx nil ,@args)))
 
 (defun chk-length-and-keys (actuals form wrld)
-  (cond ((null actuals)
+  (declare (xargs :guard (and (true-listp actuals)
+                              (true-listp form)
+                              (symbolp (car form))
+                              (plist-worldp wrld))
+                  :measure (acl2-count actuals)))
+  (cond ((endp actuals)
          (value-cmp nil))
         ((null (cdr actuals))
          (er-cmp *macro-expansion-ctx*
@@ -4145,6 +4163,10 @@
   `(local (set-duplicate-keys-action! ,key ,action)))
 
 (defun duplicate-keys-action (key wrld)
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (symbol-alistp (table-alist 'duplicate-keys-action-table
+                                                   wrld)))))
   (let ((pair (assoc-eq key (table-alist 'duplicate-keys-action-table wrld))))
     (cond (pair (cdr pair))
           (t ; default
@@ -4154,12 +4176,182 @@
 
            :error))))
 
+;  We permit macros under the following constraints on the args.
+
+;  1.  No destructuring.  (Maybe some day.)
+;  2.  No &aux.           (LET* is better.)
+;  3.  Initforms must be quotes.  (Too hard for us to do evaluation right.)
+;  4.  No &environment.   (Just not clearly enough specified in CLTL.)
+;  5.  No nonstandard lambda-keywords.  (Of course.)
+;  6.  No multiple uses of :allow-other-keys.  (Implementations differ.)
+
+;  There are three nests of functions that have the same view of
+;  the subset of macro args that we support:  macro-vars...,
+;  chk-macro-arglist..., and bind-macro-args...  Of course, it is
+;  necessary to keep them all with the same view of the subset.
+
+; The following code is a ``pseudo'' translation of the functions between
+; chk-legal-init-msg and chk-macro-arglist.  Those checkers cause errors when
+; their requirements are violated and these functions are just predicates.
+; However, they are ``pseudo'' translations because they do not check, for
+; example, that alleged variable symbols really are legal variable symbols.
+; They are used in the guards for the functions leading up to and including
+; macro-vars, which recovers all the variable symbols used in the formals list
+; of an acceptable defmacro.
+
+(defun legal-initp (x)
+  (and (consp x)
+       (true-listp x)
+       (equal 2 (length x))
+       (eq (car x) 'quote)))
+
+; The following function is just the negation of chk-macro-arglist-keysp, when
+; applied to a true-listp args.  The reason it must be applied to a true-listp
+; is that macro-arglist-keysp terminates on an endp test and its counterpart
+; checker terminates on a null test and may recur one additional time on
+; non-true-lists.
+
+(defun macro-arglist-keysp (args keys-passed)
+  (declare (xargs :guard (and (true-listp args)
+                              (true-listp keys-passed))))
+  (cond ((endp args) t)
+        ((eq (car args) '&allow-other-keys)
+         (null (cdr args)))
+        ((atom (car args))
+         (cond ((symbolp (car args))
+                (let ((new (intern (symbol-name (car args)) "KEYWORD")))
+                  (and (not (member new keys-passed))
+                       (macro-arglist-keysp (cdr args)
+                                            (cons new keys-passed)))))
+               (t nil)))
+        ((or (not (true-listp (car args)))
+             (> (length (car args)) 3))
+         nil)
+        (t (and (or (symbolp (caar args))
+                    (and (true-listp (caar args))
+                         (equal (length (caar args)) 2)
+                         (keywordp (car (caar args)))
+                         (symbolp (cadr (caar args)))))
+                (implies (> (length (car args)) 1)
+                         (legal-initp (cadr (car args))))
+                (implies (> (length (car args)) 2)
+                         (symbolp (caddr (car args))))
+                (let ((new (cond ((symbolp (caar args))
+                                  (intern (symbol-name (caar args))
+                                          "KEYWORD"))
+                                 (t (car (caar args))))))
+                  (and (not (member new keys-passed))
+                       (macro-arglist-keysp (cdr args)
+                                            (cons new keys-passed))))))))
+
+(defun macro-arglist-after-restp (args)
+  (declare (xargs :guard (true-listp args)))
+  (cond ((endp args) t)
+        ((eq (car args) '&key)
+         (macro-arglist-keysp (cdr args) nil))
+        (t nil)))
+
+(defun macro-arglist-optionalp (args)
+  (declare (xargs :guard (true-listp args)))
+  (cond ((endp args) t)
+        ((member (car args) '(&rest &body))
+         (cond ((and (cdr args)
+                     (symbolp (cadr args))
+                     (not (lambda-keywordp (cadr args))))
+                (macro-arglist-after-restp (cddr args)))
+               (t nil)))
+        ((eq (car args) '&key)
+         (macro-arglist-keysp (cdr args) nil))
+        ((symbolp (car args))
+         (macro-arglist-optionalp (cdr args)))
+        ((or (atom (car args))
+             (not (true-listp (car args)))
+             (not (< (length (car args)) 4)))
+         nil)
+        ((not (symbolp (car (car args))))
+         nil)
+        ((and (> (length (car args)) 1)
+              (not (legal-initp (cadr (car args)))))
+         nil)
+        ((and (equal (length (car args)) 3)
+              (not (symbolp (caddr (car args)))))
+         nil)
+        (t (macro-arglist-optionalp (cdr args)))))
+
+(defun macro-arglist1p (args)
+  (declare (xargs :guard (true-listp args)))
+  (cond ((endp args) t)
+        ((not (symbolp (car args)))
+         nil)
+        ((member (car args) '(&rest &body))
+         (cond ((and (cdr args)
+                     (symbolp (cadr args))
+                     (not (lambda-keywordp (cadr args))))
+                (macro-arglist-after-restp (cddr args)))
+               (t nil)))
+        ((eq (car args) '&optional)
+         (macro-arglist-optionalp (cdr args)))
+        ((eq (car args) '&key)
+         (macro-arglist-keysp (cdr args) nil))
+        (t (macro-arglist1p (cdr args)))))
+
+(defun subsequencep (lst1 lst2)
+
+  (declare (xargs :guard (and (eqlable-listp lst1)
+                              (true-listp lst2))))
+
+; We return t iff lst1 is a subsequence of lst2, in the sense that
+; '(a c e) is a subsequence of '(a b c d e f) but '(a c b) is not.
+
+  (cond ((endp lst1) t)
+        (t (let ((tl (member (car lst1) lst2)))
+             (cond ((endp tl) nil)
+                   (t (subsequencep (cdr lst1) (cdr tl))))))))
+
+(defun collect-lambda-keywordps (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((lambda-keywordp (car lst))
+         (cons (car lst) (collect-lambda-keywordps (cdr lst))))
+        (t (collect-lambda-keywordps (cdr lst)))))
+
+(defun macro-args-structurep (args)
+  (declare (xargs :guard t))
+  (and (true-listp args)
+       (let ((lambda-keywords (collect-lambda-keywordps args)))
+         (and
+          (or (subsequencep lambda-keywords
+                            '(&whole &optional &rest &key &allow-other-keys))
+              (subsequencep lambda-keywords
+                            '(&whole &optional &body &key &allow-other-keys)))
+          (and (not (member-eq '&whole (cdr args)))
+               (implies (member-eq '&allow-other-keys args)
+                        (member-eq '&allow-other-keys
+                                   (member-eq '&key args)))
+               (implies (eq (car args) '&whole)
+                        (and (consp (cdr args))
+                             (symbolp (cadr args))
+                             (not (lambda-keywordp (cadr args)))
+                             (macro-arglist1p (cddr args))))
+               (macro-arglist1p args))))))
+
 (defun bind-macro-args-keys1 (args actuals allow-flg alist form wrld
                                    state-vars)
 
 ; We need parameter state-vars because of the call of warning$-cw1 below.
 
-  (cond ((null args)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (keyword-value-listp actuals)
+                              (symbol-alistp alist)
+                              (true-listp form)
+                              (symbolp (car form))
+                              (plist-worldp wrld)
+                              (symbol-alistp
+                               (table-alist 'duplicate-keys-action-table
+                                            wrld))
+                              (weak-state-vars-p state-vars))))
+  (cond ((endp args)
          (cond ((or (null actuals) allow-flg)
                 (value-cmp alist))
                (t (er-cmp *macro-expansion-ctx*
@@ -4226,6 +4418,13 @@
                  form wrld state-vars))))))))
 
 (defun bind-macro-args-keys (args actuals alist form wrld state-vars)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (true-listp actuals)
+                              (symbol-alistp alist)
+                              (true-listp form)
+                              (plist-worldp wrld)
+                              (weak-state-vars-p state-vars))))
   (er-progn-cmp
    (chk-length-and-keys actuals form wrld)
    (cond ((assoc-keyword :allow-other-keys
@@ -4244,8 +4443,15 @@
     alist form wrld state-vars)))
 
 (defun bind-macro-args-after-rest (args actuals alist form wrld state-vars)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (true-listp actuals)
+                              (symbol-alistp alist)
+                              (true-listp form)
+                              (plist-worldp wrld)
+                              (weak-state-vars-p state-vars))))
   (cond
-   ((null args) (value-cmp alist))
+   ((endp args) (value-cmp alist))
    ((eq (car args) '&key)
     (bind-macro-args-keys (cdr args) actuals alist form wrld state-vars))
    (t (er-cmp *macro-expansion-ctx*
@@ -4254,7 +4460,14 @@
               form))))
 
 (defun bind-macro-args-optional (args actuals alist form wrld state-vars)
-  (cond ((null args)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (true-listp actuals)
+                              (symbol-alistp alist)
+                              (true-listp form)
+                              (plist-worldp wrld)
+                              (weak-state-vars-p state-vars))))
+  (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
                (t (er-cmp *macro-expansion-ctx*
@@ -4289,7 +4502,13 @@
               form wrld state-vars)))))
 
 (defun bind-macro-args1 (args actuals alist form wrld state-vars)
-  (cond ((null args)
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist1p args)
+                              (true-listp form)
+                              (symbol-alistp alist)
+                              (plist-worldp wrld)
+                              (weak-state-vars-p state-vars))))
+  (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
                (t (er-cmp *macro-expansion-ctx*
@@ -4315,6 +4534,10 @@
                              form wrld state-vars))))
 
 (defun bind-macro-args (args form wrld state-vars)
+  (declare (xargs :guard (and (macro-args-structurep args)
+                              (true-listp form)
+                              (plist-worldp wrld)
+                              (weak-state-vars-p state-vars))))
   (cond ((and (consp args)
               (eq (car args) '&whole))
          (bind-macro-args1 (cddr args) (cdr form)
@@ -5184,7 +5407,7 @@
 ; We mentioned a relaxation above for the case of congruent stobjs.  (See :DOC
 ; defstobj for an introduction to congruent stobjs.)  Consider again a function
 ; call.  Each argument corresponding to a non-nil stobj flag should be
-; a stobj that is congruent to that flag (a stobj).  Moreoever, no two such
+; a stobj that is congruent to that flag (a stobj).  Moreover, no two such
 ; arguments may be the same.
 
 ; We turn now from translation to evaluation in the logic (i.e., with *1*
@@ -5560,7 +5783,7 @@
 ; Provided every element of lst has a guard of t, the output has a guard of t.
 ; The intention here is that lst is a list of distinct variable names and
 ; name-dropper builds a translated term whose free-vars are those variables;
-; futhermore, it is cheap to evaluate and always has a guard of T.
+; furthermore, it is cheap to evaluate and always has a guard of T.
 ; The general form is either 'NIL, a single var, or a PROG2$ nest around
 ; the vars.
 
@@ -5844,7 +6067,7 @@
 
 ; Either return (mv binding nil nil ... nil) for some unsuitable binding in
 ; bindings, or else return the result of accumulating from bindings into the
-; other argments.  See parse-stobj-let.  Note that stobj is initially nil, but
+; other arguments.  See parse-stobj-let.  Note that stobj is initially nil, but
 ; is bound by the first recursive call and must be the same at every ensuing
 ; recursive call.
 
@@ -7911,7 +8134,9 @@
 (defun translate11 (x stobjs-out bindings known-stobjs flet-alist
                       cform ctx wrld state-vars)
 
-; Warning: Keep this in sync with macroexpand1*-cmp.
+; Warning: Keep this in sync with macroexpand1*-cmp.  Also, for any new special
+; operators (e.g., let and translate-and-test), consider extending
+; *special-ops* in community book books/misc/check-acl2-exports.lisp.
 
 ; Bindings is an alist binding symbols either to their corresponding STOBJS-OUT
 ; or to symbols.  The only symbols used are (about-to-be introduced) function
@@ -7945,7 +8170,7 @@
 ; But that is hard since the binding may come deep in some recursive
 ; call of translate.]
 
-; T always deferences to t and nothing else dereferences to t.  So you
+; T always dereferences to t and nothing else dereferences to t.  So you
 ; can check (eq stobjs-out t) without dereferencing to know whether we
 ; care about the stobjs-out conditions.
 
@@ -8059,15 +8284,16 @@
                             bindings)))))))))
    ((not (true-listp (cdr x)))
     (trans-er ctx
-              "Function applications in ACL2 must end in NIL.  ~x0 is ~
-               not of this form."
+              "Function (and macro) applications in ACL2 must end in NIL.  ~
+               ~x0 is not of this form."
               x))
    ((not (symbolp (car x)))
     (cond ((or (not (consp (car x)))
                (not (eq (caar x) 'lambda)))
            (trans-er ctx
-                     "Function applications in ACL2 must begin with a symbol ~
-                      or LAMBDA expression.  ~x0 is not of this form."
+                     "Function (and macro) applications in ACL2 must begin ~
+                      with a symbol or LAMBDA expression.  ~x0 is not of this ~
+                      form."
                      x))
           ((or (not (true-listp (car x)))
                (not (>= (length (car x)) 3))
@@ -8704,6 +8930,23 @@
                  "It is illegal to call ~x0 because it has been placed on ~
                   untouchable-fns."
                  (car x)))
+     ((and (eq (car x) 'ld) ; next check if we're in a definition body
+           (not (or (eq stobjs-out t)
+                    (assoc-eq :stobjs-out bindings)))
+
+; Here we enforce the requirement that a call of LD in a user definition body
+; must specify :ld-user-stobjs-modified-warning.  This requirement forces the
+; tool writer who calls LD to confront the question of whether or not
+; "user-stobjs-modified" warnings are appropriate.
+
+           (not (global-val 'boot-strap-flg wrld))
+           (true-listp x) ; else macroexpansion will disallow this anyhow
+           (not (member-eq :ld-user-stobjs-modified-warning (cdr x))))
+      (trans-er+ x ctx
+                 "It is illegal to call ~x0 in a function body without ~
+                  specifying a value for :ld-user-stobjs-modified-warning.  ~
+                  See :DOC user-stobjs-modified-warning."
+                 (car x)))
      (t
       (mv-let
        (erp expansion)
@@ -8805,7 +9048,7 @@
 
 ; Robert Krug has mentioned the possibility that the known-stobjs below could
 ; perhaps be t.  This would allow a function called by synp to use, although
-; not change, stobjs.  If this is changed, change the referances to stobjs in
+; not change, stobjs.  If this is changed, change the references to stobjs in
 ; the documentation for syntaxp and bind-free as appropriate.  But before
 ; making such a change, consider this: no live user-defined stobj will ever
 ; appear in the unifying substitution that binds variables in the evg of
@@ -9515,7 +9758,7 @@
 (defun all-fnnames1 (flg x acc)
 
 ; Flg is nil for all-fnnames, t for all-fnnames-lst.  Note that this includes
-; function names occuring in the :exec part of an mbe.  Keep this in sync with
+; function names occurring in the :exec part of an mbe.  Keep this in sync with
 ; all-fnnames1-exec.
 
   (cond (flg ; x is a list of terms
@@ -9825,7 +10068,23 @@
   (declare (ignore ctx stobjs))
   (user-stobj-alist state))
 
-(defun ev-for-trans-eval (trans vars stobjs-out ctx state aok)
+(defun collect-user-stobjs (stobjs-out)
+  (cond ((endp stobjs-out) nil)
+        ((or (null (car stobjs-out))
+             (eq (car stobjs-out) 'state))
+         (collect-user-stobjs (cdr stobjs-out)))
+        (t (cons (car stobjs-out)
+                 (collect-user-stobjs (cdr stobjs-out))))))
+
+(defun ev-for-trans-eval (trans vars stobjs-out ctx state aok
+                                user-stobjs-modified-warning)
+
+; WARNING: This function must never be in :logic mode, because it can violate
+; single-threadedness!  See :doc user-stobjs-modified-warnings.  Fortunately,
+; it depends hereditarily on the function ev, which has raw Lisp code and is
+; thus (as of this writing) prevented from being promoted to :logic mode.
+
+; Warning: Keep in sync with ev-w-for-trans-eval.
 
 ; Trans is a translated term with the indicated stobjs-out, and vars is
 ; (all-vars term).  We return the result of evaluating trans, but formulated as
@@ -9837,17 +10096,18 @@
 
   (let ((alist (cons (cons 'state
                            (coerce-state-to-object state))
-                     (user-stobj-alist-safe 'trans-eval vars state))))
+                     (user-stobj-alist-safe 'trans-eval vars state)))
+        (user-stobjs (collect-user-stobjs stobjs-out)))
     (mv-let
-     (erp val latches)
-     (ev trans alist state alist
+      (erp val latches)
+      (ev trans alist state alist
 
 ; The next argument is hard-error-returns-nilp.  Think hard before changing it!
 ; For example, ev-for-trans-eval is called by eval-clause-processor; hence if a
 ; clause-processor invokes sys-call, the call (er hard ...) under sys-call will
 ; be guaranteed to cause an error that the user can see (and react to).
 
-         nil aok)
+          nil aok)
 
 ; The first state binding below is the state produced by the evaluation of the
 ; form.  The second state is the first, but with the user-stobj-alist of that
@@ -9859,34 +10119,43 @@
 ; the user-stobj-alist of their results, else we risk overturning carefully
 ; computed answers by restoring old stobjs.
 
-     (let ((state
-            (coerce-object-to-state (cdr (car latches)))))
-       (let ((state
-              (cond
-               ((user-stobjsp stobjs-out)
-                (update-user-stobj-alist
-                 (put-assoc-eq-alist (user-stobj-alist state)
-                                     (cdr latches))
-                 state))
-               (t state))))
-         (cond
-          (erp
+      (pprogn
+       (coerce-object-to-state (cdr (car latches)))
+       (cond (user-stobjs
+              (pprogn
+               (update-user-stobj-alist
+                (put-assoc-eq-alist (user-stobj-alist state)
+                                    (cdr latches))
+                state)
+               (cond
+                (user-stobjs-modified-warning
+                 (warning$ ctx "User-stobjs-modified"
+                           "A call of the ACL2 evaluator on the term ~x0 has ~
+                            modified the user stobj~#1~[~/s~] ~&1.  See :DOC ~
+                            user-stobjs-modified-warning."
+                           trans
+                           user-stobjs))
+                (t state))))
+             (t state))
+       (cond
+        (erp
 
 ; If ev caused an error, then val is a pair (str . alist) explaining the error.
 ; We will process it here (as we have already processed the translate errors
 ; that might have arisen) so that all the errors that might be caused by this
 ; translation and evaluation are handled within this function.
 
-           (error1 ctx (car val) (cdr val) state))
-          (t (mv nil
-                 (cons stobjs-out
-                       (replace-stobjs stobjs-out val))
-                 state))))))))
+         (error1 ctx (car val) (cdr val) state))
+        (t (mv nil
+               (cons stobjs-out
+                     (replace-stobjs stobjs-out val))
+               state)))))))
 
 #+acl2-par
-(defun ev-w-for-trans-eval (trans vars stobjs-out ctx state aok)
+(defun ev-w-for-trans-eval (trans vars stobjs-out ctx state aok
+                                  user-stobjs-modified-warning)
 
-; See analogous function ev-for-trans-eval.
+; Warning: Keep in sync with ev-for-trans-eval.
 
 ; Parallelism wart: add an assertion that stobjs-out does not contain state (or
 ; any other stobj).  Perhaps the assertion should be that stobjs-out equals the
@@ -9894,17 +10163,25 @@
 
   (let ((alist (cons (cons 'state
                            (coerce-state-to-object state))
-                     (user-stobj-alist-safe 'trans-eval vars state))))
+                     (user-stobj-alist-safe 'trans-eval vars state)))
+        (user-stobjs (collect-user-stobjs stobjs-out)))
     (mv-let
-     (erp val)
-     (ev-w trans alist
-           (w state)
-           (user-stobj-alist state)
-           (f-get-global 'safe-mode state) (gc-off state)
-           nil aok)
-
-     (cond
-      (erp
+      (erp val)
+      (ev-w trans alist
+            (w state)
+            (user-stobj-alist state)
+            (f-get-global 'safe-mode state) (gc-off state)
+            nil aok)
+      (prog2$
+       (and user-stobjs-modified-warning
+            (warning$@par ctx "User-stobjs-modified"
+              "A call of the ACL2 evaluator on the term ~x0 has modified the ~
+               user stobj~#1~[~/s~] ~&1.  See :DOC ~
+               user-stobjs-modified-warning."
+              trans
+              user-stobjs))
+       (cond
+        (erp
 
 ; If ev caused an error, then val is a pair (str . alist) explaining
 ; the error.  We will process it here (as we have already processed the
@@ -9915,10 +10192,10 @@
 ; Parallelism wart: check that the above comment is true and applicable in this
 ; function, even though we call ev-w instead of ev.
 
-       (error1@par ctx (car val) (cdr val) state))
-      (t (mv nil
-             (cons stobjs-out
-                   (replace-stobjs stobjs-out val))))))))
+         (error1@par ctx (car val) (cdr val) state))
+        (t (mv nil
+               (cons stobjs-out
+                     (replace-stobjs stobjs-out val)))))))))
 
 (defun macroexpand1* (x ctx wrld state)
 
@@ -9928,7 +10205,14 @@
   (cmp-to-error-triple
    (macroexpand1*-cmp x ctx wrld (default-state-vars t))))
 
-(defun trans-eval1 (term stobjs-out ctx wrld state aok)
+(defun trans-eval1 (term stobjs-out ctx wrld state aok
+                         user-stobjs-modified-warning)
+
+; WARNING: This function must never be in :logic mode, because it can violate
+; single-threadedness!  See :doc user-stobjs-modified-warnings.  Fortunately,
+; it depends hereditarily on the function ev, which has raw Lisp code and is
+; thus (as of this writing) prevented from being promoted to :logic mode.
+
   (let ((vars (all-vars term)))
     (cond
      ((non-stobjps vars t wrld) ;;; known-stobjs = t
@@ -9936,9 +10220,61 @@
           "Global variables, such as ~&0, are not allowed. See :DOC ASSIGN ~
            and :DOC @."
           (non-stobjps vars t wrld))) ;;; known-stobjs = t
-     (t (ev-for-trans-eval term vars stobjs-out ctx state aok)))))
+     (t (ev-for-trans-eval term vars stobjs-out ctx state aok
+                           user-stobjs-modified-warning)))))
+
+(defun trans-eval0 (form ctx state aok user-stobjs-modified-warning)
+
+; WARNING: This function must never be in :logic mode, because it can violate
+; single-threadedness!  See :doc user-stobjs-modified-warnings.  Fortunately,
+; it depends hereditarily on the function ev, which has raw Lisp code and is
+; thus (as of this writing) prevented from being promoted to :logic mode.
+
+  (let ((wrld (w state)))
+    (er-let* ((form (macroexpand1* form ctx wrld state)))
+      (cond
+       ((and (consp form)
+             (eq (car form) 'if)
+             (true-listp form)
+             (equal (length form) 4))
+
+; Do some lazy evaluation, in order to avoid translating the unnecessary
+; branch.
+
+        (let ((simple-stobjs-out '(nil)))
+          (er-let* ((arg0 (translate (cadr form) simple-stobjs-out nil t ctx wrld
+                                     state))
+                    (val0 (trans-eval1 arg0 simple-stobjs-out ctx wrld state
+                                       aok user-stobjs-modified-warning)))
+            (if (cdr val0) ; the actual value
+                (trans-eval0 (caddr form) ctx state aok
+                             user-stobjs-modified-warning)
+              (trans-eval0 (cadddr form) ctx state aok
+                           user-stobjs-modified-warning)))))
+       (t
+        (mv-let
+         (erp trans bindings state)
+         (translate1 form
+                     :stobjs-out '((:stobjs-out . :stobjs-out))
+                     t
+                     ctx wrld state)
+
+; Known-stobjs = t.  We expect trans-eval to be used only when the
+; user is granted full access to the stobjs in state.  Of course, some
+; applications of trans-eval, e.g., in eval-event-lst, first check
+; that the form doesn't access stobjs or state.
+
+         (cond
+          (erp (mv t nil state))
+          (t (trans-eval1 trans (translate-deref :stobjs-out bindings) ctx wrld
+                          state aok user-stobjs-modified-warning)))))))))
 
 (defun trans-eval (form ctx state aok)
+
+; WARNING: This function must never be in :logic mode, because it can violate
+; single-threadedness!  See :doc user-stobjs-modified-warnings.  Fortunately,
+; it depends hereditarily on the function ev, which has raw Lisp code and is
+; thus (as of this writing) prevented from being promoted to :logic mode.
 
 ; Advice:  See if simple-translate-and-eval will do the job.
 
@@ -9959,42 +10295,32 @@
 ; state -- the storage of the final stobjs -- is done at the
 ; conclusion of the computation and is not directed by form.
 
-  (let ((wrld (w state)))
-    (er-let* ((form (macroexpand1* form ctx wrld state)))
-      (cond
-       ((and (consp form)
-             (eq (car form) 'if)
-             (true-listp form)
-             (equal (length form) 4))
+  (trans-eval0 form ctx state aok t))
 
-; Do some lazy evaluation, in order to avoid translating the unnecessary
-; branch.
+(defun trans-eval-no-warning (form ctx state aok)
 
-        (let ((simple-stobjs-out '(nil)))
-          (er-let* ((arg0 (translate (cadr form) simple-stobjs-out nil t ctx wrld
-                                     state))
-                    (val0 (trans-eval1 arg0 simple-stobjs-out ctx wrld state
-                                       aok)))
-            (if (cdr val0) ; the actual value
-                (trans-eval (caddr form) ctx state aok)
-              (trans-eval (cadddr form) ctx state aok)))))
-       (t
-        (mv-let
-         (erp trans bindings state)
-         (translate1 form
-                     :stobjs-out '((:stobjs-out . :stobjs-out))
-                     t
-                     ctx wrld state)
+; WARNING: This function must never be in :logic mode, because it can violate
+; single-threadedness!  See :doc user-stobjs-modified-warnings.  Fortunately,
+; it depends hereditarily on the function ev, which has raw Lisp code and is
+; thus (as of this writing) prevented from being promoted to :logic mode.
 
-; Known-stobjs = t.  We expect trans-eval to be used only when the
-; user is granted full access to the stobjs in state.  Of course, some
-; applications of trans-eval, e.g., in eval-event-lst, first check
-; that the form doesn't access stobjs or state.
+; See :doc user-stobjs-modified-warning.
 
-         (cond
-          (erp (mv t nil state))
-          (t (trans-eval1 trans (translate-deref :stobjs-out bindings) ctx wrld
-                          state aok)))))))))
+  (trans-eval0 form ctx state aok nil))
+
+(defun trans-eval-default-warning (form ctx state aok)
+
+; WARNING: This function must never be in :logic mode, because it can violate
+; single-threadedness!  See :doc user-stobjs-modified-warnings.  Fortunately,
+; it depends hereditarily on the function ev, which has raw Lisp code and is
+; thus (as of this writing) prevented from being promoted to :logic mode.
+
+; This version of trans-eval is appropriate when the relevant LD special is to
+; be consulted for when to invoke the user-stobjs-modified-warning.  See :doc
+; user-stobjs-modified-warning.
+
+  (trans-eval0 form ctx state aok
+               (f-get-global 'ld-user-stobjs-modified-warning state)))
 
 (defun simple-translate-and-eval (x alist ok-stobj-names msg ctx wrld state
                                     aok)
@@ -10007,7 +10333,7 @@
 ; being returned and what they are.  The obvious thing for trans-eval
 ; to do is to list the results.  But if one of them is STATE or some
 ; other stobj, it cannot.  So trans-eval has a rather complicated
-; interface that permits the caller to determine the mulitplicity of
+; interface that permits the caller to determine the multiplicity of
 ; the result and whether and where the stobjs appear (or, more precisely,
 ; are supposed to appear) in the output vector.  See the documentation
 ; of trans-eval for its specification.
@@ -10282,7 +10608,7 @@
 ; function manipulating operations of Lisp in ACL2.  All these
 ; operations depend upon the function trans-eval.  These functions are
 ; at the moment not very efficient because they involve a runtime call
-; to translate.  Futhermore, proving interesting theorems about these
+; to translate.  Furthermore, proving interesting theorems about these
 ; functions would not be easy because they are tied up with the
 ; ``big-clock'' story which makes our evaluator primitive recursive.
 ; But nevertheless it is worth pointing out that this capability at

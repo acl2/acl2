@@ -536,15 +536,43 @@
   (if (atom x)
       nil
     (let ((xf (svtv-entry-fix (car x))))
-      (if (and (symbolp xf)
-               (not (svtv-dontcare-p xf))
-               (not (equal (symbol-name xf) "~"))
-               (not (eq xf :ones)))
-          (cons xf (svtv-entries->vars (cdr x)))
-        (svtv-entries->vars (cdr x)))))
+      (cond ((and (symbolp xf)
+                  (not (svtv-dontcare-p xf))
+                  (not (equal (symbol-name xf) "~"))
+                  (not (eq xf :ones)))
+             (cons xf (svtv-entries->vars (cdr x))))
+            ((and (svtv-condoverride-p xf)
+                  (let ((xf (svtv-condoverride->value xf)))
+                    (and (symbolp xf)
+                         (not (svtv-dontcare-p xf))
+                         (not (equal (symbol-name xf) "~"))
+                         (not (eq xf :ones)))))
+             (cons (svtv-condoverride->value xf)
+                   (svtv-entries->vars (cdr x))))
+            (t (svtv-entries->vars (cdr x))))))
   ///
   (defthm svarlist-p-of-svtv-entries->vars
     (svarlist-p (svtv-entries->vars x))
+    :hints(("Goal" :in-theory (enable svar-p svtv-entry-fix svarlist-p)))))
+
+(define svtv-entries->overrideconds ((x svtv-entrylist-p))
+  :returns (vars symbol-listp)
+  :prepwork ((local (in-theory (enable svtv-entrylist-fix))))
+  (if (atom x)
+      nil
+    (let ((xf (svtv-entry-fix (car x))))
+      (cond ((and (svtv-condoverride-p xf)
+                  (let ((xf (svtv-condoverride->test xf)))
+                    (and (symbolp xf)
+                         (not (svtv-dontcare-p xf))
+                         (not (equal (symbol-name xf) "~"))
+                         (not (eq xf :ones)))))
+             (cons (svtv-condoverride->test xf)
+                   (svtv-entries->overrideconds (cdr x))))
+            (t (svtv-entries->overrideconds (cdr x))))))
+  ///
+  (defthm svarlist-p-of-svtv-entries->overrideconds
+    (svarlist-p (svtv-entries->overrideconds x))
     :hints(("Goal" :in-theory (enable svar-p svtv-entry-fix svarlist-p)))))
 
 (defthm svar-boolmasks-p-of-pairlis
@@ -566,8 +594,10 @@
   (b* (((when (atom x)) nil)
        ((svtv-line xf) (car x))
        (vars (svtv-entries->vars xf.entries))
+       (overrideconds (svtv-entries->overrideconds xf.entries))
        (mask (lhs->mask xf.lhs)))
     (append (pairlis$ vars (replicate (len vars) mask))
+            (pairlis$ overrideconds (replicate (len overrideconds) 1))
             (svtv-collect-masks (cdr x)))))
 
 (fty::deffixcong true-list-list-equiv true-list-list-equiv (append a b) a
@@ -1432,6 +1462,12 @@ decomposition proof.</li>
 
 (define svtv-print-alist-readable ((al svex-env-p))
   (svtv-print-alist-readable-aux al t))
+
+(define svtv-print-alists-readable ((als svex-envlist-p))
+  (if (atom als)
+      nil
+    (prog2$ (svtv-print-alist-readable (car als))
+            (svtv-print-alists-readable (cdr als)))))
 
 
 

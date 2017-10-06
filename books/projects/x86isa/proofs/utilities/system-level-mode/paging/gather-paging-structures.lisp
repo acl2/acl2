@@ -2152,6 +2152,33 @@
            (xlate-equiv-structures (wm-low-64 index val x86-2) x86-1))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-structures) ()))))
 
+(local
+ (defthm dumb-disjointness-rule
+   (implies (and (disjoint-p xs y) (consp xs))
+            (disjoint-p (list (car xs)) y))
+   :hints (("Goal" :in-theory (e/d* (disjoint-p member-p) ())))))
+
+(defthm xlate-equiv-structures-and-write-to-physical-memory-disjoint
+  (implies
+   (and
+    (bind-free
+     (find-an-xlate-equiv-x86
+      'xlate-equiv-structures-and-write-to-physical-memory-disjoint
+      x86-2 'x86-1 mfc state)
+     (x86-1))
+    (xlate-equiv-structures x86-1 (double-rewrite x86-2))    
+    (disjoint-p
+     p-addrs
+     (open-qword-paddr-list
+      (gather-all-paging-structure-qword-addresses x86-1)))    
+    (physical-address-listp p-addrs))
+   (xlate-equiv-structures (write-to-physical-memory p-addrs val x86-2) x86-1))
+  :hints (("Goal"
+           :induct (cons (write-to-physical-memory p-addrs val x86-2)
+                         (physical-address-listp p-addrs))
+           :in-theory (e/d* (write-to-physical-memory xlate-equiv-structures)
+                            ()))))
+
 (defthm xlate-equiv-structures-and-wm-low-64-entry-addr
   (implies (and
             (bind-free

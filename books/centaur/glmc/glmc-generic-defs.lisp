@@ -11,8 +11,10 @@
 (include-book "centaur/gl/shape-spec-defs" :dir :system)
 (include-book "std/alists/fal-extract" :dir :system)
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
+(local (include-book "system/f-put-global" :dir :system))
 ;; (local (include-book "clause-processors/just-expand" :dir :system))
 
+(local (in-theory (enable get-global)))
 
 (defun glmc-name (clause-proc orig-name)
   (intern-in-package-of-symbol
@@ -653,13 +655,27 @@
                                     hyp-bfr
                                     bvar-db
                                     state)
+  :prepwork ((local (in-theory (disable glcp-ctrex-complete-single-assign
+                                        glcp-ctrex-bits-to-objs
+                                        bindings-quote-if-needed
+                                        glcp-ctrex-check-bvar-db
+                                        glcp-pretty-print-bvar-db-violations))))
   (b* (((glcp-config config))
-       (assign (ec-call (glcp-ctrex-complete-single-assign name env config.shape-spec-alist hyp-bfr))))
-    (ec-call (bindings-quote-if-needed
-              (ec-call
-               (glcp-obj-ctrex->obj-alist
-                (ec-call (glcp-ctrex-bits-to-objs
-                          assign gobj-alist bvar-db config state))))))))
+       (assign (ec-call (glcp-ctrex-complete-single-assign name env config.shape-spec-alist hyp-bfr)))
+       ((glcp-obj-ctrex ctrex)
+        (ec-call (glcp-ctrex-bits-to-objs
+                  assign gobj-alist bvar-db config state)))
+       ;; (bindings (ec-call (bindings-quote-if-needed ctrex.obj-alist)))
+       ;; Check bvar-db for mismatches
+       (unparam-env (bfr-unparam-env hyp-bfr (ec-call (car ctrex.genv))))
+       (bvar-db-info (ec-call (glcp-ctrex-check-bvar-db
+                               (next-bvar bvar-db) ctrex.genv unparam-env bvar-db state))))
+    (and (hons-assoc-equal "FAIL" bvar-db-info)
+         (prog2$ (cw "Some IF test terms were assigned inconsistent values:~%")
+                 (glcp-pretty-print-bvar-db-violations bvar-db-info)))
+    ctrex.obj-alist))
+
+
 
 (define glmc-process-ctrex-inputs ((config glcp-config-p)
                                    envs
@@ -671,6 +687,13 @@
       nil
     (cons (glmc-process-ctrex-one-env "input" config (car envs) gobj-alist hyp-bfr bvar-db state)
           (glmc-process-ctrex-inputs config (cdr envs) gobj-alist hyp-bfr bvar-db state))))
+
+(define bindings-list-quote-if-needed (x)
+  (if (atom x)
+      nil
+    (cons (ec-call (bindings-quote-if-needed (car x)))
+          (bindings-list-quote-if-needed (cdr x)))))
+
 
 (define glmc-process-ctrex ((config glmc-config-p)
                             initst
@@ -687,8 +710,13 @@
        (initial-state-objs (glmc-process-ctrex-one-env
                             "initial state" config.glcp-config initst state-alist hyp-bfr bvar-db state))
        (input-objs (glmc-process-ctrex-inputs
-                    config.glcp-config ins in-alist hyp-bfr bvar-db state)))
-    (msg "Counterexample: Initial state: ~x0~%Inputs: ~x1~%" initial-state-objs input-objs)))
+                    config.glcp-config ins in-alist hyp-bfr bvar-db state))
+       (state (f-put-global ':glmc-ctrex-initial-state initial-state-objs state))
+       (state (f-put-global ':glmc-ctrex-inputs input-objs state))
+       (quoted-initsts (ec-call (bindings-quote-if-needed initial-state-objs)))
+       (quoted-ins (bindings-list-quote-if-needed input-objs)))
+    (mv (msg "Counterexample: Initial state: ~x0~%Inputs: ~x1~%" quoted-initsts quoted-ins)
+        state)))
 
 
 (define glmc-mcheck-full-property ((config glmc-config-p)
@@ -716,7 +744,8 @@
                     fsm.initst
                     fsm.var-bound))
        ((when (eq result :refuted))
-        (b* ((ctrex-msg (glmc-process-ctrex config ctrex-initst ctrex-ins fsm.hyp bvar-db state)))
+        (b* (((mv ctrex-msg state)
+              (glmc-process-ctrex config ctrex-initst ctrex-ins fsm.hyp bvar-db state)))
           (cw! "~@0" ctrex-msg)
           (mv "Counterexample!" state)))
        ((when (eq result :proved))

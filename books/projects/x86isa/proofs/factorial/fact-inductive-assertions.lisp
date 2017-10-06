@@ -447,13 +447,13 @@
                         wr32
                         rr32
                         rr64
-                        rm32
-                        rm64
-                        wm32
+                        rml32
+                        rml64
+                        wml32
                         x86-operand-from-modr/m-and-sib-bytes
-                        rim-size
-                        rim32
-                        rim08
+                        riml-size
+                        riml32
+                        riml08
                         two-byte-opcode-decode-and-execute
                         x86-effective-addr
                         subset-p
@@ -466,7 +466,7 @@
                         pf-spec32
                         sub-af-spec32
                         n32-to-i32
-                        rim08
+                        riml08
                         rr32)
                        (create-canonical-address-list
                         (create-canonical-address-list)
@@ -500,13 +500,13 @@
                         wr32
                         rr32
                         rr64
-                        rm32
-                        rm64
-                        wm32
+                        rml32
+                        rml64
+                        wml32
                         x86-operand-from-modr/m-and-sib-bytes
-                        rim-size
-                        rim32
-                        rim08
+                        riml-size
+                        riml32
+                        riml08
                         two-byte-opcode-decode-and-execute
                         x86-effective-addr
                         subset-p
@@ -558,13 +558,13 @@
              wr32
              rr32
              rr64
-             rm32
-             rm64
-             wm32
+             rml32
+             rml64
+             wml32
              x86-operand-from-modr/m-and-sib-bytes
-             rim-size
-             rim32
-             rim08
+             riml-size
+             riml32
+             riml08
              two-byte-opcode-decode-and-execute
              x86-effective-addr
              subset-p

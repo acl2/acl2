@@ -6,6 +6,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/gl/bfr" :dir :system)
 (include-book "centaur/gl/var-bounds" :dir :system)
+(include-book "std/alists/alist-defuns" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :system))
 
@@ -1257,6 +1258,18 @@ to @('bfr-mcheck').</p>
            (bfr-updates-p (acl2::aig-extract-iterated-assigns-alist x n)))
   :hints(("Goal" :in-theory (enable acl2::aig-extract-iterated-assigns-alist))))
 
+(local (defthmd bfr-varname-p-when-lookup-in-bfr-updates
+         (implies (and (hons-assoc-equal k x)
+                       (bfr-updates-p x))
+                  (bfr-varname-p k))
+         :hints(("Goal" :in-theory (enable bfr-updates-p)))))
+
+(local (defthm bfr-updates-p-of-fal-extract
+         (implies (bfr-updates-p x)
+                  (bfr-updates-p (acl2::fal-extract keys x)))
+         :hints(("Goal" :in-theory (enable acl2::fal-extract
+                                           bfr-varname-p-when-lookup-in-bfr-updates)))))
+
 (define bfrmc-set-initst-pred ((prop)
                                (constr)
                                (updates bfr-updates-p)
@@ -1269,15 +1282,18 @@ to @('bfr-mcheck').</p>
                (next-bvar natp :rule-classes :type-prescription))
   :guard (bfr-mode)
   (b* ((past-initcycle-var (lnfix max-bvar))
+       (state-vars (bfr-updates->states updates))
+       (consts-from-initstp (acl2::fal-extract state-vars
+                                               (acl2::aig-extract-iterated-assigns-alist initstp 10)))
        (const-initsts (cons (cons past-initcycle-var nil)
-                            (acl2::aig-extract-iterated-assigns-alist initstp 10)))
-       (constrained-sts (acl2::hons-set-diff (bfr-updates->states updates)
-                                             (bfr-updates->states const-initsts)))
+                            consts-from-initstp))
+       (variable-sts (acl2::hons-set-diff (bfr-updates->states updates)
+                                          (bfr-updates->states const-initsts)))
        (initst-subst (make-fast-alist
-                      (bfr-initial-states constrained-sts
+                      (bfr-initial-states variable-sts
                                           (bfr-var past-initcycle-var)
                                           (1+ past-initcycle-var))))
-       (next-var (+ 1 past-initcycle-var (len constrained-sts)))
+       (next-var (+ 1 past-initcycle-var (len variable-sts)))
        (new-prop (acl2::aig-restrict prop initst-subst))
        (new-initstp (acl2::aig-restrict (acl2::with-fast-alist const-initsts
                                           (acl2::aig-restrict initstp const-initsts))
@@ -1310,6 +1326,19 @@ to @('bfr-mcheck').</p>
                                  (m (nfix max))))
                    :in-theory (enable pbfr-depends-on bfr-depends-on bfr-from-param-space bfr-vars
                                       set::in-to-member)))))
+
+  (local (defthm bfr-lookup-in-fal-extract
+           (implies (bfr-mode)
+                    (equal (bfr-lookup k (acl2::fal-extract vars x))
+                           (if (member (bfr-varname-fix k) vars)
+                               (bfr-lookup k x)
+                             t)))
+           :hints(("Goal" :in-theory (enable bfr-lookup)))))
+
+  (local (defthm bfr-updates->states-of-fal-extract
+           (equal (bfr-updates->states (acl2::fal-extract vars x))
+                  (intersection$ vars (bfr-updates->states x)))
+           :hints(("Goal" :in-theory (enable bfr-updates->states acl2::fal-extract intersection$)))))
 
   (local (defthm bfr-lookup-of-cons
            (implies (bfr-mode)
@@ -1371,6 +1400,11 @@ to @('bfr-mcheck').</p>
                     (equal (bfr-eval (cdr (hons-assoc-equal k x)) env)
                            (cdr (hons-assoc-equal k x))))
            :hints(("Goal" :in-theory (enable hons-assoc-equal acl2::boolean-val-alistp)))))
+
+  (local (defthm boolean-val-alist-of-fal-extract
+           (implies (acl2::boolean-val-alistp x)
+                    (acl2::boolean-val-alistp (acl2::fal-extract vars x)))
+           :hints(("Goal" :in-theory (enable acl2::fal-extract acl2::boolean-val-alistp)))))
 
   (local (defthm bfr-eval-updates-of-boolean-val-alist
            (implies (and (acl2::boolean-val-alistp x) (bfr-mode))
@@ -1511,15 +1545,29 @@ to @('bfr-mcheck').</p>
                            (env env2)))
                     :in-theory (disable bfr-eval-of-normalize-env)))))
 
+  (local (defthmd set-difference-of-intersection-with-subset
+           (implies (subsetp a b)
+                    (equal (set-difference$ a (intersection$ b c))
+                           (set-difference$ a c)))
+           :hints(("Goal" :in-theory (enable set-difference$ intersection$)))))
+
+  (local (defthm set-difference-of-intersection
+           (equal (set-difference$ a (intersection$ a b))
+                  (set-difference$ a b))
+           :hints(("Goal" :in-theory (enable set-difference-of-intersection-with-subset)))))
 
   (local (defthm env-equiv-lemma1
            (implies (and (pbfr-vars-bounded max-bvar t initstp)
                          (bfr-mode))
                     (equal (bfr-eval initstp
                                      (BFR-ENV-OVERRIDE
-                                      (BFR-UPDATES->STATES
+                                      (intersection$
+                                       (bfr-updates->states updates)
+                                       (BFR-UPDATES->STATES
+                                        (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
+                                      (acl2::fal-extract
+                                       (bfr-updates->states updates)
                                        (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
-                                      (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
                                       (BFR-ENV-OVERRIDE
                                        (SET-DIFFERENCE-EQUAL
                                         (BFR-UPDATES->STATES UPDATES)
@@ -1536,12 +1584,18 @@ to @('bfr-mcheck').</p>
                                                     NIL
                                                     (BFR-ENV-OVERRIDE
                                                      (BFR-UPDATES->STATES UPDATES)
-                                                     (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
+                                                     (acl2::fal-extract
+                                                      (bfr-updates->states updates)
+                                                      (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
                                                      (CAR INS))))))
                            (bfr-eval initstp (BFR-ENV-OVERRIDE
-                                              (BFR-UPDATES->STATES
+                                              (intersection$
+                                               (bfr-updates->states updates)
+                                               (BFR-UPDATES->STATES
+                                                (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
+                                              (acl2::fal-extract
+                                               (bfr-updates->states updates)
                                                (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
-                                              (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
                                               (BFR-ENV-OVERRIDE
                                                (SET-DIFFERENCE-EQUAL
                                                 (BFR-UPDATES->STATES UPDATES)
@@ -1555,7 +1609,9 @@ to @('bfr-mcheck').</p>
                                                 (+ 1 (NFIX MAX-BVAR))
                                                 (CAR INS))
                                                (CAR INS))))))
-           :hints(("Goal" :in-theory (enable equal-of-bfr-eval-to-equal-normalize bfr-env-equiv)))))
+           :hints(("Goal" :in-theory (enable equal-of-bfr-eval-to-equal-normalize bfr-env-equiv))
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable bfr-lookup))))))
 
   (local (defthm env-equiv-lemma2
            (implies (and (pbfr-vars-bounded max-bvar t constr)
@@ -1564,9 +1620,13 @@ to @('bfr-mcheck').</p>
                                      (BFR-ENV-OVERRIDE
                                       (BFR-UPDATES->STATES UPDATES)
                                       (BFR-ENV-OVERRIDE
-                                       (BFR-UPDATES->STATES
+                                       (INTERSECTION-EQUAL
+                                        (BFR-UPDATES->STATES UPDATES)
+                                        (BFR-UPDATES->STATES
+                                         (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
+                                       (ACL2::FAL-EXTRACT
+                                        (BFR-UPDATES->STATES UPDATES)
                                         (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
-                                       (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
                                        (BFR-ENV-OVERRIDE
                                         (SET-DIFFERENCE-EQUAL
                                          (BFR-UPDATES->STATES UPDATES)
@@ -1587,7 +1647,9 @@ to @('bfr-mcheck').</p>
                                       (BFR-ENV-OVERRIDE
                                        (BFR-UPDATES->STATES
                                         (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
-                                       (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
+                                       (ACL2::FAL-EXTRACT
+                                        (BFR-UPDATES->STATES UPDATES)
+                                        (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
                                        (BFR-INS-TO-INITST
                                         (SET-DIFFERENCE-EQUAL
                                          (BFR-UPDATES->STATES UPDATES)
@@ -1598,42 +1660,100 @@ to @('bfr-mcheck').</p>
                                       (CAR INS)))))
            :hints(("Goal" :in-theory (enable equal-of-bfr-eval-to-equal-normalize bfr-env-equiv)))))
 
-  (local (defthm env-equiv-lemma3
-           (bfr-env-equiv (BFR-ENV-OVERRIDE
-                           (BFR-UPDATES->STATES UPDATES)
-                           (BFR-ENV-OVERRIDE
-                            (BFR-UPDATES->STATES
-                             (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
-                            (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
-                            (BFR-ENV-OVERRIDE
-                             (SET-DIFFERENCE-EQUAL
-                              (BFR-UPDATES->STATES UPDATES)
-                              (BFR-UPDATES->STATES
-                               (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
-                             (BFR-INS-TO-INITST
-                              (SET-DIFFERENCE-EQUAL
-                               (BFR-UPDATES->STATES UPDATES)
-                               (BFR-UPDATES->STATES
-                                (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
-                              (+ 1 (NFIX MAX-BVAR))
-                              (CAR INS))
-                             (CAR INS)))
-                           (CAR INS))
-                          (BFR-ENV-OVERRIDE
-                           (BFR-UPDATES->STATES UPDATES)
-                           (BFR-ENV-OVERRIDE
-                            (BFR-UPDATES->STATES
-                             (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
-                            (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
-                            (BFR-INS-TO-INITST
-                             (SET-DIFFERENCE-EQUAL
-                              (BFR-UPDATES->STATES UPDATES)
-                              (BFR-UPDATES->STATES
-                               (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
-                             (+ 1 (NFIX MAX-BVAR))
-                             (CAR INS)))
-                           (CAR INS)))
+  ;; (local (defthm env-equiv-lemma3
+  ;;          (bfr-env-equiv (BFR-ENV-OVERRIDE
+  ;;                          (BFR-UPDATES->STATES UPDATES)
+  ;;                          (BFR-ENV-OVERRIDE
+  ;;                           (BFR-UPDATES->STATES
+  ;;                            (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
+  ;;                           (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
+  ;;                           (BFR-ENV-OVERRIDE
+  ;;                            (SET-DIFFERENCE-EQUAL
+  ;;                             (BFR-UPDATES->STATES UPDATES)
+  ;;                             (BFR-UPDATES->STATES
+  ;;                              (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
+  ;;                            (BFR-INS-TO-INITST
+  ;;                             (SET-DIFFERENCE-EQUAL
+  ;;                              (BFR-UPDATES->STATES UPDATES)
+  ;;                              (BFR-UPDATES->STATES
+  ;;                               (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
+  ;;                             (+ 1 (NFIX MAX-BVAR))
+  ;;                             (CAR INS))
+  ;;                            (CAR INS)))
+  ;;                          (CAR INS))
+  ;;                         (BFR-ENV-OVERRIDE
+  ;;                          (BFR-UPDATES->STATES UPDATES)
+  ;;                          (BFR-ENV-OVERRIDE
+  ;;                           (BFR-UPDATES->STATES
+  ;;                            (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
+  ;;                           (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
+  ;;                           (BFR-INS-TO-INITST
+  ;;                            (SET-DIFFERENCE-EQUAL
+  ;;                             (BFR-UPDATES->STATES UPDATES)
+  ;;                             (BFR-UPDATES->STATES
+  ;;                              (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
+  ;;                            (+ 1 (NFIX MAX-BVAR))
+  ;;                            (CAR INS)))
+  ;;                          (CAR INS)))
+  ;;          :hints(("Goal" :in-theory (enable bfr-env-equiv)))))
+
+  (local (defthm bfr-varnamelist-p-of-intersection
+           (implies (bfr-varnamelist-p a)
+                    (bfr-varnamelist-p (intersection$ a b)))
+           :hints(("Goal" :in-theory (enable intersection$)))))
+
+  (local (defthm bfr-varnamelist-p-of-set-diff
+           (implies (bfr-varnamelist-p a)
+                    (bfr-varnamelist-p (set-difference-equal a b)))
+           :hints(("Goal" :in-theory (enable set-difference-equal)))))
+
+
+  (local (defthm env-override-of-env-override-intersection
+           (implies (and (bfr-varnamelist-p a)
+                         (bfr-varnamelist-p b))
+                    (bfr-env-equiv (bfr-env-override a
+                                                     (bfr-env-override (intersection$ a b) env1 env2)
+                                                     env3)
+                                   (bfr-env-override a
+                                                     (bfr-env-override b env1 env2)
+                                                     env3)))
            :hints(("Goal" :in-theory (enable bfr-env-equiv)))))
+
+  (local (defthm env-override-of-env-override-difference
+           (implies (and (bfr-varnamelist-p a)
+                         (bfr-varnamelist-p b))
+                    (bfr-env-equiv (bfr-env-override a
+                                                     env1
+                                                     (bfr-env-override (set-difference$ b a) env2 env3))
+                                   (bfr-env-override a env1
+                                                     (bfr-env-override b env2 env3))))
+           :hints(("Goal" :in-theory (enable bfr-env-equiv)))))
+
+  (local (defthm env-override-of-env-override-of-env-override
+           (implies (and (bfr-varnamelist-p a)
+                         (bfr-varnamelist-p b))
+                    (bfr-env-equiv (bfr-env-override
+                                    a (bfr-env-override b env1 (bfr-env-override a env2 env3)) env4)
+                                   (bfr-env-override a (bfr-env-override b env1 env2) env4)))
+           :hints(("Goal" :in-theory (enable bfr-env-equiv)))))
+
+  ;; (local (defthm bfr-env-override-of-intersection-of-env-override-of-difference
+  ;;          (implies (and (bfr-varnamelist-p a)
+  ;;                        (bfr-varnamelist-p b))
+  ;;                   (bfr-env-equiv
+  ;;                    (bfr-env-override (intersection-equal a b)
+  ;;                                      env1
+  ;;                                      (bfr-env-override (set-difference-equal a b)
+  ;;                                                        env2 env3))
+  ;;                    (bfr-env-override (intersection-equal a b) env1 env2)))
+  ;;          :hints(("Goal" :in-theory (enable bfr-env-equiv)))))
+
+
+  (local (defthm bfr-eval-of-env-override-cons-irrel
+           (implies (not (member (bfr-varname-fix var) (bfr-vars x)))
+                    (equal (bfr-eval x (bfr-env-override (cons var vars) a b))
+                           (bfr-eval x (bfr-env-override vars a b))))
+           :hints(("Goal" :in-theory (enable bfr-env-override)))))
 
 
   (local (in-theory (disable acl2::aig-restrict acl2::aig-extract-iterated-assigns-alist
@@ -1642,17 +1762,81 @@ to @('bfr-mcheck').</p>
                              nat-listp member ;; bfr-eval-of-override-var-superset
                              )))
 
+  ;; BOZO package
+  (defmacro hq (x) `(acl2::hq ,x))
+
+  (defun bfrmc-set-initst-pred-correct-hint (prop constr updates ins initstp max-bvar
+                                                  new-prop new-constr new-updates new-initst)
+    (declare (xargs :normalize nil))
+    (b* ((new-run (bfr-constrained-mcrun new-prop new-constr new-updates new-initst ins))
+         (initial-ins (car ins))
+         (variable-sts (acl2::hons-set-diff (bfr-updates->states updates)
+                                            (bfr-updates->states new-initst)))
+         (ins-to-initst (bfr-set-var (nfix max-bvar) nil
+                                     (bfr-env-override
+                                      (bfr-updates->states new-initst)
+                                      new-initst
+                                      (bfr-env-override
+                                       variable-sts
+                                       (bfr-ins-to-initst variable-sts
+                                                          (+ 1 (nfix max-bvar))
+                                                          initial-ins)
+                                       initial-ins))))
+         ;; (old-run (bfr-constrained-mcrun prop constr updates ins-to-initst ins))
+         (initst-ok (bfr-eval initstp ins-to-initst))
+         ((acl2::termhint-seq `'(:expand ((bfr-constrained-mcrun
+                                           ,(hq new-prop)
+                                           ,(hq new-constr)
+                                           ,(hq new-updates)
+                                           ,(hq new-initst)
+                                           ,(hq ins))
+                                          (bfr-constrained-mcrun
+                                           ,(hq prop)
+                                           ,(hq constr)
+                                           ,(hq updates)
+                                           ,(hq ins-to-initst)
+                                           ,(hq ins)))
+                                 :do-not-induct t)))
+         (eval-env (bfr-mc-env updates
+                               (bfr-env-override
+                                (bfr-updates->states new-initst)
+                                new-initst
+                                (bfr-ins-to-initst variable-sts
+                                                   (+ 1 (nfix max-bvar))
+                                                   (car ins)))
+                               (car ins)))
+         ((when new-run)
+          (b* (((when initst-ok)
+                `'(:use ((:instance acl2::mark-clause-is-true
+                          (x 'new-run-and-initst-implies-old-run))
+                         (:instance bfrmc-set-initst-pred-later-cycles
+                          (ins ,(hq (cdr ins)))
+                          (curr-st
+                           ,(hq (bfr-eval-updates updates eval-env))))))))
+            `'(:use ((:instance acl2::mark-clause-is-true
+                      (x 'new-run-and-not-initst-should-be-done))))))
+         ((when initst-ok)
+          `'(:use ((:instance acl2::mark-clause-is-true
+                    (x 'not-new-run-and-initst-implies-not-old-run))
+                   (:instance bfrmc-set-initst-pred-later-cycles
+                    (ins ,(hq (cdr ins)))
+                    (curr-st
+                     ,(hq (bfr-eval-updates updates eval-env))))))))
+      `'(:use ((:instance acl2::mark-clause-is-true
+                    (x 'not-new-run-implies-initst))))))
+                              
+
   (std::defret bfrmc-set-initst-pred-correct
     (b* ((initial-ins (car ins))
-         (constrained-sts (acl2::hons-set-diff (bfr-updates->states updates)
+         (variable-sts (acl2::hons-set-diff (bfr-updates->states updates)
                                                (bfr-updates->states new-initst)))
          (ins-to-initst (bfr-set-var (nfix max-bvar) nil
                                      (bfr-env-override
                                       (bfr-updates->states new-initst)
                                       new-initst
                                       (bfr-env-override
-                                       constrained-sts
-                                       (bfr-ins-to-initst constrained-sts
+                                       variable-sts
+                                       (bfr-ins-to-initst variable-sts
                                                           (+ 1 (nfix max-bvar))
                                                           initial-ins)
                                        initial-ins)))))
@@ -1669,29 +1853,14 @@ to @('bfr-mcheck').</p>
                (iff (bfr-constrained-mcrun new-prop new-constr new-updates new-initst ins)
                     (implies (bfr-eval initstp ins-to-initst)
                              (bfr-constrained-mcrun prop constr updates ins-to-initst ins)))))
-    :hints(("Goal" :in-theory (enable bfr-constrained-mcrun
+    :hints (("goal" :in-theory (e/d (bfr-constrained-mcrun
                                       bfr-updates->states
                                       bfr-env-override
                                       bfr-eval-updates)
-            :expand ((:free (prop constr updates initst)
-                      (bfr-constrained-mcrun prop constr updates initst ins)))
-            :use ((:instance  bfrmc-set-initst-pred-later-cycles
-                   (ins (cdr ins))
-                   (curr-st
-                    (b* ((past-initcycle-var (lnfix max-bvar))
-                         (const-initsts (cons (cons past-initcycle-var nil)
-                                              (acl2::aig-extract-iterated-assigns-alist initstp 10)))
-                         (constrained-sts (acl2::hons-set-diff (bfr-updates->states updates)
-                                                               (bfr-updates->states const-initsts))))
-                      (bfr-eval-updates updates
-                                        (bfr-mc-env updates
-                                                    (bfr-env-override
-                                                     (bfr-updates->states const-initsts)
-                                                     const-initsts
-                                                     (bfr-ins-to-initst constrained-sts
-                                                                        (+ 1 (nfix max-bvar))
-                                                                        (car ins)))
-                                                    (car ins))))))))))
+                                    ((:t bfr-constrained-mcrun))))
+            (acl2::use-termhint (bfrmc-set-initst-pred-correct-hint
+                                 prop constr updates ins initstp max-bvar
+                                 new-prop new-constr new-updates new-initst))))
 
   (local (defthm pbfr-list-depends-on-in-aig-mode
            (implies (bfr-mode)
@@ -1876,15 +2045,39 @@ to @('bfr-mcheck').</p>
                                (bfr-varnamelist-p (numlist start by n)))
                       :hints(("Goal" :in-theory (enable numlist))))))
   (b* ((past-initcycle-var (lnfix max-bvar))
+       (state-vars (bfr-updates->states updates))
+       (consts-from-initstp (acl2::fal-extract state-vars
+                                               (acl2::aig-extract-iterated-assigns-alist initstp 10)))
        (const-initsts (cons (cons past-initcycle-var nil)
-                            (acl2::aig-extract-iterated-assigns-alist initstp 10)))
-       (constrained-sts (acl2::hons-set-diff (bfr-updates->states updates)
+                            consts-from-initstp))
+       (variable-sts (acl2::hons-set-diff (bfr-updates->states updates)
                                              (bfr-updates->states const-initsts)))
-       (ins-from-initst (bfr-ins-from-initst constrained-sts (1+ past-initcycle-var) initst)))
+       (ins-from-initst (bfr-ins-from-initst variable-sts (1+ past-initcycle-var) initst)))
     (cons (bfr-env-override (numlist (1+ past-initcycle-var)
-                                     1 (len constrained-sts))
+                                     1 (len variable-sts))
                             ins-from-initst (car ins)) (cdr ins)))
   ///
+
+  (local (defthm bfr-lookup-in-fal-extract
+           (implies (bfr-mode)
+                    (equal (bfr-lookup k (acl2::fal-extract vars x))
+                           (if (member (bfr-varname-fix k) vars)
+                               (bfr-lookup k x)
+                             t)))
+           :hints(("Goal" :in-theory (enable bfr-lookup)))))
+
+  (local (defthm bfr-updates->states-of-fal-extract
+           (equal (bfr-updates->states (acl2::fal-extract vars x))
+                  (intersection$ vars (bfr-updates->states x)))
+           :hints(("Goal" :in-theory (enable bfr-updates->states acl2::fal-extract intersection$)))))
+
+  (local (defthm boolean-val-alist-of-fal-extract
+           (implies (acl2::boolean-val-alistp x)
+                    (acl2::boolean-val-alistp (acl2::fal-extract vars x)))
+           :hints(("Goal" :in-theory (enable acl2::fal-extract acl2::boolean-val-alistp)))))
+
+
+
   (local (defthm member-of-numlist
            (implies (natp start)
                     (iff (member k (numlist start 1 n))
@@ -1920,26 +2113,26 @@ to @('bfr-mcheck').</p>
 
 
   ;; (local (defthm state-alist-reduction1
-  ;;          (let ((constrained-sts (set-difference$ (bfr-updates->states updates)
+  ;;          (let ((variable-sts (set-difference$ (bfr-updates->states updates)
   ;;                                                  (bfr-updates->states const-updates))))
   ;;            (implies (natp next-bvar)
   ;;                     (bfr-env-equiv (bfr-env-override
   ;;                                     (bfr-updates->states const-updates)
   ;;                                     const-updates
   ;;                                     (bfr-ins-to-initst
-  ;;                                      constrained-sts
+  ;;                                      variable-sts
   ;;                                      next-bvar
   ;;                                      (bfr-env-override
-  ;;                                       (numlist next-bvar 1 (len constrained-sts))
+  ;;                                       (numlist next-bvar 1 (len variable-sts))
   ;;                                       (bfr-ins-from-initst
-  ;;                                        constrained-sts
+  ;;                                        variable-sts
   ;;                                        next-bvar
   ;;                                        initst)
   ;;                                       ins)))
   ;;                                    (bfr-env-override
   ;;                                     (bfr-updates->states const-updates)
   ;;                                     const-updates
-  ;;                                     (bfr-env-override constrained-sts initst nil)))))
+  ;;                                     (bfr-env-override variable-sts initst nil)))))
   ;;          :hints(("Goal" :in-theory (enable bfr-env-equiv
   ;;                                            lookup-in-bfr-ins-to-initst-split)
   ;;                  :expand ((:free (x) (bfr-lookup x nil)))))))
@@ -1959,9 +2152,12 @@ to @('bfr-mcheck').</p>
            (b* (((mv ?new-prop ?new-constr ?new-updates new-initst ?next-bvar)
                  (bfrmc-set-initst-pred prop constr updates initstp max-bvar)))
              (equal new-initst
-                     (b* ((past-initcycle-var (lnfix max-bvar))
-                          (const-initsts (cons (cons past-initcycle-var nil)
-                                               (acl2::aig-extract-iterated-assigns-alist initstp 10))))
+                    (b* ((past-initcycle-var (lnfix max-bvar))
+                         (state-vars (bfr-updates->states updates))
+                         (consts-from-initstp (acl2::fal-extract state-vars
+                                                                 (acl2::aig-extract-iterated-assigns-alist initstp 10)))
+                         (const-initsts (cons (cons past-initcycle-var nil)
+                                              consts-from-initstp)))
                        const-initsts)))
            :hints(("Goal" :in-theory (enable bfrmc-set-initst-pred)))))
 
@@ -2023,34 +2219,76 @@ to @('bfr-mcheck').</p>
                            (env (bfr-env-override vars env1 env2))))
                     :do-not-induct t))))
 
-  (local (defthm bfr-env-equiv-of-override-extract-iterated-assigns
-           (implies (and (bfr-eval initstp (bfr-env-override (bfr-updates->states updates) initst env2))
-                         ;; (pbfr-vars-bounded max-bvar t initstp)
-                         (bfr-mode))
-                    (let ((const-states (acl2::aig-extract-iterated-assigns-alist initstp n)))
-                      (bfr-env-equiv (bfr-env-override
-                                      (bfr-updates->states updates)
-                                      (bfr-env-override
-                                       (bfr-updates->states const-states)
-                                       const-states
-                                       (bfr-env-override
-                                        (set-difference-equal (bfr-updates->states updates)
-                                                              (bfr-updates->states const-states))
-                                        initst env1))
-                                      env2)
-                                     (bfr-env-override
-                                      (bfr-updates->states updates)
-                                      initst env2))))
-           :hints(("Goal" :in-theory (enable bfr-env-equiv
-                                             bfr-lookup-when-in-iterated-assigns-alist-override)
-                   :expand ((:free (x) (bfr-lookup x nil)))
-                   :do-not-induct t))))
+  
                                     
+
+  (local (defthm bfr-varnamelist-p-of-intersection
+           (implies (bfr-varnamelist-p a)
+                    (bfr-varnamelist-p (intersection$ a b)))
+           :hints(("Goal" :in-theory (enable intersection$)))))
+
+  (local (defthm bfr-varnamelist-p-of-set-diff
+           (implies (bfr-varnamelist-p a)
+                    (bfr-varnamelist-p (set-difference-equal a b)))
+           :hints(("Goal" :in-theory (enable set-difference-equal)))))
+
+
+  (local (defthm env-override-of-env-override-intersection
+           (implies (and (bfr-varnamelist-p a)
+                         (bfr-varnamelist-p b))
+                    (bfr-env-equiv (bfr-env-override a
+                                                     (bfr-env-override (intersection$ a b) env1 env2)
+                                                     env3)
+                                   (bfr-env-override a
+                                                     (bfr-env-override b env1 env2)
+                                                     env3)))
+           :hints(("Goal" :in-theory (enable bfr-env-equiv)))))
+
+  (local (defthm env-override-of-env-override-difference
+           (implies (and (bfr-varnamelist-p a)
+                         (bfr-varnamelist-p b))
+                    (bfr-env-equiv (bfr-env-override a
+                                                     env1
+                                                     (bfr-env-override (set-difference$ b a) env2 env3))
+                                   (bfr-env-override a env1
+                                                     (bfr-env-override b env2 env3))))
+           :hints(("Goal" :in-theory (enable bfr-env-equiv)))))
+
+  (local (defthm env-override-of-env-override-of-env-override
+           (implies (and (bfr-varnamelist-p a)
+                         (bfr-varnamelist-p b))
+                    (bfr-env-equiv (bfr-env-override
+                                    a (bfr-env-override b env1 (bfr-env-override a env2 env3)) env4)
+                                   (bfr-env-override a (bfr-env-override b env1 env2) env4)))
+           :hints(("Goal" :in-theory (enable bfr-env-equiv)))))
 
   (defthm bfr-env-override-of-bfr-env-override-same
     (bfr-env-equiv (bfr-env-override vars (bfr-env-override vars a b) c)
                    (bfr-env-override vars a c))
   :hints(("Goal" :in-theory (enable bfr-env-equiv))))
+
+  (local (defthm bfr-env-equiv-of-override-extract-iterated-assigns
+           (implies (and (bfr-eval initstp (bfr-env-override (bfr-updates->states updates) initst env2))
+                         ;; (pbfr-vars-bounded max-bvar t initstp)
+                         (bfr-mode))
+                    (b* (;; (past-initcycle-var (lnfix max-bvar))
+                          (state-vars (bfr-updates->states updates))
+                          (initst-consts (acl2::aig-extract-iterated-assigns-alist initstp 10))
+                          (const-states (acl2::fal-extract state-vars initst-consts))
+                          ;; (const-state-vars (intersection-equal state-vars (bfr-updates->states initst-consts)))
+                          )
+                      (bfr-env-equiv (bfr-env-override
+                                      state-vars
+                                      (bfr-env-override
+                                       (bfr-updates->states initst-consts)
+                                       const-states
+                                       initst)
+                                      env2)
+                                     (bfr-env-override state-vars initst env2))))
+           :hints(("Goal" :in-theory (enable bfr-env-equiv
+                                             bfr-lookup-when-in-iterated-assigns-alist-override)
+                   :expand ((:free (x) (bfr-lookup x nil)))
+                   :do-not-induct t))))
 
   (local (defthm bfr-constrained-mcrun-of-irrel-st
            (implies (and (bfr-varlist-bounded max-bvar (bfr-updates->states updates))
@@ -2058,16 +2296,19 @@ to @('bfr-mcheck').</p>
                                             (bfr-updates->states updates)
                                             initst (car ins)))
                          (bfr-mode))
-                    (let ((const-states (acl2::aig-extract-iterated-assigns-alist initstp n)))
+                    (b* (;; (past-initcycle-var (lnfix max-bvar))
+                          (state-vars (bfr-updates->states updates))
+                          (initst-consts (acl2::aig-extract-iterated-assigns-alist initstp 10))
+                          (const-states (acl2::fal-extract state-vars initst-consts))
+                          (const-state-vars (intersection-equal state-vars (bfr-updates->states initst-consts))))
                       (equal (bfr-constrained-mcrun
                               prop constr updates
                               (bfr-set-var (nfix max-bvar) val
                                            (bfr-env-override
-                                            (bfr-updates->states const-states)
+                                            const-state-vars
                                             const-states
                                             (bfr-env-override
-                                             (set-difference-equal (bfr-updates->states updates)
-                                                                   (bfr-updates->states const-states))
+                                             state-vars
                                              initst env)))
                               ins)
                              (bfr-constrained-mcrun
@@ -2177,22 +2418,43 @@ to @('bfr-mcheck').</p>
 
   (defthm bfr-ins-to-initst-of-bfr-ins-from-initst
     (implies (and (natp next-bvar)
-                  (bfr-varnamelist-p constrained-sts))
-             (bfr-env-equiv (bfr-ins-to-initst constrained-sts
+                  (bfr-varnamelist-p variable-sts))
+             (bfr-env-equiv (bfr-ins-to-initst variable-sts
                                                next-bvar
                                                (bfr-env-override
-                                                (numlist next-bvar 1 (len constrained-sts))
+                                                (numlist next-bvar 1 (len variable-sts))
                                                 (bfr-ins-from-initst
-                                                 constrained-sts
+                                                 variable-sts
                                                  next-bvar
                                                  initst)
                                                 env))
-                            (bfr-env-override constrained-sts initst nil)))
+                            (bfr-env-override variable-sts initst nil)))
     :hints(("Goal" :in-theory (enable bfr-env-equiv
                                       lookup-in-bfr-ins-to-initst-split)
             :expand ((:free (x) (bfr-lookup x nil)))
             :do-not-induct t)))
 
+  (local (defthmd set-difference-of-intersection-with-subset
+           (implies (subsetp a b)
+                    (equal (set-difference$ a (intersection$ b c))
+                           (set-difference$ a c)))
+           :hints(("Goal" :in-theory (enable set-difference$ intersection$)))))
+
+  (local (defthm set-difference-of-intersection
+           (equal (set-difference$ a (intersection$ a b))
+                  (set-difference$ a b))
+           :hints(("Goal" :in-theory (enable set-difference-of-intersection-with-subset)))))
+
+  (local (defthm bfr-env-override-of-intersection-set-diff
+           (implies (and (bfr-varnamelist-p a)
+                         (bfr-varnamelist-p b))
+                    (bfr-env-equiv (bfr-env-override (intersection$ a b)
+                                                     env1
+                                                     (bfr-env-override (set-difference$ a b) env2 env3))
+                                   (bfr-env-override (intersection$ a b)
+                                                     env1
+                                                     (bfr-env-override a env2 env3))))
+           :hints(("Goal" :in-theory (enable bfr-env-equiv)))))
 
   (local (defthm bfr-eval-initstp-reduce
            (implies (and (pbfr-vars-bounded max-bvar t initstp)
@@ -2200,36 +2462,39 @@ to @('bfr-mcheck').</p>
                          (BFR-EVAL INITSTP
                                    (BFR-ENV-OVERRIDE (BFR-UPDATES->STATES UPDATES)
                                                      INITST (CAR INS))))
-                    (bfr-eval initstp (BFR-ENV-OVERRIDE
-                                       (BFR-UPDATES->STATES
-                                        (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10))
-                                       (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)
-                                       (BFR-ENV-OVERRIDE
-                                        (SET-DIFFERENCE-EQUAL
-                                         (BFR-UPDATES->STATES UPDATES)
-                                         (BFR-UPDATES->STATES
-                                          (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
-                                        INITST
-                                        (BFR-ENV-OVERRIDE
-                                         (NUMLIST
-                                          (+ 1 (NFIX MAX-BVAR))
-                                          1
-                                          (LEN
-                                           (SET-DIFFERENCE-EQUAL
-                                            (BFR-UPDATES->STATES UPDATES)
-                                            (BFR-UPDATES->STATES
-                                             (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))))
-                                         (BFR-INS-FROM-INITST
-                                          (SET-DIFFERENCE-EQUAL
-                                           (BFR-UPDATES->STATES UPDATES)
-                                           (BFR-UPDATES->STATES
-                                            (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
-                                          (+ 1 (NFIX MAX-BVAR))
-                                          INITST)
-                                         (CAR INS))))))
+                    (b* (;; (past-initcycle-var (lnfix max-bvar))
+                          (state-vars (bfr-updates->states updates))
+                          (initst-consts (acl2::aig-extract-iterated-assigns-alist initstp 10))
+                          (const-states (acl2::fal-extract state-vars initst-consts))
+                          (const-state-vars (intersection-equal state-vars (bfr-updates->states initst-consts))))
+                      (bfr-eval initstp (BFR-ENV-OVERRIDE
+                                         const-state-vars
+                                         const-states
+                                         (BFR-ENV-OVERRIDE
+                                          state-vars
+                                          INITST
+                                          (BFR-ENV-OVERRIDE
+                                           (NUMLIST
+                                            (+ 1 (NFIX MAX-BVAR))
+                                            1
+                                            (LEN
+                                             (SET-DIFFERENCE-EQUAL
+                                              (BFR-UPDATES->STATES UPDATES)
+                                              (BFR-UPDATES->STATES
+                                               (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))))
+                                           (BFR-INS-FROM-INITST
+                                            (SET-DIFFERENCE-EQUAL
+                                             (BFR-UPDATES->STATES UPDATES)
+                                             (BFR-UPDATES->STATES
+                                              (ACL2::AIG-EXTRACT-ITERATED-ASSIGNS-ALIST INITSTP 10)))
+                                            (+ 1 (NFIX MAX-BVAR))
+                                            INITST)
+                                           (CAR INS)))))))
            :hints(("Goal" :in-theory (enable bfr-eval-by-normalize
                                              bfr-lookup-when-in-iterated-assigns-alist-override
                                              bfr-env-equiv)))))
+
+
 
   (std::defret bfrmc-set-initst-pred-inputs-correct
     (b* (((mv new-prop new-constr new-updates new-initst ?next-bvar)

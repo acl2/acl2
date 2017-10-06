@@ -117,7 +117,8 @@ expect or preserve @(see fast-alists)."
   (mbe :logic
        (4vec-fix (cdr (hons-get (svar-fix var) env)))
        :exec
-       (let ((look (assoc-equal var env)))
+       (let ((look (hons-get var env)))
+;; (assoc-equal var env)))
          (if look
              (cdr look)
            (4vec-x))))

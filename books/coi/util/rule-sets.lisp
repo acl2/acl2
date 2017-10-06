@@ -105,12 +105,11 @@
   (let ((version (if (consp ref) (cdr ref) nil)))
     `(local
       (progn
-	(in-theory (set-difference-theories-fn
-		    (current-theory :here)
+	(in-theory (set-difference-current-theory-fn
 		    (rule-sets::ref-list-to-disable
 		     (rule-sets::default-ref (table::get *rule-sets*))
 		     (table::get *rule-sets*) nil)
-		    t world))
+		    nil world))
 	(table::set
 	 *rule-sets*
 	 (rule-sets::set-ref-default-version-in-rule-set ',ref ',version
@@ -137,10 +136,9 @@
 	   (oref    (cons key default)))
       (if (not (equal default version))
 	  `(progn
-	     (in-theory (set-difference-theories-fn
-			 (current-theory :here)
+	     (in-theory (set-difference-current-theory-fn
 			 (rule-sets::ref-to-disable ',oref (table::get *rule-sets*) nil)
-			 t world))
+			 nil world))
 	     (table::set
 	      *rule-sets*
 	      (rule-sets::set-ref-default-version-in-rule-set ',ref ',version (table::get *rule-sets* world))))
@@ -218,7 +216,7 @@
   `(set-difference-theories-fn
     ,(if (equal theory :here) `(current-theory :here) theory)
     (rule-sets::ref-list-to-disable '(,@list) (table::get *rule-sets*) nil)
-    t world))
+    t nil world))
 
 (defmacro e/d-set (theory &rest list)
   `(rule-sets::d/e-list ,theory (rule-sets::alt-e/d-to-ed-list t '(,@list) (table::get *rule-sets*)) world))

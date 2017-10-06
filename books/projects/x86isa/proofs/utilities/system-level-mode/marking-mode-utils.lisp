@@ -616,14 +616,14 @@
 (in-theory (e/d*
             ;; We enable all these functions so that reasoning about
             ;; memory can be done in terms of rb and wb.
-            (rim-size
-             rm-size
-             wim-size
-             wm-size
-             rm08 rim08 wm08 wim08
-             rm16 rim16 wm16 wim16
-             rm32 rim32 wm32 wim32
-             rm64 rim64 wm64 wim64)
+            (riml-size
+             rml-size
+             wiml-size
+             wml-size
+             rml08 riml08 wml08 wiml08
+             rml16 riml16 wml16 wiml16
+             rml32 riml32 wml32 wiml32
+             rml64 riml64 wml64 wiml64)
             ()))
 
 ;; ======================================================================
@@ -635,7 +635,7 @@
                 (equal x86-1 x86-2)))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory) ()))))
 
-(defsection xlate-equiv-memory-and-rm08
+(defsection xlate-equiv-memory-and-rml08
   :parents (system-level-marking-mode-proof-utilities)
 
   (defthmd xlate-equiv-memory-and-rvm08
@@ -649,13 +649,13 @@
                                      (force (force))))))
 
 
-  (defthm xlate-equiv-memory-and-mv-nth-0-rm08-cong
+  (defthm xlate-equiv-memory-and-mv-nth-0-rml08-cong
     (implies (xlate-equiv-memory x86-1 x86-2)
-             (equal (mv-nth 0 (rm08 lin-addr r-w-x x86-1))
-                    (mv-nth 0 (rm08 lin-addr r-w-x x86-2))))
+             (equal (mv-nth 0 (rml08 lin-addr r-w-x x86-1))
+                    (mv-nth 0 (rml08 lin-addr r-w-x x86-2))))
     :hints
     (("Goal" :cases ((xr :programmer-level-mode 0 x86-1))
-      :in-theory (e/d* (rm08 disjoint-p member-p)
+      :in-theory (e/d* (rml08 disjoint-p member-p)
                        (force (force)))
       :use ((:instance xlate-equiv-memory-and-rvm08))))
     :rule-classes :congruence)
@@ -677,11 +677,11 @@
      (equal (xr :mem j x86-1) (xr :mem j x86-2)))
     :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory disjoint-p) ()))))
 
-  (defthm xlate-equiv-memory-and-mv-nth-1-rm08
+  (defthm xlate-equiv-memory-and-mv-nth-1-rml08
     (implies
      (and (bind-free
            (find-an-xlate-equiv-x86
-            'xlate-equiv-memory-and-mv-nth-1-rm08
+            'xlate-equiv-memory-and-mv-nth-1-rml08
             x86-1 'x86-2 mfc state)
            (x86-2))
           (syntaxp (not (equal x86-1 x86-2)))
@@ -690,11 +690,11 @@
            (list (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-1)))
            (open-qword-paddr-list
             (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))))
-     (equal (mv-nth 1 (rm08 lin-addr r-w-x x86-1))
-            (mv-nth 1 (rm08 lin-addr r-w-x x86-2))))
+     (equal (mv-nth 1 (rml08 lin-addr r-w-x x86-1))
+            (mv-nth 1 (rml08 lin-addr r-w-x x86-2))))
     :hints (("Goal"
              :cases ((xr :programmer-level-mode 0 x86-1))
-             :in-theory (e/d* (rm08
+             :in-theory (e/d* (rml08
                                rb
                                disjoint-p
                                member-p
@@ -706,16 +706,16 @@
                               (x86-2 (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86-2))))
                    (:instance xlate-equiv-memory-and-rvm08)))))
 
-  (defthm xlate-equiv-memory-and-two-mv-nth-2-rm08-cong
+  (defthm xlate-equiv-memory-and-two-mv-nth-2-rml08-cong
     (implies (xlate-equiv-memory x86-1 x86-2)
-             (xlate-equiv-memory (mv-nth 2 (rm08 lin-addr r-w-x x86-1))
-                                 (mv-nth 2 (rm08 lin-addr r-w-x x86-2))))
-    :hints (("Goal" :in-theory (e/d* (rm08 rb) (force (force)))))
+             (xlate-equiv-memory (mv-nth 2 (rml08 lin-addr r-w-x x86-1))
+                                 (mv-nth 2 (rml08 lin-addr r-w-x x86-2))))
+    :hints (("Goal" :in-theory (e/d* (rml08 rb) (force (force)))))
     :rule-classes :congruence)
 
-  (defthm xlate-equiv-memory-and-mv-nth-2-rm08
-    (xlate-equiv-memory (mv-nth 2 (rm08 lin-addr r-w-x x86)) x86)
-    :hints (("Goal" :in-theory (e/d* (rm08 rb) (force (force)))))))
+  (defthm xlate-equiv-memory-and-mv-nth-2-rml08
+    (xlate-equiv-memory (mv-nth 2 (rml08 lin-addr r-w-x x86)) x86)
+    :hints (("Goal" :in-theory (e/d* (rml08 rb) (force (force)))))))
 
 ;; ======================================================================
 
@@ -735,7 +735,7 @@
                     (xr fld index x86)))
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
-             :in-theory (e/d* (get-prefixes rm08 rb las-to-pas)
+             :in-theory (e/d* (get-prefixes rml08 rb las-to-pas)
                               (negative-logand-to-positive-logand-with-integerp-x
                                unsigned-byte-p-of-logior
                                acl2::loghead-identity
@@ -788,7 +788,7 @@
              :in-theory (e/d* (get-prefixes
                                rb
                                las-to-pas)
-                              (rm08
+                              (rml08
                                negative-logand-to-positive-logand-with-integerp-x
                                unsigned-byte-p-of-logior
                                acl2::ash-0
@@ -797,7 +797,7 @@
                                acl2::loghead-identity
                                (:t bitops::logior-natp-type)
                                (:t natp-get-prefixes)
-                               (:t n08p-mv-nth-1-rm08)
+                               (:t n08p-mv-nth-1-rml08)
                                force (force))))))
 
   (defthmd get-prefixes-xw-state-in-system-level-mode
@@ -818,7 +818,7 @@
              :in-theory (e/d* (get-prefixes
                                las-to-pas
                                rb)
-                              (rm08
+                              (rml08
                                negative-logand-to-positive-logand-with-integerp-x
                                unsigned-byte-p-of-logior
                                acl2::ash-0
@@ -827,7 +827,7 @@
                                acl2::loghead-identity
                                (:t bitops::logior-natp-type)
                                (:t natp-get-prefixes)
-                               (:t n08p-mv-nth-1-rm08)
+                               (:t n08p-mv-nth-1-rml08)
                                force (force))))))
 
   (make-event
@@ -887,7 +887,7 @@
                                acl2::loghead-identity
                                (:t bitops::logior-natp-type)
                                (:t natp-get-prefixes)
-                               (:t n08p-mv-nth-1-rm08)
+                               (:t n08p-mv-nth-1-rml08)
                                force (force))))))
 
   (defthm get-prefixes-and-!flgi-state-in-system-level-mode
@@ -926,7 +926,7 @@
              :induct (get-prefixes start-rip prefixes cnt x86)
              :expand (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86))
              :in-theory (e/d* (get-prefixes)
-                              (rm08 force (force))))))
+                              (rml08 force (force))))))
 
   (defthm get-prefixes-values-and-!flgi-in-system-level-mode
     (implies (and (not (equal index *ac*))
@@ -951,7 +951,7 @@
                                              (logand 4294955007 (xr :rflags 0 x86))))))
              :in-theory (e/d* (!flgi-open-to-xw-rflags
                                !flgi)
-                              (rm08
+                              (rml08
                                get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
                                force (force))))))
 
@@ -964,18 +964,18 @@
       (not (zp cnt))
       (equal (prefixes-slice :group-1-prefix prefixes) 0)
       (let*
-          ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+          ((flg (mv-nth 0 (rml08 start-rip :x x86)))
            (prefix-byte-group-code
-            (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))))
+            (get-one-byte-prefix-array-code (mv-nth 1 (rml08 start-rip :x x86)))))
         (and (not flg)
              (equal prefix-byte-group-code 1))))
      (equal (get-prefixes start-rip prefixes cnt x86)
             (get-prefixes (+ 1 start-rip)
                           (!prefixes-slice :group-1-prefix
-                                           (mv-nth 1 (rm08 start-rip :x x86))
+                                           (mv-nth 1 (rml08 start-rip :x x86))
                                            prefixes)
                           (+ -1 cnt)
-                          (mv-nth 2 (rm08 start-rip :x x86)))))
+                          (mv-nth 2 (rml08 start-rip :x x86)))))
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :in-theory (e/d* (get-prefixes
@@ -993,18 +993,18 @@
               (not (zp cnt))
               (equal (prefixes-slice :group-2-prefix prefixes) 0)
               (let*
-                  ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+                  ((flg (mv-nth 0 (rml08 start-rip :x x86)))
                    (prefix-byte-group-code
-                    (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))))
+                    (get-one-byte-prefix-array-code (mv-nth 1 (rml08 start-rip :x x86)))))
                 (and (not flg)
                      (equal prefix-byte-group-code 2))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice :group-2-prefix
-                                                   (mv-nth 1 (rm08 start-rip :x x86))
+                                                   (mv-nth 1 (rml08 start-rip :x x86))
                                                    prefixes)
                                   (1- cnt)
-                                  (mv-nth 2 (rm08 start-rip :x x86)))))
+                                  (mv-nth 2 (rml08 start-rip :x x86)))))
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :in-theory (e/d* (get-prefixes
@@ -1022,18 +1022,18 @@
               (not (zp cnt))
               (equal (prefixes-slice :group-3-prefix prefixes) 0)
               (let*
-                  ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+                  ((flg (mv-nth 0 (rml08 start-rip :x x86)))
                    (prefix-byte-group-code
-                    (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))))
+                    (get-one-byte-prefix-array-code (mv-nth 1 (rml08 start-rip :x x86)))))
                 (and (not flg)
                      (equal prefix-byte-group-code 3))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice :group-3-prefix
-                                                   (mv-nth 1 (rm08 start-rip :x x86))
+                                                   (mv-nth 1 (rml08 start-rip :x x86))
                                                    prefixes)
                                   (1- cnt)
-                                  (mv-nth 2 (rm08 start-rip :x x86)))))
+                                  (mv-nth 2 (rml08 start-rip :x x86)))))
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :in-theory (e/d* (get-prefixes
@@ -1051,18 +1051,18 @@
               (not (zp cnt))
               (equal (prefixes-slice :group-4-prefix prefixes) 0)
               (let*
-                  ((flg (mv-nth 0 (rm08 start-rip :x x86)))
+                  ((flg (mv-nth 0 (rml08 start-rip :x x86)))
                    (prefix-byte-group-code
-                    (get-one-byte-prefix-array-code (mv-nth 1 (rm08 start-rip :x x86)))))
+                    (get-one-byte-prefix-array-code (mv-nth 1 (rml08 start-rip :x x86)))))
                 (and (not flg)
                      (equal prefix-byte-group-code 4))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice :group-4-prefix
-                                                   (mv-nth 1 (rm08 start-rip :x x86))
+                                                   (mv-nth 1 (rml08 start-rip :x x86))
                                                    prefixes)
                                   (1- cnt)
-                                  (mv-nth 2 (rm08 start-rip :x x86)))))
+                                  (mv-nth 2 (rml08 start-rip :x x86)))))
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :in-theory (e/d* (get-prefixes
@@ -1085,9 +1085,9 @@
 
       (b* ((ctx 'get-prefixes-two-x86-induct-hint)
            ((mv flg-1 byte-1 x86-1)
-            (rm08 start-rip :x x86-1))
+            (rml08 start-rip :x x86-1))
            ((mv flg-2 byte-2 x86-2)
-            (rm08 start-rip :x x86-2))
+            (rml08 start-rip :x x86-2))
            ((when flg-1)
             (mv (cons ctx flg-1) byte-1 x86-1))
            ((when flg-2)
@@ -1252,10 +1252,10 @@
                            (get-prefixes start-rip prefixes cnt x86-1)
                            (get-prefixes start-rip prefixes cnt x86-2))
                           :use
-                          ((:instance xlate-equiv-memory-and-mv-nth-0-rm08-cong
+                          ((:instance xlate-equiv-memory-and-mv-nth-0-rml08-cong
                                       (lin-addr start-rip)
                                       (r-w-x :x))
-                           (:instance xlate-equiv-memory-and-mv-nth-1-rm08
+                           (:instance xlate-equiv-memory-and-mv-nth-1-rml08
                                       (lin-addr start-rip)
                                       (r-w-x :x)))
                           :in-theory
@@ -1264,9 +1264,9 @@
                                  get-prefixes
                                  las-to-pas
                                  mv-nth-0-las-to-pas-subset-p)
-                                (rm08
-                                 xlate-equiv-memory-and-mv-nth-0-rm08-cong
-                                 xlate-equiv-memory-and-mv-nth-1-rm08
+                                (rml08
+                                 xlate-equiv-memory-and-mv-nth-0-rml08-cong
+                                 xlate-equiv-memory-and-mv-nth-1-rml08
                                  (:rewrite mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p))))
               nil)))
 
@@ -1280,7 +1280,7 @@
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :in-theory (e/d* (get-prefixes  mv-nth-0-las-to-pas-subset-p subset-p)
-                              (rm08
+                              (rml08
                                acl2::ash-0
                                acl2::zip-open
                                cdr-create-canonical-address-list
@@ -1290,7 +1290,7 @@
                 (and (consp (car id))
                      (< 1 (len (car id))))
                 '(:in-theory (e/d* (subset-p get-prefixes mv-nth-0-las-to-pas-subset-p)
-                                   (rm08
+                                   (rml08
                                     acl2::ash-0
                                     acl2::zip-open
                                     force (force)))
@@ -1618,7 +1618,7 @@
                                   (acl2::mv-nth-cons-meta force (force))))))
 
 (local
- (defthmd rm08-in-terms-of-nth-pos-and-rb-helper
+ (defthmd rml08-in-terms-of-nth-pos-and-rb-helper
    (implies (and (disjoint-p (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))
                              (all-xlation-governing-entries-paddrs n lin-addr x86))
                  (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))

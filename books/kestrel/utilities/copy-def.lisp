@@ -11,17 +11,7 @@
 
 (in-package "ACL2")
 
-; The following function might be moved to a more general utilities book.
-(defun symbol-package-name-safe (sym)
-
-; Let's avoid accidentally creating a function symbol in the "COMMON-LISP"
-; package, which is illegal.
-
-  (declare (xargs :guard (symbolp sym)))
-  (let ((pkg (symbol-package-name sym)))
-    (if (equal pkg *main-lisp-package-name*)
-        "ACL2"
-      pkg)))
+(include-book "symbols")
 
 (defun fn-copy-name (fn)
   (declare (xargs :guard (symbolp fn)))

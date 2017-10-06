@@ -115,6 +115,10 @@
  modes, memory management via paging and segmentation, and the
  instruction fetch-decode-execute cycle.</p>
 
+<p>We are in the process of extending the model to support 32-bit mode, both as
+the legacy protected mode and as the compatibility sub-mode of the Intel's
+IA-32e mode.</p>
+
  <p>To see a list of opcodes implemented in these books, see @(see
  implemented-opcodes).</p>
 
@@ -597,8 +601,9 @@
   x86-register-readers-and-writers
   Characterizing-undefined-behavior
   x86-physical-memory
-  ia32e-paging
-  ia32e-segmentation
+  x86-linear-memory
+  x86-paging
+  x86-segmentation
   x86-top-level-memory
   x86-environment
   x86-syscalls

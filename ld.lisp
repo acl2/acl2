@@ -128,10 +128,16 @@
       ((eq prompt-fn 'default-print-prompt)
        (default-print-prompt output-channel state))
       (t (mv-let (erp trans-ans state)
-           (trans-eval (list prompt-fn
-                             (list 'quote output-channel)
-                             'state)
-                       'print-prompt state t)
+
+; We could call trans-eval-no-warning here instead, to avoid horrible warnings
+; appearing as the prompt is printed.  But if that printing modifies a user
+; stobj, then probably it would be most appropriate for the superior call of ld
+; to specify :ld-user-stobjs-modified-warning nil.
+
+           (trans-eval-default-warning (list prompt-fn
+                                             (list 'quote output-channel)
+                                             'state)
+                                       'print-prompt state t)
 
 ; If erp is non-nil, trans-ans is of the form (stobjs-out . valx).  We
 ; strongly expect that stobjs-out is (nil state).  (That is true if
@@ -365,6 +371,9 @@
                      (value pair)))
           (ld-verbose
            (er-progn (chk-ld-verbose val ctx state)
+                     (value pair)))
+          (ld-user-stobjs-modified-warning
+           (er-progn (chk-ld-user-stobjs-modified-warning val ctx state)
                      (value pair)))
           (otherwise
            (er soft ctx
@@ -618,6 +627,10 @@
          (f-put-global 'ld-query-control-alist (cdar alist) state))
         (ld-verbose
          (f-put-global 'ld-verbose (cdar alist) state))
+        (ld-user-stobjs-modified-warning
+         (if (eq (cdar alist) :same)
+             state
+           (f-put-global 'ld-user-stobjs-modified-warning (cdar alist) state)))
         (otherwise
          (let ((x (er hard 'f-put-ld-specials
                       "Someone is using ~x0 as an unauthorized LD-special."
@@ -664,7 +677,9 @@
         (cons 'ld-query-control-alist
               (f-get-global 'ld-query-control-alist state))
         (cons 'ld-verbose
-              (f-get-global 'ld-verbose state))))
+              (f-get-global 'ld-verbose state))
+        (cons 'ld-user-stobjs-modified-warning
+              (f-get-global 'ld-user-stobjs-modified-warning state))))
 
 (defun ld-read-keyword-command1 (n state)
   (cond
@@ -681,7 +696,7 @@
 
 ; Note: We take advantage of the fact that this function ALWAYS returns a list
 ; of quoted objects.  See the call of strip-cadrs in ld-read-keyword-command
-; below.  So if you optmize away some of the quotes, beware!
+; below.  So if you optimize away some of the quotes, beware!
 
                  (value (cons (list 'quote obj) rst)))))))))
 
@@ -860,7 +875,7 @@
                               may also answer R, meaning ``return ~
                               immediately from LD (without reading or ~
                               evaluating any more forms)'' or Q meaning ~
-                              ``return immediately from LD, signalling an ~
+                              ``return immediately from LD, signaling an ~
                               error.''"
                              :y t :n nil :r :return :q :error))
                        (list (cons #\0 (if (eq (ld-pre-eval-print state) t) 1 0))
@@ -892,7 +907,7 @@
 ; If ld-post-eval-print is nil we print nothing.  If it is t, we
 ; print with the standard evisceration (ld-evisc-tuple).  If it is
 ; :command-conventions, we hide error/value/state pairs by just printing
-; value and we don't print anyting when the value is :invisible.
+; value and we don't print anything when the value is :invisible.
 
   (let ((flg (ld-post-eval-print state))
         (output-channel (standard-co state)))
@@ -1104,7 +1119,8 @@
                      (mv-let (error-flg trans-ans state)
                              (if (raw-mode-p state)
                                  (acl2-raw-eval form state)
-                               (trans-eval form 'top-level state t))
+                               (trans-eval-default-warning form 'top-level
+                                                           state t))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
@@ -1198,7 +1214,7 @@
 ; handling of aborts in ld-fn forces us to call ld-fn-body again after each
 ; abort and we wish to suppress the header message after all entrances other
 ; than the first.  This only happens after an abort (all bets are off) and the
-; idea is to fool the user into thinking a normal error was signalled.
+; idea is to fool the user into thinking a normal error was signaled.
 
 #-acl2-loop-only
 (defvar *first-entry-to-ld-fn-body-flg*)
@@ -1690,7 +1706,8 @@
               (ld-error-triples 'same ld-error-triplesp)
               (ld-error-action 'same ld-error-actionp)
               (ld-query-control-alist 'same ld-query-control-alistp)
-              (ld-verbose 'same ld-verbosep))
+              (ld-verbose 'same ld-verbosep)
+              (ld-user-stobjs-modified-warning ':same))
   `(ld-fn
     (list ,@(append
              (list `(cons 'standard-oi ,standard-oi))
@@ -1742,7 +1759,11 @@
                  nil)
              (if ld-verbosep
                  (list `(cons 'ld-verbose ,ld-verbose))
-                 nil)))
+                 nil)
+             (if (eq ld-user-stobjs-modified-warning :same)
+                 nil
+               (list `(cons 'ld-user-stobjs-modified-warning
+                            ,ld-user-stobjs-modified-warning)))))
     state
     t))
 
@@ -1768,7 +1789,12 @@
            :rule-classes :type-prescription)
          (defthm rev-rev (implies (true-listp x) (equal (rev (rev x)) x))))
        :ld-pre-eval-print t
-       :ld-error-action :return))
+       :ld-error-action :return
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+       :ld-user-stobjs-modified-warning :same))
 
 (defun wormhole-prompt (channel state)
   (fmt1 "Wormhole ~s0~sr ~@1~*2"
@@ -2181,9 +2207,9 @@
 ; This read is influenced by *package*, *readtable*, and *features*,
 ; as described in acl2.lisp.
 
-; The semantics of an ACL2 read-eval-print cycles is best desribed
-; from the logical point of view via the logic programming pradigm, to
-; which we degress momentarity.  In the Lisp paradigm, one thinks
+; The semantics of an ACL2 read-eval-print cycles is best described
+; from the logical point of view via the logic programming paradigm, to
+; which we digress momentarily.  In the Lisp paradigm, one thinks
 ; of an interaction as always being something like
 
 ; >  (fact 3) = ?
@@ -2209,13 +2235,13 @@
 ; (but non-Lispish) idea that the input to a computation need not
 ; always be given entirely in advance of the commencement of a
 ; computation.  In truth, even in regular Common Lisp, the input is not
-; really always given entirely in advance because the charcters that
+; really always given entirely in advance because the characters that
 ; may appear in *standard-input* or the file system need not be known
 ; before evaluation commences.  ACL2 employs this ``incompletely
 ; specified at evaluation commencement'' idea.
 
 ; From the logical point of view, an ACL2 ``state'' is any object in
-; the logic satifying the state-p predicate, q.v. in axioms.lisp.
+; the logic satisfying the state-p predicate, q.v. in axioms.lisp.
 ; There is a long comment in axioms.lisp under the heading STATE which
 ; describes the many fields that a state has.
 
@@ -2227,7 +2253,7 @@
 ; output channels (but not the characters read or written to those
 ; channels), (b) the symbols in the global table, (c) the t-stack, (d)
 ; the 32-bit stack, and (e) the file clock.  We say that an object o
-; satisfying state-p is ``consistent with the current paritial state''
+; satisfying state-p is ``consistent with the current partial state''
 ; provided that every fact revealed by (what-is-the-global-state) and
 ; by examination of the bound globals is true about o.
 
@@ -3111,7 +3137,7 @@
            (mv-let (error-flg trans-ans state)
                    (if (raw-mode-p state)
                        (acl2-raw-eval form state)
-                     (trans-eval form 'top-level state t))
+                     (trans-eval-default-warning form 'top-level state t))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
@@ -4447,9 +4473,15 @@
         (value :invisible))
        ((or (eq io-markers :all)
             (member-equal io-marker io-markers))
-        (er-progn (trans-eval (access io-record (car io-record-lst)
-                                      :form)
-                              ctx state t)
+        (er-progn (trans-eval
+
+; We could call trans-eval-default-warning here instead of trans-eval.  But if
+; a user stobj is modified simply by printing output, we should probably know
+; about it (and someone will likely complain loudly).
+
+                   (access io-record (car io-record-lst)
+                           :form)
+                   ctx state t)
                   (print-saved-output-lst (cdr io-record-lst)
                                           (if stop-markers
                                               :all ; print till we're stopped
@@ -4477,9 +4509,15 @@
                            :io-marker)
                    :ctx)))
       (er-progn (if saved-output
-                    (trans-eval (access io-record (car saved-output)
-                                        :form)
-                                ctx state t)
+                    (trans-eval
+
+; We could call trans-eval-default-warning here instead of trans-eval.  But if
+; a user stobj is modified simply by printing output, we should probably know
+; about it (and someone will likely complain loudly).
+
+                     (access io-record (car saved-output)
+                             :form)
+                     ctx state t)
                   (value nil))
                 (pprogn (fms "There is no saved output to print.  ~
                               See :DOC set-saved-output.~|"

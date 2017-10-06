@@ -193,7 +193,7 @@
 ;   application of function symbol other than IF to a list of csts
 
 ; WARNING:  The definition of leafp below relies on the fact that leaf csts are
-; exactly those whose final cdr is nil.  Do not succomb to the temptation to
+; exactly those whose final cdr is nil.  Do not succumb to the temptation to
 ; add a new field as the final cdr without taking this into account.
 
 ; Note:  It is tempting to replace the "term" in the last case by an ACL2 term,
@@ -1127,7 +1127,7 @@
 (defun extra-rules-for-bdds (fn wrld)
 
 ; We include certain trivial rewrite rules regardless of whether there are
-; explicit rewrite rules that corrrespond to them.
+; explicit rewrite rules that correspond to them.
 
   (cond
    ((eq fn 'equal)
@@ -1990,7 +1990,7 @@
 
 ; Then vars represents an "error", and we want to return an error of the same
 ; sort.  This sort will be different for combine-if-csts+ than for the other
-; allowable functions (from the guard expresssion above), but no matter.
+; allowable functions (from the guard expression above), but no matter.
 
                   (cons 'mvf vars)))
              ,body)))

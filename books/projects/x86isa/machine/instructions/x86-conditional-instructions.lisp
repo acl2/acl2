@@ -156,7 +156,7 @@
   ;; 7F    JNLE/G rel8                                  Jump if ZF = 0 and SF = OF
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -215,10 +215,10 @@
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
        ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*) rel8/next-rip) x86)
         (if branch-cond
-            (rim-size 1 temp-rip :x x86)
+            (riml-size 1 temp-rip :x x86)
           (mv nil (+ 1 temp-rip) x86)))
        ((when flg)
-        (!!ms-fresh :rim-size-error flg))
+        (!!ms-fresh :riml-size-error flg))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
         (if branch-cond
@@ -274,7 +274,7 @@
   ;; 0F 8F JNLE/G rel32                                 Jump if ZF = 0 and SF = OF
 
   :parents (two-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -340,10 +340,10 @@
                    rel32/next-rip)
             x86)
         (if branch-cond
-            (rim-size 4 temp-rip :x x86) ;; rel32
+            (riml-size 4 temp-rip :x x86) ;; rel32
           (mv nil (+ 4 temp-rip) x86)))  ;; next-rip
        ((when flg)
-        (!!ms-fresh :rim-size-error flg))
+        (!!ms-fresh :riml-size-error flg))
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
         (if branch-cond
             (+ (the (signed-byte #.*max-linear-address-size+1*)
@@ -382,7 +382,7 @@
   ;; Op/En: D
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -415,10 +415,10 @@
         (equal (rgfi-size register-size *rcx* rex-byte x86) 0))
        ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*) rel8/next-rip) x86)
         (if branch-cond
-            (rim-size 1 temp-rip :x x86)
+            (riml-size 1 temp-rip :x x86)
           (mv nil (+ 1 temp-rip) x86)))
        ((when flg)
-        (!!ms-fresh :rim-size-error flg))
+        (!!ms-fresh :riml-size-error flg))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
         (if branch-cond
@@ -468,7 +468,7 @@
 
 
   :parents (two-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -592,7 +592,7 @@
   ;; 0F 9F SETG/SETNLE r/m8                             Set if ZF = 0 and SF = OF
 
   :parents (two-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))

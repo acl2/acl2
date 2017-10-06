@@ -18,6 +18,7 @@
                (universal-theory-fn to wrld)
                (universal-theory-fn from wrld)
                t
+               t
                wrld)))
     (collect-rewrites diff nil)))
 

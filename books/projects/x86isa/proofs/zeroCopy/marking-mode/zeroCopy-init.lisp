@@ -381,7 +381,7 @@
     (:rewrite acl2::nfix-when-not-natp)
     (:rewrite acl2::nfix-when-natp)
     (:rewrite constant-upper-bound-of-logior-for-naturals)
-    ;; (:linear combine-bytes-size-for-rm64-programmer-level-mode)
+    ;; (:linear combine-bytes-size-for-rml64-programmer-level-mode)
     (:rewrite acl2::natp-when-integerp)
     (:rewrite acl2::natp-when-gte-0)
     (:rewrite 4k-aligned-physical-address-helper)

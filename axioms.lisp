@@ -24,7 +24,7 @@
 ; which are not already provided in Common Lisp.  In some cases, the
 ; implementation of a function is identical to its axiomatization (cf.
 ; implies).  In other cases, we provide functions whose semantics are
-; applicative but whose implementations are decidely ``von
+; applicative but whose implementations are decidedly ``von
 ; Neumann-esque''.  For example, we implement the array, property
 ; list, and io primitives with non-applicative techniques.
 
@@ -46,7 +46,7 @@
 ; which we check.  (Actually, this is currently a lie about DEFUN,
 ; DEFMACRO, and PROGN, but we will provide someday a check that that
 ; those are only used in files in ways such that their ACL2 and Common
-; Lisp meanings are prefectly consistent.)  Thus, when we talk about
+; Lisp meanings are perfectly consistent.)  Thus, when we talk about
 ; +, we really mean the Common Lisp +.  However, our + does not handle
 ; floating point numbers, so there is a guard on + that checks that
 ; its args are rationals.  The symbols in the list
@@ -1428,7 +1428,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            integer-abs
            integer-range-p
            len
-           logicp ; forerly macro logicalp; preserving efficiency
+           logicp ; formerly macro logicalp; preserving efficiency
            member-equal
            natp
            nfix
@@ -2739,7 +2739,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Once upon a time hard-error took a throw-flg argument and did the
 ; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
-; it signalled an interface-er.  Note that in either case it behaved like
+; it signaled an interface-er.  Note that in either case it behaved like
 ; an error -- interface-er's are rougher because they do not leave you in
 ; the ACL2 command loop.  I think this aspect of the old code was a vestige
 ; of the pre-*ld-level* days when we didn't know if we could throw or not.
@@ -3627,7 +3627,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro ec-call1 (ign x)
 
-; We introduce ec-call1 inbetween the utlimate macroexpansion of an ec-call
+; We introduce ec-call1 inbetween the ultimate macroexpansion of an ec-call
 ; form to a return-last form, simply because untranslate will produce (ec-call1
 ; nil x) from (return-last 'ec-call1-raw nil x).
 
@@ -3716,7 +3716,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :rule-classes nil)
 
 ;; Historical Comment from Ruben Gamboa:
-;; This axiom was weakened to accomodate real x and y
+;; This axiom was weakened to accommodate real x and y
 
 (defaxiom Positive
   (and (implies (and (< 0 x) (< 0 y))
@@ -3753,7 +3753,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :rule-classes nil)
 
 ;; Historical Comment from Ruben Gamboa:
-;; This axiom was weakened to accomodate the reals.
+;; This axiom was weakened to accommodate the reals.
 
 (defaxiom complex-implies1
   (and (real/rationalp (realpart x))
@@ -3772,7 +3772,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (in-theory (disable complex-definition))
 
 ;; Historical Comment from Ruben Gamboa:
-;; This axiom was weakened to accomodate the reals.
+;; This axiom was weakened to accommodate the reals.
 
 ; This rule was called complex-rationalp-has-nonzero-imagpart before
 ; Version_2.5.
@@ -4213,7 +4213,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We catch Boolean type-prescriptions and convert them to tau signature rules.
 ; The first lemma below links booleanp to symbolp and thus to the other recogs.
-; The next two deal with special cases: boolean functionse that do not have
+; The next two deal with special cases: boolean functions that do not have
 ; type-prescriptions because we have special functions for computing their
 ; type-sets.
 
@@ -4870,72 +4870,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       x
     0))
 
-(defun string-equal1 (str1 str2 i maximum)
-  (declare (xargs :guard (and (stringp str1)
-                              (standard-char-listp (coerce str1 'list))
-                              (stringp str2)
-                              (standard-char-listp (coerce str2 'list))
-                              (integerp i)
-                              (integerp maximum)
-                              (<= maximum (length str1))
-                              (<= maximum (length str2))
-                              (<= 0 i)
-                              (<= i maximum))
-
-; We make this function :program until we know enough about o-p
-; to prove its termination.
-
-                  :mode :program))
-  (let ((i (nfix i)))
-    (cond
-     ((>= i (ifix maximum))
-      t)
-     (t (and (char-equal (char str1 i)
-                         (char str2 i))
-             (string-equal1 str1 str2 (+ 1 i) maximum))))))
+; We make 1+ and 1- macros in order to head off the potentially common error of
+; using these as nonrecursive functions on left-hand sides of rewrite rules.
 
 #+acl2-loop-only
-(defun string-equal (str1 str2)
-  (declare (xargs :guard (and (stringp str1)
-                              (standard-char-listp (coerce str1 'list))
-                              (stringp str2)
-                              (standard-char-listp (coerce str2 'list)))
-                  :mode :program))
-  (let ((len1 (length str1)))
-    (and (= len1 (length str2))
-         (string-equal1 str1 str2 0 len1))))
+(defmacro 1+ (x)
+  (list '+ 1 x))
 
-(defun standard-string-alistp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (stringp (car (car x)))
-                (standard-char-listp (coerce (car (car x)) 'list))
-                (standard-string-alistp (cdr x))))))
-
-(defthm standard-string-alistp-forward-to-alistp
-  (implies (standard-string-alistp x)
-           (alistp x))
-  :rule-classes :forward-chaining)
-
-(defun assoc-string-equal (str alist)
-  (declare (xargs :guard (and (stringp str)
-                              (standard-char-listp (coerce str 'list))
-                              (standard-string-alistp alist))
-                  :mode :program))
-  (cond
-   ((endp alist)
-    nil)
-   ((string-equal str (car (car alist)))
-    (car alist))
-   (t (assoc-string-equal str (cdr alist)))))
-
-; Ordinal stuff.  It seems more or less impossible to get o<g and o< admitted
-; during boot-strapping unless we cheat by declaring them explicitly :mode
-; :logic so that they will be admitted in the first pass of the build.  But
-; then we also need to declare functions on which they depend to be :mode
-; :logic as well (since :logic mode functions cannot have :program mode
-; functions in their bodies).
+#+acl2-loop-only
+(defmacro 1- (x)
+  (list '- x 1))
 
 (defun natp (x)
   (declare (xargs :guard t :mode :logic))
@@ -4947,6 +4891,100 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (and (integerp x)
               (<= 0 x)))
   :rule-classes :compound-recognizer)
+
+(defun standard-string-p1 (x n)
+  (declare (xargs :guard (and (stringp x)
+                              (natp n)
+                              (<= n (length x)))))
+  (cond ((zp n) t)
+        (t (let ((n (1- n)))
+             (and (standard-char-p (char x n))
+                  (standard-string-p1 x n))))))
+
+(defun standard-string-p (x)
+  (declare (xargs :guard (stringp x)))
+  (standard-string-p1 x (length x)))
+
+(defun standard-string-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (stringp (car x))
+                (standard-string-p (car x))
+                (standard-string-listp (cdr x))))))
+
+(defun string-equal1 (str1 str2 i maximum)
+  (declare (xargs :guard (and (stringp str1)
+                              (standard-string-p str1)
+                              (stringp str2)
+                              (standard-string-p str2)
+                              (integerp i)
+                              (integerp maximum)
+                              (<= maximum (length str1))
+                              (<= maximum (length str2))
+                              (<= 0 i)
+                              (<= i maximum))
+                  :measure (nfix (- (ifix maximum) (nfix i)))
+                  :mode :program))
+  (let ((i (nfix i)))
+    (cond
+     ((>= i (ifix maximum))
+      t)
+     (t (and (char-equal (char str1 i)
+                         (char str2 i))
+             (string-equal1 str1 str2 (+ 1 i) maximum))))))
+
+#+acl2-loop-only ; Commented out for patch file
+(defun string-equal (str1 str2)
+  (declare (xargs :guard (and (stringp str1)
+                              (standard-string-p str1)
+                              (stringp str2)
+                              (standard-string-p str2))
+                  :mode :program))
+  (let ((len1 (length str1)))
+    (and (= len1 (length str2))
+         (string-equal1 str1 str2 0 len1))))
+
+(defun member-string-equal (str lst)
+  (declare (xargs :guard (and (stringp str)
+                              (standard-string-p str)
+                              (standard-string-listp lst))
+                  :mode :program))
+  (cond
+   ((endp lst) nil)
+   (t (or (string-equal str (car lst))
+          (member-string-equal str (cdr lst))))))
+
+(defun standard-string-alistp (x)
+  (declare (xargs :guard t))
+  (cond
+   ((atom x) (eq x nil))
+   (t (and (consp (car x))
+           (stringp (car (car x)))
+           (standard-string-p (car (car x)))
+           (standard-string-alistp (cdr x))))))
+
+(defthm standard-string-alistp-forward-to-alistp
+  (implies (standard-string-alistp x)
+           (alistp x))
+  :rule-classes :forward-chaining)
+
+(defun assoc-string-equal (str alist)
+  (declare
+   (xargs :guard (and (stringp str)
+                      (standard-string-p str)
+                      (standard-string-alistp alist))
+          :mode :program))
+  (cond ((endp alist) nil)
+        ((string-equal str (car (car alist)))
+         (car alist))
+        (t (assoc-string-equal str (cdr alist)))))
+
+; Ordinal stuff.  It seems more or less impossible to get o<g and o< admitted
+; during boot-strapping unless we cheat by declaring them explicitly :mode
+; :logic so that they will be admitted in the first pass of the build.  But
+; then we also need to declare functions on which they depend to be :mode
+; :logic as well (since :logic mode functions cannot have :program mode
+; functions in their bodies).
 
 (defun bitp (x)
   (declare (xargs :guard t :mode :logic))
@@ -5109,7 +5147,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Before Version_7.0, *aokp* was Boolean and a separate special variable,
 ; *attached-fn-called*, was used for holding a function symbol whose
-; attachement has been called.  By folding that role into *aokp* we reduced the
+; attachment has been called.  By folding that role into *aokp* we reduced the
 ; time for (defthm spec-body ...) in
 ; books/misc/misc2/reverse-by-separation.lisp from 188 seconds to 181 seconds,
 ; a savings of about 4%.
@@ -5570,17 +5608,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (equal (character-listp (append x y))
                   (and (character-listp x)
                        (character-listp y)))))
-
-; We make 1+ and 1- macros in order to head off the potentially common error of
-; using these as nonrecursive functions on left-hand sides of rewrite rules.
-
-#+acl2-loop-only
-(defmacro 1+ (x)
-  (list '+ 1 x))
-
-#+acl2-loop-only
-(defmacro 1- (x)
-  (list '- x 1))
 
 (defun cons-with-hint (x y hint)
   (declare (xargs :guard t)
@@ -6226,7 +6253,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (loop for i fixnum from 1 to n
 
 ; Warning: Do not use "as x in l collect x" on the next line.  Sol Swords
-; disovered that at least in CCL, the looping stops in that case when l is
+; discovered that at least in CCL, the looping stops in that case when l is
 ; empty.
 
                        collect (pop l))))
@@ -6757,7 +6784,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; macro expansion of lst at hand, one could manufacture a variable
 ; that was not free in the expansion with genvars, and that would do.
 
-; As a less than elegant rememdy to the situation, we introduce below
+; As a less than elegant remedy to the situation, we introduce below
 ; the macro check-vars-not-free, which takes two arguments, the first
 ; a not-to-be-evaluated list of variable names and the second an
 ; expression.  We arrange to return the translation of the expression
@@ -6964,7 +6991,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro check-vars-not-free (vars form)
 
 ; Warning: We actually handle this macro directly in translate11, in case that
-; is an effficiency win.  Keep this macro and that part of translate11 in sync.
+; is an efficiency win.  Keep this macro and that part of translate11 in sync.
 
 ; A typical use of this macro is (check-vars-not-free (my-erp my-val) ...)
 ; which just expands to the translation of ... provided my-erp and my-val do
@@ -7650,7 +7677,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     y))
 
 ;; Historical Comment from Ruben Gamboa:
-;; Only the guard changed here.  The docstring below says that
+;; Only the guard changed here.  The doc string below says that
 ;; abs must not be used on complex arguments, since that could result
 ;; in a non-ACL2 object.
 
@@ -7684,6 +7711,26 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 )
 
+(encapsulate
+  ()
+  (local (defthm hack
+           (implies (integerp i)
+                    (equal (+ -1 1 i)
+                           i))))
+  (local
+   (defthm standard-string-p1-forward-to-standard-char-p
+     (implies (and (standard-string-p1 s n) ; n is free
+                   (stringp s)
+                   (integerp n)
+                   (natp i)
+                   (< i n))
+              (standard-char-p (nth i (coerce s 'list))))))
+
+  (verify-termination-boot-strap string-equal1))
+
+; The following was probably formerly needed for the event just above,
+; (verify-termination-boot-strap string-equal1).  It's no longer necessary for
+; that but it's a nice rule nonetheless.
 (defthm standard-char-p-nth
   (implies (and (standard-char-listp chars)
                 (<= 0 i)
@@ -7691,10 +7738,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (standard-char-p (nth i chars)))
   :hints (("Goal" :in-theory (enable standard-char-listp))))
 
-(verify-termination-boot-strap (string-equal1
-                     (declare (xargs :measure (nfix (- maximum (nfix i)))))))
 (verify-termination-boot-strap string-equal)
 (verify-termination-boot-strap assoc-string-equal)
+(verify-termination-boot-strap member-string-equal)
 (verify-termination-boot-strap xxxjoin)
 
 #+acl2-loop-only
@@ -7989,7 +8035,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; The idea is that it returns the 3 results of evaluating body except before
 ; propagating those results upwards it runs one of the two cleanup forms,
-; depending on whether the body signalled an error.  The cleanup forms return
+; depending on whether the body signaled an error.  The cleanup forms return
 ; state.  In typical use the cleanup forms restore the values of state global
 ; variables that were "temporarily" set by body.  [Note that the "expl"
 ; is a string and it is always ignored.  Its only use is to tag the elements
@@ -8010,7 +8056,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; unwind-protect in the macroexpansion of each acl2-unwind-protect.
 
 ; The (imagined) unwind-protect is almost always irrelevant because "errors"
-; signalled by body are in fact not Lisp errors.  But should the user cause an
+; signaled by body are in fact not Lisp errors.  But should the user cause an
 ; abort during body, the unwind-protect will ensure that cleanup1 is executed.
 ; This is a logically arbitrary choice; we might have said cleanup2 is
 ; executed.  By "ensure" we mean not only will the Lisp unwind-protect fire
@@ -8028,7 +8074,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; correct with respect to the (non-logical) semantics we have described.
 ; Furthermore, it bears pointing out that cleanup1 might be called upon to undo
 ; the work of a "partial" execution of cleanup2!  This happens if the body
-; completes normally and without signalling an error, cleanup2 is undertaken,
+; completes normally and without signaling an error, cleanup2 is undertaken,
 ; and then the user aborts.  So the rule is that if an abort occurs during an
 ; acl2-unwind-protect, cleanup1 is executed without interrupts.
 
@@ -8054,7 +8100,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; (unwind-protect ,body
 ;   (cond (<body was aborted> ,cleanup1 <pass abort up>)
-;         (<body signalled erp> ,cleanup1 <pass (mv erp val state') up>)
+;         (<body signaled erp> ,cleanup1 <pass (mv erp val state') up>)
 ;         (t ,cleanup2 <pass (mv erp val state') up>)))
 
 ; where we do whatever we have to do to detect aborts and to pass aborts up in
@@ -9098,7 +9144,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; already set) if the event is evaluated with a non-nil value of state global
 ; 'ld-skip-proofsp, unless we are inside an include-book or the second pass of
 ; an encapsulate.  (Note that the certificate of a book already carries the
-; information of whether skip-proofs was invoked during cerification, and we
+; information of whether skip-proofs was invoked during certification, and we
 ; use that information when including a book.)  We may also avoid setting
 ; 'skip-proofs-seen if the event has no logical content, for example, a
 ; deflabel event.  However, we avoid updating 'skip-proofs-seen in the cases of
@@ -9113,7 +9159,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; world, that is not a problem.
 
 ; Up through Version_3.4, we updated world globals 'skip-proofs-seen and
-; 'redef-seen in maybe-add-command-landmark intead of as indicated above (in
+; 'redef-seen in maybe-add-command-landmark instead of as indicated above (in
 ; particular, instead of using install-event).  But with progn!, this is
 ; misguided -- these should be updated at the event level, not the command
 ; level -- as the following example shows.
@@ -10391,7 +10437,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; case of a one dimensional array, the dimension is a list of length
 ; one which is a nonnegative integer one greater than the maximum
 ; permitted index.  (Other keywords, e.g. :purpose, for
-; identification, are permitted and ignored.)  Formally speakign, to
+; identification, are permitted and ignored.)  Formally speaking, to
 ; find the value of a non-negative integer key in such an alist, we
 ; search the alist (with the function aref1) for the first pair whose
 ; car matches the key.  If such a pair is found, then aref1 returns
@@ -10421,7 +10467,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; compress1 then associates with the alist (under the name) a ``real''
 ; array.  Compress1 returns a list that begins with the header and has
 ; its other elements in key-ascending order unless otherwise indicated
-; by the hearder, with aref1-irrelevant pairs deleted.  If the alist
+; by the header, with aref1-irrelevant pairs deleted.  If the alist
 ; is already in this normal form, then no consing is done.  If there
 ; is already an array associated with the given name, and if it
 ; happens to have the desired length, then no array allocation is done
@@ -10584,7 +10630,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; 11.6 ; no patch, but inline
 ;  4.3 ; patch and inline
 
-; #+ACL2-PAR note: Unsurpisingly, when we add the semi-necessary locking to the
+; #+ACL2-PAR note: Unsurprisingly, when we add the semi-necessary locking to the
 ; array caching scheme (alternatively, we could investigate using a
 ; compare-and-swap-based mechanism like atomic increments), we experience a
 ; very large slow down.  In Rager's experiment, it was about 40x slower.  This
@@ -10919,7 +10965,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (and (equal (cadr old-event-form) (cadr event-form))
                   (equal (caddr old-event-form) (caddr event-form)))))
 
-; This shorcut is potentially a big concern!  We are checking that the name and
+; This shortcut is potentially a big concern!  We are checking that the name and
 ; term of the defpkg form agrees with an old defpkg form.  But these two forms
 ; may have been evaluated in different worlds!  Nevertheless, for now we trust
 ; that they really are equivalent, for efficiency's sake.  Defpkg-fn will call
@@ -11423,7 +11469,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; current-acl2-world.  When that world is installed, we will note that
 ; a non-virgin name, *type-set-binary-+-table*, is being defconst'd and so
 ; we will DO NOTHING, leaving ptr1 as the value of the Common Lisp
-; global contant *type-set-binary-+-table*.  So, because of the code below,
+; global constant *type-set-binary-+-table*.  So, because of the code below,
 ; all logical copies of this array are represented by ptr1.
 
 ; In the old days, compress2 put ptr2 into the car of the 'acl2-array
@@ -11437,7 +11483,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; slow-array-warning.
 
 ; The following historical comment no longer applies to
-; 'global-enabled-stucture, but it is still relevant to
+; 'global-enabled-structure, but it is still relevant to
 ; 'global-arithmetic-enabled-structure.
 
 ; This preservation (eq) of the old array is also crucial to the way
@@ -11448,7 +11494,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; side-effects the underlying von Neumann array but returns the very
 ; same (eq) structure.  We then discard that structure, having only
 ; wanted the side effect!  Before we exploited this, we had to cons up
-; a new global-enabled-structure and rebind 'global-enabled-stucture
+; a new global-enabled-structure and rebind 'global-enabled-structure
 ; in the world.  This had the bad effect of sometimes putting more
 ; than one binding of that variable.
 
@@ -12964,7 +13010,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; The problem was that state was bound to *the-live-state* for evaluation
 ; during a proof, where lexically state had a different binding that should
-; have ruled.  This macro's conde included the check (eq (symbol-value 'state)
+; have ruled.  This macro's cond included the check (eq (symbol-value 'state)
 ; *the-live-state*), which unfortunately was no check at all: it was already
 ; true because symbol-value returns the global value, and is not affected by a
 ; superior lexical binding of state.
@@ -14173,7 +14219,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-query-control-alist . nil)
     (ld-verbose . "~sv.  Level ~Fl.  Cbd ~xc.~|System books ~
                    directory ~xb.~|Type :help for help.~%Type (good-bye) to ~
-                   quit completely out of ACL2.~|~%")))
+                   quit completely out of ACL2.~|~%")
+    (ld-user-stobjs-modified-warning . nil)))
 
 (defun always-boundp-global (x)
   (declare (xargs :guard (symbolp x)))
@@ -14394,7 +14441,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; If a user sends an "offending call" as requested in the email below, consider
 ; adding a parallelism wart in the definition of the function being called,
 ; documenting that a user has actually encountered an execution of ACL2(p) that
-; ran a function that we have indentified as not thread-safe (via
+; ran a function that we have identified as not thread-safe (via
 ; warn-about-parallelism-hazard) inside a context that we have identified as
 ; eligible for parallel execution (via with-parallelism-hazard-warnings).  (Or
 ; better yet, make a fix.)  See the comments at the top of this function for
@@ -16582,7 +16629,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (eq (get-serialize-character state)
 
 ; It's not clear that it makes sense to print preserving case when doing
-; serialize printing.  If that capability is needed we can address weaking the
+; serialize printing.  If that capability is needed we can address weakening the
 ; guard to match the guard of print-object$.
 
                                   nil)
@@ -17555,7 +17602,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; April 2009: It seems that the last half of this month or so, occasionally
 ; there have been regression failures during inclusion of books that were
 ; apparently already certified.  Those may all have been with Allegro CL.  In
-; particular, on 4/29/09 there were two successive regression failes as
+; particular, on 4/29/09 there were two successive regression failures as
 ; community book books/rtl/rel8/support/lib2.delta1/reps.lisp tried to include
 ; "bits" in that same directory.  We saw a web page claiming an issue in old
 ; versions of Allegro CL for which finish-output didn't do the job, and
@@ -20571,7 +20618,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; (typep (logcount x) 'fixnum)
 
-; Note that  nonstandard integers integeres (like (H)) are not an issue
+; Note that  nonstandard integers integers (like (H)) are not an issue
 ; because all Common Lisp integers are "real" integers, hence standard.
 
          nil)
@@ -26560,7 +26607,7 @@ Lisp definition."
          the parallelized evaluation of the waterfall.  See :doc ~
          set-waterfall-parallelism for how to disable such parallel ~
          evaluation.  Please let the ACL2 authors know if you see this ~
-         message, as our intent is that its occurence should be rare.  The ~
+         message, as our intent is that its occurrence should be rare.  The ~
          offending form is: ~x0"
         ',form)
     ,return-value))
@@ -26710,6 +26757,12 @@ Lisp definition."
 
 (defun oracle-apply (fn args state)
 
+; WARNING: Do not allow stobj arguments among args!  This is naturally enforced
+; since stobjs may not belong to lists.  It is important since otherwise
+; single-threadedness may be violated, which could lead to unsoundness since
+; this is a :logic mode function.  (For somewhat related discussion, see :doc
+; user-stobjs-modified-warnings.)
+
 ; The use of an oracle is important for the logical story.  For example, we can
 ; imagine the following sort of situation without an oracle.
 
@@ -26747,7 +26800,7 @@ Lisp definition."
 
 ; We arrange for the result to depend logically on fn and args.  This is
 ; probably not important to do, but it seems potentially weird for the result
-; ot have nothing to do with fn or with args.
+; to have nothing to do with fn or with args.
 
           (mv (and (true-listp val)
                    (eq (car val) fn)

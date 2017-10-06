@@ -146,7 +146,7 @@
 (time$ (fib1 40)) ; 1 second
 
 (defun fib2 (n j k)
-  (declare (xargs :guard (and (natp n) (natp j) (natp k)))) 
+  (declare (xargs :guard (and (natp n) (natp j) (natp k))))
   (if (zp n)
       j
     (if (equal n 1)
@@ -196,7 +196,7 @@
               #x1010101)
          -24)))
 
-(pe 'logcount)
+(pf 'logcount) ; :pe gives slightly different output in ACL2 and ACL2(p)
 (logcount #B0101001)
 (fast-logcount-32 #B0101001)
 

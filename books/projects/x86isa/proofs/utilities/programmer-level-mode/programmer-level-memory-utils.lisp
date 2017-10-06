@@ -581,7 +581,7 @@
                    (prog-addr bytes))
         (program-at prog-addr bytes x86)
         (<= prog-addr addr)
-        (< (+ n addr) (+ (len bytes) prog-addr))
+        (<= (+ n addr) (+ (len bytes) prog-addr))
         (canonical-address-p addr)
         (posp n)
         (byte-listp bytes)
@@ -661,14 +661,14 @@
 (in-theory (e/d*
             ;; We enable all these functions so that reasoning about
             ;; memory can be done in terms of rb and wb.
-            (rim-size
-             rm-size
-             wim-size
-             wm-size
-             rm08 rim08 wm08 wim08
-             rm16 rim16 wm16 wim16
-             rm32 rim32 wm32 wim32
-             rm64 rim64 wm64 wim64)
+            (riml-size
+             rml-size
+             wiml-size
+             wml-size
+             rml08 riml08 wml08 wiml08
+             rml16 riml16 wml16 wiml16
+             rml32 riml32 wml32 wiml32
+             rml64 riml64 wml64 wiml64)
             ;; We disable some expensive and irrelevant lemmas in
             ;; the programmer-level mode.
             (mv-nth-1-wb-and-!flgi-commute

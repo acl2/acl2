@@ -169,14 +169,26 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    READ-OBJECT-SUPPRESS
-    READ-OBJECT-WITH-CASE
-    PRINT-OBJECT$-PRESERVING-CASE
-    EXTEND-WORLD RETRACT-WORLD
-    WITH-OUTPUT!
-    ER-SOFT-LOGIC
-    GET-ENFORCE-REDUNDANCY
     ))
+
+(defconst *special-ops*
+
+; This list includes the operators that get special treatment when their calls
+; are translated (in translate11).  Our expectation is that these are are all
+; in *acl2-exports*.
+
+  '(quote
+    lambda
+    let
+    mv
+    mv-let
+    pargs
+    check-vars-not-free
+    translate-and-test
+    with-local-stobj
+    stobj-let
+    flet
+    declare))
 
 (defun missing-from-acl2-exports (wrld)
 
@@ -188,8 +200,11 @@
   (declare (xargs :guard (plist-worldp wrld)
                   :mode ; because of sort-symbol-listp
                   :program))
-  (set-difference-eq (raw-acl2-exports nil wrld)
-                     (append *acl2-exports-exclusions* *acl2-exports*)))
+  (let ((expected (append *acl2-exports-exclusions* *acl2-exports*)))
+    (union-eq (set-difference-eq *special-ops*
+                                 expected)
+              (set-difference-eq (raw-acl2-exports nil wrld)
+                                 expected))))
 
 (assert-event
  (null (missing-from-acl2-exports (w state)))

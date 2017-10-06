@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "elements")
+(include-book "classes")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc parse-packages
@@ -120,6 +121,48 @@
                      :maxloc maxloc
                      :warnings (list err warn2))))
 
+(defparser vl-parse-genelement-or-class ()
+  :result (vl-genelementlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (gen :w= (vl-parse-generate))
+       (when gen
+         (return (list gen)))
+       (atts := (vl-parse-0+-attribute-instances))
+       (when (vl-is-token? :vl-kwd-class)
+         (:= (vl-parse-class-declaration atts))
+         (return nil))
+       (items := (vl-parse-modelement-aux atts))
+       (return (vl-modelementlist->genelements items))))
+
+(defparser vl-parse-genelements-or-classes-until (endkwd)
+  :guard (symbolp endkwd)
+  :result (vl-genelementlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count weak
+  :measure (vl-tokstream-measure)
+  (declare (xargs :ruler-extenders :all))
+  (seq tokstream
+       (when (vl-is-token? endkwd)
+         (return nil))
+
+       (when (vl-is-token? :vl-kwd-generate)
+         (:= (vl-match))
+         (elems :w= (vl-parse-genelements-until :vl-kwd-endgenerate))
+         (:= (vl-match-token :vl-kwd-endgenerate))
+         (rest := (vl-parse-genelements-or-classes-until endkwd))
+         (return (append elems rest)))
+
+       (first :s= (vl-parse-genelement-or-class))
+       (rest := (vl-parse-genelements-until endkwd))
+       (return (append first rest))))
+
+
 (defparser vl-parse-package-declaration (atts)
   ;; package_declaration ::= { attribute_instance } package [ lifetime ] package_identifier ;
   ;;                           [ timeunits_declaration ]
@@ -149,7 +192,7 @@
                (seq tokstream
                     (:= (vl-match-token :vl-semi))
                     ;; BOZO parse timeunits declaration stuff.
-                    (items  := (vl-parse-genelements-until :vl-kwd-endpackage))
+                    (items  := (vl-parse-genelements-or-classes-until :vl-kwd-endpackage))
                     (endkwd := (vl-match-token :vl-kwd-endpackage))
                     (:= (vl-parse-endblock-name (vl-idtoken->name name) "package/endpackage"))
                     (return

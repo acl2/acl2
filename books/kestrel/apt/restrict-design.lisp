@@ -70,11 +70,11 @@
      </li>
 
      <li>
-     @($R{}d$) corresponds to @('restriction-of-rec-calls').
+     @($R{}d$) corresponds to @(':restriction-of-rec-calls').
      </li>
 
      <li>
-     @($G{}R$) corresponds to @('restriction-guard').
+     @($G{}R$) corresponds to @(':restriction-guard').
      </li>
 
      <li>

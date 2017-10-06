@@ -79,7 +79,7 @@
 ;; Normalizing memory reads:
 
 ;; All these functions open up to rb.
-(in-theory (e/d (rm16 rm32 rm64) ()))
+(in-theory (e/d (rml16 rml32 rml64) ()))
 
 (defthm mv-nth-2-rb-in-system-level-non-marking-mode
   (implies (and (not (page-structure-marking-mode x86))
@@ -106,7 +106,7 @@
 ;; Normalizing memory writes:
 
 ;; All these functions open up to wb.
-(in-theory (e/d (wm16 wm32 wm64) ()))
+(in-theory (e/d (wml16 wml32 wml64) ()))
 
 (defthm mv-nth-0-wb-and-mv-nth-0-las-to-pas-in-system-level-mode
   (implies (not (xr :programmer-level-mode 0 x86))

@@ -99,11 +99,11 @@
         (!!ms-fresh :src-addr-not-aligned src-addr))
 
        ((mv flg0 src x86)
-        (rm-size operand-size
+        (rml-size operand-size
                  (the (signed-byte #.*max-linear-address-size*) src-addr)
                  :r x86))
        ((when flg0)
-        (!!ms-fresh :src-rm-size-error flg0))
+        (!!ms-fresh :src-rml-size-error flg0))
 
        (dst-addr (if p4?
                      (rgfi-size counter/addr-size *rdi* rex-byte x86)
@@ -177,10 +177,10 @@
 
        ;; Update the x86 state:
        ((mv flg1 x86)
-        (wm-size operand-size original-dst-addr src x86))
+        (wml-size operand-size original-dst-addr src x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg1)
-        (!!ms-fresh :wm-size-error flg1))
+        (!!ms-fresh :wml-size-error flg1))
 
        ;; REP prefix: Updating rCX and RIP:
 
@@ -312,9 +312,9 @@
                              0))))
         (!!ms-fresh :src-addr-not-aligned src-addr))
        ((mv flg0 src x86)
-        (rm-size operand-size src-addr :r x86))
+        (rml-size operand-size src-addr :r x86))
        ((when flg0)
-        (!!ms-fresh :src-rm-size-error flg0))
+        (!!ms-fresh :src-rml-size-error flg0))
 
        (dst-addr (if p4?
                      (rgfi-size counter/addr-size *rdi* rex-byte x86)
@@ -333,9 +333,9 @@
                              0))))
         (!!ms-fresh :dst-addr-not-aligned dst-addr))
        ((mv flg0 dst x86)
-        (rm-size operand-size dst-addr :r x86))
+        (rml-size operand-size dst-addr :r x86))
        ((when flg0)
-        (!!ms-fresh :dst-rm-size-error flg0))
+        (!!ms-fresh :dst-rml-size-error flg0))
 
        ;; From the AMD Manual: "To perform the comparison, the instruction
        ;; subtracts the second operand from the first operand and sets the
@@ -448,7 +448,7 @@
   ;; AB STOSW/STOSD/STOSQ: Store AX/EAX/RDX at address EDI or RDI
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -514,9 +514,9 @@
                              0))))
         (!!ms-fresh :dst-addr-not-aligned dst-addr))
        ((mv flg0 x86)
-        (wm-size operand-size dst-addr rAX x86))
+        (wml-size operand-size dst-addr rAX x86))
        ((when flg0)
-        (!!ms-fresh :wm-size-error flg0))
+        (!!ms-fresh :wml-size-error flg0))
 
        ((the (signed-byte #.*max-linear-address-size+1*) dst-addr)
         (case operand-size

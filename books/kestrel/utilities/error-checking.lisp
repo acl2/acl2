@@ -74,10 +74,11 @@
                      (error-val \"Value to return in case of error.\")
                      (ctx \"Context for errors.\")
                      state)
-       :returns (mv (erp \"@('error-erp') or @('nil').\")
-                    <y>
+       :returns (mv (erp \"@('nil') or @('error-erp').\")
+                    <returns>
                     state)
-       :mode :program
+       :mode <mode>
+       :verify-guards <verify-guards> ; optional
        :parents <parents>  ; optional
        :short <short>
        :long <long>  ; optional
@@ -118,24 +119,34 @@
      </li>
 
      <li>
-     @('<y>') is a symbol
+     @('<returns>') is a symbol
      or <see topic='@(url std::returns-specifiers)'>return specifier</see>
      that describes the value returned
      inside an <see topic='@(url error-triple)'>error triple</see>.
-     Since the error-checking function is generated in program mode,
+     If the error-checking function is in program mode,
      these return specifier should not use types but only documentation strings.
      Ideally, the documentation string should say that
      the value may be the @('error-val') argument (in case of error).
      </li>
 
      <li>
+     @('<mode>') is either @(':logic') or @(':program').
+     </li>
+
+     <li>
+     @('<verify-guards>') is either @('t') or @('nil').
+     If @('<verify-guards>') is not supplied as argument,
+     @(':verify-guards') is absent.
+     </li>
+
+     <li>
      @('<parents>') is a list of parent <see topic='@(url xdoc)'>topics</see>.
-     This is absent if @('<parents>') is not supplied as argument,
-     in which case the default parent topics are used, as usual.
+     If @('<parents>') is not supplied as argument, @(':parents') is absent.
      </li>
 
      <li>
      @('<short>') and @('<long>') are strings that document the function.
+     If @('<long>') is not supplied as argument, @(':long') is absent.
      </li>
 
      <li>
@@ -145,7 +156,7 @@
      The conditions are checked in order.
      </li>
 
-    <li>
+     <li>
      Each @('<messagej>') is a list that consists of
      a <see topic='@(url fmt)'>format string</see>
      followed by up to 10 terms,
@@ -175,10 +186,12 @@
        (<x1> ... <xn>)
        <short>
        ((<condition1> . <message1>) ... (<conditionm> . <messagem>))
-       <y> ; optional - default is (val \"@('nil') or @('error-val').\")
-       <result> ; optional - default is nil
-       :parents <parents> ; optional - default is :not-supplied
-       :long <long> ; optional - default is :not-supplied
+       :returns <returns> ; default is (val \"@('nil') or @('error-val').\")
+       :result <result> ; default is nil
+       :mode <mode> ; default is :logic
+       :verify-guards <verify-guards> ; default not used
+       :parents <parents> ; default not used
+       :long <long> ; default not used
        )
    })
 
@@ -268,14 +281,17 @@
 
   (define def-error-checker-fn ((name symbolp)
                                 (xs true-listp)
-                                y
+                                returns
                                 (conditions-messages true-list-listp)
                                 result
-                                (parents (or (symbol-listp parents)
-                                             (eq parents :not-supplied)))
+                                (mode logic/program-p)
+                                (verify-guards booleanp)
+                                (verify-guards-supplied-p booleanp)
+                                (parents (symbol-listp parents))
+                                (parents-supplied-p booleanp)
                                 (short stringp)
-                                (long (or (stringp long)
-                                          (eq long :not-supplied)))
+                                (long (stringp long))
+                                (long-supplied-p booleanp)
                                 (def-error-checker-call pseudo-event-formp)
                                 state)
     :returns (function+macro pseudo-event-formp)
@@ -298,14 +314,16 @@
               (,error-val "Value to return in case of error.")
               (ctx "Context for errors.")
               state)
-             :returns (mv (erp "@('error-erp') or @('nil').")
-                          ,y
+             :returns (mv (erp "@('nil') or @('error-erp').")
+                          ,returns
                           state)
-             :mode :program
-             ,@(and (not (eq parents :not-supplied))
+             :mode ,mode
+             ,@(and verify-guards-supplied-p
+                    (list :verify-guards verify-guards))
+             ,@(and parents-supplied-p
                     (list :parents parents))
              :short ,short
-             ,@(and (not (eq long :not-supplied))
+             ,@(and long-supplied-p
                     (list :long long))
              (b* ,(def-error-checker-bindings
                     conditions-messages error-erp error-val)
@@ -341,26 +359,33 @@
              ,macro)))
       `(progn ,function ,section)))
 
-  (defmacro def-error-checker (&whole def-error-checker-call
-                                      name
-                                      xs
-                                      short
-                                      conditions-messages
-                                      &optional
-                                      (y '(val "@('nil') or @('error-val')."))
-                                      (result 'nil)
-                                      &key
-                                      (parents ':not-supplied)
-                                      (long ':not-supplied))
+  (defmacro def-error-checker (&whole
+                               def-error-checker-call
+                               name
+                               xs
+                               short
+                               conditions-messages
+                               &key
+                               (returns '(val "@('nil') or @('error-val')."))
+                               (result 'nil)
+                               (mode ':logic)
+                               (verify-guards 'nil verify-guards-supplied-p)
+                               (parents 'nil parents-supplied-p)
+                               (long '"" long-supplied-p))
     `(make-event (def-error-checker-fn
                    ',name
                    ',xs
-                   ',y
+                   ',returns
                    ',conditions-messages
                    ',result
+                   ',mode
+                   ',verify-guards
+                   ',verify-guards-supplied-p
                    ',parents
+                   ',parents-supplied-p
                    ',short
                    ',long
+                   ',long-supplied-p
                    ',def-error-checker-call
                    state))))
 
@@ -432,8 +457,18 @@
 
 (def-error-checker ensure-doublet-list
   ((x "Value to check."))
-  "Cause an error if a value is not a list of doublets."
-  (((doublet-listp x) "~@0 must be a list of doublets." description)))
+  "Cause an error if a value is not a @('nil')-terminated list of doublets."
+  (((doublet-listp x)
+    "~@0 must be a NIL-terminated list of doublets."
+    description)))
+
+(def-error-checker ensure-keyword-value-list
+  ((x "Value to check."))
+  "Cause an error if a value if not a @('nil')-terminated list of even length
+   with keywords at its even-numbered positions (counting from 0)."
+  (((keyword-value-listp x) "~@0 must a NIL-terminated list of even length ~
+                             with keywords at its even-numbered positions ~
+                             (counting from 0)." description)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,8 +496,8 @@
   "Cause an error if a value is not @('t'), @('nil'), or @(':auto');
    otherwise return a boolean result."
   (((t/nil/auto-p x) "~@0 must be T, NIL, or :AUTO." description))
-  (result "A @(tsee booleanp) or @('error-val').")
-  (if (booleanp x) x r)
+  :returns (result "A @(tsee booleanp) or @('error-val').")
+  :result (if (booleanp x) x r)
   :long
   "<p>
    If @('x') is a boolean, return it as result.
@@ -505,14 +540,13 @@
     "~@0 must not be a keyword." description)
    ((not (logical-namep symb (w state)))
     "~@0 is already in use." description))
-  (val "@('nil') or @('error-val').")
-  nil
   :long
   "<p>
    The symbol must not be in the main Lisp package,
    must not be a keyword,
    and must not be already in use.
-   </p>")
+   </p>"
+  :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -529,10 +563,10 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val "A @(tsee symbolp) or @('error-val').")
                state)
-  :mode :program
+  :verify-guards nil
   :short "Cause an error if a value is not
           either the name of an existing function
           or a <see topic='@(url numbered-names)'>numbered name</see>
@@ -577,7 +611,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val
                 "A tuple @('(pfn stobjs-in stobjs-out new-description)')
                  consisting of
@@ -694,7 +728,7 @@
                      (error-val "Value to return in case of error.")
                      (ctx "Context for errors.")
                      state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val
                 "A tuple @('(term stobjs-out)')
                  consisting of
@@ -773,7 +807,8 @@
    has an unknown measure (i.e. one with @(':?'))."
   (((not (eq (car (measure fn (w state))) :?))
     "~@0 must have a known measure, i.e. not one of the form (:? ...)."
-    description)))
+    description))
+  :verify-guards nil)
 
 (def-error-checker ensure-function-not-in-termination-thm
   ((fn (and (logic-function-namep fn (w state))
@@ -783,7 +818,8 @@
    occurs in its own termination theorem."
   (((not (member-eq fn (all-ffn-symbs (termination-theorem fn (w state)) nil)))
     "~@0 must not occur in its own termination theorem, which is~%~x1."
-    description (termination-theorem fn (w state)))))
+    description (termination-theorem fn (w state))))
+  :mode :program)
 
 (def-error-checker ensure-function-no-stobjs
   ((fn (and (function-namep fn (w state))
@@ -791,12 +827,11 @@
   "Cause an error if a function has input or output @(see stobj)s."
   (((no-stobjs-p fn (w state))
     "~@0 must have no input or output stobjs." description))
-  (val "@('nil') or @('error-val').")
-  nil
   :long
   "<p>
    The function must not be one whose @(tsee stobjs-out) are invalid.
-   </p>")
+   </p>"
+  :verify-guards nil)
 
 (def-error-checker ensure-function-arity
   ((fn (function-namep fn (w state)) "Function to check.")
@@ -804,13 +839,15 @@
   "Cause an error if a function does not have a given arity."
   (((= (arity fn (w state)) n)
     "~@0 must take ~x1 ~@2."
-    description n (if (= n 1) "argument" "arguments"))))
+    description n (if (= n 1) "argument" "arguments")))
+  :verify-guards nil)
 
 (def-error-checker ensure-function-has-args
   ((fn (function-namep fn (w state)) "Function to check."))
   "Cause an error if a function has no arguments."
   (((/= (arity fn (w state)) 0)
-    "~@0 must take at least one argument." description)))
+    "~@0 must take at least one argument." description))
+  :verify-guards nil)
 
 (def-error-checker ensure-function-number-of-results
   ((fn (and (function-namep fn (w state))
@@ -820,8 +857,6 @@
   (((= (number-of-results fn (w state)) n)
     "~@0 must return ~x1 ~@2."
     description n (if (= n 1) "result" "results")))
-  (val "@('nil') or @('error-val').")
-  nil
   :long
   "<p>
    The function must not be one whose @(tsee stobjs-out) are invalid.
@@ -860,7 +895,8 @@
     (let ((extra (set-difference-eq (all-vars term) vars)))
       (if (= (len extra) 1)
           (msg "variable ~x0" (car extra))
-        (msg "variables ~&0" extra))))))
+        (msg "variables ~&0" extra)))))
+  :verify-guards nil)
 
 (def-error-checker ensure-term-ground
   ((term pseudo-termp "Term to check."))
@@ -892,7 +928,8 @@
     (let ((fns (all-non-gv-ffn-symbs term nil (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
-        (msg "functions ~&0" fns))))))
+        (msg "functions ~&0" fns)))))
+  :verify-guards nil)
 
 (def-error-checker ensure-term-guard-verified-exec-fns
   ((term pseudo-termp "Term to check."))
@@ -906,7 +943,8 @@
     (let ((fns (all-non-gv-exec-ffn-symbs term (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
-        (msg "functions ~&0" fns))))))
+        (msg "functions ~&0" fns)))))
+  :mode :program)
 
 (def-error-checker ensure-term-does-not-call
   ((term pseudo-termp "Term to check.")
@@ -919,8 +957,9 @@
   "Cause an error if a term is not a call to @(tsee if)."
   (((and (nvariablep term) (eq (ffn-symb term) 'if))
     "~@0 must start with IF." description))
-  (test+then+else "A @(tsee pseudo-term-listp) of length 3, or @('error-val').")
-  (list (fargn term 1) (fargn term 2) (fargn term 3))
+  :returns (test+then+else
+            "A @(tsee pseudo-term-listp) of length 3, or @('error-val').")
+  :result (list (fargn term 1) (fargn term 2) (fargn term 3))
   :long
   "<p>
    If the term is a call to @(tsee if),
@@ -939,7 +978,8 @@
     (let ((fns (all-program-ffn-symbs (lambda-body lambd) nil (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
-        (msg "functions ~&0" fns))))))
+        (msg "functions ~&0" fns)))))
+  :verify-guards nil)
 
 (def-error-checker ensure-lambda-arity
   ((lambd pseudo-lambdap "Lambda expression to check.")
@@ -947,7 +987,8 @@
   "Cause an error if a lambda expression does not have a given arity."
   (((= (arity lambd (w state)) n)
     "~@0 must take ~x1 ~@2."
-    description n (if (= n 1) "argument" "arguments"))))
+    description n (if (= n 1) "argument" "arguments")))
+  :verify-guards nil)
 
 (def-error-checker ensure-lambda-guard-verified-fns
   ((lambd pseudo-lambdap "Lambda expression to check."))
@@ -959,7 +1000,8 @@
     (let ((fns (all-non-gv-ffn-symbs (lambda-body lambd) nil (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
-        (msg "functions ~&0" fns))))))
+        (msg "functions ~&0" fns)))))
+  :verify-guards nil)
 
 (def-error-checker ensure-lambda-guard-verified-exec-fns
   ((lambd pseudo-lambdap "Lambda expression to check."))
@@ -973,7 +1015,8 @@
     (let ((fns (all-non-gv-exec-ffn-symbs (lambda-body lambd) (w state))))
       (if (= (len fns) 1)
           (msg "function ~x0" (car fns))
-        (msg "functions ~&0" fns))))))
+        (msg "functions ~&0" fns)))))
+  :mode :program)
 
 (def-error-checker ensure-lambda-closed
   ((lambd pseudo-lambdap "Lambda expression to check."))
@@ -993,8 +1036,6 @@
   (((= (len stobjs-in) n)
     "~@0 must take ~x1 ~@2."
     description n (if (= n 1) "argument" "arguments")))
-  (val "@('nil') or @('error-val').")
-  nil
   :long
   "<p>
    The arity of the function or lambda expression is checked
@@ -1022,8 +1063,6 @@
   (((and (all-nils stobjs-in)
          (all-nils stobjs-out))
     "~@0 must have no input or output stobjs." description))
-  (val "@('nil') or @('error-val').")
-  nil
   :long
   "<p>
    This error-checking function is useful
@@ -1041,10 +1080,10 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val "@('nil') or @('error-val').")
                state)
-  :mode :program
+  :verify-guards nil
   :short "Cause an error if a function or lambda expression is
           a function in program mode or
           a lambda expression that calls some program-mode function."
@@ -1079,10 +1118,10 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val "@('nil') or @('error-val').")
                state)
-  :mode :program
+  :verify-guards nil
   :short "Cause an error if a function or lambda expression is
           a non-guard-verified function or
           a lambda expression that calls some non-guard-verified function."
@@ -1119,7 +1158,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('error-erp') or @('nil').")
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (val "@('nil') or @('error-val').")
                state)
   :mode :program
@@ -1159,8 +1198,6 @@
    a non-closed lambda expression."
   (((or (symbolp fn/lambda) (lambda-closedp fn/lambda))
     "~@0 must be closed." description))
-  (val "@('nil') or @('error-val').")
-  nil
   :long
   "<p>
    This error-checking function is useful
@@ -1169,7 +1206,8 @@
    to handle functions and lambda expressions uniformly.
    The @('description') parameter
    should describe the function or lambda expression.
-   </p>")
+   </p>"
+  :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1186,8 +1224,6 @@
   (((= (len stobjs-out) n)
     "~@0 must return ~x1 ~@2."
     description n (if (= n 1) "result" "results")))
-  (val "@('nil') or @('error-val').")
-  nil
   :long
   "<p>
    The number of results of the function or lambda expression or term is checked

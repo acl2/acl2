@@ -56,8 +56,8 @@
    could return some non-empty message instead.
    </p>
    <p>
-   If an error occurs during the proof attempt,
-   the proof is regarded as having failed.
+   Note that @(tsee prove$) always returns a @('nil') error flag,
+   so the code below ignores that result.
    </p>
    <p>
    If the @('verbose') argument is @('t'),
@@ -71,22 +71,16 @@
    </p>"
   (b* (((run-when verbose)
         (cw "~%(Proving ~x0:~%~x1~|" name formula))
-       ((mv erp yes/no state) (prove$ formula :hints hints)))
-    (cond (erp (b* (((run-when verbose)
-                     (cw "Prover error.)~%")))
-                 (mv nil
-                     (msg "Prover error ~x0 ~
-                           when attempting to prove ~x1:~%~x2~|"
-                          erp name formula)
-                     state)))
-          (yes/no (b* (((run-when verbose)
-                        (cw "Done.)~%")))
-                    (mv t "" state)))
-          (t (b* (((run-when verbose)
-                   (cw "Failed.)~%")))
-               (mv nil
-                   (msg "Unable to prove ~x0:~%~x1~|" name formula)
-                   state))))))
+       ((mv & yes/no state) (prove$ formula :hints hints)))
+    (if yes/no
+        (b* (((run-when verbose)
+              (cw "Done.)~%")))
+          (mv t "" state))
+      (b* (((run-when verbose)
+            (cw "Failed.)~%")))
+        (mv nil
+            (msg "Unable to prove ~x0:~%~x1~|" name formula)
+            state)))))
 
 (define prove-named-formulas
   ((named-formulas symbol-alistp "Named formulas to prove

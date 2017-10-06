@@ -30,7 +30,7 @@
 
 ; Avoid noise in CCL about undefined functions, not avoided by funcall alone.
 ; But this doesn't help in ANSI GCL or CMU CL 19e on Linux, and even has broken
-; onCMU CL 18d on Solaris, so we just punt on this trick for those Lisps.
+; on CMU CL 18d on Solaris, so we just punt on this trick for those Lisps.
 
   (if (not (symbolp fn))
       (error "~s requires a symbol, not ~s" 'qfuncall fn)
@@ -464,7 +464,7 @@
 ; Note that this isn't complete.  In particular, ACL2's proclaiming mechanism
 ; for GCL produces a return type of * for RETRACT-WORLD, because it can return
 ; what RETRACT-WORLD1 returns, and below we don't account for defined raw Lisp
-; functions likeRETRACT-WORLD1.  This could presumably be remedied by doing a
+; functions like RETRACT-WORLD1.  This could presumably be remedied by doing a
 ; sort of iterative computation of return types till we reach a fixed point,
 ; but that's for another day.
 
@@ -1849,7 +1849,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 ; For GCL, Camm Maguire has told us that calling user-homedir-pathname should
 ; work on GCL 2.6.8 or later, at least if there is a proper home directory and
-; password entry.  But if thata fails for some reason, one can use the
+; password entry.  But if that fails for some reason, one can use the
 ; commented-out alternative code below instead.
 
 ; (let ((home (si::getenv "HOME")))

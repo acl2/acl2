@@ -49,7 +49,7 @@
 
   :parents (one-byte-opcodes)
   :guard-debug t
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
@@ -71,31 +71,31 @@
         (case opcode
           (#xEB 1)
           (#xE9 4)
-          ;; Will cause an error in rim-size
+          ;; Will cause an error in riml-size
           (otherwise 0)))
 
        ((mv ?flg (the (signed-byte 32) offset) x86)
         (mbe :logic
-             (rim-size offset-size temp-rip :x x86)
+             (riml-size offset-size temp-rip :x x86)
              :exec
              (case offset-size
                (1
                 (mv-let (flag val x86)
-                  (rm08 temp-rip :x x86)
+                  (rml08 temp-rip :x x86)
                   (mv flag
                       (n08-to-i08 val)
                       x86)))
                (4
                 (mv-let (flag val x86)
-                  (rm32 temp-rip :x x86)
+                  (rml32 temp-rip :x x86)
                   (mv flag
                       (n32-to-i32 val)
                       x86)))
                (otherwise
-                (mv 'rim-size 0 x86)))))
+                (mv 'riml-size 0 x86)))))
 
        ((when flg)
-        (!!ms-fresh :rim-size-error flg))
+        (!!ms-fresh :riml-size-error flg))
 
        ((the (signed-byte #.*max-linear-address-size+1*) next-rip)
         (+ (the (integer 0 4) offset-size) temp-rip))
@@ -132,7 +132,7 @@
   ;; Op/En: M
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -241,7 +241,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                                  (unsigned-byte-p
                                                   member-equal
                                                   acl2::logtail-identity
-                                                  not rm-size
+                                                  not rml-size
                                                   signed-byte-p
                                                   select-operand-size)))))
   :implemented
@@ -362,9 +362,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ((mv flg (the (unsigned-byte 128) descriptor) x86)
         ;; [TO-DO@Shilpi]: I believe I should use :x below and not
         ;; :r. Double check.
-        (rm-size 16 descriptor-addr :x x86))
+        (rml-size 16 descriptor-addr :x x86))
        ((when flg)
-        (!!ms-fresh :rm-size-error flg))
+        (!!ms-fresh :rml-size-error flg))
 
        ;; If segment type is neither a code segment (conforming or
        ;; non-conforming) nor a call gate, then #GP(selector) is
@@ -393,10 +393,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
     (if (eql code-or-call-gate? 0) ;; Code Segment:
 
-        (if (equal (part-select
-                    (code-segment-descriptor-layout-slice
-                     :type descriptor)
-                    :low 2 :width 1)
+        (if (equal (code-segment-descriptor-layout-slice :c descriptor)
                    1)
 
             ;; Conforming Code Segment:
@@ -571,9 +568,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
             (!!ms-fresh :cs-descriptor-addr-virtual-memory-error cs-descriptor-addr))
            ((mv flg (the (unsigned-byte 64) cs-descriptor) x86)
             ;; [TO-DO@Shilpi]: I believe I should use :x below and not :r.
-            (rm-size 8 cs-descriptor-addr :x x86))
+            (rml-size 8 cs-descriptor-addr :x x86))
            ((when flg)
-            (!!ms-fresh :rm-size-error flg))
+            (!!ms-fresh :rml-size-error flg))
            ((mv valid? reason)
             ;; Note that the following predicate reports the
             ;; descriptor to be invalid if the P flag of the
@@ -585,10 +582,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
            ;; Checking the privileges of the code segment:
            (cs-dpl (code-segment-descriptor-layout-slice :dpl cs-descriptor))
-           (c-bit (part-select
-                   (code-segment-descriptor-layout-slice
-                    :type cs-descriptor)
-                   :low 2 :width 1))
+           (c-bit (code-segment-descriptor-layout-slice :c cs-descriptor))
            ((when (or (and ;; Conforming code segment
                        (equal c-bit 1)
                        (not (<= cs-dpl cpl)))
@@ -699,7 +693,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   ;; bits."
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
@@ -707,7 +701,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                                  (unsigned-byte-p
                                                   member-equal
                                                   acl2::logtail-identity
-                                                  not rm-size
+                                                  not rml-size
                                                   select-operand-size)))))
   :prepwork
   ((local (in-theory (e/d* (far-jump-guard-helpers)
@@ -769,7 +763,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
        ((mv flg0 (the (signed-byte #.*max-linear-address-size+1*) rel8/temp-rip) x86)
         (if branch-cond
-            (rim-size 1 temp-rip :x x86)
+            (riml-size 1 temp-rip :x x86)
           (mv nil (1+ temp-rip) x86)))
        ((when flg0)
         (!!ms-fresh :rim-error flg0))

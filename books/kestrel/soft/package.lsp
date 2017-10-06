@@ -19,6 +19,7 @@
                          defchoose-body
                          defchoose-bound-vars
                          defchoose-strengthen
+                         defpun
                          defun-sk-check
                          defun-sk-info->bound-vars
                          defun-sk-info->matrix
@@ -39,6 +40,8 @@
                          make-lambda
                          measure
                          o<
+                         pseudo-event-formp
+                         pseudo-event-form-listp
                          recursivep
                          restrict-alist
                          strip-keyword-list

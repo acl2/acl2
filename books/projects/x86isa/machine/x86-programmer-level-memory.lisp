@@ -53,7 +53,7 @@ during address computations.</p>
 
 <p>We define some linear memory read and write functions, like @(see
 rvm08) and @(see wvm08).  These functions are called by the top-level
-functions, like @(see rm08) and @(see wm08) when
+functions, like @(see rml08) and @(see wml08) when
 @('programmer-level-mode') is true.</p>
 
 <p>The guards of the linear memory functions are stricter than those
@@ -76,7 +76,7 @@ memory.</p>" )
   used when @('programmer-level-mode') = @('T')"
 
   :long "<p>Note that the top-level memory accessor function is @(see
-  rm08) and updater function is @(see wm08).  Their 16, 32, and 64 bit
+  rml08) and updater function is @(see wml08).  Their 16, 32, and 64 bit
   counterparts are also available.  These functions behave differently
   depending upon the value of @('programmer-level-mode').</p>"
 
@@ -313,7 +313,7 @@ memory.</p>" )
   ((addr :type (signed-byte #.*max-linear-address-size*))
    (x86))
   :enabled t
-  :guard-hints (("Goal" :in-theory (e/d (rm48-guard-proof-helper) ())))
+  :guard-hints (("Goal" :in-theory (e/d (rml48-guard-proof-helper) ())))
   :inline t
   :parents (x86-linear-memory)
 

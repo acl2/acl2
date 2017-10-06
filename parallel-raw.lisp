@@ -99,7 +99,7 @@
 ; then at that time the thread and its associated piece of work both enter the
 ; pending state.  When all child work terminates and either a CPU core becomes
 ; available or a heuristic allows an exception to that requirement, the piece
-; of work enteres the resumed state and its associated worker thread re-enters
+; of work enters the resumed state and its associated worker thread re-enters
 ; the active state.  This heuristic (implemented in
 ; wait-for-resumptive-parallelism-resources) gives priority to such resumptions
 ; over starting new pieces of work.
@@ -305,7 +305,7 @@
 ; An idle thread waits for the signaling mechanism
 ; *check-work-and-core-availability* to be signaled, at which time it looks for
 ; work on the *work-queue* and an idle core to use.  This condition can be
-; signaled by the addition of new work or by the availabilty of a CPU core.
+; signaled by the addition of new work or by the availability of a CPU core.
 
 ; Warning: In the former case, a parent thread must always signal this
 ; semaphore *after* it has already added the work to the queue.  Otherwise, a
@@ -321,7 +321,7 @@
 ; priority explained in wait-for-resumptive-parallelism-resources).  Using
 ; separate signaling mechanisms allows both an idle and resuming thread to be
 ; signaled.  Then whichever thread's heuristics allow it to execute will claim
-; access to the CPU core.  There is no problem if both their heuritistics allow
+; access to the CPU core.  There is no problem if both their heuristics allow
 ; them to continue.
 
 ; We omit the suffix "sem" from the following two variable names, because we do
@@ -448,7 +448,7 @@
 ; and when the current thread is stored in the thread-array.  This race
 ; condition could be eliminated by holding *work-queue-lock* during the
 ; function's entire execution.  Since (1) we want to minimize the duration
-; locks are held, (2) the chance of this race condition occuring is small and
+; locks are held, (2) the chance of this race condition occurring is small and
 ; (3) there is no safety penalty when this race condition occurs (instead an
 ; opportunity for early termination is missed), we only hold the lock for the
 ; amount of time it takes to read and modify the *work-queue*.
@@ -654,7 +654,7 @@
 ; We develop functions that create work, to be later processed by threads.  Our
 ; main concern is to keep the work queue sufficiently populated so as to keep
 ; CPU cores busy, while limiting the total amount of work so that the number of
-; threads necessary to evaluate that work does not execede the number of
+; threads necessary to evaluate that work does not exceed the number of
 ; threads that the underlying Lisp supports creating.  (See also comments in
 ; default-total-parallelism-work-limit.)
 
@@ -806,7 +806,7 @@
 ; execution system to cause an error when this limit is exceeded.  However,
 ; since there is no notion of ":full" parallel execution (like in the ACL2
 ; waterfall) for these primitives (because these primitives only parallelize
-; when resources are avaiable), such an error would be meaningless.
+; when resources are available), such an error would be meaningless.
 
   (< (atomically-modifiable-counter-read *total-work-count*)
      (f-get-global 'total-parallelism-work-limit *the-live-state*)))
@@ -822,7 +822,7 @@
 ; performance, however, is that we avoid the cost of locks to try to remove
 ; bottlenecks.
 
-; In summary, it is unneccessary to acquire a lock, because we just don't care
+; In summary, it is unnecessary to acquire a lock, because we just don't care
 ; if we miss a few chances to parallelize, or parallelize a few extra times.
 
   (and (f-get-global 'parallel-execution-enabled *the-live-state*)
@@ -913,7 +913,7 @@
 ; A. It signals children-done-semaphore once for each child that is unassigned
 ; (i.e. still on the work queue) and removes that child from the work queue.
 
-; B. It interrups each assigned child's thread with a throw that terminates
+; B. It interrupts each assigned child's thread with a throw that terminates
 ; processing of its work.  Note that we must do Step B after Step A: otherwise
 ; threads might grab work after Step B but before Step A, resulting in child
 ; work that is no longer available to terminate unless we call this function
@@ -1325,7 +1325,7 @@
 ; At one point this was simply the difference between the *last-slot-saved* and
 ; the *last-slot-taken*.  However, since we grab work from the work queue
 ; before actually processing it with an idle cpu core, it is also necessary to
-; include the number of threads taht are waiting for a starting core.
+; include the number of threads that are waiting for a starting core.
 
   (+ (- *last-slot-saved* *last-slot-taken*)
      *threads-waiting-for-starting-core*

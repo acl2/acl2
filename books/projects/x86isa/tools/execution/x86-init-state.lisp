@@ -89,9 +89,9 @@
                    (mv t n64-addr))))
               ((when flg)
                (mv (cons 'load-program-into-memory 'non-canonical-address) x86))
-              ((mv flg x86) (wm08 addr byte x86))
+              ((mv flg x86) (wml08 addr byte x86))
               ((when flg)
-               (mv (cons 'load-program-into-memory 'wm08-error) x86)))
+               (mv (cons 'load-program-into-memory 'wml08-error) x86)))
            (load-program-into-memory (cdr n64-bytes-lst) x86))))
 
   ///
@@ -322,7 +322,7 @@
        ((when flg0)
         (mv (cons 'load-program-into-memory flg0) x86))
        ((mv flg1 x86)
-        (wm08 halt-addr #xF4 x86)) ;; "Fake" halt address
+        (wml08 halt-addr #xF4 x86)) ;; "Fake" halt address
        ((when flg1)
         (mv (cons 'halt-addr flg0) x86))
        (x86 (!rgfi-from-alist gprs x86)) ;; General-Purpose Registers

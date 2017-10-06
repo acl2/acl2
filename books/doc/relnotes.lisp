@@ -42,6 +42,9 @@
 (include-book "centaur/bitops/portcullis" :dir :system)
 (include-book "build/portcullis" :dir :system)
 (include-book "rtl/rel11/portcullis" :dir :system)
+(include-book "kestrel/apt/portcullis" :dir :system)
+(include-book "kestrel/soft/portcullis" :dir :system)
+(include-book "kestrel/abnf/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -166,6 +169,20 @@
  Integration with @(see aignet::aignet) is also provided in the book
  \"centaur/aignet/ipasir\".</p>
 
+ <h4>ABNF</h4>
+
+ <p>The <see topic='@(url abnf::abnf)'>ABNF (Augmented Backus-Naur Form)
+ library</see> provides (1) a formalization of the syntax and semantics of the
+ ABNF notation, (2) a verified parser that turns ABNF grammar text (e.g. from
+ the HTTP RFC) into a formal representation suitable for formal
+ specification (e.g. for HTTP parsing), and (3) executable operations on ABNF
+ grammars, e.g.  to check their well-formedness and to compose them.</p>
+
+ <h4>APT</h4>
+
+ <p>The <see topic='@(url apt::apt)'>APT (Automated Program Transformations)
+ library</see> provides tools to transform programs and program specifications
+ with automated support.</p>
 
  <h3>Changes to Existing Libraries</h3>
 
@@ -181,7 +198,16 @@
  @('std/std-customization.lsp') now support rule classes other than
  @(':rewrite').</p>
 
- <h4>@(see kestrel-utilities)</h4>
+ <p>The rule @('sets-are-true-lists') has been split into three rules with the
+ same formula: a disabled @(see rewrite) rule of that name, a (@see
+ compound-recognizer) rule @('sets-are-true-lists-compound-recognizer'), and a
+ rewrite rule @('sets-are-true-lists-cheap') whose @(see backchain-limit) is
+ 1.</p>
+
+ <h4>Kestrel Utilities</h4>
+
+ <p>The <see topic='@(url kestrel-utilities)'>Kestrel Utilities</see> have
+ undergone several improvements and extensions.</p>
 
  <p>Improved an error message for @('verify-guards-program') (thanks to Eric
  Smith for feedback); see
@@ -199,13 +225,6 @@
  defined by @(tsee mutual-recursion).  Thanks to Eric Smith for a helpful bug
  report.</p>
 
- <p>The macro @(tsee must-fail) has a new keyword option, @(':expected'), to
- indicate the kind of error that is expected.  New macros @(tsee
- ensure-soft-error), @(tsee ensure-hard-error), and @(tsee ensure-error)
- provide nice interfaces to @('must-fail') with the legal values of this new
- option.  See @(see must-fail).  Thanks to Eric Smith for discussions leading
- to these changes.</p>
-
  <p>Added utility @(tsee er-soft+) for producing soft errors with @(':')@(tsee
  logic) mode code, returning a specified @(see error-triple).  The new utility
  @(tsee er-soft-logic) is similar but a bit simpler, for use when the only
@@ -218,9 +237,54 @@
  <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
  fails, then to evaluate a second event.</p>
 
- <p>Added other utilities, for example world queries (in the book
- @('world-queries.lisp')) and error checking utilities (in the new book
- @('error-checking.lisp')).</p>
+ <p>The applicability condition utilities have been replaced with the <see
+ topic='@(url named-formulas)'>named formula utilities</see>, which are
+ slightly more general and include a few improvements.</p>
+
+ <p>New <see topic='@(url paired-names)'>paired name utilities</see> have been
+ added, to construct names consisting of two names separated by a global
+ customizable separator.</p>
+
+ <p>A new @(tsee add-const-to-untranslate-preprocess) utility has been added
+ that extend @(tsee untranslate-preprocess) to keep a constant unexpanded in
+ output.</p>
+
+ <p>New @(see error-checking) utilities have been added that check conditions
+ on data (e.g. user input) and provide informative and consistent error
+ messages. These utilities include a macro @(tsee def-error-checker) to
+ concisely define error-checking functions.</p>
+
+ <p>New macros @(tsee defubyte) and @(tsee defsbyte) have been added that
+ introduce <see topic='@(url fty)'>fixtypes</see> for unsigned and signed bytes
+ of specified sizes. A number of applications of these macros for common sizes
+ is also provided.</p>
+
+ <p>Utilities @(tsee doublets-to-alist) and @(tsee keyword-value-list-to-alist)
+ have been added that convert lists of doublets and keyword-value lists to
+ corresponding alists.</p>
+
+ <p>A utility @(tsee assert?) has been added that is a variant of @(tsee
+ assert$) with customizable context and message.</p>
+
+ <p>The @(tsee integers-from-to) utility now has a logical definition that is
+ easier to reason about than its tail-recursive definition for execution (which
+ has not changed).</p>
+
+ <p>The <see topic='@(url world-queries)'>world query</see>, <see topic='@(url
+ term-utilities)'>term</see>, <see topic='@(url
+ string-utilities)'>string</see>, and <see topic='@(url
+ character-utilities)'>character</see> utilities have undergone a few
+ improvements and extensions.</p>
+
+ <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
+ about world-related functions</see> and <see topic='@(url
+ theorems-about-lists)'>theorems about lists</see> have been added.</p>
+
+ <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs
+ macroexpansion when all macros to be expanded are in logic mode.</p>
+
+ <p>There is a new @(see symbol-utilities) book (initially with a single
+ function, @(tsee symbol-package-name-safe)).</p>
 
  <h4>The apply books</h4>
 
@@ -265,6 +329,24 @@
 
  </ul>
 
+ <h4>SOFT</h4>
+
+ <p>The <see topic='@(url soft::soft)'>SOFT (Second-Order Functions and
+ Theorems) library</see> has been improved in several ways. The @(':thm-name')
+ option is now fully supported for second-order quantifier functions and their
+ instances.  The treatment of user inputs is more robust. The implementation is
+ more streamlined. A more comprehensive test suite now exists.</p>
+
+ <h4>X86ISA</h4>
+
+ <p>The <see topic='@(url x86isa)'>X86ISA</see> has been slightly extended with
+ infrastructure to support 32-bit mode of operation; in particular, the
+ @('64-bit-modep') predicate is no longer always true. Some documentation
+ topics and some comments have been expanded and clarified. Some exceptions are
+ now being added to the fault field of the x86 state rather than the
+ model-specific field. A more complete model of segment address translation has
+ been added.</p>
+
  <h4>Miscellaneous Books</h4>
 
  <p>The book \"clause-processors/use-by-hint\" now contains an additional
@@ -276,6 +358,26 @@
  binder @('symlet') that simply replace occurrences of some symbols with some
  corresponding terms in the enclosed term.  Like Common Lisp's
  @('symbol-macrolet') but much less smart.</p>
+
+ <p>Fixed @('misc/profiling.lisp') for newer distributions of CCL (Clozure
+ Common Lisp), both from SVN and from GitHub.</p>
+
+ <p>The macro @(tsee defconsts) now provides a better error message when given
+ a symbol that does not have the syntax of a constant.</p>
+
+ <p>The macro @(tsee must-fail) has a new keyword option, @(':expected'), to
+ indicate the kind of error that is expected.  New macros @(tsee
+ ensure-soft-error), @(tsee ensure-hard-error), and @(tsee ensure-error)
+ provide nice interfaces to @('must-fail') with the legal values of this new
+ option.  See @(see must-fail).  Thanks to Eric Smith for discussions leading
+ to these changes.</p>
+
+ <p>Modified @(tsee removable-runes) to allow a multiplier greater than 1.
+ Modified output accordingly.  Also, the multiplier @('m') now provides
+ non-strict bounds @('(floor (* m steps) 1)') rather than the previous
+ strict bound @('(1- (ceiling (* m steps) 1))').  Moreover, a related new utility,
+ @(tsee minimal-runes), returns a list of runes to enable that is sufficient
+ for admitting the event.</p>
 
  <h3>Licensing Changes</h3>
 
@@ -321,12 +423,6 @@
 
  <p>Added file @('system/to-do.txt') to list some potential developer
  tasks.</p>
-
- <p>Fixed @('misc/profiling.lisp') for newer distributions of CCL (Clozure
- Common Lisp), both from SVN and from GitHub.</p>
-
- <p>The macro @(tsee defconsts) now provides a better error message when given
- a symbol that does not have the syntax of a constant.</p>
 
  ")
 

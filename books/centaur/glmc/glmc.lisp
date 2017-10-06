@@ -7,7 +7,10 @@
 (include-book "centaur/gl/gl" :dir :system)
 (local (include-book "glmc-generic-proof"))
 
-
+; Matt K. mod: Avoid ACL2(p) error from
+; test-glmc-glcp-geval-apply-agrees-with-test-glmc-glcp-geval-ev
+; (clause-processor returns more than two values).
+(set-waterfall-parallelism nil)
 
 (encapsulate nil
   (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -199,7 +202,8 @@
     (:prop term nil :prop)
     (:state-hyp-method st-hyp-method :mcheck :st-hyp-method)
     (:constraint term t :constr)
-    (:check-vacuity boolean t (:check-vacuous))))
+    (:check-vacuity boolean t (:check-vacuous))
+    (:ctrex-transform function (lambda (x) x) (:ctrex-transform))))
 
 (defun glmc-hint-translate-bindings (bindings ctx state)
   (declare (xargs :stobjs state :mode :program))
@@ -266,6 +270,14 @@
                       user-val)
                  nil state)))
 
+          (function
+           (if (or (symbolp user-val)
+                   (and (consp user-val) (eq (car user-val) 'lambda)))
+               (mv nil `(,(car config-kwds) ',user-val) state)
+             (mv (msg "~x0 should be a function symbol or lambda form, but was ~x1"
+                      user-kwd user-val)
+                 nil state)))
+
           ((nil) ;;ignore
            (mv nil nil state))
 
@@ -284,7 +296,7 @@
           (mv (append new-kwds glmc-rest) glcp-rest))))
     (mv err glmc-kwds glcp-kwds state)))
 
-          
+
 (define identity-cp (x)
   (declare (xargs :guard t))
   (list x)
@@ -295,7 +307,7 @@
                   (cl-ev (conjoin-clauses (identity-cp clause)) a))
              (cl-ev (disjoin clause) a))
     :rule-classes :clause-processor))
-  
+
 
 
 (defun glmc-hint-fn (args state)
@@ -351,7 +363,7 @@
 (defmacro glmc-hint (&rest args)
   `(glmc-hint-fn ',args state))
 
-      
+
 (defxdoc glmc
   :parents (gl)
   :short "ACL2 interface to AIG-based safety model checking"
@@ -419,7 +431,7 @@ such as ABC to verify the property.</p>
             :state-hyp (and (natp st) (< st 16))
             :prop (not (equal st 14))
             :run-check-hints ('(:expand ((my-run-prop st ins)))))))
- }) 
+ })
 
 <p>The notable thing about this example is that the property, as stated, is not
 inductive.  The usual way to prove this in ACL2 would be to strengthen the

@@ -32,6 +32,7 @@
 (include-book "datatypes")
 (include-book "paramdecls")
 (include-book "imports")
+(include-book "classes") ;; just for vl-maybe-parse-lifetime
 (include-book "../descriptions")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "tools/do-not" :dir :system))
@@ -383,24 +384,6 @@ out some duplication and indirection:</p>
 ; There are a lot of ways for a data_declaration to start, so we'll use
 ; backtracking and just try to parse one.
 
-(defparser vl-maybe-parse-lifetime ()
-  :short "Match an optional @('lifetime') for SystemVerilog-2012."
-  :long "<p>Grammar:</p>
-         @({
-              lifetime ::= 'static' | 'automatic'
-         })"
-  :result (vl-lifetime-p val)
-  :resultp-of-nil t
-  :fails gracefully
-  :count strong-on-value
-  (seq tokstream
-        (when (vl-is-token? :vl-kwd-static)
-          (:= (vl-match))
-          (return :vl-static))
-        (when (vl-is-token? :vl-kwd-automatic)
-          (:= (vl-match))
-          (return :vl-automatic))
-        (return nil)))
 
 (encapsulate nil ;; vl-parse-main-data-declaration
   (local (in-theory (disable not iff

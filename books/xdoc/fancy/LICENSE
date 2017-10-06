@@ -99,21 +99,19 @@ Copyrights for other supporting files
      - xdoc-home.png
      - xdoc-logo.png
 
-   Oxygen Icon Set Images
-     http://www.oxygen-icons.org/
-     Released under GNU General Public License
-     Accessed 2012-08-13 from:
-       http://kde-look.org/content/show.php/Oxygen+Icons?content=74184
-
-     - printer.png
-     - download.png
-     - view_flat.png   (adapted)
-     - view_tree.png   (adapted)
-
-   External Link Image:
-     Released under GNU General Public License
-     Accessed 2013-07-26 from
-       http://commons.wikimedia.org/wiki/File:Icon_External_Link.png
+   External Link Image and View Images:
+     Copyright 2017 Defthm Consulting, LLC
+	 License: MIT/X11 Style License
 
      - Icon_External_Link.png
+     - view_flat.png
+     - view_tree.png
 
+	 
+   Printer and Download Images
+     Public Domain
+     Accessed 2017-09-28 from:
+       https://publicdomainvectors.org/
+
+     - printer.png
+     - download.png (adapted)

@@ -1,3 +1,4 @@
+(UNSET-WATERFALL-PARALLELISM)
 (ASSIGN SCRIPT-MODE T)
  T
 (SET-LD-PROMPT T STATE)
@@ -2474,35 +2475,14 @@ Summary
 Form:  ( DEFUN FAST-LOGCOUNT-32 ...)
 Rules: ((:TYPE-PRESCRIPTION ASH))
  FAST-LOGCOUNT-32
-ACL2 !>>(PE 'LOGCOUNT)
-        -790  (PROGN (DEFUN EXPT # ...)
-                     (DEFUN LOGCOUNT # ...)
-                     ...)
-              \
->V             (DEFUN
-                LOGCOUNT (X)
-                (DECLARE (XARGS :GUARD (INTEGERP X)))
-                (COND
-                     ((ZIP X) 0)
-                     ((< X 0) (LOGCOUNT (LOGNOT X)))
-                     ((EVENP X)
-                      (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2)))
-                     (T (1+ (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2))))))
-
-Additional events for the logical name LOGCOUNT:
-       -6864  (PROGN (DEFUN EXPT # ...)
-                     (DEFUN LOGCOUNT # ...)
-                     ...)
-              \
->PV            (DEFUN
-                LOGCOUNT (X)
-                (DECLARE (XARGS :GUARD (INTEGERP X)))
-                (COND
-                     ((ZIP X) 0)
-                     ((< X 0) (LOGCOUNT (LOGNOT X)))
-                     ((EVENP X)
-                      (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2)))
-                     (T (1+ (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2))))))
+ACL2 !>>(PF 'LOGCOUNT)
+(EQUAL (LOGCOUNT X)
+       (COND ((ZIP X) 0)
+             ((< X 0) (LOGCOUNT (LOGNOT X)))
+             ((EVENP X)
+              (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2)))
+             (T (+ 1
+                   (LOGCOUNT (NONNEGATIVE-INTEGER-QUOTIENT X 2))))))
 ACL2 !>>(LOGCOUNT 41)
 3
 ACL2 !>>(FAST-LOGCOUNT-32 41)
@@ -2543,14 +2523,13 @@ produced the non-nil result
   :DO-NOT-INDUCT T).
 Regarding this value
 (See :DOC set-iprint to be able to see elided values in this message.):
-The :DEFINITION rules for DOUBLE-REWRITE, THE-CHECK, CONS-WITH-HINT,
-IFF, WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP, ZEROP, LISTP, SYNP, CASE-SPLIT,
-FORCE, /=, =, RETURN-LAST, NULL, ENDP, ATOM, NOT, IMPLIES and EQ are
-disabled by the theory expression 
+The :DEFINITION rules for the built-in functions DOUBLE-REWRITE, THE-CHECK,
+CONS-WITH-HINT, IFF, WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP, ZEROP,
+LISTP, SYNP, CASE-SPLIT, FORCE, /=, =, RETURN-LAST, NULL, ENDP, ATOM,
+NOT, IMPLIES and EQ are disabled by the theory expression 
 (UNION-THEORIES NIL
                 (E/D** ((:RULESET GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN)))),
-but because these built-in functions are given certain special handling,
-some expansions of their calls may still occur.  See :DOC theories-
+but some expansions of their calls may still occur.  See :DOC theories-
 and-primitives.
 
 
@@ -2571,15 +2550,15 @@ produced the non-nil result
   :DO-NOT-INDUCT T).
 Regarding this value
 (See :DOC set-iprint to be able to see elided values in this message.):
-The :EXECUTABLE-COUNTERPART rules for NOT, SYMBOLP, SYMBOL-PACKAGE-NAME,
-SYMBOL-NAME, STRINGP, REALPART, RATIONALP, PKG-WITNESS, PKG-IMPORTS,
-NUMERATOR, INTERN-IN-PACKAGE-OF-SYMBOL, IMAGPART, IF, EQUAL, DENOMINATOR,
-CONS, COERCE, COMPLEX-RATIONALP, COMPLEX, CODE-CHAR, CHARACTERP, CHAR-CODE,
-<, UNARY-/, BINARY-* and ACL2-NUMBERP are disabled by the theory expression
+The :EXECUTABLE-COUNTERPART rules for the built-in functions NOT, SYMBOLP,
+SYMBOL-PACKAGE-NAME, SYMBOL-NAME, STRINGP, REALPART, RATIONALP, PKG-WITNESS,
+PKG-IMPORTS, NUMERATOR, INTERN-IN-PACKAGE-OF-SYMBOL, IMAGPART, IF,
+EQUAL, DENOMINATOR, CONS, COERCE, COMPLEX-RATIONALP, COMPLEX, CODE-CHAR,
+CHARACTERP, CHAR-CODE, <, UNARY-/, BINARY-* and ACL2-NUMBERP are disabled
+by the theory expression 
 (UNION-THEORIES NIL
                 (E/D** ((:RULESET GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN)))),
-but because these built-in functions are given certain special handling,
-some evaluations of their calls may still occur.  See :DOC theories-
+but some evaluations of their calls may still occur.  See :DOC theories-
 and-primitives.
 
 Subgoal 2'

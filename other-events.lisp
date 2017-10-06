@@ -20,165 +20,6 @@
 
 (in-package "ACL2")
 
-;  We permit macros under the following constraints on the args.
-
-;  1.  No destructuring.  (Maybe some day.)
-;  2.  No &aux.           (LET* is better.)
-;  3.  Initforms must be quotes.  (Too hard for us to do evaluation right.)
-;  4.  No &environment.   (Just not clearly enough specified in CLTL.)
-;  5.  No nonstandard lambda-keywords.  (Of course.)
-;  6.  No multiple uses of :allow-other-keys.  (Implementations differ.)
-
-;  There are three nests of functions that have the same view of
-;  the subset of macro args that we support:  macro-vars...,
-;  chk-macro-arglist..., and bind-macro-args...  Of course, it is
-;  necessary to keep them all with the same view of the subset.
-
-; The following code is a ``pseudo'' translation of the functions between
-; chk-legal-init-msg and chk-macro-arglist.  Those checkers cause errors when
-; their requirements are violated and these functions are just predicates.
-; However, they are ``pseudo'' translations because they do not check, for
-; example, that alleged variable symbols really are legal variable symbols.
-; They are used in the guards for the functions leading up to and including
-; macro-vars, which recovers all the variable symbols used in the formals list
-; of an acceptable defmacro.
-
-(defun legal-initp (x)
-  (and (consp x)
-       (true-listp x)
-       (equal 2 (length x))
-       (eq (car x) 'quote)))
-
-; The following function is just the negation of chk-macro-arglist-keysp, when
-; applied to a true-listp args.  The reason it must be applied to a true-listp
-; is that macro-arglist-keysp terminates on an endp test and its counterpart
-; checker terminates on a null test and may recur one additional time on
-; non-true-lists.
-
-(defun macro-arglist-keysp (args keys-passed)
-  (declare (xargs :guard (and (true-listp args)
-                              (true-listp keys-passed))))
-  (cond ((endp args) t)
-        ((eq (car args) '&allow-other-keys)
-         (null (cdr args)))
-        ((atom (car args))
-         (cond ((symbolp (car args))
-                (let ((new (intern (symbol-name (car args)) "KEYWORD")))
-                  (and (not (member new keys-passed))
-                       (macro-arglist-keysp (cdr args)
-                                            (cons new keys-passed)))))
-               (t nil)))
-        ((or (not (true-listp (car args)))
-             (> (length (car args)) 3))
-         nil)
-        (t (and (or (symbolp (caar args))
-                    (and (true-listp (caar args))
-                         (equal (length (caar args)) 2)
-                         (keywordp (car (caar args)))
-                         (symbolp (cadr (caar args)))))
-                (implies (> (length (car args)) 1)
-                         (legal-initp (cadr (car args))))
-                (implies (> (length (car args)) 2)
-                         (symbolp (caddr (car args))))
-                (let ((new (cond ((symbolp (caar args))
-                                  (intern (symbol-name (caar args))
-                                          "KEYWORD"))
-                                 (t (car (caar args))))))
-                  (and (not (member new keys-passed))
-                       (macro-arglist-keysp (cdr args)
-                                            (cons new keys-passed))))))))
-
-(defun macro-arglist-after-restp (args)
-  (declare (xargs :guard (true-listp args)))
-  (cond ((endp args) t)
-        ((eq (car args) '&key)
-         (macro-arglist-keysp (cdr args) nil))
-        (t nil)))
-
-(defun macro-arglist-optionalp (args)
-  (declare (xargs :guard (true-listp args)))
-  (cond ((endp args) t)
-        ((member (car args) '(&rest &body))
-         (cond ((and (cdr args)
-                     (symbolp (cadr args))
-                     (not (lambda-keywordp (cadr args))))
-                (macro-arglist-after-restp (cddr args)))
-               (t nil)))
-        ((eq (car args) '&key)
-         (macro-arglist-keysp (cdr args) nil))
-        ((symbolp (car args))
-         (macro-arglist-optionalp (cdr args)))
-        ((or (atom (car args))
-             (not (true-listp (car args)))
-             (not (< (length (car args)) 4)))
-         nil)
-        ((not (symbolp (car (car args))))
-         nil)
-        ((and (> (length (car args)) 1)
-              (not (legal-initp (cadr (car args)))))
-         nil)
-        ((and (equal (length (car args)) 3)
-              (not (symbolp (caddr (car args)))))
-         nil)
-        (t (macro-arglist-optionalp (cdr args)))))
-
-(defun macro-arglist1p (args)
-  (declare (xargs :guard (true-listp args)))
-  (cond ((endp args) t)
-        ((not (symbolp (car args)))
-         nil)
-        ((member (car args) '(&rest &body))
-         (cond ((and (cdr args)
-                     (symbolp (cadr args))
-                     (not (lambda-keywordp (cadr args))))
-                (macro-arglist-after-restp (cddr args)))
-               (t nil)))
-        ((eq (car args) '&optional)
-         (macro-arglist-optionalp (cdr args)))
-        ((eq (car args) '&key)
-         (macro-arglist-keysp (cdr args) nil))
-        (t (macro-arglist1p (cdr args)))))
-
-(defun subsequencep (lst1 lst2)
-
-  (declare (xargs :guard (and (eqlable-listp lst1)
-                              (true-listp lst2))))
-
-; We return t iff lst1 is a subsequence of lst2, in the sense that
-; '(a c e) is a subsequence of '(a b c d e f) but '(a c b) is not.
-
-  (cond ((endp lst1) t)
-        (t (let ((tl (member (car lst1) lst2)))
-             (cond ((endp tl) nil)
-                   (t (subsequencep (cdr lst1) (cdr tl))))))))
-
-(defun collect-lambda-keywordps (lst)
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) nil)
-        ((lambda-keywordp (car lst))
-         (cons (car lst) (collect-lambda-keywordps (cdr lst))))
-        (t (collect-lambda-keywordps (cdr lst)))))
-
-(defun macro-args-structurep (args)
-  (declare (xargs :guard t))
-  (and (true-listp args)
-       (let ((lambda-keywords (collect-lambda-keywordps args)))
-         (and
-          (or (subsequencep lambda-keywords
-                            '(&whole &optional &rest &key &allow-other-keys))
-              (subsequencep lambda-keywords
-                            '(&whole &optional &body &key &allow-other-keys)))
-          (and (not (member-eq '&whole (cdr args)))
-               (implies (member-eq '&allow-other-keys args)
-                        (member-eq '&allow-other-keys
-                                   (member-eq '&key args)))
-               (implies (eq (car args) '&whole)
-                        (and (consp (cdr args))
-                             (symbolp (cadr args))
-                             (not (lambda-keywordp (cadr args)))
-                             (macro-arglist1p (cddr args))))
-               (macro-arglist1p args))))))
-
 (defun macro-vars-key (args)
 
   (declare (xargs :guard (and (true-listp args)
@@ -2138,7 +1979,7 @@
                                     (global-val 'known-package-alist w)))
                             w))
 
-; Defpkg adds an axiom, labelled ax below.  We make a :REWRITE rule out of ax.
+; Defpkg adds an axiom, labeled ax below.  We make a :REWRITE rule out of ax.
 ; Warning: If the axiom added by defpkg changes, be sure to consider the
 ; initial packages that are not defined with defpkg, e.g., "ACL2".  In
 ; particular, for each primitive package in *initial-known-package-alist* there
@@ -2218,7 +2059,7 @@
 ; "rule name designators" v. runes.
 
 ; (1) When our theory functions are getting input directly from the
-;     user we wish they did a throrough job of checking it and were
+;     user we wish they did a thorough job of checking it and were
 ;     forgiving about such things as order, e.g., sorted otherwise ok
 ;     lists, so that the user didn't need to worry about order.
 
@@ -2303,18 +2144,127 @@
     (intersection-augmented-theories-fn1 (cdr lst1) lst2 ans))
    (t (intersection-augmented-theories-fn1 lst1 (cdr lst2) ans))))
 
-(defmacro check-theory (lst wrld ctx form)
-  `(cond ((theoryp! ,lst ,wrld)
-          ,form)
-         (t (er hard ,ctx
-                "A theory function has been called on an argument that does ~
-                 not represent a theory.  See the **NOTE**s above and see ~
-                 :DOC theories."))))
+(defun check-theory-msg1 (lst macro-aliases wrld bad macros theorems)
 
-(defun intersection-theories-fn (lst1 lst2 wrld)
-  (check-theory
+; For background see check-theory-msg.  Parameters bad, macros, and theorems
+; are accumulators.  Bad contains members of lst that do not satisfy n
+; rule-name-designatorp.  Macros and theorems are the subsets of bad consisting
+; of symbols that name a macro or a theorem, respectively.
+
+  (cond ((endp lst)
+         (mv bad macros theorems))
+        (t
+         (let ((sym (rule-name-designatorp (car lst) macro-aliases wrld)))
+           (cond
+            (sym (check-theory-msg1 (cdr lst) macro-aliases wrld bad macros
+                                    theorems))
+
+; Otherwise we add (car lst) to bad.  But we might also add (car lst) to one or
+; more of the other accumulators.
+
+            ((not (symbolp (car lst)))
+             (check-theory-msg1 (cdr lst) macro-aliases wrld
+                                (cons (car lst) bad)
+                                macros theorems))
+            (t (let ((name (car lst)))
+                 (mv-let (macros theorems)
+                   (cond ((and (not (eq (getpropc name 'macro-args t wrld)
+                                        t))
+
+; Do not use the function macro-args above, as it can cause a hard error!  But
+; checking for a macro isn't enough -- we don't want to report that this is a
+; macro for which add-macro-alias if actually, the macro already aliases a
+; function but that function can't be disabled (e.g., because it's
+; constrained).
+
+                               (eq (deref-macro-name name macro-aliases)
+                                   name))
+                          (mv (cons name macros)
+                              theorems))
+                         ((or (body name nil wrld)
+                              (getpropc name 'theorem nil wrld)
+                              (getpropc name 'defchoose-axiom nil
+                                        wrld))
+                          (mv macros
+                              (cons name theorems)))
+                         (t (mv macros theorems)))
+                   (check-theory-msg1 (cdr lst) macro-aliases wrld
+                                      (cons name bad)
+                                      macros theorems)))))))))
+
+(defun check-theory-msg (lst wrld)
+
+; This variant of theoryp1 returns (mv flg msg), where flg is true iff lst does
+; not represent a list of runes and msg is to be printed (as an error if flg is
+; true, else as a warning).
+
+  (cond
+   ((true-listp lst)
+    (mv-let (bad macros theorems)
+      (check-theory-msg1 lst (macro-aliases wrld) wrld nil nil nil)
+      (cond (bad (msg
+                  "A theory function has been called on a list that contains ~
+                   ~&0, which ~#0~[does~/do~] not designate a rule or a ~
+                   non-empty list of rules.  ~@1See :DOC theories."
+                  bad
+                  (cond ((or macros theorems)
+                         (msg "Note that ~@0~@1@2.  "
+                              (cond
+                               (macros
+                                (msg "~&0 ~#0~[is a macro~/are macros~]; see ~
+                                      :DOC add-macro-alias to associate a ~
+                                      macro with a function"
+                                     macros))
+                               (t ""))
+                              (cond ((and macros theorems)
+                                     ".  Also note that ")
+                                    (t ""))
+                              (cond (theorems
+                                     (msg "~&0 ~#0~[names a theorem~/name ~
+                                           theorems~] but not any rules"
+                                          theorems))
+                                    (t ""))))
+                        (t ""))))
+            (t nil))))
+   (t (msg
+       "A theory function has been called on the following argument that does ~
+        not represent a theory because it is not a true-list:~|~Y01.~|"
+       lst
+       (evisc-tuple 5 7 nil nil)))))
+
+(defun check-theory-action (lst wrld ctx)
+
+; A theory expression must evaluate to a common theory, i.e., a truelist of
+; rule name designators.  A rule name designator, recall, is something we can
+; interpret as a set of runes and includes runes themselves and the base
+; symbols of runes, such as APP and ASSOC-OF-APP.  We already have a predicate
+; for this concept: theoryp.  This checker checks for theoryp but with better
+; error reporting.  It returns t if there is an error, else nil.
+
+  (let ((msg (check-theory-msg lst wrld)))
+    (cond (msg (prog2$ (er hard ctx "~@0" msg)
+                       t))
+          (t nil))))
+
+(defmacro check-theory (lst wrld ctx form)
+  `(if (check-theory-action ,lst ,wrld ,ctx)
+       nil
+     ,form))
+
+(defmacro maybe-check-theory (skip-check lst wrld ctx form)
+  `(if ,skip-check
+       ,form
+     (check-theory ,lst ,wrld ,ctx ,form)))
+
+(defun intersection-theories-fn (lst1 lst2
+                                      lst1-known-to-be-runic
+                                      lst2-known-to-be-runic
+                                      wrld)
+  (maybe-check-theory
+   lst1-known-to-be-runic
    lst1 wrld 'intersection-theories-fn
-   (check-theory
+   (maybe-check-theory
+    lst2-known-to-be-runic
     lst2 wrld 'intersection-theories-fn
     (intersection-augmented-theories-fn1 (augment-theory lst1 wrld)
                                          (augment-theory lst2 wrld)
@@ -2327,6 +2277,8 @@
   (list 'intersection-theories-fn
         lst1
         lst2
+        (theory-fn-callp lst1)
+        (theory-fn-callp lst2)
         'world))
 
 (defun union-augmented-theories-fn1 (lst1 lst2 ans)
@@ -2335,7 +2287,7 @@
 
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their union as an
-; unagumented runic theory.  See intersection-augmented-theories-fn1.
+; unaugmented runic theory.  See intersection-augmented-theories-fn1.
 
   (cond ((null lst1) (revappend ans (strip-cdrs lst2)))
         ((null lst2) (revappend ans (strip-cdrs lst1)))
@@ -2377,17 +2329,20 @@
 ; We make some effort to share structure with lst1 if it is a runic theory,
 ; else with lst2 if it is a runic theory.  Argument lst1-known-to-be-runic is
 ; an optimization: if it is true, then lst1 is known to be a runic theory, so
-; we can skip the runic-theoryp check.
+; we can skip its runic-theoryp check.  If furthermore lst1-known-to-be-runic
+; is 'both then lst2 is also knowwn to be a runic theory and we can skip its
+; check, too.
 
   (cond
    ((or lst1-known-to-be-runic
         (runic-theoryp lst1 wrld))
-    (check-theory lst2 wrld 'union-theories-fn
-                  (union-theories-fn1 lst1
-                                      (augment-theory lst2 wrld)
-                                      nil
-                                      wrld
-                                      nil)))
+    (maybe-check-theory (eq lst1-known-to-be-runic 'both)
+                        lst2 wrld 'union-theories-fn
+                        (union-theories-fn1 lst1
+                                            (augment-theory lst2 wrld)
+                                            nil
+                                            wrld
+                                            nil)))
    ((runic-theoryp lst2 wrld)
     (check-theory lst1 wrld 'union-theories-fn
                   (union-theories-fn1 lst2
@@ -2434,7 +2389,7 @@
 
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their set-difference as
-; an unagumented runic theory.  See intersection-augmented-theories-fn1.
+; an unaugmented runic theory.  See intersection-augmented-theories-fn1.
 
   (cond ((null lst1) (revappend ans nil))
         ((null lst2) (revappend ans (strip-cdrs lst1)))
@@ -2486,7 +2441,10 @@
                (t (set-difference-theories-fn1
                    lst1 (cdr lst2) nume wrld ans))))))))
 
-(defun set-difference-theories-fn (lst1 lst2 lst1-known-to-be-runic wrld)
+(defun set-difference-theories-fn (lst1 lst2
+                                        lst1-known-to-be-runic
+                                        lst2-known-to-be-runic
+                                        wrld)
 
 ; We make some effort to share structure with lst1 if it is a runic theory.
 ; Argument lst1-known-to-be-runic is an optimization: if it is true, then lst1
@@ -2495,16 +2453,19 @@
   (cond
    ((or lst1-known-to-be-runic
         (runic-theoryp lst1 wrld))
-    (check-theory lst2 wrld 'set-difference-theories-fn
-                  (set-difference-theories-fn1 lst1
-                                               (augment-theory lst2 wrld)
-                                               nil
-                                               wrld
-                                               nil)))
+    (maybe-check-theory
+     lst2-known-to-be-runic
+     lst2 wrld 'set-difference-theories-fn
+     (set-difference-theories-fn1 lst1
+                                  (augment-theory lst2 wrld)
+                                  nil
+                                  wrld
+                                  nil)))
    (t
     (check-theory
      lst1 wrld 'set-difference-theories-fn
-     (check-theory
+     (maybe-check-theory
+      lst2-known-to-be-runic
       lst2 wrld 'set-difference-theories-fn
       (set-difference-augmented-theories-fn1
 
@@ -2611,7 +2572,7 @@
          #+acl2-metering (setq meter-maid-cnt (1+ meter-maid-cnt))
          (current-theory1-augmented (cdr lst) ans redefined))))
 
-(defun union-current-theory-fn (lst2 wrld)
+(defun union-current-theory-fn (lst2 lst2-known-to-be-runic wrld)
 
 ; Warning: Keep this in sync with current-theory-fn and
 ; set-difference-current-theory-fn.
@@ -2619,7 +2580,8 @@
 ; This function returns, with an optimized computation, the value
 ; (union-theories-fn (current-theory :here) lst2 t wrld).
 
-  (check-theory
+  (maybe-check-theory
+   lst2-known-to-be-runic
    lst2 wrld 'union-current-theory-fn
    (let* ((wrld1 ; as in current-theory-fn, we apply decode-logical-name
            (scan-to-event wrld))
@@ -2639,16 +2601,20 @@
   (cond ((equal lst1 '(current-theory :here)) ; optimization
          (list 'union-current-theory-fn
                lst2
+               (theory-fn-callp lst2)
                'world))
         ((equal lst2 '(current-theory :here)) ; optimization
          (list 'union-current-theory-fn
                lst1
+               (theory-fn-callp lst1)
                'world))
         ((theory-fn-callp lst1)
          (list 'union-theories-fn
                lst1
                lst2
-               t
+               (if (theory-fn-callp lst2)
+                   ''both
+                 t)
                'world))
         ((theory-fn-callp lst2)
          (list 'union-theories-fn
@@ -2663,7 +2629,7 @@
                nil
                'world))))
 
-(defun set-difference-current-theory-fn (lst2 wrld)
+(defun set-difference-current-theory-fn (lst2 lst2-known-to-be-runic wrld)
 
 ; Warning: Keep this in sync with current-theory-fn and
 ; union-current-theory-fn.
@@ -2674,7 +2640,8 @@
 ;                             t ; (theory-fn-callp '(current-theory :here))
 ;                             wrld).
 
-  (check-theory
+  (maybe-check-theory
+   lst2-known-to-be-runic
    lst2 wrld 'set-difference-current-theory-fn
    (let* ((wrld1 ; as in current-theory-fn, we apply decode-logical-name
            (scan-to-event wrld))
@@ -2694,11 +2661,13 @@
   (cond ((equal lst1 '(current-theory :here)) ; optimization
          (list 'set-difference-current-theory-fn
                lst2
+               (theory-fn-callp lst2)
                'world))
         (t (list 'set-difference-theories-fn
                  lst1
                  lst2
                  (theory-fn-callp lst1)
+                 (theory-fn-callp lst2)
                  'world))))
 
 ; Now we define a few useful theories.
@@ -3132,7 +3101,7 @@
 ; handled, that may or may not be correct.  In a recent version of
 ; ACL2, (universal-theory nil w), if used in an encapsulate, had the
 ; effect of computing all the names in the theory as of the last
-; world-chaning form executed by the top-level loop.  But because
+; world-changing form executed by the top-level loop.  But because
 ; encapsulate did not so mark each term as it executed them,
 ; universal-theory backed up to the point in w just before the
 ; encapsulate.  Thus, universal-theory could not be used to get the
@@ -3351,7 +3320,7 @@
 ; requirement wasn't noticed until somebody put a THEORY-INVARIANT
 ; event into a book and then the compiled book compiled the logical
 ; code below and thus loading the .o file essentially tried to
-; reexecute the table event after it had already been executed by the
+; re-execute the table event after it had already been executed by the
 ; .lisp code in the book.  A hard error was caused.
 
 ; Therefore, we also define this macro as a trivial no-op in raw Lisp.
@@ -4443,7 +4412,7 @@
 
 ; Because of the progn wrapper, chk-embedded-event-form is called on the
 ; make-event call with make-event-chk = nil.  So even if we were to avoid the
-; redefintion check below, we would not get an error here.  If you change
+; redefinition check below, we would not get an error here.  If you change
 ; anything here, consider changing the comment about redefinition in
 ; encapsulate-pass-2 and associated code.
 
@@ -4554,7 +4523,13 @@
 (defmacro set-raw-mode-on! ()
   '(er-progn (ld '((defttag :raw-mode-hack)
                    (set-raw-mode-on state))
-                 :ld-prompt nil :ld-verbose nil :ld-post-eval-print nil)
+                 :ld-prompt nil :ld-verbose nil :ld-post-eval-print nil
+
+; Do we want to allow raw mode to be set inside code?  Since this macro
+; traffics in trust tags, we might as well allow it.  So we need to specify a
+; value for the following keyword.
+
+                 :ld-user-stobjs-modified-warning :same)
              (value :invisible)))
 
 (defmacro set-raw-mode (flg)
@@ -4784,7 +4759,14 @@
 
 #+acl2-loop-only
 (defun acl2-raw-eval (form state)
-  (trans-eval form 'top-level state t))
+
+; We never execute this code in practice, since the raw code will run instead.
+; But for consistency with the raw code, we avoid the
+; user-stobjs-modified-warning.  Raw-mode is so far from maintaining soundness
+; that we feel no need to implement the user-stobjs-modified-warning in the raw
+; code.
+
+  (trans-eval-no-warning form 'top-level state t))
 
 (defun get-and-chk-last-make-event-expansion (form wrld ctx state names)
   (let ((expansion (f-get-global 'last-make-event-expansion state)))
@@ -4851,7 +4833,7 @@
 ; Can time$ really occur in an event context?  At one time we seemed to think
 ; that time$1 could, but it currently seems doubtful that either time$1 or
 ; time$ could occur in an event context.  It's harmless to leave the next line,
-; but it particulary makes no sense to us to use time$1, so we use time$
+; but it particularly makes no sense to us to use time$1, so we use time$
 ; instead.
 
                                  time$))
@@ -5084,7 +5066,15 @@
            (pprogn (f-put-global 'last-make-event-expansion nil state)
                    (if (raw-mode-p state)
                        (acl2-raw-eval form state)
-                     (trans-eval form ctx state t)))
+
+; We avoid the user-stobjs-modified-warning here, since it seems unreasonable
+; to warn about the event's result if a user stobj is changed.  Rather, if the
+; event itself does evaluation that changes a user stobjs, then that event
+; should be held responsible for any such warning.  Thus, make-event takes such
+; responsibility for its expansion phase; it is sensitive to LD special
+; ld-user-stobjs-modified-warning (see protected-eval and make-event-fn2).
+
+                     (trans-eval-no-warning form ctx state t)))
 
 ; If erp is nil, trans-ans is
 ; ((nil nil state) . (erp' val' replaced-state))
@@ -5685,7 +5675,7 @@
     (value nil))
 
 ; Otherwise, we call table-fn directly, rather than calling table by way of
-; eval-event-lst, to circumvent the restriction agains calling
+; eval-event-lst, to circumvent the restriction against calling
 ; acl2-defaults-table in the context of a LOCAL.
 
    (t (state-global-let*
@@ -5775,7 +5765,13 @@
                       ,@(and pbt succ label
                              `('(pprogn (newline (proofs-co state)
                                                  state)
-                                        (pbt ',label)))))))))))
+                                        (pbt ',label)))))
+
+; It seems a bit dodgy to call redo-flat from within code, but we see no reason
+; to prohibit it.  In that case we need to specify a value for the following
+; keyword.
+
+                :ld-user-stobjs-modified-warning :same))))))
 
 (defun cert-op (state)
 
@@ -6521,7 +6517,7 @@
 ; anything here, consider changing that comment and associated code.
 
 ; Note that when (not only-pass-p), we don't pass return an expansion-alist.
-; Consider here the first example from the aforemenioned ocmment in
+; Consider here the first example from the aforementioned comment in
 ; chk-embedded-event-form.
 
 ;   (redef!)
@@ -6530,7 +6526,7 @@
 ;     (local (defmacro foo () '(defun f (x) (cons x x))))
 ;     (foo))
 
-; Then after evaluating this event, we get the "expansion" by evluating
+; Then after evaluating this event, we get the "expansion" by evaluating
 ; (access-command-tuple-last-make-event-expansion (cddr (car (w state)))) with
 ; a result of nil, which is not the usual way to record expansions; for
 ; example, (make-event '(defun g (x) x)) similarly gives us an expansion of
@@ -7784,7 +7780,7 @@
 
 (defun known-package-alist-included-p (a1 a2)
 
-; Return true if every package-entry in a1 is present in a2, and moveover, is
+; Return true if every package-entry in a1 is present in a2, and moreover, is
 ; present non-hidden in a2 if present non-hidden in a1.
 
   (cond ((endp a1) t)
@@ -7812,7 +7808,7 @@
 ; in the first pass.  We rely on this fact in order to use the
 ; known-package-alist from the first pass as a basis for the alist returned, so
 ; that any package-entry present in the second pass's alist is present in the
-; result alist, and moveover is non-hidden in the result if non-hidden in the
+; result alist, and moreover is non-hidden in the result if non-hidden in the
 ; second pass's alist.
 
 ; In fact we believe that the known-package-alist at the end of the second pass
@@ -8822,7 +8818,7 @@
 
 ; First, a broad question:  how much security are we trying to provide?
 ; After all, one could always fake a .cert file, say by calling checksum
-; onesself.  Our claim is simply that we only fully "bless" certification runs,
+; oneself.  Our claim is simply that we only fully "bless" certification runs,
 ; from scratch, of entire collections of books, without intervention.  Thus,
 ; there is no soundness problem with using (include-book "hd:ab.lisp") in a
 ; book certified in a Unix file system and having it mean something completely
@@ -9573,7 +9569,7 @@
 ; need to convert to an absolute pathname.
 
 ; If we have an absolute pathname, either by conversion or because the
-; include-book originally referenced an absoluate pathname under the system
+; include-book originally referenced an absolute pathname under the system
 ; books directory, then we convert to using :dir :system.
 
 ; To summarize much of the above: if cbd is nil or if cbd and dir are equal, we
@@ -9999,7 +9995,7 @@
 
 (defun hidden-defpkg-events1 (kpa system-books-dir w ctx state acc)
 
-; Warning: Keep this in sync with hidden-depkg-events-simple.
+; Warning: Keep this in sync with hidden-defpkg-events-simple.
 
   (cond
    ((endp kpa) (value (reverse acc)))
@@ -10308,7 +10304,7 @@
 
 ; We assume that all necessary packages exist so that we can read the
 ; certificate file for full-book-name, without errors caused by unknown package
-; names in symbols occurring in the porcullis commands or make-event
+; names in symbols occurring in the portcullis commands or make-event
 ; expansions.  If that assumption may not hold, consider using
 ; post-alist-from-pcert1 instead.
 
@@ -10579,9 +10575,9 @@
                  (case-match form
                    (('defpkg & & & & 't) t)
                    (& nil)))
-            (er-progn (trans-eval form ctx state
+            (er-progn (trans-eval-default-warning form ctx state
 ; Perhaps aok could be t, but we use nil just to be conservative.
-                                  nil)
+                                                  nil)
                       (get-cmds-from-portcullis1
                        eval-hidden-defpkgs ch ctx state (cons form ans))))
            (t (get-cmds-from-portcullis1
@@ -10589,7 +10585,7 @@
 
 (defun hidden-defpkg-events-simple (kpa acc)
 
-; Warning: Keep this in sync with hidden-depkg-events.
+; Warning: Keep this in sync with hidden-defpkg-events.
 
   (cond
    ((endp kpa) (reverse acc))
@@ -10630,7 +10626,7 @@
       (if events
           (state-global-let*
            ((inhibit-output-lst (remove1-eq 'error *valid-output-names*)))
-           (trans-eval (cons 'er-progn events) ctx state t))
+           (trans-eval-default-warning (cons 'er-progn events) ctx state t))
         (value nil))
       (mv-let
        (erp val state)
@@ -10682,13 +10678,13 @@
             (value (reverse ans)))
            (t (mv-let
                (error-flg trans-ans state)
-               (trans-eval form
-                           (msg (if port-file-p
-                                    "the .port file for ~x0"
-                                  "the portcullis for ~x0")
-                                file1)
-                           state
-                           t)
+               (trans-eval-default-warning form
+                                           (msg (if port-file-p
+                                                    "the .port file for ~x0"
+                                                  "the portcullis for ~x0")
+                                                file1)
+                                           state
+                                           t)
 
 ; If error-flg is nil, trans-ans is of the form
 ; ((nil nil state) . (erp' val' replaced-state))
@@ -11554,7 +11550,7 @@
 
 ; We make the convention that if a file has no certificate or has an invalid
 ; certificate, we will either assume it anyway or cause an error depending on
-; suspect-book-action-alist.  In the case that we pronouce this book
+; suspect-book-action-alist.  In the case that we pronounce this book
 ; uncertified, we return nil.
 
   (let ((dir (or dir
@@ -16733,6 +16729,39 @@
                        (if bound-vars-flg 0 1)
                        args culprit explan)))))
 
+(defun without-warnings-fn (form)
+  `(state-global-let*
+    ((inhibit-output-lst (f-get-global 'inhibit-output-lst state)))
+    (pprogn
+     (f-put-global 'inhibit-output-lst
+                   (add-to-set-eq 'warning
+                                  (f-get-global 'inhibit-output-lst state))
+                   state)
+     ,form)))
+
+(defmacro without-warnings (form)
+  (without-warnings-fn form))
+
+(defmacro translate-without-warnings (&rest args)
+
+
+; To see why we may want to turn off warnings during translate, consider the
+; following example.
+
+;   (set-ignore-ok :warn)
+;   (defchoose foo (x) (y z) (< 0 y))
+
+; We expect a warning saying that x and z are unused.  But we don't want a
+; second warning like the following from defchoose-constraint's use of
+; translate, because it will make no sense to the user:
+
+;   ACL2 Warning [Ignored-variables] in ( DEFCHOOSE FOO ...):  The variable
+;   X is not used in the body of the LET expression that binds X.  But
+;   X is not declared IGNOREd or IGNORABLE.  See :DOC set-ignore-ok.
+
+
+  `(without-warnings (translate ,@args)))
+
 (defun defchoose-constraint-basic (fn bound-vars formals tbody ctx wrld state)
 
 ; It seems a pity to translate tbody, since it's already translated, but that
@@ -16741,7 +16770,7 @@
   (cond
    ((null (cdr bound-vars))
     (er-let*
-     ((consequent (translate
+     ((consequent (translate-without-warnings
                    `(let ((,(car bound-vars) ,(cons fn formals)))
                       ,tbody)
                    t t t ctx wrld state)))
@@ -16873,9 +16902,10 @@
            (cond
             (strengthen
              (er-let* ((extra
-                        (translate (defchoose-constraint-extra fn bound-vars
-                                     formals body)
-                                   t t t ctx wrld state)))
+                        (translate-without-warnings
+                         (defchoose-constraint-extra fn bound-vars formals
+                           body)
+                         t t t ctx wrld state)))
                (value (conjoin2 basic extra))))
             (t (value basic)))))
 
@@ -16933,113 +16963,110 @@
               (er-progn
                (chk-arglist-for-defchoose bound-vars t ctx state)
                (chk-arglist-for-defchoose formals nil ctx state)
-               (er-let*
-                ((tbody (translate body t t t ctx wrld state))
-                 (wrld (chk-just-new-name fn nil 'function nil ctx wrld
-                                          state)))
-                (cond
-                 ((intersectp-eq bound-vars formals)
-                  (er soft ctx
-                      "The bound and free variables of a defchoose form must ~
-                       not intersect, but their intersection for the form ~x0 ~
-                       is ~x1."
-                      event-form
-                      (intersection-eq bound-vars formals)))
-                 (t
-                  (let* ((body-vars (all-vars tbody))
-                         (bound-and-free-vars (append bound-vars formals))
-                         (diff (set-difference-eq bound-and-free-vars
-                                                  body-vars))
-                         (ignore-ok (cdr (assoc-eq
-                                          :ignore-ok
-                                          (table-alist 'acl2-defaults-table
-                                                       wrld)))))
-                    (cond
-                     ((not (subsetp-eq body-vars bound-and-free-vars))
-                      (er soft ctx
-                          "All variables in the body of a defchoose form must ~
-                           appear among the bound or free variables supplied ~
-                           in that form.  However, the ~#0~[variable ~x0 ~
-                           does~/variables ~&0 do~] not appear in the bound or ~
-                           free variables of the form ~x1, even though ~#0~[it ~
-                           appears~/they appear~] in its body."
-                          (set-difference-eq body-vars
-                                             (append bound-vars formals))
-                          event-form))
-                     ((and diff
-                           (null ignore-ok))
-                      (er soft ctx
-                          "The variable~#0~[ ~&0~ occurs~/s ~&0 occur~] in the ~
-                           body of the form ~x1.  However, ~#0~[this variable ~
-                           does~/these variables do~] not appear either in the ~
-                           bound variables or the formals of that form.  In ~
-                           order to avoid this error, see :DOC set-ignore-ok."
-                          diff
-                          event-form))
-                     (t
-                      (pprogn
-                       (cond
-                        ((eq ignore-ok :warn)
-                         (warning$ ctx "Ignored-variables"
-                                   "The variable~#0~[ ~&0 occurs~/s ~&0 ~
-                                    occur~] in the body of the following ~
-                                    defchoose form:~|~x1~|However, ~#0~[this ~
-                                    variable does~/these variables do~] not ~
-                                    appear either in the bound variables or ~
-                                    the formals of that form.  In order to ~
-                                    avoid this warning, see :DOC set-ignore-ok."
-                                   diff
-                                   event-form))
-                        (t state))
-                       (let* ((stobjs-in
-                               (compute-stobj-flags formals nil wrld))
-                              (stobjs-out
-                               (compute-stobj-flags bound-vars nil wrld))
-                              (wrld
-                               #+:non-standard-analysis
-                               (putprop
-                                fn 'classicalp
-                                (classical-fn-list-p (all-fnnames tbody) wrld)
-                                wrld)
-                               #-:non-standard-analysis
-                               wrld)
-                              (wrld
-                               (putprop
-                                fn 'constrainedp t
+               (er-let* ((tbody (translate body t t t ctx wrld state))
+                         (wrld (chk-just-new-name fn nil 'function nil ctx wrld
+                                                  state)))
+                 (cond
+                  ((intersectp-eq bound-vars formals)
+                   (er soft ctx
+                       "The bound and free variables of a defchoose form must ~
+                        not intersect, but their intersection for the form ~
+                        ~x0 is ~x1."
+                       event-form
+                       (intersection-eq bound-vars formals)))
+                  (t
+                   (let* ((body-vars (all-vars tbody))
+                          (bound-and-free-vars (append bound-vars formals))
+                          (ignored (set-difference-eq bound-and-free-vars
+                                                      body-vars))
+                          (ignore-ok (cdr (assoc-eq
+                                           :ignore-ok
+                                           (table-alist 'acl2-defaults-table
+                                                        wrld))))
+                          (ignored-vars-string
+                           "The variable~#0~[ ~&0~ does~/s ~&0 do~] not occur ~
+                            in the body of the form ~x1.  However, ~#0~[this ~
+                            variable~/each of these variables~] appears in ~
+                            the bound variables or the formals of that form.  ~
+                            In order to avoid this error, see :DOC ~
+                            set-ignore-ok."))
+                     (cond
+                      ((not (subsetp-eq body-vars bound-and-free-vars))
+                       (er soft ctx
+                           "All variables in the body of a defchoose form ~
+                            must appear among the bound or free variables ~
+                            supplied in that form.  However, the ~
+                            ~#0~[variable ~x0 does~/variables ~&0 do~] not ~
+                            appear in the bound or free variables of the form ~
+                            ~x1, even though ~#0~[it appears~/they appear~] ~
+                            in its body."
+                           (set-difference-eq body-vars bound-and-free-vars)
+                           event-form))
+                      ((and ignored
+                            (null ignore-ok))
+                       (er soft ctx
+                           ignored-vars-string
+                           ignored event-form))
+                      (t
+                       (pprogn
+                        (cond
+                         ((and ignored
+                               (eq ignore-ok :warn))
+                          (warning$ ctx "Ignored-variables"
+                                    ignored-vars-string
+                                    ignored event-form))
+                         (t state))
+                        (let* ((stobjs-in
+                                (compute-stobj-flags formals nil wrld))
+                               (stobjs-out
+                                (compute-stobj-flags bound-vars nil wrld))
+                               (wrld
+                                #+:non-standard-analysis
                                 (putprop
-                                 fn 'hereditarily-constrained-fnnames (list fn)
+                                 fn 'classicalp
+                                 (classical-fn-list-p (all-fnnames tbody) wrld)
+                                 wrld)
+                                #-:non-standard-analysis
+                                wrld)
+                               (wrld
+                                (putprop
+                                 fn 'constrainedp t
                                  (putprop
-                                  fn 'symbol-class
-                                  :common-lisp-compliant
-                                  (putprop-unless
-                                   fn 'stobjs-out stobjs-out nil
+                                  fn 'hereditarily-constrained-fnnames
+                                  (list fn)
+                                  (putprop
+                                   fn 'symbol-class
+                                   :common-lisp-compliant
                                    (putprop-unless
-                                    fn 'stobjs-in stobjs-in nil
-                                    (putprop
-                                     fn 'formals formals
-                                     wrld))))))))
-                         (er-let*
-                          ((constraint
-                            (defchoose-constraint
-                              fn bound-vars formals body tbody strengthen
-                              ctx wrld state)))
-                          (install-event fn
-                                         event-form
-                                         'defchoose
-                                         fn
-                                         nil
-                                         `(defuns nil nil
+                                    fn 'stobjs-out stobjs-out nil
+                                    (putprop-unless
+                                     fn 'stobjs-in stobjs-in nil
+                                     (putprop
+                                      fn 'formals formals
+                                      wrld))))))))
+                          (er-let*
+                              ((constraint
+                                (defchoose-constraint
+                                  fn bound-vars formals body tbody strengthen
+                                  ctx wrld state)))
+                            (install-event fn
+                                           event-form
+                                           'defchoose
+                                           fn
+                                           nil
+                                           `(defuns nil nil
 
 ; Keep the following in sync with intro-udf-lst2.
 
-                                            (,fn
-                                             ,formals
-                                             ,(null-body-er fn formals nil)))
-                                         :protect
-                                         ctx
-                                         (putprop
-                                          fn 'defchoose-axiom constraint wrld)
-                                         state))))))))))))))))))))))
+                                              (,fn
+                                               ,formals
+                                               ,(null-body-er fn formals nil)))
+                                           :protect
+                                           ctx
+                                           (putprop
+                                            fn 'defchoose-axiom constraint
+                                            wrld)
+                                           state))))))))))))))))))))))
 
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
@@ -17343,7 +17370,7 @@
 ; our handling of Common Lisp compliance.
 
 ; The argument, non-memoizable, is the value of the :non-memoizable keyword of
-; the defstobj event intrducing name.  Let us consider whether there is a need
+; the defstobj event introducing name.  Let us consider whether there is a need
 ; to add a check about :non-memoizable for the case of a stobj with stobj
 ; fields.
 
@@ -18017,7 +18044,7 @@
 ; The *1* functions for the functions are all generated by oneifying
 ; the axiomatic defs.
 
-; To see the deconsts generated, invoke
+; To see the defconsts generated, invoke
 ;   (defstobj-defconsts
 ;     (strip-accessor-names (access defstobj-template template
 ;                                   :field-templates))
@@ -19130,6 +19157,50 @@
                  (absstobj-correspondence-concl-lst
                   (cdr stobjs-out) (1+ i) st$c corr-fn)))))
 
+(defun flatten-ands-in-lit! (term)
+
+; This variant of flatten-ands-in-lit removes duplicates, always keeping the
+; first occurrence.  That seems best, rather than keeping the last occurrence.
+; Consider for example
+
+;   (and (and (integerp x) (< x 3))
+;        (and (integerp x) (> x -2)))
+
+; which translates to:
+
+;   (if (if (integerp x) (< x '3) 'nil)
+;       (if (integerp x) (< '-2 x) 'nil)
+;     'nil)
+
+; If we apply flatten-ands-in-lit, we obtain:
+
+;   ((INTEGERP X)
+;    (< X '3)
+;    (INTEGERP X)
+;    (< '-2 X))
+
+; If this is being generated to produce a guard, for example, it will be
+; important to keep the first occurrence of (INTEGERP X).  Even if we are doing
+; theorem proving, it seems plausible that the first occurrence is important as
+; a hypothesis for simplifying the rest.  Thus, if we apply
+; flatten-ands-in-lit! to the example above, we get this:
+
+;   ((INTEGERP X)
+;    (< X '3)
+;    (< '-2 X))
+
+  (case-match term
+    (('if t1 t2 t3)
+     (cond ((equal t2 *nil*)
+            (union-equal-to-end (flatten-ands-in-lit! (dumb-negate-lit t1))
+                                (flatten-ands-in-lit! t3)))
+           ((equal t3 *nil*)
+            (union-equal-to-end (flatten-ands-in-lit! t1)
+                                (flatten-ands-in-lit! t2)))
+           (t (list term))))
+    (& (cond ((equal term *t*) nil)
+             (t (list term))))))
+
 (defun absstobj-correspondence-formula (f$a f$c corr-fn formals guard-pre st
                                             st$c wrld)
 
@@ -19170,7 +19241,7 @@
       (fcons-term*
        'implies
        (conjoin (cons (fcons-term* corr-fn st$c st)
-                      (flatten-ands-in-lit guard-pre)))
+                      (flatten-ands-in-lit! guard-pre)))
        (cond ((null (cdr stobjs-out))
               (fcons-term* (if (eq (car stobjs-out) st$c)
                                corr-fn
@@ -19208,7 +19279,7 @@
       (fcons-term*
        'implies
        (conjoin (add-to-set-equal (fcons-term* st$ap st)
-                                  (flatten-ands-in-lit guard-pre)))
+                                  (flatten-ands-in-lit! guard-pre)))
 
 ; Note that the :preserved theorem is only generated if st$c is returned by the
 ; exec function.
@@ -19747,7 +19818,7 @@
 ; arguments of a lambda application; let's call these x-formals and x-args.  We
 ; know that x-formals and y-formals have the same length, and we want to check
 ; that y-formals is a permutation of x-formals and, moreover: when the
-; arguments are correspondingly permutated, then the respective members of
+; arguments are correspondingly permuted, then the respective members of
 ; x-args and y-args are equal.
 
   (declare (xargs :guard (and (symbol-listp x-formals-tail)
@@ -19951,8 +20022,8 @@
                 (let* ((expected-guard-thm-formula
                         (make-implication
                          (cons (fcons-term* corr-fn st$c st)
-                               (flatten-ands-in-lit guard-pre))
-                         (conjoin (flatten-ands-in-lit
+                               (flatten-ands-in-lit! guard-pre))
+                         (conjoin (flatten-ands-in-lit!
                                    (guard exec t wrld)))))
                        (taut-p
                         (and (null guard-thm-p)
@@ -22085,7 +22156,12 @@
              nil *standard-co* state nil))
       (if (eql 0 (f-get-global 'ld-level state))
           (ld '((trace$-lst ',trace-specs 'trace$ state))
-              :ld-verbose nil)
+              :ld-verbose nil
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+              :ld-user-stobjs-modified-warning :same)
         (trace$-lst ',trace-specs 'trace$ state))))))
 
 (defmacro with-ubt! (form)
@@ -22106,7 +22182,12 @@
                     :ld-prompt nil
                     :ld-pre-eval-print nil
                     :ld-post-eval-print nil
-                    :ld-error-action :error))
+                    :ld-error-action :error
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+                    :ld-user-stobjs-modified-warning :same))
                (value :invisible))))
 
 (defmacro trace! (&rest fns)
@@ -22130,7 +22211,12 @@
 ; calling break-on-error.  Of course, no trust tag note will be printed in raw
 ; Lisp -- but all bets are off anyhow in raw Lisp!
 
-    `(ld '(,form))
+    `(ld '(,form)
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+         :ld-user-stobjs-modified-warning :same)
     #+acl2-loop-only
     form))
 
@@ -24346,6 +24432,8 @@
 ; creating a name in the "COMMON-LISP" package, since ACL2 won't allow such a
 ; name to be a function symbol.
 
+  (declare (xargs :guard (and (symbolp sym)
+                              (stringp suffix))))
   (if (equal (symbol-package-name sym)
              *main-lisp-package-name*)
       (intern (concatenate 'string (symbol-name sym) suffix)
@@ -24472,7 +24560,7 @@
                                        conjunct ; tguard
                                        f1 a1 nil substitute ctx state)))
           (mv-let (erp stobjs-out/replaced-val state)
-            (trans-eval form ctx state t)
+            (trans-eval-default-warning form ctx state t)
             (cond (erp
                    (value (msg "Evaluation causes an error:~|~x0"
                                conjunct)))
@@ -24645,7 +24733,7 @@
   (cond ((iprint-enabledp state)
 
 ; A comment in rollover-iprint-ar explains conditions that allow a certain
-; multiplier of 4 to enable maintainance of the invariant that the
+; multiplier of 4 to enable maintenance of the invariant that the
 ; maximum-length of the iprint-ar is always at least four times the dimension.
 ; We support that reasoning here by making sure that we do not create
 ; successive entries with index 0.  Note that compress1 does not change the
@@ -25059,7 +25147,12 @@
                         (value :invisible)))
                      :ld-post-eval-print :command-conventions
                      :ld-error-action :return
-                     :ld-error-triples t)
+                     :ld-error-triples t
+
+; Do we want to allow this macro to be called inside code?  There's no obvious
+; reason why not.  So we need to specify the following keyword.
+
+                     :ld-user-stobjs-modified-warning :same)
                  (with-output
                   :off :all
                   :on error
@@ -25069,7 +25162,9 @@
                :ld-error-action :error ; in case top-level-fn fails
                :ld-error-triples t
                :ld-verbose nil
-               :ld-prompt nil)
+               :ld-prompt nil
+; See comment above about :ld-user-stobjs-modified-warning.
+               :ld-user-stobjs-modified-warning :same)
            (declare (ignore erp val))
            (mv (@ top-level-errorp) :invisible state)))
 
@@ -25102,7 +25197,7 @@
 ; Standard Model: The standard model of Peano axioms is the set of natural
 ; numbers together with the usual operators.  In particular, there are no
 ; objects in the standard model that don't correspond with some natural, e.g.,
-; there is no object having an infinite number of predecesors as one could
+; there is no object having an infinite number of predecessors as one could
 ; arrange by adding the consistent infinite set of axioms of the form n < C,
 ; for every natural number n.  The standard model of ACL2 is just Common Lisp
 ; on a machine with unlimited memory and no ``bad atoms,'' e.g., the only
@@ -25299,7 +25394,7 @@
 ; event.  Yet after the defattach, (equal (f1 x) (g1 x)) is a theorem of the
 ; evaluation theory.
 
-; This example motivates an acylicity condition on functions and their
+; This example motivates an acyclicity condition on functions and their
 ; attachments, explained below, that is sufficient for supporting a
 ; characterization of defattach events in terms of evaluation histories.  We
 ; next provide some motivation, before presenting the appropriate foundational
@@ -25949,7 +26044,7 @@
                                   (cdr attach-pair)) ; attaching for execution
                               (not (and skip-checks-t
 
-; If skip-checks is tand we have a non-executable program-mode function, then
+; If skip-checks is t and we have a non-executable program-mode function, then
 ; it is legal to attach for execution, so we can move on to the next COND
 ; branch.
 
@@ -26332,7 +26427,7 @@
 ; of alists corresponding positionally to attachment-alist, each of which binds
 ; elements of *defattach-keys* to values to help with the respective proof.
 ; Like prove, we return an error triple; the non-erroneous value is a ttree
-; signalling the successful proof of all the goals.
+; signaling the successful proof of all the goals.
 
 ; Note that filter-for-attachment has been applied before calling this
 ; function.
@@ -26787,7 +26882,7 @@
 
 ;    h1  <+ ... <+ g1 <+ h0 <+ ... <+ g0 < h1
 
-; If h1 is not iself g-canonical, then will not find the merge below at a later
+; If h1 is not itself g-canonical, then will not find the merge below at a later
 ; step, because it requires merging two components both attached to the same
 ; record (with :g field g0), which we avoid for efficiency.
 
@@ -27875,7 +27970,7 @@
 ; ordinary ancestor of f or else <f,g> is an attachment pair (think: f is
 ; redefined to be g).  We say "roughly speaking" primarily because we traffic
 ; entirely in "canonical" function symbols, as explained in the Essay on
-; Defattach.  Morover, for our defattach implementation, we include guards in
+; Defattach.  Moreover, for our defattach implementation, we include guards in
 ; the calculation of canonical ancestors.  Guards are relevant in the sense
 ; that changing or (especially) removing an attachment used in a guard could
 ; invalidate a stored value, not logically, but in the sense that its
@@ -28671,6 +28766,8 @@
 
 (defun protected-eval (form on-behalf-of ctx state aok)
 
+; This evaluator is intended to be used for make-event expansion.
+
 ; We assume that this is executed under a revert-world-on-error, so that we do
 ; not have to protect the world here in case of error, though we do set the
 ; world back to the starting world when returning a non-erroneous error triple.
@@ -28680,10 +28777,18 @@
 ; known-package-alist and value of world global 'ttags-seen immediately after
 ; form is evaluated; and if not, we return a soft error.
 
+; See the comment at the call of trans-eval-default-warning, below.
+
   (let ((original-wrld (w state)))
     (protect-system-state-globals
      (er-let*
       ((result
+
+; We call trans-eval-default-warning here, so that if make-event modifies
+; stobjs, we issue a warning if and only if the current setting of LD special
+; ld-user-stobjs-modified-warning says to issue that warning.  That seems
+; reasonable since make-event may only be called in event contexts.  See :DOC
+; user-stobjs-modified-warning.
 
 ; It would be nice to add (state-global-let* ((safe-mode t)) here.  But some
 ; *1* functions need always to call their raw Lisp counterparts.  Although we
@@ -28695,7 +28800,7 @@
 ; safe-mode for make-event will require addition".  Those comments are
 ; associated with membership tests that, for now, we avoid for efficiency.
 
-        (trans-eval form ctx state aok)))
+        (trans-eval-default-warning form ctx state aok)))
       (let* ((new-kpa (known-package-alist state))
              (new-ttags-seen (global-val 'ttags-seen (w state)))
              (stobjs-out (car result))
@@ -28805,7 +28910,7 @@
               (stobjs-out-and-raw-result
                (do-proofs?
                 do-proofsp
-                (trans-eval
+                (trans-eval-default-warning
 
 ; Note that expansion1b is guaranteed to be an embedded event form, which (as
 ; checked just below) must evaluate to an error triple.
@@ -29153,7 +29258,7 @@
 ;                              (list 'quote ',(@ bad)))))))))
 ;
 
-; where "foo2" is as follows, with the indicated portullis command:
+; where "foo2" is as follows, with the indicated portcullis command:
 
 ; (in-package "ACL2")
 ;
@@ -29334,7 +29439,7 @@
 
 (defun read-file-into-string1 (channel state ans bound)
 
-; Channel is an open input characater channel.  We read all the characters in
+; Channel is an open input character channel.  We read all the characters in
 ; the file and return the list of them.
 
   (declare (xargs :stobjs state

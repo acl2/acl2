@@ -174,7 +174,7 @@
                  gl-bdd-mode gl-aig-mode gl-mbe
 
                  logcons logcar logcdr loghead logtail logapp logext
-                 b-ior b-and b-xor b-not bfix bitp bool-fix
+                 b-ior b-and b-xor b-not bfix bitp bool-fix bool->bit
                  binary-- binary-minus-for-gl
 
                  numlist

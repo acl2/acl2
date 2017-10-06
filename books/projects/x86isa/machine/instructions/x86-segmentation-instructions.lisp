@@ -20,7 +20,7 @@
 
   :parents (privileged-opcodes two-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :long "<h3>Op/En = M: \[OP m16@('&')m64\]</h3>
 
@@ -118,7 +118,7 @@
 
   :parents (privileged-opcodes two-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :long "<h3>Op/En = M: \[OP m16@('&')m64\]</h3>
 
@@ -216,8 +216,8 @@
 
   :parents (privileged-opcodes two-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (rim08
-                                         rim32
+  :guard-hints (("Goal" :in-theory (e/d (riml08
+                                         riml32
                                          ia32e-valid-ldt-segment-descriptor-p)
                                         ())))
   :implemented
@@ -357,9 +357,9 @@ a non-canonical form, raise the SS exception.</p>"
 
        ((mv flg (the (unsigned-byte 128) descriptor) x86)
         ;; [TO-DO@Shilpi]: I believe I should use :x below and not :r.
-        (rm-size 16 descriptor-addr :x x86))
+        (rml-size 16 descriptor-addr :x x86))
        ((when flg)
-        (!!ms-fresh :rm-size-error flg))
+        (!!ms-fresh :rml-size-error flg))
 
        ((mv descriptor-valid? reason)
         (ia32e-valid-ldt-segment-descriptor-p descriptor))

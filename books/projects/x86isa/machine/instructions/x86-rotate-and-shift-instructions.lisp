@@ -226,11 +226,11 @@
           ((#xD2 #xD3)
            (mv nil (rr08 *rcx* rex-byte x86) x86))
           ((#xC0 #xC1)
-           (rm-size 1 temp-rip :x x86))
+           (rml-size 1 temp-rip :x x86))
           (otherwise ;; will not be reached
            (mv nil 0 x86))))
        ((when flg1)
-        (!!ms-fresh :rm-size-error flg1))
+        (!!ms-fresh :rml-size-error flg1))
 
        (countMask (if (logbitp #.*w* rex-byte)
                       #x3F

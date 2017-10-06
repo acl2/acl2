@@ -46,7 +46,7 @@
 ; any variables available in the environment of the wormhole-eval call.  (A
 ; third argument to wormhole-eval is an arbitrary form that uses all the free
 ; vars of the lambda, thus insuring that translate will cause an error if the
-; lambda uses variables unavailble in the context.)  The body of the lambda
+; lambda uses variables unavailable in the context.)  The body of the lambda
 ; must be a single-valued, non-state, non-stobj term.
 
 ; The idea is that the lambda expression is applied to the last value of the
@@ -94,7 +94,7 @@
 ; in particular it depends on what we call the wormhole's ``entry code''
 ; computed from the status as follows.
 
-; If the wormhole's status statisfies wormhole-statusp then the situation is
+; If the wormhole's status satisfies wormhole-statusp then the situation is
 ; simple: wormhole enters the wormhole if the status is :ENTER and doesn't if
 ; the status is :SKIP.  But we compute the entry code defensively: the entry
 ; code is :SKIP if and only if the wormhole's status is a cons whose car is
@@ -335,7 +335,8 @@
                          (ld-error-triples 'same ld-error-triplesp)
                          (ld-error-action 'same ld-error-actionp)
                          (ld-query-control-alist 'same ld-query-control-alistp)
-                         (ld-verbose 'same ld-verbosep))
+                         (ld-verbose 'same ld-verbosep)
+                         (ld-user-stobjs-modified-warning ':same))
   `(with-wormhole-lock
     (prog2$
      (wormhole-eval ,name ,entry-lambda
@@ -387,6 +388,10 @@
             nil)
           (if ld-verbosep
               (list `(cons 'ld-verbose ,ld-verbose))
+            nil)
+          (if (eq ld-user-stobjs-modified-warning :same)
+              (list `(cons 'ld-user-stobjs-modified-warning
+                           ,ld-user-stobjs-modified-warning))
             nil)))))))
 
 (defun legal-constantp1 (name)
@@ -434,7 +439,7 @@
 ; trouble.  Rather than attempt to identify all of the specials of
 ; CLTL that are prohibited as ACL2 variables, we just prohibit them
 ; all.  One might be reminded of Alexander cutting the Gordian Knot.
-; We could spend a lot of time unravelling complex questions about
+; We could spend a lot of time unraveling complex questions about
 ; specials in CLTL or we can get on with it.  When ACL2 prevents you
 ; from using REST as an argument, you should see the severed end of a
 ; once tangled rope.
@@ -555,7 +560,7 @@
          (er hard 'process-defabbrev-declares
              "In a DEFABBREV form, each expression after the argument list ~
               but before the body must be of the form (DECLARE decl1 .. ~
-              declk), where each dcli is of the form (IGNORE ..), (IGNORABE ~
+              declk), where each dcli is of the form (IGNORE ..), (IGNORABLE ~
               ..), or (TYPE ..).  The form ~x0 is thus illegal."
              (car decls)))
         (t
@@ -2067,7 +2072,7 @@
 
 ; If the fn is a symbol (or eviscerated, which we treat as a symbol), then the
 ; hd-sz is the length of the symbol.  Else, hd-sz is nil.  Think of (null
-; hd-sz) as meaning "fn is a lambda expession".
+; hd-sz) as meaning "fn is a lambda expression".
 
                   (hd-sz (cond ((or (atom (car x))
                                     (evisceratedp eviscp (car x)))
@@ -4999,18 +5004,12 @@
 ; regression.
 ;   "Invariant-risk"
 
-; The above are included because of soundness.  But "Compiled file", below, is
-; included so that we can see it even when inside include-book, since messages
-; printed by missing-compiled-book may assume that such warnings are not
-; inhibited.
+; The above are included because of soundness.  But the following are included
+; so that we can see them even when inside include-book, since messages printed
+; by missing-compiled-book may assume that such warnings are not inhibited.
 
-    "Compiled file"))
-
-(defun member-string-equal (str lst)
-  (cond
-   ((endp lst) nil)
-   (t (or (string-equal str (car lst))
-          (member-string-equal str (cdr lst))))))
+    "Compiled file"
+    "User-stobjs-modified"))
 
 (defun warning-off-p1 (summary wrld ld-skip-proofsp)
 
@@ -5018,6 +5017,11 @@
 ; be printed.  See also warning-disabled-p, which we can use to avoid needless
 ; computation on behalf of disabled warnings.
 
+  (declare (xargs :guard (and (stringp summary)
+                              (standard-string-p summary)
+                              (plist-worldp wrld)
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table wrld)))))
   (or (and summary
            (assoc-string-equal
             summary
@@ -5258,33 +5262,16 @@
 
 (defmacro observation-cw (&rest args)
 
-; See observation.  In #-acl2-par, this macro uses wormholes to avoid modifying
-; state, and prints even when including books.  In #+acl2-par, to avoid
-; wormholes, which are known not to be thread-safe, we simply call cw.
-
-; See observation.  This macro uses wormholes to avoid accessing state, and
+; See observation.  This macro uses wormholes to avoid modifying state, and
 ; prints even when including books.
 
-; We considered using the @par naming scheme to define this macro in
-; #+acl2-par, but the name would then have "@par" in it, which could jar users.
-
-  #-acl2-par
   `(observation1-cw
     ,(car args)
     ,(cadr args)
     ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
                           #\5 #\6 #\7 #\8 #\9)
                         (cddr args))
-    t)
-  #+acl2-par
-
-; Parallelism blemish: consider using *the-live-state* to disable
-; observation-cw, i.e., to avoid the cw call below, when observations are
-; turned off.  But note that if we have such #-acl2-loop-only code, users might
-; be surprised when their own use of observation-cw doesn't benefit from such
-; restrictions.
-
-  `(cw ,(cadr args) ,@(cddr args)))
+    t))
 
 ; Start stobj support in raw Lisp
 
@@ -5469,7 +5456,7 @@
 (defconst *defstobj-keywords*
   '(:renaming :inline :congruent-to :non-memoizable))
 
-; The following function is used to implement a slighly generalized
+; The following function is used to implement a slightly generalized
 ; form of macro args, namely one in which we can provide an arbitrary
 ; number of ordinary arguments terminated by an arbitrary number of
 ; keyword argument pairs.
@@ -5722,7 +5709,7 @@
                        'redundant-raw-lisp-discriminator)))
            (cond ((eq (car d) 'defabsstobj)
 
-; Then d is (defabstobj name . keyword-alist).
+; Then d is (defabsstobj name . keyword-alist).
 
                   (let ((tail (assoc-keyword :CREATOR d)))
                     (cond (tail (let* ((field-descriptor (cadr tail))
@@ -6104,7 +6091,7 @@
 
 ; Our intended use of this function is in generation of guards for recognizers
 ; of stobj fields that may themselves be stobjs.  We do not use this however in
-; accessors or updators, where translate-declaration-to-guard suffices: we do
+; accessors or updaters, where translate-declaration-to-guard suffices: we do
 ; not want to generate a stobj recognizer since the child stobj is supplied
 ; explicitly using :stobjs.
 
@@ -6351,7 +6338,7 @@
                      `((defg ,(st-lst name) nil)))
 
 ; Now we lay down the defuns of the recognizers, accessors and updaters as
-; generated by defstob-raw-defs.  The boilerplate below just adds the DEFUN to
+; generated by defstobj-raw-defs.  The boilerplate below just adds the DEFUN to
 ; the front of each def generated, preserving the order of the defs as
 ; generated.  We deal here with the :inline case; note that
 ; *stobj-inline-declare* was added in defstobj-field-fns-raw-defs.
@@ -6477,6 +6464,9 @@
 ; the form (QUOTE guts).  We return a term equivalent to (equal x
 ; const).
 
+  (declare (xargs :guard (and (consp const)
+                              (eq (car const) 'quote)
+                              (consp (cdr const)))))
   (let ((guts (cadr const)))
     (cond ((symbolp guts)
            (list 'eq x const))
@@ -6524,6 +6514,7 @@
 ; pattern.  Finally, the symbol & matches anything and causes no
 ; binding.
 
+  (declare (xargs :guard (symbol-doublet-listp bindings)))
   (cond
    ((symbolp pat)
     (cond
@@ -6552,7 +6543,9 @@
    ((atom pat)
     (mv (cons (equal-x-constant x (list 'quote pat)) tests)
         bindings))
-   ((eq (car pat) 'quote)
+   ((and (eq (car pat) 'quote)
+         (consp (cdr pat))
+         (null (cddr pat)))
     (mv (cons (equal-x-constant x pat) tests)
         bindings))
    (t (mv-let (tests1 bindings1)
@@ -6561,8 +6554,8 @@
                                   bindings)
         (match-tests-and-bindings (list 'cdr x) (cdr pat)
                                   tests1 bindings1)))))
-
 (defun match-clause (x pat forms)
+  (declare (xargs :guard t))
   (mv-let (tests bindings)
     (match-tests-and-bindings x pat nil nil)
     (list (if (null tests)
@@ -6571,6 +6564,7 @@
           (cons 'let (cons (reverse bindings) forms)))))
 
 (defun match-clause-list (x clauses)
+  (declare (xargs :guard (alistp clauses)))
   (cond ((consp clauses)
          (if (eq (caar clauses) '&)
              (list (match-clause x (caar clauses) (cdar clauses)))

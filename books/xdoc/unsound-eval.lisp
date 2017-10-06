@@ -55,11 +55,12 @@ prove anything about what it returns.  Even so, it is generally <b>unsound</b>
 since it lets you to modify @('state') and other @(see stobj)s without
 accounting for how they have been modified.</p>
 
-<p>In the execution, we basically call ACL2's @('trans-eval') function.  But we
-wrap up the call in some error handlers so that, e.g., guard violations and
-@('er') calls can be trapped and returned as error messages.  Unfortunately
-these error messages are not very informative&mdash;they will just say
-something like @('ACL2 Halted') instead of explaining the problem.</p>"
+<p>In the execution, we basically call ACL2's @(tsee trans-eval) function
+(technically: @('trans-eval-no-warning')).  But we wrap up the call in some
+error handlers so that, e.g., guard violations and @('er') calls can be trapped
+and returned as error messages.  Unfortunately these error messages are not
+very informative&mdash;they will just say something like @('ACL2 Halted')
+instead of explaining the problem.</p>"
   (declare (ignorable sexpr))
   (b* ((- (raise "Raw lisp definition not installed?"))
        ((mv err1 errmsg? state) (read-acl2-oracle state))

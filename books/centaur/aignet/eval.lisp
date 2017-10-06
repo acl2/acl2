@@ -943,3 +943,277 @@ and the inputs from the appropriate frame.</p>
     (<= (len vals)
         (len (aignet-eval-frame vals aignet)))
     :rule-classes :linear))
+
+(defsection copy-bitarr
+  (defiteration copy-bitarr-aux (bitarr vals)
+    ;; copy from bitarr to vals
+    (declare (xargs :stobjs (bitarr vals)
+                    :guard (<= (bits-length bitarr) (bits-length vals))))
+    (b* ((val (get-bit n bitarr)))
+      (set-bit n val vals))
+    :index n
+    :returns vals
+    :last (bits-length bitarr)
+    :package aignet::foo)
+
+  (local (defthm copy-bitarr-aux-iter-preserves-len
+           (implies (and (<= (len bitarr) (len vals))
+                         (<= (nfix n) (len bitarR)))
+                    (equal (len (copy-bitarr-aux-iter n bitarr vals))
+                           (len vals)))
+           :hints (("goal" :induct (copy-bitarr-aux-iter n bitarr vals)
+                    :expand ((copy-bitarr-aux-iter n bitarr vals))))))
+
+  (local (defthm copy-bitarr-aux-preserves-len
+           (implies (<= (len bitarr) (len vals))
+                    (equal (len (copy-bitarr-aux bitarr vals))
+                           (len vals)))))
+
+  (local (defthm nth-of-copy-bitarr-aux-iter
+           (equal (nth m (copy-bitarr-aux-iter n bitarr vals))
+                  (if (< (nfix m) (nfix n))
+                      (bfix (nth m bitarr))
+                    (nth m vals)))
+           :hints (("goal" :induct (copy-bitarr-aux-iter n bitarr vals)
+                    :expand ((copy-bitarr-aux-iter n bitarr vals))))))
+
+  (local (defthm nth-of-copy-bitarr-aux
+           (equal (nth m (copy-bitarr-aux bitarr vals))
+                  (if (< (nfix m) (len bitarr))
+                      (bfix (nth m bitarr))
+                    (nth m vals)))))
+
+  (local (defthm true-listp-of-copy-bitarr-aux-iter
+           (implies (true-listp vals)
+                    (true-listp (copy-bitarr-aux-iter n bitarr vals)))
+           :hints (("goal" :induct (copy-bitarr-aux-iter n bitarr vals)
+                    :expand ((copy-bitarr-aux-iter n bitarr vals))))))
+
+  (local (defthm true-listp-of-copy-bitarr-aux
+           (implies (true-listp vals)
+                    (true-listp (copy-bitarr-aux bitarr vals)))))
+
+  (in-theory (disable copy-bitarr-aux))
+
+  (local (include-book "std/lists/nth" :dir :system))
+
+  (local (defthm nth-of-bit-list-fix
+           (implies (< (nfix n) (len lst))
+                    (equal (nth n (bit-list-fix lst))
+                           (bfix (nth n lst))))
+           :hints(("Goal" :in-theory (enable nth bit-list-fix)))))
+
+  (define copy-bitarr (bitarr vals)
+    (b* ((vals (resize-bits (bits-length bitarr) vals)))
+      (copy-bitarr-aux bitarr vals))
+    ///
+    (defthm copy-bitarr-equals
+      (equal (copy-bitarr bitarr vals)
+             (bit-list-fix bitarr))
+      :hints (("goal" :do-not-induct t)
+              (acl2::equal-by-nths-hint)))))
+         
+
+
+(defsection aignet-sim-frames
+
+  
+
+  (local (defthm bit-listp-of-update-nth
+           (implies (and (bit-listp x)
+                         (< (nfix n) (len x))
+                         (bitp val))
+                    (bit-listp (update-nth n val x)))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (defiteration aignet-frame->vals (k frames vals aignet)
+    (declare (xargs :stobjs (vals aignet frames)
+                    :guard (and (natp k)
+                                (< (max-fanin aignet) (bits-length vals))
+                                (<= (num-ins aignet) (frames-ncols frames))
+                                (< k (frames-nrows frames)))))
+    (b* ((id (innum->id n aignet))
+         (val (frames-get2 k n frames)))
+      (set-bit id val vals))
+    :returns vals
+    :index n
+    :last (num-ins aignet))
+
+  (in-theory (disable aignet-frame->vals))
+  (local (in-theory (enable aignet-frame->vals)))
+
+  (defthm aignet-frame->vals-iter-preserves-size
+    (implies (and (<= (num-nodes aignet) (len vals)))
+             (equal (len (aignet-frame->vals-iter n k frames vals aignet))
+                    (len vals)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-frame->vals-iter n k frames vals aignet))))
+
+  (defthm aignet-frame->vals-preserves-size
+    (implies (<= (num-nodes aignet) (len vals))
+             (equal (len (aignet-frame->vals k frames vals aignet))
+                    (len vals)))
+    :hints(("Goal" :in-theory (enable aignet-frame->vals))))
+
+  (defthm aignet-frame->vals-iter-preserves-bit-listp
+    (implies (and (bit-listp vals)
+                  (<= (num-nodes aignet) (len vals)))
+             (bit-listp (aignet-frame->vals-iter n k frames vals aignet)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-frame->vals-iter n k frames vals aignet))))
+
+  (defthm aignet-frame->vals-preserves-bit-listp
+    (implies (and (bit-listp vals)
+                  (<= (num-nodes aignet) (len vals)))
+             (bit-listp (aignet-frame->vals k frames vals aignet)))
+    :hints(("Goal" :in-theory (enable aignet-frame->vals))))
+
+
+  (defthm nth-of-aignet-frame->vals-iter
+    (implies (<= (nfix m) (num-ins aignet))
+             (bit-equiv
+              (nth n (aignet-frame->vals-iter m k frames vals aignet))
+              (if (and (< (nfix n) (num-nodes aignet))
+                       (equal (id->type n aignet) (in-type))
+                       (equal (io-id->regp n aignet) 0)
+                       (< (io-id->ionum n aignet) (nfix m)))
+                  (nth (io-id->ionum n aignet)
+                       (nth k (stobjs::2darr->rows frames)))
+                (nth n vals))))
+    :hints((acl2::just-induct-and-expand
+            (aignet-frame->vals-iter m k frames vals aignet))
+           (and stable-under-simplificationp
+                '(:in-theory (enable lookup-stype-in-bounds)))))
+
+  (defthm nth-of-aignet-frame->vals
+    (bit-equiv
+     (nth n (aignet-frame->vals k frames vals aignet))
+     (if (and (< (nfix n) (num-nodes aignet))
+              (equal (id->type n aignet) (in-type))
+              (equal (io-id->regp n aignet) 0)
+              (< (io-id->ionum n aignet) (num-ins aignet)))
+         (nth (io-id->ionum n aignet)
+              (nth k (stobjs::2darr->rows frames)))
+       (nth n vals))))
+
+  (defthm memo-tablep-of-aignet-frame->vals-iter
+    (implies (< (node-count aignet) (len vals))
+             (<
+              (node-count aignet)
+              (len (aignet-frame->vals-iter m k frames vals aignet))))
+    :hints((acl2::just-induct-and-expand
+            (aignet-frame->vals-iter m k frames vals aignet)))
+    :rule-classes :linear)
+
+  (defthm memo-tablep-of-aignet-frame->vals
+    (implies (< (node-count aignet) (len vals))
+             (<
+              (node-count aignet)
+              (len (aignet-frame->vals k frames vals aignet))))
+    :rule-classes :linear)
+
+
+  (define aignet-sim-frame ((k natp)
+                            vals
+                            frames
+                            regvals
+                            aignet)
+    :guard (and (<= (num-nodes aignet) (bits-length vals))
+                (<= (num-ins aignet) (frames-ncols frames))
+                (< k (frames-nrows frames))
+                (<= (num-regs aignet) (bits-length regvals)))
+    (b* ((vals (aignet-frame->vals (lnfix k) frames vals aignet))
+         (vals (aignet-regvals->vals regvals vals aignet)))
+      (aignet-eval vals aignet))
+    ///
+    (defthm aignet-sim-frame-preserves-size
+      (implies (<= (num-nodes aignet) (len vals))
+               (equal (len (aignet-sim-frame k vals frames regvals aignet))
+                      (len vals)))))
+
+
+  (defiteration aignet-vals->nxstvals (regvals vals aignet)
+    (declare (xargs :stobjs (vals aignet regvals)
+                    :guard (and (<= (num-nodes aignet) (bits-length vals))
+                                (<= (num-regs aignet) (bits-length regvals)))))
+    (b* ((reg-id (regnum->id n aignet))
+         (nextst-id (reg-id->nxst reg-id aignet))
+         (val (get-bit nextst-id vals)))
+      (set-bit n val regvals))
+    :returns regvals
+    :index n
+    :last (num-regs aignet))
+
+  
+  (defthm aignet-vals->nxstvals-iter-preserves-size
+    (implies (and (<= (num-regs aignet) (len regvals))
+                  (<= (nfix n) (num-regs aignet)))
+             (equal (len (aignet-vals->nxstvals-iter n regvals vals aignet))
+                    (len regvals)))
+    :hints (("goal" :induct (aignet-vals->nxstvals-iter n regvals vals aignet)
+             :expand ((aignet-vals->nxstvals-iter n regvals vals aignet)))))
+
+  (defthm aignet-vals->nxstvals-preserves-size
+    (implies (<= (num-regs aignet) (len regvals))
+             (equal (len (aignet-vals->nxstvals regvals vals aignet))
+                    (len regvals))))
+
+  (in-theory (disable aignet-vals->nxstvals))
+  (local (in-theory (enable aignet-vals->nxstvals)))
+
+
+  (defthm nth-of-aignet-vals->nxstvals-iter
+    (implies (<= (nfix m) (num-regs aignet))
+             (bit-equiv
+              (nth n (aignet-vals->nxstvals-iter m reg-vals vals aignet))
+              (if (< (nfix n) (nfix m))
+                  (nth (reg-id->nxst (regnum->id n aignet) aignet)
+                       vals)
+                (nth n reg-vals))))
+    :hints ((acl2::just-induct-and-expand (aignet-vals->nxstvals-iter m reg-vals
+                                                                     vals
+                                                                     aignet))))
+
+  (defthm nth-of-aignet-vals->nxstvals
+    (bit-equiv
+     (nth n (aignet-vals->nxstvals reg-vals vals aignet))
+     (if (< (nfix n) (num-regs aignet))
+         (nth (reg-id->nxst (regnum->id n aignet) aignet)
+              vals)
+       (nth n reg-vals))))
+
+
+  (define aignet-sim-frames-rec ((k natp) vals frames regvals aignet)
+    :guard (and (<= (num-nodes aignet) (bits-length vals))
+                (<= (num-ins aignet) (frames-ncols frames))
+                (<= k (frames-nrows frames))
+                (<= (num-regs aignet) (bits-length regvals)))
+    :measure (nfix (- (frames-nrows frames) (nfix k)))
+    (b* (((when (mbe :logic (zp (- (frames-nrows frames) (nfix k)))
+                     :exec (eql (frames-nrows frames) k)))
+          (mv regvals vals))
+         (vals (aignet-sim-frame k vals frames regvals aignet))
+         (regvals (aignet-vals->nxstvals regvals vals aignet)))
+      (aignet-sim-frames-rec (1+ (lnfix k)) vals frames regvals aignet))
+    ///
+    (defthm len-preserved-of-aignet-sim-frames-rec
+      (implies (<= (num-nodes aignet) (len vals))
+               (equal (len (mv-nth 1 (aignet-sim-frames-rec k vals frames regvals aignet)))
+                      (len vals)))))
+
+  (define aignet-sim-frames (vals frames initsts aignet)
+    :guard (and (<= (num-regs aignet) (bits-length initsts))
+                (<= (num-ins aignet) (frames-ncols frames)))
+    :returns (new-vals)
+    (b* (((acl2::local-stobjs regvals)
+          (mv regvals vals))
+         (vals (resize-bits (num-nodes aignet) vals))
+         (regvals (copy-bitarr initsts regvals)))
+      (aignet-sim-frames-rec 0 vals frames regvals aignet))
+    ///
+    (defthm len-of-aignet-sim-frames
+      (equal (len (aignet-sim-frames vals frames initsts aignet))
+             (num-nodes aignet)))))
+         
+
+

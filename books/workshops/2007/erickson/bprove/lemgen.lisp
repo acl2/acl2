@@ -215,6 +215,14 @@
 
 (defrec pv (bind schemes log max-fun max-var max-ifn max-thm max-label depth) t)
 
+(defmacro ld+ (&rest args)
+
+; Matt K. mod: ACL2 now requires keyword :ld-user-stobjs-modified-warning in
+; code.  I'm introducing LD+ here simply as a way to avoid writing that keyword
+; repeatedly below.  Perhaps more thought should be given to whether or not we
+; want a warning here when a user stobj is modified.
+
+  `(ld ,@args :ld-user-stobjs-modified-warning :same))
 
 (mutual-recursion
 (defun intro-constr-funs (x ind-vars all-vars bind pv state)
@@ -227,7 +235,7 @@
 		 (nc `(,nf ,@all-vars))
 		 (pv (change pv pv :max-fun (1+ (access pv pv :max-fun))))
 		 (bind (cons (list x nc) bind)))
-	    (mv-let (erp val state) (ld (list `(defstub ,nf (,@all-vars) t)))
+	    (mv-let (erp val state) (ld+ (list `(defstub ,nf (,@all-vars) t)))
  		    (if (or erp (equal val :error))
 			(mv (err-fun) bind pv state)
 		      (let ((pv (change pv pv :log (append
@@ -950,10 +958,10 @@ state)
   (let* ((fmls (all-vars (cons 'dummy (all-terms-tcs tcs))))
 	 (body (tcs-to-ifun2 tcs (cons fn fmls)))
 	 (body `(cond ,@body)))
-    (mv-let (err val state) (ld (list `(defun ,fn (,@fmls) nil)))
+    (mv-let (err val state) (ld+ (list `(defun ,fn (,@fmls) nil)))
 	    (mv-let (nop tbody state) (TRANSLATE body nil NIL nil nil (W state) STATE)
 		    (let ((sbody (cond-simp tbody bind)))
-		      (mv-let (err val state) (ld (list (list 'ubt! (list 'quote fn))))
+		      (mv-let (err val state) (ld+ (list (list 'ubt! (list 'quote fn))))
 		      (mv
 		       `(defun ,fn (,@fmls)
 			  ,sbody)
@@ -966,11 +974,11 @@ state)
 (defmacro try-ubt (rl call err nerr)
   `(let ((nl (new-label (access pv pv :max-label)))
 	 (pv (change pv pv :max-label (1+ (access pv pv :max-label)))))
-     (mv-let (err val state) (ld (list (list 'deflabel nl)))
+     (mv-let (err val state) (ld+ (list (list 'deflabel nl)))
 	     (mv-let ,rl ,call
 		     (if err
 			 (let ((pv (change pv pv :max-label (1- (access pv pv :max-label)))))
-			   (mv-let (er val state) (ld (list (list 'ubt! (list 'quote nl))))
+			   (mv-let (er val state) (ld+ (list (list 'ubt! (list 'quote nl))))
 				   ,err))
 		       (let ((pv pv2))
 			 ,nerr))))))
@@ -1206,10 +1214,10 @@ state)
 					 :hints
 					 (("Goal" :induct ,ifun-call :do-not-induct t :do-not '(generalize)))
 					 )))
-			    (mv-let (err val state) (ld (list ifun))
+			    (mv-let (err val state) (ld+ (list ifun))
 				    (if err
 					(mv (err-fun) r pv  state)
-				      (mv-let (err val state) (ld (list ithm))
+				      (mv-let (err val state) (ld+ (list ithm))
 					      (if err
 						  (mv (err-fun) r pv  state)
 						(mv nil

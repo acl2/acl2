@@ -995,7 +995,7 @@
 
 (defmacro our-syntax-nice (&rest args)
 
-; Our-syntax-nice may offer slightly more pleasant human readabilty than
+; Our-syntax-nice may offer slightly more pleasant human readability than
 ; our-syntax.  Although we stopped using it ourselves in Sept. 2014, we leave
 ; it for now since it is used in some books.
 
@@ -1334,7 +1334,7 @@
 ; An optional third parameter is merely to help with error location
 ; identification.
 
-; In (SAFE-INCF (AREF A (FOO)) INC), (FOO) is only evaluted once.
+; In (SAFE-INCF (AREF A (FOO)) INC), (FOO) is only evaluated once.
 ; Same for SVREF.
 
 ; The argument, where, is only used in reporting errors.  When where is
@@ -2239,7 +2239,7 @@
              many memoized functions."))
    (unless (eql *caller* (outside-caller-col-base))
 
-; Ouch.  We are about to blow away and reconsitute the memoization structures,
+; Ouch.  We are about to blow away and reconstitute the memoization structures,
 ; including memoized definitions, yet we are inside a memoized definition!
 ; This seems like a potentially terrible situation; presumably the original
 ; definition continues executing in this case even though the function has been
@@ -3259,7 +3259,7 @@
   activity and profiling information.  MEMOIZE-FN already has a dozen
   parameters.
 
-  MEMOIZE-FN replaces the SYMBOL-FUNCTION for the symmbol FN with 'enhanced'
+  MEMOIZE-FN replaces the SYMBOL-FUNCTION for the symbol FN with 'enhanced'
   raw Common Lisp code that, supposedly, does not affect the value returned by
   FN but may make some notes and may even obtain some return values by
   remembering them from a previous call.

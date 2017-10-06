@@ -227,6 +227,7 @@
            (equal (logcdr x) (ash x -1)))
   :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs))))
 
+
 (gl::def-gl-rewrite integerp-of-logcdr
   (integerp (logcdr x)))
 
@@ -245,6 +246,7 @@
                          (gl-non-term-p n)))
            (equal (logtail n x)
                   (ash x (- (nfix n))))))
+
 
 
 
@@ -300,13 +302,22 @@
   (x (logcons (bool->bit b) (logcdr x))))
 
 (gl::def-glcp-ctrex-rewrite
-  ((logtail n x) y)
-  (x (logapp n x y))
-  :test (quotep n))
+  ((logbitp0 (logcdr x)) b)
+  (x (logcons (logcar x) (logcons (bool->bit b) (logcdr (logcdr x))))))
 
 (gl::def-glcp-ctrex-rewrite
-  ((logcdr x) y)
-  (x (logcons (logcar x) y)))
+  ((logbitp0 (logtail n x)) b)
+  (x (logapp n x (logcons (bool->bit b) (logtail (1+ (nfix n)) x))))
+  :test (quotep n))
+
+;; (gl::def-glcp-ctrex-rewrite
+;;   ((logtail n x) y)
+;;   (x (logapp n x y))
+;;   :test (quotep n))
+
+;; (gl::def-glcp-ctrex-rewrite
+;;   ((logcdr x) y)
+;;   (x (logcons (logcar x) y)))
 
 (gl::def-glcp-ctrex-rewrite
   ((ifix x) y)
@@ -334,19 +345,30 @@
   ((svex-env-fix x) y)
   (x (make-fast-alist y)))
 
-(gl::Def-gl-rewrite svex-env-fix-of-non-term
+(define svex-env-fix-gl-non-term ((x svex-env-p))
+  :returns (fix (equal fix (svex-env-fix x))
+                :hints(("Goal" :in-theory (enable svex-env-fix))))
+  (if (atom x)
+      nil
+    (if (and (consp (car x))
+             (svar-p (caar x)))
+        (cons (cons (caar x) (4vec-fix (cdar x)))
+              (svex-env-fix-gl-non-term (cdr x)))
+      (svex-env-fix-gl-non-term (cdr x)))))
+
+(gl::Def-gl-rewrite svex-env-fix-of-non-term-gl2
   (implies (syntaxp (not (and (consp x)
                               (or (eq (car x) :g-var)
-                                  (eq (car x) :g-apply)))))
+                                  (eq (car x) :g-apply)
+                                  (eq (car x) :g-ite)))))
            (equal (svex-env-fix x)
-                  (IF (ATOM X)
-                      NIL
-                      (IF (AND (CONSP (CAR X))
-                               (SVAR-P (CAAR X)))
-                          (CONS (CONS (CAAR X) (4VEC-FIX (CDAR X)))
-                                (SVEX-ENV-FIX (CDR X)))
-                          (SVEX-ENV-FIX (CDR X))))))
+                  (svex-env-fix-gl-non-term x)))
   :hints(("Goal" :in-theory (enable svex-env-fix))))
+
+(gl::def-gl-rewrite alist-keys-of-svex-env-fix
+  (equal (alist-keys (svex-env-fix x))
+         (svarlist-filter (alist-keys x)))
+  :hints(("Goal" :in-theory (enable alist-keys svex-env-fix svarlist-filter))))
 
 (gl::gl-set-uninterpreted svex-env-lookup)
 
@@ -355,7 +377,7 @@
                               (or (eq (car env) :g-var)
                                   (eq (car env) :g-apply)))))
            (equal (svex-env-lookup x env)
-                  (4vec-fix (cdr (hons-get (svar-fix x) env)))))
+                  (4vec-fix (cdr (hons-get (svar-fix x) (make-fast-alist env))))))
   :hints(("Goal" :in-theory (enable svex-env-lookup))))
 
 (gl::def-glcp-ctrex-rewrite
@@ -371,6 +393,20 @@
          (if (equal (cdr (hons-get var env)) val)
              env
            (hons-acons var val env)))))
+
+(gl::def-gl-rewrite svex-env-lookup-of-svex-env-fix-gl
+  (equal (svex-env-lookup k (svex-env-fix x))
+         (svex-env-lookup k x)))
+
+(gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
+
+(gl::def-gl-rewrite svex-env-extract-when-non-term
+  (implies (syntaxp (not (and (consp env)
+                              (or (eq (car env) :g-var)
+                                  (eq (car env) :g-apply)))))
+           (equal (svex-env-extract x env)
+                  (svex-env-extract-aux x (make-fast-alist env))))
+  :hints(("Goal" :in-theory (enable svex-env-extract svex-env-extract-aux))))
 
 (gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
 
@@ -549,3 +585,11 @@
 
 ;; For generating counterexamples...
 (memoize 'sv::svex-env-p)
+
+
+(gl::def-gl-rewrite ash-minus1-on-term
+  (implies (syntaxp (not (gl-non-term-p x)))
+           (equal (ash x -1)
+                  (logcdr x)))
+  :hints(("Goal" :in-theory (enable bitops::logtail**))))
+

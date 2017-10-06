@@ -228,7 +228,7 @@
 
 
 (defconst *deffixequiv-mutual-keywords*
-  '(:args :omit :verbosep :hints))
+  '(:args :omit :verbosep :hints :no-induction-hint))
 
 
 (defun find-define-guts-by-fn/flag-name (fn gutslist)
@@ -352,7 +352,8 @@
        (,thm-macro
         ,@(mutual-fixequivs->inductive-fix-thms
            fixequiv-al gutslist)
-        :hints ,hints))))
+        :hints ,hints
+        :no-induction-hint ,(cdr (assoc :no-induction-hint kwd-alist))))))
 
 (defun fixequivs->const/cong-thms (fixequivs)
   (if (atom fixequivs)

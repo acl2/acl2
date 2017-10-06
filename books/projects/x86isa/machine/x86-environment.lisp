@@ -127,7 +127,7 @@
     (if (signed-byte-p 48 ptr)
 
         (b* (((mv flg (the (unsigned-byte 8) mem-val) x86)
-              (rm08 ptr :r x86))
+              (rml08 ptr :r x86))
              ((when flg)
               (mv flg acc x86)))
 
@@ -203,7 +203,7 @@
         (if (zp nbytes)
             (mv nil (reverse acc) x86)
           (b* (((mv flg (the (unsigned-byte 8) byte) x86)
-                (rm08 ptr :r x86))
+                (rml08 ptr :r x86))
                ((when flg)
                 (mv flg nil x86)))
             (read-bytes-from-memory (the (signed-byte 49) (1+ ptr))
@@ -285,7 +285,7 @@
         (if (endp bytes)
             (mv nil x86)
           (b* (((mv flg x86)
-                (wm08 ptr (the (unsigned-byte 8) (car bytes)) x86))
+                (wml08 ptr (the (unsigned-byte 8) (car bytes)) x86))
                ((when flg)
                 (mv flg x86)))
             (write-bytes-to-memory
@@ -311,7 +311,7 @@
       :hints (("Goal" :in-theory (e/d* (wb
                                         wb-1
                                         wb-1-opener-theorem
-                                        wm08
+                                        wml08
                                         canonical-address-p
                                         signed-byte-p)
                                        ())))))
@@ -489,6 +489,14 @@
     (implies (not (equal fld :env))
              (equal (xr fld index (write-x86-file-des fd fd-field x86))
                     (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (write-x86-file-des
+                                      write-x86-file-des-logic)
+                                     ()))))
+
+  ;; Contributed by Alessandro Coglio
+  (defrule 64-bit-modep-of-write-x86-file-des
+    (equal (64-bit-modep (write-x86-file-des fd fd-field x86))
+           (64-bit-modep x86))
     :hints (("Goal" :in-theory (e/d* (write-x86-file-des
                                       write-x86-file-des-logic)
                                      ()))))

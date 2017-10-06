@@ -449,7 +449,7 @@
 ; The odd pairlis$ above just manufactures a substitution with bound-vars as
 ; bound vars so we can use free-varsp to answer the question, "does
 ; the rhs of the equality contain any free variables?"  The range of
-; the subsitution is irrelevant.  If the conjunction above is true, then
+; the substitution is irrelevant.  If the conjunction above is true, then
 ; the current hyp is of the form (equiv v term) and v will be chosen
 ; by rewriting term.  V is not a "free variable".
 
@@ -516,7 +516,7 @@
 ; The odd pairlis$ above just manufactures a substitution with bound-vars as
 ; bound vars so we can use free-varsp to answer the question, "does
 ; the rhs of the equality contain any free variables?"  The range of
-; the subsitution is irrelevant.  If the conjunction above is true, then
+; the substitution is irrelevant.  If the conjunction above is true, then
 ; the current hyp is of the form (equiv v term) and v will be chosen
 ; by rewriting term.  V is not a "free variable".
 
@@ -922,7 +922,7 @@
 ; equivalence relations, and accumulator acc-counts associates variables with
 ; natural numbers.  We are given a term whose value is to be maintained with
 ; respect to the given geneqv, along with var-geneqv-alist, which associates
-; variables with ilsts of equivalence relations.  We return extensions of
+; variables with lists of equivalence relations.  We return extensions of
 ; acc-equivs, acc-counts, and var-geneqv-alist as follows.
 
 ; Consider a bound (by var-geneqv-alist) variable occurrence in term.  Its
@@ -1613,7 +1613,7 @@
 (defun expand-inequality-fncall (term)
 
 ; If term is a (possibly negated) call of a primitive arithmetic
-; relation, <, = and /=, we reexpress it in terms of
+; relation, <, = and /=, we re-express it in terms of
 ; not, equal, and < so that it can be linearized successfully.
 ; Otherwise, we return term.
 
@@ -2467,7 +2467,7 @@
 ; But it is possible, perhaps, for a user-supplied built-in clause to contain
 ; no function symbols of the kind returned by all-fnnames-subsumer.  For
 ; example, the user might prove 7 as a built-in clause.  Perhaps a
-; nonpathological example arises, but I haven't bothered to think of one.
+; non-pathological example arises, but I haven't bothered to think of one.
 ; Instead, this is handled soundly, as follows.  If the :all-fnnames is nil we
 ; act like it hasn't been computed yet (as above) and compute it.  Then we
 ; consider the discriminator function symbol to the car of the resulting list,
@@ -2828,7 +2828,7 @@
 
 (defun add-compound-recognizer-rule (rune nume term ens wrld)
 
-; We construct the recongizer-tuple corresponding to term and just add
+; We construct the recognizer-tuple corresponding to term and just add
 ; it onto the front of the current recognizer-alist.  We used to merge
 ; it into the existing tuple for the same :fn, if one existed, but
 ; that makes disabling these rules complicated.  When we retrieve
@@ -2997,7 +2997,7 @@
 
 ; We have considered treating (IMPLIES a (IMPLIES b c)) as (IMPLIES (and a b)
 ; c) when we parse :forward-chaining rules.  At the moment we do not, and hence
-; such a :forward-chaing rule might put (IMPLIES b c) on the type-alist.  The
+; such a :forward-chaining rule might put (IMPLIES b c) on the type-alist.  The
 ; code for the ``improved'' parsing is in the comment just below.  This would
 ; bring the parsing of :forward-chaining rules more into line with what we do
 ; for :rewrite rules.  But an email from Dave Greve gave us the impression that
@@ -3354,7 +3354,7 @@
 ; function evfn.  The idea is to convert the user's constraint to a
 ; set of clauses and compare that set to the canonical evaluator
 ; clauses.  Why not just use clausify?  If one of the functions
-; interpretted by evfn is 'if then our full-blown clausify will break
+; interpreted by evfn is 'if then our full-blown clausify will break
 ; that clause apart into two unrecognizable pieces.
 
   (shallow-clausify1 (unprettyify term)))
@@ -3899,7 +3899,7 @@
 ; regardless of the state argument.  This belief allows us to loosen the
 ; restriction that the state is 'state, and instead allow an arbitrary state
 ; here.  But we keep the restriction that state is 'state; we may more
-; carefullly consider relaxing it upon request.
+; carefully consider relaxing it upon request.
 
                                                 'state)
                  !a)
@@ -4268,7 +4268,7 @@
 
           (er soft ctx
               "The proposed evaluator function, ~x0, was defined in the ~
-               boot-strap world.  This is illegal when meta-extract hyotheses ~
+               boot-strap world.  This is illegal when meta-extract hypotheses ~
                are present, because for logical reasons our implementation ~
                assumes that the evaluator is not ancestral in ~v1."
               (if (getpropc ev 'predefined nil wrld)
@@ -5074,7 +5074,7 @@
 
 (defun unprettyify-tp (term)
 
-; This variant of unprettyify avoids giviing special treatment to conjunctions,
+; This variant of unprettyify avoids giving special treatment to conjunctions,
 ; and hence is suitable for parsing terms into type-prescription rules.  Unlike
 ; unprettyify, it returns (mv hyps concl).
 
@@ -5542,7 +5542,7 @@
 ; simple macro that generates a suitable defthm event (rather than
 ; have to produce a new event type with all the prove-level hint
 ; passing mechanism).  To check that the formula is suitable we
-; generate a cannonical formula and check that the given one subsumes
+; generate a canonical formula and check that the given one subsumes
 ; it.  To add an :EQUIVALENCE rule we add a 'coarsenings property to
 ; the function symbol and also set up an initial 'congruences property
 ; for it.
@@ -5738,7 +5738,7 @@
 
                            "This low-level implementation error is a complete ~
                             surprise, as the subsumption check returned '? ~
-                            for the :EQUIVALENCE lemma ~x0 for funcction ~
+                            for the :EQUIVALENCE lemma ~x0 for function ~
                             symbol ~x1.  This failure occurred when it was ~
                             checked that the equivalence-relation formula ~
                             subsumes the following canonical form: ~X23.  ~
@@ -7630,9 +7630,9 @@
 (defun chk-legal-linear-trigger-terms (terms lst name ctx state)
 
 ; When the user supplies some :TRIGGER-TERMS for a :LINEAR rule, we must check
-; that each trigger is legal for every rule generated from the unprettified
+; that each trigger is legal for every rule generated from the unprettyified
 ; corollary.  Here, terms is a true-list of terms proposed as triggers and lst
-; is the unprettification of the corollary, i.e., a list of pairs of the form
+; is the unprettyification of the corollary, i.e., a list of pairs of the form
 ; ((hyps1 . concl1) ... (hypsk . conclk)).  To be legal, each term must be a
 ; non-variable, non-quote, non-lambda application, non-IF and must, for each
 ; (hypsi . concli) pair, contain sufficient variables so that the vars in hypsi
@@ -7926,7 +7926,7 @@
 ; both) without a hyp-fn; of course, we must interpret ``well-formedness''
 ; appropriately.
 
-; But we must recover the metafunction or clause-processor functio name, fn,
+; But we must recover the metafunction or clause-processor function name, fn,
 ; (and, possibly, the hypothesis metafunction name, hyp-fn) from the translated
 ; corollary formula, which means we must parse corollary as a formula of the
 ; appropriate shape.  But rule classes are translated -- resulting in this
@@ -8372,9 +8372,9 @@
                  (cond
                   ((not (subsetp-eq cond-vars pat-vars))
                    (er soft ctx
-                       "The variables occuring freely in the :CONDITION term ~
+                       "The variables occurring freely in the :CONDITION term ~
                         of an :INDUCTION rule class must be a subset of those ~
-                        occuring freely in the :PATTERN term.  But the ~
+                        occurring freely in the :PATTERN term.  But the ~
                         condition term ~x0 mentions ~&1, which ~#1~[does~/do~] ~
                         not occur in the pattern term ~x2.  Thus the ~
                         :INDUCTION rule class specified for ~x3 is illegal."
@@ -8384,9 +8384,9 @@
                        name))
                   ((not (subsetp-eq scheme-vars pat-vars))
                    (er soft ctx
-                       "The variables occuring freely in the :SCHEME term ~
+                       "The variables occurring freely in the :SCHEME term ~
                         of an :INDUCTION rule class must be a subset of those ~
-                        occuring freely in the :PATTERN term.  But the ~
+                        occurring freely in the :PATTERN term.  But the ~
                         scheme term ~x0 mentions ~&1, which ~#1~[does~/do~] ~
                         not occur in the pattern term ~x2.  Thus the ~
                         :INDUCTION rule class specified for ~x3 is illegal."
@@ -8514,7 +8514,7 @@
 ; We allow but do not require :TRIGGER-TERMS to be provided for :LINEAR rules.
 ; The whole idea of :TRIGGER-TERMS specified at the rule-class level is a
 ; little jarring in the case of linear rules because we generate a linear rule
-; for each unprettified branch through the COROLLARY of the rule class and the
+; for each unprettyified branch through the COROLLARY of the rule class and the
 ; appropriate trigger terms for one branch may not be those for another.
 ; Nevertheless, when :TRIGGER-TERMS is provided, we store the rule for every
 ; branch under every given trigger.  You get what you ask for.  The moral is
@@ -9037,7 +9037,7 @@
 ; :OTF-FLG.
 
 ; Note: The "definitive" description of the fields in our rule classes is to be
-; found in :DOC rule-classes.  It is hygenic to compare periodically the
+; found in :DOC rule-classes.  It is hygienic to compare periodically the
 ; setting below to the form described there.
 
   (let ((rule-tokens '(:REWRITE
@@ -9133,7 +9133,7 @@
                (keyword-value-listp (cdr x))))
       (translate-rule-class1
 
-; Note that we observe the requirement dicussed in the comment (warning) at the
+; Note that we observe the requirement discussed in the comment (warning) at the
 ; top of this definition, about the :corollary field being independent of
 ; context.
 
@@ -9797,7 +9797,7 @@
 ; Rule-classes is a list of translated rule classes.  The basic idea
 ; is to prove the :COROLLARY of every class in rule-classes.  Like
 ; prove, we return an error triple; the non-erroneous value is a ttree
-; signalling the successful proof of all the corollaries.
+; signaling the successful proof of all the corollaries.
 
   (let* ((classes (non-tautological-classes term rule-classes))
          (n (length classes)))
