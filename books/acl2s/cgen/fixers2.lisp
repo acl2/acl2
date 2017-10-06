@@ -192,7 +192,8 @@ a renaming r-alist (modulo xi=constant).
                      (equal (get1 :Out fxri-data) (get1 :Out frule1I))
                      (equal (get1 :fixer-term fxri-data) (get1 :fixer-term frule1I))
                      (equal (get1 :fixer-let-binding fxri-data) (get1 :fixer-let-binding frule1I))))
-        (er hard? ctx "~| Incompatible fixer rule instances have same key; cannot be merged! ~ existing: ~x0 new: ~x1~%" fxri-data frule1I))
+        (er hard? ctx "~| Incompatible fixer rule instances have same key; cannot be merged! ~ 
+existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (hyps  (union-equal (get1 :hyps fxri-data) (get1 :hyps frule1I)))
        (fixes (union-equal (get1 :fixes fxri-data) (get1 :fixes frule1I)))
        ;;update hyps and fixes
@@ -859,46 +860,6 @@ should we completely be general?
 (defun preservation-rules-table (wrld)
   (table-alist 'PRESERVATION-RULES-TABLE wrld))
 
-(defun cweight (c Cwt{})
-  (or (get1 c Cwt{}) 0))
-(defun cweight-lst (cs Cwt{})
-  (if (endp Cwt{})
-      0
-    (+ (cweight (car cs) Cwt{})
-       (cweight-lst (cdr cs) Cwt{}))))
-
-(defloop filter-terms-without-vars (terms vars)
-  (for ((term in terms))
-       (append (and (not (intersectp-eq (acl2::all-vars term) vars))
-                    (list term)))))
-
-(defun pval (fname fxri{} flits term->flits{} Cwt{} vl)
-  (declare (ignorable vl term->flits{}))
-  (b* ((fruleI (get1 fname fxri{}))
-       (cterm (get1 :constraint-term fruleI))
-       (pterms (get1 :preserves fruleI))
-       (trivially-preserved-terms (filter-terms-without-vars flits (get1 :Out fruleI))))
-    (list (+ (cweight cterm Cwt{}) (cweight-lst pterms Cwt{}))
-          (cweight-lst trivially-preserved-terms Cwt{}))))
-       
-  
-#|
-UNFINISHED
-(defun fxri-let*-soln/greedy1 (term->flits{} var-clique-rep{} Cwt{} fxri{} vl state pval{} ans)
-  (declare (ignorable vl))
-  (if (or (endp term->flits{})
-          (endp fxri{}))
-      (value ans)
-    (b* ((pval{} (update-pval-alist pval{} fxri{} term->flits{} Cwt{}))
-         (fname (choose-maximal-pval-fxri pval{}))
-         (- (cw? (debug-flag vl) "~| Cgen/Debug: Maximal pvalued fixer: ~x0~%" fname))
-         (ans (cons (fxri-b*-entry (assoc-equal fname fxri{})) ans))
-         (fxri1{} (delete-assoc-equal fname fxri{}))
-         (fxri1{} (remove-unpreserved-fxrs fxri{} fname))
-         (term->flits1{} (remove-unpreserved-flits term->flits{} fname fxri{}))
-         )
-      (fxri-let*-soln/greedy1 term->flits1{} Cwt{} fxri1{} vl state pval{} ans))))
-|#
          
 
 (defloop collect-flits0 (flits{})
