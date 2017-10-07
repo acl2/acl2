@@ -1,9 +1,11 @@
-; Matt Kaufmann
+; Matt Kaufmann and Sol Swords
 ; Copyright (C) 2013, Regents of the University of Texas
+; and
+; Copyright (C) 2017, Centaur Technology
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; This is a file I created to test nested stobjs, i.e., stobj fields of stobjs,
-; and stobj-let.  I make no claim about its elegance: in particular, some of
+; This is a file created to test nested stobjs, i.e., stobj fields of stobjs,
+; and stobj-let.  No claim is made about its elegance: in particular, some of
 ; the function names are kind of funky; and some of the proofs use heavy
 ; nesting of inductions, suggesting considering formulation of additional
 ; lemmas.
@@ -19,7 +21,8 @@
 
 (in-package "ACL2")
 
-(include-book "eval") ; defines must-fail
+(include-book "misc/eval" :dir :system) ; defines must-fail
+(include-book "misc/assert" :dir :system)
 
 (defmacro local-test (&key defs run check)
 
@@ -1071,3 +1074,336 @@ ACL2 !>
    (new-kid1-field :type kid1)
    (new-kid2-ar-field :type (array kid2b (5)))
    new-last-op)
+
+;;; The next example illustrates a soundness bug (now fixed): With the
+;;; must-fail wrapper removed below, this proof of nil succeeded in Version 7.4
+;;; (and probably many preceding versions).
+
+(encapsulate () (local (progn
+
+(defstobj a (a-fld))
+
+(defstobj aa (aa-fld) :congruent-to a)
+
+(defstobj c
+  (c-a :type a))
+
+;; just returns the a-fld of the c-a of c
+(defun c-a-fld (c)
+  (declare (xargs :stobjs c))
+  (stobj-let
+   ((a (c-a c)))
+   (x)
+   (a-fld a)
+   x))
+
+(must-fail
+ (progn
+   ;; Logically, gets the C-A field of C as both A and AA; modifies A by negating
+   ;; its A-FLD, then updates the C-A field of C with A, but then again with AA,
+   ;; which hasn't been changed.
+   ;; Execution actually negates the A-FLD of the C-A field of C.
+   (defun c-hidden-a-fld-update (c)
+     (declare (xargs :stobjs c))
+     (stobj-let
+      ((a (c-a c))
+       (aa (c-a c)))
+      (a aa)
+      (let* ((a (update-a-fld (not (a-fld a)) a)))
+        (mv a aa))
+      c))
+
+   ;; Returns the equality of the C-A-FLD before and after the hidden update.
+   ;; This will be true in the logic and false in execution.
+   (defun true-and-false ()
+     (declare (xargs :guard t))
+     (with-local-stobj c
+       (mv-let (x c)
+         (let* ((before (c-a-fld c))
+                (c (c-hidden-a-fld-update c))
+                (after (c-a-fld c)))
+           (mv (equal after before) c))
+         x)))
+
+   (defthm true-and-false-is-true
+     (true-and-false)
+     :hints(("Goal" :in-theory (disable (true-and-false)
+                                        (c-a-fld)
+                                        (c-hidden-a-fld-update)))))
+
+   (defthm true-and-false-is-contradictory
+     nil
+     :hints (("goal" :use true-and-false-is-true
+              :in-theory (disable true-and-false-is-true)))
+     :rule-classes nil)))
+)))
+
+;;; The next test illustrates another soundness bug in ACL2 7.4 (and probably
+;;; several preceding versions), in which the final defthm -- a proof of nil --
+;;; succeeded.  The problem again pertained to aliasing; see comments below.
+;;; This time we exploit a lack of guard verification for logic-mode functions.
+;;; (An initial bug fix for the issue shown in the preceding example didn't
+;;; handle this case.)
+
+(encapsulate () (local (progn
+
+(defstobj a (a-fld))
+
+(defstobj aa (aa-fld) :congruent-to a)
+
+(defstobj c
+  (as :type (array a (2))))
+
+(defun c-a-fld (c)
+  (declare (xargs :stobjs c))
+  (stobj-let
+   ((a (asi 0 c)))
+   (x)
+   (a-fld a)
+   x))
+
+(defun c-hidden-a-fld-update (i j c)
+
+; Below, a and aa refer to the same stobj when i = j, and that aliasing is
+; problematic.  We now do a robust check to ensure at runtime that this can't
+; happen.
+
+  (declare (xargs :stobjs c :verify-guards nil))
+  (stobj-let
+   ((a (asi i c))
+    (aa (asi j c)))
+   (a aa)
+   (let* ((a (update-a-fld (not (a-fld a)) a)))
+     (mv a aa))
+   c))
+
+(defun true-and-false ()
+  (declare (xargs :guard t :verify-guards nil))
+  (with-local-stobj c
+    (mv-let (x c)
+      (let* ((before (c-a-fld c))
+             (c (c-hidden-a-fld-update 0 0 c))
+             (after (c-a-fld c)))
+        (mv (equal after before) c))
+      x)))
+
+(defthm true-and-false-is-true
+  (true-and-false)
+  :hints(("Goal" :in-theory (disable (true-and-false)
+                                     (c-a-fld)
+                                     (c-hidden-a-fld-update)))))
+
+(must-fail
+ (defthm true-and-false-is-contradictory
+   nil
+   :hints (("goal" :use true-and-false-is-true
+            :in-theory (disable true-and-false-is-true)))
+   :rule-classes nil))
+)))
+
+;;; The next test also illustrates potential unsoundness, which occurred with a
+;;; preliminary fix for the kind of aliasing behavior that took place in the
+;;; preceding test.
+
+(encapsulate () (local (progn
+
+(defstobj n (n-fld :type (integer 0 *) :initially 0))
+(defstobj nn (nn-fld :type (integer 0 *) :initially 0)
+  :congruent-to n)
+
+(defun violate-invariant-if-aliased (n nn)
+  (declare (xargs :stobjs (n nn)))
+  (let* ((nfld1 (n-fld n))
+         (nn (update-n-fld (+ 1 (n-fld nn)) nn))
+         (nfld2 (n-fld n)))
+    (if (equal nfld1 nfld2) ;; always true unless aliased
+        nn
+      (update-n-fld -1 nn))))
+
+(defstobj n-arr
+  (ns :type (array n (2))))
+
+(defun cause-invariant-violation (i j n-arr)
+  (declare (xargs :stobjs n-arr
+                  :verify-guards nil))
+  (stobj-let
+   ((n (nsi i n-arr))
+    (nn (nsi j n-arr)))
+   (nn)
+   (violate-invariant-if-aliased n nn)
+   n-arr))
+
+(defun cause-invariant-violation-program (n-arr)
+  (declare (xargs :mode :program
+                  :stobjs (n-arr)))
+  (cause-invariant-violation 1 1 n-arr))
+
+(defun n-arr-has-natp-field (n-arr)
+  (declare (xargs :stobjs (n-arr)
+                  :guard-hints (("goal" :expand ((nsp (car n-arr)))))))
+  (stobj-let
+   ((n (nsi 1 n-arr)))
+   (ok)
+   (mbe :logic t
+        :exec (natp (n-fld n)))
+   ok))
+
+(defthm n-arr-has-natp-field-true
+  (n-arr-has-natp-field n-arr))
+
+(must-fail
+
+; The following should cause an error, or else the next assertion coudl fail:
+
+ (cause-invariant-violation-program n-arr)
+ :expected :hard)
+
+; In Version 7.4 this assertion failed, showing that stobj recognizer n-arrp is
+; false for the live n-arr.
+(assert! (n-arr-has-natp-field n-arr))
+
+)))
+
+;;; The next test shows how congruent stobjs may be used in stobj-let.
+
+(encapsulate () (local (progn
+
+(defstobj a (a-fld))
+(defstobj b (b-fld))
+
+(defstobj d
+  (d-a :type a)
+  (d-b :type b))
+
+(defstobj dd
+  (dd-a :type a)
+  (dd-b :type b)
+  :congruent-to d)
+
+(defun access-dd-as-d (dd)
+  (declare (xargs :stobjs dd))
+  (stobj-let
+   ((a (d-a dd))
+    (b (d-b dd)))
+   (x)
+   (list (a-fld a) (b-fld b))
+   x))
+
+(defun update-dd-as-d (dd)
+  (declare (xargs :stobjs dd))
+  (stobj-let
+   ((a (d-a dd))
+    (b (d-b dd)))
+   (a b)
+   (let* ((afld (a-fld a))
+          (bfld (b-fld b))
+          (a (update-a-fld bfld a))
+          (b (update-b-fld (not afld) b)))
+     (mv a b))
+   dd))
+
+;; want these both to remain illegal 
+(must-fail
+ (defun access-dd-as-both (dd)
+   (declare (xargs :stobjs dd))
+   (stobj-let
+    ((a (d-a dd))
+     (b (dd-b dd)))
+    (x)
+    (list (a-fld a) (b-fld b))
+    x))
+ :with-output-off nil)
+
+(defstobj aa (aa-fld) :congruent-to a)
+
+(must-fail
+ (defun access-dd-as-both-aliasing (dd)
+   (declare (xargs :stobjs dd))
+   (stobj-let
+    ((a (d-a dd))
+     (aa (dd-a dd)))
+    (x)
+    (list (a-fld a) (a-fld aa))
+    x))
+ :with-output-off nil)
+
+;; want this to remain legal
+
+(defstobj a-arr
+  (as :type (array a (2))))
+
+(defun access-a-arr (n m a-arr)
+  (declare (xargs :stobjs a-arr
+                  :guard (and (natp n)
+                              (natp m)
+                              (< n 2)
+                              (< m 2)
+                              (not (eql n m)))))
+  (stobj-let
+   ((a (asi n a-arr))
+    (aa (asi m a-arr)))
+   (x)
+   (list (a-fld a) (a-fld aa))
+   x))
+
+;; want this to be legal
+(defstobj aa-arr
+  (aas :type (array a (2)))
+  :congruent-to a-arr)
+
+(defun access-aa-arr-as-a-arr (n m aa-arr)
+  (declare (xargs :stobjs aa-arr
+                  :guard (and (natp n)
+                              (natp m)
+                              (< n 2)
+                              (< m 2)
+                              (not (eql n m)))))
+  (stobj-let
+   ((a (asi n aa-arr))
+    (aa (asi m aa-arr)))
+   (x)
+   (list (a-fld a) (a-fld aa))
+   x))
+
+;; want this to fail its guard check
+(must-fail
+ (defun access-aa-arr-as-a-arr-insufficient-guard (n m aa-arr)
+   (declare (xargs :stobjs aa-arr
+                   :guard (and (natp n)
+                               (natp m)
+                               (< n 2)
+                               (< m 2))))
+   (stobj-let
+    ((a (asi n aa-arr))
+     (aa (asi m aa-arr)))
+    (x)
+    (list (a-fld a) (a-fld aa))
+    x))
+ :with-output-off nil)
+
+(defstobj scal-and-arr
+  (saa-sc1 :type a)
+  (saa-sc2 :type a)
+  (saa-arr :type (array a (4))))
+
+(defstobj aaa (aaa-fld) :congruent-to a)
+(defstobj aaaa (aaaa-fld) :congruent-to a)
+
+(defun update-scal-and-arr (n m scal-and-arr)
+  (declare (xargs :stobjs scal-and-arr
+                  :guard (and (natp n)
+                              (natp m)
+                              (< n 4)
+                              (< m 4)
+                              (not (eql n m)))))
+  (stobj-let
+   ((a (saa-arri n scal-and-arr))
+    (aa (saa-sc1 scal-and-arr))
+    (aaa (saa-arri m scal-and-arr))
+    (aaaa (saa-sc2 scal-and-arr) update-saa-sc2))
+   (x aaaa)
+   (let ((aaaa (update-a-fld (not (a-fld aaaa)) aaaa)))
+     (mv (list (a-fld a) (a-fld aa) (a-fld aaa)) aaaa))
+   (mv x scal-and-arr)))
+  
+)))

@@ -4292,9 +4292,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(no-duplicatesp-equal ,x))))
 
-; The following is used in stobj-let.
-
 (defun chk-no-duplicatesp (lst)
+
+; This function is used in the implementation of stobj-let.  Do not modify it
+; without seeing where it is used and understand the implications of the
+; change.
+
   (declare (xargs :guard (and (eqlable-listp lst)
                               (no-duplicatesp lst)))
            (ignore lst))

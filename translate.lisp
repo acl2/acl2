@@ -358,8 +358,8 @@
 ; (a) The *1* code for an invariant-risk :program mode function binds
 ;     **1*-as-raw* to t.
 ;
-; (b) The *1* code for an mbe call reduces to its :exec code when **1*-as-raw*
-;     is true.
+; (b) The *1* code for an mbe call reduces to its *1* :exec code when
+;     **1*-as-raw* is true.
 ;
 ; (c) Raw-ev-fncall binds **1*-as-raw* to nil for :logic mode functions.
 ;
@@ -6276,9 +6276,19 @@
                              (no-duplicatesp indices)))
                     (no-duplicatesp-checks-for-stobj-let-actuals/alist
                      (cdr alist)))
-                   (t (cons `(chk-no-duplicatesp
+                   (t (cons `(with-guard-checking
+                              t
+
+; This use of with-guard-checking guarantees that the guard will be checked by
+; running chk-no-duplicatesp inside *1* code for stobj-let.  (See a comment
+; near the end of stobj-let-fn for how handling of invariant-risk guarantees
+; that such *1* code is run under program-mode wrappers.)
+
+                              (chk-no-duplicatesp
+
 ; The use of reverse is just aesthetic, to preserve the original order.
-                              (list ,@(reverse indices)))
+
+                               (list ,@(reverse indices))))
                             (no-duplicatesp-checks-for-stobj-let-actuals/alist
                              (cdr alist)))))))))
 
@@ -6338,7 +6348,17 @@
                                ,updated-guarded-consumer)))))
                    (no-dups-exprs
                     (no-duplicatesp-checks-for-stobj-let-actuals actuals nil)))
-              `(progn$ ,@no-dups-exprs ,form))))))
+              `(progn$ ,@no-dups-exprs
+
+; Warning: Think carefully before modifying how the no-dups-exprs test (just
+; above) is worked into this logical code.  A concern is whether a program-mode
+; wrapper will be able to circumvent this check.  Fortunately, the check only
+; needs to be done if there are updater calls in form, in which case there is
+; invariant-risk that will cause execution of this code as *1* code.  A concern
+; is that if the no-dups-exprs check is buried in a function call, perhaps that
+; call would somehow avoid that check by being executed in raw Lisp.
+
+                       ,form))))))
 
 (defun the-live-var-bindings (stobj-names)
   (cond ((endp stobj-names) nil)
@@ -6547,11 +6567,17 @@
    (not (eq (car (stobjs-out fn wrld))
             stobj))))
 
-(defun chk-stobj-let/bindings (stobj bound-vars actuals wrld)
+(defun chk-stobj-let/bindings (stobj acc-stobj first-acc bound-vars actuals
+                                     wrld)
 
 ; The bound-vars and actuals have been returned by parse-stobj-let, so we know
 ; that some basic syntactic requirements have been met and that the two lists
 ; have the same length.  See also chk-stobj-let.
+
+; Stobj is the variable being accessed/updated.  Acc-stobj is the stobj
+; associated with the first accessor; we have already checked in chk-stobj-let
+; that this is congruent to stobj.  First-acc is the first accessor, which is
+; just used in the error message when another accessor's stobj doesn't match.
 
   (cond ((endp bound-vars) nil)
         (t (let* ((var (car bound-vars))
@@ -6560,10 +6586,17 @@
                   (st (car (last actual))))
              (assert$
               (eq st stobj) ; guaranteed by parse-stobj-let
-              (cond ((not (stobj-field-accessor-p accessor stobj wrld))
+              (cond ((not (stobj-field-accessor-p accessor acc-stobj wrld))
                      (msg "The name ~x0 is not the name of a field accessor ~
-                           for the stobj ~x1."
-                          accessor stobj))
+                           for the stobj ~x1.~@2"
+                          accessor acc-stobj
+                          (if (eq acc-stobj stobj)
+                              ""
+                            (msg "  (The first accessor used in a stobj-let, ~
+                                  in this case ~x0, determines the stobj with ~
+                                  which all other accessors must be ~
+                                  associated, namely ~x1.)"
+                                 first-acc acc-stobj))))
                     ((not (stobjp var t wrld))
                      (msg "The stobj-let bound variable ~x0 is not the name ~
                            of a known single-threaded object in the current ~
@@ -6580,7 +6613,23 @@
                           (car (stobjs-out (caar actuals) wrld))
                           (caar actuals)
                           stobj))
-                    (t (chk-stobj-let/bindings stobj
+                    ((member-equal actual (cdr actuals))
+
+; This case fixes a soundness bug for duplicated actuals (see :DOC note-7-5).
+; It effectively checks no-duplicatesp-equal of the actuals, but doing it here
+; one-by-one has the advantage that we can easily say which actual is
+; duplicated.  Alternatively, we could check only that scalar accessor
+; functions are not used more than once.  This is a bit stronger since it also
+; disallows duplicate array accesses (though they would be disallowed by guards
+; anyway).  If we ever relax the strict syntactic restrictions on actuals --
+; e.g., allow accessors from multiple congruent stobjs -- this check will need
+; to become smarter.
+
+                     (msg "The bindings of a stobj-let must contain no ~
+                           duplicated actuals, but in the following form, the ~
+                           actual ~x0 is bound more than once."
+                          actual))
+                    (t (chk-stobj-let/bindings stobj acc-stobj first-acc
                                                (cdr bound-vars)
                                                (cdr actuals)
                                                wrld))))))))
@@ -6640,9 +6689,20 @@
     (msg
      "The name ~x0 is the name of an abstract stobj."
      stobj))
-   ((chk-stobj-let/bindings stobj bound-vars actuals wrld))
-   ((chk-stobj-let/updaters updaters corresp-accessor-fns stobj wrld))
-   (t nil)))
+   (t (let* ((first-actual (car actuals))
+             (first-accessor (car first-actual))
+             (acc-stobj (getpropc first-accessor 'stobj-function nil wrld)))
+        (cond
+         ((not (eq (congruent-stobj-rep acc-stobj wrld)
+                   (congruent-stobj-rep stobj wrld)))
+          (msg "The name ~x0 is not the name of a field accessor for the ~
+                stobj ~x1, or even one congruent to it."
+               first-accessor stobj))
+         ((chk-stobj-let/bindings
+           stobj acc-stobj first-accessor bound-vars actuals wrld))
+         ((chk-stobj-let/updaters
+           updaters corresp-accessor-fns acc-stobj wrld))
+         (t nil))))))
 
 (defun all-nils-or-x (x lst)
   (declare (xargs :guard (and (symbolp x)
