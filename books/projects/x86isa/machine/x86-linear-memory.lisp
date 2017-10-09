@@ -1745,8 +1745,8 @@ memory.</li>
              (x86p (mv-nth 2 (rml08 lin-addr r-x x86)))))
 
   (defthm rml08-value-when-error
-    (implies (mv-nth 0 (rml08 addr :x x86))
-             (equal (mv-nth 1 (rml08 addr :x x86)) 0))
+    (implies (mv-nth 0 (rml08 addr r-x x86))
+             (equal (mv-nth 1 (rml08 addr r-x x86)) 0))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
   (defthm rml08-does-not-affect-state-in-programmer-level-mode
@@ -1765,8 +1765,7 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
   (defthm xr-rml08-state-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem)))
+    (implies (programmer-level-mode x86)
              (equal (xr fld index (mv-nth 2 (rml08 addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
