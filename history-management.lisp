@@ -12083,7 +12083,28 @@
     (cl-set1 ttree)
     (guard-clauses+ (guard name nil wrld)
                     (and debug-p `(:guard (:guard ,name)))
-                    nil nil ens wrld safe-mode gc-off ttree)
+
+; Observe that when we generate the guard clauses for the guard we optimize
+; the stobj recognizers away.  We restrict to the case that the named function
+; is executable, but as of this writing, the guard is always subjected to stobj
+; single-threadedness restrictions, so we really don't need to make that
+; restriction.  We may reconsider upon demand, but if we change the next
+; argument to t, we should be careful to document that even non-executable
+; functions have their guards translated for executability.
+
+; Just to drive the point home that the stobj optimization is appropriate here:
+; Note that the stobj recognizer is always conjoined with the guard, so that
+; the guard is essentially the conjunction
+
+;   (if (stobp <stobj>) <specified-guard> 'nil)
+
+; So we actually have (stobp <stobj>) explicitly present when optimizing the
+; guards on <specified-guard>.
+
+                    (not (eq (getpropc name 'non-executablep
+                                       nil wrld)
+                             t))
+                    nil ens wrld safe-mode gc-off ttree)
     (let ((guard (guard name nil wrld))
           (unnormalized-body
            (getpropc name 'unnormalized-body
@@ -12132,7 +12153,13 @@
                  (fcons-term* 'insist
                               (getpropc name 'split-types-term *t* wrld))
                  (and debug-p `(:guard (:type ,name)))
-                 nil ; stobj-optp: no clear reason for setting this to t
+
+; There seems to be no clear reason for setting stobj-optp here to t.  This
+; decision could easily be reconsidered; we are being conservative here since
+; as we write this comment in Oct. 2017, stobj-optp = nil has been probably
+; been used here since the inception of split-types.
+
+                 nil
                  ens wrld safe-mode gc-off ttree)
                 (let ((cl-set2
                        (if type-clauses ; optimization

@@ -5236,8 +5236,21 @@
 
 (defun include-book-raw-top (full-book-name directory-name load-compiled-file
                                             dir ctx state)
-  (let ((*hcomp-fn-macro-restore-ht* (make-hash-table :test 'eq))
-        (*hcomp-const-restore-ht* (make-hash-table :test 'eq)))
+  (handler-bind
+
+; Without this handler-bind, CCL produces redefinition warnings when we attempt
+; to include a book.  To see such warnings: certify the following two books,
+; remove this handler-bind, and include "book1" and then (to see redefinition
+; warnings) "book2".
+
+; book1 has (defmacro foo (x) x)
+; book2 has (defun foo (x) x)
+
+   ((warning (lambda (c)
+               (declare (ignore c))
+               (invoke-restart 'muffle-warning))))
+   (let ((*hcomp-fn-macro-restore-ht* (make-hash-table :test 'eq))
+         (*hcomp-const-restore-ht* (make-hash-table :test 'eq)))
 
 ; We need to be careful about handling interrupts.  On the one hand, we want to
 ; take advantage of the "idempotency" provided by acl2-unwind-protect that is
@@ -5249,27 +5262,27 @@
 ; then for acl2-unwind-protect to do the actual cleanup using those saved
 ; values.
 
-    (setq *saved-hcomp-restore-hts* nil)
-    (acl2-unwind-protect
-     "include-book-raw"
-     (unwind-protect
-         (state-global-let*
-          ((raw-include-book-dir!-alist
-            (assert$ (not (raw-include-book-dir-p state))
-                     (table-alist 'include-book-dir!-table (w state)))))
-          (progn (include-book-raw
-                  full-book-name directory-name
-                  load-compiled-file dir ctx state)
-                 (value nil)))
-       (setq *saved-hcomp-restore-hts*
-             (list* *hcomp-fn-macro-restore-ht*
-                    *hcomp-const-restore-ht*)))
-     (progn (hcomp-restore-defs)
-            (setq *saved-hcomp-restore-hts* nil)
-            state)
-     (progn (hcomp-restore-defs)
-            (setq *saved-hcomp-restore-hts* nil)
-            state))))
+     (setq *saved-hcomp-restore-hts* nil)
+     (acl2-unwind-protect
+      "include-book-raw"
+      (unwind-protect
+          (state-global-let*
+           ((raw-include-book-dir!-alist
+             (assert$ (not (raw-include-book-dir-p state))
+                      (table-alist 'include-book-dir!-table (w state)))))
+           (progn (include-book-raw
+                   full-book-name directory-name
+                   load-compiled-file dir ctx state)
+                  (value nil)))
+        (setq *saved-hcomp-restore-hts*
+              (list* *hcomp-fn-macro-restore-ht*
+                     *hcomp-const-restore-ht*)))
+      (progn (hcomp-restore-defs)
+             (setq *saved-hcomp-restore-hts* nil)
+             state)
+      (progn (hcomp-restore-defs)
+             (setq *saved-hcomp-restore-hts* nil)
+             state)))))
 
 (defmacro hcomp-ht-from-type (type ctx)
   `(case ,type
