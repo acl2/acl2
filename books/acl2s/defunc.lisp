@@ -880,21 +880,21 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 @({
 
-  (defunc len (a) 
-    :input-contract t 
+  (defunc len (a)
+    :input-contract t
     :output-contract (natp (len a))
     (if (atom a)
         0
       (+ 1 (len (rest a)))))
-  
+
   (defunc app (x y)
     :input-contract (and (true-listp x) (true-listp y))
     :output-contract (and (true-listp (app x y))
-                           (equal (len (app x y)) (+ (len x) (len y))))
+                          (equal (len (app x y)) (+ (len x) (len y))))
     (if (endp x)
         y
       (cons (car x) (app (cdr x) y))))
-  
+
   (defunc add-digits (x)
     :input-contract (natp x)
     :output-contract (natp (add-digits x))
@@ -904,17 +904,17 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       (let* ((rem (rem x 10))
              (y   (/ (- x rem) 10)))
         (+ rem (add-digits y)))))
-  
+
   (defunc square-list (l)
     :input-contract (nat-listp l)
     :output-contract (nat-listp (square-list l))
     (if (endp l)
         nil
-      (app  (list (* (car l) (car l)))
-            (square-list (cdr l))))
-   :verbose t 
-   :skip-tests t)
-  
+      (app (list (* (car l) (car l)))
+           (square-list (cdr l))))
+    :verbose t
+    :skip-tests t)
+
 })
 
 <h3>Purpose</h3>
