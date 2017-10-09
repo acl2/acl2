@@ -986,30 +986,48 @@ The supported keyword options with the syntax restrictions and actions are noted
 below.
 </p>
 
+<h4>Keyword Options</h4>
+
 <dl>
-<dt>Keyword Options</dt>
-<dd>@(':input-contract ic') -- <i>ic</i> is a @(see acl2::term); required.</dd>
-<dd>@(':output-contract oc') -- <i>oc</i> is a @(see acl2::term); required.</dd>
-<dd>@(':function-contract-hints hints :rule-classes rc ...') --
-options to the function contract @(see acl2::defthm).</dd>
-<dd>@(':body-contracts-hints hints') -- give @(see acl2::hints) to aid the body contracts proof.</dd>
+<dt>@(':input-contract ic')</dt>
+  <dd>Required; @('ic') is a <see topic='@(url acl2::term)'>term</see>.</dd>
+<dt>@(':output-contract oc')</dt>
+  <dd>Required; @('oc') is a <see topic='@(url acl2::term)'>term</see>.</dd>
+<dt>@(':function-contract-hints hints')</dt>
+  <dd>Passed as <tt>:<see topic='@(url acl2::hints)'>hints</see></tt> to the
+      function contract @(see defthm).</dd>
+<dt>@(':rule-classes rcs')<br/>
+    @(':instructions is')<br/>
+    @(':otf-flg flg')</dt>
+  <dd>These three keyword arguments are passed directly to the function
+      contract @(see defthm).</dd>
+<dt>@(':body-contracts-hints hints')</dt>
+  <dd>Passed as <tt>:<see topic='@(url acl2::hints)'>hints</see></tt> to the
+      body contracts @(see defthm).</dd>
+</dl>
 
-<p> The following keyword options are usually set at the
-session-wide-level (see the <tt>set-defunc-*</tt> macros documented below);
-when given as keyword arguments to @('defunc') they override the session
-defaults.</p>
+<p>The following keyword options are usually set at the
+session-wide-level (see the <tt>set-defunc-*</tt> macros documented
+below); when given as keyword arguments to @('defunc') they override
+the session defaults.</p>
 
-<dd>@(':termination-strictp x') -- if x=t, abort if termination
-failed (default); if x=nil, then if termination fails, admit the
-function in :program mode.</dd>
-<dd>@(':function-contract-strictp x') -- if x=t abort if the
-contract proof failed (default); otherwise if x=nil, then if the proof fails,
-add a dynamic contract check.</dd>
-<dd>@(':body-contracts-strictp x') -- if x=t abort if body
-contracts proof failed; otherwise if x=nil,  body
-contracts are checked dynamically.</dd>
-<dd>@(':timeout n') -- limit the time spent in defunc events to <i>n</i> seconds.</dd>
-<dd>@(':skip-tests t') -- skip the testing actions.</dd>
+<dl>
+<dt>@(':termination-strictp x')</dt>
+  <dd>When @('x') is @('t') (default), abort if termination failed.</dd>
+  <dd>When @('x') is @('nil'), then if termination fails, admit the function in
+      :program mode.</dd>
+<dt>@(':function-contract-strictp x')</dt>
+  <dd>When @('x') is @('t') (default), abort if the contract proof failed.</dd>
+  <dd>When @('x') is @('nil'), then if the proof fails, add a dynamic contract
+      check.</dd>
+<dt>@(':body-contracts-strictp x')</dt>
+  <dd>When @('x') is @('t') (default), abort if the body contracts proof
+      failed.</dd>
+  <dd>When @('x') is @('nil'), body contracts are checked dynamically.</dd>
+<dt>@(':timeout n')</dt>
+  <dd>Limit the time spent in defunc events to @('n') seconds.</dd>
+<dt>@(':skip-tests t')</dt>
+  <dd>Skip the testing actions.</dd>
 </dl>
 
 
