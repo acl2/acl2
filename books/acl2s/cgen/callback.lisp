@@ -314,7 +314,7 @@ then it returns (value '(:do-not '(acl2::generalize)
        (- (cw? (debug-flag vl) "~| pspv-ust: ~x0 curr ust: ~x1 ctx:~x2 cgen-state.ctx:~x3~%" pspv-user-supplied-term (cget user-supplied-term) ctx (cget top-ctx)))
 
        ((unless (implies (and (not (eq (cget user-supplied-term) :undefined))
-                              (not (eq (cget top-ctx) :user-defined))) ;allow test?/prove
+                              (not (eq (car (cget top-ctx)) :user-defined))) ;allow test?/prove
                          (equal ctx (cget top-ctx))))
         (prog2$ ;Invariant 
          (cw? (verbose-flag vl)

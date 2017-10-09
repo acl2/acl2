@@ -352,7 +352,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
                               (declare (ignorable ,@ign-vars))
                               ,pterm))) ;check if pterm is still true after update
        (cgen-state (make-cgen-state-fn
-                    query ctx 
+                    query ctx
                     (list :testing-enabled :naive
                           :num-trials 500
                           :search-strategy :simple
@@ -363,7 +363,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
                           :cgen-local-timeout 4
                           :print-cgen-summary nil)
                     (w state)))
-       ((mv & cgen-state state) (prove/cgen query nil cgen-state state))
+       ((mv & cgen-state state) (test/cgen query nil cgen-state state))
        (gcs% (cget gcs))
        (num-vac (access gcs% vacs))
        (valid-runs (- (access gcs% runs) num-vac))

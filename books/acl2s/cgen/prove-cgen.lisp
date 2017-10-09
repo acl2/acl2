@@ -616,7 +616,7 @@ history s-hist.")
           (cons 'DISPLAYED-GOAL form)
           (cons 'START-TIME :undefined)
           (cons 'GCS *initial-gcs%*)
-          (cons 'TOP-CTX ctx-name))))
+          (cons 'TOP-CTX (cons :USER-DEFINED ctx-name)))))
 
 (defmacro make-cgen-state (form ctx-name &rest kwd-val-lst)
   `(make-cgen-state-fn ',form ',ctx-name ',kwd-val-lst (w state)))
@@ -642,30 +642,31 @@ history s-hist.")
    ((acl2::inhibit-output-lst acl2::*valid-output-names*))
    (acl2::translate form T logicp T "test? check" (w state) state)))
 
-
-(def prove/cgen (form hints cgen-state state)
-  (decl :mode :program
-        :sig ((any hints cgen-state state) 
-              -> (mv (oneof nil :falsifiable :? t) cgen-state state))
-        )
+;; TODO: remove code duplication between this function and prove/cgen
+(defun test/cgen (form hints cgen-state state)
+  (declare (ignore hints))
+  (declare (xargs :mode :program :stobjs (state)))
+  ;; (decl :mode :program
+  ;;       :sig ((any hints cgen-state state) 
+  ;;             -> (mv (oneof nil :falsifiable :? t) cgen-state state)))
   (b* ((ctx (cget top-ctx))
        (vl  (cget verbosity-level))
-
+       
        ((unless (equal (cget displayed-goal) form))
         (prog2$ (cw? (normal-output-flag vl) 
-                     "~|CEgen/Error: cgen-state.displayed-goal should match the first argument to prove/cgen.~|")
+                     "~|Cgen/Error: cgen-state.displayed-goal should match the first argument to prove/cgen.~|")
                 (mv :? cgen-state state)))
          
        (testing-enabled (cget testing-enabled ))
        ((when (eq testing-enabled NIL)) ;dont do any testing
         (prog2$ (cw? (verbose-flag vl) 
-                     "~|CEgen/Note: TESTING-ENABLED is set to NIL; skipping this form altogether.~|")
+                     "~|Cgen/Note: TESTING-ENABLED is set to NIL; skipping this form altogether.~|")
                 (mv :? cgen-state state)))
        ((mv erp term state) (check-syntax form NIL state))
        ((when erp)          
         (prog2$
          (cw? (normal-output-flag vl) 
-              "~|CEgen/Error: The input form is ill-formed, see below:")
+              "~|Cgen/Error: The input form is ill-formed, see below:")
 ; show error to user which was invisble earlier
          (acl2::state-global-let*
           ((acl2::inhibit-output-lst '(summary)))
@@ -679,7 +680,91 @@ history s-hist.")
        ((when unsupportedp) (mv :? cgen-state state))
        ((when (acl2::global-val 'acl2::include-book-path (w state)))
         (prog2$ (cw? (verbose-flag vl) 
-                      "~|CEgen/Note: Inside include-book; skip testing altogether.~|")
+                      "~|Cgen/Note: Inside include-book; skip testing altogether.~|")
+                 (mv :? cgen-state state)))
+         
+; No syntax error in input form, check for program-mode fns
+; Note: translate gives nil as the term if form has
+; a program-mode function, so we ignore it
+         ((mv pm? & state)    (check-syntax form T state))
+         (programp            (or pm?
+                                  (eq (default-defun-mode (w state)) 
+                                      :program)))
+
+         ((mv hyps concl state) (partition-into-hyps-concl-and-preprocess term "test?" state))
+         ((mv start-top state) (acl2::read-run-time state))
+         
+         ((unless (cgen-state-p cgen-state))
+          (er soft ctx "~|Cgen/Error: CGEN::CGEN-STATE is ill-formed~|"))
+         
+         (vars (all-vars term))
+         (d-typ-al (dumb-type-alist-infer (cons (cgen-dumb-negate-lit concl) hyps)
+                                          vars vl (w state)))
+         (- (cw? (verbose-stats-flag vl) 
+                 "~|Cgen/Verbose: (at top-level) dumb type-alist is ~x0~|" d-typ-al))
+
+         (cgen-state (update-cgen-state-givens/user :user-supplied-term term
+                                                    :start-time start-top  
+                                                    :top-vt-alist d-typ-al))
+         (type-alist (if programp 
+                         nil
+                       (get-acl2-type-alist (clausify-hyps-concl hyps concl))))
+         (tau-interval-alist (tau-interval-alist-clause (clausify-hyps-concl hyps concl) vars))
+
+         ((mv error-or-timeoutp cgen-state state) (cgen-search-fn "top" hyps concl 
+                                                                   type-alist tau-interval-alist '() 
+                                                                   programp 
+                                                                   cgen-state 
+                                                                   ctx state))
+         ((mv end state) (acl2::read-run-time state))
+         (cgen-state (cput end-time end))
+         (gcs% (cget gcs))
+         )
+    
+    ;;in
+    (cond ((posp (access gcs% cts)) (mv :falsifiable cgen-state state))
+          (error-or-timeoutp (mv t cgen-state state))
+          (t (mv :? cgen-state state)))))
+
+
+
+
+(def prove/cgen (form hints cgen-state state)
+  (decl :mode :program
+        :sig ((any hints cgen-state state) 
+              -> (mv (oneof nil :falsifiable :? t) cgen-state state)))
+  (b* ((ctx (cget top-ctx))
+       (vl  (cget verbosity-level))
+
+       ((unless (equal (cget displayed-goal) form))
+        (prog2$ (cw? (normal-output-flag vl) 
+                     "~|Cgen/Error: cgen-state.displayed-goal should match the first argument to prove/cgen.~|")
+                (mv :? cgen-state state)))
+         
+       (testing-enabled (cget testing-enabled ))
+       ((when (eq testing-enabled NIL)) ;dont do any testing
+        (prog2$ (cw? (verbose-flag vl) 
+                     "~|Cgen/Note: TESTING-ENABLED is set to NIL; skipping this form altogether.~|")
+                (mv :? cgen-state state)))
+       ((mv erp term state) (check-syntax form NIL state))
+       ((when erp)          
+        (prog2$
+         (cw? (normal-output-flag vl) 
+              "~|Cgen/Error: The input form is ill-formed, see below:")
+; show error to user which was invisble earlier
+         (acl2::state-global-let*
+          ((acl2::inhibit-output-lst '(summary)))
+          (acl2::translate form  T NIL T "test? check" (w state) state))))
+
+
+       ((mv all-execp unsupportedp) 
+          (cgen-exceptional-functions (list term) vl (w state)))
+; 21st March 2013 - catch stobj taking and constrained functions, skip testing.
+       ((unless all-execp)  (mv :? cgen-state state)) ;possible with test? ?
+       ((when unsupportedp) (mv :? cgen-state state))
+       ((when (acl2::global-val 'acl2::include-book-path (w state)))
+        (prog2$ (cw? (verbose-flag vl) 
+                      "~|Cgen/Note: Inside include-book; skip testing altogether.~|")
                  (mv :? cgen-state state)))
          
 ; No syntax error in input form, check for program-mode fns
@@ -691,19 +776,19 @@ history s-hist.")
                                       :program)))
 
          (- (cw? (debug-flag vl)
-                 "~%~%CEgen/Debug: (pm? ~x0) ~x1~|" programp (cons 'test? form))) 
+                 "~%~%Cgen/Debug: (pm? ~x0) ~x1~|" programp (cons 'test? form))) 
 
          ((mv hyps concl state) (partition-into-hyps-concl-and-preprocess term "test?" state))
          ((mv start-top state) (acl2::read-run-time state))
          
          ((unless (cgen-state-p cgen-state))
-          (er soft ctx "~|CEgen/Error: CGEN::CGEN-STATE is ill-formed~|"))
+          (er soft ctx "~|Cgen/Error: CGEN::CGEN-STATE is ill-formed~|"))
          
          (vars (all-vars term))
          (d-typ-al (dumb-type-alist-infer (cons (cgen-dumb-negate-lit concl) hyps)
                                           vars vl (w state)))
          (- (cw? (verbose-stats-flag vl) 
-                 "~|CEgen/Verbose: (at top-level) dumb type-alist is ~x0~|" d-typ-al))
+                 "~|Cgen/Verbose: (at top-level) dumb type-alist is ~x0~|" d-typ-al))
 
          (cgen-state (update-cgen-state-givens/user :user-supplied-term term
                                                     :start-time start-top  
@@ -729,7 +814,7 @@ history s-hist.")
                                programp
                                (eq testing-enabled :naive)))
 
-         (- (cw? (debug-flag vl) "~|CEgen/Debug: no-prove-call-p: ~x0 override-hints: ~x1~%" no-prove-call-p (acl2::override-hints (w state))))
+         (- (cw? (debug-flag vl) "~|Cgen/Debug: no-prove-call-p: ~x0 override-hints: ~x1~%" no-prove-call-p (acl2::override-hints (w state))))
 ; TODO: print something if erp is true i.e error in testing
          
 ; put modified cgen-state back in globals, so that the computed hint
@@ -770,7 +855,7 @@ history s-hist.")
              ;; mv-let body
              (prog2$
               (cw? (and erp (normal-output-flag vl))
-                   "~|CEgen/Error: bad trans-eval wrapper call to prove.~|")
+                   "~|Cgen/Error: bad trans-eval wrapper call to prove.~|")
               (mv erp (if erp t (cadr trval)) state)))))
 
          (cgen-state (@ cgen-state)) ;reify cgen-state from callback

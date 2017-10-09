@@ -21,35 +21,35 @@
 
 ;NOTE: interesting - I cant use defmacro instead of defabbrev
 
-(defun get-s-hist-global (ctx state) 
-  (if (f-boundp-global 'cgen-state state)
-    (b* ((cgen-state (@ cgen-state))
-         ((unless (valid-cgen-state-p cgen-state))
-          (er hard? ctx "~|CEgen/Error: (get-s-hist) cgen-state is ill-formed~|"))
-         (s-hist (cdr (assoc-eq :s-hist cgen-state))))
-      (if (s-hist-p s-hist)
-          s-hist
-        (er hard? ctx "~|CEgen/Error: hist found in globals is of bad type~|")))
-    (er hard? ctx "~|CEgen/Error: cgen-state not found in globals ~|")))
+;; (defun get-s-hist-global (ctx state) 
+;;   (if (f-boundp-global 'cgen-state state)
+;;     (b* ((cgen-state (@ cgen-state))
+;;          ((unless (valid-cgen-state-p cgen-state))
+;;           (er hard? ctx "~|CEgen/Error: (get-s-hist) cgen-state is ill-formed~|"))
+;;          (s-hist (cdr (assoc-eq :s-hist cgen-state))))
+;;       (if (s-hist-p s-hist)
+;;           s-hist
+;;         (er hard? ctx "~|CEgen/Error: hist found in globals is of bad type~|")))
+;;     (er hard? ctx "~|CEgen/Error: cgen-state not found in globals ~|")))
 
 
-(defabbrev put-s-hist-global (s-hist) 
-  (if (f-boundp-global 'cgen-state state)
-      (if (s-hist-p s-hist)
-          (b* ((cgen-state (@ cgen-state))
-               ((unless (valid-cgen-statep cgen-state))
-                (prog2$ 
-                 (er hard? ctx "~|CEgen/Error: (put-s-hist) cgen-state is ill-formed~|")
-                 state))
-               (cgen-state (put-assoc-eq :s-hist s-hist cgen-state))
-               (- (assert$ (valid-cgen-state-p cgen-state) 'put-s-hist-global)))
-          (f-put-global 'cgen-state cgen-state state))
-        (progn$
-         (cw? (debug-flag vl) "~|BAD s-hist : ~x0~|" s-hist)
-         (er hard? ctx "~|CEgen/Error: hist being put in globals is of bad type~|")
-         state))
-    (prog2$ (er hard? ctx "~|CEgen/Error: cgen-state not found in globals ~|")
-            state)))
+;; (defabbrev put-s-hist-global (s-hist) 
+;;   (if (f-boundp-global 'cgen-state state)
+;;       (if (s-hist-p s-hist)
+;;           (b* ((cgen-state (@ cgen-state))
+;;                ((unless (valid-cgen-statep cgen-state))
+;;                 (prog2$ 
+;;                  (er hard? ctx "~|CEgen/Error: (put-s-hist) cgen-state is ill-formed~|")
+;;                  state))
+;;                (cgen-state (put-assoc-eq :s-hist s-hist cgen-state))
+;;                (- (assert$ (valid-cgen-state-p cgen-state) 'put-s-hist-global)))
+;;           (f-put-global 'cgen-state cgen-state state))
+;;         (progn$
+;;          (cw? (debug-flag vl) "~|BAD s-hist : ~x0~|" s-hist)
+;;          (er hard? ctx "~|CEgen/Error: hist being put in globals is of bad type~|")
+;;          state))
+;;     (prog2$ (er hard? ctx "~|CEgen/Error: cgen-state not found in globals ~|")
+;;             state)))
 
 
 (defconst *initial-test-outcomes%* 

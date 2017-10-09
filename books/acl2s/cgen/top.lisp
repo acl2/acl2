@@ -94,7 +94,8 @@
 ;        :sig ((any hints keyword-value-listp state) -> (mv erp any state))
   (b* ((ctx 'test?)
 
-       (cgen::cgen-state (cgen::make-cgen-state-fn form ctx override-defaults (w state)))       
+       (cgen::cgen-state (cgen::make-cgen-state-fn form (cons :USER-DEFINED ctx)
+                                                   override-defaults (w state)))
 ;       (?defaults (cget params))
        ;(testing-enabled (cget testing-enabled))
        (vl              (cgen::cget verbosity-level))
