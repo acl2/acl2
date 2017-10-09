@@ -87,7 +87,7 @@
     (implies (and (not (equal fld :msr))
                   (not (equal fld :seg-hidden)))
              (equal (64-bit-modep (xw fld index value x86))
-                    (64-bit-modep x86))))  
+                    (64-bit-modep x86))))
 
   (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
     (equal (64-bit-modep (!flgi flag val x86))
