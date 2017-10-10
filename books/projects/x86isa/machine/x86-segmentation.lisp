@@ -108,7 +108,15 @@
          (e (data-segment-descriptor-attributes-layout-slice :e attr))
          (lower (if e (1+ limit) 0))
          (upper (if e (if d/b #xffffffff #xffff) limit)))
-      (mv (n32 base) lower upper))))
+      (mv (n32 base) lower upper)))
+  ///
+
+  (defrule x86-segment-base-and-bound-of-xw
+    (implies
+     (and (not (equal fld :msr))
+          (not (equal fld :seg-hidden)))
+     (equal (x86-segment-base-and-bounds seg-reg (xw fld index value x86))
+            (x86-segment-base-and-bounds seg-reg x86)))))
 
 ;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define ea-to-la ((eff-addr i64p)
@@ -201,7 +209,54 @@
               0))
          (lin-addr (n32 (+ base eff-addr))))
       (mv nil lin-addr)))
-  :guard-hints (("Goal" :in-theory (enable x86-segment-base-and-bounds))))
+  :guard-hints (("Goal" :in-theory (enable x86-segment-base-and-bounds)))
+  ///
+
+  (defrule ea-to-la-of-xw
+    (implies
+     (and (not (equal fld :msr))
+          (not (equal fld :seg-hidden)))
+     (equal (ea-to-la eff-addr seg-reg (xw fld index value x86))
+            (ea-to-la eff-addr seg-reg x86))))
+
+  (defrule ea-to-la-when-64-bit-modep-and-not-fs/gs
+    (implies (and (64-bit-modep x86)
+                  (not (equal seg-reg *fs*))
+                  (not (equal seg-reg *gs*)))
+             (and (equal (mv-nth 0 (ea-to-la eff-addr seg-reg x86))
+                         nil)
+                  (equal (mv-nth 1 (ea-to-la eff-addr seg-reg x86))
+                         (i48 eff-addr))))))
+
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+(define eas-to-las ((n natp)
+                    (eff-addr i64p)
+                    (seg-reg (integer-range-p
+                              0 *segment-register-names-len* seg-reg))
+                    x86)
+  :returns (mv flg
+               (lin-addrs "A @('nil')-terminated list of @(tsee i48p)s."))
+  :parents (x86-segmentation)
+  :short "Translate a sequence of contiguous effective addresses
+          to linear addresses."
+  :long
+  "<p>
+   The contiguous effective addresses are
+   @('eff-addr') through @('eff-addr + n - 1').
+   These effective addresses are translated in increasing order.
+   As soon as the translation of an effective address fails,
+   the recursion stops and the error flag is returned.
+   </p>"
+  (if (zp n)
+      (mv nil nil)
+    (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
+         ((when flg) (mv flg nil))
+         (eff-addr+1 (1+ eff-addr))
+         ((unless (i48p eff-addr+1))
+          (mv (list :effective-address-out-of-range eff-addr+1) nil))
+         ((mv flg lin-addrs) (eas-to-las (1- n) eff-addr+1 seg-reg x86))
+         ((when flg) (mv flg nil)))
+      (mv nil (cons lin-addr lin-addrs)))))
 
 ;; ======================================================================
 
