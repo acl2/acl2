@@ -347,6 +347,10 @@
  model-specific field. A more complete model of segment address translation has
  been added.</p>
 
+ <h4>AVR ISA</h4>
+ Julien Schmaltz and Peter Schwabes' AVR ISA model has been contributed in book
+ \"projects/avr-isa\".
+  
  <h4>Miscellaneous Books</h4>
 
  <p>The book \"clause-processors/use-by-hint\" now contains an additional
