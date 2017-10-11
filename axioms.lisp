@@ -13347,6 +13347,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (proofs-co . acl2-output-channel::standard-character-output-0)
     (protect-memoize-statistics . nil)
     (raw-arity-alist . nil)
+    (raw-guard-warningp . nil)
     (raw-include-book-dir!-alist . :ignore)
     (raw-include-book-dir-alist . :ignore)
     (raw-proof-format . nil)
