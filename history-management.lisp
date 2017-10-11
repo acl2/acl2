@@ -3547,6 +3547,7 @@
          (t (f-put-global 'current-package "ACL2" state))))
   #-acl2-loop-only
   (cond ((live-state-p state)
+         (setf (car *fncall-cache*) nil)
          (cond ((and *wormholep*
                      (not (eq wrld (w *the-live-state*))))
                 (push-wormhole-undo-formi 'cloaked-set-w! (w *the-live-state*)

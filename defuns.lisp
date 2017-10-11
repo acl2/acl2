@@ -1825,7 +1825,9 @@
 
 ; Sol Swords sent an example in which a clause-processor failed during a
 ; termination proof.  That problem goes away if we install the world, which we
-; do by making the following binding.
+; do by making the following binding.  This seems particularly important now
+; that raw-ev-fncall calls chk-raw-ev-fncall to ensure that the world is
+; (essentially) installed.
 
                        t ; formerly big-mutrec
                        wrld1))
