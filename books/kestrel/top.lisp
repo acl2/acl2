@@ -36,8 +36,10 @@
    parts of the Kestrel Books may be moved
    to other locations in the
    <see topic='@(url community-books)'>Community Books</see>.
-   For example, <see topic='@(url std)'>STD</see>
-   includes some Kestrel contributions.
+   For example,
+   <see topic='@(url std)'>STD</see> and
+   <see topic='@(url x86isa)'>X86ISA</see>
+   include some Kestrel contributions.
    </p>")
 
 (xdoc::add-resource-directory "kestrel" "images")

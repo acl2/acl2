@@ -406,6 +406,8 @@ an example table:</p>
 images and icons, but this is currently awkward.  In the future, we may add
 other tags that users request.</p>")
 
+(defpointer syntax markup)
+
 
 (defxdoc preprocessor
   :short "In addition to its @(see markup) language, XDOC includes a
@@ -1746,7 +1748,7 @@ terminal with @(':doc') or in the ACL2-Doc Emacs viewer.</p>")
   :long "<p>Examples:</p>
 
 @({
-    (defpointer acl2 acl2-sedan)
+    (defpointer acl2s acl2-sedan)
     (defpointer guard-hints xargs t)
 })
 

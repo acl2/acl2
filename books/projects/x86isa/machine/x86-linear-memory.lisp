@@ -1087,7 +1087,12 @@ memory.</li>
                            (mv-nth 1 (rb n addr r-x x86)))))
       :hints (("Goal"
                :do-not-induct t
-               :in-theory (e/d* (!flgi-undefined) ())))))
+               :in-theory (e/d* (!flgi-undefined) ()))))
+
+    (defrule 64-bit-modep-of-rb
+      (equal (64-bit-modep (mv-nth 2 (rb n addr r-x x86)))
+             (64-bit-modep x86))
+      :enable 64-bit-modep))
 
   ;; Definition of WB and other related events:
 
@@ -1176,7 +1181,12 @@ memory.</li>
       (implies (not (equal fld :mem))
                (equal (write-to-physical-memory p-addrs bytes (xw fld index value x86))
                       (xw fld index value (write-to-physical-memory p-addrs bytes x86))))
-      :hints (("Goal" :in-theory (e/d* (write-to-physical-memory) ())))))
+      :hints (("Goal" :in-theory (e/d* (write-to-physical-memory) ()))))
+
+    (defrule 64-bit-modep-of-write-to-physical-memory
+      (equal (64-bit-modep (write-to-physical-memory p-addrs value x86))
+             (64-bit-modep x86))
+      :enable 64-bit-modep))
 
   (define wb ((n natp "Number of bytes to be written")
               (addr integerp "First linear address")
@@ -1745,8 +1755,8 @@ memory.</li>
              (x86p (mv-nth 2 (rml08 lin-addr r-x x86)))))
 
   (defthm rml08-value-when-error
-    (implies (mv-nth 0 (rml08 addr :x x86))
-             (equal (mv-nth 1 (rml08 addr :x x86)) 0))
+    (implies (mv-nth 0 (rml08 addr r-x x86))
+             (equal (mv-nth 1 (rml08 addr r-x x86)) 0))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
   (defthm rml08-does-not-affect-state-in-programmer-level-mode
@@ -1765,8 +1775,7 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
   (defthm xr-rml08-state-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem)))
+    (implies (programmer-level-mode x86)
              (equal (xr fld index (mv-nth 2 (rml08 addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
@@ -1826,7 +1835,12 @@ memory.</li>
                   (x86p x86)
                   (not (mv-nth 0 (rml08 lin-addr r-x x86))))
              (equal (mv-nth 2 (rml08 lin-addr r-x x86))
-                    x86))))
+                    x86)))
+
+  (defrule 64-bit-modep-of-rml08
+    (equal (64-bit-modep (mv-nth 2 (rml08 li-addr r-x x86)))
+           (64-bit-modep x86))
+    :enable 64-bit-modep))
 
 (define riml08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (r-x    :type (member  :r :x))

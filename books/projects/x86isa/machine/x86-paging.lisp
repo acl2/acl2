@@ -87,7 +87,7 @@
     (implies (and (not (equal fld :msr))
                   (not (equal fld :seg-hidden)))
              (equal (64-bit-modep (xw fld index value x86))
-                    (64-bit-modep x86))))  
+                    (64-bit-modep x86))))
 
   (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
     (equal (64-bit-modep (!flgi flag val x86))
@@ -2556,7 +2556,12 @@ accesses.</p>
                          (value (logior (ash (loghead 2 value) 12)
                                         (logand 4294955007 (xr :rflags 0 x86))))))
              :in-theory (e/d* (!flgi-open-to-xw-rflags)
-                              (ia32e-la-to-pa-xw-rflags-state-not-ac))))))
+                              (ia32e-la-to-pa-xw-rflags-state-not-ac)))))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+           (64-bit-modep x86))
+    :enable 64-bit-modep))
 
 ;; ======================================================================
 
