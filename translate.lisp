@@ -271,14 +271,6 @@
                (t latches)))
         (t (latch-stobjs1 stobjs-out vals latches))))
 
-#-acl2-loop-only
-; We deliberately do not assign a value for the following.  It is let-bound in
-; ev and friends and assigned during the evaluation of *1* functions.  If we
-; call *1* functions directly in raw Lisp, we will presumably get an
-; unbound-variable error, but at least that will call our attention to the fact
-; that it should be bound before calling *1* functions.
-(defvar *raw-guard-warningp*)
-
 (defun actual-stobjs-out1 (stobjs-in args user-stobj-alist)
   (cond ((endp stobjs-in)
          (assert$ (null args) nil))
@@ -1068,35 +1060,6 @@
                  (untrans-table ,wrld)
                  (untranslate-preprocess-fn ,wrld)
                  ,wrld))
-
-#-acl2-loop-only
-(defmacro raw-guard-warningp-binding ()
-
-; We bind *raw-guard-warningp* in calls of ev-fncall, ev, ev-lst, ev-w,
-; ev-w-lst, and ev-fncall-w.  The initial binding is t if guard-checking is on,
-; else nil.  When a *1* function is poised to call warn-for-guard-body to print
-; a warning related to guard violations, it first checks that
-; *raw-guard-warningp*.  Hence, we do not want to re-assign this variable once
-; it is bound to nil by warn-for-guard-body, because we only want to see the
-; corresponding guard warning once per top-level evaluation.  We do however
-; want to re-assign this variable from t to nil once the warning has been
-; printed and also if guard-checking has been turned off, in particular for the
-; situation involving the prover that is described in the next paragraph.  (But
-; if guard-checking were, surprisingly, to transition instead from nil to t,
-; and we failed to re-assign this variable from nil to t, we could live with
-; that.)
-
-; Note that *raw-guard-warningp* will be bound to t just under the trans-eval
-; at the top level.  If we then enter the prover we will bind guard-checking-on
-; to nil, and we then want to re-bind *raw-guard-warningp* to nil if we enter
-; ev-fncall during the proof, so that the proof output will not contain guard
-; warning messages.  (This was handled incorrectly in Version_2.9.1.)
-
-  '(if (and (boundp '*raw-guard-warningp*)
-            (null *raw-guard-warningp*))
-       nil
-     (eq (f-get-global 'guard-checking-on *the-live-state*)
-         t)))
 
 (defun save-ev-fncall-guard-er (fn guard stobjs-in args)
   (wormhole-eval 'ev-fncall-guard-er-wormhole
@@ -2460,9 +2423,6 @@
 
 (defun ev-fncall-rec (fn args w user-stobj-alist big-n safe-mode gc-off latches
                          hard-error-returns-nilp aok)
-
-; WARNING: This function should only be called with *raw-guard-warningp* bound.
-
   (declare (xargs :guard (plist-worldp w)))
   #-acl2-loop-only
   (cond (*ev-shortcut-okp*
@@ -2605,8 +2565,6 @@
 
 (defun ev-rec (form alist w user-stobj-alist big-n safe-mode gc-off latches
                     hard-error-returns-nilp aok)
-
-; WARNING: This function should only be called with *raw-guard-warningp* bound.
 
 ; See also ev-respecting-ens.
 
@@ -2791,9 +2749,6 @@
 
 (defun ev-rec-lst (lst alist w user-stobj-alist big-n safe-mode gc-off latches
                        hard-error-returns-nilp aok)
-
-; WARNING: This function should only be called with *raw-guard-warningp* bound.
-
   (declare (xargs :guard (and (plist-worldp w)
                               (term-listp lst w)
                               (symbol-alistp alist))))
@@ -2825,8 +2780,6 @@
 (defun ev-rec-acl2-unwind-protect (form alist w user-stobj-alist big-n
                                         safe-mode gc-off latches
                                         hard-error-returns-nilp aok)
-
-; WARNING: This function should only be called with *raw-guard-warningp* bound.
 
 ; Sketch: We know that form is a termp wrt w and that it is recognized by
 ; translated-acl2-unwind-protectp.  We therefore unpack it into its body and
@@ -3064,8 +3017,7 @@
 ; Keep the two ev-fncall-rec calls below in sync.
 
   #-acl2-loop-only
-  (let ((*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let ((*ev-shortcut-okp* t))
     (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
@@ -3128,8 +3080,7 @@
 ; See the comment in ev for why we don't check the time limit here.
 
   #-acl2-loop-only
-  (let ((*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let ((*ev-shortcut-okp* t))
     (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
@@ -3648,8 +3599,7 @@
 
 (defun ev-fncall (fn args state latches hard-error-returns-nilp aok)
   (declare (xargs :guard (state-p state)))
-  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
-                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state)))
        #+acl2-loop-only ()
 
 ; See the comment in ev for why we don't check the time limit here.
@@ -3669,8 +3619,7 @@
   (declare (xargs :guard (and (state-p state)
                               (termp form (w state))
                               (symbol-alistp alist))))
-  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
-                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state)))
        #+acl2-loop-only ()
 
 ; At one time we called time-limit5-reached-p here so that we can quit if we
@@ -3703,8 +3652,7 @@
   (declare (xargs :guard (and (state-p state)
                               (term-listp lst (w state))
                               (symbol-alistp alist))))
-  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
-                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state)))
        #+acl2-loop-only ()
 
 ; See the comment in ev for why we don't check the time limit here.
@@ -3801,8 +3749,7 @@
 ; See the comment in ev for why we don't check the time limit here.
 
   #-acl2-loop-only
-  (let ((*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let ((*ev-shortcut-okp* t))
     (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
