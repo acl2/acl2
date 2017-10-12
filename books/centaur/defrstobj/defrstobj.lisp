@@ -104,7 +104,7 @@ recognizer function for a typed record; see @(see def-typed-record).</li>
       :inline t)
 })
 
-<p>See also @('centaur/rstobj/defrstobj-tests.lisp') for several more examples,
+<p>See also @('centaur/defrstobj/basic-tests.lisp') for several more examples,
 including examples of how to use @('def-typed-record').</p>
 
 
