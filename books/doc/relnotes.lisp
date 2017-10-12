@@ -348,9 +348,9 @@
  been added.</p>
 
  <h4>AVR ISA</h4>
- Julien Schmaltz and Peter Schwabes' AVR ISA model has been contributed in book
- \"projects/avr-isa\".
-  
+ <p>Julien Schmaltz and Peter Schwabes' AVR ISA model has been contributed in book
+ \"projects/avr-isa\".</p>
+
  <h4>Miscellaneous Books</h4>
 
  <p>The book \"clause-processors/use-by-hint\" now contains an additional
