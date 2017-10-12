@@ -35,7 +35,7 @@ fi
 
 if [ "${LISP:0:4}" == "sbcl" ]; then
   # horrible hack to set sbcl-home for leeroy.defthm.com
-  SBCL_HOME=/usr/local/lib/sbcl;
+  export SBCL_HOME=/usr/local/lib/sbcl;
 fi
 
 LISP=`which $LISP`
