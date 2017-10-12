@@ -13214,7 +13214,7 @@
 
   (declare (ignorable chk-boot-strap-fns-flg)) ; suppress irrelevance warning
   (er-let*@par
-   ((runic-value (eval-theory-expr expr ctx wrld state)))
+   ((runic-value (eval-theory-expr@par expr ctx wrld state)))
    (let* ((warning-disabled-p (warning-disabled-p "Theory"))
           (ens (ens state)))
      (prog2$
