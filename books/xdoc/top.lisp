@@ -470,20 +470,30 @@
       (concatenate-symbol-names (list ,@args))
       mksym-package-symbol)))
 
-; Moved from acl2-doc.lisp to make it more widely available
 (defmacro defpointer (from to &optional keyword-p)
-  `(defxdoc ,from
-     :parents (pointers)
-     :short ,(concatenate 'string
-                          "See @(see "
-                          (acl2::string-downcase (symbol-name to))
-                          ")"
-                          (if keyword-p
-                              (concatenate 'string
-                                           " for keyword @(':"
-                                           (acl2::string-downcase (symbol-name from))
-                                           "').")
-                            "."))))
+  (declare (xargs :guard (and (symbolp from) (symbolp to))))
+  (let ((from-pkg  (acl2::string-downcase (symbol-package-name from)))
+        (from-name (acl2::string-downcase (symbol-name         from)))
+        (to-pkg    (acl2::string-downcase (symbol-package-name to)))
+        (to-name   (acl2::string-downcase (symbol-name         to))))
+    `(defxdoc ,from
+       :parents (pointers)
+       :short ,(concatenate
+                'string
+                "See <see topic='@(url "
+                to-pkg "::" to-name
+                ")'>"
+                (if (equal to-pkg from-pkg)
+                    to-name
+                  (concatenate 'string to-pkg "::" to-name))
+                "</see>"
+                (if keyword-p
+                    (concatenate
+                     'string
+                     " for information about the keyword @(':"
+                     from-name
+                     "').")
+                  ".")))))
 
 
 (defun add-resource-directory-fn (dirname fullpath world)
