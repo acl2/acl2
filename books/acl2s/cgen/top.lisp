@@ -240,6 +240,9 @@ package.</p>
 "
  )
 
+#!ACL2
+(defpointer counter-example-generation cgen)
+
 (defxdoc cgen::flush
   :parents (acl2::cgen)
   :short "Flush/Reset the Cgen state globals to sane values."

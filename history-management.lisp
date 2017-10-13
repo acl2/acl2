@@ -3547,6 +3547,7 @@
          (t (f-put-global 'current-package "ACL2" state))))
   #-acl2-loop-only
   (cond ((live-state-p state)
+         (setf (car *fncall-cache*) nil)
          (cond ((and *wormholep*
                      (not (eq wrld (w *the-live-state*))))
                 (push-wormhole-undo-formi 'cloaked-set-w! (w *the-live-state*)
@@ -13213,7 +13214,7 @@
 
   (declare (ignorable chk-boot-strap-fns-flg)) ; suppress irrelevance warning
   (er-let*@par
-   ((runic-value (eval-theory-expr expr ctx wrld state)))
+   ((runic-value (eval-theory-expr@par expr ctx wrld state)))
    (let* ((warning-disabled-p (warning-disabled-p "Theory"))
           (ens (ens state)))
      (prog2$

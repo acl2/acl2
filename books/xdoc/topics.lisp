@@ -1761,7 +1761,15 @@ terminal with @(':doc') or in the ACL2-Doc Emacs viewer.</p>")
 <p>This is a simple macro that expands to a @(see defxdoc) form.  It introduces
 a new @(see xdoc) topic, @('new-topic'), that merely links to
 @('target-topic').  The new topic will only be listed under @(see
-pointers).</p>")
+pointers).</p>
+
+<p>A common practice when documenting keyword symbols is to create a
+doc topic in in the \"ACL2\" package or some other relevant package,
+rather than the \"KEYWORD\" package to which the keyword symbol
+rightfully belongs.  In keeping with this practice, the @('keywordp')
+argument to @('defpointer'), if non-nil, adds a clarification that the
+doc topic is really about the keyword symbol with the same name as
+@('new-topic'), rather than @('new-topic') itself.</p>")
 
 
 (defxdoc add-resource-directory

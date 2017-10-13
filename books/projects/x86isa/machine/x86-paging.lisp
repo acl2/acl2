@@ -258,7 +258,11 @@
   (defthm page-fault-exception-xw-state
     (implies (not (equal fld :fault))
              (equal (mv-nth 2 (page-fault-exception addr err-no (xw fld index value x86)))
-                    (xw fld index value (mv-nth 2 (page-fault-exception addr err-no x86)))))))
+                    (xw fld index value (mv-nth 2 (page-fault-exception addr err-no x86))))))
+
+  (defrule 64-bit-modep-of-page-fault-exception
+    (equal (64-bit-modep (mv-nth 2 (page-fault-exception addr err-no x86)))
+           (64-bit-modep x86))))
 
 (define page-present
   ((entry :type (unsigned-byte 64)))
@@ -1193,8 +1197,14 @@ accesses.</p>
     :hints (("Goal" :in-theory (e/d* ()
                                      (commutativity-of-+
                                       not
-                                      bitops::logand-with-negated-bitmask))))))
+                                      bitops::logand-with-negated-bitmask)))))
 
+  (defrule 64-bit-modep-of-paging-entry-no-page-fault-p
+    (equal (64-bit-modep (mv-nth 2 (paging-entry-no-page-fault-p
+                                    structure-type lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))))
 
 ;; ======================================================================
 
@@ -1451,7 +1461,14 @@ accesses.</p>
                       lin-addr
                       base-addr u/s-acc r/w-acc x/d-acc
                       wp smep smap ac nxe r-w-x cpl x86))
-                    x86))))
+                    x86)))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-page-table
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-table
+                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))
+    :enable (wm-low-32 wm-low-64)))
 
 ;; ----------------------------------------------------------------------
 
@@ -1765,7 +1782,14 @@ accesses.</p>
                       lin-addr
                       base-addr u/s-acc r/w-acc x/d-acc
                       wp smep smap ac nxe r-w-x cpl x86))
-                    x86))))
+                    x86)))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-page-directory
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-directory
+                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))
+    :enable (wm-low-32 wm-low-64)))
 
 ;; ----------------------------------------------------------------------
 
@@ -2081,7 +2105,14 @@ accesses.</p>
                       lin-addr
                       base-addr u/s-acc r/w-acc x/d-acc
                       wp smep smap ac nxe r-w-x cpl x86))
-                    x86))))
+                    x86)))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-page-dir-ptr-table
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))
+    :enable (wm-low-32 wm-low-64)))
 
 ;; ----------------------------------------------------------------------
 
@@ -2320,7 +2351,14 @@ accesses.</p>
                      (ia32e-la-to-pa-pml4-table
                       lin-addr base-addr
                       wp smep smap ac nxe r-w-x cpl x86))
-                    x86))))
+                    x86)))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-pml4-table
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                                    lin-addr base-addr
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))
+    :enable (wm-low-32 wm-low-64)))
 
 ;; ----------------------------------------------------------------------
 
