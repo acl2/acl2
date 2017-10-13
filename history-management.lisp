@@ -3548,6 +3548,7 @@
   #-acl2-loop-only
   (cond ((live-state-p state)
          (setf (car *fncall-cache*) nil)
+         (ev-fncall-w-guard1-cache-clear)
          (cond ((and *wormholep*
                      (not (eq wrld (w *the-live-state*))))
                 (push-wormhole-undo-formi 'cloaked-set-w! (w *the-live-state*)

@@ -64,7 +64,7 @@ NOTES/ISSUES
     (fms fmt-str (zip-fms *fms-chars* lst) chan state nil)))
 
 (defmacro detail (&rest r)
-  `(let ((state (detail-fn ,(first r) 
+  `(let ((state (detail-fn ,(first r)
                            ,(cons 'list (rest (butlast r 1)))
                            (detail-channel ic$) state)))
      ,(car (last r))))
@@ -101,7 +101,7 @@ NOTES/ISSUES
 (defabbrev bnth (i x) (logbitp i x))
 
 (defun blist-length (x)
-  (cond ((atom x) 
+  (cond ((atom x)
          (er hard 'blist-length "ill-formed"))
         ((eq (first x) 'bnil) 0)
         ((eq (first x) 'bcons)
@@ -117,7 +117,7 @@ NOTES/ISSUES
             (if b (the (unsigned-byte ,size) (1+ x)) x)))))
 
 (local ; ACL2 primitive
- (defmacro 1+f (x) 
+ (defmacro 1+f (x)
    `(the-fixnum (1+ (the-fixnum ,x)))))
 
 (local ; ACL2 primitive
@@ -204,7 +204,7 @@ NOTES/ISSUES
 
 ;; we initialize the inv-checker stobj ic$ for the book-keeping we need.
 (defun initialize-ic$ (jump-bound
-                       check-bound 
+                       check-bound
                        refine-bound
                        inputs-bound
                        fast-search
@@ -212,7 +212,7 @@ NOTES/ISSUES
                        always-check
                        disable-exec
                        reduce-contexts
-                       ic$ 
+                       ic$
                        state)
   (declare (xargs :stobjs (ic$ state)))
   (seq
@@ -250,7 +250,7 @@ NOTES/ISSUES
     (and (not (eq op-a 'lambda))
          (eq op-a op-b))))
 
-(defabbrev hidep (x) 
+(defabbrev hidep (x)
   (and (consp x) (eq (first x) 'hide)))
 
 (defun equiv-terms1 (x y is-lst)
@@ -277,7 +277,7 @@ NOTES/ISSUES
   (bind-args* vars args ()))
 
 (defun subst-term* (trm alst is-lst in-synp ctx)
-  (cond 
+  (cond
    ((and is-lst (endp trm)) ())
    (is-lst (cons (subst-term* (first trm) alst nil in-synp ctx)
                  (subst-term* (rest trm) alst t in-synp ctx)))
@@ -288,7 +288,7 @@ NOTES/ISSUES
         (list 'quote (if (and (not mtch) (eq trm 'ctx)) ctx val)))))
    (t
     (let ((op (first trm)))
-      (cond 
+      (cond
        ((eq op 'quote) trm)
        ((eq op 'synp) (subst-term* (second (fourth trm)) alst nil t ctx))
        (t (cons (if (atom op) (list op) op)
@@ -409,7 +409,7 @@ NOTES/ISSUES
 
 (mutual-recursion
 (defun unify-1way1 (pat term alist)
-  (cond 
+  (cond
    ((variablep pat)
     (let ((pair (assoc-eq pat alist)))
       (cond (pair (cond ((equiv-terms (cdr pair) term)
@@ -422,18 +422,18 @@ NOTES/ISSUES
    ((variablep term) (mv nil alist))
    ((fquotep term)
     (let ((func-symb (func-symb pat)))
-      (cond 
+      (cond
        ((acl2-numberp (cadr term))
         (case func-symb
           (binary-+
-           (cond 
+           (cond
             ((quotep (fargn pat 1))
              (unify-1way1 (fargn pat 2) (kwote (- (cadr term) (fix (cadr (fargn pat 1))))) alist))
             ((quotep (fargn pat 2))
              (unify-1way1 (fargn pat 1) (kwote (- (cadr term) (fix (cadr (fargn pat 2))))) alist))
             (t (mv nil alist))))
           (binary-*
-           (cond 
+           (cond
             ((and (quotep (fargn pat 1))
                   (integerp (cadr (fargn pat 1)))
                   (> (abs (cadr (fargn pat 1))) 1))
@@ -443,13 +443,13 @@ NOTES/ISSUES
                   (> (abs (cadr (fargn pat 2))) 1))
              (unify-1way1 (fargn pat 1) (kwote (/ (cadr term) (cadr (fargn pat 2)))) alist))
             (t (mv nil alist))))
-          (unary-- 
-           (cond 
-            ((>= (+ (realpart (cadr term)) (imagpart (cadr term))) 0) 
+          (unary--
+           (cond
+            ((>= (+ (realpart (cadr term)) (imagpart (cadr term))) 0)
              (mv nil alist))
             (t (unify-1way1 (fargn pat 1) (kwote (- (cadr term))) alist))))
-          (unary-/ 
-           (cond 
+          (unary-/
+           (cond
             ((or (>= (* (cadr term) (conjugate (cadr term))) 1) (eql 0 (cadr term)))
              (mv nil alist))
             (t (unify-1way1 (fargn pat 1) (kwote (/ (cadr term))) alist))))
@@ -475,12 +475,12 @@ NOTES/ISSUES
                (mv nil alist)))))
          (t (mv nil alist))))
       ((stringp (cadr term))
-       (cond 
+       (cond
         ((and (eq func-symb 'coerce) (equal (fargn pat 2) ''string))
          (unify-1way1 (fargn pat 1) (kwote (coerce (cadr term) 'list)) alist))
         (t (mv nil alist))))
       ((consp (cadr term))
-       (cond 
+       (cond
         ((eq func-symb 'cons)
          (mv-let (ans alist1)
              (unify-1way1 (fargn pat 1) (kwote (car (cadr term))) alist)
@@ -533,8 +533,8 @@ NOTES/ISSUES
   (if (and (consp trm) (member-eq (first trm) '(equal iff))) (second trm) trm))
 
 (defabbrev already-reduced (op op! go)
-  (or (eq op! 'quote) 
-      (eq op! 'hide) 
+  (or (eq op! 'quote)
+      (eq op! 'hide)
       (and (eq op op!) (not go))))
 
 (mutual-recursion
@@ -563,7 +563,7 @@ NOTES/ISSUES
     (let ((rew (rewrt-trm (subst-term-ctx hyp alst ctx)
                           nil (1- dp) ctx t (in-hyps st))))
       (if (and (consp hyp) (eq (first hyp) 'synp))
-          (cond 
+          (cond
            ((not (quotep rew))
             (er hard 'rewrt-hyp "illegal synp rewrite"))
            ((eq (second rew) t) alst)
@@ -623,7 +623,9 @@ NOTES/ISSUES
                                         (list :executable-counterpart op))))
                    (and nume (enabled-numep nume ens))))
              (mv-let (erp val)
-                 (ev-fncall-w op (fncall-args args) wrld nil nil t nil nil)
+; Matt K. mod, 10/2017: Replaced call of ev-fncall-w, now untouchable, by call
+; of ev-fncall-w!.
+                 (ev-fncall-w! op (fncall-args args) wrld nil nil t nil nil)
                (and (not erp) (list 'quote val))))
         trm)))
 
@@ -636,7 +638,7 @@ NOTES/ISSUES
     (let* ((trm (rewrt-trm (first lst) go dp ctx t st))
            (ctx+ (if (quotep trm) (if (second trm) ctx :fail) (cons trm ctx))))
       (redux-ctx (rest lst) ctx+ go dp st)))))
-  
+
 (defun rewrt-ctx (ctx go dp st)
   (let ((ctx+ (redux-ctx (redux-ctx ctx () go dp st) () go dp st)))
     (if (or (eq ctx+ :fail) (equal ctx ctx+)) ctx (rewrt-ctx ctx+ go (1- dp) st))))
@@ -663,7 +665,7 @@ NOTES/ISSUES
       (list ''t (rewrt-trm tbr go dp ctx iff st) fbr))
      (t
       (let ((f-ctx (extend-ctx (list 'equal tst ''nil) ctx go dp st)))
-        (cond 
+        (cond
          ((eq f-ctx :fail)
           (list ''t (rewrt-trm tbr go dp ctx iff st) fbr))
          ((endp f-ctx)
@@ -686,9 +688,9 @@ NOTES/ISSUES
 (defun rewrt-trm (trm go dp ctx iff st)
   (if (zp dp) (list 'hide trm)
     (let ((mtch (match-in-ctx trm ctx iff)))
-      (cond 
+      (cond
        (mtch (rewrt-trm mtch go (1- dp) ctx iff st))
-       ((atom trm) trm) 
+       ((atom trm) trm)
        (t
         (let* ((op (first trm))
                (op! (if (atom op) op (car op))))
@@ -710,7 +712,7 @@ NOTES/ISSUES
 
 (defabbrev rewrt-pure   (trm)         (rewrt-term trm ()  nil t       state))
 (defabbrev rewrt-rep    (trm rew-ctx) (rewrt-term trm ()  t   rew-ctx state))
-(defabbrev rewrt-in-ctx (trm ctx)     (rewrt-term trm ctx t   nil     state)) 
+(defabbrev rewrt-in-ctx (trm ctx)     (rewrt-term trm ctx t   nil     state))
 
 (mutual-recursion
 (defun term-contains-force (trm)
@@ -804,7 +806,7 @@ NOTES/ISSUES
   (declare (xargs :stobjs (ic$ state)))
   (if (endp reps)
       (mv nil nil step-alist nil ic$ state)
-    (seq 
+    (seq
       (current-rep (first reps))
       ((term fst-hyps ic$ state)
        (rewrite-rep-step current-rep ic$ state))
@@ -892,7 +894,7 @@ NOTES/ISSUES
 
 (defun check-and-add-seen-state (st ic$)
   (declare (xargs :stobjs ic$))
-  (with-st-hash 
+  (with-st-hash
    st
    (let* ((entry (st-hashtbli hash ic$))
           (seen (cond ((eq entry nil) nil)
@@ -903,7 +905,7 @@ NOTES/ISSUES
          (mv t ic$)
        (let ((num-states (num-states ic$)))
          (declare (type (signed-byte 29) num-states))
-         (prog2$ 
+         (prog2$
           (and (eql (modf num-states (state-report-interval)) 0)
                (> num-states 0)
                (cw "num. abstract states visited: ~x0 ~%" num-states))
@@ -941,7 +943,7 @@ NOTES/ISSUES
           (map-counter-example reps inputs (rest path) (rest mask)))))
 
 (defun get-mask-terms (step tgt n)
-  (if (atom step) 
+  (if (atom step)
       (er hard 'get-mask-terms "illegal step")
     (case (first step)
           (bnil ())
@@ -965,7 +967,7 @@ NOTES/ISSUES
           (t (er hard 'compute-ev "illegal trm")))))
 
 (defun compute-mask (term st in)
-  (if (atom term) 
+  (if (atom term)
       (er hard 'compute-mask "illegal term")
     (case (first term)
           (quote ())
@@ -999,7 +1001,7 @@ NOTES/ISSUES
 
 (defun compute-step-masks (step tgt st in)
   (compute-masks (get-mask-terms step tgt 0) st in () ()))
-                              
+
 (defun compute-example-mask (path step tgt)
   (if (endp path) ()
     (seq
@@ -1127,7 +1129,7 @@ NOTES/ISSUES
 
 (defun format-counter-example1 (path n)
   (if (endp path) ()
-    (cons (list :step n 
+    (cons (list :step n
                 :state (first (first path))
                 :input (second (first path)))
           (format-counter-example1 (rest path) (1+ n)))))
@@ -1154,9 +1156,9 @@ NOTES/ISSUES
 (defun bfs (visiting alst next-wave path ic$)
   (declare (xargs :stobjs ic$
                   :mode :program))
-  (cond 
+  (cond
    ((endp visiting)
-    (cond 
+    (cond
      ((not (endp alst))
       (bfs (cdar alst) (cdr alst) next-wave (caar alst) ic$))
      ((endp next-wave)
@@ -1166,7 +1168,7 @@ NOTES/ISSUES
    ((fzp (search-bound ic$))
     (mv :bound-fail ic$))
    (t
-    (seq 
+    (seq
       (pair (car visiting))
       (st (cdr pair))
       (path+ (cons pair path))
@@ -1219,7 +1221,7 @@ NOTES/ISSUES
 
 (comp (quote (step-prime visit-next-states bfs invariant-checker)))
 )))
-          
+
 (defun bogus-function-denoting-invariant-checker-side-effect (ic$)
   (declare (xargs :stobjs ic$))
   ic$)
@@ -1237,8 +1239,8 @@ NOTES/ISSUES
                            (list (list 'in-theory (list 'disable (list 'rep-prime)))))
                       *invariant-checker-functions-and-compile*
                       (list (list 'invariant-checker
-                                  (list 'quote reps) 
-                                  (list 'quote inputs) 
+                                  (list 'quote reps)
+                                  (list 'quote inputs)
                                   (list 'quote inv)
                                   (list 'quote step-body)
                                   'ic$ 'state)
@@ -1265,9 +1267,9 @@ NOTES/ISSUES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun build-rep-body (reps)
-  (if (endp reps) 
+  (if (endp reps)
       (list 'bnil)
-    (list 'bcons (first reps) 
+    (list 'bcons (first reps)
           (build-rep-body (rest reps)))))
 
 (defun snoc (e x)
@@ -1285,8 +1287,8 @@ NOTES/ISSUES
               (snoc term inputs)))))))
 
 (defun final-step-redux (term)
-  (cond ((or (atom term) 
-             (not (eq (car term) 'if))) 
+  (cond ((or (atom term)
+             (not (eq (car term) 'if)))
          term)
         ((quotep (second term))
          (if (second (second term))
@@ -1335,7 +1337,7 @@ NOTES/ISSUES
 
 (defun compute-reps (bound new reps hyps step-alist ic$ state)
   (declare (xargs :stobjs (ic$ state)))
-  (cond 
+  (cond
    ((endp new)
     (report "converged on reps! ~%"
       (mv t reps hyps step-alist ic$ state)))
@@ -1383,10 +1385,10 @@ NOTES/ISSUES
 (defun check-abstraction (reps step-alist inv ic$ state)
   (declare (xargs :stobjs (ic$ state)))
   (detail "check-reps: ~p0 ~%" reps
-    (seq 
+    (seq
       ((step-term ic$ state)
        (compute-step-prime reps step-alist ic$ state))
-      ((step-body inputs) 
+      ((step-body inputs)
        (build-step-body step-term reps () ic$))
       (rep-body (build-rep-body reps))
       (ic$ (clear-ic$-for-inv-check ic$))
@@ -1394,7 +1396,7 @@ NOTES/ISSUES
        (detail "step-term: ~p0 ~%" step-term
         (check-invariant step-body rep-body reps inputs inv ic$ state)))
       (detail "number of abstract states visited: ~p0~%" (num-states ic$)
-        (cond 
+        (cond
          ((eq result :passed)
           (mv t () ic$ state))
          ((eq result :bound-fail)
@@ -1427,7 +1429,7 @@ NOTES/ISSUES
 
 (defun prove-inv-loop (to-prove proven proofs-bound ic$ state)
   (declare (xargs :stobjs (ic$ state)))
-  (cond 
+  (cond
    ((endp to-prove)
     (mv t ic$ state))
    ((member-equal (first to-prove) proven)
@@ -1446,10 +1448,10 @@ NOTES/ISSUES
                         (cons (first to-prove) proven)
                         (1- proofs-bound) ic$ state))))))
 
-(defun definv-fn (inv-name 
+(defun definv-fn (inv-name
                   inv-form
                   jump-bound
-                  check-bound 
+                  check-bound
                   refine-bound
                   proofs-bound
                   inputs-bound
@@ -1462,7 +1464,7 @@ NOTES/ISSUES
                   ic$
                   state)
   (declare (xargs :stobjs (ic$ state)))
-  (seq 
+  (seq
     ((erp inv-term bindings state)
      (translate1 inv-form :stobjs-out '((:stobjs-out . :stobjs-out))
                  t 'top-level (w state) state))
@@ -1503,7 +1505,7 @@ NOTES/ISSUES
     ((ok ic$ state)
      (prove-inv-loop (list inv-term) () proofs-bound ic$ state))
     (result (if ok :qed :failed))
-    (state 
+    (state
      (report "~x0~%" (list result inv-name result)
        (detail "**************** end ~s0 **************** ~%~%" detail-file
          state)))
@@ -1517,8 +1519,8 @@ NOTES/ISSUES
             state)))
     (mv state ic$)))
 
-(defmacro definv (inv-name 
-                  inv-term 
+(defmacro definv (inv-name
+                  inv-term
                   &key
                   (file '"invp.rpt")
                   (jump-bound '1)
@@ -1546,7 +1548,7 @@ NOTES/ISSUES
                               (booleanp disable-exec)
                               (booleanp reduce-contexts)
                               (member-eq expected-result '(:qed :failed nil)))))
-  `(definv-fn 
+  `(definv-fn
      (quote ,inv-name)
      (quote ,inv-term)
      (quote ,jump-bound)

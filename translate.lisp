@@ -179,15 +179,17 @@
 (defun program-only-er-msg (fn args safe-mode)
   (msg
    "The call ~x0 is an illegal call of a function that has been marked as ~
-    ``program-only,'' presumably because it has special raw Lisp code.  This ~
-    call is illegal because program-only functions must invoke their raw Lisp ~
-    code, but ~#1~[the guard is always checked for such a function and fails ~
-    in this case~/this call is under a ``safe mode'' that is used, for ~
-    example, during macroexpansion, and prohibits the use of raw Lisp code~]."
+    ``program-only,'' presumably because it has special raw Lisp code.  See ~
+    :DOC program-only."
    (cons fn args)
    (if safe-mode 1 0)))
 
 (defconst *safe-mode-guard-er-addendum*
+
+; We could add, as a reason for using safe-mode, the application of
+; magic-ev-fncall to :program-mode functions.  But that might scare off
+; beginners, and is sufficiently covered by "another operation">
+
   "  The guard is being checked because this function is a primitive and a ~
    \"safe\" mode is being used for defconst, defpkg, macroexpansion, or ~
    another operation where safe mode is required.")
@@ -1997,7 +1999,9 @@
 (defun raw-ev-fncall (fn args latches w user-stobj-alist
                          hard-error-returns-nilp aok)
 
-; Here we assume that w is "close to" (w state), as implemented by
+; Warning: Keep this in sync with raw-ev-fncall-simple.
+
+; Here we assume that w is "close to" (w *the-live-state*), as implemented by
 ; chk-raw-ev-fncall.
 
   (the #+acl2-mv-as-values (values t t t)
@@ -3084,9 +3088,10 @@
                      (cdr (assoc-eq 'state clean-latches)))
                clean-latches))))))))))
 
-(defun ev-fncall-w (fn args w user-stobj-alist safe-mode gc-off
-                       hard-error-returns-nilp aok)
-  (declare (xargs :guard (ev-fncall-w-guard fn args w nil)))
+(defun ev-fncall-w-body (fn args w user-stobj-alist safe-mode gc-off
+                            hard-error-returns-nilp aok)
+
+; There is no guard specified for this :program mode function.
 
 ; WARNING: Do not call this function if args contains the live state
 ; or any other live stobjs and evaluation of form could modify any of
@@ -3142,6 +3147,34 @@
    (declare (ignore latches))
    (mv erp val)))
 
+(defun ev-fncall-w (fn args w user-stobj-alist safe-mode gc-off
+                       hard-error-returns-nilp aok)
+
+; See the warning in ev-fncall-w-body.
+
+  (declare (xargs :guard (ev-fncall-w-guard fn args w nil)))
+  (ev-fncall-w-body fn args w user-stobj-alist safe-mode gc-off
+                    hard-error-returns-nilp aok))
+
+(defun ev-fncall-w! (fn args w user-stobj-alist safe-mode gc-off
+                        hard-error-returns-nilp aok)
+
+; See the warning in ev-fncall-w-body.
+
+  (declare (xargs :guard t))
+  (if (ev-fncall-w-guard fn args w nil)
+      (ev-fncall-w-body fn args w user-stobj-alist safe-mode gc-off
+                        hard-error-returns-nilp aok)
+    (mv t (msg "Guard failure for ~x0 in a call of ~x1: fn = ~x2, args = ~X34"
+               'ev-fncall-w-guard
+               'ev-fncall-w!
+               fn args
+               (evisc-tuple 5 ; print-level
+                            7 ; print-length
+                            (list (cons w *evisceration-world-mark*)) ; alist
+                            nil ; hiding-cars
+                            )))))
+
 (defun ev-w (form alist w user-stobj-alist safe-mode gc-off
                   hard-error-returns-nilp aok)
 
@@ -3152,10 +3185,10 @@
 ; ev-rec as well.  Note that users cannot make such a call because they cannot
 ; put live stobjs into alist.
 
-; Also see related functions ev-fncall-w and oracle-apply (and macro
-; oracle-funcall).  Their guards pay attention to avoiding calls of untouchable
-; functions, and hence are not themselves untouchable.  But ev-w is untouchable
-; because we don't make any such check, even in the guard.
+; Also see related functions ev-fncall-w and magic-ev-fncall, which pay
+; attention to avoiding calls of untouchable functions, and hence are not
+; themselves untouchable.  But ev-w is untouchable because we don't make any
+; such check, even in the guard.
 
 ; Note that user-stobj-alist is only used for error messages, so this function
 ; may be called in the presence of local stobjs.  Probably user-stobj-alist

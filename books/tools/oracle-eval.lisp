@@ -57,7 +57,7 @@
 the state's oracle."
 
   :long "<p>Note: for many purposes you may be able to use @(see
-oracle-funcall) or @(see oracle-apply) instead of @('oracle-eval').  Although
+magic-ev-funcall) @('ev-fncall-w!') instead of @('oracle-eval').  Although
 these alternatives are less flexible, they do not require trust tags.</p>
 
 <p>General form:</p>

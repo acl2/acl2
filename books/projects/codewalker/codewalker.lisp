@@ -4677,8 +4677,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
   (mv-let (erp val)
           (cond
            ((symbolp pred)
-            (ev-fncall-w pred (list pc)
-                         (w state) nil nil nil nil nil))
+; Matt K. mod, 10/2017: Replaced call of ev-fncall-w, now untouchable, by call
+; of magic-ev-fncall.
+            (magic-ev-fncall pred (list pc) state nil nil))
            (t
 ; If we were allowed to call ev-w we would use:
 ;             (ev-w (list pred (kwote pc))

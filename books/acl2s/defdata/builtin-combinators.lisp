@@ -15,7 +15,7 @@ data last modified: [2017-06-22 Thu]
 
 (include-book "std/util/bstar" :dir :system)
 
-(table defdata-defaults-table nil 
+(table defdata-defaults-table nil
        '((:debug       .  nil)
          (:print-commentary . t)
          (:print-summary  . nil)
@@ -33,14 +33,14 @@ data last modified: [2017-06-22 Thu]
          (:pred-guard  .  (lambda (x) t))
          (:enum-guard  .  (lambda (x) (natp x)))
          (:enum/acc-guard . (lambda (m seed) (and (natp m) (unsigned-byte-p 31 seed))))
-         
+
 
 ; The following 4 defaults shouldnt be overridden by user (of defdata
 ; macro) but only by implementors and extenders of defdata framework.
-         (:pre-pred-hook-fns . nil) 
-         (:post-pred-hook-fns . nil) 
-         (:pre-hook-fns . nil) 
-         (:post-hook-fns . nil) 
+         (:pre-pred-hook-fns . nil)
+         (:post-pred-hook-fns . nil)
+         (:pre-hook-fns . nil)
+         (:post-hook-fns . nil)
          )
        :clear)
 
@@ -53,8 +53,8 @@ data last modified: [2017-06-22 Thu]
   `(mv-let (idx _SEED) (random-index-seed (len ,(cadr s)) _SEED)
            (mv (nth idx ,(cadr s)) (the (unsigned-byte 31) _SEED))))
 
-    
-       
+
+
 (defun get-tau-int (domain rexp)
   (declare (xargs :verify-guards t))
   (let ((dom (if (eq domain 'acl2s::integer)
@@ -76,7 +76,7 @@ data last modified: [2017-06-22 Thu]
     ((lo lo-rel-sym '_ hi-rel-sym hi) `((,dom ,x)
                                         ,@(and (rationalp lo) `((,lo-rel-sym ,lo ,x)))
                                         ,@(and (rationalp hi) `((,hi-rel-sym ,x  ,hi))))))))
-                                            
+
 
 ;(defun range-pred-I (x s) `(acl2::in-tau-intervalp ,x ',(get-tau-int (cadr s) (third s))))
 (defun range-pred-I (x s) `(AND . ,(make-acl2-range-constraints x (cadr s) (third s))))
@@ -89,7 +89,7 @@ data last modified: [2017-06-22 Thu]
                            (hi (and hi (if hi-rel (1- hi) hi))))
                         (cond ((and lo hi)
                                `(acl2s::nth-integer-between ,r ,lo ,hi))
-                             
+
                              (lo ;hi is positive infinity
                               `(+ ,lo ,r))
 
@@ -98,26 +98,26 @@ data last modified: [2017-06-22 Thu]
                                  (if (> i-ans ,hi)
                                      (mod i-ans (1+ ,hi))
                                    i-ans)));ans shud be less than or equal to hi
-                             
-                             
+
+
                              (t ;lo is neg inf, and hi is <= 0
                               `(- ,hi ,r))))) ;ans shud be less than or equal to hi
-      
+
       (otherwise  (let* ((gap (/ (- hi lo) 1000))
                         (lo (and lo (if lo-rel (+ gap lo) lo))) ;make both inclusive bounds
                         (hi (and hi (if hi-rel (- hi gap) hi))))
-                    (cond ((and lo hi) 
+                    (cond ((and lo hi)
                          `(acl2s::nth-rational-between ,r ,lo ,hi))
-                        
+
                         (lo ;hi is positive infinity
                          `(+ ,lo (acl2s::nth-positive-rational ,r)))
-                        
+
                         ((> hi 0) ;lo is neg infinity and hi is is >= 1
                          `(let ((rat-ans (acl2s::nth-rational ,r)))
                             (if (> rat-ans ,hi)
                                 (mod rat-ans (1+ ,hi))
                               rat-ans)));ans shud be less than or equal to hi
-                        
+
                         (t;lo is neg infinity and hi is is <= 0
                          `(- ,hi (acl2s::nth-positive-rational ,r))))))))
 
@@ -127,7 +127,7 @@ data last modified: [2017-06-22 Thu]
        (hi (tau-interval-hi tau-interval))
        (lo-rel (tau-interval-lo-rel tau-interval))
        (hi-rel (tau-interval-hi-rel tau-interval)))
-  
+
   (make-enum-body-for-range i (cadr s) lo hi lo-rel hi-rel)))
 
 
@@ -143,15 +143,15 @@ data last modified: [2017-06-22 Thu]
 (defattach minimum-range-lo minimum-range-lo-builtin)
 (defattach maximum-range-hi maximum-range-hi-builtin)
 #| Sampling distribution for Bounded Ranges [2017-06-21 Wed]
-.01 min, .01 max, .01 mid1, .01 mid2 
-    (or .02 if one mid, eg 1-4 has 2 mids: 2,3, but 1-5 has one: 3) 
+.01 min, .01 max, .01 mid1, .01 mid2
+    (or .02 if one mid, eg 1-4 has 2 mids: 2,3, but 1-5 has one: 3)
 .10 uniform between -100 and 100 (added by harshrc)
 .19 geometric around mid
 .45 uniform between min-max
 .1 geometric around min (ie, [min---])
-.1 geometric around max (ie, [max--]) 
-.01 geometric [max+1 ...]) 
-.01 geometric [min-1 ...]) 
+.1 geometric around max (ie, [max--])
+.01 geometric [max+1 ...])
+.01 geometric [min-1 ...])
 |#
 
 ;; The keys should add up to 100
@@ -250,8 +250,8 @@ data last modified: [2017-06-22 Thu]
        (between-fn (if (eq dom 'acl2s::integer)
                        'defdata::random-integer-between-seed
                      'defdata::random-rational-between-seed)))
-                     
-    
+
+
     `(b* (((mv idx (the (unsigned-byte 31) ,seedvar))
            (defdata::random-index-seed 100 ,seedvar))
           ((mv choice &) (defdata::weighted-switch-nat ',weights idx))
@@ -264,9 +264,9 @@ data last modified: [2017-06-22 Thu]
          ((':geometric ':geq x)     (mv (+ x (,nth-pos-fn ,ivar)) ,seedvar))
          ((':uniform x1 x2)         (,between-fn x1 x2 ,seedvar))
          (& (mv (er hard ',ctx "~| Impossible case ~x0.~%" sp) ,seedvar))))))
-          
-       
-  
+
+
+
 (defun make-enum/acc-body-for-range (ivar seedvar domain lo hi lo-rel hi-rel)
   (b* ((gap (if (eq domain 'acl2s::integer) 1 (/ (- hi lo) 1000)))
        (lo (and lo (if lo-rel (+ gap lo) lo))) ;make both inclusive bounds
@@ -281,11 +281,11 @@ data last modified: [2017-06-22 Thu]
                        ivar seedvar domain (sampling-dist-lo lo hi1 mid1 mid2)))
                   (t (make-enum-exp-for-bounded-range
                        ivar seedvar domain (sampling-dist-hi lo1 hi1 mid1 mid2))))))
-           
+
     `(mv-let (,ivar ,seedvar) (random-natural-seed ,seedvar) ;;overwrite original value of ivar
              ,exp)))
 
-(defun range-enum/acc-I (ivar s) 
+(defun range-enum/acc-I (ivar s)
   (declare (ignorable ivar))
   (b* ((tau-interval (get-tau-int (cadr s) (third s)))
        (lo (tau-interval-lo tau-interval))
@@ -313,7 +313,7 @@ data last modified: [2017-06-22 Thu]
 
 (defloop member-defconst-event (ps kwd-alist wrld)
   (for ((p in ps)) (append (make-defconst-event1  p kwd-alist wrld))))
-  
+
 (add-pre-post-hook defdata-defaults-table :pre-pred-hook-fns '(member-defconst-event))
 
 #!ACL2S
@@ -324,10 +324,10 @@ data last modified: [2017-06-22 Thu]
                 (:pred-inverse-I . nil)
                 (:enum-I . nil)
                 (:enum/acc-I . nil)))
-         
+
          (member . ((:aliases . (enum member member-eq member-equal in acl2::enum acl2::in))
                     (:arity . 1)
-                    (:pred-I . defdata::member-pred-I) 
+                    (:pred-I . defdata::member-pred-I)
                     (:pred-inverse-I . nil)
                     (:enum-I . defdata::member-enum-I)
                     (:enum/acc-I . defdata::member-enum/acc-I)
@@ -335,7 +335,7 @@ data last modified: [2017-06-22 Thu]
 
          (range . ((:aliases . (range between acl2::range acl2::between))
                    (:arity . 2)
-                   (:pred-I . defdata::range-pred-I) 
+                   (:pred-I . defdata::range-pred-I)
                    (:pred-inverse-I . nil)
                    (:enum-I . defdata::range-enum-I)
                    (:enum/acc-I . defdata::range-enum/acc-I))))
@@ -348,6 +348,18 @@ data last modified: [2017-06-22 Thu]
 ;copied from cgen./utilities
 
 
+; Matt K. mod, 10/2017: Since ev-fncall-w is called in my-ev-w but is now
+; untouchable, a change is necessary.  Fortunately, cert.acl2 specifies :ttags
+; :all, so we can introduce a trust tag to remove ev-fncall-w as an
+; untouchable.  An alternate solution, not yet tried (at least by me), is to
+; use ev-fncall-w! instead; but that might slow things down a lot because of
+; the extra checking done.  Note that magic-ev-fncall isn't an option, because
+; state isn't available in my-ev-w.
+
+(defttag :ev-fncall-w-ok)
+(remove-untouchable acl2::ev-fncall-w t)
+(defttag nil)
+
 (mutual-recursion
 ;(ev-fncall-w FN ARGS W SAFE-MODE GC-OFF HARD-ERROR-RETURNS-NILP AOK)
 ;I use sumners default values for
@@ -358,7 +370,7 @@ data last modified: [2017-06-22 Thu]
 
 
 (defun my-ev-w (term alist ctx w hard-error-returns-nilp)
-"special eval function that does not need state and 
+"special eval function that does not need state and
 cannot handle if, return-last,mv-list, stobjs, wormhole etc
 very restrictive
 Mainly to be used for evaluating enum lists "
@@ -368,13 +380,13 @@ Mainly to be used for evaluating enum lists "
                             (plist-worldp w)
                             (symbol-alistp alist)
                             (booleanp hard-error-returns-nilp))))
- 
+
 (b* (((when (acl2::variablep term))
 ;variable expression
       (let ((v (assoc-eq term alist))) ;bugfix (removed cdr).
 ;(earlier, if term had a value NIL, we were errorneusly
 ;crashing!!!
-        (if v ;not null 
+        (if v ;not null
           (mv nil (cdr v))
           (prog2$
            (er hard ctx "Unbound variable ~x0.~%" term)
@@ -384,7 +396,7 @@ Mainly to be used for evaluating enum lists "
       (mv nil (cadr term)))
 ;if expression
      ((when (eq (car term) 'if))
-      (prog2$ 
+      (prog2$
        (er hard ctx "IF expressions not supported at the moment.~%")
        (mv t term)))
 ;function expression
@@ -392,7 +404,7 @@ Mainly to be used for evaluating enum lists "
       (my-ev-w-lst (cdr term) alist ctx
                    w hard-error-returns-nilp))
      ((when args-er)
-      (prog2$ 
+      (prog2$
        (er hard ctx "Eval args failed~%")
        (mv t term)))
      ((when (acl2::flambda-applicationp term))
@@ -402,9 +414,9 @@ Mainly to be used for evaluating enum lists "
     (acl2::ev-fncall-w (car term) args w
                        nil nil t hard-error-returns-nilp nil)))
 
-(defun my-ev-w-lst (term-lst alist 
+(defun my-ev-w-lst (term-lst alist
                              ctx w hard-error-returns-nilp)
-"special eval function that does not need state and 
+"special eval function that does not need state and
 cannot handle return-last,mv-list, stobjs, wormhole etc
 very restrictive
 Mainly to be used for evaluating enum lists "
@@ -416,38 +428,39 @@ Mainly to be used for evaluating enum lists "
                             (booleanp hard-error-returns-nilp))))
 (if (endp term-lst)
     (mv nil nil)
-  (b* (((mv erp1 car-ans) 
-        (my-ev-w (car term-lst) alist 
+  (b* (((mv erp1 car-ans)
+        (my-ev-w (car term-lst) alist
                  ctx w hard-error-returns-nilp))
-       ((when erp1) 
-        (prog2$ 
+       ((when erp1)
+        (prog2$
          (er hard ctx "eval ~x0 failed~%" (car term-lst))
          (mv t term-lst)))
-       ((mv erp2 cdr-ans) 
-        (my-ev-w-lst (cdr term-lst) alist 
+       ((mv erp2 cdr-ans)
+        (my-ev-w-lst (cdr term-lst) alist
                      ctx w hard-error-returns-nilp))
-       ((when erp2) 
-        (prog2$ 
+       ((when erp2)
+        (prog2$
          (er hard ctx "eval failed~%")
          (mv t term-lst))))
     (mv nil (cons car-ans cdr-ans)))))
 )
-  
+
+(push-untouchable acl2::ev-fncall-w t) ; see Matt K. comment above
 
 (defun trans-my-ev-w (form ctx w hard-error-returns-nilp)
 (declare (xargs :mode :program
                 :guard (and (plist-worldp w)
                             (booleanp hard-error-returns-nilp))))
 
-  (mv-let 
-   (erp term x) 
+  (mv-let
+   (erp term x)
    (acl2::translate11 form nil nil nil nil nil
                 ctx w (acl2::default-state-vars nil))
    (declare (ignore x))
    (if erp
        (if hard-error-returns-nilp
            (mv erp form)
-         (prog2$ 
+         (prog2$
           (er hard ctx "~x0 could not be translated.~%" form)
           (mv erp form)))
      (my-ev-w term nil ctx w hard-error-returns-nilp))))
@@ -473,8 +486,8 @@ Mainly to be used for evaluating enum lists "
 
 ;;     ((lo '< '_) `(,lo < _ < nil))
 ;;     (('_ '< hi) `(nil < _ < ,hi))
-    
-    
+
+
 ;;     ((lo '<= '_) `(,lo <= _ < nil))
 ;;     (('_ '<= hi) `(nil < _ <= ,hi))
 ;;     (& rexp)))
@@ -490,7 +503,7 @@ Mainly to be used for evaluating enum lists "
     ((lo lo-rel '_ hi-rel hi) (list lo (pp-rel lo-rel) '_ (pp-rel hi-rel) hi))
     ((lo lo-rel '_)           (list lo (pp-rel lo-rel) '_ '< nil))
     (('_ hi-rel hi)           (list nil '< '_ (pp-rel hi-rel) hi))
-    
+
     (& (bad-range-syntax rexp))))
 
 (set-ignore-ok nil)
@@ -502,11 +515,11 @@ Mainly to be used for evaluating enum lists "
     ((lo-sym lo-rel-sym '_ hi-rel-sym hi-sym)
      (b* ((lo-rel (not (eq lo-rel-sym '<=)))
           (hi-rel (not (eq hi-rel-sym '<=)))
-          ((mv erp hi) 
+          ((mv erp hi)
            (trans-my-ev-w hi-sym ctx wrld nil))
           ((when erp)
            (er hard ctx "Evaluating rational expression ~x0 failed!~%" hi-sym))
-          ((mv erp lo) 
+          ((mv erp lo)
            (trans-my-ev-w lo-sym ctx wrld nil))
           ((when erp)
            (er hard ctx "Evaluating rational expression ~x0 failed!~%" lo-sym))
@@ -525,7 +538,7 @@ Mainly to be used for evaluating enum lists "
                                   (mv (- hi 1) nil)
                                 (mv hi nil))
                             (mv hi hi-rel)))
-          
+
           ((when (and lo hi (eq domain 'acl2s::integer) (> lo hi)))
            (er hard ctx "~| lo <= hi should hold. But it does not: lo = ~x0 and hi = ~x1" lo hi))
 
@@ -536,7 +549,7 @@ Mainly to be used for evaluating enum lists "
 
           (lo-rel-sym (if lo-rel '< '<=))
           (hi-rel-sym (if hi-rel '< '<=)))
-       
+
        (list 'acl2s::range domain (list lo lo-rel-sym '_ hi-rel-sym hi))))
     (& (bad-range-syntax rexp1)))))
 
