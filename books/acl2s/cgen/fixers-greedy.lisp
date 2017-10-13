@@ -354,24 +354,22 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (cgen-state (make-cgen-state-fn
                     query ctx
                     (list :testing-enabled :naive
-                          :num-trials 500
                           :search-strategy :simple
                           :num-counterexamples 500
-                          :sampling-method :uniform-random
                           :use-fixers nil
-                          :verbosity-level 1
-                          :cgen-local-timeout 4
+                          :verbosity-level (if (system-debug-flag vl) vl 1)
                           :print-cgen-summary nil)
                     (w state)))
        ((mv & cgen-state state) (test/cgen query nil cgen-state state))
        (gcs% (cget gcs))
        (num-vac (access gcs% vacs))
-       (valid-runs (- (access gcs% runs) num-vac))
+       (total-runs (access gcs% runs))
+       (valid-runs (- total-runs num-vac))
        ;; if more than half of runs are not vacuous, and more than a
        ;; half of these are witnesses then we deem that fixer-binding
        ;; preserves pterm
-       (good-enough? (and (> valid-runs 500)
-                          (> (/ (access gcs% wts) valid-runs) 50/100))))
+       (good-enough? (and (> (/ valid-runs total-runs) 1/2)
+                          (> (/ (access gcs% wts) valid-runs) 1/2))))
     (value good-enough?)))
   
 
@@ -685,6 +683,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
   (b* ((terms (append hyps  (if (not (acl2::logic-termp concl (w state)))
                                 '()
                               (list (cgen-dumb-negate-lit concl)))))
+       ((mv start-time state) (acl2::read-run-time state))
        (Cwt{} (heuristic-weights terms (w state)))
        ((mv erp res state) (fixer-arrangement1 terms terms Cwt{} vl ctx state))
        ((when erp) (value (list nil nil)))
@@ -700,7 +699,18 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (- (cw? (and (verbose-stats-flag vl) rec-fixp (consp C_unsat))
                "~| Cgen/Verbose: ~x0 still not fixed! ~%" C_unsat))
         
-       (b*-binding (collapse-b*-binding (to-b*-mv-binding B) nil)))
+       (b*-binding (collapse-b*-binding (to-b*-mv-binding B) nil))
+       ((mv end-time state) (acl2::read-run-time state))
+       (- (cw? (verbose-stats-flag vl)
+               "~| Cgen/Verbose: Time taken for arranging fixers = ~%" C_unsat))
+       ((er &) (if (verbose-stats-flag vl)
+                   (pprogn (print-rational-as-decimal (- end-time start-time)
+                                                      (standard-co state)
+                                                      state)
+                           (princ$ " seconds" (standard-co state) state)
+                           (newline (standard-co state) state)
+                           (value :invisible))
+                 (value nil))))
     
     (value (list b*-binding new-hyps))))
 

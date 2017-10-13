@@ -352,13 +352,13 @@ eg:n/a")
   (b* ((sm (local-sampling-method sampling-method i N))
        ((mv A r. BE.) (next-sigma sm r. BE.))
        (- (cw? (system-debug-flag vl) 
-               "~|CEgen/Sysdebug/run-single: A: ~x0 seed: ~x1~%" A r.))
+               "~|Cgen/Sysdebug/run-single: A: ~x0 seed: ~x1~%" A r.))
        (|not vacuous ?|  (hypotheses-val A))
        (hyp-vals (and (verbose-stats-flag vl) (hyp-val-list A)))
 
        (- (cw? (and (system-debug-flag vl)
                     (not |not vacuous ?|)) 
-               "~|CEgen/Sysdebug/run-single: hyp-vals : ~x0~%" hyp-vals))
+               "~|Cgen/Sysdebug/run-single: hyp-vals : ~x0~%" hyp-vals))
        )
 ;  in
    (if |not vacuous ?|
@@ -530,7 +530,7 @@ where
         (record-testrun. res hyp-vals A num-cts num-wts vl test-outcomes% gcs%))
        
        (- (cw? (system-debug-flag vl) 
-               "~|CEgen/Sysdebug/run-n-tests: Finished run n: ~x0 -- got ~x1~|" n res)))
+               "~|Cgen/Sysdebug/run-n-tests: Finished run n: ~x0 -- got ~x1~|" n res)))
 ;  in   
     (run-n-tests. (acl2::|1-F| n) r. BE. test-outcomes% gcs% vl cgen-state)))
 
@@ -551,7 +551,7 @@ where
         (run-n-tests. (cget num-trials) rseed. BE. test-outcomes% gcs% vl cgen-state))
        
        (- (cw? (system-debug-flag vl) 
-               "~|CEgen/Sysdebug/run-tests.: test-outcomes%: ~x0 ~|gcs%: ~x1~%" test-outcomes% gcs%)))
+               "~|Cgen/Sysdebug/run-tests.: test-outcomes%: ~x0 ~|gcs%: ~x1~%" test-outcomes% gcs%)))
    ;;in
     (mv stop? rseed. test-outcomes% gcs%)))
 
@@ -687,9 +687,9 @@ where
        (found-cts (- new-num-cts old-num-cts))
        (n (- new-total old-total))
        (- (cw? t
-               "~|CEgen/Stats/simple-search: ~x0/~x1 cts/wts found in this run (~x2 tests)!~|" found-cts found-wts n))
+               "~|Cgen/Stats/simple-search: ~x0/~x1 cts/wts found in this run (~x2 tests)!~|" found-cts found-wts n))
        (- (cw? t
-               "~|CEgen/Stats/simple-search: *END* Stopping condition: ~x0~%~%" stop?)))
+               "~|Cgen/Stats/simple-search: *END* Stopping condition: ~x0~%~%" stop?)))
     nil))
        
 
@@ -701,7 +701,7 @@ where
    (b* (;((mv rseed. state) ) (acl2::random$ defdata::*M31* state) ;Lets try CL's builtin random number generator
         (rseed. (defdata::getseed state))
         (- (cw? (system-debug-flag vl)
-                "~|CEgen/Sysdebug/run-tests: starting SEED: ~x0 ~%" rseed.))
+                "~|Cgen/Sysdebug/run-tests: starting SEED: ~x0 ~%" rseed.))
         (BE.    (pairlis$ vars (make-list (len vars) :initial-element 0)))
         ((mv stop? rseed. test-outcomes% gcs%)
          (run-tests. rseed. BE. test-outcomes% gcs% vl cgen-state))
@@ -777,16 +777,16 @@ Use :simple search strategy to find counterexamples and witnesses.
         (prog2$
          (if partial-A
              (cw? (verbose-flag vl)
-              "~%CEgen/Note: No point in searching ~x0; it evals to const ~x1 under ~x2~|" name c partial-A)
+              "~%Cgen/Note: No point in searching ~x0; it evals to const ~x1 under ~x2~|" name c partial-A)
              (cw? (verbose-flag vl)
-              "~%CEgen/Note: No point in searching ~x0; it evals to const ~x1~|" name c))
+              "~%Cgen/Note: No point in searching ~x0; it evals to const ~x1~|" name c))
          (mv erp (list NIL test-outcomes% gcs%) state)))
 
 ;ELSE atleast one variable
   (b* ((- (assert$ (consp vars) 'simple-search))
        (- (cw? (verbose-flag vl) "~%~%"))
        (- (cw? (verbose-stats-flag vl) 
-               "~|CEgen/Stats/simple-search:: *START*~|"))
+               "~|Cgen/Stats/simple-search:: *START*~|"))
 
        (hyp-val-defuns   (make-hypotheses-val-defuns hyps vars mv-sig-alist programp))
        (concl-val-defuns (make-conclusion-val-defuns concl vars mv-sig-alist programp))
@@ -805,13 +805,13 @@ Use :simple search strategy to find counterexamples and witnesses.
        ((when erp)
         (prog2$ 
            (cw? (and (normal-output-flag vl) (cget use-fixers))
-                "~|CEgen/Error: Couldn't compute fixer bindings. Skip searching ~x0.~|" name)
+                "~|Cgen/Error: Couldn't compute fixer bindings. Skip searching ~x0.~|" name)
            (mv t (list nil test-outcomes% gcs%) state)))
        
        (elim-bindings (append elim-bindings fixer-bindings))
 ;       (new-fxr-vars (set-difference-equal (acl2::all-vars1-lst additional-fxr-hyps '()) vars))
        (- (cw? (and (verbose-stats-flag vl) additional-fxr-hyps)
-               "~|CEgen/Note: Additional Hyps for fixers: ~x0~|" additional-fxr-hyps))
+               "~|Cgen/Note: Additional Hyps for fixers: ~x0~|" additional-fxr-hyps))
 
        (acl2-vt-dlist (var-types-alist-from-acl2-type-alist type-alist vars '()))
        ((mv erp top+-vt-dlist) (meet-type-alist acl2-vt-dlist (cget top-vt-alist) vl (w state)))
@@ -828,7 +828,7 @@ Use :simple search strategy to find counterexamples and witnesses.
        ((when erp)
         (prog2$ 
            (cw? (normal-output-flag vl)
-                "~|CEgen/Error: Couldn't determine enumerators. Skip searching ~x0.~|" name)
+                "~|Cgen/Error: Couldn't determine enumerators. Skip searching ~x0.~|" name)
            (mv t (list nil test-outcomes% gcs%) state)))
 
        ;;[2016-04-25 Mon] record these for later printing in vacuous-stats
@@ -836,11 +836,11 @@ Use :simple search strategy to find counterexamples and witnesses.
        (test-outcomes% (change test-outcomes% elim-bindings elim-bindings))
        
        (- (cw? (system-debug-flag vl) 
-               "~|CEgen/Sysdebug: next-sigma : ~| ~x0~|" next-sigma-defuns))
+               "~|Cgen/Sysdebug: next-sigma : ~| ~x0~|" next-sigma-defuns))
        (- (cw? (verbose-flag vl) 
-               "~|CEgen/Note: Enumerating ~x0 with ~x1~|" name disp-enum-alist))
+               "~|Cgen/Note: Enumerating ~x0 with ~%~x1~%" name disp-enum-alist))
        (- (cw? (and (verbose-flag vl) elim-bindings)
-               "~|CEgen/Note: Fixer/Elim bindings: ~x0~|" elim-bindings))
+               "~|Cgen/Note: Fixer/Elim bindings: ~%~x0~|" elim-bindings))
 
        
 ; print form if origin was :incremental
