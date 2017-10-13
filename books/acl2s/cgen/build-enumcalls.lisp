@@ -165,8 +165,11 @@
        (hi (acl2::access acl2::tau-interval interval :hi))
        (lo-rel (acl2::access acl2::tau-interval interval :lo-rel))
        (hi-rel (acl2::access acl2::tau-interval interval :hi-rel))
-       (domain (if integer-p 'acl2s::integer 'acl2s::rational)))
-    (make-numeric-range-enum-info (and lo hi integer-p (- (if hi-rel (1- hi) hi) (if lo-rel (1+ lo) lo)))
+       (domain (if integer-p 'acl2s::integer 'acl2s::rational))
+       (dom-size (if (and lo hi integer-p)
+                     (- (if hi-rel (1- hi) hi) (if lo-rel (1+ lo) lo))
+                   't)))
+    (make-numeric-range-enum-info dom-size
                                   (defdata::make-enum-body-for-range 'r domain lo hi lo-rel hi-rel)
                                   (defdata::make-enum/acc-body-for-range 'r 'seed. domain lo hi lo-rel hi-rel))))
               
