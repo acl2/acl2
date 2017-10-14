@@ -10,7 +10,6 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking" :dir :system)
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -229,8 +228,8 @@
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (hints-alist "A @('symbol-alistp') that is
-                             the alist form of the list of doublets @('hints').")
+               (hints-alist "A @('symbol-alistp') that is the alist form of
+                             the keyword-value list @('hints').")
                state)
   :mode :program
   :short "Ensure that the @(':hints') input to the transformation is valid."
