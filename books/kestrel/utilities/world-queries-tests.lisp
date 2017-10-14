@@ -238,19 +238,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (ubody 'atom (w state)) '(not (consp x)))
-
-(must-succeed*
- (defun f (x) x)
- (assert-equal (ubody 'f (w state)) 'x))
-
-(must-succeed*
- (defun p (x) (and (natp x) (natp 3)))
- (assert-equal (body 'p t (w state)) '(natp x))
- (assert-equal (ubody 'p (w state)) '(if (natp x) (natp '3) 'nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (guard-verified-p 'len (w state)))
 
 (assert! (guard-verified-p 'cons (w state)))
@@ -293,6 +280,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (ubody 'atom (w state)) '(not (consp x)))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert-equal (ubody 'f (w state)) 'x))
+
+(must-succeed*
+ (defun p (x) (and (natp x) (natp 3)))
+ (assert-equal (body 'p t (w state)) '(natp x))
+ (assert-equal (ubody 'p (w state)) '(if (natp x) (natp '3) 'nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (must-succeed*
  (defun-nx f (x) (cons (list x) (list x)))
  (assert-equal (ubody 'f (w state))
@@ -301,6 +301,30 @@
                              (cons (cons x 'nil) (cons x 'nil))))
  (assert-equal (unwrapped-nonexec-body 'f (w state))
                '(cons (cons x 'nil) (cons x 'nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (stobjs-in+ 'cons (w state)) '(nil nil))
+
+(assert-equal (stobjs-in+ 'fmt (w state)) '(nil nil nil state nil))
+
+(must-succeed*
+ (defstobj s)
+ (defun f (x s state)
+   (declare (ignore x s state) (xargs :stobjs (s state)))
+   nil)
+ (assert-equal (stobjs-in+ 'f (w state)) '(nil s state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (stobjs-out+ 'cons (w state)) '(nil))
+
+(assert-equal (stobjs-out+ 'fmt (w state)) '(nil state))
+
+(must-succeed*
+ (defstobj s)
+ (defun f (x s) (declare (xargs :stobjs s)) (mv s x))
+ (assert-equal (stobjs-out+ 'f (w state)) '(s nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -331,6 +355,32 @@
 (must-succeed*
  (defun f (state) (declare (xargs :stobjs state)) state)
  (assert! (not (no-stobjs-p 'f (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (irecursivep 'cons (w state)) nil)
+
+(assert-equal (irecursivep 'len (w state)) '(len))
+
+(assert-equal (irecursivep 'pseudo-termp (w state))
+              '(pseudo-termp pseudo-term-listp))
+
+(must-succeed*
+ (defun f (x) (if (consp x) (f (car x)) 0))
+ (assert-equal (irecursivep 'f (w state)) '(f)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (irecursivep+ 'cons (w state)) nil)
+
+(assert-equal (irecursivep+ 'len (w state)) '(len))
+
+(assert-equal (irecursivep+ 'pseudo-termp (w state))
+              '(pseudo-termp pseudo-term-listp))
+
+(must-succeed*
+ (defun f (x) (if (consp x) (f (car x)) 0))
+ (assert-equal (irecursivep+ 'f (w state)) '(f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -578,6 +628,26 @@
                         (equal (access tests-and-calls im3 :calls)
                                '((fib (binary-+ '-1 n))
                                  (fib (binary-+ '-2 n))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (thm-formula 'car-cdr-elim (w state))
+              '(implies (consp x)
+                        (equal (cons (car x) (cdr x)) x)))
+
+(must-succeed*
+ (defthm th (acl2-numberp (- x)))
+ (assert-equal (thm-formula 'th (w state)) '(acl2-numberp (unary-- x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (thm-formula+ 'car-cdr-elim (w state))
+              '(implies (consp x)
+                        (equal (cons (car x) (cdr x)) x)))
+
+(must-succeed*
+ (defthm th (acl2-numberp (- x)))
+ (assert-equal (thm-formula+ 'th (w state)) '(acl2-numberp (unary-- x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
