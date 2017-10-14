@@ -4,7 +4,7 @@
 
 (in-package "X86ISA")
 
-(include-book "x86-register-readers-and-writers" :ttags (:undef-flg))
+(include-book "x86-modes")
 
 ;; ======================================================================
 
