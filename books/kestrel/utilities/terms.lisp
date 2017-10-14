@@ -475,38 +475,6 @@
         (mv (msg "~x0 does not have a valid body.  ~@1" x term/message) nil)))
     (mv `(lambda ,(second x) ,term/message) stobjs-out)))
 
-(define trans-macro ((mac (macro-namep mac wrld)) (wrld plist-worldp))
-  :returns (term "A @(tsee pseudo-termp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "Translated term that a call to a macro translates to."
-  :long
-  "<p>
-   This function translates a call to the macro
-   that only includes its required formal arguments,
-   returning the resulting translated term.
-   </p>
-   <p>
-   Note that since the macro is in the ACL2 world
-   (because of the @(tsee macro-namep) guard),
-   the translation of the macro call should not fail.
-   However, the translation may not terminate,
-   as mentioned in @(tsee check-user-term).
-   </p>
-   <p>
-   Note also that if the macro has optional arguments,
-   its translation with non-default values for these arguments
-   may yield different terms.
-   Furthermore, if the macro is sensitive
-   to the &ldquo;shape&rdquo; of its arguments,
-   calls with argument that are not the required formal arguments
-   may yield different terms.
-   </p>"
-  (mv-let (term stobjs-out)
-    (check-user-term (cons mac (macro-required-args mac wrld)) wrld)
-    (declare (ignore stobjs-out))
-    term))
-
 (define term-guard-obligation ((term pseudo-termp) state)
   :returns (obligation "A @(tsee pseudo-termp).")
   :mode :program

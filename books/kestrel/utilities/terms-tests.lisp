@@ -343,14 +343,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (trans-macro 'list (w state))
-              ''nil)
-
-(assert-equal (trans-macro 'make-list (w state))
-              '(make-list-ac size 'nil 'nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (term-guard-obligation 'x state)
               ''t)
 
