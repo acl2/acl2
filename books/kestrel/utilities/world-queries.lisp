@@ -156,27 +156,6 @@
   (not (eq t (getpropc fn 'unnormalized-body t wrld)))
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
-(define ubody ((fn (and (logic-function-namep fn wrld)
-                        (definedp fn wrld)))
-               (wrld plist-worldp))
-  :returns (body pseudo-termp)
-  :parents (world-queries)
-  :short "Unnormalized body of a logic-mode defined function."
-  :long
-  "<p>
-   The check that the body is a pseudo-term should always succeed,
-   but it allows us to prove the return type theorem for this function
-   without strengthening the guard @(tsee plist-worldp) on @('wrld').
-   The theorem may be useful when proving properties (e.g. verify guards)
-   of functions that call this function.
-   </p>"
-  (b* ((body (getpropc fn 'unnormalized-body nil wrld)))
-    (if (pseudo-termp body)
-        body
-      (raise "Internal error: ~
-              the unnormalized body ~x0 of ~x1 is not a pseudo-term."
-             body fn))))
-
 (define guard-verified-p ((fn/thm (or (function-namep fn/thm wrld)
                                       (theorem-namep fn/thm wrld)))
                           (wrld plist-worldp))
@@ -207,6 +186,27 @@
               the non-executable status ~x0 of ~x1 is not a boolean."
              non-executablep fn)))
   :guard-hints (("Goal" :in-theory (enable function-namep))))
+
+(define ubody ((fn (and (logic-function-namep fn wrld)
+                        (definedp fn wrld)))
+               (wrld plist-worldp))
+  :returns (body pseudo-termp)
+  :parents (world-queries)
+  :short "Unnormalized body of a logic-mode defined function."
+  :long
+  "<p>
+   The check that the body is a pseudo-term should always succeed,
+   but it allows us to prove the return type theorem for this function
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((body (getpropc fn 'unnormalized-body nil wrld)))
+    (if (pseudo-termp body)
+        body
+      (raise "Internal error: ~
+              the unnormalized body ~x0 of ~x1 is not a pseudo-term."
+             body fn))))
 
 (define unwrapped-nonexec-body ((fn (and (logic-function-namep fn wrld)
                                          (definedp fn wrld)
