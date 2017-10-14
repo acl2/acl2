@@ -521,7 +521,7 @@
    whose keywords are unique and include only names of applicability conditions.
    The values of the keyword-value list
    are checked to be well-formed hints not here,
-   but implicitly when attempting prove the applicability conditions.
+   but implicitly when attempting to prove the applicability conditions.
    </p>"
   (b* (((er &) (ensure-keyword-value-list$ hints "The :HINTS input" t nil))
        (alist (keyword-value-list-to-alist hints))
