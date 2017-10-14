@@ -1748,9 +1748,7 @@
    </p>
    <p>
    If @(':show-only') is @('t'),
-   the @(tsee encapsulate) is quoted and returned as a value triple.
-   Thus, when this value triple is submitted as an event,
-   the @(tsee encapsulate) is just shown on screen.
+   an event to show the @(tsee encapsulate) on screen is returned.
    The table event and the screen output events are excluded from this
    because they just &ldquo;repeat&rdquo; things that are already present
    in the @(tsee encapsulate) that is shown on the screen.
