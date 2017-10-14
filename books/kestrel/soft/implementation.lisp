@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/defchoose-queries" :dir :system)
 (include-book "kestrel/utilities/defun-sk-queries" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
+(include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
@@ -1195,13 +1196,6 @@
        (sofunp (car sofun-inst) wrld)
        (funvar-instp (cdr sofun-inst) wrld)))
 
-(define keywords-of-keyword-value-list ((kvlist keyword-value-listp))
-  :returns (keywords symbol-listp :hyp :guard)
-  :short "Extract the keywords from the even positions of a keyword-value list."
-  (if (endp kvlist)
-      nil
-    (cons (car kvlist) (keywords-of-keyword-value-list (cddr kvlist)))))
-
 (define defun-inst-plain-events ((fun symbolp)
                                  (fparams (or (funvar-setp fparams wrld)
                                               (null fparams)))
@@ -1226,7 +1220,7 @@
    we extend the instantiation with @('(sofun . fun)'),
    to ensure that the recursive calls are properly transformed.
    </p>"
-  (b* (((unless (subsetp (keywords-of-keyword-value-list options)
+  (b* (((unless (subsetp (strip-keywords options)
                          '(:verify-guards)))
         (raise "~x0 must include only :VERIFY-GUARDS, ~
                 because ~x1 is a plain second-order function."
@@ -1319,7 +1313,7 @@
    We add @('fun') to the table of second-order functions
    iff it is second-order.
    </p>"
-  (b* (((unless (subsetp (keywords-of-keyword-value-list options)
+  (b* (((unless (subsetp (strip-keywords options)
                          '(:skolem-name :thm-name :rewrite)))
         (raise "~x0 must include only :SKOLEM-NAME, :THM-NAME, and :REWRITE, ~
                 because ~x1 is a quantifier second-order function."
@@ -1422,7 +1416,7 @@
        (options (if 2nd-order (cdr rest) rest))
        ((unless (keyword-value-listp options))
         (raise "~x0 must be a list of keyed options." options))
-       ((unless (no-duplicatesp (keywords-of-keyword-value-list options)))
+       ((unless (no-duplicatesp (strip-keywords options)))
         (raise "~x0 must have unique keywords." options))
        (fun-intro-events
         (case (sofun-kind sofun wrld)

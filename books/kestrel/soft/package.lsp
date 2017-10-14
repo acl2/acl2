@@ -45,6 +45,7 @@
                          recursivep
                          restrict-alist
                          strip-keyword-list
+                         strip-keywords
                          symbol-symbol-alistp
                          ubody
                          variablep
