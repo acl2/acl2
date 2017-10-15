@@ -28,13 +28,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (strip-keywords nil) nil)
+(assert-equal (keywords-of-keyword-value-list nil) nil)
 
-(assert-equal (strip-keywords '(:one 1 :two 2 :three 3))
+(assert-equal (keywords-of-keyword-value-list '(:one 1 :two 2 :three 3))
               '(:one :two :three))
 
-(assert-equal (strip-keywords '(:one 1 :one 2 :three 3))
+(assert-equal (keywords-of-keyword-value-list '(:one 1 :one 2 :three 3))
               '(:one :one :three))
 
-(assert-equal (strip-keywords '(:x :abc :y #\9))
+(assert-equal (keywords-of-keyword-value-list '(:x :abc :y #\9))
               '(:x :y))

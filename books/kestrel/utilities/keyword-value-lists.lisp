@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define strip-keywords ((kvlist keyword-value-listp))
+(define keywords-of-keyword-value-list ((kvlist keyword-value-listp))
   :returns (keywords symbol-listp
                      :hyp :guard
                      :hints (("Goal"

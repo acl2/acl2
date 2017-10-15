@@ -1221,7 +1221,7 @@
    we extend the instantiation with @('(sofun . fun)'),
    to ensure that the recursive calls are properly transformed.
    </p>"
-  (b* (((unless (subsetp (strip-keywords options)
+  (b* (((unless (subsetp (keywords-of-keyword-value-list options)
                          '(:verify-guards)))
         (raise "~x0 must include only :VERIFY-GUARDS, ~
                 because ~x1 is a plain second-order function."
@@ -1318,7 +1318,7 @@
    We add @('fun') to the table of second-order functions
    iff it is second-order.
    </p>"
-  (b* (((unless (subsetp (strip-keywords options)
+  (b* (((unless (subsetp (keywords-of-keyword-value-list options)
                          '(:skolem-name :thm-name :rewrite)))
         (raise "~x0 must include only :SKOLEM-NAME, :THM-NAME, and :REWRITE, ~
                 because ~x1 is a quantifier second-order function."
@@ -1423,7 +1423,7 @@
        (options (if 2nd-order (cdr rest) rest))
        ((unless (keyword-value-listp options))
         (raise "~x0 must be a list of keyed options." options))
-       ((unless (no-duplicatesp (strip-keywords options)))
+       ((unless (no-duplicatesp (keywords-of-keyword-value-list options)))
         (raise "~x0 must have unique keywords." options))
        (fun-intro-events
         (case (sofun-kind sofun wrld)

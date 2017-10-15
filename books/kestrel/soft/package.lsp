@@ -35,6 +35,7 @@
                          formals
                          function-symbol-listp
                          guard-verified-p
+                         keywords-of-keyword-value-list
                          lambda-body
                          lambda-formals
                          make-lambda
@@ -45,7 +46,6 @@
                          recursivep
                          restrict-alist
                          strip-keyword-list
-                         strip-keywords
                          symbol-symbol-alistp
                          ubody
                          variablep
