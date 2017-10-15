@@ -1935,14 +1935,4 @@
    of an instance of a second-order theorem are @('(:rewrite)'),
    but perhaps the default should be the rule classes
    of the second-order theorem that is being instantiated.
-   </p>
-
-   <h4>Untranslated Terms</h4>
-
-   <p>
-   Instances of second-order functions and theorems
-   are currently generated with
-   <see topic='@(url acl2::term)'>translated terms</see>.
-   Generating untranslated terms instead
-   would result in more readable functions and theorems.
    </p>")
