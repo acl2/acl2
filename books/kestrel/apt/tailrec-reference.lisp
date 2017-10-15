@@ -41,7 +41,7 @@
    </p>
 
    <h3>
-   Form
+   General Form
    </h3>
 
    @({
