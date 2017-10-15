@@ -157,6 +157,64 @@
                                               rev-result))))
      :verify-guards nil)))
 
+(define fapply-term ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
+  :guard (or (symbolp fn)
+             (= (len terms)
+                (len (lambda-formals fn))))
+  :returns (term "A @(tsee pseudo-termp).")
+  :parents (term-utilities)
+  :short "Variant of @(tsee apply-term) that performs no simplification."
+  :long
+  "<p>
+   The meaning of the starting @('f') in the name of this utility
+   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
+   </p>"
+  (cond ((symbolp fn) (fcons-term fn terms))
+        (t (fsubcor-var (lambda-formals fn) terms (lambda-body fn))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-fn/lambda-p pseudo-lambdap))))
+
+(defsection fapply-term*
+  :parents (term-utilities)
+  :short "Variant of @(tsee apply-term*) that performs no simplification."
+  :long
+  "<p>
+   The meaning of the starting @('f') in the name of this utility
+   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
+   </p>
+   @(def fapply-term*)"
+  (defmacro fapply-term* (fn &rest terms)
+    `(fapply-term ,fn (list ,@terms))))
+
+(define fapply-unary-to-terms ((fn pseudo-fn/lambda-p)
+                               (terms pseudo-term-listp))
+  :guard (or (symbolp fn)
+             (= 1 (len (lambda-formals fn))))
+  :returns (applied-terms "A @(tsee pseudo-term-listp).")
+  :parents (term-utilities)
+  :short "Variant of @(tsee apply-unary-to-terms)
+          that performs no simplification."
+  :long
+  "<p>
+   The meaning of the starting @('f') in the name of this utility
+   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
+   </p>"
+  (fapply-unary-to-terms-aux fn terms nil)
+  :verify-guards nil
+
+  :prepwork
+  ((define fapply-unary-to-terms-aux ((fn pseudo-fn/lambda-p)
+                                      (terms pseudo-term-listp)
+                                      (rev-result pseudo-term-listp))
+     :guard (or (symbolp fn)
+                (= 1 (len (lambda-formals fn))))
+     :returns (final-result "A @(tsee pseudo-term-listp).")
+     (cond ((endp terms) (reverse rev-result))
+           (t (fapply-unary-to-terms-aux fn
+                                         (cdr terms)
+                                         (cons (fapply-term* fn (car terms))
+                                               rev-result))))
+     :verify-guards nil)))
+
 (defines all-program-ffn-symbs
   :parents (term-utilities)
   :short "Program-mode functions called by a term."
