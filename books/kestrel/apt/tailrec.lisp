@@ -1785,6 +1785,7 @@
                                      app-cond-thm-names
                                      old-fn-unnorm-name
                                      wrld))
+       (names-to-avoid (rcons domain-of-old-thm-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event
             new-fn-formals) (tailrec-new-fn-intro-events
@@ -1825,6 +1826,7 @@
                                   new-fn-formals
                                   new-to-old-thm-name
                                   wrld))
+       (names-to-avoid (rcons old-to-new-thm-name names-to-avoid))
        ((mv wrapper-fn-local-event
             wrapper-fn-exported-event) (tailrec-wrapper-fn-intro-events
                                         old-fn-name
@@ -1836,7 +1838,6 @@
                                         app-cond-thm-names
                                         new-fn-formals
                                         wrld))
-       (names-to-avoid (rcons old-to-new-thm-name names-to-avoid))
        ((mv wrapper-fn-unnorm-event
             wrapper-fn-unnorm-name) (install-not-norm-event wrapper-fn-name
                                                             t

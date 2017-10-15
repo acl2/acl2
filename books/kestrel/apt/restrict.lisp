@@ -870,6 +870,7 @@
                                                         t
                                                         names-to-avoid
                                                         wrld))
+       (names-to-avoid (rcons names-to-avoid old-fn-unnorm-name))
        ((mv new-fn-local-event
             new-fn-exported-event) (restrict-new-fn-intro-events
                                     old-fn-name
@@ -880,7 +881,6 @@
                                     make-non-executable
                                     do-verify-guards
                                     wrld))
-       (names-to-avoid (rcons names-to-avoid old-fn-unnorm-name))
        ((mv new-fn-unnorm-event
             new-fn-unnorm-name) (install-not-norm-event new-fn-name
                                                         t
