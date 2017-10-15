@@ -111,10 +111,8 @@
           obtaining a pseudo-term."
   :long
   "<p>
-   If a lambda expression is applied, a beta reduction is performed.
-   </p>
-   <p>
-   This utility extends @(tsee cons-term) to lambda expressions.
+   This utility is similar to @(tsee cons-term),
+   but it performs a beta reduction when @('fn') is a lambda expression.
    </p>"
   (cond ((symbolp fn) (cons-term fn terms))
         (t (subcor-var (lambda-formals fn) terms (lambda-body fn))))
@@ -127,10 +125,8 @@
           obtaining a pseudo-term."
   :long
   "<p>
-   If a lambda expression is applied, a beta reduction is performed.
-   </p>
-   <p>
-   This utility extends @(tsee cons-term*) to lambda expressions.
+   This utility is similar to @(tsee cons-term*),
+   but it performs a beta reduction when @('fn') is a lambda expressions.
    </p>
    @(def apply-term*)"
   (defmacro apply-term* (fn &rest terms)
