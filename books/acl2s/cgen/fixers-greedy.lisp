@@ -334,11 +334,6 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
                              (revappend-fxri{} fxri1{} fxri{}))))
 )
 
-(defun is-var-equality-hyp (term)
-  (and (equal (len term) 3)
-       (member-equal (car term) '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL))
-       (or (proper-symbolp (second term))
-           (proper-symbolp (third term)))))
 
 (defun destruct-var-equality-hyp (hyp)
   (case-match hyp
@@ -507,6 +502,15 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
     (+ (pval0 (car fnames) cterms fxri{} Cwt{})
        (pval0-lst (cdr fnames) cterms fxri{} Cwt{}))))
 
+
+(defun pval0-max-lst (fnames cterms fxri{} Cwt{} ans)
+  (if (endp fnames)
+      ans
+    (pval0-max-lst (cdr fnames) cterms fxri{} Cwt{}
+                   (max (pval0 (car fnames) cterms fxri{} Cwt{})
+                        ans))))
+
+
 (mutual-recursion 
 (defun pval-fxr (fname cterms fxri{} Cwt{})
   (b* ((fruleI (get1 fname fxri{}))
@@ -517,19 +521,21 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
     (+ (pval0 fname cterms fxri{} Cwt{})
        (pval-terms all-pterms all-pterms fxri{} Cwt{}))))
 
-(defun pval-fxr-max-lst (fnames cterms fxri{} Cwt{} ans)
-  (if (endp fnames)
-      ans
-    (pval-fxr-max-lst (cdr fnames) cterms fxri{} Cwt{}
-                      (max (pval-fxr (car fnames) cterms fxri{} Cwt{})
-                           ans))))
+;; (defun pval-fxr-max-lst (fnames cterms fxri{} Cwt{} ans)
+;;   (if (endp fnames)
+;;       ans
+;;     (pval-fxr-max-lst (cdr fnames) cterms fxri{} Cwt{}
+;;                       (max (pval-fxr (car fnames) cterms fxri{} Cwt{})
+;;                            ans))))
   
 (defun pval-terms (terms cterms fxri{} Cwt{})
   (if (endp terms)
       0
     (b* ((term (car terms))
          (fnames (get1-lst :name (assoc-all-frules term fxri{})))
-         (pval-max (pval-fxr-max-lst fnames cterms fxri{} Cwt{} 0)))
+         ;; (pval-max (pval-fxr-max-lst fnames cterms fxri{} Cwt{} 0))
+         (pval-max (pval0-max-lst fnames cterms fxri{} Cwt{} 0))
+         )
       (+ pval-max
          (pval-terms (cdr terms) cterms fxri{} Cwt{})))))
 )    
@@ -551,7 +557,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
             (assign-pval-scores-aux (cdr fxri-entries) cterms fxri{} Cwt{})))))
          
 (defun assign-pval-scores (fxri{} cterms Cwt{})
-  (b* ((- (cw? nil "len fxri is ~x0~%" (len fxri{}))))
+  (b* ((- (cw? t "DEBUG:: assign-pval-scores - len(fxri) is ~x0~%" (len fxri{}))))
     (assign-pval-scores-aux fxri{} cterms fxri{} Cwt{})))
 
 (defun max-pval-frule (fxri{} ans-frule)
@@ -582,8 +588,8 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (not-preserved-terms (remove1-equal cterm (set-difference-equal cterms pterms)))
        (- (cw? nil "~% remove-chosen-fixer:~x0 cterm:~x1  ~% not-preserved-terms: ~x2~%"
                (get1 :fixer-term frule) cterm not-preserved-terms))
-       ;(remove-terms (cons (get1 :constraint-term frule) not-preserved-terms))
-       (remove-terms (cons (get1 :constraint-term frule) nil))
+       (remove-terms (cons (get1 :constraint-term frule) not-preserved-terms))
+       ;(remove-terms (cons (get1 :constraint-term frule) nil))
        )
     (mv (set-difference-equal cterms remove-terms)
         (delete-frules remove-terms fxri{}))))
@@ -594,7 +600,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
       (mv ans-fxri{} fixer-B)
     (b* ((frule (max-pval-frule fxri{} (cdar fxri{})))
          ((mv cterms fxri{}) (remove-chosen-fixer frule cterms fxri{}))
-         ;;(fxri{}~ (assign-pval-scores fxri{}~ cterms~ Cwt{})) NO, dont recursively update.
+         ;; (fxri{} (assign-pval-scores fxri{} cterms Cwt{}))
          )
       (maxsat-fxr-ckt-aux fxri{} cterms Cwt{}
                           (acons (get1 :name frule) frule ans-fxri{})
@@ -659,14 +665,14 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
                            (value :invisible))
                  (value nil)))
        
-       (C_sat fixable-terms) ;;For now just line up all fixers. This probably makes recursive fixing inconsequential.
-       (C_unsat '())
-;       (C_sat (filter-fxri-constraint-terms fixable-terms fxri{}))
-;       (C_unsat (set-difference-equal fixable-terms C_sat))
+       ;; (C_sat fixable-terms) ;;For now just line up all fixers. This probably makes recursive fixing inconsequential.
+       ;; (C_unsat '())
+       (C_sat (filter-fxri-constraint-terms fixable-terms fxri{}))
+       (C_unsat (set-difference-equal fixable-terms C_sat))
        ;(b*-soln (to-b*-mv-binding soln-fxr-binding))
        (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Fixer-bindings: ~%~x0~%" soln-fxr-binding))
        (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Fixed terms: ~x0~%" C_sat))
-;       (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Unsat fixable terms: ~x0~%" C_unsat))
+       (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Unsat fixable terms: ~x0~%~%" C_unsat))
        ;; TODO check that this let* binding is sound/correct, i.e., it
        ;; satisfies all the hyps under fixer and pres rules.
        (new-hyps (union-lsts (get1-lst :enum-hyps (assoc-frule-lst C_sat fxri{}))))
