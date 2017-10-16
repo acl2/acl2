@@ -401,7 +401,28 @@ thought about how to implement it.
       nil
     (cons `(assoc-eq ',(car vars) ,alst)
           (make-guard-var-assoc-eq (cdr vars) alst))))
-  
+
+(def cs%-enumcalls-defdata (cs% vl wrld)
+  (decl :sig ((cs%-p fixnump plist-worldp) 
+              -> (mv fixnum (cons pseudo-termp pseudo-termp)))
+        :doc "see cs%-enumcalls")
+  (declare (xargs :verify-guards nil))
+;;; TODO: optimize/complete here using extra information in
+;;; spilled-types and additional-constraints
+  (case-match cs%
+;('cs% defdata-type spilled-types eq-constraint interval additional-constraints)
+    (('cs% defdata-type & & range & &)
+; ACHTUNG: cs% defrec exposed
+     (b* ((enum-info% (get-enum-info% defdata-type range vl wrld )))
+       (mv (access enum-info% domain-size)
+           (access enum-info% min-rec-depth)
+           (access enum-info% max-rec-depth)
+           (list (access enum-info% expr)
+                 (access enum-info% expr2)))))
+    (& (prog2$ 
+        (cw? (normal-output-flag vl) "~|Cgen/Error: BAD record cs% passed to cs%-enumcalls")
+        (mv 0 0 0 NIL)))))
+
 (def cs%-enumcalls (cs% vl wrld bound-vars)
   (decl :sig ((cs%-p fixnump plist-worldp  symbol-listp) 
               -> (mv fixnum (cons pseudo-termp pseudo-termp)))
@@ -467,8 +488,8 @@ thought about how to implement it.
         (cw? (normal-output-flag vl) "~|Cgen/Error: BAD record cs% passed to cs%-enumcalls")
         (mv 0 0 0 NIL)))))     
 
-(def make-next-sigma_mv-let (v-cs%-alst seen-vars vl wrld body)
-  (decl :sig ((symbol-alistp symbol-listp plist-worldp pseudo-termp) -> pseudo-termp)
+(def make-next-sigma_mv-let (v-cs%-alst seen-vars use-fixers-p vl wrld body)
+  (decl :sig ((symbol-alistp symbol-listp booleanp fixnum plist-worldp pseudo-termp) -> pseudo-termp)
         :doc "helper function to make-next-sigma")
   (f* ((_mv-value (v min max exp exp2) 
           `(case sampling-method 
@@ -488,37 +509,39 @@ thought about how to implement it.
       body
     (b* (((cons var cs%) (car v-cs%-alst))
          ((mv & min-rec-depth max-rec-depth (list exp exp2))
-          (cs%-enumcalls cs% vl wrld seen-vars)))
+          (if use-fixers-p
+              (cs%-enumcalls-defdata cs% vl wrld)
+              (cs%-enumcalls cs% vl wrld seen-vars))))
 ;    in 
      `(mv-let (seed. BE. ,var)
               ,(_mv-value var min-rec-depth max-rec-depth exp exp2)
               (declare (ignorable ,var))
-            ,(make-next-sigma_mv-let (cdr v-cs%-alst) (cons var seen-vars) vl wrld body ))))))
+            ,(make-next-sigma_mv-let (cdr v-cs%-alst) (cons var seen-vars) use-fixers-p vl wrld body ))))))
 
 
                
 ;; dead code 
-(def make-enumerator-calls-alist (v-cs%-alst vl wrld  ans.)
-  (decl :sig ((symbol-cs%-alist fixnum plist-world  symbol-alist) 
-              -> (mv erp symbol-alist))
-        :doc 
-        "given an alist mapping variables to cs% records (in dependency order),
-  we walk down the alist, translating each type constraint to the corresponding
-enumerator call expression")
-  (declare (xargs :verify-guards nil))
-  (if (endp v-cs%-alst)
-      (mv nil (reverse ans.)) ;dont change the original dependency order
-    (b* (((cons x cs%) (car v-cs%-alst))
-         ((mv domain-size ?min-rec-depth ?max-rec-depth calls)
-          (cs%-enumcalls cs% vl wrld  (strip-cars ans.)))
+;; (def make-enumerator-calls-alist (v-cs%-alst vl wrld ans.)
+;;   (decl :sig ((symbol-cs%-alist fixnum plist-world  symbol-alist) 
+;;               -> (mv erp symbol-alist))
+;;         :doc 
+;;         "given an alist mapping variables to cs% records (in dependency order),
+;;   we walk down the alist, translating each type constraint to the corresponding
+;; enumerator call expression")
+;;   (declare (xargs :verify-guards nil))
+;;   (if (endp v-cs%-alst)
+;;       (mv nil (reverse ans.)) ;dont change the original dependency order
+;;     (b* (((cons x cs%) (car v-cs%-alst))
+;;          ((mv domain-size ?min-rec-depth ?max-rec-depth calls)
+;;           (cs%-enumcalls cs% vl wrld  (strip-cars ans.)))
 
-; simple bug July 9 2013: below comparison, replaced int= with equal,
-; this could have been caught by type-checking/guard-verif
-         ((when (equal domain-size 0)) (mv t '()))) 
-;    in
-     (make-enumerator-calls-alist (cdr v-cs%-alst) vl wrld
-                                 ;; add in reverse order
-                                 (cons (cons x calls) ans.)))))
+;; ; simple bug July 9 2013: below comparison, replaced int= with equal,
+;; ; this could have been caught by type-checking/guard-verif
+;;          ((when (equal domain-size 0)) (mv t '()))) 
+;; ;    in
+;;      (make-enumerator-calls-alist (cdr v-cs%-alst) vl wrld
+;;                                  ;; add in reverse order
+;;                                  (cons (cons x calls) ans.)))))
 
 
 (defun displayed-range (interval)
