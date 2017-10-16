@@ -1135,3 +1135,9 @@ Mainly to be used for evaluating enum lists "
         ((endp (cdr hyps)) (list (cgen-dumb-negate-lit (car hyps)) concl))
         (t (append (cgen-dumb-negate-lit-lst hyps)
                    (list concl)))))
+
+(defun is-var-equality-hyp (term)
+  (and (equal (len term) 3)
+       (member-equal (car term) '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL))
+       (or (proper-symbolp (second term))
+           (proper-symbolp (third term)))))

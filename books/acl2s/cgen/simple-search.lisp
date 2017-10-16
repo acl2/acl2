@@ -703,6 +703,12 @@ where
      (mv T nil state)))))
 
 
+(defloop filter-var-eq-hyps (hyps)
+  (for ((hyp in hyps))
+       (when (is-var-equality-hyp hyp)
+         (collect hyp))))
+
+
 
 ;; 1st April 2013 Fix
 ;; You cannot trust make-event to give the right result
@@ -781,7 +787,9 @@ Use :simple search strategy to find counterexamples and witnesses.
        ;;[2016-04-03 Sun] Added support for fixers
        ((mv erp fxr-res state)
         (if (cget use-fixers)
-            (fixer-arrangement hyps concl vl ctx state)
+            ;; reify all eq hyps that are true in the ACL2 context.
+            (b* ((eq-hyps (filter-var-eq-hyps (reify-type-alist-hyps type-alist))))
+              (fixer-arrangement (union-equal eq-hyps hyps) concl vl ctx state))
           (value (list nil nil))))
        ((list fixer-bindings additional-fxr-hyps) fxr-res)
        
