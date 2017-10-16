@@ -110,6 +110,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (fapply-term 'f '('4 y))
+              '(f '4 y))
+
+(assert-equal (fapply-term '(lambda (x y) (* (1+ x) (1- y))) '(a b))
+              '(* (1+ a) (1- b)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (fapply-term* 'f ''4 'y)
+              '(f '4 y))
+
+(assert-equal (fapply-term* '(lambda (x y) (* (1+ x) (1- y))) 'a 'b)
+              '(* (1+ a) (1- b)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (fapply-unary-to-terms 'f '(x (g y) '2))
+              '((f x) (f (g y)) (f '2)))
+
+(assert-equal (fapply-unary-to-terms '(lambda (z) (cons z z))
+                                     '(x (g y) '2))
+              '((cons x x) (cons (g y) (g y)) (cons '2 '2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) '(quote "a"))
+              '(quote "a"))
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) 'z)
+              'z)
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) 'x)
+              '(quote 1))
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) '((lambda (x) x) y))
+              '((lambda (x) x) '2))
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) '(f x (g z)))
+              '(f '1 (g z)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-equal (all-program-ffn-symbs 'x nil (w state)) nil)
 
 (assert-equal (all-program-ffn-symbs '(quote 4) nil (w state)) nil)
