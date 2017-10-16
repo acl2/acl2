@@ -160,6 +160,9 @@ cgen-state"
           (print-cgen-summary :print-cgen-summary)
           (use-fixers :use-fixers)
           (recursively-fix :recursively-fix)
+          (num-print-counterexamples :num-print-counterexamples)
+          (num-print-witnesses :num-print-witnesses)
+          
           ) v))
     (and (fixnump num-trials)
          (fixnump verbosity-level)
@@ -173,6 +176,9 @@ cgen-state"
          (booleanp print-cgen-summary)
          (booleanp use-fixers)
          (booleanp recursively-fix)
+         (fixnump num-print-counterexamples)
+         (fixnump num-print-witnesses)
+        
          )))
          
 (defun cgen-params-p (v)
