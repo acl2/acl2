@@ -9,6 +9,7 @@
 
 (include-book "basis")
 (include-book "../defdata/defdata-util")
+(include-book "utilities")
 
 ;;; For use by testing hints
 ;;; Get the type information from the ACL2 type alist
@@ -196,8 +197,45 @@
                  (and (consp term)
                       (equal (acl2::decode-ts ts) 'ACL2::*TS-T*)
                       (list term))))))
-                
 
+
+(defloop kwote-numbers (lst)
+  (for ((x in lst))
+       (collect (if (acl2-numberp x) (kwote x) x))))
+
+(program)
+#!ACL2
+(defun reify-poly (poly var)
+  (let* ((pair (show-poly1
+                   (cond ((null (access poly poly :alist)) nil)
+                         (t (cons (cons (list (caar (access poly poly :alist)))
+                                        (cdar (access poly poly :alist)))
+                                  (cdr (access poly poly :alist)))))
+                   (cond ((= (access poly poly :constant) 0) nil)
+                         ((logical-< 0 (access poly poly :constant)) nil)
+                         (t (cons (- (access poly poly :constant)) nil)))
+                   (cond ((= (access poly poly :constant) 0) nil)
+                         ((logical-< 0 (access poly poly :constant))
+                          (cons (access poly poly :constant) nil))
+                         (t nil))))
+         (lhs (car pair))
+         (lhs (cgen::kwote-numbers lhs))
+         (rhs (cdr pair))
+         (rhs (cgen::kwote-numbers rhs)))
+    (cgen::subst-equal var (list var) ;;var is in extra parens in poly encoding.
+                       (cons (access poly poly :relation)
+                             (append (or lhs '('0)) (or rhs '('0)))))))
+
+(defloop reify-poly-lst-hyps (poly-lst var)
+  (for ((poly in poly-lst))
+       (collect (acl2::reify-poly poly var))))
+
+(defloop reify-pot-lst-hyps (pot-lst)
+  (for ((pot in pot-lst))
+       (append (reify-poly-lst-hyps (append (acl2::access acl2::linear-pot pot :negatives)
+                                            (acl2::access acl2::linear-pot pot :positives))
+                                    (acl2::access acl2::linear-pot pot :var)))))
+(logic)
 
 ; utility fn to print if verbose flag is true 
 (defmacro cw? (verbose-flag &rest rst)
@@ -218,18 +256,19 @@
       (collect-tau-alist (cdr triples)
                          tau-alist type-alist pot-lst ens wrld))))
 
-(defun tau-alist-clause (clause sign ens wrld state)
+
+(defun tau-alist-clause (cl sign ens wrld state)
   (declare (xargs :mode :program :stobjs (state)))
-;duplicated from tau-clausep in prove.lisp.
-(b* (((mv ?contradictionp type-alist pot-lst)
-      (acl2::cheap-type-alist-and-pot-lst clause ens wrld state))
-     (triples (acl2::merge-sort-car-<
-                (acl2::annotate-clause-with-key-numbers clause
-                                                        (len clause)
-                                                        0 wrld)))
-     (tau-alist (collect-tau-alist triples sign type-alist pot-lst
-                                   ens wrld)))
-  tau-alist))
+  (b* (((mv & type-alist pot-lst) (acl2::cheap-type-alist-and-pot-lst cl ens wrld state))
+       (pot-hyps (reify-pot-lst-hyps pot-lst))
+       ((mv hyps concl) (clause-mv-hyps-concl cl))
+       (clause (cgen::clausify-hyps-concl (union-equal hyps pot-hyps) concl))
+       ;;(- (cw "hyps= ~x0 reified hyps = ~x1~%" hyps pot-hyps))
+       (triples (acl2::merge-sort-car-<
+                 (acl2::annotate-clause-with-key-numbers clause (len clause) 0 wrld)))
+       (tau-alist (collect-tau-alist triples sign type-alist pot-lst ens wrld)))
+    tau-alist))
+
 
 
 ;; (defun tau-alist-clauses (clauses sign ens wrld state ans)
