@@ -4115,32 +4115,6 @@
                 (cdr *accumulated-warnings*))))
   state)
 
-(defconst *stobjs-out-invalid*
-  '(if return-last))
-
-(defun stobjs-out (fn w)
-
-; Warning: keep this in sync with get-stobjs-out-for-declare-form.
-
-; See the Essay on STOBJS-IN and STOBJS-OUT.
-
-; Note that even though the guard implies (not (member-eq fn
-; *stobjs-out-invalid*)), we keep the member-eq test in the code in case
-; stobjs-out is called from a :program-mode function, since in that case the
-; guard may not hold.
-
-  (declare (xargs :guard (and (symbolp fn)
-                              (plist-worldp w)
-                              (not (member-eq fn *stobjs-out-invalid*)))))
-  (cond ((eq fn 'cons)
-; We call this function on cons so often we optimize it.
-         '(nil))
-        ((member-eq fn *stobjs-out-invalid*)
-         (er hard! 'stobjs-out
-             "Implementation error: Attempted to find stobjs-out for ~x0."
-             fn))
-        (t (getpropc fn 'stobjs-out '(nil) w))))
-
 ; The ACL2 Record Facilities
 
 ; Our record facility gives us the ability to declare "new" types of

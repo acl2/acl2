@@ -445,7 +445,7 @@
   ((list true-listp "List to check.")
    (super true-listp "List that must include all the elements of @('list')."))
   "Cause an error if any element of a @('nil')-terminated list
-   is not a member of another list."
+   is not a member of another @('nil')-terminated list."
   (((subsetp-equal list super)
     "~@0 must have only elements in ~x1, but it includes the ~@2."
     description

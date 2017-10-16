@@ -321,37 +321,6 @@
   (defrule rulelist-wfp-of-*imf-grammar-rules*
     (rulelist-wfp *imf-grammar-rules*)))
 
-(defval *all-imf-grammar-rules*
-  :parents (imf-example)
-  :short "All the IMF grammar rules, including the referenced ABNF core rules."
-  :long
-  "<p>
-   These are obtained by plugging the core rules into the IMF rules.
-   </p>
-   <p>
-   The resulting rules are well-formed and closed,
-   and generate a language consisting only of ASCII codes.
-   </p>
-   <p>
-   We use @(tsee add-const-to-untranslate-preprocess)
-   to keep this constant unexpanded in output.
-   </p>"
-  (plug-rules *imf-grammar-rules*
-              *core-rules*)
-  ///
-
-  (add-const-to-untranslate-preprocess *all-imf-grammar-rules*)
-
-  (defrule rulelist-wfp-of-*all-imf-grammar-rules*
-    (rulelist-wfp *all-imf-grammar-rules*))
-
-  (defrule rulelist-closedp-of-*all-imf-grammar-rules*
-    (rulelist-closedp *all-imf-grammar-rules*))
-
-  (defrule ascii-only-*all-imf-grammar-rules*
-    (rulelist-in-termset-p *all-imf-grammar-rules*
-                           (integers-from-to 0 127))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc smtp-example
@@ -394,50 +363,6 @@
 
   (defrule rulelist-wfp-of-*smtp-grammar-rules*
     (rulelist-wfp *smtp-grammar-rules*)))
-
-(defval *all-smtp-grammar-rules*
-  :parents (smtp-example)
-  :short "All the SMTP grammar rules,
-          including the referenced IMF rules and ABNF core rules."
-  :long
-  "<p>
-   Since both the SMTP rules and the IMF rules contain
-   at least one different rule for the same name (namely, @('atom')),
-   we remove from the IMF grammar all the rules that define names
-   already defined by the SMTP grammar.
-   The IMF rules plugged into the SMTP rules transitively reference @('atom'),
-   but that should refer to the one defined by the SMTP rules,
-   not the IMF rules.
-   We plug the remaining IMF grammar rules into the SMTP rules,
-   and then we plug the ABNF core rules.
-   </p>
-   <p>
-   The resulting rules are well-formed and closed,
-   and generate a language consisting only of ASCII codes.
-   </p>
-   <p>
-   We use @(tsee add-const-to-untranslate-preprocess)
-   to keep this constant unexpanded in output.
-   </p>"
-  (plug-rules
-   (plug-rules *smtp-grammar-rules*
-               (remove-rules-that-define
-                (rulelist-defined-rules *smtp-grammar-rules*)
-                *imf-grammar-rules*))
-   *core-rules*)
-  ///
-
-  (add-const-to-untranslate-preprocess *all-smtp-grammar-rules*)
-
-  (defrule rulelist-wfp-of-*all-smtp-grammar-rules*
-    (rulelist-wfp *all-smtp-grammar-rules*))
-
-  (defrule rulelist-closedp-of-*all-smtp-grammar-rules*
-    (rulelist-closedp *all-smtp-grammar-rules*))
-
-  (defrule ascii-only-*all-smtp-grammar-rules*
-    (rulelist-in-termset-p *all-smtp-grammar-rules*
-                           (integers-from-to 0 127))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -482,38 +407,6 @@
 
   (defrule rulelist-wfp-of-*imap-grammar-rules*
     (rulelist-wfp *imap-grammar-rules*)))
-
-(defval *all-imap-grammar-rules*
-  :parents (imap-example)
-  :short "All the IMAP grammar rules, including the referenced ABNF core rules."
-  :long
-  "<p>
-   These are obtained by plugging the core rules into the IMAP rules.
-   </p>
-   <p>
-   These resulting rules are well-formed and closed.
-   </p>
-   <p>
-   The presence of some ABNF prose value notations in the IMAP rules
-   (e.g. in the @('ATOM-CHAR') rule)
-   prevents the formulation, based on the IMAP rules only,
-   of bounds on the natural numbers in the strings of the generated language.
-   </p>
-   <p>
-   We use @(tsee add-const-to-untranslate-preprocess)
-   to keep this constant unexpanded in output.
-   </p>"
-  (plug-rules *imap-grammar-rules*
-              *core-rules*)
-  ///
-
-  (add-const-to-untranslate-preprocess *all-imap-grammar-rules*)
-
-  (defrule rulelist-wfp-of-*all-imap-grammar-rules*
-    (rulelist-wfp *all-imap-grammar-rules*))
-
-  (defrule rulelist-closedp-of-*all-imap-grammar-rules*
-    (rulelist-closedp *all-imap-grammar-rules*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -51,7 +51,7 @@ data last modified: [2014-08-06]
         (cons (car terms) (find-x-terms-=-depth (cdr terms) x depth))
       (find-x-terms-=-depth (cdr terms) x depth)))))
 
- 
+
 (defun find-x-terms->=-depth (terms x depth)
   "find terms having x at greater than or equal to given depth"
   (if (endp terms)
@@ -87,8 +87,8 @@ data last modified: [2014-08-06]
 
 
 
-       
-  
+
+
 ;Tell J this problem TODO
 (DEFUN DUMBer-NEGATE-LIT (TERM)
   (COND ((acl2::VARIABLEP TERM)
@@ -151,7 +151,7 @@ data last modified: [2014-08-06]
              "Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule")
 ;poss simple or conj rule
          `(IMPLIES (AND . ,es) (,P ,x))))))
-  
+
 
 
 (defloop tau-rules-DNF=>Px (conj-clauses Px C)
@@ -173,7 +173,7 @@ data last modified: [2014-08-06]
        (conjunctive-clauses (acl2::cnf-dnf t te nil)) ;get dnf form
        (rules (tau-rules-DNF=>Px conjunctive-clauses Px C)))
     rules))
-    
+
 
 
 (defun tau-rules-Px=>OR-terms (terms P x)
@@ -229,7 +229,7 @@ data last modified: [2014-08-06]
 
 (defloop get-first-eq-constant-dont-change (terms wrld)
   (for ((term in terms)) (thereis (get-eq-constant-dont-change term wrld))))
-  
+
 
 (defun tau-rule-Px-recog=>prod (and-terms P x C wrld)
   (declare (ignorable P wrld))
@@ -244,7 +244,7 @@ data last modified: [2014-08-06]
 ;TODO -- revisit this!! The and-terms eaten up tau-rule-Px-=>EQ-NIL-Hack should not
 ; in the first place come here.
 
-       
+
        (dterms (remove-equal recog-exp and-terms)))
 
      (if (find-x-terms->=-depth dterms x 3)
@@ -257,7 +257,7 @@ data last modified: [2014-08-06]
 (defloop tau-rules-Px=>SoP (sop P x C wrld)
   "Given sum-of-products pred expr sop, return a list of characterizing tau rules"
   (for ((prod in sop)) (append (tau-rule-Px-recog=>prod prod P x C wrld))))
-       
+
 (defun tau-rule-Px-=>EQ-NIL-Hack (and-terms P x wrld)
   (b* ((eq-exp (get-first-eq-constant-dont-change and-terms wrld))
        ((unless eq-exp) ;hack
@@ -271,7 +271,7 @@ data last modified: [2014-08-06]
                     nil))
 ;       (- (cw "recog = ~x0 " recog-exp))
        ((unless recog-exp) nil))
-                               
+
     `((IMPLIES (AND (,P ,x) ,recog-exp) ,eq-exp))))
 
 (defloop tau-rules-Px=>EQ-constants (sop P x wrld)
@@ -292,6 +292,18 @@ data last modified: [2014-08-06]
 
 (defloop governing-recognizer-call (terms C wrld) ;cheat: just give the first
   (for ((term in terms)) (thereis (recognizer-call term C wrld))))
+
+; Matt K. mod, 10/2017: Since ev-fncall-w is called in disjoint-clause2-p but
+; is now untouchable, a change is necessary.  Fortunately, cert.acl2 specifies
+; :ttags :all, so we can introduce a trust tag to remove ev-fncall-w as an
+; untouchable.  An alternate solution, not yet tried (at least by me), is to
+; use ev-fncall-w! instead; but that might slow things down a lot because of
+; the extra checking done.  Note that magic-ev-fncall isn't an option, because
+; state isn't available in disjoint-clause2-p.
+
+(defttag :ev-fncall-w-ok)
+(remove-untouchable acl2::ev-fncall-w t)
+(defttag nil)
 
 (defun disjoint-clause2-p (cl1 cl2 C wrld)
   (b* ((P1x (governing-recognizer-call cl1 C wrld))
@@ -314,11 +326,13 @@ data last modified: [2014-08-06]
                  (and (not erp) (not res)))
              t)) ;new symbol introduced will be disjoint -- heuristic
           ((and P1x P2x)
-           (if (and (function-symbolp (car P1x) wrld) 
+           (if (and (function-symbolp (car P1x) wrld)
                     (function-symbolp (car P2x) wrld))
                (disjoint-p (car P1x) (car P2x) wrld)
              t)) ;new symbols disjoint -- heuristic
           (t nil))))
+
+(push-untouchable acl2::ev-fncall-w t) ; see Matt K. comment above
 
 
 (defloop clause-disjoint-with-clauses-p (cl clauses C wrld)
@@ -355,7 +369,7 @@ data last modified: [2014-08-06]
       `((IMPLIES (AND (,P ,x) ,@neg-prod-recogs)
                  (OR . ,base-terms))))))
 
-       
+
 
 (defun shallow-prod-p (texp C)
   (and (consp texp)
@@ -377,18 +391,18 @@ data last modified: [2014-08-06]
             (rest (set-difference-equal targs prods)))
          (and (consp prods)
               (var-or-quoted-listp rest)))))
-         
-       
+
+
 
 
 (defun tau-rules-Px=>form (form Px s  new-fns-and-args ctx C wrld)
   (b* (((mv erp te) (acl2::pseudo-translate form new-fns-and-args wrld))
-       ((when erp) 
+       ((when erp)
         (prog2$
          (cw "~| ~x0: Error in translate: ~x1" ctx te)
          (list "Error in translate in tau-rules => direction")))
        (te (expand-lambda te)) ;eliminate let/lambda
-;       (vars (all-vars1-lst te '())) 
+;       (vars (all-vars1-lst te '()))
 ;       (- (assert$ (= 1 (len vars)) nil))) ;monadic
        )
     (if (shallow-union-of-prods-p s C)
@@ -403,7 +417,7 @@ data last modified: [2014-08-06]
 
       (b* ((clauses (acl2::cnf-dnf t te t))) ;get cnf
         (tau-rules-Px=>CNF clauses Px)))))
-     
+
 
 (defloop filter-strings (xs)
   (for ((x in xs)) (append (and (stringp x) (list x)))))
@@ -416,14 +430,14 @@ data last modified: [2014-08-06]
            (mv msgs (cons 'AND rules)))
           ((consp rules) (mv msgs (car rules))) ;single rule
           (t (mv msgs nil)))))
-  
+
 
 
 (defun all-1-arity-fns1 (conx-al)
     (b* ((dest-pred-alist (get1 :dest-pred-alist conx-al))
          (recog (get1 :recog conx-al)))
       (cons recog (strip-cars dest-pred-alist))))
-         
+
 (defloop all-1-arity-fns (new-constructors)
   (for ((cx in new-constructors)) (append (all-1-arity-fns1 (cdr cx)))))
 
@@ -432,7 +446,7 @@ data last modified: [2014-08-06]
          (arity (get1 :arity conx-al))
          (v1--vk (numbered-vars x arity)))
       (cons conx v1--vk)))
-         
+
 (defloop all-conx-fns-args (new-constructors x)
   (for ((cx in new-constructors)) (collect (all-conx-fns-args1 cx x))))
 
@@ -446,8 +460,8 @@ data last modified: [2014-08-06]
         (t (let ((fn (caar fn-args-lst)))
                  ;(formals (cdar fn-args-lst)))
              (putprop
-              fn 'acl2::tau-pair (if (is-allp-alias fn wrld) 
-                                     (cons nil fn) 
+              fn 'acl2::tau-pair (if (is-allp-alias fn wrld)
+                                     (cons nil fn)
                                    (cons 0 fn))
               (extend-wrld-with-fn-args-list-with-tau-pair (cdr fn-args-lst) wrld))))))
 
@@ -456,7 +470,7 @@ data last modified: [2014-08-06]
                 (acl2::strip-force-and-case-split-in-hyps-of-pairs (acl2::unprettyify term))))
         (wrld1 (extend-wrld-with-fn-args-list-with-tau-pair fn-args-lst wrld)))
     (acl2::acceptable-tau-rulesp :all pairs wrld1)))
-       
+
 
 (defun tau-characterization-events1 (pair top-kwd-alist ctx wrld)
   (b* (((cons name A) pair)
@@ -522,33 +536,33 @@ data last modified: [2014-08-06]
        (?recp (get1 :recp kwd-alist))
        (yes (get1 :print-commentary kwd-alist))
        )
-    
 
-    
+
+
     (append (and msgs<= `((commentary ,yes "~| ~x0 <= body -- not complete. ~|Reasons: ~x1 ~%" ',Px ',msgs<=)))
             (and msgs=> `((commentary ,yes "~| ~x0 => body -- not complete. ~|Reasons: ~x1 ~%" ',Px ',msgs=>)))
             (and (not msgs=>) (not msgs<=) rule-Px-=>-tau-acceptable-p rule-Px-=>-tau-acceptable-p
                  `((commentary ,yes "~|Defdata/Note: ~x0 relatively complete for Tau.~%" ',(car Px))))
-            (and rule-=>-Px 
+            (and rule-=>-Px
                  `((DEFTHM ,(symbol-fns::prefix 'def '=> name)
                      ,rule-=>-Px
                      :HINTS (("Goal" :IN-THEORY (e/d (,(car Px)) (,@disabled ,@(strip-cars new-constructors)))))
                      :RULE-CLASSES (,@(and rule-=>-Px-tau-acceptable-p (list :TAU-SYSTEM)) :REWRITE))))
             (and rule-Px-=>
-                 `((DEFTHM ,(symbol-fns::suffix name '=> 'def) 
+                 `((DEFTHM ,(symbol-fns::suffix name '=> 'def)
                      ,rule-Px-=>
                      :HINTS (("Goal" :IN-THEORY (e/d (,(car Px)) (,@disabled))))
-                     :RULE-CLASSES (,@(and rule-Px-=>-tau-acceptable-p '(:TAU-SYSTEM)) 
+                     :RULE-CLASSES (,@(and rule-Px-=>-tau-acceptable-p '(:TAU-SYSTEM))
                                     ;,@(:REWRITE
-                                    ;:backchain-limit-lst 10) 
+                                    ;:backchain-limit-lst 10)
 ;HARSH: Check if it is a record (product?) type and also add a rewrite rule here
 ; Disable the constructor
                                     (:forward-chaining :trigger-terms (,Px))
                                     ; Do we want forward chaining here?
                                     )))))))
-     
 
-   
+
+
 
 (defloop tau-characterization-events0 (ps kwd-alist wrld)
   (for ((p in ps)) (append (tau-characterization-events1 p kwd-alist 'tau-characterization wrld))))

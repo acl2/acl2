@@ -28708,25 +28708,98 @@
              (mv nil nil))))))
 
 #-acl2-loop-only
+(progn
+
+(defun raw-ev-fncall-simple (fn args w hard-error-returns-nilp aok programp
+                                stobjs-out)
+
+; Warning: Keep this in sync with raw-ev-fncall.  The present version is
+; somewhat faster, and supports efficient execution of magic-ev-fncall, thus
+; avoiding any consideration of stobjs.
+
+; We assume that w = (w *the-live-state*), that the call of
+; ev-fncall-w-guard in magic-ev-fncall has been successfully executed, that
+; programp = (programp fn w), and that stobjs-out = (stobjs-outt fn w).
+
+  (the #+acl2-mv-as-values (values t t)
+       #-acl2-mv-as-values t
+       (let* ((*aokp*
+
+; We expect the parameter aok, here and in all functions in the "ev family"
+; that take aok as an argument, to be Boolean.  If it's not, then there is no
+; real harm done: *aokp* would be bound here to a non-Boolean value, suggesting
+; that an attachment has been used when that isn't necessarily the case; see
+; *aokp*.
+
+               aok)
+              (throw-raw-ev-fncall-flg t)
+              (**1*-as-raw*
+
+; We defeat the **1*-as-raw* optimization so that when we use raw-ev-fncall to
+; evaluate a call of a :logic mode term, all of the evaluation will take place
+; in the logic.  Note that we don't restrict this special treatment to
+; :common-lisp-compliant functions, because such a function might call an
+; :ideal mode function wrapped in ec-call.  But we do restrict to :logic mode
+; functions, since they cannot call :program mode functions and hence there
+; cannot be a subsidiary rebinding of **1*-as-raw* to t.
+
+               (if programp
+                   **1*-as-raw*
+                 nil))
+              (applied-fn (*1*-symbol fn))
+              (val (catch 'raw-ev-fncall
+
+; Since w = (w *the-live-state*), we can avoid calling (chk-raw-ev-fncall fn w
+; aok) or checking (fboundp fn).
+
+                     (prog1
+                         (let ((*hard-error-returns-nilp*
+                                hard-error-returns-nilp))
+                           #-acl2-mv-as-values
+                           (apply applied-fn args)
+                           #+acl2-mv-as-values
+                           (cond ((null (cdr stobjs-out))
+                                  (apply applied-fn args))
+                                 (t (multiple-value-list
+                                     (apply applied-fn args)))))
+                       (setq throw-raw-ev-fncall-flg nil)))))
+
+; Observe that if a throw to 'raw-ev-fncall occurred during the
+; (apply fn args) then the local variable throw-raw-ev-fncall-flg
+; is t and otherwise it is nil.  If a throw did occur, val is the
+; value thrown.
+
+         (cond
+          (throw-raw-ev-fncall-flg
+           (mv t (ev-fncall-msg val w nil)))
+          (t #-acl2-mv-as-values ; adjust val for the multiple value case
+             (let ((val
+                    (cond
+                     ((null (cdr stobjs-out)) val)
+                     (t (cons val
+                              (mv-refs (1- (length stobjs-out))))))))
+               (mv nil val))
+             #+acl2-mv-as-values ; val already adjusted for multiple value case
+             (mv nil val))))))
+
 (defun-overrides magic-ev-fncall (fn args state hard-error-returns-nilp aok)
-
-; Warning: Do not allow this function to modify state without reading the
-; comment in chk-logic-subfunctions showing that if trans-eval is in :logic
-; mode, then user-defined stobjs can be changed in a way inconsistent with
-; logical definitions.
-
-  (let ((wrld (w state)))
+  (let* ((wrld (w state))
+         (programp/stobjs-out
+          (ev-fncall-w-guard fn args wrld
+                             (f-get-global 'temp-touchable-fns state))))
     (cond
-     ((and (symbolp fn)
-           (true-listp args)
-           (let ((formals
-                  (getpropc fn 'formals t wrld)))
-             (and (not (eq formals t)) ; (function-symbolp fn wrld)
-                  (eql (length args) (length formals))))
-           (logicp fn wrld))
-      (ev-fncall fn args state
-                 nil ; latches
-                 hard-error-returns-nilp aok))
+     (programp/stobjs-out
+      (if (car programp/stobjs-out)
+          (state-free-global-let*
+           ((safe-mode t))
+           (raw-ev-fncall-simple fn args
+                                 wrld
+                                 hard-error-returns-nilp
+                                 aok
+                                 t
+                                 (cdr programp/stobjs-out)))
+        (raw-ev-fncall-simple fn args wrld hard-error-returns-nilp aok nil
+                              (cdr programp/stobjs-out))))
      (t
       (let ((msg
              (msg "~%~%Meta-level function Problem: Magic-ev-fncall attempted ~
@@ -28747,17 +28820,26 @@
                          fn))
                    ((not (eql (length args)
                               (length (getpropc fn 'formals t wrld))))
-                    (msg "The length of that args is ~x0, but ~x1 takes ~x2 ~
-                          arguments"
+                    (msg "the length of that argument list is ~x0, but ~x1 ~
+                          takes ~x2 arguments"
                          (length args)
                          fn
                          (length (getpropc fn 'formals t wrld))))
                    (t
-                    (assert (not (logicp fn wrld)))
-                    (msg "~x0 is not a logic-mode function symbol"
-                         fn))))))
+
+; Since we don't expect many direct calls of magic-ev-fncall and we have
+; covered most cases above, we leave it up to the user to investigate which
+; part of ev-fncall-w-guard fails.  The condition (all-nils stobjs-in) from
+; ev-fncall-w-guard1 is automatically met here, since stobjs could not be put
+; intot he list, args.
+
+                    (msg "even though the call of ~x0 is well-formed, it ~
+                          fails to satisfy ~x1"
+                         fn
+                         'ev-fncall-w-guard))))))
         (prog2$ (cw "~@0" msg)
                 (mv t msg)))))))
+)
 
 (defun make-event-ctx (event-form)
   (msg "( MAKE-EVENT ~@0~@1)"

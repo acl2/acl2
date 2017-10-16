@@ -132,3 +132,5 @@
 (verify-termination add-suffix-to-fn) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination fsubcor-var) ; and guards

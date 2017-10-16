@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/defchoose-queries" :dir :system)
 (include-book "kestrel/utilities/defun-sk-queries" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
+(include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
@@ -1148,6 +1149,7 @@
                inst sothm))
        (sothm-formula (formula sothm nil wrld))
        (thm-formula (fun-subst-term inst sothm-formula wrld))
+       (thm-formula (untranslate thm-formula t wrld))
        (fsbs (ext-fun-subst-term sothm-formula inst wrld))
        (thm-proof (sothm-inst-proof sothm fsbs wrld)))
     `(defthm ,thm ,thm-formula ,@thm-proof ,@rest)))
@@ -1195,13 +1197,6 @@
        (sofunp (car sofun-inst) wrld)
        (funvar-instp (cdr sofun-inst) wrld)))
 
-(define keywords-of-keyword-value-list ((kvlist keyword-value-listp))
-  :returns (keywords symbol-listp :hyp :guard)
-  :short "Extract the keywords from the even positions of a keyword-value list."
-  (if (endp kvlist)
-      nil
-    (cons (car kvlist) (keywords-of-keyword-value-list (cddr kvlist)))))
-
 (define defun-inst-plain-events ((fun symbolp)
                                  (fparams (or (funvar-setp fparams wrld)
                                               (null fparams)))
@@ -1243,8 +1238,11 @@
        (sofun-guard (guard sofun nil wrld))
        (fsbs (if sofun-measure (acons sofun fun inst) inst))
        (fun-body (fun-subst-term fsbs sofun-body wrld))
+       (fun-body (untranslate fun-body nil wrld))
        (fun-measure (fun-subst-term inst sofun-measure wrld))
+       (fun-measure (untranslate fun-measure nil wrld))
        (fun-guard (fun-subst-term inst sofun-guard wrld))
+       (fun-guard (untranslate fun-guard t wrld))
        (sofun-tt-name `(:termination-theorem ,sofun))
        (sofun-tt-formula (and (recursivep sofun nil wrld)
                               (termination-theorem sofun wrld)))
@@ -1290,6 +1288,7 @@
        (bound-vars (defchoose-bound-vars sofun wrld))
        (sofun-body (defchoose-body sofun wrld))
        (fun-body (fun-subst-term inst sofun-body wrld))
+       (fun-body (untranslate fun-body nil wrld))
        (info (list 'choice fparams))
        (table-event (if fparams
                         (list `(table second-order-functions ',fun ',info))
@@ -1329,6 +1328,7 @@
        (quant (defun-sk-info->quantifier sofun-info))
        (sofun-matrix (defun-sk-info->matrix sofun-info))
        (fun-matrix (fun-subst-term inst sofun-matrix wrld))
+       (fun-matrix (untranslate fun-matrix nil wrld))
        (rewrite-option (assoc-keyword :rewrite options))
        (rewrite
         (if rewrite-option
@@ -1354,6 +1354,7 @@
                      nil)))
        (sofun-guard (guard sofun nil wrld))
        (fun-guard (fun-subst-term inst sofun-guard wrld))
+       (fun-guard (untranslate fun-guard t wrld))
        (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
        (info (list 'quant fparams))
        (table-event (if fparams

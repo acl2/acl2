@@ -2217,34 +2217,6 @@
        :program
        :logic))
 
-(defun logicp (fn wrld)
-
-; We assume that fn is not the name of a theorem (presumably it's a function
-; symbol), in order to avoid the use of symbol-class, which can check the
-; 'theorem property of fn.
-
-  (declare (xargs :guard (and (plist-worldp wrld)
-
-; We deliberately avoid adding the conjunct (function-symbolp fn), even though
-; we expect it to be true when we call logicp.  Otherwise we would incur more
-; proof obligations; indeed, guard verification would fail for arities-okp.
-
-                              (symbolp fn))))
-  (not (eq (getpropc fn 'symbol-class nil wrld)
-           :program)))
-
-(defmacro logicalp (fn wrld)
-; DEPRECATED in favor of logicp!
-  `(logicp ,fn ,wrld))
-
-(defmacro programp (fn wrld)
-
-; We assume that fn is not the name of a theorem (presumably it's a function
-; symbol), in order to avoid the use of symbol-class, which can check the
-; 'theorem property of fn.
-
-  `(not (logicp ,fn ,wrld)))
-
 (defun defun-mode (name wrld)
 
 ; Only function symbols have defun-modes.  For all other kinds of names

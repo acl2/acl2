@@ -35,6 +35,7 @@
                          formals
                          function-symbol-listp
                          guard-verified-p
+                         keywords-of-keyword-value-list
                          lambda-body
                          lambda-formals
                          make-lambda
