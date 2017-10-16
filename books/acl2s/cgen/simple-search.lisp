@@ -403,7 +403,7 @@ eg:n/a")
 
 ; TODO: This function is in the inner loop. See if it can be furthur
 ; optimized.
-(def record-testrun. (test-result hyp-vals A num-cts num-wts vl test-outcomes% gcs%)
+(def record-testrun. (test-result hyp-vals A num-print-cts num-print-wts vl test-outcomes% gcs%)
   (decl :sig ((keyword true-listp symbol-doublet-listp fixnum fixnum fixnum test-outcomes%-p gcs%-p)
               ->
               (mv test-outcomes%-p gcs%-p))
@@ -421,7 +421,7 @@ eg:n/a")
                              (gcs% (gcs-1+ cts))
                              (m    (access test-outcomes% |#cts|))
                              (test-outcomes% ;TODO:per subgoal num-cts stored??
-                              (if (< m num-cts) ;dont store extra unless
+                              (if (< m num-print-cts) ;dont store extra unless
                                   (b* ((test-outcomes% (change test-outcomes% cts (cons A A-cts))))
                                     test-outcomes%)
                                 test-outcomes%))
@@ -441,7 +441,7 @@ eg:n/a")
                              (gcs% (gcs-1+ wts))
                              (m    (access test-outcomes% |#wts|))
                              (test-outcomes%   
-                              (if (< m num-wts)
+                              (if (< m num-print-wts)
                                   (b* ((test-outcomes% (change test-outcomes% wts (cons A A-wts))))
                                     test-outcomes%)
                                 test-outcomes%))
@@ -468,7 +468,7 @@ eg:n/a")
                              (gcs% (gcs-1+ vacs))
                              (m    (access test-outcomes% |#vacs|))
                              (test-outcomes%   
-                              (if (or (< m (acl2::+f num-wts num-cts))
+                              (if (or (< m (acl2::+f num-print-wts num-print-cts))
                                       (verbose-stats-flag vl)) ;[2015-04-07 Tue]
 
 ; TODO: [2014-04-26 Sat] To (post-) diagnose vacuous tests, we ought
@@ -525,9 +525,11 @@ where
 
        ((mv res hyp-vals A r. BE.) ; res = test value  A= value-bindings
         (run-single-test. vl (cget sampling-method) num-trials local-trial-num  r. BE.))
-
+       
+       (num-print-cts (cget num-print-counterexamples))
+       (num-print-wts (cget num-print-witnesses))
        ((mv test-outcomes% gcs%)
-        (record-testrun. res hyp-vals A num-cts num-wts vl test-outcomes% gcs%))
+        (record-testrun. res hyp-vals A num-print-cts num-print-wts vl test-outcomes% gcs%))
        
        (- (cw? (system-debug-flag vl) 
                "~|Cgen/Sysdebug/run-n-tests: Finished run n: ~x0 -- got ~x1~|" n res)))
@@ -576,15 +578,15 @@ where
                                       (list (car x))))))
 (include-book "select")
 (def make-next-sigma-defuns (hyps concl
-                                  partial-A elim-bindings
+                                  partial-A elim-bindings fixer-bindings
                                   top-vt-alist
                                   type-alist tau-interval-alist
-                                  programp vl state)
+                                  programp use-fixers-p vl state)
   (decl :sig ((pseudo-term-list pseudo-term
-                                symbol-doublet-listp symbol-doublet-listp
+                                symbol-doublet-listp symbol-doublet-listp symbol-doublet-listp
                                 symbol-doublet-listp
                                 alist symbol-alist
-                                boolean fixnum plist-worldp) 
+                                boolean boolean fixnum plist-worldp) 
               -> (mv erp all symbol-alist))
         :doc "return the defun forms defining next-sigma function, given a
         list of hypotheses and conclusion (terms). Also return the enum-alist to be displayed")
@@ -605,13 +607,14 @@ where
                                                  (strip-cars v-cs%-alst)
                                                  'BE.)))
                              :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))))
-             ,(make-next-sigma_mv-let v-cs%-alst '() vl wrld
+             ,(make-next-sigma_mv-let v-cs%-alst '() use-fixers-p vl wrld
 ; sigma will be output as a let-bindings i.e symbol-doublet-listp
-                                      `(B* ,(append partial-A elim-bindings)
+                                      `(B* ,(append partial-A fixer-bindings elim-bindings)
                                           (mv ,(make-var-value-list-bindings
                                                 (remove-duplicates-eq
                                                  (union-eq (strip-cars v-cs%-alst)
                                                            (strip-cars partial-A)
+                                                           (strip-bound-vars fixer-bindings)
                                                            (strip-bound-vars elim-bindings))) '())
                                               seed. BE.))))
            (defun next-sigma-current-gv (sampling-method seed. BE.)
@@ -645,28 +648,6 @@ where
 
 
 
-(def clause-mv-hyps-concl (cl)
-  (decl :sig ((clause) 
-              -> (mv pseudo-term-list pseudo-term))
-        :doc "return (mv hyps concl) which are proper terms given a
-  clause cl. Adapted from prettyify-clause2 in other-processes.lisp")
-  (cond ((null cl) (mv '() ''NIL))
-        ((null (cdr cl)) (mv '() (car cl)))
-        ((null (cddr cl)) (mv (list (cgen-dumb-negate-lit (car cl)))
-                              (cadr cl)))
-        (t (mv (cgen-dumb-negate-lit-lst (butlast cl 1))
-               (car (last cl))))))
-
-(def clausify-hyps-concl (hyps concl)
-  (decl :sig ((pseudo-term-list pseudo-term)
-              -> clause)
-        :doc "given hyps concl which are proper terms return equivalent
-  clause cl. inverse of clause-mv-hyps-concl")
-  (cond ((and (endp hyps) (equal concl ''NIL)) 'NIL)
-        ((endp hyps) (list concl))
-        ((endp (cdr hyps)) (list (cgen-dumb-negate-lit (car hyps)) concl))
-        (t (append (cgen-dumb-negate-lit-lst hyps)
-                   (list concl)))))
 
 
 
@@ -733,14 +714,16 @@ where
 ;[2015-09-19 Sat] added support for refine/expand in assign-value of incremental-search
 ;[2016-04-03 Sun] elim-bindings will also suffice for incorporating fixers!!
                     elim-bindings 
-                    type-alist tau-interval-alist mv-sig-alist
+                    type-alist tau-interval-alist
+                    mv-sig-alist
                     test-outcomes% gcs%
                     vl cgen-state
                     programp incremental-flag?
                     ctx state)
   (decl :sig ((string pseudo-term-list pseudo-term symbol-list symbol-doublet-listp
                       symbol-doublet-listp
-                      alist variable-alist variable-alist
+                      alist variable-alist
+                      variable-alist
                       test-outcomes% gcs%
                       fixnum cgen-state
                       boolean boolean
@@ -770,7 +753,7 @@ Use :simple search strategy to find counterexamples and witnesses.
              (record-testrun. (if c :witness :counterexample)
                               '()
                               partial-A
-                              (cget num-counterexamples) (cget num-witnesses)
+                              (cget num-print-counterexamples) (cget num-print-witnesses)
                               vl test-outcomes% gcs%)))
 
 ;       in
@@ -808,7 +791,6 @@ Use :simple search strategy to find counterexamples and witnesses.
                 "~|Cgen/Error: Couldn't compute fixer bindings. Skip searching ~x0.~|" name)
            (mv t (list nil test-outcomes% gcs%) state)))
        
-       (elim-bindings (append elim-bindings fixer-bindings))
 ;       (new-fxr-vars (set-difference-equal (acl2::all-vars1-lst additional-fxr-hyps '()) vars))
        (- (cw? (and (verbose-stats-flag vl) additional-fxr-hyps)
                "~|Cgen/Note: Additional Hyps for fixers: ~x0~|" additional-fxr-hyps))
@@ -820,10 +802,11 @@ Use :simple search strategy to find counterexamples and witnesses.
        ((mv erp next-sigma-defuns disp-enum-alist)
         (make-next-sigma-defuns (union-equal additional-fxr-hyps hyps) concl
 ;(append new-fxr-vars vars)  Compute it again afresh [2016-10-29 Sat]
-                                partial-A elim-bindings
+                                partial-A elim-bindings fixer-bindings
                                 top+-vt-dlist
                                 type-alist tau-interval-alist
                                 t ; programp ;;Aug 2014 -- New defdata has program-mode enumerators
+                                (cget use-fixers)
                                 vl state))
        ((when erp)
         (prog2$ 
@@ -832,15 +815,16 @@ Use :simple search strategy to find counterexamples and witnesses.
            (mv t (list nil test-outcomes% gcs%) state)))
 
        ;;[2016-04-25 Mon] record these for later printing in vacuous-stats
+       (fxr-elim-bindings (append fixer-bindings elim-bindings))
        (test-outcomes% (change test-outcomes% disp-enum-alist disp-enum-alist))
-       (test-outcomes% (change test-outcomes% elim-bindings elim-bindings))
+       (test-outcomes% (change test-outcomes% elim-bindings fxr-elim-bindings))
        
        (- (cw? (system-debug-flag vl) 
                "~|Cgen/Sysdebug: next-sigma : ~| ~x0~|" next-sigma-defuns))
        (- (cw? (verbose-flag vl) 
                "~|Cgen/Note: Enumerating ~x0 with ~%~x1~%" name disp-enum-alist))
        (- (cw? (and (verbose-flag vl) elim-bindings)
-               "~|Cgen/Note: Fixer/Elim bindings: ~%~x0~|" elim-bindings))
+               "~|Cgen/Note: Fixer/Elim bindings: ~%~x0~|" fxr-elim-bindings))
 
        
 ; print form if origin was :incremental
