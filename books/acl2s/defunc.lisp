@@ -614,8 +614,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (b* (((er guard-ob) (acl2::function-guard-obligation ',name state))
                  (- (defdata::cw? ,debug "~| guard-obligation: ~x0~%" guard-ob))
                  (- (cw "~|Query: Testing body contracts ... ~%"))
-                 ((er &) (with-prover-time-limit ,testing-timeout
-                           (test-guards guard-ob ',hints '(:print-cgen-summary nil :num-witnesses 0) state)))
+                 ((er &) (with-output :on (error)
+                                      (with-prover-time-limit
+                                       ,testing-timeout
+                                       (test-guards guard-ob ',hints '(:print-cgen-summary nil :num-witnesses 0) state))))
                  )
               (value '(value-triple :invisible))))) 'test?-phase state t))
        ((when (eq T (cadr trval))) (mv t nil state)) ;abort with error
@@ -625,8 +627,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          `(make-event
            (er-progn
             (with-output :on (error) (skip-proofs ,defun))
-            (test? (implies ,ic ,oc) :print-cgen-summary nil :num-witnesses 0)
-            (value '(value-triple :invisible)))) 'test?-phase state t))
+            (with-output :on (error) (test? (implies ,ic ,oc) :print-cgen-summary nil :num-witnesses 0))
+            (value '(value-triple :invisible))))
+         'test?-phase state t))
        ((when (eq T (cadr trval))) (mv t nil state)) ;abort with error
        ((mv end state) (acl2::read-run-time state))
        ((er &) (print-time-taken start end state))
