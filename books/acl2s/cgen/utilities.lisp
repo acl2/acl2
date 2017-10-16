@@ -1096,3 +1096,29 @@ Mainly to be used for evaluating enum lists "
   (cond ((endp lst) nil)
         (t (cons (cgen-dumb-negate-lit (car lst))
                  (cgen-dumb-negate-lit-lst (cdr lst))))))
+
+
+(defun clause-mv-hyps-concl (cl)
+  (declare (xargs :verify-guards nil))
+  ;; (decl :sig ((clause) 
+  ;;             -> (mv pseudo-term-list pseudo-term))
+  ;;       :doc "return (mv hyps concl) which are proper terms given a
+  ;; clause cl. Adapted from prettyify-clause2 in other-processes.lisp")
+  (cond ((null cl) (mv '() ''NIL))
+        ((null (cdr cl)) (mv '() (car cl)))
+        ((null (cddr cl)) (mv (list (cgen-dumb-negate-lit (car cl)))
+                              (cadr cl)))
+        (t (mv (cgen-dumb-negate-lit-lst (butlast cl 1))
+               (car (last cl))))))
+
+(defun clausify-hyps-concl (hyps concl)
+  (declare (xargs :verify-guards nil))
+  ;; (decl :sig ((pseudo-term-list pseudo-term)
+  ;;             -> clause)
+  ;;       :doc "given hyps concl which are proper terms return equivalent
+  ;; clause cl. inverse of clause-mv-hyps-concl")
+  (cond ((and (endp hyps) (equal concl ''NIL)) 'NIL)
+        ((endp hyps) (list concl))
+        ((endp (cdr hyps)) (list (cgen-dumb-negate-lit (car hyps)) concl))
+        (t (append (cgen-dumb-negate-lit-lst hyps)
+                   (list concl)))))
