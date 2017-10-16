@@ -107,7 +107,8 @@
        ;; (fixer-let-bindingI (cdr tmp-term))
 
        (hypsI       (acl2::sublis-expr-lst alist (get1 :hyps frule)))
-              
+       (test-hypsI  (acl2::sublis-expr-lst alist (get1 :test-hyps frule)))
+ 
        (constraint-termI (acl2::sublis-expr alist (get1 :constraint-term frule)))
        (constraint-varsI (acl2::all-vars constraint-termI))
        
@@ -120,6 +121,7 @@
        (fruleI (put-assoc :fixer-let-binding fixer-let-bindingI fruleI))
 
        (fruleI (put-assoc :hyps hypsI fruleI))
+       (fruleI (put-assoc :test-hyps test-hypsI fruleI))
        ;; what about meta-precondition??
        
        (fruleI (put-assoc :constraint-term constraint-termI fruleI))
@@ -172,7 +174,7 @@
        (B-eq (convert-conspairs-to-listpairs W{}))
        (frulei (put-assoc-eq :constraint-term cterm frulei))
        (frulei (put-assoc-eq :fixes (list cterm) frulei)) ;TODO: what about single fixer fixing multiple terms
-       (frulei (put-assoc-eq :preserves (list cterm) frulei))
+       (frulei (put-assoc-eq :preserves '() frulei))
        (In (union-eq (get1-lst :In frules-param)
                      (union-eq (set-difference-eq (get1 :In frulei)
                                                   (get1-lst :Out frules-param))
@@ -205,13 +207,13 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (fixes (union-equal (get1 :fixes fxri-data) (get1 :fixes frule1I)))
        ;;update hyps and fixes
        (fxri-data (put-assoc-equal :hyps hyps (put-assoc-equal :fixes fixes fxri-data))))
-    (put-assoc-equal nm fxri-data fxri{})))
+    (acl2::put-assoc-equal-fast nm fxri-data fxri{})))
 
-(defun append-fxri{} (fxri1{} fxri{})
+(defun revappend-fxri{} (fxri1{} fxri{})
   (if (endp fxri1{})
       fxri{}
-    (add-to-fxri{} (cdar fxri1{})
-                   (append-fxri{} (cdr fxri1{}) fxri{}))))
+    (revappend-fxri{} (cdr fxri1{})
+                      (add-to-fxri{} (cdar fxri1{}) fxri{}))))
 
 (defun equalitize (cons-pair)
 ;"convert (s . t) to (equal s t)"
@@ -220,16 +222,10 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
 (u::defloop equalitize-lst (alst)
   (for ((cons-pair in alst)) (collect (equalitize cons-pair))))
 
-(defun is-type-hyp (term wrld)
-  (or (defdata::is-type-predicate (car term) wrld)
-      (and (equal (len term) 3)
-           (equal (car term) 'EQUAL)
-           (or (proper-symbolp (second term))
-               (proper-symbolp (third term))))))
 
 (defloop filter-type-hyps (terms wrld)
   (for ((term in terms))
-       (append (and (consp term) (is-type-hyp term wrld)
+       (append (and (consp term) (defdata::is-type-predicate (car term) wrld)
                     (list term)))))
 
 (defun fixer-rules-table (wrld)
@@ -335,32 +331,89 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        ;; TODO (frules (filter-frules-by-top-function frules fn-sym))
        ((er fxri1{}) (instantiate-fixer-rules1 frules term all-terms vl state '())))
     (instantiate-fixer-rules frules (cdr terms) all-terms vl state
-                             (append-fxri{} fxri1{} fxri{}))))
+                             (revappend-fxri{} fxri1{} fxri{}))))
 )
 
-       
+(defun is-var-equality-hyp (term)
+  (and (equal (len term) 3)
+       (member-equal (car term) '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL))
+       (or (proper-symbolp (second term))
+           (proper-symbolp (third term)))))
+
+(defun destruct-var-equality-hyp (hyp)
+  (case-match hyp
+    (('EQUAL (& . &) (& . &)) (list nil nil))
+    (('EQUAL x (f . args)) (list x (acl2::cons-term f args)))
+    (('EQUAL (f . args) x) (list x (acl2::cons-term f args)))
+    (('EQUAL x y) (if (acl2::symbol-< x y) (list x y) (list y x)))))
+
+(defun make-dummy-equality-frule-instance (eq-hyp)
+  (b* (((list x equal-to-term) (destruct-var-equality-hyp eq-hyp))
+       (out-vars (list x))
+       (in-vars (acl2::all-vars equal-to-term))
+       (fixer-term equal-to-term)
+       (constraint-term (list 'EQUAL x equal-to-term))
+       (nm (s+ "EQ-" (term-name fixer-term) "/" (to-string x)))
+       (rule (list (cons :hyps '())
+                   (cons :In in-vars)
+                   (cons :Out out-vars)
+                   (cons :fixer-vars in-vars)
+                   (cons :fixer-term fixer-term)
+                   (cons :name nm)
+                   (cons :constraint-vars (union-eq out-vars in-vars))
+                   (cons :constraint-term constraint-term)
+                   (cons :fixer-let-binding `((,x ,equal-to-term)))
+                   (cons :fixes (list constraint-term `(EQUAL ,equal-to-term ,x)))
+                   )))
+    (cons nm rule)))
+
+
+(defloop dummy-eq-frule-instances (hyps)
+  (for ((hyp in hyps))
+       (when (is-var-equality-hyp hyp)
+         (collect (make-dummy-equality-frule-instance hyp)))))
+
+
+
 (include-book "acl2s/cgen/prove-cgen" :dir :system :ttags :all)
 
-(defun term-preserved-by-fxr-test? (pterm fixer-binding pterm-fxr-binding type-hyps vl ctx state)
-  (declare (ignorable vl))
-  (b* ((bound-vars (remove-duplicates-eq (strip-cars (append pterm-fxr-binding
+(defun term-preserved-by-fxr-test? (pterm frule pterm-frule all-terms vl ctx state)
+  (declare (ignorable vl all-terms))
+  (b* ((pterm-fxr-binding (get1 :fixer-let-binding pterm-frule))
+       (fixer-binding (get1 :fixer-let-binding frule))
+       (bound-vars (remove-duplicates-eq (strip-cars (append pterm-fxr-binding
                                                              fixer-binding))))
        (ign-vars (set-difference-eq bound-vars (collect-vars pterm)))
-       (query `(IMPLIES (AND ,@type-hyps)
+       ;; (cl (clausify-hyps-concl all-terms ''nil))
+       ;; ((mv contradictionp type-alist pot-lst)
+       ;;  (acl2::cheap-type-alist-and-pot-lst cl (acl2::ens state) (w state) state))
+       ;; (acl2-type-hyps (and (not contradictionp) (reify-type-alist-hyps type-alist)))
+       ;; (acl2-leq-hyps (and (not contradictionp) (reify-pot-lst-hyps pot-lst)))
+       ;; (type-hyps (union-equal (filter-type-hyps all-terms (w state))
+       ;;                         acl2-type-hyps))
+       (type-hyps (remove-duplicates-equal
+                   (append (get1 :hyps frule) (get1 :test-hyps frule)
+                           (get1 :hyps pterm-frule) (get1 :test-hyps pterm-frule))))
+       (query `(IMPLIES (AND ,@type-hyps) ;,@acl2-leq-hyps)
                         (LET* (,@pterm-fxr-binding ;;this makes pterm true
                                ,@fixer-binding) ;; this updates
                               (declare (ignorable ,@ign-vars))
                               ,pterm))) ;check if pterm is still true after update
        (cgen-state (make-cgen-state-fn
                     query ctx
-                    (list :testing-enabled :naive
+                    (list :num-trials 500
+                          :testing-enabled :naive
                           :search-strategy :simple
-                          :num-counterexamples 500
+                          :sampling-method :random ;more efficient
+                          :num-witnesses 251
+                          :num-print-counterexamples 0
+                          :num-print-witnesses 0
                           :use-fixers nil
-                          :verbosity-level (if (system-debug-flag vl) vl 1)
-                          :print-cgen-summary nil)
+                          :verbosity-level (if (system-debug-flag vl) 3 1))
                     (w state)))
        ((mv & cgen-state state) (test/cgen query nil cgen-state state))
+       ;; ((er &) (print-testing-summary cgen-state ctx state))
+       
        (gcs% (cget gcs))
        (num-vac (access gcs% vacs))
        (total-runs (access gcs% runs))
@@ -368,7 +421,9 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        ;; if more than half of runs are not vacuous, and more than a
        ;; half of these are witnesses then we deem that fixer-binding
        ;; preserves pterm
-       (good-enough? (and (> (/ valid-runs total-runs) 1/2)
+       (good-enough? (and (posp total-runs)
+                          (> (/ valid-runs total-runs) 1/2)
+                          (posp valid-runs)
                           (> (/ (access gcs% wts) valid-runs) 1/2))))
     (value good-enough?)))
   
@@ -392,19 +447,21 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
 
 
 ;; Note that fxr is represented as the fixer let-binding
-(defun filter-terms-preserved-by-fxr (pterms F-binding fxri{} type-hyps vl ctx state)
+(defun filter-terms-preserved-by-fxr (pterms fxr-rule fxri{} all-terms vl ctx state)
   (declare (ignorable vl))
   (b* (((when (endp pterms)) (value nil))
-       (pterm-F-binding (get1 :fixer-let-binding (assoc-frule (car pterms) fxri{})))
-       ((er yesp) (term-preserved-by-fxr-test? (car pterms) F-binding
-                                               pterm-F-binding type-hyps vl ctx state))
-       ((er rest) (filter-terms-preserved-by-fxr (cdr pterms) F-binding
-                                                 fxri{} type-hyps vl ctx state)))
+       (pterm-frule (assoc-frule (car pterms) fxri{}))
+
+       ((er yesp) (term-preserved-by-fxr-test? (car pterms) fxr-rule
+                                               pterm-frule
+                                               all-terms vl ctx state))
+       ((er rest) (filter-terms-preserved-by-fxr (cdr pterms) fxr-rule
+                                                 fxri{} all-terms vl ctx state)))
     (value (append (and yesp (list (car pterms)))
                    rest))))
 
 ;;; dynamically update :preserves field for each frule in fxri-entries
-(defun update-preserves-relation (fxri-entries cterms fxri{} type-hyps vl ctx state)
+(defun update-preserves-relation (fxri-entries cterms fxri{} all-terms vl ctx state)
   (declare (ignorable vl))
   (b* (((when (endp fxri-entries)) (value nil))
        ((cons nm frulei) (car fxri-entries))
@@ -412,10 +469,10 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (trivial-preserved-terms (set-difference-equal cterms pterms))
        ((er preserved-terms)
         (filter-terms-preserved-by-fxr (remove1-equal (get1 :constraint-term frulei) pterms)
-                                       (get1 :fixer-let-binding frulei)
-                                       fxri{} type-hyps vl ctx state))
+                                       frulei
+                                       fxri{} all-terms vl ctx state))
        ((er rest-fxri-entries)
-        (update-preserves-relation (cdr fxri-entries) cterms fxri{} type-hyps vl ctx state))
+        (update-preserves-relation (cdr fxri-entries) cterms fxri{} all-terms vl ctx state))
        (frulei (put-assoc-eq :preserves preserved-terms
                              (put-assoc-eq :trivially-preserves trivial-preserved-terms
                                            frulei))))
@@ -477,16 +534,25 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
          (pval-terms (cdr terms) cterms fxri{} Cwt{})))))
 )    
 
+(memoize 'pval-fxr :ideal-okp t)
+(memoize 'pval-terms :ideal-okp t)
+(memoize 'pval0 :ideal-okp t)
+
+
 ;; insert pval field into each frule in fxri-entries
-(defun assign-pval-scores (fxri-entries cterms fxri{} Cwt{})
+(defun assign-pval-scores-aux (fxri-entries cterms fxri{} Cwt{})
   (if (endp fxri-entries)
       '()
     (b* (((cons fname frule) (car fxri-entries))
          (pval (pval-fxr fname cterms fxri{} Cwt{}))
+         ;; (pval (pval0 fname cterms fxri{} Cwt{}))
          (frule (put-assoc-eq :pval pval frule)))
       (cons (cons fname frule)
-            (assign-pval-scores (cdr fxri-entries) cterms fxri{} Cwt{})))))
+            (assign-pval-scores-aux (cdr fxri-entries) cterms fxri{} Cwt{})))))
          
+(defun assign-pval-scores (fxri{} cterms Cwt{})
+  (b* ((- (cw? nil "len fxri is ~x0~%" (len fxri{}))))
+    (assign-pval-scores-aux fxri{} cterms fxri{} Cwt{})))
 
 (defun max-pval-frule (fxri{} ans-frule)
   (if (endp fxri{})
@@ -507,21 +573,30 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
 
 
 ;;; 1. remove all fixer rules that fix the constraint term of frule
-;;; 2. remove all fixer rules that fix terms not preserved by fixer of frule
-(defun remove-chosen-fixer (frule cterms fxri{}) ;; -> fxri{}
+;;; 2. remove all fixer rules that fix terms not preserved by fixer of frule -- NO, just keep them
+;; [2017-10-16 Mon] For now just line up all fixers. This probably makes recursive fixing inconsequential.
+(defun remove-chosen-fixer (frule cterms fxri{}) ;; -> (mv cterms fxri{})
   (b* ((pterms (append (get1 :preserves frule)
                        (get1 :trivially-preserves frule)))
-       (not-preserved-terms (set-difference-equal cterms pterms)))
-    (delete-frules (cons (get1 :constraint-term frule) not-preserved-terms)
-                   fxri{})))
+       (cterm (get1 :constraint-term frule))
+       (not-preserved-terms (remove1-equal cterm (set-difference-equal cterms pterms)))
+       (- (cw? nil "~% remove-chosen-fixer:~x0 cterm:~x1  ~% not-preserved-terms: ~x2~%"
+               (get1 :fixer-term frule) cterm not-preserved-terms))
+       ;(remove-terms (cons (get1 :constraint-term frule) not-preserved-terms))
+       (remove-terms (cons (get1 :constraint-term frule) nil))
+       )
+    (mv (set-difference-equal cterms remove-terms)
+        (delete-frules remove-terms fxri{}))))
        
-(defun maxsat-fxr-ckt-aux (fxri{} cterms ans-fxri{} fixer-B)
+(defun maxsat-fxr-ckt-aux (fxri{} cterms Cwt{} ans-fxri{} fixer-B)
+  (declare (ignorable Cwt{}))
   (if (endp fxri{})
       (mv ans-fxri{} fixer-B)
     (b* ((frule (max-pval-frule fxri{} (cdar fxri{})))
-         (reduced-fxri{} (remove-chosen-fixer frule cterms fxri{})))
-      (maxsat-fxr-ckt-aux reduced-fxri{}
-                          cterms
+         ((mv cterms fxri{}) (remove-chosen-fixer frule cterms fxri{}))
+         ;;(fxri{}~ (assign-pval-scores fxri{}~ cterms~ Cwt{})) NO, dont recursively update.
+         )
+      (maxsat-fxr-ckt-aux fxri{} cterms Cwt{}
                           (acons (get1 :name frule) frule ans-fxri{})
                           (append (get1 :fixer-let-binding frule)
                                   fixer-B)))))
@@ -532,8 +607,8 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
 ;;; solution.
 (defun maxsat-fxr-ckt (fxri{} cterms Cwt{})
   ;; TODO: perhaps its better to update pval scores everytime fxri{} changes!?
-  (maxsat-fxr-ckt-aux (assign-pval-scores fxri{} cterms fxri{} Cwt{})
-                      cterms
+  (maxsat-fxr-ckt-aux (time$ (assign-pval-scores fxri{} cterms Cwt{}))
+                      cterms Cwt{}
                       '() '()))
 
 (defloop filter-fxri-constraint-terms (cterms fxri{})
@@ -552,18 +627,46 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (?prules (strip-cdrs (preservation-rules-table wrld)))
        (type-hyps (filter-type-hyps terms wrld))
        (cterms (set-difference-equal terms type-hyps))
-       ((er fxri{}) (instantiate-fixer-rules frules cterms all-terms vl state '()))
+       ((er fxri{}) (instantiate-fixer-rules frules cterms all-terms vl state
+                                             (dummy-eq-frule-instances cterms)))
        ;; ((er fxri{}) (instantiate-pres-rules prules cterms all-terms vl state fxri{}))
-       ((er fxri{}) (update-preserves-relation fxri{} cterms fxri{} type-hyps vl ctx state))
        (fixable-terms (filter-fxri-constraint-terms cterms fxri{}))
-       
+       ((mv start-time state) (acl2::read-run-time state))
+       ((er fxri{}) (update-preserves-relation fxri{} fixable-terms fxri{} all-terms vl ctx state))
+       ((mv end-time state) (acl2::read-run-time state))
+       (- (cw? (verbose-stats-flag vl)
+               "~| Cgen/Verbose: Time taken for updating preservation relation = "))
+       ((er &) (if (verbose-stats-flag vl)
+                   (pprogn (print-rational-as-decimal (- end-time start-time)
+                                                      (standard-co state)
+                                                      state)
+                           (princ$ " seconds" (standard-co state) state)
+                           (newline (standard-co state) state)
+                           (value :invisible))
+                 (value nil)))
+
+       ((mv start-time state) (acl2::read-run-time state))
        ((mv fxri{} soln-fxr-binding) (maxsat-fxr-ckt fxri{} fixable-terms Cwt{}))
-       (C_sat (filter-fxri-constraint-terms fixable-terms fxri{}))
-       (C_unsat (set-difference-equal fixable-terms C_sat))
+       ((mv end-time state) (acl2::read-run-time state))
+       (- (cw? (verbose-stats-flag vl)
+               "~| Cgen/Verbose: Time taken by maxsat-fxr-ckt = "))
+       ((er &) (if (verbose-stats-flag vl)
+                   (pprogn (print-rational-as-decimal (- end-time start-time)
+                                                      (standard-co state)
+                                                      state)
+                           (princ$ " seconds" (standard-co state) state)
+                           (newline (standard-co state) state)
+                           (value :invisible))
+                 (value nil)))
+       
+       (C_sat fixable-terms) ;;For now just line up all fixers. This probably makes recursive fixing inconsequential.
+       (C_unsat '())
+;       (C_sat (filter-fxri-constraint-terms fixable-terms fxri{}))
+;       (C_unsat (set-difference-equal fixable-terms C_sat))
        ;(b*-soln (to-b*-mv-binding soln-fxr-binding))
-       (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Fixer-bindings: ~x0~%" soln-fxr-binding))
+       (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Fixer-bindings: ~%~x0~%" soln-fxr-binding))
        (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Fixed terms: ~x0~%" C_sat))
-       (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Unsat fixable terms: ~x0~%" C_unsat))
+;       (- (cw? (verbose-stats-flag vl) "~| Cgen/Verbose: Unsat fixable terms: ~x0~%" C_unsat))
        ;; TODO check that this let* binding is sound/correct, i.e., it
        ;; satisfies all the hyps under fixer and pres rules.
        (new-hyps (union-lsts (get1-lst :enum-hyps (assoc-frule-lst C_sat fxri{}))))
@@ -675,7 +778,8 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
 ;; TODO: assign more weight to a term that is harder to satisfy by Cgen.
 (defloop heuristic-weights (terms wrld)
   (for ((term in terms))
-       (collect (cond ((is-type-hyp term wrld) (cons term 0))
+       (collect (cond ((and (consp term) (defdata::is-type-predicate (car term) wrld))
+                       (cons term 0))
                       ((monadic-term-p term)   (cons term 1))
                       (t (cons term 2))))))
   
@@ -702,7 +806,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (b*-binding (collapse-b*-binding (to-b*-mv-binding B) nil))
        ((mv end-time state) (acl2::read-run-time state))
        (- (cw? (verbose-stats-flag vl)
-               "~| Cgen/Verbose: Time taken for arranging fixers = ~%" C_unsat))
+               "~| Cgen/Verbose: Time taken for arranging fixers = "))
        ((er &) (if (verbose-stats-flag vl)
                    (pprogn (print-rational-as-decimal (- end-time start-time)
                                                       (standard-co state)
