@@ -357,7 +357,7 @@
    </p>"
   (recursivep fn nil wrld))
 
-(define irecursivep+ ((fn (function-namep fn wrld))
+(define irecursivep+ ((fn (logic-function-namep fn wrld))
                       (wrld plist-worldp))
   :returns (clique symbol-listp)
   :parents (world-queries)
