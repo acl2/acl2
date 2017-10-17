@@ -225,7 +225,8 @@
 
 (defthm direct-map-p-and-wb-disjoint-from-xlation-governing-addrs
   (implies
-   (and (disjoint-p
+   (and (64-bit-modep x86) ; added
+        (disjoint-p
          (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
          (all-xlation-governing-entries-paddrs
           count addr (double-rewrite x86))))
@@ -250,6 +251,7 @@
    (local (in-theory (e/d (disjoint-p$) ()))))
 
   (if (and (page-structure-marking-mode x86)
+           (64-bit-modep x86) ; added
            (not (programmer-level-mode x86))
            (canonical-address-p prog-addr)
            (canonical-address-p (+ -1 (len bytes) prog-addr))
@@ -282,6 +284,7 @@
 
   (defthm rewrite-program-at-to-program-at-alt
     (implies (forced-and
+              (64-bit-modep x86) ; added
               (disjoint-p$
                (mv-nth 1 (las-to-pas (len bytes) prog-addr :x (double-rewrite x86)))
                (open-qword-paddr-list
@@ -344,7 +347,7 @@
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault
+     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault
             :programmer-level-mode :page-structure-marking-mode)
      *x86-field-names-as-keywords*)
     'program-at-alt
@@ -391,6 +394,7 @@
 
   :non-executable t
   (if (and (page-structure-marking-mode x86)
+           (64-bit-modep x86) ; added
            (not (programmer-level-mode x86))
            (canonical-address-p addr)
            (canonical-address-p (+ -1 n addr))
@@ -452,7 +456,7 @@
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :programmer-level-mode :page-structure-marking-mode)
      *x86-field-names-as-keywords*)
     'rb-alt
     (acl2::formals 'rb-alt (w state))
@@ -462,7 +466,7 @@
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :programmer-level-mode :page-structure-marking-mode)
      *x86-field-names-as-keywords*)
     'rb-alt
     (acl2::formals 'rb-alt (w state))
@@ -481,7 +485,7 @@
   (make-event
    (generate-write-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :programmer-level-mode :page-structure-marking-mode)
      *x86-field-names-as-keywords*)
     'rb-alt
     (acl2::formals 'rb-alt (w state))
@@ -526,7 +530,8 @@
 
   (defthm mv-nth-2-rb-alt-in-system-level-marking-mode
     (implies
-     (and (not (programmer-level-mode x86))
+     (and (64-bit-modep x86) ; added
+          (not (programmer-level-mode x86))
           (not (mv-nth 0 (las-to-pas n lin-addr r-x (double-rewrite x86))))
           (canonical-address-p lin-addr)
           (canonical-address-p (+ -1 n lin-addr))
@@ -551,6 +556,7 @@
     ;; reading from the paging data structures, we want to reason
     ;; about rb.
     (implies (and
+              (64-bit-modep x86) ; added
               (disjoint-p
                (mv-nth 1 (las-to-pas n addr r-x (double-rewrite x86)))
                (open-qword-paddr-list
@@ -616,6 +622,7 @@
 
   (defthm many-reads-with-rb-alt-from-program-at-alt-in-marking-mode
     (implies (and
+              (64-bit-modep x86) ; added
               (bind-free
                (find-program-at-info 'prog-addr 'bytes mfc state)
                (prog-addr bytes))
@@ -669,7 +676,8 @@
   (local
    (defthmd mv-nth-0-las-to-pas-subset-p-for-1-byte
      (implies
-      (and (<= addr-1 addr-2)
+      (and (64-bit-modep x86) ; added
+           (<= addr-1 addr-2)
            (< addr-2 (+ n-1 addr-1))
            (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
            (posp n-1)
@@ -685,7 +693,8 @@
   (local
    (defthmd mv-nth-1-las-to-pas-subset-p-for-1-byte
      (implies
-      (and (<= addr-1 addr-2)
+      (and (64-bit-modep x86) ; added
+           (<= addr-1 addr-2)
            (< addr-2 (+ n-1 addr-1))
            (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
            (posp n-1))
@@ -704,6 +713,7 @@
     ;; instead of
     ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr)).
     (implies (and
+              (64-bit-modep x86) ; added
               (bind-free
                (find-program-at-info 'prog-addr 'bytes mfc state)
                (prog-addr bytes))
@@ -767,6 +777,7 @@
                   (canonical-address-p lin-addr)
                   (unsigned-byte-p (ash n-w 3) value)
                   (natp n-w)
+                  (64-bit-modep x86) ; added
                   (not (programmer-level-mode x86))
                   (page-structure-marking-mode x86)
                   (x86p x86))
@@ -824,6 +835,7 @@
               (canonical-address-p (+ -1 n-w write-addr))
               (canonical-address-p write-addr)
               (page-structure-marking-mode x86)
+              (64-bit-modep x86) ; added
               (not (programmer-level-mode x86)))
              (and
               (equal (mv-nth 0 (rb-alt n lin-addr r-w-x
@@ -847,7 +859,8 @@
 
   (defthm no-errors-when-translating-program-bytes-in-marking-mode-using-program-at-alt
     (implies
-     (and (bind-free (find-program-at-info 'prog-addr 'bytes mfc state)
+     (and (64-bit-modep x86) ; added
+          (bind-free (find-program-at-info 'prog-addr 'bytes mfc state)
                      (prog-addr bytes))
           (program-at-alt prog-addr bytes x86)
           (<= prog-addr addr)
@@ -871,6 +884,7 @@
 
   (defthm disjointness-of-program-bytes-from-paging-structures
     (implies (and
+              (64-bit-modep x86) ; added
               (bind-free
                (find-program-at-info 'prog-addr 'bytes mfc state)
                (prog-addr bytes))
@@ -965,6 +979,8 @@
       (physical-address-p entry-addr)
       (equal (loghead 3 entry-addr) 0)
       (unsigned-byte-p 64 value)
+      (64-bit-modep x86-1) ; added
+      (64-bit-modep x86-2) ; added
       (not (programmer-level-mode x86-2))
       (posp n-1) (posp n-2) (integerp lin-addr-2))
      (disjoint-p
@@ -1054,6 +1070,8 @@
               (physical-address-p entry-addr)
               (equal (loghead 3 entry-addr) 0)
               (unsigned-byte-p 64 value)
+              (64-bit-modep x86-1) ; added
+              (64-bit-modep x86-2) ; added
               (not (programmer-level-mode x86-2))
               (posp n-1) (posp n-2) (integerp lin-addr-2))
              (disjoint-p
@@ -1091,6 +1109,8 @@
       (physical-address-p entry-addr)
       (equal (loghead 3 entry-addr) 0)
       (unsigned-byte-p 64 value)
+      (64-bit-modep x86-1) ; added
+      (64-bit-modep x86-2) ; added
       (not (programmer-level-mode x86-2)))
      (disjoint-p
       (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1))
@@ -1138,6 +1158,7 @@
   (defthm las-to-pas-values-and-wb-disjoint
     (implies
      (and
+      (64-bit-modep x86) ; added
       (disjoint-p
        (mv-nth 1 (las-to-pas n-2 write-addr :w (double-rewrite x86)))
        (all-xlation-governing-entries-paddrs n-1 lin-addr (double-rewrite x86)))
@@ -1244,6 +1265,7 @@
  have to be re-proved in terms of @('get-prefixes-alt').</p>"
 
   (if (and (page-structure-marking-mode x86)
+           (64-bit-modep x86) ; added
            (not (programmer-level-mode x86))
            (canonical-address-p start-rip)
            ;; In the following two conditions below, if we're being
@@ -1300,7 +1322,7 @@
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :programmer-level-mode :page-structure-marking-mode)
      *x86-field-names-as-keywords*)
     'get-prefixes-alt
     (acl2::formals 'get-prefixes-alt (w state))
@@ -1311,7 +1333,7 @@
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :programmer-level-mode :page-structure-marking-mode)
      *x86-field-names-as-keywords*)
     'get-prefixes-alt
     (acl2::formals 'get-prefixes-alt (w state))
@@ -1322,7 +1344,7 @@
   (make-event
    (generate-write-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :msr :fault :programmer-level-mode :page-structure-marking-mode)
+     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :programmer-level-mode :page-structure-marking-mode)
      *x86-field-names-as-keywords*)
     'get-prefixes-alt
     (acl2::formals 'get-prefixes-alt (w state))
@@ -1375,6 +1397,7 @@
                 (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
               (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86))))
               (page-structure-marking-mode x86)
+              (64-bit-modep x86) ; added
               (not (programmer-level-mode x86))
               (canonical-address-p start-rip))
              (equal (get-prefixes start-rip prefixes cnt x86)
@@ -1385,6 +1408,7 @@
 
   (defthm get-prefixes-alt-opener-lemma-zero-cnt
     (implies (and (page-structure-marking-mode x86)
+                  (64-bit-modep x86) ; added
                   (not (programmer-level-mode x86))
                   (canonical-address-p start-rip))
              (equal (get-prefixes-alt start-rip prefixes 0 x86)
@@ -1404,6 +1428,7 @@
                          (zp prefix-byte-group-code)))
                   (not (zp cnt))
                   (page-structure-marking-mode x86)
+                  (64-bit-modep x86) ; added
                   (not (programmer-level-mode x86))
                   (canonical-address-p start-rip)
                   ;; We read only one byte inside get-prefixes-alt --
@@ -1452,6 +1477,7 @@
         (and (not flg)
              (equal prefix-byte-group-code 1)))
       (page-structure-marking-mode x86)
+      (64-bit-modep x86) ; added
       (not (programmer-level-mode x86))
       (canonical-address-p start-rip)
       (disjoint-p
@@ -1507,6 +1533,7 @@
         (and (not flg)
              (equal prefix-byte-group-code 2)))
       (page-structure-marking-mode x86)
+      (64-bit-modep x86) ; added
       (not (programmer-level-mode x86))
       (canonical-address-p start-rip)
       (disjoint-p
@@ -1562,6 +1589,7 @@
         (and (not flg)
              (equal prefix-byte-group-code 3)))
       (page-structure-marking-mode x86)
+      (64-bit-modep x86) ; added
       (not (programmer-level-mode x86))
       (canonical-address-p start-rip)
       (disjoint-p
@@ -1617,6 +1645,7 @@
         (and (not flg)
              (equal prefix-byte-group-code 4)))
       (page-structure-marking-mode x86)
+      (64-bit-modep x86) ; added
       (not (programmer-level-mode x86))
       (canonical-address-p start-rip)
       (disjoint-p
@@ -1722,7 +1751,8 @@
     ;; (las-to-pas ...)) when no prefix bytes are present and no
     ;; errors are encountered.
     (implies
-     (and (b* (((mv flg prefix-byte &)
+     (and (64-bit-modep x86) ; added
+          (b* (((mv flg prefix-byte &)
                 ;; (rml08 start-rip :x x86)
                 (rb-alt 1 start-rip :x x86))
                (prefix-byte-group-code
@@ -1761,7 +1791,8 @@
                            (xlate-equiv-memory-and-mv-nth-1-rml08))))
 
     (defthm mv-nth-0-rb-and-xw-mem-in-system-level-mode
-      (implies (and (disjoint-p
+      (implies (and (64-bit-modep x86) ; added
+                    (disjoint-p
                      (list index)
                      (all-xlation-governing-entries-paddrs
                       n lin-addr (double-rewrite x86)))
@@ -1799,6 +1830,7 @@
         (canonical-address-p (+ -1 n lin-addr))
         (physical-address-p index)
         (unsigned-byte-p 8 value)
+        (64-bit-modep x86) ; added
         (not (programmer-level-mode x86))
         (x86p x86))
        (equal (mv-nth 1 (rb n lin-addr r-x (xw :mem index value x86)))
@@ -1864,6 +1896,7 @@
 
        (implies
         (and
+         (64-bit-modep x86) ; added
          (bind-free (find-l-addrs-from-disjoint-p-of-las-to-pas-and-all-xlation
                      '(n-1 addr-1) r-x mfc state)
                     (n-1 addr-1))
@@ -2128,6 +2161,7 @@
           (canonical-address-p (+ -1 cnt start-rip))
           (physical-address-p index)
           (unsigned-byte-p 8 value)
+          (64-bit-modep x86) ; added
           (not (programmer-level-mode x86))
           (page-structure-marking-mode x86)
           (x86p x86))
@@ -2181,6 +2215,7 @@
         (canonical-address-p start-rip)
         (canonical-address-p (+ -1 cnt start-rip))
         (physical-address-listp p-addrs)
+        (64-bit-modep x86) ; added
         (not (programmer-level-mode x86))
         (page-structure-marking-mode x86)
         (x86p x86))
@@ -2272,6 +2307,7 @@
          (mv-nth 1 (las-to-pas cnt start-rip :x (double-rewrite x86))))
         (posp cnt)
         (canonical-address-p (+ -1 cnt start-rip))
+        (64-bit-modep x86) ; added
         (not (programmer-level-mode x86))
         (x86p x86))
        (and
@@ -2384,6 +2420,7 @@
         (equal (loghead 3 lin-addr) 0)
         (canonical-address-p lin-addr)
         (unsigned-byte-p 64 value)
+        (64-bit-modep x86) ; added
         (not (programmer-level-mode x86))
         (x86p x86))
        (and
@@ -2478,6 +2515,8 @@
             ;; End: binding hypotheses.
 
             (page-structure-marking-mode x86)
+            (64-bit-modep x86) ; added
+            (64-bit-modep x86-3) ; added
             (not (programmer-level-mode x86))
             (not (ms x86))
             (not (fault x86))

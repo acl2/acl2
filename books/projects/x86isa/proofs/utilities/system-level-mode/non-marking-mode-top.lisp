@@ -928,7 +928,9 @@
              rml08 riml08 wml08 wiml08
              rml16 riml16 wml16 wiml16
              rml32 riml32 wml32 wiml32
-             rml64 riml64 wml64 wiml64)
+             rml64 riml64 wml64 wiml64
+             ea-to-la
+             rme08 rime08 wme08 wime08)
             ()))
 
 ;; ======================================================================

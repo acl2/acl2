@@ -15,7 +15,7 @@
 (local (in-theory (e/d ()
                        (programmer-level-mode-rml08-no-error
                         (:meta acl2::mv-nth-cons-meta)
-                        rml08-value-when-error
+                        rme08-value-when-error
                         member-equal))))
 
 ;; ======================================================================
@@ -1364,7 +1364,7 @@
        ;; (machine 'x86)
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
-        (rml08 temp-rip :x x86))
+        (rme08 temp-rip *cs* :x x86))
        ((when flg0)
         (!!ms-fresh :opcode-byte-access-error flg0))
 
@@ -1380,7 +1380,7 @@
        (modr/m? (x86-two-byte-opcode-ModR/M-p opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
-            (rml08 temp-rip :x x86)
+            (rme08 temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg1)
         (!!ms-fresh :modr/m-byte-read-error flg1))
@@ -1399,7 +1399,7 @@
                   (x86-decode-SIB-p modr/m)))
        ((mv flg2 (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rml08 temp-rip :x x86)
+            (rme08 temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg2)
         (!!ms-fresh :sib-byte-read-error flg2))
@@ -3712,7 +3712,7 @@
 
     (b* ((ctx 'get-prefixes)
          ((mv flg (the (unsigned-byte 8) byte) x86)
-          (rml08 start-rip :x x86))
+          (rme08 start-rip *cs* :x x86))
          ((when flg)
           (mv (cons ctx flg) byte x86))
 
@@ -3917,7 +3917,7 @@
              :in-theory
              (union-theories
               '(get-prefixes
-                rml08-does-not-affect-state-in-programmer-level-mode)
+                rme08-does-not-affect-state-in-programmer-level-mode)
               (theory 'minimal-theory)))))
 
   (defthm get-prefixes-does-not-modify-x86-state-in-system-level-non-marking-mode
@@ -3929,10 +3929,10 @@
                     x86))
     :hints (("Goal"
              :in-theory (union-theories '(get-prefixes
-                                          mv-nth-2-rml08-in-system-level-non-marking-mode)
+                                          mv-nth-2-rme08-in-system-level-non-marking-mode)
                                         (theory 'minimal-theory)))))
 
-  (local (in-theory (e/d  (rml08 rvm08)
+  (local (in-theory (e/d  (rme08 rml08 rvm08)
                           (force
                            (force)
                            signed-byte-p-48-fwd-chain
@@ -3957,9 +3957,9 @@
               15))
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
-             :in-theory (e/d (rml08-value-when-error)
+             :in-theory (e/d (rme08-value-when-error)
                              (signed-byte-p
-                              unsigned-byte-p rml08
+                              unsigned-byte-p rme08 rml08
                               (force) force
                               canonical-address-p
                               not acl2::zp-open
@@ -3992,9 +3992,10 @@
     ;; This lemma would be used for those instructions which do not have
     ;; any prefix byte.
     (implies (and (let*
-                      ((flg (mv-nth 0 (rml08 start-rip :x x86)))
+                      ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
                        (prefix-byte-group-code
-                        (get-one-byte-prefix-array-code (mv-nth 1 (rml08 start-rip :x x86)))))
+                        (get-one-byte-prefix-array-code
+                         (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
                     (and (not flg)
                          (zp prefix-byte-group-code)))
                   (not (zp cnt)))
@@ -4003,18 +4004,19 @@
                      nil)
               (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
                      (let ((prefixes
-                            (!prefixes-slice :next-byte
-                                             (mv-nth 1 (rml08 start-rip :x x86))
-                                             prefixes)))
+                            (!prefixes-slice
+                             :next-byte
+                             (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                             prefixes)))
                        (!prefixes-slice :num-prefixes (- 15 cnt) prefixes))))))
 
   (defthm get-prefixes-opener-lemma-group-1-prefix
     (implies (and (or (programmer-level-mode x86)
                       (not (page-structure-marking-mode x86)))
-                  (let* ((flg (mv-nth 0 (rml08 start-rip :x x86)))
+                  (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rml08 start-rip :x x86)))))
+                           (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 1)))
                   (equal (prefixes-slice :group-1-prefix prefixes) 0)
@@ -4022,9 +4024,10 @@
                   (canonical-address-p (1+ start-rip)))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
-                                  (!prefixes-slice :group-1-prefix
-                                                   (mv-nth 1 (rml08 start-rip :x x86))
-                                                   prefixes)
+                                  (!prefixes-slice
+                                   :group-1-prefix
+                                   (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                   prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
                                      (rb
@@ -4036,10 +4039,10 @@
     (implies (and (or (programmer-level-mode x86)
                       (and (not (programmer-level-mode x86))
                            (not (page-structure-marking-mode x86))))
-                  (let* ((flg (mv-nth 0 (rml08 start-rip :x x86)))
+                  (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rml08 start-rip :x x86)))))
+                           (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 2)))
                   (equal (prefixes-slice :group-2-prefix prefixes) 0)
@@ -4047,9 +4050,10 @@
                   (not (zp cnt)))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
-                                  (!prefixes-slice :group-2-prefix
-                                                   (mv-nth 1 (rml08 start-rip :x x86))
-                                                   prefixes)
+                                  (!prefixes-slice
+                                   :group-2-prefix
+                                   (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                   prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
                                      (rb
@@ -4061,10 +4065,10 @@
     (implies (and (or (programmer-level-mode x86)
                       (and (not (programmer-level-mode x86))
                            (not (page-structure-marking-mode x86))))
-                  (let* ((flg (mv-nth 0 (rml08 start-rip :x x86)))
+                  (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rml08 start-rip :x x86)))))
+                           (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 3)))
                   (equal (prefixes-slice :group-3-prefix prefixes) 0)
@@ -4072,9 +4076,10 @@
                   (not (zp cnt)))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
-                                  (!prefixes-slice :group-3-prefix
-                                                   (mv-nth 1 (rml08 start-rip :x x86))
-                                                   prefixes)
+                                  (!prefixes-slice
+                                   :group-3-prefix
+                                   (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                   prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
                                      (rb
@@ -4086,10 +4091,10 @@
     (implies (and (or (programmer-level-mode x86)
                       (and (not (programmer-level-mode x86))
                            (not (page-structure-marking-mode x86))))
-                  (let* ((flg (mv-nth 0 (rml08 start-rip :x x86)))
+                  (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rml08 start-rip :x x86)))))
+                           (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 4)))
                   (equal (prefixes-slice :group-4-prefix prefixes) 0)
@@ -4097,9 +4102,10 @@
                   (not (zp cnt)))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
-                                  (!prefixes-slice :group-4-prefix
-                                                   (mv-nth 1 (rml08 start-rip :x x86))
-                                                   prefixes)
+                                  (!prefixes-slice
+                                   :group-4-prefix
+                                   (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                   prefixes)
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* ()
                                      (rb
@@ -4174,7 +4180,7 @@ semantic function.</p>"
        ((mv flg1 (the (unsigned-byte 8) opcode/escape-byte) x86)
         (if (equal 0 rex-byte)
             (mv nil opcode/rex/escape-byte x86)
-          (rml08 temp-rip :x x86)))
+          (rme08 temp-rip *cs* :x x86)))
        ((when flg1)
         (!!ms-fresh :opcode/escape-byte-read-error flg1))
 
@@ -4237,7 +4243,7 @@ semantic function.</p>"
        (modr/m? (x86-one-byte-opcode-ModR/M-p opcode/escape-byte))
        ((mv flg3 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
-            (rml08 temp-rip :x x86)
+            (rme08 temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg3)
         (!!ms-fresh :modr/m-byte-read-error flg2))
@@ -4266,7 +4272,7 @@ semantic function.</p>"
 
        ((mv flg5 (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rml08 temp-rip :x x86)
+            (rme08 temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg5)
         (!!ms-fresh :sib-byte-read-error flg3))
@@ -4318,16 +4324,16 @@ semantic function.</p>"
                         0))
       (equal opcode/escape-byte (if (equal rex-byte 0)
                                     opcode/rex/escape-byte
-                                  (mv-nth 1 (rml08 temp-rip0 :x x86))))
+                                  (mv-nth 1 (rme08 temp-rip0 *cs* :x x86))))
       (equal temp-rip1 (if (equal rex-byte 0)
                            temp-rip0 (1+ temp-rip0)))
       (equal modr/m? (x86-one-byte-opcode-modr/m-p opcode/escape-byte))
       (equal modr/m (if modr/m?
-                        (mv-nth 1 (rml08 temp-rip1 :x x86))
+                        (mv-nth 1 (rme08 temp-rip1 *cs* :x x86))
                       0))
       (equal temp-rip2 (if modr/m? (1+ temp-rip1) temp-rip1))
       (equal sib? (and modr/m? (x86-decode-sib-p modr/m)))
-      (equal sib (if sib? (mv-nth 1 (rml08 temp-rip2 :x x86)) 0))
+      (equal sib (if sib? (mv-nth 1 (rme08 temp-rip2 *cs* :x x86)) 0))
       (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
 
       (or (programmer-level-mode x86)
@@ -4340,17 +4346,17 @@ semantic function.</p>"
           ;; the new RIP is canonical, not that there's no error
           ;; in reading a value from that address.
           t
-        (not (mv-nth 0 (rml08 temp-rip0 :x x86))))
+        (not (mv-nth 0 (rme08 temp-rip0 *cs* :x x86))))
       (if (equal rex-byte 0)
           t
         (canonical-address-p temp-rip1))
       (if modr/m?
           (and (canonical-address-p temp-rip2)
-               (not (mv-nth 0 (rml08 temp-rip1 :x x86))))
+               (not (mv-nth 0 (rme08 temp-rip1 *cs* :x x86))))
         t)
       (if sib?
           (and (canonical-address-p temp-rip3)
-               (not (mv-nth 0 (rml08 temp-rip2 :x x86))))
+               (not (mv-nth 0 (rme08 temp-rip2 *cs* :x x86))))
         t)
       (x86p x86)
       ;; Print the rip and the first opcode byte of the instruction
