@@ -19,8 +19,11 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
 (include-book "system/pseudo-good-worldp" :dir :system)
+(include-book "term-applicand-recognizers")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+(local (include-book "arglistp-theorems"))
+(local (include-book "world-theorems"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,6 +150,50 @@
   (and (function-namep x wrld)
        (logicp x wrld))
   :enabled t)
+
+(define formals+ ((fn (fn/lambda-p fn wrld))
+                  (wrld plist-worldp-with-formals))
+  :returns (formals symbol-listp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee formals)."
+  :long
+  "<p>
+   This returns the same result of @(tsee formals) on functions,
+   but it has a stronger guard
+   and includes a run-time check (which should always succeed) on the result
+   that allows us to prove the return type theorem
+   without strengthening the guard on the world argument.
+   </p>
+   <p>
+   This utility also works on lambda expressions.
+   </p>"
+  (b* ((formals (cond ((symbolp fn) (formals fn wrld))
+                      (t (lambda-formals fn)))))
+    (if (symbol-listp formals)
+        formals
+      (raise "Internal error: ~
+              the formals ~x0 of ~x1 are not ~
+              a NIL-terminated list of symbols."
+             formals fn)))
+  :guard-hints (("Goal" :in-theory (enable fn/lambda-p lambdap))))
+
+(define arity+ ((fn (fn/lambda-p fn wrld))
+                (wrld plist-worldp-with-formals))
+  :returns (result natp
+                  :hyp (fn/lambda-p fn wrld)
+                  :hints (("Goal" :in-theory (enable fn/lambda-p lambdap arity))))
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee arity)."
+  :long
+  "<p>
+   This returns the same result of @(tsee arity) on functions,
+   but it has a stronger guard.
+   </p>
+   <p>
+   This utility also works on lambda expressions.
+   </p>"
+  (arity fn wrld)
+  :guard-hints (("Goal" :in-theory (enable fn/lambda-p lambdap))))
 
 (define definedp ((fn (logic-function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)
