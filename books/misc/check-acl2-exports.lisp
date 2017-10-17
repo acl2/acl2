@@ -173,6 +173,7 @@
     ARGLISTP
     CONS-TERM*
     FSUBCOR-VAR
+    IGNORABLE IRRELEVANT OPTIMIZE ; from declare forms
 
 ; Symbols below should be subtracted from *acl2-exports*.
 
