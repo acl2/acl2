@@ -213,6 +213,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (formals+ 'len (w state)) '(x))
+
+(must-succeed*
+ (defun f (x y zz aaa b77) (list x y zz aaa b77))
+ (assert-equal (formals+ 'f (w state)) '(x y zz aaa b77)))
+
+(assert-equal (formals+ '(lambda (x y) (binary-+ x y)) (w state))
+              '(x y))
+
+(assert-equal (formals+ '(lambda () '33) (w state))
+              nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (arity+ 'len (w state)) 1)
+
+(must-succeed*
+ (defun f (x y zz aaa b77) (list x y zz aaa b77))
+ (assert-equal (arity+ 'f (w state)) 5))
+
+(assert-equal (arity+ '(lambda (x y) (binary-+ x y)) (w state))
+              2)
+
+(assert-equal (arity+ '(lambda () '33) (w state))
+              0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (definedp 'not (w state)))
 
 (assert! (not (definedp 'cons (w state))))
