@@ -28,6 +28,10 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+module sub (input [3:0] i);
+
+endmodule
+
 module m0 () ;
 
   wire [3:0] a, b, c;
@@ -184,5 +188,14 @@ module m0 () ;
   wire [1+1:0] wire_no2;
   wire [1-1:0] wire_no3;
   wire [1*1:0] wire_no4;
+
+   sub subinst1 (.i(a % a));
+
+   sub subinst2 (//@VL LINT_IGNORE_WARN_LEFTRIGHT
+		 .i(a % a));
+
+   //@VL LINT_IGNORE_WARN_LEFTRIGHT
+   sub subinst3 (.i(a % a));
+
 
 endmodule

@@ -1081,7 +1081,22 @@ should address this again later.</p>"
     :rule-classes (:rewrite
                    (:type-prescription :corollary
                     (implies (not err)
-                             (natp (moddb-modname-get-index (design->top x) new-moddb)))))))
+                             (natp (moddb-modname-get-index (design->top x) new-moddb))))))
+
+  (defret vars-of-svex-design-flatten-and-normalize
+    (implies (and (modalist-addr-p (design->modalist x))
+                  (not indexedp))
+             (svarlist-addr-p (svex-alist-vars flat-assigns))))
+
+  (defret vars-of-svex-design-flatten-and-normalize-delays
+    (implies (and (modalist-addr-p (design->modalist x))
+                  (not indexedp))
+             (svarlist-addr-p (svar-map-vars flat-delays))))
+
+  (defret vars-of-svex-design-flatten-and-normalize-constraints
+    (implies (and (modalist-addr-p (design->modalist x))
+                  (not indexedp))
+             (svarlist-addr-p (constraintlist-vars flat-constraints)))))
 
 
 (define svex-design-compile ((x design-p)

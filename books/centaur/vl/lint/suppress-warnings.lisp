@@ -192,7 +192,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 
 (fty::defvisitors vl-lint-scan-for-ignore-genelement
   :template vl-lint-scan-for-ignore
-  :types (vl-genelement))
+  :types (vl-genelement vl-context1))
   
 
 
@@ -245,6 +245,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
             (:vl-plainarg     (and (vl-plainarg-p x)      (vl-plainarg-scan-for-ignore x      mwtype)))
             (:vl-namedarg     (and (vl-namedarg-p x)      (vl-namedarg-scan-for-ignore x      mwtype)))
 
+            (:vl-context      (and (vl-context1-p x)      (vl-context1-scan-for-ignore x      mwtype)))
 
             ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt
               :vl-callstmt :vl-disablestmt :vl-eventtriggerstmt

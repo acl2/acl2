@@ -135,6 +135,8 @@ normal(:m4, "u2 ")
 unused(:"Design Root", "Function noreturn ")
 unused(:"Design Root", "nr_unused ")
 unset(:"Design Root", "noreturn ")
+# this doesn't work yet
+# normal(:"Design Root", "noreturn2 ")
 
 normal(:m5, "width ")
 unused(:m5, "m5_unused ")

@@ -192,6 +192,13 @@ function noreturn (input a);
   // doesn't assign to noreturn
 endfunction
 
+//@VL LINT_IGNORE_LUCID_UNSET
+function noreturn2 (input a);
+  reg nr_unused;
+  nr_unused = a;
+  // doesn't assign to noreturn
+endfunction
+
 
 
 module m5 () ;
