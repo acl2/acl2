@@ -22850,6 +22850,7 @@
                                    keep-unify-subst wrld state ens ttree)
 
 ; This function is adapted from ACL2 function relieve-hyps1-iter.
+; Keep-unify-subst must be t, nil, or :FAILED.
 
   (mv-let
    (relieve-hyps1-ans unify-subst1 ttree1)
@@ -22874,10 +22875,11 @@
 ; simplify-clause-pot-lst.  Also notice that rcnst has been replaced by ens (an
 ; enable structure).
 
-; When keep-unify-subst is non-nil, we run through all of the hyps in order to
-; find extensions of unify-subst that bind free variables in order to make hyps
-; true.  Keep-unify-subst is true at the top level, but when we get a failure,
-; we set it to :FAILED so that we can return nil at the end.
+; Keep-unify-subst should be t, :FAILED, or nil.  When it is non-nil, we run
+; through all of the hyps in order to find extensions of unify-subst that bind
+; free variables in order to make hyps true.  Keep-unify-subst is t at the top
+; level, but when we get a failure, we set it to :FAILED so that we can return
+; nil at the end.
 
 ; This function a No-Change Loser when keep-unify-subst is nil.  In order to
 ; accomplish this without requiring it have to test the answer to its own
@@ -22909,7 +22911,7 @@
                                 new-unify-subst
                                 unify-subst0 ttree0
                                 type-alist
-                                (if (and (eq keep-unify-subst t)
+                                (if (and keep-unify-subst
                                          (not relieve-hyp-ans))
                                     :FAILED
                                   keep-unify-subst)
@@ -22928,7 +22930,11 @@
 ; a new ttree.  This function is a No-Change Loser.
 
   (pc-relieve-hyps1 rune hyps unify-subst unify-subst ttree type-alist
-                    keep-unify-subst wrld state ens ttree))
+
+; Pc-relieve-hyps1 expects keep-unify-subst to be t, nil, or :failed.
+
+                    (not (null keep-unify-subst))
+                    wrld state ens ttree))
 
 (defun remove-trivial-lits (lst type-alist alist wrld ens ttree)
 
