@@ -4,7 +4,7 @@
 
 (in-package "X86ISA")
 
-(include-book "x86-register-readers-and-writers" :ttags (:undef-flg))
+(include-book "x86-modes")
 
 ;; ======================================================================
 
@@ -15,7 +15,7 @@
   :short "Physical memory read and write functions"
 
   :long "<p>Note that the top-level memory accessor function is @(see
-  rm08) and updater function is @(see wm08).  Their 16, 32, 64, and
+  rml08) and updater function is @(see wml08).  Their 16, 32, 64, and
   128 bit counterparts are also available.  These functions behave
   differently depending upon the value of
   @('programmer-level-mode').</p>

@@ -10,7 +10,6 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking" :dir :system)
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -509,9 +508,8 @@
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (hints-alist "A @('symbol-alistp') that is
-                             the alist form of
-                             the list of doublets @('hints').")
+               (hints-alist "A @('symbol-alistp') that is the alist form of
+                             the keyword-value list @('hints').")
                state)
   :mode :program
   :short "Ensure that the @(':hints') input to the transformation is valid."
@@ -521,7 +519,7 @@
    whose keywords are unique and include only names of applicability conditions.
    The values of the keyword-value list
    are checked to be well-formed hints not here,
-   but implicitly when attempting prove the applicability conditions.
+   but implicitly when attempting to prove the applicability conditions.
    </p>"
   (b* (((er &) (ensure-keyword-value-list$ hints "The :HINTS input" t nil))
        (alist (keyword-value-list-to-alist hints))
@@ -1750,9 +1748,7 @@
    </p>
    <p>
    If @(':show-only') is @('t'),
-   the @(tsee encapsulate) is quoted and returned as a value triple.
-   Thus, when this value triple is submitted as an event,
-   the @(tsee encapsulate) is just shown on screen.
+   an event to show the @(tsee encapsulate) on screen is returned.
    The table event and the screen output events are excluded from this
    because they just &ldquo;repeat&rdquo; things that are already present
    in the @(tsee encapsulate) that is shown on the screen.
@@ -1789,6 +1785,7 @@
                                      app-cond-thm-names
                                      old-fn-unnorm-name
                                      wrld))
+       (names-to-avoid (rcons domain-of-old-thm-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event
             new-fn-formals) (tailrec-new-fn-intro-events
@@ -1829,6 +1826,7 @@
                                   new-fn-formals
                                   new-to-old-thm-name
                                   wrld))
+       (names-to-avoid (rcons old-to-new-thm-name names-to-avoid))
        ((mv wrapper-fn-local-event
             wrapper-fn-exported-event) (tailrec-wrapper-fn-intro-events
                                         old-fn-name
@@ -1840,7 +1838,6 @@
                                         app-cond-thm-names
                                         new-fn-formals
                                         wrld))
-       (names-to-avoid (rcons old-to-new-thm-name names-to-avoid))
        ((mv wrapper-fn-unnorm-event
             wrapper-fn-unnorm-name) (install-not-norm-event wrapper-fn-name
                                                             t

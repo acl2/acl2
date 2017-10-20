@@ -40,7 +40,7 @@ keys with values, has a @('get') function to look up the value of some key, and
 has a @('set') function to install some new value for some key.</p>
 
 <p>Unlike an ordinary @('misc/record'), a typed record is homogeneous, i.e., we
-unconditionally know @({(foop (get a r))}).  Meanwhile, the @('get') and
+unconditionally know: @({(foop (get a r))})  Meanwhile, the @('get') and
 @('set') functions for a typed record are <b>almost</b> the same as for
 ordinary records.  The only difference is that the @('g-same-s') theorem
 becomes:</p>

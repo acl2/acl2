@@ -2424,6 +2424,20 @@
         (:case-split (generate-case-split sieve. x ls$ us$))
         (t (mv () us$))))
 
+; Matt K. mod, 10/2017: Since ev-fncall-w is called in funcall below but is now
+; untouchable, a change is necessary.  (Note that funcall is a macro that
+; generates a call of ev-fncall-w, which is why a change wasn't necessary
+; earlier.)  Fortunately, kas.acl2 specifies :ttags :all, so we can introduce a
+; trust tag to remove ev-fncall-w as an untouchable.  An alternate solution,
+; not yet tried (at least by me), is to use ev-fncall-w! instead; but that
+; might slow things down a lot because of the extra checking done.  Note that
+; magic-ev-fncall isn't an option, because state isn't available in funcall
+; (though we could consider adding it).
+
+(defttag :ev-fncall-w-ok)
+(remove-untouchable ev-fncall-w t)
+(defttag nil)
+
 (defunk process-user-sieve (sieve. r ls$ us$)
   (if (not (eq (first sieve.) :funcall))
       (mv nil () us$)
@@ -2637,6 +2651,10 @@
       (letk ((ls$ (incr-rule-ctr (oper.exec op)))
              (y ls$ (install-quote val. ls$)))
         (mv^ y ls$)))))
+
+; ; Matt K. mod, 10/2017: Undo the removal of ev-fncall-w as an untouchable,
+; performed earlier above.
+(push-untouchable ev-fncall-w t)
 
 (defunk exec-counterpart (opcd x ls$ us$)
   (letk ((op (opcd.index opcd))

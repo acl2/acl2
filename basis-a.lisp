@@ -4115,32 +4115,6 @@
                 (cdr *accumulated-warnings*))))
   state)
 
-(defconst *stobjs-out-invalid*
-  '(if return-last))
-
-(defun stobjs-out (fn w)
-
-; Warning: keep this in sync with get-stobjs-out-for-declare-form.
-
-; See the Essay on STOBJS-IN and STOBJS-OUT.
-
-; Note that even though the guard implies (not (member-eq fn
-; *stobjs-out-invalid*)), we keep the member-eq test in the code in case
-; stobjs-out is called from a :program-mode function, since in that case the
-; guard may not hold.
-
-  (declare (xargs :guard (and (symbolp fn)
-                              (plist-worldp w)
-                              (not (member-eq fn *stobjs-out-invalid*)))))
-  (cond ((eq fn 'cons)
-; We call this function on cons so often we optimize it.
-         '(nil))
-        ((member-eq fn *stobjs-out-invalid*)
-         (er hard! 'stobjs-out
-             "Implementation error: Attempted to find stobjs-out for ~x0."
-             fn))
-        (t (getpropc fn 'stobjs-out '(nil) w))))
-
 ; The ACL2 Record Facilities
 
 ; Our record facility gives us the ability to declare "new" types of
@@ -5262,33 +5236,16 @@
 
 (defmacro observation-cw (&rest args)
 
-; See observation.  In #-acl2-par, this macro uses wormholes to avoid modifying
-; state, and prints even when including books.  In #+acl2-par, to avoid
-; wormholes, which are known not to be thread-safe, we simply call cw.
-
-; See observation.  This macro uses wormholes to avoid accessing state, and
+; See observation.  This macro uses wormholes to avoid modifying state, and
 ; prints even when including books.
 
-; We considered using the @par naming scheme to define this macro in
-; #+acl2-par, but the name would then have "@par" in it, which could jar users.
-
-  #-acl2-par
   `(observation1-cw
     ,(car args)
     ,(cadr args)
     ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
                           #\5 #\6 #\7 #\8 #\9)
                         (cddr args))
-    t)
-  #+acl2-par
-
-; Parallelism blemish: consider using *the-live-state* to disable
-; observation-cw, i.e., to avoid the cw call below, when observations are
-; turned off.  But note that if we have such #-acl2-loop-only code, users might
-; be surprised when their own use of observation-cw doesn't benefit from such
-; restrictions.
-
-  `(cw ,(cadr args) ,@(cddr args)))
+    t))
 
 ; Start stobj support in raw Lisp
 

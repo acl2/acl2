@@ -408,9 +408,9 @@
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((mv flg1 (the (unsigned-byte 32) imm) x86)
-        (rm-size imm-size temp-rip :x x86))
+        (rml-size imm-size temp-rip :x x86))
        ((when flg1)
-        (!!ms-fresh :rim-size-error flg1))
+        (!!ms-fresh :riml-size-error flg1))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
         (+ temp-rip imm-size))

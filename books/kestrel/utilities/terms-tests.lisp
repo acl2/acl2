@@ -15,68 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (not (pseudo-lambdap "abc")))
-
-(assert! (not (pseudo-lambdap (cons 3 6))))
-
-(assert! (not (pseudo-lambdap '(lambda (x) x extra))))
-
-(assert! (not (pseudo-lambdap '(lambd (x) x))))
-
-(assert! (not (pseudo-lambdap '(lambda (x 8) x))))
-
-(assert! (not (pseudo-lambdap '(lambda (x y) #\a))))
-
-(assert! (pseudo-lambdap '(lambda (x) x)))
-
-(assert! (pseudo-lambdap '(lambda (x y z) (+ x (* y z)))))
-
-(assert! (pseudo-lambdap '(lambda (x y z) (+ x x))))
-
-(assert! (pseudo-lambdap '(lambda (x y z) (+ a b))))
-
-(must-succeed*
- (defconst *term* '((lambda (x) (1+ x)) y))
- (assert! (pseudo-termp *term*))
- (assert! (pseudo-lambdap (ffn-symb *term*))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (pseudo-fn/lambda-p 'f))
-
-(assert! (pseudo-fn/lambda-p '(lambda (x) x)))
-
-(assert! (not (pseudo-fn/lambda-p 33)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (lambdap '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
-
-(assert! (not (lambdap '(lambda (x) (fffff x)) (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (not (fn/lambda-p "cons" (w state))))
-
-(assert! (not (fn/lambda-p 'fffffffff (w state))))
-
-(assert! (fn/lambda-p 'cons (w state)))
-
-(assert! (fn/lambda-p 'len (w state)))
-
-(assert! (not (fn/lambda-p 'car-cdr-elim (w state))))
-
-(must-succeed*
- (defun h (x) x)
- (assert! (fn/lambda-p 'h (w state))))
-
-(assert!
- (fn/lambda-p '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
-
-(assert! (not (fn/lambda-p '(lambda (x) (fffff x)) (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (lambda-closedp '(lambda (x) (* '2 x))))
 
 (assert! (lambda-closedp '(lambda (x y) (- y x))))
@@ -107,6 +45,48 @@
 (assert-equal (apply-unary-to-terms '(lambda (z) (cons z z))
                                     '(x (g y) '2))
               '((cons x x) (cons (g y) (g y)) '(2 . 2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (fapply-term 'f '('4 y))
+              '(f '4 y))
+
+(assert-equal (fapply-term '(lambda (x y) (* (1+ x) (1- y))) '(a b))
+              '(* (1+ a) (1- b)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (fapply-term* 'f ''4 'y)
+              '(f '4 y))
+
+(assert-equal (fapply-term* '(lambda (x y) (* (1+ x) (1- y))) 'a 'b)
+              '(* (1+ a) (1- b)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (fapply-unary-to-terms 'f '(x (g y) '2))
+              '((f x) (f (g y)) (f '2)))
+
+(assert-equal (fapply-unary-to-terms '(lambda (z) (cons z z))
+                                     '(x (g y) '2))
+              '((cons x x) (cons (g y) (g y)) (cons '2 '2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) '(quote "a"))
+              '(quote "a"))
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) 'z)
+              'z)
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) 'x)
+              '(quote 1))
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) '((lambda (x) x) y))
+              '((lambda (x) x) '2))
+
+(assert-equal (fsublis-var '((x . '1) (y . '2)) '(f x (g z)))
+              '(f '1 (g z)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -340,14 +320,6 @@
 
 (assert! (msgp (nth 0 (mv-list 2 (check-user-lambda
                                   '(lambda (x) (f x)) (w state))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (trans-macro 'list (w state))
-              ''nil)
-
-(assert-equal (trans-macro 'make-list (w state))
-              '(make-list-ac size 'nil 'nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

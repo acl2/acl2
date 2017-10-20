@@ -624,7 +624,10 @@
 
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-pml4-table
   (implies
-   (and (member-p (pml4-table-entry-addr (logext 48 lin-addr)
+   ;; without the 64-bit mode hyp, this theorem is not true,
+   ;; because ia32e-la-to-pa-pml4-table may mark bits in the state
+   (and (64-bit-modep x86)
+        (member-p (pml4-table-entry-addr (logext 48 lin-addr)
                                          (logand 18446744073709547520 (loghead 52 base-addr)))
                   (gather-all-paging-structure-qword-addresses x86))
 
@@ -1047,11 +1050,17 @@
                wp smep smap ac nxe r-w-x cpl x86-1))
     (mv-nth 2 (ia32e-la-to-pa-pml4-table
                lin-addr base-addr
-               wp smep smap ac nxe r-w-x cpl x86-2)))))
+               wp smep smap ac nxe r-w-x cpl x86-2))))
+  ;; add the following after adding 64-bit mode hyp to previous theorem:
+  :hints (("Goal" :in-theory (enable xlate-equiv-memory))))
 
 (defthm two-pml4-table-walks-ia32e-la-to-pa-pml4-table
   (implies
-   (and (member-p (pml4-table-entry-addr (logext 48 lin-addr-2)
+   ;; the 64-bit mode hyp makes the proof of this theorem easy
+   ;; (via xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-pml4-table above),
+   ;; but could this hyp be removed from here?
+   (and (64-bit-modep x86)
+        (member-p (pml4-table-entry-addr (logext 48 lin-addr-2)
                                          (logand 18446744073709547520 (loghead 52 base-addr-2)))
                   (gather-all-paging-structure-qword-addresses x86))
 

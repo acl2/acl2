@@ -1553,9 +1553,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro defun-overrides (name formals &rest rest)
 
-; This is basically defun, for a function that takes the live state and has a
-; guard of t.  We push name onto *defun-overrides* so that add-trip knows to
-; leave the *1* definition in place.
+; This defines the function symbol, name, in raw Lisp.  Name should have a
+; guard of t and should have *unknown-constraints*.  We push name onto
+; *defun-overrides* so that add-trip knows to leave the *1* definition in
+; place.
+
+; Warning: The generated definitions will replace both the raw Lisp and *1*
+; definitions of name.  We must ensure that these definitions can't be
+; evaluated when proving theorems unless each has unknown-constraints and never
+; returns two values for the same input.  The latter condition may be taken
+; care of by passing in live states with different, or unknown, oracles.  If
+; state is not a formal (or even if it is), this latter condition -- i.e.,
+; being a function, must be true in order for the use of defun-overrides to be
+; sound!
 
   (assert (member 'state formals :test 'eq))
   `(progn (push ',name *defun-overrides*) ; see add-trip
@@ -4292,9 +4302,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(no-duplicatesp-equal ,x))))
 
-; The following is used in stobj-let.
-
 (defun chk-no-duplicatesp (lst)
+
+; This function is used in the implementation of stobj-let.  Do not modify it
+; without seeing where it is used and understand the implications of the
+; change.
+
   (declare (xargs :guard (and (eqlable-listp lst)
                               (no-duplicatesp lst)))
            (ignore lst))
@@ -12601,7 +12614,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-fncall! ; apply
     open-trace-file-fn ; *trace-output*
     set-trace-evisc-tuple ; *trace-evisc-tuple*
-    ev-fncall-w ; *the-live-state*
+    ev-fncall-w-body ; *the-live-state*
     ev-rec ; wormhole-eval
     setup-simplify-clause-pot-lst1 ; dmr-flush
     save-exec-fn ; save-exec-raw, etc.
@@ -12811,7 +12824,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     print-object$-preserving-case
     assign-lock
     throw-or-attach-call
-    oracle-apply oracle-apply-raw
     time-tracker-fn
     gc-verbose-fn
     set-absstobj-debug-fn
@@ -12824,6 +12836,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     concrete-badge-userfn
     concrete-apply$-userfn
+
+    ev-fncall-w-guard1
 
 ; The apply.lisp book defines apply$-lambda in :logic mode and if execution of
 ; apply$ is allowed (by going through the rubric that involves setting
@@ -13344,6 +13358,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (proofs-co . acl2-output-channel::standard-character-output-0)
     (protect-memoize-statistics . nil)
     (raw-arity-alist . nil)
+    (raw-guard-warningp . nil)
     (raw-include-book-dir!-alist . :ignore)
     (raw-include-book-dir-alist . :ignore)
     (raw-proof-format . nil)
@@ -20267,7 +20282,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     ev-fncall ev ev-lst ev-fncall!
     ev-fncall-rec ev-rec ev-rec-lst ev-rec-acl2-unwind-protect
-    ev-w ev-w-lst
+    ev-fncall-w ev-fncall-w-body ev-w ev-w-lst
 
     set-w set-w! cloaked-set-w!
 
@@ -20317,16 +20332,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     checkpoint-world
 
-    let-beta-reduce
-
     f-put-global@par ; for #+acl2-par (modifies state under the hood)
 
     with-live-state ; see comment in that macro
 
     stobj-evisceration-alist ; returns bad object
     trace-evisceration-alist ; returns bad object
-
-    oracle-apply-raw
 
     update-enabled-structure-array ; many assumptions for calling correctly
 
@@ -26640,8 +26651,6 @@ Lisp definition."
                        (symbol-name sym))
           "ACL2"))
 
-; Oracle-funcall, oracle-apply, and oracle-apply-ttag:
-
 (defun stobjs-in (fn w)
 
 ; Fn must be a function symbol, not a lambda expression and not an
@@ -26656,9 +26665,6 @@ Lisp definition."
       '(nil nil)
 
     (getpropc fn 'stobjs-in nil w)))
-
-(defmacro oracle-funcall (fn &rest args)
-  `(oracle-apply ,fn (list ,@args) state))
 
 (defun all-nils (lst)
   (declare (xargs :guard (true-listp lst)))
@@ -26692,30 +26698,138 @@ Lisp definition."
     (sys-call+)
     ))
 
-(defun ev-fncall-w-guard (fn args wrld temp-touchable-fns)
+#-acl2-loop-only
+(progn
 
-; This function should return nil if the term (cons fn (kwote-lst args)) can
-; not be translated for execution.  See translate11.
+; We implement a very simple cache for ev-fncall-w-guard, in support of
+; ev-fncall-w and magic-ev-fncall.
 
-; Note that this function is described in :doc oracle-apply.  If this function
-; is updated, then update that :doc topic as well.
+(defconstant *ev-fncall-w-guard1-cache-size*
 
-; Warning: If this function is changed, then consider changing the table guard
-; for dive-into-macros-table.
+; This size is rather arbitrary.  We avoid making it too large, to avoid having
+; a cache that takes up a lot of memory, as it holds a world in each entry.
+
+  10)
+
+(defconstant *ev-fncall-w-guard1-cache-init*
+  (cons 0 (make-list *ev-fncall-w-guard1-cache-size*)))
+
+(defvar *ev-fncall-w-guard1-cache*
+  *ev-fncall-w-guard1-cache-init*)
+
+(defun ev-fncall-w-guard1-cache-clear ()
+  (let ((cache *ev-fncall-w-guard1-cache*))
+    (setf (car cache) 0)
+    (loop for tail on (cdr cache)
+          do
+          (setf (car tail) nil))))
+
+(defun ev-fncall-w-guard1-cache-lookup (fn wrld temp-touchable-fns)
+  (let ((tuple (assoc-eq fn (cdr *ev-fncall-w-guard1-cache*))))
+    (or (and (eq (cadr tuple) wrld)
+             (eq (caddr tuple) temp-touchable-fns)
+             (cdddr tuple))
+
+; Otherwise eliminate the tuple's key, so that this tuple doesn't get found
+; next time we look up fn in the cache.
+
+        (setf (car tuple) nil))))
+
+(defun ev-fncall-w-guard1-cache-update (fn wrld temp-touchable-fns data)
+
+; This function is thread-safe, in the sense that it will always result in a
+; valid update.
+
+  (let* ((cache *ev-fncall-w-guard1-cache*)
+         (index (car cache))
+         (alist (cdr cache)))
+    (when (>= (incf index) *ev-fncall-w-guard1-cache-size*)
+; Avoid using (= index *ev-fncall-w-guard1-cache-size*), for thread safety
+      (setq index 0))
+    (let ((tail (nthcdr index alist)))
+      (setf (car tail)
+            (list* fn wrld temp-touchable-fns data)))))
+
+; It is a bit tempting to add
+; (declaim (inline ev-fncall-w-guard1))
+; but a bit of experimentation suggests that this doesn't help.
+)
+
+(defun logicp (fn wrld)
+
+; We assume that fn is not the name of a theorem (presumably it's a function
+; symbol), in order to avoid the use of symbol-class, which can check the
+; 'theorem property of fn.
+
+  (declare (xargs :guard (and (plist-worldp wrld)
+
+; We deliberately avoid adding the conjunct (function-symbolp fn), even though
+; we expect it to be true when we call logicp.  Otherwise we would incur more
+; proof obligations; indeed, guard verification would fail for arities-okp.
+
+                              (symbolp fn))))
+  (not (eq (getpropc fn 'symbol-class nil wrld)
+           :program)))
+
+(defmacro logicalp (fn wrld)
+; DEPRECATED in favor of logicp!
+  `(logicp ,fn ,wrld))
+
+(defmacro programp (fn wrld)
+
+; We assume that fn is not the name of a theorem (presumably it's a function
+; symbol), in order to avoid the use of symbol-class, which can check the
+; 'theorem property of fn.
+
+  `(not (logicp ,fn ,wrld)))
+
+(defconst *stobjs-out-invalid*
+  '(if return-last))
+
+(defun stobjs-out (fn w)
+
+; Warning: keep this in sync with get-stobjs-out-for-declare-form.
+
+; See the Essay on STOBJS-IN and STOBJS-OUT.
+
+; Note that even though the guard implies (not (member-eq fn
+; *stobjs-out-invalid*)), we keep the member-eq test in the code in case
+; stobjs-out is called from a :program-mode function, since in that case the
+; guard may not hold.
+
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp w)
+                              (not (member-eq fn *stobjs-out-invalid*)))))
+  (cond ((eq fn 'cons)
+; We call this function on cons so often we optimize it.
+         '(nil))
+        ((member-eq fn *stobjs-out-invalid*)
+         (er hard! 'stobjs-out
+             "Implementation error: Attempted to find stobjs-out for ~x0."
+             fn))
+        (t (getpropc fn 'stobjs-out '(nil) w))))
+
+(defun ev-fncall-w-guard1 (fn wrld temp-touchable-fns)
+
+; See ev-fncall-w-guard.  Here we use a cache to avoid most of that computation
+; in some cases.  We return the length of the formals of fn if all the expected
+; conditions hold, else nil.
 
   (declare (xargs :guard t))
+  #-acl2-loop-only
+  (let ((data (ev-fncall-w-guard1-cache-lookup fn wrld
+                                               temp-touchable-fns)))
+    (when data
+      (return-from ev-fncall-w-guard1 data)))
   (and (plist-worldp wrld)
        (symbolp fn)
 
-; The function ev-fncall-rec-logical disallows calling the function IF,
-; presumably because one should evaluate that call lazily.  We make the same
-; restriction here.  At one time we also considered disallowing
-; return-last, synp, and mv-list, but these are truly function symbols whose
-; calls can reasonably be evaluated in the logic.
+; We avoid potential problems obtaining the stobjs-out of 'if.  (We give
+; special handling to 'return-last in ev-fncall-w-guard1, so we don't need to
+; avoid it here.)
 
        (not (eq fn 'if))
        (not (assoc-eq fn *ttag-fns-and-macros*))
-       (true-listp args)
        (let* ((formals (getpropc fn 'formals t wrld))
               (stobjs-in (stobjs-in fn wrld))
               (untouchable-fns (global-val 'untouchable-fns wrld)))
@@ -26724,13 +26838,11 @@ Lisp definition."
 ; the necessary true-listp tests into that macro.  So we open-code here.
 
          (and (not (eq formals t))
-              (eql (len formals) (len args))
               (true-listp untouchable-fns)
               (or (not (member-eq fn untouchable-fns))
-                  (and temp-touchable-fns
-                       (or (eq t temp-touchable-fns)
-                           (and (true-listp temp-touchable-fns)
-                                (member-eq fn temp-touchable-fns)))))
+                  (eq t temp-touchable-fns)
+                  (and (true-listp temp-touchable-fns)
+                       (member-eq fn temp-touchable-fns)))
 
 ; Perhaps we could skip the next check.  It is equivalent to (not
 ; (stobj-creatorp fn wrld)), but stobj-creatorp is defined later.
@@ -26738,83 +26850,39 @@ Lisp definition."
               (not (and (null formals)
                         (getpropc fn 'stobj-function nil wrld)))
               (true-listp stobjs-in) ; needed for guard of all-nils
-              (all-nils stobjs-in)))))
+              (all-nils stobjs-in)
+              (let ((data (list* (len formals)
+                                 (programp fn wrld)
+                                 (if (eq fn 'return-last)
 
-(defun oracle-apply-guard (fn args state)
+; We handle return-last in raw-ev-fncall-simple as we do in raw-ev-fncall.
+
+                                     '(nil)
+                                   (stobjs-out fn wrld)))))
+                #-acl2-loop-only
+                (progn
+                  (ev-fncall-w-guard1-cache-update fn wrld temp-touchable-fns
+                                                   data)
+                  data)
+                #+acl2-loop-only
+                data)))))
+
+(defun ev-fncall-w-guard (fn args wrld temp-touchable-fns)
 
 ; This function should return nil if the term (cons fn (kwote-lst args)) can
 ; not be translated for execution.  See translate11.
 
-; Note that this function is described in :doc oracle-apply.  If this function
-; is updated, then update that :doc topic as well.
+; Warning: If this function is changed, then consider changing the table guard
+; for dive-into-macros-table.
 
-  (declare (xargs :stobjs state))
-  (and (f-boundp-global 'temp-touchable-fns state)
-       (ev-fncall-w-guard fn
-                          args
-                          (w state)
-                          (f-get-global 'temp-touchable-fns state))))
-
-(defun oracle-apply (fn args state)
-
-; WARNING: Do not allow stobj arguments among args!  This is naturally enforced
-; since stobjs may not belong to lists.  It is important since otherwise
-; single-threadedness may be violated, which could lead to unsoundness since
-; this is a :logic mode function.  (For somewhat related discussion, see :doc
-; user-stobjs-modified-warnings.)
-
-; The use of an oracle is important for the logical story.  For example, we can
-; imagine the following sort of situation without an oracle.
-
-;   (encapsulate
-;    ()
-;    (local (defun f (x)
-;             1))
-;    (defthm prop-1
-;      (equal (oracle-funcall 'f) 1)
-;      :rule-classes nil))
-;
-;   (encapsulate
-;    ()
-;    (local (defun f ()
-;             2))
-;    (defthm prop-2
-;      (equal (oracle-funcall 'f) 2)
-;      :rule-classes nil))
-;
-;   (defthm contradiction
-;     nil
-;     :hints (("Goal" :use (prop-1 prop-2))))
-
-  (declare (xargs :stobjs state
-                  :guard (oracle-apply-guard fn args state)))
-  #-acl2-loop-only
-  (when (live-state-p state)
-    (return-from oracle-apply
-                 (mv (state-free-global-let* ((safe-mode t))
-                                             (apply (*1*-symbol fn) args))
-                     state)))
-  (mv-let (erp val state)
-          (read-acl2-oracle state)
-          (declare (ignore erp))
-
-; We arrange for the result to depend logically on fn and args.  This is
-; probably not important to do, but it seems potentially weird for the result
-; to have nothing to do with fn or with args.
-
-          (mv (and (true-listp val)
-                   (eq (car val) fn)
-                   (equal (cadr val) args)
-                   (caddr val))
-              state)))
-
-(defun oracle-apply-raw (fn args state)
-  (declare (xargs :stobjs state :guard t))
-  #-acl2-loop-only
-  (when (live-state-p state)
-    (return-from oracle-apply-raw
-                 (mv (apply fn args) state)))
-  (ec-call (oracle-apply fn args state)))
+  (declare (xargs :guard t))
+  (let ((len-formals/programp/stobjs-out
+         (ev-fncall-w-guard1 fn wrld temp-touchable-fns)))
+    (and len-formals/programp/stobjs-out
+         (true-listp args)
+         (eql (car len-formals/programp/stobjs-out)
+              (length args))
+         (cdr len-formals/programp/stobjs-out))))
 
 (defun time-tracker-fn (tag kwd kwdp times interval min-time msg)
 

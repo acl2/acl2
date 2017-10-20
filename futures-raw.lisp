@@ -1208,7 +1208,7 @@
 
 ; Parallelism no-fix: we have considered causing child threads to inherit
 ; ld-specials from their parents, or even other state globals such as
-; *ev-shortcut-okp* and *raw-guard-warningp*, as the following comment from
+; *ev-shortcut-okp* and raw-guard-warningp, as the following comment from
 ; David Rager suggests.  But this now seems too difficult to justify that
 ; effort, and we do not feel obligated to do so; see the "IMPORTANT NOTE" in
 ; :doc parallelism.

@@ -28,82 +28,6 @@
 
 ;; ======================================================================
 
-;; Extended by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
-;; Extended from always T to discriminating between 64-bit and 32-bit mode.
-(define 64-bit-modep (x86)
-  :parents (machine)
-  :short "Check whether we are in 64-bit mode."
-  :long
-  "<p>
-   For now we do not model in detail all the processor modes and transitions
-   (see Figure 2-3 in Intel Volume 3A).
-   We implicitly assume that the processor
-   is always in one of the following modes:
-   </p>
-   <ul>
-     <li>Protected mode.</li>
-     <li>Compatibility mode (sub-mode of IA-32e mode).</li>
-     <li>64-bit mode (sub-mode of IA-32e mode).</li>
-   </ul>
-   <p>
-   No real-address mode, virtual-8086 mode, or system management mode for now.
-   </p>
-   <p>
-   Given the above assumption, this predicate discriminates between
-   64-bit mode and the other two modes (collectively, 32-bit mode).
-   Based on Section 2.2 of in Intel Volume 3A (near Figure 2-3),
-   the discrimination is based on the IA32_EFER.LME and CS.L bits:
-   if they are both 1, we are in 64-bit mode,
-   otherwise we are in 32-bit mode
-   (protected mode if IA32_EFER.LME is 0,
-   compatibility mode if IA32_EFER.LME is 1 and CS.L is 0;
-   note that when IA32_EFER.LME is 0, CS.L should be 0,
-   according to Section 3.4.5 of Intel Volume 3A).
-   </p>
-   <p>
-   This predicate does not include state invariants such as
-   the constraints imposed by the 64-bit mode consistency checks
-   described in Section 9.8.5 of Intel Volume 3A.
-   </p>
-   <p>
-   This predicate is useful as a hypothesis of theorems
-   about either 64-bit or 32-bit mode.
-   </p>
-   <p>
-   Since @('(xr :msr ... x86)') returns a 64-bit value
-   but the IA32_EFER register consists of 12 bits.
-   So we use @(tsee n12) to make @('ia32_efer-slice') applicable.
-   </p>"
-  (b* ((ia32_efer (n12 (xr :msr *ia32_efer-idx* x86)))
-       (ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
-       (cs-hidden (xr :seg-hidden *cs* x86))
-       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-       (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
-    (and (equal ia32_efer.lma 1)
-         (equal cs.l 1)))
-  ///
-
-  (defrule 64-bit-modep-of-xw ; contributed by Eric Smith
-    (implies (and (not (equal fld :msr))
-                  (not (equal fld :seg-hidden)))
-             (equal (64-bit-modep (xw fld index value x86))
-                    (64-bit-modep x86))))  
-
-  (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
-    (equal (64-bit-modep (!flgi flag val x86))
-           (64-bit-modep x86)))
-
-  (defrule 64-bit-modep-of-!flgi-undefined
-    (equal (64-bit-modep (!flgi-undefined flg x86))
-           (64-bit-modep x86))
-    :enable !flgi-undefined)
-
-  (defrule 64-bit-modep-of-write-user-rflags
-    (equal (64-bit-modep (write-user-rflags vector mask x86))
-           (64-bit-modep x86))))
-
-;; ======================================================================
-
 (defthm loghead-zero-smaller
   (implies (and (equal (loghead n x) 0)
                 (natp n)
@@ -258,7 +182,11 @@
   (defthm page-fault-exception-xw-state
     (implies (not (equal fld :fault))
              (equal (mv-nth 2 (page-fault-exception addr err-no (xw fld index value x86)))
-                    (xw fld index value (mv-nth 2 (page-fault-exception addr err-no x86)))))))
+                    (xw fld index value (mv-nth 2 (page-fault-exception addr err-no x86))))))
+
+  (defrule 64-bit-modep-of-page-fault-exception
+    (equal (64-bit-modep (mv-nth 2 (page-fault-exception addr err-no x86)))
+           (64-bit-modep x86))))
 
 (define page-present
   ((entry :type (unsigned-byte 64)))
@@ -1193,8 +1121,14 @@ accesses.</p>
     :hints (("Goal" :in-theory (e/d* ()
                                      (commutativity-of-+
                                       not
-                                      bitops::logand-with-negated-bitmask))))))
+                                      bitops::logand-with-negated-bitmask)))))
 
+  (defrule 64-bit-modep-of-paging-entry-no-page-fault-p
+    (equal (64-bit-modep (mv-nth 2 (paging-entry-no-page-fault-p
+                                    structure-type lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))))
 
 ;; ======================================================================
 
@@ -1451,7 +1385,14 @@ accesses.</p>
                       lin-addr
                       base-addr u/s-acc r/w-acc x/d-acc
                       wp smep smap ac nxe r-w-x cpl x86))
-                    x86))))
+                    x86)))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-page-table
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-table
+                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))
+    :enable (wm-low-32 wm-low-64)))
 
 ;; ----------------------------------------------------------------------
 
@@ -1765,7 +1706,14 @@ accesses.</p>
                       lin-addr
                       base-addr u/s-acc r/w-acc x/d-acc
                       wp smep smap ac nxe r-w-x cpl x86))
-                    x86))))
+                    x86)))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-page-directory
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-directory
+                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))
+    :enable (wm-low-32 wm-low-64)))
 
 ;; ----------------------------------------------------------------------
 
@@ -2081,7 +2029,14 @@ accesses.</p>
                       lin-addr
                       base-addr u/s-acc r/w-acc x/d-acc
                       wp smep smap ac nxe r-w-x cpl x86))
-                    x86))))
+                    x86)))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-page-dir-ptr-table
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))
+    :enable (wm-low-32 wm-low-64)))
 
 ;; ----------------------------------------------------------------------
 
@@ -2320,7 +2275,14 @@ accesses.</p>
                      (ia32e-la-to-pa-pml4-table
                       lin-addr base-addr
                       wp smep smap ac nxe r-w-x cpl x86))
-                    x86))))
+                    x86)))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-pml4-table
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                                    lin-addr base-addr
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (64-bit-modep x86))
+    :enable (wm-low-32 wm-low-64)))
 
 ;; ----------------------------------------------------------------------
 
@@ -2556,7 +2518,12 @@ accesses.</p>
                          (value (logior (ash (loghead 2 value) 12)
                                         (logand 4294955007 (xr :rflags 0 x86))))))
              :in-theory (e/d* (!flgi-open-to-xw-rflags)
-                              (ia32e-la-to-pa-xw-rflags-state-not-ac))))))
+                              (ia32e-la-to-pa-xw-rflags-state-not-ac)))))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa
+    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+           (64-bit-modep x86))
+    :enable 64-bit-modep))
 
 ;; ======================================================================
 
@@ -2893,7 +2860,7 @@ accesses.</p>
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) ()))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-!=-all-ones
-  ;; This rule comes in useful during the guard proof of rm16.
+  ;; This rule comes in useful during the guard proof of rml16.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4095)
@@ -2959,7 +2926,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4093
-  ;; This rule comes in useful during the guard proof of rm32.
+  ;; This rule comes in useful during the guard proof of rml32.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4093)
@@ -2991,7 +2958,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4089
-  ;; This rule comes in useful during the guard proof of rm64.
+  ;; This rule comes in useful during the guard proof of rml64.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4089)
@@ -3023,7 +2990,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4089
-  ;; This rule comes in useful during the guard proof of rm64.
+  ;; This rule comes in useful during the guard proof of rml64.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (equal (loghead 12 lin-addr) 4089)
@@ -3055,7 +3022,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-=-4090
-  ;; This rule comes in useful during the guard proof of rm64.
+  ;; This rule comes in useful during the guard proof of rml64.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (equal (loghead 12 lin-addr) 4090)
@@ -3086,7 +3053,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-<-4081
-  ;; This rule comes in useful during the guard proof of rm128.
+  ;; This rule comes in useful during the guard proof of rml128.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (< (loghead 12 lin-addr) 4081)
@@ -3118,7 +3085,7 @@ accesses.</p>
                             (b *mem-size-in-bytes-1*))))))
 
 (defthm ia32e-la-to-pa-<-*mem-size-in-bytes-15*-when-low-12-bits-=-4081
-  ;; This rule comes in useful during the guard proof of rm128.
+  ;; This rule comes in useful during the guard proof of rml128.
   (implies (and (x86p x86)
                 (integerp lin-addr)
                 (equal (loghead 12 lin-addr) 4081)

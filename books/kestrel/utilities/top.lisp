@@ -12,6 +12,7 @@
 
 (include-book "acceptable-rewrite-rule-p")
 (include-book "all-vars-theorems")
+(include-book "arglistp-theorems")
 (include-book "assert")
 (include-book "auto-termination")
 (include-book "bytes")
@@ -53,6 +54,7 @@
 (include-book "strings")
 (include-book "symbol-symbol-alists")
 (include-book "symbol-true-list-alists")
+(include-book "symbols")
 (include-book "terms")
 (include-book "testing")
 (include-book "trans-eval-error-triple")

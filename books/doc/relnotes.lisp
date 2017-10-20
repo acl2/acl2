@@ -198,6 +198,12 @@
  @('std/std-customization.lsp') now support rule classes other than
  @(':rewrite').</p>
 
+ <p>The rule @('sets-are-true-lists') has been split into three rules with the
+ same formula: a disabled @(see rewrite) rule of that name, a (@see
+ compound-recognizer) rule @('sets-are-true-lists-compound-recognizer'), and a
+ rewrite rule @('sets-are-true-lists-cheap') whose @(see backchain-limit) is
+ 1.</p>
+
  <h4>Kestrel Utilities</h4>
 
  <p>The <see topic='@(url kestrel-utilities)'>Kestrel Utilities</see> have
@@ -277,6 +283,9 @@
  <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs
  macroexpansion when all macros to be expanded are in logic mode.</p>
 
+ <p>There is a new @(see symbol-utilities) book (initially with a single
+ function, @(tsee symbol-package-name-safe)).</p>
+
  <h4>The apply books</h4>
 
  <p>Updated books pertaining to @('apply$'); see @('projects/apply-model/') and
@@ -335,7 +344,12 @@
  @('64-bit-modep') predicate is no longer always true. Some documentation
  topics and some comments have been expanded and clarified. Some exceptions are
  now being added to the fault field of the x86 state rather than the
- model-specific field.</p>
+ model-specific field. A more complete model of segment address translation has
+ been added.</p>
+
+ <h4>AVR ISA</h4>
+ <p>Julien Schmaltz and Peter Schwabes' AVR ISA model has been contributed in book
+ \"projects/avr-isa\".</p>
 
  <h4>Miscellaneous Books</h4>
 

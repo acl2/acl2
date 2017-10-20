@@ -1043,6 +1043,12 @@
                    '((:executable-counterpart force))
                    (theory 'executable-counterpart-minimal-theory))))
 
+(defconst *acl2-primitives*
+  (strip-cars *primitive-formals-and-guards*))
+
+(deftheory acl2-primitives
+  (definition-runes *acl2-primitives* nil world))
+
 ; See the Essay on the Status of the Tau System During and After Bootstrapping
 ; in axioms.lisp where we discuss choices (1.a), (1.b), (2.a) and (2.b)
 ; related to the status of the tau system.  Here is where we implement
@@ -1411,6 +1417,7 @@
   '(("system/top"
      (>=-LEN ACL2-COUNT X)
      (ABBREV-EVISC-TUPLE)
+     (ADD-SUFFIX-TO-FN)
      (ALIST-TO-DOUBLETS ACL2-COUNT ALIST)
      (ALL->=-LEN ACL2-COUNT LST)
      (ALL-FFN-SYMBS ACL2-COUNT TERM)
@@ -1448,6 +1455,8 @@
      (FIND-FIRST-BAD-ARG ACL2-COUNT ARGS)
      (FNUME)
      (FORMALIZED-VARLISTP ACL2-COUNT VARLIST)
+     (FSUBCOR-VAR ACL2-COUNT FORM)
+     (FSUBCOR-VAR-LST ACL2-COUNT FORMS)
      (IMPLICATE)
      (LAMBDA-KEYWORDP)
      (LAMBDA-SUBTERMP ACL2-COUNT TERM)
@@ -1502,7 +1511,7 @@
      (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
      (RUNEP)
      (STOBJP)
-     (STOBJS-OUT)
+;    (STOBJS-OUT) ; now in axioms.lisp
      (STRIP-CADRS ACL2-COUNT X)
      (STRIP-DCLS ACL2-COUNT LST)
      (STRIP-DCLS1 ACL2-COUNT LST)

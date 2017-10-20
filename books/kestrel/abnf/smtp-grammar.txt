@@ -27,6 +27,8 @@ mail = "MAIL FROM:" Reverse-path
 rcpt = "RCPT TO:" ( "<Postmaster@" Domain ">" / "<Postmaster>" /
             Forward-path ) [SP Rcpt-parameters] CRLF
 
+data = "DATA" CRLF
+
 rset = "RSET" CRLF
 
 vrfy = "VRFY" SP String CRLF

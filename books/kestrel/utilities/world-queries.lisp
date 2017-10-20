@@ -19,8 +19,11 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
 (include-book "system/pseudo-good-worldp" :dir :system)
+(include-book "term-applicand-recognizers")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+(local (include-book "arglistp-theorems"))
+(local (include-book "world-theorems"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -148,6 +151,50 @@
        (logicp x wrld))
   :enabled t)
 
+(define formals+ ((fn (fn/lambda-p fn wrld))
+                  (wrld plist-worldp-with-formals))
+  :returns (formals symbol-listp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee formals)."
+  :long
+  "<p>
+   This returns the same result of @(tsee formals) on functions,
+   but it has a stronger guard
+   and includes a run-time check (which should always succeed) on the result
+   that allows us to prove the return type theorem
+   without strengthening the guard on the world argument.
+   </p>
+   <p>
+   This utility also works on lambda expressions.
+   </p>"
+  (b* ((formals (cond ((symbolp fn) (formals fn wrld))
+                      (t (lambda-formals fn)))))
+    (if (symbol-listp formals)
+        formals
+      (raise "Internal error: ~
+              the formals ~x0 of ~x1 are not ~
+              a NIL-terminated list of symbols."
+             formals fn)))
+  :guard-hints (("Goal" :in-theory (enable fn/lambda-p lambdap))))
+
+(define arity+ ((fn (fn/lambda-p fn wrld))
+                (wrld plist-worldp-with-formals))
+  :returns (result natp
+                  :hyp (fn/lambda-p fn wrld)
+                  :hints (("Goal" :in-theory (enable fn/lambda-p lambdap arity))))
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee arity)."
+  :long
+  "<p>
+   This returns the same result of @(tsee arity) on functions,
+   but it has a stronger guard.
+   </p>
+   <p>
+   This utility also works on lambda expressions.
+   </p>"
+  (arity fn wrld)
+  :guard-hints (("Goal" :in-theory (enable fn/lambda-p lambdap))))
+
 (define definedp ((fn (logic-function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (world-queries)
@@ -155,27 +202,6 @@
           i.e. it has an @('unnormalized-body') property."
   (not (eq t (getpropc fn 'unnormalized-body t wrld)))
   :guard-hints (("Goal" :in-theory (enable function-namep))))
-
-(define ubody ((fn (and (logic-function-namep fn wrld)
-                        (definedp fn wrld)))
-               (wrld plist-worldp))
-  :returns (body pseudo-termp)
-  :parents (world-queries)
-  :short "Unnormalized body of a logic-mode defined function."
-  :long
-  "<p>
-   The check that the body is a pseudo-term should always succeed,
-   but it allows us to prove the return type theorem for this function
-   without strengthening the guard @(tsee plist-worldp) on @('wrld').
-   The theorem may be useful when proving properties (e.g. verify guards)
-   of functions that call this function.
-   </p>"
-  (b* ((body (getpropc fn 'unnormalized-body nil wrld)))
-    (if (pseudo-termp body)
-        body
-      (raise "Internal error: ~
-              the unnormalized body ~x0 of ~x1 is not a pseudo-term."
-             body fn))))
 
 (define guard-verified-p ((fn/thm (or (function-namep fn/thm wrld)
                                       (theorem-namep fn/thm wrld)))
@@ -207,6 +233,27 @@
               the non-executable status ~x0 of ~x1 is not a boolean."
              non-executablep fn)))
   :guard-hints (("Goal" :in-theory (enable function-namep))))
+
+(define ubody ((fn (and (logic-function-namep fn wrld)
+                        (definedp fn wrld)))
+               (wrld plist-worldp))
+  :returns (body pseudo-termp)
+  :parents (world-queries)
+  :short "Unnormalized body of a logic-mode defined function."
+  :long
+  "<p>
+   The check that the body is a pseudo-term should always succeed,
+   but it allows us to prove the return type theorem for this function
+   without strengthening the guard @(tsee plist-worldp) on @('wrld').
+   The theorem may be useful when proving properties (e.g. verify guards)
+   of functions that call this function.
+   </p>"
+  (b* ((body (getpropc fn 'unnormalized-body nil wrld)))
+    (if (pseudo-termp body)
+        body
+      (raise "Internal error: ~
+              the unnormalized body ~x0 of ~x1 is not a pseudo-term."
+             body fn))))
 
 (define unwrapped-nonexec-body ((fn (and (logic-function-namep fn wrld)
                                          (definedp fn wrld)
@@ -263,6 +310,49 @@
               does not have the expected wrapper."
              body fn))))
 
+(define stobjs-in+ ((fn (function-namep fn wrld))
+                    (wrld plist-worldp))
+  :returns (result symbol-listp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee stobjs-in)."
+  :long
+  "<p>
+   This returns the same result as @(tsee stobjs-in),
+   but it has a stronger guard
+   and includes a run-time check (which should always succeed) on the result
+   that allows us to prove the return type theorem
+   without strengthening the guard on the world argument.
+   </p>"
+  (b* ((result (stobjs-in fn wrld)))
+    (if (symbol-listp result)
+        result
+      (raise "Internal error: ~
+              the input stobjs ~x0 of ~x1 do not form ~
+              a NIL-terminated list of symbols."
+             result fn))))
+
+(define stobjs-out+ ((fn (function-namep fn wrld))
+                     (wrld plist-worldp))
+  :guard (not (member-eq fn *stobjs-out-invalid*))
+  :returns (result symbol-listp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee stobjs-out)."
+  :long
+  "<p>
+   This returns the same result as @(tsee stobjs-out),
+   but it has a stronger guard
+   and includes a run-time check (which should always succeed) on the result
+   that allows us to prove the return type theorem
+   without strengthening the guard on the world argument.
+   </p>"
+  (b* ((result (stobjs-out fn wrld)))
+    (if (symbol-listp result)
+        result
+      (raise "Internal error: ~
+              the output stobjs ~x0 of ~x1 do not form ~
+              a NIL-terminated list of symbols."
+             result fn))))
+
 (define number-of-results ((fn (function-namep fn wrld))
                            (wrld plist-worldp))
   :guard (not (member-eq fn *stobjs-out-invalid*))
@@ -297,6 +387,43 @@
    </p>"
   (and (all-nils (stobjs-in fn wrld))
        (all-nils (stobjs-out fn wrld))))
+
+(define irecursivep ((fn symbolp) (wrld plist-worldp))
+  :returns (clique "A @(tsee symbol-listp).")
+  :parents (world-queries)
+  :short "List of mutually recursive functions of which
+          this function is a member,
+          based on the @(tsee defun) form that introduced this function,
+          or @('nil') if this function is not recursive."
+  :long
+  "<p>
+   This is a specialization of @(tsee recursivep)
+   with @('nil') as the second argument:
+   the @('i') that starts the name of @('irecursivep') conveys that
+   the result is based on the @(tsee defun) form that introduced @('fn').
+   </p>"
+  (recursivep fn nil wrld))
+
+(define irecursivep+ ((fn (logic-function-namep fn wrld))
+                      (wrld plist-worldp))
+  :returns (clique symbol-listp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee irecursivep)."
+  :long
+  "<p>
+   This returns the same result as @(tsee irecursivep),
+   but it has a stronger guard
+   and includes a run-time check (which should always succeed) on the result
+   that allows us to prove the return type theorem
+   without strengthening the guard on the world argument.
+   </p>"
+  (b* ((clique (irecursivep fn wrld)))
+    (if (symbol-listp clique)
+        clique
+      (raise "Internal error: ~
+              the 'RECURSIVEP property ~x0 of ~x1 is not ~
+              a NIL-terminated list of symbols."
+             clique fn))))
 
 (define measure ((fn (and (logic-function-namep fn wrld)
                           (recursivep fn nil wrld)))
@@ -524,6 +651,37 @@
    because induction is not directly supported for mutually recursive functions.
    </p>"
   (getpropc fn 'induction-machine nil wrld))
+
+(define thm-formula ((thm symbolp) (wrld plist-worldp))
+  :returns (formula "A @(tsee pseudo-termp).")
+  :parents (world-queries)
+  :short "Formula of a theorem."
+  :long
+  "<p>
+   This is a specialization of @(tsee formula) to theorems.
+   </p>"
+  (getpropc thm 'theorem nil wrld))
+
+(define thm-formula+ ((thm (theorem-namep thm wrld))
+                      (wrld plist-worldp))
+  :returns (formula pseudo-termp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee thm-formula)."
+  :long
+  "<p>
+   This returns the same result as @(tsee thm-formula),
+   but it has a stronger guard
+   and includes a run-time check (which should always succeed) on the result
+   that allows us to prove the return type theorem
+   without strengthening the guard on the world argument.
+   </p>"
+  (b* ((formula (thm-formula thm wrld)))
+    (if (pseudo-termp formula)
+        formula
+      (raise "Internal error: ~
+              the 'FORMULA property ~x0 of ~x1 is not a pseudo-term."
+             formula thm)))
+  :guard-hints (("Goal" :in-theory (enable theorem-namep))))
 
 (define pseudo-tests-and-callp (x)
   :returns (yes/no booleanp)

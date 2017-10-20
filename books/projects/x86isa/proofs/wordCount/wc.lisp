@@ -566,17 +566,17 @@
                              wr32
                              rr32
                              rr64
-                             rm32
-                             rm64
-                             wm32
-                             wm64
+                             rml32
+                             rml64
+                             wml32
+                             wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
-                             rim-size
-                             rim32
+                             riml-size
+                             riml32
                              n32-to-i32
                              n64-to-i64
-                             rim08
+                             riml08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              ;; Flags
@@ -1141,19 +1141,19 @@
                              wr32
                              rr32
                              rr64
-                             rm32
-                             rm64
-                             wm32
-                             wm64
+                             rml32
+                             rml64
+                             wml32
+                             wml64
                              write-canonical-address-to-memory
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
-                             rim-size
-                             rim32
+                             riml-size
+                             riml32
                              n32-to-i32
                              n64-to-i64
-                             rim08
-                             rim64
+                             riml08
+                             riml64
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              rr08
@@ -1420,11 +1420,11 @@
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
-                             rim-size
-                             rim08
-                             rm32
-                             wm-size
-                             wm32
+                             riml-size
+                             riml08
+                             rml32
+                             wml-size
+                             wml32
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1
@@ -2079,11 +2079,11 @@
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
-                             rim-size
-                             rim08
-                             rm32
-                             wm-size
-                             wm32
+                             riml-size
+                             riml08
+                             rml32
+                             wml-size
+                             wml32
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1
@@ -2353,7 +2353,7 @@
                 (force (canonical-address-p (+ -1 n addr))))
            (equal (mv-nth 1 (rb n addr :x x86))
                   (mv-nth 1 (rb n addr :r x86))))
-  :hints (("Goal" :in-theory (e/d* (rb rm08)
+  :hints (("Goal" :in-theory (e/d* (rb rml08)
                                    ((:meta acl2::mv-nth-cons-meta))))))
 
 (defthmd effects-newline-encountered-limited
@@ -2451,13 +2451,13 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              write-canonical-address-to-memory
-                             rim-size
-                             rim08
-                             rim32
-                             rm32
-                             wm-size
-                             wm32
-                             wm64
+                             riml-size
+                             riml08
+                             riml32
+                             rml32
+                             wml-size
+                             wml32
+                             wml64
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1)
@@ -2886,13 +2886,13 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              write-canonical-address-to-memory
-                             rim-size
-                             rim08
-                             rim32
-                             rm32
-                             wm-size
-                             wm32
-                             wm64
+                             riml-size
+                             riml08
+                             riml32
+                             rml32
+                             wml-size
+                             wml32
+                             wml64
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1)
@@ -3302,13 +3302,13 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              write-canonical-address-to-memory
-                             rim-size
-                             rim08
-                             rim32
-                             rm32
-                             wm-size
-                             wm32
-                             wm64
+                             riml-size
+                             riml08
+                             riml32
+                             rml32
+                             wml-size
+                             wml32
+                             wml64
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1)
@@ -3831,13 +3831,13 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              write-canonical-address-to-memory
-                             rim-size
-                             rim08
-                             rim32
-                             rm32
-                             wm-size
-                             wm32
-                             wm64
+                             riml-size
+                             riml08
+                             riml32
+                             rml32
+                             wml-size
+                             wml32
+                             wml64
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1)
@@ -4598,13 +4598,13 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              write-canonical-address-to-memory
-                             rim-size
-                             rim08
-                             rim32
-                             rm32
-                             wm-size
-                             wm32
-                             wm64
+                             riml-size
+                             riml08
+                             riml32
+                             rml32
+                             wml-size
+                             wml32
+                             wml64
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              x86-run-plus-1)

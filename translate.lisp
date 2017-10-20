@@ -179,15 +179,17 @@
 (defun program-only-er-msg (fn args safe-mode)
   (msg
    "The call ~x0 is an illegal call of a function that has been marked as ~
-    ``program-only,'' presumably because it has special raw Lisp code.  This ~
-    call is illegal because program-only functions must invoke their raw Lisp ~
-    code, but ~#1~[the guard is always checked for such a function and fails ~
-    in this case~/this call is under a ``safe mode'' that is used, for ~
-    example, during macroexpansion, and prohibits the use of raw Lisp code~]."
+    ``program-only,'' presumably because it has special raw Lisp code.  See ~
+    :DOC program-only."
    (cons fn args)
    (if safe-mode 1 0)))
 
 (defconst *safe-mode-guard-er-addendum*
+
+; We could add, as a reason for using safe-mode, the application of
+; magic-ev-fncall to :program-mode functions.  But that might scare off
+; beginners, and is sufficiently covered by "another operation">
+
   "  The guard is being checked because this function is a primitive and a ~
    \"safe\" mode is being used for defconst, defpkg, macroexpansion, or ~
    another operation where safe mode is required.")
@@ -271,14 +273,6 @@
                (t latches)))
         (t (latch-stobjs1 stobjs-out vals latches))))
 
-#-acl2-loop-only
-; We deliberately do not assign a value for the following.  It is let-bound in
-; ev and friends and assigned during the evaluation of *1* functions.  If we
-; call *1* functions directly in raw Lisp, we will presumably get an
-; unbound-variable error, but at least that will call our attention to the fact
-; that it should be bound before calling *1* functions.
-(defvar *raw-guard-warningp*)
-
 (defun actual-stobjs-out1 (stobjs-in args user-stobj-alist)
   (cond ((endp stobjs-in)
          (assert$ (null args) nil))
@@ -358,8 +352,8 @@
 ; (a) The *1* code for an invariant-risk :program mode function binds
 ;     **1*-as-raw* to t.
 ;
-; (b) The *1* code for an mbe call reduces to its :exec code when **1*-as-raw*
-;     is true.
+; (b) The *1* code for an mbe call reduces to its *1* :exec code when
+;     **1*-as-raw* is true.
 ;
 ; (c) Raw-ev-fncall binds **1*-as-raw* to nil for :logic mode functions.
 ;
@@ -412,124 +406,6 @@
 ; with "(defun f-log".
 
   nil)
-
-#-acl2-loop-only
-(defun raw-ev-fncall (fn args latches w user-stobj-alist
-                         hard-error-returns-nilp aok)
-  (the #+acl2-mv-as-values (values t t t)
-       #-acl2-mv-as-values t
-       (let* ((*aokp*
-
-; We expect the parameter aok, here and in all functions in the "ev family"
-; that take aok as an argument, to be Boolean.  If it's not, then there is no
-; real harm done: *aokp* would be bound here to a non-Boolean value, suggesting
-; that an attachment has been used when that isn't necessarily the case; see
-; *aokp*.
-
-               aok)
-              (pair (assoc-eq 'state latches))
-              (w (if pair (w (cdr pair)) w)) ; (cdr pair) = *the-live-state*
-              (throw-raw-ev-fncall-flg t)
-              (**1*-as-raw*
-
-; We defeat the **1*-as-raw* optimization so that when we use raw-ev-fncall to
-; evaluate a call of a :logic mode term, all of the evaluation will take place
-; in the logic.  Note that we don't restrict this special treatment to
-; :common-lisp-compliant functions, because such a function might call an
-; :ideal mode function wrapped in ec-call.  But we do restrict to :logic mode
-; functions, since they cannot call :program mode functions and hence there
-; cannot be a subsidiary rebinding of **1*-as-raw* to t.
-
-               (if (logicp fn w)
-                   nil
-                 **1*-as-raw*))
-              (*1*fn (*1*-symbol fn))
-              (applied-fn (cond
-                           ((fboundp *1*fn) *1*fn)
-                           ((and (global-val 'boot-strap-flg w)
-                                 (not (global-val 'boot-strap-pass-2 w)))
-                            fn)
-                           (t
-                            (er hard 'raw-ev-fncall
-                                "We had thought that *1* functions were ~
-                                 always defined outside the first pass of ~
-                                 initialization, but the *1* function for ~
-                                 ~x0, which should be ~x1, is not."
-                                fn *1*fn))))
-              (stobjs-out
-               (cond ((eq fn 'return-last)
-
-; Things can work out fine if we imagine that return-last returns a single
-; value: in the case of (return-last ... (mv ...)), the mv returns a list and
-; we just pass that along.
-
-                      '(nil))
-; The next form was originally conditionalized with #+acl2-extra-checks, but we
-; want to do this unconditionally.
-                     (latches ; optimization
-                      (actual-stobjs-out fn args w user-stobj-alist))
-                     (t (stobjs-out fn w))))
-              (val (catch 'raw-ev-fncall
-                     (cond ((not (fboundp fn))
-                            (er hard 'raw-ev-fncall
-                                "A function, ~x0, that was supposed to be ~
-                                 defined is not.  Supposedly, this can only ~
-                                 arise because of aborts during undoing.  ~
-                                 There is no recovery from this erroneous ~
-                                 state."
-                                fn)))
-                     (prog1
-                         (let ((*hard-error-returns-nilp*
-                                hard-error-returns-nilp))
-                           #-acl2-mv-as-values
-                           (apply applied-fn args)
-                           #+acl2-mv-as-values
-                           (cond ((null (cdr stobjs-out))
-                                  (apply applied-fn args))
-                                 (t (multiple-value-list
-                                     (apply applied-fn args)))))
-                       (setq throw-raw-ev-fncall-flg nil))))
-
-; It is important to rebind w here, since we may have updated state since the
-; last binding of w.
-
-              (w (if pair
-
-; We use the live state now if and only if we used it above, in which case (cdr
-; pair) = *the-live-state*.
-
-                     (w (cdr pair))
-                   w)))
-
-; Observe that if a throw to 'raw-ev-fncall occurred during the
-; (apply fn args) then the local variable throw-raw-ev-fncall-flg
-; is t and otherwise it is nil.  If a throw did occur, val is the
-; value thrown.
-
-         (cond
-          (throw-raw-ev-fncall-flg
-           (mv t (ev-fncall-msg val w user-stobj-alist) latches))
-          (t #-acl2-mv-as-values ; adjust val for the multiple value case
-             (let ((val
-                    (cond
-                     ((null (cdr stobjs-out)) val)
-                     (t (cons val
-                              (mv-refs (1- (length stobjs-out))))))))
-               (mv nil
-                   val
-; The next form was originally conditionalized with #+acl2-extra-checks, with
-; value latches when #-acl2-extra-checks; but we want this unconditionally.
-                   (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
-                                 val
-                                 latches)))
-             #+acl2-mv-as-values ; val already adjusted for multiple value case
-             (mv nil
-                 val
-; The next form was originally conditionalized with #+acl2-extra-checks, with
-; value latches when #-acl2-extra-checks; but we want this unconditionally.
-                 (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
-                               val
-                               latches)))))))
 
 (defun translated-acl2-unwind-protectp4 (term)
 
@@ -1068,35 +944,6 @@
                  (untrans-table ,wrld)
                  (untranslate-preprocess-fn ,wrld)
                  ,wrld))
-
-#-acl2-loop-only
-(defmacro raw-guard-warningp-binding ()
-
-; We bind *raw-guard-warningp* in calls of ev-fncall, ev, ev-lst, ev-w,
-; ev-w-lst, and ev-fncall-w.  The initial binding is t if guard-checking is on,
-; else nil.  When a *1* function is poised to call warn-for-guard-body to print
-; a warning related to guard violations, it first checks that
-; *raw-guard-warningp*.  Hence, we do not want to re-assign this variable once
-; it is bound to nil by warn-for-guard-body, because we only want to see the
-; corresponding guard warning once per top-level evaluation.  We do however
-; want to re-assign this variable from t to nil once the warning has been
-; printed and also if guard-checking has been turned off, in particular for the
-; situation involving the prover that is described in the next paragraph.  (But
-; if guard-checking were, surprisingly, to transition instead from nil to t,
-; and we failed to re-assign this variable from nil to t, we could live with
-; that.)
-
-; Note that *raw-guard-warningp* will be bound to t just under the trans-eval
-; at the top level.  If we then enter the prover we will bind guard-checking-on
-; to nil, and we then want to re-bind *raw-guard-warningp* to nil if we enter
-; ev-fncall during the proof, so that the proof output will not contain guard
-; warning messages.  (This was handled incorrectly in Version_2.9.1.)
-
-  '(if (and (boundp '*raw-guard-warningp*)
-            (null *raw-guard-warningp*))
-       nil
-     (eq (f-get-global 'guard-checking-on *the-live-state*)
-         t)))
 
 (defun save-ev-fncall-guard-er (fn guard stobjs-in args)
   (wormhole-eval 'ev-fncall-guard-er-wormhole
@@ -2070,7 +1917,215 @@
                   (cadr x)))
         (t (list 'not x))))
 
+(defun event-tuple-fn-names (ev-tuple)
+  (case (access-event-tuple-type ev-tuple)
+    ((defun)
+     (list (access-event-tuple-namex ev-tuple)))
+    ((defuns defstobj)
+     (access-event-tuple-namex ev-tuple))
+    (otherwise nil)))
+
+#-acl2-loop-only
+(progn
+
+(defvar *fncall-cache*
+  '(nil))
+
+(defun raw-ev-fncall-okp (wrld aokp &aux (w-state (w *the-live-state*)))
+  (when (eq wrld w-state)
+    (return-from raw-ev-fncall-okp :live))
+  (let* ((fncall-cache *fncall-cache*)
+         (cached-w (car *fncall-cache*)))
+    (cond ((and wrld
+                (eq wrld cached-w))
+           t)
+          (t
+           (let ((fns nil))
+             (loop for tail on wrld
+                   until (eq tail w-state)
+                   do (let ((trip (car tail)))
+                        (cond
+                         ((member-eq (cadr trip)
+                                     '(unnormalized-body
+                                       stobjs-out
+
+; 'Symbol-class supports the programp call in ev-fncall-guard-er-msg.
+
+                                       symbol-class
+                                       table-alist))
+                          (setq fns (add-to-set-eq (car trip) fns)))
+                         ((and (eq (car trip) 'guard-msg-table)
+                               (eq (cadr trip) 'table-alist))
+
+; The table, guard-msg-table, is consulted in ev-fncall-guard-er-msg.
+
+                          (return-from raw-ev-fncall-okp nil))
+                         ((and (eq (car trip) 'event-landmark)
+                               (eq (cadr trip) 'global-value))
+
+; This case is due to the get-event call in guard-raw.
+
+                          (setq fns
+                                (union-eq (event-tuple-fn-names (cddr trip))
+                                          fns)))
+                         ((and aokp
+                               (eq (car trip) 'attachment-records)
+                               (eq (cadr trip) 'global-value))
+                          (return-from raw-ev-fncall-okp nil))))
+                   finally
+                   (cond (tail (setf (car fncall-cache) nil
+                                     (cdr fncall-cache) fns
+                                     (car fncall-cache) wrld))
+                         (t (return-from raw-ev-fncall-okp nil)))))
+           t)
+          (t nil))))
+
+(defun chk-raw-ev-fncall (fn wrld aokp)
+  (let ((ctx 'raw-ev-fncall)
+        (okp (raw-ev-fncall-okp wrld aokp)))
+    (cond ((eq okp :live) nil)
+          (okp
+           (when (member-eq fn (cdr *fncall-cache*))
+             (er hard ctx
+                 "Implementation error: Unexpected call of raw-ev-fncall for ~
+                  function ~x0 (the world is sufficiently close to (w state) ~
+                  in general, but not for that function symbol)."
+                 fn)))
+          (t
+           (er hard ctx
+               "Implementation error: Unexpected call of raw-ev-fncall (the ~
+                world is not sufficiently close to (w state)).")))))
+
+(defun raw-ev-fncall (fn args latches w user-stobj-alist
+                         hard-error-returns-nilp aok)
+
+; Warning: Keep this in sync with raw-ev-fncall-simple.
+
+; Here we assume that w is "close to" (w *the-live-state*), as implemented by
+; chk-raw-ev-fncall.
+
+  (the #+acl2-mv-as-values (values t t t)
+       #-acl2-mv-as-values t
+       (let* ((*aokp*
+
+; We expect the parameter aok, here and in all functions in the "ev family"
+; that take aok as an argument, to be Boolean.  If it's not, then there is no
+; real harm done: *aokp* would be bound here to a non-Boolean value, suggesting
+; that an attachment has been used when that isn't necessarily the case; see
+; *aokp*.
+
+               aok)
+              (pair (assoc-eq 'state latches))
+              (w (if pair (w (cdr pair)) w)) ; (cdr pair) = *the-live-state*
+              (throw-raw-ev-fncall-flg t)
+              (**1*-as-raw*
+
+; We defeat the **1*-as-raw* optimization so that when we use raw-ev-fncall to
+; evaluate a call of a :logic mode term, all of the evaluation will take place
+; in the logic.  Note that we don't restrict this special treatment to
+; :common-lisp-compliant functions, because such a function might call an
+; :ideal mode function wrapped in ec-call.  But we do restrict to :logic mode
+; functions, since they cannot call :program mode functions and hence there
+; cannot be a subsidiary rebinding of **1*-as-raw* to t.
+
+               (if (logicp fn w)
+                   nil
+                 **1*-as-raw*))
+              (*1*fn (*1*-symbol fn))
+              (applied-fn (cond
+                           ((fboundp *1*fn) *1*fn)
+                           ((and (global-val 'boot-strap-flg w)
+                                 (not (global-val 'boot-strap-pass-2 w)))
+                            fn)
+                           (t
+                            (er hard 'raw-ev-fncall
+                                "We had thought that *1* functions were ~
+                                 always defined outside the first pass of ~
+                                 initialization, but the *1* function for ~
+                                 ~x0, which should be ~x1, is not."
+                                fn *1*fn))))
+              (stobjs-out
+               (cond ((eq fn 'return-last)
+
+; Things can work out fine if we imagine that return-last returns a single
+; value: in the case of (return-last ... (mv ...)), the mv returns a list and
+; we just pass that along.
+
+                      '(nil))
+; The next form was originally conditionalized with #+acl2-extra-checks, but we
+; want to do this unconditionally.
+                     (latches ; optimization
+                      (actual-stobjs-out fn args w user-stobj-alist))
+                     (t (stobjs-out fn w))))
+              (val (catch 'raw-ev-fncall
+                     (chk-raw-ev-fncall fn w aok)
+                     (cond ((not (fboundp fn))
+                            (er hard 'raw-ev-fncall
+                                "A function, ~x0, that was supposed to be ~
+                                 defined is not.  Supposedly, this can only ~
+                                 arise because of aborts during undoing.  ~
+                                 There is no recovery from this erroneous ~
+                                 state."
+                                fn)))
+                     (prog1
+                         (let ((*hard-error-returns-nilp*
+                                hard-error-returns-nilp))
+                           #-acl2-mv-as-values
+                           (apply applied-fn args)
+                           #+acl2-mv-as-values
+                           (cond ((null (cdr stobjs-out))
+                                  (apply applied-fn args))
+                                 (t (multiple-value-list
+                                     (apply applied-fn args)))))
+                       (setq throw-raw-ev-fncall-flg nil))))
+
+; It is important to rebind w here, since we may have updated state since the
+; last binding of w.
+
+              (w (if pair
+
+; We use the live state now if and only if we used it above, in which case (cdr
+; pair) = *the-live-state*.
+
+                     (w (cdr pair))
+                   w)))
+
+; Observe that if a throw to 'raw-ev-fncall occurred during the
+; (apply fn args) then the local variable throw-raw-ev-fncall-flg
+; is t and otherwise it is nil.  If a throw did occur, val is the
+; value thrown.
+
+         (cond
+          (throw-raw-ev-fncall-flg
+           (mv t (ev-fncall-msg val w user-stobj-alist) latches))
+          (t #-acl2-mv-as-values ; adjust val for the multiple value case
+             (let ((val
+                    (cond
+                     ((null (cdr stobjs-out)) val)
+                     (t (cons val
+                              (mv-refs (1- (length stobjs-out))))))))
+               (mv nil
+                   val
+; The next form was originally conditionalized with #+acl2-extra-checks, with
+; value latches when #-acl2-extra-checks; but we want this unconditionally.
+                   (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
+                                 val
+                                 latches)))
+             #+acl2-mv-as-values ; val already adjusted for multiple value case
+             (mv nil
+                 val
+; The next form was originally conditionalized with #+acl2-extra-checks, with
+; value latches when #-acl2-extra-checks; but we want this unconditionally.
+                 (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
+                               val
+                               latches)))))))
+)
+
 (mutual-recursion
+
+; These functions assume that the input world is "close to" the installed
+; world, (w *the-live-state*), since ultimately they typically lead to calls of
+; the check chk-raw-ev-fncall within raw-ev-fncall.
 
 ; Here we combine what may naturally be thought of as two separate
 ; mutual-recursion nests: One for evaluation and one for untranslate.  However,
@@ -2460,9 +2515,6 @@
 
 (defun ev-fncall-rec (fn args w user-stobj-alist big-n safe-mode gc-off latches
                          hard-error-returns-nilp aok)
-
-; WARNING: This function should only be called with *raw-guard-warningp* bound.
-
   (declare (xargs :guard (plist-worldp w)))
   #-acl2-loop-only
   (cond (*ev-shortcut-okp*
@@ -2605,8 +2657,6 @@
 
 (defun ev-rec (form alist w user-stobj-alist big-n safe-mode gc-off latches
                     hard-error-returns-nilp aok)
-
-; WARNING: This function should only be called with *raw-guard-warningp* bound.
 
 ; See also ev-respecting-ens.
 
@@ -2791,9 +2841,6 @@
 
 (defun ev-rec-lst (lst alist w user-stobj-alist big-n safe-mode gc-off latches
                        hard-error-returns-nilp aok)
-
-; WARNING: This function should only be called with *raw-guard-warningp* bound.
-
   (declare (xargs :guard (and (plist-worldp w)
                               (term-listp lst w)
                               (symbol-alistp alist))))
@@ -2825,8 +2872,6 @@
 (defun ev-rec-acl2-unwind-protect (form alist w user-stobj-alist big-n
                                         safe-mode gc-off latches
                                         hard-error-returns-nilp aok)
-
-; WARNING: This function should only be called with *raw-guard-warningp* bound.
 
 ; Sketch: We know that form is a termp wrt w and that it is recognized by
 ; translated-acl2-unwind-protectp.  We therefore unpack it into its body and
@@ -3043,9 +3088,10 @@
                      (cdr (assoc-eq 'state clean-latches)))
                clean-latches))))))))))
 
-(defun ev-fncall-w (fn args w user-stobj-alist safe-mode gc-off
-                       hard-error-returns-nilp aok)
-  (declare (xargs :guard (ev-fncall-w-guard fn args w nil)))
+(defun ev-fncall-w-body (fn args w user-stobj-alist safe-mode gc-off
+                            hard-error-returns-nilp aok)
+
+; There is no guard specified for this :program mode function.
 
 ; WARNING: Do not call this function if args contains the live state
 ; or any other live stobjs and evaluation of form could modify any of
@@ -3064,8 +3110,7 @@
 ; Keep the two ev-fncall-rec calls below in sync.
 
   #-acl2-loop-only
-  (let ((*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let ((*ev-shortcut-okp* t))
     (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
@@ -3102,6 +3147,34 @@
    (declare (ignore latches))
    (mv erp val)))
 
+(defun ev-fncall-w (fn args w user-stobj-alist safe-mode gc-off
+                       hard-error-returns-nilp aok)
+
+; See the warning in ev-fncall-w-body.
+
+  (declare (xargs :guard (ev-fncall-w-guard fn args w nil)))
+  (ev-fncall-w-body fn args w user-stobj-alist safe-mode gc-off
+                    hard-error-returns-nilp aok))
+
+(defun ev-fncall-w! (fn args w user-stobj-alist safe-mode gc-off
+                        hard-error-returns-nilp aok)
+
+; See the warning in ev-fncall-w-body.
+
+  (declare (xargs :guard t))
+  (if (ev-fncall-w-guard fn args w nil)
+      (ev-fncall-w-body fn args w user-stobj-alist safe-mode gc-off
+                        hard-error-returns-nilp aok)
+    (mv t (msg "Guard failure for ~x0 in a call of ~x1: fn = ~x2, args = ~X34"
+               'ev-fncall-w-guard
+               'ev-fncall-w!
+               fn args
+               (evisc-tuple 5 ; print-level
+                            7 ; print-length
+                            (list (cons w *evisceration-world-mark*)) ; alist
+                            nil ; hiding-cars
+                            )))))
+
 (defun ev-w (form alist w user-stobj-alist safe-mode gc-off
                   hard-error-returns-nilp aok)
 
@@ -3112,10 +3185,10 @@
 ; ev-rec as well.  Note that users cannot make such a call because they cannot
 ; put live stobjs into alist.
 
-; Also see related functions ev-fncall-w and oracle-apply (and macro
-; oracle-funcall).  Their guards pay attention to avoiding calls of untouchable
-; functions, and hence are not themselves untouchable.  But ev-w is untouchable
-; because we don't make any such check, even in the guard.
+; Also see related functions ev-fncall-w and magic-ev-fncall, which pay
+; attention to avoiding calls of untouchable functions, and hence are not
+; themselves untouchable.  But ev-w is untouchable because we don't make any
+; such check, even in the guard.
 
 ; Note that user-stobj-alist is only used for error messages, so this function
 ; may be called in the presence of local stobjs.  Probably user-stobj-alist
@@ -3128,8 +3201,7 @@
 ; See the comment in ev for why we don't check the time limit here.
 
   #-acl2-loop-only
-  (let ((*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let ((*ev-shortcut-okp* t))
     (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
@@ -3648,8 +3720,7 @@
 
 (defun ev-fncall (fn args state latches hard-error-returns-nilp aok)
   (declare (xargs :guard (state-p state)))
-  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
-                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state)))
        #+acl2-loop-only ()
 
 ; See the comment in ev for why we don't check the time limit here.
@@ -3669,8 +3740,7 @@
   (declare (xargs :guard (and (state-p state)
                               (termp form (w state))
                               (symbol-alistp alist))))
-  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
-                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state)))
        #+acl2-loop-only ()
 
 ; At one time we called time-limit5-reached-p here so that we can quit if we
@@ -3703,8 +3773,7 @@
   (declare (xargs :guard (and (state-p state)
                               (term-listp lst (w state))
                               (symbol-alistp alist))))
-  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
-                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state)))
        #+acl2-loop-only ()
 
 ; See the comment in ev for why we don't check the time limit here.
@@ -3801,8 +3870,7 @@
 ; See the comment in ev for why we don't check the time limit here.
 
   #-acl2-loop-only
-  (let ((*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+  (let ((*ev-shortcut-okp* t))
     (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
@@ -4082,7 +4150,7 @@
                               (plist-worldp wrld)
                               (standard-string-alistp
                                (table-alist 'inhibit-warnings-table wrld))
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (warning1-form t))
 
 (defmacro warning$-cw1 (ctx summary str+ &rest fmt-args)
@@ -4350,7 +4418,7 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond ((endp args)
          (cond ((or (null actuals) allow-flg)
                 (value-cmp alist))
@@ -4424,7 +4492,7 @@
                               (symbol-alistp alist)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (er-progn-cmp
    (chk-length-and-keys actuals form wrld)
    (cond ((assoc-keyword :allow-other-keys
@@ -4449,7 +4517,7 @@
                               (symbol-alistp alist)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond
    ((endp args) (value-cmp alist))
    ((eq (car args) '&key)
@@ -4466,7 +4534,7 @@
                               (symbol-alistp alist)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
@@ -4507,7 +4575,7 @@
                               (true-listp form)
                               (symbol-alistp alist)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
@@ -4537,7 +4605,7 @@
   (declare (xargs :guard (and (macro-args-structurep args)
                               (true-listp form)
                               (plist-worldp wrld)
-                              (true-listp state-vars))))
+                              (weak-state-vars-p state-vars))))
   (cond ((and (consp args)
               (eq (car args) '&whole))
          (bind-macro-args1 (cddr args) (cdr form)
@@ -6276,9 +6344,19 @@
                              (no-duplicatesp indices)))
                     (no-duplicatesp-checks-for-stobj-let-actuals/alist
                      (cdr alist)))
-                   (t (cons `(chk-no-duplicatesp
+                   (t (cons `(with-guard-checking
+                              t
+
+; This use of with-guard-checking guarantees that the guard will be checked by
+; running chk-no-duplicatesp inside *1* code for stobj-let.  (See a comment
+; near the end of stobj-let-fn for how handling of invariant-risk guarantees
+; that such *1* code is run under program-mode wrappers.)
+
+                              (chk-no-duplicatesp
+
 ; The use of reverse is just aesthetic, to preserve the original order.
-                              (list ,@(reverse indices)))
+
+                               (list ,@(reverse indices))))
                             (no-duplicatesp-checks-for-stobj-let-actuals/alist
                              (cdr alist)))))))))
 
@@ -6338,7 +6416,17 @@
                                ,updated-guarded-consumer)))))
                    (no-dups-exprs
                     (no-duplicatesp-checks-for-stobj-let-actuals actuals nil)))
-              `(progn$ ,@no-dups-exprs ,form))))))
+              `(progn$ ,@no-dups-exprs
+
+; Warning: Think carefully before modifying how the no-dups-exprs test (just
+; above) is worked into this logical code.  A concern is whether a program-mode
+; wrapper will be able to circumvent this check.  Fortunately, the check only
+; needs to be done if there are updater calls in form, in which case there is
+; invariant-risk that will cause execution of this code as *1* code.  A concern
+; is that if the no-dups-exprs check is buried in a function call, perhaps that
+; call would somehow avoid that check by being executed in raw Lisp.
+
+                       ,form))))))
 
 (defun the-live-var-bindings (stobj-names)
   (cond ((endp stobj-names) nil)
@@ -6547,11 +6635,17 @@
    (not (eq (car (stobjs-out fn wrld))
             stobj))))
 
-(defun chk-stobj-let/bindings (stobj bound-vars actuals wrld)
+(defun chk-stobj-let/bindings (stobj acc-stobj first-acc bound-vars actuals
+                                     wrld)
 
 ; The bound-vars and actuals have been returned by parse-stobj-let, so we know
 ; that some basic syntactic requirements have been met and that the two lists
 ; have the same length.  See also chk-stobj-let.
+
+; Stobj is the variable being accessed/updated.  Acc-stobj is the stobj
+; associated with the first accessor; we have already checked in chk-stobj-let
+; that this is congruent to stobj.  First-acc is the first accessor, which is
+; just used in the error message when another accessor's stobj doesn't match.
 
   (cond ((endp bound-vars) nil)
         (t (let* ((var (car bound-vars))
@@ -6560,10 +6654,17 @@
                   (st (car (last actual))))
              (assert$
               (eq st stobj) ; guaranteed by parse-stobj-let
-              (cond ((not (stobj-field-accessor-p accessor stobj wrld))
+              (cond ((not (stobj-field-accessor-p accessor acc-stobj wrld))
                      (msg "The name ~x0 is not the name of a field accessor ~
-                           for the stobj ~x1."
-                          accessor stobj))
+                           for the stobj ~x1.~@2"
+                          accessor acc-stobj
+                          (if (eq acc-stobj stobj)
+                              ""
+                            (msg "  (The first accessor used in a stobj-let, ~
+                                  in this case ~x0, determines the stobj with ~
+                                  which all other accessors must be ~
+                                  associated, namely ~x1.)"
+                                 first-acc acc-stobj))))
                     ((not (stobjp var t wrld))
                      (msg "The stobj-let bound variable ~x0 is not the name ~
                            of a known single-threaded object in the current ~
@@ -6580,7 +6681,23 @@
                           (car (stobjs-out (caar actuals) wrld))
                           (caar actuals)
                           stobj))
-                    (t (chk-stobj-let/bindings stobj
+                    ((member-equal actual (cdr actuals))
+
+; This case fixes a soundness bug for duplicated actuals (see :DOC note-7-5).
+; It effectively checks no-duplicatesp-equal of the actuals, but doing it here
+; one-by-one has the advantage that we can easily say which actual is
+; duplicated.  Alternatively, we could check only that scalar accessor
+; functions are not used more than once.  This is a bit stronger since it also
+; disallows duplicate array accesses (though they would be disallowed by guards
+; anyway).  If we ever relax the strict syntactic restrictions on actuals --
+; e.g., allow accessors from multiple congruent stobjs -- this check will need
+; to become smarter.
+
+                     (msg "The bindings of a stobj-let must contain no ~
+                           duplicated actuals, but in the following form, the ~
+                           actual ~x0 is bound more than once."
+                          actual))
+                    (t (chk-stobj-let/bindings stobj acc-stobj first-acc
                                                (cdr bound-vars)
                                                (cdr actuals)
                                                wrld))))))))
@@ -6640,9 +6757,20 @@
     (msg
      "The name ~x0 is the name of an abstract stobj."
      stobj))
-   ((chk-stobj-let/bindings stobj bound-vars actuals wrld))
-   ((chk-stobj-let/updaters updaters corresp-accessor-fns stobj wrld))
-   (t nil)))
+   (t (let* ((first-actual (car actuals))
+             (first-accessor (car first-actual))
+             (acc-stobj (getpropc first-accessor 'stobj-function nil wrld)))
+        (cond
+         ((not (eq (congruent-stobj-rep acc-stobj wrld)
+                   (congruent-stobj-rep stobj wrld)))
+          (msg "The name ~x0 is not the name of a field accessor for the ~
+                stobj ~x1, or even one congruent to it."
+               first-accessor stobj))
+         ((chk-stobj-let/bindings
+           stobj acc-stobj first-accessor bound-vars actuals wrld))
+         ((chk-stobj-let/updaters
+           updaters corresp-accessor-fns acc-stobj wrld))
+         (t nil))))))
 
 (defun all-nils-or-x (x lst)
   (declare (xargs :guard (and (symbolp x)

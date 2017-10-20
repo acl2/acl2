@@ -73,10 +73,10 @@
 
 ; A ``virtual formal,'' or ``vformal,'' is a component of a formal, given by an
 ; expression in that formal.  For example, (nth 7 st) is a virtual formal that
-; is changed in a recursion in which st is replaced (update-nth 7 new-val st).
-; An important property of virtual formals is that they're orthogonal
+; is changed in a recursion in which st is replaced by (update-nth 7 new-val
+; st).  An important property of virtual formals is that they're orthogonal
 ; (independent): changing one does not change another.  Thus, if (nth 7 (locals
-; st)) and (nth 8 (locals st)) are virtual formals, then (locals s) should not
+; st)) and (nth 8 (locals st)) are virtual formals, then (locals st) should not
 ; be so considered.
 
 ; Two tables drive the identification of virtual formals:

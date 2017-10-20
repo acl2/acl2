@@ -1,7 +1,7 @@
 ;; AUTHORS:
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 ;; Robert Krug <rkrug@cs.utexas.edu>
-;; Thanks to Dmitry Nadezhin for proving the equivalence of rm/wm128
+;; Thanks to Dmitry Nadezhin for proving the equivalence of rm/wml128
 ;; to rb/wb.
 
 (in-package "X86ISA")
@@ -236,11 +236,11 @@ memory.</li>
                                     ihsext-inductions)
                                    ()))))
 
-(local (in-theory (e/d* (rm16-guard-proof-helper
+(local (in-theory (e/d* (rml16-guard-proof-helper
                          rb-and-rvm32-helper
-                         rm32-guard-proof-helper
+                         rml32-guard-proof-helper
                          rb-and-rvm64-helper
-                         rm64-guard-proof-helper)
+                         rml64-guard-proof-helper)
                         ())))
 
 ;; ======================================================================
@@ -428,8 +428,8 @@ memory.</li>
 
   :long "<p>The functions @('rb') (read bytes) and @('wb') (write
  bytes) are used in reasoning about memory reads and writes. Functions
- like @('rm08'), @('rm16'), @('rm32'), and @('rm64') are reduced to
- @('rb'), and @('wm08'), @('wm16'), @('wm32'), and @('wm64') to
+ like @('rml08'), @('rml16'), @('rml32'), and @('rml64') are reduced to
+ @('rb'), and @('wml08'), @('wml16'), @('wml32'), and @('wml64') to
  @('wb') during reasoning.</p>"
 
   (local (xdoc::set-default-parents reasoning-about-memory-reads-and-writes))
@@ -855,7 +855,7 @@ memory.</li>
   ;;                             (r-x :type (member :r :w :x))
   ;;                             x86)
   ;;   :short "Used to discharge @('mbe') proof obligations for @(see
-  ;;   rm128) and @(see wm128)"
+  ;;   rml128) and @(see wml128)"
   ;;   :enabled t
   ;;   :guard (not (programmer-level-mode x86))
 
@@ -1087,7 +1087,12 @@ memory.</li>
                            (mv-nth 1 (rb n addr r-x x86)))))
       :hints (("Goal"
                :do-not-induct t
-               :in-theory (e/d* (!flgi-undefined) ())))))
+               :in-theory (e/d* (!flgi-undefined) ()))))
+
+    (defrule 64-bit-modep-of-rb
+      (equal (64-bit-modep (mv-nth 2 (rb n addr r-x x86)))
+             (64-bit-modep x86))
+      :enable 64-bit-modep))
 
   ;; Definition of WB and other related events:
 
@@ -1176,7 +1181,12 @@ memory.</li>
       (implies (not (equal fld :mem))
                (equal (write-to-physical-memory p-addrs bytes (xw fld index value x86))
                       (xw fld index value (write-to-physical-memory p-addrs bytes x86))))
-      :hints (("Goal" :in-theory (e/d* (write-to-physical-memory) ())))))
+      :hints (("Goal" :in-theory (e/d* (write-to-physical-memory) ()))))
+
+    (defrule 64-bit-modep-of-write-to-physical-memory
+      (equal (64-bit-modep (write-to-physical-memory p-addrs value x86))
+             (64-bit-modep x86))
+      :enable 64-bit-modep))
 
   (define wb ((n natp "Number of bytes to be written")
               (addr integerp "First linear address")
@@ -1703,9 +1713,9 @@ memory.</li>
 
 (local (in-theory (e/d* () (member-equal))))
 
-(define rm08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-              (r-x      :type (member  :r :x))
-              (x86))
+(define rml08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x      :type (member  :r :x))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -1727,72 +1737,71 @@ memory.</li>
               (byte (the (unsigned-byte 8) (memi p-addr x86))))
            (mv nil byte x86))))
 
-    (mv 'rm08 0 x86))
+    (mv 'rml08 0 x86))
 
   ///
 
-  (defthm-usb n08p-mv-nth-1-rm08
+  (defthm-usb n08p-mv-nth-1-rml08
     :hyp (force (x86p x86))
     :bound 8
-    :concl (mv-nth 1 (rm08 lin-addr r-x x86))
+    :concl (mv-nth 1 (rml08 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
     :gen-type t)
 
-  (defthm x86p-rm08
+  (defthm x86p-rml08
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm08 lin-addr r-x x86)))))
+             (x86p (mv-nth 2 (rml08 lin-addr r-x x86)))))
 
-  (defthm rm08-value-when-error
-    (implies (mv-nth 0 (rm08 addr :x x86))
-             (equal (mv-nth 1 (rm08 addr :x x86)) 0))
+  (defthm rml08-value-when-error
+    (implies (mv-nth 0 (rml08 addr r-x x86))
+             (equal (mv-nth 1 (rml08 addr r-x x86)) 0))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
-  (defthm rm08-does-not-affect-state-in-programmer-level-mode
+  (defthm rml08-does-not-affect-state-in-programmer-level-mode
     (implies (programmer-level-mode x86)
-             (equal (mv-nth 2 (rm08 start-rip :x x86)) x86))
+             (equal (mv-nth 2 (rml08 start-rip :x x86)) x86))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
-  (defthm programmer-level-mode-rm08-no-error
+  (defthm programmer-level-mode-rml08-no-error
     (implies (and (programmer-level-mode x86)
                   (canonical-address-p addr)
                   (x86p x86))
-             (and (equal (mv-nth 0 (rm08 addr r-x x86)) nil)
-                  (equal (mv-nth 1 (rm08 addr :x x86))
+             (and (equal (mv-nth 0 (rml08 addr r-x x86)) nil)
+                  (equal (mv-nth 1 (rml08 addr :x x86))
                          (memi (loghead 48 addr) x86))
-                  (equal (mv-nth 2 (rm08 addr r-x x86)) x86)))
+                  (equal (mv-nth 2 (rml08 addr r-x x86)) x86)))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
-  (defthm xr-rm08-state-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :mem)))
-             (equal (xr fld index (mv-nth 2 (rm08 addr r-x x86)))
+  (defthm xr-rml08-state-in-programmer-level-mode
+    (implies (programmer-level-mode x86)
+             (equal (xr fld index (mv-nth 2 (rml08 addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm xr-rm08-state-in-system-level-mode
+  (defthm xr-rml08-state-in-system-level-mode
     (implies (and (not (programmer-level-mode x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (rm08 addr r-x x86)))
+             (equal (xr fld index (mv-nth 2 (rml08 addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm rm08-xw-programmer-level-mode
+  (defthm rml08-xw-programmer-level-mode
     (implies (and (programmer-level-mode x86)
                   (not (equal fld :mem))
                   (not (equal fld :programmer-level-mode)))
-             (and (equal (mv-nth 0 (rm08 addr r-x (xw fld index value x86)))
-                         (mv-nth 0 (rm08 addr r-x x86)))
-                  (equal (mv-nth 1 (rm08 addr r-x (xw fld index value x86)))
-                         (mv-nth 1 (rm08 addr r-x x86)))
+             (and (equal (mv-nth 0 (rml08 addr r-x (xw fld index value x86)))
+                         (mv-nth 0 (rml08 addr r-x x86)))
+                  (equal (mv-nth 1 (rml08 addr r-x (xw fld index value x86)))
+                         (mv-nth 1 (rml08 addr r-x x86)))
                   ;; No need for the conclusion about the state because
-                  ;; "rm08-does-not-affect-state-in-programmer-level-mode".
+                  ;; "rml08-does-not-affect-state-in-programmer-level-mode".
                   ))
     :hints (("Goal" :in-theory (e/d* () (rb)))))
 
-  (defthm rm08-xw-system-mode
+  (defthm rml08-xw-system-mode
     (implies (and (not (programmer-level-mode x86))
                   (not (equal fld :fault))
                   (not (equal fld :seg-visible))
@@ -1802,33 +1811,38 @@ memory.</li>
                   (not (equal fld :rflags))
                   (not (equal fld :programmer-level-mode))
                   (not (equal fld :page-structure-marking-mode)))
-             (and (equal (mv-nth 0 (rm08 addr r-x (xw fld index value x86)))
-                         (mv-nth 0 (rm08 addr r-x x86)))
-                  (equal (mv-nth 1 (rm08 addr r-x (xw fld index value x86)))
-                         (mv-nth 1 (rm08 addr r-x x86)))
-                  (equal (mv-nth 2 (rm08 addr r-x (xw fld index value x86)))
-                         (xw fld index value (mv-nth 2 (rm08 addr r-x x86)))))))
+             (and (equal (mv-nth 0 (rml08 addr r-x (xw fld index value x86)))
+                         (mv-nth 0 (rml08 addr r-x x86)))
+                  (equal (mv-nth 1 (rml08 addr r-x (xw fld index value x86)))
+                         (mv-nth 1 (rml08 addr r-x x86)))
+                  (equal (mv-nth 2 (rml08 addr r-x (xw fld index value x86)))
+                         (xw fld index value (mv-nth 2 (rml08 addr r-x x86)))))))
 
-  (defthm rm08-xw-system-mode-rflags-not-ac
+  (defthm rml08-xw-system-mode-rflags-not-ac
     (implies (and (not (programmer-level-mode x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
-             (and (equal (mv-nth 0 (rm08 addr r-x (xw :rflags 0 value x86)))
-                         (mv-nth 0 (rm08 addr r-x x86)))
-                  (equal (mv-nth 1 (rm08 addr r-x (xw :rflags 0 value x86)))
-                         (mv-nth 1 (rm08 addr r-x x86)))
-                  (equal (mv-nth 2 (rm08 addr r-x (xw :rflags 0 value x86)))
-                         (xw :rflags 0 value (mv-nth 2 (rm08 addr r-x x86)))))))
+             (and (equal (mv-nth 0 (rml08 addr r-x (xw :rflags 0 value x86)))
+                         (mv-nth 0 (rml08 addr r-x x86)))
+                  (equal (mv-nth 1 (rml08 addr r-x (xw :rflags 0 value x86)))
+                         (mv-nth 1 (rml08 addr r-x x86)))
+                  (equal (mv-nth 2 (rml08 addr r-x (xw :rflags 0 value x86)))
+                         (xw :rflags 0 value (mv-nth 2 (rml08 addr r-x x86)))))))
 
-  (defthm mv-nth-2-rm08-in-system-level-non-marking-mode
+  (defthm mv-nth-2-rml08-in-system-level-non-marking-mode
     (implies (and (not (programmer-level-mode x86))
                   (not (page-structure-marking-mode x86))
                   (x86p x86)
-                  (not (mv-nth 0 (rm08 lin-addr r-x x86))))
-             (equal (mv-nth 2 (rm08 lin-addr r-x x86))
-                    x86))))
+                  (not (mv-nth 0 (rml08 lin-addr r-x x86))))
+             (equal (mv-nth 2 (rml08 lin-addr r-x x86))
+                    x86)))
 
-(define rim08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+  (defrule 64-bit-modep-of-rml08
+    (equal (64-bit-modep (mv-nth 2 (rml08 li-addr r-x x86)))
+           (64-bit-modep x86))
+    :enable 64-bit-modep))
+
+(define riml08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (r-x    :type (member  :r :x))
                (x86))
 
@@ -1836,27 +1850,27 @@ memory.</li>
   :guard (canonical-address-p lin-addr)
 
   (mv-let (flag val x86)
-    (rm08 lin-addr r-x x86)
+    (rml08 lin-addr r-x x86)
     (mv flag (n08-to-i08 val) x86))
   ///
 
-  (defthm-sb i08p-mv-nth-1-rim08
+  (defthm-sb i08p-mv-nth-1-riml08
     :hyp (force (x86p x86))
     :bound 8
-    :concl (mv-nth 1 (rim08 lin-addr r-x x86))
+    :concl (mv-nth 1 (riml08 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
     :gen-type t)
 
-  (defthm x86p-rim08
+  (defthm x86p-riml08
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rim08 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (riml08 lin-addr r-x x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm08 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-              (val      :type (unsigned-byte 8))
-              (x86))
+(define wml08 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+               (val      :type (unsigned-byte 8))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -1877,48 +1891,48 @@ memory.</li>
               (x86 (!memi p-addr byte x86)))
            (mv nil x86))))
 
-    (mv 'wm08 x86))
+    (mv 'wml08 x86))
 
   ///
 
-  (defthm x86p-wm08
+  (defthm x86p-wml08
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm08 lin-addr val x86))))
+             (x86p (mv-nth 1 (wml08 lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (force (force)))))
     :rule-classes (:rewrite :type-prescription))
 
-  (defthm programmer-level-mode-wm08-no-error
+  (defthm programmer-level-mode-wml08-no-error
     (implies (and (programmer-level-mode x86)
                   (canonical-address-p addr))
-             (equal (mv-nth 0 (wm08 addr val x86)) nil))
-    :hints (("Goal" :in-theory (e/d (wm08 wvm08) ()))))
+             (equal (mv-nth 0 (wml08 addr val x86)) nil))
+    :hints (("Goal" :in-theory (e/d (wml08 wvm08) ()))))
 
-  (defthm xr-wm08-programmer-level-mode
+  (defthm xr-wml08-programmer-level-mode
     (implies (and (programmer-level-mode x86)
                   (not (equal fld :mem)))
-             (equal (xr fld index (mv-nth 1 (wm08 addr val x86)))
+             (equal (xr fld index (mv-nth 1 (wml08 addr val x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* (wvm08) ()))))
 
-  (defthm xr-wm08-system-level-mode
+  (defthm xr-wml08-system-level-mode
     (implies (and (not (programmer-level-mode x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 1 (wm08 addr val x86)))
+             (equal (xr fld index (mv-nth 1 (wml08 addr val x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm wm08-xw-programmer-level-mode
+  (defthm wml08-xw-programmer-level-mode
     (implies (and (programmer-level-mode x86)
                   (not (equal fld :mem))
                   (not (equal fld :programmer-level-mode)))
-             (and (equal (mv-nth 0 (wm08 addr val (xw fld index value x86)))
-                         (mv-nth 0 (wm08 addr val x86)))
-                  (equal (mv-nth 1 (wm08 addr val (xw fld index value x86)))
-                         (xw fld index value (mv-nth 1 (wm08 addr val x86))))))
-    :hints (("Goal" :in-theory (e/d* (wm08 wvm08) ()))))
+             (and (equal (mv-nth 0 (wml08 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wml08 addr val x86)))
+                  (equal (mv-nth 1 (wml08 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wml08 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wml08 wvm08) ()))))
 
-  (defthm wm08-xw-system-mode
+  (defthm wml08-xw-system-mode
     (implies (and (not (programmer-level-mode x86))
                   (not (equal fld :fault))
                   (not (equal fld :seg-visible))
@@ -1928,43 +1942,43 @@ memory.</li>
                   (not (equal fld :msr))
                   (not (equal fld :programmer-level-mode))
                   (not (equal fld :page-structure-marking-mode)))
-             (and (equal (mv-nth 0 (wm08 addr val (xw fld index value x86)))
-                         (mv-nth 0 (wm08 addr val x86)))
-                  (equal (mv-nth 1 (wm08 addr val (xw fld index value x86)))
-                         (xw fld index value (mv-nth 1 (wm08 addr val x86))))))
+             (and (equal (mv-nth 0 (wml08 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wml08 addr val x86)))
+                  (equal (mv-nth 1 (wml08 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wml08 addr val x86))))))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm wm08-xw-system-mode-rflags-not-ac
+  (defthm wml08-xw-system-mode-rflags-not-ac
     (implies (and (not (programmer-level-mode x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
-             (and (equal (mv-nth 0 (wm08 addr val (xw :rflags 0 value x86)))
-                         (mv-nth 0 (wm08 addr val x86)))
-                  (equal (mv-nth 1 (wm08 addr val (xw :rflags 0 value x86)))
-                         (xw :rflags 0 value (mv-nth 1 (wm08 addr val x86))))))
+             (and (equal (mv-nth 0 (wml08 addr val (xw :rflags 0 value x86)))
+                         (mv-nth 0 (wml08 addr val x86)))
+                  (equal (mv-nth 1 (wml08 addr val (xw :rflags 0 value x86)))
+                         (xw :rflags 0 value (mv-nth 1 (wml08 addr val x86))))))
     :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
-(define wim08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+(define wiml08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (val      :type (signed-byte 8))
                (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
 
-  (wm08 lin-addr (the (unsigned-byte 8) (n08 val)) x86)
+  (wml08 lin-addr (the (unsigned-byte 8) (n08 val)) x86)
   ///
-  (defthm x86p-wim08
+  (defthm x86p-wiml08
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wim08 lin-addr val x86))))
+             (x86p (mv-nth 1 (wiml08 lin-addr val x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm16 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-              (r-x      :type (member  :r :x))
-              (x86))
+(define rml16 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x      :type (member  :r :x))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
-  :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm16 rm08)
+  :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm16 rml08)
                                         ())))
 
   :prepwork
@@ -1977,7 +1991,7 @@ memory.</li>
               (equal (rvm16 lin-addr x86)
                      (rb 2 lin-addr r-x x86)))
      :hints (("Goal"
-              :in-theory (e/d (rm08 rvm08 rvm16)
+              :in-theory (e/d (rml08 rvm08 rvm16)
                               (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -2020,28 +2034,28 @@ memory.</li>
 
                      (mv nil word x86))))
 
-          (mv 'rm16 0 x86)))
+          (mv 'rml16 0 x86)))
 
-    (mv 'rm16 0 x86))
+    (mv 'rml16 0 x86))
 
   ///
 
-  (defthm-usb n16p-mv-nth-1-rm16
+  (defthm-usb n16p-mv-nth-1-rml16
     :hyp (force (x86p x86))
     :bound 16
-    :concl (mv-nth 1 (rm16 lin-addr r-x x86))
+    :concl (mv-nth 1 (rml16 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
     :gen-type t)
 
-  (defthm x86p-rm16
+  (defthm x86p-rml16
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm16 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (rml16 lin-addr r-x x86))))
     :hints (("Goal" :in-theory (disable unsigned-byte-p signed-byte-p (force))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rim16 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+(define riml16 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (r-x    :type (member  :r :x))
                (x86))
 
@@ -2049,25 +2063,25 @@ memory.</li>
   :guard (canonical-address-p lin-addr)
 
   (mv-let (flag val x86)
-    (rm16 lin-addr r-x x86)
+    (rml16 lin-addr r-x x86)
     (mv flag (n16-to-i16 val) x86))
   ///
 
-  (defthm-sb i16p-mv-nth-1-rim16
+  (defthm-sb i16p-mv-nth-1-riml16
     :hyp (force (x86p x86))
     :bound 16
-    :concl (mv-nth 1 (rim16 lin-addr r-x x86))
+    :concl (mv-nth 1 (riml16 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
     :gen-type t)
 
-  (defthm x86p-rim16
+  (defthm x86p-riml16
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rim16 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (riml16 lin-addr r-x x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm16
+(define wml16
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
    (val      :type (unsigned-byte 16))
    (x86))
@@ -2086,7 +2100,7 @@ memory.</li>
               (equal (wvm16 lin-addr val x86)
                      (wb 2 lin-addr :w val x86)))
      :hints (("Goal"
-              :in-theory (e/d (wm08 wvm08 wvm16)
+              :in-theory (e/d (wml08 wvm08 wvm16)
                               (force (force) unsigned-byte-p))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -2128,39 +2142,39 @@ memory.</li>
                     (x86 (!memi p-addr1 byte1 x86)))
                  (mv nil x86))))
 
-          (mv 'wm16 x86)))
+          (mv 'wml16 x86)))
 
-    (mv 'wm16 x86))
+    (mv 'wml16 x86))
 
   ///
 
-  (defthm x86p-wm16
+  (defthm x86p-wml16
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm16 lin-addr val x86))))
+             (x86p (mv-nth 1 (wml16 lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p signed-byte-p force (force)))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wim16 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+(define wiml16 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (val      :type (signed-byte 16))
                (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
 
-  (wm16 lin-addr (the (unsigned-byte 16) (n16 val)) x86)
+  (wml16 lin-addr (the (unsigned-byte 16) (n16 val)) x86)
   ///
-  (defthm x86p-wim16
+  (defthm x86p-wiml16
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wim16 lin-addr val x86))))
+             (x86p (mv-nth 1 (wiml16 lin-addr val x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm32 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-              (r-x    :type (member  :r :x))
-              (x86))
+(define rml32 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x    :type (member  :r :x))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
-  :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm32 rm08)
+  :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm32 rml08)
                                         (rb-1
                                          (:rewrite acl2::ash-0)
                                          (:rewrite acl2::zip-open)
@@ -2181,7 +2195,7 @@ memory.</li>
                (rvm32 lin-addr x86)
                (rb 4 lin-addr r-x x86)))
      :hints (("Goal"
-              :in-theory (e/d (rm08 rvm08 rvm32) (force (force)))))))
+              :in-theory (e/d (rml08 rvm08 rvm32) (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
@@ -2244,28 +2258,28 @@ memory.</li>
 
                      (mv nil dword x86))))
 
-          (mv 'rm32 0 x86)))
+          (mv 'rml32 0 x86)))
 
-    (mv 'rm32 0 x86))
+    (mv 'rml32 0 x86))
 
   ///
 
-  (defthm-usb n32p-mv-nth-1-rm32
+  (defthm-usb n32p-mv-nth-1-rml32
     :hyp (force (x86p x86))
     :bound 32
-    :concl (mv-nth 1 (rm32 lin-addr r-x x86))
+    :concl (mv-nth 1 (rml32 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (force (force)))))
     :gen-type t)
 
-  (defthm x86p-rm32
+  (defthm x86p-rml32
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm32 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (rml32 lin-addr r-x x86))))
     :hints (("Goal" :in-theory (disable unsigned-byte-p signed-byte-p (force))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rim32 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+(define riml32 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (r-x    :type (member  :r :x))
                (x86))
 
@@ -2273,27 +2287,27 @@ memory.</li>
   :guard (canonical-address-p lin-addr)
 
   (mv-let (flag val x86)
-    (rm32 lin-addr r-x x86)
+    (rml32 lin-addr r-x x86)
     (mv flag (n32-to-i32 val) x86))
   ///
 
-  (defthm-sb i32p-mv-nth-1-rim32
+  (defthm-sb i32p-mv-nth-1-riml32
     :hyp (force (x86p x86))
     :bound 32
-    :concl (mv-nth 1 (rim32 lin-addr r-x x86))
+    :concl (mv-nth 1 (riml32 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
     :gen-type t)
 
-  (defthm x86p-rim32
+  (defthm x86p-riml32
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rim32 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (riml32 lin-addr r-x x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm32 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-              (val      :type (unsigned-byte 32))
-              (x86))
+(define wml32 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+               (val      :type (unsigned-byte 32))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -2315,7 +2329,7 @@ memory.</li>
                    (canonical-address-p (+ 3 lin-addr)))
               (equal (wvm32 lin-addr val x86)
                      (wb 4 lin-addr :w val x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32)
+     :hints (("Goal" :in-theory (e/d (wml08 wvm08 wvm32)
                                      (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -2383,35 +2397,35 @@ memory.</li>
                     (x86 (!memi p-addr3 byte3 x86)))
                  (mv nil x86))))
 
-          (mv 'wm32 x86)))
+          (mv 'wml32 x86)))
 
-    (mv 'wm32 x86))
+    (mv 'wml32 x86))
 
   ///
 
-  (defthm x86p-wm32
+  (defthm x86p-wml32
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm32 lin-addr val x86))))
+             (x86p (mv-nth 1 (wml32 lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (force (force)))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wim32 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+(define wiml32 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (val      :type (signed-byte 32))
                (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
 
-  (wm32 lin-addr (the (unsigned-byte 32) (n32 val)) x86)
+  (wml32 lin-addr (the (unsigned-byte 32) (n32 val)) x86)
   ///
-  (defthm x86p-wim32
+  (defthm x86p-wiml32
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wim32 lin-addr val x86))))
+             (x86p (mv-nth 1 (wiml32 lin-addr val x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm48 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-              (r-x      :type (member :r :x))
-              (x86))
+(define rml48 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x      :type (member :r :x))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -2419,9 +2433,9 @@ memory.</li>
                  :expand ((las-to-pas 6 lin-addr r-x x86)
                           (las-to-pas 5 (+ 1 lin-addr) r-x (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))
                  :in-theory (e/d (rb-and-rvm48
-                                  rm08
-                                  rb-and-rm48-helper-1
-                                  rb-and-rm48-helper-2)
+                                  rml08
+                                  rb-and-rml48-helper-1
+                                  rb-and-rml48-helper-2)
                                  (not
                                   ash-monotone-2
                                   (:rewrite acl2::ash-0)
@@ -2460,7 +2474,7 @@ memory.</li>
                      (rb 6 lin-addr r-x x86)))
      :hints (("Goal"
               :in-theory (e/d (rb-and-rvm48-helper
-                               rm48-guard-proof-helper)
+                               rml48-guard-proof-helper)
                               (rb-and-rvm32-helper
                                logior-expt-to-plus-quotep
                                signed-byte-p
@@ -2539,31 +2553,31 @@ memory.</li>
 
                      (mv nil value x86))))
 
-          (mv 'rm48 0 x86)))
+          (mv 'rml48 0 x86)))
 
-    (mv 'rm48 0 x86))
+    (mv 'rml48 0 x86))
 
   ///
 
-  (defthm-usb n48p-mv-nth-1-rm48
+  (defthm-usb n48p-mv-nth-1-rml48
     :hyp (force (x86p x86))
     :bound 48
-    :concl (mv-nth 1 (rm48 lin-addr r-x x86))
+    :concl (mv-nth 1 (rml48 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p ash-monotone-2))))
     :otf-flg t
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (ash-monotone-2 rb))))
     :gen-type t)
 
-  (defthm x86p-rm48
+  (defthm x86p-rml48
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm48 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (rml48 lin-addr r-x x86))))
     :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm48 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-              (val      :type (unsigned-byte 48))
-              (x86))
+(define wml48 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+               (val      :type (unsigned-byte 48))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -2587,7 +2601,7 @@ memory.</li>
                    (canonical-address-p (+ 5 lin-addr)))
               (equal (wvm48 lin-addr val x86)
                      (wb 6 lin-addr :w val x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm16 wvm32 wvm48)
+     :hints (("Goal" :in-theory (e/d (wml08 wvm08 wvm16 wvm32 wvm48)
                                      (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -2680,21 +2694,21 @@ memory.</li>
                     (x86 (!memi p-addr5 byte5 x86)))
                  (mv nil x86))))
 
-          (mv 'wm48 x86)))
+          (mv 'wml48 x86)))
 
-    (mv 'wm48 x86))
+    (mv 'wml48 x86))
 
   ///
 
-  (defthm x86p-wm48
+  (defthm x86p-wml48
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm48 lin-addr val x86))))
+             (x86p (mv-nth 1 (wml48 lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (force (force)))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm64 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-              (r-x    :type (member  :r :x))
-              (x86))
+(define rml64 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x    :type (member  :r :x))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -2710,7 +2724,7 @@ memory.</li>
                  (mv-nth 2 (las-to-pas 6 (+ 2 lin-addr) r-x
                                        (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) r-x
                                                                  (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))))))
-    :in-theory (e/d (rb-and-rvm64 rm08)
+    :in-theory (e/d (rb-and-rvm64 rml08)
                     (not
                      ash-monotone-2
                      (:rewrite acl2::ash-0)
@@ -2774,7 +2788,7 @@ memory.</li>
               :in-theory (e/d (rb-and-rvm64-helper-1
                                rb-and-rvm64-helper-2)
                               (rb-and-rvm32-helper
-                               rm64-guard-proof-helper
+                               rml64-guard-proof-helper
                                logior-expt-to-plus-quotep
                                signed-byte-p
                                force (force)))))))
@@ -2871,29 +2885,29 @@ memory.</li>
 
                      (mv nil qword x86))))
 
-          (mv 'rm64 0 x86)))
+          (mv 'rml64 0 x86)))
 
-    (mv 'rm64 0 x86))
+    (mv 'rml64 0 x86))
 
   ///
 
-  (defthm-usb n64p-mv-nth-1-rm64
+  (defthm-usb n64p-mv-nth-1-rml64
     :hyp (force (x86p x86))
     :bound 64
-    :concl (mv-nth 1 (rm64 lin-addr r-x x86))
+    :concl (mv-nth 1 (rml64 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p ash-monotone-2))))
     :otf-flg t
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (ash-monotone-2 rb))))
     :gen-type t)
 
-  (defthm x86p-rm64
+  (defthm x86p-rml64
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm64 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (rml64 lin-addr r-x x86))))
     :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rim64 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+(define riml64 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (r-x    :type (member  :r :x))
                (x86))
 
@@ -2901,27 +2915,27 @@ memory.</li>
   :guard (canonical-address-p lin-addr)
 
   (mv-let (flag val x86)
-    (rm64 lin-addr r-x x86)
+    (rml64 lin-addr r-x x86)
     (mv flag (n64-to-i64 val) x86))
   ///
 
-  (defthm-sb i64p-mv-nth-1-rim64
+  (defthm-sb i64p-mv-nth-1-riml64
     :hyp (force (x86p x86))
     :bound 64
-    :concl (mv-nth 1 (rim64 lin-addr r-x x86))
+    :concl (mv-nth 1 (riml64 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
     :gen-type t)
 
-  (defthm x86p-rim64
+  (defthm x86p-riml64
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rim64 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (riml64 lin-addr r-x x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm64 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
-              (val      :type (unsigned-byte 64))
-              (x86))
+(define wml64 ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+               (val      :type (unsigned-byte 64))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -2955,7 +2969,7 @@ memory.</li>
                    (canonical-address-p (+ 7 lin-addr)))
               (equal (wvm64 lin-addr val x86)
                      (wb 8 lin-addr :w val x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 wvm64)
+     :hints (("Goal" :in-theory (e/d (wml08 wvm08 wvm32 wvm64)
                                      (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -3053,35 +3067,35 @@ memory.</li>
 
                  (mv nil x86))))
 
-          (mv 'wm64 x86)))
+          (mv 'wml64 x86)))
 
-    (mv 'wm64 x86))
+    (mv 'wml64 x86))
 
   ///
 
-  (defthm x86p-wm64
+  (defthm x86p-wml64
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm64 lin-addr val x86))))
+             (x86p (mv-nth 1 (wml64 lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wim64 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+(define wiml64 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (val      :type (signed-byte 64))
                (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
 
-  (wm64 lin-addr (the (unsigned-byte 64) (n64 val)) x86)
+  (wml64 lin-addr (the (unsigned-byte 64) (n64 val)) x86)
   ///
-  (defthm x86p-wim64
+  (defthm x86p-wiml64
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wim64 lin-addr val x86))))
+             (x86p (mv-nth 1 (wiml64 lin-addr val x86))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define rm80 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-              (r-x      :type (member  :r :x))
-              (x86))
+(define rml80 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (r-x      :type (member  :r :x))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -3099,8 +3113,8 @@ memory.</li>
                                                       (+ 1 lin-addr) r-x
                                                       (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))))))
     :in-theory (e/d (rb-and-rvm80
-                     rm80-in-system-level-mode-guard-proof-helper
-                     rm08)
+                     rml80-in-system-level-mode-guard-proof-helper
+                     rml08)
                     (not
                      ash-monotone-2
                      (:rewrite acl2::ash-0)
@@ -3120,7 +3134,7 @@ memory.</li>
                      (rb 10 lin-addr r-x x86)))
      :hints (("Goal"
 
-              :in-theory (e/d (rvm80 rb-and-rvm16 rb-and-rvm64 rm80-guard-proof-helper)
+              :in-theory (e/d (rvm80 rb-and-rvm16 rb-and-rvm64 rml80-guard-proof-helper)
                               (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -3233,31 +3247,31 @@ memory.</li>
 
                      (mv nil value x86))))
 
-          (mv 'rm80 0 x86)))
+          (mv 'rml80 0 x86)))
 
-    (mv 'rm80 0 x86))
+    (mv 'rml80 0 x86))
 
   ///
 
-  (defthm-usb n80p-mv-nth-1-rm80
+  (defthm-usb n80p-mv-nth-1-rml80
     :hyp (force (x86p x86))
     :bound 80
-    :concl (mv-nth 1 (rm80 lin-addr r-x x86))
+    :concl (mv-nth 1 (rml80 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d (rb) (signed-byte-p ash-monotone-2))))
     :otf-flg t
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (ash-monotone-2 rb))))
     :gen-type t)
 
-  (defthm x86p-rm80
+  (defthm x86p-rml80
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm80 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (rml80 lin-addr r-x x86))))
     :hints (("Goal" :in-theory (e/d () (rb unsigned-byte-p signed-byte-p (force)))))
     :rule-classes (:rewrite :type-prescription)))
 
-(define wm80 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-              (val      :type (unsigned-byte 80))
-              (x86))
+(define wml80 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+               (val      :type (unsigned-byte 80))
+               (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -3290,7 +3304,7 @@ memory.</li>
                    (canonical-address-p (+ 9 lin-addr)))
               (equal (wvm80 lin-addr val x86)
                      (wb 10 lin-addr :w val x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm16 wvm32 wvm64 wvm80)
+     :hints (("Goal" :in-theory (e/d (wml08 wvm08 wvm16 wvm32 wvm64 wvm80)
                                      (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -3407,28 +3421,28 @@ memory.</li>
 
                  (mv nil x86))))
 
-          (mv 'wm80 x86)))
+          (mv 'wml80 x86)))
 
-    (mv 'wm80 x86))
+    (mv 'wml80 x86))
 
   ///
 
-  (defthm x86p-wm80
+  (defthm x86p-wml80
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm80 lin-addr val x86))))
+             (x86p (mv-nth 1 (wml80 lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (rb force (force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-;; TODO: Prove rm128 equivalent to rb in the system-level mode.
-(define rm128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-               (r-x      :type (member :r :x))
-               (x86))
+;; TODO: Prove rml128 equivalent to rb in the system-level mode.
+(define rml128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+                (r-x      :type (member :r :x))
+                (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
                  :in-theory (e/d (rb-and-rvm128
-                                  rm08 rm64
+                                  rml08 rml64
                                   rb-and-rvm128-helper-1
                                   rb-and-rvm128-helper-2)
                                  (not
@@ -3639,32 +3653,32 @@ memory.</li>
 
                 (mv nil oword x86)))
 
-          (mv 'rm128 0 x86)))
+          (mv 'rml128 0 x86)))
 
-    (mv 'rm128 0 x86))
+    (mv 'rml128 0 x86))
 
   ///
 
-  (defthm-usb n128p-mv-nth-1-rm128
+  (defthm-usb n128p-mv-nth-1-rml128
     :hyp (force (x86p x86))
     :bound 128
-    :concl (mv-nth 1 (rm128 lin-addr r-x x86))
+    :concl (mv-nth 1 (rml128 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p ash-monotone-2))))
     :otf-flg t
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (ash-monotone-2 rb))))
     :gen-type t)
 
-  (defthm x86p-rm128
+  (defthm x86p-rml128
     (implies (force (x86p x86))
-             (x86p (mv-nth 2 (rm128 lin-addr r-x x86))))
+             (x86p (mv-nth 2 (rml128 lin-addr r-x x86))))
     :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-;; TODO: Prove wm128 equivalent to rb in the system-level mode.
-(define wm128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-               (val      :type (unsigned-byte 128))
-               (x86))
+;; TODO: Prove wml128 equivalent to rb in the system-level mode.
+(define wml128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
+                (val      :type (unsigned-byte 128))
+                (x86))
 
   :parents (x86-linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -3689,7 +3703,7 @@ memory.</li>
                    (canonical-address-p (+ 15 lin-addr)))
               (equal (wvm128 lin-addr val x86)
                      (wb 16 lin-addr :w val x86)))
-     :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 wvm64 wvm128)
+     :hints (("Goal" :in-theory (e/d (wml08 wvm08 wvm32 wvm64 wvm128)
                                      (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -3857,15 +3871,15 @@ memory.</li>
                 (mv nil x86)))
 
 
-          (mv 'wm128 x86)))
+          (mv 'wml128 x86)))
 
-    (mv 'wm128 x86))
+    (mv 'wml128 x86))
 
   ///
 
-  (defthm x86p-wm128
+  (defthm x86p-wml128
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm128 lin-addr val x86))))
+             (x86p (mv-nth 1 (wml128 lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (rb force (force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
@@ -3877,74 +3891,74 @@ memory.</li>
 
   :short "Functions to read/write 8/16/32/64/128 bits into the memory:"
 
-  (define rm-size ((nbytes :type (member 1 2 4 6 8 10 16))
-                   (addr   :type (signed-byte #.*max-linear-address-size*))
-                   (r-x    :type (member :r :x))
-                   (x86))
+  (define rml-size ((nbytes :type (member 1 2 4 6 8 10 16))
+                    (addr   :type (signed-byte #.*max-linear-address-size*))
+                    (r-x    :type (member :r :x))
+                    (x86))
     :guard (natp nbytes)
     :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))
     :inline t
     :enabled t
     (case nbytes
-      (1 (rm08 addr r-x x86))
-      (2 (rm16 addr r-x x86))
-      (4 (rm32 addr r-x x86))
+      (1 (rml08 addr r-x x86))
+      (2 (rml16 addr r-x x86))
+      (4 (rml32 addr r-x x86))
       (6
        ;; Use case: To fetch operands of the form m16:32 (see far jmp
        ;; instruction).
-       (rm48 addr r-x x86))
-      (8 (rm64 addr r-x x86))
+       (rml48 addr r-x x86))
+      (8 (rml64 addr r-x x86))
       (10
        ;; Use case: The instructions LGDT and LIDT need to read 10
        ;; bytes at once.
-       (rm80 addr r-x x86))
-      (16 (rm128 addr r-x x86))
+       (rml80 addr r-x x86))
+      (16 (rml128 addr r-x x86))
       (otherwise
        (if (mbe :logic (canonical-address-p (+ -1 nbytes addr))
                 :exec (< (+ -1 nbytes addr) #.*2^47*))
            (rb nbytes addr r-x x86)
-         (mv 'rm-size 0 x86))))
+         (mv 'rml-size 0 x86))))
 
     ///
 
-    (defthm x86p-of-mv-nth-2-of-rm-size
+    (defthm x86p-of-mv-nth-2-of-rml-size
       (implies (force (x86p x86))
-               (x86p (mv-nth 2 (rm-size bytes lin-addr r-x x86)))))
+               (x86p (mv-nth 2 (rml-size bytes lin-addr r-x x86)))))
 
-    ;; TODO Prove the following after proving the equivalence of rm128
+    ;; TODO Prove the following after proving the equivalence of rml128
     ;; and rb in system-level mode.
-    ;; (defthmd rm-size-to-rb
+    ;; (defthmd rml-size-to-rb
     ;;   (implies (and (canonical-address-p (+ -1 nbytes lin-addr))
     ;;                 (canonical-address-p lin-addr))
     ;;            (b* (((mv flg1 val x86-1)
-    ;;                  (rm-size nbytes lin-addr r-x x86))
+    ;;                  (rml-size nbytes lin-addr r-x x86))
     ;;                 ((mv flg2 bytes x86-2)
     ;;                  (rb nbytes lin-addr r-x x86)))
     ;;              (and (equal flg1 flg2)
     ;;                   (equal val (if flg1 0 bytes))
     ;;                   (equal x86-1 x86-2))))
-    ;;   :hints (("Goal" :in-theory (e/d* (signed-byte-p rm08 rm128 rm32 rm48 rm64 rm80 rm16)
+    ;;   :hints (("Goal" :in-theory (e/d* (signed-byte-p rml08 rml128 rml32 rml48 rml64 rml80 rml16)
     ;;                                    ()))))
     )
 
-  (define rim-size ((nbytes :type (member 1 2 4 8))
+  (define riml-size ((nbytes :type (member 1 2 4 8))
                     (addr   :type (signed-byte #.*max-linear-address-size*))
                     (r-x  :type (member :r :x))
                     (x86))
     :inline t
     :enabled t
     (case nbytes
-      (1 (rim08 addr r-x x86))
-      (2 (rim16 addr r-x x86))
-      (4 (rim32 addr r-x x86))
-      (8 (rim64 addr r-x x86))
+      (1 (riml08 addr r-x x86))
+      (2 (riml16 addr r-x x86))
+      (4 (riml32 addr r-x x86))
+      (8 (riml64 addr r-x x86))
       (otherwise
-       (mv 'rim-size nbytes x86))))
+       (mv 'riml-size nbytes x86))))
 
-  (define wm-size ((nbytes :type (member 1 2 4 6 8 10 16))
-                   (addr   :type (signed-byte #.*max-linear-address-size*))
-                   (val    :type (integer 0 *))
-                   (x86))
+  (define wml-size ((nbytes :type (member 1 2 4 6 8 10 16))
+                    (addr   :type (signed-byte #.*max-linear-address-size*))
+                    (val    :type (integer 0 *))
+                    (x86))
     :guard (case nbytes
              (1  (n08p val))
              (2  (n16p val))
@@ -3956,49 +3970,49 @@ memory.</li>
     :inline t
     :enabled t
     (case nbytes
-      (1 (wm08 addr val x86))
-      (2 (wm16 addr val x86))
-      (4 (wm32 addr val x86))
+      (1 (wml08 addr val x86))
+      (2 (wml16 addr val x86))
+      (4 (wml32 addr val x86))
       (6
        ;; Use case: To store operands of the form m16:32.
-       (wm48 addr val x86))
-      (8 (wm64 addr val x86))
+       (wml48 addr val x86))
+      (8 (wml64 addr val x86))
       (10
        ;; Use case: Instructions like SGDT and SIDT write 10 bytes to
        ;; the memory.
-       (wm80 addr val x86))
-      (16 (wm128 addr val x86))
+       (wml80 addr val x86))
+      (16 (wml128 addr val x86))
       (otherwise
        (if (mbe :logic (canonical-address-p (+ -1 nbytes addr))
                 :exec (< (+ nbytes addr) #.*2^47-1*))
            (wb nbytes addr :w val x86)
-         (mv 'wm-size x86))))
+         (mv 'wml-size x86))))
 
     ///
 
-    (defthm x86p-wm-size
+    (defthm x86p-wml-size
       (implies (force (x86p x86))
-               (x86p (mv-nth 1 (wm-size nbytes lin-addr val x86))))
+               (x86p (mv-nth 1 (wml-size nbytes lin-addr val x86))))
       :hints (("Goal" :in-theory (e/d () (rb force (force) unsigned-byte-p signed-byte-p)))))
 
-    ;; TODO Prove the following after proving the equivalence of wm128
+    ;; TODO Prove the following after proving the equivalence of wml128
     ;; and wb in system-level mode.
-    ;; (defthmd wm-size-to-wb
+    ;; (defthmd wml-size-to-wb
     ;;   (implies (and (canonical-address-p (+ -1 nbytes lin-addr))
     ;;                 (canonical-address-p lin-addr))
     ;;            (b* (((mv flg1 x86-1)
-    ;;                  (wm-size nbytes lin-addr val x86))
+    ;;                  (wml-size nbytes lin-addr val x86))
     ;;                 ((mv flg2 x86-2)
     ;;                  (wb nbytes lin-addr :w val x86)))
     ;;              (and (equal flg1 flg2)
     ;;                   (equal x86-1 x86-2))))
     ;;   :hints (("Goal" :in-theory (e/d* (signed-byte-p
     ;;                                     las-to-pas
-    ;;                                     wm08 wm128 wm32 wm48 wm64 wm80 wm16)
+    ;;                                     wml08 wml128 wml32 wml48 wml64 wml80 wml16)
     ;;                                    ()))))
     )
 
-  (define wim-size ((nbytes :type (member 1 2 4 8))
+  (define wiml-size ((nbytes :type (member 1 2 4 8))
                     (addr   :type (signed-byte #.*max-linear-address-size*))
                     (val    :type integer)
                     (x86))
@@ -4010,23 +4024,23 @@ memory.</li>
     :inline t
     :enabled t
     (case nbytes
-      (1 (wim08 addr val x86))
-      (2 (wim16 addr val x86))
-      (4 (wim32 addr val x86))
-      (8 (wim64 addr val x86))
+      (1 (wiml08 addr val x86))
+      (2 (wiml16 addr val x86))
+      (4 (wiml32 addr val x86))
+      (8 (wiml64 addr val x86))
       (otherwise
-       (mv 'wim-size x86)))))
+       (mv 'wiml-size x86)))))
 
 #||
 
-;; The following definitions of rm/wm-size are nicer in one sense that
+;; The following definitions of rml/wml-size are nicer in one sense that
 ;; their definition is in terms of rb/wb, unlike in the functions
-;; above, where the equivalence of rm/wm-size to rb/wb is established
+;; above, where the equivalence of rm/wml-size to rb/wb is established
 ;; via a theorem.  However, these nicer definitions cause some proofs
 ;; to fail in x86-decoding-and-spec-utils.lisp, which I'd rather not
 ;; fix right now.
 
-(define rm-size
+(define rml-size
   ((nbytes   :type (member 1 2 4 6 8 10 16))
    (lin-addr :type (signed-byte #.*max-linear-address-size*))
    (r-x    :type (member :r :x))
@@ -4034,7 +4048,7 @@ memory.</li>
   :guard (natp nbytes)
   :guard-hints (("Goal"
                  :in-theory
-                 (e/d* (signed-byte-p rm08 rm128 rm32 rm48 rm64 rm80 rm16)
+                 (e/d* (signed-byte-p rml08 rml128 rml32 rml48 rml64 rml80 rml16)
                        (create-canonical-address-list-1))))
   :inline t
 
@@ -4057,19 +4071,19 @@ memory.</li>
              :exec
 
              (case nbytes
-               (1 (rm08 lin-addr r-x x86))
-               (2 (rm16 lin-addr r-x x86))
-               (4 (rm32 lin-addr r-x x86))
+               (1 (rml08 lin-addr r-x x86))
+               (2 (rml16 lin-addr r-x x86))
+               (4 (rml32 lin-addr r-x x86))
                (6
                   ;; Use case: To fetch operands of the form m16:32 (see far jmp ; ;
                   ;; instruction). ; ;
-                (rm48 lin-addr r-x x86))
-               (8 (rm64 lin-addr r-x x86))
+                (rml48 lin-addr r-x x86))
+               (8 (rml64 lin-addr r-x x86))
                (10
                   ;; Use case: The instructions LGDT and LIDT need to read 10 ; ;
                   ;; bytes at once. ; ;
-                (rm80 lin-addr r-x x86))
-               (16 (rm128 lin-addr r-x x86))
+                (rml80 lin-addr r-x x86))
+               (16 (rml128 lin-addr r-x x86))
                (otherwise
                 (b* (((mv flg bytes x86)
                       (rb (create-canonical-address-list nbytes lin-addr)
@@ -4078,17 +4092,17 @@ memory.</li>
                       (mv flg 0 x86)))
                   (mv nil (combine-bytes bytes) x86)))))
 
-          (mv 'rm-size 0 x86)))
-    (mv 'rm-size 0 x86))
+          (mv 'rml-size 0 x86)))
+    (mv 'rml-size 0 x86))
 
   ///
 
-  (defthm x86p-of-mv-nth-2-of-rm-size
+  (defthm x86p-of-mv-nth-2-of-rml-size
     (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
                   (x86p x86))
-             (x86p (mv-nth 2 (rm-size bytes lin-addr r-x x86))))))
+             (x86p (mv-nth 2 (rml-size bytes lin-addr r-x x86))))))
 
-(define wm-size
+(define wml-size
   ((nbytes   :type (member 1 2 4 6 8 10 16))
    (lin-addr :type (signed-byte #.*max-linear-address-size*))
    (val      :type (integer 0 *))
@@ -4105,7 +4119,7 @@ memory.</li>
   :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p
                                           las-to-pas
                                           byte-ify
-                                          wm08 wm128 wm32 wm48 wm64 wm80 wm16)
+                                          wml08 wml128 wml32 wml48 wml64 wml80 wml16)
                                          ())))
   :inline t
   (if (mbt (canonical-address-p lin-addr))
@@ -4123,32 +4137,32 @@ memory.</li>
                  x86)
              :exec
              (case nbytes
-               (1 (wm08 lin-addr val x86))
-               (2 (wm16 lin-addr val x86))
-               (4 (wm32 lin-addr val x86))
+               (1 (wml08 lin-addr val x86))
+               (2 (wml16 lin-addr val x86))
+               (4 (wml32 lin-addr val x86))
                (6
                   ;; Use case: To store operands of the form m16:32. ;
-                (wm48 lin-addr val x86))
-               (8 (wm64 lin-addr val x86))
+                (wml48 lin-addr val x86))
+               (8 (wml64 lin-addr val x86))
                (10
                   ;; Use case: Instructions like SGDT and SIDT write 10 bytes to ;
                   ;; the memory. ;
-                (wm80 lin-addr val x86))
-               (16 (wm128 lin-addr val x86))
+                (wml80 lin-addr val x86))
+               (16 (wml128 lin-addr val x86))
                (otherwise
                 (wb (create-addr-bytes-alist
                      (create-canonical-address-list nbytes lin-addr)
                      (byte-ify nbytes val))
                     x86))))
 
-          (mv 'wm-size x86)))
-    (mv 'wm-size x86))
+          (mv 'wml-size x86)))
+    (mv 'wml-size x86))
 
   ///
 
-  (defthm x86p-wm-size
+  (defthm x86p-wml-size
     (implies (force (x86p x86))
-             (x86p (mv-nth 1 (wm-size nbytes lin-addr val x86))))
+             (x86p (mv-nth 1 (wml-size nbytes lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (rb force (force) unsigned-byte-p signed-byte-p))))))
 
 ||#
@@ -4157,11 +4171,11 @@ memory.</li>
 
 ;; Writing canonical address to memory:
 
-;; A short note on why I couldn't make do with wim64 to write a
+;; A short note on why I couldn't make do with wiml64 to write a
 ;; canonical address to the memory:
 
 ;; Here's a small, compelling example.  The following is some
-;; information provided by profile when running fib(24); here, wim64
+;; information provided by profile when running fib(24); here, wiml64
 ;; was used to store a canonical address in the memory in the
 ;; specification of the CALL (#xE8) instruction.
 
@@ -4173,7 +4187,7 @@ memory.</li>
 ;; So, for fib(24), 4,801,792 bytes are allocated on the heap!  And
 ;; this is with paging turned off.
 
-;; The reason why wim64 uses such a lot of memory is because it
+;; The reason why wiml64 uses such a lot of memory is because it
 ;; creates bignums all the time.  But when I have to store a canonical
 ;; address in the memory, I *know* that I'm storing a quantity lesser
 ;; than 64-bits.  Thus, I use write-canonical-address-to-memory to
@@ -4183,7 +4197,7 @@ memory.</li>
 
 ;; Note that write-canonical-address-to-memory is optimized in the
 ;; programmer-level mode only --- in the system-level mode, it's
-;; merely a call of wm64.
+;; merely a call of wml64.
 
 (define write-canonical-address-to-memory-user-exec
   ((lin-addr          :type (signed-byte  #.*max-linear-address-size*))
@@ -4212,7 +4226,7 @@ memory.</li>
              (the (signed-byte 16)
                   (ash canonical-address -32))))
            ((mv flg0 x86)
-            (wm32 lin-addr canonical-address-low-nat x86))
+            (wml32 lin-addr canonical-address-low-nat x86))
            ((the (signed-byte #.*max-linear-address-size+1*) next-addr)
             (+ 4 lin-addr))
            ((when (mbe :logic (not (canonical-address-p next-addr))
@@ -4220,11 +4234,11 @@ memory.</li>
                                  (the (signed-byte
                                        #.*max-linear-address-size+1*)
                                       next-addr))))
-            (mv 'wm64-canonical-address-user-mode x86))
+            (mv 'wml64-canonical-address-user-mode x86))
            ((mv flg1 x86)
-            (wim32 next-addr canonical-address-high-int x86))
+            (wiml32 next-addr canonical-address-high-int x86))
            ((when (or flg0 flg1))
-            (mv 'wm64-canonical-address-user-mode x86)))
+            (mv 'wml64-canonical-address-user-mode x86)))
         (mv nil x86))
 
     (mv 'unreachable x86)))
@@ -4263,8 +4277,8 @@ memory.</li>
                              (val (loghead 64 canonical-address))))
             :in-theory (e/d*
                         (write-canonical-address-to-memory-user-exec
-                         wim32
-                         wm32
+                         wiml32
+                         wml32
                          wb-and-wvm64
                          wb-1)
                         ())))))
@@ -4299,14 +4313,14 @@ memory.</li>
           (b* ((canonical-address-unsigned-val
                 (mbe :logic (loghead 64 canonical-address)
                      :exec (logand #.*2^64-1* canonical-address))))
-            ;; Note that calling wm64 here will be a tad expensive ---
+            ;; Note that calling wml64 here will be a tad expensive ---
             ;; for one, there's an extra function call. Also, the
             ;; programmer-level-mode field will have to be checked
-            ;; again inside wm64. However, this is better for
+            ;; again inside wml64. However, this is better for
             ;; reasoning than laying down the code again. As it is,
             ;; performance in the system-level mode is quite less than
             ;; that in programmer-level mode.
-            (wm64 lin-addr canonical-address-unsigned-val x86)))
+            (wml64 lin-addr canonical-address-unsigned-val x86)))
 
       (mv 'write-canonical-address-to-memory-error x86)))
 

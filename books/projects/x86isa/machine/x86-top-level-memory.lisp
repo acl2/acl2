@@ -32,12 +32,109 @@
   :long
   "<p>
    The effective address is translated to a linear address
-   and then @('rm08') is called.
+   and then @('rml08') is called.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
        ((when flg) (mv flg 0 x86)))
-    (rm08 lin-addr r-x x86))
-  :guard-hints (("Goal" :in-theory (enable ea-to-la))))
+    (rml08 lin-addr r-x x86))
+  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
+  ///
+
+  (defthm-usb n08p-of-mv-nth-1-rme08
+    :hyp (x86p x86)
+    :bound 8
+    :concl (mv-nth 1 (rme08 eff-addr seg-reg r-x x86))
+    :gen-linear t
+    :gen-type t)
+
+  (defrule x86p-rme08
+    (implies (x86p x86)
+             (x86p (mv-nth 2 (rme08 eff-addr seg-reg r-x x86)))))
+
+  (defrule rme08-value-when-error
+    (implies (mv-nth 0 (rme08 eff-addr seg-reg r-x x86))
+             (equal (mv-nth 1 (rme08 eff-addr seg-reg r-x x86)) 0))
+    :enable (rml08 rvm08))
+
+  (defrule rme08-does-not-affect-state-in-programmer-level-mode
+    (implies (programmer-level-mode x86)
+             (equal (mv-nth 2 (rme08 eff-addr seg-reg r-x x86)) x86))
+    :enable rml08)
+
+  (defrule mv-nth-2-rme08-in-system-level-non-marking-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (page-structure-marking-mode x86))
+                  (x86p x86)
+                  (not (mv-nth 0 (rme08 eff-addr seg-reg r-x x86))))
+             (equal (mv-nth 2 (rme08 eff-addr seg-reg r-x x86))
+                    x86)))
+
+  (defrule xr-rme08-state-programmer-level-mode
+    (implies (programmer-level-mode x86)
+             (equal (xr fld index (mv-nth 2 (rme08 addr seg-reg r-x x86)))
+                    (xr fld index x86)))
+    :enable rml08)
+
+  (defrule xr-rme08-state-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (rme08 addr seg-reg r-x x86)))
+                    (xr fld index x86))))
+
+  (defrule rme08-xw-programmer-level-mode
+    (implies
+     (and (programmer-level-mode x86)
+          (not (equal fld :mem))
+          (not (equal fld :programmer-level-mode))
+          (not (equal fld :seg-hidden))
+          (not (equal fld :msr)))
+     (and (equal (mv-nth 0 (rme08 addr seg-reg r-x (xw fld index value x86)))
+                 (mv-nth 0 (rme08 addr seg-reg r-x x86)))
+          (equal (mv-nth 1 (rme08 addr seg-reg r-x (xw fld index value x86)))
+                 (mv-nth 1 (rme08 addr seg-reg r-x x86)))
+          ;; No need for the conclusion about the state because
+          ;; "rme08-does-not-affect-state-in-programmer-level-mode".
+          ))
+    :enable (ea-to-la x86-segment-base-and-bounds))
+
+  (defrule rme08-xw-system-level-mode
+    (implies
+     (and (not (programmer-level-mode x86))
+          (not (equal fld :fault))
+          (not (equal fld :seg-visible))
+          (not (equal fld :seg-hidden))
+          (not (equal fld :mem))
+          (not (equal fld :ctr))
+          (not (equal fld :msr))
+          (not (equal fld :rflags))
+          (not (equal fld :programmer-level-mode))
+          (not (equal fld :page-structure-marking-mode)))
+     (and (equal (mv-nth 0 (rme08 addr seg-reg r-x (xw fld index value x86)))
+                 (mv-nth 0 (rme08 addr seg-reg r-x x86)))
+          (equal (mv-nth 1 (rme08 addr seg-reg r-x (xw fld index value x86)))
+                 (mv-nth 1 (rme08 addr seg-reg r-x x86)))
+          (equal (mv-nth 2 (rme08 addr seg-reg r-x (xw fld index value x86)))
+                 (xw fld index value (mv-nth 2 (rme08 addr seg-reg r-x x86)))))))
+
+  (defrule rme08-xw-system-level-mode-rflags-not-ac
+    (implies
+     (and (not (programmer-level-mode x86))
+          (equal (rflags-slice :ac value)
+                 (rflags-slice :ac (rflags x86))))
+     (and (equal (mv-nth 0 (rme08 addr seg-reg r-x (xw :rflags 0 value x86)))
+                 (mv-nth 0 (rme08 addr seg-reg r-x x86)))
+          (equal (mv-nth 1 (rme08 addr seg-reg r-x (xw :rflags 0 value x86)))
+                 (mv-nth 1 (rme08 addr seg-reg r-x x86)))
+          (equal (mv-nth 2 (rme08 addr seg-reg r-x (xw :rflags 0 value x86)))
+                 (xw :rflags 0 value (mv-nth 2 (rme08 addr seg-reg r-x x86)))))))
+
+  (defrule rme08-when-64-bit-modep-and-not-fs/gs
+    (implies (and (64-bit-modep x86)
+                  (not (equal seg-reg *fs*))
+                  (not (equal seg-reg *gs*)))
+             (equal (rme08 eff-addr seg-reg r-x x86)
+                    (rml08 (i48 eff-addr) r-x x86)))))
 
 (define rime08
   ((eff-addr i64p)
@@ -52,11 +149,11 @@
   :long
   "<p>
    The effective address is translated to a linear address
-   and then @('rim08') is called.
+   and then @('riml08') is called.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
        ((when flg) (mv flg 0 x86)))
-    (rim08 lin-addr r-x x86))
+    (riml08 lin-addr r-x x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
 (define wme08
@@ -70,11 +167,11 @@
   :long
   "<p>
    The effective address is translated to a linear address
-   and then @('wm08') is called.
+   and then @('wml08') is called.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
        ((when flg) (mv flg x86)))
-    (wm08 lin-addr val x86))
+    (wml08 lin-addr val x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
 (define wime08
@@ -88,11 +185,11 @@
   :long
   "<p>
    The effective address is translated to a linear address
-   and then @('wim08') is called.
+   and then @('wiml08') is called.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
        ((when flg) (mv flg x86)))
-    (wim08 lin-addr val x86))
+    (wiml08 lin-addr val x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
 ;; ======================================================================

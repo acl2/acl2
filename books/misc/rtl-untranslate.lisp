@@ -1,4 +1,4 @@
-; Copyright (C) 2004-2015 Advanced Mirco Devices, Inc. 
+; Copyright (C) 2004-2015 Advanced Micro Devices, Inc.
 ; All rights reserved.
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
@@ -105,7 +105,7 @@
 
   (let ((term (if preprocess-fn
                   (mv-let (erp term1)
-                          (ev-fncall-w preprocess-fn
+                          (ev-fncall-w! preprocess-fn
                                        (list term wrld)
                                        wrld
                                        nil ; user-stobj-alist

@@ -59,18 +59,18 @@ ZF, SF, and OF flags.</p>
 <p>To trace memory reads and writes, you can use the following:</p>
 
 <code>
-;; Trace rm08 and rm16.
-(trace-read-memory (rm08 rm16))
+;; Trace rml08 and rml16.
+(trace-read-memory (rml08 rml16))
 
 ;; The following is the same as
-;; (trace-read-memory (rm08 rim08 rm16 rim16 rm32 rim32 rm64 rim64))
+;; (trace-read-memory (rml08 riml08 rml16 riml16 rml32 riml32 rml64 riml64))
 (trace-all-reads)
 
-;; Trace wm32 and wm64.
-(trace-write-memory (wm32 wm64))
+;; Trace wml32 and wml64.
+(trace-write-memory (wml32 wml64))
 
 ;; The following is the same as
-;; (trace-write-memory (wm08 wim08 wm16 wim16 wm32 wim32 wm64 wim64))
+;; (trace-write-memory (wml08 wiml08 wml16 wiml16 wml32 wiml32 wml64 wiml64))
 (trace-all-writes)
 </code>
 
@@ -520,9 +520,9 @@ executed \(whatever comes first\).</p>
    (t
     (mv-let
      (erp val x86)
-     (rm08 (rip x86) :r x86)
+     (rml08 (rip x86) :r x86)
      (cond
-      (erp (mv (cons erp "rm08 Error. See log file for the execution trace.")
+      (erp (mv (cons erp "rml08 Error. See log file for the execution trace.")
                x86 state))
       ((equal val #xF4)
        (let ((x86 (x86-fetch-decode-execute x86)))
@@ -776,14 +776,14 @@ executed \(whatever comes first\).</p>
 (defun trace-read-memory-1 (fn)
   (let* ((numbytes
           (case fn
-            ('rm08  1)
-            ('rim08 1)
-            ('rm16  2)
-            ('rim16 2)
-            ('rm32  4)
-            ('rim32 4)
-            ('rm64  8)
-            ('rim64 8))))
+            ('rml08  1)
+            ('riml08 1)
+            ('rml16  2)
+            ('riml16 2)
+            ('rml32  4)
+            ('riml32 4)
+            ('rml64  8)
+            ('riml64 8))))
     (list
      `(trace! (,fn
                :cond (and (equal ACL2::traced-fn (quote ,fn))
@@ -803,28 +803,28 @@ executed \(whatever comes first\).</p>
             (create-trace-read-memory-1 (cdr fn-lst)))))
 
 (defun create-trace-read-memory (fn-lst)
-  ;; (create-trace-read-memory '(rm08 rm16))
+  ;; (create-trace-read-memory '(rml08 rml16))
   (cons 'er-progn
         (create-trace-read-memory-1 fn-lst)))
 
 (defmacro trace-read-memory (lst)
-  ;; (trace-read-memory (rm08 rim08 rm16 rim16 rm32 rim32 rm64 rim64))
+  ;; (trace-read-memory (rml08 riml08 rml16 riml16 rml32 riml32 rml64 riml64))
   (create-trace-read-memory lst))
 
 (defmacro trace-all-reads ()
-  `(trace-read-memory (rm08 rim08 rm16 rim16 rm32 rim32 rm64 rim64)))
+  `(trace-read-memory (rml08 riml08 rml16 riml16 rml32 riml32 rml64 riml64)))
 
 (defun trace-write-memory-1 (fn)
   (let* ((numbytes
           (case fn
-            ('wm08  1)
-            ('wim08 1)
-            ('wm16  2)
-            ('wim16 2)
-            ('wm32  4)
-            ('wim32 4)
-            ('wm64  8)
-            ('wim64 8))))
+            ('wml08  1)
+            ('wiml08 1)
+            ('wml16  2)
+            ('wiml16 2)
+            ('wml32  4)
+            ('wiml32 4)
+            ('wml64  8)
+            ('wiml64 8))))
     (list
      `(trace! (,fn
                :cond (equal ACL2::traced-fn (quote ,fn))
@@ -843,16 +843,16 @@ executed \(whatever comes first\).</p>
             (create-trace-write-memory-1 (cdr fn-lst)))))
 
 (defun create-trace-write-memory (fn-lst)
-  ;; (create-trace-write-memory '(wm08 wm16))
+  ;; (create-trace-write-memory '(wml08 wml16))
   (cons 'er-progn
         (create-trace-write-memory-1 fn-lst)))
 
 (defmacro trace-write-memory (lst)
-  ;; (trace-write-memory (wm08 wim08 wm16 wim16 wm32 wim32 wm64 wim64))
+  ;; (trace-write-memory (wml08 wiml08 wml16 wiml16 wml32 wiml32 wml64 wiml64))
   (create-trace-write-memory lst))
 
 (defmacro trace-all-writes ()
-  `(trace-write-memory (wm08 wim08 wm16 wim16 wm32 wim32 wm64 wim64)))
+  `(trace-write-memory (wml08 wiml08 wml16 wiml16 wml32 wiml32 wml64 wiml64)))
 
 (defmacro trace-to-file (file)
   `(open-trace-file ,file))

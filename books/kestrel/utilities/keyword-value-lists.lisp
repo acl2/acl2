@@ -53,3 +53,21 @@
             (revappend rev-alist (keyword-value-list-to-alist kvlist)))))
 
   (verify-guards keyword-value-list-to-alist))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define keywords-of-keyword-value-list ((kvlist keyword-value-listp))
+  :returns (keywords symbol-listp
+                     :hyp :guard
+                     :hints (("Goal"
+                              :in-theory (enable keyword-value-list-to-alist))))
+  :parents (kestrel-utilities system-utilities)
+  :short "Extract the list of keywords from
+          a @('nil')-terminated list of even length
+          with keywords at its even-numbered positions (counting from 0),
+          into the corresponding alist."
+  :long
+  "<p>
+   The returned keywords are in the same order as in the starting list.
+   </p>"
+  (strip-cars (keyword-value-list-to-alist kvlist)))

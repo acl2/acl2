@@ -25,3 +25,16 @@
 
 (assert-equal (keyword-value-list-to-alist '(:x :abc :y #\9))
               '((:x . :abc) (:y . #\9)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (keywords-of-keyword-value-list nil) nil)
+
+(assert-equal (keywords-of-keyword-value-list '(:one 1 :two 2 :three 3))
+              '(:one :two :three))
+
+(assert-equal (keywords-of-keyword-value-list '(:one 1 :one 2 :three 3))
+              '(:one :one :three))
+
+(assert-equal (keywords-of-keyword-value-list '(:x :abc :y #\9))
+              '(:x :y))

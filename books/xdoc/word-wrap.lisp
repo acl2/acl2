@@ -34,21 +34,37 @@
 (program)
 
 
-; NORMALIZE-WHITESPACE canonicalizes whitespace so that any adjacent whitespace
-; characters are merged into a single space.
+; NORMALIZE-WHITESPACE canonicalizes whitespace so that any adjacent
+; whitespace characters are merged into a single space unless they
+; occur at the end of a sentence, in which case they are merged into
+; two spaces.
 
 (defun normalize-whitespace-aux (x n xl acc)
   (b* (((when (>= n xl))
         acc)
        (char-n (char x n))
-       ((when (member char-n '(#\Space #\Tab #\Page #\Newline)))
-        (normalize-whitespace-aux
-         x (+ n 1) xl
-         (if (and (< (+ n 1) xl)
-                  (member (char x (+ n 1)) '(#\Space #\Tab #\Page #\Newline)))
-             acc
-           (cons #\Space acc)))))
-    (normalize-whitespace-aux x (+ n 1) xl (cons char-n acc))))
+       (whitespace '(#\Space #\Tab #\Newline #\Page #\Return))
+       (sentence-ends '(#\. #\! #\?))
+       (closers '(#\" #\' #\` #\) #\] #\} #\>))
+       (acc (cond
+             ;; Keep all non-whitespace characters.
+             ((not (member char-n whitespace))
+              (cons char-n acc))
+             ;; Keep a whitespace character if:
+             ;; - There's no whitespace immediately after it; or
+             ;; - There is whitespace after it but a sentence ended
+             ;;   right before it.
+             ((or (>= (+ n 1) xl)
+                  (not (member (char x (+ n 1)) whitespace))
+                  (and (>= n 1)
+                       (or (member (char x (- n 1)) sentence-ends)
+                           (and (>= n 2)
+                                (member (char x (- n 1)) closers)
+                                (member (char x (- n 2)) sentence-ends)))))
+              (cons #\Space acc))
+             ;; Otherwise, merge it into the subsequent whitespace.
+             (t acc))))
+    (normalize-whitespace-aux x (+ n 1) xl acc)))
 
 (defun normalize-whitespace (x)
   (declare (type string x))

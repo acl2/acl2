@@ -15,6 +15,7 @@
 (in-package "ACL2")
 
 (include-book "std/util/defines" :dir :system)
+(include-book "term-applicand-recognizers")
 (include-book "world-queries")
 
 (local (include-book "all-vars-theorems"))
@@ -25,71 +26,6 @@
 (defxdoc term-utilities
   :parents (kestrel-utilities system-utilities)
   :short "Utilities for @(see term)s.")
-
-(define pseudo-lambdap (x)
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize lambda expressions of
-          <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
-  :long
-  "<p>
-   Check whether @('x') is
-   a @('nil')-terminated list of exactly three elements,
-   whose first element is the symbol @('lambda'),
-   whose second element is a list of symbols, and
-   whose third element is a pseudo-term.
-   </p>"
-  (and (true-listp x)
-       (= (len x) 3)
-       (eq (first x) 'lambda)
-       (symbol-listp (second x))
-       (pseudo-termp (third x))))
-
-(define pseudo-fn/lambda-p (x)
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize symbols and
-          lambda expressions of
-          <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
-  :long
-  "<p>
-   Check whether @('x') is a symbol or a
-   <see topic='@(url pseudo-lambdap)'>pseudo-lambda-expression</see>.
-   These are the possible values of the first element of
-   a pseudo-term that is not a variable or a quoted constant
-   (i.e. a pseudo-term that is a function application).
-   </p>"
-  (or (symbolp x)
-      (pseudo-lambdap x)))
-
-(define lambdap (x (wrld plist-worldp-with-formals))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize valid
-          <see topic='@(url term)'>translated</see> lambda expression."
-  :long
-  "<p>
-   Check whether @('x') is a @('nil')-terminated list of exactly three elements,
-   whose first element is the symbol @('lambda'),
-   whose second element is a list of legal variable symbols without duplicates,
-   and whose third element is a valid translated term
-   whose free variables are all among the ones in the second element.
-   </p>"
-  (and (true-listp x)
-       (= (len x) 3)
-       (eq (first x) 'lambda)
-       (arglistp (second x))
-       (termp (third x) wrld)
-       (subsetp-eq (all-vars (third x))
-                   (second x))))
-
-(define fn/lambda-p (x (wrld plist-worldp-with-formals))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize valid function symbols and
-          <see topic='@(url term)'>translated</see> lambda expression."
-  (or (function-namep x wrld)
-      (lambdap x wrld)))
 
 (define lambda-closedp ((lambd pseudo-lambdap))
   :returns (yes/no booleanp)
@@ -111,7 +47,8 @@
           obtaining a pseudo-term."
   :long
   "<p>
-   If a lambda expression is applied, a beta reduction is performed.
+   This utility is similar to @(tsee cons-term),
+   but it performs a beta reduction when @('fn') is a lambda expression.
    </p>"
   (cond ((symbolp fn) (cons-term fn terms))
         (t (subcor-var (lambda-formals fn) terms (lambda-body fn))))
@@ -124,7 +61,8 @@
           obtaining a pseudo-term."
   :long
   "<p>
-   If a lambda expression is applied, a beta reduction is performed.
+   This utility is similar to @(tsee cons-term*),
+   but it performs a beta reduction when @('fn') is a lambda expressions.
    </p>
    @(def apply-term*)"
   (defmacro apply-term* (fn &rest terms)
@@ -154,6 +92,95 @@
                                         (cons (apply-term* fn (car terms))
                                               rev-result))))
      :verify-guards nil)))
+
+(define fapply-term ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
+  :guard (or (symbolp fn)
+             (= (len terms)
+                (len (lambda-formals fn))))
+  :returns (term "A @(tsee pseudo-termp).")
+  :parents (term-utilities)
+  :short "Variant of @(tsee apply-term) that performs no simplification."
+  :long
+  "<p>
+   The meaning of the starting @('f') in the name of this utility
+   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
+   </p>"
+  (cond ((symbolp fn) (fcons-term fn terms))
+        (t (fsubcor-var (lambda-formals fn) terms (lambda-body fn))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-fn/lambda-p pseudo-lambdap))))
+
+(defsection fapply-term*
+  :parents (term-utilities)
+  :short "Variant of @(tsee apply-term*) that performs no simplification."
+  :long
+  "<p>
+   The meaning of the starting @('f') in the name of this utility
+   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
+   </p>
+   @(def fapply-term*)"
+  (defmacro fapply-term* (fn &rest terms)
+    `(fapply-term ,fn (list ,@terms))))
+
+(define fapply-unary-to-terms ((fn pseudo-fn/lambda-p)
+                               (terms pseudo-term-listp))
+  :guard (or (symbolp fn)
+             (= 1 (len (lambda-formals fn))))
+  :returns (applied-terms "A @(tsee pseudo-term-listp).")
+  :parents (term-utilities)
+  :short "Variant of @(tsee apply-unary-to-terms)
+          that performs no simplification."
+  :long
+  "<p>
+   The meaning of the starting @('f') in the name of this utility
+   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
+   </p>"
+  (fapply-unary-to-terms-aux fn terms nil)
+  :verify-guards nil
+
+  :prepwork
+  ((define fapply-unary-to-terms-aux ((fn pseudo-fn/lambda-p)
+                                      (terms pseudo-term-listp)
+                                      (rev-result pseudo-term-listp))
+     :guard (or (symbolp fn)
+                (= 1 (len (lambda-formals fn))))
+     :returns (final-result "A @(tsee pseudo-term-listp).")
+     (cond ((endp terms) (reverse rev-result))
+           (t (fapply-unary-to-terms-aux fn
+                                         (cdr terms)
+                                         (cons (fapply-term* fn (car terms))
+                                               rev-result))))
+     :verify-guards nil)))
+
+(defines fsublis-var
+  :parents (term-utilities)
+  :short "Variant of @(tsee sublis-var) that performs no simplification."
+  :long
+  "<p>
+   The meaning of the starting @('f') in the name of this utility
+   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
+   </p>
+   @(def fsublis-var)
+   @(def fsublis-var-lst)"
+
+  (define fsublis-var ((alist (and (symbol-alistp alist)
+                                   (pseudo-term-listp (strip-cdrs alist))))
+                       (term pseudo-termp))
+    :returns (new-term "A @(tsee pseudo-termp).")
+    (cond ((variablep term) (b* ((pair (assoc-eq term alist)))
+                              (cond (pair (cdr pair))
+                                    (t term))))
+          ((fquotep term) term)
+          (t (b* ((fn (ffn-symb term))
+                  (args (fsublis-var-lst alist (fargs term))))
+               (fcons-term fn args)))))
+
+  (define fsublis-var-lst ((alist (and (symbol-alistp alist)
+                                       (pseudo-term-listp (strip-cdrs alist))))
+                           (terms pseudo-term-listp))
+    :returns (new-terms "A @(tsee pseudo-term-listp).")
+    (cond ((endp terms) nil)
+          (t (cons (fsublis-var alist (car terms))
+                   (fsublis-var-lst alist (cdr terms)))))))
 
 (defines all-program-ffn-symbs
   :parents (term-utilities)
@@ -474,38 +501,6 @@
        ((when (msgp term/message))
         (mv (msg "~x0 does not have a valid body.  ~@1" x term/message) nil)))
     (mv `(lambda ,(second x) ,term/message) stobjs-out)))
-
-(define trans-macro ((mac (macro-namep mac wrld)) (wrld plist-worldp))
-  :returns (term "A @(tsee pseudo-termp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "Translated term that a call to a macro translates to."
-  :long
-  "<p>
-   This function translates a call to the macro
-   that only includes its required formal arguments,
-   returning the resulting translated term.
-   </p>
-   <p>
-   Note that since the macro is in the ACL2 world
-   (because of the @(tsee macro-namep) guard),
-   the translation of the macro call should not fail.
-   However, the translation may not terminate,
-   as mentioned in @(tsee check-user-term).
-   </p>
-   <p>
-   Note also that if the macro has optional arguments,
-   its translation with non-default values for these arguments
-   may yield different terms.
-   Furthermore, if the macro is sensitive
-   to the &ldquo;shape&rdquo; of its arguments,
-   calls with argument that are not the required formal arguments
-   may yield different terms.
-   </p>"
-  (mv-let (term stobjs-out)
-    (check-user-term (cons mac (macro-required-args mac wrld)) wrld)
-    (declare (ignore stobjs-out))
-    term))
 
 (define term-guard-obligation ((term pseudo-termp) state)
   :returns (obligation "A @(tsee pseudo-termp).")

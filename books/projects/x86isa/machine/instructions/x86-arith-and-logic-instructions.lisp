@@ -78,24 +78,24 @@
                                     ())))))
 
 (local
- (defthm unsigned-byte-p-32-of-rm08
+ (defthm unsigned-byte-p-32-of-rml08
    (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
                  (x86p x86))
-            (unsigned-byte-p 32 (mv-nth 1 (rm08 lin-addr r-w-x x86))))
+            (unsigned-byte-p 32 (mv-nth 1 (rml08 lin-addr r-w-x x86))))
    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
 
 (local
- (defthm unsigned-byte-p-32-of-rm16
+ (defthm unsigned-byte-p-32-of-rml16
    (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
                  (x86p x86))
-            (unsigned-byte-p 32 (mv-nth 1 (rm16 lin-addr r-w-x x86))))
+            (unsigned-byte-p 32 (mv-nth 1 (rml16 lin-addr r-w-x x86))))
    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
 
 (local
- (defthm unsigned-byte-p-64-of-rm08
+ (defthm unsigned-byte-p-64-of-rml08
    (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
                  (x86p x86))
-            (unsigned-byte-p 64 (mv-nth 1 (rm08 lin-addr r-w-x x86))))
+            (unsigned-byte-p 64 (mv-nth 1 (rml08 lin-addr r-w-x x86))))
    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
 
 (local
@@ -472,7 +472,7 @@
                                                   gpr-arith/logic-spec-4
                                                   gpr-arith/logic-spec-2
                                                   gpr-arith/logic-spec-1
-                                                  rm-size
+                                                  rml-size
                                                   select-operand-size
                                                   unsigned-byte-p
                                                   signed-byte-p)))))
@@ -606,9 +606,9 @@
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((mv ?flg1 (the (unsigned-byte 32) imm) x86)
-        (rm-size imm-size temp-rip :x x86))
+        (rml-size imm-size temp-rip :x x86))
        ((when flg1)
-        (!!ms-fresh :rm-size-error flg1))
+        (!!ms-fresh :rml-size-error flg1))
        ;; Sign-extend imm:
        (imm
         (mbe :logic (loghead (ash E-size 3) (logext (ash imm-size 3) imm))
@@ -775,9 +775,9 @@
                    operand-size))
        (rAX (rgfi-size rAX-size *rax* rex-byte x86))
        ((mv ?flg imm x86)
-        (rm-size operand-size temp-rip :x x86))
+        (rml-size operand-size temp-rip :x x86))
        ((when flg)
-        (!!ms-fresh :rm-size-error flg))
+        (!!ms-fresh :rml-size-error flg))
 
        ;; Sign-extend imm when required.
        (imm

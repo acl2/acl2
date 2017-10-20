@@ -37,7 +37,7 @@
          x86-effective-addr-from-sib
          x86-operand-to-reg/mem
          rr08 rr32 rr64 wr08 wr32 wr64
-         rim08 rim32 rim64
+         riml08 riml32 riml64
          !flgi-undefined
          write-user-rflags
 
@@ -1767,6 +1767,10 @@
                                                           :X
                                                           X86)))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
+(defrule 64-bit-modep-of-zerocopy-state
+  (equal (64-bit-modep (zerocopy-state x86))
+         (64-bit-modep x86)))
+
 (defthmd rewire_dst_to_src-effects
   (implies
    (rewire_dst_to_src-effects-preconditions x86)
@@ -3028,6 +3032,7 @@
     ;; rule can be applicable in cases where there are writes to
     ;; locations of memory disjoint from the paging structures.
     (xlate-equiv-structures (double-rewrite x86-1) (double-rewrite x86-2))
+    (64-bit-modep x86-1) ; added
     (not (programmer-level-mode (double-rewrite x86-1)))
     (member-p
      index
@@ -3068,6 +3073,7 @@
         (physical-address-p index)
         (equal (loghead 3 index) 0)
         (unsigned-byte-p 64 value)
+        (64-bit-modep x86-1) ; added
         (not (programmer-level-mode (double-rewrite x86-1)))
         ;; IMPORTANT: xlate-equiv-structures is weaker than
         ;; xlate-equiv-memory --- I use the former here so that this
@@ -3102,6 +3108,7 @@
      (x86-2))
     (xlate-equiv-structures (double-rewrite x86-1)
                             (double-rewrite x86-2))
+    (64-bit-modep x86-1) ; added
     (not (programmer-level-mode x86-1))
     (disjoint-p
      (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86-1)))
@@ -3198,7 +3205,8 @@
 
 (defthmd program-at-projection
   (implies
-   (and (rewire_dst_to_src-effects-preconditions x86)
+   (and (64-bit-modep x86) ; added
+        (rewire_dst_to_src-effects-preconditions x86)
         (direct-map-p 8
                       (page-dir-ptr-table-entry-addr
                        (xr :rgf *rsi* x86)
@@ -3441,6 +3449,7 @@
       8
       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
       (double-rewrite x86)))
+    (64-bit-modep x86) ; added
     (not (xr :programmer-level-mode 0 x86)))
    (equal (pdpt-base-addr lin-addr (mv-nth 2 (las-to-pas n-2 lin-addr-2 r-w-x-2 x86)))
           (pdpt-base-addr lin-addr (double-rewrite x86))))
@@ -3481,6 +3490,7 @@
       8
       (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
       (double-rewrite x86)))
+    (64-bit-modep x86) ; added
     (not (programmer-level-mode x86)))
    (equal (pdpt-base-addr lin-addr (mv-nth 1 (wb n-w write-addr w value x86)))
           (pdpt-base-addr lin-addr (double-rewrite x86))))
@@ -3707,7 +3717,8 @@
 
 (defthmd source-data-from-initial-state-in-terms-of-read-from-physical-memory-and-las-to-pas
   (implies
-   (and (rewire_dst_to_src-effects-preconditions x86)
+   (and (64-bit-modep x86) ; added
+        (rewire_dst_to_src-effects-preconditions x86)
         (disjoint-p$
          (mv-nth 1 (las-to-pas *2^30* (xr :rgf *rdi* x86) :r x86))
          (open-qword-paddr-list
@@ -3733,7 +3744,8 @@
 
 (defthmd source-data-from-initial-state-in-terms-of-read-from-physical-memory-and-addr-range
   (implies
-   (and (rewire_dst_to_src-effects-preconditions x86)
+   (and (64-bit-modep x86) ; added
+        (rewire_dst_to_src-effects-preconditions x86)
         (source-data-preconditions x86))
    (equal
     (mv-nth 1 (rb *2^30* (xr :rgf *rdi* x86) :r x86))
@@ -3795,7 +3807,7 @@
     ((n *2^30*)
      (addr-1 (xr :rgf *rdi* x86)))
     t)
-   :bash :bash :bash :bash))
+   :bash :bash :bash :bash :bash))
 
 ;; ----------------------------------------------------------------------
 
@@ -4012,7 +4024,7 @@
                               (:type-prescription zip)
                               (:type-prescription gather-all-paging-structure-qword-addresses)
                               (:rewrite unsigned-byte-p-of-logtail)
-                              ;; (:linear combine-bytes-size-for-rm64-programmer-level-mode)
+                              ;; (:linear combine-bytes-size-for-rml64-programmer-level-mode)
                               (:rewrite acl2::subsetp-member . 2)
                               (:rewrite acl2::subsetp-member . 1)
                               (:rewrite acl2::logtail-identity)
@@ -4083,8 +4095,9 @@
   ;; I shouldn't need this lemma --- this should follow directly from
   ;; xlate-equiv-memory-and-pml4-table-base-addr and
   ;; xlate-equiv-memory-with-mv-nth-2-las-to-pas.
-  (equal (pml4-table-base-addr (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
-         (pml4-table-base-addr (double-rewrite x86))))
+  (implies (64-bit-modep x86)
+           (equal (pml4-table-base-addr (mv-nth 2 (las-to-pas l-addrs r-w-x cpl x86)))
+                  (pml4-table-base-addr (double-rewrite x86)))))
 
 (local
  (defthm translation-of-destination-pml4-table-entry-from-final-state-is-error-free
@@ -4908,6 +4921,7 @@
 
 (defthmd destination-data-in-final-state-==-source-data-in-initial-state
   (implies (and
+            (64-bit-modep x86)
             (rewire_dst_to_src-effects-preconditions x86)
             (source-data-preconditions x86)
             (destination-data-preconditions x86)
@@ -4973,7 +4987,8 @@
 
 (defthmd program-is-unmodified
   (implies
-   (and (rewire_dst_to_src-effects-preconditions x86)
+   (and (64-bit-modep x86)
+        (rewire_dst_to_src-effects-preconditions x86)
         (direct-map-p 8
                       (page-dir-ptr-table-entry-addr
                        (xr :rgf *rsi* x86)

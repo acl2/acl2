@@ -2144,27 +2144,20 @@
     (intersection-augmented-theories-fn1 (cdr lst1) lst2 ans))
    (t (intersection-augmented-theories-fn1 lst1 (cdr lst2) ans))))
 
-(defun check-theory-msg1 (lst macro-aliases wrld bad macros theorems
-                              primitives)
+(defun check-theory-msg1 (lst macro-aliases wrld bad macros theorems)
 
-; For background see check-theory-msg.  Parameters bad, macros, theorems, and
-; primitives are accumulators.  Bad contains members of lst that do not satisfy
+; For background see check-theory-msg.  Parameters bad, macros, and theorems
+; are accumulators.  Bad contains members of lst that do not satisfy n
 ; rule-name-designatorp.  Macros and theorems are the subsets of bad consisting
-; of symbols that name a macro or a theorem, respectively.  Primitives is a
-; list of rule-name-designators.
+; of symbols that name a macro or a theorem, respectively.
 
   (cond ((endp lst)
-         (mv bad macros theorems primitives))
+         (mv bad macros theorems))
         (t
          (let ((sym (rule-name-designatorp (car lst) macro-aliases wrld)))
            (cond
-            (sym
-             (check-theory-msg1
-              (cdr lst) macro-aliases wrld bad macros theorems
-              (cond ((and sym
-                          (assoc-eq sym *primitive-formals-and-guards*))
-                     (cons sym primitives))
-                    (t primitives))))
+            (sym (check-theory-msg1 (cdr lst) macro-aliases wrld bad macros
+                                    theorems))
 
 ; Otherwise we add (car lst) to bad.  But we might also add (car lst) to one or
 ; more of the other accumulators.
@@ -2172,7 +2165,7 @@
             ((not (symbolp (car lst)))
              (check-theory-msg1 (cdr lst) macro-aliases wrld
                                 (cons (car lst) bad)
-                                macros theorems primitives))
+                                macros theorems))
             (t (let ((name (car lst)))
                  (mv-let (macros theorems)
                    (cond ((and (not (eq (getpropc name 'macro-args t wrld)
@@ -2197,7 +2190,7 @@
                          (t (mv macros theorems)))
                    (check-theory-msg1 (cdr lst) macro-aliases wrld
                                       (cons name bad)
-                                      macros theorems primitives)))))))))
+                                      macros theorems)))))))))
 
 (defun check-theory-msg (lst wrld)
 
@@ -2205,61 +2198,39 @@
 ; not represent a list of runes and msg is to be printed (as an error if flg is
 ; true, else as a warning).
 
-  (let ((primitives-str
-         "~@0 ~&1 ~#1~[is a primitive~/are primitives~] without any ~
-          definition; any attempt to enable or disable rules based on a ~
-          primitive will have no effect.  "))
-    (cond
-     ((true-listp lst)
-      (mv-let (bad macros theorems primitives)
-        (check-theory-msg1 lst (macro-aliases wrld) wrld
-                           nil nil nil nil)
-        (cond
-         (bad
-          (mv t
-              (msg
-               "A theory function has been called on a list that contains ~
-                ~&0, which ~#0~[does~/do~] not designate a rule or a ~
-                non-empty list of rules.  ~@1~@2See :DOC theories."
-               bad
-               (cond
-                ((or macros theorems)
-                 (msg "Note that ~@0~@1~@2.  "
-                      (cond
-                       (macros
-                        (msg "~&0 ~#0~[is a macro~/are macros~]; see :DOC ~
-                              add-macro-alias to associate a macro with a ~
-                              function"
-                             macros))
-                       (t ""))
-                      (cond
-                       ((and macros theorems)
-                        ".  Also note that ")
-                       (t ""))
-                      (cond
-                       (theorems
-                        (msg "~&0 ~#0~[names a theorem~/name theorems~] but ~
-                              not any rules"
-                             theorems))
-                       (t ""))))
-                (t ""))
-               (cond
-                (primitives (msg primitives-str
-                                 (if (or macros theorems)
-                                     "Moreover,"
-                                   "Note that")
-                                 primitives))
-                (t "")))))
-         (primitives
-          (mv nil (msg primitives-str "Note that" primitives)))
-         (t (mv nil nil)))))
-     (t (mv t
-            (msg
-             "A theory function has been called on the following argument ~
-              that does not represent a theory because it is not a ~
-              true-list:~|~Y01.~|"
-             lst
-             (evisc-tuple 5 7 nil nil)))))))
+  (cond
+   ((true-listp lst)
+    (mv-let (bad macros theorems)
+      (check-theory-msg1 lst (macro-aliases wrld) wrld nil nil nil)
+      (cond (bad (msg
+                  "A theory function has been called on a list that contains ~
+                   ~&0, which ~#0~[does~/do~] not designate a rule or a ~
+                   non-empty list of rules.  ~@1See :DOC theories."
+                  bad
+                  (cond ((or macros theorems)
+                         (msg "Note that ~@0~@1@2.  "
+                              (cond
+                               (macros
+                                (msg "~&0 ~#0~[is a macro~/are macros~]; see ~
+                                      :DOC add-macro-alias to associate a ~
+                                      macro with a function"
+                                     macros))
+                               (t ""))
+                              (cond ((and macros theorems)
+                                     ".  Also note that ")
+                                    (t ""))
+                              (cond (theorems
+                                     (msg "~&0 ~#0~[names a theorem~/name ~
+                                           theorems~] but not any rules"
+                                          theorems))
+                                    (t ""))))
+                        (t ""))))
+            (t nil))))
+   (t (msg
+       "A theory function has been called on the following argument that does ~
+        not represent a theory because it is not a true-list:~|~Y01.~|"
+       lst
+       (evisc-tuple 5 7 nil nil)))))
 
 (defun check-theory-action (lst wrld ctx)
 
@@ -2270,15 +2241,9 @@
 ; for this concept: theoryp.  This checker checks for theoryp but with better
 ; error reporting.  It returns t if there is an error, else nil.
 
-  (mv-let (flg msg)
-    (check-theory-msg lst wrld)
-    (cond (flg (prog2$ (er hard ctx "~@0" msg)
+  (let ((msg (check-theory-msg lst wrld)))
+    (cond (msg (prog2$ (er hard ctx "~@0" msg)
                        t))
-          (msg (prog2$ (warning1-cw ctx "Theory" "~@0"
-                                    (list (cons #\0 msg))
-                                    wrld
-                                    (default-state-vars nil))
-                       nil))
           (t nil))))
 
 (defmacro check-theory (lst wrld ctx form)
@@ -16764,6 +16729,39 @@
                        (if bound-vars-flg 0 1)
                        args culprit explan)))))
 
+(defun without-warnings-fn (form)
+  `(state-global-let*
+    ((inhibit-output-lst (f-get-global 'inhibit-output-lst state)))
+    (pprogn
+     (f-put-global 'inhibit-output-lst
+                   (add-to-set-eq 'warning
+                                  (f-get-global 'inhibit-output-lst state))
+                   state)
+     ,form)))
+
+(defmacro without-warnings (form)
+  (without-warnings-fn form))
+
+(defmacro translate-without-warnings (&rest args)
+
+
+; To see why we may want to turn off warnings during translate, consider the
+; following example.
+
+;   (set-ignore-ok :warn)
+;   (defchoose foo (x) (y z) (< 0 y))
+
+; We expect a warning saying that x and z are unused.  But we don't want a
+; second warning like the following from defchoose-constraint's use of
+; translate, because it will make no sense to the user:
+
+;   ACL2 Warning [Ignored-variables] in ( DEFCHOOSE FOO ...):  The variable
+;   X is not used in the body of the LET expression that binds X.  But
+;   X is not declared IGNOREd or IGNORABLE.  See :DOC set-ignore-ok.
+
+
+  `(without-warnings (translate ,@args)))
+
 (defun defchoose-constraint-basic (fn bound-vars formals tbody ctx wrld state)
 
 ; It seems a pity to translate tbody, since it's already translated, but that
@@ -16772,7 +16770,7 @@
   (cond
    ((null (cdr bound-vars))
     (er-let*
-     ((consequent (translate
+     ((consequent (translate-without-warnings
                    `(let ((,(car bound-vars) ,(cons fn formals)))
                       ,tbody)
                    t t t ctx wrld state)))
@@ -16904,9 +16902,10 @@
            (cond
             (strengthen
              (er-let* ((extra
-                        (translate (defchoose-constraint-extra fn bound-vars
-                                     formals body)
-                                   t t t ctx wrld state)))
+                        (translate-without-warnings
+                         (defchoose-constraint-extra fn bound-vars formals
+                           body)
+                         t t t ctx wrld state)))
                (value (conjoin2 basic extra))))
             (t (value basic)))))
 
@@ -16964,113 +16963,110 @@
               (er-progn
                (chk-arglist-for-defchoose bound-vars t ctx state)
                (chk-arglist-for-defchoose formals nil ctx state)
-               (er-let*
-                ((tbody (translate body t t t ctx wrld state))
-                 (wrld (chk-just-new-name fn nil 'function nil ctx wrld
-                                          state)))
-                (cond
-                 ((intersectp-eq bound-vars formals)
-                  (er soft ctx
-                      "The bound and free variables of a defchoose form must ~
-                       not intersect, but their intersection for the form ~x0 ~
-                       is ~x1."
-                      event-form
-                      (intersection-eq bound-vars formals)))
-                 (t
-                  (let* ((body-vars (all-vars tbody))
-                         (bound-and-free-vars (append bound-vars formals))
-                         (diff (set-difference-eq bound-and-free-vars
-                                                  body-vars))
-                         (ignore-ok (cdr (assoc-eq
-                                          :ignore-ok
-                                          (table-alist 'acl2-defaults-table
-                                                       wrld)))))
-                    (cond
-                     ((not (subsetp-eq body-vars bound-and-free-vars))
-                      (er soft ctx
-                          "All variables in the body of a defchoose form must ~
-                           appear among the bound or free variables supplied ~
-                           in that form.  However, the ~#0~[variable ~x0 ~
-                           does~/variables ~&0 do~] not appear in the bound or ~
-                           free variables of the form ~x1, even though ~#0~[it ~
-                           appears~/they appear~] in its body."
-                          (set-difference-eq body-vars
-                                             (append bound-vars formals))
-                          event-form))
-                     ((and diff
-                           (null ignore-ok))
-                      (er soft ctx
-                          "The variable~#0~[ ~&0~ occurs~/s ~&0 occur~] in the ~
-                           body of the form ~x1.  However, ~#0~[this variable ~
-                           does~/these variables do~] not appear either in the ~
-                           bound variables or the formals of that form.  In ~
-                           order to avoid this error, see :DOC set-ignore-ok."
-                          diff
-                          event-form))
-                     (t
-                      (pprogn
-                       (cond
-                        ((eq ignore-ok :warn)
-                         (warning$ ctx "Ignored-variables"
-                                   "The variable~#0~[ ~&0 occurs~/s ~&0 ~
-                                    occur~] in the body of the following ~
-                                    defchoose form:~|~x1~|However, ~#0~[this ~
-                                    variable does~/these variables do~] not ~
-                                    appear either in the bound variables or ~
-                                    the formals of that form.  In order to ~
-                                    avoid this warning, see :DOC set-ignore-ok."
-                                   diff
-                                   event-form))
-                        (t state))
-                       (let* ((stobjs-in
-                               (compute-stobj-flags formals nil wrld))
-                              (stobjs-out
-                               (compute-stobj-flags bound-vars nil wrld))
-                              (wrld
-                               #+:non-standard-analysis
-                               (putprop
-                                fn 'classicalp
-                                (classical-fn-list-p (all-fnnames tbody) wrld)
-                                wrld)
-                               #-:non-standard-analysis
-                               wrld)
-                              (wrld
-                               (putprop
-                                fn 'constrainedp t
+               (er-let* ((tbody (translate body t t t ctx wrld state))
+                         (wrld (chk-just-new-name fn nil 'function nil ctx wrld
+                                                  state)))
+                 (cond
+                  ((intersectp-eq bound-vars formals)
+                   (er soft ctx
+                       "The bound and free variables of a defchoose form must ~
+                        not intersect, but their intersection for the form ~
+                        ~x0 is ~x1."
+                       event-form
+                       (intersection-eq bound-vars formals)))
+                  (t
+                   (let* ((body-vars (all-vars tbody))
+                          (bound-and-free-vars (append bound-vars formals))
+                          (ignored (set-difference-eq bound-and-free-vars
+                                                      body-vars))
+                          (ignore-ok (cdr (assoc-eq
+                                           :ignore-ok
+                                           (table-alist 'acl2-defaults-table
+                                                        wrld))))
+                          (ignored-vars-string
+                           "The variable~#0~[ ~&0~ does~/s ~&0 do~] not occur ~
+                            in the body of the form ~x1.  However, ~#0~[this ~
+                            variable~/each of these variables~] appears in ~
+                            the bound variables or the formals of that form.  ~
+                            In order to avoid this error, see :DOC ~
+                            set-ignore-ok."))
+                     (cond
+                      ((not (subsetp-eq body-vars bound-and-free-vars))
+                       (er soft ctx
+                           "All variables in the body of a defchoose form ~
+                            must appear among the bound or free variables ~
+                            supplied in that form.  However, the ~
+                            ~#0~[variable ~x0 does~/variables ~&0 do~] not ~
+                            appear in the bound or free variables of the form ~
+                            ~x1, even though ~#0~[it appears~/they appear~] ~
+                            in its body."
+                           (set-difference-eq body-vars bound-and-free-vars)
+                           event-form))
+                      ((and ignored
+                            (null ignore-ok))
+                       (er soft ctx
+                           ignored-vars-string
+                           ignored event-form))
+                      (t
+                       (pprogn
+                        (cond
+                         ((and ignored
+                               (eq ignore-ok :warn))
+                          (warning$ ctx "Ignored-variables"
+                                    ignored-vars-string
+                                    ignored event-form))
+                         (t state))
+                        (let* ((stobjs-in
+                                (compute-stobj-flags formals nil wrld))
+                               (stobjs-out
+                                (compute-stobj-flags bound-vars nil wrld))
+                               (wrld
+                                #+:non-standard-analysis
                                 (putprop
-                                 fn 'hereditarily-constrained-fnnames (list fn)
+                                 fn 'classicalp
+                                 (classical-fn-list-p (all-fnnames tbody) wrld)
+                                 wrld)
+                                #-:non-standard-analysis
+                                wrld)
+                               (wrld
+                                (putprop
+                                 fn 'constrainedp t
                                  (putprop
-                                  fn 'symbol-class
-                                  :common-lisp-compliant
-                                  (putprop-unless
-                                   fn 'stobjs-out stobjs-out nil
+                                  fn 'hereditarily-constrained-fnnames
+                                  (list fn)
+                                  (putprop
+                                   fn 'symbol-class
+                                   :common-lisp-compliant
                                    (putprop-unless
-                                    fn 'stobjs-in stobjs-in nil
-                                    (putprop
-                                     fn 'formals formals
-                                     wrld))))))))
-                         (er-let*
-                          ((constraint
-                            (defchoose-constraint
-                              fn bound-vars formals body tbody strengthen
-                              ctx wrld state)))
-                          (install-event fn
-                                         event-form
-                                         'defchoose
-                                         fn
-                                         nil
-                                         `(defuns nil nil
+                                    fn 'stobjs-out stobjs-out nil
+                                    (putprop-unless
+                                     fn 'stobjs-in stobjs-in nil
+                                     (putprop
+                                      fn 'formals formals
+                                      wrld))))))))
+                          (er-let*
+                              ((constraint
+                                (defchoose-constraint
+                                  fn bound-vars formals body tbody strengthen
+                                  ctx wrld state)))
+                            (install-event fn
+                                           event-form
+                                           'defchoose
+                                           fn
+                                           nil
+                                           `(defuns nil nil
 
 ; Keep the following in sync with intro-udf-lst2.
 
-                                            (,fn
-                                             ,formals
-                                             ,(null-body-er fn formals nil)))
-                                         :protect
-                                         ctx
-                                         (putprop
-                                          fn 'defchoose-axiom constraint wrld)
-                                         state))))))))))))))))))))))
+                                              (,fn
+                                               ,formals
+                                               ,(null-body-er fn formals nil)))
+                                           :protect
+                                           ctx
+                                           (putprop
+                                            fn 'defchoose-axiom constraint
+                                            wrld)
+                                           state))))))))))))))))))))))
 
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
@@ -19161,6 +19157,50 @@
                  (absstobj-correspondence-concl-lst
                   (cdr stobjs-out) (1+ i) st$c corr-fn)))))
 
+(defun flatten-ands-in-lit! (term)
+
+; This variant of flatten-ands-in-lit removes duplicates, always keeping the
+; first occurrence.  That seems best, rather than keeping the last occurrence.
+; Consider for example
+
+;   (and (and (integerp x) (< x 3))
+;        (and (integerp x) (> x -2)))
+
+; which translates to:
+
+;   (if (if (integerp x) (< x '3) 'nil)
+;       (if (integerp x) (< '-2 x) 'nil)
+;     'nil)
+
+; If we apply flatten-ands-in-lit, we obtain:
+
+;   ((INTEGERP X)
+;    (< X '3)
+;    (INTEGERP X)
+;    (< '-2 X))
+
+; If this is being generated to produce a guard, for example, it will be
+; important to keep the first occurrence of (INTEGERP X).  Even if we are doing
+; theorem proving, it seems plausible that the first occurrence is important as
+; a hypothesis for simplifying the rest.  Thus, if we apply
+; flatten-ands-in-lit! to the example above, we get this:
+
+;   ((INTEGERP X)
+;    (< X '3)
+;    (< '-2 X))
+
+  (case-match term
+    (('if t1 t2 t3)
+     (cond ((equal t2 *nil*)
+            (union-equal-to-end (flatten-ands-in-lit! (dumb-negate-lit t1))
+                                (flatten-ands-in-lit! t3)))
+           ((equal t3 *nil*)
+            (union-equal-to-end (flatten-ands-in-lit! t1)
+                                (flatten-ands-in-lit! t2)))
+           (t (list term))))
+    (& (cond ((equal term *t*) nil)
+             (t (list term))))))
+
 (defun absstobj-correspondence-formula (f$a f$c corr-fn formals guard-pre st
                                             st$c wrld)
 
@@ -19201,7 +19241,7 @@
       (fcons-term*
        'implies
        (conjoin (cons (fcons-term* corr-fn st$c st)
-                      (flatten-ands-in-lit guard-pre)))
+                      (flatten-ands-in-lit! guard-pre)))
        (cond ((null (cdr stobjs-out))
               (fcons-term* (if (eq (car stobjs-out) st$c)
                                corr-fn
@@ -19239,7 +19279,7 @@
       (fcons-term*
        'implies
        (conjoin (add-to-set-equal (fcons-term* st$ap st)
-                                  (flatten-ands-in-lit guard-pre)))
+                                  (flatten-ands-in-lit! guard-pre)))
 
 ; Note that the :preserved theorem is only generated if st$c is returned by the
 ; exec function.
@@ -19982,8 +20022,8 @@
                 (let* ((expected-guard-thm-formula
                         (make-implication
                          (cons (fcons-term* corr-fn st$c st)
-                               (flatten-ands-in-lit guard-pre))
-                         (conjoin (flatten-ands-in-lit
+                               (flatten-ands-in-lit! guard-pre))
+                         (conjoin (flatten-ands-in-lit!
                                    (guard exec t wrld)))))
                        (taut-p
                         (and (null guard-thm-p)
@@ -22810,6 +22850,7 @@
                                    keep-unify-subst wrld state ens ttree)
 
 ; This function is adapted from ACL2 function relieve-hyps1-iter.
+; Keep-unify-subst must be t, nil, or :FAILED.
 
   (mv-let
    (relieve-hyps1-ans unify-subst1 ttree1)
@@ -22834,10 +22875,11 @@
 ; simplify-clause-pot-lst.  Also notice that rcnst has been replaced by ens (an
 ; enable structure).
 
-; When keep-unify-subst is non-nil, we run through all of the hyps in order to
-; find extensions of unify-subst that bind free variables in order to make hyps
-; true.  Keep-unify-subst is true at the top level, but when we get a failure,
-; we set it to :FAILED so that we can return nil at the end.
+; Keep-unify-subst should be t, :FAILED, or nil.  When it is non-nil, we run
+; through all of the hyps in order to find extensions of unify-subst that bind
+; free variables in order to make hyps true.  Keep-unify-subst is t at the top
+; level, but when we get a failure, we set it to :FAILED so that we can return
+; nil at the end.
 
 ; This function a No-Change Loser when keep-unify-subst is nil.  In order to
 ; accomplish this without requiring it have to test the answer to its own
@@ -22869,7 +22911,7 @@
                                 new-unify-subst
                                 unify-subst0 ttree0
                                 type-alist
-                                (if (and (eq keep-unify-subst t)
+                                (if (and keep-unify-subst
                                          (not relieve-hyp-ans))
                                     :FAILED
                                   keep-unify-subst)
@@ -22888,7 +22930,11 @@
 ; a new ttree.  This function is a No-Change Loser.
 
   (pc-relieve-hyps1 rune hyps unify-subst unify-subst ttree type-alist
-                    keep-unify-subst wrld state ens ttree))
+
+; Pc-relieve-hyps1 expects keep-unify-subst to be t, nil, or :failed.
+
+                    (not (null keep-unify-subst))
+                    wrld state ens ttree))
 
 (defun remove-trivial-lits (lst type-alist alist wrld ens ttree)
 
@@ -24392,6 +24438,8 @@
 ; creating a name in the "COMMON-LISP" package, since ACL2 won't allow such a
 ; name to be a function symbol.
 
+  (declare (xargs :guard (and (symbolp sym)
+                              (stringp suffix))))
   (if (equal (symbol-package-name sym)
              *main-lisp-package-name*)
       (intern (concatenate 'string (symbol-name sym) suffix)
@@ -28666,25 +28714,98 @@
              (mv nil nil))))))
 
 #-acl2-loop-only
+(progn
+
+(defun raw-ev-fncall-simple (fn args w hard-error-returns-nilp aok programp
+                                stobjs-out)
+
+; Warning: Keep this in sync with raw-ev-fncall.  The present version is
+; somewhat faster, and supports efficient execution of magic-ev-fncall, thus
+; avoiding any consideration of stobjs.
+
+; We assume that w = (w *the-live-state*), that the call of
+; ev-fncall-w-guard in magic-ev-fncall has been successfully executed, that
+; programp = (programp fn w), and that stobjs-out = (stobjs-outt fn w).
+
+  (the #+acl2-mv-as-values (values t t)
+       #-acl2-mv-as-values t
+       (let* ((*aokp*
+
+; We expect the parameter aok, here and in all functions in the "ev family"
+; that take aok as an argument, to be Boolean.  If it's not, then there is no
+; real harm done: *aokp* would be bound here to a non-Boolean value, suggesting
+; that an attachment has been used when that isn't necessarily the case; see
+; *aokp*.
+
+               aok)
+              (throw-raw-ev-fncall-flg t)
+              (**1*-as-raw*
+
+; We defeat the **1*-as-raw* optimization so that when we use raw-ev-fncall to
+; evaluate a call of a :logic mode term, all of the evaluation will take place
+; in the logic.  Note that we don't restrict this special treatment to
+; :common-lisp-compliant functions, because such a function might call an
+; :ideal mode function wrapped in ec-call.  But we do restrict to :logic mode
+; functions, since they cannot call :program mode functions and hence there
+; cannot be a subsidiary rebinding of **1*-as-raw* to t.
+
+               (if programp
+                   **1*-as-raw*
+                 nil))
+              (applied-fn (*1*-symbol fn))
+              (val (catch 'raw-ev-fncall
+
+; Since w = (w *the-live-state*), we can avoid calling (chk-raw-ev-fncall fn w
+; aok) or checking (fboundp fn).
+
+                     (prog1
+                         (let ((*hard-error-returns-nilp*
+                                hard-error-returns-nilp))
+                           #-acl2-mv-as-values
+                           (apply applied-fn args)
+                           #+acl2-mv-as-values
+                           (cond ((null (cdr stobjs-out))
+                                  (apply applied-fn args))
+                                 (t (multiple-value-list
+                                     (apply applied-fn args)))))
+                       (setq throw-raw-ev-fncall-flg nil)))))
+
+; Observe that if a throw to 'raw-ev-fncall occurred during the
+; (apply fn args) then the local variable throw-raw-ev-fncall-flg
+; is t and otherwise it is nil.  If a throw did occur, val is the
+; value thrown.
+
+         (cond
+          (throw-raw-ev-fncall-flg
+           (mv t (ev-fncall-msg val w nil)))
+          (t #-acl2-mv-as-values ; adjust val for the multiple value case
+             (let ((val
+                    (cond
+                     ((null (cdr stobjs-out)) val)
+                     (t (cons val
+                              (mv-refs (1- (length stobjs-out))))))))
+               (mv nil val))
+             #+acl2-mv-as-values ; val already adjusted for multiple value case
+             (mv nil val))))))
+
 (defun-overrides magic-ev-fncall (fn args state hard-error-returns-nilp aok)
-
-; Warning: Do not allow this function to modify state without reading the
-; comment in chk-logic-subfunctions showing that if trans-eval is in :logic
-; mode, then user-defined stobjs can be changed in a way inconsistent with
-; logical definitions.
-
-  (let ((wrld (w state)))
+  (let* ((wrld (w state))
+         (programp/stobjs-out
+          (ev-fncall-w-guard fn args wrld
+                             (f-get-global 'temp-touchable-fns state))))
     (cond
-     ((and (symbolp fn)
-           (true-listp args)
-           (let ((formals
-                  (getpropc fn 'formals t wrld)))
-             (and (not (eq formals t)) ; (function-symbolp fn wrld)
-                  (eql (length args) (length formals))))
-           (logicp fn wrld))
-      (ev-fncall fn args state
-                 nil ; latches
-                 hard-error-returns-nilp aok))
+     (programp/stobjs-out
+      (if (car programp/stobjs-out)
+          (state-free-global-let*
+           ((safe-mode t))
+           (raw-ev-fncall-simple fn args
+                                 wrld
+                                 hard-error-returns-nilp
+                                 aok
+                                 t
+                                 (cdr programp/stobjs-out)))
+        (raw-ev-fncall-simple fn args wrld hard-error-returns-nilp aok nil
+                              (cdr programp/stobjs-out))))
      (t
       (let ((msg
              (msg "~%~%Meta-level function Problem: Magic-ev-fncall attempted ~
@@ -28705,17 +28826,26 @@
                          fn))
                    ((not (eql (length args)
                               (length (getpropc fn 'formals t wrld))))
-                    (msg "The length of that args is ~x0, but ~x1 takes ~x2 ~
-                          arguments"
+                    (msg "the length of that argument list is ~x0, but ~x1 ~
+                          takes ~x2 arguments"
                          (length args)
                          fn
                          (length (getpropc fn 'formals t wrld))))
                    (t
-                    (assert (not (logicp fn wrld)))
-                    (msg "~x0 is not a logic-mode function symbol"
-                         fn))))))
+
+; Since we don't expect many direct calls of magic-ev-fncall and we have
+; covered most cases above, we leave it up to the user to investigate which
+; part of ev-fncall-w-guard fails.  The condition (all-nils stobjs-in) from
+; ev-fncall-w-guard1 is automatically met here, since stobjs could not be put
+; intot he list, args.
+
+                    (msg "even though the call of ~x0 is well-formed, it ~
+                          fails to satisfy ~x1"
+                         fn
+                         'ev-fncall-w-guard))))))
         (prog2$ (cw "~@0" msg)
                 (mv t msg)))))))
+)
 
 (defun make-event-ctx (event-form)
   (msg "( MAKE-EVENT ~@0~@1)"

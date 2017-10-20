@@ -375,9 +375,9 @@
                              x86-operand-from-modr/m-and-sib-bytes
                              write-user-rflags
                              !flgi-undefined
-                             rim-size
-                             rim08
-                             rm08
+                             riml-size
+                             riml08
+                             rml08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              n32-to-i32
@@ -429,8 +429,8 @@
                              x86-operand-from-modr/m-and-sib-bytes
                              write-user-rflags
                              !flgi-undefined
-                             rim-size
-                             rim08
+                             riml-size
+                             riml08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              n32-to-i32
@@ -441,9 +441,9 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
-                             rm08
-                             rm32
-                             rim32
+                             rml08
+                             rml32
+                             riml32
                              rr32
                              wr32
                              signed-byte-p
@@ -466,8 +466,8 @@
                              x86-operand-from-modr/m-and-sib-bytes
                              write-user-rflags
                              !flgi-undefined
-                             rim-size
-                             rim08
+                             riml-size
+                             riml08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              n32-to-i32
@@ -478,9 +478,9 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
-                             rm08
-                             rm32
-                             rim32
+                             rml08
+                             rml32
+                             riml32
                              rr32
                              wr32
                              signed-byte-p
@@ -510,8 +510,8 @@
                              x86-operand-from-modr/m-and-sib-bytes
                              write-user-rflags
                              !flgi-undefined
-                             rim-size
-                             rim08
+                             riml-size
+                             riml08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              n32-to-i32
@@ -522,9 +522,9 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
-                             rm08
-                             rm32
-                             rim32
+                             rml08
+                             rml32
+                             riml32
                              rr32
                              wr32
                              signed-byte-p
@@ -549,8 +549,8 @@
                              x86-operand-from-modr/m-and-sib-bytes
                              write-user-rflags
                              !flgi-undefined
-                             rim-size
-                             rim08
+                             riml-size
+                             riml08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              n32-to-i32
@@ -561,9 +561,9 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
-                             rm08
-                             rm32
-                             rim32
+                             rml08
+                             rml32
+                             riml32
                              rr32
                              wr32
                              signed-byte-p
@@ -595,8 +595,8 @@
                              x86-operand-from-modr/m-and-sib-bytes
                              write-user-rflags
                              !flgi-undefined
-                             rim-size
-                             rim08
+                             riml-size
+                             riml08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
                              n32-to-i32
@@ -607,8 +607,8 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
-                             rm32
-                             rim32
+                             rml32
+                             riml32
                              rr32
                              wr32
                              signed-byte-p)
@@ -674,7 +674,7 @@
                        (+ #x18 addr))))
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d
-                       (rm08)
+                       (rml08)
                        (f
                         program-at
                         factorial-effects
@@ -687,7 +687,7 @@
           ("Subgoal 2"
            :in-theory (e/d
                        (fact-init-x86-state
-                        rm08)
+                        rml08)
                        (f
                         program-at
                         factorial-effects

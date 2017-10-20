@@ -1058,6 +1058,7 @@
           (pprogn (f-put-global 'trace-level 0 state)
                   (print-deferred-ttag-notes-summary state)))
          (t state))
+   (f-put-global 'raw-guard-warningp t state)
    (mv-let
     (col state)
     (if (and (eql (f-get-global 'in-verify-flg state) 1)

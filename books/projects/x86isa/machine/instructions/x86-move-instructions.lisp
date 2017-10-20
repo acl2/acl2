@@ -23,7 +23,7 @@
   ;; 89: MOV r/m64, r64
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -142,7 +142,7 @@
   ;; 8B: MOV r64, r/m64
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -293,8 +293,8 @@
 
        ;; Get the offset:
        ((mv flg offset x86)
-        (rim-size offset-size temp-rip :x x86))
-       ((when flg) (!!ms-fresh :rim-size-error flg))
+        (riml-size offset-size temp-rip :x x86))
+       ((when flg) (!!ms-fresh :riml-size-error flg))
 
        ;; Check if the above memory read caused any problems:
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
@@ -350,8 +350,8 @@
 
        ;; Get data from v-addr:
        ((mv flg data x86)
-        (rm-size operand-size v-addr :r x86))
-       ((when flg) (!!ms-fresh :rm-size-error flg))
+        (rml-size operand-size v-addr :r x86))
+       ((when flg) (!!ms-fresh :rml-size-error flg))
 
        ;; Write the data to rAX:
        (x86 (!rgfi-size operand-size *rax* data rex-byte x86))
@@ -368,7 +368,7 @@
   ;; B8 + rd: MOV r64, imm64
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -432,9 +432,9 @@
               4))))
 
        ((mv flg0 imm x86)
-        (rm-size operand-size temp-rip :x x86))
+        (rml-size operand-size temp-rip :x x86))
        ((when flg0)
-        (!!ms-fresh :imm-rm-size-error flg0))
+        (!!ms-fresh :imm-rml-size-error flg0))
 
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
         (+ temp-rip operand-size))
@@ -473,7 +473,7 @@
   ;; C7/0: MOV r/m64, imm32
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -557,9 +557,9 @@
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
        ((mv flg2 imm x86)
-        (rm-size imm-size temp-rip :x x86))
+        (rml-size imm-size temp-rip :x x86))
        ((when flg2)
-        (!!ms-fresh :imm-rm-size-error flg2))
+        (!!ms-fresh :imm-rml-size-error flg2))
        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
         (+ temp-rip imm-size))
        ((when (mbe :logic (not (canonical-address-p temp-rip))
@@ -609,7 +609,7 @@
   ;; LEA r64, m
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -718,7 +718,7 @@
   ;; address-size override prefix.
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -796,7 +796,7 @@
   ;; (Move word to word/doubleword/quadword with sign-extension)
 
   :parents (two-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32
                                                n08-to-i08
                                                n16-to-i16
                                                n32-to-i32
@@ -895,7 +895,7 @@
   ;; (Move word to word/doubleword/quadword with zero-extension)
 
   :parents (two-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))

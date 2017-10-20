@@ -495,7 +495,7 @@ instructions shift the bits of the destination operand to the right
 least significant bit of the destination operand is shifted into the
 CF flag, and the most significant bit is either set or cleared
 depending on the instruction type. The SHR instruction clears the most
-significant bit (see Figure 7-8 in the Intel® 64 and IA-32
+significant bit (see Figure 7-8 in the Intel 64 and IA-32
 Architectures Software Developer s Manual, Volume 1)... The OF flag is
 affected only on 1-bit shifts. For the SAR instruction, the OF flag is
 cleared for all 1-bit shifts. For the SHR instruction, the OF flag is

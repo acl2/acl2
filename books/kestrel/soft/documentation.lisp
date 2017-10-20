@@ -376,7 +376,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defunvar fvar (* ... *) => *)
@@ -463,7 +463,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defun2 sofun (fvar1 ... fvarN) (var1 ... varM)
@@ -635,7 +635,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defchoose2 sofun (bvar1 ... bvarP) (fvar1 ... fvarN) (var1 ... varM)
@@ -761,7 +761,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defun-sk sofun (fvar1 ... fvarN) (var1 ... varM)
@@ -961,7 +961,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defun-inst fun (fvar1 ... fvarN)
@@ -1197,6 +1197,7 @@
      <see topic='@(url function-variable-instantiation)'>applying
      the instantiation</see>
      to the body of @('sofun').
+     The @(':strengthen') value of @('fun') is the same as @('sofun').
      </p>
      </li>
 
@@ -1213,6 +1214,7 @@
      <see topic='@(url function-variable-instantiation)'>applying
      the instantiation</see>
      to the body of @('sofun').
+     The @(':strengthen') value of @('fun') is the same as @('sofun').
      </p>
      </li>
 
@@ -1229,6 +1231,9 @@
      <see topic='@(url function-variable-instantiation)'>applying
      the instantiation</see>
      to the body and guard of @('sofun').
+     The guard of @('fun') is not verified.
+     The @(':strengthen') value of @('fun') is the same as @('sofun').
+     The @(':quant-ok') value of @('fun') is @('t').
      </p>
      </li>
 
@@ -1245,6 +1250,9 @@
      <see topic='@(url function-variable-instantiation)'>applying
      the instantiation</see>
      to the body and guard of @('sofun').
+     The guard of @('fun') is not verified.
+     The @(':strengthen') value of @('fun') is the same as @('sofun').
+     The @(':quant-ok') value of @('fun') is @('t').
      </p>
      </li>
 
@@ -1368,7 +1376,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defthm sothm
@@ -1559,7 +1567,7 @@
 
   :long
 
-  "<h3>Form</h3>
+  "<h3>General Form</h3>
 
    @({
      (defthm-inst thm
@@ -1735,4 +1743,196 @@
    This manual instead suggests
    to enclose each function variable in square brackets,
    e.g. @('sofun[?f][?g][?h]').
+   </p>")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc soft-implementation
+
+  :parents (soft)
+
+  :short "Implementation of SOFT.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc soft-future-work
+
+  :parents (soft)
+
+  :short "Some possible improvements and extensions to SOFT."
+
+  :long
+
+  "<h4>Mutual Recursion</h4>
+
+   <p>
+   SOFT should be extended with the ability to introduce and instantiate
+   mutually recursive functions,
+   perhaps via a new @('mutual-recursion2') macro.
+   </p>
+
+   <h4>Other Well-Founded Relations</h4>
+
+   <p>
+   Currently recursive second-order functions
+   must use @(tsee o<) as their well-founded relation.
+   This could be relaxed, perhaps even to the point of
+   allowing second-order well-founded relations.
+   </p>
+
+   <h4>Other Function and Theorem Introduction Macros</h4>
+
+   <p>
+   Besides second-order versions of
+   @(tsee defun), @(tsee defchoose), and @(tsee defun-sk),
+   we could add support for second-order versions of
+   @(tsee defund), @(tsee defun-nx), @(tsee define), @(tsee defpun),
+   and other function introduction events.
+   @(tsee defun-inst) would generate the same macros for instances.
+   The macros could be called @('defund2'), @('defun-nx2'), etc.
+   </p>
+
+   <p>
+   Under some conditions, it would make sense for @(tsee defun-inst)
+   to instantiate a partial second-order function
+   (introduced, say, via a future @('defpun2') macro)
+   to a total second-order function (i.e. a @(tsee defun2) or @(tsee defun)),
+   when the instantiated @(':domain') or @(':gdomain') restrictions
+   are theorems.
+   </p>
+
+   <p>
+   @(tsee defthm-inst) could also generate instances with the same macros
+   from second-order theorems introduced via
+   @(tsee defthm), @(tsee defrule), and other theorem introduction events.
+   </p>
+
+   <h4>Program Mode</h4>
+
+   <p>
+   Currently SOFT only supports logic-mode second-order funcions.
+   Supporting program-mode functions as well may be useful.
+   </p>
+
+   <h4>Guards of Instances of Second-Order Functions</h4>
+
+   <p>
+   It would be useful to allow
+   the default guards of instances of second-order functions
+   (obtained by instantiating the guards of the second-order functions)
+   to be overridden by stronger guards.
+   </p>
+
+   <p>
+   The <see topic='@(url acl2::guard-theorem)'>guard theorem</see>
+   of a second-order function may be useful
+   (although not sufficient in general)
+   to verifies the guards of instances of the second-order function.
+   A mechanism to enable the use of that theorem would be useful.
+   </p>
+
+   <p>
+   See the future work section of the
+   <a href=\"http://eptcs.web.cse.unsw.edu.au/paper.cgi?ACL22015.3\"
+   >Workshop paper</a>
+   for a more detailed discussion with examples.
+   </p>
+
+   <h4>Lambda Expressions</h4>
+
+   <p>
+   Instantiations could be extended to allow function variables
+   to be replaces with lambda expressions, besides named functions.
+   </p>
+
+   <h4>Transitivity of Instantiations</h4>
+
+   <p>
+   Intuitively,
+   if @('f') is an instance of @('g')
+   and @('g') is an instance of @('h'),
+   then @('f') should be an instance of @('h').
+   This is currently not supported by @(tsee defun-inst),
+   but probably it should be.
+   </p>
+
+   <p>
+   See the future work section of the
+   <a href=\"http://eptcs.web.cse.unsw.edu.au/paper.cgi?ACL22015.3\"
+   >Workshop paper</a>
+   for a more detailed discussion with examples.
+   </p>
+
+   <h4>More Constraints on Function Variables</h4>
+
+   <p>
+   The types of function variables are currently limited to
+   <see topic='@(url acl2::signature)'>signatures</see>
+   with single-value results and with no stobjs.
+   This could be extended to allow multiple-value results and stobjs.
+   Instantiations will have to respect these additional type structures.
+   </p>
+
+   <p>
+   Other than their types, function variables are currently unconstrained.
+   In some cases, it may be useful to specify some logical constraints,
+   resulting in a constrained function as in non-trivial @(tsee encapsulate)s.
+   Instantiations will have to respect these additional constraints.
+   </p>
+
+   <p>
+   The latter extension would overlap with some existing tools,
+   such as @('instance-of-defspec') and @('make-generic-theory').
+   Ideally, the functionality of SOFT and those tools would be integrated.
+   </p>
+
+   <p>
+   Function variables current have guard @('t').
+   It may be useful to allow guards to be specified for function variables.
+   Instantiations will have to match these guards.
+   </p>
+
+   <h4>Automatic Instances</h4>
+
+   <p>
+   Currently, when an instantiation is applied to a term,
+   the table of instances of second-order functions is consulted
+   to find replacements for certain second-order functions,
+   and the application of the instantiation fails
+   if replacements are not found.
+   Thus, all the needed instances must be introduced
+   before applying the instantiation.
+   SOFT could be extended to generate automatically
+   the needed instances of second-order functions.
+   </p>
+
+   <p>
+   SOFT could also be extended with a macro @('defthm2')
+   to prove a second-order theorem via @(tsee defthm)
+   and to record the theorem in a new table,
+   along with information about the involved second-order functions.
+   @(tsee defun-inst) could be extended with
+   the option to generate instances of the second-order theorems
+   that involve the second-order function being instantiated.
+   @('defthm2') could include the option to generate
+   instances of the theorem that correspond
+   to the known instances of the second-order functions
+   that the theorem involves.
+   These extensions would reduce the use of explicit @(tsee defthm-inst)s.
+   </p>
+
+   <p>
+   The convention of including function variables in square brackets
+   in the names of second-order functions and theorems,
+   could be exploited to name the automatically generated
+   function and theorem instances.
+   </p>
+
+   <h4>Default Rule Classes</h4>
+
+   <p>
+   Currently the default rule classes
+   of an instance of a second-order theorem are @('(:rewrite)'),
+   but perhaps the default should be the rule classes
+   of the second-order theorem that is being instantiated.
    </p>")

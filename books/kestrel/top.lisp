@@ -36,8 +36,19 @@
    parts of the Kestrel Books may be moved
    to other locations in the
    <see topic='@(url community-books)'>Community Books</see>.
-   For example, <see topic='@(url std)'>STD</see>
-   includes some Kestrel contributions.
+   For example,
+   <see topic='@(url std)'>STD</see> and
+   <see topic='@(url x86isa)'>X86ISA</see>
+   include some Kestrel contributions.
+   </p>
+   <p>
+   The Kestrel Books build upon, and are meant to extend and be compatible with,
+   the ACL2 system code
+   and various existing libraries such as
+   <see topic='@(url std)'>STD</see>,
+   <see topic='@(url fty)'>FTY</see>,
+   <see topic='@(url seq)'>Seq</see>,
+   and others.
    </p>")
 
 (xdoc::add-resource-directory "kestrel" "images")

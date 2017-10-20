@@ -128,3 +128,11 @@
 (verify-termination implicate) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination add-suffix-to-fn) ; and guards
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "subcor-var") ; for subcor-var1
+
+(verify-termination fsubcor-var) ; and guards

@@ -184,7 +184,7 @@ automatically.</p></li>
 <li><p>The function @(see load-program-into-memory) also accepts
 programs that satisfy @('n64p-byte-alistp').</p></li>
 
-<li><p>Of course, @(see wm08) \(and its friends like @(see
+<li><p>Of course, @(see wml08) \(and its friends like @(see
 write-bytes-to-memory)\) can also be used to write a program to the
 memory.  Initialization of other components of the x86 state can be
 done by using the appropriate updater functions directly.  For

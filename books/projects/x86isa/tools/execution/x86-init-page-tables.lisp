@@ -19,7 +19,7 @@
   :long "<p>Recall that when the value of the field
   @('programmer-level-mode') is <tt>nil</tt>, the x86 model is in its
   supervisor-level mode.  It's only in this mode that memory read and
-  write functions like @(see rm08) and @(see wm08) will do a
+  write functions like @(see rml08) and @(see wml08) will do a
   page-table walk.  See section @(see programmer-level-mode) for
   details.</p>" )
 

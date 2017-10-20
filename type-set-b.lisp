@@ -526,10 +526,30 @@
 ; We return the tail of mapping-pairs whose car is the pair for rune.
 
   (cond ((null mapping-pairs)
-         (er hard 'find-mapping-pairs-tail
-             "We have exhausted the mapping-pairs of the basic symbol ~
-              of ~x0 and failed to find that rune."
-             rune))
+
+; At one time we caused a hard error here, because we expected that this case
+; never happens.  However, it can happen upon redefinition, when rune is no
+; longer a rune.  Here are two examples.
+
+; Example 1:
+;   (defthm my-thm (equal (car (cons x x)) x))
+;   (deftheory my-thy (current-theory :here))
+;   (redef!)
+;   (defthm my-thm (equal (cdr (cons x x)) x)
+;     :hints (("Goal" :in-theory (theory 'my-thy))))
+
+; Example 2:
+;   (defthm my-thm (equal (car (cons x x)) x))
+;   (deftheory my-thy (current-theory :here))
+;   (redef!)
+;   (defthm my-thm (equal (cdr (cons x x)) x) :rule-classes nil)
+;   (in-theory (theory 'my-thy))
+
+; As of October 2017 we believe that this code has been in place for many
+; years, and at this point it seems that the value of the hard error is
+; outweighed by avoiding presentation to users of this obscure error message.
+
+         nil)
         ((equal rune (cdr (car mapping-pairs))) mapping-pairs)
         (t (find-mapping-pairs-tail1 rune (cdr mapping-pairs)))))
 
@@ -568,10 +588,17 @@
    ((null lst) ans)
    (t (let ((mapping-pairs
              (find-mapping-pairs-tail (car lst) mapping-pairs wrld)))
-        (augment-runic-theory1 (cdr lst)
-                               (cdr mapping-pairs)
-                               wrld
-                               (cons (car mapping-pairs) ans))))))
+        (cond
+         (mapping-pairs
+          (augment-runic-theory1 (cdr lst)
+                                 (cdr mapping-pairs)
+                                 wrld
+                                 (cons (car mapping-pairs) ans)))
+         (t
+          (augment-runic-theory1 (cdr lst)
+                                 mapping-pairs
+                                 wrld
+                                 ans)))))))
 
 (defun augment-runic-theory (lst wrld)
 

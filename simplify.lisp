@@ -3843,6 +3843,17 @@
 ; resulting ttree is the one to be associated with the new disjunction created
 ; from the new (shrunken) clause.
 
+; Efficiency Note: If we take the view that the only way we can help ourselves
+; is by knocking off all but one of the literals, then it suffices to apply
+; type-set to just the first two literals of the clause.  If neither is NIL,
+; then we're not going to knock off all but one!  However, (a) it seems
+; unlikely users will forward chain to long lists of disjuncts -- in fact, 2 is
+; the most we've seen, (b) if type-set finds a true literal we can stop
+; checking that clause, which is an efficiency win even if we didn't learn
+; anything useful, and (c) limiting it to just two literals imposes some
+; overhead and coding ugliness.  So, we decided to do it this way and just
+; record our thoughts for posterity.
+
   (cond
    ((endp clause)
     (cond

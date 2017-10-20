@@ -63,7 +63,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rm64-direct-map-helper
+(def-gl-export rml64-direct-map-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl (equal
@@ -93,10 +93,11 @@
 
 (in-theory (e/d* () (rb-and-rm-low-64-for-direct-map-helper-1
                      rb-and-rm-low-64-for-direct-map-helper-2
-                     rm64-direct-map-helper)))
+                     rml64-direct-map-helper)))
 
 (defthm rb-and-rm-low-64-for-direct-map
   (implies (and
+            (64-bit-modep x86) ; added
             (direct-map-p 8 direct-mapped-addr r-w-x  (double-rewrite x86))
             ;; The physical addresses corresponding to
             ;; direct-mapped-addr to (+ 7 direct-mapped-addr) are
@@ -135,7 +136,7 @@
                              n08p
                              unsigned-byte-p
                              signed-byte-p
-                             rm64-direct-map-helper)
+                             rml64-direct-map-helper)
                             (rb-and-rm-low-64-for-direct-map-helper-1
                              rb-and-rm-low-64-for-direct-map-helper-2
                              xlate-equiv-memory-and-xr-mem-from-rest-of-memory
@@ -210,6 +211,7 @@
   ;; lin-addr.
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal page-dir-ptr-table-entry
            (mv-nth 1 (rb 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)
                          r-w-x x86)))
@@ -276,6 +278,7 @@
   ;; where this address lies in the same 1G page as lin-addr.
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal pml4-table-base-addr (pml4-table-base-addr x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
     (equal pdpt-base-addr (pdpt-base-addr lin-addr x86))
@@ -335,6 +338,7 @@
   ;; address lies in the same 1G page as lin-addr.
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86)))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
     (equal pdpt-base-addr (pdpt-base-addr lin-addr (double-rewrite x86)))
@@ -456,8 +460,9 @@
   ///
 
   (defthmd las-to-pas-alt-is-las-to-pas
-    (equal (las-to-pas-alt iteration count lin-addr r-w-x x86)
-           (las-to-pas (- count iteration) (+ iteration lin-addr) r-w-x x86))
+    (implies (64-bit-modep x86) ; added
+             (equal (las-to-pas-alt iteration count lin-addr r-w-x x86)
+                    (las-to-pas (- count iteration) (+ iteration lin-addr) r-w-x x86)))
     :hints (("Goal" :in-theory (e/d* (las-to-pas) ()))))
 
   (defthm xlate-equiv-memory-and-mv-nth-0-las-to-pas-alt-cong
@@ -475,9 +480,10 @@
     :rule-classes :congruence)
 
   (defthm xlate-equiv-memory-with-mv-nth-2-las-to-pas-alt
-    (xlate-equiv-memory
-     (mv-nth 2 (las-to-pas-alt iteration count lin-addr r-w-x x86))
-     (double-rewrite x86))
+    (implies (64-bit-modep x86) ; added
+             (xlate-equiv-memory
+              (mv-nth 2 (las-to-pas-alt iteration count lin-addr r-w-x x86))
+              (double-rewrite x86)))
     :hints (("Goal" :in-theory (e/d* (las-to-pas-alt-is-las-to-pas) ()))))
 
   (defthm xlate-equiv-memory-with-two-mv-nth-2-las-to-pas-alt-cong
@@ -522,6 +528,7 @@
 (defthmd las-to-pas-values-for-same-1G-page-general
   (implies
    (and
+    (64-bit-modep x86) ; added
     (direct-map-p
      8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
      :r (double-rewrite x86))
@@ -668,6 +675,7 @@
 (defthmd las-to-pas-values-for-same-1G-page
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86)))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
     (equal pdpt-base-addr (pdpt-base-addr lin-addr (double-rewrite x86)))
@@ -742,6 +750,7 @@
   ;; xlation-governing-entries-paddrs.
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal pml4-table-base-addr (pml4-table-base-addr x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
     (equal pdpt-base-addr (pdpt-base-addr lin-addr x86))
@@ -820,6 +829,7 @@
  (defthmd all-xlation-governing-entries-paddrs-1G-pages-general
    (implies
     (and
+     (64-bit-modep x86) ; added
      (direct-map-p
       8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
       :r (double-rewrite x86))
@@ -923,6 +933,7 @@
  (defthmd all-xlation-governing-entries-paddrs-1G-pages
    (implies
     (and
+     (64-bit-modep x86) ; added
      (equal pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86)))
      (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
      (equal pdpt-base-addr (pdpt-base-addr lin-addr (double-rewrite x86)))
@@ -1002,6 +1013,7 @@
   ;; xlation-governing-entries-paddrs.
   (implies
    (and
+    (64-bit-modep x86) ; added
     ;; Restricting this rule so that it doesn't apply when lin-addr
     ;; points to a paging entry.
     (syntaxp (not (and (consp lin-addr)
@@ -1113,6 +1125,7 @@
  (defthmd xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr-helper
    (implies
     (and
+     (64-bit-modep x86) ; added
      (equal page-dir-ptr-table-entry-addr
             (page-dir-ptr-table-entry-addr
              lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
@@ -1264,6 +1277,7 @@
 (defthmd xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr
   (implies
    (and
+    (64-bit-modep x86) ; added
     (syntaxp (not (and (consp lin-addr)
                        (or (eq (car lin-addr) 'car)
                            (eq (car lin-addr) 'pml4-table-entry-addr$inline)
@@ -1360,6 +1374,7 @@
 (defthmd all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr
             lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
@@ -1469,6 +1484,7 @@
 (defthm all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
   (implies
    (and
+    (64-bit-modep x86) ; added
     ;; Restrict this rule so that it fires when lin-addr is either (XR
     ;; :RGF *RSI* X86) or (XR :RGF *RDI* X86) or lin-addr.
     (syntaxp (or
@@ -1584,6 +1600,7 @@
   ;; corresponding to this lin-addr has been modified --- the new
   ;; PDPTE is value.
   (implies (and
+            (64-bit-modep x86) ; added
             (equal p-addrs
                    (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)))
             (equal page-dir-ptr-table-entry
@@ -1684,6 +1701,7 @@
   ;; r-w-x as an argument to this function.
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal pml4-table-base-addr (pml4-table-base-addr x86))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86)))
@@ -1768,6 +1786,7 @@
   ;; the level of physical memory.
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr
             lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
@@ -1861,6 +1880,7 @@
   ;; memory.
   (implies
    (and
+    (64-bit-modep x86) ; added
     ;; Restricting this rule so that it doesn't apply when lin-addr
     ;; points to a paging entry.
     (syntaxp (not (and (consp lin-addr)
@@ -1984,6 +2004,7 @@
   ;; have been modified --- the new PDPTE is write-val.
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr
             lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
@@ -2114,6 +2135,7 @@
   ;; have been modified --- the new PDPTE is write-val.
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr
             lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
@@ -2214,6 +2236,7 @@
 (defthm rb-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
   (implies
    (and
+    (64-bit-modep x86) ; added
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr
             lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))

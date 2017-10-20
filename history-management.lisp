@@ -3547,6 +3547,8 @@
          (t (f-put-global 'current-package "ACL2" state))))
   #-acl2-loop-only
   (cond ((live-state-p state)
+         (setf (car *fncall-cache*) nil)
+         (ev-fncall-w-guard1-cache-clear)
          (cond ((and *wormholep*
                      (not (eq wrld (w *the-live-state*))))
                 (push-wormhole-undo-formi 'cloaked-set-w! (w *the-live-state*)
@@ -4209,17 +4211,7 @@
 
 ; Generally speaking, if a member of lst is not a rule name designator, then
 ; some theory function (set-difference-theories, etc.) will have reported it,
-; using check-theory, before we get here.  Now check-theory not only reports
-; errors, but it warns when one is attempting to enable or disable a primitive
-; (either the definition or the executable-counterpart).  We do not warn here;
-; for example, if one submits (in-theory '(cons)) there will be no warning.  It
-; seems good enough to warn with (in-theory (enable cons)).
-
-; Remark.  An entirely different way to handle primitives would be not to
-; associate them with runes.  But as of this writing in Sept. 2017, those
-; primitives have had 'runic-mapping-pairs properties for a long time, and we
-; are nervous about either changing that or ignoring those properties when
-; producing theories (see for example function-theory-fn1).
+; using check-theory, before we get here.
 
   (cond ((atom lst)
          (cond ((null lst)
@@ -8322,7 +8314,7 @@
 
 (defconst *basic-ruler-extenders*
 
-; We ensure that these are sorted; see normalize-ruler-extenders.
+; We ensure that these are sorted, although this may no longer be important.
 
   (let ((lst '(mv-list return-last)))
     (assert$ (strict-symbol-<-sortedp lst)
@@ -8330,7 +8322,7 @@
 
 (defconst *basic-ruler-extenders-plus-lambdas*
 
-; We ensure that these are sorted; see normalize-ruler-extenders.
+; We ensure that these are sorted, although this may no longer be important.
 ; If we change *basic-ruler-extenders* so that the cons of :lambdas to the
 ; front is no longer sorted, then we will have to call sort-symbol-listp.  But
 ; here we got lucky.
@@ -9436,24 +9428,15 @@
          (cond ((member-eq arg '(:otf :otf-flg-override))
                 (value@par arg))
                ((keywordp arg)
-                (let ((name (symbol-name arg)))
-                  (cond ((and (<= 3 (length name))
-                              (equal (subseq name 0 3) "OTF"))
-                         (er@par soft ctx
-                           "We do not allow :do-not-induct hint values in the ~
-                            keyword package whose name starts with \"OTF\", ~
-                            unless the value is :OTF or :OTF-FLG-OVERRIDE, ~
-                            because we suspect you intended :OTF or ~
-                            :OTF-FLG-OVERRIDE in this case.  The value ~x0 is ~
-                            thus illegal."
-                           arg))
-                        (t (value@par arg)))))
+                (er@par soft ctx
+                  "We do not allow :do-not-induct hint values in the keyword ~
+                   package other than :OTF and :OTF-FLG-OVERRIDE.  The value ~
+                   ~x0 is thus illegal."
+                  arg))
                (t (value@par arg))))
         (t (er@par soft ctx
-             "The :do-not-induct hint should be followed by a symbol: either ~
-              T, :QUIT, or the root name to be used in the naming of any ~
-              clauses given byes.  ~x0 is an illegal root name.  See the ~
-              :do-not-induct discussion in :DOC hints."
+             "The :do-not-induct hint should be followed by a symbol.  ~x0 is ~
+              thus illegal.  See the :do-not-induct discussion in :DOC hints."
              arg))))
 
 (defun@par translate-hands-off-hint1 (arg ctx wrld state)
@@ -12102,7 +12085,28 @@
     (cl-set1 ttree)
     (guard-clauses+ (guard name nil wrld)
                     (and debug-p `(:guard (:guard ,name)))
-                    nil nil ens wrld safe-mode gc-off ttree)
+
+; Observe that when we generate the guard clauses for the guard we optimize
+; the stobj recognizers away.  We restrict to the case that the named function
+; is executable, but as of this writing, the guard is always subjected to stobj
+; single-threadedness restrictions, so we really don't need to make that
+; restriction.  We may reconsider upon demand, but if we change the next
+; argument to t, we should be careful to document that even non-executable
+; functions have their guards translated for executability.
+
+; Just to drive the point home that the stobj optimization is appropriate here:
+; Note that the stobj recognizer is always conjoined with the guard, so that
+; the guard is essentially the conjunction
+
+;   (if (stobp <stobj>) <specified-guard> 'nil)
+
+; So we actually have (stobp <stobj>) explicitly present when optimizing the
+; guards on <specified-guard>.
+
+                    (not (eq (getpropc name 'non-executablep
+                                       nil wrld)
+                             t))
+                    nil ens wrld safe-mode gc-off ttree)
     (let ((guard (guard name nil wrld))
           (unnormalized-body
            (getpropc name 'unnormalized-body
@@ -12151,7 +12155,13 @@
                  (fcons-term* 'insist
                               (getpropc name 'split-types-term *t* wrld))
                  (and debug-p `(:guard (:type ,name)))
-                 nil ; stobj-optp: no clear reason for setting this to t
+
+; There seems to be no clear reason for setting stobj-optp here to t.  This
+; decision could easily be reconsidered; we are being conservative here since
+; as we write this comment in Oct. 2017, stobj-optp = nil has been probably
+; been used here since the inception of split-types.
+
+                 nil
                  ens wrld safe-mode gc-off ttree)
                 (let ((cl-set2
                        (if type-clauses ; optimization
@@ -12992,12 +13002,67 @@
   (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
 
 (defun new-disables (theory-tail runic-theory ens wrld)
+
+; This function returns a subset of theory-tail in the same order.  Do not
+; change the order without consulting the case in
+; translate-in-theory-hint(@par) for "disable all primitive functions".
+
   (cond ((endp theory-tail) nil)
         ((and (enabled-runep (car theory-tail) ens wrld)
-              (not (member-eq (car theory-tail) runic-theory)))
+              (not (member-equal (car theory-tail) runic-theory)))
          (cons (car theory-tail)
                (new-disables (cdr theory-tail) runic-theory ens wrld)))
         (t (new-disables (cdr theory-tail) runic-theory ens wrld))))
+
+(defun some-new-disables-1 (theory-tail runic-theory ens wrld)
+
+; Returns (mv allp runes), where runes consists of members of theory-tail that
+; are enabled by ens and do not belong to runic-theory, and allp is true when
+; runes consists of all of theory-tail (in which case the two are eq).
+
+  (cond ((endp theory-tail) (mv t nil))
+        (t (mv-let (allp rest)
+             (some-new-disables-1 (cdr theory-tail) runic-theory ens wrld)
+             (let ((addp (and (enabled-runep (car theory-tail) ens wrld)
+                              (not (member-equal (car theory-tail) runic-theory)))))
+               (cond ((and allp addp)
+                      (mv t theory-tail))
+                     (addp (mv nil (cons (car theory-tail) rest)))
+                     (t (mv nil rest))))))))
+
+(defun some-new-disables (theory-tail runic-theory ens wrld)
+
+; Return a list of runes in theory-tail that are enabled (as per ens) and do
+; not belong to runic-theory, unless all runes in theory-tail have those two
+; properties, in which case return nil.
+
+  (mv-let (allp runes)
+    (some-new-disables-1 theory-tail runic-theory ens wrld)
+    (cond (allp nil)
+          (t runes))))
+
+(defun some-new-enables-1 (theory-tail runic-theory ens wrld)
+
+; See the analogous function some-new-disables-1.
+
+  (cond ((endp theory-tail) (mv t nil))
+        (t (mv-let (allp rest)
+             (some-new-enables-1 (cdr theory-tail) runic-theory ens wrld)
+             (let ((addp (and (not (enabled-runep (car theory-tail) ens wrld))
+                              (member-equal (car theory-tail) runic-theory))))
+               (cond ((and allp addp)
+                      (mv t theory-tail))
+                     (addp (mv nil (cons (car theory-tail) rest)))
+                     (t (mv nil rest))))))))
+
+(defun some-new-enables (theory-tail runic-theory ens wrld)
+
+; See the analogous function some-new-disables.
+
+  (mv-let (allp runes)
+    (some-new-enables-1 theory-tail runic-theory ens wrld)
+    (cond (allp nil)
+          (t runes))))
 
 (defun translate-in-theory-hint (expr chk-boot-strap-fns-flg ctx wrld state)
 
@@ -13014,27 +13079,27 @@
       (pprogn
        (cond
         ((or warning-disabled-p
+             (f-get-global 'boot-strap-flg state)
              (not (and chk-boot-strap-fns-flg
                        (f-get-global 'verbose-theory-warning state))))
          state)
         (t
          (pprogn
-          (let ((new-disables
+          (let* ((definition-minimal-theory
+                   (getpropc 'definition-minimal-theory 'theory
+                             nil ; so, returns nil early in boot-strap
+                             wrld))
                  (new-disables
-                  (getpropc 'definition-minimal-theory 'theory
-                            nil ; so, returns nil early in boot-strap
-                            wrld)
-                  runic-value ens wrld)))
+                  (new-disables definition-minimal-theory runic-value ens
+                                wrld)))
             (cond
              (new-disables
               (warning$ ctx ("Theory")
-                        `("The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 ~
+                        `("The :DEFINITION rule~#0~[ for the built-in ~
+                           function ~&0 is~/s for the built-in functions ~&0 ~
                            are~] disabled by the theory expression ~x1, but ~
-                           because ~#0~[this built-in function is~/these ~
-                           built-in functions are~] given certain special ~
-                           handling, some expansions of ~#0~[its~/their~] ~
-                           calls may still occur.  See :DOC ~
-                           theories-and-primitives."
+                           some expansions of ~#0~[its~/their~] calls may ~
+                           still occur.  See :DOC theories-and-primitives."
                           (:doc theories-and-primitives)
                           (:new-disables ,(strip-base-symbols new-disables))
                           (:rule-class :definition)
@@ -13042,21 +13107,21 @@
                         (strip-base-symbols new-disables)
                         expr))
              (t state)))
-          (let ((new-disables
-                 (new-disables
+          (let* ((executable-counterpart-minimal-theory
                   (getpropc 'executable-counterpart-minimal-theory
                             'theory
                             nil ; so, returns nil early in boot-strap
-                            wrld)
-                  runic-value ens wrld)))
+                            wrld))
+                 (new-disables
+                  (new-disables executable-counterpart-minimal-theory
+                                runic-value ens wrld)))
             (cond
              (new-disables
               (warning$ ctx ("Theory")
-                        `("The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 ~
-                           is~/s for ~&0 are~] disabled by the theory ~
-                           expression ~x1, but because ~#0~[this built-in ~
-                           function is~/these built-in functions are~] given ~
-                           certain special handling, some evaluations of ~
+                        `("The :EXECUTABLE-COUNTERPART rule~#0~[ for the ~
+                           built-in function ~&0 is~/s for the built-in ~
+                           functions ~&0 are~] disabled by the theory ~
+                           expression ~x1, but some evaluations of ~
                            ~#0~[its~/their~] calls may still occur.  See :DOC ~
                            theories-and-primitives."
                           (:doc theories-and-primitives)
@@ -13065,6 +13130,75 @@
                           (:theory-expression ,expr))
                         (strip-base-symbols new-disables)
                         expr))
+             (t state)))
+
+; Below, we warn if the definition of any primitive is being disabled or
+; enabled, with the exception that there is no warning if they are all
+; transitioning from enabled to disabled or vice-versa.  (The preceding case
+; already handles this for executable-counterparts.)  The exception covers the
+; case that one transitions from some very small theory, e.g., (theory
+; 'minimal-theory), back to a more "normal" theory, e.g., (theory
+; 'ground-zero).  An entirely different way to handle primitives would be not
+; to associate them with runes.  But as of this writing in Oct. 2017, those
+; primitives have had 'runic-mapping-pairs properties for a long time, and we
+; are nervous about either changing that or ignoring those properties when
+; producing theories (see for example function-theory-fn1).
+
+; Note that the code below doesn't warn when we enable a primitive that is
+; already enabled.  For example, immediately after starting up ACL2, the event
+; (in-theory (enable cons)) produces no warning, because the definition of cons
+; was already enabled and warnings are based on the theory expression, as
+; opposed to the theory it produces.  It might be feasible to let
+; union-current-theory-fn warn when it encounters a primitive, much as we cause
+; errors when theory functions encounter bad runes.  But that's really not the
+; right thing to do; for example, for all we know a macro is generating the
+; expression (set-different-theories ... (enable ...)), with no intention of
+; enabling anything.
+
+          (let* ((acl2-primitives-theory
+                  (getpropc 'acl2-primitives 'theory
+                            nil ; so, returns nil early in boot-strap
+                            wrld))
+                 (new-primitive-disables
+                  (some-new-disables acl2-primitives-theory runic-value ens
+                                     wrld))
+                 (new-primitive-enables
+
+; The following is nil if all definitions of primitives are disabled about to
+; be enabled; see the discussion above.
+
+                  (some-new-enables acl2-primitives-theory runic-value ens wrld)))
+            (cond
+             ((or new-primitive-disables new-primitive-enables)
+              (warning$ ctx ("Theory")
+                        `("There is no effect from disabling or enabling ~
+                           :DEFINITION rules for primitive functions (see ~
+                           :DOC primitive).  For the expression ~x0, the ~
+                           attempt to ~@1 will therefore have no effect for ~
+                           ~#2~[its definition~/their definitions~].  See ~
+                           :DOC theories-and-primitives."
+                          (:doc theories-and-primitives)
+                          (:new-primitive-disables ,new-primitive-disables)
+                          (:new-primitive-enables ,new-primitive-enables)
+                          (:theory-expression ,expr))
+                        expr
+                        (cond
+                         ((and new-primitive-disables new-primitive-enables)
+                          (msg "disable ~&0 and enable ~&1"
+                               (strip-base-symbols new-primitive-disables)
+                               (strip-base-symbols new-primitive-enables)))
+                         (new-primitive-disables
+                          (msg "disable ~&0"
+                               (strip-base-symbols new-primitive-disables)))
+                         (t ; new-primitive-enables
+                          (msg "enable ~&0"
+                               (strip-base-symbols new-primitive-enables))))
+                        (cond
+                         ((or (and new-primitive-disables new-primitive-enables)
+                              (cdr new-primitive-disables)
+                              (cdr new-primitive-enables))
+                          1)
+                         (t 0))))
              (t state))))))
        (value runic-value)))))
 
@@ -13087,24 +13221,25 @@
      (prog2$
       (cond
        ((or warning-disabled-p
+            (f-get-global 'boot-strap-flg state)
             (not (and chk-boot-strap-fns-flg
                       (f-get-global 'verbose-theory-warning state))))
         nil)
        (t
         (progn$
-         (let ((new-disables
+         (let* ((definition-minimal-theory
+                  (getpropc 'definition-minimal-theory 'theory
+                            nil ; so, returns nil early in boot-strap
+                            wrld))
                 (new-disables
-                 (getpropc 'definition-minimal-theory 'theory
-                           nil ; so, returns nil early in boot-strap
-                           wrld)
-                 runic-value ens wrld)))
+                 (new-disables definition-minimal-theory runic-value ens
+                               wrld)))
            (cond
             (new-disables
              (warning$@par ctx ("Theory")
-               `("The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 are~] ~
-                  disabled by the theory expression ~x1, but because ~
-                  ~#0~[this built-in function is~/these built-in functions ~
-                  are~] given certain special handling, some expansions of ~
+               `("The :DEFINITION rule~#0~[ for the built-in function ~&0 ~
+                  is~/s for the built-in functions ~&0 are~] disabled by the ~
+                  theory expression ~x1, but some expansions of ~
                   ~#0~[its~/their~] calls may still occur.  See :DOC ~
                   theories-and-primitives."
                  (:doc theories-and-primitives)
@@ -13114,21 +13249,21 @@
                (strip-base-symbols new-disables)
                expr))
             (t nil)))
-         (let ((new-disables
-                (new-disables
+         (let* ((executable-counterpart-minimal-theory
                  (getpropc 'executable-counterpart-minimal-theory
                            'theory
                            nil ; so, returns nil early in boot-strap
-                           wrld)
-                 runic-value ens wrld)))
+                           wrld))
+                (new-disables
+                 (new-disables executable-counterpart-minimal-theory
+                               runic-value ens wrld)))
            (cond
             (new-disables
              (warning$@par ctx ("Theory")
-               `("The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 is~/s for ~&0 ~
-                  are~] disabled by the theory expression ~x1, but because ~
-                  ~#0~[this built-in function is~/these built-in functions ~
-                  are~] given certain special handling, some evaluations of ~
-                  ~#0~[its~/their~] calls may still occur.  See :DOC ~
+               `("The :EXECUTABLE-COUNTERPART rule~#0~[ for the built-in ~
+                  function ~&0 is~/s for the built-in functions ~&0 are~] ~
+                  disabled by the theory expression ~x1, but some evaluations ~
+                  of ~#0~[its~/their~] calls may still occur.  See :DOC ~
                   theories-and-primitives."
                  (:doc theories-and-primitives)
                  (:new-disables ,(strip-base-symbols new-disables))
@@ -13136,6 +13271,50 @@
                  (:theory-expression ,expr))
                (strip-base-symbols new-disables)
                expr))
+            (t nil)))
+
+; For the next case, see the correponding comment in
+; translate-in-theory-hint@par.
+
+         (let* ((acl2-primitives-theory
+                 (getpropc 'acl2-primitives 'theory
+                           nil ; so, returns nil early in boot-strap
+                           wrld))
+                (new-primitive-disables
+                 (some-new-disables acl2-primitives-theory runic-value ens
+                                    wrld))
+                (new-primitive-enables
+                 (some-new-enables acl2-primitives-theory runic-value ens wrld)))
+           (cond
+            ((or new-primitive-disables new-primitive-enables)
+             (warning$@par ctx ("Theory")
+               `("There is no effect from disabling or enabling :DEFINITION ~
+                  rules for primitive functions (see :DOC primitive).  For ~
+                  the expression ~x0, the attempt to ~@1 will therefore have ~
+                  no effect for ~#2~[its definition~/their definitions~].  ~
+                  See :DOC theories-and-primitives."
+                 (:doc theories-and-primitives)
+                 (:new-primitive-disables ,new-primitive-disables)
+                 (:new-primitive-enables ,new-primitive-enables)
+                 (:theory-expression ,expr))
+               expr
+               (cond
+                ((and new-primitive-disables new-primitive-enables)
+                 (msg "disable ~&0 and enable ~&1"
+                      (strip-base-symbols new-primitive-disables)
+                      (strip-base-symbols new-primitive-enables)))
+                (new-primitive-disables
+                 (msg "disable ~&0"
+                      (strip-base-symbols new-primitive-disables)))
+                (t ; new-primitive-enables
+                 (msg "enable ~&0"
+                      (strip-base-symbols new-primitive-enables))))
+               (cond
+                ((or (and new-primitive-disables new-primitive-enables)
+                     (cdr new-primitive-disables)
+                     (cdr new-primitive-enables))
+                 1)
+                (t 0))))
             (t nil))))))
       (value@par runic-value)))))
 

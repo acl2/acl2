@@ -251,7 +251,7 @@
   :hints (("Goal" :in-theory (e/d* () ())))
   :rule-classes ((:rewrite :loop-stopper ((addr2 addr1)))))
 
-;; Theorems about rm64 and wm64:
+;; Theorems about rml64 and wml64:
 
 ;; rm-low-64 and wm-low-64:
 

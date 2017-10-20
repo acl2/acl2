@@ -169,6 +169,16 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    MAGIC-EV-FNCALL
+    ARGLISTP
+    CONS-TERM*
+    FSUBCOR-VAR
+    IGNORABLE IRRELEVANT OPTIMIZE ; from declare forms
+
+; Symbols below should be subtracted from *acl2-exports*.
+
+    ORACLE-APPLY ORACLE-APPLY-RAW ORACLE-FUNCALL ; to be removed
+
     ))
 
 (defconst *special-ops*
