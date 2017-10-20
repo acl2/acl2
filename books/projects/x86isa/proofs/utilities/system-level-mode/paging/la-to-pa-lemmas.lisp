@@ -345,9 +345,12 @@
   :rule-classes :congruence)
 
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa
-  (xlate-equiv-memory
-   (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-   (double-rewrite x86))
+  ;; without the 64-bit mode hyp, this theorem is not true,
+  ;; because ia32e-la-to-pa may mark bits in the state
+  (implies (64-bit-modep x86)
+           (xlate-equiv-memory
+            (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
+            (double-rewrite x86)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (xlate-equiv-memory)
                             (bitops::logand-with-negated-bitmask
@@ -360,20 +363,27 @@
            (xlate-equiv-memory
             (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86-1))
             (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86-2))))
-  :rule-classes :congruence)
+  :rule-classes :congruence
+  ;; add the following after adding 64-bit mode hyp to previous theorem:
+  :hints (("Goal" :in-theory (enable xlate-equiv-memory))))
 
 (defthm two-page-walks-ia32e-la-to-pa
-  (and
+  (implies
+   ;; the 64-bit mode hyp makes the proof of this theorem easy
+   ;; (via xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa above),
+   ;; but could this hyp be removed from here?
+   (64-bit-modep x86)
+   (and
 
-   (equal
-    (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1
-                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
-    (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 x86)))
+    (equal
+     (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1
+                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
+     (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 x86)))
 
-   (equal
-    (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1
-                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
-    (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 x86))))
+    (equal
+     (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1
+                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
+     (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 x86)))))
 
   :hints (("Goal" :in-theory (e/d* () (ia32e-la-to-pa)))))
 
@@ -444,9 +454,13 @@
   :rule-classes :congruence)
 
 (defthm xlate-equiv-memory-with-mv-nth-2-las-to-pas
-  (xlate-equiv-memory
-   (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
-   (double-rewrite x86))
+  ;; the 64-bit mode hyp makes the proof of this theorem easy
+  ;; (via xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa),
+  ;; but could this hyp be removed from here?
+  (implies (64-bit-modep x86)
+           (xlate-equiv-memory
+            (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
+            (double-rewrite x86)))
   :hints (("Goal" :induct (las-to-pas n lin-addr r-w-x x86))))
 
 (defthm xlate-equiv-memory-with-two-mv-nth-2-las-to-pas-cong
