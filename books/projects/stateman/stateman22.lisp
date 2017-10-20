@@ -6,7 +6,7 @@
 ; (ld "stateman22.lisp" :ld-pre-eval-print t)
 ; (certify-book "stateman22")
 
-(in-package "ACL2")
+(in-package "SMAN")
 
 (set-state-ok t)
 
@@ -7003,4 +7003,7 @@
 (memoize 'memoizable-meta-!r)
 (memoize 'memoizable-meta-mod)
 (memoize 'memoizable-meta-<)
-(memoize 'sublis-var1 :condition '(and (null alist) (consp form) (eq (car form) 'HIDE)))
+(memoize 'acl2::sublis-var1
+         :condition '(and (null acl2::alist)
+                          (consp acl2::form)
+                          (eq (car acl2::form) 'HIDE)))
