@@ -10,6 +10,8 @@
 
 (in-package "APT")
 
+(include-book "utilities/top")
+
 (include-book "restrict")
 (include-book "restrict-design")
 (include-book "restrict-reference")
@@ -115,3 +117,5 @@
 (defxdoc implementation
   :parents (apt)
   :short "Implementation of the APT tools.")
+
+(xdoc::order-subtopics implementation (utilities) t)

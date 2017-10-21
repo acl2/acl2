@@ -137,6 +137,7 @@
                          keyword-value-list-to-alist
                          lambda-body
                          lambda-formals
+                         macro-required-args
                          make-implication
                          make-lambda
                          make-paired-name
