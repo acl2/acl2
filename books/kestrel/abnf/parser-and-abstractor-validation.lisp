@@ -13,6 +13,9 @@
 (include-book "parser")
 (include-book "abstractor")
 
+; (depends-on "core-rules.txt")
+; (depends-on "concrete-syntax-rules.txt")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc parser-and-abstractor-validation

@@ -18,6 +18,13 @@
 (include-book "parser")
 (include-book "abstractor")
 
+; (depends-on "uri-grammar.txt")
+; (depends-on "http-grammar.txt")
+; (depends-on "imf-grammar.txt")
+; (depends-on "smtp-grammar.txt")
+; (depends-on "imap-grammar.txt")
+; (depends-on "json-grammar.txt")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc examples
