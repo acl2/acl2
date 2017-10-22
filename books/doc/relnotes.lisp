@@ -428,6 +428,12 @@
  <p>Added file @('system/to-do.txt') to list some potential developer
  tasks.</p>
 
+ <p>Fixed a bug in the package redefinition utility in community book
+ @('books/misc/redef-pkg.lisp').</p>
+
+ <p>Defined a constant @(tsee *acl2-system-exports*) that extends @(tsee
+ *acl2-exports*) for system programmers.</p>
+
  ")
 
 (defxdoc note-7-2-books

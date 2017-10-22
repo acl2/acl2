@@ -198,7 +198,7 @@
 ;;; End new code
 
   (let ((package-entry
-         (and (not (global-val 'boot-strap-flg w))
+         (and (not (f-get-global 'boot-strap-flg state))
               (find-package-entry
                name
                (global-val 'known-package-alist w)))))
@@ -231,8 +231,8 @@
         ((equal name "")
 
 ; In Allegro CL, "" is prohibited because it is already a nickname for the
-; KEYWORD package.  But in GCL we could prove nil up through v2-7 by certifying
-; the following book with the indicated portcullis:
+; KEYWORD package.  But in (non-ANSI, at least) GCL we could prove nil up
+; through v2-7 by certifying the following book with the indicated portcullis:
 
 ; (in-package "ACL2")
 ;
@@ -307,7 +307,7 @@
 ; In order to build a profiling image for GCL, we have observed a need to avoid
 ; going into safe-mode when building the system.
 
-          (not (global-val 'boot-strap-flg w))))
+          (not (f-get-global 'boot-strap-flg state))))
         (er-let*
          ((pair (simple-translate-and-eval form nil nil
                                            "The second argument to defpkg"
@@ -404,7 +404,7 @@ nil
 ; Warning: In maybe-push-undo-stack and maybe-pop-undo-stack we rely
 ; on the fact that the symbol name-PACKAGE is new!
 
-                          (chk-just-new-name base-symbol
+                          (chk-just-new-name base-symbol nil
                                              'theorem nil ctx w state)
                           (prog2$
                            (chk-package-reincarnation-import-restrictions

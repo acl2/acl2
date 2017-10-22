@@ -204,6 +204,7 @@
 (include-book "tools/run-script" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
 (include-book "system/event-names" :dir :system)
+(include-book "system/acl2-system-exports" :dir :system)
 
 ;; [Jared] removing these to speed up the manual build
 ;; BOZO should we put them back in?
