@@ -12,9 +12,11 @@
 
 (include-book "kestrel/utilities/defchoose-queries" :dir :system)
 (include-book "kestrel/utilities/defun-sk-queries" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)
+(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
@@ -70,8 +72,20 @@
     (and (symbolp funvar)
          (not (null (assoc-eq funvar table))))))
 
-(define defunvar-fn (funvar arguments arrow result)
-  :returns (event (or (pseudo-event-formp event) (null event)))
+(define defunvar-fn ((funvar "Input to @(tsee defunvar).")
+                     (arguments "Input to @(tsee defunvar).")
+                     (arrow "Input to @(tsee defunvar).")
+                     (result "Input to @(tsee defunvar).")
+                     (verbose "Input to @(tsee defunvar).")
+                     (call pseudo-event-formp "Call to @(tsee defunvar).")
+                     (ctx "Context for errors.")
+                     state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (event (or (pseudo-event-formp event) (null event)))
+               state)
+  :verify-guards nil
   :short "Validate the inputs to @(tsee defunvar)
           and generate the event form to submit."
   :long
@@ -79,19 +93,31 @@
    Similary to @(tsee *-listp),
    any @('*') and @('=>') symbol (i.e. in any package) is allowed.
    </p>"
-  (b* (((unless (symbolp funvar))
-        (raise "~x0 must be a name." funvar))
+  (b* ((wrld (w state))
+       ((unless (symbolp funvar))
+        (er-soft+ ctx t nil "~x0 must be a name." funvar))
        ((unless (*-listp arguments))
-        (raise "~x0 must be a list (* ... *)." arguments))
+        (er-soft+ ctx t nil "~x0 must be a list (* ... *)." arguments))
        ((unless (and (symbolp arrow)
                      (equal (symbol-name arrow) "=>")))
-        (raise "~x0 must be =>." arrow))
+        (er-soft+ ctx t nil "~x0 must be =>." arrow))
        ((unless (and (symbolp result)
                      (equal (symbol-name result) "*")))
-        (raise "~x0 must be *." result)))
-    `(progn
-       (defstub ,funvar ,arguments ,arrow ,result)
-       (table function-variables ',funvar nil))))
+        (er-soft+ ctx t nil "~x0 must be *." result))
+       ((unless (booleanp verbose))
+        (er-soft+ ctx t nil "~x0 must be T or NIL." verbose))
+       ((when (funvarp funvar wrld))
+        (b* ((arity (arity funvar wrld)))
+          (if (= arity (len arguments))
+              (prog2$ (cw "~%The call ~x0 is redundant.~%" call)
+                      (value `(value-triple :invisible)))
+            (er-soft+ ctx t nil "A function variable ~x0 with arity ~x1 ~
+                                 already exists.~%" funvar arity))))
+       (event `(progn
+                 (defstub ,funvar ,arguments ,arrow ,result)
+                 (table function-variables ',funvar nil)
+                 (value-triple ',funvar))))
+    (value event)))
 
 (defsection defunvar-implementation
   :short "Implementation of @(tsee defunvar)."
@@ -99,8 +125,20 @@
   "@(def defunvar)
    @(def acl2::defunvar)"
 
-  (defmacro defunvar (funvar arguments arrow result)
-    `(make-event (defunvar-fn ',funvar ',arguments ',arrow ',result)))
+  (defmacro defunvar (&whole call
+                             funvar arguments arrow result &key verbose)
+    (control-screen-output
+     verbose
+     `(make-event (defunvar-fn
+                    ',funvar
+                    ',arguments
+                    ',arrow
+                    ',result
+                    ',verbose
+                    ',call
+                    (cons 'defunvar ',funvar)
+                    state)
+                  :on-behalf-of :quiet)))
 
   (defmacro acl2::defunvar (&rest args)
     `(defunvar ,@args)))
@@ -112,8 +150,17 @@
   "@(def show-defunvar)
    @(def acl2::show-defunvar)"
 
-  (defmacro show-defunvar (funvar arguments arrow result)
-    `(defunvar-fn ',funvar ',arguments ',arrow ',result))
+  (defmacro show-defunvar (&whole call
+                                  funvar arguments arrow result &key verbose)
+    `(defunvar-fn
+       ',funvar
+       ',arguments
+       ',arrow
+       ',result
+       ',verbose
+       ',call
+       (cons 'defunvar ',funvar)
+       state))
 
   (defmacro acl2::show-defunvar (&rest args)
     `(show-defunvar ,@args)))

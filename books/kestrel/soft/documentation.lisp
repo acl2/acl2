@@ -379,7 +379,8 @@
   "<h3>General Form</h3>
 
    @({
-     (defunvar fvar (* ... *) => *)
+     (defunvar fvar (* ... *) => *
+       :verbose ...)
    })
 
    <h3>Inputs</h3>
@@ -407,6 +408,20 @@
      <p>
      A list of zero or more @('*') signs,
      which defines the arity of @('fvar').
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':verbose ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @('t') to show all the output;
+     @('nil') (the default) to suppress all the non-error output.
      </p>
 
      </blockquote>

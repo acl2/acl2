@@ -16,6 +16,7 @@
 
 (defpkg "SOFT" (append *std-pkg-symbols*
                        '(body
+                         control-screen-output
                          defchoose-body
                          defchoose-bound-vars
                          defchoose-strengthen
@@ -29,6 +30,7 @@
                          defun-sk-info->strengthen
                          defun-sk-info->witness
                          defun-sk-quantifier-p
+                         er-soft+
                          fargs
                          flambdap
                          fn-symb
