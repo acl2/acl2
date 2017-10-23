@@ -1,3 +1,10 @@
+; Copyright (C) 2014, ForrestHunt, Inc.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+; Symbolic State Management -- Version 22
+; J Strother Moore
+; Fall/Winter, 2014/2015
+; Georgetown, TX and Edinburgh, Scotland
+
 #|| Certification:
 
 ; (ld "byte-addressed-state.lisp" :ld-pre-eval-print t)

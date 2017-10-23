@@ -33,3 +33,5 @@ one at the top-level of an ACL2 session.
 
 After the publication of the Stateman paper, it was decided to put the
 stateman work in a separate package named "SMAN" (contributed by David Rager).
+To keep things simple, David Rager assigned the copyright from these changes
+to ForrestHunt, Inc.
