@@ -532,7 +532,7 @@ set to the most-significant bit of the original operand.</p>"
   (b* ((size+1 (1+ size))
        (size-1 (1- size))
        (neg-size-1 (- size-1))
-       (size-mask (1- (expt 2 size)))
+;       (size-mask (1- (expt 2 size)))
        (fn-name (mk-name "SAR-SPEC-" size))
        (?str-nbits (if (eql size 8) "08" size)))
 
@@ -565,8 +565,12 @@ set to the most-significant bit of the original operand.</p>"
                                                     dst)
                                                   ,neg-size-1))))
                         1)
-                   (the (unsigned-byte ,size)
-                     (logior ,size-mask raw-result-not-sign-extended))
+                   (loghead ,size
+                            (ash
+                             (logext ,size dst)
+                             neg-src))
+;                   (the (unsigned-byte ,size)
+;                     (logior ,size-mask raw-result-not-sign-extended))
                  raw-result-not-sign-extended))
               (result (mbe :logic (n-size ,size raw-result)
                            :exec raw-result))
