@@ -151,7 +151,8 @@
        (logicp x wrld))
   :enabled t)
 
-(define formals+ ((fn (fn/lambda-p fn wrld))
+(define formals+ ((fn (or (function-namep fn wrld)
+                          (pseudo-lambdap fn)))
                   (wrld plist-worldp-with-formals))
   :returns (formals symbol-listp)
   :parents (world-queries)
@@ -175,13 +176,14 @@
               the formals ~x0 of ~x1 are not ~
               a NIL-terminated list of symbols."
              formals fn)))
-  :guard-hints (("Goal" :in-theory (enable fn/lambda-p lambdap))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
-(define arity+ ((fn (fn/lambda-p fn wrld))
+(define arity+ ((fn (or (function-namep fn wrld)
+                        (pseudo-lambdap fn)))
                 (wrld plist-worldp-with-formals))
   :returns (result natp
-                  :hyp (fn/lambda-p fn wrld)
-                  :hints (("Goal" :in-theory (enable fn/lambda-p lambdap arity))))
+                   :hyp (or (function-namep fn wrld) (pseudo-lambdap fn))
+                   :hints (("Goal" :in-theory (enable arity pseudo-lambdap))))
   :parents (world-queries)
   :short "Logic-friendly variant of @(tsee arity)."
   :long
@@ -193,7 +195,7 @@
    This utility also works on lambda expressions.
    </p>"
   (arity fn wrld)
-  :guard-hints (("Goal" :in-theory (enable fn/lambda-p lambdap))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 (define definedp ((fn (logic-function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)
