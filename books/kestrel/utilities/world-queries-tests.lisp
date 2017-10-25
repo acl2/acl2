@@ -319,6 +319,12 @@
  (assert-equal (body 'p t (w state)) '(natp x))
  (assert-equal (ubody 'p (w state)) '(if (natp x) (natp '3) 'nil)))
 
+(assert-equal (ubody '(lambda (x y) (cons x (h '3))) (w state))
+              '(cons x (h '3)))
+
+(assert-equal (ubody '(lambda (a) (h a '"abc")) (w state))
+              '(h a '"abc"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*

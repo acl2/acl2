@@ -234,26 +234,34 @@
              non-executablep fn)))
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
-(define ubody ((fn (and (logic-function-namep fn wrld)
-                        (definedp fn wrld)))
+(define ubody ((fn (or (and (logic-function-namep fn wrld)
+                            (definedp fn wrld))
+                       (pseudo-lambdap fn)))
                (wrld plist-worldp))
-  :returns (body pseudo-termp)
+  :returns (body pseudo-termp
+                 :hyp (or (symbolp fn) (pseudo-lambdap fn))
+                 :hints (("Goal" :in-theory (enable pseudo-lambdap))))
   :parents (world-queries)
-  :short "Unnormalized body of a logic-mode defined function."
+  :short "Unnormalized body of a logic-mode defined named function,
+          or body of a lambda expression."
   :long
   "<p>
-   The check that the body is a pseudo-term should always succeed,
+   The check that the unnormalized body of a named function is a pseudo-term,
+   should always succeed,
    but it allows us to prove the return type theorem for this function
    without strengthening the guard @(tsee plist-worldp) on @('wrld').
    The theorem may be useful when proving properties (e.g. verify guards)
    of functions that call this function.
    </p>"
-  (b* ((body (getpropc fn 'unnormalized-body nil wrld)))
-    (if (pseudo-termp body)
-        body
-      (raise "Internal error: ~
-              the unnormalized body ~x0 of ~x1 is not a pseudo-term."
-             body fn))))
+  (cond ((symbolp fn)
+         (b* ((body (getpropc fn 'unnormalized-body nil wrld)))
+           (if (pseudo-termp body)
+               body
+             (raise "Internal error: ~
+                     the unnormalized body ~x0 of ~x1 is not a pseudo-term."
+                    body fn))))
+        (t (lambda-body fn)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 (define unwrapped-nonexec-body ((fn (and (logic-function-namep fn wrld)
                                          (definedp fn wrld)
