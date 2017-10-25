@@ -344,3 +344,37 @@ that.
 [Quoted text hidden]
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Fix handling of state result in old-style signatures without state argument.}}
+
+Below is the relevant email thread.
+
+From: Matt Kaufmann <kaufmann@cs.utexas.edu>
+Subject: Re: Old-style signature with output state
+Date: October 24, 2017 at 5:20:40 AM PDT
+To: Alessandro Coglio <coglio@kestrel.edu>
+
+Wow, weird!  I'll be it's easy to fix.  May I add it to
+books/system/to-do.txt and email acl2-devel about it?  Or, feel free
+to do so (or even to forward this email if you like).
+
+Thanks for letting me know --
+-- Matt
+Alessandro Coglio <coglio@kestrel.edu> writes:
+
+Hi Matt,
+
+[...]
+
+I found that the following is accepted by ACL2, even though my reading of :doc
+signature is that state may appear in the result of the signature only if it
+appears in the formals:
+
+(encapsulate
+ ((f (x) state))
+ (local (defun f (x) x)))
+
+However, the stobjs-out property of f is (nil), indicating that the state output
+variable has been treated like an ordinary variable.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
