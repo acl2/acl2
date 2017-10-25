@@ -162,7 +162,7 @@
    but it has a stronger guard
    and includes a run-time check (which should always succeed) on the result
    that allows us to prove the return type theorem
-   without strengthening the guard on the world argument.
+   without strengthening the guard on @('wrld').
    </p>
    <p>
    This utility also works on lambda expressions.
@@ -222,9 +222,7 @@
   "<p>
    The check that the non-executable status is a boolean should always succeed,
    but it allows us to prove the return type theorem for this function
-   without strengthening the guard @(tsee plist-worldp) on @('wrld').
-   The theorem may be useful when proving properties (e.g. verify guards)
-   of functions that call this function.
+   without strengthening the guard on @('wrld').
    </p>"
   (b* ((non-executablep (getpropc fn 'non-executablep nil wrld)))
     (if (booleanp non-executablep)
@@ -249,9 +247,7 @@
    The check that the unnormalized body of a named function is a pseudo-term,
    should always succeed,
    but it allows us to prove the return type theorem for this function
-   without strengthening the guard @(tsee plist-worldp) on @('wrld').
-   The theorem may be useful when proving properties (e.g. verify guards)
-   of functions that call this function.
+   without strengthening the guard on @('wrld').
    </p>"
   (cond ((symbolp fn)
          (b* ((body (getpropc fn 'unnormalized-body nil wrld)))
@@ -300,9 +296,7 @@
    <p>
    The check that the unwrapped body is a pseudo-term should always succeed,
    but it allows us to prove the return type theorem for this function
-   without strengthening the guard @(tsee plist-worldp) on @('wrld').
-   The theorem may be useful when proving properties (e.g. verify guards)
-   of functions that call this function.
+   without strengthening the guard on @('wrld').
    </p>"
   (let ((body (ubody fn wrld)))
     (if (throw-nonexec-error-p body fn (formals fn wrld))
@@ -329,7 +323,7 @@
    but it has a stronger guard
    and includes a run-time check (which should always succeed) on the result
    that allows us to prove the return type theorem
-   without strengthening the guard on the world argument.
+   without strengthening the guard on @('wrld').
    </p>"
   (b* ((result (stobjs-in fn wrld)))
     (if (symbol-listp result)
@@ -351,7 +345,7 @@
    but it has a stronger guard
    and includes a run-time check (which should always succeed) on the result
    that allows us to prove the return type theorem
-   without strengthening the guard on the world argument.
+   without strengthening the guard on @('wrld').
    </p>"
   (b* ((result (stobjs-out fn wrld)))
     (if (symbol-listp result)
@@ -423,7 +417,7 @@
    but it has a stronger guard
    and includes a run-time check (which should always succeed) on the result
    that allows us to prove the return type theorem
-   without strengthening the guard on the world argument.
+   without strengthening the guard on @('wrld').
    </p>"
   (b* ((clique (irecursivep fn wrld)))
     (if (symbol-listp clique)
@@ -449,9 +443,7 @@
    should always succeed,
    but they allow us to verify the guards of this function
    and to prove the return type theorem for this function,
-   without strengthening the guard @(tsee plist-worldp) on @('wrld').
-   The theorem may be useful when proving properties (e.g. verify guards)
-   of functions that call this function.
+   without strengthening the guard on @('wrld').
    </p>"
   (b* ((justification (getpropc fn 'justification nil wrld))
        ((unless (weak-justification-p justification))
@@ -479,9 +471,7 @@
    should always succeed,
    but they allow us to verify the guards of this function
    and to prove the return type theorem for this function,
-   without strengthening the guard @(tsee plist-worldp) on @('wrld').
-   The theorem may be useful when proving properties (e.g. verify guards)
-   of functions that call this function.
+   without strengthening the guard on @('wrld').
    </p>"
   (b* ((justification (getpropc fn 'justification nil wrld))
        ((unless (weak-justification-p justification))
@@ -514,9 +504,7 @@
    should always succeed,
    but they allow us to verify the guards of this function
    and to prove the return type theorem for this function,
-   without strengthening the guard @(tsee plist-worldp) on @('wrld').
-   The theorem may be useful when proving properties (e.g. verify guards)
-   of functions that call this function.
+   without strengthening the guard on @('wrld').
    </p>"
   (b* ((justification (getpropc fn 'justification nil wrld))
        ((unless (weak-justification-p justification))
@@ -546,9 +534,7 @@
    should always succeed,
    but they allow us to verify the guards of this function
    and to prove the return type theorem for this function,
-   without strengthening the guard @(tsee plist-worldp) on @('wrld').
-   The theorem may be useful when proving properties (e.g. verify guards)
-   of functions that call this function.
+   without strengthening the guard on @('wrld').
    </p>"
   (b* ((justification (getpropc fn 'justification nil wrld))
        ((unless (weak-justification-p justification))
@@ -681,7 +667,7 @@
    but it has a stronger guard
    and includes a run-time check (which should always succeed) on the result
    that allows us to prove the return type theorem
-   without strengthening the guard on the world argument.
+   without strengthening the guard on @('wrld').
    </p>"
   (b* ((formula (thm-formula thm wrld)))
     (if (pseudo-termp formula)
