@@ -327,6 +327,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (uguard 'atom (w state)) *t*)
+
+(assert-equal (uguard 'car (w state)) '(if (consp x) 't (equal x 'nil)))
+
+(must-succeed*
+ (defun f (x) (declare (xargs :guard (natp x))) x)
+ (assert-equal (uguard 'f (w state)) '(natp x)))
+
+(assert-equal (uguard '(lambda (z y) (binary-+ y (cons z '2))) (w state)) *t*)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (must-succeed*
  (defun-nx f (x) (cons (list x) (list x)))
  (assert-equal (ubody 'f (w state))

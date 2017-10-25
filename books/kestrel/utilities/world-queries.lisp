@@ -261,6 +261,42 @@
         (t (lambda-body fn)))
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
+(define uguard ((fn pseudo-fn/lambda-p) (wrld plist-worldp))
+  :returns (guard "A @(tsee pseudo-termp).")
+  :mode :program
+  :parents (world-queries)
+  :short "Unoptimized guard of a named function or of a lambda expression."
+  :long
+  "<p>
+   This is a specialization of
+   <see topic='@(url system-utilities)'>@('guard')</see>
+   with @('nil') as the second argument.
+   </p>"
+  (guard fn nil wrld))
+
+(define uguard+ ((fn (or (function-namep fn wrld)
+                         (pseudo-lambdap fn)))
+                 (wrld plist-worldp))
+  :returns (guard pseudo-termp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee uguard)."
+  :long
+  "<p>
+   This returns the same result as @(tsee uguard),
+   but it has a stronger guard
+   and includes a run-time check (which should always succeed) on the result
+   that allows us to prove the return type theorem
+   without strengthening the guard on @('wrld').
+   </p>"
+  (cond ((symbolp fn)
+         (b* ((result (getpropc fn 'guard *t* wrld)))
+           (if (pseudo-termp result)
+               result
+             (raise "Internal error: ~
+                     the guard ~x0 of ~x1 is not a pseudo-term."
+                    result fn))))
+        (t *t*)))
+
 (define unwrapped-nonexec-body ((fn (and (logic-function-namep fn wrld)
                                          (definedp fn wrld)
                                          (non-executablep fn wrld)))
@@ -404,7 +440,7 @@
    This is a specialization of @(tsee recursivep)
    with @('nil') as the second argument:
    the @('i') that starts the name of @('irecursivep') conveys that
-   the result is based on the @(tsee defun) form that introduced @('fn').
+   the result is based on the @(tsee defun) form that <i>introduced</i> @('fn').
    </p>"
   (recursivep fn nil wrld))
 
