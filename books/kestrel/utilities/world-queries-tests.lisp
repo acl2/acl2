@@ -697,6 +697,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (classes 'car-cdr-elim (w state)) '((:elim)))
+
+(must-succeed*
+ (defthm th (acl2-numberp (- x)))
+ (assert-equal (classes 'th (w state)) '((:rewrite))))
+
+(must-succeed*
+ (defthm th (booleanp (if x t nil)) :rule-classes :type-prescription)
+ (assert-equal (classes 'th (w state))
+               '((:type-prescription :typed-term (if x 't 'nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (classes+ 'car-cdr-elim (w state)) '((:elim)))
+
+(must-succeed*
+ (defthm th (acl2-numberp (- x)))
+ (assert-equal (classes+ 'th (w state)) '((:rewrite))))
+
+(must-succeed*
+ (defthm th (booleanp (if x t nil)) :rule-classes :type-prescription)
+ (assert-equal (classes+ 'th (w state))
+               '((:type-prescription :typed-term (if x 't 'nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (pseudo-tests-and-callp (make tests-and-call
                                        :tests '((f x))
                                        :call ''3)))

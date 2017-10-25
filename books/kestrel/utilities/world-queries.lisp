@@ -715,6 +715,35 @@
              formula thm)))
   :guard-hints (("Goal" :in-theory (enable theorem-namep))))
 
+(define classes ((thm symbolp) (wrld plist-worldp))
+  :returns (classes "An @(tsee alistp)
+                     from @(tsee keywordp) to @(tsee keyword-value-listp).")
+  :parents (world-queries)
+  :short "Rule classes of a theorem."
+  (getpropc thm 'classes nil wrld))
+
+(define classes+ ((thm (theorem-namep thm wrld))
+                  (wrld plist-worldp))
+  :returns (classes keyword-to-keyword-value-list-alistp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee classes)."
+  :long
+  "<p>
+   This returns the same result as @(tsee classes),
+   but it has a stronger guard
+   and includes a run-time check (which should always succeed) on the result
+   that allows us to prove the return type theorem
+   without strengthening the guard on @('wrld').
+   </p>"
+  (b* ((result (classes thm wrld)))
+    (if (keyword-to-keyword-value-list-alistp result)
+        result
+      (raise "Internal error: ~
+              the rule classes ~x0 of ~x1 are not an alist
+              from keywords to keyword-value lists."
+             result thm)))
+  :guard-hints (("Goal" :in-theory (enable theorem-namep))))
+
 (define pseudo-tests-and-callp (x)
   :returns (yes/no booleanp)
   :parents (world-queries)
