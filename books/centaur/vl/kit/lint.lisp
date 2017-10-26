@@ -53,6 +53,7 @@
 (include-book "../transforms/addnames")
 (include-book "../transforms/clean-warnings")
 (include-book "centaur/sv/vl/moddb" :dir :system)
+(include-book "centaur/sv/vl/use-set" :dir :system)
 (include-book "../../misc/sneaky-load")
 (include-book "../mlib/json")
 (include-book "centaur/getopt/top" :dir :system)
@@ -672,9 +673,10 @@ shown.</p>"
        ;;                   (len lost) lost))
        ;;           design))
 
-       ((mv reportcard ?modalist) (xf-cwtime (vl-design->svex-modalist
+       ((mv reportcard modalist) (xf-cwtime (vl-design->svex-modalist
                                               design :config simpconfig)))
        (design (xf-cwtime (vl-apply-reportcard design reportcard)))
+       (design (xf-cwtime (vl-design-sv-use-set design modalist)))
 
        (design (xf-cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 
@@ -957,6 +959,24 @@ shown.</p>"
         :vl-lucid-unset
         :vl-lucid-multidrive))
 
+(defconst *lucid-variable-warnings*
+  (list :vl-lucid-unused-variable
+        :vl-lucid-spurious-variable
+        :vl-lucid-unset-variable))
+
+(defconst *sv-use-set-warnings*
+  (list 
+   :sv-use-set-spurious
+   :sv-use-set-spurious-inout
+   :sv-use-set-unused-input
+   :sv-use-set-unset-output
+   :sv-use-set-partly-unset-output
+   :sv-use-set-unused
+   :sv-use-set-unset
+   :sv-use-set-partly-unset
+   :sv-use-set-partly-unused
+   :sv-use-set-partly-spurious))
+   
 
 
 (defconst *warnings-covered*
@@ -974,6 +994,8 @@ shown.</p>"
           *same-ports-warnings*
           *same-ports-minor-warnings*
           *lucid-warnings*
+          *lucid-variable-warnings*
+          *sv-use-set-warnings*
           ))
 
 (defconst *warnings-ignored*
@@ -1132,6 +1154,18 @@ you can see \"vl-trunc-minor.txt\" to review them.")))
          "vl-lucid.txt"
          (vl-ps-update-autowrap-col 68)
          (vl-lint-print-warnings "vl-lucid.txt" "Lucidity Checking" *lucid-warnings* reportcard)))
+
+       (state
+        (with-ps-file
+         "vl-lucid-vars.txt"
+         (vl-ps-update-autowrap-col 68)
+         (vl-lint-print-warnings "vl-lucid-vars.txt" "Lucidity Checking" *lucid-variable-warnings* reportcard)))
+
+       (state
+        (with-ps-file
+         "vl-sv-use-set.txt"
+         (vl-ps-update-autowrap-col 68)
+         (vl-lint-print-warnings "vl-sv-use-set.txt" "SV Use/Set Checking" *sv-use-set-warnings* reportcard)))
 
        (state
         (if (not major)

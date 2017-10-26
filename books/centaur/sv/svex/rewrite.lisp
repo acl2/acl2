@@ -424,7 +424,23 @@ functions) and that it is being given the right number of arguments.</p>
     ;; Tail recursive because it blew up on us before.
     :returns (call-count natp :rule-classes :type-prescription)
     :inline t
-    (svexlist-count-calls-aux x 0)))
+    (svexlist-count-calls-aux x 0))
+
+  (defthm-svex-toposort-flag
+    (defthm member-vars-of-svex-toposort
+      (implies (and (not (member v (svex-vars x)))
+                    (not (member v (svexlist-vars sort))))
+               (not (member v (svexlist-vars (mv-nth 0 (svex-toposort x sort contents))))))
+      :hints ('(:expand ((svex-vars x)
+                         (svex-toposort x sort contents))))
+      :flag svex-toposort)
+    (defthm member-vars-of-svexlist-toposort
+      (implies (and (not (member v (svexlist-vars x)))
+                    (not (member v (svexlist-vars sort))))
+               (not (member v (svexlist-vars (mv-nth 0 (svexlist-toposort x sort contents))))))
+      :hints ('(:expand ((svexlist-vars x)
+                         (svexlist-toposort x sort contents))))
+      :flag svexlist-toposort)))
 
                       
 

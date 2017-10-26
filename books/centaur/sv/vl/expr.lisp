@@ -1428,7 +1428,8 @@ the way.</li>
        
        ((mv err paramval)
         (b* (((when (eq (tag item) :vl-vardecl))
-              (mv nil nil))
+              (b* (((vl-vardecl item)))
+                (mv nil (and item.constp item.constval))))
              ((when (member (tag item) '(:vl-modinst
                                          :vl-interfaceport)))
               (mv nil nil))

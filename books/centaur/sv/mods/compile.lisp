@@ -734,14 +734,16 @@ svex-assigns-compose)).</li>
        (modalist x.modalist)
        (topmod x.top)
        ((with-fast modalist))
-       ((unless (cwtime (modhier-loopfree-p topmod modalist)))
+       ((unless (cwtime (modhier-loopfree-p topmod modalist)
+                        :mintime 1))
         (mv
          (msg "Module ~s0 has an instance loop!~%" topmod)
          nil nil nil moddb aliases))
 
        ;; Create a moddb structure from the module hierarchy.
        ;; This involves enumerating the modules, instances, and wires.
-       (moddb (cwtime (module->db topmod modalist moddb)))
+       (moddb (cwtime (module->db topmod modalist moddb)
+                      :mintime 1))
        (modidx (moddb-modname-get-index topmod moddb))
 
        ;; Clear and size the aliases
@@ -758,7 +760,8 @@ svex-assigns-compose)).</li>
 
        ;; Now translate the modalist by replacing all variables (nets/HIDs)
        ;; with their moddb indices.
-       ((mv err modalist) (cwtime (modalist-named->indexed modalist moddb :quiet t)))
+       ((mv err modalist) (cwtime (modalist-named->indexed modalist moddb :quiet t)
+                                  :mintime 1))
        ((when err)
         (mv (msg "Error indexing wire names: ~@0~%" err)
             nil nil nil moddb aliases))
@@ -769,7 +772,8 @@ svex-assigns-compose)).</li>
 
        ;; Gather the full flattened lists of aliases and assignments from the module DB.
        ((mv modfails varfails flat-aliases flat-assigns flat-fixups flat-constraints)
-        (cwtime (svex-mod->flatten scope modalist moddb)))
+        (cwtime (svex-mod->flatten scope modalist moddb)
+                :mintime 1))
        ((when modfails)
         (mv (msg "Module names referenced but not found: ~x0~%" modfails)
             nil nil nil moddb aliases))
@@ -780,8 +784,10 @@ svex-assigns-compose)).</li>
        ;; Compute a normal form for each variable by running a
        ;; union/find-like algorithm on the list of alias pairs.  This
        ;; populates aliases, which maps each wire's index to its canonical form.
-       (aliases (cwtime (svex-mod->initial-aliases modidx 0 moddb aliases)))
-       (aliases (cwtime (canonicalize-alias-pairs flat-aliases aliases))))
+       (aliases (cwtime (svex-mod->initial-aliases modidx 0 moddb aliases)
+                        :mintime 1))
+       (aliases (cwtime (canonicalize-alias-pairs flat-aliases aliases)
+                        :mintime 1)))
     (mv nil flat-assigns flat-fixups flat-constraints moddb aliases))
   ///
 

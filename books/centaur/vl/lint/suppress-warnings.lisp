@@ -135,17 +135,37 @@ either upper or lower case, treating - and _ as equivalent, and with or without
   :returns (mashed stringp :rule-classes :type-prescription)
   (vl-mash-warning-string (symbol-name x)))
 
+(encapsulate
+  (((vl-lint-suppress-warnings-att-compare * *) => *
+    :formals (mashed-att mashed-warning-type)
+    :guard (and (stringp mashed-att)
+                (stringp mashed-warning-type))))
+
+  (local (defun vl-lint-suppress-warnings-att-compare (mashed-att mashed-warning-type)
+           (declare (xargs :guard (and (stringp mashed-att)
+                                       (stringp mashed-warning-type))))
+           (str::istrprefixp mashed-att mashed-warning-type)))
+
+  (defthm booleanp-of-vl-lint-suppress-warnings-att-compare
+    (booleanp (vl-lint-suppress-warnings-att-compare mashed-att mashed-warning-type))
+    :rule-classes :type-prescription)
+
+  (fty::deffixequiv vl-lint-suppress-warnings-att-compare
+    :args ((mashed-att stringp) (mashed-warning-type stringp))))
+
+(define vl-lint-suppress-warnings-att-compare-default ((mashed-att stringp)
+                                                       (mashed-warning-type stringp))
+  (str::istrprefixp mashed-att mashed-warning-type))
+
+(defattach vl-lint-suppress-warnings-att-compare vl-lint-suppress-warnings-att-compare-default) 
+
 (define vl-lint-attname-says-ignore ((attname stringp)
                                      (mashed-warning-type stringp))
   :returns (ignorep booleanp :rule-classes :type-prescription)
   (b* (((unless (vl-lint-ignore-att-p attname))
         nil)
-       (mashed-att (vl-lint-ignore-att-mash attname))
-       ((when (equal mashed-att ""))
-        ;; Ignore everything!
-        t))
-    ;; Otherwise, only ignore certain warning types
-    (str::istrprefixp mashed-att mashed-warning-type))
+       (mashed-att (vl-lint-ignore-att-mash attname)))
+    (vl-lint-suppress-warnings-att-compare mashed-att mashed-warning-type))
   ///
   (local
    (assert!

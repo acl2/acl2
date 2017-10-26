@@ -117,7 +117,7 @@ def match_warning(mod, type, substring)
   if ok
     puts "#{mod}: OK: matched #{type}, #{substring}"
   else
-    raise "failed to match required warning: #{mod}, #{type}, #{substring}"
+    puts "ERROR: failed to match required warning: #{mod}, #{type}, #{substring}"
   end
 end
 
@@ -126,7 +126,7 @@ def outlaw_warning(mod, type, substring)
   wlist = WARNINGS[mod] || []
   found = some_warning_matches(type, substring, wlist)
   if found
-    raise "found outlawed warning: #{mod}, #{type}, #{substring}:\n     #{found[:type]} -- #{found[:text]}"
+    puts "ERROR: found outlawed warning: #{mod}, #{type}, #{substring}:\n     #{found[:type]} -- #{found[:text]}"
   else
     puts "#{mod}: OK: none match #{type}, #{substring}"
   end

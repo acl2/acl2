@@ -1128,8 +1128,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
        (wire (wire-fix wire))
        (name (wire->name wire))
        ((when (elab-mod$c->wirename-idxes-boundp name elab-mod$c))
-        (raise "Wire already exists in ~s0: ~x1"
-               (elab-mod$c->name elab-mod$c) name)
+        (cw "In ~x2: Wire already exists in ~s0: ~x1~%"
+            (elab-mod$c->name elab-mod$c) name __function__)
         elab-mod$c)
        (elab-mod$c (if (<= (elab-mod$c->wiretable-length elab-mod$c) idx)
                      (resize-elab-mod$c->wiretable (max 16 (* 2 idx)) elab-mod$c)
@@ -6031,9 +6031,9 @@ checked to see if it is a valid bitselect and returned as a separate value."
         (b* (((stobj-get name)
               ((elab-mod (moddb->modsi modidx moddb)))
               (elab-mod->name elab-mod)))
-          (raise "Error looking up ~x1: ~@0~%from module: ~x2"
+          (cw "Error looking up ~x1: ~@0~%from module: ~x2"
                           err path name)))
-       ((when bitsel) (raise "Didn't expect a bit select: ~x0" path)))
+       ((when bitsel) (cw "Didn't expect a bit select: ~x0" path)))
     idx)
   ///
 
