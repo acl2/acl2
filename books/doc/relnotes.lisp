@@ -327,6 +327,13 @@
  <li>When composing together 0-delay update functions, if bit-level
  combinational loops are present, these are composed together to a fixpoint.</li>
 
+ <li>@(see Vl::vl-lint) has yet another use-set check, @(see vl::vl-design-sv-use-set),
+ which uses SV's interpretation of SystemVerilog semantics to more exactly
+ analyze the usage and updates of module variables.  The previous @(see vl::Lucid)
+ use-set check is still useful since sv-use-set only checks variables, not
+ parameters, functions, types, etc., and also does not analyze variables local
+ to procedural code blocks.</li>
+
  </ul>
 
  <h4>SOFT</h4>

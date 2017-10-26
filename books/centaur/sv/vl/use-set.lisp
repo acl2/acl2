@@ -3467,6 +3467,30 @@
                               (modalist sv::modalist-p))
   :returns (new-x vl-design-p)
   :guard (sv::svarlist-addr-p (sv::modalist-vars modalist))
+  :parents (vl-lint)
+  :short "Analyze used/set variables using SV's semantics."
+  :long "<p>This check issues warnings about variables that are unused, unset,
+or spurious (neither used nor set).  It has some overlap with @(see vl::Lucid), but
+each check does some things that the other doesn't:</p>
+
+<ul>
+
+<li>Lucid checks whether parameters, functions, types, etc. are used,
+whereas sv-use-set only deals with variables (a category which includes wires
+and regs, etc).</li>
+
+<li>Lucid checks variables that are local to procedural code, which sv-use-set
+currently does not.</li>
+
+<li>Sv-use-set understands complex datatypes and is exact in its analysis of
+which array/struct/etc. fields are used/set, which lucid does not.</li>
+
+<li>Sv-use-set understands procedural constructs such as bounded loops and in
+many cases can statically determine which indices of an array are accessed even
+when the index is a local procedural variable.</li>
+
+</ul>"
+
   (b* ((modalist (sv::modalist-fix modalist))
        ((unless (sv::modhier-loopfreelist-p (alist-keys modalist) modalist))
         (cw "Error: loop in instantiation hierarchy??~%")
@@ -3476,4 +3500,3 @@
     (fast-alist-free stubbed-modalist)
     (fast-alist-free use-set-acc)
     (vl-apply-reportcard x reportcard)))
-       
