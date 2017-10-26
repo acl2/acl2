@@ -198,7 +198,18 @@
     with-local-stobj
     stobj-let
     flet
-    declare))
+    declare
+    if
+    mv-list
+    return-last
+
+; The following are not included because even though they get special handling
+; in translate11, they don't need to be documented.
+
+;   synp
+;   makunbound-global
+;   put-global
+    ))
 
 (defun missing-from-acl2-exports (wrld)
 
