@@ -30,7 +30,7 @@
 (in-package "STOBJS")
 
 (include-book "centaur/misc/prev-stobj-binding" :dir :system)
-(include-book "tools/rulesets" :dir :system)
+;; (include-book "tools/rulesets" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/basic/arith-equiv-defs" :dir :system)
@@ -38,6 +38,7 @@
 
 
 (defxdoc stobj-updater-independence
+  :parents (std/stobjs)
   :short "Discussion of the accessor/updater indepencence or <i>frame problem</i>,
           especially as it relates to the @(see def-updater-independence-thm) utility."
   :long "<p>Note: This is related to what is known as the frame problem in
@@ -122,7 +123,7 @@ affects elements k and above of field 2:</p>
                  (nth i (nth 2 x))))
  })
 
-<p>Given an appropriate reasoning strategy about @(see range-equal) and the
+<p>Given an appropriate reasoning strategy about @('range-equal') and the
 bind-free strategy below, these two rules are sufficient to prove:</p>
  @({
  (implies (<= (nfix j) (nfix k))
@@ -154,30 +155,39 @@ third actual, @('bar'), to @('old').</li>
 
 </ul>")
 
+(defun bind-updater-independence-prev-stobj (arg mfc state)
+  (declare (xargs :stobjs state :mode :program))
+  (if (eq arg 'new)
+      '((old . old))
+    (acl2::prev-stobj-binding arg 'old mfc state)))
 
-(defmacro bind-stobj-updater-returnval (arg var)
-  `(and (syntaxp (consp ,arg))
-        (bind-free (acl2::prev-stobj-binding ,arg ',var mfc state))))
+(defmacro bind-stobj-updater-returnval (arg)
+  `(and (syntaxp (or (consp ,arg) (eq ,arg 'new)))
+        (bind-free (bind-updater-independence-prev-stobj ,arg mfc state))))
 
-(def-ruleset! special-updater-independence-thms nil)
+;; (def-ruleset! special-updater-independence-thms nil)
 
 (defmacro def-updater-independence-thm (name body &rest args)
-  (b* ((special-name (intern-in-package-of-symbol
-                      (concatenate 'string (symbol-name name) "-SPECIAL")
-                      name)))
-    `(encapsulate nil
-       (local (in-theory (enable* special-updater-independence-thms)))
-       (defthm ,name
-         (implies (bind-stobj-updater-returnval new old)
-                  ,body)
-         . ,args)
-       (defthmd ,special-name
-         (implies (bind-free (and (eq new 'new) '((old . old))) (old))
-                  ,body)
-         :hints (("goal" :use ,name
-                  :in-theory nil)))
-       (add-to-ruleset special-updater-independence-thms ,special-name))))
+  ;; (b* ((special-name (intern-in-package-of-symbol
+  ;;                     (concatenate 'string (symbol-name name) "-SPECIAL")
+  ;;                     name)))
+  `(defthm ,name
+     (implies (bind-stobj-updater-returnval new)
+              ,body)
+     . ,args))
 
+(defxdoc def-updater-independence-thm
+  :parents (stobj-updater-independence)
+  :short "Prove an updater independence theorem, as discussed in @(see stobj-updater-independence)."
+  :long "<p>This just adds the appropriate @('bind-free') form to your theorem,
+which should use the variables @('new') and @('old') (from the ACL2 package).  For example:</p>
+@({
+ (def-updater-independence-thm access-3rd-updater-independence
+   (implies (equal (nth 3 new) (nth 3 old))
+            (equal (access-3rd new) (access-3rd old)))
+   :hints((\"Goal\" :in-theory (enable access-3rd))))
+ })
+<p>Note @('new') should appear in the LHS and @('old') should not.</p>")
 
 
 ;; Range-equal and range-equal-badguy provide an effective way to reason about
@@ -186,6 +196,19 @@ third actual, @('bar'), to @('old').</li>
 
 (define range-equal ((start natp) (num natp) (x true-listp) (y true-listp))
   :measure (nfix num)
+  :parents (stobj-updater-independence)
+  :short "Check that a range of entries from two lists are equal."
+  :long "<p>This is useful for stobj updater independence theorems, e.g.,</p>
+@({
+ (def-stobj-updater-independence sum-range-of-field2-updater-independence
+   (implies (range-equal 0 k (nth 2 new) (nth 2 old))
+            (equal (sum-range-of-field2 k new)
+                   (sum-range-of-field2 k old))))
+ })
+
+<p>Also see @('range-nat-equiv'), which is similar but checks @('nat-equiv') of
+corresponding elements instead of @('equal').</p>
+"
   (if (zp num)
       t
     (and (equal (nth start x) (nth start y))
