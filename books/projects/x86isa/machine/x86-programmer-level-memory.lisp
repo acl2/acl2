@@ -101,7 +101,10 @@ memory.</p>" )
 
   (defthm canonical-address-p-and-logext-48
     (implies (canonical-address-p a)
-             (equal (logext 48 a) a))))
+             (equal (logext 48 a) a)))
+
+  (defthm canonical-address-p-of-logext-48
+    (canonical-address-p (logext 48 a))))
 
 ;; ======================================================================
 
