@@ -36,12 +36,12 @@
   (if (equal (dec x) 0)
       (equal
        (+ (* (+ (* 128 c) (floor a 2)) 256)
-	  (+ (* 128 (mod a 2))
-	     (floor low 2)))
+          (+ (* 128 (mod a 2))
+             (floor low 2)))
        (* f1save f2))
     (wp-zcoef
      (+ (* 128 (mod low 2))
-	(floor f1 2))
+        (floor f1 2))
      (dec x)
      (*
       (mod f1 2)
@@ -49,13 +49,13 @@
        (+ (+ (* 128 c) (floor a 2)) f2)
        256))
      (+ (* 128 (mod a 2))
-	(floor low 2))
+        (floor low 2))
      (if (equal (mod f1 2) 0)
-	 (+ (* 128 c) (floor a 2))
+         (+ (* 128 c) (floor a 2))
        (mod
-	(+ (+ (* 128 c) (floor a 2))
-	   f2)
-	256))
+        (+ (+ (* 128 c) (floor a 2))
+           f2)
+        256))
      f1save
      f2)))
 
@@ -78,12 +78,12 @@
   (if (equal (dec x) 0)
       (equal
        (+ (* (+ (* (expt 2 (1- i)) c) (floor a 2)) (expt 2 i))
-	  (+ (* (expt 2 (1- i)) (mod a 2))
-	     (floor low 2)))
+          (+ (* (expt 2 (1- i)) (mod a 2))
+             (floor low 2)))
        result)
     (wp-zcoef-g
      (+ (* (expt 2 (1- i)) (mod low 2))
-	(floor f1 2))
+        (floor f1 2))
      (dec x)
      (*
       (mod f1 2)
@@ -91,13 +91,13 @@
        (+ (+ (* (expt 2 (1- i)) c) (floor a 2)) f2)
        (expt 2 i)))
      (+ (* (expt 2 (1- i)) (mod a 2))
-	(floor low 2))
+        (floor low 2))
      (if (equal (mod f1 2) 0)
-	 (+ (* (expt 2 (1- i)) c) (floor a 2))
+         (+ (* (expt 2 (1- i)) c) (floor a 2))
        (mod
-	(+ (+ (* (expt 2 (1- i)) c) (floor a 2))
-	   f2)
-	(expt 2 i)))
+        (+ (+ (* (expt 2 (1- i)) c) (floor a 2))
+           f2)
+        (expt 2 i)))
      result
      f2
      i)))
@@ -106,25 +106,25 @@
 
 (defthm wp-zcoef-g-instance
   (equal (wp-zcoef f1 x c low a f1save f2)
-	 (wp-zcoef-g f1 x c low a (* f1save f2) f2 8)))
+         (wp-zcoef-g f1 x c low a (* f1save f2) f2 8)))
 
 (defthm floor-mod-rewrite
   (and (implies (and (equal d (* b c))
-		     (rationalp a)
-		     (rationalp b)
-		     (rationalp c))
-		(equal (+ (* c (mod a b))
-			  (* d (floor a b)))
-		       (* c a)))
+                     (rationalp a)
+                     (rationalp b)
+                     (rationalp c))
+                (equal (+ (* c (mod a b))
+                          (* d (floor a b)))
+                       (* c a)))
        (implies (and (equal d (* b c))
-		     (rationalp a)
-		     (rationalp b)
-		     (rationalp c)
-		     (rationalp e))
-		(equal (+ (* c (mod a b))
-			  (* d (floor a b))
-			  e)
-		       (+ (* c a) e)))))
+                     (rationalp a)
+                     (rationalp b)
+                     (rationalp c)
+                     (rationalp e))
+                (equal (+ (* c (mod a b))
+                          (* d (floor a b))
+                          e)
+                       (+ (* c a) e)))))
 
 (defun ind-hint (i)
   (if (zp i)
@@ -142,60 +142,59 @@
                      (MOD (+ 1 J) (EXPT 2 (+ -1 I)))))))
 
 (defthm mod-+-1
-  (implies (and	(equal (mod a 2) 0)
-		(natp i)
-		(integerp a))
-	   (equal (mod (+ 1 a) (expt 2 i))
-		  (if (equal i 0)
-		      0
-		    (+ 1 (mod a (expt 2 i))))))
+  (implies (and   (equal (mod a 2) 0)
+                  (natp i)
+                  (integerp a))
+           (equal (mod (+ 1 a) (expt 2 i))
+                  (if (equal i 0)
+                      0
+                    (+ 1 (mod a (expt 2 i))))))
   :hints (("Goal"
-	   :induct (ind-hint i)
-	   :do-not '(generalize))))
+           :induct (ind-hint i)
+           :do-not '(generalize))))
 
 ;;; Generalize the correctness theorem.
 
 (defthm wp-zcoef-g-multiplies
-   (implies (and (not (zp x))
-		 (integerp i)
-		 (<= x i)
-		 (natp f1)
-		 (natp low)
-		 (natp a)
-		 (natp c)
-		 (< low (expt 2 i))
-		 (natp f2)
-		 (< f2 (expt 2 i)))
-	    (equal (wp-zcoef-g f1 x c low a result f2 i)
-		   (equal
-		    (+ (floor (+ low (* (expt 2 i) a) (* (expt 2 i) (expt 2 i) c))
-			      (expt 2 x))
-		       (* f2
-			  (mod f1 (expt 2 (1- x)))
-			  (floor (expt 2 i) (expt 2 (1- x)))))
-		    result)))
-   :hints (("Subgoal *1/2.16"
-	    :nonlinearp t)
-	   ("Subgoal *1/2.15.1"
-	    :nonlinearp t)
-	   ("Subgoal *1/2.14.1"
-	    :nonlinearp t)
-	   ("Subgoal *1/2.13.1"
-	    :nonlinearp t)
-	   ("Subgoal *1/2.12"
-	    :nonlinearp t)
-	   ("Subgoal *1/2.11.1"
-	    :nonlinearp t)))
+  (implies (and (not (zp x))
+                (integerp i)
+                (<= x i)
+                (natp f1)
+                (natp low)
+                (natp a)
+                (natp c)
+                (< low (expt 2 i))
+                (natp f2)
+                (< f2 (expt 2 i)))
+           (equal (wp-zcoef-g f1 x c low a result f2 i)
+                  (equal
+                   (+ (floor (+ low (* (expt 2 i) a) (* (expt 2 i) (expt 2 i) c))
+                             (expt 2 x))
+                      (* f2
+                         (mod f1 (expt 2 (1- x)))
+                         (floor (expt 2 i) (expt 2 (1- x)))))
+                   result)))
+  :hints (("Subgoal *1/2.16"
+           :nonlinearp t)
+          ("Subgoal *1/2.15.1"
+           :nonlinearp t)
+          ("Subgoal *1/2.14.1"
+           :nonlinearp t)
+          ("Subgoal *1/2.13.1"
+           :nonlinearp t)
+          ("Subgoal *1/2.12"
+           :nonlinearp t)
+          ("Subgoal *1/2.11.1"
+           :nonlinearp t)))
 
 ;;; Program correctness result
 
 (defthm wp-zcoef-is-correct
- (implies (and (natp f2)
-               (< f2 256)
-               (natp f1)
-               (< f1 256)
-               (natp low)
-               (< low 256)
-	       (natp c))
-          (wp-zcoef-1 f1 c low f2)))
-
+  (implies (and (natp f2)
+                (< f2 256)
+                (natp f1)
+                (< f1 256)
+                (natp low)
+                (< low 256)
+                (natp c))
+           (wp-zcoef-1 f1 c low f2)))

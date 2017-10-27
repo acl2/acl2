@@ -1,4 +1,4 @@
-module compress32 
+module compress32
    (
      output logic [63:0] out0,
      output logic [63:0] out1,
@@ -11,9 +11,9 @@ module compress32
    assign out1 = ( in0 & in1 | in0 &in2 | in1 & in2 ) << 1;
 
 endmodule : compress32
-   
 
-module compress42 
+
+module compress42
    (
      output logic [63:0] out0,
      output logic [63:0] out1,
@@ -28,10 +28,10 @@ module compress42
   assign temp = (in1 & in2 | in1 & in3 | in2 & in3) << 1;
   assign out0 = in0 ^ in1 ^ in2 ^ in3 ^ temp;
   assign out1 = ( (in0 & ~(in0 ^ in1 ^ in2 ^ in3)) | (temp & (in0 ^ in1 ^ in2 ^ in3)) ) << 1;
-     
+
 endmodule : compress42
-   
-module sum 
+
+module sum
   (
     output [63:0] out,
     input  [63:0] in [16:0]
@@ -72,17 +72,17 @@ endmodule : sum
 module imul
    (
     output logic [63:0]   prod, // unsigned product
-                 
+
     input logic [31:0]    x,    // unsigned mulitplier will be (modified) Booth encoded
     input logic [31:0]    y     // unsigned multiplicand
     );
-   
+
    /* **************************************************************
-    
-    Use modified radix-4 Booth encoding of multilplier x to form 
+
+    Use modified radix-4 Booth encoding of multilplier x to form
     the table of aligned partial products whose rows sum to the
     product x*y.
-    
+
     ************************************************************** */
 
    localparam   TWIDE = 32 + 2*17 + 5;
@@ -91,17 +91,17 @@ module imul
    // Step 1: Form bd, the r4 modified Booth digits for x.
    //
    logic [34:0]   xa;
-   
+
    logic [16:0]   bd_2x; // magnitude 2 Booth digit
    logic [16:0]   bd_1x; // magnitude 1 Booth digit
    logic [16:0]   bd_m;  // minus Booth digit
-   
+
    // Note that bd_m[k] = x[2k+1].
-   
+
    always_comb
       begin
          xa = {2'h0,x,1'b0}; // xa[i] = x[i-1] with pre- and post-pended zeros.
-         for (int k = 0; k < 17; k++) 
+         for (int k = 0; k < 17; k++)
             begin: gen_mbd //                                     xa[2k+2]  xa[2k+1]  xa[2k  ] |
             //                                          m_2_1      x[2k+1]     x[2k]   x[2k-1] | bd
             casex (xa[(2*k+2)-:3]) //                            -----------------------------------
@@ -125,7 +125,7 @@ module imul
 
    always_comb
       begin: gen_pp
-         for (int k=0; k<17; k++) 
+         for (int k=0; k<17; k++)
             begin
                casex ({bd_2x[k],bd_1x[k]})
                   2'b10:   row = {y,1'b0}; // 2x multiple
@@ -139,21 +139,21 @@ module imul
    // ==============================================================
    // Step 3: Form the table whose rows sum to the final product.
    //
-   // We must ensure that bd_m[16] = '0, for otherwise the 
-   // following table of partial products will have a missing 
+   // We must ensure that bd_m[16] = '0, for otherwise the
+   // following table of partial products will have a missing
    // two's complement +1 factor associated with the last row.
 
    genvar gi;
    logic [63:0]  tble [16:0];
-      
+
    logic [(TWIDE-1):0]       tmp  [16:0];
    logic                     psb  [16:0];
    logic                     sb   [16:0];
-   
+
    logic [17:0]             bd_m1;
-   
+
    always_comb  bd_m1 = {bd_m,1'b0};
-   
+
    generate
       for (gi=0; gi<17; gi++)
          begin: tble_gi
@@ -171,7 +171,7 @@ module imul
    endgenerate
 
    // ==============================================================
-   // Step 4: Compute the product by summing the rows of the table of 
+   // Step 4: Compute the product by summing the rows of the table of
    //         aligned partial products.
 
    sum sum (prod, tble);

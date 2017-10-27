@@ -3,9 +3,9 @@
 general-theorems.lisp
 ~~~~~~~~~~~~~~~~~~~~~~
 Author: Disha Puri
-Last Updated: 12th April 2014 
+Last Updated: 12th April 2014
 
-This file the general theorems about syntax and semantics 
+This file the general theorems about syntax and semantics
 to be used in other files.
 
 ||#
@@ -20,7 +20,7 @@ to be used in other files.
   (implies (phi-restriction-list l)
            (phi-restriction-list (next-to-execute l a))))
 
-(defthm phi-restriction-run-lists 
+(defthm phi-restriction-run-lists
   (implies (phi-restriction-list l)
            (equal (run-lists l i next pre1)
                   (run-lists l i next pre2)))
@@ -48,10 +48,10 @@ to be used in other files.
    ("Subgoal *1/2''"
     :use
     ((:instance phi-restriction-run-lists
-      (l (car b)))
+                (l (car b)))
      (:instance (:definition run-block)
-      (init-state i)
-      (prev pre2))))))
+                (init-state i)
+                (prev pre2))))))
 
 (defthm phi-restriction-block-set
   (implies (phi-restriction-ccdfg c)
@@ -69,11 +69,11 @@ to be used in other files.
    ("Subgoal *1/2''"
     :use
     ((:instance (:definition run-block-set)
-      (init-state i)
-      (next-bb next)
-      (prev pre2))
+                (init-state i)
+                (next-bb next)
+                (prev pre2))
      (:instance phi-restriction-run-block
-     (b (cadar c)))))))
+                (b (cadar c)))))))
 
 (in-theory (disable phi-restriction-block-set))
 
@@ -88,10 +88,10 @@ to be used in other files.
    ("Subgoal *1/2'"
     :use
     ((:instance (:definition run-blocks-iters)
-      (init-state i)
-      (prev pre2))
+                (init-state i)
+                (prev pre2))
      (:instance phi-restriction-block-set
-      (next nil))))))
+                (next nil))))))
 
 (in-theory (disable phi-restriction-block-iters))
 
@@ -232,10 +232,10 @@ to be used in other files.
     :in-theory (theory 'ground-zero)
     :use
     ((:instance run-blocks-iters
-      (iter 1))
+                (iter 1))
      (:instance run-blocks-iters
-      (iter 0)
-      (init-state (run-block-set c init-state nil prev)))))))
+                (iter 0)
+                (init-state (run-block-set c init-state nil prev)))))))
 
 (defthm not-consp-run-block-set
   (implies (not (consp c))
@@ -259,7 +259,7 @@ to be used in other files.
   (("Goal"
     :in-theory (union-theories (theory 'ground-zero)
                                '(run-block-set)))))
-  
+
 (defthm run-block-set-cons
   (implies (and (branch-restriction-ccdfg (list a))
                 (branch-restriction-ccdfg b))
@@ -279,14 +279,14 @@ to be used in other files.
 (defun induction-hint-run-block-set-remove-take-n (m init-state pre prev)
   (if (or (endp pre)
           (zp m)) (list m init-state pre prev)
-    (induction-hint-run-block-set-remove-take-n (- m 1) 
-                                                (run-block-set (list (car pre)) 
+    (induction-hint-run-block-set-remove-take-n (- m 1)
+                                                (run-block-set (list (car pre))
                                                                init-state nil prev)
                                                 (cdr pre)
                                                 prev)))
 
 (defthm run-block-set-remove-take-n
-  (implies (and (posp m)     
+  (implies (and (posp m)
                 (branch-restriction-ccdfg pre))
            (equal (run-block-set (remove-n m pre)
                                  (run-block-set (take-n m pre)
@@ -343,19 +343,19 @@ to be used in other files.
    ("Subgoal *1/2.3''"
     :use
     ((:instance (:definition take-n)
-      (n (+ 1 pp-interval))
-      (l loop))
+                (n (+ 1 pp-interval))
+                (l loop))
      (:instance m
-      (m pp-interval))))
+                (m pp-interval))))
    ("Subgoal *1/2.1'"
     :use
     ((:instance (:definition take-n)
-      (n (+ m pp-interval))
-      (l loop))
+                (n (+ m pp-interval))
+                (l loop))
      (:instance add-3
-      (a pp-interval)
-      (b -1)
-      (c m))))))
+                (a pp-interval)
+                (b -1)
+                (c m))))))
 
 (defthm append-three
   (equal (append (append a b) c) (append a (append b c))))
@@ -375,7 +375,7 @@ to be used in other files.
   (implies (and (natp k)
                 (natp m))
            (equal (run-blocks-iters c i (+ m k) prev)
-                  (run-blocks-iters c (run-blocks-iters c i k prev) 
+                  (run-blocks-iters c (run-blocks-iters c i k prev)
                                     m prev)))
   :hints
   (("Goal"
@@ -385,14 +385,14 @@ to be used in other files.
    ("Subgoal *1/3'"
     :use
     ((:instance (:definition run-blocks-iters)
-      (init-state i)
-      (iter (+ 1 m)))
+                (init-state i)
+                (iter (+ 1 m)))
      (:instance m)))))
 
 (defthm run-block-iters-append
   (implies (natp k)
            (equal (run-blocks-iters c i (+ 1 k) prev)
-                  (run-block-set c (run-blocks-iters c i k prev) 
+                  (run-block-set c (run-blocks-iters c i k prev)
                                  nil prev)))
   :hints
   (("Goal"
@@ -427,7 +427,7 @@ to be used in other files.
 
 (defthm run-block-iters-reverse-append
   (implies (posp k)
-           (equal  (run-block-set c (run-blocks-iters c i (+ -1 k) prev) 
+           (equal  (run-block-set c (run-blocks-iters c i (+ -1 k) prev)
                                   nil prev)
                    (run-blocks-iters c i (+ -1 1 k) prev)))
   :hints
@@ -436,7 +436,7 @@ to be used in other files.
                                '(k))
     :use
     ((:instance run-block-iters-append
-      (k (- k 1)))))))
+                (k (- k 1)))))))
 
 (defthm take-n-plus-interval
   (implies (and (posp m)
@@ -453,4 +453,3 @@ to be used in other files.
                                  branch-restriction-ccdfg-cdr
                                  branch-restriction-take-n
                                  branch-restriction-remove-n)))))
-

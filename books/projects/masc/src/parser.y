@@ -38,7 +38,7 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 }
 
 %token TYPEDEF CONST STRUCT ENUM TEMPLATE
-%token MASC 
+%token MASC
 %token INT UINT INT64 UINT64 BOOL
 %token TO_UINT TO_UINT64 RANGE SLC SET_SLC
 %token WAIT FOR IF ELSE WHILE DO SWITCH CASE DEFAULT BREAK CONTINUE RETURN ASSERT
@@ -46,7 +46,7 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %token SC_INT SC_BIGINT SC_FIXED SC_UINT SC_BIGUINT SC_UFIXED AC_INT
 %token <s> RSHFT_ASSIGN LSHFT_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN MOD_ASSIGN
 %token <s> AND_ASSIGN XOR_ASSIGN OR_ASSIGN
-%token <s> INC_OP DEC_OP 
+%token <s> INC_OP DEC_OP
 %token <s> RSHFT_OP LSHFT_OP AND_OP OR_OP LE_OP GE_OP EQ_OP NE_OP
 %token <s> ID NAT TRUE FALSE TYPEID TEMPLATEID
 %token <s> '=' '+' '-' '&' '|' '!' '~' '*' '%' '<' '>' '^' '/'
@@ -59,11 +59,11 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %type <sfl> struct_field_list
 %type <ecd> enum_const_dec
 %type <ecdl> enum_const_dec_list
-%type <exp> expression constant integer boolean symbol_ref funcall 
+%type <exp> expression constant integer boolean symbol_ref funcall
 %type <exp> array_or_bit_ref subrange array_init case_label
 %type <exp> primary_expression postfix_expression prefix_expression mult_expression add_expression
 %type <exp> arithmetic_expression rel_expression eq_expression and_expression xor_expression ior_expression
-%type <exp> to_uint_expression to_uint64_expression log_and_expression log_or_expression cond_expression 
+%type <exp> to_uint_expression to_uint64_expression log_and_expression log_or_expression cond_expression
 %type <exp> mv_expression struct_ref
 %type <fd> func_def func_template
 %type <expl> expr_list nontrivial_expr_list arith_expr_list nontrivial_arith_expr_list
@@ -72,7 +72,7 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %type <tpd> template_param_dec
 %type <tdl> template_param_dec_list nontrivial_template_param_dec_list
 %type <stml> statement_list
-%type <stm> statement block var_dec const_dec untyped_var_dec untyped_const_dec iterative_statement 
+%type <stm> statement block var_dec const_dec untyped_var_dec untyped_const_dec iterative_statement
 %type <stm> for_statement for_init while_statement multiple_var_dec multiple_const_dec null_statement
 %type <stm> do_statement if_statement switch_statement continue_statement break_statement
 %type <stm> simple_statement assignment multiple_assignment assertion wait_statement return_statement
@@ -88,8 +88,8 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 // Program Structure
 //*************************************************************************************
 
-// A program consists of a sequence of type definitions, global constant declarations, 
-// and function definitions.  The parser produces four linked lists  corresponding to 
+// A program consists of a sequence of type definitions, global constant declarations,
+// and function definitions.  The parser produces four linked lists  corresponding to
 // these sequences, stored as the values of the variables typeDefs, constDecs, and funDefs.
 
 program
@@ -97,32 +97,32 @@ program
   | program_element
   ;
 
-program_element 
+program_element
   : type_dec ';'
-    {      
+    {
       if (!prog.typeDefs) {
         prog.typeDefs = new List<DefinedType>($1);
       }
-      else if (prog.typeDefs->find($1->name)) { 
+      else if (prog.typeDefs->find($1->name)) {
         yyerror("Duplicate type definition");
       }
-      else { 
+      else {
         prog.typeDefs->add($1);
       }
-    }    
+    }
   | const_dec ';'
     {
       if (!prog.constDecs) {
         prog.constDecs = new List<ConstDec>((ConstDec*)$1);
       }
-      else if (prog.constDecs->find(((ConstDec*)$1)->sym->name)) { 
+      else if (prog.constDecs->find(((ConstDec*)$1)->sym->name)) {
         yyerror("Duplicate global constant declaration");
       }
       else {
         prog.constDecs->add((ConstDec*)$1);
       }
-    }     
-  | func_def 
+    }
+  | func_def
     {
       if (!prog.funDefs) {
         prog.funDefs = new List<FunDef>($1);
@@ -148,7 +148,7 @@ type_dec
 
 typedef_dec
   : TYPEDEF typedef_type ID  {$$ = new DefinedType($3, $2);}
-  | typedef_dec '[' arithmetic_expression ']'  
+  | typedef_dec '[' arithmetic_expression ']'
     {
       if ($3->isConst() && $3->evalConst() > 0) {
         $1->def = new ArrayType($3, $1->def); $$ = $1;
@@ -173,7 +173,7 @@ type_spec
   | ENUM enum_type      {$$ = $2;}         // standard C enumeration type
   ;
 
-primitive_type  
+primitive_type
   : INT   {$$ = &intType;}
   | UINT  {$$ = &uintType;}
   | INT64   {$$ = &int64Type;}
@@ -182,7 +182,7 @@ primitive_type
   ;
 
 register_type
-  : SC_INT '<' arithmetic_expression '>' // rel_expression would produce unresolvable shift-reduce conflict             
+  : SC_INT '<' arithmetic_expression '>' // rel_expression would produce unresolvable shift-reduce conflict
     {
       if ($3->isConst() && $3->isInteger() && $3->evalConst() >= 0) {
        $$ = new IntType($3);
@@ -258,7 +258,7 @@ register_type
   ;
 
 array_param_type
-  : ARRAY '<' type_spec ',' arithmetic_expression '>'   
+  : ARRAY '<' type_spec ',' arithmetic_expression '>'
     {
       if ($5->isConst() && $5->evalConst() > 0) {
         $$ = new ArrayType($5, $3);
@@ -286,8 +286,8 @@ enum_type
   : '{' enum_const_dec_list '}'  {$$ = new EnumType($2);}
   ;
 
-enum_const_dec_list 
-  : enum_const_dec                          {$$ = new List<EnumConstDec>($1);}      
+enum_const_dec_list
+  : enum_const_dec                          {$$ = new List<EnumConstDec>($1);}
   | enum_const_dec_list ',' enum_const_dec  {$$ = $1->add($3);}
   ;
 
@@ -320,7 +320,7 @@ constant
 
 integer
 : NAT {$$ = new Integer($1);}
-  | '-' NAT 
+  | '-' NAT
     {
      char *name = new char[strlen($2)+2];
      strcpy(name+1, $2);
@@ -335,7 +335,7 @@ boolean
   ;
 
 symbol_ref
-  : ID 
+  : ID
     {
       SymDec *s = symTab->find($1);
       if (s) {
@@ -345,7 +345,7 @@ symbol_ref
         yyerror("Unknown symbol");
       }
     }
-          
+
   ;
 
 funcall
@@ -380,7 +380,7 @@ postfix_expression
   | to_uint64_expression
   ;
 
-// In order to distinguish between a bit reference and a (syntactically equivalent) array 
+// In order to distinguish between a bit reference and a (syntactically equivalent) array
 // reference, the base must be examin<ed:
 
 array_or_bit_ref
@@ -502,7 +502,7 @@ cond_expression
 mv_expression
   : mv_type '(' expr_list ')' {$$ = new MultipleValue((MvType*)$1, $3);}
   ;
-        
+
 expression
   : cond_expression
   | mv_expression
@@ -514,7 +514,7 @@ expr_list
   ;
 
 nontrivial_expr_list
-  : expression                           {$$ = new List<Expression>($1);} 
+  : expression                           {$$ = new List<Expression>($1);}
   | nontrivial_expr_list ',' expression  {$$ = $1->add($3);}
   ;
 
@@ -525,7 +525,7 @@ arith_expr_list
   ;
 
 nontrivial_arith_expr_list
-  : arithmetic_expression                                 {$$ = new List<Expression>($1);} 
+  : arithmetic_expression                                 {$$ = new List<Expression>($1);}
   | nontrivial_arith_expr_list ',' arithmetic_expression  {$$ = $1->add($3);}
   ;
 
@@ -538,9 +538,9 @@ statement
   : simple_statement ';'
   | block
   | iterative_statement
-  | if_statement 
+  | if_statement
   | switch_statement
-  | MASC symbol_ref ID '{' nontrivial_expr_list '}' statement 
+  | MASC symbol_ref ID '{' nontrivial_expr_list '}' statement
     {$$ = $7; $$->var = (SymRef*)$2; $$->vals = (List<Constant>*)$5;}
   ;
 
@@ -560,7 +560,7 @@ simple_statement
   ;
 
 var_dec
-  : type_spec untyped_var_dec  
+  : type_spec untyped_var_dec
     {
      $$ = $2;
      Type *t = ((VarDec*)$$)->type;
@@ -571,16 +571,16 @@ var_dec
        ((VarDec*)$$)->type = $1;
      }
     }
-  ;                
+  ;
 
 untyped_var_dec
-  : ID                
+  : ID
     {$$ = new VarDec($1, NULL); symTab->push((VarDec*)$$);}
   | ID '=' expression
     {$$ = new VarDec($1, NULL, $3); symTab->push((VarDec*)$$);}
   | ID '=' array_init
     {$$ = new VarDec($1, NULL, $3); symTab->push((VarDec*)$$);}
-  | ID '[' arithmetic_expression ']' 
+  | ID '[' arithmetic_expression ']'
     {
       if ($3->isConst() && $3->evalConst() > 0) {
         $$ = new VarDec($1, new ArrayType($3, NULL)); symTab->push((VarDec*)$$);
@@ -605,7 +605,7 @@ array_init
   ;
 
 array_init_list
-  : expression                      {$$ = new BigList<Expression>($1);} 
+  : expression                      {$$ = new BigList<Expression>($1);}
   | array_init_list ',' expression  {$$ = $1->add($3);}
   ;
 
@@ -662,7 +662,7 @@ multiple_var_dec
      ((MulVarDec*)$$)->decs->add((VarDec*)$3);
     }
   ;
-  
+
 multiple_const_dec
   : const_dec ',' untyped_const_dec
     {
@@ -719,15 +719,15 @@ assignment
           yyerror("Second arg of set_slc must be an expression of register type");
         }
         else {
-    	  Expression *top;
-	  if ($5->isConst()) {
-	    top = new Integer($5->evalConst() + ((RegType*)type)->width->evalConst() - 1);
-	  }
-  	  else {
-	    top = new BinaryExpr($5, new Integer(((RegType*)type)->width->evalConst() - 1), newstr("+"));
-  	  }
-	  $$ = new Assignment(new Subrange($1, top, $5), "=", $7);
-	}
+          Expression *top;
+          if ($5->isConst()) {
+            top = new Integer($5->evalConst() + ((RegType*)type)->width->evalConst() - 1);
+          }
+          else {
+            top = new BinaryExpr($5, new Integer(((RegType*)type)->width->evalConst() - 1), newstr("+"));
+          }
+          $$ = new Assignment(new Subrange($1, top, $5), "=", $7);
+        }
       }
     }
   ;
@@ -781,8 +781,8 @@ iterative_statement
   ;
 
 for_statement
-  : FOR {symTab->pushFrame();} '(' for_init ';' expression ';' assignment ')' 
-    statement  
+  : FOR {symTab->pushFrame();} '(' for_init ';' expression ';' assignment ')'
+    statement
     {
       $$ = new ForStmt((SimpleStatement*)$4, $6, (Assignment*)$8, $10);
       symTab->popFrame();
@@ -792,7 +792,7 @@ for_statement
 for_init
   : var_dec {symTab->push((VarDec*)$1);}
   | assignment
-  ; 
+  ;
 
 while_statement
   : WHILE '(' expression ')' statement  {$$ = new WhileStmt($3, $5);}
@@ -823,7 +823,7 @@ case
 
 case_label
   : constant
-  | symbol_ref 
+  | symbol_ref
     {
       if ($1->exprType()->isEnumType()) {
         $$ = $1;
@@ -838,7 +838,7 @@ case_label
 //*************************************************************************************
 
 func_def
-  : type_spec ID {symTab->pushFrame();} '(' param_dec_list ')' block 
+  : type_spec ID {symTab->pushFrame();} '(' param_dec_list ')' block
     {$$ = new FunDef($2, $1, $5, (Block*)$7); symTab->popFrame();}
   | func_template
   ;
@@ -849,13 +849,13 @@ param_dec_list
   ;
 
 nontrivial_param_dec_list
-  : var_dec                                {$$ = new List<VarDec>((VarDec*)$1);} 
+  : var_dec                                {$$ = new List<VarDec>((VarDec*)$1);}
   | nontrivial_param_dec_list ',' var_dec  {$$ = $1->add((VarDec*)$3);}
   ;
 
 func_template
-  : TEMPLATE {symTab->pushFrame();} '<' template_param_dec_list '>' 
-    type_spec ID '(' param_dec_list ')' block 
+  : TEMPLATE {symTab->pushFrame();} '<' template_param_dec_list '>'
+    type_spec ID '(' param_dec_list ')' block
     {
       $$ = new Template($7, $6, $9, (Block*)$11, $4); symTab->popFrame();
       if (!prog.templates) {
@@ -873,7 +873,7 @@ template_param_dec_list
   ;
 
 nontrivial_template_param_dec_list
-  : template_param_dec                                         {$$ = new List<TempParamDec>((TempParamDec*)$1);} 
+  : template_param_dec                                         {$$ = new List<TempParamDec>((TempParamDec*)$1);}
   | nontrivial_template_param_dec_list ',' template_param_dec  {$$ = $1->add((TempParamDec*)$3);}
   ;
 

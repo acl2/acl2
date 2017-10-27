@@ -33,33 +33,33 @@
 ;;; This is mechanically derived.
 
 (DEFN WP-ZCOEF
-       (F1 X C LOW A F1SAVE F2)
-       (IF (EQUAL (DEC X) 0)
-           (EQUAL
-              (PLUS (TIMES (PLUS (TIMES 128 C) (QUOTIENT A 2)) 256)
-                    (PLUS (TIMES 128 (REMAINDER A 2))
-                          (QUOTIENT LOW 2)))
-              (TIMES F1SAVE F2))
-           (WP-ZCOEF
-              (PLUS (TIMES 128 (REMAINDER LOW 2))
-                    (QUOTIENT F1 2))
-              (DEC X)
-              (TIMES
-                 (REMAINDER F1 2)
-                 (QUOTIENT
-                    (PLUS (PLUS (TIMES 128 C) (QUOTIENT A 2)) F2)
-                    256))
-              (PLUS (TIMES 128 (REMAINDER A 2))
-                    (QUOTIENT LOW 2))
-	      (IF (EQUAL (REMAINDER F1 2) 0)
-		  (PLUS (TIMES 128 C) (QUOTIENT A 2))
-		  (REMAINDER
-		   (PLUS (PLUS (TIMES 128 C) (QUOTIENT A 2))
-			 F2)
-		   256))
-	      F1SAVE
-              F2))
-       ((lessp (dec x)))) ; This hint is user added
+  (F1 X C LOW A F1SAVE F2)
+  (IF (EQUAL (DEC X) 0)
+      (EQUAL
+       (PLUS (TIMES (PLUS (TIMES 128 C) (QUOTIENT A 2)) 256)
+             (PLUS (TIMES 128 (REMAINDER A 2))
+                   (QUOTIENT LOW 2)))
+       (TIMES F1SAVE F2))
+      (WP-ZCOEF
+       (PLUS (TIMES 128 (REMAINDER LOW 2))
+             (QUOTIENT F1 2))
+       (DEC X)
+       (TIMES
+        (REMAINDER F1 2)
+        (QUOTIENT
+         (PLUS (PLUS (TIMES 128 C) (QUOTIENT A 2)) F2)
+         256))
+       (PLUS (TIMES 128 (REMAINDER A 2))
+             (QUOTIENT LOW 2))
+       (IF (EQUAL (REMAINDER F1 2) 0)
+           (PLUS (TIMES 128 C) (QUOTIENT A 2))
+           (REMAINDER
+            (PLUS (PLUS (TIMES 128 C) (QUOTIENT A 2))
+                  F2)
+            256))
+       F1SAVE
+       F2))
+  ((lessp (dec x)))) ; This hint is user added
 
 ;;; This is the weakest precondition at the beginning of the program.
 
@@ -80,7 +80,7 @@
   (if (zerop b)
       0
     (if (zerop i)
-	1
+        1
       (times b (exp (sub1 i) b)))))
 
 ;;; We generalize the register size in order to capture properties of 128 and 256.
@@ -89,30 +89,30 @@
   (if (equal (dec x) 0)
       (equal
        (plus (quotient low 2)
-	     (times (exp (sub1 i) 2) (remainder a 2))
-	     (times (exp i 2) (quotient a 2))
-	     (times (exp i 2) (exp (sub1 i) 2) c))
+             (times (exp (sub1 i) 2) (remainder a 2))
+             (times (exp i 2) (quotient a 2))
+             (times (exp i 2) (exp (sub1 i) 2) c))
        result)
     (wp-zcoef-g
      (plus (quotient f1 2) (times (exp (sub1 i) 2) (remainder low 2)))
      (dec x)
      (if (equal (remainder f1 2) 0)
-	 0
+         0
        (quotient
-	(plus (quotient a 2)
-	      (times (exp (sub1 i) 2) c)
-	      f2)
-	(exp i 2)))
+        (plus (quotient a 2)
+              (times (exp (sub1 i) 2) c)
+              f2)
+        (exp i 2)))
      (plus (quotient low 2)
-	   (times (exp (sub1 i) 2) (remainder a 2)))
+           (times (exp (sub1 i) 2) (remainder a 2)))
      (if (equal (remainder f1 2) 0)
-	 (plus (quotient a 2)
-	       (times (exp (sub1 i) 2) c))
+         (plus (quotient a 2)
+               (times (exp (sub1 i) 2) c))
        (remainder
-	(plus (quotient a 2)
-	      (times (exp (sub1 i) 2) c)
-	      f2)
-	(exp i 2)))
+        (plus (quotient a 2)
+              (times (exp (sub1 i) 2) c)
+              f2)
+        (exp i 2)))
      result
      f2
      i))
@@ -121,14 +121,14 @@
 ;;; We successively transform wp-zcoef-1 into instances of more general functions.
 
 (prove-lemma wp-zcoef-g-instance (rewrite)
-	     (equal (wp-zcoef f1 x c low a f1save f2)
-		    (wp-zcoef-g f1 x c low a (times f1save f2) f2 8))
-	     ((disable-theory if-normalization)
-	      (expand (wp-zcoef f1 0 c low a f1save f2)
-		      (wp-zcoef-g f1 0 c low a (times f1save f2) f2 8))
-	      (hands-off quotient remainder difference)
-	      (disable times
-		       times-add1)))
+  (equal (wp-zcoef f1 x c low a f1save f2)
+         (wp-zcoef-g f1 x c low a (times f1save f2) f2 8))
+  ((disable-theory if-normalization)
+   (expand (wp-zcoef f1 0 c low a f1save f2)
+           (wp-zcoef-g f1 0 c low a (times f1save f2) f2 8))
+   (hands-off quotient remainder difference)
+   (disable times
+            times-add1)))
 
 ;;; Inspection of the assembly program shows that c effectively behaves as an
 ;;; extension of a, so we define an equivalent function on ac = a + c*2^i.
@@ -136,15 +136,15 @@
 (defn wp-zcoef-ac (f1 x ac low result f2 i)
   (if (equal (dec x) 0)
       (equal (plus (quotient low 2) (times ac (exp (sub1 i) 2)))
-	     result)
+             result)
     (wp-zcoef-ac
      (plus (quotient f1 2) (times (exp (sub1 i) 2) (remainder low 2)))
      (dec x)
      (if (equal (remainder f1 2) 0)
-	 (quotient ac 2)
+         (quotient ac 2)
        (plus f2 (quotient ac 2)))
      (plus (quotient low 2)
-	   (times (exp (sub1 i) 2) (remainder ac 2)))
+           (times (exp (sub1 i) 2) (remainder ac 2)))
      result
      f2
      i))
@@ -165,209 +165,209 @@
 ;;; An alternative to remainder-plus-arg1 that generates fewer case splits.
 
 (prove-lemma remainder-plus-arg1-alt (rewrite)
-	     (implies (equal (remainder a d) 0)
-		      (and (equal (remainder (plus a b) d) (remainder b d))
-			   (equal (remainder (plus b a) d) (remainder b d))
-			   (equal (remainder (plus b a c) d)
-				  (remainder (plus b c) d))
-			   (equal (remainder (plus b c a) d)
-				  (remainder (plus b c) d))))
-	     ((disable-theory if-normalization)
-	      (hands-off difference)
-	      (disable times-add1)))
+  (implies (equal (remainder a d) 0)
+           (and (equal (remainder (plus a b) d) (remainder b d))
+                (equal (remainder (plus b a) d) (remainder b d))
+                (equal (remainder (plus b a c) d)
+                       (remainder (plus b c) d))
+                (equal (remainder (plus b c a) d)
+                       (remainder (plus b c) d))))
+  ((disable-theory if-normalization)
+   (hands-off difference)
+   (disable times-add1)))
 
 ;;; An alternative to quotient-plus-arg1 that generates fewer case splits.
 
 (prove-lemma quotient-plus-arg1-alt (rewrite)
-	     (implies (equal (remainder a d) 0)
-		      (and (equal (quotient (plus a b) d)
-				  (plus (quotient a d) (quotient b d)))
-			   (equal (quotient (plus b a) d)
-				  (plus (quotient a d) (quotient b d)))
-			   (equal (quotient (plus b a c) d)
+  (implies (equal (remainder a d) 0)
+           (and (equal (quotient (plus a b) d)
+                       (plus (quotient a d) (quotient b d)))
+                (equal (quotient (plus b a) d)
+                       (plus (quotient a d) (quotient b d)))
+                (equal (quotient (plus b a c) d)
 
-				  (plus (quotient a d) (quotient (plus b c) d)))
-			   (equal (quotient (plus b c a) d)
-				  (plus (quotient a d) (quotient (plus b c) d)))))
-	     ((disable-theory if-normalization)
-	      (hands-off difference)
-	      (disable lessp-transpose-meta
-		       equal-transpose-meta
-		       remainder-difference-arg1
-		       remainder-plus-arg1)))
+                       (plus (quotient a d) (quotient (plus b c) d)))
+                (equal (quotient (plus b c a) d)
+                       (plus (quotient a d) (quotient (plus b c) d)))))
+  ((disable-theory if-normalization)
+   (hands-off difference)
+   (disable lessp-transpose-meta
+            equal-transpose-meta
+            remainder-difference-arg1
+            remainder-plus-arg1)))
 
 ;;; We now prove an instance of fn1-as-fn2.
 
 (functionally-instantiate wp-zcoef-g-as-ac nil
   (let ((ts (list (f1 s)
-		  (x s)
-		  (c s)
-		  (low s)
-		  (a s)
-		  (result s)
-		  (f2 s)
-		  (i s)
-		  (plus (a s) (times (c s) (exp (i s) 2))))))
+                  (x s)
+                  (c s)
+                  (low s)
+                  (a s)
+                  (result s)
+                  (f2 s)
+                  (i s)
+                  (plus (a s) (times (c s) (exp (i s) 2))))))
     (implies (and (not (zerop (x s)))
-		  (not (lessp (i s) (x s))))
-	     (equal (wp-zcoef-g (f1 s)
-				(x s)
-				(c s)
-				(low s)
-				(a s)
-				(result s)
-				(f2 s)
-				(i s))
-		    (wp-zcoef-ac (f1 ts)
-				 (x ts)
-				 (ac ts)
-				 (low ts)
-				 (result ts)
-				 (f2 ts)
-				 (i ts)))))
-    fn1-as-fn2
-    ((b1 (lambda (s) (equal (dec (x s)) 0)))
-     (b2 (lambda (s) (equal (dec (x s)) 0)))
-     (q1 (lambda (s) (equal (plus (times (plus (times (exp (sub1 (i s)) 2) (c s))
-					       (quotient (a s) 2))
-					 (exp (i s) 2))
-				  (plus (times (exp (sub1 (i s)) 2) (remainder (a s) 2))
-					(quotient (low s) 2)))
-			    (result s))))
-     (q2 (lambda (s) (equal (plus (quotient (low s) 2)
-				  (times (ac s) (exp (sub1 (i s)) 2)))
-			    (result s))))
-     (p (lambda (s) (and (not (zerop (x s)))
-			    (not (lessp (i s) (x s))))))
-     (fn1 (lambda (s)
-	    (wp-zcoef-g (f1 s) (x s) (c s) (low s) (a s) (result s) (f2 s) (i s))))
-     (fn2 (lambda (s)
-	    (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
-     (sigma1 (lambda (s)
-	      (list
-	       (plus (times (exp (sub1 (i s)) 2) (remainder (low s) 2))
-		     (quotient (f1 s) 2))
-	       (dec (x s))
-	       (if (equal (remainder (f1 s) 2) 0)
-		   0
-		 (quotient
-		  (plus (plus (times (exp (sub1 (i s)) 2) (c s))
-			      (quotient (a s) 2))
-			(f2 s))
-		  (exp (i s) 2)))
-	       (plus (times (exp (sub1 (i s)) 2) (remainder (a s) 2))
-		     (quotient (low s) 2))
-	       (if (equal (remainder (f1 s) 2) 0)
-		   (plus (times (exp (sub1 (i s)) 2) (c s))
-			 (quotient (a s) 2))
-		 (remainder
-		  (plus (plus (times (exp (sub1 (i s)) 2) (c s))
-			      (quotient (a s) 2))
-			(f2 s))
-		  (exp (i s) 2)))
-	       (result s)
-	       (f2 s)
-	       (i s))))
-     (sigma2 (lambda (s)
-	    (list
-	     (plus (times (exp (sub1 (i s)) 2) (remainder (low s) 2))
-		   (quotient (f1 s) 2))
-	     (dec (x s))
-	     (if (equal (remainder (f1 s) 2) 0)
-		 0
-	       (quotient
-		(plus (plus (times (exp (sub1 (i s)) 2) (c s))
-			    (quotient (a s) 2))
-		      (f2 s))
-		(exp (i s) 2)))
-	     (plus (times (exp (sub1 (i s)) 2) (remainder (ac s) 2))
-		   (quotient (low s) 2))
-	     (if (equal (remainder (f1 s) 2) 0)
-		 (plus (times (exp (sub1 (i s)) 2) (c s))
-		       (quotient (a s) 2))
-	       (remainder
-		(plus (plus (times (exp (sub1 (i s)) 2) (c s))
-			    (quotient (a s) 2))
-		      (f2 s))
-		(exp (i s) 2)))
-	     (result s)
-	     (f2 s)
-	     (i s)
-	     (if (equal (remainder (f1 s) 2) 0)
-		 (quotient (ac s) 2)
-	       (plus (f2 s) (quotient (ac s) 2))))))
-     (measure1 (lambda (s) (if (zerop (x s)) 256 (x s))))
-     (id-alt
-      (lambda (s)
-	(list 
-	 (f1 s)
-	 (x s)
-	 (c s)
-	 (low s)
-	 (a s)
-	 (result s)
-	 (f2 s)
-	 (i s)
-	 (plus (a s) (times (c s) (exp (i s) 2)))))))
+                  (not (lessp (i s) (x s))))
+             (equal (wp-zcoef-g (f1 s)
+                                (x s)
+                                (c s)
+                                (low s)
+                                (a s)
+                                (result s)
+                                (f2 s)
+                                (i s))
+                    (wp-zcoef-ac (f1 ts)
+                                 (x ts)
+                                 (ac ts)
+                                 (low ts)
+                                 (result ts)
+                                 (f2 ts)
+                                 (i ts)))))
+  fn1-as-fn2
+  ((b1 (lambda (s) (equal (dec (x s)) 0)))
+   (b2 (lambda (s) (equal (dec (x s)) 0)))
+   (q1 (lambda (s) (equal (plus (times (plus (times (exp (sub1 (i s)) 2) (c s))
+                                             (quotient (a s) 2))
+                                       (exp (i s) 2))
+                                (plus (times (exp (sub1 (i s)) 2) (remainder (a s) 2))
+                                      (quotient (low s) 2)))
+                          (result s))))
+   (q2 (lambda (s) (equal (plus (quotient (low s) 2)
+                                (times (ac s) (exp (sub1 (i s)) 2)))
+                          (result s))))
+   (p (lambda (s) (and (not (zerop (x s)))
+                       (not (lessp (i s) (x s))))))
+   (fn1 (lambda (s)
+          (wp-zcoef-g (f1 s) (x s) (c s) (low s) (a s) (result s) (f2 s) (i s))))
+   (fn2 (lambda (s)
+          (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
+   (sigma1 (lambda (s)
+             (list
+              (plus (times (exp (sub1 (i s)) 2) (remainder (low s) 2))
+                    (quotient (f1 s) 2))
+              (dec (x s))
+              (if (equal (remainder (f1 s) 2) 0)
+                  0
+                (quotient
+                 (plus (plus (times (exp (sub1 (i s)) 2) (c s))
+                             (quotient (a s) 2))
+                       (f2 s))
+                 (exp (i s) 2)))
+              (plus (times (exp (sub1 (i s)) 2) (remainder (a s) 2))
+                    (quotient (low s) 2))
+              (if (equal (remainder (f1 s) 2) 0)
+                  (plus (times (exp (sub1 (i s)) 2) (c s))
+                        (quotient (a s) 2))
+                (remainder
+                 (plus (plus (times (exp (sub1 (i s)) 2) (c s))
+                             (quotient (a s) 2))
+                       (f2 s))
+                 (exp (i s) 2)))
+              (result s)
+              (f2 s)
+              (i s))))
+   (sigma2 (lambda (s)
+             (list
+              (plus (times (exp (sub1 (i s)) 2) (remainder (low s) 2))
+                    (quotient (f1 s) 2))
+              (dec (x s))
+              (if (equal (remainder (f1 s) 2) 0)
+                  0
+                (quotient
+                 (plus (plus (times (exp (sub1 (i s)) 2) (c s))
+                             (quotient (a s) 2))
+                       (f2 s))
+                 (exp (i s) 2)))
+              (plus (times (exp (sub1 (i s)) 2) (remainder (ac s) 2))
+                    (quotient (low s) 2))
+              (if (equal (remainder (f1 s) 2) 0)
+                  (plus (times (exp (sub1 (i s)) 2) (c s))
+                        (quotient (a s) 2))
+                (remainder
+                 (plus (plus (times (exp (sub1 (i s)) 2) (c s))
+                             (quotient (a s) 2))
+                       (f2 s))
+                 (exp (i s) 2)))
+              (result s)
+              (f2 s)
+              (i s)
+              (if (equal (remainder (f1 s) 2) 0)
+                  (quotient (ac s) 2)
+                (plus (f2 s) (quotient (ac s) 2))))))
+   (measure1 (lambda (s) (if (zerop (x s)) 256 (x s))))
+   (id-alt
+    (lambda (s)
+      (list
+       (f1 s)
+       (x s)
+       (c s)
+       (low s)
+       (a s)
+       (result s)
+       (f2 s)
+       (i s)
+       (plus (a s) (times (c s) (exp (i s) 2)))))))
   ((disable-theory if-normalization)
    (expand (wp-zcoef-g (car s)
-		       (cadr s)
-		       (caddr s)
-		       (cadddr s)
-		       (caddddr s)
-		       (cadddddr s)
-		       (caddddddr s)
-		       (cadddddddr s))
-	   (wp-zcoef-g (car s)
-		       0
-		       (caddr s)
-		       (cadddr s)
-		       (caddddr s)
-		       (cadddddr s)
-		       (caddddddr s)
-		       (cadddddddr s)))
+                       (cadr s)
+                       (caddr s)
+                       (cadddr s)
+                       (caddddr s)
+                       (cadddddr s)
+                       (caddddddr s)
+                       (cadddddddr s))
+           (wp-zcoef-g (car s)
+                       0
+                       (caddr s)
+                       (cadddr s)
+                       (caddddr s)
+                       (cadddddr s)
+                       (caddddddr s)
+                       (cadddddddr s)))
    (hands-off difference)
    (disable quotient-add1-arg2
-	    remainder-add1-arg2
-	    quotient-plus-arg1
-	    remainder-plus-arg1
-	    remainder-plus-arg1-simple
-	    quotient-times-arg1
-	    remainder-times-arg1
-	    lessp-transpose-meta
-	    equal-transpose-meta
-	    times
-	    times-add1
-	    sub1-times
-	    equal-add1
-	    remainder-difference-arg1
-	    sub1-quotient
-	    sub1-remainder
-	    wp-zcoef-g
-	    )))
+            remainder-add1-arg2
+            quotient-plus-arg1
+            remainder-plus-arg1
+            remainder-plus-arg1-simple
+            quotient-times-arg1
+            remainder-times-arg1
+            lessp-transpose-meta
+            equal-transpose-meta
+            times
+            times-add1
+            sub1-times
+            equal-add1
+            remainder-difference-arg1
+            sub1-quotient
+            sub1-remainder
+            wp-zcoef-g
+            )))
 
 ;;; Convert the above instantiation into an effective rewrite rule.
 
 (prove-lemma wp-zcoef-g-as-ac-rewrite (rewrite)
-    (implies (and (not (zerop x))
-		  (not (lessp i x)))
-	     (equal (wp-zcoef-g f1 x c low a result f2 i)
-		    (wp-zcoef-ac f1
-				 x
-				 (plus a (times c (exp i 2)))
-				 low
-				 result
-				 f2
-				 i)))
-    ((use (wp-zcoef-g-as-ac (s (list f1 x c low a result f2 i
-				     (plus a (times c (exp i 2)))))))
-     (hands-off quotient remainder times difference plus)))
+  (implies (and (not (zerop x))
+                (not (lessp i x)))
+           (equal (wp-zcoef-g f1 x c low a result f2 i)
+                  (wp-zcoef-ac f1
+                               x
+                               (plus a (times c (exp i 2)))
+                               low
+                               result
+                               f2
+                               i)))
+  ((use (wp-zcoef-g-as-ac (s (list f1 x c low a result f2 i
+                                   (plus a (times c (exp i 2)))))))
+   (hands-off quotient remainder times difference plus)))
 
 (prove-lemma remainder-exp-exp (rewrite)
   (implies (not (lessp i j))
-	   (equal (remainder (exp i 2) (exp j 2)) 0))
+           (equal (remainder (exp i 2) (exp j 2)) 0))
   ((disable times
-	    times-add1)))
+            times-add1)))
 
 ;;; We now look for a substitution id-alt, which leaves wp-zcoef-ac invariant.
 ;;; Since we will be proving that sigma1 and id-alt commute, we would indeed have
@@ -380,151 +380,151 @@
 ;;; (times 2 (remainder (exp (sub1 x) 2))) to ac.  This defines id-alt.
 
 (functionally-instantiate f2-induction nil
- (let ((ts
-	(list (f1 s)
-	      (x s)
-	      (c s)
-	      (low s)
-	      (a s)
-	      (result s)
-	      (sub1 (f2 s))
-	      (i s)
-	      (plus (ac s) (times 2 (remainder (f1 s) (exp (sub1 (x s)) 2)))))))
-   (implies
-    (and (not (zerop (f2 s)))
-	 (not (zerop (x s)))
-	 (not (lessp (i s) (x s))))
-    (equal (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))
-	   (wp-zcoef-ac
-	    (f1 ts)
-	    (x ts)
-	    (ac ts)
-	    (low ts)
-	    (result ts)
-	    (f2 ts)
-	    (i ts)))))
-    fn1-as-fn2
-    ((b1 (lambda (s) (equal (dec (x s)) 0)))
-     (b2 (lambda (s) (equal (dec (x s)) 0)))
-     (q1 (lambda (s) (equal (plus (quotient (low s) 2)
-				  (times (ac s) (exp (sub1 (i s)) 2)))
-			    (result s))))
-     (q2 (lambda (s) (equal (plus (quotient (low s) 2)
-				  (times (ac s) (exp (sub1 (i s)) 2)))
-			    (result s))))
-     (p (lambda (s) (and (not (zerop (f2 s)))
-			    (not (zerop (x s)))
-			    (not (lessp (i s) (x s))))))
-     (fn1 (lambda (s)
-	    (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
-     (fn2 (lambda (s)
-	    (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
-     (sigma1 (lambda (s)
-	      (list
-	       (plus (times (exp (sub1 (i s)) 2) (remainder (low s) 2))
-		     (quotient (f1 s) 2))
-	       (dec (x s))
-	       (c s)
-	       (plus (times (exp (sub1 (i s)) 2) (remainder (ac s) 2))
-		     (quotient (low s) 2))
-	       (a s)
-	       (result s)
-	       (f2 s)
-	       (i s)
-	       (if (equal (remainder (f1 s) 2) 0)
-		   (quotient (ac s) 2)
-		 (plus (f2 s) (quotient (ac s) 2))))))
-     (sigma2 (lambda (s)
-	    (list
-	     (plus (times (exp (sub1 (i s)) 2) (remainder (low s) 2))
-		   (quotient (f1 s) 2))
-	     (dec (x s))
-	     (c s)
-	     (plus (times (exp (sub1 (i s)) 2) (remainder (ac s) 2))
-		   (quotient (low s) 2))
-	     (a s)
-	     (result s)
-	     (f2 s)
-	     (i s)
-	     (if (equal (remainder (f1 s) 2) 0)
-		 (quotient (ac s) 2)
-	       (plus (f2 s) (quotient (ac s) 2))))))
-     (measure1 (lambda (s) (if (zerop (x s)) 256 (x s))))
-     (id-alt
-      (lambda (s)
-	(list 
-	 (f1 s)
-	 (x s)
-	 (c s)
-	 (low s)
-	 (a s)
-	 (result s)
-	 (sub1 (f2 s))
-	 (i s)
-	 (plus (ac s) (times 2 (remainder (f1 s) (exp (sub1 (x s)) 2))))))))
-    ((disable-theory if-normalization)
-     (hands-off difference)
-     (disable quotient-add1-arg2
-	      remainder-add1-arg2
-	      remainder-difference-arg1
-	      quotient-plus-arg1
-	      remainder-plus-arg1
-	      remainder-plus-arg1-simple
-	      times
-	      times-add1)))
+  (let ((ts
+         (list (f1 s)
+               (x s)
+               (c s)
+               (low s)
+               (a s)
+               (result s)
+               (sub1 (f2 s))
+               (i s)
+               (plus (ac s) (times 2 (remainder (f1 s) (exp (sub1 (x s)) 2)))))))
+    (implies
+     (and (not (zerop (f2 s)))
+          (not (zerop (x s)))
+          (not (lessp (i s) (x s))))
+     (equal (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))
+            (wp-zcoef-ac
+             (f1 ts)
+             (x ts)
+             (ac ts)
+             (low ts)
+             (result ts)
+             (f2 ts)
+             (i ts)))))
+  fn1-as-fn2
+  ((b1 (lambda (s) (equal (dec (x s)) 0)))
+   (b2 (lambda (s) (equal (dec (x s)) 0)))
+   (q1 (lambda (s) (equal (plus (quotient (low s) 2)
+                                (times (ac s) (exp (sub1 (i s)) 2)))
+                          (result s))))
+   (q2 (lambda (s) (equal (plus (quotient (low s) 2)
+                                (times (ac s) (exp (sub1 (i s)) 2)))
+                          (result s))))
+   (p (lambda (s) (and (not (zerop (f2 s)))
+                       (not (zerop (x s)))
+                       (not (lessp (i s) (x s))))))
+   (fn1 (lambda (s)
+          (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
+   (fn2 (lambda (s)
+          (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
+   (sigma1 (lambda (s)
+             (list
+              (plus (times (exp (sub1 (i s)) 2) (remainder (low s) 2))
+                    (quotient (f1 s) 2))
+              (dec (x s))
+              (c s)
+              (plus (times (exp (sub1 (i s)) 2) (remainder (ac s) 2))
+                    (quotient (low s) 2))
+              (a s)
+              (result s)
+              (f2 s)
+              (i s)
+              (if (equal (remainder (f1 s) 2) 0)
+                  (quotient (ac s) 2)
+                (plus (f2 s) (quotient (ac s) 2))))))
+   (sigma2 (lambda (s)
+             (list
+              (plus (times (exp (sub1 (i s)) 2) (remainder (low s) 2))
+                    (quotient (f1 s) 2))
+              (dec (x s))
+              (c s)
+              (plus (times (exp (sub1 (i s)) 2) (remainder (ac s) 2))
+                    (quotient (low s) 2))
+              (a s)
+              (result s)
+              (f2 s)
+              (i s)
+              (if (equal (remainder (f1 s) 2) 0)
+                  (quotient (ac s) 2)
+                (plus (f2 s) (quotient (ac s) 2))))))
+   (measure1 (lambda (s) (if (zerop (x s)) 256 (x s))))
+   (id-alt
+    (lambda (s)
+      (list
+       (f1 s)
+       (x s)
+       (c s)
+       (low s)
+       (a s)
+       (result s)
+       (sub1 (f2 s))
+       (i s)
+       (plus (ac s) (times 2 (remainder (f1 s) (exp (sub1 (x s)) 2))))))))
+  ((disable-theory if-normalization)
+   (hands-off difference)
+   (disable quotient-add1-arg2
+            remainder-add1-arg2
+            remainder-difference-arg1
+            quotient-plus-arg1
+            remainder-plus-arg1
+            remainder-plus-arg1-simple
+            times
+            times-add1)))
 
 ;;; Convert the above to an effective rewrite rule.
 
 (prove-lemma f2-induction-rewrite (rewrite)
-   (implies
-    (and (not (zerop f2))
-	 (not (zerop x))
-	 (not (lessp i x)))
-    (equal (wp-zcoef-ac f1 x ac low result f2 i)
-	   (wp-zcoef-ac f1
-			x
-			(plus ac (times 2 (remainder f1 (exp (sub1 x) 2))))
-			low
-			result
-			(sub1 f2)
-			i)))
-   ((use (f2-induction (s (list f1 x c low a result f2 i ac))))
-    (hands-off quotient remainder times difference plus)))
+  (implies
+   (and (not (zerop f2))
+        (not (zerop x))
+        (not (lessp i x)))
+   (equal (wp-zcoef-ac f1 x ac low result f2 i)
+          (wp-zcoef-ac f1
+                       x
+                       (plus ac (times 2 (remainder f1 (exp (sub1 x) 2))))
+                       low
+                       result
+                       (sub1 f2)
+                       i)))
+  ((use (f2-induction (s (list f1 x c low a result f2 i ac))))
+   (hands-off quotient remainder times difference plus)))
 
 ;;; This is the base case for the alternative induction.  When f2=0, wp-zcoef-ac simply
 ;;; right shifts ac and low x times.
 
 (prove-lemma f2-induction-base-case (rewrite)
-	     (implies (and (zerop f2)
-			   (not (zerop x))
-			   (not (lessp i x)))
-		      (equal (wp-zcoef-ac f1 x ac low result f2 i)
-			     (equal (plus (quotient low (exp x 2))
-					  (times ac (quotient (exp i 2) (exp x 2))))
-				    result)))
-	     ((disable-theory if-normalization)
-	      (induct (wp-zcoef-ac f1 x ac low result f2 i))
-	      (hands-off difference)
-	      (expand (wp-zcoef-ac f1 x ac low result f2 i)
-		      (wp-zcoef-ac f1 x ac low result 0 i))
-	      (disable quotient-add1-arg2
-		       remainder-add1-arg2
-		       quotient-plus-arg1
-		       remainder-plus-arg1
-		       remainder-plus-arg1-simple
-		       remainder-difference-arg1
-		       times
-		       times-add1
-		       equal-add1
-		       wp-zcoef-ac
-		       lessp-transpose-meta
-		       equal-transpose-meta
-		       remainder-remainder
-		       sub1-quotient
-		       lessp-odometer-simple
-		       equal-odometer-simple
-		       sub1-times
-		       sub1-remainder)))
+  (implies (and (zerop f2)
+                (not (zerop x))
+                (not (lessp i x)))
+           (equal (wp-zcoef-ac f1 x ac low result f2 i)
+                  (equal (plus (quotient low (exp x 2))
+                               (times ac (quotient (exp i 2) (exp x 2))))
+                         result)))
+  ((disable-theory if-normalization)
+   (induct (wp-zcoef-ac f1 x ac low result f2 i))
+   (hands-off difference)
+   (expand (wp-zcoef-ac f1 x ac low result f2 i)
+           (wp-zcoef-ac f1 x ac low result 0 i))
+   (disable quotient-add1-arg2
+            remainder-add1-arg2
+            quotient-plus-arg1
+            remainder-plus-arg1
+            remainder-plus-arg1-simple
+            remainder-difference-arg1
+            times
+            times-add1
+            equal-add1
+            wp-zcoef-ac
+            lessp-transpose-meta
+            equal-transpose-meta
+            remainder-remainder
+            sub1-quotient
+            lessp-odometer-simple
+            equal-odometer-simple
+            sub1-times
+            sub1-remainder)))
 
 ;;; This is the induction hint corresponding to id-alt.
 
@@ -536,43 +536,41 @@
 ;;; Rewrite an arbitrary application of wp-zcoef-ac into the base case.
 
 (prove-lemma wp-zcoef-ac-as-0 (rewrite)
-	     (implies
-	      (and (not (zerop x))
-		   (not (lessp i x)))
-	      (equal (wp-zcoef-ac f1 x ac low result f2 i)
-		     (if (zerop f2)
-			 (equal (plus (quotient low (exp x 2))
-				      (times ac (quotient (exp i 2) (exp x 2))))
-				result)
-		       (wp-zcoef-ac
-			f1
-			x
-			(plus ac (times 2 f2 (remainder f1 (exp (sub1 x) 2))))
-			low
-			result
-			0
-			i))))
-	     ((disable-theory if-normalization)
-	      (induct (wp-ind-hint f1 x ac f2))
-	      (hands-off difference)
-	      (disable wp-zcoef-ac
-		       plus-commutes-nest-meta
-		       plus-commutes-meta
-		       quotient-plus-arg2)))
+  (implies
+   (and (not (zerop x))
+        (not (lessp i x)))
+   (equal (wp-zcoef-ac f1 x ac low result f2 i)
+          (if (zerop f2)
+              (equal (plus (quotient low (exp x 2))
+                           (times ac (quotient (exp i 2) (exp x 2))))
+                     result)
+            (wp-zcoef-ac
+             f1
+             x
+             (plus ac (times 2 f2 (remainder f1 (exp (sub1 x) 2))))
+             low
+             result
+             0
+             i))))
+  ((disable-theory if-normalization)
+   (induct (wp-ind-hint f1 x ac f2))
+   (hands-off difference)
+   (disable wp-zcoef-ac
+            plus-commutes-nest-meta
+            plus-commutes-meta
+            quotient-plus-arg2)))
 
 ;;; Finally, the correctness result.
 
 (prove-lemma mult-program-is-correct nil
-	     (implies (and (lessp low 256)
-			   (lessp f1 256)
-			   (lessp f2 256))
-		      (wp-zcoef-1 f1 c low f2))
-	     ((disable-theory if-normalization)
-	      (disable quotient-add1-arg2
-		       remainder-add1-arg2
-		       times
-		       times-add1
-		       quotient-sub1-arg1
-		       difference-add1)))
-
-
+  (implies (and (lessp low 256)
+                (lessp f1 256)
+                (lessp f2 256))
+           (wp-zcoef-1 f1 c low f2))
+  ((disable-theory if-normalization)
+   (disable quotient-add1-arg2
+            remainder-add1-arg2
+            times
+            times-add1
+            quotient-sub1-arg1
+            difference-add1)))

@@ -28,11 +28,11 @@
 (DEFN WP-LOOP (N A C NSAVE)
   (IF (EQUAL (DEC N) 0)
       (EQUAL (REMAINDER (PLUS C (PLUS A N)) 256)
-	     (QUOTIENT (TIMES NSAVE (PLUS 1 NSAVE)) 2))
+             (QUOTIENT (TIMES NSAVE (PLUS 1 NSAVE)) 2))
       (WP-LOOP (DEC N)
-	       (REMAINDER (PLUS C (PLUS A N)) 256)
-	       (QUOTIENT (PLUS C (PLUS A N)) 256)
-	       NSAVE))
+               (REMAINDER (PLUS C (PLUS A N)) 256)
+               (QUOTIENT (PLUS C (PLUS A N)) 256)
+               NSAVE))
   ((lessp (if (zerop n) 256 n))))
 
 ;;; Weakest precondition at start of program
@@ -52,82 +52,82 @@
 
 (functionally-instantiate wp-loop-fn1-as-fn2 nil
   (implies (and (not (zerop (n s)))
-		(not (zerop (nsave s)))
-		(equal (c s) 0)
-		(lessp (plus (a s) (quotient (times (n s) (add1 (n s))) 2)) 256)
-		(not (lessp (a s) (nsave s))))
-	   (equal (wp-loop (n s) (a s) (c s) (nsave s))
-		  (let ((s (list (n s)
-				 (difference (a s) (nsave s))
-				 (c s)
-				 (sub1 (nsave s)))))
-		    (wp-loop (n s)
-			     (a s)
-			     (c s)
-			     (nsave s)))))
+                (not (zerop (nsave s)))
+                (equal (c s) 0)
+                (lessp (plus (a s) (quotient (times (n s) (add1 (n s))) 2)) 256)
+                (not (lessp (a s) (nsave s))))
+           (equal (wp-loop (n s) (a s) (c s) (nsave s))
+                  (let ((s (list (n s)
+                                 (difference (a s) (nsave s))
+                                 (c s)
+                                 (sub1 (nsave s)))))
+                    (wp-loop (n s)
+                             (a s)
+                             (c s)
+                             (nsave s)))))
   fn1-as-fn2
   ((fn1 (lambda (s) (wp-loop (n s) (a s) (c s) (nsave s))))
    (fn2 (lambda (s) (wp-loop (n s) (a s) (c s) (nsave s))))
    (b1 (lambda (s) (equal (dec (n s)) 0)))
    (b2 (lambda (s) (equal (dec (n s)) 0)))
    (q1 (lambda (s) (equal (remainder (plus (c s) (a s) (n s)) 256)
-			  (quotient (times (nsave s) (add1 (nsave s))) 2))))
+                          (quotient (times (nsave s) (add1 (nsave s))) 2))))
    (q2 (lambda (s) (equal (remainder (plus (c s) (a s) (n s)) 256)
-			  (quotient (times (nsave s) (add1 (nsave s))) 2))))
+                          (quotient (times (nsave s) (add1 (nsave s))) 2))))
    (sigma1 (lambda (s)
-	     (list (dec (n s))
-		   (remainder (plus (c s) (a s) (n s)) 256)
-		   (quotient (plus (c s) (a s) (n s)) 256)
-		   (nsave s))))
+             (list (dec (n s))
+                   (remainder (plus (c s) (a s) (n s)) 256)
+                   (quotient (plus (c s) (a s) (n s)) 256)
+                   (nsave s))))
    (sigma2 (lambda (s)
-	     (list (dec (n s))
-		   (remainder (plus (c s) (a s) (n s)) 256)
-		   (quotient (plus (c s) (a s) (n s)) 256)
-		   (nsave s))))
+             (list (dec (n s))
+                   (remainder (plus (c s) (a s) (n s)) 256)
+                   (quotient (plus (c s) (a s) (n s)) 256)
+                   (nsave s))))
    (p (lambda (s)
-	(and (not (zerop (n s)))
-	     (not (zerop (nsave s)))
-	     (equal (c s) 0)
-	     (lessp (plus (a s) (quotient (times (n s) (add1 (n s))) 2)) 256)
-	     (not (lessp (a s) (nsave s))))))
+        (and (not (zerop (n s)))
+             (not (zerop (nsave s)))
+             (equal (c s) 0)
+             (lessp (plus (a s) (quotient (times (n s) (add1 (n s))) 2)) 256)
+             (not (lessp (a s) (nsave s))))))
    (id-alt (lambda (s)
-	     (list (n s)
-		   (difference (a s) (nsave s))
-		   (c s)
-		   (sub1 (nsave s)))))
+             (list (n s)
+                   (difference (a s) (nsave s))
+                   (c s)
+                   (sub1 (nsave s)))))
    (measure1 (lambda (s) (if (zerop (n s)) 256 (n s)))))
   ((disable-theory if-normalization)
    (expand (times (car s) (car s)))
    (disable quotient-add1-arg2
-	    remainder-add1-arg2
-	    quotient-plus-arg1
-	    remainder-plus-arg1
-	    remainder-plus-arg1-simple
-	    equal-add1
-	    plus-add1
-	    quotient-times-arg1
-	    quotient-remainder
-	    lessp-quotient-arg2-linear
-	    difference-add1
-	    difference-plus-arg1
-	    sub1-quotient
-	    lessp-times-single-linear
-	    sub1-plus
-	    lessp-odometer-simple
-	    equal-odometer-simple
-	    remainder-lessp-linear
-	    )))
+            remainder-add1-arg2
+            quotient-plus-arg1
+            remainder-plus-arg1
+            remainder-plus-arg1-simple
+            equal-add1
+            plus-add1
+            quotient-times-arg1
+            quotient-remainder
+            lessp-quotient-arg2-linear
+            difference-add1
+            difference-plus-arg1
+            sub1-quotient
+            lessp-times-single-linear
+            sub1-plus
+            lessp-odometer-simple
+            equal-odometer-simple
+            remainder-lessp-linear
+            )))
 
 ;;; Convert the above to an effective rewrite rule.
 
 (prove-lemma wp-loop-fn1-as-fn2-rewrite (rewrite)
   (implies (and (not (zerop n))
-		(not (zerop nsave))
-		(equal c 0)
-		(lessp (plus a (quotient (times n (add1 n)) 2)) 256)
-		(not (lessp a nsave)))
-	   (equal (wp-loop n a c nsave)
-		  (wp-loop n (difference a nsave) c (sub1 nsave))))
+                (not (zerop nsave))
+                (equal c 0)
+                (lessp (plus a (quotient (times n (add1 n)) 2)) 256)
+                (not (lessp a nsave)))
+           (equal (wp-loop n a c nsave)
+                  (wp-loop n (difference a nsave) c (sub1 nsave))))
   ((disable-theory if-normalization)
    (hands-off quotient remainder)
    (use (wp-loop-fn1-as-fn2 (s (list n a c nsave))))))
@@ -135,22 +135,22 @@
 ;;; The correctness result
 
 (prove-lemma wp-loop-is-correct (rewrite)
-	     (implies (and (not (zerop n))
-			   (lessp (quotient (times n (add1 n)) 2) 256)
-			   (equal nsave n))
-		      (wp-1 n nsave))
-	     ((disable-theory if-normalization)
-	      (induct (difference n nsave))
-	      (disable quotient-plus-arg1
-		       difference-add1
-		       equal-add1
-		       quotient-add1-arg2
-		       remainder-add1-arg2
-		       lessp-transpose-meta
-		       equal-transpose-meta
-		       remainder-plus-arg1
-		       difference-plus-arg1
-		       lessp-times-single-linear
-		       remainder-lessp-linear
-		       equal-odometer-simple
-		       lessp-odometer-simple)))
+  (implies (and (not (zerop n))
+                (lessp (quotient (times n (add1 n)) 2) 256)
+                (equal nsave n))
+           (wp-1 n nsave))
+  ((disable-theory if-normalization)
+   (induct (difference n nsave))
+   (disable quotient-plus-arg1
+            difference-add1
+            equal-add1
+            quotient-add1-arg2
+            remainder-add1-arg2
+            lessp-transpose-meta
+            equal-transpose-meta
+            remainder-plus-arg1
+            difference-plus-arg1
+            lessp-times-single-linear
+            remainder-lessp-linear
+            equal-odometer-simple
+            lessp-odometer-simple)))

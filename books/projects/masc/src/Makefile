@@ -1,5 +1,4 @@
-
-all: ../bin/masc ../bin/parse 
+all: ../bin/masc ../bin/parse
 
 ../bin/parse: parser.l parser.y parser.h output.c main.c
 	bison -d -v parser.y
@@ -17,4 +16,4 @@ clean:
 	/bin/rm -f masc parser.tab.c parser.tab.h parser.output lex.yy.c parser.c
 
 veryclean: clean
-	/bin/rm -f ../bin/masc ../bin/parse 
+	/bin/rm -f ../bin/masc ../bin/parse

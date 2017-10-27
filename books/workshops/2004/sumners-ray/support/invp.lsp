@@ -71,12 +71,12 @@ NOTES/ISSUES
 
 (defmacro report (&rest r)
   `(prog2$ (cw ,@(butlast r 1))
-      (detail ,(string-append "REPORT:" (first r))
-              ,@(rest r))))
+           (detail ,(string-append "REPORT:" (first r))
+                   ,@(rest r))))
 
 (defmacro bozo (&rest r)
   `(prog2$ (cw ,@(butlast r 1))
-      ,(car (last r))))
+           ,(car (last r))))
 
 (defmacro seq (&rest bind)
   (cond ((endp bind)
@@ -93,7 +93,7 @@ NOTES/ISSUES
 
 (defmacro die (&rest r)
   `(prog2$ (er hard ,@(butlast r 1))
-     ,(car (last r))))
+           ,(car (last r))))
 
 (logic)
 
@@ -111,10 +111,10 @@ NOTES/ISSUES
 (defmacro bcons (b x)
   (let ((size (1+ (blist-length x))))
     `(the (unsigned-byte ,size)
-          (let ((b ,b)
-                (x (the (unsigned-byte ,size) (* ,x 2))))
-            (declare (type (unsigned-byte ,size) x))
-            (if b (the (unsigned-byte ,size) (1+ x)) x)))))
+       (let ((b ,b)
+             (x (the (unsigned-byte ,size) (* ,x 2))))
+         (declare (type (unsigned-byte ,size) x))
+         (if b (the (unsigned-byte ,size) (1+ x)) x)))))
 
 (local ; ACL2 primitive
  (defmacro 1+f (x)
@@ -197,10 +197,10 @@ NOTES/ISSUES
 (defun clear-ic$-for-inv-check (ic$)
   (declare (xargs :stobjs ic$))
   (seq
-    (ic$ (resize-st-hashtbl 0 ic$))  ;; this will clear the st-hashtbl
-    (ic$ (resize-st-hashtbl (prev-prime-number (check-bound ic$)) ic$))
-    (ic$ (update-inv-check-result nil ic$))
-    ic$))
+   (ic$ (resize-st-hashtbl 0 ic$)) ;; this will clear the st-hashtbl
+   (ic$ (resize-st-hashtbl (prev-prime-number (check-bound ic$)) ic$))
+   (ic$ (update-inv-check-result nil ic$))
+   ic$))
 
 ;; we initialize the inv-checker stobj ic$ for the book-keeping we need.
 (defun initialize-ic$ (jump-bound
@@ -216,27 +216,27 @@ NOTES/ISSUES
                        state)
   (declare (xargs :stobjs (ic$ state)))
   (seq
-    (ic$ (update-jump-bound      jump-bound      ic$))
-    (ic$ (update-check-bound     check-bound     ic$))
-    (ic$ (update-refine-bound    refine-bound    ic$))
-    (ic$ (update-inputs-bound    inputs-bound    ic$))
-    (ic$ (update-fast-search     fast-search     ic$))
-    (ic$ (update-always-check    always-check    ic$))
-    (ic$ (update-disable-exec    disable-exec    ic$))
-    (ic$ (update-reduce-contexts reduce-contexts ic$))
-    (ic$ (clear-ic$-for-inv-check ic$))
-    ((channel state)
-     (if detail-file
-         (open-output-channel detail-file :character state)
-       (mv nil state)))
-    (ic$ (update-detail-channel channel ic$))
-    (mv ic$ state)))
+   (ic$ (update-jump-bound      jump-bound      ic$))
+   (ic$ (update-check-bound     check-bound     ic$))
+   (ic$ (update-refine-bound    refine-bound    ic$))
+   (ic$ (update-inputs-bound    inputs-bound    ic$))
+   (ic$ (update-fast-search     fast-search     ic$))
+   (ic$ (update-always-check    always-check    ic$))
+   (ic$ (update-disable-exec    disable-exec    ic$))
+   (ic$ (update-reduce-contexts reduce-contexts ic$))
+   (ic$ (clear-ic$-for-inv-check ic$))
+   ((channel state)
+    (if detail-file
+        (open-output-channel detail-file :character state)
+      (mv nil state)))
+   (ic$ (update-detail-channel channel ic$))
+   (mv ic$ state)))
 
 (defun cleanup-ic$ (ic$ state)
   (declare (xargs :stobjs (ic$ state)))
   (seq
-    (state (close-output-channel (detail-channel ic$) state))
-    (mv ic$ state)))
+   (state (close-output-channel (detail-channel ic$) state))
+   (mv ic$ state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #| <SECTION>   3. iterative inside-out conditional term rewriter          |#
@@ -807,29 +807,29 @@ NOTES/ISSUES
   (if (endp reps)
       (mv nil nil step-alist nil ic$ state)
     (seq
-      (current-rep (first reps))
-      ((term fst-hyps ic$ state)
-       (rewrite-rep-step current-rep ic$ state))
-      ((rst-reps rst-hyps step-alist rst-ins ic$ state)
-       (compute-rep-prime (rest reps) step-alist ic$ state))
-      (fst-reps (extract-rep-subterms term))
-      (reps (union-equal fst-reps rst-reps))
-      (hyps (union-equal fst-hyps rst-hyps))
-      (fst-ins (extract-non-rep-subterms term))
-      (ins (union-equal fst-ins rst-ins))
-      (step-alist (acons current-rep term step-alist))
-      (mv reps hyps step-alist ins ic$ state))))
+     (current-rep (first reps))
+     ((term fst-hyps ic$ state)
+      (rewrite-rep-step current-rep ic$ state))
+     ((rst-reps rst-hyps step-alist rst-ins ic$ state)
+      (compute-rep-prime (rest reps) step-alist ic$ state))
+     (fst-reps (extract-rep-subterms term))
+     (reps (union-equal fst-reps rst-reps))
+     (hyps (union-equal fst-hyps rst-hyps))
+     (fst-ins (extract-non-rep-subterms term))
+     (ins (union-equal fst-ins rst-ins))
+     (step-alist (acons current-rep term step-alist))
+     (mv reps hyps step-alist ins ic$ state))))
 
 (defun compute-step-prime (reps step-alist ic$ state)
   (declare (xargs :stobjs (ic$ state)))
   (if (endp reps)
       (mv (list 'bnil) ic$ state)
     (seq
-      ((rest-step ic$ state)
-       (compute-step-prime (rest reps) step-alist ic$ state))
-      (first-step
-       (cdr (assoc-equal (first reps) step-alist)))
-      (mv (list 'bcons first-step rest-step) ic$ state))))
+     ((rest-step ic$ state)
+      (compute-step-prime (rest reps) step-alist ic$ state))
+     (first-step
+      (cdr (assoc-equal (first reps) step-alist)))
+     (mv (list 'bcons first-step rest-step) ic$ state))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -878,17 +878,17 @@ NOTES/ISSUES
   (or (legal-bnth term)
       (and (consp term)
            (case (first term)
-                 (quote t)
-                 (if (and (legal-bnth (second term))
-                          (legal-singl (third term))
-                          (legal-singl (fourth term))))))))
+             (quote t)
+             (if (and (legal-bnth (second term))
+                      (legal-singl (third term))
+                      (legal-singl (fourth term))))))))
 
 (defun legal-step (term)
   (and (consp term)
        (case (first term)
-             (bcons (and (legal-singl (second term))
-                         (legal-step (third term))))
-             (bnil t))))
+         (bcons (and (legal-singl (second term))
+                     (legal-step (third term))))
+         (bnil t))))
 
 (defmacro state-report-interval () 1000)
 
@@ -946,44 +946,44 @@ NOTES/ISSUES
   (if (atom step)
       (er hard 'get-mask-terms "illegal step")
     (case (first step)
-          (bnil ())
-          (bcons
-           (if (member n tgt)
-               (cons (second step)
-                     (get-mask-terms (third step) tgt (1+ n)))
-             (get-mask-terms (third step) tgt (1+ n))))
-          (t (er hard 'get-mask-terms "illegal step")))))
+      (bnil ())
+      (bcons
+       (if (member n tgt)
+           (cons (second step)
+                 (get-mask-terms (third step) tgt (1+ n)))
+         (get-mask-terms (third step) tgt (1+ n))))
+      (t (er hard 'get-mask-terms "illegal step")))))
 
 (defun compute-ev (trm st in)
   (if (atom trm)
       (er hard 'compute-ev "illegal term")
     (case (first trm)
-          (quote (second trm))
-          (bnth (bnth (second trm)
-                      (if (eq (third trm) 's) st in)))
-          (if (if (compute-ev (second trm) st in)
-                  (compute-ev (third trm) st in)
-                (compute-ev (fourth trm) st in)))
-          (t (er hard 'compute-ev "illegal trm")))))
+      (quote (second trm))
+      (bnth (bnth (second trm)
+                  (if (eq (third trm) 's) st in)))
+      (if (if (compute-ev (second trm) st in)
+              (compute-ev (third trm) st in)
+            (compute-ev (fourth trm) st in)))
+      (t (er hard 'compute-ev "illegal trm")))))
 
 (defun compute-mask (term st in)
   (if (atom term)
       (er hard 'compute-mask "illegal term")
     (case (first term)
-          (quote ())
-          (bnth (list term))
-          (if (let* ((tst (second term))
-                     (tbr (third term))
-                     (fbr (fourth term))
-                     (tst-v (compute-ev tst st in))
-                     (br (if tst-v tbr fbr))
-                     (rst (compute-mask br st in)))
-                (if (or (quotep tst)
-                        (iff (compute-ev tbr st in)
-                             (compute-ev fbr st in)))
-                    rst
-                  (cons tst rst))))
-          (t (er hard 'compute-mask "illegal term")))))
+      (quote ())
+      (bnth (list term))
+      (if (let* ((tst (second term))
+                 (tbr (third term))
+                 (fbr (fourth term))
+                 (tst-v (compute-ev tst st in))
+                 (br (if tst-v tbr fbr))
+                 (rst (compute-mask br st in)))
+            (if (or (quotep tst)
+                    (iff (compute-ev tbr st in)
+                         (compute-ev fbr st in)))
+                rst
+              (cons tst rst))))
+      (t (er hard 'compute-mask "illegal term")))))
 
 (defun add-mask-bits (mask var rslt)
   (if (endp mask) rslt
@@ -1005,17 +1005,17 @@ NOTES/ISSUES
 (defun compute-example-mask (path step tgt)
   (if (endp path) ()
     (seq
-      ((st-mask in-mask)
-       (compute-step-masks step tgt (caar path) (cdar path)))
-      (acons st-mask in-mask
-             (compute-example-mask (cdr path) step st-mask)))))
+     ((st-mask in-mask)
+      (compute-step-masks step tgt (caar path) (cdar path)))
+     (acons st-mask in-mask
+            (compute-example-mask (cdr path) step st-mask)))))
 
 (defun transform-rslt-path (path)
   (if (endp (cdr path)) ()
     (seq
-      (in (caar path))
-      (st (cdadr path))
-      (acons st in (transform-rslt-path (cdr path))))))
+     (in (caar path))
+     (st (cdadr path))
+     (acons st in (transform-rslt-path (cdr path))))))
 
 (defun load-input-vec (input-set ndx ic$)
   (declare (xargs :stobjs ic$))
@@ -1034,28 +1034,28 @@ NOTES/ISSUES
   (if (atom term)
       (er hard 'input-set-template "illegal atom term")
     (case (first term)
-          (quote (if (second term) t nil))
-          (bcons (list 'or
-                       (input-set-template (second term))
-                       (input-set-template (third term))))
-          (bnil :x)
-          (bnth (let ((ndx (second term))
-                      (var (third term)))
-                  (cond ((not (and (natp ndx)
-                                   (member var '(s i))))
-                         (er hard 'input-set-template "illegal bnth term"))
-                        ((eq var 'i) (list 'if ndx t nil))
-                        (t :x))))
-          (if (let* ((tst (input-set-template (second term)))
-                     (tbr (input-set-template (third term)))
-                     (fbr (input-set-template (fourth term)))
-                     (tst (if (ivarp tst) (second tst) tst)))
-                (cond ((natp tst) (list 'if tst tbr fbr))
-                      ((eq tst t) tbr)
-                      ((eq tst nil) fbr)
-                      ((eq tst :x) (list 'or tbr fbr))
-                      (t (er hard 'input-set-template "illegal if term")))))
-          (t (er hard 'input-set-template "illegal op term")))))
+      (quote (if (second term) t nil))
+      (bcons (list 'or
+                   (input-set-template (second term))
+                   (input-set-template (third term))))
+      (bnil :x)
+      (bnth (let ((ndx (second term))
+                  (var (third term)))
+              (cond ((not (and (natp ndx)
+                               (member var '(s i))))
+                     (er hard 'input-set-template "illegal bnth term"))
+                    ((eq var 'i) (list 'if ndx t nil))
+                    (t :x))))
+      (if (let* ((tst (input-set-template (second term)))
+                 (tbr (input-set-template (third term)))
+                 (fbr (input-set-template (fourth term)))
+                 (tst (if (ivarp tst) (second tst) tst)))
+            (cond ((natp tst) (list 'if tst tbr fbr))
+                  ((eq tst t) tbr)
+                  ((eq tst nil) fbr)
+                  ((eq tst :x) (list 'or tbr fbr))
+                  (t (er hard 'input-set-template "illegal if term")))))
+      (t (er hard 'input-set-template "illegal op term")))))
 
 (defun fully-defined (tmpl)
   (cond ((eq tmpl :x) nil)
@@ -1117,15 +1117,15 @@ NOTES/ISSUES
 (defun construct-input-vec (step-term inputs state ic$)
   (declare (xargs :stobjs (state ic$)))
   (seq
-    (input-set (compute-input-set step-term))
-    (num-inputs (length input-set))
-    (ic$ (update-num-inputs num-inputs ic$))
-    (ic$ (resize-input-vec num-inputs ic$))
-    (ic$ (load-input-vec input-set 0 ic$))
-    (report "number of input bits: ~p0  number of inputs: ~p1 ~%"
-            (length inputs) num-inputs
-     (detail "inputs: ~p0 ~%" inputs
-      (mv ic$ state)))))
+   (input-set (compute-input-set step-term))
+   (num-inputs (length input-set))
+   (ic$ (update-num-inputs num-inputs ic$))
+   (ic$ (resize-input-vec num-inputs ic$))
+   (ic$ (load-input-vec input-set 0 ic$))
+   (report "number of input bits: ~p0  number of inputs: ~p1 ~%"
+           (length inputs) num-inputs
+           (detail "inputs: ~p0 ~%" inputs
+                   (mv ic$ state)))))
 
 (defun format-counter-example1 (path n)
   (if (endp path) ()
@@ -1229,23 +1229,23 @@ NOTES/ISSUES
 (defun check-invariant (step-body rep-body reps inputs inv ic$ state)
   (declare (xargs :stobjs (ic$ state)))
   (mv-let (erp val state)
-          (ld (append (list (list 'defun 'step-prime (list 's 'i)
-                                  '(declare (xargs :mode :program))
-                                  step-body)
-                            (list 'defun 'rep-prime (list 'n)
-                                  '(declare (xargs :mode :logic))
-                                  rep-body))
-                      (and (disable-exec ic$)
-                           (list (list 'in-theory (list 'disable (list 'rep-prime)))))
-                      *invariant-checker-functions-and-compile*
-                      (list (list 'invariant-checker
-                                  (list 'quote reps)
-                                  (list 'quote inputs)
-                                  (list 'quote inv)
-                                  (list 'quote step-body)
-                                  'ic$ 'state)
-                            (list 'ubt! (list 'quote 'step-prime))))
-              :ld-user-stobjs-modified-warning
+    (ld (append (list (list 'defun 'step-prime (list 's 'i)
+                            '(declare (xargs :mode :program))
+                            step-body)
+                      (list 'defun 'rep-prime (list 'n)
+                            '(declare (xargs :mode :logic))
+                            rep-body))
+                (and (disable-exec ic$)
+                     (list (list 'in-theory (list 'disable (list 'rep-prime)))))
+                *invariant-checker-functions-and-compile*
+                (list (list 'invariant-checker
+                            (list 'quote reps)
+                            (list 'quote inputs)
+                            (list 'quote inv)
+                            (list 'quote step-body)
+                            'ic$ 'state)
+                      (list 'ubt! (list 'quote 'step-prime))))
+        :ld-user-stobjs-modified-warning
 
 ; Matt K. mod: ACL2 now requires keyword :ld-user-stobjs-modified-warning in
 ; code.  If this macro is only to be evaluated at the top level, that keyword
@@ -1254,7 +1254,7 @@ NOTES/ISSUES
 ; be given to whether or not we want a warning here when a user stobj is
 ; modified.
 
-              :same)
+        :same)
     (let ((ic$ (bogus-function-denoting-invariant-checker-side-effect ic$)))
       (if erp (die :check-invariant
                    "Unexpected error ~p0" val
@@ -1340,21 +1340,21 @@ NOTES/ISSUES
   (cond
    ((endp new)
     (report "converged on reps! ~%"
-      (mv t reps hyps step-alist ic$ state)))
+            (mv t reps hyps step-alist ic$ state)))
    ((zp bound)
     (report "exceeded refine bound! ~%"
-      (mv nil reps hyps step-alist ic$ state)))
+            (mv nil reps hyps step-alist ic$ state)))
    (t
     (seq
-      ((new-new new-hyps step-alist new-ins ic$ state)
-       (compute-rep-prime new step-alist ic$ state))
-      (bound (- bound (len new)))
-      (reps (union-equal new reps))
-      (new (set-difference-equal new-new reps))
-      (hyps (union-equal new-hyps hyps))
-      (detail "new reps: ~p0 ~%" new
-        (detail "new ins: ~p0 ~%" new-ins
-          (compute-reps bound new reps hyps step-alist ic$ state)))))))
+     ((new-new new-hyps step-alist new-ins ic$ state)
+      (compute-rep-prime new step-alist ic$ state))
+     (bound (- bound (len new)))
+     (reps (union-equal new reps))
+     (new (set-difference-equal new-new reps))
+     (hyps (union-equal new-hyps hyps))
+     (detail "new reps: ~p0 ~%" new
+             (detail "new ins: ~p0 ~%" new-ins
+                     (compute-reps bound new reps hyps step-alist ic$ state)))))))
 
 (defun get-prods (term)
   (cond ((eq term t) ())
@@ -1385,47 +1385,47 @@ NOTES/ISSUES
 (defun check-abstraction (reps step-alist inv ic$ state)
   (declare (xargs :stobjs (ic$ state)))
   (detail "check-reps: ~p0 ~%" reps
-    (seq
-      ((step-term ic$ state)
-       (compute-step-prime reps step-alist ic$ state))
-      ((step-body inputs)
-       (build-step-body step-term reps () ic$))
-      (rep-body (build-rep-body reps))
-      (ic$ (clear-ic$-for-inv-check ic$))
-      ((result ic$ state)
-       (detail "step-term: ~p0 ~%" step-term
-        (check-invariant step-body rep-body reps inputs inv ic$ state)))
-      (detail "number of abstract states visited: ~p0~%" (num-states ic$)
-        (cond
-         ((eq result :passed)
-          (mv t () ic$ state))
-         ((eq result :bound-fail)
-          (report "exceeded bound on number of states!~%"
-            (mv nil () ic$ state)))
-         ((eq result :bad-init)
-          (report "could not rewrite (rep-prime (t0)) to constant!~%"
-            (mv nil () ic$ state)))
-         (t
-          (report "failed-inv-check!~%"
-            (detail "failed-path:~p0~%" (format-counter-example result)
-              (mv nil (find-new-reps result) ic$ state)))))))))
+          (seq
+           ((step-term ic$ state)
+            (compute-step-prime reps step-alist ic$ state))
+           ((step-body inputs)
+            (build-step-body step-term reps () ic$))
+           (rep-body (build-rep-body reps))
+           (ic$ (clear-ic$-for-inv-check ic$))
+           ((result ic$ state)
+            (detail "step-term: ~p0 ~%" step-term
+                    (check-invariant step-body rep-body reps inputs inv ic$ state)))
+           (detail "number of abstract states visited: ~p0~%" (num-states ic$)
+                   (cond
+                    ((eq result :passed)
+                     (mv t () ic$ state))
+                    ((eq result :bound-fail)
+                     (report "exceeded bound on number of states!~%"
+                             (mv nil () ic$ state)))
+                    ((eq result :bad-init)
+                     (report "could not rewrite (rep-prime (t0)) to constant!~%"
+                             (mv nil () ic$ state)))
+                    (t
+                     (report "failed-inv-check!~%"
+                             (detail "failed-path:~p0~%" (format-counter-example result)
+                                     (mv nil (find-new-reps result) ic$ state)))))))))
 
 (defun prove-inv-single (bound inv-term new-reps curr-reps curr-hyps curr-step ic$ state)
   (declare (xargs :stobjs (ic$ state)))
   (seq
-    ((ok reps hyps step-alist ic$ state)
-     (compute-reps (refine-bound ic$) new-reps curr-reps
-                   curr-hyps curr-step ic$ state))
-    (if (or ok (always-check ic$))
-        (seq
-          ((ok new-reps ic$ state)
-           (check-abstraction reps step-alist inv-term ic$ state))
-          (cond
-           (ok                              (mv t hyps ic$ state))
-           ((or (endp new-reps) (zp bound)) (mv nil hyps ic$ state))
-           (t (prove-inv-single (1- bound) inv-term new-reps
-                                reps hyps step-alist ic$ state))))
-      (mv nil hyps ic$ state))))
+   ((ok reps hyps step-alist ic$ state)
+    (compute-reps (refine-bound ic$) new-reps curr-reps
+                  curr-hyps curr-step ic$ state))
+   (if (or ok (always-check ic$))
+       (seq
+        ((ok new-reps ic$ state)
+         (check-abstraction reps step-alist inv-term ic$ state))
+        (cond
+         (ok                              (mv t hyps ic$ state))
+         ((or (endp new-reps) (zp bound)) (mv nil hyps ic$ state))
+         (t (prove-inv-single (1- bound) inv-term new-reps
+                              reps hyps step-alist ic$ state))))
+     (mv nil hyps ic$ state))))
 
 (defun prove-inv-loop (to-prove proven proofs-bound ic$ state)
   (declare (xargs :stobjs (ic$ state)))
@@ -1436,17 +1436,17 @@ NOTES/ISSUES
     (prove-inv-loop (rest to-prove) proven proofs-bound ic$ state))
    ((zp proofs-bound)
     (report "exceeded bound on number of proofs!~%"
-      (mv nil ic$ state)))
+            (mv nil ic$ state)))
    (t
     (seq
-      ((ok hyps ic$ state)
-       (prove-inv-single (jump-bound ic$) (first to-prove) (list (first to-prove))
-                         () () () ic$ state))
-      (if (not ok)
-          (mv nil ic$ state)
-        (prove-inv-loop (append hyps (rest to-prove))
-                        (cons (first to-prove) proven)
-                        (1- proofs-bound) ic$ state))))))
+     ((ok hyps ic$ state)
+      (prove-inv-single (jump-bound ic$) (first to-prove) (list (first to-prove))
+                        () () () ic$ state))
+     (if (not ok)
+         (mv nil ic$ state)
+       (prove-inv-loop (append hyps (rest to-prove))
+                       (cons (first to-prove) proven)
+                       (1- proofs-bound) ic$ state))))))
 
 (defun definv-fn (inv-name
                   inv-form
@@ -1465,11 +1465,11 @@ NOTES/ISSUES
                   state)
   (declare (xargs :stobjs (ic$ state)))
   (seq
-    ((erp inv-term bindings state)
-     (translate1 inv-form :stobjs-out '((:stobjs-out . :stobjs-out))
-                 t 'top-level (w state) state))
-    (state
-     (if (or erp
+   ((erp inv-term bindings state)
+    (translate1 inv-form :stobjs-out '((:stobjs-out . :stobjs-out))
+                t 'top-level (w state) state))
+   (state
+    (if (or erp
 
 ; Change by Matt K., 10/17/2013: When testing a tentative fix for a soundness
 ; bug, I found a guard violation below because EQ was being called instead of
@@ -1482,42 +1482,42 @@ NOTES/ISSUES
 ; necessary.  But it seems that since the call of EQ was ill-guarded, it is
 ; still good to fix.)
 
-             (not (equal bindings bindings)))
-         (die :illegal-term
-              "Error in macro-expansion: ~p0" inv-form
-              state)
-       state))
-    ((ic$ state)
-     (initialize-ic$ jump-bound
-                     check-bound
-                     refine-bound
-                     inputs-bound
-                     fast-search
-                     detail-file
-                     always-check
-                     disable-exec
-                     reduce-contexts
-                     ic$
-                     state))
-    (state
-     (detail "**************** begin ~s0 **************** ~%" detail-file
-       state))
-    ((ok ic$ state)
-     (prove-inv-loop (list inv-term) () proofs-bound ic$ state))
-    (result (if ok :qed :failed))
-    (state
-     (report "~x0~%" (list result inv-name result)
-       (detail "**************** end ~s0 **************** ~%~%" detail-file
-         state)))
-    ((ic$ state)
-     (cleanup-ic$ ic$ state))
-    (state
-     (if (implies expected-result (equal result expected-result))
-         state
-       (die :unexpected-result-for-inv-proof
-            "encountered unexpected result for invariant proof~%"
-            state)))
-    (mv state ic$)))
+            (not (equal bindings bindings)))
+        (die :illegal-term
+             "Error in macro-expansion: ~p0" inv-form
+             state)
+      state))
+   ((ic$ state)
+    (initialize-ic$ jump-bound
+                    check-bound
+                    refine-bound
+                    inputs-bound
+                    fast-search
+                    detail-file
+                    always-check
+                    disable-exec
+                    reduce-contexts
+                    ic$
+                    state))
+   (state
+    (detail "**************** begin ~s0 **************** ~%" detail-file
+            state))
+   ((ok ic$ state)
+    (prove-inv-loop (list inv-term) () proofs-bound ic$ state))
+   (result (if ok :qed :failed))
+   (state
+    (report "~x0~%" (list result inv-name result)
+            (detail "**************** end ~s0 **************** ~%~%" detail-file
+                    state)))
+   ((ic$ state)
+    (cleanup-ic$ ic$ state))
+   (state
+    (if (implies expected-result (equal result expected-result))
+        state
+      (die :unexpected-result-for-inv-proof
+           "encountered unexpected result for invariant proof~%"
+           state)))
+   (mv state ic$)))
 
 (defmacro definv (inv-name
                   inv-term
@@ -1660,13 +1660,9 @@ NOTES/ISSUES
   (declare (xargs :stobjs state
                   :mode :program))
   (mv-let (channel state)
-      (open-output-channel "success.txt" :character state)
+    (open-output-channel "success.txt" :character state)
     (let ((state (fms "invariant prover successfully completed proofs!!" () channel state nil)))
       (let ((state (close-output-channel channel state)))
         state))))
 
 (mark-successful-run state)
-
-
-
-

@@ -28,11 +28,11 @@
   (declare (xargs :measure (dec n)))
   (if (equal (dec n) 0)
       (equal (mod (+ c (+ a n)) 256)
-	     (floor (* ns (1+ ns)) 2))
+             (floor (* ns (1+ ns)) 2))
     (wp-loop (dec n)
-	     (mod (+ c (+ a n)) 256)
-	     (floor (+ c (+ a n)) 256)
-	     ns)))
+             (mod (+ c (+ a n)) 256)
+             (floor (+ c (+ a n)) 256)
+             ns)))
 
 ;;; Weakest precondition at beginning of program
 
@@ -57,16 +57,16 @@
 
 (defthm wp-loop-g=h
   (implies (and (not (zp n))
-		(natp ns)
-		(natp a)
-		(equal c 0)
-		(< (+ a (floor (* n (+ 1 n)) 2)) 256))
-	   (equal (wp-loop n a c ns)
-		  (if (equal (dec n) 0)
-		      (equal (mod (+ a n) 256)
-			     (floor (* ns (+ 1 ns)) 2))
-		    (equal (mod (+ 1 a (wp-loop-h (list n c ns))) 256)
-			   (floor (* ns (+ 1 ns)) 2)))))
+                (natp ns)
+                (natp a)
+                (equal c 0)
+                (< (+ a (floor (* n (+ 1 n)) 2)) 256))
+           (equal (wp-loop n a c ns)
+                  (if (equal (dec n) 0)
+                      (equal (mod (+ a n) 256)
+                             (floor (* ns (+ 1 ns)) 2))
+                    (equal (mod (+ 1 a (wp-loop-h (list n c ns))) 256)
+                           (floor (* ns (+ 1 ns)) 2)))))
   :hints
   (("Goal"
     :use
@@ -75,7 +75,7 @@
       g=h
       (bb (lambda (s) (equal (dec (n s)) 0)))
       (qt (lambda (a s) (equal (mod (+ a (n s)) 256)
-			       (floor (* (ns s) (+ 1 (ns s))) 2))))
+                               (floor (* (ns s) (+ 1 (ns s))) 2))))
       (g (lambda (a s) (wp-loop (n s) a (c s) (ns s))))
       (measure-g (lambda (s) (dec (n s))))
       (tau (lambda (s) (list (dec (n s)) (c s) (ns s))))
@@ -83,25 +83,25 @@
       (rhoh (lambda (a s) (+ a (n s))))
       (h (lambda (s) (wp-loop-h s)))
       (rt (lambda (a s) (and (not (zp (n s)))
-			     (natp (ns s))
-			     (natp a)
-			     (equal (c s) 0)
-			     (< (+ a (floor (* (n s) (+ 1 (n s))) 2)) 256))))
+                             (natp (ns s))
+                             (natp a)
+                             (equal (c s) 0)
+                             (< (+ a (floor (* (n s) (+ 1 (n s))) 2)) 256))))
       (id (lambda () 0))
       (op (lambda (a x s) (if (equal (dec (n s)) 0)
-			      a
-			    (+ a x))))
+                              a
+                            (+ a x))))
       (hs (lambda (s) (if (equal (dec (n s)) 0)
-			  s
-			(list 1 (c s) (ns s))))))
+                          s
+                        (list 1 (c s) (ns s))))))
      (s (list n c ns))))))
 
 ;;; Derive a closed form expression for wp-loop-h.
 
 (defthm wp-loop-h-closed
   (implies (not (zp (n s)))
-	   (equal (wp-loop-h s)
-		  (+ -1 (floor (* (n s) (+ 1 (n s))) 2))))
+           (equal (wp-loop-h s)
+                  (+ -1 (floor (* (n s) (+ 1 (n s))) 2))))
   :hints
   (("Goal"
     :in-theory (disable prefer-positive-addends-equal))))
@@ -110,6 +110,6 @@
 
 (defthm wp-loop-is-correct
   (implies (and (not (zp n))
-		(equal ns n)
-		(< (floor (* n (+ 1 n)) 2) 256))
-	   (wp-1 n ns)))
+                (equal ns n)
+                (< (floor (* n (+ 1 n)) 2) 256))
+           (wp-1 n ns)))
