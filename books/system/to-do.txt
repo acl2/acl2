@@ -347,14 +347,15 @@ that.
 
 {{Fix handling of state result in old-style signatures without state argument.}}
 
-Below is the relevant email thread.
+Below is the relevant email thread (with a typo from Matt fixed by
+Matt).
 
 From: Matt Kaufmann <kaufmann@cs.utexas.edu>
 Subject: Re: Old-style signature with output state
 Date: October 24, 2017 at 5:20:40 AM PDT
 To: Alessandro Coglio <coglio@kestrel.edu>
 
-Wow, weird!  I'll be it's easy to fix.  May I add it to
+Wow, weird!  I'll bet it's easy to fix.  May I add it to
 books/system/to-do.txt and email acl2-devel about it?  Or, feel free
 to do so (or even to forward this email if you like).
 
