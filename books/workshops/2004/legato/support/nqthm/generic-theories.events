@@ -7,18 +7,18 @@
 ;;; (r s) = loop invariant
 
 (constrain loop-invariant-theory (rewrite)
- (and (implies (b s) (equal (wp s) (qp s)))
-      (implies (and (not (b s)) (r s)) (equal (wp (sigma s)) (wp s)))
-      (implies (not (b s)) (ord-lessp (measure (sigma s)) (measure s)))
-      (ordinalp (measure s))
-      (implies (and (not (b s)) (r s)) (r (sigma s))) ; generic loop invariant
-      (implies (and (b s) (r s)) (qp s)))
- ((b (lambda (s) (zerop s)))
-  (qp (lambda (s) t))
-  (wp (lambda (s) t))
-  (measure (lambda (s) (add1 s)))
-  (sigma (lambda (s) (sub1 s)))
-  (r (lambda (s) t))))
+  (and (implies (b s) (equal (wp s) (qp s)))
+       (implies (and (not (b s)) (r s)) (equal (wp (sigma s)) (wp s)))
+       (implies (not (b s)) (ord-lessp (measure (sigma s)) (measure s)))
+       (ordinalp (measure s))
+       (implies (and (not (b s)) (r s)) (r (sigma s))) ; generic loop invariant
+       (implies (and (b s) (r s)) (qp s)))
+  ((b (lambda (s) (zerop s)))
+   (qp (lambda (s) t))
+   (wp (lambda (s) t))
+   (measure (lambda (s) (add1 s)))
+   (sigma (lambda (s) (sub1 s)))
+   (r (lambda (s) t))))
 
 ;;; An induct hint
 
@@ -29,8 +29,8 @@
 ;;; The main result derived from this theory
 
 (prove-lemma wp-is-weakest-invariant (rewrite)
-	     (implies (r s) (wp s))
-	     ((induct (wp-ind s))))
+  (implies (r s) (wp s))
+  ((induct (wp-ind s))))
 
 ;;; The tail recursion generic theory
 
@@ -48,32 +48,32 @@
 ;;; (hs s) = (if (bb s) s (hs (tau s))), computes a bottom object under tau
 
 (constrain tail-recursion-theory (rewrite)
- (and
-  (implies (and (bb s) (rt a s)) (equal (g a s) (qt a s)))
-  (implies (and (not (bb s)) (rt a s)) (equal (g (rho a s) (tau s)) (g a s)))
-  (ordinalp (measure-g s))
-  (implies (not (bb s)) (ord-lessp (measure-g (tau s)) (measure-g s)))
-  (implies (and (bb s) (rt a s)) (equal (h s) (id)))
-  (implies (and (not (bb s)) (rt a s)) (equal (rhoh (h (tau s)) s) (h s)))
-  (implies (and (not (bb s)) (rt a s)) (rt (rho a s) (tau s)))
-  (implies (bb s) (equal (hs s) s))
-  (implies (not (bb s)) (equal (hs (tau s)) (hs s)))
-  (implies (and (not (bb s)) (rt a s))
-	   (equal (op (rho a s) (h (tau s)) (tau s))
-		  (op a (rhoh (h (tau s)) s) s)))
-  (implies (and (bb s) (rt a s)) (equal (op a (id) s) a)))
- ((measure-g (lambda (s) (add1 s)))
-  (tau (lambda (s) (sub1 s)))
-  (qt (lambda (a s) t))
-  (rho (lambda (a s) 0))
-  (rhoh (lambda (a s) 0))
-  (bb (lambda (s) (zerop s)))
-  (g (lambda (a s) t))
-  (id (lambda () 0))
-  (op (lambda (a x s) (if (and (zerop s) (equal x 0)) a 0)))
-  (h (lambda (s) 0))
-  (rt (lambda (a s) t))
-  (hs (lambda (s) (if (zerop s) s 0)))))
+  (and
+   (implies (and (bb s) (rt a s)) (equal (g a s) (qt a s)))
+   (implies (and (not (bb s)) (rt a s)) (equal (g (rho a s) (tau s)) (g a s)))
+   (ordinalp (measure-g s))
+   (implies (not (bb s)) (ord-lessp (measure-g (tau s)) (measure-g s)))
+   (implies (and (bb s) (rt a s)) (equal (h s) (id)))
+   (implies (and (not (bb s)) (rt a s)) (equal (rhoh (h (tau s)) s) (h s)))
+   (implies (and (not (bb s)) (rt a s)) (rt (rho a s) (tau s)))
+   (implies (bb s) (equal (hs s) s))
+   (implies (not (bb s)) (equal (hs (tau s)) (hs s)))
+   (implies (and (not (bb s)) (rt a s))
+            (equal (op (rho a s) (h (tau s)) (tau s))
+                   (op a (rhoh (h (tau s)) s) s)))
+   (implies (and (bb s) (rt a s)) (equal (op a (id) s) a)))
+  ((measure-g (lambda (s) (add1 s)))
+   (tau (lambda (s) (sub1 s)))
+   (qt (lambda (a s) t))
+   (rho (lambda (a s) 0))
+   (rhoh (lambda (a s) 0))
+   (bb (lambda (s) (zerop s)))
+   (g (lambda (a s) t))
+   (id (lambda () 0))
+   (op (lambda (a x s) (if (and (zerop s) (equal x 0)) a 0)))
+   (h (lambda (s) 0))
+   (rt (lambda (a s) t))
+   (hs (lambda (s) (if (zerop s) s 0)))))
 
 (defn a-g (a s)
   (if (bb s)
@@ -83,22 +83,22 @@
 
 (prove-lemma a-g-as-op-h (rewrite)
   (implies (rt a s)
-	   (equal (a-g a s)
-		  (op a (h s) s))))
+           (equal (a-g a s)
+                  (op a (h s) s))))
 
 (prove-lemma g-as-a-g (rewrite)
   (implies (rt a s)
-	   (equal (g a s) (qt (a-g a s) (hs s))))
+           (equal (g a s) (qt (a-g a s) (hs s))))
   ((induct (a-g a s))))
 
 ;;; Main result of tail recursion theory
 
 (prove-lemma g=h (rewrite)
   (implies (rt a s)
-	   (equal (g a s)
-		  (if (bb s)
-		      (qt a s)
-		    (qt (op a (h s) s) (hs s))))))
+           (equal (g a s)
+                  (if (bb s)
+                      (qt a s)
+                    (qt (op a (h s) s) (hs s))))))
 
 ;;; Equivalent definition and alternate induction theory.
 
@@ -113,28 +113,28 @@
 ;;; variables or the alternative induction pattern.
 
 (constrain alternate-induction-theory (rewrite)
- (and (implies (and (p s) (not (b1 s))) (equal (id-alt (sigma1 s)) (sigma2 (id-alt s))))
-      (implies (not (b1 s)) (equal (fn1 (sigma1 s)) (fn1 s)))
-      (implies (b2 s) (equal (fn2 s) (q2 s)))
-      (implies (b1 s) (equal (fn1 s) (q1 s)))
-      (implies (not (b1 s)) (ord-lessp (measure1 (sigma1 s)) (measure1 s)))
-      (implies (not (b2 s)) (equal (fn2 (sigma2 s)) (fn2 s)))
-      (implies (p s) (equal (b2 (id-alt s)) (b1 s)))
-      (implies (and (not (b1 s)) (p s)) (p (sigma1 s)))
-      (implies (and (b1 s) (p s)) (equal (q2 (id-alt s)) (q1 s)))
-      (ordinalp (measure1 s)))
- ((fn1 (lambda (s) t))
-  (fn2 (lambda (s) t))
-  (b1 (lambda (s) (zerop (car s))))
-  (b2 (lambda (s) (zerop (cdr s))))
-  (q1 (lambda (s) t))
-  (q2 (lambda (s) t))
-  (p (lambda (s) t))
-  (measure1 (lambda (s) (add1 (car s))))
-  (sigma1 (lambda (s) (cons (sub1 (car s)) (cdr s))))
-  (sigma2 (lambda (s) (cons (car s) (sub1 (cdr s)))))
-  (id-alt (lambda (s) (cons (cdr s) (car s))))))
-  
+  (and (implies (and (p s) (not (b1 s))) (equal (id-alt (sigma1 s)) (sigma2 (id-alt s))))
+       (implies (not (b1 s)) (equal (fn1 (sigma1 s)) (fn1 s)))
+       (implies (b2 s) (equal (fn2 s) (q2 s)))
+       (implies (b1 s) (equal (fn1 s) (q1 s)))
+       (implies (not (b1 s)) (ord-lessp (measure1 (sigma1 s)) (measure1 s)))
+       (implies (not (b2 s)) (equal (fn2 (sigma2 s)) (fn2 s)))
+       (implies (p s) (equal (b2 (id-alt s)) (b1 s)))
+       (implies (and (not (b1 s)) (p s)) (p (sigma1 s)))
+       (implies (and (b1 s) (p s)) (equal (q2 (id-alt s)) (q1 s)))
+       (ordinalp (measure1 s)))
+  ((fn1 (lambda (s) t))
+   (fn2 (lambda (s) t))
+   (b1 (lambda (s) (zerop (car s))))
+   (b2 (lambda (s) (zerop (cdr s))))
+   (q1 (lambda (s) t))
+   (q2 (lambda (s) t))
+   (p (lambda (s) t))
+   (measure1 (lambda (s) (add1 (car s))))
+   (sigma1 (lambda (s) (cons (sub1 (car s)) (cdr s))))
+   (sigma2 (lambda (s) (cons (car s) (sub1 (cdr s)))))
+   (id-alt (lambda (s) (cons (cdr s) (car s))))))
+
 (defn fn1-ind (s)
   (if (b1 s) (q1 s) (fn1-ind (sigma1 s)))
   ((ord-lessp (measure1 s))))
@@ -142,7 +142,6 @@
 ;;; This is the main result of the theory.
 
 (prove-lemma fn1-as-fn2 nil
-	     (implies (p s)
-		      (equal (fn1 s) (fn2 (id-alt s))))
-	     ((induct (fn1-ind s))))
-
+  (implies (p s)
+           (equal (fn1 s) (fn2 (id-alt s))))
+  ((induct (fn1-ind s))))

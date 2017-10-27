@@ -102,7 +102,7 @@
    (equal (abs (* x y)) (* (abs x) (abs y)))))
 
 (defthm abs-<-*-thm
-  (Implies
+  (implies
    (and
     (realp x)
     (realp y)

@@ -28,11 +28,11 @@
 (DEFN WP-LOOP (N A C NSAVE)
   (IF (EQUAL (DEC N) 0)
       (EQUAL (REMAINDER (PLUS C (PLUS A N)) 256)
-	     (QUOTIENT (TIMES NSAVE (PLUS 1 NSAVE)) 2))
+             (QUOTIENT (TIMES NSAVE (PLUS 1 NSAVE)) 2))
       (WP-LOOP (DEC N)
-	       (REMAINDER (PLUS C (PLUS A N)) 256)
-	       (QUOTIENT (PLUS C (PLUS A N)) 256)
-	       NSAVE))
+               (REMAINDER (PLUS C (PLUS A N)) 256)
+               (QUOTIENT (PLUS C (PLUS A N)) 256)
+               NSAVE))
   ((lessp (if (zerop n) 256 n))))
 
 ;;; Weakest precondition at start of program
@@ -49,58 +49,58 @@
 ;;; Instantiate loop invariant theory
 
 (functionally-instantiate wp-sum-loop-invariant nil
- (implies (and (not (zerop (n s)))
-               (lessp (plus (a s) (quotient (times (n s) (add1 (n s))) 2)) 256)
-               (equal (c s) 0)
-               (equal (plus (a s) (quotient (times (n s) (add1 (n s))) 2))
-                      (quotient (times (nsave s) (add1 (nsave s))) 2)))
-          (wp-loop (n s) (a s) (c s) (nsave s)))
- wp-is-weakest-invariant
- ((b (lambda (s) (equal (dec (n s)) 0)))
-  (qp (lambda (s) (equal
-		   (remainder (plus (c s) (plus (a s) (n s))) 256)
-		   (quotient (times (nsave s) (add1 (nsave s))) 2))))
-  (wp (lambda (s) (wp-loop (n s) (a s) (c s) (nsave s))))
-  (measure (lambda (s) (dec (n s))))
-  (sigma (lambda (s) (list (dec (n s))
-			   (remainder (plus (c s) (plus (a s) (n s))) 256)
-			   (quotient (plus (c s) (plus (a s) (n s))) 256)
-			   (nsave s))))
-  (r (lambda (s) (and (not (zerop (n s)))
-		      (lessp (plus (a s) (quotient (times (n s) (add1 (n s))) 2)) 256)
-		      (equal (c s) 0)
-		      (equal (plus (a s) (quotient (times (n s) (add1 (n s))) 2))
-			     (quotient (times (nsave s) (add1 (nsave s))) 2))))))
- ((hands-off difference)
-  (disable quotient-add1-arg2
-	   remainder-add1-arg2
-	   quotient-plus-arg1
-	   remainder-plus-arg1
-	   quotient-times-arg1
-	   quotient-times-arg1-kb
-	   remainder-difference-arg1
-	   lessp-quotient-arg2-linear
-	   quotient-remainder
-	   lessp-quotient
-	   )))
+  (implies (and (not (zerop (n s)))
+                (lessp (plus (a s) (quotient (times (n s) (add1 (n s))) 2)) 256)
+                (equal (c s) 0)
+                (equal (plus (a s) (quotient (times (n s) (add1 (n s))) 2))
+                       (quotient (times (nsave s) (add1 (nsave s))) 2)))
+           (wp-loop (n s) (a s) (c s) (nsave s)))
+  wp-is-weakest-invariant
+  ((b (lambda (s) (equal (dec (n s)) 0)))
+   (qp (lambda (s) (equal
+                    (remainder (plus (c s) (plus (a s) (n s))) 256)
+                    (quotient (times (nsave s) (add1 (nsave s))) 2))))
+   (wp (lambda (s) (wp-loop (n s) (a s) (c s) (nsave s))))
+   (measure (lambda (s) (dec (n s))))
+   (sigma (lambda (s) (list (dec (n s))
+                            (remainder (plus (c s) (plus (a s) (n s))) 256)
+                            (quotient (plus (c s) (plus (a s) (n s))) 256)
+                            (nsave s))))
+   (r (lambda (s) (and (not (zerop (n s)))
+                       (lessp (plus (a s) (quotient (times (n s) (add1 (n s))) 2)) 256)
+                       (equal (c s) 0)
+                       (equal (plus (a s) (quotient (times (n s) (add1 (n s))) 2))
+                              (quotient (times (nsave s) (add1 (nsave s))) 2))))))
+  ((hands-off difference)
+   (disable quotient-add1-arg2
+            remainder-add1-arg2
+            quotient-plus-arg1
+            remainder-plus-arg1
+            quotient-times-arg1
+            quotient-times-arg1-kb
+            remainder-difference-arg1
+            lessp-quotient-arg2-linear
+            quotient-remainder
+            lessp-quotient
+            )))
 
 ;;; Transform to flat state space rule.
 
 (prove-lemma wp-sum-loop-invariant-flat (rewrite)
- (implies (and (not (zerop n))
-               (lessp (plus a (quotient (times n (add1 n)) 2)) 256)
-               (equal c 0)
-               (equal (plus a (quotient (times n (add1 n)) 2))
-                      (quotient (times nsave (add1 nsave)) 2)))
-          (wp-loop n a c nsave))
- ((use (wp-sum-loop-invariant (s (list n a c nsave))))
-  (hands-off quotient remainder)))
+  (implies (and (not (zerop n))
+                (lessp (plus a (quotient (times n (add1 n)) 2)) 256)
+                (equal c 0)
+                (equal (plus a (quotient (times n (add1 n)) 2))
+                       (quotient (times nsave (add1 nsave)) 2)))
+           (wp-loop n a c nsave))
+  ((use (wp-sum-loop-invariant (s (list n a c nsave))))
+   (hands-off quotient remainder)))
 
 ;;; Final correctness result
 
 (prove-lemma wp-loop-is-correct (rewrite)
-	     (implies (and (not (zerop n))
-			   (lessp (quotient (times n (add1 n)) 2) 256)
-			   (equal nsave n))
-		      (wp-1 n nsave))
-	     ((hands-off quotient)))
+  (implies (and (not (zerop n))
+                (lessp (quotient (times n (add1 n)) 2) 256)
+                (equal nsave n))
+           (wp-1 n nsave))
+  ((hands-off quotient)))

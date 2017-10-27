@@ -37,7 +37,7 @@
                                 (error "Non-binary digits in --> ~s."
                                        symbol))))
                   (reverse (subseq (symbol-name symbol) 1))))))
-                           
+
 (eval-when (load eval)
   (progn
     (set-dispatch-macro-character #\# #\v #'bit-vector-reader)

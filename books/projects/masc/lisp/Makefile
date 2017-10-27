@@ -1,4 +1,3 @@
-
 all: translate.cert
 
 translate.cert: translate.lisp

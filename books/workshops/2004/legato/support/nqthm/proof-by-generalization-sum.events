@@ -27,11 +27,11 @@
 (DEFN WP-LOOP (N A C NSAVE)
   (IF (EQUAL (DEC N) 0)
       (EQUAL (REMAINDER (PLUS C (PLUS A N)) 256)
-	     (QUOTIENT (TIMES NSAVE (PLUS 1 NSAVE)) 2))
+             (QUOTIENT (TIMES NSAVE (PLUS 1 NSAVE)) 2))
       (WP-LOOP (DEC N)
-	       (REMAINDER (PLUS C (PLUS A N)) 256)
-	       (QUOTIENT (PLUS C (PLUS A N)) 256)
-	       NSAVE))
+               (REMAINDER (PLUS C (PLUS A N)) 256)
+               (QUOTIENT (PLUS C (PLUS A N)) 256)
+               NSAVE))
   ((lessp (if (zerop n) 256 n))))
 
 ;;; Weakest precondition at start of program
@@ -41,36 +41,35 @@
 ;;; Proof by generalization
 
 (prove-lemma wp-loop-closed (rewrite)
-	     (implies (and (not (zerop n))
-			   (lessp (plus c a (quotient (times n (add1 n)) 2))
-				  256))
-		      (equal (wp-loop n a c nsave)
-			       (equal (plus c a (quotient (times n (add1 n)) 2))
-				      (quotient (times nsave (add1 nsave)) 2))))
-	     ((disable-theory if-normalization)
-	      (induct (wp-loop n a c nsave))
-	      (hands-off difference)
-	      (expand (times n (add1 n)))
-	      (disable quotient-add1-arg2
-		       remainder-add1-arg2
-		       remainder-plus-arg1
-		       remainder-plus-arg1-simple
-		       quotient-plus-arg1
-		       equal-add1
-		       quotient-times-arg1
-		       quotient-add1-arg1
-		       lessp-quotient
-		       lessp-quotient-arg2-linear
-		       times-add1
-		       sub1-plus
-		       )))
+  (implies (and (not (zerop n))
+                (lessp (plus c a (quotient (times n (add1 n)) 2))
+                       256))
+           (equal (wp-loop n a c nsave)
+                  (equal (plus c a (quotient (times n (add1 n)) 2))
+                         (quotient (times nsave (add1 nsave)) 2))))
+  ((disable-theory if-normalization)
+   (induct (wp-loop n a c nsave))
+   (hands-off difference)
+   (expand (times n (add1 n)))
+   (disable quotient-add1-arg2
+            remainder-add1-arg2
+            remainder-plus-arg1
+            remainder-plus-arg1-simple
+            quotient-plus-arg1
+            equal-add1
+            quotient-times-arg1
+            quotient-add1-arg1
+            lessp-quotient
+            lessp-quotient-arg2-linear
+            times-add1
+            sub1-plus
+            )))
 
 ;;; Final correctness result
 
 (prove-lemma wp-loop-is-correct (rewrite)
-	     (implies (and (not (zerop n))
-			   (lessp (quotient (times n (add1 n)) 2) 256)
-			   (equal nsave n))
-		      (wp-1 n nsave))
-	     ((hands-off quotient)))
-
+  (implies (and (not (zerop n))
+                (lessp (quotient (times n (add1 n)) 2) 256)
+                (equal nsave n))
+           (wp-1 n nsave))
+  ((hands-off quotient)))

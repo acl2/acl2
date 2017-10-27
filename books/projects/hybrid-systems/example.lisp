@@ -353,7 +353,7 @@
         (<= (abs (- (getpos x) (getPosReq x))) (+ 3 (* 2 eps))))
    (and
     (valid-state (sys-step x eps) eps) ;; Cuong Chau: I changed "(valid-state x
-    ;; eps)" to "(valid-state (sys-step x eps) eps)" 
+    ;; eps)" to "(valid-state (sys-step x eps) eps)"
     (< (m1 (sys-step x eps) eps) 1)
     (< (m2 (sys-step x eps) eps) 1)
     (<= (abs (- (getpos (sys-step x eps))

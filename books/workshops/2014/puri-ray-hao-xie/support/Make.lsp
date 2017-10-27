@@ -18,4 +18,3 @@ Last Updated: 12th April 2014
 (u)
 (certify-book "seq-pp-equivalence" 0 t :skip-proofs-okp t)
 (u)
-

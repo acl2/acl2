@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
     yyin = fopen(buf, "r");
     if (yyin == NULL) {
       printf("Failed to open file '%s'\n", buf);
-    } 
+    }
     else {
       yylineno = 1;
       yyparse();

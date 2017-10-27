@@ -28,11 +28,11 @@
   (declare (xargs :measure (dec n)))
   (if (equal (dec n) 0)
       (equal (mod (+ c (+ a n)) 256)
-	     (floor (* ns (1+ ns)) 2))
+             (floor (* ns (1+ ns)) 2))
     (wp-loop (dec n)
-	     (mod (+ c (+ a n)) 256)
-	     (floor (+ c (+ a n)) 256)
-	     ns)))
+             (mod (+ c (+ a n)) 256)
+             (floor (+ c (+ a n)) 256)
+             ns)))
 
 ;;; Weakest precondition at beginning of program
 
@@ -46,19 +46,18 @@
        (equal c 0)
        (natp ns)
        (equal (+ a (floor (* n (1+ n)) 2))
-	      (floor (* ns (1+ ns)) 2))))
+              (floor (* ns (1+ ns)) 2))))
 
 (defthm wp-sum-loop-invariant
- (implies (wp-sum-invariant n a c ns)
-	  (wp-loop n a c ns))
- :hints
- ((loop-invariant-hint
-   'wp-loop
-   '(wp-sum-invariant n a c ns))))
+  (implies (wp-sum-invariant n a c ns)
+           (wp-loop n a c ns))
+  :hints
+  ((loop-invariant-hint
+    'wp-loop
+    '(wp-sum-invariant n a c ns))))
 
 (defthm wp-loop-is-correct
- (implies (and (not (zp n))
-	       (equal nsave n)
-	       (< (floor (* n (1+ n)) 2) 256))
-	  (wp-1 n nsave)))
-
+  (implies (and (not (zp n))
+                (equal nsave n)
+                (< (floor (* n (1+ n)) 2) 256))
+           (wp-1 n nsave)))
