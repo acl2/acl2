@@ -204,6 +204,10 @@
  rewrite rule @('sets-are-true-lists-cheap') whose @(see backchain-limit) is
  1.</p>
 
+ <p>A new utility @('def-updater-independence-thm') for proving stobj (and
+ stobj-style) accessors independent of updaters has been added to
+ @('std/stobjs/updater-independence.lisp').</p>
+
  <h4>Kestrel Utilities</h4>
 
  <p>The <see topic='@(url kestrel-utilities)'>Kestrel Utilities</see> have

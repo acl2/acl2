@@ -36,6 +36,7 @@
 (include-book "centaur/aig/misc" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "centaur/fty/fixtype" :dir :system)
+(include-book "centaur/misc/iffstar" :dir :system)
 (local (include-book "centaur/aig/aig-vars" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 
@@ -1299,23 +1300,6 @@ anything if we're working with AIGs."
     (implies (booleanp y)
              (not (pbfr-depends-on k p y)))
     :hints(("Goal" :in-theory (enable booleanp)))
-    :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
-
-
-
-
-(defsection iff*
-  (defund iff* (x y)
-    (iff x y))
-  (defequiv iff* :hints(("Goal" :in-theory (enable iff*))))
-  (defrefinement iff iff* :hints(("Goal" :in-theory (enable iff*))))
-  (defrefinement iff* iff :hints(("Goal" :in-theory (enable iff*))))
-
-  (defthm iff*-of-nonnils
-    (implies (and x y)
-             (equal (iff* x y) t))
-    :hints(("Goal" :in-theory (enable iff*)))
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 

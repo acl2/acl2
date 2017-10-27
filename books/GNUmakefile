@@ -1604,6 +1604,7 @@ TAGS : $(CERT_PL_SOURCES)
 	@rm -f TAGS
 	cat $(BUILD_DIR)/Makefile-sources | xargs -n 100 --delimiter='\n' $(ETAGS) -a
 
+
 ##############################
 ### Section: Git Status
 ##############################
@@ -1611,7 +1612,7 @@ TAGS : $(CERT_PL_SOURCES)
 # that need to be added before your commit -- candidates are things
 # that show up under "Untracked files".
 git_status:
-	@cat $(BUILD_DIR)/Makefile-sources | xargs --delimiter='\n' git status --
+	@xargs --delimiter='\n' git status -- < $(BUILD_DIR)/Makefile-sources
 
 
 ##############################
