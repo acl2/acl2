@@ -97,7 +97,7 @@
        (natp (num-regs aignet))
        (natp (num-outs aignet))
        (natp (num-nxsts aignet))
-       (natp (num-nodes aignet))
+       (posp (num-nodes aignet))
        (natp (max-fanin aignet))
        (<= (lnfix (num-ins aignet))
            (ins-length aignet))
@@ -105,8 +105,8 @@
            (outs-length aignet))
        (<= (lnfix (num-regs aignet))
            (regs-length aignet))
-       (< (max-fanin aignet)
-          (num-nodes aignet))
+       ;; (< (max-fanin aignet)
+       ;;    (num-nodes aignet))
        (<= (* 2 (lnfix (num-nodes aignet)))
            (nodes-length aignet))))
 
@@ -507,6 +507,138 @@
          (aignet (update-node-slot nodes 0 slot0 aignet))
          (aignet (update-node-slot nodes 1 slot1 aignet)))
       aignet)))
+
+
+
+(define count-nodes ((n natp) (type natp) (regp bitp) aignet)
+  :guard (and (aignet-sizes-ok aignet)
+              (<= n (num-nodes aignet)))
+  :measure (nfix (- (nfix (num-nodes aignet)) (nfix n)))
+  :returns (count natp :rule-classes :type-prescription)
+  (b* (((when (zp (- (nfix (num-nodes aignet)) (nfix n))))
+        0)
+       (n-type (id->type n aignet))
+       (n-regp (id->regp n aignet)))
+    (+ (if (and (eql n-type type)
+                (eql n-regp regp))
+           1
+         0)
+       (count-nodes (+ 1 (lnfix n)) type regp aignet))))
+
+(define aignet-counts-accurate (aignet)
+  :guard (aignet-sizes-ok aignet)
+  (and (eql (nfix (num-ins aignet)) (count-nodes 0 (in-type) 0 aignet))
+       (eql (nfix (num-regs aignet)) (count-nodes 0 (in-type) 1 aignet))
+       (eql (nfix (num-outs aignet)) (count-nodes 0 (out-type) 0 aignet))
+       (eql (nfix (num-nxsts aignet)) (count-nodes 0 (out-type) 1 aignet))))
+
+(defun-sk aignet-nodes-nonconst (aignet)
+  (forall idx 
+          (implies (and (posp idx)
+                        (< idx (nfix (num-nodes aignet))))
+                   (not (equal (snode->type (id->slot idx 0 aignet))
+                               (const-type)))))
+  :rewrite :direct)
+
+;; (defun-sk aignet-max-fanin-sufficient (aignet)
+;;   (forall idx
+;;           (implies (and (< (nfix (max-fanin aignet)) (nfix idx))
+;;                         (< (nfix idx) (nfix (num-nodes aignet))))
+;;                    (equal (snode->type (id->slot idx 0 aignet))
+;;                           (out-type))))
+;;   :rewrite :direct)
+
+;; (define aignet-max-fanin-correct (aignet)
+;;   :guard (aignet-sizes-ok aignet)
+;;   (and (< (lnfix (max-fanin aignet)) (lnfix (num-nodes aignet)))
+;;        (not (equal (id->type (max-fanin aignet) aignet) (out-type)))
+;;        (ec-call (aignet-max-fanin-sufficient aignet))))
+
+(define aignet-no-nxstsp ((n natp) aignet)
+  ;; Checks no nextstates in the nodes above n.
+  :guard (and (aignet-sizes-ok aignet)
+              (< n (num-nodes aignet)))
+  :measure (nfix (- (nfix (num-nodes aignet)) (+ 1 (nfix n))))
+  (b* (((when (mbe :logic (zp (- (nfix (num-nodes aignet)) (+ 1 (nfix n))))
+                   :exec (eql (+ 1 n) (num-nodes aignet))))
+        t))
+    (and (not (and (int= (id->type (+ 1 (lnfix n)) aignet) (out-type))
+                   (int= (id->regp (+ 1 (lnfix n)) aignet) 1)))
+         (aignet-no-nxstsp (+ 1 (lnfix n)) aignet))))
+
+(define aignet-find-max-fanin ((n natp) aignet)
+    :guard (and (aignet-sizes-ok aignet)
+                (< n (num-nodes aignet))
+                (equal (id->type 0 aignet) (const-type)))
+    :measure (nfix n)
+    :returns (max-fanin natp :rule-classes :type-prescription)
+    (b* (((unless (and (int= (id->type n aignet) (out-type))
+                       (mbt (not (zp n)))))
+          (lnfix n)))
+      (aignet-find-max-fanin (1- (lnfix n)) aignet)))
+
+(defsection aignet-rollback
+
+
+  (define aignet-rollback-one (aignet)
+    :guard (and (aignet-sizes-ok aignet)
+                (< 1 (num-nodes aignet))
+                (ec-call (aignet-counts-accurate aignet))
+                (ec-call (aignet-nodes-nonconst aignet))
+                (not (and (equal (id->type (+ -1 (num-nodes aignet)) aignet) (out-type))
+                          (equal (id->regp (+ -1 (num-nodes aignet)) aignet) 1))))
+    :returns (new-aignet)
+    (b* ((n (+ -1 (lnfix (num-nodes aignet))))
+         (type (id->type n aignet))
+         ((when (eql type (gate-type)))
+          (update-num-nodes n aignet))
+         ((when (eql type (out-type)))
+          ;; We can't handle nxst nodes without doing something more
+          ;; complicated, so we'll just guard against them in the logic
+          ;; version.
+          (b* ((aignet (update-num-outs (1- (lnfix (num-outs aignet))) aignet)))
+            (update-num-nodes n aignet)))
+         (regp (id->regp n aignet))
+         (aignet (if (int= regp 1)
+                     (update-num-regs (1- (lnfix (num-regs aignet))) aignet)
+                   (update-num-ins (1- (lnfix (num-ins aignet))) aignet))))
+      (update-num-nodes n aignet)))
+
+  (define aignet-rollback-aux ((n natp) aignet)
+    :guard (and (aignet-sizes-ok aignet)
+                (< (nfix n) (num-nodes aignet))
+                (aignet-counts-accurate aignet)
+                (ec-call (aignet-nodes-nonconst aignet))
+                (aignet-no-nxstsp n aignet))
+    :measure (nfix (- (nfix (num-nodes aignet)) (+ 1 (nfix n))))
+    :returns (new-aignet)
+    (b* (((when (mbe :logic (zp (- (nfix (num-nodes aignet)) (+ 1 (nfix n))))
+                     :exec (int= (num-nodes aignet) (+ 1 n))))
+          aignet)
+         (aignet (aignet-rollback-one aignet)))
+      (aignet-rollback-aux n aignet)))
+
+  (define aignet-rollback ((n natp) aignet)
+    :guard (and (aignet-sizes-ok aignet)
+                (< (nfix n) (num-nodes aignet))
+                (aignet-counts-accurate aignet)
+                (ec-call (aignet-nodes-nonconst aignet))
+                (aignet-no-nxstsp n aignet)
+                (equal (id->type 0 aignet) (const-type)))
+    :returns (new-aignet)
+    (b* ((aignet (aignet-rollback-aux n aignet))
+         (nodes (lnfix (num-nodes aignet))))
+      (if (< (lnfix (max-fanin aignet)) nodes)
+          aignet
+        (update-max-fanin
+         (aignet-find-max-fanin (1- nodes) aignet)
+         aignet)))))
+      
+         
+          
+          
+         
+    
 
 
 

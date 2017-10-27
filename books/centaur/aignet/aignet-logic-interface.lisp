@@ -171,8 +171,6 @@
    (nxst-node->reg (car (lookup-id id aignet)))
    (cdr (lookup-id id aignet))))
 
-
-
 (define aignet$a::fanin-litp ((lit litp) (aignet aignet$a::aignet-well-formedp))
   :enabled t
   (aignet-litp lit aignet))
@@ -334,6 +332,15 @@
                   (eql (aignet$a::io-id->regp regid aignet) 1))
              (aignet-nodes-ok (cons (nxst-node f regid) aignet)))
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
+
+
+(define aignet$a::aignet-rollback ((id natp "the id of the last node to be included")
+                                   (aignet aignet$a::aignet-well-formedp))
+  :guard (and (aignet$a::id-existsp id aignet)
+              (equal (aignet$a::num-nxsts aignet)
+                     (non-exec (aignet$a::num-nxsts (lookup-id id aignet)))))
+  (lookup-id id aignet))
+
 
 (define aignet$a::aignet-clear (aignet)
   :enabled t

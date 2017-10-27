@@ -156,6 +156,12 @@
     (<= (+ 1 (nfix n)) (len (update-nth-lit n v x)))
     :rule-classes ((:linear :trigger-terms ((len (update-nth-lit n v x))))))
 
+  (defthm len-of-update-nth-lit
+    (implies (< (nfix n) (len x))
+             (equal (len (update-nth-lit n val x))
+                    (len x)))
+    :hints(("Goal" :in-theory (enable update-nth-lit))))
+
   (defthm update-nth-lit-same
     (equal (update-nth-lit n v1 (update-nth-lit n v2 arr))
            (update-nth-lit n v1 arr)))

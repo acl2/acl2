@@ -32,6 +32,7 @@
 
 (include-book "std/portcullis" :dir :system)
 (include-book "centaur/satlink/portcullis" :dir :system)
+(include-book "centaur/bitops/portcullis" :dir :system)
 
 (defconst *aignet-exports*
   '(aignet-well-formedp
@@ -136,7 +137,9 @@
             *aignet-exports*
             *aignet-imports*
             satlink::*satlink-exports*
-            std::*std-exports*))
+            std::*std-exports*
+            *bitops-exports*
+            *stobjs-exports*))
 
 ;; (defconst *aignet$a-exports*
 ;;   #!AIGNET

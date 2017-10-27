@@ -38,6 +38,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "clause-processors/generalize" :dir :system))
+(local (include-book "clause-processors/use-by-hint" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable nth
@@ -50,16 +51,178 @@
                            ;; set::sets-are-true-lists
                            make-list-ac
                            true-listp-update-nth
-                           acl2::nth-with-large-index)))
+                           acl2::nth-with-large-index
+                           ;; (aignet$c::aignet-max-fanin-correct)
+                           ;; (aignet$c::aignet-max-fanin-sufficient)
+                           (aignet$c::aignet-nodes-nonconst))))
+
+
+(local (defthm lookup-id-of-lookup-id
+         (implies (and (<= m n)
+                       (integerp n)
+                       (<= n (node-count aignet))
+                       ;; (not (equal (stype (car (lookup-id m aignet))) :const))
+                       )
+                  (equal (lookup-id m (lookup-id n aignet))
+                         (lookup-id m aignet)))
+         :hints ((and stable-under-simplificationp
+                      '(:cases ((zp m))))
+                 (and stable-under-simplificationp
+                      '(:cases ((zp n)))))))
+
+
+(local (defthm id->phase-of-extension-inverse
+         (implies (and (aignet-extension-bind-inverse)
+                       (<= (nfix id) (node-count orig)))
+                  (equal (aignet$a::id->phase id orig)
+                         (aignet$a::id->phase id new)))))
+
+(local (defthm lookup-reg->nxst-of-extension-inverse-when-nxst-counts-equal
+         (implies (and (aignet-extension-bind-inverse)
+                       (equal (stype-count :nxst orig)
+                              (stype-count :nxst new))
+                       (equal (stype (car (lookup-id reg-id orig))) :reg))
+                  (equal (lookup-reg->nxst reg-id orig)
+                         (lookup-reg->nxst reg-id new)))
+         :hints(("Goal" :in-theory (enable lookup-reg->nxst aignet-extension-p
+                                           stype-count)))))
+
+(local (defthm id->phase-of-cons
+         (implies (equal (nfix n) (+ 1 (node-count aignet)))
+                  (equal (aignet$a::id->phase n (cons node aignet))
+                         (snode->phase (mv-nth 1 (id-slots n (cons node aignet))))))
+         :hints(("Goal" :in-theory (enable id-slots))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable aignet$a::id->phase))))))
+
+(local (in-theory (disable id->phase-of-cons)))
+
+(local (defthm id-slots-of-cons-gate
+         (implies (equal (nfix n) (+ 1 (node-count aignet)))
+                  (equal (id-slots n (cons (gate-node f0 f1) aignet))
+                         (let ((f0 (aignet-lit-fix f0 aignet))
+                               (f1 (aignet-lit-fix f1 aignet)))
+                         (mk-snode (gate-type) 0
+                                   (b-and (aignet$a::lit->phase f0 aignet)
+                                          (aignet$a::lit->phase f1 aignet))
+                                   f0 f1))))
+         :hints(("Goal" :in-theory (enable id-slots aignet$a::id->phase)))))
+
+(local (defthm id-slots-of-cons-pi
+         (implies (equal (nfix n) (+ 1 (node-count aignet)))
+                  (equal (id-slots n (cons '(:pi) aignet))
+                         (mk-snode (in-type) 0
+                                   0 0
+                                   (stype-count :pi aignet))))
+         :hints(("Goal" :in-theory (enable id-slots aignet$a::id->phase)))))
+
+(local (defthm id-slots-of-cons-reg
+         (implies (equal (nfix n) (+ 1 (node-count aignet)))
+                  (equal (id-slots n (cons '(:reg) aignet))
+                         (mk-snode (in-type) 1
+                                   0
+                                   (+ 1 (node-count aignet))
+                                   (stype-count :reg aignet))))
+         :hints(("Goal" :in-theory (enable id-slots aignet$a::id->phase
+                                           lookup-reg->nxst)))))
+
+(local (defthm id-slots-of-cons-po
+         (implies (equal (nfix n) (+ 1 (node-count aignet)))
+                  (equal (id-slots n (cons (po-node f) aignet))
+                         (let ((f (aignet-lit-fix f aignet)))
+                         (mk-snode (out-type) 0
+                                   (aignet$a::lit->phase f aignet)
+                                   f (stype-count :po aignet)))))
+         :hints(("Goal" :in-theory (enable id-slots aignet$a::id->phase)))))
+
+(local (defthm id-slots-of-cons-nxst
+         (implies (equal (nfix n) (+ 1 (node-count aignet)))
+                  (equal (id-slots n (cons (nxst-node f regid) aignet))
+                         (let ((f (aignet-lit-fix f aignet)))
+                           (mk-snode (out-type) 1
+                                     (aignet$a::lit->phase f aignet)
+                                     f (aignet-id-fix regid aignet)))))
+         :hints(("Goal" :in-theory (enable id-slots aignet$a::id->phase)))))
+
+(local (defthm id-slots-of-cons-non-nxst
+         (implies (and (not (eq (stype node) :nxst))
+                       (<= (nfix n) (node-count aignet)))
+                  (equal (id-slots n (cons node aignet))
+                         (id-slots n aignet)))
+         :hints(("Goal" :in-theory (enable id-slots)
+                 :expand ((lookup-reg->nxst n (cons node aignet)))))))
+
+(local (defthm id-slots-non-reg-node-of-cons-nxst
+         (implies (and (<= (nfix n) (node-count aignet))
+                       (not (equal (nfix n) (nfix regid))))
+                  (equal (id-slots n (cons (nxst-node f regid) aignet))
+                         (id-slots n aignet)))
+         :hints(("Goal" :in-theory (enable id-slots)
+                 :expand ((:free (node) (lookup-reg->nxst n (cons node aignet))))))))
+
+(local (defthm id-slot-1-of-cons-node
+         (implies (<= (nfix n) (node-count aignet))
+                  (equal (mv-nth 1 (id-slots n (cons node aignet)))
+                         (mv-nth 1 (id-slots n aignet))))
+         :hints(("Goal" :in-theory (enable id-slots)))))
+
+(local (defthm id-slot-0-of-cons-nxst
+         (implies (And (<= (nfix n) (node-count aignet))
+                       (equal (stype (car (lookup-id regid aignet))) :reg))
+                  (equal (mv-nth 0 (id-slots regid (cons (nxst-node f regid) aignet)))
+                         (aignet$c::set-snode->regid (+ 1 (node-count aignet))
+                                                     (mv-nth 0 (id-slots regid aignet)))))
+         :hints(("Goal" :in-theory (enable id-slots)
+                 :expand ((lookup-reg->nxst regid (cons (nxst-node f regid) aignet)))))))
+
+(local (defthm id-slots-of-aignet-extension-inverse
+         (implies (and (aignet-extension-bind-inverse)
+                       (<= (nfix m) (node-count orig))
+                       (equal (stype-count :nxst orig)
+                              (stype-count :nxst new)))
+                  (equal (id-slots m orig)
+                         (id-slots m new)))
+         :hints(("Goal" :in-theory (e/d (id-slots)
+                                        (lookup-reg->nxst-of-extension-inverse-when-nxst-counts-equal))
+                 :use ((:instance lookup-reg->nxst-of-extension-inverse-when-nxst-counts-equal
+                        (reg-id m)))))))
+
+(local (in-theory (enable id->phase-of-cons)))
 
 (local
  (progn
+
+   
+
+   #!aignet$c
+   (defthm aignet-nodes-nonconst-when-empty
+     (implies (equal (num-nodes aignet) 1)
+              (aignet-nodes-nonconst aignet))
+     :hints(("Goal" :in-theory (enable aignet-nodes-nonconst))))
+
+   #!aignet$C
+   (defthm aignet-find-max-fanin-when-empty
+     (implies (equal (id->type 0 aignet) 0)
+              (equal (aignet-find-max-fanin 0 aignet) 0))
+     :hints(("Goal" :in-theory (enable aignet-find-max-fanin))))
+
+   #!aignet$c
+   (defthm aignet-counts-accurate-when-empty
+     (implies (and (equal (num-nodes aignet) 1)
+                   (equal (id->type 0 aignet) 0)
+                   (equal (num-ins aignet) 0)
+                   (equal (num-outs aignet) 0)
+                   (equal (num-nxsts aignet) 0)
+                   (equal (num-regs aignet) 0))
+              (aignet-counts-accurate aignet))
+     :hints(("Goal" :in-theory (enable aignet-counts-accurate
+                                       count-nodes))))
 
    (defun-sk innums-correct (aignetc aigneta)
      (forall n
              (implies (< (nfix n) (aignet$a::num-ins aigneta))
                       (nat-equiv (nth n (nth aignet$c::*insi* aignetc))
-                                (node-count (lookup-stype n (pi-stype) aigneta)))))
+                                 (node-count (lookup-stype n (pi-stype) aigneta)))))
      :rewrite :direct)
 
    (in-theory (disable innums-correct))
@@ -68,7 +231,7 @@
      (forall n
              (implies (< (nfix n) (aignet$a::num-outs aigneta))
                       (nat-equiv (nth n (nth aignet$c::*outsi* aignetc))
-                                (node-count (lookup-stype n (po-stype) aigneta)))))
+                                 (node-count (lookup-stype n (po-stype) aigneta)))))
      :rewrite :direct)
 
    (in-theory (disable outnums-correct))
@@ -79,7 +242,7 @@
       (implies
        (< (nfix n) (aignet$a::num-regs aigneta))
        (nat-equiv (nth n (nth aignet$c::*regsi* aignetc))
-                 (aignet$a::regnum->id n aigneta))))
+                  (aignet$a::regnum->id n aigneta))))
      :rewrite :direct)
 
    (in-theory (disable regnums-correct
@@ -94,8 +257,9 @@
        (forall
         id
         (implies
-         (and (natp id)
-              (case-split (< id (aignet$c::num-nodes aignetc))))
+         ;; (and (natp id)
+         ;;      (case-split (< id (aignet$c::num-nodes aignetc))))
+         (case-split (< (nfix id) (nfix (aignet$c::num-nodes aignetc))))
          (let ((slot0 (aignet$c::id->slot id 0 aignetc))
                (slot1 (aignet$c::id->slot id 1 aignetc)))
            (and (equal (aignet$c::snode->type slot0)
@@ -151,7 +315,8 @@
                              aignet$a::co-id->fanin
                              aignet$a::gate-id->fanin0
                              aignet$a::gate-id->fanin1
-                             aignet$a::io-id->ionum)))
+                             aignet$a::io-id->ionum
+                             aignet$a::aignet-rollback)))
 
    (defthm id->type-of-empty
      (equal (aignet$a::id->type x nil) 0)
@@ -175,49 +340,67 @@
 
    (defsection aignet-count-equivs
      (defund-nx aignet-count-equivs (aignetc aigneta)
-       (and (equal (nth aignet$c::*num-nodes* aignetc)
-                   (aignet$a::num-nodes aigneta))
-            (equal (nth aignet$c::*num-ins* aignetc)
-                   (aignet$a::num-ins aigneta))
-            (equal (nth aignet$c::*num-regs* aignetc)
-                   (aignet$a::num-regs aigneta))
-            (equal (nth aignet$c::*num-nxsts* aignetc)
-                   (aignet$a::num-nxsts aigneta))
-            (equal (nth aignet$c::*num-outs* aignetc)
-                   (aignet$a::num-outs aigneta))
-            (equal (nth aignet$c::*max-fanin* aignetc)
-                   (aignet$a::max-fanin aigneta))))
+       (and (nat-equiv (nth aignet$c::*num-nodes* aignetc)
+                       (aignet$a::num-nodes aigneta))
+            (nat-equiv (nth aignet$c::*num-ins* aignetc)
+                       (aignet$a::num-ins aigneta))
+            (nat-equiv (nth aignet$c::*num-regs* aignetc)
+                       (aignet$a::num-regs aigneta))
+            (nat-equiv (nth aignet$c::*num-nxsts* aignetc)
+                       (aignet$a::num-nxsts aigneta))
+            (nat-equiv (nth aignet$c::*num-outs* aignetc)
+                       (aignet$a::num-outs aigneta))
+            (nat-equiv (nth aignet$c::*max-fanin* aignetc)
+                       (aignet$a::max-fanin aigneta))))
 
      (local (in-theory (enable aignet-count-equivs)))
      (defthm aignet-count-equivs-implies
        (implies (aignet-count-equivs aignetc aigneta)
-                (and (equal (nth aignet$c::*num-nodes* aignetc)
-                            (aignet$a::num-nodes aigneta))
-                     (equal (nth aignet$c::*num-ins* aignetc)
-                            (aignet$a::num-ins aigneta))
-                     (equal (nth aignet$c::*num-regs* aignetc)
-                            (aignet$a::num-regs aigneta))
-                     (equal (nth aignet$c::*num-nxsts* aignetc)
-                            (aignet$a::num-nxsts aigneta))
-                     (equal (nth aignet$c::*num-outs* aignetc)
-                            (aignet$a::num-outs aigneta))
-                     (equal (nth aignet$c::*max-fanin* aignetc)
-                            (aignet$a::max-fanin aigneta)))))
+                (and (nat-equiv (nth aignet$c::*num-nodes* aignetc)
+                                (aignet$a::num-nodes aigneta))
+                     (nat-equiv (nth aignet$c::*num-ins* aignetc)
+                                (aignet$a::num-ins aigneta))
+                     (nat-equiv (nth aignet$c::*num-regs* aignetc)
+                                (aignet$a::num-regs aigneta))
+                     (nat-equiv (nth aignet$c::*num-nxsts* aignetc)
+                                (aignet$a::num-nxsts aigneta))
+                     (nat-equiv (nth aignet$c::*num-outs* aignetc)
+                                (aignet$a::num-outs aigneta))
+                     (nat-equiv (nth aignet$c::*max-fanin* aignetc)
+                                (aignet$a::max-fanin aigneta))
+                     (implies (natp (nth aignet$c::*num-nodes* aignetc))
+                              (equal (nth aignet$c::*num-nodes* aignetc)
+                                     (aignet$a::num-nodes aigneta)))
+                     (implies (natp (nth aignet$c::*num-ins* aignetc))
+                              (equal (nth aignet$c::*num-ins* aignetc)
+                                     (aignet$a::num-ins aigneta)))
+                     (implies (natp (nth aignet$c::*num-regs* aignetc))
+                              (equal (nth aignet$c::*num-regs* aignetc)
+                                     (aignet$a::num-regs aigneta)))
+                     (implies (natp (nth aignet$c::*num-nxsts* aignetc))
+                              (equal (nth aignet$c::*num-nxsts* aignetc)
+                                     (aignet$a::num-nxsts aigneta)))
+                     (implies (natp (nth aignet$c::*num-outs* aignetc))
+                              (equal (nth aignet$c::*num-outs* aignetc)
+                                     (aignet$a::num-outs aigneta)))
+                     (implies (natp (nth aignet$c::*max-fanin* aignetc))
+                              (equal (nth aignet$c::*max-fanin* aignetc)
+                                     (aignet$a::max-fanin aigneta))))))
 
      (defthm aignet-count-equivs-unhide
        (equal (hide (aignet-count-equivs aignetc aigneta))
-              (and (equal (nth aignet$c::*num-nodes* aignetc)
-                          (aignet$a::num-nodes aigneta))
-                   (equal (nth aignet$c::*num-ins* aignetc)
-                          (aignet$a::num-ins aigneta))
-                   (equal (nth aignet$c::*num-regs* aignetc)
-                          (aignet$a::num-regs aigneta))
-                   (equal (nth aignet$c::*num-nxsts* aignetc)
-                          (aignet$a::num-nxsts aigneta))
-                   (equal (nth aignet$c::*num-outs* aignetc)
-                          (aignet$a::num-outs aigneta))
-                   (equal (nth aignet$c::*max-fanin* aignetc)
-                          (aignet$a::max-fanin aigneta))))
+              (and (nat-equiv (nth aignet$c::*num-nodes* aignetc)
+                              (aignet$a::num-nodes aigneta))
+                   (nat-equiv (nth aignet$c::*num-ins* aignetc)
+                              (aignet$a::num-ins aigneta))
+                   (nat-equiv (nth aignet$c::*num-regs* aignetc)
+                              (aignet$a::num-regs aigneta))
+                   (nat-equiv (nth aignet$c::*num-nxsts* aignetc)
+                              (aignet$a::num-nxsts aigneta))
+                   (nat-equiv (nth aignet$c::*num-outs* aignetc)
+                              (aignet$a::num-outs aigneta))
+                   (nat-equiv (nth aignet$c::*max-fanin* aignetc)
+                              (aignet$a::max-fanin aigneta))))
        :hints (("goal" :Expand ((:free (x) (hide x)))))))
 
 
@@ -225,6 +408,12 @@
      (defun-nx aignet-corr (aignetc aigneta)
        (and (aignet$a::aignet-well-formedp aigneta)
             (aignet$c::aignet-sizes-ok aignetc)
+            (aignet$c::aignet-counts-accurate aignetc)
+            (aignet$c::aignet-nodes-nonconst aignetc)
+            (nat-equiv (aignet$c::max-fanin aignetc)
+                       (aignet$c::aignet-find-max-fanin
+                        (+ -1 (aignet$c::num-nodes aignetc))
+                        aignetc))
             ;; (aignet$c::aignet-regs-in-bounds aignetc)
             (aignet-count-equivs aignetc aigneta)
             (innums-correct aignetc aigneta)
@@ -235,6 +424,13 @@
        (equal (hide (aignet-corr aignetc aigneta))
               (and (aignet$a::aignet-well-formedp aigneta)
                    (aignet$c::aignet-sizes-ok aignetc)
+                   (aignet$c::aignet-counts-accurate aignetc)
+                   (aignet$c::aignet-nodes-nonconst aignetc)
+                   ;; (aignet$c::aignet-max-fanin-correct aignetc)
+                   (nat-equiv (nth aignet$c::*max-fanin* aignetc)
+                              (aignet$c::aignet-find-max-fanin
+                               (+ -1 (aignet$c::num-nodes aignetc))
+                               aignetc))
                    ;; (aignet$c::aignet-regs-in-bounds aignetc)
                    (aignet-count-equivs aignetc aigneta)
                    (innums-correct aignetc aigneta)
@@ -259,6 +455,112 @@
    ;;            (equal (equal n (+ -1 m))
    ;;                   (equal (+ 1 n) m))))
 
+   (local (defthm aignet-has-no-nxst-when-counts-equal
+            (implies (equal (stype-count :nxst aignet)
+                            (stype-count :nxst (lookup-id n aignet)))
+                     (not (and (< (nfix n) (nfix m))
+                               (<= (nfix m) (node-count aignet))
+                               (equal (stype (car (lookup-id m aignet))) :nxst))))
+            :hints (("goal" :induct (lookup-id n aignet)
+                     :in-theory (enable lookup-id)))
+            :rule-classes nil))
+
+   (local (defthm aignet-no-nxstsp-when-counts-equal
+            (implies (and (nodes-correct aignet$c aignet)
+                          (equal (stype-count :nxst aignet)
+                                 (stype-count :nxst (lookup-id n aignet))))
+                     (aignet$c::aignet-no-nxstsp n aignet$c))
+            :hints (("goal" :use ((:instance aignet$c::not-aignet-no-nxstsp-implies-witness
+                                   (n n) (aignet aignet$c))
+                                  (:instance aignet-has-no-nxst-when-counts-equal
+                                   (m (aignet$c::aignet-nxstsp-witness n aignet$c))))))))
+
+
+   (local (defthmd max-fanin-when-nodes-correct-lemma
+            (implies (and (nodes-correct aignet$c aignet)
+                          (equal (nfix (aignet$c::num-nodes aignet$c)) (+ 1 (node-count aignet)))
+                          (aignet-extension-p aignet aignet-suff))
+                     (equal (node-count (find-max-fanin aignet-suff))
+                            (aignet$c::aignet-find-max-fanin (node-count aignet-suff) aignet$c)))
+            :hints(("Goal" :in-theory (enable node-count find-max-fanin aignet$c::aignet-find-max-fanin)))))
+
+   (local (defthm max-fanin-when-nodes-correct
+            (implies (and (nodes-correct aignet$c aignet)
+                          (equal (nfix (aignet$c::num-nodes aignet$c)) (+ 1 (node-count aignet))))
+                     (equal (node-count (find-max-fanin aignet))
+                            (aignet$c::aignet-find-max-fanin (node-count aignet) aignet$c)))
+            :hints(("Goal" :in-theory (enable max-fanin-when-nodes-correct-lemma)))))
+
+   (local (defthm find-max-fanin-of-lookup-id
+            (implies (and (nodes-correct aignet$c aignet)
+                          (equal (nfix (aignet$c::num-nodes aignet$c)) (+ 1 (node-count aignet)))
+                          (<= (nfix n) (node-count aignet)))
+                     (equal (node-count (find-max-fanin (lookup-id n aignet)))
+                            (aignet$c::aignet-find-max-fanin n aignet$c)))
+            :hints(("Goal" :in-theory (enable max-fanin-when-nodes-correct-lemma)))))
+
+   (local (defthmd cdr-lookup-id-of-plus-1
+            (implies (and (natp nn)
+                          (< nn (node-count aignet)))
+                     (equal (cdr (lookup-id (+ 1 nn) aignet))
+                            (lookup-id nn aignet)))
+            :hints (("goal" :in-theory (enable lookup-id)
+                     :induct t)
+                    (and stable-under-simplificationp
+                         '(:expand ((lookup-id nn aignet)
+                                    (lookup-id nn (cdr aignet)))
+                           :in-theory (disable lookup-id-in-extension-inverse))))))
+
+   (local (defthmd lookup-id-of-minus-1
+            (implies (and (posp nn)
+                          (<= nn (node-count aignet)))
+                     (equal (lookup-id (+ -1 nn) aignet)
+                            (cdr (lookup-id nn aignet))))
+            :hints (("goal" :use ((:instance cdr-lookup-id-of-plus-1
+                                   (nn (+ -1 nn))))))))
+
+   (local (in-theory (disable acl2::nfix-equal-to-nonzero)))
+
+   (local (defthmd stype-count-0-of-extension-inverse
+            (implies (and (aignet-extension-bind-inverse)
+                          (equal 0 (stype-count stype new)))
+                     (equal (equal 0 (stype-count stype orig)) t))))
+
+   (local (define type->stype-for-count (type regp)
+            :verify-guards nil
+            :returns (stype (iff (stypep stype) stype))
+            (cond ((eql type (in-type)) (if (eql regp 1) :reg :pi))
+                  ((eql type (out-type)) (if (eql regp 1) :nxst :po))
+                  (t nil))))
+
+   (local (defthm count-nodes-is-diff-of-stype-counts-pi
+            (implies (and (syntaxp (and (quotep type)
+                                        (quotep regp)))
+                          (bitp regp)
+                          (equal stype (type->stype-for-count type regp))
+                          stype
+                          ;; (aignet$c::aignetp aignet$c)
+                          (nodes-correct aignet$c aignet)
+                          (equal (nfix (aignet$c::num-nodes aignet$c)) (+ 1 (node-count aignet)))
+                          (<= (nfix n) (+ 1 (node-count aignet))))
+                     (equal (aignet$c::count-nodes n type regp aignet$c)
+                            (- (stype-count stype aignet)
+                               (stype-count stype (lookup-id (nfix (+ -1 (nfix n))) aignet)))))
+            :hints(("Goal" :in-theory (enable aignet$c::count-nodes
+                                              type->stype-for-count)
+                    :induct t)
+                   (and stable-under-simplificationp
+                        '(:in-theory (e/d (lookup-id-of-minus-1
+                                           stype-count-0-of-extension-inverse))
+                          :cases ((equal (nfix n) (node-count aignet))
+                                  (equal (nfix n) 0))
+                          :expand ((:free (stype) (stype-count stype (lookup-id n aignet)))
+                                   (:free (type regp) (aignet$c::count-nodes (nth 4 aignet$c) type regp aignet$c))
+                                   (:free (type regp) (aignet$c::count-nodes (+ 1 (nfix n)) type regp aignet$c))
+                                   ;; (stype-count :pi (cdr (lookup-id (+ 1 (nfix n)) aignet)))
+                                   ))))))
+   
+
    (set-default-hints
     '((and stable-under-simplificationp
            (let ((last (car (last clause))))
@@ -269,6 +571,12 @@
                                        aignet-count-equivs))
                   `(:expand (,last)))))
       (and stable-under-simplificationp
+           (let ((last (car (last clause))))
+             (case-match last
+               (('equal ('node-count ('lookup-stype . &)) ('node-count ('lookup-stype . &)))
+                '(:in-theory (enable lookup-stype-in-bounds)))
+               (& nil))))
+      (and stable-under-simplificationp
            '(:expand ((:free (a b c stype)
                        (lookup-stype a stype (cons b c)))
                       (:free (a b c)
@@ -277,12 +585,15 @@
                        (lookup-id a (cons b c)))
                       (:free (b)
                        (aignet$a::id->phase (+ 1 (node-count aignet)) b))
+                      ;; (:free (b)
+                      ;;  (aignet$a::id->phase nid b))
                       (:free (a b)
                        (aignet$a::lit->phase a b))
                       (:free (a b)
                        (aignet-litp a b))
-                      (:free (id aignet)
-                       (id-slots id aignet)))))
+                      ;; (:free (id aignet)
+                      ;;  (id-slots id aignet))
+                      )))
       (and stable-under-simplificationp
            (let ((last (car (last clause))))
              (and (member (car last) '(;; aignet$c::aignet-regs-in-bounds
@@ -293,15 +604,22 @@
            (let ((witness (acl2::find-call-lst
                            'nodes-correct-witness
                            clause)))
-             `(:clause-processor
-               (acl2::simple-generalize-cp
-                clause '((,witness . nid))))))
-      (and stable-under-simplificationp
-           '(:cases ((equal (nfix nid) (+ 1 (node-count aignet)))
-                     (< (nfix nid) (+ 1 (node-count aignet))))))
-      ;; (and stable-under-simplificationp
-      ;;      '(:expand ((:free (a b)
-      ;;                  (aignet$a::id->phase nid (cons a b))))))
+             (and witness
+                  `(:computed-hint-replacement
+                    ((and stable-under-simplificationp
+                          '(:cases ((equal (nfix nid) (+ 1 (node-count aignet)))
+                                    (< (nfix nid) (+ 1 (node-count aignet))))))
+                     ;; (and stable-under-simplificationp
+                     ;;      '(:expand ((:free (a b)
+                     ;;                  (aignet$a::id->phase nid (cons a b)))
+                     ;;                 (:free (a b)
+                     ;;                  (aignet$a::lit->phase a b))
+                     ;;                 (id-slots nid aignet))))
+                     )
+                    :clause-processor
+                    (acl2::simple-generalize-cp
+                     clause '((,witness . nid)))))))
+      
       (and stable-under-simplificationp
            '(:in-theory (enable aignet-idp
                                 typecodep)))
@@ -369,12 +687,53 @@
                      (equal (aignet$a::id->phase id aignet) 0))
             :hints(("Goal" :in-theory (enable aignet$a::id->phase)))))
 
+   (local (defthm id->phase-when-gate
+            (implies (equal (stype (car (lookup-id id aignet))) (gate-stype))
+                     (equal (aignet$a::id->phase id aignet)
+                            (b* ((f0 (fanin :gate0 (lookup-id id aignet)))
+                                 (f1 (fanin :gate1 (lookup-id id aignet))))
+                              (b-and (b-xor (lit->neg f0)
+                                            (aignet$a::id->phase (lit->var f0) aignet))
+                                     (b-xor (lit->neg f1)
+                                            (aignet$a::id->phase (lit->var f1) aignet))))))
+            :hints(("Goal" :in-theory (enable aignet$a::id->phase)))))
+
    (local (defthm node-count-lookup-reg->nxst-out-of-bounds
             (implies (< (node-count aignet) (nfix id))
                      (equal (node-count (lookup-reg->nxst id aignet))
                             0))))))
 
+
+
+;; (local (defthm nth-under-nat-equiv
+;;          (implies (and (syntaxp (and (quotep n)
+;;                                      (member (unquote n)
+;;                                              (list aignet$c::*num-outs*
+;;                                                    aignet$c::*num-ins*
+;;                                                    aignet$c::*num-regs* 
+;;                                                    aignet$c::*num-nxsts*))))
+;;                        (natp (nth n x))
+;;                        (natp y))
+;;                   (equal (equal (nth n x) y)
+;;                          (nat-equiv (nth n x) y)))))
+
 (local (std::add-default-post-define-hook :fix))
+
+
+;; (local (defthm dumb
+;;            (implies (equal (nfix n) (+ 1 m))
+;;                     (equal (+ -1 (nfix n))
+;;                            (fix m)))))
+
+(local (in-theory (disable ACL2::INEQUALITY-WITH-NFIX-HYP-1
+                           AIGNET$C::AIGNETP-IMPLIES-NUM-NODES
+                           lookup-id-in-bounds-when-positive
+                           lookup-id-out-of-bounds
+                           stype-const-when-not-others
+                           acl2::cancel_plus-equal-correct
+                           node-count-of-atom
+                           fanin-if-co-when-output)))
+
 
 (acl2::defabsstobj-events aignet
   :concrete aignet$c::aignet
@@ -443,6 +802,9 @@
             (aignet-set-nxst :logic aignet$a::aignet-set-nxst
                               :exec aignet$c::aignet-set-nxst
                               :protect t)
+            (aignet-rollback :logic aignet$a::aignet-rollback
+                             :exec aignet$c::aignet-rollback
+                             :protect t)
 
             (aignet-init :logic aignet$a::aignet-init
                          :exec aignet$c::aignet-init
@@ -676,6 +1038,18 @@
   <p>In the execution we update the necessary arrays, counts, etc.</p>
 
   @(def aignet$a::aignet-set-nxst)")
+
+(defxdoc aignet-rollback
+  :short "@(call aignet-rollback) rewinds the aignet so that node @('n') is the
+          last node."
+  :long "<p>Logically this is just:</p>
+ @({
+   (lookup-id n aignet)
+  })
+
+ <p>The guard requires that there are no next-state nodes that will be removed;
+this is because the implementation of removing a next-state node is somewhat
+more complicated than other kinds.</p>")
 
 
 ;; Network size
