@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-(include-book "make-event/eval-check" :dir :system)
 (include-book "misc/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
