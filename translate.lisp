@@ -4681,7 +4681,7 @@
               (erp (er-cmp ctx
                            "In the attempt to macroexpand the form ~x0 ~
                             evaluation of the guard for ~x2 caused the ~
-                            following error:~|~%~@1"
+                            error below.~|~%~@1"
                            x
                            guard-val
                            (car x)))
@@ -4709,8 +4709,7 @@
                                 (er-cmp ctx
                                         "In the attempt to macroexpand the ~
                                          form ~x0, evaluation of the macro ~
-                                         body caused the following ~
-                                         error:~|~%~@1"
+                                         body caused the error below.~|~%~@1"
                                         x
                                         expansion))
                                (t (value-cmp expansion))))))))))
