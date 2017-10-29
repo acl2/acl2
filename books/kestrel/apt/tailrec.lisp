@@ -1550,7 +1550,7 @@
                         (calculated in @(tsee tailrec-event)).")
    (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
    (test-of-alpha-thm-name
-    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event.")
+    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event).")
    (names-to-avoid symbol-listp "Names already used by preceding events.")
    (wrld plist-worldp))
   :returns (mv (domain-of-ground-base-thm-event "A @(tsee pseudo-event-formp).")
@@ -1605,7 +1605,7 @@
                         (calculated in @(tsee tailrec-event)).")
    (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
    (test-of-alpha-thm-name
-    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event.")
+    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event).")
    (names-to-avoid symbol-listp "Names already used by preceding events.")
    (wrld plist-worldp))
   :returns (mv (combine-left-identity-ground-thm-event
@@ -1658,7 +1658,7 @@
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
    (test-of-alpha-thm-name
-    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event.")
+    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event).")
    (old-guard-of-alpha-thm-name
     symbolp "Result of @(tsee tailrec-old-guard-of-alpha-intro-event).")
    (names-to-avoid symbol-listp "Names already used by preceding events.")
