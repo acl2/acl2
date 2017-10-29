@@ -12,6 +12,9 @@
 
 (include-book "xdoc/top" :dir :system)
 
+; (depends-on "design-notes/restrict.pdf")
+; (depends-on "design-notes/notation.pdf")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; documentation topic for the design notes,
