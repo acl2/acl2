@@ -263,6 +263,7 @@
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 
 (include-book "make-event/proof-by-arith" :dir :system)
+(include-book "make-event/eval-check" :dir :system)
 
 (include-book "centaur/memoize/old/profile" :dir :system)
 (include-book "centaur/memoize/old/watch" :dir :system)
