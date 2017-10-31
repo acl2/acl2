@@ -273,7 +273,7 @@
  <p>The <see topic='@(url world-queries)'>world query</see>, <see topic='@(url
  term-utilities)'>term</see>, <see topic='@(url
  string-utilities)'>string</see>, and <see topic='@(url
- character-utilities)'>character</see> utilities have undergone a few
+ character-utilities)'>character</see> utilities have undergone several
  improvements and extensions.</p>
 
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
@@ -341,8 +341,9 @@
  <p>The <see topic='@(url soft::soft)'>SOFT (Second-Order Functions and
  Theorems) library</see> has been improved in several ways. The @(':thm-name')
  option is now fully supported for second-order quantifier functions and their
- instances.  The treatment of user inputs is more robust. The implementation is
- more streamlined. A more comprehensive test suite now exists.</p>
+ instances.  The treatment of user inputs is more robust. The user interface is
+ more terse. The implementation is more streamlined. A more comprehensive test
+ suite now exists.</p>
 
  <h4>X86ISA</h4>
 
@@ -351,8 +352,8 @@
  @('64-bit-modep') predicate is no longer always true. Some documentation
  topics and some comments have been expanded and clarified. Some exceptions are
  now being added to the fault field of the x86 state rather than the
- model-specific field. A more complete model of segment address translation has
- been added.</p>
+ model-specific field. A complete model of segment address translation has been
+ added.</p>
 
  <h4>AVR ISA</h4>
  <p>Julien Schmaltz and Peter Schwabes' AVR ISA model has been contributed in book
