@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "term-applicand-recognizers")
+(include-book "term-function-recognizers")
 (include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

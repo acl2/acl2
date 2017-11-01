@@ -15,7 +15,7 @@
 (in-package "ACL2")
 
 (include-book "std/util/defines" :dir :system)
-(include-book "term-applicand-recognizers")
+(include-book "term-function-recognizers")
 (include-book "world-queries")
 
 (local (include-book "all-vars-theorems"))

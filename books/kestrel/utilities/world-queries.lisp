@@ -19,7 +19,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
 (include-book "system/pseudo-good-worldp" :dir :system)
-(include-book "term-applicand-recognizers")
+(include-book "term-function-recognizers")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
