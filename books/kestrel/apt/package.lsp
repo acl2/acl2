@@ -149,8 +149,8 @@
                          packn
                          pairlis-x1
                          pseudo-event-formp
-                         pseudo-fn/lambda-p
                          pseudo-lambdap
+                         pseudo-termfnp
                          pseudo-tests-and-call-listp
                          recursive-calls
                          recursivep

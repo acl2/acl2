@@ -326,7 +326,7 @@
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (domain$ "A @(tsee pseudo-fn/lambda-p) that is
+               (domain$ "A @(tsee pseudo-termfnp) that is
                          the predicate denoted by @('domain').")
                state)
   :mode :program
@@ -576,7 +576,7 @@
                                          pseudo-termp
                                          symbolp
                                          symbolp
-                                         pseudo-fn/lambda-p
+                                         pseudo-termfnp
                                          symbolp
                                          booleanp
                                          symbolp
@@ -752,7 +752,7 @@
    (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    state)
   :returns (formula "An untranslated term.")
   :mode :program
@@ -864,7 +864,7 @@
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (do-verify-guards booleanp "Result of @(tsee tailrec-check-inputs).")
    state)
   :returns (app-conds "A @(tsee symbol-alistp).")
@@ -886,7 +886,7 @@
       (q symbolp)
       (r symbolp)
       (variant tailrec-variantp)
-      (domain$ pseudo-fn/lambda-p)
+      (domain$ pseudo-termfnp)
       (do-verify-guards booleanp)
       (rev-app-conds symbol-alistp)
       state)
@@ -919,7 +919,7 @@
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (names-to-avoid symbol-listp "Names of other events
                                  (calculated in @(tsee tailrec-event)).")
    (app-cond-thm-names symbol-symbol-alistp
@@ -1013,7 +1013,7 @@
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-enable booleanp "Result of @(tsee tailrec-check-inputs).")
    (make-non-executable booleanp "Result of @(tsee tailrec-check-inputs).")
@@ -1218,7 +1218,7 @@
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (names-to-avoid symbol-listp "Names of other events
                                  (calculated in @(tsee tailrec-event)).")
@@ -1543,7 +1543,7 @@
 (define tailrec-domain-of-ground-base-intro-event
   ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (app-cond-thm-names symbol-symbol-alistp
                        "Map from the names of the applicability conditions
                         to the corresponding theorems
@@ -1598,7 +1598,7 @@
    (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (app-cond-thm-names symbol-symbol-alistp
                        "Map from the names of the applicability conditions
                         to the corresponding theorems
@@ -2008,7 +2008,7 @@
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-enable booleanp "Result of @(tsee tailrec-check-inputs).")
    (wrapper-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")

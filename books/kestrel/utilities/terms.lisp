@@ -36,7 +36,7 @@
               (lambda-formals lambd))
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
-(define apply-term ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
+(define apply-term ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= (len terms)
                 (len (lambda-formals fn))))
@@ -52,7 +52,7 @@
    </p>"
   (cond ((symbolp fn) (cons-term fn terms))
         (t (subcor-var (lambda-formals fn) terms (lambda-body fn))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-fn/lambda-p pseudo-lambdap))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))
 
 (defsection apply-term*
   :parents (term-utilities)
@@ -68,7 +68,7 @@
   (defmacro apply-term* (fn &rest terms)
     `(apply-term ,fn (list ,@terms))))
 
-(define apply-unary-to-terms ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
+(define apply-unary-to-terms ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= 1 (len (lambda-formals fn))))
   :returns (applied-terms "A @(tsee pseudo-term-listp).")
@@ -80,7 +80,7 @@
   :verify-guards nil
 
   :prepwork
-  ((define apply-unary-to-terms-aux ((fn pseudo-fn/lambda-p)
+  ((define apply-unary-to-terms-aux ((fn pseudo-termfnp)
                                      (terms pseudo-term-listp)
                                      (rev-result pseudo-term-listp))
      :guard (or (symbolp fn)
@@ -93,7 +93,7 @@
                                               rev-result))))
      :verify-guards nil)))
 
-(define fapply-term ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
+(define fapply-term ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= (len terms)
                 (len (lambda-formals fn))))
@@ -107,7 +107,7 @@
    </p>"
   (cond ((symbolp fn) (fcons-term fn terms))
         (t (fsubcor-var (lambda-formals fn) terms (lambda-body fn))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-fn/lambda-p pseudo-lambdap))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))
 
 (defsection fapply-term*
   :parents (term-utilities)
@@ -121,7 +121,7 @@
   (defmacro fapply-term* (fn &rest terms)
     `(fapply-term ,fn (list ,@terms))))
 
-(define fapply-unary-to-terms ((fn pseudo-fn/lambda-p)
+(define fapply-unary-to-terms ((fn pseudo-termfnp)
                                (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= 1 (len (lambda-formals fn))))
@@ -138,7 +138,7 @@
   :verify-guards nil
 
   :prepwork
-  ((define fapply-unary-to-terms-aux ((fn pseudo-fn/lambda-p)
+  ((define fapply-unary-to-terms-aux ((fn pseudo-termfnp)
                                       (terms pseudo-term-listp)
                                       (rev-result pseudo-term-listp))
      :guard (or (symbolp fn)

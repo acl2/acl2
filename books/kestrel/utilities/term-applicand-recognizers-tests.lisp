@@ -1,4 +1,4 @@
-; Term Applicand Recognizers -- Tests
+; Term Function Recognizers -- Tests
 ;
 ; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -42,11 +42,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (pseudo-fn/lambda-p 'f))
+(assert! (pseudo-termfnp 'f))
 
-(assert! (pseudo-fn/lambda-p '(lambda (x) x)))
+(assert! (pseudo-termfnp '(lambda (x) x)))
 
-(assert! (not (pseudo-fn/lambda-p 33)))
+(assert! (not (pseudo-termfnp 33)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,21 +56,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (not (fn/lambda-p "cons" (w state))))
+(assert! (not (termfnp "cons" (w state))))
 
-(assert! (not (fn/lambda-p 'fffffffff (w state))))
+(assert! (not (termfnp 'fffffffff (w state))))
 
-(assert! (fn/lambda-p 'cons (w state)))
+(assert! (termfnp 'cons (w state)))
 
-(assert! (fn/lambda-p 'len (w state)))
+(assert! (termfnp 'len (w state)))
 
-(assert! (not (fn/lambda-p 'car-cdr-elim (w state))))
+(assert! (not (termfnp 'car-cdr-elim (w state))))
 
 (must-succeed*
  (defun h (x) x)
- (assert! (fn/lambda-p 'h (w state))))
+ (assert! (termfnp 'h (w state))))
 
 (assert!
- (fn/lambda-p '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
+ (termfnp '(lambda (x y) (binary-+ x (len (cons '3 'nil)))) (w state)))
 
-(assert! (not (fn/lambda-p '(lambda (x) (fffff x)) (w state))))
+(assert! (not (termfnp '(lambda (x) (fffff x)) (w state))))

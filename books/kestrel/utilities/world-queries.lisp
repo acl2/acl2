@@ -261,7 +261,7 @@
         (t (lambda-body fn)))
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
-(define uguard ((fn pseudo-fn/lambda-p) (wrld plist-worldp))
+(define uguard ((fn pseudo-termfnp) (wrld plist-worldp))
   :returns (guard "A @(tsee pseudo-termp).")
   :mode :program
   :parents (world-queries)

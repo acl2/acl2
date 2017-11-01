@@ -1,4 +1,4 @@
-; Term Applicand Recognizers
+; Term Function Recognizers
 ;
 ; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,91 +11,143 @@
 (in-package "ACL2")
 
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 
 (local (include-book "all-vars-theorems"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc term-applicand-recognizers
+(defxdoc term-function-recognizers
   :parents (term-utilities system-utilities)
-  :short "Recognizers of term applicands."
+  :short "Recognizers of functions in terms."
   :long
   "<p>
    In translated @(see term)s,
-   applicands are lambda expressions and function names.
-   They are applied to argument terms.
+   the &lsquo;functions&rsquo; that are applied to argument terms are
+   function symbols and lambda expressions.
    </p>
    <p>
-   The built-in predicates @(tsee pseudo-termp) and @(tsee termp)
-   recognize pseudo-terms and terms.
-   The following predicates recognize lambda expressions and applicands
-   in pseudo-terms and terms.
+   The predicates @(tsee pseudo-termp) and @(tsee termp)
+   recognize pseudo-terms and valid translated terms.
+   The following predicates recognize
+   lambda expressions in pseudo-terms and valid translated terms,
+   as well as functions (in the sense above)
+   in pseudo-terms and valid translated terms.
+   </p>
+   <p>
+   Note that the predicate @(tsee symbolp) recognizes
+   functions in pseudo-terms that are not lambda expressions,
+   and the predicate @(tsee function-namep) recognizes
+   functions in valid translated terms that are not lambda expressions.
    </p>")
 
 (define pseudo-lambdap (x)
   :returns (yes/no booleanp)
-  :parents (term-utilities term-applicand-recognizers)
+  :parents (term-utilities term-function-recognizers)
   :short "Recognize pseudo-lambda-expressions,
-          i.e. lambda expressions of
+          i.e. lambda expressions in
           <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   :long
   "<p>
-   Check whether @('x') is
-   a @('nil')-terminated list of exactly three elements,
-   whose first element is the symbol @('lambda'),
-   whose second element is a list of symbols, and
-   whose third element is a pseudo-term.
+   This definition mirrors
+   the relevant portion of the definition of @(tsee pseudo-termp).
    </p>"
   (and (true-listp x)
        (= (len x) 3)
        (eq (first x) 'lambda)
        (symbol-listp (second x))
-       (pseudo-termp (third x))))
+       (pseudo-termp (third x)))
+  ///
 
-(define pseudo-fn/lambda-p (x)
+  (defrule pseudo-lambdap-when-pseudo-termp
+    (implies (and (pseudo-termp term)
+                  (consp term)
+                  (consp (car term)))
+             (pseudo-lambdap (car term))))
+
+  (defrule pseudo-termp-when-pseudo-lambdap
+    (implies (and (pseudo-lambdap lambd)
+                  (pseudo-term-listp terms)
+                  (equal (len terms) (len (lambda-formals lambd))))
+             (pseudo-termp (cons lambd terms)))))
+
+(define pseudo-termfnp (x)
   :returns (yes/no booleanp)
-  :parents (term-utilities term-applicand-recognizers)
-  :short "Recognize pseudo-applicands,
-          i.e. symbols and pseudo-lambda-expressions."
-  :long
-  "<p>
-   Check whether @('x') is a symbol or a
-   <see topic='@(url pseudo-lambdap)'>pseudo-lambda-expression</see>.
-   These are the possible values of the first element of
-   a <see topic='@(url pseudo-termp)'>pseudo-term</see>
-   that is not a variable or a quoted constant
-   (i.e. a pseudo-term that is a function application).
-   </p>"
+  :parents (term-utilities term-function-recognizers)
+  :short "Recognize pseudo-term-functions,
+          i.e. functions in
+          <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
   (or (symbolp x)
-      (pseudo-lambdap x)))
+      (pseudo-lambdap x))
+  ///
+
+  (defrule pseudo-termfnp-when-pseudo-termp
+    (implies (and (pseudo-termp term)
+                  (consp term))
+             (pseudo-termfnp (car term)))
+    :enable pseudo-lambdap)
+
+  (defrule pseudo-termp-when-pseudo-termfnp
+    (implies (and (pseudo-termfnp fn)
+                  (pseudo-term-listp terms)
+                  (or (atom fn)
+                      (equal (len terms) (len (lambda-formals fn))))
+                  (not (eq fn 'quote)))
+             (pseudo-termp (cons fn terms)))
+    :enable pseudo-lambdap))
 
 (define lambdap (x (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
-  :parents (term-utilities term-applicand-recognizers)
+  :parents (term-utilities term-function-recognizers)
   :short "Recognize valid
-          <see topic='@(url term)'>translated</see> lambda expression."
+          <see topic='@(url term)'>translated</see> lambda expression,
+          i.e. lambda expressions in valid translated terms."
   :long
   "<p>
-   Check whether @('x') is a @('nil')-terminated list of exactly three elements,
-   whose first element is the symbol @('lambda'),
-   whose second element is a list of legal variable symbols without duplicates,
-   and whose third element is a valid translated term
-   whose free variables are all among the ones in the second element.
+   This definition mirrors
+   the relevant portion of the definition of @(tsee termp).
    </p>"
   (and (true-listp x)
        (= (len x) 3)
        (eq (first x) 'lambda)
        (arglistp (second x))
        (termp (third x) wrld)
-       (subsetp-eq (all-vars (third x))
-                   (second x))))
+       (null (set-difference-eq (all-vars (third x)) (second x))))
+  ///
 
-(define fn/lambda-p (x (wrld plist-worldp-with-formals))
+  (defrule lambdap-when-termp
+    (implies (and (termp term wrld)
+                  (consp term)
+                  (consp (car term)))
+             (lambdap (car term) wrld)))
+
+  (defrule termp-when-lambdap
+    (implies (and (lambdap lambd wrld)
+                  (term-listp terms wrld)
+                  (equal (len terms) (len (lambda-formals lambd))))
+             (termp (cons lambd terms) wrld))))
+
+(define termfnp (x (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
-  :parents (term-utilities term-applicand-recognizers)
-  :short "Recognize valid applicands,
-          i.e. function symbols and
-          <see topic='@(url term)'>translated</see> lambda expression."
+  :parents (term-utilities term-function-recognizers)
+  :short "Recognize valid
+          <see topic='@(url term)'>translated</see> term functions,
+          i.e. functions in valid translated terms."
   (or (and (symbolp x)
            (function-symbolp x wrld))
-      (lambdap x wrld)))
+      (lambdap x wrld))
+  ///
+
+  (defrule termfnp-when-termp
+    (implies (and (termp term wrld)
+                  (consp term)
+                  (consp (car term)))
+             (termfnp (car term) wrld)))
+
+  (defrule termp-when-termfnp
+    (implies (and (termfnp fn wrld)
+                  (term-listp terms wrld)
+                  (equal (len terms) (arity fn wrld))
+                  (not (eq fn 'quote)))
+             (termp (cons fn terms) wrld))
+    :enable (arity lambdap)))
