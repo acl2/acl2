@@ -190,9 +190,9 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
    ))
 
 
-;; See Intel Vol. 2, Appendix A.2.2
-
 #||
+
+See Intel Vol. 2, Appendix A.2.2
 
 A.2.2 Codes for Operand Type
 
