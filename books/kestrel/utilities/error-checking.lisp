@@ -615,7 +615,7 @@
                (val
                 "A tuple @('(pfn stobjs-in stobjs-out new-description)')
                  consisting of
-                 a @(tsee pseudo-fn/lambda-p),
+                 a @(tsee pseudo-termfnp),
                  a @(tsee symbol-listp),
                  a @(tsee symbol-listp), and
                  a @(tsee msgp);
@@ -1074,7 +1074,7 @@
    </p>")
 
 (define ensure-function/lambda-logic-mode
-  ((fn/lambda pseudo-fn/lambda-p "Function or lambda expression to check.")
+  ((fn/lambda pseudo-termfnp "Function or lambda expression to check.")
    (description msgp)
    (error-erp "Flag to return in case of error.")
    (error-val "Value to return in case of error.")
@@ -1091,7 +1091,7 @@
   "<p>
    This error-checking function is useful
    after calling @(tsee ensure-function/macro/lambda)
-   (which returns the @(tsee pseudo-fn/lambda-p))
+   (which returns the @(tsee pseudo-termfnp))
    to handle functions and lambda expressions uniformly.
    The @('description') parameter
    should describe the function or lambda expression.
@@ -1112,7 +1112,7 @@
         ,x ,description ,error-erp ,error-val ctx state))))
 
 (define ensure-function/lambda-guard-verified-fns
-  ((fn/lambda pseudo-fn/lambda-p "Function or lambda expression to check.")
+  ((fn/lambda pseudo-termfnp "Function or lambda expression to check.")
    (description msgp)
    (error-erp "Flag to return in case of error.")
    (error-val "Value to return in case of error.")
@@ -1129,7 +1129,7 @@
   "<p>
    This error-checking function is useful
    after calling @(tsee ensure-function/macro/lambda)
-   (which returns the @(tsee pseudo-fn/lambda-p))
+   (which returns the @(tsee pseudo-termfnp))
    to handle functions and lambda expressions uniformly.
    The @('description') parameter
    should describe the function or lambda expression.
@@ -1152,7 +1152,7 @@
         ,x ,description ,error-erp ,error-val ctx state))))
 
 (define ensure-function/lambda-guard-verified-exec-fns
-  ((fn/lambda pseudo-fn/lambda-p "Function or lambda expression to check.")
+  ((fn/lambda pseudo-termfnp "Function or lambda expression to check.")
    (description msgp)
    (error-erp "Flag to return in case of error.")
    (error-val "Value to return in case of error.")
@@ -1170,7 +1170,7 @@
   "<p>
    This error-checking function is useful
    after calling @(tsee ensure-function/macro/lambda)
-   (which returns the @(tsee pseudo-fn/lambda-p))
+   (which returns the @(tsee pseudo-termfnp))
    to handle functions and lambda expressions uniformly.
    The @('description') parameter
    should describe the function or lambda expression.
@@ -1193,7 +1193,7 @@
         ,x ,description ,error-erp ,error-val ctx state))))
 
 (def-error-checker ensure-function/lambda-closed
-  ((fn/lambda pseudo-fn/lambda-p "Function or lambda expression to check."))
+  ((fn/lambda pseudo-termfnp "Function or lambda expression to check."))
   "Cause an error if a function or lambda expression is
    a non-closed lambda expression."
   (((or (symbolp fn/lambda) (lambda-closedp fn/lambda))
@@ -1202,7 +1202,7 @@
   "<p>
    This error-checking function is useful
    after calling @(tsee ensure-function/macro/lambda)
-   (which returns the @(tsee pseudo-fn/lambda-p))
+   (which returns the @(tsee pseudo-termfnp))
    to handle functions and lambda expressions uniformly.
    The @('description') parameter
    should describe the function or lambda expression.

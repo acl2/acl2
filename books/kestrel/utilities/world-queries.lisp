@@ -19,7 +19,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
 (include-book "system/pseudo-good-worldp" :dir :system)
-(include-book "term-applicand-recognizers")
+(include-book "term-function-recognizers")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
@@ -261,7 +261,7 @@
         (t (lambda-body fn)))
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
-(define uguard ((fn pseudo-fn/lambda-p) (wrld plist-worldp))
+(define uguard ((fn pseudo-termfnp) (wrld plist-worldp))
   :returns (guard "A @(tsee pseudo-termp).")
   :mode :program
   :parents (world-queries)
