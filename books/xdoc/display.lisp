@@ -69,13 +69,22 @@
 (defun topic-to-rendered (topic topic-to-rendered-table)
 
 ; E.g., (topic-to-rendered "ACL2____About_02Types" <table>)
-; = "About_Types", where <table> is 
+; = "About_Types", where <table> is
 ; (cdr (acl2::f-get-global 'topic-to-rendered-pair state)).
 ; Note that rendered does not have a package prefix.
 
   (cdr (hons-get (intern topic "ACL2") topic-to-rendered-table)))
 
 (defun text-matches-mangle (text mangle topic-to-rendered-table)
+
+; Text is xdoc source text ending with text of the form "[topic" (with a
+; closing right bracket not included, but implicit) and mangle is corresponding
+; mangled text.  We return:
+
+; t, if it's appropriate to render the text as "[topic]";
+; (list "[topic']"), if it's appropriate to render the text as "[topic']";
+; "topic'", if it's appropriate to render the text as "topic (see [topic']);
+; nil otherwise.
 
 ; Examples:
 
@@ -122,30 +131,54 @@
   (let* ((bracket-posn (search "[" text :from-end t))
          (start (and bracket-posn
                      (1+ bracket-posn)))
-         (rendered (topic-to-rendered mangle topic-to-rendered-table)))
+         (rendered (and start ; optimization
+                        (topic-to-rendered mangle topic-to-rendered-table))))
     (cond
      ((or (null start) (null rendered))
       nil)
      (t
-      (let ((text-topic (subseq text start (length text))))
+      (let* ((text-topic0 (subseq text start (length text)))
+             (acl2-prefix-posn (search "acl2::" text-topic0 :test 'char-equal))
+             (text-topic ; transform acl2::foo into foo
+
+; We take measures to deal with the case that text-topic0 has an "acl2" prefix,
+; e.g., "acl2::foo" or "ACL2::foo".  We don't hit that issue when printing the
+; manual; we only hit it when printing documentation at the terminal.  That's
+; because, for example @(see acl2::foo) somehow doesn't generate acl2::foo when
+; the defxdoc form is submitted in the "ACL2" package, as it is when generating
+; the acl2-doc manual.  Rather than figure out how to deal with that in the
+; preprocessor or some other earlier place (and carefully, since we don't want
+; to mess up the online manual, where defxdoc forms are submitted in their
+; original package), we handle it here.
+
+              (if acl2-prefix-posn
+                  (subseq text-topic0 6 (length text-topic0))
+                text-topic0)))
         (cond
          ((string-equal rendered text-topic)
-          t)
+          (if acl2-prefix-posn ; then return cleaned-up text-topic
+              (list text-topic)
+            t))
          (t
           (let ((posn (search "::" rendered)))
             (cond
              ((and posn
                    (string-equal (subseq rendered (+ posn 2) (length rendered))
-                                 text-topic))
+
+; We could probably use text-topic here and below, and get the same result,
+; since presumably rendered does not have an "acl2::" prefix.
+
+                                 text-topic0))
               (list (concatenate 'string
                                  (acl2::string-downcase
                                   (subseq rendered 0 (+ posn 2)))
-                                 text-topic)))
+                                 text-topic0)))
              (t rendered))))))))))
 
 (defun fix-close-see (str bracket-posn match)
 
-; Match is either a string or nil, as returned by text-matches-mangle.
+; Match is either a string, a list containing a string, or nil, as returned by
+; text-matches-mangle.
 
   (cond ((null bracket-posn) str)
         ((null match) ; remove the bracket
