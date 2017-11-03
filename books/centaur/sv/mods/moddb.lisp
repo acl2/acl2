@@ -6031,7 +6031,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
         (b* (((stobj-get name)
               ((elab-mod (moddb->modsi modidx moddb)))
               (elab-mod->name elab-mod)))
-          (cw "Error looking up ~x1: ~@0~%from module: ~x2"
+          (cw "Error looking up ~x1: ~@0~%from module: ~x2~%"
                           err path name)))
        ((when bitsel) (cw "Didn't expect a bit select: ~x0" path)))
     idx)

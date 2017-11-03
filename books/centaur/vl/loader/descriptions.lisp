@@ -135,6 +135,9 @@ doesn't introduce a name (e.g., an @('import') statement."
       (otherwise     (impossible)))))
 
 
+
+
+
 (define vl-descriptionlist->names-nrev ((x vl-descriptionlist-p) nrev)
   :parents (vl-descriptionlist->names)
   (b* (((when (atom x))
@@ -207,6 +210,116 @@ the number of descriptions in the list.</p>"
 
   (defthm no-nil-in-vl-descriptionlist->names
     (not (member nil (vl-descriptionlist->names x)))))
+
+
+
+(define vl-description->origname ((x vl-description-p))
+  :short "Get the name from most descriptions -- original version, i.e. not modified
+          by unparameterization, in the cases of modules and interfaces."
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (b* ((x (vl-description-fix x)))
+    (case (tag x)
+      (:vl-module     (vl-module->origname x))
+      (:vl-udp        (vl-udp->name x))
+      (:vl-interface  (vl-interface->origname x))
+      (:vl-package    (vl-package->name x))
+      (:vl-program    (vl-program->name x))
+      (:vl-class      (vl-class->name x))
+      (:vl-config     (vl-config->name x))
+      (:vl-vardecl    (vl-vardecl->name x))
+      (:vl-taskdecl   (vl-taskdecl->name x))
+      (:vl-fundecl    (vl-fundecl->name x))
+      (:vl-paramdecl  (vl-paramdecl->name x))
+      (:vl-import     nil)
+      (:vl-fwdtypedef
+       ;; SUBTLE: I don't want forward typedefs to look like they have names,
+       ;; because they aren't really a complete definition, and if we haven't
+       ;; loaded the "real" typedef, then I don't want to count these as loaded
+       ;; yet.  Moreover, a forward typedef shouldn't ever overwrite a real
+       ;; typedef or anything like that.
+       nil)
+      (:vl-typedef   (vl-typedef->name x))
+      (:vl-dpiimport (vl-dpiimport->name x))
+      (:vl-dpiexport
+       ;; Subtle: DPI exports shouldn't really look like they have names for
+       ;; basically the same reason as forward typedefs.  We want to find the
+       ;; actual definition, not the fact that it's exported.
+       nil)
+      (otherwise     (impossible)))))
+
+
+(define vl-descriptionlist->orignames-nrev ((x vl-descriptionlist-p) nrev)
+  :parents (vl-descriptionlist->orignames)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (name (vl-description->origname (car x)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-descriptionlist->orignames-nrev (cdr x) nrev)))
+
+(define vl-descriptionlist->orignames ((x vl-descriptionlist-p))
+  :short "Collect all names introduced by a @(see vl-descriptionlist-p)."
+  :parents (vl-descriptionlist-p)
+  :long "<p>Note that descriptions may not have names, in which case we don't
+add anything.  In other words, the list of names returned may be shorter than
+the number of descriptions in the list.</p>"
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (if (vl-description->origname (car x))
+                      (cons (vl-description->origname (car x))
+                            (vl-descriptionlist->orignames (cdr x)))
+                    (vl-descriptionlist->orignames (cdr x)))
+                nil)
+       :exec (if (atom x)
+                 nil
+               (with-local-nrev (vl-descriptionlist->orignames-nrev x nrev))))
+  ///
+  (defthm vl-descriptionlist->orignames-nrev-removal
+    (equal (vl-descriptionlist->orignames-nrev x nrev)
+           (append nrev (vl-descriptionlist->orignames x)))
+    :hints(("Goal" :in-theory (enable vl-descriptionlist->orignames-nrev))))
+
+  (verify-guards vl-descriptionlist->orignames)
+
+  (defthm vl-descriptionlist->orignames-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-descriptionlist->orignames x)
+                    nil)))
+
+  (defthm vl-descriptionlist->orignames-of-cons
+    (equal (vl-descriptionlist->orignames (cons a x))
+           (if (vl-description->origname a)
+               (cons (vl-description->origname a)
+                     (vl-descriptionlist->orignames x))
+             (vl-descriptionlist->orignames x))))
+
+  (defthm vl-descriptionlist->orignames-of-list-fix
+    (equal (vl-descriptionlist->orignames (list-fix x))
+           (vl-descriptionlist->orignames x)))
+
+  (defcong list-equiv equal (vl-descriptionlist->orignames x) 1
+    :event-name vl-descriptionlist->orignames-preserves-list-equiv
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv)
+                            (vl-descriptionlist->orignames-of-list-fix))
+            :use ((:instance vl-descriptionlist->orignames-of-list-fix (x x))
+                  (:instance vl-descriptionlist->orignames-of-list-fix (x acl2::x-equiv))))))
+
+  (defthm vl-descriptionlist->orignames-of-append
+    (equal (vl-descriptionlist->orignames (append x y))
+           (append (vl-descriptionlist->orignames x)
+                   (vl-descriptionlist->orignames y))))
+
+  (defthm vl-descriptionlist->orignames-of-rev
+    (equal (vl-descriptionlist->orignames (rev x))
+           (rev (vl-descriptionlist->orignames x))))
+
+  (defthm string-listp-of-vl-descriptionlist->orignames
+    (string-listp (vl-descriptionlist->orignames x)))
+
+  (defthm no-nil-in-vl-descriptionlist->orignames
+    (not (member nil (vl-descriptionlist->orignames x)))))
 
 (fty::defalist vl-descalist
   :key-type stringp

@@ -709,6 +709,11 @@ svex-assigns-compose)).</li>
          :hints(("Goal" :in-theory (enable lhs-overridelist-keys))))))
 
 
+(define cap-length ((n natp) x)
+  (if (< (lnfix n) (len x))
+      (take n (list-fix x))
+    x))
+
 
 (define svex-design-flatten ((x design-p)
                              &key
@@ -771,14 +776,14 @@ svex-assigns-compose)).</li>
        (scope (make-modscope-top :modidx modidx))
 
        ;; Gather the full flattened lists of aliases and assignments from the module DB.
-       ((mv modfails varfails flat-aliases flat-assigns flat-fixups flat-constraints)
+       ((mv varfails modfails flat-aliases flat-assigns flat-fixups flat-constraints)
         (cwtime (svex-mod->flatten scope modalist moddb)
                 :mintime 1))
        ((when modfails)
-        (mv (msg "Module names referenced but not found: ~x0~%" modfails)
+        (mv (msg "Module names referenced but not found: ~x0~%" (cap-length 20 modfails))
             nil nil nil moddb aliases))
        ((when varfails)
-        (mv (msg "Variable names malformed/unresolved: ~x0~%" varfails)
+        (mv (msg "Variable names malformed/unresolved: ~x0~%" (cap-length 20 varfails))
             nil nil nil moddb aliases))
 
        ;; Compute a normal form for each variable by running a
