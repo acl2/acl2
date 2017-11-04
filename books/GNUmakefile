@@ -1,5 +1,3 @@
-# -*- mode: makefile -*-
-
 # ACL2 Community Books Makefile
 # Copyright (C) 2013 Centaur Technology
 #
@@ -645,7 +643,7 @@ OK_CERTS := $(filter-out $(SLOW_BOOKS) models/y86/%, $(OK_CERTS))
 
 # Books that currently don't certify (or don't certify on some
 # systems), and that we want to work around for the moment:
-BROKEN_BOOKS := 
+BROKEN_BOOKS :=
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 
 ##############################

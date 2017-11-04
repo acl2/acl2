@@ -178,11 +178,14 @@
 
 (defun program-only-er-msg (fn args safe-mode)
   (msg
-   "The call ~x0 is an illegal call of a function that has been marked as ~
-    ``program-only,'' presumably because it has special raw Lisp code.  See ~
-    :DOC program-only."
+   "The call ~x0~|is an illegal call of a function that has been marked as ~
+    ``program-only,'' presumably because it has special raw Lisp code~@1.  ~
+    See :DOC program-only for further explanation and a link to possible ~
+    workarounds."
    (cons fn args)
-   (if safe-mode 1 0)))
+   (if safe-mode
+       " and safe-mode is active"
+     "")))
 
 (defconst *safe-mode-guard-er-addendum*
 
