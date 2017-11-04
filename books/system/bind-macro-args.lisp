@@ -23,13 +23,18 @@
    (implies (keyword-value-listp x)
             (keyword-value-listp (remove-keyword key x)))))
 
+(local ; could be useful towards verifying guards
+ (defthm keyword-value-listp-cddr-assoc-keyword
+   (implies (keyword-value-listp x)
+            (keyword-value-listp (cddr (assoc-keyword key x))))))
+
 (defun bind-macro-args-keys1 (args actuals allow-flg alist form wrld
                                    state-vars)
 
 ; We need parameter state-vars because of the call of warning$-cw1 below.
 
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-keysp args nil)
                               (keyword-value-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -133,7 +138,7 @@
 
 (defun bind-macro-args-keys (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-keysp args nil)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -159,7 +164,7 @@
 
 (defun bind-macro-args-after-rest (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-after-restp args)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -177,7 +182,7 @@
 
 (defun bind-macro-args-optional (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-optionalp args)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)

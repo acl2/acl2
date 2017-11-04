@@ -1265,6 +1265,8 @@ state)
                                    (ens state)
                                    (w state)
                                    state
+                                   nil
+; Matt K. addition: new orig-hints argument of nil matches old behavior.
                                    nil)
                      :pool '((being-proved-by-induction . nil)))
              (w state)

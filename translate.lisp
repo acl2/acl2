@@ -4273,12 +4273,6 @@
        (equal 2 (length x))
        (eq (car x) 'quote)))
 
-; The following function is just the negation of chk-macro-arglist-keysp, when
-; applied to a true-listp args.  The reason it must be applied to a true-listp
-; is that macro-arglist-keysp terminates on an endp test and its counterpart
-; checker terminates on a null test and may recur one additional time on
-; non-true-lists.
-
 (defun macro-arglist-keysp (args keys-passed)
   (declare (xargs :guard (and (true-listp args)
                               (true-listp keys-passed))))
@@ -4409,7 +4403,7 @@
 ; We need parameter state-vars because of the call of warning$-cw1 below.
 
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-keysp args nil)
                               (keyword-value-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4487,7 +4481,7 @@
 
 (defun bind-macro-args-keys (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-keysp args nil)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4512,7 +4506,7 @@
 
 (defun bind-macro-args-after-rest (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-after-restp args)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4529,7 +4523,7 @@
 
 (defun bind-macro-args-optional (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-optionalp args)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)

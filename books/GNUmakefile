@@ -89,12 +89,14 @@
 # Basic Options:
 #
 #   USE_QUICKLISP=1
-#                 Experimental; needed for certain books.  Quicklisp is a
-#                 packaging system for Common Lisp libraries, sort of like CPAN
-#                 for Perl or RubyGems for Ruby.  May not work with some Lisps.
-#                 This might still work if the system books directory is
-#                 relocated after certification.  But if, after the move, you
-#                 want to certify books that depend on quicklisp, you should
+#                 Needed for certain books.  Quicklisp is a packaging
+#                 system for Common Lisp libraries, sort of like CPAN
+#                 for Perl or RubyGems for Ruby.  May not work with
+#                 some Lisps (but seems to work with all ACL2 host
+#                 Lisps except GCL).  This might still work if the
+#                 system books directory is relocated after
+#                 certification.  But if, after the move, you want to
+#                 certify books that depend on quicklisp, you should
 #                 probably run "make quicklisp_clean" first.
 #
 # Advanced Options:
@@ -262,7 +264,7 @@ $(info Determining whether Glucose is installed)
 # If glucose doesn't exist, then the error message saying it can't be
 # found is redirected to /dev/null, resulting in an empty value for
 # GLUCOSE_EXISTS
-GLUCOSE_EXISTS := $(shell glucose --version 2>/dev/null)
+GLUCOSE_EXISTS := $(shell glucose --help 2>/dev/null)
 ifdef GLUCOSE_EXISTS
   OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
@@ -294,6 +296,17 @@ SMTLINK_EXISTS := $(shell z3 --version 2>/dev/null)
 ifdef SMTLINK_EXISTS
   OS_HAS_SMTLINK ?= 1
 endif # ifdef SMTLINK_EXISTS
+
+# The default for USE_QUICKLISP is now 1 for all ACL2 host Lisps
+# except for GCL, which we believe does not support quicklisp.
+# (Probably we could avoid the ifndef and just use ?= instead of :=;
+# but that seems potentially unsafe if ?= can assign like = instead of
+# like :=.
+ifndef USE_QUICKLISP
+  ifneq ($(ACL2_HOST_LISP), GCL)
+    USE_QUICKLISP := 1
+  endif
+endif
 
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
@@ -483,6 +496,8 @@ endif # ifneq ($(ACL2_HAS_REALS), )
 #
 # I would much prefer to just reassign USE_QUICKLISP to 0 when we don't want
 # it, but I can't get that to work in Make for whatever reason.
+# (Note: Things have changed since the comment just above was written,
+# so someone might want to try to simplify.)
 
 ifeq ($(USE_QUICKLISP), 1)
   ifeq ($(ACL2_HOST_LISP), GCL)
