@@ -141,9 +141,9 @@
 
  <h4>try-gl-concls</h4>
 
- <p>See @('centaur/misc/try-gl-concls') for a small but convenient utility to
- find all the true conclusions (if any) from a user-provided list of possible
- conclusions using @(see GL::GL).</p>
+ <p>See @(see try-gl-concls) for a small but convenient utility to
+ find all the true conclusions (if any) from a user-provided list of
+ possible conclusions using @(see GL::GL).</p>
 
  <h4>GLMC</h4>
 
@@ -347,13 +347,32 @@
 
  <h4>X86ISA</h4>
 
- <p>The <see topic='@(url x86isa)'>X86ISA</see> has been slightly extended with
+ <ul>
+
+ <li>The <see topic='@(url x86isa)'>X86ISA</see> has been slightly extended with
  infrastructure to support 32-bit mode of operation; in particular, the
  @('64-bit-modep') predicate is no longer always true. Some documentation
  topics and some comments have been expanded and clarified. Some exceptions are
  now being added to the fault field of the x86 state rather than the
  model-specific field. A complete model of segment address translation has been
- added.</p>
+ added.</li>
+
+ <li>Codewalker can now be used to reason about 64-bit user-level x86
+ programs --- see
+ @('books/projects/x86isa/proofs/codewalker-examples') for demos.</li>
+
+ <li>Memory functions do not traffic in lists anymore.  Instead of a
+ list of canonical addresses, a contiguous linear memory region is now
+ specified by: @('<n, lin-addr>'), where @('n') is the number of bytes
+ to be read or written and @('lin-addr') is the first address of the
+ memory region.</li>
+
+ <li>In the programmer-level mode, disjointness of memory regions can
+ be conveniently expressed using a function called @('separate').  All
+ the proofs in the programmer-level mode have been updated to use this
+ paradigm.</li>
+
+ </ul>
 
  <h4>AVR ISA</h4>
  <p>Julien Schmaltz and Peter Schwabes' AVR ISA model has been contributed in book
