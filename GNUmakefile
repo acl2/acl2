@@ -1,5 +1,3 @@
-# -*- mode: makefile -*-
-
 # ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2017, Regents of the University of Texas
 

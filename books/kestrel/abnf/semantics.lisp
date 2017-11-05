@@ -68,10 +68,11 @@
   :pred symbolp
   ///
 
-  (defruled disjoint-nat/rulename
+  (defrule disjoint-nat/rulename
     :parents (symbol)
     (not (and (natp x)
-              (rulenamep x))))
+              (rulenamep x)))
+    :rule-classes nil)
 
   (defrule symbolp-when-natp
     :parents (symbol)
