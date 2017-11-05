@@ -178,11 +178,14 @@
 
 (defun program-only-er-msg (fn args safe-mode)
   (msg
-   "The call ~x0 is an illegal call of a function that has been marked as ~
-    ``program-only,'' presumably because it has special raw Lisp code.  See ~
-    :DOC program-only."
+   "The call ~x0~|is an illegal call of a function that has been marked as ~
+    ``program-only,'' presumably because it has special raw Lisp code~@1.  ~
+    See :DOC program-only for further explanation and a link to possible ~
+    workarounds."
    (cons fn args)
-   (if safe-mode 1 0)))
+   (if safe-mode
+       " and safe-mode is active"
+     "")))
 
 (defconst *safe-mode-guard-er-addendum*
 
@@ -4273,12 +4276,6 @@
        (equal 2 (length x))
        (eq (car x) 'quote)))
 
-; The following function is just the negation of chk-macro-arglist-keysp, when
-; applied to a true-listp args.  The reason it must be applied to a true-listp
-; is that macro-arglist-keysp terminates on an endp test and its counterpart
-; checker terminates on a null test and may recur one additional time on
-; non-true-lists.
-
 (defun macro-arglist-keysp (args keys-passed)
   (declare (xargs :guard (and (true-listp args)
                               (true-listp keys-passed))))
@@ -4409,7 +4406,7 @@
 ; We need parameter state-vars because of the call of warning$-cw1 below.
 
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-keysp args nil)
                               (keyword-value-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4487,7 +4484,7 @@
 
 (defun bind-macro-args-keys (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-keysp args nil)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4512,7 +4509,7 @@
 
 (defun bind-macro-args-after-rest (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-after-restp args)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4529,7 +4526,7 @@
 
 (defun bind-macro-args-optional (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-optionalp args)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)

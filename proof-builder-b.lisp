@@ -930,7 +930,8 @@
     (null-pool (cdr pool)))
    (t nil)))
 
-(defun initial-pspv (term displayed-goal otf-flg ens wrld state splitter-output)
+(defun initial-pspv (term displayed-goal otf-flg ens wrld state splitter-output
+                          orig-hints)
 
 ; This is close to being equivalent to a call (make-pspv ...).  However, the
 ; splitter-output is supplied as a parameter here.
@@ -941,6 +942,7 @@
           :user-supplied-term term
           :displayed-goal displayed-goal
           :otf-flg otf-flg
+          :orig-hints orig-hints
           ))
 
 (defun pc-prove (term displayed-goal hints otf-flg ens wrld ctx state)
@@ -954,7 +956,8 @@
    (er-let* ((ttree
               (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
                                         state
-                                        (splitter-output)))
+                                        (splitter-output)
+                                        hints))
                     (clauses (list (list term))))
                 (if (f-get-global 'in-verify-flg state) ;interactive
                     (state-global-let*

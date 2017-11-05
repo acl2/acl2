@@ -397,6 +397,10 @@
 
  <p>Improved books cleaning slightly, in @('books/GNUmakefile').</p>
 
+ <p>By default, the @(''make'') targets for certifying books now include the
+ books that depend on quicklisp, except when the host Lisp is GCL.  Specify
+ @('USE_QUICKLISP=0') if that is not what you want.</p>
+
  <p>Also see @(see note-7-5), specifically the section on ``Changes at the
  System Level''.</p>
 
