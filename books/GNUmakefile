@@ -529,6 +529,8 @@ quicklisp_clean:
 	@echo "Cleaning up Quicklisp files"
 	cd $(QUICKLISP_DIR); ./clean.sh
 
+clean: quicklisp_clean
+
 ifeq ($(REALLY_USE_QUICKLISP), 0)
 $(info Excluding books that depend on Quicklisp: [$(CERT_PL_USES_QUICKLISP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
