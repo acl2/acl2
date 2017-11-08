@@ -230,27 +230,40 @@
 ||#
 
 
-(defun l-obviously-equal-lambda-args (x-formals-tail x-args-tail y-formals
-                                                     y-args)
-  (declare (xargs :measure (len x-formals-tail)
-                  :guard (and (symbol-listp x-formals-tail)
-                              (pseudo-term-listp x-args-tail)
-                              (symbol-listp y-formals)
-                              (pseudo-term-listp y-args))))
+;; (defun l-obviously-equal-lambda-args (x-formals-tail x-args-tail y-formals
+;;                                                      y-args)
+;;   (declare (xargs :measure (len x-formals-tail)
+;;                   :guard (and (symbol-listp x-formals-tail)
+;;                               (pseudo-term-listp x-args-tail)
+;;                               (symbol-listp y-formals)
+;;                               (pseudo-term-listp y-args))))
 
-; We know that y-formals is a permutation of x-formals.  We recur through
-; x-formals and x-args, checking that correspond arguments are equal.
+;; ; We know that y-formals is a permutation of x-formals.  We recur through
+;; ; x-formals and x-args, checking that correspond arguments are equal.
 
-  (cond ((endp x-formals-tail) t)
-        (t (let ((posn (position-eq (car x-formals-tail) y-formals)))
-             (and posn
-                  (equal (car x-args-tail)
-                         (nth posn y-args))
-                  (l-obviously-equal-lambda-args (cdr x-formals-tail)
-                                                 (cdr x-args-tail)
-                                                 y-formals y-args))))))
+;;   (cond ((endp x-formals-tail) t)
+;;         (t (let ((posn (position-eq (car x-formals-tail) y-formals)))
+;;              (and posn
+;;                   (equal (car x-args-tail)
+;;                          (nth posn y-args))
+;;                   (l-obviously-equal-lambda-args (cdr x-formals-tail)
+;;                                                  (cdr x-args-tail)
+;;                                                  y-formals y-args))))))
 
 
+(verify-termination obviously-equal-lambda-args)
+
+
+;; Note: this is the same as obviously-equiv-terms/obviously-equiv-terms-lst
+;; except for the occurrence of mbt.  Matt might add that to the definition in
+;; which case we can replace this with:
+;; (verify-termination
+;;  (obviously-equiv-terms
+;;   (declare (xargs :measure (two-nats-measure (max (term-depth x) (term-depth y)) 0)
+;;                   :verify-guards nil)))
+;;  (obviously-equiv-terms-lst
+;;   (declare (xargs :measure (two-nats-measure (max (term-list-depth x) (term-list-depth y)) (len x))))))
+;; and then replace all occurrences of l-obviously-equiv with obviously-equiv below.
 
 (mutual-recursion
 
@@ -343,7 +356,7 @@
 
                                (and (l-obviously-equiv-terms
                                      x-body y-body iff-flg)
-                                    (l-obviously-equal-lambda-args
+                                    (obviously-equal-lambda-args
                                      x-formals (fargs x)
                                      y-formals (fargs y)))))))))))
              ((not (eq (ffn-symb x) (ffn-symb y)))
@@ -388,6 +401,9 @@
 
  
  )
+
+
+
 
 (flag::make-flag l-obviously-equiv-terms-flag
                  l-obviously-equiv-terms
@@ -471,8 +487,8 @@
        (index-of v x))
   :hints(("Goal" :in-theory (enable index-of))))
 
-(defthm l-obviously-equal-lambda-args-implies
-  (implies (and (l-obviously-equal-lambda-args x-formals-tail x-args-tail
+(defthm obviously-equal-lambda-args-implies
+  (implies (and (obviously-equal-lambda-args x-formals-tail x-args-tail
                                                y-formals y-args)
                 (symbol-listp y-formals)
                 (member v x-formals-tail))
@@ -506,8 +522,8 @@
   :hints (("goal" :induct (set-equiv-by-len-ind x y)
            :in-theory (enable member subsetp no-duplicatesp))))
 
-(defthm l-obviously-equal-lambda-args-implies-subsetp
-  (implies (and (l-obviously-equal-lambda-args x-formals-tail x-args-tail
+(defthm obviously-equal-lambda-args-implies-subsetp
+  (implies (and (obviously-equal-lambda-args x-formals-tail x-args-tail
                                                y-formals y-args)
                 (symbol-listp y-formals))
            (subsetp x-formals-tail y-formals))
@@ -515,8 +531,8 @@
 
 
 
-(defthm l-obviously-equal-lambda-args-implies-set-equiv
-  (implies (and (l-obviously-equal-lambda-args x-formals x-args
+(defthm obviously-equal-lambda-args-implies-set-equiv
+  (implies (and (obviously-equal-lambda-args x-formals x-args
                                                y-formals y-args)
                 (no-duplicatesp x-formals)
                 (symbol-listp y-formals)
@@ -688,8 +704,8 @@
   :hints(("Goal" :in-theory (enable nth))))
 
 (include-book "std/alists/alist-equiv" :dir :System)
-(defthm l-obviously-equal-lambda-args-implies-alist-equiv
-  (implies (and (l-obviously-equal-lambda-args x-formals x-args
+(defthm obviously-equal-lambda-args-implies-alist-equiv
+  (implies (and (obviously-equal-lambda-args x-formals x-args
                                                y-formals y-args)
                 (no-duplicatesp x-formals)
                 (symbol-listp y-formals)
@@ -698,8 +714,8 @@
                                (pairlis$ y-formals (obv-ev-lst y-args a)))
                   t))
   :hints (("goal" :in-theory (e/d (alist-equiv-iff-agree-on-bad-guy)
-                                  (l-obviously-equal-lambda-args-implies-set-equiv))
-           :use l-obviously-equal-lambda-args-implies-set-equiv
+                                  (obviously-equal-lambda-args-implies-set-equiv))
+           :use obviously-equal-lambda-args-implies-set-equiv
            :do-not-induct t)))
 
 (defthm assoc-equal-when-key
@@ -726,7 +742,7 @@
              
            
 (defthm eval-with-obviously-equal-lambda-args
-  (implies (and (l-obviously-equal-lambda-args x-formals x-args
+  (implies (and (obviously-equal-lambda-args x-formals x-args
                                                y-formals y-args)
                 (no-duplicatesp x-formals)
                 (symbol-listp y-formals)
