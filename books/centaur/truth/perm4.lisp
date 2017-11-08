@@ -759,3 +759,165 @@
 ;;        ((when look) rest))
 ;;     (hons-acons look.truth t rest)))
 
+
+
+(defsection perm4-rev-indices
+  (local (set-default-hints
+          '('(:in-theory (enable index-swap perm4-index-list)
+              :expand ((:free (n perm x) (index-perm-rev n perm x 4))
+                       (:free (n perm x) (index-perm n perm x 4)))))))
+
+  (define perm4-rev-index0 ((x perm4p))
+    :enabled t
+    :inline t
+    (mbe :logic (index-perm-rev 0 (perm4-index-list x) 0 4)
+         :exec (perm4-idx0 x)))
+  
+  (define perm4-rev-index1 ((x perm4p))
+    :enabled t
+    :inline t
+    (mbe :logic (index-perm-rev 0 (perm4-index-list x) 1 4)
+       :exec (b* (((the (unsigned-byte 2) idx1) (perm4-idx1 x)))
+               (if (eql idx1 (the (unsigned-byte 2) (perm4-idx0 x))) 0 idx1))))
+
+  (define perm4-rev-index2 ((x perm4p))
+    :enabled t
+    :inline t
+    (mbe :logic (index-perm-rev 0 (perm4-index-list x) 2 4)
+       :exec (b* (((the (unsigned-byte 2) idx2) (perm4-idx2 x))
+                  ((the (unsigned-byte 2) idx0) (perm4-idx0 x)))
+               (if (eql idx2 (the (unsigned-byte 2) (perm4-idx1 x)))
+                   (if (eql idx0 1) 0 1)
+                 (if (eql idx0 idx2) 0 idx2)))))
+
+  (define perm4-rev-index3 ((x perm4p))
+    :enabled t
+    :inline t
+    (mbe :logic (index-perm-rev 0 (perm4-index-list x) 3 4)
+         :exec (b* (((the (unsigned-byte 2) idx1) (perm4-idx1 x))
+                    ((the (unsigned-byte 2) idx0) (perm4-idx0 x)))
+                 (if (eql (the (unsigned-byte 2) (perm4-idx2 x)) 3)
+                     (if (eql idx1 2)
+                         (if (eql idx0 1) 0 1)
+                       (if (eql idx0 2) 0 2))
+                   (if (eql idx1 3)
+                       (if (eql idx0 1) 0 1)
+                     (if (eql idx0 3) 0 3))))))
+
+  (define perm4-rev-index ((n natp) (x perm4p))
+    :enabled t
+    :inline t
+    :guard (< n 4)
+    (mbe :logic (index-perm-rev 0 (perm4-index-list x) n 4)
+         :exec (case n
+                 (0 (perm4-rev-index0 x))
+                 (1 (perm4-rev-index1 x))
+                 (2 (perm4-rev-index2 x))
+                 (t (perm4-rev-index3 x)))))
+
+
+  
+  (define perm4-perm-index0 ((x perm4p))
+    :enabled t
+    :inline t
+    (mbe :logic (index-perm 0 (perm4-index-list x) 0 4)
+         :exec ;; (b* ((k (perm4-idx0 x))
+               ;;      (k (if (eql k 1)
+               ;;             (perm4-idx1 x)
+               ;;           (if (eql k (perm4-idx1 x))
+               ;;               1
+               ;;             k))))
+               ;;   (if (eql k 2)
+               ;;       (perm4-idx2 x)
+               ;;     (if (eql k (perm4-idx2 x))
+               ;;         2
+               ;;       k)))
+         (b* (((the (unsigned-byte 2) idx0) (perm4-idx0 x))
+              ((the (unsigned-byte 2) idx1) (perm4-idx1 x)))
+           (cond ((eql idx0 0) 0)
+                 ((eql idx1 idx0) 1)
+                 (t (b* ((k (if (eql idx0 1)
+                                idx1
+                              idx0)))
+                      (if (eql k (the (unsigned-byte 2) (perm4-idx2 x)))
+                          2
+                        3)))))))
+  
+  (define perm4-perm-index1 ((x perm4p))
+    :enabled t
+    :inline t
+    (mbe :logic (index-perm 0 (perm4-index-list x) 1 4)
+         :exec ;; (b* ((k (if (eql (perm4-idx0 x) 1) 0 1))
+         ;;      (k (if (eql k 1)
+         ;;               (perm4-idx1 x)
+         ;;           (if (eql k (perm4-idx1 x))
+         ;;               1
+         ;;             k))))
+         ;;   (if (eql k 2)
+         ;;         (perm4-idx2 x)
+         ;;       (if (eql k (perm4-idx2 x))
+         ;;           2
+         ;;         k)))
+         (b* (((the (unsigned-byte 2) idx1) (perm4-idx1 x)))
+           (cond ((eql (the (unsigned-byte 2) (perm4-idx0 x)) 1) 0)
+                 ((eql idx1 1) 1)
+                 ;; (t 
+                 ;; x is idx1 going in,
+                 ;; both idx1 and idx2 must be 2 or 3
+                 ;;   idx2 \ idx1   2   3
+                 ;;    2            2   3
+                 ;;    3            3   2
+                 ((eql idx1
+                       (the (unsigned-byte 2) (perm4-idx2 x))) 2)
+                 (t 3)
+                 ;; ((eql (perm4-idx1 x) 2) (perm4-idx2 x))
+                 ;; (t (perm4-idx1 x))
+                 ))
+         ))
+
+  (define perm4-perm-index2 ((x perm4p))
+    :enabled t
+    :inline t
+    (mbe :logic (index-perm 0 (perm4-index-list x) 2 4)
+       :exec ;; (b* ((k (if (eql (perm4-idx0 x) 2) 0 2))
+             ;;      (k (if (eql k (perm4-idx1 x))
+             ;;             1
+             ;;           k)))
+             ;;   (if (eql k 2)
+             ;;       (perm4-idx2 x)
+             ;;     (if (eql k (perm4-idx2 x))
+             ;;         2
+             ;;       k)))
+       (cond ((eql (the (unsigned-byte 2) (perm4-idx0 x)) 2) 0)
+             ((eql (the (unsigned-byte 2) (perm4-idx1 x)) 2) 1)
+             (t (the (unsigned-byte 2) (perm4-idx2 x))))
+       ))
+
+  (define perm4-perm-index3 ((x perm4p))
+    :enabled t
+    :inline t
+    (mbe :logic (index-perm 0 (perm4-index-list x) 3 4)
+         :exec ;; (b* ((k (if (eql (perm4-idx0 x) 3) 0 3))
+               ;;      (k (if (eql k (perm4-idx1 x))
+               ;;             1
+               ;;           k)))
+               ;;   (if (eql k (perm4-idx2 x))
+               ;;       2
+               ;;     k))
+         (cond ((eql (the (unsigned-byte 2) (perm4-idx0 x)) 3) 0)
+               ((eql (the (unsigned-byte 2) (perm4-idx1 x)) 3) 1)
+               ((eql (the (unsigned-byte 2) (perm4-idx2 x)) 3) 2)
+               (t 3))))
+
+  (define perm4-index ((n natp) (x perm4p))
+    :enabled t
+    :inline t
+    :guard (< n 4)
+    (mbe :logic (index-perm 0 (perm4-index-list x) n 4)
+         :exec (case n
+                 (0 (perm4-perm-index0 x))
+                 (1 (perm4-perm-index1 x))
+                 (2 (perm4-perm-index2 x))
+                 (t (perm4-perm-index3 x)))))
+
+)

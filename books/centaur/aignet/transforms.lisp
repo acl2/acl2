@@ -2,6 +2,7 @@
 
 (in-package "AIGNET")
 
+(include-book "rewrite")
 (include-book "fraig")
 (include-book "balance")
 (include-book "observability")
@@ -28,6 +29,7 @@ transforms.  The currently supported transforms are:</p>
   :short "Configuration object for any combinational transform supported by @(see apply-comb-transforms)."
   (balance-config
    fraig-config
+   rewrite-config
    abc-comb-simp-config
    observability-config))
 
@@ -36,6 +38,7 @@ transforms.  The currently supported transforms are:</p>
   (case (tag x)
     (:balance-config "Balance")
     (:fraig-config "Fraig")
+    (:rewrite-config "Rewrite")
     (:observability-config "Observability")
     (t "Abc simplify")))
 
@@ -53,6 +56,8 @@ transforms.  The currently supported transforms are:</p>
              (:balance-config (b* ((aignet2 (balance aignet aignet2 transform)))
                                 (mv aignet2 state)))
              (:fraig-config (fraig aignet aignet2 transform state))
+             (:rewrite-config (b* ((aignet2 (rewrite aignet aignet2 transform)))
+                                (mv aignet2 state)))
              (:observability-config (observability-fix aignet aignet2 transform state))
              (otherwise (abc-comb-simplify aignet aignet2 transform state))))
           (- (print-aignet-stats name aignet2)))
@@ -91,6 +96,8 @@ transforms.  The currently supported transforms are:</p>
              (:balance-config (b* ((aignet (balance! aignet transform)))
                                 (mv aignet state)))
              (:fraig-config (fraig! aignet transform state))
+             (:rewrite-config (b* ((aignet (rewrite! aignet transform)))
+                                (mv aignet state)))
              (:observability-config (observability-fix! aignet transform state))
              (otherwise (abc-comb-simplify! aignet transform state))))
           (- (print-aignet-stats name aignet)))

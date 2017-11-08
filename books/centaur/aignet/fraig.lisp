@@ -2446,73 +2446,9 @@
            (classes-size classes))))
     
   
-(local
- (defsection init-copy-comb-fraig
-   (local (in-theory (enable init-copy-comb)))
-   (local (std::set-define-current-function init-copy-comb))
 
-   (local (defthm lit-eval-when-const
-            (implies (equal (stype (car (lookup-id n aignet))) :const)
-                     (equal (lit-eval (make-lit n neg) invals regvals aignet)
-                            (bfix neg)))
-            :hints(("Goal" :expand ((lit-eval (make-lit n neg) invals regvals aignet)
-                                    (id-eval n invals regvals aignet))))))
 
-   (local (defthm nth-lit-of-nil
-            (equal (nth-lit n nil) 0)
-            :hints(("Goal" :in-theory (enable nth-lit nth)))))
 
-   (defret comb-equivalent-of-fraig-init-copy-lemma
-     (implies (<= (nfix n) (num-nodes aignet))
-              (aignet-copy-is-comb-equivalent-for-non-gates n aignet new-copy new-aignet2))
-     :hints(("Goal" :in-theory (enable aignet-copy-is-comb-equivalent-for-non-gates
-                                       aignet-lits-comb-equivalent
-                                       aignet-idp)
-             :induct (aignet-copy-is-comb-equivalent-for-non-gates n aignet new-copy new-aignet2))
-            (and stable-under-simplificationp
-                 (let ((witness (acl2::find-call-lst
-                                 'aignet-lits-comb-equivalent-witness
-                                 clause)))
-                   `(:clause-processor
-                     (acl2::simple-generalize-cp
-                      clause '(((mv-nth '0 ,witness) . invals)
-                               ((mv-nth '1 ,witness) . regvals))))))
-            (and stable-under-simplificationp
-                 '(:cases ((equal (stype (car (lookup-id (+ -1 n) aignet))) :const))))
-            (and stable-under-simplificationp
-                 '(:expand ((:free (n neg aignet) (lit-eval (make-lit n neg) invals regvals aignet))
-                            (:free (count stype aignet aignet2)
-                             (id-eval (node-count (lookup-stype count stype aignet))
-                                      invals regvals aignet2))
-                            (id-eval (+ -1 n) invals regvals aignet))))))))
-
-(local
- (defsection finish-copy-comb-fraig
-   (local (in-theory (enable finish-copy-comb)))
-   (local (std::set-define-current-function finish-copy-comb))
-
-   (local (defthm aignet-copy-is-comb-equivalent-implies-output-fanins-comb-equiv
-            (implies (aignet-copy-is-comb-equivalent (+ 1 (max-fanin aignet)) aignet copy aignet2)
-                     (output-fanins-comb-equiv aignet copy aignet2))
-            :hints(("Goal" :in-theory (e/d (output-fanins-comb-equiv)
-                                           (output-fanins-comb-equiv-necc))))))
-
-   (local (defthm aignet-copy-is-comb-equivalent-implies-nxst-fanins-comb-equiv
-            (implies (aignet-copy-is-comb-equivalent (+ 1 (max-fanin aignet)) aignet copy aignet2)
-                     (nxst-fanins-comb-equiv aignet copy aignet2))
-            :hints(("Goal" :in-theory (e/d (nxst-fanins-comb-equiv)
-                                           (nxst-fanins-comb-equiv-necc))))))
-
-   (defret fraig-finish-copy-comb-equivalent
-     (implies (and (aignet-copy-is-comb-equivalent (+ 1 (max-fanin aignet)) aignet copy aignet2)
-                   (aignet-copies-in-bounds copy aignet2)
-                   (equal (stype-count :po aignet2) 0)
-                   (equal (stype-count :nxst aignet2) 0)
-                   (equal (stype-count :reg aignet2)
-                          (stype-count :reg aignet)))
-              (comb-equiv new-aignet2 aignet))
-     :hints(("Goal" :in-theory (e/d (comb-equiv) (finish-copy-comb)))))))
-  
 
 (define fraig-core-aux ((aignet  "Input aignet")
                         (aignet2 "New aignet -- will be emptied")
