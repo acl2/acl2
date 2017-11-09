@@ -94,6 +94,11 @@
   :returns (yes/no booleanp)
   :parents (world-queries)
   :short "Recognize symbols that name functions."
+  :long
+  "<p>
+   This function is enabled because it is meant as an abbreviation.
+   Thus, theorems triggered by this function should be avoided.
+   </p>"
   (and (symbolp x)
        (function-symbolp x wrld))
   :enabled t)
@@ -102,15 +107,27 @@
   :returns (yes/no booleanp)
   :parents (world-queries)
   :short "Recognize symbols that name theorems."
+  :long
+  "<p>
+   This function is enabled because it is meant as an abbreviation.
+   Thus, theorems triggered by this function should be avoided.
+   </p>"
   (and (symbolp x)
-       (theorem-symbolp x wrld)))
+       (theorem-symbolp x wrld))
+  :enabled t)
 
 (define macro-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (world-queries)
   :short "Recognize symbols that name macros."
+  :long
+  "<p>
+   This function is enabled because it is meant as an abbreviation.
+   Thus, theorems triggered by this function should be avoided.
+   </p>"
   (and (symbolp x)
-       (macro-symbolp x wrld)))
+       (macro-symbolp x wrld))
+  :enabled t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,8 +291,7 @@
       (raise "Internal error: ~
               the MACRO-ARGS property ~x0 of ~x1 ~
               is not a NIL-terminated list."
-             result mac)))
-  :guard-hints (("Goal" :in-theory (enable macro-namep))))
+             result mac))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,8 +346,7 @@
    This returns the same result as @(tsee guard-verified-p),
    but it has a stronger guard.
    </p>"
-  (guard-verified-p fn/thm wrld)
-  :guard-hints (("Goal" :in-theory (enable theorem-namep))))
+  (guard-verified-p fn/thm wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -943,7 +958,6 @@
       (if (eq (car all-args) '&whole)
           (macro-required-args+-aux mac (cddr all-args) nil)
         (macro-required-args+-aux mac all-args nil))))
-  :guard-hints (("Goal" :in-theory (enable macro-namep)))
 
   :prepwork
   ((define macro-required-args+-aux ((mac symbolp)
@@ -1008,8 +1022,7 @@
         result
       (raise "Internal error: ~
               the FORMULA property ~x0 of ~x1 is not a pseudo-term."
-             result thm)))
-  :guard-hints (("Goal" :in-theory (enable theorem-namep))))
+             result thm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1047,8 +1060,7 @@
       (raise "Internal error: ~
               the rule classes ~x0 of ~x1 are not an alist
               from keywords to keyword-value lists."
-             result thm)))
-  :guard-hints (("Goal" :in-theory (enable theorem-namep))))
+             result thm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
