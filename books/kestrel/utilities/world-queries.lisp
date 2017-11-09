@@ -34,6 +34,36 @@
   "<p>
    These complement the world query utilities
    in the <see topic='@(url system-utilities)'>built-in system utilities</see>.
+   </p>
+   <p>
+   Many of these world query utilities come in two variants:
+   a &ldquo;fast&rdquo; one and a &ldquo;logic-friendly&rdquo; one.
+   The former has relatively weak and no (strong) return type theorems;
+   the latter has stronger guards and some run-time checks
+   that are believed to never fail
+   and that enable the proof of (stronger) return type theorems
+   without having to assume stronger properties in the guard
+   of the @(see world) arguments.
+   The logic-friendly variants are helpful
+   to prove properties (including verifying guards)
+   of logic-mode code that calls them,
+   but the fast variants avoid the performance penalty
+   of the always-satisfied run-time checks,
+   when proving properties of the code that calls them is not a focus
+   (e.g. in program-mode code).
+   </p>
+   <p>
+   The built-in world query utilities
+   have the characteristics of the fast variants.
+   Below we provide logic-friendly variants of
+   some built-in world query utilities.
+   </p>
+   <p>
+   The fast variants provided below are named in a way
+   that is &ldquo;consistent&rdquo; with the built-in world query utilities.
+   The logic-friendly world query utilities are named by adding @('+')
+   after the name of the corresponding fast world query utilities
+   (both built-in and provided below).
    </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,6 +206,11 @@
   :returns (yes/no booleanp)
   :parents (world-queries)
   :short "Recognize symbols that name logic-mode functions."
+  :long
+  "<p>
+   This function is enabled because it is meant as an abbreviation.
+   Thus, theorems triggered by this function should be avoided.
+   </p>"
   (and (function-namep x wrld)
        (logicp x wrld))
   :enabled t)
