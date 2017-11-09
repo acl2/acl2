@@ -632,7 +632,7 @@
   :guard (not (member-eq fn *stobjs-out-invalid*))
   :returns (n posp)
   :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee number-of-result)."
+  :short "Logic-friendly variant of @(tsee number-of-results)."
   :long
   "<p>
    This returns the same result as @(tsee number-of-results),
@@ -1204,9 +1204,6 @@
    </p>
    <p>
    This utility may be extended to handle also mutually recursive functions.
-   </p>
-   <p>
-   See @(tsee recursive-calls+) for a logic-friendly variant of this utility.
    </p>"
   (termination-machine
    (list fn) (ubody fn wrld) nil nil (ruler-extenders fn wrld)))
