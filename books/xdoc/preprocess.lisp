@@ -208,6 +208,46 @@
       (otherwise
        event))))
 
+
+;; (defun get-event-types (wrld acc)
+;;   (declare (xargs :mode :program))
+;;   (b* ((wrld (acl2::scan-to-event wrld))
+;;        ((when (atom wrld)) acc)
+;;        (form (acl2::access-event-tuple-form (cddr (car wrld))))
+;;        (kind (and (consp form) (car form))))
+;;     (get-event-types (cdr wrld)
+;;                      (if kind (cons kind acc) acc))))
+  
+
+(defun hons-acons-list-unique (keys val acc)
+  (if (atom keys)
+      acc
+    (hons-acons-list-unique (cdr keys) val
+                            (if (hons-get (car keys) acc)
+                                acc
+                              (hons-acons (car keys) val acc)))))
+
+(defun make-get-event*-table (wrld acc)
+  (b* ((wrld (acl2::scan-to-event wrld))
+       ((when (atom wrld)) acc)
+       (event (cddr (car wrld)))
+       (form (acl2::access-event-tuple-form event))
+       (kind (and (consp form) (car form)))
+       (namex (acl2::access-event-tuple-namex event))
+       (acc (cond ((member-eq kind
+                              '(acl2::verify-termination
+                                acl2::verify-termination-boot-strap
+                                acl2::verify-guards))
+                   acc)
+                  ((not namex) acc)
+                  ((symbolp namex)
+                   (if (hons-get namex acc)
+                       acc
+                     (hons-acons namex form acc)))
+                  ((symbol-listp namex) (hons-acons-list-unique namex form acc))
+                  (t acc))))
+    (make-get-event*-table (cdr wrld) acc)))
+
 #!ACL2
 (defun xdoc::get-event* (name wrld)
   ;; Historically XDOC used ACL2::GET-EVENT, but we found that this was
@@ -229,10 +269,13 @@
            (xdoc::get-event* name (scan-to-event (cdr wrld1))))
           (t ev))))
 
-(defun get-event-aux (name context world)
+(defun get-event-aux (name context world table)
   ;; A general purpose event lookup as in :pe
+  ;; Table must be either something produced by make-get-event*-table (on the current world) or 0.
   (b* ((props (acl2::getprops name 'current-acl2-world world))
-       (evt   (and props (get-event* name world)))
+       (evt   (and props (if (eql table 0)
+                             (get-event* name world)
+                           (cdr (hons-get name table)))))
        ((when evt)
         evt))
     (and (xdoc-verbose-p)
@@ -242,8 +285,13 @@
               "::"
               (symbol-name name))))
 
-(defun get-event (name context world)
-  (clean-up-event name (get-event-aux name context world)))
+(defun get-event (name context state)
+  (declare (xargs :stobjs state))
+  (clean-up-event name (get-event-aux name context
+                                      (w state)
+                                      (if (boundp-global 'xdoc-get-event-table state)
+                                          (f-get-global 'xdoc-get-event-table state)
+                                        0))))
 
 (defun start-event (event acc)
   (b* ((acc (str::revappend-chars "<b>" acc))
@@ -262,14 +310,14 @@
 
 #||
 
-(get-event-aux 'append (w state))
-(get-event 'append (w state))
+(get-event-aux 'append 'test (w state) 0)
+(get-event 'append 'test state)
 
-(get-event-aux 'binary-append (w state))
-(get-event 'binary-append (w state))
+(get-event-aux 'binary-append 'test (w state) 0)
+(get-event 'binary-append 'test state)
 
-(get-event-aux 'write-byte$ (w state))
-(get-event 'write-byte$ (w state))
+(get-event-aux 'write-byte$ 'test (w state) 0)
+(get-event 'write-byte$ 'test state)
 
 (defun UGLY (X)
   (DECLARE
@@ -278,11 +326,10 @@
           :VERIFY-GUARDS NIL))
   (IF (CONSP X) (UGLY (CDR X)) 0))
 
-(get-event-aux 'ugly (w state))
-(get-event 'ugly (w state))
+(get-event-aux 'ugly 'test (w state) 0)
+(get-event 'ugly 'test state)
 
-(xml-ppr-obj (get-event 'ugly (w state))
-             state
+(xml-ppr-obj (get-event 'ugly 'test state)
              :topics-fal (make-fast-alist '((acl2::consp . t)
                                             (acl2::defun . t)
                                             (acl2::declare . t)
@@ -292,6 +339,24 @@
              :base-pkg 'xdoc::foo)
 
 ||#
+
+
+#||
+;; test get-event* table mode:
+(make-event `(defconst *table* ',(make-get-event*-table (w state) nil)))
+
+(defun check-get-event*-table (table wrld)
+  (if (atom table)
+      nil
+    (b* ((spec (get-event* (caar table) wrld)))
+      (if (equal spec (cdar table))
+          (check-get-event*-table (cdr table) wrld)
+        (list (caar table) (cdar table) spec)))))
+  
+(assert! (equal (check-get-event*-table *table* (w state)) nil))
+
+||#
+
 
 
 #||
@@ -315,17 +380,17 @@
 
 (foo)
 
-(get-event 'undefined (w state)) ; good, fails
-(get-event 'append (w state))
-(get-event 'binary-append (w state))
-(get-event 'st (w state))
-(get-event 'fld (w state)) ;; bad? returns the whole stobj
-(get-event 'all-integerp (w state))
-(get-event 'all-integerp-witness (w state)) ;; good i guess - returns the encapsulate
-(get-event 'f (w state))
-(get-event 'h (w state)) ;; good i guess, returns the encapsulate
-(get-event 'acl2::car-cons (w state))
-(get-event '*const* (w state))
+(get-event 'undefined 'test state) ; good, fails
+(get-event 'append 'test state)
+(get-event 'binary-append 'test state)
+(get-event 'st 'test state)
+(get-event 'fld 'test state) ;; bad? returns the whole stobj
+(get-event 'all-integerp 'test state)
+(get-event 'all-integerp-witness 'test state) ;; good i guess - returns the encapsulate
+(get-event 'f 'test state)
+(get-event 'h 'test state) ;; good i guess, returns the encapsulate
+(get-event 'acl2::car-cons 'test state)
+(get-event '*const* 'test state)
 
 (get-formals 'binary-append (w state))  ;; --> (ACL2::X ACL2::Y)
 (get-formals 'append (w state)) ;; --> (ACL2::X ACL2::Y &REST ACL2::RST)
@@ -544,7 +609,7 @@
 (defun process-def-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
   ;; block, along with a source-code link.
-  (b* ((def (get-event arg context (w state)))
+  (b* ((def (get-event arg context state))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
        (acc (process-srclink-directive arg acc))
@@ -558,7 +623,7 @@
   ;; @(gdef foo) -- Look up the definition for foo, pretty-print it as in @def,
   ;; but don't use a source-code link because this is a "Generated Definition"
   ;; for which a tags-search will probably fail.
-  (b* ((def (get-event arg context (w state)))
+  (b* ((def (get-event arg context state))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
        (acc (sym-mangle arg base-pkg acc))
@@ -571,7 +636,7 @@
 (defun process-thm-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(thm foo) -- Look up the theorem named foo, and pretty-print its event
   ;; along with a source link.
-  (b* ((def (get-event arg context (w state)))
+  (b* ((def (get-event arg context state))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
        (acc (process-srclink-directive arg acc))
@@ -584,7 +649,7 @@
 (defun process-gthm-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(gthm foo) -- Like @(thm foo), but don't provide a source link since this
   ;; is a generated theorem.
-  (b* ((def (get-event arg context (w state)))
+  (b* ((def (get-event arg context state))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
        (acc (sym-mangle arg base-pkg acc))
