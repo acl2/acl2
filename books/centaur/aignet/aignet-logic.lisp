@@ -1800,7 +1800,11 @@ suffix.</p>"
     (implies (aignet-idp id aignet)
              (equal (aignet-id-fix id aignet)
                     (nfix id)))
-    :hints(("Goal" :in-theory (enable aignet-idp)))))
+    :hints(("Goal" :in-theory (enable aignet-idp))))
+
+  (defthm aignet-id-fix-of-node-list-fix
+    (equal (aignet-id-fix x (node-list-fix aignet))
+           (aignet-id-fix x aignet))))
 
 
 (defenum fanin-type-p (:gate0 :gate1 :co)

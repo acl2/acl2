@@ -9,7 +9,7 @@
 ;; Cuong Chau: Added for compatibility with old NSA books.
 (defmacro standard-numberp (x)
   `(and (acl2-numberp ,x)
-	(standardp ,x)))
+        (standardp ,x)))
 
 (defun coeff-term-order (x y)
   (declare (xargs :mode :program))

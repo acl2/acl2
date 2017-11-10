@@ -51,7 +51,7 @@
 ;; Function to read segment headers from the binary
 ;; -------------------------------------------------------------------
 
-(defun read-segment-headers (nsegments rest-of-the-file acc)
+(defun read-segment-headers-64 (nsegments rest-of-the-file acc)
   (declare (xargs :guard (and (natp nsegments)
                               (byte-listp rest-of-the-file)
                               (true-listp acc))))
@@ -75,15 +75,43 @@
                 (cons 'filesz p_filesz)
                 (cons 'memsz  p_memsz)
                 (cons 'align  p_align))))
-        (read-segment-headers (1- nsegments) rest-of-the-file
-                              (cons segment acc)))))
+        (read-segment-headers-64 (1- nsegments) rest-of-the-file
+                                 (cons segment acc)))))
+
+(defun read-segment-headers-32 (nsegments rest-of-the-file acc)
+  (declare (xargs :guard (and (natp nsegments)
+                              (byte-listp rest-of-the-file)
+                              (true-listp acc))))
+  (if (zp nsegments)
+      (reverse acc)
+
+    (b* (((mv p_type   rest-of-the-file) (rnbni 4 rest-of-the-file))
+         ((mv p_offset rest-of-the-file) (rnbni 4 rest-of-the-file))
+         ((mv p_vaddr  rest-of-the-file) (rnbni 4 rest-of-the-file))
+         ((mv p_paddr  rest-of-the-file) (rnbni 4 rest-of-the-file))
+         ((mv p_filesz rest-of-the-file) (rnbni 4 rest-of-the-file))
+         ((mv p_memsz  rest-of-the-file) (rnbni 4 rest-of-the-file))
+         ((mv p_flags  rest-of-the-file) (rnbni 4 rest-of-the-file))
+         ((mv p_align  rest-of-the-file) (rnbni 4 rest-of-the-file))
+         (segment
+          (list (cons 'type   p_type)
+                (cons 'flags  p_flags)
+                (cons 'offset p_offset)
+                (cons 'vaddr  p_vaddr)
+                (cons 'paddr  p_paddr)
+                (cons 'filesz p_filesz)
+                (cons 'memsz  p_memsz)
+                (cons 'align  p_align))))
+        (read-segment-headers-32 (1- nsegments) rest-of-the-file
+                                 (cons segment acc)))))
 
 ;; -------------------------------------------------------------------
 ;; Function to read section headers from the binary
 ;; -------------------------------------------------------------------
 
-(defun read-section-headers (nsections rest-of-the-file acc)
+(defun read-section-headers (nsections w rest-of-the-file acc)
   (declare (xargs :guard (and (natp nsections)
+                              (member w '(4 8))
                               (byte-listp rest-of-the-file)
                               (true-listp acc))))
   (if (zp nsections)
@@ -91,14 +119,14 @@
 
     (b* (((mv sh_name      rest-of-the-file) (rnbni 4 rest-of-the-file))
          ((mv sh_type      rest-of-the-file) (rnbni 4 rest-of-the-file))
-         ((mv sh_flags     rest-of-the-file) (rnbni 8 rest-of-the-file))
-         ((mv sh_addr      rest-of-the-file) (rnbni 8 rest-of-the-file))
-         ((mv sh_offset    rest-of-the-file) (rnbni 8 rest-of-the-file))
-         ((mv sh_size      rest-of-the-file) (rnbni 8 rest-of-the-file))
+         ((mv sh_flags     rest-of-the-file) (rnbni w rest-of-the-file))
+         ((mv sh_addr      rest-of-the-file) (rnbni w rest-of-the-file))
+         ((mv sh_offset    rest-of-the-file) (rnbni w rest-of-the-file))
+         ((mv sh_size      rest-of-the-file) (rnbni w rest-of-the-file))
          ((mv sh_link      rest-of-the-file) (rnbni 4 rest-of-the-file))
          ((mv sh_info      rest-of-the-file) (rnbni 4 rest-of-the-file))
-         ((mv sh_addralign rest-of-the-file) (rnbni 8 rest-of-the-file))
-         ((mv sh_entsize   rest-of-the-file) (rnbni 8 rest-of-the-file))
+         ((mv sh_addralign rest-of-the-file) (rnbni w rest-of-the-file))
+         ((mv sh_entsize   rest-of-the-file) (rnbni w rest-of-the-file))
          (section
           (list (cons 'name      sh_name)
                 (cons 'type      sh_type)
@@ -110,7 +138,7 @@
                 (cons 'info      sh_info)
                 (cons 'addralign sh_addralign)
                 (cons 'entsize   sh_entsize))))
-        (read-section-headers (1- nsections) rest-of-the-file
+        (read-section-headers (1- nsections) w rest-of-the-file
                               (cons section acc)))))
 
 ;; -------------------------------------------------------------------
@@ -122,6 +150,7 @@
                               (= (len file-header) 64))))
   (b* (((mv e_magic     file-header) (rnbbi 4 file-header))
        ((mv e_class     file-header) (rnbni 1 file-header))
+       (w (if (equal e_class 1) 4 8))
        ((mv e_dataenc   file-header) (rnbni 1 file-header))
        ((mv e_identver  file-header) (rnbni 1 file-header))
        ((mv e_osabi     file-header) (rnbni 1 file-header))
@@ -130,9 +159,9 @@
        ((mv e_type      file-header) (rnbni 2 file-header))
        ((mv e_machine   file-header) (rnbni 2 file-header))
        ((mv e_version   file-header) (rnbni 4 file-header))
-       ((mv e_entry     file-header) (rnbni 8 file-header))
-       ((mv e_phoff     file-header) (rnbni 8 file-header))
-       ((mv e_shoff     file-header) (rnbni 8 file-header))
+       ((mv e_entry     file-header) (rnbni w file-header))
+       ((mv e_phoff     file-header) (rnbni w file-header))
+       ((mv e_shoff     file-header) (rnbni w file-header))
        ((mv e_flags     file-header) (rnbni 4 file-header))
        ((mv e_ehsize    file-header) (rnbni 2 file-header))
        ((mv e_phentsize file-header) (rnbni 2 file-header))
@@ -391,36 +420,39 @@
                   :verify-guards nil))
   (b* ((elf-file-size (len file-byte-list))
        (elf (!elf-file-size elf-file-size elf))
-       ;; Assuming 64-bit architecture --- ELF header size is 64
-       ;; bytes.
-       (elf-header-size 64)
-       (elf (!elf-header-size elf-header-size elf))
        ;; The following checks are also done in the top-level function
        ;; binary-file-read (in tools/execution/top.lisp).  They're
        ;; done here again in case someone wants to use this function
        ;; at the top level.
-       (file-header (take elf-header-size file-byte-list))
+       (file-header (take 64 file-byte-list))
        (header (read-elf-header file-header))
        (magic (combine-bytes (cdr (assoc 'magic header))))
        (class (cdr (assoc 'class header)))
+       ;; ELF32 when class=1
+       ;; ELF64 when class=2
        ((when (or (not (equal magic #.*ELFMAG*))
-                  (not (equal class 2))))
+                  (not (member class '(1 2)))))
         (mv
-         (cw "Error: Not a 64-bit ELF object file (as suggested by the ELF header). ~%")
+         (cw "Error: Not an ELF object file (as suggested by the ELF header). ~%")
          elf state))
+       (elf-header-size (if (equal class 1) 52 64))
+       (elf (!elf-header-size elf-header-size elf))
 
        ;; Retrieve the data for the segment headers
        (segment-header-offset (nfix (cdr (assoc 'phoff header))))
        (segment-headers (nthcdr segment-header-offset file-byte-list))
        (nsegments (nfix (cdr (assoc 'phnum header))))
-       (segments (read-segment-headers nsegments segment-headers nil))
+       (segments (if (equal class 1)
+                     (read-segment-headers-32 nsegments segment-headers ())
+                   (read-segment-headers-64 nsegments segment-headers ())))
 
        ;; Retrieve the data for the section header
        (section-header-offset (nfix (cdr (assoc 'shoff header))))
        (section-headers (nthcdr section-header-offset file-byte-list))
        (nsections (nfix (cdr (assoc 'shnum header))))
        (elf (!sections-num nsections elf))
-       (sections (read-section-headers nsections section-headers nil))
+       (w (if (equal class 1) 4 8))
+       (sections (read-section-headers nsections w section-headers nil))
        (string-section-index (nfix (cdr (assoc 'shstrndx header))))
        ((when (not (or (equal nsections string-section-index)
                        (> nsections string-section-index))))

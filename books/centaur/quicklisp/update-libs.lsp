@@ -64,7 +64,15 @@
                          "uiop"
                          "html-template"
                          "shellpool"
-                         "external-program"
+                         ;; "external-program" ; removed Nov 2017 to avoid GPL
+
+; On Nov 3, 2017, David Rager attempted to update quicklisp.  The update seemed
+; to fail, because CFFI needed Babel.  But, that dependency wasn't registered
+; with the quicklisp system (or something to that effect).  As such, we
+; maually include Babel.  After some amount of time passes, this is likely to
+; get fixed.
+                         "babel"
+                         
                          )
                    :to "./bundle")
 

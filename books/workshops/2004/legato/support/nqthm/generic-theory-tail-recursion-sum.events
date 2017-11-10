@@ -28,11 +28,11 @@
 (DEFN WP-LOOP (N A C NSAVE)
   (IF (EQUAL (DEC N) 0)
       (EQUAL (REMAINDER (PLUS C (PLUS A N)) 256)
-	     (QUOTIENT (TIMES NSAVE (PLUS 1 NSAVE)) 2))
+             (QUOTIENT (TIMES NSAVE (PLUS 1 NSAVE)) 2))
       (WP-LOOP (DEC N)
-	       (REMAINDER (PLUS C (PLUS A N)) 256)
-	       (QUOTIENT (PLUS C (PLUS A N)) 256)
-	       NSAVE))
+               (REMAINDER (PLUS C (PLUS A N)) 256)
+               (QUOTIENT (PLUS C (PLUS A N)) 256)
+               NSAVE))
   ((lessp (if (zerop n) 256 n))))
 
 ;;; Weakest precondition at start of program
@@ -58,24 +58,24 @@
 
 (functionally-instantiate wp-loop-g=h nil
   (implies (and (not (zerop (n s)))
-		(equal (c s) 0)
-		(lessp (plus a (quotient (times (n s) (add1 (n s))) 2)) 256))
-	   (equal (wp-loop (n s) a (c s) (nsave s))
-		  (if (equal (dec (n s)) 0)
-		      (equal (remainder (plus a (n s)) 256)
-			     (quotient (times (nsave s) (add1 (nsave s))) 2))
-		    (let ((a (if (equal (dec (n s)) 0)
-				 a
-			       (plus a (wp-loop-h s))))
-			  (s (if (equal (dec (n s)) 0)
-				 s
-			       (list 1 (c s) (nsave s)))))
-		      (equal (remainder (plus a (n s)) 256)
-			     (quotient (times (nsave s) (add1 (nsave s))) 2))))))
+                (equal (c s) 0)
+                (lessp (plus a (quotient (times (n s) (add1 (n s))) 2)) 256))
+           (equal (wp-loop (n s) a (c s) (nsave s))
+                  (if (equal (dec (n s)) 0)
+                      (equal (remainder (plus a (n s)) 256)
+                             (quotient (times (nsave s) (add1 (nsave s))) 2))
+                    (let ((a (if (equal (dec (n s)) 0)
+                                 a
+                               (plus a (wp-loop-h s))))
+                          (s (if (equal (dec (n s)) 0)
+                                 s
+                               (list 1 (c s) (nsave s)))))
+                      (equal (remainder (plus a (n s)) 256)
+                             (quotient (times (nsave s) (add1 (nsave s))) 2))))))
   g=h
   ((bb (lambda (s) (equal (dec (n s)) 0)))
    (qt (lambda (a s) (equal (remainder (plus a (n s)) 256)
-			    (quotient (times (nsave s) (add1 (nsave s))) 2))))
+                            (quotient (times (nsave s) (add1 (nsave s))) 2))))
    (g (lambda (a s) (wp-loop (n s) a (c s) (nsave s))))
    (measure-g (lambda (s) (if (zerop (n s)) 256 (n s))))
    (tau (lambda (s) (list (dec (n s)) (c s) (nsave s))))
@@ -83,96 +83,96 @@
    (rhoh (lambda (a s) (plus a (n s))))
    (h (lambda (s) (wp-loop-h s)))
    (rt (lambda (a s) (and (not (zerop (n s)))
-			  (equal (c s) 0)
-			  (lessp (plus a (quotient (times (n s) (add1 (n s))) 2))
-				 256))))
+                          (equal (c s) 0)
+                          (lessp (plus a (quotient (times (n s) (add1 (n s))) 2))
+                                 256))))
    (id (lambda () 0))
    (op (lambda (a x s) (if (equal (dec (n s)) 0)
-			   a
-			 (plus a x))))
+                           a
+                         (plus a x))))
    (hs (lambda (s) (if (equal (dec (n s)) 0)
-		       s
-		     (list 1 (c s) (nsave s))))))
+                       s
+                     (list 1 (c s) (nsave s))))))
   ((disable-theory if-normalization)
    (expand (times v v) (times v w))
    (disable quotient-add1-arg2
-	    remainder-add1-arg2
-	    quotient-plus-arg1
-	    remainder-plus-arg1
-	    remainder-plus-arg1-simple
-	    equal-add1
-	    remainder-difference-arg1
-	    difference-add1
-	    times-add1
-	    difference-plus-arg1
-	    sub1-quotient
-	    sub1-remainder
-	    sub1-plus
-	    sub1-times
-	    dichotomy)))
+            remainder-add1-arg2
+            quotient-plus-arg1
+            remainder-plus-arg1
+            remainder-plus-arg1-simple
+            equal-add1
+            remainder-difference-arg1
+            difference-add1
+            times-add1
+            difference-plus-arg1
+            sub1-quotient
+            sub1-remainder
+            sub1-plus
+            sub1-times
+            dichotomy)))
 
 ;;; Transform above to a flat state space rule.
 
 (prove-lemma wp-loop-g=h-rewrite (rewrite)
- (implies (and (not (zerop n))
-	       (equal c 0)
-	       (lessp (plus a (quotient (times n (add1 n)) 2)) 256))
-	   (equal (wp-loop n a c nsave)
-		  (if (equal (dec n) 0)
-		      (equal (remainder (plus a n) 256)
-			     (quotient (times nsave (add1 nsave)) 2))
-		    (let ((a (plus a (wp-loop-h (list n c nsave)))))
-		      (equal (remainder (add1 a) 256)
-			     (quotient (times nsave (add1 nsave)) 2))))))
- ((disable-theory if-normalization)
-  (use (wp-loop-g=h (a a) (s (list n c nsave))))
-  (hands-off difference)
-  (disable quotient-add1-arg2
-	   remainder-add1-arg2
-	   quotient-plus-arg1
-	   remainder-plus-arg1
-	   remainder-plus-arg1-simple
-	   equal-add1
-	   times-add1
-	   plus-add1
-	   sub1-plus
-	   remainder-difference-arg1
-	   )))
+  (implies (and (not (zerop n))
+                (equal c 0)
+                (lessp (plus a (quotient (times n (add1 n)) 2)) 256))
+           (equal (wp-loop n a c nsave)
+                  (if (equal (dec n) 0)
+                      (equal (remainder (plus a n) 256)
+                             (quotient (times nsave (add1 nsave)) 2))
+                    (let ((a (plus a (wp-loop-h (list n c nsave)))))
+                      (equal (remainder (add1 a) 256)
+                             (quotient (times nsave (add1 nsave)) 2))))))
+  ((disable-theory if-normalization)
+   (use (wp-loop-g=h (a a) (s (list n c nsave))))
+   (hands-off difference)
+   (disable quotient-add1-arg2
+            remainder-add1-arg2
+            quotient-plus-arg1
+            remainder-plus-arg1
+            remainder-plus-arg1-simple
+            equal-add1
+            times-add1
+            plus-add1
+            sub1-plus
+            remainder-difference-arg1
+            )))
 
 ;;; Closed form for wp-loop-h
 
 (prove-lemma wp-loop-h-closed (rewrite)
   (implies (not (zerop (n s)))
-	   (equal (wp-loop-h s)
-		  (sub1 (quotient (times (n s) (add1 (n s))) 2))))
+           (equal (wp-loop-h s)
+                  (sub1 (quotient (times (n s) (add1 (n s))) 2))))
   ((induct (wp-loop-h s))
    (disable quotient-add1-arg2
-	    remainder-add1-arg2
-	    sub1-quotient
-	    quotient-times-arg1
-	    quotient-times-arg1-kb
-	    quotient-plus-arg1
-	    remainder-difference-arg1
-	    )))
+            remainder-add1-arg2
+            sub1-quotient
+            quotient-times-arg1
+            quotient-times-arg1-kb
+            quotient-plus-arg1
+            remainder-difference-arg1
+            )))
 
 ;;; Final correctness result
 
 (prove-lemma wp-loop-is-correct (rewrite)
-	     (implies (and (not (zerop n))
-			   (lessp (quotient (times n (add1 n)) 2) 256)
-			   (equal nsave n))
-		      (wp-1 n nsave))
-	     ((disable-theory if-normalization)
-	      (hands-off difference)
-	      (disable quotient-add1-arg2
-		       remainder-add1-arg2
-		       quotient-plus-arg1
-		       remainder-plus-arg1
-		       remainder-plus-arg1-simple
-		       equal-add1
-		       times-add1
-		       sub1-plus
-		       plus-add1
-		       remainder-add1-arg1
-		       sub1-times
-		       )))
+  (implies (and (not (zerop n))
+                (lessp (quotient (times n (add1 n)) 2) 256)
+                (equal nsave n))
+           (wp-1 n nsave))
+  ((disable-theory if-normalization)
+   (hands-off difference)
+   (disable quotient-add1-arg2
+            remainder-add1-arg2
+            quotient-plus-arg1
+            remainder-plus-arg1
+            remainder-plus-arg1-simple
+            equal-add1
+            times-add1
+            sub1-plus
+            plus-add1
+            remainder-add1-arg1
+            sub1-times
+            )))

@@ -17,7 +17,7 @@
 
 <p>The constants @('*one-byte-opcode-map-lst*') and
 @('*two-byte-opcode-map-lst*') contain information presented in the
-opcode maps, as described in Intel Manual, Volume 2, Appendix A-2.</p>
+opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
 
 <p>An array @('*64-bit-mode-one-byte-has-modr/m-ar*') is created by
   the function @(tsee 64-bit-compute-modr/m-map) for the efficient
@@ -190,9 +190,9 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A-2.</p>
    ))
 
 
-;; See Intel Vol. 2, Appendix A.2.2
-
 #||
+
+See Intel Vol. 2, Appendix A.2.2
 
 A.2.2 Codes for Operand Type
 

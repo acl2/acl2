@@ -77,7 +77,7 @@
 (load-system-from-acl2-quicklisp-bundle "bordeaux-threads")
 (load-system-from-acl2-quicklisp-bundle "bt-semaphore")
 (load-system-from-acl2-quicklisp-bundle "cl-fad")
-(load-system-from-acl2-quicklisp-bundle "external-program")
+;; (load-system-from-acl2-quicklisp-bundle "external-program") ; removed Nov 2017
 
 ; [Jared] it looks like there's a difference between how allegro prints numbers
 ; which causes some of the tests here to fail.  I'll need to update fastnumio

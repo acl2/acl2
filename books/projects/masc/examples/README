@@ -6,7 +6,7 @@ This subdirectory contains two examples of MASC programs:
 
     www.russinoff.com/papers/masc.html
 
-As described in ../README, compile and run hello.cpp, and parse it with the options 
+As described in ../README, compile and run hello.cpp, and parse it with the options
 -m, -c, and -a.
 
 
@@ -35,5 +35,5 @@ Certify the correctness proof:
 
 
 
- 
+
 1

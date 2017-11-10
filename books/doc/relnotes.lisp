@@ -141,9 +141,9 @@
 
  <h4>try-gl-concls</h4>
 
- <p>See @('centaur/misc/try-gl-concls') for a small but convenient utility to
- find all the true conclusions (if any) from a user-provided list of possible
- conclusions using @(see GL::GL).</p>
+ <p>See @(see try-gl-concls) for a small but convenient utility to
+ find all the true conclusions (if any) from a user-provided list of
+ possible conclusions using @(see GL::GL).</p>
 
  <h4>GLMC</h4>
 
@@ -203,6 +203,10 @@
  compound-recognizer) rule @('sets-are-true-lists-compound-recognizer'), and a
  rewrite rule @('sets-are-true-lists-cheap') whose @(see backchain-limit) is
  1.</p>
+
+ <p>A new utility @('def-updater-independence-thm') for proving stobj (and
+ stobj-style) accessors independent of updaters has been added to
+ @('std/stobjs/updater-independence.lisp').</p>
 
  <h4>Kestrel Utilities</h4>
 
@@ -273,7 +277,7 @@
  <p>The <see topic='@(url world-queries)'>world query</see>, <see topic='@(url
  term-utilities)'>term</see>, <see topic='@(url
  string-utilities)'>string</see>, and <see topic='@(url
- character-utilities)'>character</see> utilities have undergone a few
+ character-utilities)'>character</see> utilities have undergone several
  improvements and extensions.</p>
 
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
@@ -341,18 +345,38 @@
  <p>The <see topic='@(url soft::soft)'>SOFT (Second-Order Functions and
  Theorems) library</see> has been improved in several ways. The @(':thm-name')
  option is now fully supported for second-order quantifier functions and their
- instances.  The treatment of user inputs is more robust. The implementation is
- more streamlined. A more comprehensive test suite now exists.</p>
+ instances.  The treatment of user inputs is more robust. The user interface is
+ more terse. The implementation is more streamlined. A more comprehensive test
+ suite now exists.</p>
 
  <h4>X86ISA</h4>
 
- <p>The <see topic='@(url x86isa)'>X86ISA</see> has been slightly extended with
+ <ul>
+
+ <li>The <see topic='@(url x86isa)'>X86ISA</see> has been slightly extended with
  infrastructure to support 32-bit mode of operation; in particular, the
  @('64-bit-modep') predicate is no longer always true. Some documentation
  topics and some comments have been expanded and clarified. Some exceptions are
  now being added to the fault field of the x86 state rather than the
- model-specific field. A more complete model of segment address translation has
- been added.</p>
+ model-specific field. A complete model of segment address translation has been
+ added.</li>
+
+ <li>Codewalker can now be used to reason about 64-bit user-level x86
+ programs --- see
+ @('books/projects/x86isa/proofs/codewalker-examples') for demos.</li>
+
+ <li>Memory functions do not traffic in lists anymore.  Instead of a
+ list of canonical addresses, a contiguous linear memory region is now
+ specified by: @('<n, lin-addr>'), where @('n') is the number of bytes
+ to be read or written and @('lin-addr') is the first address of the
+ memory region.</li>
+
+ <li>In the programmer-level mode, disjointness of memory regions can
+ be conveniently expressed using a function called @('separate').  All
+ the proofs in the programmer-level mode have been updated to use this
+ paradigm.</li>
+
+ </ul>
 
  <h4>AVR ISA</h4>
  <p>Julien Schmaltz and Peter Schwabes' AVR ISA model has been contributed in book
@@ -395,6 +419,10 @@
  <h3>Build System Updates</h3>
 
  <p>Improved books cleaning slightly, in @('books/GNUmakefile').</p>
+
+ <p>By default, the @(''make'') targets for certifying books now include the
+ books that depend on quicklisp, except when the host Lisp is GCL.  Specify
+ @('USE_QUICKLISP=0') if that is not what you want.</p>
 
  <p>Also see @(see note-7-5), specifically the section on ``Changes at the
  System Level''.</p>

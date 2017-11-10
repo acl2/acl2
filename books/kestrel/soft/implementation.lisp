@@ -24,6 +24,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define inputs-have-verbose-t-p ((inputs true-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of inputs (to a SOFT macro) includes @(':verbose t')."
+  :long
+  "<p>
+   The list is examined from right to left,
+   two elements at a time,
+   so long as the first of the two elements if a keyword.
+   If @(':verbose t') is found, @('t') is returned.
+   If @(':verbose x') is found and @('x') is not @('t'), @('nil') is returned.
+   If there are no more keyword-value pairs, @('nil') is returned.
+   </p>"
+  (inputs-have-verbose-t-p-aux (rev inputs))
+
+  :prepwork
+  ((define inputs-have-verbose-t-p-aux ((rev-inputs true-listp))
+     :returns (yes/no booleanp)
+     (if (or (endp rev-inputs)
+             (endp (cdr rev-inputs)))
+         nil
+       (b* ((value? (car rev-inputs))
+            (keyword? (cadr rev-inputs)))
+         (if (keywordp keyword?)
+             (if (eq keyword? :verbose)
+                 (eq value? t)
+               (inputs-have-verbose-t-p-aux (cddr rev-inputs)))
+           nil))))))
+
 (define *-listp (stars)
   :returns (yes/no booleanp)
   :short "Recognize @('nil')-terminated lists of @('*')s."
@@ -72,11 +100,7 @@
     (and (symbolp funvar)
          (not (null (assoc-eq funvar table))))))
 
-(define defunvar-fn ((funvar "Input to @(tsee defunvar).")
-                     (arguments "Input to @(tsee defunvar).")
-                     (arrow "Input to @(tsee defunvar).")
-                     (result "Input to @(tsee defunvar).")
-                     (verbose "Input to @(tsee defunvar).")
+(define defunvar-fn ((inputs true-listp)
                      (call pseudo-event-formp "Call to @(tsee defunvar).")
                      (ctx "Context for errors.")
                      state)
@@ -94,18 +118,47 @@
    any @('*') and @('=>') symbol (i.e. in any package) is allowed.
    </p>"
   (b* ((wrld (w state))
+       ((unless (>= (len inputs) 4))
+        (er-soft+ ctx t nil
+                  "At least four inputs must be supplied, not ~n0."
+                  (len inputs)))
+       (funvar (first inputs))
+       (arguments (second inputs))
+       (arrow (third inputs))
+       (result (fourth inputs))
+       (options (nthcdr 4 inputs))
        ((unless (symbolp funvar))
-        (er-soft+ ctx t nil "~x0 must be a name." funvar))
+        (er-soft+ ctx t nil
+                  "The first input must be a symbol, but ~x0 is not."
+                  funvar))
        ((unless (*-listp arguments))
-        (er-soft+ ctx t nil "~x0 must be a list (* ... *)." arguments))
+        (er-soft+ ctx t nil
+                  "The second input must be a list (* ... *), but ~x0 is not."
+                  arguments))
        ((unless (and (symbolp arrow)
                      (equal (symbol-name arrow) "=>")))
-        (er-soft+ ctx t nil "~x0 must be =>." arrow))
+        (er-soft+ ctx t nil
+                  "The third input must be =>, but ~x0 is not."
+                  arrow))
        ((unless (and (symbolp result)
                      (equal (symbol-name result) "*")))
-        (er-soft+ ctx t nil "~x0 must be *." result))
+        (er-soft+ ctx t nil
+                  "The fourth input must be *, but ~x0 is not."
+                  result))
+       ((unless (or (null options)
+                    (and (= (len options) 2)
+                         (eq (car options) :verbose))))
+        (er-soft+ ctx t nil
+                  "After the * input there may be at most one :VERBOSE option, ~
+                   but instead ~x0 was supplied."
+                  options))
+       (verbose (if options
+                    (cadr options)
+                  nil))
        ((unless (booleanp verbose))
-        (er-soft+ ctx t nil "~x0 must be T or NIL." verbose))
+        (er-soft+ ctx t nil
+                  "The :VERBOSE input must be T or NIL, but ~x0 is not."
+                  verbose))
        ((when (funvarp funvar wrld))
         (b* ((arity (arity funvar wrld)))
           (if (= arity (len arguments))
@@ -125,23 +178,18 @@
   "@(def defunvar)
    @(def acl2::defunvar)"
 
-  (defmacro defunvar (&whole call
-                             funvar arguments arrow result &key verbose)
+  (defmacro defunvar (&whole call &rest inputs)
     (control-screen-output
-     verbose
+     (inputs-have-verbose-t-p inputs)
      `(make-event (defunvar-fn
-                    ',funvar
-                    ',arguments
-                    ',arrow
-                    ',result
-                    ',verbose
+                    ',inputs
                     ',call
-                    (cons 'defunvar ',funvar)
+                    (cons 'defunvar ',(if (consp inputs) (car inputs) nil))
                     state)
                   :on-behalf-of :quiet)))
 
-  (defmacro acl2::defunvar (&rest args)
-    `(defunvar ,@args)))
+  (defmacro acl2::defunvar (&rest inputs)
+    `(defunvar ,@inputs)))
 
 (defsection show-defunvar
   :short "Show the event form generated by @(tsee defunvar),

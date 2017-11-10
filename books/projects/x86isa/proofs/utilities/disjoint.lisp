@@ -7,6 +7,8 @@
 (include-book "std/lists/flatten" :dir :system)
 (include-book "clause-processors/find-matching" :dir :system)
 
+(local (xdoc::set-default-parents general-memory-utils))
+
 ;; ===================================================================
 
 (define separate ((r-w-x-1 :type (member :r :w :x))

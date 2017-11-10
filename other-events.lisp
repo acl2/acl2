@@ -27953,14 +27953,23 @@
 
 #-acl2-loop-only
 (defun hard-error-is-error (ctx str alist)
-  (error "~a" (channel-to-string
-               (error-fms-channel t ctx str alist chan
+  (state-free-global-let*
+   (#+acl2-par (parallel-execution-enabled
+
+; We avoid an infinite loop here that is caused when calling channel-to-string
+; with non-nil parallel-execution-enabled in ACL2(p).  The problem was that
+; channel-to-string calls with-local-state, which is illegal when
+; parallel-execution is enabled.
+
+                nil))
+   (error "~a" (channel-to-string
+                (error-fms-channel t ctx str alist chan
 
 ; Leave the following as state, not *the-live-state*, to avoid compiler
 ; warning.
 
-                                  state)
-               chan nil nil t)))
+                                   state)
+                chan nil nil t))))
 
 ; Essay on Memoization with Attachments (relevant for #+hons version only)
 

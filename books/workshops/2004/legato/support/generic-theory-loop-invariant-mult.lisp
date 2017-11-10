@@ -38,12 +38,12 @@
   (if (equal (dec x) 0)
       (equal
        (+ (* (+ (* 128 c) (floor a 2)) 256)
-	  (+ (* 128 (mod a 2))
-	     (floor low 2)))
+          (+ (* 128 (mod a 2))
+             (floor low 2)))
        (* f1save f2))
     (wp-zcoef
      (+ (* 128 (mod low 2))
-	(floor f1 2))
+        (floor f1 2))
      (dec x)
      (*
       (mod f1 2)
@@ -51,13 +51,13 @@
        (+ (+ (* 128 c) (floor a 2)) f2)
        256))
      (+ (* 128 (mod a 2))
-	(floor low 2))
+        (floor low 2))
      (if (equal (mod f1 2) 0)
-	 (+ (* 128 c) (floor a 2))
+         (+ (* 128 c) (floor a 2))
        (mod
-	(+ (+ (* 128 c) (floor a 2))
-	   f2)
-	256))
+        (+ (+ (* 128 c) (floor a 2))
+           f2)
+        256))
      f1save
      f2)))
 
@@ -80,12 +80,12 @@
   (if (equal (dec x) 0)
       (equal
        (+ (* (+ (* (expt 2 (1- i)) c) (floor a 2)) (expt 2 i))
-	  (+ (* (expt 2 (1- i)) (mod a 2))
-	     (floor low 2)))
+          (+ (* (expt 2 (1- i)) (mod a 2))
+             (floor low 2)))
        result)
     (wp-zcoef-g
      (+ (* (expt 2 (1- i)) (mod low 2))
-	(floor f1 2))
+        (floor f1 2))
      (dec x)
      (*
       (mod f1 2)
@@ -93,13 +93,13 @@
        (+ (+ (* (expt 2 (1- i)) c) (floor a 2)) f2)
        (expt 2 i)))
      (+ (* (expt 2 (1- i)) (mod a 2))
-	(floor low 2))
+        (floor low 2))
      (if (equal (mod f1 2) 0)
-	 (+ (* (expt 2 (1- i)) c) (floor a 2))
+         (+ (* (expt 2 (1- i)) c) (floor a 2))
        (mod
-	(+ (+ (* (expt 2 (1- i)) c) (floor a 2))
-	   f2)
-	(expt 2 i)))
+        (+ (+ (* (expt 2 (1- i)) c) (floor a 2))
+           f2)
+        (expt 2 i)))
      result
      f2
      i)))
@@ -108,7 +108,7 @@
 
 (defthm wp-zcoef-g-instance
   (equal (wp-zcoef f1 x c low a f1save f2)
-	 (wp-zcoef-g f1 x c low a (* f1save f2) f2 8)))
+         (wp-zcoef-g f1 x c low a (* f1save f2) f2 8)))
 
 (set-irrelevant-formals-ok t)
 
@@ -120,7 +120,7 @@
       0
     (ind-2
      (+ (* (expt 2 (1- i)) (mod low 2))
-           (floor f1 2))
+        (floor f1 2))
      (dec x)
      (*
       (mod f1 2)
@@ -128,15 +128,15 @@
        (+ (+ (* (expt 2 (1- i)) c) (floor a 2)) f2)
        (expt 2 i)))
      (+ (* (expt 2 (1- i)) (mod a 2))
-           (floor low 2))
+        (floor low 2))
      (if (equal (mod f1 2) 0)
          (+ (* (expt 2 (1- i)) c) (floor a 2))
        (mod
         (+ (+ (* (expt 2 (1- i)) c) (floor a 2))
-              f2)
+           f2)
         (expt 2 i)))
      (+ (* (expt 2 (1- i)) (mod lowp 2))
-           (floor f1p 2))
+        (floor f1p 2))
      (dec xp)
      (*
       (mod f1p 2)
@@ -144,12 +144,12 @@
        (+ (+ (* (expt 2 (1- i)) cp) (floor ap 2)) f2)
        (expt 2 i)))
      (+ (* (expt 2 (1- i)) (mod ap 2))
-           (floor lowp 2))
+        (floor lowp 2))
      (if (equal (mod f1p 2) 0)
          (+ (* (expt 2 (1- i)) cp) (floor ap 2))
        (mod
         (+ (+ (* (expt 2 (1- i)) cp) (floor ap 2))
-              f2)
+           f2)
         (expt 2 i)))
      f2
      i)))
@@ -158,57 +158,57 @@
 
 (defthm equal-odd-even
   (implies (and (equal (mod a 2) (mod b 2))
-		(integerp a)
-		(integerp b))
-	   (not (equal (+ 1 a) b))))
+                (integerp a)
+                (integerp b))
+           (not (equal (+ 1 a) b))))
 
 ;;; This lemma is needed for equal-wp-zcoef-g.
 
 (defthm mod-+-1
-  (implies (and	(equal (mod a 2) 0)
-		(natp i)
-		(integerp a))
-	   (equal (mod (+ 1 a) (expt 2 i))
-		  (if (equal i 0)
-		      0
-		    (+ 1 (mod a (expt 2 i))))))
+  (implies (and   (equal (mod a 2) 0)
+                  (natp i)
+                  (integerp a))
+           (equal (mod (+ 1 a) (expt 2 i))
+                  (if (equal i 0)
+                      0
+                    (+ 1 (mod a (expt 2 i))))))
   :hints (("Goal"
-	   :in-theory (disable simplify-mod-+-mod-weak))))
+           :in-theory (disable simplify-mod-+-mod-weak))))
 
 (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
-                                             hist pspv)))
+                                              hist pspv)))
 
 ;;; This lemma reduces an equality proof between two different
 ;;; applications of wp-zcoef-g to equality proof on its arguments.
 
 (defthm equal-wp-zcoef-g
   (implies (and (equal (mod f1 (expt 2 (1- x)))
-		       (mod f1p (expt 2 (1- x))))
-		(equal x xp)
-		(equal (+ (* c (expt 2 i)) a)
-		       (+ (* cp (expt 2 i)) ap))
-		(equal low lowp)
-		(<= x i)
-		(not (zp x))
-		(natp f1)
-		(natp x)
-		(natp c)
-		(natp low)
-		(natp a)
-		(natp f2)
-		(natp i)
-		(natp f1p)
-		(natp xp)
-		(natp cp)
-		(natp lowp)
-		(natp ap))
-	   (equal (equal (wp-zcoef-g f1 x c low a result f2 i)
-			 (wp-zcoef-g f1p xp cp lowp ap result f2 i))
-		  t))
+                       (mod f1p (expt 2 (1- x))))
+                (equal x xp)
+                (equal (+ (* c (expt 2 i)) a)
+                       (+ (* cp (expt 2 i)) ap))
+                (equal low lowp)
+                (<= x i)
+                (not (zp x))
+                (natp f1)
+                (natp x)
+                (natp c)
+                (natp low)
+                (natp a)
+                (natp f2)
+                (natp i)
+                (natp f1p)
+                (natp xp)
+                (natp cp)
+                (natp lowp)
+                (natp ap))
+           (equal (equal (wp-zcoef-g f1 x c low a result f2 i)
+                         (wp-zcoef-g f1p xp cp lowp ap result f2 i))
+                  t))
   :hints (("Goal"
-	   :nonlinearp t
-	   :induct (ind-2 f1 x c low a f1p xp cp lowp ap f2 i)
-	   :in-theory (disable (:rewrite mod-zero . 1)))
+           :nonlinearp t
+           :induct (ind-2 f1 x c low a f1p xp cp lowp ap f2 i)
+           :in-theory (disable (:rewrite mod-zero . 1)))
           ("Subgoal *1/2.10.1'"
 
 ; Matt K. mod for April 2016 mod after adding type-set bit for {1}: I really
@@ -237,23 +237,23 @@
        (natp low)
        (natp a)
        (equal (+ (floor low (expt 2 x))
-		 (* a (expt 2 (- i x)))
-		 (* c (expt 2 i) (expt 2 (- i x)))
-		 (* f2
-		    (mod f1 (expt 2 (1- x)))
-		    (floor (expt 2 i) (expt 2 (1- x)))))
-	      result)))
+                 (* a (expt 2 (- i x)))
+                 (* c (expt 2 i) (expt 2 (- i x)))
+                 (* f2
+                    (mod f1 (expt 2 (1- x)))
+                    (floor (expt 2 i) (expt 2 (1- x)))))
+              result)))
 
 (defthm expand-nth
   (implies (not (zp i))
-	   (equal (nth i s)
-		  (nth (1- i) (cdr s)))))
+           (equal (nth i s)
+                  (nth (1- i) (cdr s)))))
 
 (defthm equal-cancel
   (implies (and (acl2-numberp b)
-		(acl2-numberp c))
-	   (equal (equal (+ a b) (+ a c))
-		  (equal b c))))
+                (acl2-numberp c))
+           (equal (equal (+ a b) (+ a c))
+                  (equal b c))))
 
 (set-default-hints nil)
 
@@ -261,23 +261,21 @@
 
 (defthm wp-zcoef-loop-invariant
   (implies (wp-zcoef-g-invariant f1 x c low a result f2 i)
-	   (wp-zcoef-g f1 x c low a result f2 i))
- :hints
- (("Goal" :induct t)
-  (loop-invariant-hint
-   'wp-zcoef-g
-   '(wp-zcoef-g-invariant f1 x c low a result f2 i))))
+           (wp-zcoef-g f1 x c low a result f2 i))
+  :hints
+  (("Goal" :induct t)
+   (loop-invariant-hint
+    'wp-zcoef-g
+    '(wp-zcoef-g-invariant f1 x c low a result f2 i))))
 
 ;;; Program correctness result
 
 (defthm wp-zcoef-is-correct
- (implies (and (natp f2)
-               (< f2 256)
-               (natp f1)
-               (< f1 256)
-               (natp low)
-               (< low 256)
-	       (natp c))
-          (wp-zcoef-1 f1 c low f2)))
-
-
+  (implies (and (natp f2)
+                (< f2 256)
+                (natp f1)
+                (< f1 256)
+                (natp low)
+                (< low 256)
+                (natp c))
+           (wp-zcoef-1 f1 c low f2)))

@@ -790,6 +790,12 @@
 (defun initial-rcnst-from-ens (ens wrld state splitter-output)
   (make-rcnst ens wrld state
               :splitter-output splitter-output
+
+; We need the :force-info to be non-nil for the call of
+; resume-suspended-assumption-rewriting in pc-single-step-primitive.  We set it
+; to t so that forcing is unrestricted.  Proof-builder calls to the prover
+; won't be hurt by this, because simplify-clause sets :force-info itself.
+
               :force-info t))
 
 (defun make-new-goals-fixed-hyps (termlist hyps goal-name start-index)

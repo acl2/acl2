@@ -498,7 +498,7 @@ current top-level form.  See the documentation for enter-theorem."
 (define-key comint-mode-map "\C-d" nil)
 
 ; The following only seems necessary in gnu.
-(define-key comint-mode-map "Œ" 'c-m-l)
+(define-key comint-mode-map "\C-\M-l" 'c-m-l)
 
 ; Allow use of meta-p and meta-n for command completion.  Multiple
 ; meta-p/meta-n commands cycle backward/forward through previous matching
@@ -682,7 +682,7 @@ one such error; if you suspect more errors, run it again."
 
 (define-key (current-global-map) "\C-\M-q" 'indent-sexp)
 
-(define-key ctl-t-keymap "" 'up-list)
+(define-key ctl-t-keymap "\C-p" 'up-list)
 
 ; For the following, set compare-windows-whitespace to something other than "[
 ; \t\n]+"

@@ -67,13 +67,15 @@
 (defconst *deffixequiv-keywords*
   '(:args :omit :hints :verbosep))
 
-(defun fixequiv-type-from-guard (guard)
+(defun fixequiv-type-from-guard (guard wrld)
   (and (std::tuplep 2 guard)
-       (car guard)))
+       (let ((type1 (car guard)))
+         (or (cdr (assoc type1 (table-alist 'fixequiv-guard-type-overrides wrld)))
+             type1))))
 
 (defun fixequiv-from-define-formal (fn formal hints state)
   (b* (((std::formal fm) formal)
-       (type (fixequiv-type-from-guard fm.guard))
+       (type (fixequiv-type-from-guard fm.guard (w state)))
        (stobjname (and (fgetprop fm.name 'acl2::stobj nil (w state))
                        (acl2::congruent-stobj-rep fm.name (w state))))
        (type (or type stobjname))
@@ -110,7 +112,7 @@
                          (raise "Can't derive argument types from ~x0 because it ~
                         wasn't created with DEFINE." fn)))
                       ((std::formal fm) formal)
-                      (type (or (fixequiv-type-from-guard fm.guard)
+                      (type (or (fixequiv-type-from-guard fm.guard (w state))
                                 (and (fgetprop fm.name 'acl2::stobj nil (w state))
                                      (acl2::congruent-stobj-rep fm.name (w state)))))
                       ((unless type)
@@ -122,6 +124,9 @@
        (opts (append `(:hints ,(append arg-hints hints)) opts-without-hints)))
     (deffixequiv-basic-parse (cons fn formals)
       var type opts state)))
+
+(defmacro set-fixequiv-guard-override (guard-fn type)
+  `(table fixequiv-guard-type-overrides ',guard-fn ',type))
 
 (defun fixequivs-from-explicit-args (fn args gutsformals formals hints state)
   (if (atom args)

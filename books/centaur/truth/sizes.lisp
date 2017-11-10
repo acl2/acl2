@@ -37,6 +37,7 @@
 (local (include-book "centaur/bitops/ash-bounds" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
+(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (in-theory (disable unsigned-byte-p signed-byte-p)))
 
 (define var-alist ((n natp) (numvars natp))
@@ -132,6 +133,45 @@
       (swap-vars-case 1 0 numvars)
     `(case n
        . ,(swap-vars-outer-loop numvars numvars))))
+
+
+(defun swap-polarity-case (m numvars)
+  `(logior (the (unsigned-byte ,(ash 1 numvars))
+                (ash (the (unsigned-byte ,(ash 1 numvars))
+                          (logand ,(var m numvars)
+                                  (the (unsigned-byte ,(ash 1 numvars)) truth)))
+                     ,(- (ash 1 m))))
+           (the (unsigned-byte ,(ash 1 numvars))
+                (ash (the (unsigned-byte ,(- (ash 1 numvars) (ash 1 m)))
+                          (logand ,(lognot (var m numvars))
+                                  (the (unsigned-byte ,(ash 1 numvars)) truth)))
+                     ,(ash 1 m)))))
+
+(defun swap-polarity-cases-fn (m numvars)
+  (if (zp m)
+      nil
+    (cons (list (if (eql m 1) 'otherwise (1- m))
+                (swap-polarity-case (1- m) numvars))
+          (swap-polarity-cases-fn (1- m) numvars))))
+
+(defmacro swap-polarity-cases (numvars)
+  `(case m
+     . ,(swap-polarity-cases-fn numvars numvars)))
+
+(defun permute-polarity-bindings-fn (m numvars)
+  (declare (xargs :measure (nfix (- (nfix numvars) (nfix m)))
+                  :mode :program))
+  (if (zp (- (nfix numvars) (nfix m)))
+      nil
+    (cons `(truth (if (logbitp ,m mask)
+                      (mbe :logic (swap-polarity ,m truth ,numvars)
+                           :exec ,(swap-polarity-case m numvars))
+                    truth))
+          (permute-polarity-bindings-fn (1+ (nfix m)) numvars))))
+
+(defmacro permute-polarity-bindings (numvars)
+  `(b* ,(permute-polarity-bindings-fn 0 numvars)
+     truth))
 
 
 
@@ -249,6 +289,95 @@
                            acl2::posp-redefinition
                            acl2::ifix-when-not-integerp)))
 
+(local (defthm truth-norm-when-unsigned-byte-p
+         (implies (unsigned-byte-p (ash 1 (nfix numvars)) truth)
+                  (equal (truth-norm truth numvars)
+                         truth))
+         :hints(("Goal" :in-theory (enable truth-norm)))))
+
+
+(local (defthmd normalize-logand-neg-with-ash-of-unsigned-byte-lemma
+         (implies (and ;; (syntaxp (and (quotep n) (quotep k)
+                       ;;               (negp (unquote n))))
+                       ;;(unsigned-byte-p m x)
+                       ;; (syntaxp (quotep m))
+                       (natp k))
+                  (equal (logand n (ash (loghead m x) k))
+                         (logand (loghead (+ (nfix m) k) n) (ash (loghead m x) k))))
+         :hints ((acl2::logbitp-reasoning))))
+
+(local (defthm normalize-logand-neg-with-ash-of-unsigned-byte
+         (implies (and (syntaxp (and (quotep n) (quotep k)
+                                     (negp (unquote n))))
+                       (unsigned-byte-p m x)
+                       (syntaxp (quotep m))
+                       (natp k))
+                  (equal (logand n (ash x k))
+                         (logand (loghead (+ m k) n) (ash x k))))
+         :hints (("goal" :use ((:instance normalize-logand-neg-with-ash-of-unsigned-byte-lemma)))
+                 (and stable-under-simplificationp
+                      '(:in-theory (enable unsigned-byte-p))))))
+
+
+(local (defthmd ash-of-logtail-when-loghead-0
+         (implies (and (equal (loghead m n) 0)
+                       (natp m))
+                  (equal (ash (logtail m n) m)
+                         (ifix n)))
+         :hints ((acl2::logbitp-reasoning))))
+
+(local (defthm normalize-logand-of-ash-to-ash-of-loghead
+         (implies (and (syntaxp (and (quotep n)
+                                     (quotep m)))
+                       (natp m)
+                       (equal (loghead m n) 0)
+                       (logmaskp (ash n (- m))))
+                  (equal (logand n (ash x m))
+                         (ash (logand (ash n (- m)) x) m)))
+         :hints(("Goal" :in-theory (enable ash-of-logtail-when-loghead-0)))))
+
+(local (defthmd normalize-logand-const-with-loghead-lemma
+         (equal (logand (loghead m n) (loghead m x))
+                (logand (loghead m n) x))
+         :hints ((acl2::logbitp-reasoning))))
+
+(local (defthm normalize-logand-const-with-loghead
+         (implies (and (syntaxp (and (quotep n) (quotep m)))
+                       (unsigned-byte-p m n))
+                  (equal (logand n (loghead m x))
+                         (logand n x)))
+         :hints (("goal" :use normalize-logand-const-with-loghead-lemma))))
+
+(local (defun normalize-unsigned-byte-p-neg-const-ind (n m x)
+         (if (zp n)
+             (list m x)
+           (normalize-unsigned-byte-p-neg-const-ind (1- n) (logcdr m) (logcdr x)))))
+
+(local (defthmd normalize-unsigned-byte-p-neg-const-lemma
+         (implies (and (unsigned-byte-p (integer-length m) x)
+                       (equal 0 (loghead (integer-length m) m)))
+                  (equal (logand m x) 0))
+         :hints (("goal" :induct (logand m x)
+                  :in-theory (enable* ihsext-recursive-redefs
+                                      ihsext-inductions)
+                  :expand ((integer-length m))))))
+
+(local (defthm normalize-unsigned-byte-p-neg-const
+         (implies (and (syntaxp (and (quotep n) (quotep m)))
+                       (negp m)
+                       (unsigned-byte-p (integer-length m) x)
+                       (unsigned-byte-p n (loghead (integer-length m) m)))
+                  (unsigned-byte-p n (logand m x)))
+         :hints (("goal" :induct (normalize-unsigned-byte-p-neg-const-ind n m x)
+                  :in-theory (enable* ihsext-recursive-redefs
+                                      normalize-unsigned-byte-p-neg-const-lemma)
+                  :expand ((integer-length m)
+                           (:free (n) (unsigned-byte-p (+ 1 n) x)))))))
+         
+
+
+(local (in-theory (disable (tau-system))))
+
 (progn
   (defconst *truth-defs*
     '(defsection truth<NUMVARS>
@@ -294,6 +423,33 @@
               :exec (logand <MASK> truth)))
 
 
+       
+       (define swap-polarity<NUMVARS> ((m :type (integer 0 <NUMVARS-1>))
+                                       (truth :type (unsigned-byte <WIDTH>)))
+         :guard (and (natp m) (< m <NUMVARS>)
+                     (unsigned-byte-p <WIDTH> truth))
+         :guard-hints (("Goal" :in-theory (enable swap-polarity)))
+         :split-types t
+         :enabled t
+         (:@ :fixnum :inline t) ;; marginal speed improvement
+         (mbe :logic (swap-polarity m truth <NUMVARS>)
+              :exec (swap-polarity-cases <NUMVARS>)))
+
+       (define permute-polarity<NUMVARS> ((mask :type (unsigned-byte <NUMVARS>))
+                                          (truth :type (unsigned-byte <WIDTH>)))
+         :guard (and (unsigned-byte-p <NUMVARS> mask)
+                     (unsigned-byte-p <WIDTH> truth))
+         :guard-hints (("Goal" ;; :in-theory (enable swap-polarity)
+                        :expand ((:free (a b c) (permute-polarity a b c <NUMVARS>))))
+                       (and stable-under-simplificationp
+                            (let ((lit (car (last clause))))
+                              (case-match lit
+                                (('equal ('swap-polarity n truth numvars) &)
+                                 `(:expand ((swap-polarity ,n ,truth ,numvars))))))))
+         :guard-debug t
+         :enabled t
+         (mbe :logic (permute-polarity 0 mask truth <NUMVARS>)
+              :exec (permute-polarity-bindings <NUMVARS>)))
 
 
        (define positive-cofactor<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
@@ -387,20 +543,40 @@
                                    (m :type (integer 0 <NUMVARS-1>))
                                    (truth :type (unsigned-byte <WIDTH>)))
          :guard (and (natp n) (< n <NUMVARS>)
-                     (natp m) (< m n)
+                     (natp m) (< m <NUMVARS>)
                      (unsigned-byte-p <WIDTH> truth))
-         :guard-hints (("Goal" :in-theory (enable swap-vars)))
+         :guard-hints (("Goal" :in-theory (enable swap-vars swap-vars-aux)))
          :split-types t
          :enabled t
          (mbe :logic (swap-vars n m truth <NUMVARS>)
-              :exec (swap-vars-cases <NUMVARS>)))
+              :exec (if (eql n m)
+                        truth
+                      (mv-let (n m)
+                        (if (< m n)
+                            (mv n m)
+                          (mv m n))
+                        (swap-vars-cases <NUMVARS>)))))
+
+       (define swap-vars-ordered<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
+                                           (m :type (integer 0 <NUMVARS-1>))
+                                           (truth :type (unsigned-byte <WIDTH>)))
+         :guard (and (natp n) (< n <NUMVARS>)
+                     (natp m) (<= m n)
+                     (unsigned-byte-p <WIDTH> truth))
+         :guard-hints (("Goal" :in-theory (enable swap-vars swap-vars-aux)))
+         :split-types t
+         :enabled t
+         (mbe :logic (swap-vars n m truth <NUMVARS>)
+              :exec (if (eql n m)
+                        truth
+                      (swap-vars-cases <NUMVARS>))))
 
        ;; very marginally faster for the adjacent variables case
        (define swap-adjacent-vars<NUMVARS> ((m :type (integer 0 <NUMVARS-1>))
                                    (truth :type (unsigned-byte <WIDTH>)))
          :guard (and (natp m) (< m <NUMVARS-1>)
                      (unsigned-byte-p <WIDTH> truth))
-         :guard-hints (("Goal" :in-theory (enable swap-vars)))
+         :guard-hints (("Goal" :in-theory (enable swap-vars swap-vars-aux)))
          :split-types t
          :enabled t
          (:@ :fixnum :inline t) ;; marginal speed improvement
@@ -490,6 +666,7 @@
                                     (permute-var-down<NUMVARS> count n truth)
                                   truth)))
                       (permute-shrink<NUMVARS> (1+ n) (+ bit count) mask truth))))
+       
 
 
 
@@ -591,6 +768,14 @@
        (let ((truth (logand #xffff i)))
          (loop for n from 1 to 3 do
                (loop for m from 0 to (1- n) do
+                     (swap-vars-ordered4 n m truth))))))
+
+;; 0.40 sec:
+(time
+ (loop for i from 1 to 10000000 do
+       (let ((truth (logand #xffff i)))
+         (loop for n from 1 to 3 do
+               (loop for m from 0 to (1- n) do
                      (swap-vars4 n m truth))))))
 ;; 2.6 sec:
 (time
@@ -608,7 +793,7 @@
                (loop for m from 0 to (1- n) do
                      (swap-vars-old4 n m truth))))))
 
-;; 0.33 sec:
+;; 0.20 sec:
 (time
  (loop for i from 1 to 10000000 do
        (let ((truth (logand #xffff i)))
@@ -617,13 +802,21 @@
                      (swap-adjacent-vars4 m truth))))))
 
 
-;; 0.59 sec:
+;; 0.73 sec:
 (time
  (loop for i from 1 to 10000000 do
        (let ((truth (* i 429)))
          (loop for n from 1 to 4 do
                (loop for m from 0 to (1- n) do
                      (swap-vars5 n m truth))))))
+
+;; 0.58 sec:
+(time
+ (loop for i from 1 to 10000000 do
+       (let ((truth (* i 429)))
+         (loop for n from 1 to 4 do
+               (loop for m from 0 to (1- n) do
+                     (swap-vars-ordered5 n m truth))))))
 ;; 4.3 sec:
 (time
  (loop for i from 1 to 10000000 do

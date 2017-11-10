@@ -32,20 +32,20 @@ sequential CCDFG.
 * INSIGHT INTO ALGORITHM: THE BIGGER PICTURE
 *******************************************************************************************
 
-We do not discuss the complete algorithm in these scripts. 
+We do not discuss the complete algorithm in these scripts.
 However, here is a little insight into the algorithm:
 
 Input: Sequential CCDFG in the form of basic-block-list-p (list of basic blocks)
-1. Separate the first iteration by resolving the branch statements. 
+1. Separate the first iteration by resolving the branch statements.
 The CCDFG is now in the form = (list pre loop) where pre is the first
 iteration of sequential CCDFG. Since, we do not allow branching in between the scheduling steps,
-this step also resolves the branch statements. 
+this step also resolves the branch statements.
 2. Resolve the phi statement. Future CCDFG have no phi-statements after this step.
 3. Remove the necessary data hazards based on pipeline interval.
-4. "Superstep construction step" to create pipelining supersteps - the pipelined CCDFG of the form 
+4. "Superstep construction step" to create pipelining supersteps - the pipelined CCDFG of the form
 (list pre loop post)
 5. Convert into a single basic-block-list-p by adding the branch statements for transitions.
-Output: Pipelined CCDFG in the form of basic-block-list-p 
+Output: Pipelined CCDFG in the form of basic-block-list-p
 
 ******************************************************************************************
 * Current Status
@@ -59,12 +59,12 @@ invariant is true. Also, that invariant implies correctness
 statement is true.
 
 The proof is a sketch that can be submitted to ACL2 to prove
-our correctness criteria of loop pipelines. 
-Note that theorem related to no-conflict is "skip-proof"-ed.  
-It relates to proving that if there are no data hazards and 
-no branches in two adjacent blocks, then the order of execution 
-of the two blocks does not matter. 
-We have used this as an assumption currently as our focus was 
+our correctness criteria of loop pipelines.
+Note that theorem related to no-conflict is "skip-proof"-ed.
+It relates to proving that if there are no data hazards and
+no branches in two adjacent blocks, then the order of execution
+of the two blocks does not matter.
+We have used this as an assumption currently as our focus was
 on proving that if we can create a pipelined CCDFG when there
 are no data-hazards, then our algorithm follows the invariant.
 
@@ -73,11 +73,11 @@ The functions for superstep construction step are in
 pipeline prologue, full pipeline and epilogue.
 
 ****************************************************************************************
-  Loading "MakeFile.lisp" loads and certifies the entire code. 
+  Loading "MakeFile.lisp" loads and certifies the entire code.
 ****************************************************************************************
 
 "Makefile.lisp" loads a sequence of files each of which are explained below:
- 
+
 The first file "functions.lisp" contains the functions to
 define the syntax of a CCDFG. It also contains functions to
 combine the two iterations as required in parallel
@@ -101,7 +101,7 @@ SOME DETAILS ON HOW TO READ THE DEFINITIONS
 
 A Glimpse of the main functions:
 
-As part of testing, see the constant *seq-ccdfg* which is the sequential CCDFG 
+As part of testing, see the constant *seq-ccdfg* which is the sequential CCDFG
 of the form (list pre loop).
 
 We can check that it is a seq-ccdfg with no phi or branch statements

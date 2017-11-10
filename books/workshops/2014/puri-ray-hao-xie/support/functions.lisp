@@ -6,7 +6,7 @@
 functions.lisp
 ~~~~~~~~~~~~~~
 Author: Disha Puri
-Last Updated: 12th April 2014 
+Last Updated: 12th April 2014
 
 This file provides the syntax of a CCDFG.  The syntax is
 (now) based essentially on LLVM parse tree.  In particular, a
@@ -28,16 +28,16 @@ syntactically correct CCDFG is something that can be transformed
   `(skip-proofs (defthm ,@args)))
 
 (defun evaluate-val (val bindings)
-  (if (symbolp val) 
-      (cdr (assoc-equal val bindings)) 
+  (if (symbolp val)
+      (cdr (assoc-equal val bindings))
     val))
 
 (defun mem (e x)
   (if (consp x)
       (if (equal e (car x))
           t
-          (mem e (cdr x)))
-      nil))
+        (mem e (cdr x)))
+    nil))
 
 (defun not-in (a b)
   (if (endp a) t
@@ -60,23 +60,23 @@ syntactically correct CCDFG is something that can be transformed
 (defun replace-var (var val lst)
   (if (endp lst) (acons var val lst)
     (if (not var) lst
-      (if (equal var (caar lst)) 
-        (acons var val (cdr lst))
+      (if (equal var (caar lst))
+          (acons var val (cdr lst))
         (if (symbol-< (caar lst) var)
-          (cons (car lst)
-                (replace-var var val (cdr lst)))
+            (cons (car lst)
+                  (replace-var var val (cdr lst)))
           (acons var val lst))))))
 
-(defun substring (sub str start) 
-    (declare (xargs :measure (nfix (- (1+ (- (length str) (length sub))) start))))
-    (if (or (not (natp start))
-            (< (length str) (length sub))
-            (> start (- (length str) (length sub))))
-        nil
-      (if (equal (subseq str start (+ start (length sub)))
-                 sub)
-          start
-        (substring sub str (1+ start)))))
+(defun substring (sub str start)
+  (declare (xargs :measure (nfix (- (1+ (- (length str) (length sub))) start))))
+  (if (or (not (natp start))
+          (< (length str) (length sub))
+          (> start (- (length str) (length sub))))
+      nil
+    (if (equal (subseq str start (+ start (length sub)))
+               sub)
+        start
+      (substring sub str (1+ start)))))
 
 ;; to find if sub is a substring of str
 (defun is-substring (sub str)
@@ -131,7 +131,7 @@ syntactically correct CCDFG is something that can be transformed
        (symbolp (fourth x))
        (equal (fifth x) '[from)
        (symbolp (sixth x))))
-       
+
 (defun branch-statement-p (x)
   (and (equal (len x) 1)
        (or (unconditional-branch-statement-p (car x))
@@ -285,12 +285,12 @@ syntactically correct CCDFG is something that can be transformed
 
 ;; phi-statement
 (defun phi-statement-p (x)
-  (and (consp x) 
+  (and (consp x)
        (equal (len x) 2)
        (symbolp (first x))
        (first x)
        (phi-expression-p (cdr x))))
- 
+
 (defun phi-statements-aux-p (x)
   (if (endp x) t
     (and (consp x)
@@ -329,8 +329,8 @@ syntactically correct CCDFG is something that can be transformed
 (defun msteps-lists-list-p (x)
   (if (endp x)
       t
-      (and (msteps-list-p (first x))
-           (msteps-lists-list-p (rest x)))))
+    (and (msteps-list-p (first x))
+         (msteps-lists-list-p (rest x)))))
 
 ;; a basic block consists of a name and lists of (list of msteps)
 (defun basic-block-p (x)
@@ -352,9 +352,9 @@ syntactically correct CCDFG is something that can be transformed
 
 ;; when we only have the sequential CCDFG, prologue and epilogue are nil
 
-;; after unrolling the loop once and replacing the phi statement, we have prologue 
+;; after unrolling the loop once and replacing the phi statement, we have prologue
 ;; and loop, while epilogue is still nil
-;; it is only after superstep construction step, we get the pipelined CCDFG with 
+;; it is only after superstep construction step, we get the pipelined CCDFG with
 ;; three elements: prologue, loop and epilogue
 (defun seq-ccdfg-p (x)
   (and (ccdfg-p x)
@@ -404,7 +404,7 @@ syntactically correct CCDFG is something that can be transformed
   (if (endp x) t
     (and (branch-restriction-block (cadr (car x)))
          (branch-restriction-ccdfg (cdr x)))))
-     
+
 ;; a CCDFG with no branch-statements
 (defun branch-restriction (x)
   (and (branch-restriction-ccdfg (first x))
@@ -424,10 +424,10 @@ syntactically correct CCDFG is something that can be transformed
 
 (defun get-write-phi (stmts)
   (if (endp stmts) '()
-    (append (list (caar stmts)) 
+    (append (list (caar stmts))
             (get-write-phi (cdr stmts)))))
 
-;; state consists of 
+;; state consists of
 ;; bindings (list of tuples of variables with their values
 ;; mem (mem with values at particular addresses)
 ;; ptrs (lists of tuples of ptr name with its value
@@ -438,7 +438,7 @@ syntactically correct CCDFG is something that can be transformed
           ((return-statement-p stmt) '())
           ((store-statement-p stmt) '())
           ((assignment-statement-p stmt) (list (caar stmt)))
-          ((phi-statements-p stmt) (get-write-phi stmt)) 
+          ((phi-statements-p stmt) (get-write-phi stmt))
           (t nil))))
 
 (defun write-from-bindings (mstep)
@@ -484,9 +484,9 @@ syntactically correct CCDFG is something that can be transformed
           ((xor-expression-p expr) (list (eval-symbol (cadr expr))
                                          (eval-symbol (caddr expr))))
           ((lshr-expression-p expr) (list (eval-symbol (cadr expr))
-                                         (eval-symbol (caddr expr))))
-          ((shl-expression-p expr) (list (eval-symbol (cadr expr))
                                           (eval-symbol (caddr expr))))
+          ((shl-expression-p expr) (list (eval-symbol (cadr expr))
+                                         (eval-symbol (caddr expr))))
           ((eq-expression-p expr) (list (eval-symbol (cadr expr))
                                         (eval-symbol (caddr expr))))
           ((symbol-expression-p expr) (list (eval-symbol (car expr))))
@@ -496,14 +496,14 @@ syntactically correct CCDFG is something that can be transformed
 (defun read-list-stmt (stmt)
   (cond ((return-statement-p stmt)
          (list (nth 1 (car stmt))))
-        ((assignment-statement-p stmt) 
+        ((assignment-statement-p stmt)
          (find-read (nth 1 (car stmt))))
         ((store-statement-p stmt)
          (list (nth 1 (car stmt)) (nth 2 (car stmt))))
         ((conditional-branch-statement-p (car stmt))
          (list (nth 1 (car stmt))))
-        ((phi-statements-p stmt) 
-          (find-read-phi-s stmt))
+        ((phi-statements-p stmt)
+         (find-read-phi-s stmt))
         (t nil)))
 
 (defun read-from-bindings (mstep)
@@ -511,11 +511,11 @@ syntactically correct CCDFG is something that can be transformed
 
 (defun read-from-ptrs (mstep)
   (cond ((and (assignment-statement-p (cdr mstep))
-               (getelementptr-expression-p (cadadr mstep)))
-          (list (eval-symbol (cadr (cadadr mstep)))))
-         ((store-statement-p (cdr mstep))
-          (list (fourth (cadr mstep))))
-         (t nil)))
+              (getelementptr-expression-p (cadadr mstep)))
+         (list (eval-symbol (cadr (cadadr mstep)))))
+        ((store-statement-p (cdr mstep))
+         (list (fourth (cadr mstep))))
+        (t nil)))
 
 (defun readl (mstep)
   (append (read-from-bindings mstep)
@@ -534,7 +534,7 @@ syntactically correct CCDFG is something that can be transformed
   (if (endp blocks) '()
     (append (get-msteps-block (car blocks))
             (get-msteps-blocks (cdr blocks)))))
-                             
+
 (defun get-msteps (ccdfg)
   (if (endp ccdfg) '()
     (append (get-msteps-blocks (cadr (car ccdfg)))
@@ -549,7 +549,7 @@ syntactically correct CCDFG is something that can be transformed
   (if (endp msteps) '()
     (append (writel (car msteps))
             (all-write (cdr msteps)))))
-  
+
 (defun no-conflict (c1 c2)
   (if (and (not-in (all-read (get-msteps c1))
                    (all-write (get-msteps c2)))
@@ -557,64 +557,64 @@ syntactically correct CCDFG is something that can be transformed
                    (all-read (get-msteps c2)))
            (not-in (all-write (get-msteps c1))
                    (all-write (get-msteps c2))))
-    t
+      t
     nil))
 
-;; here block is a ccdfg in itself, just it has one block 
-;; (combine-blocks (x ((a) (b) (c))) (y ((a) (b) (C))) 1) 
+;; here block is a ccdfg in itself, just it has one block
+;; (combine-blocks (x ((a) (b) (c))) (y ((a) (b) (C))) 1)
 (defun combine-blocks (new-ccdfg block pos)
   (if (equal new-ccdfg nil) block
     (if (no-conflict block (remove-n (+ pos 1) new-ccdfg))
-      (append (take-n pos new-ccdfg)
-              (list (list (car (nth pos new-ccdfg))
-                          (append (cadr (nth pos new-ccdfg))
-                                  (cadr (car block)))))
-              (remove-n (+ 1 pos) new-ccdfg))
+        (append (take-n pos new-ccdfg)
+                (list (list (car (nth pos new-ccdfg))
+                            (append (cadr (nth pos new-ccdfg))
+                                    (cadr (car block)))))
+                (remove-n (+ 1 pos) new-ccdfg))
       "error")))
 
 (defun combine-iters (new-ccdfg new-iter pos)
-    (declare (xargs :measure (acl2-count new-iter)))
-    (if (or (endp new-iter)
-            (equal new-ccdfg "error")) new-ccdfg
-      (combine-iters (combine-blocks new-ccdfg 
-                                     (list (car new-iter)) 
-                                     pos)
-                       (cdr new-iter)
-                       (+ pos 1))))
+  (declare (xargs :measure (acl2-count new-iter)))
+  (if (or (endp new-iter)
+          (equal new-ccdfg "error")) new-ccdfg
+    (combine-iters (combine-blocks new-ccdfg
+                                   (list (car new-iter))
+                                   pos)
+                   (cdr new-iter)
+                   (+ pos 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Example for testing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *seq-ccdfg*
-'(
-  ((1(((bb1_@@_4       (|%exitcond1| (eq |%i| 10000)))
-       (bb1_@@_5       (|%i_1| (add |%i| 00001)))
-       (bb_@@_0        (|%exitcond1| (true))))))
-    (2(((bb_@@_1        (|%tmp| (shl |%v1_1| 4)))
-        (bb_@@_2        (|%tmp_1| (add |%tmp| |%k0_read|)))
-        (bb_@@_3        (|%tmp_2| (lshr |%v1_1| 5)))
-        (bb_@@_4        (|%tmp_3| (add |%tmp_2| |%k1_read|)))
-        (bb_@@_5        (|%tmp4| (add |%v1_1| |%next_mul|))))))
-    (3(((bb_@@_6        (|%tmp5| (xor |%tmp_3| |%tmp4|)))
-        (bb_@@_7        (|%tmp_5| (xor |%tmp5| |%tmp_1|)))
-        (bb_@@_8       (|%v0_2| (add |%tmp_5| |%v0_1|)))
-        (bb_@@_9       (|%tmp_6| (shl |%v0_2| 4)))
-        (bb_@@_10       (|%tmp_7| (add |%tmp_6| |%k2_read|)))
-        (bb_@@_11       (|%tmp_8| (lshr |%v0_2| 5)))))))
-   ((1(((bb1_@@_4       (|%exitcond1| (eq |%i| 10000)))
-        (bb1_@@_5       (|%i_1| (add |%i| 00001)))
-        (bb_@@_0        (|%exitcond1| (true))))))
-    (2(((bb_@@_1        (|%tmp| (shl |%v1_1| 4)))
-        (bb_@@_2        (|%tmp_1| (add |%tmp| |%k0_read|)))
-        (bb_@@_3        (|%tmp_2| (lshr |%v1_1| 5)))
-        (bb_@@_4        (|%tmp_3| (add |%tmp_2| |%k1_read|)))
-        (bb_@@_5        (|%tmp4| (add |%v1_1| |%next_mul|))))))
-    (3(((bb_@@_6        (|%tmp5| (xor |%tmp_3| |%tmp4|)))
-        (bb_@@_7        (|%tmp_5| (xor |%tmp5| |%tmp_1|)))
-        (bb_@@_8       (|%v0_2| (add |%tmp_5| |%v0_1|)))
-        (bb_@@_9       (|%tmp_6| (shl |%v0_2| 4)))
-        (bb_@@_10       (|%tmp_7| (add |%tmp_6| |%k2_read|)))
-        (bb_@@_11       (|%tmp_8| (lshr |%v0_2| 5)))))))
-   ))
+  '(
+    ((1(((bb1_@@_4       (|%exitcond1| (eq |%i| 10000)))
+         (bb1_@@_5       (|%i_1| (add |%i| 00001)))
+         (bb_@@_0        (|%exitcond1| (true))))))
+     (2(((bb_@@_1        (|%tmp| (shl |%v1_1| 4)))
+         (bb_@@_2        (|%tmp_1| (add |%tmp| |%k0_read|)))
+         (bb_@@_3        (|%tmp_2| (lshr |%v1_1| 5)))
+         (bb_@@_4        (|%tmp_3| (add |%tmp_2| |%k1_read|)))
+         (bb_@@_5        (|%tmp4| (add |%v1_1| |%next_mul|))))))
+     (3(((bb_@@_6        (|%tmp5| (xor |%tmp_3| |%tmp4|)))
+         (bb_@@_7        (|%tmp_5| (xor |%tmp5| |%tmp_1|)))
+         (bb_@@_8       (|%v0_2| (add |%tmp_5| |%v0_1|)))
+         (bb_@@_9       (|%tmp_6| (shl |%v0_2| 4)))
+         (bb_@@_10       (|%tmp_7| (add |%tmp_6| |%k2_read|)))
+         (bb_@@_11       (|%tmp_8| (lshr |%v0_2| 5)))))))
+    ((1(((bb1_@@_4       (|%exitcond1| (eq |%i| 10000)))
+         (bb1_@@_5       (|%i_1| (add |%i| 00001)))
+         (bb_@@_0        (|%exitcond1| (true))))))
+     (2(((bb_@@_1        (|%tmp| (shl |%v1_1| 4)))
+         (bb_@@_2        (|%tmp_1| (add |%tmp| |%k0_read|)))
+         (bb_@@_3        (|%tmp_2| (lshr |%v1_1| 5)))
+         (bb_@@_4        (|%tmp_3| (add |%tmp_2| |%k1_read|)))
+         (bb_@@_5        (|%tmp4| (add |%v1_1| |%next_mul|))))))
+     (3(((bb_@@_6        (|%tmp5| (xor |%tmp_3| |%tmp4|)))
+         (bb_@@_7        (|%tmp_5| (xor |%tmp5| |%tmp_1|)))
+         (bb_@@_8       (|%v0_2| (add |%tmp_5| |%v0_1|)))
+         (bb_@@_9       (|%tmp_6| (shl |%v0_2| 4)))
+         (bb_@@_10       (|%tmp_7| (add |%tmp_6| |%k2_read|)))
+         (bb_@@_11       (|%tmp_8| (lshr |%v0_2| 5)))))))
+    ))
 ;;;;;;;;;;;;;;;;;; End of File "functions.lisp" ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

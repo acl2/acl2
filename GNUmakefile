@@ -1,5 +1,3 @@
-#  -*- Fundamental -*-
-
 # ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2017, Regents of the University of Texas
 
@@ -96,6 +94,8 @@
 #  metering as part of a system-wide recompilation, use the full-meter
 #  option below.  If you want to get rid of the metering in the
 #  compiled code, do make full.
+
+###############################################################################
 
 # Avoid loading the ACL2 customization file.  This is already done by
 # the books build system; however we need this for "make DOC" and
@@ -531,7 +531,13 @@ proofs: compile-ok
 	@$(MAKE) check_init_ok
 	rm -f workxxx
 
-.PHONY: DOC acl2-manual check-acl2-exports
+.PHONY: DOC acl2-manual check-acl2-exports check-books
+
+check-books:
+	@if [ ! -d books ] ; then \
+	echo "ERROR: The system books directory, books/, does not exist." ;\
+	exit 1 ;\
+	fi
 
 # The next target, DOC, is the target that should generally be used
 # for rebuilding the ACL2 User's Manual.
@@ -545,12 +551,12 @@ proofs: compile-ok
 # WARNING: even though this target may rebuild doc.lisp, that will not
 # update the documentation for the :DOC command at the terminal, of
 # course; for that, you'll need to rebuild ACL2.
-DOC: acl2-manual STATS
+DOC: acl2-manual STATS check-books
 	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
 	rm -f doc/home-page.html
 	$(MAKE) update-doc.lisp doc/home-page.html
 
-check-acl2-exports:
+check-acl2-exports: check-books
 	cd books ; rm -f misc/check-acl2-exports.cert ; $(MAKE) ACL2=$(ACL2) misc/check-acl2-exports.cert
 
 # We remove doc/HTML before rebuilding it, in order to make sure that
@@ -568,7 +574,7 @@ doc/home-page.html: doc/home-page.lisp
 # The following will implicitly use ACL2=acl2 unless ACL2 is set.
 # Note that books/system/doc/acl2-manual.lisp ends in a call of
 # xdoc::save that populates doc/manual/ (not under books/).
-acl2-manual:
+acl2-manual: check-books
 	rm -rf doc/manual books/system/doc/acl2-manual.cert
 	cd books ; make USE_QUICKLISP=1 system/doc/acl2-manual.cert
 	rm -rf doc/manual/download/*
@@ -598,7 +604,7 @@ update-doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/rendered-doc.ls
 # care much about whether it's up-to-date in any sense, so we don't
 # make the next target depend on $(PREFIXsaved_acl2).  This hasn't
 # been super carefully thought out, so could change.
-books/system/doc/rendered-doc.lsp:
+books/system/doc/rendered-doc.lsp: check-books
 	rm -f books/system/doc/rendered-doc.lsp
 	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
 
@@ -708,7 +714,7 @@ large-acl2p:
 # Success can generally be determined by checking for the absence of ** in the
 # log.
 .PHONY: certify-books
-certify-books:
+certify-books: check-books
 	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2)
 
 # Certify books that are not up-to-date, even those less likely to be
@@ -716,12 +722,12 @@ certify-books:
 # checking for the absence of ** in the log, or by looking at the Unix
 # exit status.
 .PHONY: regression
-regression:
+regression: check-books
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
 
 .PHONY: regression-everything
-regression-everything:
+regression-everything: check-books
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
 
@@ -744,7 +750,7 @@ regression-everything-fresh: clean-books
 # The following allows for a relatively short test, in response to a request
 # from GCL maintainer Camm Maguire.
 .PHONY: certify-books-short
-certify-books-short:
+certify-books-short: check-books
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
 
@@ -800,13 +806,13 @@ devel-check:
 # without running the clean-doc target.
 
 .PHONY: clean-doc
-clean-doc:
+clean-doc: check-books
 	cd books/system/doc ; ../../build/clean.pl
 	rm -rf doc/manual
 	rm -f books/system/doc/rendered-doc.lsp
 
 .PHONY: clean-books
-clean-books:
+clean-books: check-books
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) moreclean
 
 # This following should be executed inside the acl2-sources directory.
@@ -833,7 +839,7 @@ tar:
 # Keep tar-workshops in sync with tar.
 # This target should be executed in the acl2-sources directory.
 .PHONY: tar-workshops
-tar-workshops:
+tar-workshops: check-books
 	cd books ; rm -f workshops.tar.Z workshops.tar.gz workshops.tar workshops-tar-gz-md5sum
 	cd books ; chmod -R g+r workshops ; chmod -R o+r workshops ; tar cvf /tmp/workshops.tar workshops ; chmod -R o-w workshops
 	mv /tmp/workshops.tar books/
@@ -892,6 +898,6 @@ our-develenv.cl:
 # we want to run this anyhow and it would get in the way to have a
 # regression failure (though I don't know how that might happen).
 .PHONY: chk-include-book-worlds
-chk-include-book-worlds:
+chk-include-book-worlds: check-books
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)

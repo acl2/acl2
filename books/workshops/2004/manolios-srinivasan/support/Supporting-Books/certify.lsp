@@ -12,5 +12,3 @@
 
 (certify-book "det-macros")
 :u
-
-

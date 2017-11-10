@@ -303,6 +303,17 @@ acl2::4v-monotonicity).</p>"
                                       4vec-bitxor))
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
+                '(:bdd (:vars nil)))))
+
+  (defthm 4vec-wildeq-monotonic-when-second-const
+    (implies (4vec-[= a b)
+             (4vec-[= (4vec-wildeq a c)
+                      (4vec-wildeq b c)))
+    :hints(("Goal" :in-theory (enable 4vec-wildeq
+                                      4vec-bitxor
+                                      4vec-[=))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
                 '(:bdd (:vars nil))))))
 
 
@@ -382,10 +393,13 @@ an approximation of its value in @('y')?"
   :parents (svex-apply 4vec-[=)
   :short "@(see svex-apply) is almost always monotonic :-("
 
+  
+
   (defthm svex-apply-monotonic
     (implies (and (4veclist-[= x y)
                   (not (eq (fnsym-fix fn) '===))
-                  (not (eq (fnsym-fix fn) '==?)))
+                  (or (not (eq (fnsym-fix fn) '==?))
+                      (equal (4veclist-nth-safe 1 x) (4veclist-nth-safe 1 y))))
              (4vec-[= (svex-apply fn x) (svex-apply fn y)))
     :hints(("Goal" :in-theory (e/d (svex-apply)
                                    (2vec-p 2vec->val))))))
@@ -546,3 +560,54 @@ any environment."
              :in-theory (disable svex-eval-when-4vec-xfree-of-minval
                                  equal-of-4vecs 4vec-xfree-p)
              :expand ((svex-xeval (svex-call '==? args)))))))
+
+
+
+(defines svex-monotonic-p
+  (define svex-monotonic-p ((x svex-p))
+    :measure (svex-count x)
+    :returns (monotonicp)
+    :verify-guards nil
+    (svex-case x
+      :var t
+      :quote t
+      :call (and (or (and (not (eq x.fn '===))
+                          (or (not (eq x.fn '==?))
+                              (b* ((b (nth 1 x.args)))
+                                (or (not b)
+                                    (svex-case b :quote)))))
+                     (cw "Nonmonotonic operator: ~x0~%" x))
+                 (svexlist-monotonic-p x.args))))
+  (define svexlist-monotonic-p ((x svexlist-p))
+    :measure (svexlist-count x)
+    :returns (monotonicp)
+    (if (Atom x)
+        t
+      (and (svex-monotonic-p (car x))
+           (svexlist-monotonic-p (cdr x)))))
+  ///
+
+  (defthm-svex-monotonic-p-flag
+    (defthm svex-eval-monontonic-when-svex-monotonic
+      (implies (and (svex-env-[= env1 env2)
+                    (svex-monotonic-p x))
+               (4vec-[= (svex-eval x env1) (svex-eval x env2)))
+      :hints ('(:expand ((svex-monotonic-p x)
+                         (:free (env) (svex-eval x env))))
+              (and stable-under-simplificationp
+                   '(:expand ((nth 1 (svex-call->args x))
+                              (:free (env) (svexlist-eval (svex-call->args x) env))))))
+      :flag svex-monotonic-p)
+
+    (defthm svexlist-eval-monontonic-when-svexlist-monotonic
+      (implies (and (svex-env-[= env1 env2)
+                    (svexlist-monotonic-p x))
+               (4veclist-[= (svexlist-eval x env1) (svexlist-eval x env2)))
+      :hints ('(:expand ((svexlist-monotonic-p x)
+                         (:free (env) (svexlist-eval x env)))))
+      :flag svexlist-monotonic-p))
+
+  (verify-guards svex-monotonic-p
+    :hints(("Goal" :expand ((nth 1 (svex-call->args x))))))
+
+  (memoize 'svex-monotonic-p :condition '(svex-case x :call)))

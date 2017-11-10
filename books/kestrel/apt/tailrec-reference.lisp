@@ -663,7 +663,8 @@
      </p>
 
      @({
-       (domain base<x1,...,xn>)
+       (implies test<x1,...,xn>
+                (domain base<x1,...,xn>))
      })
 
      </blockquote>
@@ -795,7 +796,8 @@
      </p>
 
      @({
-       (implies (domain u)
+       (implies (and test<x1,...,xn>
+                     (domain u))
                 (equal combine<base<x1...,xn>,u>
                        u))
      })
@@ -819,7 +821,8 @@
      </p>
 
      @({
-       (implies (domain u)
+       (implies (and test<x1,...,xn>
+                     (domain u))
                 (equal combine<u,base<x1...,xn>>
                        u))
      })
