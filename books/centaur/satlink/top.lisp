@@ -129,10 +129,11 @@ with many solvers.)</p>
 open source, recommended</h3>
 
 <p>Based on our experiences using @(see gl) for proofs about hardware modules
-at Centaur, we usually try Glucose first.  On Linux, version 3.0 or 4.0 should
-work with Satlink without modification.  (We have also successfully used
-earlier versions with Satlink, but occasionally needed to patch them in minor
-ways, e.g., to print counterexamples.)</p>
+at Centaur, we usually try Glucose first.  On Linux, version 3.0, 4.0, or 4.1
+should work with Satlink without modification (though, some users have had
+difficulty with 4.0).  (We have also successfully used earlier versions with
+Satlink, but occasionally needed to patch them in minor ways, e.g., to print
+counterexamples.)</p>
 
 <p>Quick instructions:</p>
 

@@ -236,8 +236,18 @@
     (mv (cons first rest) state)))
 
 (defun render-topics (x all-topics state)
-  (b* ((topics-fal (topics-fal all-topics))
-       ((mv ans state) (render-topics1 x all-topics topics-fal state)))
+  (b* ((prev-event-table-binding
+        ;; save the previous binding (or lack) of xdoc-get-event-table, set it
+        ;; to one generated from the current world, and restore at the end
+        (and (acl2::f-boundp-global 'xdoc-get-event-table state)
+             (list (f-get-global 'xdoc-get-event-table state))))
+       (state (f-put-global 'xdoc-get-event-table (make-get-event*-table (w state) nil) state))
+       (topics-fal (topics-fal all-topics))
+       ((mv ans state) (render-topics1 x all-topics topics-fal state))
+        (- (fast-alist-free (@ xdoc-get-event-table)))
+        (state (if prev-event-table-binding
+                   (f-put-global 'xdoc-get-event-table (car prev-event-table-binding) state)
+                 (makunbound-global 'xdoc-get-event-table state))))
     (fast-alist-free topics-fal)
     (mv ans state)))
 
