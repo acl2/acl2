@@ -82,6 +82,20 @@ convenient foreign-function interface.''
 
 <p>
 
+<font color="red">NOTE</font>:
+Certain <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____HONS-ENABLED">ACL2
+features</a> are optimized for 64-bit CCL.  Some large developments
+may even fail with 32-bit CCL; so for CCL, the 64-bit version is
+preferred.  To check if your CCL is a 64-bit CCL, evaluate the
+following expression in your CCL; the result should
+be <code>YES</code>.
+
+<pre>
+#+x86_64 'yes #-x86_64 'no
+</pre>
+
+<p>
+
 Here is an easy way to obtain and build the latest version (generally
 recommended) for Linux (or another OS; see below) running on an x86 or
 x86-64.  First stand in any directory, though you might want to stand
@@ -189,7 +203,7 @@ Common Lisp implementations.</li>
 <li>Only minimal testing is done for ACL2 built on CLISP.</li>
 
 <li>CLISP does not support building the
-  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v7-4/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
+  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
   ACL2 (ACL2(h)), but only (with the limitations expressed above)
   a discontinued version, ACL2(c).</li>
 
