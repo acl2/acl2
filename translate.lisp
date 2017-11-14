@@ -1938,7 +1938,7 @@
   (when (eq wrld w-state)
     (return-from raw-ev-fncall-okp :live))
   (let* ((fncall-cache *fncall-cache*)
-         (cached-w (car *fncall-cache*)))
+         (cached-w (car fncall-cache)))
     (cond ((and wrld
                 (eq wrld cached-w))
            t)
