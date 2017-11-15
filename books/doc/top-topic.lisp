@@ -39,7 +39,7 @@
 (defxdoc top
    :short "User manual for the <a
 href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2 Theorem Prover</a> and
-the <a href='http://acl2-books.googlecode.com/'>ACL2 Community Books</a>"
+the <a href='https://github.com/acl2/acl2/tree/master/books'>ACL2 Community Books</a>"
 
    :long "<h3>Introduction</h3>
 
