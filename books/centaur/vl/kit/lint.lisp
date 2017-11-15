@@ -1083,7 +1083,7 @@ shown.</p>"
                     (vl-descriptionlist->orignames
                      (vl-remove-nameless-descriptions
                       (vl-design-descriptions orig)))))
-       (missing (difference final-descs orig-descs)))
+       (missing (difference orig-descs final-descs)))
     (vl-pp-stringlist-lines missing)))
     
 
