@@ -1,4 +1,4 @@
-; Copyright David Rager 2012
+; Copyright (C) David Rager 2012
 
 ; License: (An MIT/X11-style license)
 ;
