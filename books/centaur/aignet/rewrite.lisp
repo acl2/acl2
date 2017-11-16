@@ -62,22 +62,22 @@
 
 
 
-(local (defthm cutsdb-ok-implies-truth-p-of-truth
-         (implies (and (cutsdb-ok cutsdb)
-                       (cutp$ cut cutsdb)
-                       (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)))
-                  (truth::truth4-p (cut-datai (+ 1 cut) cutsdb)))
-         :hints (("goal" :use ((:instance cutsdb-ok-implies-cutsdb-cut-ok
-                                (n cut)))
-                  :in-theory (e/d (cutsdb-cut-ok cut-next$ cut-next)
-                                  (cutsdb-ok-implies-cutsdb-cut-ok))))))
+;; (local (defthm cutsdb-ok-implies-truth-p-of-truth
+;;          (implies (and (cutsdb-ok cutsdb)
+;;                        (cutp$ cut cutsdb)
+;;                        (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)))
+;;                   (truth::truth4-p (cut-datai (+ 1 cut) cutsdb)))
+;;          :hints (("goal" :use ((:instance cutsdb-ok-implies-cutsdb-cut-ok
+;;                                 (n cut)))
+;;                   :in-theory (e/d (cutsdb-cut-ok cut-next$ cut-next)
+;;                                   (cutsdb-ok-implies-cutsdb-cut-ok))))))
 
 (local (defthm bound-when-truth4-p
          (implies (truth::truth4-p x)
                   (< x #x10000))
          :hints(("Goal" :in-theory (enable truth::truth4-p unsigned-byte-p)))))
 
-(define cut-initialize-copy ((cut cutp$)
+(define cut-initialize-copy ((cut natp)
                              (copy "mapping from aignet to aignet2 indices")
                              (copy2 "mapping from dsd aig indices to aignet2 indices -- writing this here")
                              (cutsdb cutsdb-ok)
@@ -91,55 +91,51 @@
                 ok))
   :prepwork ((local (defthm cut-data-bounded-by-cut-nnodes
                       (implies (and (cutsdb-ok cutsdb)
-                                    (cutp$ cut cutsdb)
+                                    (natp cut)
                                     (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
-                                    (natp offset)
-                                    (< offset (cut-datai cut cutsdb)))
-                               (< (cut-datai (+ 2 cut offset) cutsdb) (cut-nnodes cutsdb)))
-                      :hints (("goal" :use ((:instance cutsdb-cut-bounded-when-cutsdb-ok
-                                             (n cut)))
-                               :in-theory (e/d (cutsdb-cut-bounded
-                                                cutsdb-data-nodes-bounded-implies-compare)
-                                               (cutsdb-cut-bounded-when-cutsdb-ok))
+                                    (natp idx)
+                                    (< idx (cutinfo->size (cut-infoi cut cutsdb))))
+                               (< (cut-leavesi (+ (* 4 cut) idx) cutsdb) (cut-nnodes cutsdb)))
+                      :hints (("goal" :use ((:instance cutsdb-ok-implies-cuts-bounded-by-nnodes
+                                             (bound (cut-nnodes cutsdb)) (cut cut)))
+                               :in-theory (e/d (cut-leaves-bounded
+                                                leaves-bounded-implies-compare)
+                                               (cutsdb-ok-implies-cuts-bounded-by-nnodes))
                                :cases ((equal (cut-nnodes cutsdb) 0))))
                       :rule-classes :linear))
-             (local (defthm cutsdb-ok-implies-cut-data-less-than-length
-                      (implies (and (cutsdb-ok cutsdb)
-                                    (cutp$ cut cutsdb)
-                                    (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
-                                    (natp offset)
-                                    (< offset (cut-datai cut cutsdb)))
-                               (< (+ 2 cut offset) (cut-data-length cutsdb)))
-                      :hints (("goal" :use ((:instance cutsdb-ok-implies-cutsdb-cut-ok
-                                             (n cut)))
-                               :in-theory (e/d (cutsdb-cut-ok cut-next$ cut-next)
-                                               (cutsdb-ok-implies-cutsdb-cut-ok))))))
+             ;; (local (defthm cutsdb-ok-implies-cut-data-less-than-length
+             ;;          (implies (and (cutsdb-ok cutsdb)
+             ;;                        (natp offset)
+             ;;                        (< offset (cut-datai cut cutsdb)))
+             ;;                   (< (+ 2 cut offset) (cut-data-length cutsdb)))
+             ;;          :hints (("goal" :use ((:instance cutsdb-ok-implies-cutsdb-cut-ok
+             ;;                                 (n cut)))
+             ;;                   :in-theory (e/d (cutsdb-cut-ok cut-next$ cut-next)
+             ;;                                   (cutsdb-ok-implies-cutsdb-cut-ok))))))
              )
-  (b* ((cut (cut-fix cut))
-       (size (cut-datai cut cutsdb))
-       (truth (cut-datai (+ 1 cut) cutsdb))
+  (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
        ((acl2::stobj-get npn)
         ((truth::npn4arr (rwlib->npns rwlib)))
-        (truth::get-npn4 truth truth::npn4arr))
+        (truth::get-npn4 cutinf.truth truth::npn4arr))
        ((truth::npn4 npn))
-       ((acl2::fun (idx-lit idx perm polarity size cut copy cutsdb))
+       ((acl2::fun (idx-lit idx perm polarity cutinf.size cut copy cutsdb))
         (b* ((perm-idx (truth::perm4-index idx perm))
-             (node (if (< perm-idx size) (cut-datai (+ 2 perm-idx cut) cutsdb) 0))
+             (node (if (< perm-idx cutinf.size) (cut-leavesi (+ perm-idx (* 4 (lnfix cut))) cutsdb) 0))
              (copy-lit (get-lit node copy)))
           (lit-negate-cond copy-lit (logbit idx polarity))))
        ((acl2::stobj-get copy2)
         ((aignet-tmp (rwlib->aigs rwlib)))
         (b* ((copy2 (set-lit (innum->id 0 aignet-tmp)
-                             (idx-lit 0 npn.perm npn.polarity size cut copy cutsdb)
+                             (idx-lit 0 npn.perm npn.polarity cutinf.size cut copy cutsdb)
                              copy2))
              (copy2 (set-lit (innum->id 1 aignet-tmp)
-                             (idx-lit 1 npn.perm npn.polarity size cut copy cutsdb)
+                             (idx-lit 1 npn.perm npn.polarity cutinf.size cut copy cutsdb)
                              copy2))
              (copy2 (set-lit (innum->id 2 aignet-tmp)
-                             (idx-lit 2 npn.perm npn.polarity size cut copy cutsdb)
+                             (idx-lit 2 npn.perm npn.polarity cutinf.size cut copy cutsdb)
                              copy2))
              (copy2 (set-lit (innum->id 3 aignet-tmp)
-                             (idx-lit 3 npn.perm npn.polarity size cut copy cutsdb)
+                             (idx-lit 3 npn.perm npn.polarity cutinf.size cut copy cutsdb)
                              copy2)))
           copy2)))
     copy2)
@@ -149,14 +145,12 @@
                   (rwlib-wfp rwlib))
              (equal (nth-lit (node-count (lookup-stype n :pi (rwlib->aigs rwlib)))
                              new-copy2)
-                    (b* ((cut (cut-fix cut))
-                         (size (cut-datai cut cutsdb))
-                         (truth (cut-datai (+ 1 cut) cutsdb))
-                         ((truth::npn4 npn) (truth::get-npn4 truth (rwlib->npns rwlib)))
+                    (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+                         ((truth::npn4 npn) (truth::get-npn4 cutinf.truth (rwlib->npns rwlib)))
                          (perm-idx (truth::index-perm
                                     0 (truth::perm4-index-list npn.perm) n 4))
-                         (node (if (< perm-idx size)
-                                   (cut-datai (+ 2 perm-idx cut) cutsdb)
+                         (node (if (< perm-idx cutinf.size)
+                                   (cut-leavesi (+ perm-idx (* 4 (nfix cut))) cutsdb)
                                  0))
                          (copy-lit (get-lit node copy)))
                       (lit-negate-cond copy-lit (logbit n npn.polarity)))))
@@ -175,17 +169,16 @@
                   (rwlib-wfp rwlib))
              (equal (len new-copy2) (len copy2)))))
        
-(define cut-impl-index-ok ((cut cutp$)
+(define cut-impl-index-ok ((cut natp)
                            (impl-idx natp)
                            (cutsdb cutsdb-ok)
                            (rwlib rwlib-wfp))
   :guard (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
-  (b* ((cut (cut-fix cut))
-       (truth (cut-datai (+ 1 cut) cutsdb))
+  (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
        ((acl2::stobj-get ok)
         ((truth::npn4arr (rwlib->npns rwlib))
          (acl2::smm   (rwlib->cands rwlib)))
-        (b* (((truth::npn4 npn) (truth::get-npn4 truth truth::npn4arr)))
+        (b* (((truth::npn4 npn) (truth::get-npn4 cutinf.truth truth::npn4arr)))
           (< (lnfix impl-idx) (acl2::smm-block-size npn.truth-idx acl2::smm)))))
     ok))
        
@@ -223,17 +216,17 @@
 
 (defthm impl-lit-bound-when-rwlib-wfp
   (implies (and (rwlib-wfp rwlib)
-                (cutp$ cut)
-                (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                 (cutsdb-ok cutsdb)
                 (cut-impl-index-ok cut impl-idx cutsdb rwlib))
            (<= (lit->var (nth impl-idx
-                              (nth (truth::npn4->truth-idx (nth (cut-datai (+ 1 cut) cutsdb)
+                              (nth (truth::npn4->truth-idx (nth (cutinfo->truth (cut-infoi cut cutsdb))
                                                                 (rwlib->npns rwlib)))
                                    (rwlib->cands rwlib))))
                (node-count (find-max-fanin (rwlib->aigs rwlib)))))
   :hints(("Goal" :in-theory (enable cut-impl-index-ok)))
   :rule-classes (:rewrite :linear))
+
 
 (defsection cutsdb-correct
   (defun-sk cutsdb-correct (cutsdb aignet)
@@ -243,8 +236,104 @@
 
   (in-theory (disable cutsdb-correct))
   (defthm cutsdb-correct-of-aignet-derive-cuts
-    (cutsdb-correct (aignet-derive-cuts aignet cutsdb config) aignet)
-    :hints(("Goal" :in-theory (enable cutsdb-correct)))))
+    (cutsdb-correct (mv-nth 1 (aignet-derive-cuts aignet config refcounts cutsdb)) aignet)
+    :hints(("Goal" :in-theory (enable cutsdb-correct))))
+
+  (defthm cutsdb-correct-of-aignet-derive-cuts-aux
+    (implies (and (cutsdb-correct cutsdb aignet)
+                  (cutsdb-ok cutsdb))
+             (cutsdb-correct (mv-nth 1 (aignet-derive-cuts-aux aignet count config refcounts cutsdb)) aignet))
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause))))))))
+
+(defsection cutsdb-correct-of-aignet-extension
+  ;; (local (defthm cut-data-bounded-by-cut-nnodes
+  ;;          (implies (and (cutsdb-ok cutsdb)
+  ;;                        (natp cut)
+  ;;                        (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+  ;;                        (natp idx)
+  ;;                        (< idx (cutinfo->size (cut-infoi cut cutsdb))))
+  ;;                   (< (cut-leavesi (+ (* 4 cut) idx) cutsdb) (cut-nnodes cutsdb)))
+  ;;          :hints (("goal" :use ((:instance cutsdb-ok-implies-cuts-bounded-by-nnodes
+  ;;                                 (bound (cut-nnodes cutsdb)) (cut cut)))
+  ;;                   :in-theory (e/d (cut-leaves-bounded
+  ;;                                    leaves-bounded-implies-compare)
+  ;;                                   (cutsdb-ok-implies-cuts-bounded-by-nnodes))
+  ;;                   :cases ((equal (cut-nnodes cutsdb) 0))))
+  ;;          :rule-classes :linear))
+
+  (local (defthm leaves-bounded-when-cutsdb-ok
+           (implies (and (cutsdb-ok cutsdb)
+                         (natp cut)
+                         (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)))
+                    (leaves-bounded (* 4 cut)
+                                    (cutinfo->size (cut-infoi cut cutsdb))
+                                    (cut-nnodes cutsdb)
+                                    cutsdb))
+           :hints (("goal" :use ((:instance cutsdb-ok-implies-cuts-bounded-by-nnodes
+                                  (bound (cut-nnodes cutsdb)) (cut cut)))
+                    :in-theory (e/d (cut-leaves-bounded)
+                                    (cutsdb-ok-implies-cuts-bounded-by-nnodes))))))
+
+
+  (local (defthm leaves-truthenv-of-record-vals-of-aignet-extension
+           (implies (and (aignet-extension-binding)
+                         (leaves-bounded data size (cut-nnodes cutsdb) cutsdb)
+                         (<= (cut-nnodes cutsdb) (num-nodes orig)))
+                    (equal (leaves-truthenv data size bit-idx cutsdb
+                                            (aignet-record-vals vals invals regvals new))
+                           (leaves-truthenv data size bit-idx cutsdb
+                                            (aignet-record-vals vals invals regvals orig))))
+           :hints(("Goal" :in-theory (enable leaves-truthenv leaves-bounded
+                                             aignet-idp)))))
+
+  (local (defthm cut-value-of-record-vals-of-aignet-extension
+           (implies (and (aignet-extension-binding)
+                         (cutsdb-ok cutsdb)
+                         (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                         (<= (cut-nnodes cutsdb) (num-nodes orig)))
+                    (equal (cut-value cut cutsdb (aignet-record-vals vals invals regvals new))
+                           (cut-value cut cutsdb (aignet-record-vals vals invals regvals orig))))
+           :hints(("Goal" :in-theory (e/d (cut-value cut-leaves-bounded)
+                                          (cutsdb-ok-implies-cuts-bounded-by-nnodes))
+                   :use ((:instance cutsdb-ok-implies-cuts-bounded-by-nnodes
+                          (bound (Cut-nnodes cutsdb))))))))
+
+  (local (defthm cuts-consistent-of-record-vals-of-aignet-extension
+           (implies (and (aignet-extension-binding)
+                         (cutsdb-ok cutsdb)
+                         (<= (nfix max) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                         (<= (cut-nnodes cutsdb) (num-nodes orig)))
+                    (equal (cuts-consistent cut max value cutsdb (aignet-record-vals vals invals regvals new))
+                           (cuts-consistent cut max value cutsdb (aignet-record-vals vals invals regvals orig))))
+           :hints(("Goal" :in-theory (enable cuts-consistent)))))
+
+  (local (defthm node-cuts-consistent-of-record-vals-of-aignet-extension
+           (implies (and (aignet-extension-binding)
+                         (cutsdb-ok cutsdb)
+                         (< (nfix node) (cut-nnodes cutsdb))
+                         (<= (cut-nnodes cutsdb) (num-nodes orig)))
+                    (equal (node-cuts-consistent node cutsdb (aignet-record-vals vals invals regvals new))
+                           (node-cuts-consistent node cutsdb (aignet-record-vals vals invals regvals orig))))
+           :hints(("Goal" :in-theory (enable node-cuts-consistent aignet-idp)))))
+
+  (local (defthm cutsdb-consistent-of-record-vals-of-aignet-extension
+           (implies (and (aignet-extension-binding)
+                         (cutsdb-ok cutsdb)
+                         (<= (cut-nnodes cutsdb) (num-nodes orig))
+                         (cutsdb-consistent cutsdb (aignet-record-vals vals invals regvals orig)))
+                    (cutsdb-consistent cutsdb (aignet-record-vals vals invals regvals new)))
+           :hints ((and stable-under-simplificationp
+                        `(:expand (,(car (last clause))))))))
+
+  (defthm cutsdb-correct-of-aignet-extension
+    (implies (and (aignet-extension-binding)
+                  (cutsdb-correct cutsdb orig)
+                  (cutsdb-ok cutsdb)
+                  (<= (cut-nnodes cutsdb) (num-nodes orig)))
+             (cutsdb-correct cutsdb new))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause))))))))
 
 
 
@@ -273,53 +362,96 @@
             :in-theory (disable nth-of-input-copy-values-split-lemma
                                 input-copy-values)))
     :fn input-copy-values))
-  
+
+
+(local (defthmd cut-leaves-bounded-implies-compare
+         (implies (and (cut-leaves-bounded cut bound cutsdb)
+                       (natp cut) (natp idx) (natp bound)
+                       (< idx (cutinfo->size (cut-infoi cut cutsdb))))
+                  (< (cut-leavesi (+ idx (* 4 cut)) cutsdb) bound))
+         :hints(("Goal" :in-theory (enable cut-leaves-bounded
+                                           leaves-bounded-implies-compare)))
+         :rule-classes (:rewrite :linear)))
+
+(local
+ (defthmd cut-leaves-lit-idsp-implies
+   (implies (and (cut-leaves-lit-idsp cut aignet cutsdb)
+                 (natp cut) (natp idx)
+                 (< idx (cutinfo->size (cut-infoi cut cutsdb))))
+            (b* ((leaf (cut-leavesi (+ idx (* 4 cut)) cutsdb)))
+              (and (aignet-idp leaf aignet)
+                   (not (equal (ctype (stype (car (lookup-id leaf aignet)))) :output))
+                   (not (equal (stype (car (lookup-id leaf aignet))) :po))
+                   (not (equal (stype (car (lookup-id leaf aignet))) :nxst)))))
+   :hints(("Goal" :in-theory (enable cut-leaves-lit-idsp
+                                     leaves-lit-idsp-implies)))))
+
+
 
 (defthm input-copy-values-of-cut-initialize-copy
   (implies (and (aignet-copy-is-comb-equivalent node aignet copy aignet2)
                 (aignet-copies-in-bounds copy aignet2)
                 (cutsdb-lit-idsp aignet cutsdb)
                 (posp node)
-                (cutp$ cut)
-                (cutsdb-cut-bounded cut node cutsdb)
+                (cut-leaves-bounded cut node cutsdb)
                 (< (nfix n) 4)
                 (rwlib-wfp rwlib)
                 (cutsdb-ok cutsdb)
-                (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                 (rwlib-correct rwlib))
            (iff (truth::env-lookup n
                                    (permuted-env-from-aignet-invals
-                                    (nth (cut-datai (+ 1 cut) cutsdb)
+                                    (nth (cutinfo->truth (cut-infoi cut cutsdb))
                                          (rwlib->npns rwlib))
                                     (INPUT-COPY-VALUES 0 INVALS
                                                        REGVALS (RWLIB->AIGS RWLIB)
                                                        (CUT-INITIALIZE-COPY CUT COPY COPY2 CUTSDB RWLIB)
                                                        AIGNET2)))
-                (and (< (nfix n) (cut-datai cut cutsdb))
+                (and (< (nfix n) (cutinfo->size (cut-infoi cut cutsdb)))
                      (acl2::bit->bool 
-                      (id-eval (cut-datai (+ 2 cut (nfix n)) cutsdb)
+                      (id-eval (cut-leavesi (+ (* 4 (nfix cut)) (nfix n)) cutsdb)
                                invals regvals aignet)))))
-  :hints(("Goal" :in-theory (enable cutsdb-cut-bounded-implies-nodes-bounded
-                                    cut-next$ cut-next)
-          :use ((:instance cutsdb-cut-lit-idsp-implies-nodes-lit-idsp
-                 (n cut)
-                 (i (+ 2 cut (nfix n))))))))
+  :hints(("Goal" :in-theory (enable cut-leaves-bounded-implies-compare
+                                    cut-leaves-lit-idsp-implies
+                                    cutsdb-lit-idsp-implies-cut-leaves-lit-idsp)
+          ;; :use ((:instance cutsdb-cut-lit-idsp-implies-nodes-lit-idsp
+          ;;        (n cut)
+          ;;        (i (+ 2 cut (nfix n)))))
+          )))
+
+(local (defthmd cut-leaves-bounded-implies-compare-strong
+         (implies (and (equal cut1 (double-rewrite cut))
+                       (bind-free (case-match cut1
+                                    (('nfix cut2) `((cut2 . ,cut2)))
+                                    (& `((cut2 . ,cut1))))
+                                  (cut2))
+                       (equal (nfix cut2) cut1)
+                       (syntaxp (or (cw "cut2: ~x0~%" cut2) t))
+                       (cut-leaves-bounded cut2 bound cutsdb)
+                       (syntaxp (or (cw "bound: ~x0~%" bound) t))
+                       (natp cut1) (natp idx) (natp bound)
+                       (<= bound bound2)
+                       (< idx (cutinfo->size (cut-infoi cut1 cutsdb))))
+                  (< (cut-leavesi (+ idx (* 4 cut)) cutsdb) bound2))
+         :hints(("Goal" :in-theory (enable cut-leaves-bounded
+                                           leaves-bounded-implies-compare)))
+         :rule-classes (:rewrite :linear)))
 
 (defthm permuted-env-of-input-copy-values-is-truthenv
   (implies (and (aignet-copy-is-comb-equivalent node aignet copy aignet2)
                 (aignet-copies-in-bounds copy aignet2)
                 (cutsdb-lit-idsp aignet cutsdb)
                 (posp node)
-                (cutp$ cut)
-                (cutsdb-cut-bounded cut node cutsdb)
+                (cut-leaves-bounded cut node cutsdb)
                 (< (nfix n) 4)
                 (rwlib-wfp rwlib)
                 (cutsdb-ok cutsdb)
-                (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                (<= node (num-nodes aignet))
+                (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                 (rwlib-correct rwlib))
            (iff (truth::env-lookup n
                                    (permuted-env-from-aignet-invals
-                                    (nth (cut-datai (+ 1 cut) cutsdb)
+                                    (nth (cutinfo->truth (cut-infoi cut cutsdb))
                                          (rwlib->npns rwlib))
                                     (INPUT-COPY-VALUES 0 INVALS
                                                        REGVALS (RWLIB->AIGS RWLIB)
@@ -327,13 +459,14 @@
                                                        AIGNET2)))
                 (truth::env-lookup
                  n
-                 (node-cut-truthenv (+ 2 cut) (cut-datai cut cutsdb)
-                                    0 cutsdb
-                                    (aignet-record-vals nil invals regvals aignet)))))
-  :hints(("Goal" :in-theory (enable cut-next$ cut-next aignet-idp)
-          :use ((:instance cutsdb-cut-lit-idsp-implies-nodes-lit-idsp
-                 (n cut)
-                 (i (+ 2 cut (nfix n))))))))
+                 (leaves-truthenv (* 4 (nfix cut)) (cutinfo->size (cut-infoi cut cutsdb))
+                                  0 cutsdb
+                                  (aignet-record-vals nil invals regvals aignet)))))
+  :hints(("Goal" :in-theory (e/d (aignet-idp
+                                    cut-leaves-bounded-implies-compare-strong
+                                    cut-leaves-lit-idsp-implies
+                                    cutsdb-lit-idsp-implies-cut-leaves-lit-idsp)))))
+
 
 (defsection eval-with-permuted-env-of-input-copy-values-is-truthenv
   (local #!truth
@@ -352,15 +485,15 @@
                   (aignet-copies-in-bounds copy aignet2)
                   (cutsdb-lit-idsp aignet cutsdb)
                   (posp node)
-                  (cutp$ cut)
-                  (cutsdb-cut-bounded cut node cutsdb)
+                  (cut-leaves-bounded cut node cutsdb)
                   (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
-                  (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (<= node (num-nodes aignet))
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (rwlib-correct rwlib))
              (equal (truth::truth-eval truth
                                        (permuted-env-from-aignet-invals
-                                        (nth (cut-datai (+ 1 cut) cutsdb)
+                                        (nth (cutinfo->truth (cut-infoi cut cutsdb))
                                              (rwlib->npns rwlib))
                                         (INPUT-COPY-VALUES 0 INVALS
                                                            REGVALS (RWLIB->AIGS RWLIB)
@@ -368,16 +501,19 @@
                                                            AIGNET2))
                                        4)
                     (truth::truth-eval truth
-                                       (node-cut-truthenv (+ 2 cut) (cut-datai cut cutsdb)
-                                                          0 cutsdb
-                                                          (aignet-record-vals nil invals regvals aignet))
+                                       ;; (node-cut-truthenv (+ 2 cut) (cut-datai cut cutsdb)
+                                       ;;                    0 cutsdb
+                                       ;;                    (aignet-record-vals nil invals regvals aignet))
+                                       (leaves-truthenv (* 4 (nfix cut)) (cutinfo->size (cut-infoi cut cutsdb))
+                                                        0 cutsdb
+                                                        (aignet-record-vals nil invals regvals aignet))
                                        4)))))
 
 
 
 
 
-(define aignet-build-cut ((cut cutp$)
+(define aignet-build-cut ((cut natp)
                           (impl-idx natp)
                           (eba "mark for copied nodes")
                           (copy "mapping from aignet to aignet2 indices")
@@ -403,13 +539,12 @@
                (new-strash2)
                (new-aignet2))
   (b* ((copy2 (cut-initialize-copy cut copy copy2 cutsdb rwlib))
-       (cut (cut-fix cut))
-       (truth (cut-datai (+ 1 cut) cutsdb))
+       ((cutinfo cutinf) (cut-infoi cut cutsdb))
        ((acl2::stobj-get lit copy2 eba strash2 aignet2)
         ((truth::npn4arr (rwlib->npns rwlib))
          (smm   (rwlib->cands rwlib))
          (aignet-tmp  (rwlib->aigs rwlib)))
-        (b* (((truth::npn4 npn) (truth::get-npn4 truth truth::npn4arr))
+        (b* (((truth::npn4 npn) (truth::get-npn4 cutinf.truth truth::npn4arr))
              (lit (smm-read-lit npn.truth-idx impl-idx smm))
              (eba (eba-clear eba))
              ((mv eba copy2 strash2 aignet2)
@@ -445,13 +580,14 @@
                    (rwlib-wfp rwlib)
                    (aignet-copies-in-bounds copy2 aignet2)
                    (aignet-copies-in-bounds copy aignet2)
-                   (cutp$ cut cutsdb)
                    (posp node)
-                   (cutsdb-cut-bounded cut node cutsdb)
+                   (cut-leaves-bounded cut node cutsdb)
+                   (<= node (num-nodes aignet))
+                   ;; (< node (cut-nnodes cutsdb))
                    ;; (< node (cut-nnodes cutsdb))
                    ;; (<= (nodecut-indicesi node cutsdb) cut)
                    ;; (< cut (nodecut-indicesi (+ 1 node) cutsdb))
-                   (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                   (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                    (cut-impl-index-ok cut impl-idx cutsdb rwlib))
               (equal (lit-eval lit invals regvals new-aignet2)
                      ;; (b-xor 
@@ -471,14 +607,13 @@
                   (rwlib-wfp rwlib)
                   (aignet-copies-in-bounds copy2 aignet2)
                   (aignet-copies-in-bounds copy aignet2)
-                  (cutp$ cut cutsdb)
                   (posp node)
-                  (cutsdb-cut-bounded cut node cutsdb)
+                  (cut-leaves-bounded cut node cutsdb)
                   (< node (cut-nnodes cutsdb))
-                  (aignet-idp node aignet)
+                  (<= (cut-nnodes cutsdb) (num-nodes aignet))
                   (not (equal (ctype (stype (car (lookup-id node aignet)))) :output))
-                  (<= (nodecut-indicesi node cutsdb) cut)
-                  (< cut (nodecut-indicesi (+ 1 node) cutsdb))
+                  (<= (nodecut-indicesi node cutsdb) (nfix cut))
+                  (< (nfix cut) (nodecut-indicesi (+ 1 node) cutsdb))
                   (cut-impl-index-ok cut impl-idx cutsdb rwlib)
                   (cutsdb-correct cutsdb aignet))
              (equal (lit-eval lit invals regvals new-aignet2)
@@ -497,8 +632,7 @@
     (implies (and (aignet-copies-in-bounds copy2 aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (cutsdb-ok cutsdb)
-                  (cutp$ cut)
-                  (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (cut-impl-index-ok cut impl-idx cutsdb rwlib)
                   (rwlib-wfp rwlib))
              (aignet-litp lit new-aignet2))
@@ -508,8 +642,7 @@
     (implies (and (aignet-copies-in-bounds copy2 aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (cutsdb-ok cutsdb)
-                  (cutp$ cut)
-                  (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (cut-impl-index-ok cut impl-idx cutsdb rwlib)
                   (rwlib-wfp rwlib))
              (<= (lit-id lit) (node-count (find-max-fanin new-aignet2))))
@@ -521,8 +654,7 @@
     (implies (and (aignet-copies-in-bounds copy2 aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (cutsdb-ok cutsdb)
-                  (cutp$ cut)
-                  (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (cut-impl-index-ok cut impl-idx cutsdb rwlib)
                   (rwlib-wfp rwlib))
              (aignet-copies-in-bounds new-copy2 new-aignet2))
@@ -532,7 +664,7 @@
     (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len copy2))
                   (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
-                  (< (cut-fix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (cut-impl-index-ok cut impl-idx cutsdb rwlib))
              (equal (len new-copy2) (len copy2)))
     :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
@@ -541,7 +673,7 @@
     (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len eba))
                   (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
-                  (< (cut-fix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (cut-impl-index-ok cut impl-idx cutsdb rwlib))
              (equal (len new-eba) (len eba)))
     :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
@@ -1319,22 +1451,22 @@
                            (refcounts))
   :returns (mv (mffc-count natp :rule-classes :type-prescription)
                (new-refcounts))
-  :guard (and (<= (+ n size) (cut-data-length cutsdb))
-              (cutsdb-data-nodes-bounded n size (lits-length copy) cutsdb)
+  :guard (and (<= (+ n size) (cut-leaves-length cutsdb))
+              (leaves-bounded n size (lits-length copy) cutsdb)
               (aignet-copies-in-bounds copy aignet)
               (<= (cut-nnodes cutsdb) (lits-length copy))
               (< (max-fanin aignet) (u32-length refcounts)))
   :verify-guards nil
   (b* (((when (zp size))
         (mv 0 refcounts))
-       (id (cut-datai n cutsdb))
+       (id (cut-leavesi n cutsdb))
        (lit (get-lit id copy))
        ((mv size1 refcounts) (aignet-restore-mffc (lit-id lit) 1 aignet refcounts))
        ((mv rest-size refcounts) (cut-restore-mffcs (1+ (lnfix n)) (1- size) cutsdb copy aignet refcounts)))
     (mv (+ size1 rest-size) refcounts))
   ///
   (verify-guards cut-restore-mffcs
-    :hints (("goal" :expand ((cutsdb-data-nodes-bounded n size (len copy) cutsdb)))))
+    :hints (("goal" :expand ((leaves-bounded n size (len copy) cutsdb)))))
 
   (local (defthm lit->var-upper-bound-by-aignet-litp
            (implies (aignet-litp lit aignet)
@@ -1373,15 +1505,15 @@
                            (refcounts))
   :returns (mv (mffc-count natp :rule-classes :type-prescription)
                (new-refcounts))
-  :guard (and (<= (+ n size) (cut-data-length cutsdb))
-              (cutsdb-data-nodes-bounded n size (lits-length copy) cutsdb)
+  :guard (and (<= (+ n size) (cut-leaves-length cutsdb))
+              (leaves-bounded n size (lits-length copy) cutsdb)
               (aignet-copies-in-bounds copy aignet)
               (<= (cut-nnodes cutsdb) (lits-length copy))
               (< (max-fanin aignet) (u32-length refcounts)))
   :verify-guards nil
   (b* (((when (zp size))
         (mv 0 refcounts))
-       (id (cut-datai n cutsdb))
+       (id (cut-leavesi n cutsdb))
        (lit (get-lit id copy))
        ((mv rest-size refcounts) (cut-delete-mffcs (1+ (lnfix n)) (1- size) cutsdb copy aignet refcounts))
        ((mv size1 refcounts) (aignet-delete-mffc (lit-id lit) aignet refcounts)))
@@ -1411,7 +1543,7 @@
     :rule-classes :linear)
 
   (verify-guards cut-delete-mffcs
-    :hints (("goal" :expand ((cutsdb-data-nodes-bounded n size (len copy) cutsdb)))))
+    :hints (("goal" :expand ((leaves-bounded n size (len copy) cutsdb)))))
 
   (defthm cut-delete-mffcs-nth-equiv-congruence-refcounts
     (implies (acl2::nth-nat-equiv refcounts refcounts1)
@@ -1427,7 +1559,7 @@
                          refcounts)
     :hints(("Goal" :in-theory (enable cut-restore-mffcs)))))
 
-(define eval-cut ((cut cutp$)
+(define eval-cut ((cut natp)
                   (node natp)
                   (cutsdb cutsdb-ok)
                   (rwlib rwlib-wfp)
@@ -1463,47 +1595,46 @@
              ;;                        (<= (cut-nnodes cutsdb) (nfix bound)))
              ;;                   (cutsdb-data-nodes-bounded n size bound cutsdb))
              ;;          :hints(("Goal" :in-theory (enable cutsdb-data-nodes-bounded-when-bounded-lesser)))))
-             (local (defthm cutsdb-data-nodes-bounded-cutsdb-cut-bounded
-                      (implies (and (cutsdb-cut-bounded cut (cut-nnodes cutsdb) cutsdb)
+             (local (defthm leaves-bounded-when-cut-leaves-bounded
+                      (implies (and (cut-leaves-bounded cut (cut-nnodes cutsdb) cutsdb)
                                     (<= (cut-nnodes cutsdb) (nfix bound))
-                                    (cutp$ cut))
-                               (cutsdb-data-nodes-bounded (+ 2 cut) (cut-datai cut cutsdb) bound cutsdb))
-                      :hints(("Goal" :in-theory (enable cutsdb-cut-bounded
-                                                        cutsdb-data-nodes-bounded-when-bounded-lesser)))))
+                                    (equal cut1 (nfix cut)))
+                               (leaves-bounded (* 4 cut1) (cutinfo->size (cut-infoi cut cutsdb)) bound cutsdb))
+                      :hints(("Goal" :in-theory (enable cut-leaves-bounded
+                                                        leaves-bounded-when-bounded-lesser)))))
              (local (defthm cutsdb-ok-implies-cut-data-less-than-length
                       (implies (and (cutsdb-ok cutsdb)
-                                    (cutp$ cut cutsdb)
-                                    (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                                    (natp cut1)
+                                    (< cut1 (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                                     (natp offset))
-                               (and (implies (<= offset (cut-datai cut cutsdb))
-                                             (<= (+ 2 cut offset) (cut-data-length cutsdb)))
-                                    (implies (< offset (cut-datai cut cutsdb))
-                                             (< (+ 2 cut offset) (cut-data-length cutsdb)))))
-                      :hints (("goal" :use ((:instance cutsdb-ok-implies-cutsdb-cut-ok
-                                             (n cut)))
-                               :in-theory (e/d (cutsdb-cut-ok cut-next$ cut-next)
-                                               (cutsdb-ok-implies-cutsdb-cut-ok)))))))
+                               (and (implies (<= offset (cutinfo->size (cut-infoi cut1 cutsdb)))
+                                             (<= (+ (* 4 cut1) offset) (cut-leaves-length cutsdb)))
+                                    (implies (< offset (cutinfo->size (cut-infoi cut1 cutsdb)))
+                                             (< (+ (* 4 cut1) offset) (cut-leaves-length cutsdb)))))
+                      ;; :hints (("goal" :use ((:instance cutsdb-ok-implies-cutsdb-cut-ok
+                      ;;                        (n cut)))
+                      ;;          :in-theory (e/d (cutsdb-cut-ok cut-next$ cut-next)
+                      ;;                          (cutsdb-ok-implies-cutsdb-cut-ok))))
+                      )))
   :guard-hints (("goal" :in-theory (enable cut-impl-index-ok)))
 
-  (b* ((cut (cut-fix cut))
-       (size (cut-datai cut cutsdb))
-       (truth (cut-datai (+ 1 cut) cutsdb))
-       ((when (and (eql size 0)
+  (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+       ((when (and (eql cutinf.size 0)
                    (cut-impl-index-ok cut 0 cutsdb rwlib)))
         ;; shortcut for const0 node
         (mv t 0 0 refcounts2 eba eba2 copy2 rewrite-stats))
-       ((unless (and (cutsdb-cut-bounded cut node cutsdb)
+       ((unless (and (cut-leaves-bounded cut node cutsdb)
                      (cut-impl-index-ok cut 0 cutsdb rwlib)))
         (mv nil 0 0 refcounts2 eba eba2 copy2 rewrite-stats))
-       ((mv base-cost refcounts2) (cut-restore-mffcs (+ 2 cut) size cutsdb copy aignet2 refcounts2))
+       ((mv base-cost refcounts2) (cut-restore-mffcs (* 4 (lnfix cut)) cutinf.size cutsdb copy aignet2 refcounts2))
        (copy2 (cut-initialize-copy cut copy copy2 cutsdb rwlib))
        ((acl2::stobj-get impl-index impl-cost eba eba2 copy2 rewrite-stats)
         ((aignet (rwlib->aigs rwlib))
          (smm    (rwlib->cands rwlib))
          (truth::npn4arr (rwlib->npns rwlib)))
-        (b* (((truth::npn4 npn) (truth::get-npn4 truth truth::npn4arr)))
+        (b* (((truth::npn4 npn) (truth::get-npn4 cutinf.truth truth::npn4arr)))
           (eval-implementations 0 npn.truth-idx smm aignet eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats)))
-       ((mv & refcounts2) (cut-delete-mffcs (+ 2 cut) size cutsdb copy aignet2 refcounts2)))
+       ((mv & refcounts2) (cut-delete-mffcs (* 4 (lnfix cut)) cutinf.size cutsdb copy aignet2 refcounts2)))
     (mv t (+ base-cost impl-cost) impl-index refcounts2 eba eba2 copy2 rewrite-stats))
   ///
   (defret eval-cut-impl-index-ok
@@ -1519,7 +1650,7 @@
   (defret copy2-length-of-eval-cut
     (implies (and (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
-                  (< (cut-fix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (< (max-fanin (rwlib->aigs rwlib)) (len copy2)))
              (equal (len new-copy2) (len copy2)))
     :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
@@ -1534,7 +1665,7 @@
   (defret eba-length-of-eval-cut
     (implies (and (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
-                  (< (cut-fix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (< (max-fanin (rwlib->aigs rwlib)) (len eba)))
              (equal (len new-eba) (len eba)))
     :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
@@ -1543,7 +1674,7 @@
   (defret eba2-length-of-eval-cut
     (implies (and (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
-                  (< (cut-fix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (< (max-fanin (rwlib->aigs rwlib)) (len eba2)))
              (equal (len new-eba2) (len eba2)))
     :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
@@ -1551,17 +1682,17 @@
 
   (defretd eval-cut-ok-implies-cut-bounded
     (implies ok
-             (cutsdb-cut-bounded cut node cutsdb))
+             (cut-leaves-bounded cut node cutsdb))
     :hints ((acl2::use-termhint
-             (and (equal (cut-datai (cut-fix cut) cutsdb) 0)
-                  ''(:expand ((cutsdb-cut-bounded cut node cutsdb)
-                              (:free (n) (cutsdb-data-nodes-bounded n 0 node cutsdb)))))))))
+             (and (equal (cutinfo->size (cut-infoi cut cutsdb)) 0)
+                  ''(:expand ((cut-leaves-bounded cut node cutsdb)
+                              (:free (n) (leaves-bounded n 0 node cutsdb)))))))))
 
        
 
                  
-(define choose-implementation-cuts ((cuts-start cutp$)
-                                    (cuts-end cutp$)
+(define choose-implementation-cuts ((cuts-start natp)
+                                    (cuts-end natp)
                                     (node natp)
                                     (cutsdb cutsdb-ok)
                                     (rwlib rwlib-wfp)
@@ -1595,27 +1726,25 @@
                (new-eba2)
                (new-copy2)
                (new-rewrite-stats))
-  :measure (cut-measure cuts-start cuts-end cutsdb)
-  (b* ((cuts-start (cut-fix cuts-start))
-       ((when (mbe :logic (zp (- (lnfix cuts-end) cuts-start))
+  :measure (nfix (- (nfix cuts-end) (nfix cuts-start)))
+  (b* (((when (mbe :logic (zp (- (lnfix cuts-end) (nfix cuts-start)))
                    :exec (eql cuts-start cuts-end)))
         (mv nil 0 0 0 refcounts2 eba eba2 copy2 rewrite-stats))
        ((mv ok1 score1 impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats)
         (eval-cut cuts-start node cutsdb rwlib eba eba2 copy copy2 strash2 aignet2 refcounts2 rewrite-stats))
        ((when (and ok1 (eql score1 0)))
         ;; early out for 0-cost
-        (mv t 0 cuts-start impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats))
-       (next (cut-next$ cuts-start cutsdb))
+        (mv t 0 (lnfix cuts-start) impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats))
        ((unless ok1)
-        (choose-implementation-cuts next cuts-end node cutsdb rwlib
+        (choose-implementation-cuts (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
                                     eba eba2 copy copy2 strash2 aignet2 refcounts2 rewrite-stats))
        ((mv ok-rest best-score best-cut-idx best-impl-idx
             refcounts2 eba eba2 copy2 rewrite-stats)
-        (choose-implementation-cuts next cuts-end node cutsdb rwlib
+        (choose-implementation-cuts (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
                                     eba eba2 copy copy2 strash2 aignet2 refcounts2 rewrite-stats))
        ((when (or (not ok-rest)
                   (< score1 best-score)))
-        (mv ok1 score1 cuts-start impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats)))
+        (mv ok1 score1 (lnfix cuts-start) impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats)))
     (mv t best-score best-cut-idx best-impl-idx refcounts2 eba eba2 copy2 rewrite-stats))
   ///
   (verify-guards choose-implementation-cuts)
@@ -1623,15 +1752,15 @@
   (defret cut-impl-index-ok-of-choose-implementation-cuts
     (implies ok
              (and (cut-impl-index-ok cut-index impl-index cutsdb rwlib)
-                  (cutsdb-cut-bounded cut-index node cutsdb)))
+                  (cut-leaves-bounded cut-index node cutsdb)))
     :hints(("Goal" :induct t)
            (and stable-under-simplificationp
                 '(:use ((:instance eval-cut-ok-implies-cut-bounded
-                         (cut (cut-fix cuts-start))))))))
+                         (cut (nfix cuts-start))))))))
 
-  (defret cutp-of-choose-implemenation-cuts
-    (implies (cutsdb-ok cutsdb)
-             (cutp cut-index cutsdb)))
+  ;; (defret cutp-of-choose-implemenation-cuts
+  ;;   (implies (cutsdb-ok cutsdb)
+  ;;            (cutp cut-index cutsdb)))
 
   (defret cut-bound-of-choose-implemenation-cuts
     (implies ok
@@ -1640,7 +1769,7 @@
 
   (defret cut-lower-bound-of-choose-implementation-cuts
     (implies ok
-             (<= (cut-fix cuts-start) cut-index))
+             (<= (nfix cuts-start) cut-index))
     :rule-classes :linear)
 
   
@@ -2159,7 +2288,7 @@
                   (aignet-copies-in-bounds copy2 aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (< (nfix n) (cut-nnodes cutsdb))
-                  (aignet-idp n aignet)
+                  (<= (cut-nnodes cutsdb) (num-nodes aignet))
                   (cutsdb-correct cutsdb aignet))
              (aignet-copy-is-comb-equivalent nn aignet new-copy new-aignet2))
     :hints (;; (and stable-under-simplificationp
@@ -2291,6 +2420,7 @@
                                                                 aignet copy aignet2)
                   (rwlib-correct rwlib)
                   (cutsdb-ok cutsdb)
+                  (<= (cut-nnodes cutsdb) (num-nodes aignet))
                   (cutsdb-lit-idsp aignet cutsdb)
                   (rwlib-wfp rwlib)
                   (aignet-copies-in-bounds copy2 aignet2)
@@ -2343,9 +2473,9 @@
   :returns (mv new-copy new-aignet2)
   :prepwork ((local (in-theory (disable acl2::resize-list-when-atom resize-list
                                         (rwlib-init-abc))))
-             (local (defthm cut-data-length-when-cutsdb-ok
+             (local (defthm cut-leaves-length-when-cutsdb-ok
                       (implies (cutsdb-ok cutsdb)
-                               (< 0 (cut-data-length cutsdb)))
+                               (<= 0 (cut-leaves-length cutsdb)))
                       :hints(("Goal" :in-theory (enable cutsdb-ok))))))
   :guard-debug t
   (b* (((acl2::local-stobjs
@@ -2362,17 +2492,22 @@
             cutsdb rwlib eba eba2 copy2 strash2
             refcounts refcounts2 rewrite-stats))
        (rwlib (rwlib-init-abc rwlib))
-       (cutsdb (time$ (aignet-derive-cuts aignet cutsdb
-                                          (make-cuts4-config :max-cuts
-                                                             (rewrite-config->cuts-per-node config)))
-                      :msg "; rewrite -- derive cuts: ~st sec, ~sa bytes~%"))
-       (ncuts (cutsdb-count-cuts 0 0 cutsdb))
-       (- (cw "; rewrite -- Total cuts: ~x0 (~x1 per node)~%"
-              ncuts (ceiling ncuts (+ 1 (max-fanin aignet)))))
-       ;; (strash (aignet-populate-strash 0 strash aignet))
-       ((mv copy aignet2) (init-copy-comb aignet copy aignet2))
        (refcounts (resize-u32 (+ 1 (max-fanin aignet)) refcounts))
        (refcounts (aignet-count-refs refcounts aignet))
+       ((mv cuts-checked cutsdb)
+        (time$ (aignet-derive-cuts aignet
+                                   (make-cuts4-config :max-cuts
+                                                      (rewrite-config->cuts-per-node config))
+                                   refcounts
+                                   cutsdb)
+               :msg "; rewrite -- derive cuts: ~st sec, ~sa bytes~%"))
+       (ncuts (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+       (- (cw "; rewrite -- Total cuts: ~x0 (~x1 per node)~%"
+              ncuts (ceiling ncuts (+ 1 (max-fanin aignet))))
+          (cw "; rewrite -- Number of cuts evaluated: ~x0 (~x1 per node)~%"
+              cuts-checked (ceiling cuts-checked (+ 1 (max-fanin aignet)))))
+       ;; (strash (aignet-populate-strash 0 strash aignet))
+       ((mv copy aignet2) (init-copy-comb aignet copy aignet2))
        ((acl2::stobj-get eba eba2 copy2)
         ((aignet-tmp (rwlib->aigs rwlib)))
         (b* ((size (+ 1 (max-fanin aignet-tmp)))

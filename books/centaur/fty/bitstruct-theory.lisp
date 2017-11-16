@@ -353,22 +353,22 @@
   ///
   (deffixequiv int-equiv-under-mask))
 
-(defun bitstruct-read-over-write-find-rule (fnname lemmas)
+(defun bitstruct-read-over-write-find-rule (term lemmas)
   (declare (xargs :mode :program))
   (if (atom lemmas)
       (mv nil nil)
     (b* (((acl2::rewrite-rule rule) (car lemmas))
          ((unless (equal rule.rhs ''t))
-          (bitstruct-read-over-write-find-rule fnname (cdr lemmas))))
+          (bitstruct-read-over-write-find-rule term (cdr lemmas))))
       (case-match rule.lhs
-        ((& (fn . args) in ('quote mask))
-         (if (and (eq fn fnname)
-                  (symbolp in)
-                  (symbol-listp args)
-                  (member-eq in args))
-             (mv mask (- (len args) (len (member-eq in args))))
-           (bitstruct-read-over-write-find-rule fnname (cdr lemmas))))
-        (& (bitstruct-read-over-write-find-rule fnname (cdr lemmas)))))))
+        ((& left right ('quote mask))
+         (b* (((mv ok subst) (acl2::one-way-unify left term))
+              ((unless ok)
+               (bitstruct-read-over-write-find-rule term (cdr lemmas)))
+              ((unless (subsetp (all-vars right) (strip-cars subst)))
+               (bitstruct-read-over-write-find-rule term (cdr lemmas))))
+           (mv mask (acl2::sublis-var subst right))))
+        (& (bitstruct-read-over-write-find-rule term (cdr lemmas)))))))
                  
 
 (defun bitstruct-read-over-write-bind-free (write-term
@@ -378,15 +378,12 @@
   (declare (ignore mfc)
            (xargs :stobjs state
                   :mode :program))
-  (b* ((fnname (car write-term))
-       (args (cdr write-term))
-       (wrld (w state))
+  (b* ((wrld (w state))
        (lemmas (getpropc equiv-under-mask-fn 'acl2::lemmas nil wrld))
-       ((mv mask arg-num) (bitstruct-read-over-write-find-rule fnname lemmas))
-       ((unless arg-num) nil)
-       (in-arg (nth arg-num args)))
+       ((mv mask ans) (bitstruct-read-over-write-find-rule write-term lemmas))
+       ((unless mask) nil))
     `((,mask-var . ',mask)
-      (,y-var . ,in-arg))))
+      (,y-var . ,ans))))
 
 (defmacro bitstruct-read-over-write-hyps (write-term 
                                           equiv-under-mask-fn
