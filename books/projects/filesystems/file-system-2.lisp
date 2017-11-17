@@ -229,8 +229,7 @@
 ; This function writes a specified text string to a specified position to a
 ; text file at a specified path.
 (defun l2-wrchs (hns fs start text)
-  (declare (xargs :guard-debug t
-                  :guard (and (symbol-listp hns)
+  (declare (xargs :guard (and (symbol-listp hns)
                               (l2-fs-p fs)
                               (natp start)
                               (stringp text))

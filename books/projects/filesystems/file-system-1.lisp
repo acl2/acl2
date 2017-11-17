@@ -146,6 +146,22 @@
   :hints (("Goal" :in-theory (enable insert-text)) )
   :rule-classes :linear)
 
+(encapsulate ()
+  (local (INCLUDE-BOOK "std/lists/nthcdr" :dir :system))
+
+  (defthmd
+    len-of-insert-text
+    (implies (and (character-listp oldtext)
+                  (stringp text)
+                  (natp start))
+             (equal (len (insert-text oldtext start text))
+                    (+ start (len (coerce text 'list))
+                       (nfix (+ (len oldtext)
+                                (- (+ start (len (coerce text 'list)))))))))
+    :hints (("goal" :do-not-induct t
+             :expand (insert-text oldtext start text)))))
+
+
 ; The problem with this definition of l1-wrchs is that it deletes a directory if
 ; it's found where a text file is expected
 (defun l1-wrchs (hns fs start text)

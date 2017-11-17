@@ -167,3 +167,10 @@
   (implies (and (subsetp-equal lst1 lst2)
                 (member-equal x lst1))
            (member-equal x lst2)))
+
+(defthm nth-of-revappend
+  (implies (and (natp n))
+           (equal (nth n (revappend x y))
+                  (if (< n (len x))
+                      (nth (- (len x) (+ n 1)) x)
+                      (nth (- n (len x)) y)))))
