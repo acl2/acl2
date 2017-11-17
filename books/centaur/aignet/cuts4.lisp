@@ -3952,14 +3952,16 @@
 ;; Ranking of cuts: Keep a smaller cut if it's available.  Otherwise, heavily
 ;; penalize leaves that have few references.
 (define cut-score-aux ((start natp) (size natp) (refcounts) (cutsdb))
-  :guard (<= (+ start size) (cut-leaves-length cutsdb))
+  :guard (and (<= (+ start size) (cut-leaves-length cutsdb))
+              (leaves-bounded start size (u32-length refcounts) cutsdb))
   :measure (nfix size)
   :returns (score natp :rule-classes :type-prescription)
+  :verify-guards nil
   (b* (((when (zp size)) 0)
        (leaf (cut-leavesi start cutsdb))
-       (nrefs (if (< leaf (u32-length refcounts))
-                  (get-u32 leaf refcounts)
-                0))
+       (nrefs ;;(if (< leaf (u32-length refcounts))
+                  (get-u32 leaf refcounts))
+                ;;0))
        (leaf-score (case nrefs
                      (0 0)
                      (1 8)
@@ -3968,6 +3970,9 @@
                      (t 15))))
     (+ leaf-score (cut-score-aux (1+ (lnfix start)) (1- size) refcounts cutsdb)))
   ///
+  (verify-guards cut-score-aux
+    :hints (("goal" :in-theory (enable leaves-bounded))))
+
   (defret cut-score-aux-bound
     (<= score (* 15 (nfix size)))
     :rule-classes :linear))
@@ -3976,10 +3981,13 @@
                    (refcounts)
                    (cutsdb cutsdb-ok))
   :guard (and (< cut (cut-info-length cutsdb))
-              (<= (+ 4 (* 4 cut)) (cut-leaves-length cutsdb)))
+              (<= (+ 4 (* 4 cut)) (cut-leaves-length cutsdb))
+              (cut-leaves-bounded cut (cut-nnodes cutsdb) cutsdb)
+              (<= (cut-nnodes cutsdb) (u32-length refcounts)))
   ;; BOZO bounds checking on refcounts because we don't have the invariant that
   ;; leaves are bounded
   :returns (score natp :rule-classes :type-prescription)
+  :verify-guards nil
   (b* (((cutinfo info) (cut-infoi cut cutsdb)))
     (+ (cut-score-aux (* 4 (lnfix cut)) info.size refcounts cutsdb)
        (case info.size
@@ -3989,6 +3997,10 @@
          (3 400)
          (t 0))))
   ///
+  (verify-guards cut-score
+    :hints (("goal" :in-theory (enable cut-leaves-bounded
+                                       leaves-bounded-when-bounded-lesser))))
+  
   (defret cut-score-bound
     (<= score 1000)
     :rule-classes :linear)
@@ -4005,7 +4017,9 @@
               ((unless (and (< m (cut-info-length cutsdb))
                             (<= (+ 4 (* 4 m)) (cut-leaves-length cutsdb))))
                nil))
-           (cut-leaves-sorted m cutsdb))
+           (and (cut-leaves-sorted m cutsdb)
+                (cut-leaves-bounded m (cut-nnodes cutsdb) cutsdb)
+                (<= (cut-nnodes cutsdb) (u32-length refcounts))))
            ;;    (size (cut-leavesi m cutsdb))
            ;;    ((unless (<= (cut-next m cutsdb) (cut-leaves-length cutsdb))) nil)
            ;;    (truth (cut-leavesi (+ 1 m) cutsdb))
@@ -4019,6 +4033,7 @@
                                     (< x (expt 2 32)))
                                (unsigned-byte-p 32 x))
                       :hints(("Goal" :in-theory (enable unsigned-byte-p))))))
+  :guard-hints (("goal" :in-theory (enable cut-leaves-bounded)))
   :returns (new-cutsdb)
   (b* ((m (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
        ((cutinfo info) (cut-infoi m cutsdb))
@@ -4029,12 +4044,14 @@
        (new-size (logcount mask))
        (new-truth (truth::permute-shrink4 0 0 mask info.truth))
        (cutsdb (leaves-reduce (* 4 m) info.size (* 4 m) 0 mask cutsdb))
-       (score (cut-score m refcounts cutsdb)))
-    (update-cut-infoi m (make-cutinfo :size new-size
-                                      :truth new-truth
-                                      :score score
-                                      :valid t)
-                      cutsdb))
+       (info1 (make-cutinfo :size new-size
+                            :truth new-truth
+                            :score 0
+                            :valid t))
+       (cutsdb (update-cut-infoi m info1 cutsdb))
+       (score (cut-score m refcounts cutsdb))
+       (info2 (!cutinfo->score score info1)))
+    (update-cut-infoi m info2 cutsdb))
   ///
   (defret cutsdb-ok-of-cut-reduce
     (implies (cutsdb-ok cutsdb)
@@ -4246,6 +4263,7 @@
                   (cut-leaves-length cutsdb))
               (< (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)
                  (cut-info-length cutsdb))
+              (<= (cut-nnodes cutsdb) (u32-length refcounts))
               )
   :returns (mv (updatedp)
                (new-cutsdb))
@@ -5004,6 +5022,7 @@
   :guard (and (< cut0 (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               (< cut1 (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               (not (equal 0 (cut-nnodes cutsdb)))
+              (<= (cut-nnodes cutsdb) (u32-length refcounts))
               ;; (<= node-cuts-start (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               )
   :returns (mv valid constp new-cutsdb)
@@ -5397,6 +5416,7 @@
   :guard (and (<= cut0-max (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               (<= cut0 cut0-max)
               (< cut1 (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+              (<= (cut-nnodes cutsdb) (u32-length refcounts))
               ;; (<= node-cuts-start (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               (not (equal 0 (cut-nnodes cutsdb))))
   :measure (nfix (- (nfix cut0-max) (nfix cut0)))
@@ -5563,6 +5583,7 @@
               (<= cut0 cut0-max)
               (<= cut1-max (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               (<= cut1 cut1-max)
+              (<= (cut-nnodes cutsdb) (u32-length refcounts))
               ;; (<= node-cuts-start (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               (not (equal 0 (cut-nnodes cutsdb))))
   :measure (nfix (- (nfix cut1-max) (nfix cut1)))
@@ -5839,8 +5860,12 @@
 
 (define node-add-trivial-cut ((refcounts) (cutsdb cutsdb-ok))
   :returns (new-cutsdb)
-  :guard (not (equal 0 (cut-nnodes cutsdb)))
+  :guard (and (not (equal 0 (cut-nnodes cutsdb)))
+              (<= (cut-nnodes cutsdb) (u32-length refcounts)))
   :guard-debug t
+  :guard-hints (("goal" :in-theory (enable cut-leaves-bounded)
+                 :expand ((:free (data bound cutsdb) (leaves-bounded data 1 bound cutsdb))
+                          (:free (data bound cutsdb) (leaves-bounded data 0 bound cutsdb)))))
   (b* ((node (cut-nnodes cutsdb))
        (cut (nodecut-indicesi node cutsdb))
        (cutsdb (cutsdb-maybe-grow-cut-leaves (+ 4 (* 4 cut)) cutsdb))
@@ -6126,7 +6151,8 @@
                               (refcounts)
                               (cutsdb cutsdb-ok))
   :guard (and (< (lit-id child0) (cut-nnodes cutsdb))
-              (< (lit-id child1) (cut-nnodes cutsdb)))
+              (< (lit-id child1) (cut-nnodes cutsdb))
+              (<= (cut-nnodes cutsdb) (u32-length refcounts)))
   :returns (mv (new-count natp :rule-classes :type-prescription) new-cutsdb)
   (b* ((node0 (lit-id child0))
        (node1 (lit-id child1))
@@ -6294,7 +6320,8 @@
                           (refcounts)
                           (cutsdb cutsdb-ok))
   :guard (and (< (lit-id child0) (cut-nnodes cutsdb))
-              (< (lit-id child1) (cut-nnodes cutsdb)))
+              (< (lit-id child1) (cut-nnodes cutsdb))
+              (< (cut-nnodes cutsdb) (u32-length refcounts)))
   :returns (mv (count natp :rule-classes :type-prescription) new-cutsdb)
   (b* ((cutsdb (cuts-add-node cutsdb)))
     (node-derive-cuts-aux child0 child1 config refcounts cutsdb))
@@ -6535,6 +6562,7 @@
 
 (define node-derive-cuts-input ((refcounts) (cutsdb cutsdb-ok))
   :returns (new-cutsdb)
+  :guard (< (cut-nnodes cutsdb) (u32-length refcounts))
   (b* ((cutsdb (cuts-add-node cutsdb)))
     (node-add-trivial-cut refcounts cutsdb))
   ///
@@ -6630,7 +6658,8 @@
                                  (cutsdb cutsdb-ok))
   :returns (mv (cuts-checked natp :rule-classes :type-prescription)
                new-cutsdb)
-  :guard (<= (cut-nnodes cutsdb) (max-fanin aignet))
+  :guard (and (<= (cut-nnodes cutsdb) (max-fanin aignet))
+              (< (cut-nnodes cutsdb) (u32-length refcounts)))
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   (b* ((node (cut-nnodes cutsdb))
        (slot0 (id->slot node 0 aignet))
@@ -6717,7 +6746,8 @@
   :returns (mv (cuts-checked natp :rule-classes :type-prescription)
                new-cutsdb)
   :measure (nfix (- (+ 1 (max-fanin aignet)) (cut-nnodes cutsdb)))
-  :guard (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet)))
+  :guard (and (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet)))
+              (< (max-fanin aignet) (u32-length refcounts)))
   (b* ((node (cut-nnodes cutsdb))
        ((when (mbe :logic (zp (+ 1 (max-fanin aignet) (- (nfix node))))
                    :exec (eql (+ 1 (max-fanin aignet)) node)))
@@ -6777,6 +6807,7 @@
 (define aignet-derive-cuts (aignet (config cuts4-config-p) refcounts cutsdb)
   :returns (mv (cuts-checked natp :rule-classes :type-prescription)
                new-cutsdb)
+  :guard (< (max-fanin aignet) (u32-length refcounts))
   :verify-guards nil
   (b* ((cutsdb (update-cut-nnodes 0 cutsdb))
        (cutsdb (cutsdb-maybe-grow-nodecut-indices 1 cutsdb))
