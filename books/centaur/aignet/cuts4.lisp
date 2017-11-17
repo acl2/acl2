@@ -1715,6 +1715,14 @@
                   (not (equal (stype (car (lookup-id (cut-leavesi n cutsdb) aignet))) :nxst))))
     :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding))))
 
+  (defthmd leaves-lit-idsp-implies-aignet-litp
+    (implies (and (leaves-lit-idsp idx num aignet cutsdb)
+                  (<= (nfix idx) (nfix n))
+                  (< (nfix n) (+ (nfix idx) (nfix num))))
+             (aignet-litp (make-lit (cut-leavesi n cutsdb) bit) aignet))
+    :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding
+                                       aignet-litp aignet-idp))))
+
   (defthm leaves-lit-idsp-of-aignet-extension
     (implies (and (aignet-extension-binding)
                   (leaves-lit-idsp idx num orig cutsdb))
@@ -1835,7 +1843,12 @@
   (defthmd cutsdb-lit-idsp-implies-cut-leaves-lit-idsp
     (implies (and (cutsdb-lit-idsp aignet cutsdb)
                   (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)))
-             (cut-leaves-lit-idsp cut aignet cutsdb))))
+             (cut-leaves-lit-idsp cut aignet cutsdb)))
+
+  (defthm cutsdb-lit-idsp-of-aignet-extension
+   (implies (and (aignet-extension-binding)
+                 (cutsdb-lit-idsp orig cutsdb))
+            (cutsdb-lit-idsp new cutsdb))))
 
   
     
