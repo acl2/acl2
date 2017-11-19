@@ -13225,6 +13225,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 "(r)"
                                 #+(and mcl (not ccl))
                                 "(mcl)"))
+    (acl2-world-alist . nil)
     (acl2p-checkpoints-for-summary . nil)
     (axiomsp . nil)
     (bddnotes . nil)
@@ -20375,6 +20376,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     current-acl2-world
     undone-worlds-kill-ring
+    acl2-world-alist
     timer-alist
 
     main-timer

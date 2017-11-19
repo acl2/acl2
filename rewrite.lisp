@@ -89,10 +89,8 @@
 
 ; Note: We explicitly check that an equivalence relation has no guard because
 ; we never otherwise consider their guards.  (The "guard" on an ACL2 function
-; definition is a predicate that must be true of the actuals in order for the
-; defining equation to hold.  It can be thought of as a "precondition" or a
-; characterization of the domain of the function definition.  In Common Lisp
-; (and ACL2 is just a subset of Common Lisp) many functions, e.g., car and cdr,
+; can be thought of as a "precondition" or a characterization of the domain of
+; the function definition.  In Common Lisp many functions, e.g., car and cdr,
 ; are not defined everywhere and guards are our way of taking note of this.
 ; Equivalence relations have "no" guard, meaning their guard is t, i.e., they
 ; are defined everywhere.)

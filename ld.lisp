@@ -2129,6 +2129,62 @@
 (defmacro oops nil
   '(oops-fn state))
 
+(defun push-current-acl2-world (name state)
+  (declare (xargs :guard (and (symbolp name)
+                              (f-boundp-global 'acl2-world-alist state)
+                              (alistp (f-get-global 'acl2-world-alist state)))))
+  (prog2$ (or (symbolp name) ; always true if guard is checked
+              (er hard 'push-current-acl2-world
+                  "It is illegal to call push-current-acl2-world with ~x0, ~
+                   because it is not a symbol."
+                  name))
+          (f-put-global 'acl2-world-alist
+                        (acons name
+                               (w state)
+                               (f-get-global 'acl2-world-alist state))
+                        state)))
+
+(defun pop-current-acl2-world (name state)
+  (declare (xargs :guard (and (symbolp name)
+                              (f-boundp-global 'acl2-world-alist state)
+                              (alistp (f-get-global 'acl2-world-alist state))
+                              (assoc-eq name (f-get-global 'acl2-world-alist
+                                                           state)))))
+  (prog2$
+   (or (symbolp name) ; always true if guard is checked
+       (er hard 'pop-current-acl2-world
+           "It is illegal to call pop-current-acl2-world with ~x0, because ~
+            it is not a symbol."
+           name))
+   (let ((pair (assoc-eq name (f-get-global 'acl2-world-alist state))))
+     (cond
+      ((null pair)
+       (prog2$
+        (er hard 'pop-current-acl2-world
+            "Attempted to pop the name ~x0, which is not bound in ~x1."
+            name
+            '(@ acl2-world-alist))
+        state))
+      (t
+       (pprogn
+        (set-w! (cdr pair) state)
+        (f-put-global 'acl2-world-alist
+                      (delete-assoc-eq name
+                                       (f-get-global 'acl2-world-alist state))
+                      state)))))))
+
+(defmacro revert-world (form)
+
+; This variant of revert-world-on-error reverts the world after execution of
+; form, whether or not there is an error.
+
+  `(acl2-unwind-protect
+    "revert-world"
+    (pprogn (push-current-acl2-world 'revert-world state)
+            ,form)
+    (pop-current-acl2-world 'revert-world state)
+    (pop-current-acl2-world 'revert-world state)))
+
 (defmacro i-am-here ()
   '(mv-let (col state)
            (fmt1 "~ I-AM-HERE~|" nil 0 (standard-co state) state nil)
