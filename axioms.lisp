@@ -24726,17 +24726,38 @@ Lisp definition."
   (declare (xargs :mode :logic :verify-guards t))
   (if x y z))
 
+(defun resize-list-exec (lst n default-value acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (and (integerp n) (> n 0))
+      (resize-list-exec (if (atom lst) lst (cdr lst))
+                        (1- n)
+                        default-value
+                        (cons (if (atom lst) default-value (car lst))
+                              acc))
+    (reverse acc)))
+
 (defun resize-list (lst n default-value)
 
 ; This function supports stobjs.
 
-  (declare (xargs :guard t))
-  (if (and (integerp n) (> n 0))
-      (cons (if (atom lst) default-value (car lst))
-            (resize-list (if (atom lst) lst (cdr lst))
-                         (1- n)
-                         default-value))
-    nil))
+  (declare (xargs :guard t :verify-guards nil))
+  (mbe :logic
+       (if (and (integerp n) (> n 0))
+           (cons (if (atom lst) default-value (car lst))
+                 (resize-list (if (atom lst) lst (cdr lst))
+                              (1- n)
+                              default-value))
+         nil)
+       :exec ; tail-recursive
+       (resize-list-exec lst n default-value nil)))
+
+(defthm resize-list-exec-is-resize-list
+  (implies (true-listp acc)
+           (equal (resize-list-exec lst n default-value acc)
+                  (revappend acc
+                             (resize-list lst n default-value)))))
+
+(verify-guards resize-list)
 
 ; Define e/d, adapted with only minor changes from Bishop Brock's community
 ; book books/ihs/ihs-init.lisp.

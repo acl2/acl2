@@ -28,12 +28,6 @@
 ;
 ; Original authors: Sol Swords <sswords@centtech.com>
 
-; Added by Matt K., 11/14/2017: With safety 0, LispWorks fails to complete the
-; guard conjecture for RECORD-ALL-NPN4-PERMS-TOP (both Version 7.0 and Version
-; 7.1).  With safety 3, the problem goes away (and the entire LD completes in a
-; few seconds).  Until we (perhaps) get a LispWorks fix, we'll avoid this book.
-; cert_param: (non-lispworks)
-
 (in-package "TRUTH")
 
 (include-book "sizes")

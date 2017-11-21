@@ -174,6 +174,7 @@
     CONS-TERM*
     FSUBCOR-VAR
     IGNORABLE IRRELEVANT OPTIMIZE ; from declare forms
+    REVERT-WORLD
 
 ; Symbols below should be subtracted from *acl2-exports*.
 

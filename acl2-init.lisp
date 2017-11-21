@@ -217,26 +217,28 @@ implementations.")
 ;  #+clisp
 ;  (setq CUSTOM:*DEFAULT-FILE-ENCODING* :unix)
 
-#+(and lispworks (not acl2-par))
-(setq system::*stack-overflow-behaviour*
+#+lispworks
+(hcl:extend-current-stack
 
-; The following could reasonably be nil or :warn.  David Rager did some
-; experiments suggesting that ACL2(p) regressions (as of July 2011) may be more
-; robust with the :warn setting.  However, that setting causes warnings during
-; the build, and it's easy to imagine that ACL2 users would also see that
-; cryptic warning -- very un-ACL2-like!  So we use nil rather than :warn here.
+; For LispWorks, we extend the stack size to avoid stack overflows.
 
-      nil)
+; We have also also considered setting system::*stack-overflow-behaviour* to
+; nil (as we did in ACL2 Version 7.4 and some (perhaps many) versions earlier
+; -- or :warn, as we did similarly for ACL2(p).  However, it seems best not to
+; mess with the default of :error: a stack overflow seems unlikely to be caught
+; with safety 0, and with safety 3, we prefer to see the error rather than
+; having the stack automatically extended, so that we can find the offending
+; loop and fix it.  For example, for the community book
+; books/centaur/truth/perm4.lisp, we sent a bug report to LispWorks (during
+; post-7.4 development) for a hang in "Computing the guard conjecture for
+; RECORD-ALL-NPN4-PERMS-TOP"; but the problem was simply a stack overflow.  We
+; didn't catch the problem with safety 3 because
+; system::*stack-overflow-behaviour* was nil, so the stack grew automatically.
+; Why not set it to nil for safety 0 and :error for safety 3?  Because perhaps
+; (not sure) when investigating an issue with safety 3, we could get stack
+; overflows that aren't actually the problem.
 
-#+(and lispworks acl2-par)
-(setq system:*stack-overflow-behaviour*
-
-; Since a setting of nil is at least sometimes (if not always) ignored when
-; safety is set to 0 (according to an email communication between David Rager
-; and Martin Simmons), we choose to use the warn setting for the #+acl2-par
-; build.
-
-      :warn)
+ 400)
 
 ; We have observed a significant speedup with Allegro CL when turning off
 ; its cross-referencing capability.  Here are the times before and after
