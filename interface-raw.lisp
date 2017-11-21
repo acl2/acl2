@@ -8428,9 +8428,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 ;     The fix was for ACL2 function print-call-history to print backtraces to
 ;     *standard-output*, rather than to the default stream, *debug-io*.
-; 
+;
 ; BUT that fix caused a problem:
-; 
+;
 ; (2) Commit 6d7ad53ecdaaec9dcf3e3d05c19832b97fa7062a on Aug 26, 2016 provided
 ;     a fix for GitHub Issue 634 (https://github.com/acl2/acl2/issues/634),
 ;     namely, printing of a backtrace to the terminal.  The problem had been
@@ -8457,7 +8457,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; (defun foo (x) (declare (optimize (safety 0))) (car x))
 ; #+acl2-loop-only (set-debugger-enable t)
 ; (foo 3)
-; 
+;
 ; So now, in LP we bind *debug-io* to *our-standard-io* instead of
 ; *standard-output*, thus guaranteeing that debugger output is sent to standard
 ; output rather than the terminal, without the mistake of binding *debug-io* to
@@ -8539,27 +8539,30 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
        #-(and gcl (not cltl2))
        (setq *debugger-hook* 'our-abort)
 
-; Even with the setting of *stack-overflow-behaviour* to nil or :warn in
-; acl2-init.lisp, we cannot eliminate the following form for LispWorks.  (We
-; tried with LispWorks 6.0 and Lispworks 6.0.1 with *stack-overflow-behaviour*
-; = nil and without the following form, but we got segmentation faults when
-; certifying community books books/concurrent-programs/bakery/stutter2 and
-; books/unicode/read-utf8.lisp.)
+; We have found it necessary to extend the LispWorks stack size, in particular
+; for community books books/concurrent-programs/bakery/stutter2 and
+; books/unicode/read-utf8.lisp.
 
        #+lispworks (hcl:extend-current-stack 400)
 
-       #+(and lispworks acl2-par)
-       (when (< (hcl:current-stack-length)
+; David Rager agrees that the following block of code is fine to delete (note
+; that as of 11/2017 (hcl:current-stack-length) is 399998 when ACL2 comes up,
+; built on 64-bit LispWorks), though he wonders if it is needed for 32-bit
+; LispWorks.  We'll leave it as a comment in case something like it is useful
+; in the future.
 
-; Keep the below number (currently 80000) in sync with the value given to
-; *sg-default-size* (set elsewhere in our code).
-
-                80000)
-         (hcl:extend-current-stack
-
-; this calculation sets the current stack length to be within 1% of 80000
-
-          (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
+;;;        #+(and lispworks acl2-par)
+;;;        (when (< (hcl:current-stack-length)
+;;;
+;;; ; Keep the below number (currently 80000) in sync with the value given to
+;;; ; *sg-default-size* (set elsewhere in our code).
+;;;
+;;;                 80000)
+;;;          (hcl:extend-current-stack
+;;;
+;;; ; this calculation sets the current stack length to be within 1% of 80000
+;;;
+;;;           (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
 
        #+sbcl
        (define-our-sbcl-putenv) ; see comment on this in acl2-fns.lisp
