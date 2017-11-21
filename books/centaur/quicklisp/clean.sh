@@ -32,19 +32,29 @@
 
 set -e
 
-# Modification by Matt K. to go with ACL2 release: Comment out lines
-# that assume we are in a git repository.
+# Modification by Matt K.: check if we are in a github repository
+# before doing git operations, and if not, then remove compiled files
+# bundle.* but not bundle.lisp.
 
-DIFF=`git status --porcelain bundle`
-if [ ! -z "$DIFF" ]
-then
-    echo "Cowardly refusing to clean because there are uncommitted changes in bundle/"
-    git status bundle | sed 's/^/   | /'
-    exit 1
+if [ "`git rev-parse --git-dir 2> /dev/null`" != "" ] ; then \
+echo "Cleaning inside github repo" ;\
+DIFF=`git status --porcelain bundle` ;\
+if [ ! -z "$DIFF" ] ; then \
+    echo "Cowardly refusing to clean because there are uncommitted changes in bundle/" ;\
+    git status bundle | sed 's/^/   | /' ;\
+    exit 1 ;\
+fi ;\
+echo "Cleaning quicklisp/bundle" ;\
+git clean -f bundle ;\
+else \
+echo "Cleaning quicklisp/bundle (only compiled files 'bundle.*', since outside git repository)" ;\
+cd bundle ;\
+bundles="`ls -1 bundle.* | grep -v 'lisp$'`" || bundles="" ;\
+if [ "$bundles" != "" ] ; then \
+rm -f $bundles ;\
+fi ;\
+cd .. ;\
 fi
-
-echo "Cleaning quicklisp/bundle"
-git clean -f bundle
 
 echo "Cleaning asdf-home/cache/common-lisp"
 rm -rf asdf-home/cache/common-lisp
