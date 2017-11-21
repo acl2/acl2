@@ -1,3 +1,7 @@
+; Copyright (C) 2017, Regents of the University of Texas
+; Written by Mihir Mehta
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 (in-package "ACL2")
 
 (defthm make-character-list-makes-character-list
@@ -167,3 +171,10 @@
   (implies (and (subsetp-equal lst1 lst2)
                 (member-equal x lst1))
            (member-equal x lst2)))
+
+(defthm nth-of-revappend
+  (implies (and (natp n))
+           (equal (nth n (revappend x y))
+                  (if (< n (len x))
+                      (nth (- (len x) (+ n 1)) x)
+                      (nth (- n (len x)) y)))))
