@@ -1,8 +1,7 @@
 ; Unquote Object If Quoted
 ;
-; Copyright (C) 2015-2017
-;   Kestrel Institute (http://www.kestrel.edu)
-;   Regents of the University of Texas
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
