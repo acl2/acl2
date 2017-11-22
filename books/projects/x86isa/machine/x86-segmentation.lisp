@@ -122,7 +122,8 @@
 (define ea-to-la ((eff-addr i64p)
                   (seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
                   x86)
-  :returns (mv flg (lin-addr i48p))
+  :returns (mv flg
+               (lin-addr i64p :hyp (i64p eff-addr)))
   :parents (x86-segmentation)
   :short "Translate an effective address to a linear address."
   :long
@@ -179,10 +180,17 @@
    </p>
    <p>
    If the translation is successful,
-   this function returns a signed 48-bit integer
-   that represents a canonical linear address.
-   In 64-bit mode, the 64-bit linear address that results from the translation
+   this function returns a signed 64-bit integer
+   that represents a linear address.
+   In 64-bit mode, when the segment register is FS or GS,
+   the 64-bit linear address that results from the translation
    is checked to be canonical before returning it.
+   In 64-bit mode, when the segment register is not FS or GS,
+   the effective address is returned unmodified as a linear address,
+   because segment translation should be a no-op in this case;
+   the returned linear address may be canonical or not,
+   but it is checked to be canonical elsewhere,
+   before accessing memory via paging.
    In 32-bit mode, the 32-bit linear address that results from the translation
    is always canonical.
    If the translation fails,
@@ -198,7 +206,7 @@
             (if (canonical-address-p lin-addr)
                 (mv nil lin-addr)
               (mv (list :non-canonical-address lin-addr) 0)))
-        (mv nil (i48 eff-addr)))
+        (mv nil eff-addr))
     (b* (((mv base
               lower-bound
               upper-bound) (x86-segment-base-and-bounds seg-reg x86))
@@ -226,7 +234,7 @@
              (and (equal (mv-nth 0 (ea-to-la eff-addr seg-reg x86))
                          nil)
                   (equal (mv-nth 1 (ea-to-la eff-addr seg-reg x86))
-                         (i48 eff-addr))))))
+                         eff-addr)))))
 
 ;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define eas-to-las ((n natp)
@@ -235,7 +243,7 @@
                               0 *segment-register-names-len* seg-reg))
                     x86)
   :returns (mv flg
-               (lin-addrs "A @('nil')-terminated list of @(tsee i48p)s."))
+               (lin-addrs "A @('nil')-terminated list of @(tsee i64p)s."))
   :parents (x86-segmentation)
   :short "Translate a sequence of contiguous effective addresses
           to linear addresses."
@@ -244,16 +252,14 @@
    The contiguous effective addresses are
    @('eff-addr') through @('eff-addr + n - 1').
    These effective addresses are translated in increasing order.
-   As soon as the translation of an effective address fails,
+   When the translation of an effective address fails,
    the recursion stops and the error flag is returned.
    </p>"
   (if (zp n)
       (mv nil nil)
     (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
          ((when flg) (mv flg nil))
-         (eff-addr+1 (1+ eff-addr))
-         ((unless (i48p eff-addr+1))
-          (mv (list :effective-address-out-of-range eff-addr+1) nil))
+         (eff-addr+1 (i64 (1+ eff-addr)))
          ((mv flg lin-addrs) (eas-to-las (1- n) eff-addr+1 seg-reg x86))
          ((when flg) (mv flg nil)))
       (mv nil (cons lin-addr lin-addrs)))))

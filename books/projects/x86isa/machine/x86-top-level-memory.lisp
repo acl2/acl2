@@ -33,9 +33,13 @@
   "<p>
    The effective address is translated to a linear address
    and then @('rml08') is called.
+   If the resulting linear address is not canonical,
+   an error occurs.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
-       ((when flg) (mv flg 0 x86)))
+       ((when flg) (mv flg 0 x86))
+       ((unless (canonical-address-p lin-addr))
+        (mv (list :non-canonical-address lin-addr) 0 x86)))
     (rml08 lin-addr r-x x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la)))
   ///
@@ -132,9 +136,10 @@
   (defrule rme08-when-64-bit-modep-and-not-fs/gs
     (implies (and (64-bit-modep x86)
                   (not (equal seg-reg *fs*))
-                  (not (equal seg-reg *gs*)))
+                  (not (equal seg-reg *gs*))
+                  (canonical-address-p eff-addr))
              (equal (rme08 eff-addr seg-reg r-x x86)
-                    (rml08 (i48 eff-addr) r-x x86)))))
+                    (rml08 eff-addr r-x x86)))))
 
 (define rime08
   ((eff-addr i64p)
@@ -150,9 +155,13 @@
   "<p>
    The effective address is translated to a linear address
    and then @('riml08') is called.
+   If the resulting linear address is not canonical,
+   an error occurs.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
-       ((when flg) (mv flg 0 x86)))
+       ((when flg) (mv flg 0 x86))
+       ((unless (canonical-address-p lin-addr))
+        (mv (list :non-canonical-address lin-addr) 0 x86)))
     (riml08 lin-addr r-x x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
@@ -168,9 +177,13 @@
   "<p>
    The effective address is translated to a linear address
    and then @('wml08') is called.
+   If the resulting linear address is not canonical,
+   an error occurs.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
-       ((when flg) (mv flg x86)))
+       ((when flg) (mv flg x86))
+       ((unless (canonical-address-p lin-addr))
+        (mv (list :non-canonical-address lin-addr) x86)))
     (wml08 lin-addr val x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
@@ -186,9 +199,13 @@
   "<p>
    The effective address is translated to a linear address
    and then @('wiml08') is called.
+   If the resulting linear address is not canonical,
+   an error occurs.
    </p>"
   (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
-       ((when flg) (mv flg x86)))
+       ((when flg) (mv flg x86))
+       ((unless (canonical-address-p lin-addr))
+        (mv (list :non-canonical-address lin-addr) x86)))
     (wiml08 lin-addr val x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la))))
 
