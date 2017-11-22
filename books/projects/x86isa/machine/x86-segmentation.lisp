@@ -122,6 +122,7 @@
          (lower (if e (1+ limit) 0))
          (upper (if e (if d/b #xffffffff #xffff) limit)))
       (mv (n32 base) lower upper)))
+  :inline t
   ///
 
   (defrule x86-segment-base-and-bound-of-xw
@@ -231,6 +232,7 @@
          (lin-addr (n32 (+ base eff-addr))))
       (mv nil lin-addr)))
   :guard-hints (("Goal" :in-theory (enable x86-segment-base-and-bounds)))
+  :inline t
   ///
 
   (defrule ea-to-la-of-xw

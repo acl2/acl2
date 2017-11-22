@@ -42,6 +42,7 @@
         (mv (list :non-canonical-address lin-addr) 0 x86)))
     (rml08 lin-addr r-x x86))
   :guard-hints (("Goal" :in-theory (enable ea-to-la)))
+  :inline t
   ///
 
   (defthm-usb n08p-of-mv-nth-1-rme08
@@ -163,7 +164,8 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) 0 x86)))
     (riml08 lin-addr r-x x86))
-  :guard-hints (("Goal" :in-theory (enable ea-to-la))))
+  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
+  :inline t)
 
 (define wme08
   ((eff-addr i64p)
@@ -185,7 +187,8 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) x86)))
     (wml08 lin-addr val x86))
-  :guard-hints (("Goal" :in-theory (enable ea-to-la))))
+  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
+  :inline t)
 
 (define wime08
   ((eff-addr i64p)
@@ -207,6 +210,7 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) x86)))
     (wiml08 lin-addr val x86))
-  :guard-hints (("Goal" :in-theory (enable ea-to-la))))
+  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
+  :inline t)
 
 ;; ======================================================================
