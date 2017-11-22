@@ -29,7 +29,9 @@
 (define x86-segment-base-and-bounds
   ((seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
    x86)
-  :returns (mv (base n32p) (lower-bound n33p) (upper-bound n32p))
+  :returns (mv (base n64p :hyp (x86p x86))
+               (lower-bound n33p)
+               (upper-bound n32p))
   :parents (x86-segmentation)
   :short "Return a segment's base linear address, lower bound, and upper bound."
   :long
@@ -37,15 +39,27 @@
    The segment is the one in the given segment register.
    </p>
    <p>
-   Even though @('*hidden-segment-register-layout*') uses 64 bits
-   for the segment base address,
-   addresses coming from segment descriptors are always 32 bits:
+   Base addresses coming from segment descriptors are always 32 bits:
    see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.5
-   and AMD manual, Apr'16, Vol. 2, Sec. 4-7 and 4-8.
-   Thus, this function returns an unsigned 32-bit integer as the base result.
+   and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4.8.
+   However, in 64-bit mode, segment bases for FS and GS are 64 bits:
+   see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.4
+   and AMD manual, Apr'16, Vol. 2, Sec 4.5.3.
    As an optimization, in 64-bit mode,
    since segment bases for CS, DS, SS, and ES are ignored,
    this function just returns 0 as the base result under these conditions.
+   In 64-bit mode, when the segment register is FS or GS,
+   we read the base address from the MSRs
+   mentioned in Intel manual, Mar'17, Vol. 3A, Sec. 3.4.4
+   and AMD manual, Apr'16, Vol. 2, Sec 4.5.3;
+   these are physically mapped to the relevant hidden portions of FS and GS,
+   so it should be a state invariant that they are equal to
+   the relevant hidden portions of FS and GS.
+   In 32-bit mode, since the high 32 bits are ignored
+   (see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.4
+   and AMD manual, Apr'16, Vol. 2, Sec 4.5.3),
+   we only return the low 32 bits of the base address
+   read from the hidden portion of the segment register.
    </p>
    <p>
    @('*hidden-segment-register-layout*') uses 32 bits
@@ -94,12 +108,11 @@
    the caller must ignore this result in 64-bit mode.
    </p>"
   (if (64-bit-modep x86)
-      (if (or (eql seg-reg *fs*)
-              (eql seg-reg *gs*))
-          (b* ((hidden (xr :seg-hidden seg-reg x86))
-               (base (hidden-seg-reg-layout-slice :base-addr hidden)))
-            (mv (n32 base) 0 0))
-        (mv 0 0 0))
+      (cond ((eql seg-reg *fs*)
+             (mv (msri *ia32_fs_base-idx* x86) 0 0))
+            ((eql seg-reg *gs*)
+             (mv (msri *ia32_gs_base-idx* x86) 0 0))
+            (t (mv 0 0 0)))
     (b* ((hidden (xr :seg-hidden seg-reg x86))
          (base (hidden-seg-reg-layout-slice :base-addr hidden))
          (limit (hidden-seg-reg-layout-slice :limit hidden))
