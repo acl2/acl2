@@ -1022,7 +1022,7 @@
 
 (defun bounded-nat-alistp (x n)
 
-; Check that x is a true-list of pairs (i . x) with i < x.
+; Check that x is a true-list of pairs (i . y) with i < n.
 
   (declare (xargs :guard (natp n)))
   (cond ((atom x) (null x))

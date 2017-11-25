@@ -156,6 +156,11 @@
                 (r-symbol-alistp macro-aliases))
            (symbolp (deref-macro-name name macro-aliases))))
 
+(defthm bounded-nat-alistp-forward-to-alistp
+  (implies (bounded-nat-alistp x n)
+           (alistp x))
+  :rule-classes :forward-chaining)
+
 (verify-termination ; and guards
   (disabledp-fn (declare (xargs :guard-hints
                                 (("Goal"
