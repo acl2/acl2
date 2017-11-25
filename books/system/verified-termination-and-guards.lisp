@@ -114,3 +114,50 @@
 (verify-termination strip-dcls)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; The following section was written by Matt Kaufmann.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination enabled-structure-p) ; and guards
+
+(verify-termination enabled-numep) ; and guards
+
+(verify-termination bounded-nat-alistp) ; and guards
+
+; Start guard proof for enabled-runep
+
+(defthm bounded-nat-alistp-forward-to-alisp
+  (implies (bounded-nat-alistp x n)
+           (alistp x))
+  :rule-classes :forward-chaining)
+
+(defthm enabled-runep-guard-helper-1
+  (implies (and (assoc-equal-cdr r x)
+                (bounded-nat-alistp x n))
+           (or (natp (car (assoc-equal-cdr r x)))
+               (equal (car (assoc-equal-cdr r x)) nil)))
+  :rule-classes :type-prescription)
+
+(defthm enabled-runep-guard-helper-2
+  (implies (and (bounded-nat-alistp x n)
+                (assoc-equal-cdr r x))
+           (< (car (assoc-equal-cdr r x))
+              n))
+  :rule-classes :linear)
+
+(verify-termination enabled-runep) ; and guards
+
+(verify-termination disabledp-fn-lst) ; and guards
+
+; Start guard proof for disabledp-fn
+
+(defthm symbolp-deref-macro-name
+  (implies (and (symbolp name)
+                (symbol-alistp macro-aliases)
+                (r-symbol-alistp macro-aliases))
+           (symbolp (deref-macro-name name macro-aliases))))
+
+(verify-termination ; and guards
+  (disabledp-fn (declare (xargs :guard-hints
+                                (("Goal"
+                                  :in-theory (disable deref-macro-name)
+                                  :do-not-induct t))))))
