@@ -166,3 +166,14 @@
                                 (("Goal"
                                   :in-theory (disable deref-macro-name)
                                   :do-not-induct t))))))
+
+; And now a slew of easy ones:
+
+(verify-termination def-body) ; and guards
+(verify-termination access-command-tuple-number) ; and guards
+(verify-termination collect-non-x) ; and guards
+(verify-termination
+  (silent-error (declare (xargs :verify-guards t)))) ; and guards
+(verify-termination saved-output-token-p) ; and guards
+(verify-termination push-io-record) ; and guards
+(verify-termination scan-to-cltl-command) ; and guards

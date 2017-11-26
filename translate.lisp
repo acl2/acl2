@@ -1370,6 +1370,7 @@
         :last-make-event-expansion last-make-event-expansion))
 
 (defun access-command-tuple-number (x)
+  (declare (xargs :guard (weak-command-tuple-p x)))
   (access command-tuple x :number))
 
 (defun access-command-tuple-defun-mode (x)
@@ -1439,9 +1440,11 @@
 ; its number or 'command-landmark with n as its number, depending on
 ; whether flg is 'event-landmark or 'command-landmark.
 
+  (declare (xargs :guard (and (natp n)
+                              (plist-worldp wrld))))
   #+acl2-metering
   (setq meter-maid-cnt (1+ meter-maid-cnt))
-  (cond ((null wrld)
+  (cond ((endp wrld)
          (er hard 'scan-to-landmark-number
              "We have scanned the world looking for absolute ~
               ~#0~[event~/command~] number ~x1 and failed to find it. ~

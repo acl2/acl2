@@ -5659,7 +5659,8 @@
 ; Scan to the next binding of 'cltl-command or to the end of this event block.
 ; Return either nil or the global-value of cltl-command for this event.
 
-  (cond ((null wrld) nil)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (cond ((endp wrld) nil)
         ((and (eq (caar wrld) 'event-landmark)
               (eq (cadar wrld) 'global-value))
          nil)

@@ -2280,6 +2280,9 @@
     concl))
 
 (defun def-body (fn wrld)
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp wrld)
+                              (true-listp (getpropc fn 'def-bodies nil wrld)))))
   (car (getpropc fn 'def-bodies nil wrld)))
 
 (defun body (fn normalp w)
@@ -2359,7 +2362,7 @@
 ; Given a list of stobjs, return the list of recognizer applications.
 ; E.g., given (STATE MY-ST) we return ((STATE-P STATE) (MY-STP MY-ST)).
 
-  (cond ((null known-stobjs) nil)
+  (cond ((endp known-stobjs) nil)
         (t (cons (fcons-term* (get-stobj-recognizer (car known-stobjs) wrld)
                               (car known-stobjs))
                  (stobj-recognizer-terms (cdr known-stobjs) wrld)))))
