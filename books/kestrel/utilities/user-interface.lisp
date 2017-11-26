@@ -191,3 +191,70 @@
    @(def cw-event)"
   (defmacro cw-event (str &rest args)
     `(value-triple (cw ,str ,@args))))
+
+(defsection make-event-terse
+  :parents (user-interface)
+  :short "A variant of @(tsee make-event) with terser screen output."
+  :long
+  "<p>
+   We wrap a normal @(tsee make-event)
+   in a @(tsee with-output) that removes all the screen output
+   except possibly errors.
+   We also suppress the concluding error message of @(tsee make-event),
+   via @(':on-behalf-of :quiet').
+   </p>
+   <p>
+   The rationale for not suppressing error output is that, otherwise,
+   @('make-event-terse') will fail silently in case of an error.
+   However, if errors were already suppressed,
+   this form does not enable them.
+   </p>
+   <p>
+   We save, via @(':stack :push'), the current state of the outputs,
+   so that, inside the form passed to @('make-event-terse'),
+   that output state can be selectively restored for some sub-forms.
+   That output state can be restored via @('(with-output :stack :pop ...)'),
+   or by using the @(tsee restore-output) or @(tsee restore-output?) utilities.
+   </p>
+   <p>
+   Currently @('make-event-terse') does not support
+   @(tsee make-event)'s @(':check-expansion') and @(':expansion?'),
+   but it could be extended to support them and pass them to @(tsee make-event).
+   </p>
+   <p>
+   @('make-event-terse') may be useful in event-generating macros.
+   </p>"
+  (defmacro make-event-terse (form)
+    `(with-output
+       :gag-mode nil
+       :off ,(remove-eq 'error *valid-output-names*)
+       :stack :push
+       (make-event ,form :on-behalf-of :quiet))))
+
+(define restore-output ((form pseudo-event-formp))
+  :returns (form-with-output-restored pseudo-event-formp)
+  :parents (user-interface)
+  :short "Wrap a form to have it produce screen output
+          according to previously saved screen output settings."
+  :long
+  "<p>
+   This wraps the form in a @('(with-output :stack :pop ...)').
+   It can be used on a sub-form
+   of the form passed to a @(tsee make-event-terse).
+   </p>"
+  `(with-output :stack :pop ,form))
+
+(define restore-output? ((yes/no booleanp) (form pseudo-event-formp))
+  :returns (form-maybe-with-output-restored pseudo-event-formp
+                                            :hyp (pseudo-event-formp form))
+  :parents (user-interface)
+  :short "Conditionally wrap a form to have it produce screen output
+          according to previously saved screen output settings."
+  :long
+  "<p>
+   This leaves the form unchanged if the boolean is @('nil'),
+   otherwise it calls @(tsee restore-output) on it.
+   </p>"
+  (if yes/no
+      (restore-output form)
+    form))

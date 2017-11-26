@@ -236,7 +236,9 @@
  component is not @('nil').</p>
 
  <p>New utility @(tsee manage-screen-output) is an improved version of @(tsee
- control-screen-output) (which may eventually be removed).</p>
+ control-screen-output) (which may eventually be removed).  Added utilities
+ @(tsee make-event-terse), @(tsee restore-output) and @(tsee restore-output?)
+ to fine-tune screen output in event-generating macros.</p>
 
  <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
  fails, then to evaluate a second event.</p>
