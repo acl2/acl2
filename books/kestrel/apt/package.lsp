@@ -138,6 +138,7 @@
                          lambda-body
                          lambda-formals
                          macro-required-args
+                         make-event-terse
                          make-implication
                          make-lambda
                          make-paired-name
@@ -159,6 +160,7 @@
                          rename-fns
                          rename-fns-lst
                          resolve-numbered-name-wildcard
+                         restore-output?
                          ruler-extenders-lst
                          run-when
                          set-numbered-name-index-end
