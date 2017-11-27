@@ -28914,17 +28914,17 @@
                     But the shape of ~x0 is ~x1."
                    form
                    (prettyify-stobjs-out stobjs-out)))
-              ((eq on-behalf-of :quiet!)
-               (silent-error state))
-              ((stringp (car vals))
-               (er soft ctx
-                   (car vals)))
-              ((tilde-@p (car vals)) ; a message
-               (er soft ctx
-                   "~@0"
-                   (car vals)))
               ((car vals)
                (cond
+                ((eq on-behalf-of :quiet!)
+                 (silent-error state))
+                ((stringp (car vals))
+                 (er soft ctx
+                     (car vals)))
+                ((tilde-@p (car vals)) ; a message
+                 (er soft ctx
+                     "~@0"
+                     (car vals)))
                 ((eq on-behalf-of :quiet)
                  (silent-error state))
                 (t (er soft ctx
