@@ -991,7 +991,11 @@
     "apply-raw"
     "interface-raw"
     "defpkgs"
-    "boot-strap-pass-2" ; at the end so that it is compiled last
+    "boot-strap-pass-2-a"
+    "apply-prim"
+    "apply-constraints"
+    "apply"
+    "boot-strap-pass-2-b"
     )
   "*acl2-files* is the list of all the files necessary to build
 ACL2 from scratch.")

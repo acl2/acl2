@@ -232,7 +232,8 @@ ACL2_IGNORE ?= -k
 # The order of the files below is unimportant.
 # NOTE: We deliberately exclude doc.lisp, which does not contribute to
 # proclaiming or TAGS.
-sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
+sources := axioms.lisp memoize.lisp hons.lisp\
+           boot-strap-pass-2-a.lisp boot-strap-pass-2-b.lisp\
            basis-a.lisp basis-b.lisp parallel.lisp translate.lisp\
            type-set-a.lisp linear-a.lisp\
            type-set-b.lisp linear-b.lisp\
@@ -243,7 +244,8 @@ sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
            defthm.lisp other-events.lisp ld.lisp proof-builder-b.lisp\
            proof-builder-pkg.lisp apply-raw.lisp interface-raw.lisp\
            serialize.lisp serialize-raw.lisp\
-           defpkgs.lisp
+           defpkgs.lisp\
+           apply-prim.lisp apply-constraints.lisp apply.lisp
 
 ifdef ACL2_HONS
 	sources := $(sources) hons-raw.lisp memoize-raw.lisp

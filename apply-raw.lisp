@@ -18,6 +18,9 @@
 ; University of Texas at Austin
 ; Austin, TX 78712 U.S.A.
 
+; Many thanks to ForrestHunt, Inc. for supporting the preponderance of this
+; work, and for permission to include it here.
+
 (in-package "ACL2")
 
 ; Support for experiments with apply$: raw Lisp code.  See other-events.lisp
@@ -25,11 +28,11 @@
 
 ; In this file we include essays and code in support of an experiment in how we
 ; might allow the evaluation of forms ancestrally dependent on apply$ (as
-; defined in the community book /projects/apply/apply.lisp) at the top-level of
-; the ACL2 loop.  This support is not enabled in ACL2, but can be activated (at
-; the cost of invalidating our soundness assurances) as described below.
-; This file is to be loaded in raw Lisp; for related code that can be loaded in
-; the ACL2 loop, see the end of other-events.lisp.
+; defined in the community book books/projects/apply/apply.lisp) at the
+; top-level of the ACL2 loop.  This support is not enabled in ACL2, but can be
+; activated (at the cost of invalidating our soundness assurances) as described
+; below.  This file is to be loaded in raw Lisp; for related code that can be
+; loaded in the ACL2 loop, see the end of other-events.lisp.
 
 ; This section implements raw Lisp code for apply$-lambda as well as the
 ; ``dopplegangers'' for apply$-userfn and badge-userfn.  For relevant
@@ -200,10 +203,12 @@
 ; immediately after starting your ACL2 session.
 
 ;   (include-book "projects/apply/apply" :dir :system)
-;   (defattach (badge-userfn concrete-badge-userfn)
+;   (defattach
+;     (badge-userfn concrete-badge-userfn)
+;     (apply$-userfn concrete-apply$-userfn)
 ;     :hints
-;     (("Goal" :use concrete-badge-userfn-type)))
-;   (defattach apply$-userfn concrete-apply$-userfn)
+;     (("Goal" :use (concrete-badge-userfn-type
+;                    concrete-apply$-userfn-takes-arity-args))))
 ;   (value :q)
 ;   (defun apply$-lambda (fn args) (concrete-apply$-lambda fn args))
 ;   (setq *allow-concrete-execution-of-apply-stubs* t)
@@ -219,7 +224,11 @@
 
 ; -----------------------------------------------------------------
 
-(defvar *allow-concrete-execution-of-apply-stubs* nil)
+(defvar *allow-concrete-execution-of-apply-stubs*
+
+; This form supports installation of The Rubric.
+
+  t)
 
 ; ACL2(a) only -- the definition below is only relevant in ACL2(a)
 (defun query-badge-userfn-structure (msgp fn wrld)
@@ -274,8 +283,7 @@
              fn
              (cdr
               (assoc-eq :badge-userfn-structure
-                        (table-alist 'badge-table
-                                     wrld)))))))
+                        (table-alist 'badge-table wrld)))))))
       (cond
        ((null bdg) ; fn is a function symbol with no badge assigned
         (cond ((null msgp) (mv t nil))
@@ -532,8 +540,8 @@
                   (if failure-msg
                       failure-msg
 ; Error {[8.5]}
-                      (msg "~x0 returns multiple values, it has a badge but ~
-                            no warrant"
+                      (msg "~x0 returns multiple values, so it has a badge ~
+                            but no warrant"
                            fn)))
                  (msg (cond
                        ((eq *aokp* 'apply$-userfn)
@@ -1252,46 +1260,8 @@
 ; book.  But that's impossible because apply$-lambda is a defun'd, not
 ; constrained, function.
 
-(defun concrete-apply$-lambda (fn args)
-
-; This function must be equal to APPLY$-LAMBDA when the fn is a consp and args
-; is a true-list.  But it must also implement the feature that it allows
-; top-level evaluation.  So, if we are in an environment where attachments are
-; allowed and we're in ACL2(a), we get the compiled code for the LAMBDA (if
-; it's equivalent to the slower way) and just apply that code.  Otherwise, we
-; just do what apply$-lambda itself would do: call ev$ on the body.  Since this
-; function is only called when the raw Lisp version of apply$-lambda is called,
-; we know that the guard of apply$-lambda is satisfied, i.e., (consp fn) and
-; (true-listp args).  But we don't know anything else and so have to use the
-; same ec-calls we see in the comparable branch of apply$-lambda.
-
-  (declare (ftype (function (t t) (values t))
-                  ev$))
-  (if (and *aokp*
-           *allow-concrete-execution-of-apply-stubs*)
-      (let ((compiled-version ; see the Essay on the Compiled-LAMBDA Cache
-             (compile-tame-compliant-unrestricted-lambda fn)))
-        (cond
-         ((null compiled-version)
-          (EV$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
-               (ec-call
-                (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
-                          args))))
-         (t
-
-; We know that fn is a well-formed, tame, compliant, unrestricted (:guard t)
-; LAMBDA expression and compiled-version is its compiled code.  We can run it!
-
-          (let ((arity (length (cadr fn))))
-            (apply compiled-version
-                   (if (= arity
-                          (length args))
-                       args
-                       (take arity args)))))))
-      (EV$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
-           (ec-call
-            (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
-                      args)))))
+; Concrete-apply$-lambda was originally defined here, but has since been
+; incorporated into the definition of apply$-lambda in source file apply.lisp.
 
 ; The Rubric for Setting Up the Execution of APPLY$ includes the redefinition
 ; of the raw Lisp version of apply$-lambda:

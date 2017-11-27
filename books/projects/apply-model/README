@@ -7,30 +7,30 @@ Moore.
 This directory contains a version of APPLY$ built in an isolated package
 named "MODAPP" (for Model of APPLY$).
 
-At the time of this writing, namely ACL2 Version_7.4, the books:
-
-apply-prim.lisp
-constraints.lisp
-apply.lisp
-
-on /books/projects/apply/ are identical to their namesakes on
-/books/projects/apply-model/ --- EXCEPT FOR THE INITIAL IN-PACKAGE!
-
-However, over time we would not be surprised to see the books on
-/books/projects/apply/ evolve, e.g., to extend DEF-WARRANT to succeed on
-mutually-recursive functions or functions with ``big'' ordinal measures.
-
+WARNING: There is no guarantee that the definitions in the above paper or in
+this directory agree with those of APPLY$ et al in the ACL2 sources!  We regard
+this work as foundational and static: it backs up the definitions and arguments
+in the above paper.  But once APPLY$ was integrated into the sources we felt
+free (under the usual concerns that we convince ourselves of the logical
+correctness of any changes) to improve it.  One such improvement occurred even
+as we integrated APPLY$: we added a constraint to apply$-userfn allowing us to
+prove that (APPLY$ 'fn args) is only sensitive to the first n elements of args,
+where n is the arity of 'fn as reported by the badge.  An example of another
+improvement we might someday make is to extend def-warrant to handle mutual
+recursion.  Thus, as time goes by we expect ACL2's sources to drift away from
+the foundational work here.
 
 In this README file we address four questions: What's in this directory, why is
 it in an isolated package, what is the relation between this directory and the
-similarly-named /books/projects/apply/, and how to certify these books?
+similarly-named /books/system/apply/, and how to certify these books?
 
 WHAT IS IN THIS DIRECTORY?
 
 The "MODAPP" package is defined in portcullis.acl2 and every book here is built
 on top of that by virtue of the cert.acl2 file here.
 
-The files apply-prim.lisp, constraints.lisp, and apply.lisp define APPLY$.
+The files apply-prim.lisp, apply-constraints.lisp, and apply.lisp define
+APPLY$.
 
 The file report.lisp provides the script for proving the theorems cited as
 Examples in the above-mentioned paper.
@@ -69,8 +69,8 @@ arise in the model construction.
 
 In our opinion, ex1/ is a small enough body of work that you can grasp the
 whole model construction story by reading every line in the files there,
-assuming you're already familiar with apply-prim.lisp, constraints.lisp, and
-apply.lisp here.
+assuming you're already familiar with apply-prim.lisp, apply-constraints.lisp,
+and apply.lisp here.
 
 Ex2/ is provided just to illustrate that def-warrant admits a pretty wide range
 of functions involving APPLY$ and we can model all those warrants
@@ -79,35 +79,28 @@ model construction handles certain weird but admissible situations.
 
 WHY IS THIS DEVELOPMENT DONE IN AN ISOLATED PACKAGE?
 
-As of ACL2 Version_7.4, APPLY$ is not a built-in ACL2 primitive.  However,
-there is code in the ACL2 sources (see the ACL2 source file apply-raw.lisp) to
-support execution of APPLY$.  That code is activated only by hand-execution of
-``The Rubric'' which is shown the apply-raw.lisp ACL2 source file.
+From ACL2 Version_8.0 onwards we expect APPLY$ will be an ACL2 primitive.  This
+is necessary in order to support the implicit inclusion in the evaluation
+theory of all warrants, allowing top-level execution of ground apply$ forms via
+attachments to the ``magic'' functions concrete-badge-userfn an
+concrete-apply$-userfn.
 
-But this raises the problem that the source code supports behavior of a
-function not described by the axioms in the source code.  Furthermore, as
-APPLY$ matures we are quite likely to extend its behavior, e.g., by enlarging
-the set of functions on which DEF-WARRANT succeeds.  When APPLY$ and its
-support stabilizes, we plan to incorporate its definition into the source code.
+To support execution of APPLY$ without tying down the definition or constraints
+on apply$ would raise soundness issues if the user defined apply$ differently.
 
 We thus decided to preserve the version APPLY$ described in the paper, along
 with its examples, model construction, and execution model.  That's why this
 directory does everything in an isolated package.
 
-WHAT IS THE RELATIONSHIP BETWEEN THIS DIRECTORY AND /books/projects/apply/?
+WHAT IS THE RELATIONSHIP BETWEEN THIS DIRECTORY AND /books/system/apply/?
 
-As of ACL2 Version_7.4, APPLY$ is not in the ACL2 source code but The Rubric
-can be executed to define it and make it executable.  The Rubric includes the
-book /books/projects/apply/apply.lisp.  As we extend APPLY$, DEF-WARRANT, etc.,
-we will be chaning the books in /books/projects/apply/ and the raw Lisp support
-for execution in apply-raw.lisp.  So under that evolution,
-/books/projects/apply will track the emerging notions of APPLY$ and DEF-WARRANT
-while the books here, /books/projects/apply-model/ will remain static and in
-agreement with the paper.  Furthermore, if and when APPLY$ and DEF-WARRANT
-become standard parts of ACL2, the books in /books/projects/apply-model/ will
-still be loadable (they're in a different package) and will document the core
-ideas in APPLY$.  Of course, as APPLY$ evolves, we'll have to convince
-ourselves we can still build a model of all the warrants.
+The short answer is "none".  These files are static and support the paper
+above, whereas the similarly named files in books/system/apply/ support the
+build process for ACL2, particularly the claims that the definitions of APPLY$,
+et al, terminate and are guard verified.  At one time the definitions in the
+two directories might have agreed but they are free to drift apart.
+
+See the Essay on the APPLY$ Integration in the ACL2 source file apply-prim.lisp.
 
 CERTIFICATION INSTRUCTIONS
 
@@ -116,7 +109,7 @@ certification of ex1/ and ex2/ is a bit non-standard because it involves
 copying certain files so they can be re-certified with different portcullises.
 
 Q. Given a book, a.lisp, defining a current theory how do you build a book,
-e.lisp, whose current theory the evaluation theory of a.lisp defined by some
+e.lisp, whose current theory is the evaluation theory of a.lisp defined by some
 attachments?
 
 A. Put the relevant constraints in the portcullis of a.lisp.  When you certify
@@ -131,5 +124,5 @@ make all ACL2=<your-acl2> ACL2_SYSTEM_BOOKS=<your-acl2-books-directory>
 make top ACL2=<your-acl2> ACL2_SYSTEM_BOOKS=<your-acl2-books-directory>
 
 E.g.,
-make all ACL2=v74 ACL2_SYSTEM_BOOKS=/u/moore/work/acl2/v7-4/books/
-make top ACL2=v74 ACL2_SYSTEM_BOOKS=/u/moore/work/acl2/v7-4/books/
+make all ACL2=v80 ACL2_SYSTEM_BOOKS=/u/moore/work/acl2/v8-0/books/
+make top ACL2=v80 ACL2_SYSTEM_BOOKS=/u/moore/work/acl2/v8-0/books/

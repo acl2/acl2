@@ -2743,9 +2743,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (*hard-error-is-error*
         (hard-error-is-error ctx str alist))
        (t
-        (let ((*standard-output* *error-output*)
-              (*wormholep* nil))
-          (error-fms t ctx str alist state))
+        (when (not (and (f-get-global 'inhibit-er-hard state)
+                        (member 'error
+                                (f-get-global 'inhibit-output-lst state)
+                                :test #'eq)))
+          (let ((*standard-output* *error-output*)
+                (*wormholep* nil))
+            (error-fms t ctx str alist state)))
 
 ; Once upon a time hard-error took a throw-flg argument and did the
 ; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
@@ -6272,6 +6276,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        collect (pop l))))
   (first-n-ac n l nil))
 
+(defthm true-listp-take
+
+; This rule was not needed until we added verify-termination-boot-strap for
+; first-n-ac and take.
+
+  (true-listp (take n l))
+  :rule-classes :type-prescription)
+
 #+acl2-loop-only
 (defun butlast (lst n)
   (declare (xargs :guard (and (true-listp lst)
@@ -8468,11 +8480,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; This completes the Essay on Unwind-Protect.  There are some additional
 ; comments in the code for EV.
 
-; It is IMPERATIVE that the following macro, when-logic, is ONLY used when its
-; second argument is a form that evaluates to an error triple.  Keep this
-; function in sync with boot-translate.
-
 (defmacro when-logic (str x)
+
+; It is IMPERATIVE that this is ONLY used when its second argument is a form
+; that evaluates to an error triple.  Keep this function in sync with
+; boot-translate.
+
   (list 'if
         '(eq (default-defun-mode-from-state state)
              :program)
@@ -12839,13 +12852,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     ev-fncall-w-guard1
 
-; The apply.lisp book defines apply$-lambda in :logic mode and if execution of
-; apply$ is allowed (by going through the rubric that involves setting
-; *allow-concrete-execution-of-apply-stubs*) then its raw Lisp code is
-; different, namely apply$-lambda in raw Lisp is defined to call
-; concrete-apply$-lambda.  So, perhaps, someday, apply$-lambda will be on this
-; list.
-
 ; mfc functions
 
     mfc-ancestors ; *metafunction-context*
@@ -12885,6 +12891,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     file-length$
     delete-file$
     set-bad-lisp-consp-memoize
+    #-acl2-devel apply$-lambda
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -12977,6 +12984,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     stobj-let
     add-ld-keyword-alias! set-ld-keyword-aliases!
     with-guard-checking-event
+    when-pass-2
     ))
 
 (defmacro with-live-state (form)
@@ -13296,6 +13304,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (in-verify-flg . nil) ; value can be set to the ld-level
     (including-uncertified-p . nil) ; valid only during include-book
     #+acl2-infix (infixp . nil) ; See the Essay on Infix below
+    (inhibit-er-hard . nil)
     (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
                                      ; will print a summary for each event.
                                      ; Exit-boot-strap-mode sets this list
@@ -15330,7 +15339,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; This was made non-local in order to support the verify-termination-boot-strap
 ; for chars-for-tilde-@-clause-id-phrase/periods in file
-; boot-strap-pass-2.lisp.
+; boot-strap-pass-2-a.lisp.
 
   (implies (true-listp ans)
            (true-listp (explode-nonnegative-integer n print-base ans)))
@@ -20342,6 +20351,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     update-enabled-structure-array ; many assumptions for calling correctly
 
+    when-pass-2
+
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
 ; ability to call :puff.  It now seems unnecessary to include
 ; maybe-install-acl2-defaults-table, since its body is something one can call
@@ -25338,12 +25349,6 @@ Lisp definition."
            (true-listp y))))
 
  (local
-  (defthm true-listp-first-n-ac
-    (implies (and (true-listp acc)
-                  (true-listp lst))
-             (true-listp (first-n-ac n lst acc)))))
-
- (local
   (defthm true-listp-nthcdr
     (implies (true-listp x)
              (true-listp (nthcdr n x)))))
@@ -25819,12 +25824,6 @@ Lisp definition."
   (defthm true-listp-revappend
     (equal (true-listp (revappend x y))
            (true-listp y))))
-
- (local
-  (defthm true-listp-first-n-ac
-    (implies (and (true-listp acc)
-                  (true-listp lst))
-             (true-listp (first-n-ac n lst acc)))))
 
  (verify-guards throw-nonexec-error)
  (verify-guards defun-nx-fn)
@@ -26652,18 +26651,12 @@ Lisp definition."
            (ignore name state))
   (state-mac@par))
 
-; These constants are needed both in parallel.lisp and boot-strap-pass-2.lisp,
-; so we define them here.
-
 (defconst *waterfall-printing-values*
   '(:full :limited :very-limited))
 
 (defconst *waterfall-parallelism-values*
   '(nil t :full :top-level :resource-based :resource-and-timing-based
         :pseudo-parallel))
-
-; This is needed in both boot-strap-pass-2.lisp and parallel.lisp, so we put it
-; here.
 
 (defun symbol-constant-fn (prefix sym)
   (declare (xargs :guard (and (symbolp prefix)
@@ -27437,9 +27430,9 @@ Lisp definition."
   ()
 
 ; The following function symbols are used (ancestrally) in the constraints on
-; concrete-badge-userfn.  They must be in logic mode.  We use encapsulate so
-; that verify-termination-boot-strap will do its intended job in the first pass
-; of the build.
+; concrete-badge-userfn and concrete-apply$-userfn.  They must be in logic
+; mode.  We use encapsulate so that verify-termination-boot-strap will do its
+; intended job in the first pass of the build.
 
   (logic)
   (verify-termination-boot-strap booleanp)
@@ -27449,4 +27442,38 @@ Lisp definition."
   (verify-termination-boot-strap member-equal)
   (verify-termination-boot-strap subsetp-eql-exec)
   (verify-termination-boot-strap subsetp-eql-exec$guard-check)
-  (verify-termination-boot-strap subsetp-equal))
+  (verify-termination-boot-strap subsetp-equal)
+  (verify-termination-boot-strap revappend)
+  (verify-termination-boot-strap first-n-ac)
+  (verify-termination-boot-strap take))
+
+(defmacro when-pass-2 (&rest x)
+
+; This alternative to when-logic is useful in apply.lisp and related files,
+; where we want to avoid compilation because of the use of make-event, and we
+; also want to avoid evaluation during pass 1 of initialization, because we are
+; waiting for a suitable function-theory.  We cannot simply define when-logic
+; to be nil in raw Lisp, becase its use is not limited to the definition of
+; local.
+
+  #-acl2-loop-only
+  (declare (ignore x))
+  #-acl2-loop-only
+  nil
+  #+acl2-loop-only
+  (list 'if
+        '(eq (default-defun-mode-from-state state)
+             :program)
+        (list 'skip-when-logic (list 'quote "WHEN-PASS-2") 'state)
+        `(progn!
+          :state-global-bindings
+          ((ld-skip-proofsp t))
+
+; Since when-pass-2 avoids raw Lisp compilation, we instruct ACL2 to compile
+; on-the-fly.  This is unnecessary for Lisps that always compile, but it seems
+; harmless for us to avoid making an exception for those Lisps, for which
+; set-compile-fns is a no-op.
+
+          (set-compile-fns t)
+          ,@x
+          (set-compile-fns nil))))

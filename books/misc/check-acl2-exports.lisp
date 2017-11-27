@@ -175,6 +175,7 @@
     FSUBCOR-VAR
     IGNORABLE IRRELEVANT OPTIMIZE ; from declare forms
     REVERT-WORLD
+    APPLY$ EV$ EV$-LIST
 
 ; Symbols below should be subtracted from *acl2-exports*.
 

@@ -886,11 +886,11 @@
 ; non-function "outside-caller" (denoting the caller of outermost call of a
 ; memoized function) and 5-7 are assigned to the first three built-in functions
 ; listed below; they are always memoized by explicit calls to memoize in
-; boot-strap-pass-2.  Of course, this set and the particular numbers may change
-; in future releases, but we include this information here to indicate aspects
-; of the basic scheme.  BAD-LISP-OBJECTP may not always be memoized, i.e., it
-; is not in ACL2(hp).  See *thread-unsafe-builtin-memoizations* for a list of
-; functions that are not memoized in ACL2(hp).
+; boot-strap-pass-2-b.lisp.  Of course, this set and the particular numbers may
+; change in future releases, but we include this information here to indicate
+; aspects of the basic scheme.  BAD-LISP-OBJECTP may not always be memoized,
+; i.e., it is not in ACL2(hp).  See *thread-unsafe-builtin-memoizations* for a
+; list of functions that are not memoized in ACL2(hp).
 
 ; fn                               number assigned
 ; "outside-caller"                     4

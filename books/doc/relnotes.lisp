@@ -424,6 +424,10 @@
  books that depend on quicklisp, except when the host Lisp is GCL.  Specify
  @('USE_QUICKLISP=0') if that is not what you want.</p>
 
+ <p>Improved @('books/GNUmakefile') so that by default, it reports an error
+ when the @('bash') shell is missing.  (Note that a version of @('sh') on a
+ FreeBSD machine caused an error.)</p>
+
  <p>Also see @(see note-7-5), specifically the section on ``Changes at the
  System Level''.</p>
 

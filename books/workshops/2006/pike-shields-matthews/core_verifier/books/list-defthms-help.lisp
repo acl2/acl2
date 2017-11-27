@@ -10,15 +10,15 @@
 
 (local (include-book "data-structures/list-defthms" :dir :system))
 
-;; From lists-defthms library
-   (defthm true-listp-first-n-ac
+;; From lists-defthms library (Matt K. mod: only :rewrite now)
+   (defthm true-listp-first-n-ac-rewrite
      (implies (true-listp ac)
 	      (true-listp (first-n-ac i l ac)))
-     :rule-classes (:rewrite :type-prescription)
+     :rule-classes (:rewrite)
      :hints (("Goal" :induct (first-n-ac i l ac))))
 
-;; From lists-defthms library
-(defthm true-listp-take
+;; From lists-defthms library (Matt K. mod: only :rewrite now)
+(defthm true-listp-take-rewrite
   (true-listp (take n l)))
 
 ; from list-defthms

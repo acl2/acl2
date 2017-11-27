@@ -6244,11 +6244,28 @@
           (cond (boot-strap-flg
                  (or (boundp (cadr (cddr trip)))
                      (interface-er "~x0 is not boundp!"
-                                   (cadr (cddr trip)))))
+                                   (cadr (cddr trip))))
+
+; In the boot-strap, there are constants that will not get the necessary
+; 'redundant-raw-lisp-discriminator proprerty without the following code.  In
+; particular, the constant *badge-prim-falist* is defined under when-pass-2, so
+; its defconst form is not processed in raw Lisp.  As a result, without the
+; following code we get an error: "The following raw Lisp error occurred when
+; loading file <path>/apply-prim.dx64fsl: Illegal attempt to redeclare the
+; constant *BADGE-PRIM-FALIST*."  That error prevents loading of the compiled
+; file.
+
+                 (or (get (cadr (cddr trip))
+                          'redundant-raw-lisp-discriminator)
+                     (setf (get (cadr (cddr trip))
+                                'redundant-raw-lisp-discriminator)
+                           (list* 'defconst
+                                  (caddr (cddr trip)) ; form
+                                  (cadddr (cddr trip))))))
                 ((equal *main-lisp-package-name*
                         (symbol-package-name (cadr (cddr trip))))
-                 (interface-er "It is illegal to redefine a defconst in ~
-                                    the main Lisp package, such as ~x0!"
+                 (interface-er "It is illegal to redefine a defconst in the ~
+                                main Lisp package, such as ~x0!"
                                (cadr (cddr trip))))
                 (t (maybe-push-undo-stack 'defconst (cadr (cddr trip)))
 
@@ -6265,7 +6282,14 @@
                                          nil
                                          t))))
         (defmacro
-          (cond (boot-strap-flg
+          (cond ((and boot-strap-flg
+                      (not (global-val 'boot-strap-pass-2 wrld)))
+
+; During the first pass of initialization, we insist that every function
+; defined already be defined in raw lisp.  During pass two we can't expect this
+; because there may be LOCAL defuns that got skipped during compilation and the
+; first pass.
+
                  (or (fboundp (cadr (cddr trip)))
                      (interface-er "~x0 is not fboundp!"
                                    (cadr (cddr trip)))))
@@ -7167,7 +7191,7 @@
          (global-set 'boot-strap-pass-2 t (w *the-live-state*))
          *the-live-state*)
   (acl2-unwind *ld-level* nil)
-  #+hons (memoize-init) ; for memoize calls in boot-strap-pass-2.lisp
+  #+hons (memoize-init) ; for memoize calls in boot-strap-pass-2-b.lisp
 
 ; We use an explicit call of LD-fn to change the defun-mode to :logic just to
 ; lay down an event in the pre-history, in case we someday want to poke around
@@ -7191,8 +7215,14 @@
     "memoize"
     "hons"
     "serialize"
-    "boot-strap-pass-2"
+    "boot-strap-pass-2-a"
+    "apply-prim"
+    "apply-constraints"
+    "apply"
+    "boot-strap-pass-2-b"
     ))
+
+(assert (subsetp-equal *acl2-pass-2-files* *acl2-files*))
 
 ; Next we define fns-different-wrt-acl2-loop-only, used below in
 ; check-built-in-constants.  We base our code loosely on
@@ -7216,7 +7246,7 @@
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
             defmacro defabbrev defun@par defmacro-last defun-overrides
-            defun-with-guard-check)
+            defun-with-guard-check defun-sk)
           (our-update-ht (cadr form) form ht))
          (save-def
           (note-fns-in-form (cadr form) ht))
@@ -7232,7 +7262,7 @@
                            (nth 2 form)
                          (nth 1 form)))))
             (our-update-ht name form ht)))
-         ((mutual-recursion mutual-recursion@par progn)
+         ((mutual-recursion mutual-recursion@par progn when-pass-2)
           (loop for x in (cdr form)
                 do (note-fns-in-form x ht)))
          ((encapsulate when)
@@ -7245,6 +7275,7 @@
          ((add-custom-keyword-hint
            add-macro-alias
            add-macro-fn
+           assert
            #+ccl ccl:defstatic
            declaim
            def-basic-type-sets
@@ -7293,7 +7324,16 @@
            table
            value
            verify-guards
-           verify-termination-boot-strap)
+           verify-termination-boot-strap
+
+; We are generally unlikely to see make-event in our source files, since
+; compilation is so restricted for them.  An exception is the make-event form
+; in source file apply-prim.lisp, which is local and hence not compiled.  We
+; make things easy on ourselves here and avoid trying to check make-event
+; forms.
+
+           make-event
+           set-compile-fns)
           nil)
          (t
           (error "Unexpected type of form, ~s.  See note-fns-in-form."
@@ -7754,24 +7794,14 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                  acc))))
    (t
     (let* ((trip (car trips))
-           (fn
-
-; We need to rule out triples such as the following (but for :ideal mode)
-
-;  (EVENT-LANDMARK GLOBAL-VALUE 5054
-;                  (DEFUN EVENS . :COMMON-LISP-COMPLIANT)
-;                  DEFUN EVENS (L)
-;                  (DECLARE (XARGS :GUARD (TRUE-LISTP L)))
-;                  (COND ((ENDP L) NIL)
-;                        (T (CONS (CAR L) (EVENS (CDDR L))))))
-
-            (and (eq (car trip) 'event-landmark)
-                 (true-listp trip)
-                 (eq (cadr trip) 'global-value)
-                 (eq (access-event-tuple-type (cddr trip)) 'defun)
-                 (nth 5 trip))))
+           (fn (and (eq (car trip) 'event-landmark)
+                    (eq (cadr trip) 'global-value)
+                    (case (access-event-tuple-type (cddr trip))
+                      (defun (access-event-tuple-namex (cddr trip)))
+                      (defuns (car (access-event-tuple-namex (cddr trip))))
+                      (otherwise nil)))))
       (cond ((and fn
-                  (symbolp fn)
+                  (symbolp fn) ; always true?
                   (eq (symbol-class fn (w state))
                       :ideal)
                   (not (eq (getpropc fn 'non-executablep)
@@ -7905,10 +7935,10 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; Note: if system-books-dir is supplied, it should be a Unix-style
 ; pathname (either absolute or not [doesn't matter which]).
 
-; This function first lds all of the *acl2-files* except boot-strap-pass-2.lisp
-; and *-raw.lisp in default-defun-mode :program (which is the default
-; default-defun-mode).  It then loads the files in acl2-pass-2-files in :logic
-; mode.
+; This function first lds all of the *acl2-files*, except
+; boot-strap-pass-2-*.lisp and *-raw.lisp, in default-defun-mode :program
+; (which is the default default-defun-mode).  It then loads the files in
+; acl2-pass-2-files in :logic mode.
 
 ; During the first pass, ld-skip-proofsp is 'initialize-acl2, which is like the
 ; setting t (doing syntactic checks but skipping proofs and LOCALs) but omits a
@@ -8060,7 +8090,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
              ans))
      (dolist
        (fl *acl2-files*)
-       (when (not (or (equal fl "boot-strap-pass-2")
+       (when (not (or (equal fl "boot-strap-pass-2-a")
+                      (equal fl "boot-strap-pass-2-b")
                       (raw-source-name-p fl)))
          (mv-let (er val st)
                  (ld-fn
