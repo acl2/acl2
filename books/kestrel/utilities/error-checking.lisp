@@ -70,12 +70,13 @@
    @({
      (define <name> (<x1> ... <xn>
                      (description msgp)
-                     (error-erp \"Flag to return in case of error.\")
+                     (error-erp (not (null error-erp))
+                                \"Flag to return in case of error.\")
                      (error-val \"Value to return in case of error.\")
                      (ctx \"Context for errors.\")
                      state)
        :returns (mv <erp>
-                    <returns>
+                    <val>
                     state)
        :mode <mode>
        :verify-guards <verify-guards> ; optional
@@ -101,7 +102,7 @@
 
    <p>
    where each @('<...>') element,
-   except @('<erp>') and @('<x1\'>'), ..., @('<xn\'>'),
+   except @('<erp>'), @('<val>'), and @('<x1\'>'), ..., @('<xn\'>'),
    is supplied as argument to the macro:
    </p>
 
@@ -121,23 +122,34 @@
      </li>
 
      <li>
-     @('<erp>') is one of the following
-     <see topic='@(url std::returns-specifiers)'>return specifiers</see>:
+     @('<erp>') is a
+     <see topic='@(url std::returns-specifiers)'>return specifier</see>
+     that describes the error flag returned
+     inside the <see topic='@(url error-triple)'>error triple</see>.
+     This return specifier is:
      @('(erp (implies erp (equal erp error-erp)))')
-     if @('<mode>') is @(':logic');
+     if @('<mode>') is @(':logic'); and
      @('(erp \"@('nil') or @('error-erp').\")')
      if @('<mode>') is @(':program').
      </li>
 
      <li>
-     @('<returns>') is a symbol
-     or <see topic='@(url std::returns-specifiers)'>return specifier</see>
+     @('<val>') is a
+     <see topic='@(url std::returns-specifiers)'>return specifier</see>
      that describes the value returned
-     inside an <see topic='@(url error-triple)'>error triple</see>.
-     If the error-checking function is in program mode,
-     these return specifier should not use types but only documentation strings.
-     Ideally, the documentation string should say that
-     the value may be the @('error-val') argument (in case of error).
+     inside the <see topic='@(url error-triple)'>error triple</see>.
+     This return specifier depends on the @('<returns>') argument to the macro
+     (see below for the complete list of arguments to the macro)
+     and on @('<mode>'):
+     if no @('<returns>') argument is supplied and @('<mode>') is @(':logic'),
+     then @('<val>') is
+     @('(val (and (implies erp (equal val error-val))
+                  (implies (and (not erp) error-erp) (not val))))');
+     if no @('<returns>') argument is supplied and @('<mode>') is @(':program'),
+     then @('<val>') is
+     @('(val \"@('nil') if @('erp') is @('nil'), otherwise @('error-val').\")');
+     if a @('<returns>') argument is supplied,
+     then @('<val>') is @('<returns>').
      </li>
 
      <li>
@@ -197,7 +209,7 @@
        (<x1> ... <xn>)
        <short>
        ((<condition1> . <message1>) ... (<conditionm> . <messagem>))
-       :returns <returns> ; default is (val \"@('nil') or @('error-val').\")
+       :returns <val> ; default not used
        :result <result> ; default is nil
        :mode <mode> ; default is :logic
        :verify-guards <verify-guards> ; default not used
@@ -293,6 +305,7 @@
   (define def-error-checker-fn ((name symbolp)
                                 (xs true-listp)
                                 returns
+                                (returns-supplied-p booleanp)
                                 (conditions-messages true-list-listp)
                                 result
                                 (mode logic/program-p)
@@ -331,7 +344,19 @@
                              (:program
                               '(erp "@('nil') or @('error-erp')."))
                              (t (impossible)))
-                          ,returns
+                          ,(if returns-supplied-p
+                               returns
+                             (case mode
+                               (:logic
+                                `(val (and (implies erp
+                                                    (equal val ,error-val))
+                                           (implies (and (not erp) ,error-erp)
+                                                    (not val)))))
+                               (:program
+                                '(val
+                                  "@('nil') if @('erp') is @('nil'),
+                                   otherwise @('error-val')."))
+                               (t (impossible))))
                           state)
              :mode ,mode
              ,@(and verify-guards-supplied-p
@@ -382,7 +407,7 @@
                                short
                                conditions-messages
                                &key
-                               (returns '(val "@('nil') or @('error-val')."))
+                               (returns 'nil returns-supplied-p)
                                (result 'nil)
                                (mode ':logic)
                                (verify-guards 'nil verify-guards-supplied-p)
@@ -392,6 +417,7 @@
                    ',name
                    ',xs
                    ',returns
+                   ',returns-supplied-p
                    ',conditions-messages
                    ',result
                    ',mode
@@ -512,7 +538,9 @@
   "Cause an error if a value is not @('t'), @('nil'), or @(':auto');
    otherwise return a boolean result."
   (((t/nil/auto-p x) "~@0 must be T, NIL, or :AUTO." description))
-  :returns (result "A @(tsee booleanp) or @('error-val').")
+  :returns (val (and (implies erp (equal val error-val))
+                     (implies (and (not erp) error-erp (booleanp r))
+                              (booleanp val))))
   :result (if (booleanp x) x r)
   :long
   "<p>
@@ -580,7 +608,9 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp (implies erp (equal erp error-erp)))
-               (val "A @(tsee symbolp) or @('error-val').")
+               (val (and (implies erp (equal val error-val))
+                         (implies (and (not erp) error-erp)
+                                  (symbolp val))))
                state)
   :verify-guards nil
   :short "Cause an error if a value is not
@@ -629,13 +659,14 @@
    state)
   :returns (mv (erp "@('nil') or @('error-erp').")
                (val
-                "A tuple @('(pfn stobjs-in stobjs-out new-description)')
+                "A tuple @('(fn stobjs-in stobjs-out new-description)')
                  consisting of
                  a @(tsee pseudo-termfnp),
                  a @(tsee symbol-listp),
                  a @(tsee symbol-listp), and
-                 a @(tsee msgp);
-                 or @('error-val').")
+                 a @(tsee msgp)
+                 if @('erp') is @('nil'),
+                 otherwise @('error-val').")
                state)
   :mode :program
   :short "Cause an error if a value is not
@@ -749,8 +780,9 @@
                 "A tuple @('(term stobjs-out)')
                  consisting of
                  a @(tsee pseudo-termp) and
-                 a @(tsee symbol-listp);
-                 or @('error-val').")
+                 a @(tsee symbol-listp)
+                 if @('erp') is @('nil'),
+                 otherwise @('error-val').")
                state)
   :mode :program
   :short "Cause an error if a value is not a term."
@@ -973,8 +1005,10 @@
   "Cause an error if a term is not a call to @(tsee if)."
   (((and (nvariablep term) (eq (ffn-symb term) 'if))
     "~@0 must start with IF." description))
-  :returns (test+then+else
-            "A @(tsee pseudo-term-listp) of length 3, or @('error-val').")
+  :returns (val (and (implies erp (equal val error-val))
+                     (implies (and (not erp) error-erp (pseudo-termp term))
+                              (and (pseudo-term-listp val)
+                                   (equal (len val) 3)))))
   :result (list (fargn term 1) (fargn term 2) (fargn term 3))
   :long
   "<p>
@@ -1097,7 +1131,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp (implies erp (equal erp error-erp)))
-               (val "@('nil') or @('error-val').")
+               (val (and (implies erp (equal val error-val))
+                         (implies (and (not erp) error-erp) (not val))))
                state)
   :verify-guards nil
   :short "Cause an error if a function or lambda expression is
@@ -1135,7 +1170,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp (implies erp (equal erp error-erp)))
-               (val "@('nil') or @('error-val').")
+               (val (and (implies erp (equal val error-val))
+                         (implies (and (not erp) error-erp) (not val))))
                state)
   :verify-guards nil
   :short "Cause an error if a function or lambda expression is
@@ -1175,7 +1211,8 @@
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@('nil') or @('error-erp').")
-               (val "@('nil') or @('error-val').")
+               (val "@('nil') if @('erp') is @('nil'),
+                     otherwise @('error-val').")
                state)
   :mode :program
   :short "Cause an error if a function or lambda expression is
