@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "user-interface")
+(include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,3 +89,36 @@
 
 (progn
   (cw-event "Message."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event-terse
+ '(defun a (x) x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event-terse
+ `(progn
+    (defun b (x) x)
+    ,(restore-output '(defun c (x) x))))
+
+(assert! (equal (restore-output '(form))
+                '(with-output :stack :pop (form))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event-terse
+ `(progn
+    (defun d (x) x)
+    ,(restore-output? t '(defun e (x) x))))
+
+(make-event-terse
+ `(progn
+    (defun f (x) x)
+    ,(restore-output? nil '(defun g (x) x))))
+
+(assert! (equal (restore-output? t '(form))
+                '(with-output :stack :pop (form))))
+
+(assert! (equal (restore-output? nil '(form))
+                '(form)))

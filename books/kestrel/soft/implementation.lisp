@@ -24,34 +24,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define inputs-have-verbose-t-p ((inputs true-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of inputs (to a SOFT macro) includes @(':verbose t')."
-  :long
-  "<p>
-   The list is examined from right to left,
-   two elements at a time,
-   so long as the first of the two elements if a keyword.
-   If @(':verbose t') is found, @('t') is returned.
-   If @(':verbose x') is found and @('x') is not @('t'), @('nil') is returned.
-   If there are no more keyword-value pairs, @('nil') is returned.
-   </p>"
-  (inputs-have-verbose-t-p-aux (rev inputs))
-
-  :prepwork
-  ((define inputs-have-verbose-t-p-aux ((rev-inputs true-listp))
-     :returns (yes/no booleanp)
-     (if (or (endp rev-inputs)
-             (endp (cdr rev-inputs)))
-         nil
-       (b* ((value? (car rev-inputs))
-            (keyword? (cadr rev-inputs)))
-         (if (keywordp keyword?)
-             (if (eq keyword? :verbose)
-                 (eq value? t)
-               (inputs-have-verbose-t-p-aux (cddr rev-inputs)))
-           nil))))))
-
 (define *-listp (stars)
   :returns (yes/no booleanp)
   :short "Recognize @('nil')-terminated lists of @('*')s."
@@ -169,7 +141,8 @@
        (event `(progn
                  (defstub ,funvar ,arguments ,arrow ,result)
                  (table function-variables ',funvar nil)
-                 (value-triple ',funvar))))
+                 (value-triple ',funvar)))
+       (event (restore-output? verbose event)))
     (value event)))
 
 (defsection defunvar-implementation
@@ -179,14 +152,11 @@
    @(def acl2::defunvar)"
 
   (defmacro defunvar (&whole call &rest inputs)
-    (control-screen-output
-     (inputs-have-verbose-t-p inputs)
-     `(make-event (defunvar-fn
-                    ',inputs
-                    ',call
-                    (cons 'defunvar ',(if (consp inputs) (car inputs) nil))
-                    state)
-                  :on-behalf-of :quiet)))
+    `(make-event-terse (defunvar-fn
+                         ',inputs
+                         ',call
+                         (cons 'defunvar ',(if (consp inputs) (car inputs) nil))
+                         state)))
 
   (defmacro acl2::defunvar (&rest inputs)
     `(defunvar ,@inputs)))
