@@ -201,7 +201,7 @@
    in a @(tsee with-output) that removes all the screen output
    except possibly errors.
    We also suppress the concluding error message of @(tsee make-event),
-   via @(':on-behalf-of :quiet').
+   via @(':on-behalf-of :quiet!').
    </p>
    <p>
    The rationale for not suppressing error output is that, otherwise,
@@ -229,7 +229,7 @@
        :gag-mode nil
        :off ,(remove-eq 'error *valid-output-names*)
        :stack :push
-       (make-event ,form :on-behalf-of :quiet))))
+       (make-event ,form :on-behalf-of :quiet!))))
 
 (define restore-output ((form pseudo-event-formp))
   :returns (form-with-output-restored pseudo-event-formp)
