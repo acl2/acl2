@@ -881,8 +881,6 @@
 
   (declare (xargs :guard t))
   (and (weak-enabled-structure-p ens)
-       (signed-byte-p 30 (access enabled-structure ens
-                                 :index-of-last-enabling))
        (array1p (access enabled-structure ens
                         :array-name)
                 (access enabled-structure ens
@@ -891,6 +889,16 @@
                         :array-name))
        (signed-byte-p 30 (access enabled-structure ens
                                  :array-length))
+       (signed-byte-p 30 (access enabled-structure ens
+                                 :index-of-last-enabling))
+
+; The following must be true in order for the array access in enabled-numep to
+; be in bounds.
+
+       (< (access enabled-structure ens
+                  :index-of-last-enabling)
+          (access enabled-structure ens
+                  :array-length))
        (character-listp (access enabled-structure ens
                                 :array-name-root))
        (natp (access enabled-structure ens
@@ -983,14 +991,11 @@
 ; in the enabled structure ens.  We treat nil as though it were
 ; enabled.
 
-  (declare (type (or null (signed-byte 30)) nume)
-           (xargs :guard
-                  (and (enabled-structure-p ens)
-                       (or (null nume)
-                           (and (natp nume)
-                                (< nume
-                                   (access enabled-structure ens
-                                           :array-length)))))))
+  (declare (type (or null
+                     (and (signed-byte 30)
+                          (integer 0 *)))
+                 nume)
+           (xargs :guard (enabled-structure-p ens)))
   (cond ((null nume) t)
         ((> (the-fixnum nume)
             (the-fixnum
