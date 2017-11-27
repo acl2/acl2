@@ -74,7 +74,7 @@
                      (error-val \"Value to return in case of error.\")
                      (ctx \"Context for errors.\")
                      state)
-       :returns (mv (erp \"@('nil') or @('error-erp').\")
+       :returns (mv <erp>
                     <returns>
                     state)
        :mode <mode>
@@ -100,7 +100,9 @@
    })
 
    <p>
-   where each @('<...>') element is supplied as argument to the macro:
+   where each @('<...>') element,
+   except @('<erp>') and @('<x1\'>'), ..., @('<xn\'>'),
+   is supplied as argument to the macro:
    </p>
 
    <ul>
@@ -116,6 +118,15 @@
      Let @('<xi\'>') be:
      @('<xi>') if @('<xi>') is a symbol;
      the name of the @('<xi>') extended formal otherwise.
+     </li>
+
+     <li>
+     @('<erp>') is one of the following
+     <see topic='@(url std::returns-specifiers)'>return specifiers</see>:
+     @('(erp (implies erp (equal erp error-erp)))')
+     if @('<mode>') is @(':logic');
+     @('(erp \"@('nil') or @('error-erp').\")')
+     if @('<mode>') is @(':program').
      </li>
 
      <li>
@@ -314,7 +325,12 @@
               (,error-val "Value to return in case of error.")
               (ctx "Context for errors.")
               state)
-             :returns (mv (erp "@('nil') or @('error-erp').")
+             :returns (mv ,(case mode
+                             (:logic
+                              `(erp (implies erp (equal erp ,error-erp))))
+                             (:program
+                              '(erp "@('nil') or @('error-erp')."))
+                             (t (impossible)))
                           ,returns
                           state)
              :mode ,mode
@@ -563,7 +579,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('nil') or @('error-erp').")
+  :returns (mv (erp (implies erp (equal erp error-erp)))
                (val "A @(tsee symbolp) or @('error-val').")
                state)
   :verify-guards nil
@@ -1080,7 +1096,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('nil') or @('error-erp').")
+  :returns (mv (erp (implies erp (equal erp error-erp)))
                (val "@('nil') or @('error-val').")
                state)
   :verify-guards nil
@@ -1118,7 +1134,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv (erp "@('nil') or @('error-erp').")
+  :returns (mv (erp (implies erp (equal erp error-erp)))
                (val "@('nil') or @('error-val').")
                state)
   :verify-guards nil
