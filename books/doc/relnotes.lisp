@@ -441,6 +441,13 @@
  the topic @(see testing-utilities) is the top-level topic for the testing
  utilities.</p>
 
+ <p>The Kestrel Testing Utilities have been integrated with similar testing
+ utilities under @('[books]/misc').  The utilities in
+ @('kestrel/utilities/testing.lisp') have been added to @('misc/eval.lisp') and
+ @('misc/assert.lisp'), and the tests in
+ @('kestrel/utilities/testing-tests.lisp') have been moved into two new files
+ @('misc/eval-test.lisp') and @('misc/assert-tests.lisp').</p>
+
  <p>The utility @(tsee run-script) supports testing of evaluation of the forms
  in a given file, to check that the output is as expected.  So far, several
  existing scripts have been adapted to take advantage of this utility:</p>
