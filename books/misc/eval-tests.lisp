@@ -1,4 +1,4 @@
-; Testing Facilities -- Tests
+; Event-Level Evaluation -- Tests
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "testing")
+(include-book "eval")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,10 +61,3 @@
  (must-be-redundant (defun f (x) x))
  (defthm th (acl2-numberp (+ x y)))
  (must-be-redundant (defthm th (acl2-numberp (+ x y)))))
-
-(must-succeed*
- (defun f (x) (cons x x))
- (assert-equal (f 3) '(3 . 3)))
-
-(must-fail
- (assert-equal 1 2))
