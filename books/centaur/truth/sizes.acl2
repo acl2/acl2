@@ -1,0 +1,15 @@
+(ld "cert.acl2")
+
+; (Matt K. mod): Turning off waterfall-parallelism because of the use
+; of (logbitp-reasoning) in the proof of
+; normalize-logand-neg-with-ash-of-unsigned-byte-lemma.  It could be
+; turned off for just that theorem, but here we prevent future
+; possible failures of that computed hint, which returns a value, when
+; waterfall-parallelism is active.
+
+; Computed hint LOGBITP-REASONING modifies state:
+#+acl2-par
+(set-waterfall-parallelism nil)
+
+; Copied from cert.acl2:
+; cert-flags: ? t :ttags :all
