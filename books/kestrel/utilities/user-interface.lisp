@@ -193,7 +193,7 @@
     `(value-triple (cw ,str ,@args))))
 
 (defsection make-event-terse
-  :parents (user-interface)
+  :parents (user-interface make-event)
   :short "A variant of @(tsee make-event) with terser screen output."
   :long
   "<p>
