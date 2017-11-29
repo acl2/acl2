@@ -57,36 +57,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate
-  ()
-  (local
-   (defmacro m () (control-screen-output-and-maybe-replay
-                   nil t '(make-event '(defun f (x) x)))))
-  (local (m)))
-
-(encapsulate
-  ()
-  (local
-   (defmacro m () (control-screen-output-and-maybe-replay
-                   t t '(make-event '(defun f (x) x)))))
-  (local (m)))
-
-(encapsulate
-  ()
-  (local
-   (defmacro m () (control-screen-output-and-maybe-replay
-                   nil nil '(make-event '(defun f (x) x)))))
-  (local (m)))
-
-(encapsulate
-  ()
-  (local
-   (defmacro m () (control-screen-output-and-maybe-replay
-                   t nil '(make-event '(defun f (x) x)))))
-  (local (m)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (progn
   (cw-event "Message."))
 

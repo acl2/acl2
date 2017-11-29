@@ -527,6 +527,71 @@
                      `(,fn (:e ,fn) (:t ,fn)))
                    (clique-runic-designators (cdr clique))))))
 
+; The following function has been moved here from
+; [books]/kestrel/utilities/user-interface.lisp, because it is an obsolete user
+; interface utility that is only used in this simplify-defun.lisp file.
+(define control-screen-output-and-maybe-replay
+  ((verbose "@('t') (or @(''t')) or @('nil') (or @(''nil')), else indicates
+             replay on failure.")
+   (event-p "Make an event when true.")
+   (form (pseudo-event-formp form)))
+  :returns (new-form pseudo-event-formp :hyp (pseudo-event-formp form))
+  :short "Variant of @(tsee control-screen-output)
+          that can replay a failure verbosely."
+  :long
+  "<p>Usage:</p>
+
+   @({
+   (control-screen-output-and-maybe-replay verbose event-p form)
+   })
+
+   <p>where @('verbose') is not evaluated.</p>
+
+   <p>If @('verbose') is @('t'), @(''t'), @('nil'), or @(''nil'), this is just
+   @(tsee control-screen-output), and @(':event-p') is ignored.  So suppose
+   otherwise for the rest of this documentation.</p>
+
+   <p>In that case, @('(control-screen-output nil form)') is evaluated, and
+   then if evaluation fails, @('(control-screen-output t form)') is
+   subsequently evaluated so that the failure can be seen with more output.
+   Moreover, the value of @(':event-p') is relevant, with the following two
+   cases.</p>
+
+   <ul>
+
+   <li>For @(':event-p t'), the call of
+   @('control-screen-output-and-maybe-replay') can go into a book, but @('form')
+   must be a legal event form (see @(see embedded-event-form)).</li>
+
+   <li>For @(':event-p nil'), the call of
+   @('control-screen-output-and-maybe-replay') cannot go into a book, but
+   @('form') need not be a legal event form.</li>
+
+   </ul>"
+
+  (let ((verbose (maybe-unquote verbose)))
+    (cond ((booleanp verbose)
+           (control-screen-output verbose form))
+          (t
+           (let ((form-nil (control-screen-output nil form))
+                 (form-t (control-screen-output t form)))
+             (cond
+              (event-p
+               `(make-event
+                 '(:or ,form-nil
+                       (with-output
+                         :off :all
+                         :on error
+                         :stack :push
+                         (progn
+                           (value-triple (cw "~%===== VERBOSE REPLAY: =====~|"))
+                           (with-output :stack :pop ,form-t))))))
+              (t `(mv-let (erp val state)
+                    ,form-nil
+                    (cond (erp (prog2$ (cw "~%===== VERBOSE REPLAY: =====~|")
+                                       ,form-t))
+                          (t (value val)))))))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Main implementation code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
