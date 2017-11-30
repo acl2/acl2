@@ -38,28 +38,45 @@
 ; DEFUNVAR:
 
 (must-fail ; bad name
- (defunvar "?f" () => *))
+ (defunvar "?f" () => *)
+ :with-output-off nil)
 
 (must-fail ; bad name
- (defunvar '?f () => *))
+ (defunvar '?f () => *)
+ :with-output-off nil)
 
 (must-fail ; bad arguments
- (defunvar ?f 33 => *))
+ (defunvar ?f 33 => *)
+ :with-output-off nil)
 
 (must-fail ; bad arguments
- (defunvar ?f (3 *) => *))
+ (defunvar ?f (3 *) => *)
+ :with-output-off nil)
 
 (must-fail ; bad arguments
- (defunvar ?f (* state *) => *))
+ (defunvar ?f (* state *) => *)
+ :with-output-off nil)
 
 (must-fail ; bad arguments
- (defunvar ?f (x y) => *))
+ (defunvar ?f (x y) => *)
+ :with-output-off nil)
 
 (must-fail ; bad arrow
- (defunvar ?f (* *) #\> *))
+ (defunvar ?f (* *) #\> *)
+ :with-output-off nil)
 
 (must-fail ; bad result
- (defunvar ?f (* *) => (1 2 3)))
+ (defunvar ?f (* *) => (1 2 3))
+ :with-output-off nil)
+
+(must-fail ; bad options
+ (defunvar ?f (*) => * bad))
+
+(must-fail ; bad options
+ (defunvar ?f (*) => * :other nil))
+
+(must-fail ; bad options
+ (defunvar ?f (*) => * :print 4))
 
 (defunvar ?nullary () => *)
 
@@ -73,6 +90,14 @@
 (defunvar ?g (* *) => *)
 
 (defunvar ?many (* * * * * * * * *) => *)
+
+(must-succeed ; print everything
+ (defunvar ?a (*) => * :print :all)
+ :with-output-off nil)
+
+(must-succeed ; print nothing
+ (defunvar ?a (*) => * :print nil)
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

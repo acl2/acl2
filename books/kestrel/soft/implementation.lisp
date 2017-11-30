@@ -119,18 +119,18 @@
                   result))
        ((unless (or (null options)
                     (and (= (len options) 2)
-                         (eq (car options) :verbose))))
+                         (eq (car options) :print))))
         (er-soft+ ctx t nil
-                  "After the * input there may be at most one :VERBOSE option, ~
+                  "After the * input there may be at most one :PRINT option, ~
                    but instead ~x0 was supplied."
                   options))
-       (verbose (if options
-                    (cadr options)
-                  nil))
-       ((unless (booleanp verbose))
+       (print (if options
+                  (cadr options)
+                nil))
+       ((unless (member-eq print '(nil :all)))
         (er-soft+ ctx t nil
-                  "The :VERBOSE input must be T or NIL, but ~x0 is not."
-                  verbose))
+                  "The :PRINT input must be NIL or :ALL, but ~x0 is not."
+                  print))
        ((when (funvarp funvar wrld))
         (b* ((arity (arity funvar wrld)))
           (if (= arity (len arguments))
@@ -142,7 +142,7 @@
                  (defstub ,funvar ,arguments ,arrow ,result)
                  (table function-variables ',funvar nil)
                  (value-triple ',funvar)))
-       (event (restore-output? verbose event)))
+       (event (restore-output? (eq print :all) event)))
     (value event)))
 
 (defsection defunvar-implementation
@@ -169,13 +169,13 @@
    @(def acl2::show-defunvar)"
 
   (defmacro show-defunvar (&whole call
-                                  funvar arguments arrow result &key verbose)
+                                  funvar arguments arrow result &key print)
     `(defunvar-fn
        ',funvar
        ',arguments
        ',arrow
        ',result
-       ',verbose
+       ',print
        ',call
        (cons 'defunvar ',funvar)
        state))
