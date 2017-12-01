@@ -3016,6 +3016,28 @@
                  (update-cut-leavesi n v cutsdb)
                (ec-call (update-cut-leavesi n v cutsdb)))))
 
+;; (define collect-leaves ((data natp)
+;;                         (size natp)
+;;                         (cutsdb))
+;;   :guard (<= (+ data size) (cut-leaves-length cutsdb))
+;;   (if (zp size)
+;;       nil
+;;     (cons (cut-leavesi data cutsdb)
+;;           (collect-leaves (1+ (lnfix data)) (1- size) cutsdb))))
+
+;; (include-book "std/strings/hexify" :dir :system)
+      
+
+;; (define print-cut ((cut natp)
+;;                    (cutsdb))
+;;   :guard (and (< cut (cut-info-length cutsdb))
+;;               (<= (+ 4 (* 4 cut)) (cut-leaves-length cutsdb)))
+;;   (b* (((cutinfo cutinf) (cut-infoi cut cutsdb)))
+;;     (acl2::msg "Cut ~x0: truth ~s1, valid ~x2, score ~x3, leaves ~x4"
+;;                (lnfix cut) (str::hexify cutinf.truth)
+;;                cutinf.valid cutinf.score (collect-leaves (* 4 (lnfix cut)) cutinf.size cutsdb))))
+
+
 (define cuts-check-any-contained ((start natp)
                                   (end natp)
                                   (data natp)
@@ -3034,9 +3056,16 @@
        (cut-size (cutinfo->size (cut-infoi start cutsdb)))
        (cut-leaves (* 4 start))
        (contained (and (<= cut-size (lnfix size))
-                       (leaves-subsetp cut-leaves cut-size data size cutsdb))))
+                       (leaves-subsetp cut-leaves cut-size data size cutsdb)))
+       ;; (- (and contained
+       ;;         (cw "Contained: ~x0~%in: ~@1~%"
+       ;;             (collect-leaves data size cutsdb)
+       ;;             (print-cut start cutsdb))))
+       )
     (or contained
         (cuts-check-any-contained (1+ start) end data size cutsdb))))
+       
+  
 
 
 (define cuts-invalidate-any-contained ((start natp)
@@ -3063,6 +3092,8 @@
                        (leaves-subsetp data size cut-leaves cut-size cutsdb)))
        ((unless contained)
         (cuts-invalidate-any-contained (1+ (lnfix start)) end data size found-acc cutsdb))
+       ;; (- (cw "Invalidating:~%~@0~%based on: ~x1~%"
+       ;;        (print-cut start cutsdb) (collect-leaves data size cutsdb)))
        (cutsdb (update-cut-infoi start (!cutinfo->valid nil info) cutsdb)))
     (cuts-invalidate-any-contained (1+ (lnfix start)) end data size t cutsdb))
   ///
@@ -3990,7 +4021,45 @@
     (<= score (* 15 (nfix size)))
     :rule-classes :linear))
 
-(define cut-score ((cut natp)
+(define cut-refcount ((start natp) (size natp) (refcounts) (cutsdb))
+  :guard (and (<= (+ start size) (cut-leaves-length cutsdb))
+              (leaves-bounded start size (u32-length refcounts) cutsdb))
+  :measure (nfix size)
+  :returns (score natp :rule-classes :type-prescription)
+  :verify-guards nil
+  (b* (((when (zp size)) 0)
+       (leaf (cut-leavesi start cutsdb))
+       (nrefs ;;(if (< leaf (u32-length refcounts))
+                  (get-u32 leaf refcounts))
+                ;;0))
+       )
+    (+ nrefs (cut-refcount (1+ (lnfix start)) (1- size) refcounts cutsdb)))
+  ///
+  (verify-guards cut-refcount
+    :hints (("goal" :in-theory (enable leaves-bounded)))))
+
+(define cut-onerefcount ((start natp) (size natp) (refcounts) (cutsdb))
+  :guard (and (<= (+ start size) (cut-leaves-length cutsdb))
+              (leaves-bounded start size (u32-length refcounts) cutsdb))
+  :measure (nfix size)
+  :returns (score natp :rule-classes :type-prescription)
+  :verify-guards nil
+  (b* (((when (zp size)) 0)
+       (leaf (cut-leavesi start cutsdb))
+       (nrefs ;;(if (< leaf (u32-length refcounts))
+                  (get-u32 leaf refcounts))
+                ;;0))
+       )
+    (+ (if (eql nrefs 1) 1 0) (cut-onerefcount (1+ (lnfix start)) (1- size) refcounts cutsdb)))
+  ///
+  (verify-guards cut-onerefcount
+    :hints (("goal" :in-theory (enable leaves-bounded))))
+
+  (defret cut-onerefcount-bound
+    (<= score (nfix size))
+    :rule-classes :linear))
+
+(define cut-score((cut natp)
                    (refcounts)
                    (cutsdb cutsdb-ok))
   :guard (and (< cut (cut-info-length cutsdb))
@@ -4001,6 +4070,13 @@
   ;; leaves are bounded
   :returns (score natp :rule-classes :type-prescription)
   :verify-guards nil
+  ;; (b* (((cutinfo info) (cut-infoi cut cutsdb))
+  ;;      ((when (< info.size 2)) 1001)
+  ;;      (refcount (min 1000 (cut-refcount (* 4 (lnfix cut)) info.size refcounts cutsdb)))
+  ;;      (onescount (cut-onerefcount (* 4 (lnfix cut)) info.size refcounts cutsdb))
+  ;;      ((when (< 3 onescount))
+  ;;       (- 5 onescount)))
+  ;;   refcount)
   (b* (((cutinfo info) (cut-infoi cut cutsdb)))
     (+ (cut-score-aux (* 4 (lnfix cut)) info.size refcounts cutsdb)
        (case info.size
@@ -4015,7 +4091,7 @@
                                        leaves-bounded-when-bounded-lesser))))
   
   (defret cut-score-bound
-    (<= score 1000)
+    (<= score 1001)
     :rule-classes :linear)
 
   (defret size-of-cut-score
@@ -4052,8 +4128,11 @@
        ((cutinfo info) (cut-infoi m cutsdb))
        (mask (truth-reducemask info.size 0 info.truth))
        ((when (eql mask (loghead info.size -1)))
-        ;; No reduction
-        cutsdb)
+        ;; No reduction -- just score
+        (b* ((score (cut-score m refcounts cutsdb))
+             ;; (- (acl2::sneaky-incf score))
+             (info2 (!cutinfo->score score info)))
+          (update-cut-infoi m info2 cutsdb)))
        (new-size (logcount mask))
        (new-truth (truth::permute-shrink4 0 0 mask info.truth))
        (cutsdb (leaves-reduce (* 4 m) info.size (* 4 m) 0 mask cutsdb))
@@ -4063,6 +4142,7 @@
                             :valid t))
        (cutsdb (update-cut-infoi m info1 cutsdb))
        (score (cut-score m refcounts cutsdb))
+       ;; (- (acl2::sneaky-incf score))
        (info2 (!cutinfo->score score info1)))
     (update-cut-infoi m info2 cutsdb))
   ///
@@ -4748,8 +4828,6 @@
            (cuts-consistent cut max value cutsdb bitarr)))
 
 
-
-
 (define node-locate-cut (;; (node-cuts-start natp)
                          (config cuts4-config-p)
                          (cutsdb cutsdb-ok))
@@ -4808,6 +4886,11 @@
                                         cutsdb-leaves-lit-idsp-by-badguy))))
   :guard-debug t
   :returns (mv constp new-cutsdb)
+  :guard-hints ((and stable-under-simplificationp
+                     '(:cases ((< (NODECUT-INDICESI (+ -1 (CUT-NNODES CUTSDB))
+                                                    CUTSDB)
+                                  (NODECUT-INDICESI (CUT-NNODES CUTSDB)
+                                                    CUTSDB))))))
   (b* ((new-cut-idx (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
        ((cutinfo info) (cut-infoi new-cut-idx cutsdb))
        (node-cuts-start (nodecut-indicesi (1- (cut-nnodes cutsdb)) cutsdb))
@@ -4816,22 +4899,34 @@
         (b* ((cutsdb (copy-cut new-cut-idx node-cuts-start cutsdb))
              (cutsdb (update-nodecut-indicesi$ (cut-nnodes cutsdb) (+ 1 (lnfix node-cuts-start)) cutsdb)))
           (mv t cutsdb)))
-       ((mv some-invalidated cutsdb)
-        (cuts-invalidate-any-contained node-cuts-start new-cut-idx
-                                       (* 4 new-cut-idx) info.size nil cutsdb))
-       ((unless (or some-invalidated
-                    (<= (cuts4-config->max-cuts config)
-                        (- new-cut-idx (lnfix node-cuts-start)))))
+       ((when (eql new-cut-idx (lnfix node-cuts-start)))
         (b* ((cutsdb (update-nodecut-indicesi$
                       (cut-nnodes cutsdb)
                       (+ 1 new-cut-idx)
                       cutsdb)))
           (mv nil cutsdb)))
+       ((mv ?some-invalidated cutsdb)
+        (cuts-invalidate-any-contained node-cuts-start new-cut-idx
+                                       (* 4 new-cut-idx) info.size nil cutsdb))
        ((mv worst-cut worst-score worst-validp)
         (cuts-find-worst node-cuts-start new-cut-idx cutsdb))
+       ((when (and worst-validp
+                   (< (- new-cut-idx (lnfix node-cuts-start))
+                      (cuts4-config->max-cuts config))))
+        ;; (acl2::sneaky-incf 'added-new)
+       ;; ((unless (or some-invalidated
+       ;;              (<= (cuts4-config->max-cuts config)
+       ;;                  (- new-cut-idx (lnfix node-cuts-start)))))
+        (b* ((cutsdb (update-nodecut-indicesi$
+                      (cut-nnodes cutsdb)
+                      (+ 1 new-cut-idx)
+                      cutsdb)))
+          (mv nil cutsdb)))
        (new-score (cutinfo->score (cut-infoi new-cut-idx cutsdb)))
-       ((when (and worst-validp (<= new-score worst-score)))
+       ((when (and worst-validp (< new-score worst-score)))
+        ;; (acl2::sneaky-incf 'worst-was-better)
         (mv nil cutsdb))
+       ;; (- (acl2::sneaky-incf 'worst-replaced))
        (cutsdb (copy-cut new-cut-idx worst-cut cutsdb)))
     (mv nil cutsdb))
   ///
@@ -5446,6 +5541,9 @@
   (b* (((when (mbe :logic (zp (- (nfix cut0-max) (nfix cut0)))
                    :exec (eql cut0-max cut0)))
         (mv (lnfix valid-count-in) nil cutsdb))
+       ((cutinfo cut0inf) (cut-infoi cut0 cutsdb))
+       ((unless cut0inf.valid)
+        (node-merge-cut-sets1 (1+ (lnfix cut0)) neg0 cut0-max cut1 neg1 valid-count-in config refcounts cutsdb))
        ((mv valid constp cutsdb) (node-merge-cuts cut0 neg0 cut1 neg1 config refcounts cutsdb))
        (valid-count (+ (bool->bit valid) (lnfix valid-count-in)))
        ((when constp) (mv valid-count t cutsdb)))
@@ -5613,6 +5711,9 @@
   (b* (((when (mbe :logic (zp (- (nfix cut1-max) (nfix cut1)))
                    :exec (eql cut1-max cut1)))
         (mv (lnfix valid-count-in) nil cutsdb))
+       ((cutinfo cut1inf) (cut-infoi cut1 cutsdb))
+       ((unless cut1inf.valid)
+        (node-merge-cut-sets cut0 neg0 cut0-max (1+ (lnfix cut1)) neg1 cut1-max valid-count-in config refcounts cutsdb))
        ((mv valid-count constp cutsdb)
         (node-merge-cut-sets1 cut0 neg0 cut0-max cut1 neg1 valid-count-in config refcounts cutsdb))
        ((when constp) (mv valid-count t cutsdb)))
@@ -6155,7 +6256,19 @@
 ;;                                        max val new-cutsdb bitarr)))))))
 
 
-
+;; (define print-cuts ((start natp)
+;;                     (end natp)
+;;                     (cutsdb))
+;;   :guard (and (<= start end)
+;;               (<= end (cut-info-length cutsdb))
+;;               (<= (* 4 end) (cut-leaves-length cutsdb)))
+;;   :measure (nfix (- (nfix end) (nfix start)))
+;;   (b* (((when (mbe :logic (zp (- (nfix end) (nfix start)))
+;;                    :exec (eql start end)))
+;;         nil))
+;;     (cw "~@0~%" (print-cut start cutsdb))
+;;     (print-cuts (1+ (lnfix start)) end cutsdb)))
+       
 
 
 (define node-derive-cuts-aux ((child0 litp)
@@ -6181,6 +6294,10 @@
        ((when constp)
         (mv count cutsdb))
        (cutsdb (node-add-trivial-cut refcounts cutsdb)))
+    ;; (cw "Cuts for node ~x0:~%" (1- (cut-nnodes cutsdb)))
+    ;; (print-cuts (nodecut-indicesi (1- (cut-nnodes cutsdb)) cutsdb)
+    ;;             (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)
+    ;;             cutsdb)
     (mv (+ 1 count) cutsdb))
   ///
   

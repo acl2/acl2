@@ -346,7 +346,7 @@
 (define maybe-grow-truth4arr ((size natp)
                               (truth4arr))
   :returns new-truth4arr
-  (if (< (lnfix size) (truth4s-length truth4arr))
+  (if (<= (lnfix size) (truth4s-length truth4arr))
       truth4arr
     (resize-truth4s (max 222 (* 2 (lnfix size))) truth4arr))
   ///
@@ -354,7 +354,7 @@
   (local (include-book "std/lists/nth" :dir :system))
 
   (defret length-of-maybe-grow-truth4arr-at-least-size
-    (< (nfix size) (len new-truth4arr))
+    (<= (nfix size) (len new-truth4arr))
     :rule-classes :linear)
 
   (defret length-of-maybe-grow-truth4arr-at-least-previous
@@ -612,7 +612,7 @@
               truth4arr)))
        ((unless (eql 0 (get-npn4 n npn4arr)))
         (record-all-npn4-perms (1+ (lnfix n)) canonical-count npn4arr truth4arr))
-       (truth4arr (maybe-grow-truth4arr canonical-count truth4arr))
+       (truth4arr (maybe-grow-truth4arr (1+ (lnfix canonical-count)) truth4arr))
        (truth4arr (set-truth4 canonical-count (lnfix n) truth4arr))
        (npn4arr (record-npn4-perms *all-perms4* (make-npn4 :truth-idx (lnfix canonical-count))
                                    (lnfix n) npn4arr)))

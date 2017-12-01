@@ -28,7 +28,8 @@
 
 
 (fty::defprod rewrite-config
-  ((cuts4-config cuts4-config-p)
+  ((cuts4-config cuts4-config-p :default '(make-cuts4-config))
+   (cut-tries-limit acl2::maybe-natp :rule-classes :type-prescription :default 5)
    (zero-cost-replace booleanp :rule-classes :type-prescription))
   :tag :rewrite-config)
 
@@ -1379,7 +1380,8 @@
                               (strash2 "strash for aignet2")
                               (aignet2 "destination")
                               (refcounts2 "refcounts for aignet2")
-                              (rewrite-stats))
+                              (rewrite-stats)
+                              (config rewrite-config-p))
   :guard (and (< block (acl2::smm-nblocks smm))
               (< n (acl2::smm-block-size block smm))
               (ec-call (smm-contains-aignet-lits smm aignet))
@@ -1416,11 +1418,13 @@
        ((mv ?lit cost eba eba2 copy2)
         (eval-cut-implementation-rec impl-lit aignet eba eba2 copy2 strash2 aignet2 refcounts2))
        (next (+ 1 (lnfix n)))
-       ((when (mbe :logic (zp (- (acl2::smm-block-size block smm) next))
-                   :exec (eql next (acl2::smm-block-size block smm))))
+       ((rewrite-config config))
+       ((when (or (eql next config.cut-tries-limit)
+                  (mbe :logic (zp (- (acl2::smm-block-size block smm) next))
+                       :exec (eql next (acl2::smm-block-size block smm)))))
         (mv (lnfix n) cost eba eba2 copy2 rewrite-stats))
        ((mv best-n best-cost eba eba2 copy2 rewrite-stats)
-        (eval-implementations next block smm aignet eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats)))
+        (eval-implementations next block smm aignet eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config)))
     (if (< cost best-cost)
         (mv (lnfix n) cost eba eba2 copy2 rewrite-stats)
       (mv best-n best-cost eba eba2 copy2 rewrite-stats)))
@@ -1599,7 +1603,8 @@
                   (strash2 "strash for aignet2")
                   (aignet2 "destination")
                   (refcounts2 "refcounts for aignet2")
-                  (rewrite-stats))
+                  (rewrite-stats)
+                  (config rewrite-config-p))
   :guard (and (aignet-copies-in-bounds copy2 aignet2)
               (cutsdb-lit-idsp aignet2 cutsdb)
               ;; (<= (cut-nnodes cutsdb) (lits-length copy))
@@ -1668,7 +1673,7 @@
          (smm    (rwlib->cands rwlib))
          (truth::npn4arr (rwlib->npns rwlib)))
         (b* (((truth::npn4 npn) (truth::get-npn4 cutinf.truth truth::npn4arr)))
-          (eval-implementations 0 npn.truth-idx smm aignet eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats)))
+          (eval-implementations 0 npn.truth-idx smm aignet eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config)))
        ((mv & refcounts2) (cut-delete-mffcs (* 4 (lnfix cut)) cutinf.size cutsdb aignet2 refcounts2)))
     (mv t (+ base-cost impl-cost) impl-index refcounts2 eba eba2 copy2 rewrite-stats))
   ///
@@ -1741,7 +1746,8 @@
                                     (strash2 "strash for aignet2")
                                     (aignet2 "destination")
                                     (refcounts2 "refcounts for aignet2")
-                                    (rewrite-stats))
+                                    (rewrite-stats)
+                                    (config rewrite-config-p))
   :guard (and (<= cuts-start cuts-end)
               (<= cuts-end (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               (aignet-copies-in-bounds copy2 aignet2)
@@ -1768,17 +1774,17 @@
                    :exec (eql cuts-start cuts-end)))
         (mv nil 0 0 0 refcounts2 eba eba2 copy2 rewrite-stats))
        ((mv ok1 score1 impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats)
-        (eval-cut cuts-start node cutsdb rwlib eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats))
+        (eval-cut cuts-start node cutsdb rwlib eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
        ((when (and ok1 (eql score1 0)))
         ;; early out for 0-cost
         (mv t 0 (lnfix cuts-start) impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats))
        ((unless ok1)
         (choose-implementation-cuts (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
-                                    eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats))
+                                    eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
        ((mv ok-rest best-score best-cut-idx best-impl-idx
             refcounts2 eba eba2 copy2 rewrite-stats)
         (choose-implementation-cuts (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
-                                    eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats))
+                                    eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
        ((when (or (not ok-rest)
                   (< score1 best-score)))
         (mv ok1 score1 (lnfix cuts-start) impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats)))
@@ -2175,7 +2181,7 @@
         (choose-implementation-cuts
          (nodecut-indicesi (lit-id lit) cutsdb)
          (nodecut-indicesi (+ 1 (lit-id lit)) cutsdb)
-         (lit-id lit) cutsdb rwlib eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats))
+         (lit-id lit) cutsdb rwlib eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
 
        ((when (and replacep (if config.zero-cost-replace (<= cut-cost build-cost) (< cut-cost build-cost))))
         (b* ((rewrite-stats (incr-rewrite-stats-repls rewrite-stats))

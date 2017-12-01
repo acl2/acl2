@@ -768,22 +768,240 @@
   ;;           (and stable-under-simplificationp
   ;;                (acl2::equal-by-nths-hint))))
   )
-                                              
+
+
+(encapsulate nil
+  (local (in-theory (enable hons-assoc-equal)))
+  (fty::defmap nat-val-alistp :val-type natp :true-listp t))
+
+;; Priorities: in abc src/opt/dar/darLib.c, pPriosMem is basically the same as
+;; our abc-prios.  Each chunk (indexed by pPrios) is a permutation of indices
+;; 0:n-1 which indicate the the ranking of outputs for a given truth value.  For example,
+;; the first chunk of priodata (for truth index 1 of 222) is
+;; 10  9  12  6  11  14  4  1  7  5  2  3  13  8  0
+;; which means there are 15 outputs implementing that truth table,
+;; and the "best" one is number 10, followed by 9, 12, etc.  We want to put the
+;; outputs into our smm in that order.
+
+(include-book "centaur/misc/numlist" :dir :system)
+(include-book "defsort/defsort" :dir :system)
+
+(define nat< ((x natp) (y natp))
+  :inline t
+  :enabled t
+  (mbe :logic (< (nfix x) (nfix y))
+       :exec (< x y)))
+
+(acl2::defsort sort-nats
+  :prefix natsort
+  :compare< nat<
+  :comparablep natp
+  :comparable-listp nat-listp
+  :true-listp t
+  :weak nil)
+
+
+(define lits-to-litarr-aux ((idx natp)
+                            (lits lit-listp)
+                            (litarr))
+  :enabled t
+  :prepwork ((local (include-book "std/lists/take" :dir :system))
+             (local (include-book "std/lists/len" :dir :system))
+             (local (include-book "std/lists/nthcdr" :dir :system))
+             (local (defthm litarr$ap-is-lit-listp
+                      (equal (litarr$ap x)
+                             (lit-listp x))))
+             (local (defthm take-of-update-last
+                      (implies (equal (nfix idx) (+ 1 (nfix last)))
+                               (equal (take idx (update-nth last val x))
+                                      (append (take last x)
+                                              (list val))))
+                      :hints(("Goal" :in-theory (enable update-nth)))))
+             (local (defthm nthcdr-of-update-nth
+                      (implies (< (nfix m) (nfix n))
+                               (equal (nthcdr n (update-nth m val x))
+                                      (nthcdr n x))) 
+                      :hints(("Goal" :in-theory (enable update-nth))))))
+  :guard (<= (+ idx (len lits)) (lits-length litarr))
+  :returns (new-litarr)
+  :guard-hints (("goal" :in-theory (e/d (update-nth-lit)
+                                        (satlink::lit-list-fix-of-append
+                                         ;; acl2::nthcdr-of-cdr
+                                         acl2::open-small-nthcdr
+                                         acl2::nthcdr-when-zp
+                                         acl2::nthcdr-of-cdr)))
+                (and stable-under-simplificationp
+                     '(:expand (;; (:free (litarr) (take idx litarr))
+                                (update-nth idx (car lits) litarr)
+                                (:free (n litarr) (lits-to-litarr-aux n (cdr lits) litarr)))))
+                )
+  (mbe :logic (non-exec (lit-list-fix (append (take idx litarr)
+                                              lits
+                                              (nthcdr (+ (nfix idx) (len lits)) litarr))))
+       :exec (if (atom lits)
+                 litarr
+               (b* ((litarr (set-lit idx (lit-fix (car lits)) litarr)))
+                 (lits-to-litarr-aux (1+ (lnfix idx)) (cdr lits) litarr)))))
+
+
+(define lits-to-litarr ((lits lit-listp)
+                        (litarr))
+  :prepwork ((local (defthm nthcdr-of-resize-list
+                      (equal (nthcdr n (resize-list list n val)) nil)
+                      :hints(("Goal" :in-theory (enable nthcdr resize-list)))))
+             (local (defthm len-of-resize-list
+                      (equal (len (resize-list list n val)) (nfix n))
+                      :hints(("Goal" :in-theory (enable resize-list))))))
+  :enabled t
+  (mbe :logic (non-exec (lit-list-fix lits))
+       :exec
+       (b* ((litarr (resize-lits (len lits) litarr)))
+         (lits-to-litarr-aux 0 lits litarr))))
+
+(define nat-list-max ((x nat-listp))
+  ;; BOZO this is the same as max-nats from vl/util/sum-nats.lisp and nat-list-max from sv/mods/moddb.lisp
+  :returns (max natp :rule-classes :type-prescription)
+  (if (atom x)
+      0
+    (max (lnfix (car x))
+         (nat-list-max (cdr x))))
+  ///
+  (defret nat-list-max-of-numlist
+    (implies (natp n)
+             (equal (nat-list-max (acl2::numlist n 1 len))
+                    (if (zp len) 0 (+ -1 n len)))))
+
+  (defret nat-list-max-of-natsort-insert
+    (equal (nat-list-max (natsort-insert elt x))
+           (max (nfix elt) (nat-list-max x)))
+    :hints(("Goal" :in-theory (enable natsort-insert))))
+
+  (defret nat-list-max-of-natsort-insertsort
+    (equal (nat-list-max (natsort-insertsort x))
+           (nat-list-max x))
+    :hints(("Goal" :in-theory (enable natsort-insertsort)))))
+
+(define reorder-lits-by-prios-aux ((prios nat-listp)
+                                   (litarr))
+  :guard (< (nat-list-max prios) (lits-length litarr))
+  :guard-hints (("goal" :in-theory (enable nat-list-max)))
+  :returns (lits lit-listp)
+  (if (atom prios)
+      nil
+    (cons (get-lit (car prios) litarr)
+          (reorder-lits-by-prios-aux (cdr prios) litarr)))
+  ///
+  (defret len-of-reorder-lits-by-prios-aux
+    (equal (len lits) (len prios)))
+
+  (local (defthm member-nth-lit
+           (implies (< (nfix n) (len x))
+                    (member (nth-lit n x) (lit-list-fix x)))
+           :hints(("Goal" :in-theory (enable nth-lit nth)))))
+
+  ;; (defretd member-of-reorder-lits-by-prios-aux
+  ;;   (implies (and (not (member x (lit-list-fix litarr)))
+  ;;                 (< (nat-list-max prios) (lits-length litarr)))
+  ;;            (not (member x lits)))
+  ;;   :hints(("Goal" :in-theory (enable nat-list-max))))
+
+  (defret nth-of-reorder-lits-by-prios-aux
+    (implies (< (nfix n) (len prios))
+             (equal (nth n lits)
+                    (nth-lit (nth n prios) litarr)))
+    :hints (("goal" :induct (nth n prios)
+             :expand ((reorder-lits-by-prios-aux prios litarr))
+             :in-theory (enable nth)))))
+
+(define reorder-lits-by-prios ((prios nat-listp)
+                               (lits lit-listp))
+  :guard (< (nat-list-max prios) (len lits))
+  :returns (new-lits lit-listp)
+  (b* (((local-stobjs litarr) (mv litarr new-lits))
+       (litarr (lits-to-litarr lits litarr))
+       (new-lits
+        (reorder-lits-by-prios-aux prios litarr)))
+    (mv litarr new-lits))
+  ///
+  (defret len-of-reorder-lits-by-prios
+    (equal (len new-lits) (len prios)))
+
+  ;; (defretd member-of-reorder-lits-by-prios
+  ;;   (implies (and (not (member x (lit-list-fix lits)))
+  ;;                 (< (nat-list-max prios) (len lits)))
+  ;;            (not (member x new-lits)))
+  ;;   :hints(("Goal" :in-theory (enable member-of-reorder-lits-by-prios-aux))))
+
+  ;; (defret member-nth-of-reorder-lits-by-prios
+  ;;   (implies (and (< (nfix n) (len prios))
+  ;;                 (< (nat-list-max prios) (len lits))
+  ;;                 (lit-listp lits))
+  ;;            (member (nth n new-lits) lits))
+  ;;   :hints (("goal" :use ((:instance member-of-reorder-lits-by-prios
+  ;;                          (x (nth n new-lits))))
+  ;;            :in-theory (disable reorder-lits-by-prios))))
+  
+  (defret nth-of-reorder-lits-by-prios
+    (implies (< (nfix n) (len prios))
+             (equal (nth n new-lits)
+                    (lit-fix (nth (nth n prios) (lit-list-fix lits)))))
+    :hints(("Goal" :in-theory (enable nth-lit)))))
+  
+
+(define prios-are-permutation ((prios))
+  :returns (permp)
+  (b* ((len (len prios)))
+    (and (nat-listp prios)
+         (equal (sort-nats prios) (acl2::numlist 0 1 len))))
+  ///
+  (defret nat-listp-when-prios-are-permutation
+    (implies permp (nat-listp prios))
+    :rule-classes :forward-chaining)
+
+  (local (defthm nat-list-max-when-sort-equals-numlist
+           (implies (equal (natsort-insertsort x) (acl2::numlist 0 1 len))
+                    (equal (nat-list-max x)
+                           (if (zp len) 0 (+ -1 len))))
+           :hints(("Goal" :use ((:instance nat-list-max-of-natsort-insertsort))
+                   :in-theory (disable nat-list-max-of-natsort-insertsort acl2::numlist)))))
+
+  (defretd nat-list-max-when-prios-are-permutation
+    (implies (and permp (consp prios))
+             (equal (nat-list-max prios) (+ -1 (len prios))))
+    :hints(("Goal" :in-theory (disable acl2::numlist)))))
+                        
 
 (define truthmap-to-smm ((truthmap truthmap-p)
                          (truth4arr)
+                         (priodata nat-listp)
                          (smm))
   :guard (<= (smm-nblocks smm) (truth4s-length truth4arr))
   :measure (nfix (- (truth4s-length truth4arr) (acl2::smm-nblocks smm)))
   :returns (new-smm)
+  :prepwork ((local (include-book "std/lists/take" :dir :system))
+             (local (defthm nat-listp-of-nthcdr
+                      (implies (nat-listp x)
+                               (nat-listp (nthcdr n x)))))
+             (local (in-theory (enable nat-list-max-when-prios-are-permutation))))
   (b* ((n (acl2::smm-nblocks smm))
        ((when (mbe :logic (zp (- (truth4s-length truth4arr) n))
                    :exec (eql (truth4s-length truth4arr) n)))
         smm)
        (lits (cdr (hons-get (get-truth4 n truth4arr) (truthmap-fix truthmap))))
-       (smm (acl2::smm-addblock (len lits) smm))
+       (len (len lits))
+       (smm (acl2::smm-addblock len smm))
+       ((when (eql len 0))
+        (truthmap-to-smm truthmap truth4arr priodata smm))
+       (prios (take len priodata))
+       (prios-ok (prios-are-permutation prios))
+       (- (and (not prios-ok)
+               (raise "Bad priorities for block ~x0: ~x1~%"
+                      n prios)))
+       (lits (if prios-ok
+                 (reorder-lits-by-prios prios lits)
+               lits))
        (smm (smm-write-lits n 0 lits smm)))
-    (truthmap-to-smm truthmap truth4arr smm))
+    (truthmap-to-smm truthmap truth4arr (nthcdr len priodata) smm))
   ///
   (defret nblocks-of-truthmap-to-smm
     (implies (<= (len smm) (len truth4arr))
@@ -809,6 +1027,22 @@
                          (< (nfix n) (len x)))
                     (litp (nth n x)))
            :hints(("Goal" :in-theory (enable lit-listp nth)))))
+
+  (local (in-theory (disable acl2::nth-of-take)))
+
+
+  (local (defthmd nth-bounded-by-nat-list-max
+           (implies (and (< (nfix n) (len x)))
+                    (<= (nfix (nth n x)) (nat-list-max x)))
+           :hints(("Goal" :in-theory (enable nth nat-list-max)))))
+
+  (local (defthm nth-bounded-by-nat-list-max-special
+           (implies (< (nfix n) (nfix m))
+                    (<= (nfix (nth n (take m x))) (nat-list-max (take m x))))
+           :hints(("Goal" :in-theory (enable nth-bounded-by-nat-list-max)))
+           :rule-classes :linear))
+
+  (local (in-theory (disable acl2::inequality-with-nfix-hyp-2)))
 
   (defret member-lit-of-truthmap-to-smm
     (implies (and (<= (smm-nblocks smm) (nfix n))
@@ -852,7 +1086,6 @@
           (incr-ids (cdr x)))))
 
 
-
 (define setup-abc-rwlib (npn4arr
                             truth4arr
                             aignet
@@ -869,7 +1102,7 @@
        (truth4arr2 (resize-truth4s (num-nodes aignet) truth4arr2))
        (truth4arr2 (aignet-derive-truth4s 0 aignet truth4arr2))
        (truthmap (aignet-id-list-collect-truthmap (incr-ids (abc-outs)) truth4arr2 nil))
-       (smm (truthmap-to-smm truthmap truth4arr smm)))
+       (smm (truthmap-to-smm truthmap truth4arr (abc-prios) smm)))
     (fast-alist-free truthmap)
     (mv npn4arr truth4arr smm aignet truth4arr2))
   ///
@@ -921,7 +1154,7 @@
                  (truth4arr2 (aignet-derive-truth4s 0 aignet truth4arr2-orig))
                  (outs (incr-ids (abc-outs)))
                  (truthmap (aignet-id-list-collect-truthmap outs truth4arr2 nil))
-                 (smm (truthmap-to-smm truthmap truth4arr smm-orig))
+                 (smm (truthmap-to-smm truthmap truth4arr (abc-prios) smm-orig))
                  (lit (nth idx (nth n smm))))
               `'(:use ((:instance aignet-id-list-collect-truthmap-of-aignet-derive-truth4s
                         (lit ,(hq lit))
@@ -933,6 +1166,7 @@
                         (k idx)
                         (truthmap ,(hq truthmap))
                         (truth4arr ,(hq truth4arr))
+                        (priodata ,(hq (abc-prios)))
                         (smm ,(hq smm-orig)))))))))
 
   (defret aignet-truth-impls-correct-of-setup-abc-rwlib
