@@ -26,7 +26,7 @@
 ;; ======================================================================
 
 ;; Added by Alessandro Coglio <coglio@kestrel.edu>
-(define x86-segment-base-and-bounds
+(define segment-base-and-bounds
   ((seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
    x86)
   :returns (mv (base n64p :hyp (x86p x86))
@@ -129,8 +129,8 @@
     (implies
      (and (not (equal fld :msr))
           (not (equal fld :seg-hidden)))
-     (equal (x86-segment-base-and-bounds seg-reg (xw fld index value x86))
-            (x86-segment-base-and-bounds seg-reg x86)))))
+     (equal (segment-base-and-bounds seg-reg (xw fld index value x86))
+            (segment-base-and-bounds seg-reg x86)))))
 
 ;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define ea-to-la ((eff-addr i64p)
@@ -215,7 +215,7 @@
   (if (64-bit-modep x86)
       (if (or (eql seg-reg *fs*)
               (eql seg-reg *gs*))
-          (b* (((mv base & &) (x86-segment-base-and-bounds seg-reg x86))
+          (b* (((mv base & &) (segment-base-and-bounds seg-reg x86))
                (lin-addr (i64 (+ base (n64 eff-addr)))))
             (if (canonical-address-p lin-addr)
                 (mv nil lin-addr)
@@ -223,7 +223,7 @@
         (mv nil eff-addr))
     (b* (((mv base
               lower-bound
-              upper-bound) (x86-segment-base-and-bounds seg-reg x86))
+              upper-bound) (segment-base-and-bounds seg-reg x86))
          ((unless (and (<= lower-bound eff-addr)
                        (<= eff-addr upper-bound)))
           (mv (list :segment-limit-fail
@@ -231,7 +231,7 @@
               0))
          (lin-addr (n32 (+ base eff-addr))))
       (mv nil lin-addr)))
-  :guard-hints (("Goal" :in-theory (enable x86-segment-base-and-bounds)))
+  :guard-hints (("Goal" :in-theory (enable segment-base-and-bounds)))
   :inline t
   ///
 
