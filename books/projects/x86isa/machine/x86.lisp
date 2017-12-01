@@ -3695,7 +3695,7 @@
    <p>
    Note that a code segment is never expand-down,
    so the valid effective addresses are always between 0 and the segment limit
-   (cf. @(tsee x86-segment-base-and-bounds)).
+   (cf. @(tsee segment-base-and-bounds)).
    In 32-bit mode, when CS.D is 0, the segment limit should be a 16-bit value
    (coming from a well-formed segment descriptor),
    but this invariant is not available to this function:

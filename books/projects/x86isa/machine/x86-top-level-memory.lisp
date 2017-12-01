@@ -101,7 +101,7 @@
           ;; No need for the conclusion about the state because
           ;; "rme08-does-not-affect-state-in-programmer-level-mode".
           ))
-    :enable (ea-to-la x86-segment-base-and-bounds))
+    :enable (ea-to-la segment-base-and-bounds))
 
   (defrule rme08-xw-system-level-mode
     (implies
