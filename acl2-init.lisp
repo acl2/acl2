@@ -1761,44 +1761,74 @@ implementations.")
   #-x86-64 2000)
 
 #+sbcl
-(defvar *sbcl-contrib-dir*
-  (or (getenv$-raw "SBCL_HOME")
-      (let ((suggestions
-             (and
-              (boundp 'sb-ext::*core-pathname*)
-              (ignore-errors
-                (let* ((core-dir
-                        (pathname-directory
-                         sb-ext::*core-pathname*))
-                       (contrib-dir-pathname-new ; see comment above
-                        (and (equal (car (last core-dir))
-                                    "output")
-                             (make-pathname
-                              :directory
-                              (append (butlast core-dir 1)
-                                      (list "obj/sbcl-home")))))
-                       (contrib-dir-pathname
-                        (and (equal (car (last core-dir))
-                                    "output")
-                             (make-pathname
-                              :directory
-                              (append (butlast core-dir 1)
-                                      (list "contrib"))))))
-                  (append (and (probe-file contrib-dir-pathname-new)
-                               (list (namestring contrib-dir-pathname-new)))
-                          (and (probe-file contrib-dir-pathname)
-                               (list (namestring contrib-dir-pathname)))))))))
-        (cond
-         ((consp (cdr suggestions))
-          (error "Please set environment variable SBCL_HOME.  Suggestions:~%~
-                  ~a or ~a"
-                 (car suggestions)
-                 (cadr suggestions)))
-         ((consp suggestions)
-          (error "Please set environment variable SBCL_HOME.  Suggestion:~%~
-                  ~a"
-                 (car suggestions)))
-         (t (error "Please set environment variable SBCL_HOME."))))))
+(defvar *sbcl-home-dir*
+  (let* ((sbcl-home-env (getenv$-raw "SBCL_HOME"))
+         (sbcl-home-env (and sbcl-home-env
+
+; Besides checking that the filesystem location pointed to by SBCL_HOME exists,
+; this also canonicalizes the pathname, for example by (we believe) adding a
+; terminating "/" if one did not exist.
+
+                             (probe-file sbcl-home-env)))
+         (core-dir (and (boundp 'sb-ext::*core-pathname*)
+                        (pathname-directory sb-ext::*core-pathname*)))
+         (in-place  (and core-dir (equal (car (last core-dir)) "output")))
+         (installed (and core-dir (not in-place)))
+         (sbcl-home-installed
+          (and installed
+               (make-pathname :directory core-dir)))
+
+; Note 2017-11-23: The comment below only applies to the case when SBCL is
+; running in-place from an SBCL source tree, and not the case when SBCL is
+; running from an install target directory.
+
+; In order to profile, Nikodemus Siivola has told us that we "need to set
+; SBCL_HOME to the location of the contribs".  We used contrib/ through SBCL
+; 1.1.11.  But we noticed in SBCL 1.1.14 that the suitable contrib/ directory
+; (at least for requiring sb-sprof) is obj/sbcl-home/contrib/, an impression
+; that seemed to be confirmed via email from fahree@gmail.com on 1/13/2014.
+; Since directory obj/sbcl-home/ doesn't exist in (our installation of) SBCL
+; 1.1.11, we simply look for that first.  But we noticed that it doesn't work
+; to include the trailing "contrib/" when using obj/sbcl-home/.
+
+         (sbcl-home-in-place-old
+          (and in-place
+               (make-pathname :directory (append (butlast core-dir 1)
+                                                 '("contrib")))))
+         (sbcl-home-in-place-new
+          (and in-place
+               (make-pathname :directory (append (butlast core-dir 1)
+                                                 '("obj" "sbcl-home")))))
+         (sbcl-home-detected
+          (or
+           (and sbcl-home-installed    (probe-file sbcl-home-installed))
+           (and sbcl-home-in-place-new (probe-file sbcl-home-in-place-new))
+           (and sbcl-home-in-place-old (probe-file sbcl-home-in-place-old)))))
+    (cond
+     ((and sbcl-home-env
+
+; In some older versions of SBCL, such as 1.1.11, if SBCL_HOME is not passed to
+; SBCL upon startup, the SBCL process itself sets SBCL_HOME to the location of
+; sbcl.core.  But if SBCL is being run in-place from an SBCL source tree
+; instead of being installed in an install target directory, this SBCL_HOME
+; value is incorrect and should be ignored.
+
+           (not (and in-place core-dir
+                     (equal sbcl-home-env
+                            (probe-file (make-pathname :directory core-dir))))))
+      (when (and sbcl-home-detected
+                 (not (equal sbcl-home-env sbcl-home-detected)))
+        (warn "SBCL_HOME is currently set to \"~a\", but our heuristics ~
+               indicate that it should be set to \"~a\".  The ACL2 image we ~
+               save may not work correctly.~%"
+              sbcl-home-env sbcl-home-detected))
+      (namestring sbcl-home-env))
+     (sbcl-home-detected
+      (namestring sbcl-home-detected))
+     (t (error "Could not determine a suitable value for the environment ~
+                variable SBCL_HOME.  If it is set, please try unsetting it or ~
+                correcting it.  If it is not set, please try setting it to an ~
+                appropriate value.")))))
 
 #+sbcl
 (defun save-acl2-in-sbcl-aux (sysout-name core-name
@@ -1819,24 +1849,14 @@ implementations.")
     (if (probe-file eventual-sysout-core)
         (delete-file eventual-sysout-core))
     (with-open-file ; write to nsaved_acl2
-     (str sysout-name :direction :output)
-     (let* ((prog (car sb-ext:*posix-argv*)))
-       (write-exec-file
-        str
-
-; In order to profile, Nikodemus Siivola has told us that we "need to set
-; SBCL_HOME to the location of the contribs".  We used contrib/ through SBCL
-; 1.1.11.  But we noticed in SBCL 1.1.14 that the suitable contrib/ directory
-; (at least for requiring sb-sprof) is obj/sbcl-home/contrib/, an impression
-; that seemed to be confirmed via email from fahree@gmail.com on 1/13/2014.
-; Since directory obj/sbcl-home/ doesn't exist in (our installation of) SBCL
-; 1.1.11, we simply look for that first.  But we noticed that it doesn't work
-; to include the trailing "contrib/" when using obj/sbcl-home/.
-
-        ("~a~%"
-         (format nil
-                 "export SBCL_HOME=~s"
-                 *sbcl-contrib-dir*))
+      (str sysout-name :direction :output)
+      (let* ((prog (car sb-ext:*posix-argv*)))
+        (write-exec-file
+         str
+         ("~a~%"
+          (format nil
+                  "export SBCL_HOME='~a'"
+                  *sbcl-home-dir*))
 
 ; We have observed with SBCL 1.0.49 that "make HTML" fails on our 64-bit linux
 ; system unless we start sbcl with --control-stack-size 4 [or larger].  The
@@ -1863,19 +1883,21 @@ implementations.")
 ; Example:
 ; (export SBCL_USER_ARGS="--lose-on-corruption" ; ./sbcl-saved_acl2)
 
-        "~s --dynamic-space-size ~s --control-stack-size 64 ~
-         --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
-         --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
-        prog
-        *sbcl-dynamic-space-size*
-        eventual-sysout-core
-        (insert-string host-lisp-args)
-        (insert-string toplevel-args)
-        (user-args-string inert-args "--end-toplevel-options"))))
+         "~s --dynamic-space-size ~s --control-stack-size 64 ~
+          --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
+          --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
+         prog
+         *sbcl-dynamic-space-size*
+         eventual-sysout-core
+         (insert-string host-lisp-args)
+         (insert-string toplevel-args)
+         (user-args-string inert-args "--end-toplevel-options"))))
     (chmod-executable sysout-name)
-    ;; In SBCL 0.9.3 the read-only space is too small for dumping ACL2 on x86,
-    ;; so we have to specify :PURIFY NIL. This will unfortunately result in
-    ;; some core file bloat, and slightly slower startup.
+
+; In SBCL 0.9.3 the read-only space is too small for dumping ACL2 on x86, so we
+; have to specify :PURIFY NIL. This will unfortunately result in some core file
+; bloat, and slightly slower startup.
+
     (sb-ext:gc)
     (sb-ext:save-lisp-and-die sysout-core
                               :purify

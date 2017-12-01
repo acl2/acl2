@@ -3602,7 +3602,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore ign))
   (assert (and (consp x) (symbolp (car x)))) ; checked by translate11
   (let ((*1*fn (*1*-symbol (car x)))
-        (*1*fn$inline (*1*-symbol (add-suffix (car x) *inline-suffix*))))
+        (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*)))
     `(cond
       (*safe-mode-verified-p* ; see below for discussion of this case
        ,x)

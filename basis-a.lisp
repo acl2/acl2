@@ -4746,11 +4746,14 @@
 
 (defun saved-output-token-p (token state)
   (declare (xargs :stobjs state
-                  :guard (and (symbolp token)
-                              (f-boundp-global 'saved-output-p state)
-                              (f-boundp-global 'saved-output-token-lst state)
-                              (true-listp (f-get-global 'saved-output-token-lst
-                                                        state)))))
+                  :guard
+                  (and (symbolp token)
+                       (f-boundp-global 'saved-output-p state)
+                       (f-boundp-global 'saved-output-token-lst state)
+                       (or (eq (f-get-global 'saved-output-token-lst state)
+                               :all)
+                           (true-listp (f-get-global 'saved-output-token-lst
+                                                     state))))))
   (and (f-get-global 'saved-output-p state)
        (or (eq (f-get-global 'saved-output-token-lst state) :all)
            (member-eq token (f-get-global 'saved-output-token-lst state)))))
