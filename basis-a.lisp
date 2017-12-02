@@ -5002,8 +5002,9 @@
 ; be printed.  See also warning-disabled-p, which we can use to avoid needless
 ; computation on behalf of disabled warnings.
 
-  (declare (xargs :guard (and (stringp summary)
-                              (standard-string-p summary)
+  (declare (xargs :guard (and (or (null summary)
+                                  (and (stringp summary)
+                                       (standard-string-p summary)))
                               (plist-worldp wrld)
                               (standard-string-alistp
                                (table-alist 'inhibit-warnings-table wrld)))))

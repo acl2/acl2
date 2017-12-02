@@ -10434,10 +10434,12 @@
 ; "insert-proof" example sent to us by Dave Greve.
 
   (cond
-   ((rw-cacheable-failure-reason failure-reason)
+   ((and failure-reason ; could be nil; see "save some conses" in relieve-hyps1
+         (rw-cacheable-failure-reason failure-reason))
 
-; We take advantage here of the guard on rw-cacheable-failure-reason, i.e.,
-; that (consp failure-reason) and (posp (car failure-reason)).
+; Since failure-reason is non-nil, we expect (just as in the guard on
+; rw-cacheable-failure-reason) that (consp failure-reason) and (posp (car
+; failure-reason)).
 
     (let* ((hyp (nth (1- (car failure-reason)) hyps))
            (entry (make rw-cache-entry
@@ -10924,6 +10926,7 @@
 ; but for a free-failure reason.
 
   (cond ((and (rw-cache-active-p rcnst)
+              failure-reason ; always true?
               (rw-cacheable-failure-reason failure-reason))
          (acons new-unify-subst
                 failure-reason
