@@ -206,10 +206,10 @@
 ; *badge-prim-falist* because it depends on
 ; *first-order-like-terms-and-out-arities*, which is defined with a make-event
 ; that cannot be compiled.  Since *apply$-boot-fns-badge-alist* is only defined
-; in pass 2, we deal with it similarly here.
+; in pass 2, we deal with it similarly here.  We use defparameter so that the
+; compiler knows that the variable is special.
 
-      (setf (symbol-value name)
-            (eval form)))
+      (eval `(defparameter ,name ,form)))
      (t (or (boundp name)
             (er hard 'defconst
                 "Implementation error!  Expected ~x0 to be boundp.  Please ~

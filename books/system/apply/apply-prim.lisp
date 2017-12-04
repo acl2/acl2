@@ -168,9 +168,11 @@
       (cons `(CAR ,x)
             (n-car-cadr-caddr-etc (- n 1) `(CDR ,x)))))
 
-(defun apply$-prim (fn args)
-  (declare (xargs :guard (true-listp args)))
-  (make-apply$-prim-body))
+; The following is commented out, because otherwise we get an error due to an
+; attempt to redundantly define a function with raw Lisp code.
+; (defun apply$-prim (fn args)
+;   (declare (xargs :guard (true-listp args)))
+;   (make-apply$-prim-body))
 
 ; To prove termination and guards of apply$, for example, we will need to
 ; manipulate terms involving apply$-prim.  Leaving that function enabled causes

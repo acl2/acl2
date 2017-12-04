@@ -5762,6 +5762,9 @@
 ; This concludes development of code for early loading of compiled files
 ; (though other related such code may be found elsewhere).
 
+(defconst *boot-strap-pass-2-acl2-loop-only-fns*
+  '(apply$-prim))
+
 (defun-one-output add-trip (world-name world-key trip)
 
 ; Warning: If you change this function, consider making corresponding changes
@@ -5921,6 +5924,9 @@
 ; *1* def; see the next comment about ignorep.
 
                      (maybe-push-undo-stack 'defun (car def) ignorep))
+                    ((and boot-strap-flg
+                          (member-eq (car def)
+                                     *boot-strap-pass-2-acl2-loop-only-fns*)))
                     (t (maybe-push-undo-stack 'defun (car def) ignorep)
 
 ; Note: If ignorep is '(defstobj . stobj), we save both the current def and the
@@ -7333,6 +7339,8 @@
 ; forms.
 
            make-event
+           make-apply$-prim-body-fn-raw
+           set-raw-mode
            set-compile-fns)
           nil)
          (t

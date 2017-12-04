@@ -357,6 +357,8 @@
 
 (defun make-apply$-prim-body-fn (falist acc)
 
+; WARNING: Keep this in sync with make-apply$-prim-body-fn-raw.
+
 ; Falist = ((fn . badge) ...) and is a fast alist although we do not actually
 ; use it as an alist here; we just cdr down it.
 
@@ -386,10 +388,68 @@
 ; proofs; so we do that.
 (in-theory (disable (:e break$)))
 
+#-acl2-loop-only
+(progn
+
+(defvar *apply$-prim-ht* (make-hash-table :test 'eq))
+
+(defun make-apply$-prim-body-fn-raw (falist ht)
+
+; WARNING: Keep this in sync with make-apply$-prim-body-fn.
+
+; The present function's name is perhaps a bit misleading, since it doesn't
+; create a function body, but rather, it populates the given hash-table, which
+; will actually be *apply$-prim-ht*.
+
+; See make-apply$-prim-body-fn.  Note that we do not handle return-last
+; specially here.
+
+  (cond
+   ((endp falist) nil) ; reversing might be unnecessary
+   (t (let ((fn (car (car falist)))
+            (badge (cdr (car falist))))
+        (cond
+         ((equal (access apply$-badge badge :authorization-flg) t)
+          (let ((fn-to-call (cond ((member fn *ec-call-bad-ops*
+                                           :test 'eq)
+                                   fn)
+                                  (t (let ((*1*fn (*1*-symbol fn)))
+                                       (assert (fboundp *1*fn))
+                                       *1*fn)))))
+            (setf (gethash fn ht)
+                  (cons fn-to-call
+                        (access apply$-badge badge :arity)))
+            (make-apply$-prim-body-fn-raw (cdr falist) ht)))
+         (t (make-apply$-prim-body-fn-raw (cdr falist) ht)))))))
+
+(defun apply$-prim (fn args)
+  (cond ((eq fn 'return-last)
+         (caddr args))
+        (t (let ((pair (gethash fn *apply$-prim-ht*)))
+             (and pair
+                  (let ((fn2 (car pair))
+                        (arity (cdr pair)))
+                    (let ((args (if (int= arity (length args))
+                                    args
+                                  (take arity args))))
+                      (apply fn2 args))))))))
+(defun-*1* apply$-prim (fn args)
+  (if (true-listp args) ; guard
+      (apply$-prim fn args)
+    (gv apply$-prim (fn args) (apply$-prim fn (fix-true-list args)))))
+
+)
+
 (when-pass-2
 
 ; We use when-pass-2 because of dependence on *badge-prim-falist*.  See comment
 ; above regarding "depends on the make-event above."
+
+(set-raw-mode t)
+
+(make-apply$-prim-body-fn-raw *badge-prim-falist* *apply$-prim-ht*)
+
+(set-raw-mode nil)
 
 (defmacro make-apply$-prim-body ()
 ; We ignore primitives whose authorization-flg is nil.
@@ -397,6 +457,7 @@
      ,@(make-apply$-prim-body-fn *badge-prim-falist* nil)
      (otherwise nil)))
 
+#+acl2-loop-only
 (defun apply$-prim (fn args)
   (declare (xargs :guard (true-listp args)))
   (make-apply$-prim-body))

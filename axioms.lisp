@@ -12892,6 +12892,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     delete-file$
     set-bad-lisp-consp-memoize
     #-acl2-devel apply$-lambda
+    apply$-prim
   ))
 
 (defconst *primitive-macros-with-raw-code*
