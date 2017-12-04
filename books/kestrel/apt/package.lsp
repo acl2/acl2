@@ -29,6 +29,7 @@
                          append?
                          apply-term
                          apply-term*
+                         assert-equal
                          body
                          conjoin
                          conjoin-untranslated-terms
@@ -144,6 +145,8 @@
                          make-paired-name
                          measure
                          msg-downcase-first
+                         must-eval-to-t
+                         must-succeed*
                          named-formulas-to-thm-events
                          next-numbered-name
                          non-executablep
