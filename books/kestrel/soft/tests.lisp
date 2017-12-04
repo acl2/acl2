@@ -70,13 +70,16 @@
  :with-output-off nil)
 
 (must-fail ; bad options
- (defunvar ?f (*) => * bad))
+ (defunvar ?f (*) => * bad)
+ :with-output-off nil)
 
 (must-fail ; bad options
- (defunvar ?f (*) => * :other nil))
+ (defunvar ?f (*) => * :other nil)
+ :with-output-off nil)
 
 (must-fail ; bad options
- (defunvar ?f (*) => * :print 4))
+ (defunvar ?f (*) => * :print 4)
+ :with-output-off nil)
 
 (defunvar ?nullary () => *)
 
