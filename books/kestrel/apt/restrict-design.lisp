@@ -24,7 +24,7 @@
 
   :parents (design-notes restrict)
 
-  :short "Design notes for the domain restriction transformation."
+  :short "Design notes for the APT domain restriction transformation."
 
   :long
 

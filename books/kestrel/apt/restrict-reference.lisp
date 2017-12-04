@@ -18,7 +18,7 @@
 
   :parents (reference)
 
-  :short "Domain restriction transformation:
+  :short "APT domain restriction transformation:
           restrict the effective domain of a function."
 
   :long

@@ -24,7 +24,7 @@
 
   :parents (design-notes tailrec)
 
-  :short "Design notes for the tail recursion transformation."
+  :short "Design notes for the APT tail recursion transformation."
 
   :long
 

@@ -19,7 +19,7 @@
 
 (defxdoc transformation-table
   :parents (utilities)
-  :short "Transformation table."
+  :short "APT transformation table."
   :long
   "<p>
    This table records, for each successful call to an APT transformation,

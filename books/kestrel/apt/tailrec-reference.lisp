@@ -18,7 +18,7 @@
 
   :parents (reference)
 
-  :short "Tail recursion transformation:
+  :short "APT tail recursion transformation:
           turn a recursive function that is not tail-recursive
           into an equivalent tail-recursive function."
 
