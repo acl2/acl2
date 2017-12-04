@@ -29775,16 +29775,10 @@
 (defmacro read-file-into-string (filename &key (start '0) bytes)
   `(read-file-into-string2 ,filename ,start ,bytes state))
 
-; Support for experiments with apply$: logic code.  See apply-raw.lisp for raw
-; Lisp support and relevant background.
-
 ; Below we define two ``acl2-magic-concrete...'' functions whose only uses are
 ; to allow us to introduce concrete-badge-userfn and concrete-apply$-userfn as
-; partially constrained functions.  Despite the word ``magic'' in their names
-; they are relevant to the normal ACL2 user (and to the ACL2(a) user) because
-; in the normal ACL2, concrete-badge-userfn and concrete-apply$-userfn are
-; partially constrained.  It's just that in ACL2(a) their executable
-; counterparts are really interesting while in ACL2 they're not interesting.
+; partially constrained functions.  See apply-raw.lisp for raw Lisp support and
+; relevant background.
 
 (defun acl2-magic-concrete-badge-userfn (x)
 

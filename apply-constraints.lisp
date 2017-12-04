@@ -134,15 +134,22 @@
 ; fn) then we'd know fn isn't among the ~800 primitives or the six boot
 ; functions.
 
-; This additional conjunct is easily achieved, though it requires moving up a
-; few defconsts below so we can use them in the defthm above.
+; This additional conjunct can probably be easily achieved, in particular by
+; moving up the definition below of *apply$-boot-fns-badge-alist* so we can use
+; it in the defthm above.
 
-; If we add it we must make sure that concrete-badge-userfn satisfies the
-; constraint.  (BTW: The ``doppelganger'' of badge-userfn (which must also
-; satisfy this constraint) in the foundational work of
-; books/projects/apply-model/ex1/ and ex2/ already satisfies this additional
-; constraint because the final otherwise clause in the doppelganger's
-; definition is nil.)
+; More problematically, we must make sure that concrete-badge-userfn satisfies
+; the strengthened constraint.  This is difficult because
+; concrete-badge-userfn is currently (partially) constrained in
+; other-events.lisp, which is processed before apply$-primp and
+; *apply$-boot-fns-badge-alist* are defined.  The only way we can think of to
+; fix this would be to move the introduction of concrete-badge-userfn into
+; this file and deal with any bootstrapping issues that come up!
+
+; (BTW: The ``doppelganger'' of badge-userfn (which must also satisfy this
+; constraint) in the foundational work of books/projects/apply-model/ex1/ and
+; ex2/ already satisfies this additional constraint because the final
+; otherwise clause in the doppelganger's definition is nil.)
 
 ; On the other hand, so far, we haven't seen a proof where the stronger
 ; constraint is required.  It is just odd that, for all we know, (badge-userfn
