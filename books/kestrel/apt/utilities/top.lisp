@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "print-specifiers")
 (include-book "transformation-table")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

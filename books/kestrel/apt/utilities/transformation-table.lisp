@@ -19,7 +19,7 @@
 
 (defxdoc transformation-table
   :parents (utilities)
-  :short "Transformation table."
+  :short "APT transformation table."
   :long
   "<p>
    This table records, for each successful call to an APT transformation,
@@ -37,7 +37,7 @@
    and prior to comparing a call with the keys in the table.
    </p>
    <p>
-   Since the @(':verbose') input to transformations only affects screen output,
+   Since the @(':print') input to transformations only affects screen output,
    it is similarly removed from a call
    prior to storing a call in the table
    and prior to comparing a call with the keys in the table.
@@ -54,12 +54,12 @@
 (define remove-irrelevant-inputs-from-transformation-call
   ((call pseudo-event-formp)
    (wrld plist-worldp))
-  :returns (call-without-verbose-showonly pseudo-event-formp
-                                          :hyp (pseudo-event-formp call))
+  :returns (call-without-print-showonly pseudo-event-formp
+                                        :hyp (pseudo-event-formp call))
   :verify-guards nil
   :parents (transformation-table)
   :short "Remove from a call to a transformation
-          the @(':verbose') and @(':show-only') inputs, if present."
+          the @(':print') and @(':show-only') inputs, if present."
   :long
   "<p>
    See the discussion <see topic='@(url transformation-table)'>here</see>
@@ -77,7 +77,7 @@
        (number-of-mandatory-inputs (len (macro-required-args name wrld)))
        (mandatory-inputs (take number-of-mandatory-inputs args))
        (optional-inputs (nthcdr number-of-mandatory-inputs args))
-       (optional-inputs (remove-keyword :verbose optional-inputs))
+       (optional-inputs (remove-keyword :print optional-inputs))
        (optional-inputs (remove-keyword :show-only optional-inputs)))
     `(,name ,@mandatory-inputs ,@optional-inputs)))
 
@@ -91,7 +91,7 @@
           record a transformation call into the transformation table."
   :long
   "<p>
-   The @(':verbose') and @(':show-only') inputs, if present,
+   The @(':print') and @(':show-only') inputs, if present,
    are removed from the call prior to recording it.
    See the discussion <see topic='@(url transformation-table)'>here</see>
    for motivation.
@@ -108,7 +108,7 @@
           by this transformation call, if any."
   :long
   "<p>
-   The @(':verbose') and @(':show-only') inputs, if present,
+   The @(':print') and @(':show-only') inputs, if present,
    are removed from the call prior to looking it up in the transformation table.
    See the discussion <see topic='@(url transformation-table)'>here</see>
    for motivation.

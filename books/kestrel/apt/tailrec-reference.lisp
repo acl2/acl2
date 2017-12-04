@@ -18,7 +18,7 @@
 
   :parents (reference)
 
-  :short "Tail recursion transformation:
+  :short "APT tail recursion transformation:
           turn a recursive function that is not tail-recursive
           into an equivalent tail-recursive function."
 
@@ -58,7 +58,7 @@
               :non-executable  ; default :auto
               :verify-guards   ; default :auto
               :hints           ; default nil
-              :verbose         ; default nil
+              :print           ; default :result
               :show-only       ; default nil
        )
    })
@@ -553,26 +553,15 @@
      </blockquote>
 
    <p>
-   @(':verbose') &mdash; default @('nil')
+   @(':print') &mdash; default @(':result')
    </p>
 
      <blockquote>
 
      <p>
-     Controls the amount of screen output:
+     A <see topic='@(url print-specifier)'>print specifier</see>
+     to control the output printed on the screen.
      </p>
-
-     <ul>
-
-       <li>
-       @('t'), to show all the output.
-       </li>
-
-       <li>
-       @('nil'), to suppress all the non-error output.
-       </li>
-
-     </ul>
 
      </blockquote>
 

@@ -825,7 +825,7 @@
 
 (must-succeed*
 
- (test-title "Test the :VERBOSE option.")
+ (test-title "Test the :PRINT option.")
 
  ;; least upper bound in lattice consisting of NIL as bottom, T as top,
  ;; and all the other values between NIL and T and incomparable to each other:
@@ -838,17 +838,45 @@
  ;; target function:
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
- ;; not a boolean:
- (must-fail (tailrec f :verbose 1) :with-output-off nil)
+ ;; not a print specifier:
+ (must-fail (tailrec f :print 1)
+            :with-output-off nil)
 
- ;; default:
- (must-succeed (tailrec f))
+ ;; default output:
+ (must-succeed (tailrec f)
+               :with-output-off nil)
 
- ;; verbose:
- (must-succeed (tailrec f :verbose t))
+ ;; no output:
+ (must-succeed (tailrec f :print nil)
+               :with-output-off nil)
 
- ;; not verbose:
- (must-succeed (tailrec f :verbose nil))
+ ;; expansion output only:
+ (must-succeed (tailrec f :print :expand)
+               :with-output-off nil)
+
+ ;; submission output only:
+ (must-succeed (tailrec f :print :submit)
+               :with-output-off nil)
+
+ ;; result output only:
+ (must-succeed (tailrec f :print :result)
+               :with-output-off nil)
+
+ ;; expansion and submission output only:
+ (must-succeed (tailrec f :print (:expand :submit))
+               :with-output-off nil)
+
+ ;; expansion and result output only:
+ (must-succeed (tailrec f :print (:expand :result))
+               :with-output-off nil)
+
+ ;; submission and result output only:
+ (must-succeed (tailrec f :print (:submit :result))
+               :with-output-off nil)
+
+ ;; all output:
+ (must-succeed (tailrec f :print t)
+               :with-output-off nil)
 
  :with-output-off nil)
 
@@ -891,6 +919,7 @@
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (must-succeed*
 
  (test-title "Test handling of redundancy.")
@@ -906,98 +935,98 @@
  ;; target function:
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
- ;; initial call without :VERBOSE and without :SHOW-ONLY:
+ ;; initial call without :PRINT and without :SHOW-ONLY:
  (must-succeed*
   (tailrec f)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :verbose t))
-  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :verbose t :show-only t))
-  (must-be-redundant (tailrec f :verbose nil :show-only t))
-  (must-be-redundant (tailrec f :verbose t :show-only nil))
-  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print nil :show-only t))
+  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print nil :show-only nil)))
 
- ;; initial call with :VERBOSE T and without :SHOW-ONLY:
+ ;; initial call with :PRINT T and without :SHOW-ONLY:
  (must-succeed*
-  (tailrec f :verbose t)
+  (tailrec f :print t)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :verbose t))
-  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :verbose t :show-only t))
-  (must-be-redundant (tailrec f :verbose nil :show-only t))
-  (must-be-redundant (tailrec f :verbose t :show-only nil))
-  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print nil :show-only t))
+  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print nil :show-only nil)))
 
- ;; initial call with :VERBOSE NIL and without :SHOW-ONLY:
+ ;; initial call with :PRINT NIL and without :SHOW-ONLY:
  (must-succeed*
-  (tailrec f :verbose nil)
+  (tailrec f :print nil)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :verbose t))
-  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :verbose t :show-only t))
-  (must-be-redundant (tailrec f :verbose nil :show-only t))
-  (must-be-redundant (tailrec f :verbose t :show-only nil))
-  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print nil :show-only t))
+  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print nil :show-only nil)))
 
- ;; initial call without :VERBOSE and with :SHOW-ONLY T:
+ ;; initial call without :PRINT and with :SHOW-ONLY T:
  (must-succeed*
   (tailrec f :show-only t)
   (must-fail-local (must-be-redundant (tailrec f))))
 
- ;; initial call without :VERBOSE and with :SHOW-ONLY NIL:
+ ;; initial call without :PRINT and with :SHOW-ONLY NIL:
  (must-succeed*
   (tailrec f :show-only nil)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :verbose t))
-  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :verbose t :show-only t))
-  (must-be-redundant (tailrec f :verbose nil :show-only t))
-  (must-be-redundant (tailrec f :verbose t :show-only nil))
-  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print nil :show-only t))
+  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print nil :show-only nil)))
 
- ;; initial call with :VERBOSE T and with :SHOW-ONLY T:
+ ;; initial call with :PRINT T and with :SHOW-ONLY T:
  (must-succeed*
-  (tailrec f :verbose t :show-only t)
+  (tailrec f :print t :show-only t)
   (must-fail-local (must-be-redundant (tailrec f))))
 
- ;; initial call with :VERBOSE T and with :SHOW-ONLY NIL:
+ ;; initial call with :PRINT T and with :SHOW-ONLY NIL:
  (must-succeed*
-  (tailrec f :verbose t :show-only nil)
+  (tailrec f :print t :show-only nil)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :verbose t))
-  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :verbose t :show-only t))
-  (must-be-redundant (tailrec f :verbose nil :show-only t))
-  (must-be-redundant (tailrec f :verbose t :show-only nil))
-  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print nil :show-only t))
+  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print nil :show-only nil)))
 
- ;; initial call with :VERBOSE NIL and with :SHOW-ONLY T:
+ ;; initial call with :PRINT NIL and with :SHOW-ONLY T:
  (must-succeed*
-  (tailrec f :verbose nil :show-only t)
+  (tailrec f :print nil :show-only t)
   (must-fail-local (must-be-redundant (tailrec f))))
 
- ;; initial call with :VERBOSE NIL and with :SHOW-ONLY NIL:
+ ;; initial call with :PRINT NIL and with :SHOW-ONLY NIL:
  (must-succeed*
-  (tailrec f :verbose nil :show-only nil)
+  (tailrec f :print nil :show-only nil)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :verbose t))
-  (must-be-redundant (tailrec f :verbose nil))
+  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :verbose t :show-only t))
-  (must-be-redundant (tailrec f :verbose nil :show-only t))
-  (must-be-redundant (tailrec f :verbose t :show-only nil))
-  (must-be-redundant (tailrec f :verbose nil :show-only nil)))
+  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print nil :show-only t))
+  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print nil :show-only nil)))
 
  ;; non-redundant calls:
  (must-succeed*

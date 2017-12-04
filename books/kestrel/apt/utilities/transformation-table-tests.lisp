@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "APT")
 
 (include-book "transformation-table")
 (include-book "kestrel/utilities/testing" :dir :system)
@@ -20,23 +20,23 @@
  (defmacro mac (a b c &key opt verbose show-only)
    (list a b c opt verbose show-only))
 
- (assert-equal (apt::remove-irrelevant-inputs-from-transformation-call
+ (assert-equal (remove-irrelevant-inputs-from-transformation-call
                 '(mac 1 2 3 :opt 0)
                 (w state))
                '(mac 1 2 3 :opt 0))
 
- (assert-equal (apt::remove-irrelevant-inputs-from-transformation-call
-                '(mac 1 2 3 :opt 0 :verbose t)
+ (assert-equal (remove-irrelevant-inputs-from-transformation-call
+                '(mac 1 2 3 :opt 0 :print t)
                 (w state))
                '(mac 1 2 3 :opt 0))
 
- (assert-equal (apt::remove-irrelevant-inputs-from-transformation-call
+ (assert-equal (remove-irrelevant-inputs-from-transformation-call
                 '(mac 1 2 3 :show-only t :opt 0)
                 (w state))
                '(mac 1 2 3 :opt 0))
 
- (assert-equal (apt::remove-irrelevant-inputs-from-transformation-call
-                '(mac 1 2 3 :verbose t :show-only t :opt 0)
+ (assert-equal (remove-irrelevant-inputs-from-transformation-call
+                '(mac 1 2 3 :print t :show-only t :opt 0)
                 (w state))
                '(mac 1 2 3 :opt 0)))
 
@@ -48,16 +48,16 @@
    (list a b c opt verbose show-only))
 
  (assert-equal (assoc-equal '(mac 1 2 3 :opt 0)
-                            (table-alist 'apt::transformation-table (w state)))
+                            (table-alist 'transformation-table (w state)))
                nil)
 
- (make-event (apt::record-transformation-call-event
-              '(mac 1 2 3 :opt 0 :verbose t :show-only t)
+ (make-event (record-transformation-call-event
+              '(mac 1 2 3 :opt 0 :print t :show-only t)
               '(encapsulate () enc)
               (w state)))
 
  (assert-equal (assoc-equal '(mac 1 2 3 :opt 0)
-                            (table-alist 'apt::transformation-table (w state)))
+                            (table-alist 'transformation-table (w state)))
                (cons '(mac 1 2 3 :opt 0) '(encapsulate () enc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,14 +68,14 @@
    (list a b c opt verbose show-only))
 
  (assert-equal
-  (apt::previous-transformation-expansion '(mac 1 2 3 :opt 0) (w state))
+  (previous-transformation-expansion '(mac 1 2 3 :opt 0) (w state))
   nil)
 
- (make-event (apt::record-transformation-call-event
-              '(mac 1 2 3 :opt 0 :verbose t :show-only t)
+ (make-event (record-transformation-call-event
+              '(mac 1 2 3 :opt 0 :print t :show-only t)
               '(encapsulate () enc)
               (w state)))
 
  (assert-equal
-  (apt::previous-transformation-expansion '(mac 1 2 3 :opt 0) (w state))
+  (previous-transformation-expansion '(mac 1 2 3 :opt 0) (w state))
   '(encapsulate () enc)))
