@@ -20,7 +20,7 @@
 
 ; This file cannot be compiled because it changes packages in the middle.
 
-#+cmucl
+#+skip
 (error "CMUCL builds are temporarily disabled, pending some necessary fixes for
 CMUCL.  To remove this error (which may cause failures in the build or book
 certification), just remove the initial form from ACL2 source file

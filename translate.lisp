@@ -1983,8 +1983,7 @@
                                      (cdr fncall-cache) fns
                                      (car fncall-cache) wrld))
                          (t (return-from raw-ev-fncall-okp nil)))))
-           t)
-          (t nil))))
+           t))))
 
 (defun chk-raw-ev-fncall (fn wrld aokp)
   (let ((ctx 'raw-ev-fncall)
