@@ -3659,6 +3659,13 @@
   :inline t
   ///
 
+  (defthm-sb read-*ip-is-i48p
+    :hyp (x86p x86)
+    :bound 48
+    :concl (read-*ip x86)
+    :gen-type t
+    :gen-linear t)
+
   (defrule read-*ip-when-64-bit-modep
     (implies (64-bit-modep x86)
              (equal (read-*ip x86)
@@ -4250,7 +4257,8 @@ semantic function.</p>"
        ;; the top-level.
        ((when (or (ms x86) (fault x86))) x86)
 
-       (start-rip (the (signed-byte #.*max-linear-address-size*) (rip x86)))
+       (start-rip (the (signed-byte #.*max-linear-address-size*)
+                       (read-*ip x86)))
 
        ((mv flg0 (the (unsigned-byte 44) prefixes) x86)
         (get-prefixes start-rip 0 15 x86))
@@ -4421,7 +4429,7 @@ semantic function.</p>"
      (and
       (not (ms x86))
       (not (fault x86))
-      (equal start-rip (rip x86))
+      (equal start-rip (read-*ip x86))
       (not (mv-nth 0 (get-prefixes start-rip 0 15 x86)))
       (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 15 x86)))
       (equal opcode/rex/escape-byte
