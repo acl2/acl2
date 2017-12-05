@@ -208,6 +208,8 @@ and the inputs from the appropriate frame.</p>
         (len (aignet-eval vals aignet)))
     :rule-classes :linear)
 
+  (fty::deffixequiv aignet-eval-iter :args ((aignet aignet)))
+  (fty::deffixequiv acl2::aignet-eval$inline :args ((aignet aignet)))
 
   (defiteration aignet-vals->invals (invals vals aignet)
     (declare (xargs :stobjs (vals aignet invals)
@@ -243,6 +245,9 @@ and the inputs from the appropriate frame.</p>
          (nth (innum->id n aignet)
               vals)
        (nth n in-vals))))
+
+  (fty::deffixequiv aignet-vals->invals-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-vals->invals$inline :args ((aignet aignet)))
 
   (defiteration aignet-invals->vals (invals vals aignet)
     (declare (xargs :stobjs (vals aignet invals)
@@ -325,7 +330,9 @@ and the inputs from the appropriate frame.</p>
               (node-count aignet)
               (len (aignet-invals->vals invals vals aignet))))
     :rule-classes :linear)
-
+  
+  (fty::deffixequiv aignet-invals->vals-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-invals->vals$inline :args ((aignet aignet)))
 
   (defiteration aignet-vals->regvals (regvals vals aignet)
     (declare (xargs :stobjs (vals aignet regvals)
@@ -361,6 +368,9 @@ and the inputs from the appropriate frame.</p>
          (nth (regnum->id n aignet)
               vals)
        (nth n reg-vals))))
+
+  (fty::deffixequiv aignet-vals->regvals-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-vals->regvals$inline :args ((aignet aignet)))
 
   (defiteration aignet-regvals->vals (regvals vals aignet)
     (declare (xargs :stobjs (vals aignet regvals)
@@ -456,7 +466,8 @@ and the inputs from the appropriate frame.</p>
     :hints(("Goal" :in-theory (enable aignet-vals->regvals-iter))))
   (defcong bits-equiv equal (aignet-vals->regvals regvals vals aignet) 2)
 
-
+  (fty::deffixequiv aignet-regvals->vals-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-regvals->vals$inline :args ((aignet aignet)))
 
 
   (defthm id-eval-of-in/regvals-of-aignet-vals-of-in/regvals-iters
@@ -942,7 +953,10 @@ and the inputs from the appropriate frame.</p>
   (defthm aignet-eval-frame-vals-length-preserved
     (<= (len vals)
         (len (aignet-eval-frame vals aignet)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (fty::deffixequiv aignet-eval-frame-iter :args ((aignet aignet)))
+  (fty::deffixequiv acl2::aignet-eval-frame$inline :args ((aignet aignet))))
 
 (defsection copy-bitarr
   (defiteration copy-bitarr-aux (bitarr vals)
@@ -1069,6 +1083,9 @@ and the inputs from the appropriate frame.</p>
     :hints(("Goal" :in-theory (enable aignet-frame->vals))))
 
 
+  (fty::deffixequiv aignet-frame->vals-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-frame->vals$inline :args ((aignet aignet)))
+
   (defthm nth-of-aignet-frame->vals-iter
     (implies (<= (nfix m) (num-ins aignet))
              (bit-equiv
@@ -1181,6 +1198,10 @@ and the inputs from the appropriate frame.</p>
          (nth (reg-id->nxst (regnum->id n aignet) aignet)
               vals)
        (nth n reg-vals))))
+
+
+  (fty::deffixequiv aignet-vals->nxstvals-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-vals->nxstvals$inline :args ((aignet aignet)))
 
 
   (define aignet-sim-frames-rec ((k natp) vals frames regvals aignet)

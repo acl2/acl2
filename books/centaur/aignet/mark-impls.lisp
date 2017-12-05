@@ -91,7 +91,9 @@
   (defun-sk eba$c-words-in-bounds (eba$c)
     (forall idx
             (implies (and (< (nfix idx) (nfix (eba$c->wordcount eba$c)))
-                          (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c))))
+                          ;; (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c)))
+                          (< (nfix (eba$c->wordcount eba$c))
+                             (logtail 7 (nfix (nth *eba$c->length* eba$c)))))
                      (< (nfix (nth idx (nth *eba$c->wordlisti* eba$c)))
                         (len (nth *eba$c->bitsi* eba$c)))))
     :rewrite :direct)
@@ -101,7 +103,9 @@
   (defthm eba$c-words-in-bounds-necc-no-nfix
     (implies (and (eba$c-words-in-bounds eba$c)
                   (< (nfix idx) (nfix (eba$c->wordcount eba$c)))
-                  (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c)))
+                  (< (nfix (eba$c->wordcount eba$c))
+                             (logtail 7 (nfix (nth *eba$c->length* eba$c))))
+                  ;; (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c)))
                   (natp (nth idx (nth *eba$c->wordlisti* eba$c))))
              (<  (nth idx (nth *eba$c->wordlisti* eba$c))
                  (len (nth *eba$c->bitsi* eba$c))))
@@ -111,7 +115,10 @@
   (defthm eba$c-words-in-bounds-necc-linear
     (implies (and (eba$c-words-in-bounds eba$c)
                   (< (nfix idx) (nfix (eba$c->wordcount eba$c)))
-                  (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c))))
+                  (< (nfix (eba$c->wordcount eba$c))
+                             (logtail 7 (nfix (nth *eba$c->length* eba$c))))
+                  ;; (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c))))
+                  )
              (<  (nfix (nth idx (nth *eba$c->wordlisti* eba$c)))
                  (len (nth *eba$c->bitsi* eba$c))))
     :hints (("goal" :use eba$c-words-in-bounds-necc))
@@ -120,7 +127,10 @@
   (defthm eba$c-words-in-bounds-necc-lte
     (implies (and (eba$c-words-in-bounds eba$c)
                   (< (nfix idx) (nfix (eba$c->wordcount eba$c)))
-                  (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c))))
+                  (< (nfix (eba$c->wordcount eba$c))
+                             (logtail 7 (nfix (nth *eba$c->length* eba$c))))
+                  ;; (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c)))
+                  )
              (<= (+ 1 (nfix (nth idx (nth *eba$c->wordlisti* eba$c))))
                  (len (nth *eba$c->bitsi* eba$c))))
     :hints (("goal" :use eba$c-words-in-bounds-necc)))
@@ -128,7 +138,9 @@
   (defthm eba$c-words-in-bounds-necc-lte-no-nfix
     (implies (and (eba$c-words-in-bounds eba$c)
                   (< (nfix idx) (nfix (eba$c->wordcount eba$c)))
-                  (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c)))
+                  (< (nfix (eba$c->wordcount eba$c))
+                             (logtail 7 (nfix (nth *eba$c->length* eba$c))))
+                  ;; (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c)))
                   (natp (nth idx (nth *eba$c->wordlisti* eba$c))))
              (<= (+ 1 (nth idx (nth *eba$c->wordlisti* eba$c)))
                  (len (nth *eba$c->bitsi* eba$c))))
@@ -142,7 +154,9 @@
                   (equal (len (nth *eba$c->bitsi* new))
                          (len (nth *eba$c->bitsi* old)))
                   (nat-equiv (nth *eba$c->wordcount* new)
-                             (nth *eba$c->wordcount* old)))
+                             (nth *eba$c->wordcount* old))
+                  (nat-equiv (nth *eba$c->length* new)
+                             (nth *eba$c->length* old)))
              (eba$c-words-in-bounds new))
     :hints ((and stable-under-simplificationp
                  `(:expand (,(car (last clause)))
@@ -163,6 +177,48 @@
     :rewrite :direct)
 
   (in-theory (disable eba$c-set-bits-in-words)))
+
+
+(defsection eba$c-set-bits-in-bounds
+
+  (defun-sk eba$c-set-bits-in-bounds (eba$c)
+    (forall bitidx
+            (implies (<= (nfix (eba$c->length eba$c)) (nfix bitidx))
+                     (not (logbitp (loghead 5 (nfix bitidx))
+                                   (nfix (nth (logtail 5 (nfix bitidx)) (nth *eba$c->bitsi* eba$c)))))))
+    :rewrite :direct)
+
+  (in-theory (disable eba$c-set-bits-in-bounds
+                      eba$c-set-bits-in-bounds-necc))
+
+
+  (defthm eba$c-set-bits-in-bounds-necc-rw
+    (implies (and (eba$c-set-bits-in-bounds eba$c)
+                  (natp bitidx)
+                  (<= (nfix (eba$c->length eba$c)) bitidx))
+             (and (not (logbitp (loghead 5 bitidx)
+                                (nfix (nth (logtail 5 bitidx) (nth *eba$c->bitsi* eba$c)))))
+                  (implies (natp (nth (logtail 5 bitidx) (nth *eba$c->bitsi* eba$c)))
+                           (not (logbitp (loghead 5 bitidx)
+                                         (nth (logtail 5 bitidx) (nth *eba$c->bitsi* eba$c)))))))
+    :hints (("goal" :use eba$c-set-bits-in-bounds-necc)))
+
+  
+
+  (stobjs::def-updater-independence-thm eba$c-set-bits-in-bounds-updater-independence
+    (implies (and (eba$c-set-bits-in-bounds old)
+                  (nat-equiv (nth *eba$c->length* new)
+                             (nth *eba$c->length* old))
+                  (equal (nth *eba$c->bitsi* new)
+                         (nth *eba$c->bitsi* old)))
+             (eba$c-set-bits-in-bounds new))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :use ((:instance eba$c-set-bits-in-bounds-necc
+                          (eba$c old)
+                          (bitidx (eba$c-set-bits-in-bounds-witness new))))
+                   :in-theory (disable eba$c-set-bits-in-bounds-necc-rw))))))
+
     
              
                   
@@ -174,7 +230,8 @@
 (define eba$c-set-bit$ ((word-idx :type (unsigned-byte 27))
                         (bit-idx :type (unsigned-byte 5))
                         (eba$c))
-  :guard (< word-idx (eba$c->bits-length eba$c))
+  :guard (and (< word-idx (eba$c->bits-length eba$c))
+              (<= (ash (eba$c->length eba$c) -7) (eba$c->wordlist-length eba$c)))
   :enabled t
   (b* (((the (unsigned-byte 32) word) (lnfix (eba$c->bitsi (the (unsigned-byte 32) word-idx) eba$c)))
        ((the (unsigned-byte 32) new-word)
@@ -187,8 +244,9 @@
        ((unless (eql (the (unsigned-byte 32) word) 0))
         eba$c)
        ((the (unsigned-byte 32) wc) (lnfix (eba$c->wordcount eba$c)))
-       ((when (<= (eba$c->wordlist-length eba$c) wc))
-        (if (eql (eba$c->wordlist-length eba$c) wc)
+       (max-wordlist-count (1- (ash (lnfix (eba$c->length eba$c)) -7)))
+       ((when (<= max-wordlist-count wc))
+        (if (eql max-wordlist-count wc)
             (mbe :logic
                  (update-eba$c->wordcount (+ 1 wc) eba$c)
                  :exec (if (< wc #xffffffff)
@@ -242,13 +300,14 @@
 
 
 (define eba$c-set-bits-invar ((eba$c))
-  (implies (<= (lnfix (eba$c->wordcount eba$c)) (eba$c->wordlist-length eba$c))
+  (implies (< (lnfix (eba$c->wordcount eba$c)) (ash (lnfix (eba$c->length eba$c)) -7))
            (ec-call (eba$c-set-bits-in-words eba$c))))
 
 (define eba$c-set-bit ((n natp)
                        (eba$c))
   :guard (and (< n (eba$c->length eba$c))
-              (< (ash (eba$c->length eba$c) -5) (eba$c->bits-length eba$c)))
+              (< (ash (eba$c->length eba$c) -5) (eba$c->bits-length eba$c))
+              (<= (ash (eba$c->length eba$c) -7) (eba$c->wordlist-length eba$c)))
   :guard-hints (("goal" :use ((:instance acl2::logtail-monotonic
                                (x n) (y (eba$c->length eba$c)) (n 5)))))
   :returns (new-eba$c)
@@ -264,7 +323,9 @@
   (defret eba$c-set-bit-words-in-bounds
     (implies (and (eba$c-words-in-bounds eba$c)
                   (< (nfix n) (nfix (eba$c->length eba$c)))
-                  (< (acl2::logtail 5 (nfix (eba$c->length eba$c))) (eba$c->bits-length eba$c)))
+                  (< (acl2::logtail 5 (nfix (eba$c->length eba$c))) (eba$c->bits-length eba$c))
+                  ;; (<= (acl2::logtail 7 (nfix (eba$c->length eba$c))) (eba$c->wordlist-length eba$c))
+                  )
              (eba$c-words-in-bounds new-eba$c))
     :hints (("goal" :use ((:instance acl2::logtail-monotonic
                            (x (nfix n)) (y (eba$c->length eba$c)) (n 5))))
@@ -294,8 +355,9 @@
   ;;                `(:expand (,(car (last clause)))))))
 
   (defret eba$c-set-bit-preserves-wordlist-length
-    (equal (len (nth *eba$c->wordlisti* new-eba$c))
-           (len (nth *eba$c->wordlisti* eba$c))))
+    (implies (<= (ash (lnfix (eba$c->length eba$c)) -7) (eba$c->wordlist-length eba$c))
+             (equal (len (nth *eba$c->wordlisti* new-eba$c))
+                    (len (nth *eba$c->wordlisti* eba$c)))))
 
   (defret eba$c-set-bit-preserves-bits-length
     (implies (and (< (nfix n) (nfix (eba$c->length eba$c)))
@@ -314,7 +376,28 @@
 
   (defret eba$c-set-bit-preserves-length
     (equal (nth *eba$c->length* new-eba$c)
-           (nth *eba$c->length* eba$c))))
+           (nth *eba$c->length* eba$c)))
+
+  (local (defthm equal-of-loghead-when-equal-logtail
+           (implies (equal (loghead n x) (loghead n y))
+                    (iff (equal (logtail n x) (logtail n y))
+                         (equal (ifix x) (ifix y))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs
+                                              acl2::arith-equiv-forwarding)))
+           :otf-flg t))
+
+  (defret eba$c-set-bit-preserves-set-bits-in-bounds
+    (implies (and (eba$c-set-bits-in-bounds eba$c)
+                  (< (nfix n) (nfix (eba$c->length eba$c))))
+             (eba$c-set-bits-in-bounds new-eba$c))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :in-theory (e/d (bitops::logbitp-of-ash-split)
+                                   (eba$c-set-bits-in-bounds-necc-rw
+                                    ACL2::INEQUALITY-WITH-NFIX-HYP-2))
+                   :use ((:instance eba$c-set-bits-in-bounds-necc
+                          (bitidx (eba$c-set-bits-in-bounds-witness new-eba$c)))))))))
 
 
 (define eba$c-clear-bit$ ((word-idx :type (unsigned-byte 27))
@@ -399,7 +482,19 @@
 
   (defret eba$c-clear-bit-preserves-length
     (equal (nth *eba$c->length* new-eba$c)
-           (nth *eba$c->length* eba$c))))
+           (nth *eba$c->length* eba$c)))
+
+  (defret eba$c-clear-bit-preserves-set-bits-in-bounds
+    (implies (and (eba$c-set-bits-in-bounds eba$c)
+                  (< (nfix n) (nfix (eba$c->length eba$c))))
+             (eba$c-set-bits-in-bounds new-eba$c))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :in-theory (e/d (bitops::logbitp-of-ash-split)
+                                   (eba$c-set-bits-in-bounds-necc-rw
+                                    ACL2::INEQUALITY-WITH-NFIX-HYP-2))
+                   :use ((:instance eba$c-set-bits-in-bounds-necc
+                          (bitidx (eba$c-set-bits-in-bounds-witness new-eba$c)))))))))
 
 ;; (local (defthm max-equal-second
 ;;          (implies (<= a b)
@@ -411,6 +506,7 @@
                            (eba$c))
   :guard (and (<= n (eba$c->wordcount eba$c))
               (<= (eba$c->wordcount eba$c) (eba$c->wordlist-length eba$c))
+              (< (eba$c->wordcount eba$c) (ash (eba$c->length eba$c) -7))
               (ec-call (eba$c-words-in-bounds eba$c)))
   :measure (nfix (- (nfix (eba$c->wordcount eba$c)) (nfix n)))
   :returns (new-eba$c)
@@ -444,14 +540,15 @@
 
   (local (defthm nth-index-of-of-take-when-member
            (implies (and (member x (take n y))
-                         (<= (nfix n) (len y)))
+                         x
+                         ;; (<= (nfix n) (len y))
+                         )
                     (equal (nth (acl2::index-of x (take n y)) y)
                            x))
            :hints(("Goal" :in-theory (enable acl2::index-of nth)))))
 
   (defthm eba$c-clear-words-effect
-    (implies (and (eba$c-set-bits-in-words eba$c)
-                  (<= (nfix (eba$c->wordcount eba$c)) (eba$c->wordlist-length eba$c)))
+    (implies (and (eba$c-set-bits-in-words eba$c))
              (nat-equiv (nth idx (nth *eba$c->bitsi* (eba$c-clear-words 0 eba$c)))
                         0))
     :hints (("goal" :use ((:instance eba$c-clear-words-effect-rec
@@ -471,13 +568,29 @@
 
   (defret eba$c-clear-words-preserves-bits-length
     (implies (and (eba$c-words-in-bounds eba$c)
-                  (<= (nfix (eba$c->wordcount eba$c)) (eba$c->wordlist-length eba$c)))
+                  (< (nfix (eba$c->wordcount eba$c)) (ash (nfix (eba$c->length eba$c)) -7)))
              (equal (len (nth *eba$c->bitsi* new-eba$c))
                     (len (nth *eba$c->bitsi* eba$c)))))
 
   (defret eba$c-clear-words-preserves-length
     (equal (nth *eba$c->length* new-eba$c)
-           (nth *eba$c->length* eba$c))))
+           (nth *eba$c->length* eba$c)))
+
+  (local (defret eba$c-clear-words-preserves-zero-bit
+           (implies (not (logbitp k (nfix (nth idx (nth *eba$c->bitsi* eba$c)))))
+                    (not (logbitp k (nfix (nth idx (nth *eba$c->bitsi* new-eba$c))))))))
+
+  
+  (defret eba$c-clear-words-preserves-set-bits-in-bounds
+    (implies (eba$c-set-bits-in-bounds eba$c)
+             (eba$c-set-bits-in-bounds new-eba$c))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :in-theory (e/d (bitops::logbitp-of-ash-split)
+                                   (eba$c-set-bits-in-bounds-necc-rw
+                                    ACL2::INEQUALITY-WITH-NFIX-HYP-2))
+                   :use ((:instance eba$c-set-bits-in-bounds-necc
+                          (bitidx (eba$c-set-bits-in-bounds-witness new-eba$c)))))))))
 
 (define eba$c-clear-all ((n natp :type (unsigned-byte 32))
                          (eba$c))
@@ -516,18 +629,36 @@
 
   (defret eba$c-clear-all-preserves-length
     (equal (nth *eba$c->length* new-eba$c)
-           (nth *eba$c->length* eba$c))))
+           (nth *eba$c->length* eba$c)))
+
+  (local (defret eba$c-clear-all-preserves-zero-bit
+           (implies (not (logbitp k (nfix (nth idx (nth *eba$c->bitsi* eba$c)))))
+                    (not (logbitp k (nfix (nth idx (nth *eba$c->bitsi* new-eba$c))))))))
+
+  (defret eba$c-clear-all-preserves-set-bits-in-bounds
+    (implies (eba$c-set-bits-in-bounds eba$c)
+             (eba$c-set-bits-in-bounds new-eba$c))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :in-theory (e/d (bitops::logbitp-of-ash-split)
+                                   (eba$c-set-bits-in-bounds-necc-rw
+                                    ACL2::INEQUALITY-WITH-NFIX-HYP-2))
+                   :use ((:instance eba$c-set-bits-in-bounds-necc
+                          (bitidx (eba$c-set-bits-in-bounds-witness new-eba$c)))))))))
 
 
 (define eba$c-clear ((eba$c))
-  :guard (ec-call (eba$c-words-in-bounds eba$c))
+  :guard (and (ec-call (eba$c-words-in-bounds eba$c))
+              (<= (ash (eba$c->length eba$c) -7) (eba$c->wordlist-length eba$c)))
   :returns (new-eba$c)
-  (b* ((eba$c (if (<= (lnfix (eba$c->wordcount eba$c))
-                      (eba$c->wordlist-length eba$c))
+  (b* ((eba$c (if (< (lnfix (eba$c->wordcount eba$c))
+                     (ash (lnfix (eba$c->length eba$c)) -7))
                   (eba$c-clear-words 0 eba$c)
-                (if (<= (eba$c->bits-length eba$c) #xffffffff)
-                    (eba$c-clear-all 0 eba$c)
-                  (ec-call (eba$c-clear-all 0 eba$c))))))
+                (mbe :logic (eba$c-clear-all 0 eba$c)
+                     :exec
+                     (if (<= (eba$c->bits-length eba$c) #xffffffff)
+                         (eba$c-clear-all 0 eba$c)
+                       (ec-call (eba$c-clear-all 0 eba$c)))))))
     (update-eba$c->wordcount 0 eba$c))
   ///
   (defret eba$c-clear-effect
@@ -558,12 +689,17 @@
            (and stable-under-simplificationp
                 `(:expand (,(car (last clause)))))
            (and stable-under-simplificationp
-                `(:expand (,(car (last clause))))))))
+                `(:expand (,(car (last clause)))))))
+  
+  (defret eba$c-clear-preserves-set-bits-in-bounds
+    (implies (eba$c-set-bits-in-bounds eba$c)
+             (eba$c-set-bits-in-bounds new-eba$c))))
 
 
 (define eba$c-resize$ ((n natp :type (unsigned-byte 32)) eba$c)
   :returns (new-eba$c)
-  :guard (ec-call (eba$c-words-in-bounds eba$c))
+  :guard (and (ec-call (eba$c-words-in-bounds eba$c))
+              (<= (ash (eba$c->length eba$c) -7) (eba$c->wordlist-length eba$c)))
   :enabled t
   (b* ((eba$c (eba$c-clear eba$c))
        (nwords (+ 1 (ash (lnfix n) -5)))
@@ -572,11 +708,12 @@
     ;; Heuristic: If we write bits to more than 1/4 the words, then we
     ;; should just traverse the whole array to clear it instead of
     ;; collecting and visiting specifically the words that were visited.
-    (resize-eba$c->wordlist (ash nwords -2) eba$c)))
+    (resize-eba$c->wordlist (ash (lnfix n) -7) eba$c)))
 
 (define eba$c-resize ((n natp) eba$c)
   :returns (new-eba$c)
-  :guard (ec-call (eba$c-words-in-bounds eba$c))
+  :guard (and (ec-call (eba$c-words-in-bounds eba$c))
+              (<= (ash (eba$c->length eba$c) -7) (eba$c->wordlist-length eba$c)))
   :inline t
   (mbe :logic (eba$c-resize$ n eba$c)
        :exec (if (<= n #xffffffff)
@@ -607,7 +744,17 @@
 
   (defret eba$c-resize-bits-length
     (equal (len (nth *eba$c->bitsi* new-eba$c))
-           (+ 1 (logtail 5 (nfix n))))))
+           (+ 1 (logtail 5 (nfix n)))))
+  
+  (defret eba$c-resize-wordlist-length
+    (equal (len (nth *eba$c->wordlisti* new-eba$c))
+           (logtail 7 (nfix n))))
+
+  (defret eba$c-resize-preserves-set-bits-in-bounds
+    (implies (eba$c-set-bits-invar eba$c)
+             (eba$c-set-bits-in-bounds new-eba$c))
+    :hints(("Goal" :in-theory (e/d (eba$c-set-bits-in-bounds)
+                                   (eba$c-resize))))))
 
 
 (define eba$c-get-bit ((n natp :type (unsigned-byte 32))
@@ -659,6 +806,242 @@
              (equal (eba$c-get-bit n (eba$c-resize size eba$c))
                     0))))
 
+
+(define eba$c-maybe-grow-bits ((n natp) eba$c)
+  :returns (new-eba$c)
+  :inline t
+  (b* (((unless (< (lnfix (eba$c->bits-length eba$c)) (lnfix n)))
+        eba$c))
+    (resize-eba$c->bits (max (* 2 (lnfix n)) 16)
+                        eba$c))
+  ///
+  (defret eba$c-maybe-grow-bits-effect
+    (nat-equiv (nth idx (nth *eba$c->bitsi* new-eba$c))
+               (nth idx (nth *eba$c->bitsi* eba$c))))
+
+  (defret eba$c->bits-length-increasing-of-eba$c-maybe-grow-bits
+    (<= (len (nth *eba$c->bitsi* eba$c)) (len (nth *eba$c->bitsi* new-eba$c)))
+    :rule-classes :linear)
+
+  (defret eba$c->bits-length-at-least-n-of-eba$c-maybe-grow-bits
+    (<= (nfix n) (len (nth *eba$c->bitsi* new-eba$c)))
+    :rule-classes :linear)
+
+  (defret nth-of-eba$c-maybe-grow-bits
+    (implies (not (equal (nfix idx) *eba$c->bitsi*))
+             (equal (nth idx new-eba$c)
+                    (nth idx eba$c))))
+
+  (defret eba$c-words-in-bounds-of-eba$c-maybe-grow-bits
+    (implies (eba$c-words-in-bounds eba$c)
+             (eba$c-words-in-bounds new-eba$c))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause))))))))
+
+(define eba$c-maybe-grow-wordlist ((n natp) eba$c)
+  :returns (new-eba$c)
+  :inline t
+  (b* (((unless (< (lnfix (eba$c->wordlist-length eba$c)) (lnfix n)))
+        eba$c))
+    (resize-eba$c->wordlist (max (* 2 (lnfix n)) 16)
+                        eba$c))
+  ///
+  (defret eba$c-maybe-grow-wordlist-effect
+    (nat-equiv (nth idx (nth *eba$c->wordlisti* new-eba$c))
+               (nth idx (nth *eba$c->wordlisti* eba$c))))
+
+  (defret eba$c->wordlist-length-increasing-of-eba$c-maybe-grow-wordlist
+    (<= (len (nth *eba$c->wordlisti* eba$c)) (len (nth *eba$c->wordlisti* new-eba$c)))
+    :rule-classes :linear)
+
+  (defret eba$c->wordlist-length-at-least-n-of-eba$c-maybe-grow-wordlist
+    (<= (nfix n) (len (nth *eba$c->wordlisti* new-eba$c)))
+    :rule-classes :linear)
+
+  (defret nth-of-eba$c-maybe-grow-wordlist
+    (implies (not (equal (nfix idx) *eba$c->wordlisti*))
+             (equal (nth idx new-eba$c)
+                    (nth idx eba$c))))
+
+  (defret nth-wordlist-of-maybe-grow-wordlist-under-equal
+    (implies (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c)))
+             (equal (nth idx (nth *eba$c->wordlisti* new-eba$c))
+                    (nth idx (nth *eba$c->wordlisti* eba$c)))))
+
+  ;; (defret eba$c-words-in-bounds-of-eba$c-maybe-grow-wordlist
+  ;;   (implies (eba$c-words-in-bounds eba$c)
+  ;;            (eba$c-words-in-bounds new-eba$c))
+  ;;   :hints ((and stable-under-simplificationp
+  ;;                `(:expand (,(car (last clause)))))))
+  )
+
+(define eba$c-grow ((n natp) eba$c)
+  :returns (new-eba$c)
+  :guard (and (ec-call (eba$c-words-in-bounds eba$c))
+              (<= (eba$c->length eba$c) (nfix n)))
+  :inline t
+  :guard-debug t
+  :guard-hints (("goal" :do-not-induct t
+                 :in-theory (disable unsigned-byte-p-of-logtail)))
+  (b* ((nwords (+ 1 (ash (lnfix n) -5)))
+       (eba$c (eba$c-maybe-grow-bits nwords eba$c))
+       (old-wordlist-limit (ash (lnfix (eba$c->length eba$c)) -7))
+       (new-wordlist-limit (ash (lnfix n) -7))
+       (eba$c (eba$c-maybe-grow-wordlist new-wordlist-limit eba$c))
+       (eba$c (if (< (lnfix (eba$c->wordcount eba$c)) old-wordlist-limit)
+                  eba$c
+                (mbe :logic (update-eba$c->wordcount new-wordlist-limit eba$c)
+                     :exec (if (< new-wordlist-limit #xffffffff)
+                               (update-eba$c->wordcount new-wordlist-limit eba$c)
+                             (ec-call (update-eba$c->wordcount new-wordlist-limit eba$c)))))))
+    (mbe :logic (update-eba$c->length (lnfix n) eba$c)
+         :exec (if (<= n #xffffffff)
+                   (update-eba$c->length (lnfix n) eba$c)
+                 (ec-call (update-eba$c->length (lnfix n) eba$c)))))
+  ///
+  
+  (defret eba$c-grow-effect
+    (implies (and (<= (nfix (eba$c->length eba$c)) (nfix n)))
+             (nat-equiv (nth idx (nth *eba$c->bitsi* new-eba$c))
+                        (nth idx (nth *eba$c->bitsi* eba$c))))
+    :hints (("goal" :use ((:instance acl2::logtail-monotonic
+                           (n 5) (x (nfix idx)) (y (nfix n))))
+             :in-theory (disable acl2::logtail-monotonic))))
+
+  (defret eba$c-grow-length
+    (equal (nth *eba$c->length* new-eba$c)
+           (nfix n)))
+
+  (defret eba$c-grow-wordcount
+    (implies (< (nfix (nth *eba$c->wordcount* eba$c))
+                (logtail 7 (nfix (nth *eba$c->length* eba$c))))
+             (equal (nth *eba$c->wordcount* new-eba$c)
+                    (nth *eba$c->wordcount* eba$c))))
+
+  (defret eba$c-grow-wordcount-greater
+    (implies (<= (logtail 7 (nfix (nth *eba$c->length* eba$c)))
+                 (nfix (nth *eba$c->wordcount* eba$c)))
+             (equal (nth *eba$c->wordcount* new-eba$c)
+                    (logtail 7 (nfix (nth *eba$c->length* new-eba$c))))))
+
+  ;; (defret nth-of-eba$c-grow-preserved
+  ;;   (implies (and (not (equal (nfix idx) *eba$c->bitsi*))
+  ;;                 (not (equal (nfix idx) *eba$c->length*))
+  ;;                 (not (equal (nfix idx) *eba$c->wordlisti*)))
+  ;;            (equal (nth idx new-eba$c)
+  ;;                   (nth idx eba$c))))
+
+
+  (defret nth-wordlist-of-eba$c-grow
+    (nat-equiv (nth idx (nth *eba$c->wordlisti* new-eba$c))
+               (nth idx (nth *eba$c->wordlisti* eba$c))))
+
+  
+
+  (local (defret nth-wordlist-of-eba$c-grow-under-equal
+           (implies (case-split (< (nfix idx) (len (nth *eba$c->wordlisti* eba$c))))
+                    (equal (nth idx (nth *eba$c->wordlisti* new-eba$c))
+                               (nth idx (nth *eba$c->wordlisti* eba$c))))))
+
+
+  (local (defthm member-when-nth
+           (implies (and (equal (nth n x) y)
+                         y)
+                    (member y x))
+           :hints(("Goal" :in-theory (enable nth member)))
+           :rule-classes nil))
+
+  ;; (local (defthm nth-of-index-of
+  ;;          (implies (member x y)
+  ;;                   (equal (nth (acl2::index-of x y) y) x))
+  ;;          :hints(("Goal" :in-theory (enable member nth acl2::index-of)))))
+
+  (local (defthm nth-of-index-of-take
+           (implies (and (member x (take n y))
+                         x)
+                    (equal (nth (acl2::index-of x (take n y)) y) x))
+           :hints(("Goal" :use ((:instance acl2::nth-of-index-when-member
+                                 (k x)
+                                 (x (take n y))))
+                   :do-not-induct t
+                   :in-theory (disable acl2::nth-of-index-when-member)))))
+
+
+  (local (defret wordlist-len-increasing-of-eba$c-grow
+           (<= (len (nth *eba$c->wordlisti* eba$c)) (len (nth *eba$c->wordlisti* new-eba$c)))
+           :rule-classes :linear))
+           
+
+  (local (in-theory (disable ACL2::TAKE-OF-TOO-MANY)))
+
+  (local (defthm member-take-when-index-of-greater-than-length
+           (implies (and (member k (take w x))
+                         k)
+                    (< (acl2::index-of k (take w x)) (len x)))
+           :hints(("Goal" :use ((:instance acl2::nth-of-index-when-member
+                                 (k k) (x (take w x))))
+                   :in-theory (disable acl2::nth-of-index-when-member)))
+           :rule-classes (:rewrite :linear)))
+
+
+  (local (defret member-take-of-eba$c-grow
+           (implies (and (member k (take w (nth *eba$c->wordlisti* eba$c)))
+                         (natp k))
+                    (member k (take w (nth *eba$c->wordlisti* new-eba$c))))
+           :hints (("goal" :use ((:instance member-when-nth
+                                  (y k)
+                                  (x (take w (nth *eba$c->wordlisti* new-eba$c)))
+                                  (n (acl2::index-of k (take w (nth *eba$c->wordlisti* eba$c))))))
+                    :in-theory (disable eba$c-grow)))))
+
+  (defret eba$c-set-bits-invar-of-eba$c-grow
+    (implies (and (eba$c-set-bits-invar eba$c)
+                  (<= (nfix (eba$c->length eba$c)) (nfix n)))
+             (eba$c-set-bits-invar new-eba$c))
+    :hints(("goal" :in-theory (e/d (eba$c-set-bits-invar)
+                                   (eba$c-grow)))
+           (and stable-under-simplificationp
+                (let ((lit (car (last clause))))
+                  (and (eq (car lit) 'eba$c-set-bits-in-words)
+                       `(:expand (,lit)
+                         :in-theory (disable eba$c-set-bits-in-words-necc eba$c-grow)
+                         :use ((:instance eba$c-set-bits-in-words-necc
+                                (idx (eba$c-set-bits-in-words-witness . ,(cdr lit)))))))))
+           ;; (and stable-under-simplificationp
+           ;;      `(:expand (,(car (last clause)))))
+           (and stable-under-simplificationp
+                '(:cases ((< (nfix (nth *eba$c->wordcount* eba$c))
+                             (logtail 7 (nfix (nth *eba$c->length* eba$c)))))))))
+
+  (defret eba$c-grow-bits-length
+    (<= (+ 1 (logtail 5 (nfix n)))
+        (len (nth *eba$c->bitsi* new-eba$c)))
+    :rule-classes :linear)
+
+  (defret eba$c-set-bits-in-bounds-of-eba$c-grow
+    (implies (and (eba$c-set-bits-in-bounds eba$c)
+                  (<= (nfix (eba$c->length eba$c)) (nfix n)))
+             (eba$c-set-bits-in-bounds new-eba$c))
+    :hints (("goal" :in-theory (disable eba$c-grow))
+            (And stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defret eba$c-words-in-bounds-of-eba$c-grow
+    (implies (eba$c-words-in-bounds eba$c)
+             (eba$c-words-in-bounds new-eba$c))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defret eba$c-get-bit-of-eba$c-grow
+    (implies (<= (nfix (eba$c->length eba$c)) (nfix n))
+             (equal (eba$c-get-bit idx new-eba$c)
+                    (eba$c-get-bit idx eba$c)))
+    :hints(("Goal" :in-theory (e/d (eba$c-get-bit) (eba$c-grow)))))
+
+  (defret eba$c-grow-wordlist-big-enough
+    (<= (logtail 7 (nfix n)) (len (nth *eba$c->wordlisti* new-eba$c)))
+    :rule-classes :linear))
+
   
 
 (define eba$ap (eba$a)
@@ -694,6 +1077,11 @@
   :ignore-ok t :irrelevant-formals-ok t
   :enabled t
   (acl2::repeat n 0))
+
+(define eba$a-grow ((n natp) eba$a)
+  :guard (<= (eba$a-length eba$a) n)
+  :enabled t
+  (resize-list eba$a n 0))
  
 (define create-eba$a ()
   :enabled t
@@ -719,8 +1107,10 @@
      :enabled t
      (and (eba$c-set-bits-invar eba$c)
           (eba$c-words-in-bounds eba$c)
+          (eba$c-set-bits-in-bounds eba$c)
           (equal (eba$c->length eba$c) (len eba$a))
           (< (ash (eba$c->length eba$c) -5) (eba$c->bits-length eba$c))
+          (<= (ash (eba$c->length eba$c) -7) (eba$c->wordlist-length eba$c))
           (eba-bits-corr eba$c eba$a))))
 
 
@@ -746,6 +1136,18 @@
                     (eba-bits-corr eba$c eba$a))
            :hints(("Goal" :in-theory (enable eba-bits-corr)))))
 
+  (local (defthm eba$c-set-bits-in-bounds-when-empty
+           (implies (equal (nth *eba$c->bitsi* eba$c) '(0))
+                    (eba$c-set-bits-in-bounds eba$c))
+           :hints(("Goal" :in-theory (enable eba$c-set-bits-in-bounds
+                                             nth)))))
+
+  (local (defthm eba$c-set-bits-in-bounds-implies-get-bit
+           (implies (and (eba$c-set-bits-in-bounds eba$c)
+                         (<= (nfix (nth *eba$c->length* eba$c)) (nfix n)))
+                    (equal (eba$c-get-bit n eba$c) 0))
+           :hints(("Goal" :in-theory (enable eba$c-get-bit)))))
+
 
   (local (set-default-hints
           '((and stable-under-simplificationp
@@ -768,7 +1170,8 @@
               (eba-set-bit :exec eba$c-set-bit$inline :logic eba$a-set-bit :protect t)
               (eba-clear-bit :exec eba$c-clear-bit$inline :logic eba$a-clear-bit)
               (eba-clear :exec eba$c-clear :logic eba$a-clear :protect t)
-              (resize-eba :exec eba$c-resize$inline :logic eba$a-resize :protect t)))
+              (resize-eba :exec eba$c-resize$inline :logic eba$a-resize :protect t)
+              (eba-grow :exec eba$c-grow$inline :logic eba$a-grow :protect t)))
 
   )
 

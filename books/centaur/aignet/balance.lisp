@@ -51,6 +51,12 @@
                            acl2::resize-list-when-atom)))
 (local (std::add-default-post-define-hook :fix))
 
+;; BOZO skipping node-list-fix congruence proofs here
+(local (table fty::fixtypes 'fty::fixtype-alist
+              (b* ((fixtype-alist (cdr (assoc 'fty::fixtype-alist (table-alist 'fty::fixtypes world)))))
+                (remove-equal (assoc 'aignet fixtype-alist)
+                              fixtype-alist))))
+
 (local (xdoc::set-default-parents balance))
 
 (fty::defprod balance-config

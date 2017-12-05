@@ -633,10 +633,14 @@
 
 (define aignet-make-n-inputs (n aignet)
   (declare (type (integer 0 *) n))
-  (b* (((when (zp n)) aignet)
+  (b* (((when (zp n))
+        (mbe :logic (non-exec (node-list-fix aignet))
+             :exec aignet))
        (aignet (aignet-add-in aignet)))
     (aignet-make-n-inputs (1- n) aignet))
   ///
+  (fty::deffixequiv aignet-make-n-inputs)
+
   (def-aignet-preservation-thms aignet-make-n-inputs)
 
   (defthm num-inputs-of-aignet-make-n-inputs
@@ -676,10 +680,14 @@
 
 (define aignet-make-n-regs (n aignet)
   (declare (type (integer 0 *) n))
-  (b* (((when (zp n)) aignet)
+  (b* (((when (zp n))
+        (mbe :logic (non-exec (node-list-fix aignet))
+             :exec aignet))
        (aignet (aignet-add-reg aignet)))
     (aignet-make-n-regs (1- n) aignet))
   ///
+  (fty::deffixequiv aignet-make-n-regs)
+
   (def-aignet-preservation-thms aignet-make-n-regs)
 
   (defthm num-regs-of-aignet-make-n-regs

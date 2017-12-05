@@ -4059,6 +4059,21 @@
     (<= score (nfix size))
     :rule-classes :linear))
 
+
+(define cut-has-unreferenced ((start natp) (size natp) (refcounts) (cutsdb))
+  :guard (and (<= (+ start size) (cut-leaves-length cutsdb))
+              (leaves-bounded start size (u32-length refcounts) cutsdb))
+  :guard-hints (("goal" :in-theory (enable leaves-bounded)))
+  :measure (nfix size)
+  (b* (((when (zp size)) nil)
+       (leaf (cut-leavesi start cutsdb))
+       (nrefs ;;(if (< leaf (u32-length refcounts))
+                  (get-u32 leaf refcounts))
+                ;;0))
+       )
+    (or (eql nrefs 0)
+        (cut-has-unreferenced (1+ (lnfix start)) (1- size) refcounts cutsdb))))
+
 (define cut-score((cut natp)
                    (refcounts)
                    (cutsdb cutsdb-ok))

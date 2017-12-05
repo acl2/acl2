@@ -25,6 +25,14 @@ transforms.  The currently supported transforms are:</p>
 
 (local (xdoc::set-default-parents aignet-comb-transforms))
 
+(fty::defprod snapshot-config
+  :parents (comb-transform)
+  :short "Aignet transform that returns the same network and simply writes a snapshot
+          into an aiger file for debugging."
+  ((filename stringp))
+  :layout :tree
+  :tag :snapshot-config)
+
 (fty::deftranssum comb-transform
   :short "Configuration object for any combinational transform supported by @(see apply-comb-transforms)."
   (balance-config
@@ -40,6 +48,7 @@ transforms.  The currently supported transforms are:</p>
     (:fraig-config "Fraig")
     (:rewrite-config "Rewrite")
     (:observability-config "Observability")
+    (:snapshot-config "Snapshot")
     (t "Abc simplify")))
 
 
@@ -59,6 +68,10 @@ transforms.  The currently supported transforms are:</p>
              (:rewrite-config (b* ((aignet2 (rewrite aignet aignet2 transform)))
                                 (mv aignet2 state)))
              (:observability-config (observability-fix aignet aignet2 transform state))
+             (:snapshot-config (b* ((state (aignet-write-aiger (snapshot-config->filename transform)
+                                                               aignet state))
+                                    (aignet2 (aignet-raw-copy aignet aignet2)))
+                                 (mv aignet2 state)))
              (otherwise (abc-comb-simplify aignet aignet2 transform state))))
           (- (print-aignet-stats name aignet2)))
        (mv aignet2 state))
@@ -99,6 +112,9 @@ transforms.  The currently supported transforms are:</p>
              (:rewrite-config (b* ((aignet (rewrite! aignet transform)))
                                 (mv aignet state)))
              (:observability-config (observability-fix! aignet transform state))
+             (:snapshot-config (b* ((state (aignet-write-aiger (snapshot-config->filename transform)
+                                                               aignet state)))
+                                 (mv aignet state)))
              (otherwise (abc-comb-simplify! aignet transform state))))
           (- (print-aignet-stats name aignet)))
        (mv aignet state))

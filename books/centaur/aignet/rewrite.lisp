@@ -26,11 +26,15 @@
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable nth update-nth unsigned-byte-p)))
 
+(std::defenum rewrite-eval-method-p
+  (:build :nobuild))
+
 
 (fty::defprod rewrite-config
   ((cuts4-config cuts4-config-p :default '(make-cuts4-config))
    (cut-tries-limit acl2::maybe-natp :rule-classes :type-prescription :default 5)
-   (zero-cost-replace booleanp :rule-classes :type-prescription))
+   (zero-cost-replace booleanp :rule-classes :type-prescription)
+   (evaluation-method rewrite-eval-method-p :default :nobuild))
   :tag :rewrite-config)
 
 ;; note: these are needed for fixequivs as long as the config is empty...
@@ -61,6 +65,8 @@
 (defstobj-clone copy2 copy :suffix "2")
 ;; (defstobj-clone smm acl2::smm :strsubst (("abcd" . "abcd")))
 (defstobj-clone eba2 eba :suffix "2")
+(defstobj-clone eba3 eba :suffix "3")
+(defstobj-clone eba4 eba :suffix "4")
 
 
 
@@ -78,6 +84,24 @@
          (implies (truth::truth4-p x)
                   (< x #x10000))
          :hints(("Goal" :in-theory (enable truth::truth4-p unsigned-byte-p)))))
+
+(defsection empty-bitarr-p
+  (defun-sk empty-bitarr-p (x)
+    (forall idx
+            (bit-equiv (nth idx x) 0))
+    :rewrite :direct)
+
+  (local (include-book "std/lists/nth" :dir :system))
+
+  (defthm empty-bitarr-p-of-repeat
+    (empty-bitarr-p (acl2::repeat n 0)))
+
+  (in-theory (Disable empty-bitarr-p))
+
+  (defthm aignet-marked-copies-in-bounds-of-empty-bitarr
+    (implies (empty-bitarr-p x)
+             (aignet-marked-copies-in-bounds copy x aignet2))
+    :hints(("Goal" :in-theory (enable aignet-marked-copies-in-bounds)))))
 
 (define cut-initialize-copy ((cut natp)
                              (copy2 "mapping from dsd aig indices to aignet2 indices -- writing this here")
@@ -159,11 +183,50 @@
                             (equal (nfix n) 2)
                             (equal (nfix n) 3)))))
 
+  (local (defthmd stype-when-stype-count-is-zero
+           (implies (and (equal (stype-count stype aignet) 0)
+                         (not (equal stype (const-stype))))
+                    (not (equal (stype (car (lookup-id id aignet))) stype)))
+           :hints(("Goal" :in-theory (enable stype-count lookup-id)))))
+
+  (defretd lookup-of-cut-initialize-copy-when-input
+    (implies (and (rwlib-wfp rwlib)
+                  (equal (ctype (stype (car (lookup-id id (rwlib->aigs rwlib))))) :input))
+             (equal (nth-lit id
+                             new-copy2)
+                    (b* ((n (stype-count :pi (cdr (lookup-id id (rwlib->aigs rwlib)))))
+                         ((cutinfo cutinf) (cut-infoi cut cutsdb))
+                         ((truth::npn4 npn) (truth::get-npn4 cutinf.truth (rwlib->npns rwlib)))
+                         (perm-idx (truth::index-perm
+                                    0 (truth::perm4-index-list npn.perm) n 4))
+                         (node (if (< perm-idx cutinf.size)
+                                   (cut-leavesi (+ perm-idx (* 4 (nfix cut))) cutsdb)
+                                 0)))
+                      (make-lit node (logbit n npn.polarity)))))
+    :hints (("goal" :in-theory (e/d (ctype
+                                     stype-when-stype-count-is-zero)
+                                    (cut-initialize-copy
+                                        lookup-of-cut-initialize-copy))
+             :expand ((stype-count :pi (lookup-id id (rwlib->aigs rwlib))))
+             :use ((:instance lookup-of-cut-initialize-copy
+                    (n (stype-count :pi (cdr (lookup-id id (rwlib->aigs rwlib))))))))))
+
   (defret aignet-copies-in-bounds-of-cut-initialize-copy
     (implies (and (aignet-copies-in-bounds copy2 aignet2)
                   (cutsdb-lit-idsp aignet2 cutsdb)
                   (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)))
              (aignet-copies-in-bounds new-copy2 aignet2)))
+
+  (defret aignet-input-copies-in-bounds-of-cut-initialize-copy
+    (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
+                  (rwlib-wfp rwlib)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)))
+             (aignet-input-copies-in-bounds new-copy2
+                                            (rwlib->aigs rwlib)
+                                            aignet2))
+    :hints(("Goal" :in-theory (e/d (aignet-input-copies-in-bounds
+                                    lookup-of-cut-initialize-copy-when-input)
+                                   (cut-initialize-copy)))))
 
   (defret length-of-cut-initialize-copy
     (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len copy2))
@@ -189,6 +252,7 @@
   :guard (and (< block (smm-nblocks smm))
               (< idx (smm-block-size block smm)))
   :enabled t
+  :inline t
   :prepwork ((local (defthm nat-listp-when-u32-listp
                       (implies (acl2::u32-listp x)
                                (nat-listp x))))
@@ -245,7 +309,22 @@
                   (cutsdb-ok cutsdb))
              (cutsdb-correct (mv-nth 1 (aignet-derive-cuts-aux aignet count config refcounts cutsdb)) aignet))
     :hints((and stable-under-simplificationp
-                `(:expand (,(car (last clause))))))))
+                `(:expand (,(car (last clause)))))))
+
+  (fty::deffixequiv cutsdb-correct :args ((aignet aignet))
+    :hints(("Goal" :in-theory (disable cutsdb-correct)
+            :cases ((cutsdb-correct cutsdb aignet)))
+           (and stable-under-simplificationp
+                (b* ((lit (assoc 'cutsdb-correct clause))
+                     (other (cadr (assoc 'not clause))))
+                  `(:expand (,lit)
+                    :in-theory (disable cutsdb-correct-necc)
+                    :use ((:instance cutsdb-correct-necc
+                           (cutsdb ,(cadr other))
+                           (aignet ,(caddr other))
+                           (vals (mv-nth 0 (cutsdb-correct-witness . ,(cdr lit))))
+                           (invals (mv-nth 1 (cutsdb-correct-witness . ,(cdr lit))))
+                           (regvals (mv-nth 2 (cutsdb-correct-witness . ,(cdr lit))))))))))))
 
 (defsection cutsdb-correct-of-aignet-extension
   ;; (local (defthm cut-data-bounded-by-cut-nnodes
@@ -531,15 +610,14 @@
                           (aignet2))
   :guard (and ;; (<= (cut-nnodes cutsdb) (lits-length copy))
               ;; (aignet-copies-in-bounds copy aignet2)
-              (aignet-copies-in-bounds copy2 aignet2)
-              (cutsdb-lit-idsp aignet2 cutsdb)
-              (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
-              (b* (((acl2::stobj-get ok)
-                    ((aignet-tmp (rwlib->aigs rwlib)))
-                    (and (< (max-fanin aignet-tmp) (lits-length copy2))
-                         (< (max-fanin aignet-tmp) (eba-length eba)))))
-                ok)
-              (cut-impl-index-ok cut impl-idx cutsdb rwlib))
+          (cutsdb-lit-idsp aignet2 cutsdb)
+          (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+          (b* (((acl2::stobj-get ok)
+                ((aignet-tmp (rwlib->aigs rwlib)))
+                (and (< (max-fanin aignet-tmp) (lits-length copy2))
+                     (< (max-fanin aignet-tmp) (eba-length eba)))))
+            ok)
+          (cut-impl-index-ok cut impl-idx cutsdb rwlib))
   :guard-hints (("goal" :in-theory (enable cut-impl-index-ok)))
   :returns (mv (lit litp :rule-classes :type-prescription)
                (new-copy2)
@@ -586,7 +664,7 @@
                    ;; (cutsdb-ok cutsdb)
                    (cutsdb-lit-idsp aignet2 cutsdb)
                    (rwlib-wfp rwlib)
-                   (aignet-copies-in-bounds copy2 aignet2)
+                   ;; (aignet-copies-in-bounds copy2 aignet2)
                    ;; (aignet-copies-in-bounds copy aignet2)
                    ;; (posp node)
                    (cut-leaves-bounded cut (num-nodes aignet2) cutsdb)
@@ -625,7 +703,7 @@
                   (cutsdb-ok cutsdb)
                   (cutsdb-lit-idsp aignet2 cutsdb)
                   (rwlib-wfp rwlib)
-                  (aignet-copies-in-bounds copy2 aignet2)
+                  ;; (aignet-copies-in-bounds copy2 aignet2)
                   ;; (aignet-copies-in-bounds copy aignet2)
                   (posp node)
                   ;; (cut-leaves-bounded cut node cutsdb)
@@ -649,8 +727,7 @@
                    (node node))))))
 
   (defret aignet-litp-of-aignet-build-cut
-    (implies (and (aignet-copies-in-bounds copy2 aignet2)
-                  (cutsdb-lit-idsp aignet2 cutsdb)
+    (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
                   ;; (cutsdb-ok cutsdb)
                   (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (cut-impl-index-ok cut impl-idx cutsdb rwlib)
@@ -660,8 +737,7 @@
             :do-not-induct t)))
 
   (defret lit-id-lte-max-fanin-of-aignet-build-cut
-    (implies (and (aignet-copies-in-bounds copy2 aignet2)
-                  ;; (aignet-copies-in-bounds copy aignet2)
+    (implies (and ;; (aignet-copies-in-bounds copy aignet2)
                   (cutsdb-lit-idsp aignet2 cutsdb)
                   ;; (cutsdb-ok cutsdb)
                   (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
@@ -672,16 +748,15 @@
             :in-theory (disable aignet-build-cut)))
     :rule-classes (:rewrite :linear))
 
-  (defret aignet-copies-in-bounds-of-aignet-build-cut-copy2
-    (implies (and (aignet-copies-in-bounds copy2 aignet2)
-                  ;; (aignet-copies-in-bounds copy aignet2)
-                  (cutsdb-lit-idsp aignet2 cutsdb)
-                  ;; (cutsdb-ok cutsdb)
-                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
-                  (cut-impl-index-ok cut impl-idx cutsdb rwlib)
-                  (rwlib-wfp rwlib))
-             (aignet-copies-in-bounds new-copy2 new-aignet2))
-    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+  ;; (defret aignet-copies-in-bounds-of-aignet-build-cut-copy2
+  ;;   (implies (and ;; (aignet-copies-in-bounds copy aignet2)
+  ;;                 (cutsdb-lit-idsp aignet2 cutsdb)
+  ;;                 ;; (cutsdb-ok cutsdb)
+  ;;                 (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+  ;;                 (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+  ;;                 (rwlib-wfp rwlib))
+  ;;            (aignet-copies-in-bounds new-copy2 new-aignet2))
+  ;;   :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
 
   (defret copy2-length-of-aignet-build-cut
     (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len copy2))
@@ -705,6 +780,793 @@
     (implies (not (equal (stype-fix stype) :gate))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2)))))
+
+
+
+
+
+;; ==========================================================================================
+;; Evaluation method 1: Actually build each truth-table implementation and
+;; count how many nodes it adds/newly references; revert the AIG after each
+;; test.
+;; ==========================================================================================
+
+
+(define aignet-build-cut-tmp ((cut natp)
+                              (impl-idx natp)
+                              (eba "mark for copied nodes")
+                              (copy2 "mapping from dsd aig indices to aignet2 indices -- writing this here")
+                              (cutsdb cutsdb-ok)
+                              (rwlib rwlib-wfp)
+                              (strash2)
+                              (aignet2))
+  :guard (and ;; (<= (cut-nnodes cutsdb) (lits-length copy))
+              ;; (aignet-copies-in-bounds copy aignet2)
+          (cutsdb-lit-idsp aignet2 cutsdb)
+          (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+          (b* (((acl2::stobj-get ok)
+                ((aignet-tmp (rwlib->aigs rwlib)))
+                (and (< (max-fanin aignet-tmp) (lits-length copy2))
+                     (< (max-fanin aignet-tmp) (eba-length eba))
+                     (ec-call (aignet-input-copies-in-bounds copy2 aignet-tmp aignet2))
+                     (ec-call (aignet-marked-copies-in-bounds copy2 eba aignet2)))))
+            ok)
+          (cut-impl-index-ok cut impl-idx cutsdb rwlib))
+  :guard-hints (("goal" :in-theory (enable cut-impl-index-ok)))
+  :returns (mv (lit litp :rule-classes :type-prescription)
+               (new-copy2)
+               (new-eba)
+               (new-strash2)
+               (new-aignet2))
+  (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+       ((acl2::stobj-get lit copy2 eba strash2 aignet2)
+        ((truth::npn4arr (rwlib->npns rwlib))
+         (smm   (rwlib->cands rwlib))
+         (aignet-tmp  (rwlib->aigs rwlib)))
+        (b* (((truth::npn4 npn) (truth::get-npn4 cutinf.truth truth::npn4arr))
+             (lit (smm-read-lit npn.truth-idx impl-idx smm))
+             ((mv eba copy2 strash2 aignet2)
+              (aignet-copy-dfs-eba-rec (lit-id lit) aignet-tmp eba copy2 strash2 9 aignet2))
+             (new-lit (lit-negate-cond (lit-copy lit copy2) npn.negate)))
+          (mv new-lit copy2 eba strash2 aignet2))))
+    (mv lit copy2 eba strash2 aignet2))
+  ///
+  (def-aignet-preservation-thms aignet-build-cut-tmp :stobjname aignet2)
+
+  (local (defun nth-of-repeat-ind (n m)
+           (if (zp n)
+               m
+             (nth-of-repeat-ind (1- n) (1- m)))))
+  (local (defthmd nth-of-repeat-split
+           (equal (nth n (acl2::repeat m x))
+                  (and (< (nfix n) (nfix m))
+                       x) )
+           :hints(("Goal" :in-theory (enable nth acl2::repeat)
+                   :induct (nth-of-repeat-ind n m)))))
+
+  (local (defthm dfs-copy-onto-invar-of-empty-marks
+           (dfs-copy-onto-invar aignet (acl2::repeat n 0) copy aignet2)
+           :hints(("Goal" :in-theory (enable dfs-copy-onto-invar
+                                             nth-of-repeat-split)))))
+
+  (defret aignet-litp-of-aignet-build-cut-tmp
+    (implies (and (aignet-input-copies-in-bounds copy2 (rwlib->aigs rwlib) aignet2)
+                  (aignet-marked-copies-in-bounds copy2 eba aignet2)
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  ;; (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+                  (rwlib-wfp rwlib))
+             (aignet-litp lit new-aignet2))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok)
+            :do-not-induct t)))
+
+  (defret lit-id-lte-max-fanin-of-aignet-build-cut-tmp
+    (implies (and (aignet-input-copies-in-bounds copy2 (rwlib->aigs rwlib) aignet2)
+                  (aignet-marked-copies-in-bounds copy2 eba aignet2)
+                  ;; (aignet-copies-in-bounds copy aignet2)
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  ;; (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+                  (rwlib-wfp rwlib))
+             (<= (lit-id lit) (node-count (find-max-fanin new-aignet2))))
+    :hints(("Goal" :use aignet-litp-of-aignet-build-cut-tmp
+            :in-theory (disable aignet-build-cut-tmp)))
+    :rule-classes (:rewrite :linear))
+
+  (defret aignet-input-copies-in-bounds-of-aignet-build-cut-tmp-copy2
+    (implies (and (aignet-input-copies-in-bounds copy2 (rwlib->aigs rwlib) aignet2)
+                  ;; (aignet-copies-in-bounds copy aignet2)
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  ;; (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+                  (rwlib-wfp rwlib))
+             (aignet-input-copies-in-bounds new-copy2 (rwlib->aigs rwlib) new-aignet2))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret aignet-marked-copies-in-bounds-of-aignet-build-cut-tmp-copy2
+    (implies (and (aignet-input-copies-in-bounds copy2 (rwlib->aigs rwlib) aignet2)
+                  (aignet-marked-copies-in-bounds copy2 eba aignet2)
+                  ;; (aignet-copies-in-bounds copy aignet2)
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  ;; (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+                  (rwlib-wfp rwlib))
+             (aignet-marked-copies-in-bounds new-copy2 new-eba new-aignet2))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret copy2-length-of-aignet-build-cut-tmp
+    (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len copy2))
+                  (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib))
+             (equal (len new-copy2) (len copy2)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret eba-length-of-aignet-build-cut-tmp
+    (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len eba))
+                  (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib))
+             (equal (len new-eba) (len eba)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret stype-counts-of-aignet-build-cut-tmp
+    (implies (not (equal (stype-fix stype) :gate))
+             (equal (stype-count stype new-aignet2)
+                    (stype-count stype aignet2)))))
+
+
+(define maybe-grow-refcounts ((n natp) refcounts)
+  :returns (new-refcounts)
+  (if (< (u32-length refcounts) (lnfix n))
+      (resize-u32 (max 16 (* 2 (lnfix n))) refcounts)
+    refcounts)
+  ///
+  (defret length-of-maybe-grow-refcounts
+    (<= (nfix n) (len new-refcounts))
+    :rule-classes :linear)
+
+  (local (include-book "std/lists/nth" :dir :system))
+  (local (in-theory (enable acl2::nth-when-too-large)))
+
+  (defret nth-nat-equiv-of-maybe-grow-refcounts
+    (acl2::nth-nat-equiv new-refcounts refcounts)
+    :hints(("Goal" :in-theory (e/d* (acl2::nth-nat-equiv
+                                     acl2::arith-equiv-forwarding)
+                                    (acl2::inequality-with-nfix-hyp-1
+                                     acl2::inequality-with-nfix-hyp-2
+                                     acl2::nfix-equal-to-zero))))))
+
+(define maybe-grow-eba ((n natp) eba)
+  :returns (new-eba)
+  (if (< (eba-length eba) (lnfix n))
+      (eba-grow n eba)
+    eba)
+  ///
+  (defret length-of-maybe-grow-eba
+    (<= (nfix n) (len new-eba))
+    :rule-classes :linear))
+
+
+(define aignet-count-unreferenced-cone ((n natp)
+                                        (aignet)
+                                        (eba "marks visited nodes")
+                                        (refcounts))
+  :guard (and (id-existsp n aignet)
+              (not (eql (id->type n aignet) (out-type)))
+              (< (max-fanin aignet) (eba-length eba))
+              (< (max-fanin aignet) (u32-length refcounts)))
+  :returns (mv (count natp :rule-classes :type-prescription)
+               new-eba)
+  :verify-guards nil
+  :measure (nfix n)
+  
+  :prepwork ((local (in-theory (disable lookup-id-in-bounds-when-positive
+                                        acl2::update-nth-of-nth-free
+                                        bound-when-aignet-idp
+                                        fanin-if-co-when-output
+                                        lookup-id-implies-aignet-idp
+                                        acl2::nfix-equal-to-nonzero
+                                        acl2::nth-of-update-nth-diff
+                                        acl2::update-nth-of-update-nth-diff
+                                        default-car
+                                        snode->fanin-of-co-slot
+                                        lookup-id-out-of-bounds
+                                        node-count-of-atom
+                                        acl2::zp-open))))
+  (b* (((unless (eql 0 (eba-get-bit n eba)))
+        (mv 0 eba))
+       (slot0 (id->slot n 0 aignet))
+       ((unless (eql (snode->type slot0) (gate-type)))
+        (mv 0 eba))
+       (refs (get-u32 n refcounts))
+       ((unless (eql refs 0))
+        (mv 0 eba))
+       (eba (eba-set-bit n eba))
+       (child0 (lit-id (snode->fanin slot0)))
+       (child1 (lit-id (gate-id->fanin1 n aignet)))
+       ((mv count1 eba) (aignet-count-unreferenced-cone child1 aignet eba refcounts))
+       ((mv count0 eba) (aignet-count-unreferenced-cone child0 aignet eba refcounts)))
+    (mv (+ 1 count1 count0) eba))
+  ///
+  (local (defthmd less-than-max-fanin-when-not-output
+           (implies (and (aignet-idp n aignet)
+                         (not (eql (id->type n aignet) (out-type))))
+                    (<= (nfix n) (node-count (find-max-fanin aignet))))
+           :hints (("goal" :in-theory (enable aignet-litp aignet-idp)
+                    :use ((:instance aignet-litp-implies-less-than-max-fanin
+                           (lit (make-lit n 0))))))))
+           
+                                     
+
+  (defret eba-length-of-aignet-count-unreferenced-cone
+    (implies (and (id-existsp n aignet)
+                  (not (eql (id->type n aignet) (out-type)))
+                  (< (max-fanin aignet) (len eba)))
+             (equal (len new-eba) (len eba)))
+    :hints (("goal" :induct <call>
+             :in-theory (e/d ()
+                             ((:d aignet-count-unreferenced-cone)
+                              acl2::nfix-equal-to-zero
+                              POSP-WHEN-CONSP-OF-LOOKUP-ID))
+             :expand (<call>))
+            (and stable-under-simplificationp
+                 '(:use ((:instance less-than-max-fanin-when-not-output))))))
+
+  (verify-guards aignet-count-unreferenced-cone
+    :hints ((and stable-under-simplificationp
+                 '(:use ((:instance less-than-max-fanin-when-not-output)))))))
+
+
+
+
+(define eval-cut-implementation ((cut natp)
+                                 (impl-idx natp)
+                                 (eba "mark for copied nodes")
+                                 (copy2 "mapping from dsd aig indices to aignet2 indices -- writing this here")
+                                 (cutsdb cutsdb-ok)
+                                 (rwlib rwlib-wfp)
+                                 (strash2)
+                                 (aignet2)
+                                 (eba2 "scratch for counting unreferenced nodes in aignet2")
+                                 (refcounts2 "refcounts for aignet2")
+                                 ;; (rewrite-stats)
+                                 ;; (config rewrite-config-p)
+                                 )
+  :guard (and ;; (<= (cut-nnodes cutsdb) (lits-length copy))
+              ;; (aignet-copies-in-bounds copy aignet2)
+              (cutsdb-lit-idsp aignet2 cutsdb)
+              (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+              (b* (((acl2::stobj-get ok)
+                    ((aignet-tmp (rwlib->aigs rwlib)))
+                    (and (< (max-fanin aignet-tmp) (lits-length copy2))
+                         (< (max-fanin aignet-tmp) (eba-length eba))
+                         (ec-call (aignet-input-copies-in-bounds copy2 aignet-tmp aignet2))
+                         (ec-call (aignet-marked-copies-in-bounds copy2 eba aignet2)))))
+                ok)
+              (cut-impl-index-ok cut impl-idx cutsdb rwlib))
+  :returns (mv (cost natp :rule-classes :type-prescription)
+               (new-eba2)
+               (new-refcounts2 (acl2::nth-nat-equiv new-refcounts2 refcounts2))
+               (new-eba)
+               (new-copy2)
+               (new-strash2)
+               (new-aignet2))
+  ;; :verify-guards nil
+  (b* (((mv lit copy2 eba strash2 aignet2)
+        (aignet-build-cut-tmp cut impl-idx eba copy2 cutsdb rwlib strash2 aignet2))
+       (refcounts2 (maybe-grow-refcounts (+ 1 (max-fanin aignet2)) refcounts2))
+       (eba2 (maybe-grow-eba (+ 1 (max-fanin aignet2)) eba2))
+       (eba2 (eba-clear eba2))
+       ((mv count eba2) (aignet-count-unreferenced-cone (lit-id lit) aignet2 eba2 refcounts2)))
+    (mv count eba2 refcounts2 eba copy2 strash2 aignet2))
+  ///
+  (def-aignet-preservation-thms eval-cut-implementation :stobjname aignet2)
+
+  (local (defun nth-of-repeat-ind (n m)
+           (if (zp n)
+               m
+             (nth-of-repeat-ind (1- n) (1- m)))))
+  (local (defthmd nth-of-repeat-split
+           (equal (nth n (acl2::repeat m x))
+                  (and (< (nfix n) (nfix m))
+                       x) )
+           :hints(("Goal" :in-theory (enable nth acl2::repeat)
+                   :induct (nth-of-repeat-ind n m)))))
+
+  (local (defthm dfs-copy-onto-invar-of-empty-marks
+           (dfs-copy-onto-invar aignet (acl2::repeat n 0) copy aignet2)
+           :hints(("Goal" :in-theory (enable dfs-copy-onto-invar
+                                             nth-of-repeat-split)))))
+
+  ;; (defret aignet-litp-of-eval-cut-implementation
+  ;;   (implies (and (aignet-copies-in-bounds copy2 aignet2)
+  ;;                 (cutsdb-lit-idsp aignet2 cutsdb)
+  ;;                 ;; (cutsdb-ok cutsdb)
+  ;;                 (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+  ;;                 (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+  ;;                 (rwlib-wfp rwlib))
+  ;;            (aignet-litp lit new-aignet2))
+  ;;   :hints(("Goal" :in-theory (enable cut-impl-index-ok)
+  ;;           :do-not-induct t)))
+
+  ;; (defret lit-id-lte-max-fanin-of-eval-cut-implementation
+  ;;   (implies (and (aignet-copies-in-bounds copy2 aignet2)
+  ;;                 ;; (aignet-copies-in-bounds copy aignet2)
+  ;;                 (cutsdb-lit-idsp aignet2 cutsdb)
+  ;;                 ;; (cutsdb-ok cutsdb)
+  ;;                 (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+  ;;                 (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+  ;;                 (rwlib-wfp rwlib))
+  ;;            (<= (lit-id lit) (node-count (find-max-fanin new-aignet2))))
+  ;;   :hints(("Goal" :use aignet-litp-of-eval-cut-implementation
+  ;;           :in-theory (disable eval-cut-implementation)))
+  ;;   :rule-classes (:rewrite :linear))
+
+  (defret aignet-copies-in-bounds-of-eval-cut-implementation-copy2
+    (implies (and (aignet-input-copies-in-bounds copy2 (rwlib->aigs rwlib) aignet2)
+                  ;; (aignet-copies-in-bounds copy aignet2)
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  ;; (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+                  (rwlib-wfp rwlib))
+             (and (aignet-input-copies-in-bounds new-copy2 (rwlib->aigs rwlib) new-aignet2)
+                  (implies (aignet-marked-copies-in-bounds copy2 eba aignet2)
+                           (aignet-marked-copies-in-bounds new-copy2 new-eba new-aignet2))))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret copy2-length-of-eval-cut-implementation
+    (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len copy2))
+                  (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib))
+             (equal (len new-copy2) (len copy2)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret eba-length-of-eval-cut-implementation
+    (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len eba))
+                  (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib))
+             (equal (len new-eba) (len eba)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret stype-counts-of-eval-cut-implementation
+    (implies (not (equal (stype-fix stype) :gate))
+             (equal (stype-count stype new-aignet2)
+                    (stype-count stype aignet2))))
+
+  (defret refcounts-length-of-eval-cut-implementation
+    (< (node-count (find-max-fanin new-aignet2)) (len new-refcounts2))
+    :rule-classes :linear))
+
+(define eval-cut-implementations ((cut natp)
+                                  (impl-idx natp)
+                                  (blocksize natp)
+                                  (eba "mark for copied nodes")
+                                  (copy2 "mapping from dsd aig indices to aignet2 indices -- writing this here")
+                                  (cutsdb cutsdb-ok)
+                                  (rwlib rwlib-wfp)
+                                  (strash2)
+                                  (aignet2)
+                                  (eba2 "scratch for counting unreferenced nodes in aignet2")
+                                  (refcounts2 "refcounts for aignet2")
+                                  (rewrite-stats)
+                                  (config rewrite-config-p)
+                                  )
+  :guard (and ;; (<= (cut-nnodes cutsdb) (lits-length copy))
+              ;; (aignet-copies-in-bounds copy aignet2)
+              (cutsdb-lit-idsp aignet2 cutsdb)
+              (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+              (< impl-idx blocksize)
+              (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+                   ((acl2::stobj-get ok)
+                    ((aignet-tmp (rwlib->aigs rwlib))
+                     (npn4arr (rwlib->npns rwlib))
+                     (smm (rwlib->cands rwlib)))
+                    (b* (((truth::npn4 npn) (get-npn4 cutinf.truth npn4arr)))
+                      (and (< (max-fanin aignet-tmp) (lits-length copy2))
+                           (< (max-fanin aignet-tmp) (eba-length eba))
+                           (equal blocksize (smm-block-size npn.truth-idx smm))
+                           (ec-call (aignet-input-copies-in-bounds copy2 aignet-tmp aignet2))
+                           (ec-call (aignet-marked-copies-in-bounds copy2 eba aignet2))))))
+                ok))
+  :returns (mv (best-impl natp)
+               (cost natp :rule-classes :type-prescription)
+               (new-eba2)
+               (new-refcounts2 (acl2::nth-nat-equiv new-refcounts2 refcounts2))
+               (new-eba)
+               (new-copy2)
+               (new-strash2)
+               (new-aignet2)
+               (new-rewrite-stats))
+  :measure (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+                ((acl2::stobj-get size)
+                 ((npn4arr (rwlib->npns rwlib))
+                  (smm (rwlib->cands rwlib)))
+                 (b* (((truth::npn4 npn) (get-npn4 cutinf.truth npn4arr)))
+                   (smm-block-size npn.truth-idx smm))))
+             (nfix (- size (nfix impl-idx))))
+  :verify-guards nil
+  (b* ((blocksize (mbe :logic (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+                                   ((acl2::stobj-get size)
+                                    ((npn4arr (rwlib->npns rwlib))
+                                     (smm (rwlib->cands rwlib)))
+                                    (b* (((truth::npn4 npn) (get-npn4 cutinf.truth npn4arr)))
+                                      (smm-block-size npn.truth-idx smm))))
+                                size)
+                       :exec blocksize))
+       (impl-idx (lnfix impl-idx))
+       (rewrite-stats (incr-rewrite-stats-tries rewrite-stats))
+       ((mv cost eba2 refcounts2 eba copy2 strash2 aignet2)
+        (eval-cut-implementation cut impl-idx eba copy2 cutsdb rwlib strash2 aignet2 eba2 refcounts2))
+       (next (1+ impl-idx))
+       ((when (or (eql next (rewrite-config->cut-tries-limit config))
+                  (mbe :logic (zp (- blocksize next))
+                       :exec (eql next blocksize))))
+        (mv impl-idx cost eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats))
+       ((mv best-impl best-cost eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats)
+        (eval-cut-implementations cut next blocksize eba copy2 cutsdb rwlib strash2 aignet2 eba2 refcounts2 rewrite-stats config))
+       ((when (<= cost best-cost))
+        (mv impl-idx cost eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats)))
+    (mv best-impl best-cost eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats))
+  ///
+  (verify-guards eval-cut-implementations
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (def-aignet-preservation-thms eval-cut-implementations :stobjname aignet2)
+
+  (local (defun nth-of-repeat-ind (n m)
+           (if (zp n)
+               m
+             (nth-of-repeat-ind (1- n) (1- m)))))
+  (local (defthmd nth-of-repeat-split
+           (equal (nth n (acl2::repeat m x))
+                  (and (< (nfix n) (nfix m))
+                       x) )
+           :hints(("Goal" :in-theory (enable nth acl2::repeat)
+                   :induct (nth-of-repeat-ind n m)))))
+
+  (local (defthm dfs-copy-onto-invar-of-empty-marks
+           (dfs-copy-onto-invar aignet (acl2::repeat n 0) copy aignet2)
+           :hints(("Goal" :in-theory (enable dfs-copy-onto-invar
+                                             nth-of-repeat-split)))))
+
+
+  (defret aignet-copies-in-bounds-of-eval-cut-implementations-copy2
+    (implies (and (aignet-input-copies-in-bounds copy2 (rwlib->aigs rwlib) aignet2)
+                  ;; (aignet-copies-in-bounds copy aignet2)
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  ;; (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+                  (rwlib-wfp rwlib))
+             (and (aignet-input-copies-in-bounds new-copy2 (rwlib->aigs rwlib) new-aignet2)
+                  (implies (aignet-marked-copies-in-bounds copy2 eba aignet2)
+                           (aignet-marked-copies-in-bounds new-copy2 new-eba new-aignet2))))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret copy2-length-of-eval-cut-implementations
+    (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len copy2))
+                  (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib))
+             (equal (len new-copy2) (len copy2)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret eba-length-of-eval-cut-implementations
+    (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len eba))
+                  (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (cut-impl-index-ok cut impl-idx cutsdb rwlib))
+             (equal (len new-eba) (len eba)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret stype-counts-of-eval-cut-implementations
+    (implies (not (equal (stype-fix stype) :gate))
+             (equal (stype-count stype new-aignet2)
+                    (stype-count stype aignet2))))
+
+  (defret refcounts-length-of-eval-cut-implementations
+    (< (node-count (find-max-fanin new-aignet2)) (len new-refcounts2))
+    :rule-classes ((:linear :trigger-terms ((len new-refcounts2)))))
+
+  (defret eval-cut-implementations-best-impl-lower-bound
+    (<= (nfix impl-idx) best-impl)
+    :rule-classes :linear)
+
+  (defret eval-cut-implementations-best-impl-bound
+    (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+         ((acl2::stobj-get size)
+          ((npn4arr (rwlib->npns rwlib))
+           (smm (rwlib->cands rwlib)))
+          (b* (((truth::npn4 npn) (get-npn4 cutinf.truth npn4arr)))
+            (smm-block-size npn.truth-idx smm))))
+      (implies (< (nfix impl-idx) size)
+               (< best-impl size)))
+    :rule-classes :linear))
+             
+
+(define strash-delete-nodes-above ((n natp) (strash) (aignet))
+  :guard (<= n (num-nodes aignet))
+  :measure (nfix (- (num-nodes aignet) (nfix n)))
+  :returns (new-strash)
+  :guard-hints (("goal" :in-theory (enable aignet-idp)))
+  (b* (((when (mbe :logic (zp (- (num-nodes aignet) (nfix n)))
+                   :exec (eql (num-nodes aignet) n)))
+        strash)
+       (slot0 (id->slot n 0 aignet))
+       (type (snode->type slot0))
+       ((unless (eql type (gate-type)))
+        (strash-delete-nodes-above (1+ (lnfix n)) strash aignet))
+       (key (aignet-addr-combine (snode->fanin slot0)
+                                 (gate-id->fanin1 n aignet)))
+       (strash (strashtab-rem key strash)))
+    (strash-delete-nodes-above (1+ (lnfix n)) strash aignet)))
+
+(define eval-cut-build ((cut natp)
+                        (node natp)
+                        (eba "mark for copied nodes")
+                        (copy2 "mapping from dsd aig indices to aignet2 indices -- writing this here")
+                        (cutsdb cutsdb-ok)
+                        (rwlib rwlib-wfp)
+                        (strash2)
+                        (aignet2)
+                        (eba2 "scratch for counting unreferenced nodes in aignet2")
+                        (refcounts2 "refcounts for aignet2")
+                        (rewrite-stats)
+                        (config rewrite-config-p)
+                        )
+  :guard (and ;; (<= (cut-nnodes cutsdb) (lits-length copy))
+              ;; (aignet-copies-in-bounds copy aignet2)
+              (cutsdb-lit-idsp aignet2 cutsdb)
+              (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+              (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+                   ((acl2::stobj-get ok)
+                    ((aignet-tmp (rwlib->aigs rwlib)))
+                    (and (< (max-fanin aignet-tmp) (lits-length copy2))
+                         (< (max-fanin aignet-tmp) (eba-length eba)))))
+                ok))
+  :returns (mv (ok)
+               (best-impl natp)
+               (cost natp :rule-classes :type-prescription)
+               (new-eba2)
+               (new-refcounts2 (acl2::nth-nat-equiv new-refcounts2 refcounts2))
+               (new-eba)
+               (new-copy2)
+               (new-strash2)
+               (new-aignet2)
+               (new-rewrite-stats))
+  :guard-hints (("goal" :in-theory (enable cut-impl-index-ok)))
+  (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+       (aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
+                     :exec aignet2))
+       ((when (and (eql cutinf.size 0)
+                   (cut-impl-index-ok cut 0 cutsdb rwlib)))
+        ;; shortcut for const0 node
+        (mv t 0 0 eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats))
+       ((unless (and cutinf.valid
+                     (cut-leaves-bounded cut node cutsdb)
+                     (cut-impl-index-ok cut 0 cutsdb rwlib)))
+        (mv nil 0 0 eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats))
+       (copy2 (cut-initialize-copy cut copy2 cutsdb rwlib))
+       (eba (eba-clear eba))
+       (nnodes (num-nodes aignet2))
+       ((acl2::stobj-get blocksize)
+        ((npn4arr (rwlib->npns rwlib))
+         (smm (rwlib->cands rwlib)))
+        (b* (((truth::npn4 npn) (get-npn4 cutinf.truth npn4arr)))
+          (smm-block-size npn.truth-idx smm)))
+       ((mv impl cost eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats)
+        (eval-cut-implementations cut 0 blocksize eba copy2 cutsdb
+                                  rwlib strash2 aignet2 eba2 refcounts2 rewrite-stats config))
+       (strash2 (strash-delete-nodes-above nnodes strash2 aignet2))
+       (aignet2 (aignet-rollback (1- nnodes) aignet2)))
+    (mv t impl cost eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats))
+  ///
+
+  (defretd eval-cut-build-ok-implies-cut-leaves-bounded
+    (implies ok
+             (cut-leaves-bounded cut node cutsdb))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable cut-leaves-bounded leaves-bounded)))))
+
+  (defret eval-cut-build-ok-implies-cut-impl-index-ok
+    (implies ok
+             (cut-impl-index-ok cut best-impl cutsdb rwlib))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret eval-cut-build-returns-same-aignet2
+    (equal new-aignet2 (node-list-fix aignet2))
+    :hints(("Goal" :in-theory (enable aignet$a::aignet-rollback))))
+
+  ;; (defret aignet-copies-in-bounds-of-eval-cut-build-copy2
+  ;;   (implies (and (aignet-copies-in-bounds copy2 aignet2)
+  ;;                 ;; (aignet-copies-in-bounds copy aignet2)
+  ;;                 (cutsdb-lit-idsp aignet2 cutsdb)
+  ;;                 ;; (cutsdb-ok cutsdb)
+  ;;                 (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+  ;;                 (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+  ;;                 (rwlib-wfp rwlib))
+  ;;            (aignet-copies-in-bounds new-copy2 new-aignet2))
+  ;;   :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret copy2-length-of-eval-cut-build
+    (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len copy2))
+                  (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  ;; (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+                  )
+             (equal (len new-copy2) (len copy2)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret eba-length-of-eval-cut-build
+    (implies (and (< (max-fanin (rwlib->aigs rwlib)) (len eba))
+                  (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  ;; (cut-impl-index-ok cut impl-idx cutsdb rwlib)
+                  )
+             (equal (len new-eba) (len eba)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret refcounts-length-of-eval-cut-build
+    (implies (< (node-count (find-max-fanin aignet2)) (len refcounts2))
+             (< (node-count (find-max-fanin aignet2)) (len new-refcounts2)))
+    :rule-classes :linear))
+
+
+(define choose-implementation-cuts-build ((cuts-start natp)
+                                          (cuts-end natp)
+                                          (node natp)
+                                          (cutsdb cutsdb-ok)
+                                          (rwlib rwlib-wfp)
+                                          (eba)
+                                          (eba2)
+                                          (copy2)
+                                          (strash2 "strash for aignet2")
+                                          (aignet2 "destination")
+                                          (refcounts2 "refcounts for aignet2")
+                                          (rewrite-stats)
+                                          (config rewrite-config-p))
+  :guard (and (<= cuts-start cuts-end)
+              (<= cuts-end (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+              (cutsdb-lit-idsp aignet2 cutsdb)
+              (stobj-let ((aignet (rwlib->aigs rwlib)))
+                         (ok)
+                         (and (< (max-fanin aignet) (lits-length copy2))
+                              (< (max-fanin aignet) (eba-length eba)))
+                         ok))
+  :verify-guards nil
+  :returns (mv (ok "if nil, no qualifiying cuts")
+               (score natp :rule-classes :type-prescription)
+               (cut-index natp :rule-classes :type-prescription)
+               (impl-index natp :rule-classes :type-prescription)
+               (new-refcounts2 (acl2::nth-nat-equiv new-refcounts2 refcounts2))
+               (new-eba)
+               (new-eba2)
+               (new-copy2)
+               (new-strash2)
+               (new-aignet2 (equal new-aignet2 (node-list-fix aignet2)))
+               (new-rewrite-stats))
+  :measure (nfix (- (nfix cuts-end) (nfix cuts-start)))
+  (b* ((aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
+                     :exec aignet2))
+       ((when (mbe :logic (zp (- (lnfix cuts-end) (nfix cuts-start)))
+                   :exec (eql cuts-start cuts-end)))
+        (mv nil 0 0 0 refcounts2 eba eba2 copy2 strash2 aignet2 rewrite-stats))
+       ((mv ok1 impl-idx1 score1 eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats)
+        (eval-cut-build cuts-start node eba copy2 cutsdb rwlib strash2 aignet2 eba2 refcounts2 rewrite-stats config))
+       ((when (and ok1 (eql score1 0)))
+        ;; early out for 0-cost
+        (mv t 0 (lnfix cuts-start) impl-idx1 refcounts2 eba eba2 copy2 strash2 aignet2 rewrite-stats))
+       ((unless ok1)
+        (choose-implementation-cuts-build
+         (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
+         eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
+       ((mv ok-rest best-score best-cut-idx best-impl-idx
+            refcounts2 eba eba2 copy2 strash2 aignet2 rewrite-stats)
+        (choose-implementation-cuts-build
+         (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
+         eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
+       ((when (or (not ok-rest)
+                  (< score1 best-score)))
+        (mv ok1 score1 (lnfix cuts-start) impl-idx1 refcounts2 eba eba2 copy2 strash2 aignet2 rewrite-stats)))
+    (mv t best-score best-cut-idx best-impl-idx refcounts2 eba eba2 copy2 strash2 aignet2 rewrite-stats))
+  ///
+  (verify-guards choose-implementation-cuts-build
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret cut-impl-index-ok-of-choose-implementation-cuts-build
+    (implies ok
+             (and (cut-impl-index-ok cut-index impl-index cutsdb rwlib)
+                  (cut-leaves-bounded cut-index node cutsdb)))
+    :hints(("Goal" :induct t)
+           (and stable-under-simplificationp
+                '(:use ((:instance eval-cut-build-ok-implies-cut-leaves-bounded
+                         (cut (nfix cuts-start))
+                         (aignet2 (node-list-fix aignet2))))))
+           ))
+
+  ;; (defret cutp-of-choose-implemenation-cuts
+  ;;   (implies (cutsdb-ok cutsdb)
+  ;;            (cutp cut-index cutsdb)))
+
+  (defret cut-bound-of-choose-implemenation-cuts
+    (implies ok
+             (< cut-index (nfix cuts-end)))
+    :rule-classes :linear)
+
+  (defret cut-lower-bound-of-choose-implementation-cuts-build
+    (implies ok
+             (<= (nfix cuts-start) cut-index))
+    :rule-classes :linear)
+
+  
+  ;; (defret refcounts-length-of-choose-implementation-cut
+  ;;   (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
+  ;;                 (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+  ;;                 (< (max-fanin aignet2) (len refcounts2)))
+  ;;            (equal (len new-refcounts2) (len refcounts2))))
+
+  (defret refcounts-length-of-choose-implementation-cut
+    (implies (< (node-count (find-max-fanin aignet2)) (len refcounts2))
+             (< (node-count (find-max-fanin aignet2)) (len new-refcounts2)))
+    :rule-classes :linear)
+
+  (defret copy2-length-of-choose-implementation-cuts-build
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len copy2)))
+             (equal (len new-copy2) (len copy2)))
+    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
+                                   (len)))))
+
+  ;; (defret copy2-in-bounds-of-choose-implementation-cuts-build
+  ;;   (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
+  ;;                 (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+  ;;                 (aignet-copies-in-bounds copy2 aignet2))
+  ;;            (aignet-copies-in-bounds new-copy2 aignet2)))
+
+  (defret eba-length-of-choose-implementation-cuts-build
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len eba)))
+             (equal (len new-eba) (len eba)))
+    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
+                                   (len)))))
+
+  ;; (defret eba2-length-of-choose-implementation-cuts-build
+  ;;   (implies (and (rwlib-wfp rwlib)
+  ;;                 (cutsdb-ok cutsdb)
+  ;;                 (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+  ;;                 (< (max-fanin (rwlib->aigs rwlib)) (len eba2)))
+  ;;            (equal (len new-eba2) (len eba2)))
+  ;;   :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
+  ;;                                  (len)))))
+  )
+
+
+
+;; ==========================================================================================
+;; End Evaluation method 1.
+;; ==========================================================================================
+
+
 
 
 
@@ -852,7 +1714,7 @@
                                         acl2::zp-open))))
   (b* ((slot0 (id->slot n 0 aignet))
        ((unless (eql (snode->type slot0) (gate-type)))
-        (mv 1 refcounts))
+        (mv 0 refcounts))
        (refs (get-u32 n refcounts))
        (new-refs (+ (lnfix nrefs) refs))
        (refcounts (set-u32 n new-refs refcounts))
@@ -1049,230 +1911,38 @@
 
 
 
-(define strash-delete-nodes-above ((n natp) (strash) (aignet))
-  :guard (<= n (num-nodes aignet))
-  :measure (nfix (- (num-nodes aignet) (nfix n)))
-  :returns (new-strash)
-  :guard-hints (("goal" :in-theory (enable aignet-idp)))
-  (b* (((when (mbe :logic (zp (- (num-nodes aignet) (nfix n)))
-                   :exec (eql (num-nodes aignet) n)))
-        strash)
-       (slot0 (id->slot n 0 aignet))
-       (type (snode->type slot0))
-       ((unless (eql type (gate-type)))
-        (strash-delete-nodes-above (1+ (lnfix n)) strash aignet))
-       (key (aignet-addr-combine (snode->fanin slot0)
-                                 (gate-id->fanin1 n aignet)))
-       (strash (strashtab-rem key strash)))
-    (strash-delete-nodes-above (1+ (lnfix n)) strash aignet)))
 
 
 
 
 
 
-(defsection aignet-in/marked-copies-in-bounds
-  (defun-sk aignet-in/marked-copies-in-bounds (copy mark aignet aignet2)
-    (forall n
-            (implies (or (equal (id->type n aignet) (in-type))
-                         (equal (id->type n aignet) (const-type))
-                         (bit->bool (nth n mark)))
-                     (aignet-litp (nth-lit n copy) aignet2)))
-    :rewrite :direct)
+  
 
-  (in-theory (disable aignet-in/marked-copies-in-bounds))
-
-  (defthm aignet-in/marked-copies-in-bounds-of-extension
-    (implies (and (aignet-extension-binding)
-                  (aignet-in/marked-copies-in-bounds copy mark aignet orig))
-             (aignet-in/marked-copies-in-bounds copy mark aignet new))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
-  (defthm aignet-in/marked-copies-in-bounds-of-update-copy
-    (implies (and (aignet-in/marked-copies-in-bounds copy mark aignet aignet2)
-                  (aignet-litp lit aignet2))
-             (aignet-in/marked-copies-in-bounds (update-nth-lit n lit copy) mark aignet aignet2))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
-  (defthm aignet-in/marked-copies-in-bounds-of-update-mark
-    (implies (and (aignet-in/marked-copies-in-bounds copy mark aignet aignet2)
-                  (aignet-litp (nth-lit n copy) aignet2))
-             (aignet-in/marked-copies-in-bounds copy
-                                                (update-nth n 1 mark)
-                                                aignet aignet2))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))
-                   :in-theory (enable* acl2::arith-equiv-forwarding))))))
-
-;; (define eval-cut-implementation-copy-rec ((lit litp "node to copy from the rwlib aignet")
-;;                                           (aignet "rwlib aignet -- source of the copy")
-;;                                           (eba "mark already visited nodes")
-;;                                           (copy2 "mapping from aignet to aignet2")
-;;                                           (strash2 "strash for aignet2")
-;;                                           (aignet2 "destination")
-;;                                           (refcounts2 "refcounts for aignet2"))
-;;   :guard (and (fanin-litp lit aignet)
-;;               (ec-call (aignet-in/marked-copies-in-bounds copy2 eba aignet aignet2))
-;;               (< (max-fanin aignet) (lits-length copy2))
-;;               (< (max-fanin aignet) (eba-length eba)))
-;;   :returns (mv (count natp :rule-classes :type-prescription)
-;;                (new-eba)
-;;                (new-copy2)
-;;                (new-strash2)
-;;                (new-aignet2))
-;;   :measure (lit-id lit)
-;;   :verify-guards nil
-;;   :prepwork ((local (in-theory (disable lookup-id-in-bounds-when-positive
-;;                                         default-car
-;;                                         snode->fanin-of-co-slot
-;;                                         lookup-id-out-of-bounds
-;;                                         acl2::natp-posp
-;;                                         node-count-of-atom
-;;                                         fanin-if-co-when-output))))
-;;   (b* ((id (lit-id lit))
-;;        (slot0 (id->slot id 0 aignet))
-;;        (gatep (eql (snode->type slot0) (gate-type)))
-;;        ((when (eql 1 (eba-get-bit id eba)))
-;;         (mv 0 eba copy2 strash2 aignet2))
-;;        ((unless gatep)
-;;         (b* ((eba (eba-set-bit id eba)))
-;;           ;; Inputs and const0 are copied
-;;           (mv 0 ;; don't count inputs/consts
-;;               eba copy2 strash2 aignet2)))
-;;        (fanin0 (snode->fanin slot0))
-;;        (fanin1 (gate-id->fanin1 id aignet))
-;;        ((mv count0 eba copy2 strash2 aignet2)
-;;         (eval-cut-implementation-copy-rec fanin0 aignet eba copy2 strash2 aignet2 refcounts2))
-;;        ((mv count1 eba copy2 strash2 aignet2)
-;;         (eval-cut-implementation-copy-rec fanin1 aignet eba copy2 strash2 aignet2 refcounts2))
-;;        (eba (eba-set-bit id eba))
-;;        (fanin-copy0 (lit-copy fanin0 copy2))
-;;        (fanin-copy1 (lit-copy fanin1 copy2))
-;;        ((mv existing key lit1 lit2) (aignet-and-gate-simp/strash fanin-copy0 fanin-copy1 9 strash2 aignet2))
-;;        ((unless existing)
-;;         (b* (((mv copy-lit strash2 aignet2) (aignet-install-and existing key lit1 lit2 strash2 aignet2))
-;;              (copy2 (set-lit id copy-lit copy2)))
-;;           (mv (+ 1 count0 count1) eba copy2 strash2 aignet2)))
-;;        (copy2 (set-lit id existing copy2))
-;;        (refs (b* ((ex-id (lit-id existing)))
-;;                (if (< ex-id (u32-length refcounts2))
-;;                    (get-u32 (lit-id existing) refcounts2)
-;;                  0))))
-;;     (mv (+ (if (eql refs 0) 1 0) count0 count1)
-;;         eba copy2 strash2 aignet2))
-;;   ///
-;;   (local (in-theory (disable (:d eval-cut-implementation-copy-rec))))
-
-;;   (def-aignet-preservation-thms eval-cut-implementation-copy-rec :stobjname aignet2)
-
-;;   (defret eval-cut-implementation-copy-rec-preserves-eba-marks
-;;     (implies (equal 1 (nth n eba))
-;;              (equal (nth n new-eba) 1))
-;;     :hints (("goal" :induct <call> :expand (<call>))))
-
-;;   (defret eval-cut-implementation-copy-rec-sets-eba-marks
-;;     (equal (nth (lit->var lit) new-eba) 1)
-;;     :hints (("goal" :expand (<call>))))
-
-;;   (defret eval-cut-implementation-copy-rec-preserves-marked-lits
-;;     (implies (equal 1 (nth n eba))
-;;              (equal (nth-lit n new-copy2)
-;;                     (nth-lit n copy2)))
-;;     :hints (("goal" :induct <call> :expand (<call>))))
-
-;;   (defret stype-counts-of-eval-cut-implementation-copy-rec
-;;     (implies (not (equal (stype-fix stype) :gate))
-;;              (equal (stype-count stype new-aignet2)
-;;                     (stype-count stype aignet2)))
-;;     :hints (("goal" :induct <call> :expand (<call>))))
-
-;;   (defret eval-cut-implementation-copy-rec-preserves-input-lits
-;;     (implies (equal (id->type n aignet) (in-type))
-;;              (equal (nth-lit n new-copy2)
-;;                     (nth-lit n copy2)))
-;;     :hints (("goal" :induct <call> :expand (<call>))))
-
-;;   (defret aignet-in/marked-copies-in-bounds-of-eval-cut-implementation-copy-rec
-;;     (implies (and (aignet-in/marked-copies-in-bounds copy2 eba aignet aignet2)
-;;                   (aignet-litp lit aignet))
-;;              (aignet-in/marked-copies-in-bounds new-copy2 new-eba aignet new-aignet2))
-;;     :hints (("goal" :induct <call>
-;;              :expand (<call>))
-;;             (and stable-under-simplificationp
-;;                  '(:expand ((aignet-litp lit aignet))
-;;                    :in-theory (enable ctype)))))
-
-;;   (defret aignet-litp-of-copy-lit-of-eval-cut-implementation-copy-rec
-;;     (implies (and (aignet-in/marked-copies-in-bounds copy2 eba aignet aignet2)
-;;                   (aignet-litp lit aignet)
-;;                   (equal 1 (nth n new-eba)))
-;;              (aignet-litp (nth-lit n new-copy2) new-aignet2))
-;;     :hints (("goal" :use aignet-in/marked-copies-in-bounds-of-eval-cut-implementation-copy-rec
-;;              :in-theory (disable aignet-in/marked-copies-in-bounds-of-eval-cut-implementation-copy-rec))))
-
-;;   (defret copy2-length-of-eval-cut-implementation-copy-rec
-;;     (implies (and (aignet-litp lit aignet)
-;;                   (< (max-fanin aignet) (len copy2)))
-;;              (equal (len new-copy2) (len copy2)))
-;;     :hints (("goal" :induct <call>
-;;              :expand (<call>))))
-
-;;   (defret eba-length-of-eval-cut-implementation-copy-rec
-;;     (implies (and (aignet-litp lit aignet)
-;;                   (< (max-fanin aignet) (len eba)))
-;;              (equal (len new-eba) (len eba)))
-;;     :hints (("goal" :induct <call>
-;;              :expand (<call>))))
-
-;;   ;; (defret eba2-length-of-eval-cut-implementation-copy-rec
-;;   ;;   (implies (and (aignet-litp lit aignet)
-;;   ;;                 (< (max-fanin aignet) (len eba2)))
-;;   ;;            (equal (len new-eba2) (len eba2)))
-;;   ;;   :hints (("goal" :induct <call>
-;;   ;;            :expand (<call>))))
-
-;;   ;; (local (defthm len-of-update-nth-incr
-;;   ;;          (<= (len x) (len (update-nth n val x)))
-;;   ;;          :rule-classes :linear))
-
-;;   (local (in-theory (disable len-update-nth
-;;                              acl2::len-of-update-nth)))
-
-;;   (local (defthm lit->var-of-aignet-and-gate-simp/strash-upper-bound
-;;            (b* (((mv existing & & &) (aignet-and-gate-simp/strash lit0 lit1 gatesimp strash aignet)))
-;;              (implies (aignet-litp existing aignet)
-;;                       (<= (lit->var existing) (node-count (find-max-fanin aignet)))))
-;;            :rule-classes :linear))
-;;   ;; (local (defthm lit->var-upper-bound-by-aignet-litp
-;;   ;;          (implies (aignet-litp lit aignet2)
-;;   ;;                   (<= (lit->var lit) (node-count (find-max-fanin aignet2))))
-;;   ;;          :rule-classes :linear))
-
-;;   (verify-guards eval-cut-implementation-copy-rec
-;;     :guard-debug t))
+;; ==========================================================================================
+;; Evaluation method 2:  Don't build any new nodes onto the AIG while evaluating implementations,
+;; but track which implememetation nodes correspond to existing AIG nodes and count
+;; the nonexistent implementation nodes plus the existing but unreferenced ones.
+;; ==========================================================================================
 
 
 
 
-(define eval-cut-implementation-rec ((lit litp "node to copy from the rwlib aignet")
-                                     (aignet "rwlib aignet -- source of the copy")
-                                     (eba "mark already visited nodes")
-                                     (eba2 "mark nodes whose copy entries are valid")
-                                     (copy2 "mapping from aignet to aignet2")
-                                     (strash2 "strash for aignet2")
-                                     (aignet2 "destination")
-                                     (refcounts2 "refcounts for aignet2"))
+
+(define eval-cut-implementation-copy-rec ((lit litp "node to copy from the rwlib aignet")
+                                          (aignet "rwlib aignet -- source of the copy")
+                                          (eba "mark nodes we've already attempted to copy")
+                                          (eba2 "mark nodes with valid copies")
+                                          (copy2 "mapping from aignet to aignet2")
+                                          (strash2 "strash for aignet2")
+                                          (aignet2 "destination"))
   :guard (and (fanin-litp lit aignet)
-              (aignet-copies-in-bounds copy2 aignet2)
+              (ec-call (aignet-marked-copies-in-bounds copy2 eba2 aignet2))
+              (ec-call (aignet-input-copies-in-bounds copy2 aignet aignet2))
               (< (max-fanin aignet) (lits-length copy2))
-              (< (max-fanin aignet2) (u32-length refcounts2))
               (< (max-fanin aignet) (eba-length eba))
               (< (max-fanin aignet) (eba-length eba2)))
-  :returns (mv (copy-lit (or (litp copy-lit) (not copy-lit)) :rule-classes :type-prescription)
-               (count natp :rule-classes :type-prescription)
-               (new-eba)
+  :returns (mv (new-eba)
                (new-eba2)
                (new-copy2))
   :measure (lit-id lit)
@@ -1288,71 +1958,115 @@
        (slot0 (id->slot id 0 aignet))
        (gatep (eql (snode->type slot0) (gate-type)))
        ((when (eql 1 (eba-get-bit id eba)))
-        (b* ((copiedp (or
-                        ;; inputs and const are copied regardless of eba2 setting
-                       (not gatep)
-                       (eql 1 (eba-get-bit id eba2))))
-             (lit (and copiedp (lit-negate-cond (get-lit id copy2) (lit-neg lit)))))
-          (mv lit 0 eba eba2 copy2)))
-       (eba (eba-set-bit id eba))
+        (mv eba eba2 copy2))
        ((unless gatep)
-        ;; Inputs and const0 are copied
-        (mv (lit-negate-cond (get-lit id copy2) (lit-neg lit))
-            0 ;; don't count inputs/consts
-            eba eba2 copy2))
+        (b* ((eba (eba-set-bit id eba))
+             (eba2 (eba-set-bit id eba2))
+             (copy2 (if (eql (snode->type slot0) (const-type))
+                        (set-lit id 0 copy2)
+                      copy2)))
+          (mv eba eba2 copy2)))
        (fanin0 (snode->fanin slot0))
        (fanin1 (gate-id->fanin1 id aignet))
-       ((mv fanin-copy0 count0 eba eba2 copy2)
-        (eval-cut-implementation-rec fanin0 aignet eba eba2 copy2 strash2 aignet2 refcounts2))
-       ((mv fanin-copy1 count1 eba eba2 copy2)
-        (eval-cut-implementation-rec fanin1 aignet eba eba2 copy2 strash2 aignet2 refcounts2))
-       ((unless (and fanin-copy0 fanin-copy1))
-        (mv nil
-            (+ 1 count0 count1)
-            eba eba2 copy2))
+       ((mv eba eba2 copy2)
+        (eval-cut-implementation-copy-rec fanin0 aignet eba eba2 copy2 strash2 aignet2))
+       ((mv eba eba2 copy2)
+        (eval-cut-implementation-copy-rec fanin1 aignet eba eba2 copy2 strash2 aignet2))
+       (eba (eba-set-bit id eba))
+       (fanin-copy0 (lit-copy fanin0 copy2))
+       (fanin-copy1 (lit-copy fanin1 copy2))
+       ((when (or (and (eql fanin-copy0 0) (eql 1 (eba-get-bit (lit-id fanin0) eba2)))
+                  (and (eql fanin-copy1 0) (eql 1 (eba-get-bit (lit-id fanin1) eba2)))))
+        (b* ((copy2 (set-lit id 0 copy2))
+             (eba2 (eba-set-bit id eba2)))
+          (mv eba eba2 copy2)))
+       ((unless (and (eql 1 (eba-get-bit (lit-id fanin0) eba2))
+                     (eql 1 (eba-get-bit (lit-id fanin1) eba2))))
+        (mv eba eba2 copy2))
        ((mv existing ?key ?lit1 ?lit2) (aignet-and-gate-simp/strash fanin-copy0 fanin-copy1 9 strash2 aignet2))
        ((unless existing)
-        (mv nil (+ 1 count0 count1) eba eba2 copy2))
-       (eba2 (eba-set-bit id eba2))
+        (mv eba eba2 copy2))
        (copy2 (set-lit id existing copy2))
-       (refs (get-u32 (lit-id existing) refcounts2)))
-    (mv (lit-negate-cond existing (lit-neg lit))
-        (+ (if (eql refs 0) 1 0) count0 count1)
-        eba eba2 copy2))
+       (eba2 (eba-set-bit id eba2)))
+    (mv eba eba2 copy2))
   ///
-  (local (in-theory (disable (:d eval-cut-implementation-rec))))
-  (defret aignet-litp-of-eval-cut-implementation-rec
-    (implies (aignet-copies-in-bounds copy2 aignet2)
-             (and (aignet-copies-in-bounds new-copy2 aignet2)
-                  (implies copy-lit
-                           (aignet-litp copy-lit aignet2))))
-    :hints (("goal" :induct <call>
-             :expand (<call>))))
+  (local (in-theory (disable (:d eval-cut-implementation-copy-rec))))
 
-  (defret copy2-length-of-eval-cut-implementation-rec
+  (defret eval-cut-implementation-copy-rec-preserves-eba-marks
+    (implies (equal 1 (nth n eba))
+             (equal (nth n new-eba) 1))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret eval-cut-implementation-copy-rec-preserves-eba2-marks
+    (implies (equal 1 (nth n eba2))
+             (equal (nth n new-eba2) 1))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret eval-cut-implementation-copy-rec-sets-eba-marks
+    (equal (nth (lit->var lit) new-eba) 1)
+    :hints (("goal" :expand (<call>))))
+
+  (defret eval-cut-implementation-copy-rec-preserves-eba-marked-lits
+    (implies (equal 1 (nth n eba))
+             (equal (nth-lit n new-copy2)
+                    (nth-lit n copy2)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret eval-cut-implementation-copy-rec-preserves-eba-marked-eba2-bits
+    (implies (equal 1 (nth n eba))
+             (equal (nth n new-eba2)
+                    (nth n eba2)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret eval-cut-implementation-copy-rec-preserves-input-lits
+    (implies (equal (id->type n aignet) (in-type))
+             (equal (nth-lit n new-copy2)
+                    (nth-lit n copy2)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+
+  (defret aignet-in/marked-copies-in-bounds-of-eval-cut-implementation-copy-rec
+    (implies (and (aignet-input-copies-in-bounds copy2 aignet aignet2)
+                  (aignet-litp lit aignet))
+             (and (aignet-input-copies-in-bounds new-copy2 aignet aignet2)
+                  (implies (aignet-marked-copies-in-bounds copy2 eba2 aignet2)
+                           (aignet-marked-copies-in-bounds new-copy2 new-eba2 aignet2))))
+    :hints (("goal" :induct <call>
+             :expand (<call>))
+            (and stable-under-simplificationp
+                 '(:expand ((aignet-litp lit aignet))
+                   :in-theory (enable ctype)))))
+
+  (defret aignet-litp-of-copy-lit-of-eval-cut-implementation-copy-rec
+    (implies (and (aignet-input-copies-in-bounds copy2 aignet aignet2)
+                  (aignet-marked-copies-in-bounds copy2 eba2 aignet2)
+                  (aignet-litp lit aignet)
+                  (equal 1 (nth n new-eba2)))
+             (aignet-litp (nth-lit n new-copy2) aignet2))
+    :hints (("goal" :use aignet-in/marked-copies-in-bounds-of-eval-cut-implementation-copy-rec
+             :in-theory (disable aignet-in/marked-copies-in-bounds-of-eval-cut-implementation-copy-rec))))
+
+  (defret copy2-length-of-eval-cut-implementation-copy-rec
     (implies (and (aignet-litp lit aignet)
                   (< (max-fanin aignet) (len copy2)))
              (equal (len new-copy2) (len copy2)))
     :hints (("goal" :induct <call>
              :expand (<call>))))
 
-  (defret eba-length-of-eval-cut-implementation-rec
+  (defret eba-length-of-eval-cut-implementation-copy-rec
     (implies (and (aignet-litp lit aignet)
                   (< (max-fanin aignet) (len eba)))
              (equal (len new-eba) (len eba)))
     :hints (("goal" :induct <call>
              :expand (<call>))))
 
-  (defret eba2-length-of-eval-cut-implementation-rec
+  (defret eba2-length-of-eval-cut-implementation-copy-rec
     (implies (and (aignet-litp lit aignet)
                   (< (max-fanin aignet) (len eba2)))
              (equal (len new-eba2) (len eba2)))
     :hints (("goal" :induct <call>
              :expand (<call>))))
 
-  ;; (local (defthm len-of-update-nth-incr
-  ;;          (<= (len x) (len (update-nth n val x)))
-  ;;          :rule-classes :linear))
 
   (local (in-theory (disable len-update-nth
                              acl2::len-of-update-nth)))
@@ -1367,15 +2081,193 @@
   ;;                   (<= (lit->var lit) (node-count (find-max-fanin aignet2))))
   ;;          :rule-classes :linear))
 
-  (verify-guards eval-cut-implementation-rec
+  (verify-guards eval-cut-implementation-copy-rec
     :guard-debug t))
+
+
+(define cut-impl-find-copies-rec ((lit litp "node to copy from the rwlib aignet")
+                                  (aignet "rwlib aignet -- source of the copy")
+                                  ;; (eba "mark already visited aignet nodes")
+                                  (eba2 "mark aignet nodes whose copy entries are valid")
+                                  (eba3 "mark aignet nodes whose cones have already been counted")
+                                  (eba4 "mark aignet2 nodes whose cones have already been counted")
+                                  (copy2 "mapping from aignet to aignet2")
+                                  (aignet2 "destination")
+                                  (refcounts2 "refcounts for aignet2"))
+  :guard (and (fanin-litp lit aignet)
+              (ec-call (aignet-input-copies-in-bounds copy2 aignet aignet2))
+              (ec-call (aignet-marked-copies-in-bounds copy2 eba2 aignet2))
+              (< (max-fanin aignet) (lits-length copy2))
+              (< (max-fanin aignet2) (u32-length refcounts2))
+              (< (max-fanin aignet) (eba-length eba2))
+              (< (max-fanin aignet) (eba-length eba3))
+              (< (max-fanin aignet2) (eba-length eba4)))
+  :returns (mv (count natp :rule-classes :type-prescription)
+               (new-eba3)
+               (new-eba4))
+  :measure (lit-id lit)
+  :verify-guards nil
+  :prepwork ((local (in-theory (disable lookup-id-in-bounds-when-positive
+                                        default-car
+                                        snode->fanin-of-co-slot
+                                        lookup-id-out-of-bounds
+                                        acl2::natp-posp
+                                        node-count-of-atom
+                                        fanin-if-co-when-output))))
+  (b* ((id (lit-id lit))
+       (slot0 (id->slot id 0 aignet))
+       ((when (eql 1 (eba-get-bit id eba3)))
+        (mv 0 eba3 eba4))
+       (eba3 (eba-set-bit id eba3))
+       (type (snode->type slot0))
+       ((unless (eql type (gate-type)))
+        ;; input/const cones are already counted (and marked as referenced) at the cut level
+        ;; we know all inputs have to be used because the truth table depends on them all.
+        (mv 0 eba3 eba4))
+       ((when (eql 1 (eba-get-bit id eba2)))
+        (b* ((cone-id (lit-id (get-lit id copy2)))
+             ((mv count eba4) (aignet-count-unreferenced-cone cone-id aignet2 eba4 refcounts2)))
+          (mv count eba3 eba4)))
+       (fanin0 (snode->fanin slot0))
+       (fanin1 (gate-id->fanin1 id aignet))
+       ((mv count0 eba3 eba4)
+        (cut-impl-find-copies-rec fanin0 aignet eba2 eba3 eba4 copy2 aignet2 refcounts2))
+       ((mv count1 eba3 eba4)
+        (cut-impl-find-copies-rec fanin1 aignet eba2 eba3 eba4 copy2 aignet2 refcounts2)))
+    (mv (+ 1 count0 count1) eba3 eba4))
+  ///
+  (local (in-theory (disable (:d cut-impl-find-copies-rec))))
+
+  (local (defthm input-ctype-when-not-gate-or-const
+           (implies (and (aignet-litp lit aignet)
+                         (not (equal (stype (car (lookup-id (lit->var lit) aignet))) :gate))
+                         (not (equal (stype (car (lookup-id (lit->var lit) aignet))) :const)))
+                    (equal (ctype (stype (car (lookup-id (lit->var lit) aignet))))
+                           :input))
+           :hints(("Goal" :in-theory (enable ctype aignet-litp)))))
+
+  (defret eba3-length-of-cut-impl-find-copies-rec
+    (implies (and (aignet-litp lit aignet)
+                  (< (max-fanin aignet) (len eba3)))
+             (equal (len new-eba3) (len eba3)))
+    :hints (("goal" :induct <call>
+             :expand (<call>))))
+
+  (defret eba4-length-of-cut-impl-find-copies-rec
+    (implies (and (aignet-marked-copies-in-bounds copy2 eba2 aignet2)
+                  (aignet-input-copies-in-bounds copy2 aignet aignet2)
+                  (< (max-fanin aignet2) (len eba4))
+                  (aignet-litp lit aignet))
+             (equal (len new-eba4) (len eba4)))
+    :hints (("goal" :induct <call>
+             :expand (<call>))))
+
+  (local (defthm max-gte-1
+           (<= x (max x y))
+           :rule-classes :linear))
+  (local (defthm max-gte-2
+           (<= y (max x y))
+           :rule-classes :linear))
+
+  (verify-guards cut-impl-find-copies-rec
+    :hints(("Goal" :in-theory (disable max)))
+    :guard-debug t))
+
+
+
+
+
+(define eval-cut-implementation-nobuild ((lit litp "node to copy from the rwlib aignet")
+                                         (aignet "rwlib aignet -- source of the copy")
+                                         (eba "mark nodes we've already attempted to copy")
+                                         (eba2 "mark nodes with valid copies")
+                                         (eba3 "scratch to mark aignet nodes whose cones have already been counted")
+                                         (eba4 "scratch to mark aignet2 nodes whose cones have already been counted")
+                                         (copy2 "mapping from aignet to aignet2")
+                                         (strash2 "strash for aignet2")
+                                         (aignet2 "destination")
+                                         (refcounts2 "refcounts for aignet2"))
+  :guard (and (fanin-litp lit aignet)
+              (ec-call (aignet-input-copies-in-bounds copy2 aignet aignet2))
+              (ec-call (aignet-marked-copies-in-bounds copy2 eba2 aignet2))
+              (< (max-fanin aignet) (lits-length copy2))
+              (< (max-fanin aignet2) (u32-length refcounts2))
+              (< (max-fanin aignet) (eba-length eba))
+              (< (max-fanin aignet) (eba-length eba2))
+              (< (max-fanin aignet) (eba-length eba3))
+              (< (max-fanin aignet2) (eba-length eba4)))
+  :returns (mv (count natp :rule-classes :type-prescription
+                      "The count returned here is complicated.  What we want is
+                       the count of the implementation nodes that don't yet have
+                       copies in aignet2, plus the count of all unreferenced nodes
+                       in aignet2 in the cones of the copies for nodes that do have
+                       them.")
+               (new-eba)
+               (new-eba2)
+               (new-copy2)
+               (new-eba3)
+               (new-eba4))
+  (b* (((mv eba eba2 copy2)
+        (eval-cut-implementation-copy-rec lit aignet eba eba2 copy2 strash2 aignet2))
+       (eba3 (eba-clear eba3))
+       (eba4 (eba-clear eba4))
+       ((mv count eba3 eba4)
+        (cut-impl-find-copies-rec lit aignet eba2 eba3 eba4 copy2 aignet2 refcounts2)))
+    (mv count eba eba2 copy2 eba3 eba4))
+  ///
   
+  (defret aignet-in/marked-copies-in-bounds-of-eval-cut-implementation-nobuild
+    (implies (and (aignet-input-copies-in-bounds copy2 aignet aignet2)
+                  (aignet-litp lit aignet))
+             (and (aignet-input-copies-in-bounds new-copy2 aignet aignet2)
+                  (implies (aignet-marked-copies-in-bounds copy2 eba2 aignet2)
+                           (aignet-marked-copies-in-bounds new-copy2 new-eba2 aignet2)))))
+
+  (defret copy2-length-of-eval-cut-implementation-nobuild
+    (implies (and (aignet-litp lit aignet)
+                  (< (max-fanin aignet) (len copy2)))
+             (equal (len new-copy2) (len copy2))))
+
+  (defret eba-length-of-eval-cut-implementation-nobuild
+    (implies (and (aignet-litp lit aignet)
+                  (< (max-fanin aignet) (len eba)))
+             (equal (len new-eba) (len eba))))
+
+  (defret eba2-length-of-eval-cut-implementation-nobuild
+    (implies (and (aignet-litp lit aignet)
+                  (< (max-fanin aignet) (len eba2)))
+             (equal (len new-eba2) (len eba2))))
+
+  (defret eba3-length-of-eval-cut-implementation-nobuild
+    (implies (and (aignet-litp lit aignet)
+                  (< (max-fanin aignet) (len eba3)))
+             (equal (len new-eba3) (len eba3))))
+
+  (defret eba4-length-of-eval-cut-implementation-nobuild
+    (implies (and (aignet-marked-copies-in-bounds copy2 eba2 aignet2)
+                  (aignet-input-copies-in-bounds copy2 aignet aignet2)
+                  (< (max-fanin aignet2) (len eba4))
+                  (aignet-litp lit aignet))
+             (equal (len new-eba4) (len eba4)))))
+
+(encapsulate nil
+  (local (include-book "std/lists/nth" :dir :system))
+;  (local (in-theory (enable acl2::nth-when-too-large)))
+  (defthm smm-contains-aignet-lits-necc-easier
+    (implies (and (smm-contains-aignet-lits smm aignet)
+                  (< (nfix idx) (len (nth block smm))))
+             (aignet-litp (nth idx (nth block smm)) aignet))
+    :hints (("goal" :cases ((< (nfix block) (len smm)))))))
+
+
 (define eval-implementations ((n natp "impl index")
                               (block natp "smm block")
                               (smm "implementation pointer array")
                               (aignet "rwlib aignet -- source of the copy")
-                              (eba "mark already visited nodes")
-                              (eba2 "mark nodes whose copy entries are valid")
+                              (eba "mark nodes we've already attempted to copy")
+                              (eba2 "mark nodes with valid copies")
+                              (eba3 "scratch to mark aignet nodes whose cones have already been counted")
+                              (eba4 "scratch to mark aignet2 nodes whose cones have already been counted")
                               (copy2 "mapping from aignet to aignet2")
                               (strash2 "strash for aignet2")
                               (aignet2 "destination")
@@ -1385,17 +2277,22 @@
   :guard (and (< block (acl2::smm-nblocks smm))
               (< n (acl2::smm-block-size block smm))
               (ec-call (smm-contains-aignet-lits smm aignet))
-              (aignet-copies-in-bounds copy2 aignet2)
+              (ec-call (aignet-input-copies-in-bounds copy2 aignet aignet2))
+              (ec-call (aignet-marked-copies-in-bounds copy2 eba2 aignet2))
               (< (max-fanin aignet) (lits-length copy2))
               (< (max-fanin aignet2) (u32-length refcounts2))
               (< (max-fanin aignet) (eba-length eba))
-              (< (max-fanin aignet) (eba-length eba2)))
+              (< (max-fanin aignet) (eba-length eba2))
+              (< (max-fanin aignet) (eba-length eba3))
+              (< (max-fanin aignet2) (eba-length eba4)))
   :measure (nfix (- (acl2::smm-block-size block smm) (nfix n)))
   :returns (mv (best-index natp :rule-classes :type-prescription)
                (best-cost natp :rule-classes :type-prescription)
                (new-eba)
                (new-eba2)
                (new-copy2)
+               (new-eba3)
+               (new-eba4)
                (new-rewrite-stats))
   :prepwork ((local (defthm nat-listp-when-u32-listp
                       (implies (acl2::u32-listp x)
@@ -1412,55 +2309,64 @@
                       :hints(("Goal" :in-theory (enable nth))))))
   :verify-guards nil
   (b* ((impl-lit (acl2::smm-read block n smm))
-       (eba (eba-clear eba))
-       (eba2 (eba-clear eba2))
        (rewrite-stats (incr-rewrite-stats-tries rewrite-stats))
-       ((mv ?lit cost eba eba2 copy2)
-        (eval-cut-implementation-rec impl-lit aignet eba eba2 copy2 strash2 aignet2 refcounts2))
+       ((mv cost eba eba2 copy2 eba3 eba4)
+        (eval-cut-implementation-nobuild impl-lit aignet eba eba2 eba3 eba4 copy2 strash2 aignet2 refcounts2))
        (next (+ 1 (lnfix n)))
        ((rewrite-config config))
-       ((when (or (eql next config.cut-tries-limit)
-                  (mbe :logic (zp (- (acl2::smm-block-size block smm) next))
-                       :exec (eql next (acl2::smm-block-size block smm)))))
-        (mv (lnfix n) cost eba eba2 copy2 rewrite-stats))
-       ((mv best-n best-cost eba eba2 copy2 rewrite-stats)
-        (eval-implementations next block smm aignet eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config)))
+       ((when (or ;; (and (not (eql (lnfix block) 1))
+               (eql next config.cut-tries-limit)
+               (mbe :logic (zp (- (acl2::smm-block-size block smm) next))
+                    :exec (eql next (acl2::smm-block-size block smm)))))
+        (mv (lnfix n) cost eba eba2 copy2 eba3 eba4 rewrite-stats))
+       ((mv best-n best-cost eba eba2 copy2 eba3 eba4 rewrite-stats)
+        (eval-implementations next block smm aignet eba eba2 eba3 eba4 copy2 strash2 aignet2 refcounts2 rewrite-stats config)))
     (if (< cost best-cost)
-        (mv (lnfix n) cost eba eba2 copy2 rewrite-stats)
-      (mv best-n best-cost eba eba2 copy2 rewrite-stats)))
+        (mv (lnfix n) cost eba eba2 copy2 eba3 eba4 rewrite-stats)
+      (mv best-n best-cost eba eba2 copy2 eba3 eba4 rewrite-stats)))
   ///
   (verify-guards eval-implementations)
 
-  (defret copy2-in-bounds-of-eval-implementations
-    (implies (aignet-copies-in-bounds copy2 aignet2)
-             (aignet-copies-in-bounds new-copy2 aignet2)))
-
+  
   (defret copy2-length-of-eval-implementations
     (implies (and (smm-contains-aignet-lits smm aignet)
-                  (< (nfix block) (len smm))
-                  (< (nfix n) (len (nth block smm)))
+                  (< (nfix n) (acl2::smm-block-size block smm))
                   (< (max-fanin aignet) (len copy2)))
-             (equal (len new-copy2) (len copy2)))
-    :hints (("goal" :induct <call>
-             :expand (<call>))))
+             (equal (len new-copy2) (len copy2))))
+
+  (defret aignet-in/marked-copies-in-bounds-of-eval-implementations
+    (implies (and (aignet-input-copies-in-bounds copy2 aignet aignet2)
+                  (smm-contains-aignet-lits smm aignet)
+                  (< (nfix n) (acl2::smm-block-size block smm)))
+             (and (aignet-input-copies-in-bounds new-copy2 aignet aignet2)
+                  (implies (aignet-marked-copies-in-bounds copy2 eba2 aignet2)
+                           (aignet-marked-copies-in-bounds new-copy2 new-eba2 aignet2)))))
 
   (defret eba-length-of-eval-implementations
     (implies (and (smm-contains-aignet-lits smm aignet)
-                  (< (nfix block) (len smm))
-                  (< (nfix n) (len (nth block smm)))
+                  (< (nfix n) (acl2::smm-block-size block smm))
                   (< (max-fanin aignet) (len eba)))
-             (equal (len new-eba) (len eba)))
-    :hints (("goal" :induct <call>
-             :expand (<call>))))
+             (equal (len new-eba) (len eba))))
 
   (defret eba2-length-of-eval-implementations
     (implies (and (smm-contains-aignet-lits smm aignet)
-                  (< (nfix block) (len smm))
-                  (< (nfix n) (len (nth block smm)))
+                  (< (nfix n) (acl2::smm-block-size block smm))
                   (< (max-fanin aignet) (len eba2)))
-             (equal (len new-eba2) (len eba2)))
-    :hints (("goal" :induct <call>
-             :expand (<call>))))
+             (equal (len new-eba2) (len eba2))))
+
+  (defret eba3-length-of-eval-implementations
+    (implies (and (smm-contains-aignet-lits smm aignet)
+                  (< (nfix n) (acl2::smm-block-size block smm))
+                  (< (max-fanin aignet) (len eba3)))
+             (equal (len new-eba3) (len eba3))))
+
+  (defret eba4-length-of-eval-implementations
+    (implies (and (aignet-marked-copies-in-bounds copy2 eba2 aignet2)
+                  (aignet-input-copies-in-bounds copy2 aignet aignet2)
+                  (< (max-fanin aignet2) (len eba4))
+                  (smm-contains-aignet-lits smm aignet)
+                  (< (nfix n) (acl2::smm-block-size block smm)))
+             (equal (len new-eba4) (len eba4))))
 
   (defret impl-index-ok-of-eval-implementations
     (implies (< (nfix n) (len (nth block smm)))
@@ -1527,6 +2433,9 @@
              (acl2::nth-nat-equiv (mv-nth 1 (cut-restore-mffcs n size cutsdb aignet refcounts))
                                   (mv-nth 1 (cut-restore-mffcs n size cutsdb aignet refcounts1))))
     :rule-classes :congruence))
+
+
+
 
 (define cut-delete-mffcs ((n natp)
                            (size natp)
@@ -1599,30 +2508,36 @@
                   (rwlib rwlib-wfp)
                   (eba)
                   (eba2)
+                  (eba3)
+                  (eba4)
                   (copy2)
                   (strash2 "strash for aignet2")
                   (aignet2 "destination")
                   (refcounts2 "refcounts for aignet2")
                   (rewrite-stats)
                   (config rewrite-config-p))
-  :guard (and (aignet-copies-in-bounds copy2 aignet2)
-              (cutsdb-lit-idsp aignet2 cutsdb)
+  :guard (and (cutsdb-lit-idsp aignet2 cutsdb)
               ;; (<= (cut-nnodes cutsdb) (lits-length copy))
               (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               (< (max-fanin aignet2) (u32-length refcounts2))
+              (< (max-fanin aignet2) (eba-length eba4))
               (stobj-let ((aignet (rwlib->aigs rwlib)))
                          (ok)
-                         (and (< (max-fanin aignet) (lits-length copy2))
-                              (< (max-fanin aignet) (eba-length eba))
-                              (< (max-fanin aignet) (eba-length eba2)))
+                         (and 
+                          (< (max-fanin aignet) (lits-length copy2))
+                          (< (max-fanin aignet) (eba-length eba))
+                          (< (max-fanin aignet) (eba-length eba2))
+                          (< (max-fanin aignet) (eba-length eba3)))
                          ok))
   :returns (mv (ok "if nil, disqualify this cut")
                (score natp :rule-classes :type-prescription)
                (impl-idx natp :rule-classes :type-prescription)
-               (new-refcounts2 (acl2::nth-nat-equiv new-refcounts2 refcounts2))
                (new-eba)
                (new-eba2)
                (new-copy2)
+               (new-eba3)
+               (new-eba4)
+               (new-refcounts2 (acl2::nth-nat-equiv new-refcounts2 refcounts2))
                (new-rewrite-stats))
   :prepwork (;; (local (defthm cutsdb-data-nodes-bounded-when-bounded-lesser-special
              ;;          (implies (and (cutsdb-data-nodes-bounded n size (cut-nnodes cutsdb) cutsdb)
@@ -1662,20 +2577,27 @@
        ((when (and (eql cutinf.size 0)
                    (cut-impl-index-ok cut 0 cutsdb rwlib)))
         ;; shortcut for const0 node
-        (mv t 0 0 refcounts2 eba eba2 copy2 rewrite-stats))
-       ((unless (and (cut-leaves-bounded cut node cutsdb)
-                     (cut-impl-index-ok cut 0 cutsdb rwlib)))
-        (mv nil 0 0 refcounts2 eba eba2 copy2 rewrite-stats))
+        (mv t 0 0 eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats))
+       ((unless (and cutinf.valid
+                     (cut-leaves-bounded cut node cutsdb)))
+        (mv nil 0 0 eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats))
+       ((unless (cut-impl-index-ok cut 0 cutsdb rwlib))
+        (cw "Programming error -- nontrivial cut has no implementations?~%")
+        (break$)
+        (mv nil 0 0 eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats))
        ((mv base-cost refcounts2) (cut-restore-mffcs (* 4 (lnfix cut)) cutinf.size cutsdb aignet2 refcounts2))
        (copy2 (cut-initialize-copy cut copy2 cutsdb rwlib))
-       ((acl2::stobj-get impl-index impl-cost eba eba2 copy2 rewrite-stats)
+       (eba (eba-clear eba))
+       (eba2 (eba-clear eba2))
+       ((acl2::stobj-get impl-index impl-cost eba eba2 copy2 eba3 eba4 rewrite-stats)
         ((aignet (rwlib->aigs rwlib))
          (smm    (rwlib->cands rwlib))
          (truth::npn4arr (rwlib->npns rwlib)))
         (b* (((truth::npn4 npn) (truth::get-npn4 cutinf.truth truth::npn4arr)))
-          (eval-implementations 0 npn.truth-idx smm aignet eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config)))
+          (eval-implementations 0 npn.truth-idx smm aignet eba eba2 eba3 eba4 copy2 strash2 aignet2 refcounts2 rewrite-stats config)))
        ((mv & refcounts2) (cut-delete-mffcs (* 4 (lnfix cut)) cutinf.size cutsdb aignet2 refcounts2)))
-    (mv t (+ base-cost impl-cost) impl-index refcounts2 eba eba2 copy2 rewrite-stats))
+    (mv t (+ base-cost impl-cost)
+        impl-index eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats))
   ///
   (defret eval-cut-impl-index-ok
     (implies ok
@@ -1698,12 +2620,12 @@
     :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
                                    (len)))))
 
-  (defret copy2-in-bounds-of-eval-cut
-    (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
-                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
-                  (aignet-copies-in-bounds copy2 aignet2))
-             (aignet-copies-in-bounds new-copy2 aignet2))
-    :hints(("Goal" :in-theory (enable cutsdb-lit-idsp-implies-cut-leaves-lit-idsp))))
+  ;; (defret copy2-in-bounds-of-eval-cut
+  ;;   (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
+  ;;                 (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+  ;;                 (aignet-copies-in-bounds copy2 aignet2))
+  ;;            (aignet-copies-in-bounds new-copy2 aignet2))
+  ;;   :hints(("Goal" :in-theory (enable cutsdb-lit-idsp-implies-cut-leaves-lit-idsp))))
     
 
   (defret eba-length-of-eval-cut
@@ -1724,6 +2646,20 @@
     :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
                                    (len)))))
 
+  (defret eba3-length-of-eval-cut
+    (implies (and (rwlib-wfp rwlib)
+                  (< (max-fanin (rwlib->aigs rwlib)) (len eba3)))
+             (equal (len new-eba3) (len eba3)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
+  (defret eba4-length-of-eval-cut
+    (implies (and (< (max-fanin aignet2) (len eba4))
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  (< (nfix cut) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (rwlib-wfp rwlib))
+             (equal (len new-eba4) (len eba4)))
+    :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
+
   (defretd eval-cut-ok-implies-cut-bounded
     (implies ok
              (cut-leaves-bounded cut node cutsdb))
@@ -1735,64 +2671,68 @@
        
 
                  
-(define choose-implementation-cuts ((cuts-start natp)
-                                    (cuts-end natp)
-                                    (node natp)
-                                    (cutsdb cutsdb-ok)
-                                    (rwlib rwlib-wfp)
-                                    (eba)
-                                    (eba2)
-                                    (copy2)
-                                    (strash2 "strash for aignet2")
-                                    (aignet2 "destination")
-                                    (refcounts2 "refcounts for aignet2")
-                                    (rewrite-stats)
-                                    (config rewrite-config-p))
+(define choose-implementation-cuts-nobuild ((cuts-start natp)
+                                            (cuts-end natp)
+                                            (node natp)
+                                            (cutsdb cutsdb-ok)
+                                            (rwlib rwlib-wfp)
+                                            (eba)
+                                            (eba2)
+                                            (eba3)
+                                            (eba4)
+                                            (copy2)
+                                            (strash2 "strash for aignet2")
+                                            (aignet2 "destination")
+                                            (refcounts2 "refcounts for aignet2")
+                                            (rewrite-stats)
+                                            (config rewrite-config-p))
   :guard (and (<= cuts-start cuts-end)
               (<= cuts-end (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
-              (aignet-copies-in-bounds copy2 aignet2)
               (cutsdb-lit-idsp aignet2 cutsdb)
               (< (max-fanin aignet2) (u32-length refcounts2))
+              (< (max-fanin aignet2) (eba-length eba4))
               (stobj-let ((aignet (rwlib->aigs rwlib)))
                          (ok)
                          (and (< (max-fanin aignet) (lits-length copy2))
                               (< (max-fanin aignet) (eba-length eba))
-                              (< (max-fanin aignet) (eba-length eba2)))
+                              (< (max-fanin aignet) (eba-length eba2))
+                              (< (max-fanin aignet) (eba-length eba3)))
                          ok))
   :verify-guards nil
   :returns (mv (ok "if nil, no qualifiying cuts")
                (score natp :rule-classes :type-prescription)
                (cut-index natp :rule-classes :type-prescription)
                (impl-index natp :rule-classes :type-prescription)
-               (new-refcounts2 (acl2::nth-nat-equiv new-refcounts2 refcounts2))
                (new-eba)
                (new-eba2)
                (new-copy2)
+               (new-eba3)
+               (new-eba4)
+               (new-refcounts2 (acl2::nth-nat-equiv new-refcounts2 refcounts2))
                (new-rewrite-stats))
   :measure (nfix (- (nfix cuts-end) (nfix cuts-start)))
   (b* (((when (mbe :logic (zp (- (lnfix cuts-end) (nfix cuts-start)))
                    :exec (eql cuts-start cuts-end)))
-        (mv nil 0 0 0 refcounts2 eba eba2 copy2 rewrite-stats))
-       ((mv ok1 score1 impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats)
-        (eval-cut cuts-start node cutsdb rwlib eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
+        (mv nil 0 0 0 eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats))
+       ((mv ok1 score1 impl-idx1 eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats)
+        (eval-cut cuts-start node cutsdb rwlib eba eba2 eba3 eba4 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
        ((when (and ok1 (eql score1 0)))
         ;; early out for 0-cost
-        (mv t 0 (lnfix cuts-start) impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats))
+        (mv t 0 (lnfix cuts-start) impl-idx1 eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats))
        ((unless ok1)
-        (choose-implementation-cuts (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
-                                    eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
-       ((mv ok-rest best-score best-cut-idx best-impl-idx
-            refcounts2 eba eba2 copy2 rewrite-stats)
-        (choose-implementation-cuts (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
-                                    eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
+        (choose-implementation-cuts-nobuild (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
+                                    eba eba2 eba3 eba4 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
+       ((mv ok-rest best-score best-cut-idx best-impl-idx eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats)
+        (choose-implementation-cuts-nobuild (1+ (lnfix cuts-start)) cuts-end node cutsdb rwlib
+                                    eba eba2 eba3 eba4 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
        ((when (or (not ok-rest)
                   (< score1 best-score)))
-        (mv ok1 score1 (lnfix cuts-start) impl-idx1 refcounts2 eba eba2 copy2 rewrite-stats)))
-    (mv t best-score best-cut-idx best-impl-idx refcounts2 eba eba2 copy2 rewrite-stats))
+        (mv ok1 score1 (lnfix cuts-start) impl-idx1 eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats)))
+    (mv t best-score best-cut-idx best-impl-idx eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats))
   ///
-  (verify-guards choose-implementation-cuts)
+  (verify-guards choose-implementation-cuts-nobuild)
 
-  (defret cut-impl-index-ok-of-choose-implementation-cuts
+  (defret cut-impl-index-ok-of-choose-implementation-cuts-nobuild
     (implies ok
              (and (cut-impl-index-ok cut-index impl-index cutsdb rwlib)
                   (cut-leaves-bounded cut-index node cutsdb)))
@@ -1805,7 +2745,145 @@
   ;;   (implies (cutsdb-ok cutsdb)
   ;;            (cutp cut-index cutsdb)))
 
-  (defret cut-bound-of-choose-implemenation-cuts
+  (defret cut-bound-of-choose-implementation-cuts-nobuild
+    (implies ok
+             (< cut-index (nfix cuts-end)))
+    :rule-classes :linear)
+
+  (defret cut-lower-bound-of-choose-implementation-cuts-nobuild
+    (implies ok
+             (<= (nfix cuts-start) cut-index))
+    :rule-classes :linear)
+
+  
+  (defret refcounts-length-of-choose-implementation-cuts-nobuild
+    (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin aignet2) (len refcounts2)))
+             (equal (len new-refcounts2) (len refcounts2))))
+
+  (defret copy2-length-of-choose-implementation-cuts-nobuild
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len copy2)))
+             (equal (len new-copy2) (len copy2)))
+    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
+                                   (len)))))
+
+  (defret eba-length-of-choose-implementation-cuts-nobuild
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len eba)))
+             (equal (len new-eba) (len eba)))
+    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
+                                   (len)))))
+
+  (defret eba2-length-of-choose-implementation-cuts-nobuild
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len eba2)))
+             (equal (len new-eba2) (len eba2)))
+    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
+                                   (len)))))
+
+  (defret eba3-length-of-choose-implementation-cuts-nobuild
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len eba3)))
+             (equal (len new-eba3) (len eba3)))
+    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
+                                   (len)))))
+
+  (defret eba4-length-of-choose-implementation-cuts-nobuild
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin aignet2) (len eba4)))
+             (equal (len new-eba4) (len eba4)))
+    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
+                                   (len))))))
+
+
+;; ==========================================================================================
+;; End Evaluation method 2.
+;; ==========================================================================================
+
+
+(define choose-implementation-cuts ((cuts-start natp)
+                                    (cuts-end natp)
+                                    (node natp)
+                                    (cutsdb cutsdb-ok)
+                                    (rwlib rwlib-wfp)
+                                    (eba)
+                                    (eba2)
+                                    (eba3)
+                                    (eba4)
+                                    (copy2)
+                                    (strash2 "strash for aignet2")
+                                    (aignet2 "destination")
+                                    (refcounts2 "refcounts for aignet2")
+                                    (rewrite-stats)
+                                    (config rewrite-config-p))
+  :guard (and (<= cuts-start cuts-end)
+              (<= cuts-end (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+              (cutsdb-lit-idsp aignet2 cutsdb)
+              (b* ((width (stobj-let ((aignet (rwlib->aigs rwlib)))
+                                     (width)
+                                     (max-fanin aignet)
+                                     width)))
+                (and (< width (lits-length copy2))
+                     (< width (eba-length eba))
+                     (or (eq (rewrite-config->evaluation-method config) :build)
+                         (and (< (max-fanin aignet2) (u32-length refcounts2))
+                              (< (max-fanin aignet2) (eba-length eba4))
+                              (< width (eba-length eba2))
+                              (< width (eba-length eba3)))))))
+  :verify-guards nil
+  :returns (mv (ok "if nil, no qualifiying cuts")
+               (score natp :rule-classes :type-prescription)
+               (cut-index natp :rule-classes :type-prescription)
+               (impl-index natp :rule-classes :type-prescription)
+               (new-eba)
+               (new-eba2)
+               (new-copy2)
+               (new-eba3)
+               (new-eba4)
+               (new-strash2)
+               (new-aignet2 (equal new-aignet2 (node-list-fix aignet2)))
+               (new-refcounts2 (acl2::nth-nat-equiv new-refcounts2 refcounts2))
+               (new-rewrite-stats))
+  (b* (((rewrite-config config)))
+    (if (eq config.evaluation-method :build)
+        (b* (((mv ok score cut-index impl-index refcounts2 eba eba2 copy2 strash2 aignet2 rewrite-stats)
+              (choose-implementation-cuts-build
+               cuts-start cuts-end node cutsdb rwlib eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config)))
+          (mv ok score cut-index impl-index eba eba2 copy2 eba3 eba4 strash2 aignet2 refcounts2 rewrite-stats))
+      (b* (((mv ok score cut-index impl-index eba eba2 copy2 eba3 eba4 refcounts2 rewrite-stats)
+            (choose-implementation-cuts-nobuild
+             cuts-start cuts-end node cutsdb rwlib eba eba2 eba3 eba4 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
+           (aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
+                         :exec aignet2)))
+        (mv ok score cut-index impl-index eba eba2 copy2 eba3 eba4 strash2 aignet2 refcounts2 rewrite-stats))))
+  ///
+  
+ 
+  (verify-guards choose-implementation-cuts)
+
+  (defret cut-impl-index-ok-of-choose-implementation-cuts
+    (implies ok
+             (and (cut-impl-index-ok cut-index impl-index cutsdb rwlib)
+                  (cut-leaves-bounded cut-index node cutsdb))))
+
+  ;; (defret cutp-of-choose-implemenation-cuts
+  ;;   (implies (cutsdb-ok cutsdb)
+  ;;            (cutp cut-index cutsdb)))
+
+  (defret cut-bound-of-choose-implementation-cuts
     (implies ok
              (< cut-index (nfix cuts-end)))
     :rule-classes :linear)
@@ -1816,48 +2894,50 @@
     :rule-classes :linear)
 
   
-  (defret refcounts-length-of-choose-implementation-cut
+  (defret refcounts-length-of-choose-implementation-cuts
     (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
                   (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (< (max-fanin aignet2) (len refcounts2)))
-             (equal (len new-refcounts2) (len refcounts2))))
+             (< (node-count (find-max-fanin aignet2)) (len new-refcounts2))))
 
   (defret copy2-length-of-choose-implementation-cuts
     (implies (and (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
                   (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (< (max-fanin (rwlib->aigs rwlib)) (len copy2)))
-             (equal (len new-copy2) (len copy2)))
-    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
-                                   (len)))))
-
-  (defret copy2-in-bounds-of-choose-implementation-cuts
-    (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
-                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
-                  (aignet-copies-in-bounds copy2 aignet2))
-             (aignet-copies-in-bounds new-copy2 aignet2)))
+             (equal (len new-copy2) (len copy2))))
 
   (defret eba-length-of-choose-implementation-cuts
     (implies (and (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
                   (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (< (max-fanin (rwlib->aigs rwlib)) (len eba)))
-             (equal (len new-eba) (len eba)))
-    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
-                                   (len)))))
+             (equal (len new-eba) (len eba))))
 
   (defret eba2-length-of-choose-implementation-cuts
-    (implies (and (rwlib-wfp rwlib)
+    (implies (and (not (equal (rewrite-config->evaluation-method config) :build))
+                  (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
                   (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                   (< (max-fanin (rwlib->aigs rwlib)) (len eba2)))
-             (equal (len new-eba2) (len eba2)))
+             (equal (len new-eba2) (len eba2))))
+
+  (defret eba3-length-of-choose-implementation-cuts
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len eba3)))
+             (equal (len new-eba3) (len eba3))))
+
+  (defret eba4-length-of-choose-implementation-cuts
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  (<= (nfix cuts-end) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
+                  (< (max-fanin aignet2) (len eba4)))
+             (equal (len new-eba4) (len eba4)))
     :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
-                                   (len)))))) 
-       
-
-
-
+                                   (len))))))
 
 
 
@@ -1999,15 +3079,6 @@
 
 
 
-(define maybe-grow-refcounts ((n natp) refcounts)
-  :returns (new-refcounts)
-  (if (< (u32-length refcounts) (lnfix n))
-      (resize-u32 (max 16 (* 2 (lnfix n))) refcounts)
-    refcounts)
-  ///
-  (defret length-of-maybe-grow-refcounts
-    (<= (nfix n) (len new-refcounts))
-    :rule-classes :linear))
 
 ;; (define my-aignet-and-gate-simp/strash ((lit1 litp)
 ;;                                        (lit2 litp)
@@ -2061,16 +3132,26 @@
                   (aignet-litp lit2 aignet2)
                   (or (not existing)
                       (aignet-litp existing aignet2)))
-             (equal (len new-refcounts2) (len refcounts2)))))
+             (equal (len new-refcounts2) (len refcounts2))))
+
+  (defret refcounts-length-nondecr-of-rewrite-default-copy-deref-and-cost
+    (>= (len new-refcounts2) (len refcounts2))
+    :hints(("Goal" :in-theory (disable refcounts-length-of-aignet-delete-mffc
+                                       refcounts-length-of-aignet-restore-mffc)))
+    :rule-classes :linear))
                   
 
 (define rewrite-copy-node ((n natp "index in original aig")
                            (aignet "original aig")
                            (aignet2 "new aig being constructed")
+                           (cutsdb cutsdb-ok)
                            (copy "mapping from original to new aig nodes")
                            (strash2 "strash table for aignet2")
-                           (refcounts2 "refcounts for aignet2, including replacements"))
+                           (refcounts2 "refcounts for aignet2, including replacements")
+                           (rewrite-stats)
+                           (config rewrite-config-p))
   :guard (and (<= n (max-fanin aignet))
+              (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
               (eql (id->type n aignet) (gate-type))
               (< (max-fanin aignet) (lits-length copy))
               (aignet-copies-in-bounds copy aignet2)
@@ -2080,10 +3161,13 @@
 
   :returns (mv (lit litp :rule-classes :type-prescription)
                (build-cost natp :rule-classes :type-prescription)
+               new-cutsdb
                new-aignet2
                new-strash2
-               new-refcounts2)
+               new-refcounts2
+               new-rewrite-stats)
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
+                                    
   (b* ((n (lnfix n))
        (lit0 (gate-id->fanin0 n aignet))
        (lit1 (gate-id->fanin1 n aignet))
@@ -2092,15 +3176,23 @@
        (flit1-copy (lit-copy lit1 copy))
        ((mv existing key lit0-copy lit1-copy)
         (aignet-and-gate-simp/strash flit0-copy flit1-copy 9 strash2 aignet2))
-       ((mv build-cost refcounts2)
-        (rewrite-default-copy-deref-and-cost
-         flit0-copy flit1-copy existing lit0-copy lit1-copy aignet2 refcounts2))
-
        ((mv lit strash2 aignet2)
         (aignet-install-and existing key lit0-copy lit1-copy strash2 aignet2))
-       (refcounts2 (maybe-grow-refcounts (+ 1 (max-fanin aignet2)) refcounts2)))
+       (refcounts2 (maybe-grow-refcounts (+ 1 (max-fanin aignet2)) refcounts2))
 
-    (mv lit build-cost aignet2 strash2 refcounts2))
+       ;; Note: It's a little weird to do this here, but it seems heuristically
+       ;; slightly better to evaluate cuts with the inputs to the new node
+       ;; referenced, rather than after derefing them below.  That's the only
+       ;; reason to derive cuts here rather than in reimplement-node or elsewhere.
+       ((rewrite-config config))
+       ((mv cuts-checked cutsdb) (aignet-derive-cuts-aux aignet2 0 config.cuts4-config refcounts2 cutsdb))
+       (rewrite-stats (incr-rewrite-stats-cuts-checked rewrite-stats cuts-checked))
+
+       ((mv build-cost refcounts2)
+        (rewrite-default-copy-deref-and-cost
+         flit0-copy flit1-copy existing lit0-copy lit1-copy aignet2 refcounts2)))
+
+    (mv lit build-cost cutsdb aignet2 strash2 refcounts2 rewrite-stats))
 
   ///
   
@@ -2125,7 +3217,54 @@
              (equal (lit-eval lit invals regvals new-aignet2)
                     (id-eval n invals regvals aignet)))
     :hints (("goal" :expand ((id-eval n invals regvals aignet))
-             :in-theory (enable eval-and-of-lits lit-eval)))))
+             :in-theory (enable eval-and-of-lits lit-eval))))
+
+  
+  (defret cutsdb-lit-idsp-of-rewrite-copy-node
+    (implies (and (cutsdb-ok cutsdb)
+                  (cutsdb-lit-idsp aignet2 cutsdb))
+             (cutsdb-lit-idsp new-aignet2 new-cutsdb)))
+
+  (defret cutsdb-ok-of-rewrite-copy-node
+    (implies (cutsdb-ok cutsdb)
+             (cutsdb-ok new-cutsdb)))
+
+  
+  (defret cut-nnodes-lte-max-fanin-of-rewrite-copy-node
+    (implies (<= (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2))))
+             (equal (cut-nnodes new-cutsdb) (+ 1 (node-count (find-max-fanin new-aignet2))))))
+
+  
+  (defret cutsdb-correct-of-rewrite-copy-node
+    (implies (and (cutsdb-correct cutsdb aignet2)
+                  (cutsdb-ok cutsdb)
+                  (<= (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2)))))
+             (cutsdb-correct new-cutsdb new-aignet2))))
+
+(local
+
+ (defsection cutsdb-lit-idsp-of-node-list-fix
+   (defthm leaves-lit-idsp-of-node-list-fix
+     (iff (leaves-lit-idsp n size (node-list-fix aignet) cutsdb)
+          (leaves-lit-idsp n size aignet cutsdb))
+     :hints(("Goal" :in-theory (enable leaves-lit-idsp))))
+
+   (defthm cut-leaves-lit-idsp-of-node-list-fix
+     (iff (cut-leaves-lit-idsp n (node-list-fix aignet) cutsdb)
+          (cut-leaves-lit-idsp n aignet cutsdb))
+     :hints(("Goal" :in-theory (enable cut-leaves-lit-idsp))))
+
+   (defthm cutsdb-leaves-lit-idsp-of-node-list-fix
+     (iff (cutsdb-leaves-lit-idsp n (node-list-fix aignet) cutsdb)
+          (cutsdb-leaves-lit-idsp n aignet cutsdb))
+     :hints(("Goal" :in-theory (enable cutsdb-leaves-lit-idsp))))
+
+   (defthm cutsdb-lit-idsp-of-node-list-fix
+     (iff (cutsdb-lit-idsp (node-list-fix aignet) cutsdb)
+          (cutsdb-lit-idsp aignet cutsdb))
+     :hints(("Goal" :in-theory (enable cutsdb-lit-idsp))))))
+
+
 
 (define rewrite-reimplement-node ((lit litp "lit to replicate")
                                   (build-cost natp)
@@ -2134,29 +3273,35 @@
                                   aignet2
                                   eba
                                   eba2
+                                  eba3
+                                  eba4
                                   copy2
                                   strash2
                                   refcounts2
                                   rewrite-stats
                                   (config rewrite-config-p))
   :guard (and (fanin-litp lit aignet2)
-              (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
-              (aignet-copies-in-bounds copy2 aignet2)
+              (equal (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
               (cutsdb-lit-idsp aignet2 cutsdb)
               (< (max-fanin aignet2) (u32-length refcounts2))
-              (stobj-let
-               ((aignet-tmp (rwlib->aigs rwlib)))
-               (ok)
-               (and (< (max-fanin aignet-tmp) (lits-length copy2))
-                    (< (max-fanin aignet-tmp) (eba-length eba))
-                    (< (max-fanin aignet-tmp) (eba-length eba2)))
-               ok))
+              (b* ((width (stobj-let ((aignet (rwlib->aigs rwlib)))
+                                     (width)
+                                     (max-fanin aignet)
+                                     width)))
+                (and (< width (lits-length copy2))
+                     (< width (eba-length eba))
+                     (or (eq (rewrite-config->evaluation-method config) :build)
+                         (and (< (max-fanin aignet2) (eba-length eba4))
+                              (< width (eba-length eba2))
+                              (< width (eba-length eba3)))))))
   :returns (mv (new-lit litp :rule-classes :type-prescription)
                new-aignet2
-               new-cutsdb
+               ;; new-cutsdb
                new-eba
                new-eba2
                new-copy2
+               new-eba3
+               new-eba4
                new-strash2
                new-refcounts2
                new-rewrite-stats)
@@ -2171,17 +3316,19 @@
        ((when (or (and (not config.zero-cost-replace)
                        (eql 0 build-cost))
                   (eql (lit-id lit) 0)))
-        (b* ((rewrite-stats (incr-rewrite-stats-zero rewrite-stats)))
-          (mv (lit-fix lit) aignet2 cutsdb eba eba2 copy2 strash2 refcounts2 rewrite-stats)))
+        (b* ((rewrite-stats (incr-rewrite-stats-zero rewrite-stats))
+             (aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
+                           :exec aignet2)))
+          (mv (lit-fix lit) aignet2 eba eba2 copy2 eba3 eba4 strash2 refcounts2 rewrite-stats)))
 
-       ((mv cuts-checked cutsdb) (aignet-derive-cuts-aux aignet2 0 config.cuts4-config refcounts2 cutsdb))
-       (rewrite-stats (incr-rewrite-stats-cuts-checked rewrite-stats cuts-checked))
+       ;; ((mv cuts-checked cutsdb) (aignet-derive-cuts-aux aignet2 0 config.cuts4-config refcounts2 cutsdb))
+       ;; (rewrite-stats (incr-rewrite-stats-cuts-checked rewrite-stats cuts-checked))
 
-       ((mv replacep cut-cost cut-index impl-index refcounts2 eba eba2 copy2 rewrite-stats)
+       ((mv replacep cut-cost cut-index impl-index eba eba2 copy2 eba3 eba4 strash2 aignet2 refcounts2 rewrite-stats)
         (choose-implementation-cuts
          (nodecut-indicesi (lit-id lit) cutsdb)
          (nodecut-indicesi (+ 1 (lit-id lit)) cutsdb)
-         (lit-id lit) cutsdb rwlib eba eba2 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
+         (lit-id lit) cutsdb rwlib eba eba2 eba3 eba4 copy2 strash2 aignet2 refcounts2 rewrite-stats config))
 
        ((when (and replacep (if config.zero-cost-replace (<= cut-cost build-cost) (< cut-cost build-cost))))
         (b* ((rewrite-stats (incr-rewrite-stats-repls rewrite-stats))
@@ -2192,26 +3339,27 @@
 
              (refcounts2 (maybe-grow-refcounts (+ 1 (max-fanin aignet2)) refcounts2)))
           (mv (lit-negate-cond new-lit (lit-neg lit))
-              aignet2 cutsdb eba eba2 copy2 strash2 refcounts2 rewrite-stats))))
-    (mv (lit-fix lit) aignet2 cutsdb eba eba2 copy2 strash2 refcounts2 rewrite-stats))
+              aignet2 eba eba2 copy2 eba3 eba4 strash2 refcounts2 rewrite-stats)))
+       (aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
+                     :exec aignet2)))
+    (mv (lit-fix lit) aignet2 eba eba2 copy2 eba3 eba4 strash2 refcounts2 rewrite-stats))
   ///
   (def-aignet-preservation-thms rewrite-reimplement-node :stobjname aignet2)
 
-  (defret rewrite-reimplement-node-copies-in-bounds
-    (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
-                  (cutsdb-ok cutsdb)
-                  (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
-                  (aignet-litp lit aignet2)
-                  (aignet-copies-in-bounds copy2 aignet2)
-                  (rwlib-wfp rwlib))
-             (aignet-copies-in-bounds new-copy2 new-aignet2)))
+  ;; (defret rewrite-reimplement-node-copies-in-bounds
+  ;;   (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
+  ;;                 (cutsdb-ok cutsdb)
+  ;;                 (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
+  ;;                 (aignet-litp lit aignet2)
+  ;;                 (aignet-copies-in-bounds copy2 aignet2)
+  ;;                 (rwlib-wfp rwlib))
+  ;;            (aignet-copies-in-bounds new-copy2 new-aignet2)))
 
   (defret aignet-litp-of-rewrite-reimplement-node
     (implies (and (cutsdb-lit-idsp aignet2 cutsdb)
                   (cutsdb-ok cutsdb)
-                  (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
+                  (equal (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
                   (aignet-litp lit aignet2)
-                  (aignet-copies-in-bounds copy2 aignet2)
                   (rwlib-wfp rwlib))
              (aignet-litp new-lit new-aignet2)))
 
@@ -2226,7 +3374,7 @@
                   ;; (aignet-copies-in-bounds copy2 aignet2)
                   (cutsdb-ok cutsdb)
                   (aignet-litp lit aignet2)
-                  (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2))))
+                  (equal (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2))))
              (< (node-count (find-max-fanin new-aignet2)) (len new-refcounts2)))
     :rule-classes (:rewrite :linear))
 
@@ -2236,7 +3384,7 @@
                   (cutsdb-ok cutsdb)
                   (< (max-fanin (rwlib->aigs rwlib)) (len copy2))
                   (aignet-litp lit aignet2)
-                  (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2))))
+                  (equal (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2))))
              (equal (len new-copy2) (len copy2))))
 
   (defret eba-length-of-rewrite-reimplement-node
@@ -2244,15 +3392,16 @@
                   (cutsdb-ok cutsdb)
                   (< (max-fanin (rwlib->aigs rwlib)) (len eba))
                   (aignet-litp lit aignet2)
-                  (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2))))
+                  (equal (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2))))
              (equal (len new-eba) (len eba))))
 
   (defret eba2-length-of-rewrite-reimplement-node
-    (implies (and (rwlib-wfp rwlib)
+    (implies (and (not (equal (rewrite-config->evaluation-method config) :build))
+                  (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
                   (< (max-fanin (rwlib->aigs rwlib)) (len eba2))
                   (aignet-litp lit aignet2)
-                  (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2))))
+                  (equal (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2))))
              (equal (len new-eba2) (len eba2))))
 
   (local (defret eval-of-aignet-build-cut-rw
@@ -2261,7 +3410,6 @@
                      (cutsdb-ok cutsdb)
                      (cutsdb-lit-idsp aignet2 cutsdb)
                      (rwlib-wfp rwlib)
-                     (aignet-copies-in-bounds copy2 aignet2)
                      (bind-free '((node . (satlink::lit->var$inline lit))) (node))
                      ;; (aignet-copies-in-bounds copy aignet2)
                      (posp node)
@@ -2289,34 +3437,52 @@
                   (rwlib-correct rwlib)
                   (cutsdb-correct cutsdb aignet2)
                   (cutsdb-lit-idsp aignet2 cutsdb)
-                  (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
-                  (aignet-litp lit aignet2)
-                  (aignet-copies-in-bounds copy2 aignet2))
+                  (equal (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
+                  (aignet-litp lit aignet2))
              (equal (lit-eval new-lit invals regvals new-aignet2)
                     (lit-eval lit invals regvals aignet2)))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable lit-eval)))))
 
-  (defret cutsdb-lit-idsp-of-rewrite-reimplement-node
-    (implies (and (cutsdb-ok cutsdb)
-                  (cutsdb-lit-idsp aignet2 cutsdb))
-             (cutsdb-lit-idsp new-aignet2 new-cutsdb)))
+  ;; (defret cutsdb-lit-idsp-of-rewrite-reimplement-node
+  ;;   (implies (and (cutsdb-ok cutsdb)
+  ;;                 (cutsdb-lit-idsp aignet2 cutsdb))
+  ;;            (cutsdb-lit-idsp new-aignet2 new-cutsdb)))
 
-  (defret cutsdb-ok-of-rewrite-reimplement-node
-    (implies (cutsdb-ok cutsdb)
-             (cutsdb-ok new-cutsdb)))
-
-  
-  (defret cut-nnodes-lte-max-fanin-of-rewrite-reimplement-node
-    (implies (<= (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2))))
-             (<= (cut-nnodes new-cutsdb) (+ 1 (node-count (find-max-fanin new-aignet2))))))
+  ;; (defret cutsdb-ok-of-rewrite-reimplement-node
+  ;;   (implies (cutsdb-ok cutsdb)
+  ;;            (cutsdb-ok new-cutsdb)))
 
   
-  (defret cutsdb-correct-of-rewrite-reimplement-node
-    (implies (and (cutsdb-correct cutsdb aignet2)
+  ;; (defret cut-nnodes-lte-max-fanin-of-rewrite-reimplement-node
+  ;;   (implies (<= (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2))))
+  ;;            (<= (cut-nnodes new-cutsdb) (+ 1 (node-count (find-max-fanin new-aignet2))))))
+
+  
+  ;; (defret cutsdb-correct-of-rewrite-reimplement-node
+  ;;   (implies (and (cutsdb-correct cutsdb aignet2)
+  ;;                 (cutsdb-ok cutsdb)
+  ;;                 (<= (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2)))))
+  ;;            (cutsdb-correct new-cutsdb new-aignet2)))
+
+  (defret eba3-length-of-rewrite-reimplement-node
+    (implies (and (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
-                  (<= (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2)))))
-             (cutsdb-correct new-cutsdb new-aignet2))))
+                  (aignet-litp lit aignet2)
+                  (equal (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2))))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len eba3)))
+             (equal (len new-eba3) (len eba3))))
+
+  (defret eba4-length-of-rewrite-reimplement-node
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (aignet-litp lit aignet2)
+                  (equal (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2))))
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  (< (max-fanin aignet2) (len eba4)))
+             (equal (len new-eba4) (len eba4)))
+    :hints(("Goal" :in-theory (e/d (cut-impl-index-ok)
+                                   (len))))))
 
 
 
@@ -2327,6 +3493,8 @@
                             (aignet2 "new aig being constructed")
                             (eba "scratch bits sized to rwlib aignet")
                             (eba2 "scratch bits sized to rwlib aignet")
+                            (eba3 "scratch bits sized to rwlib aignet")
+                            (eba4 "scratch bits sized to aignet2")
                             (copy "mapping from original to new aig nodes")
                             (copy2 "scratch mappings from rwlib aigs to new nodes")
                             (strash2 "strash table for aignet2")
@@ -2338,8 +3506,10 @@
                new-cutsdb
                new-eba
                new-eba2
-               new-copy
+               new-copy 
                new-copy2
+               new-eba3
+               new-eba4
                new-strash2
                new-refcounts2
                new-rewrite-stats)
@@ -2347,7 +3517,6 @@
               (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
               (< (max-fanin aignet) (lits-length copy))
               (aignet-copies-in-bounds copy aignet2)
-              (aignet-copies-in-bounds copy2 aignet2)
               (cutsdb-lit-idsp aignet2 cutsdb)
               (equal (num-ins aignet) (num-ins aignet2))
               (equal (num-regs aignet) (num-regs aignet2))
@@ -2358,26 +3527,31 @@
                (ok)
                (and (< (max-fanin aignet-tmp) (lits-length copy2))
                     (< (max-fanin aignet-tmp) (eba-length eba))
-                    (< (max-fanin aignet-tmp) (eba-length eba2)))
+                    (or (eq (rewrite-config->evaluation-method config) :build)
+                        (and (< (max-fanin aignet-tmp) (eba-length eba2))
+                             (< (max-fanin aignet-tmp) (eba-length eba3)))))
                ok))
   ;; :guard-debug t
   :ignore-ok t
   :verify-guards nil
   (b* ((n (lnfix n))
+       (aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
+                     :exec aignet2))
        ((unless (eql (id->type n aignet) (gate-type)))
-        (mv aignet2 cutsdb eba eba2 copy copy2 strash2 refcounts2 rewrite-stats))
-       ((mv lit build-cost aignet2 strash2 refcounts2)
-        (rewrite-copy-node n aignet aignet2 copy strash2 refcounts2))
+        (mv aignet2 cutsdb eba eba2 copy copy2 eba3 eba4 strash2 refcounts2 rewrite-stats))
+       ((mv lit build-cost cutsdb aignet2 strash2 refcounts2 rewrite-stats)
+        (rewrite-copy-node n aignet aignet2 cutsdb copy strash2 refcounts2 rewrite-stats config))
        ((rewrite-config config))
+       (eba4 (maybe-grow-eba (+ 1 (max-fanin aignet2)) eba4))
        
-       ((mv new-lit aignet2 cutsdb eba eba2 copy2 strash2 refcounts2 rewrite-stats)
+       ((mv new-lit aignet2 eba eba2 copy2 eba3 eba4 strash2 refcounts2 rewrite-stats)
         (rewrite-reimplement-node
-         lit build-cost cutsdb rwlib aignet2 eba eba2 copy2 strash2 refcounts2 rewrite-stats config))
+         lit build-cost cutsdb rwlib aignet2 eba eba2 eba3 eba4 copy2 strash2 refcounts2 rewrite-stats config))
 
        ((mv & refcounts2) (aignet-restore-mffc (lit-id new-lit) (get-u32 n refcounts) aignet2 refcounts2))
 
        (copy (set-lit n new-lit copy)))
-    (mv aignet2 cutsdb eba eba2 copy copy2 strash2 refcounts2 rewrite-stats))
+    (mv aignet2 cutsdb eba eba2 copy copy2 eba3 eba4 strash2 refcounts2 rewrite-stats))
 
   ///
   (def-aignet-preservation-thms rewrite-sweep-node :stobjname aignet2)
@@ -2392,14 +3566,12 @@
              :in-theory (enable aignet-idp))))
 
   (defret rewrite-sweep-node-copies-in-bounds
-    (implies (and (aignet-copies-in-bounds copy2 aignet2)
-                  (aignet-copies-in-bounds copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   (cutsdb-lit-idsp aignet2 cutsdb)
                   (cutsdb-ok cutsdb)
                   (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
                   (rwlib-wfp rwlib))
-             (and (aignet-copies-in-bounds new-copy new-aignet2)
-                  (aignet-copies-in-bounds new-copy2 new-aignet2)))
+             (aignet-copies-in-bounds new-copy new-aignet2))
     :hints (("goal" :do-not-induct t)))
 
   (defret stype-counts-of-rewrite-sweep-node
@@ -2453,12 +3625,22 @@
              (equal (len new-eba) (len eba))))
 
   (defret eba2-length-of-rewrite-sweep-node
-    (implies (and (rwlib-wfp rwlib)
+    (implies (and (not (equal (rewrite-config->evaluation-method config) :build))
+                  (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
                   (< (max-fanin (rwlib->aigs rwlib)) (len eba2))
                   (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
                   (aignet-copies-in-bounds copy aignet2))
              (equal (len new-eba2) (len eba2))))
+
+  
+  (defret eba3-length-of-rewrite-sweep-node
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (aignet-copies-in-bounds copy aignet2)
+                  (<= (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2))))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len eba3)))
+             (equal (len new-eba3) (len eba3))))
 
   (set-ignore-ok t)
 
@@ -2471,7 +3653,6 @@
                   (cutsdb-ok cutsdb)
                   (cutsdb-lit-idsp aignet2 cutsdb)
                   (rwlib-wfp rwlib)
-                  (aignet-copies-in-bounds copy2 aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (< (nfix n) (num-nodes aignet))
                   ;; (< (nfix n) (cut-nnodes cutsdb))
@@ -2553,6 +3734,8 @@
                        (aignet2 "new aig being constructed")
                        (eba "scratch bits sized to rwlib aignet")
                        (eba2 "scratch bits sized to rwlib aignet")
+                       (eba3 "scratch bits sized to rwlib aignet")
+                       (eba4 "scratch bits sized to aignet2")
                        (copy "mapping from original to new aig nodes")
                        (copy2 "scratch mappings from rwlib aigs to new nodes")
                        (strash2 "strash table for aignet2")
@@ -2566,6 +3749,8 @@
                new-eba2
                new-copy
                new-copy2
+               new-eba3
+               new-eba4
                new-strash2
                new-refcounts2
                new-rewrite-stats)
@@ -2573,7 +3758,6 @@
               (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
               (< (max-fanin aignet) (lits-length copy))
               (aignet-copies-in-bounds copy aignet2)
-              (aignet-copies-in-bounds copy2 aignet2)
               (cutsdb-lit-idsp aignet2 cutsdb)
               (equal (num-ins aignet) (num-ins aignet2))
               (equal (num-regs aignet) (num-regs aignet2))
@@ -2584,27 +3768,29 @@
                (ok)
                (and (< (max-fanin aignet-tmp) (lits-length copy2))
                     (< (max-fanin aignet-tmp) (eba-length eba))
-                    (< (max-fanin aignet-tmp) (eba-length eba2)))
+                    (or (eq (rewrite-config->evaluation-method config) :build)
+                        (and (< (max-fanin aignet-tmp) (eba-length eba2))
+                             (< (max-fanin aignet-tmp) (eba-length eba3)))))
                ok))
   :verify-guards nil
   :measure (nfix (- (+ 1 (max-fanin aignet)) (nfix n)))
   (b* (((when (mbe :logic (zp (- (+ 1 (max-fanin aignet)) (nfix n)))
                    :exec (eql n (+ 1 (max-fanin aignet)))))
-        (mv aignet2 cutsdb eba eba2 copy copy2 strash2 refcounts2 rewrite-stats))
-       ((mv aignet2 cutsdb eba eba2 copy copy2 strash2 refcounts2 rewrite-stats)
-        (rewrite-sweep-node n aignet cutsdb rwlib aignet2 eba eba2 copy copy2 strash2 refcounts refcounts2 rewrite-stats config)))
-    (rewrite-sweep (+ 1 (lnfix n)) aignet cutsdb rwlib aignet2 eba eba2 copy copy2 strash2 refcounts refcounts2 rewrite-stats config))
+        (b* ((aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
+                           :exec aignet2)))
+          (mv aignet2 cutsdb eba eba2 copy copy2 eba3 eba4 strash2 refcounts2 rewrite-stats)))
+       ((mv aignet2 cutsdb eba eba2 copy copy2 eba3 eba4 strash2 refcounts2 rewrite-stats)
+        (rewrite-sweep-node n aignet cutsdb rwlib aignet2 eba eba2 eba3 eba4 copy copy2 strash2 refcounts refcounts2 rewrite-stats config)))
+    (rewrite-sweep (+ 1 (lnfix n)) aignet cutsdb rwlib aignet2 eba eba2 eba3 eba4 copy copy2 strash2 refcounts refcounts2 rewrite-stats config))
   ///
   
   (defret rewrite-sweep-copies-in-bounds
-    (implies (and (aignet-copies-in-bounds copy2 aignet2)
-                  (aignet-copies-in-bounds copy aignet2)
+    (implies (and (aignet-copies-in-bounds copy aignet2)
                   (cutsdb-lit-idsp aignet2 cutsdb)
                   (cutsdb-ok cutsdb)
                   (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
                   (rwlib-wfp rwlib))
-             (and (aignet-copies-in-bounds new-copy new-aignet2)
-                  (aignet-copies-in-bounds new-copy2 new-aignet2))))
+             (and (aignet-copies-in-bounds new-copy new-aignet2))))
 
   (defret stype-counts-of-rewrite-sweep
     (implies (not (equal (stype-fix stype) :gate))
@@ -2619,7 +3805,6 @@
 
   (defret rewrite-sweep-preserves-comb-equiv-for-non-gates
     (implies (and (aignet-copy-is-comb-equivalent-for-non-gates m aignet copy aignet2)
-                  (aignet-copies-in-bounds copy2 aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (cutsdb-lit-idsp aignet2 cutsdb)
                   (cutsdb-ok cutsdb)
@@ -2635,7 +3820,6 @@
                   (cutsdb-ok cutsdb)
                   (cutsdb-lit-idsp aignet2 cutsdb)
                   (rwlib-wfp rwlib)
-                  (aignet-copies-in-bounds copy2 aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (<= (nfix n) (+ 1 (max-fanin aignet)))
                   (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
@@ -2650,7 +3834,6 @@
     (implies (and (< (node-count (find-max-fanin aignet2)) (len refcounts2))
                   (cutsdb-lit-idsp aignet2 cutsdb)
                   (aignet-copies-in-bounds copy aignet2)
-                  (aignet-copies-in-bounds copy2 aignet2)
                   (cutsdb-ok cutsdb)
                   (rwlib-wfp rwlib)
                   (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2))))
@@ -2667,7 +3850,6 @@
                   (< (max-fanin (rwlib->aigs rwlib)) (len copy2))
                   (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
                   (aignet-copies-in-bounds copy aignet2)
-                  (aignet-copies-in-bounds copy2 aignet2)
                   (cutsdb-lit-idsp aignet2 cutsdb))
              (equal (len new-copy2) (len copy2))))
 
@@ -2677,19 +3859,27 @@
                   (< (max-fanin (rwlib->aigs rwlib)) (len eba))
                   (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
                   (aignet-copies-in-bounds copy aignet2)
-                  (aignet-copies-in-bounds copy2 aignet2)
                   (cutsdb-lit-idsp aignet2 cutsdb))
              (equal (len new-eba) (len eba))))
 
   (defret eba2-length-of-rewrite-sweep
-    (implies (and (rwlib-wfp rwlib)
+    (implies (and (not (equal (rewrite-config->evaluation-method config) :build))
+                  (rwlib-wfp rwlib)
                   (cutsdb-ok cutsdb)
                   (< (max-fanin (rwlib->aigs rwlib)) (len eba2))
                   (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet2)))
                   (aignet-copies-in-bounds copy aignet2)
-                  (aignet-copies-in-bounds copy2 aignet2)
                   (cutsdb-lit-idsp aignet2 cutsdb))
              (equal (len new-eba2) (len eba2))))
+
+  (defret eba3-length-of-rewrite-sweep
+    (implies (and (rwlib-wfp rwlib)
+                  (cutsdb-ok cutsdb)
+                  (cutsdb-lit-idsp aignet2 cutsdb)
+                  (aignet-copies-in-bounds copy aignet2)
+                  (<= (cut-nnodes cutsdb) (+ 1 (node-count (find-max-fanin aignet2))))
+                  (< (max-fanin (rwlib->aigs rwlib)) (len eba3)))
+             (equal (len new-eba3) (len eba3))))
 
   (defret cutsdb-ok-of-rewrite-sweep
     (implies (cutsdb-ok cutsdb)
@@ -2712,6 +3902,14 @@
 
   (Verify-guards rewrite-sweep))
 
+
+(fty::deffixequiv aignet-count-refs-iter :args ((aignet aignet))
+  :hints(("Goal" :in-theory (enable aignet-count-refs-iter
+                                    aignet-count-refs-step))))
+
+(fty::deffixequiv aignet-count-refs$inline :args ((aignet aignet))
+  :hints(("Goal" :in-theory (enable aignet-count-refs))))
+
 (define rewrite-copy-core ((aignet "Input aignet")
                            (copy "Mapping from aignet IDs to aignet2 lits -- overwritten")
                            (aignet2)
@@ -2729,26 +3927,29 @@
          rwlib
          eba
          eba2
+         eba3
+         eba4
          copy2
          strash2
          refcounts
          refcounts2
          rewrite-stats)
         (mv copy aignet2
-            cutsdb rwlib eba eba2 copy2 strash2
+            cutsdb rwlib eba eba2 copy2 eba3 eba4 strash2
             refcounts refcounts2 rewrite-stats))
        (rwlib (rwlib-init-abc rwlib))
        (refcounts (resize-u32 (+ 1 (max-fanin aignet)) refcounts))
        (refcounts (aignet-count-refs refcounts aignet))
        ;; (strash (aignet-populate-strash 0 strash aignet))
        ((mv copy aignet2) (init-copy-comb aignet copy aignet2))
-       ((acl2::stobj-get eba eba2 copy2)
+       ((acl2::stobj-get eba eba2 eba3 copy2)
         ((aignet-tmp (rwlib->aigs rwlib)))
         (b* ((size (+ 1 (max-fanin aignet-tmp)))
              (eba (resize-eba size eba))
              (eba2 (resize-eba size eba2))
+             (eba3 (resize-eba size eba3))
              (copy2 (resize-lits size copy2)))
-          (mv eba eba2 copy2)))
+          (mv eba eba2 eba3 copy2)))
        (refcounts2 (resize-u32 (* 2 (+ 1 (max-fanin aignet2))) refcounts2))
        ((mv cuts-checked cutsdb)
         (aignet-derive-cuts aignet2
@@ -2761,15 +3962,15 @@
        ;;        ncuts (ceiling ncuts (+ 1 (max-fanin aignet))))
        ;;    (cw "; rewrite -- Number of cuts evaluated: ~x0 (~x1 per node)~%"
        ;;        cuts-checked (ceiling cuts-checked (+ 1 (max-fanin aignet)))))
-       ((mv aignet2 cutsdb eba eba2 copy copy2 strash2 refcounts2 rewrite-stats)
+       ((mv aignet2 cutsdb eba eba2 copy copy2 eba3 eba4 strash2 refcounts2 rewrite-stats)
         (time$
-         (rewrite-sweep 0 aignet cutsdb rwlib aignet2 eba eba2 copy copy2 strash2 refcounts refcounts2
+         (rewrite-sweep 0 aignet cutsdb rwlib aignet2 eba eba2 eba3 eba4 copy copy2 strash2 refcounts refcounts2
                         rewrite-stats config)
          :msg "; rewrite -- sweep: ~st sec, ~sa bytes~%"))
        (- (cw "Rewrite stats:~%")
           (print-rewrite-stats rewrite-stats)))
     (mv copy aignet2
-        cutsdb rwlib eba eba2 copy2 strash2
+        cutsdb rwlib eba eba2 copy2 eba3 eba4 strash2
         refcounts refcounts2 rewrite-stats))
   ///
   (defret rewrite-copy-core-copies-in-bounds
@@ -2802,9 +4003,14 @@
   :returns (new-aignet2)
   (b* (((acl2::local-stobjs copy)
         (mv copy aignet2))
+       ;; (- (acl2::sneaky-clear))
        ((mv copy aignet2)
         (rewrite-copy-core aignet copy aignet2 config))
        (aignet2 (finish-copy-comb aignet copy aignet2)))
+    ;; (with-local-state
+    ;;   (mv-let (ans state)
+    ;;     (acl2::sneaky-alist state)
+    ;;     (cw "sneaky-alist: ~x0~%" ans)))
     (mv copy aignet2))
   ///
   (defret stype-counts-of-rewrite-core

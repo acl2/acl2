@@ -962,10 +962,10 @@
 
   ;; returns (mv exists key id).
   ;; exists implies that id is a gate with the two specified fanins.
-  (definlined strash-lookup (lit1 lit2 strash aignet)
-    (declare (xargs :stobjs (aignet strash)
-                    :guard (and (litp lit1) (fanin-litp lit1 aignet)
-                                (litp lit2) (fanin-litp lit2 aignet))))
+  (define strash-lookup ((lit1 litp) (lit2 litp) strash aignet)
+    :inline t
+    :guard (and (fanin-litp lit1 aignet)
+                (fanin-litp lit2 aignet))
     (b* ((key (aignet-addr-combine (lit-fix lit1) (lit-fix lit2)))
          (id (strashtab-get key strash))
          ((when id)
@@ -977,33 +977,32 @@
                 (er hard? 'strash-lookup "Strash lookup found bogus value!")
                 (mv nil key 0)))
             (mv t key id))))
-      (mv nil key 0)))
+      (mv nil key 0))
+    ///
 
-  (local (in-theory (enable strash-lookup)))
+    (defthm strash-lookup-correct
+      (b* (((mv found & id) (strash-lookup lit1 lit2 strash aignet)))
+        (implies found
+                 (and (aignet-idp id aignet)
+                      (aignet-litp (mk-lit id bit) aignet)
+                      (b* ((suff (lookup-id id aignet))
+                           (node (car suff)))
+                        (and (equal (stype node) (gate-stype))
+                             (equal (fanin :gate0 suff)
+                                    (lit-fix lit1))
+                             (equal (fanin :gate1 suff)
+                                    (lit-fix lit2)))))))
+      :hints(("Goal" :in-theory (enable aignet-litp))))
 
-  (defthm strash-lookup-correct
-    (b* (((mv found & id) (strash-lookup lit1 lit2 strash aignet)))
-      (implies found
-               (and (aignet-idp id aignet)
-                    (aignet-litp (mk-lit id bit) aignet)
-                    (b* ((suff (lookup-id id aignet))
-                         (node (car suff)))
-                      (and (equal (stype node) (gate-stype))
-                           (equal (fanin :gate0 suff)
-                                  (lit-fix lit1))
-                           (equal (fanin :gate1 suff)
-                                  (lit-fix lit2)))))))
-    :hints(("Goal" :in-theory (enable aignet-litp))))
+    (defthm strash-lookup-id-type
+      (natp (mv-nth 2 (strash-lookup lit1 lit2 strash aignet)))
+      :rule-classes (:rewrite :type-prescription))
 
-  (defthm strash-lookup-id-type
-    (natp (mv-nth 2 (strash-lookup lit1 lit2 strash aignet)))
-    :rule-classes (:rewrite :type-prescription))
+    (defthm strash-lookup-key-type
+      (acl2-numberp (mv-nth 1 (strash-lookup lit1 lit2 strash aignet)))
+      :rule-classes :type-prescription)
 
-  (defthm strash-lookup-key-type
-    (acl2-numberp (mv-nth 1 (strash-lookup lit1 lit2 strash aignet)))
-    :rule-classes :type-prescription)
-
-  (defcong list-equiv equal (strash-lookup lit1 lit2 strash aignet) 4))
+    (defcong list-equiv equal (strash-lookup lit1 lit2 strash aignet) 4)))
 
 (defsection gatesimp
   :parents (aignet-construction)
@@ -1118,7 +1117,9 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
        ((mv existing key lit1 lit2)
         (aignet-and-gate-simp/strash lit1 lit2 gatesimp strash aignet))
        ((when existing)
-        (mv existing strash aignet))
+        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
+                          :exec aignet)))
+          (mv existing strash aignet)))
        (new-id (num-nodes aignet))
        (new-lit (mk-lit new-id 0))
        (aignet (aignet-add-gate lit1 lit2 aignet))
@@ -1208,7 +1209,9 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                (new-strash)
                (new-aignet))
   (b* (((when existing)
-        (mv (lit-fix existing) strash aignet))
+        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
+                          :exec aignet)))
+          (mv (lit-fix existing) strash aignet)))
        (new-id (num-nodes aignet))
        (new-lit (mk-lit new-id 0))
        (aignet (aignet-add-gate lit1 lit2 aignet))
@@ -1516,6 +1519,7 @@ find a node already representing the required logical expression."
     (b* ((aignet (aignet-add-in aignet)))
       (aignet-add-ins (1- n) aignet)))
   ///
+  (fty::deffixequiv aignet-add-ins)
 
   (def-aignet-preservation-thms aignet-add-ins)
 
@@ -1544,7 +1548,11 @@ find a node already representing the required logical expression."
                     (if (< (nfix innum) (stype-count :pi aignet))
                         (lookup-stype innum :pi aignet)
                       (aignet-add-ins (+ 1 (- (nfix innum) (stype-count :pi aignet))) aignet))))
-    :hints(("Goal" :in-theory (enable lookup-stype))))
+    :hints(("Goal" :in-theory (e/d (lookup-stype) ((:d aignet-add-ins)))
+            :expand (<call>
+                     (:free (aignet) (aignet-add-ins 0 aignet))
+                     (:free (n) (aignet-add-ins (+ 1 n) aignet)))
+            :induct <call>)))
 
   (std::defret lookup-id-of-aignet-add-ins
     (implies (<= (nfix id) (+ (nfix n) (node-count aignet)))
@@ -1588,6 +1596,7 @@ find a node already representing the required logical expression."
     (b* ((aignet (aignet-add-reg aignet)))
       (aignet-add-regs (1- n) aignet)))
   ///
+  (fty::deffixequiv aignet-add-regs)
 
   (def-aignet-preservation-thms aignet-add-regs)
 
@@ -1616,8 +1625,11 @@ find a node already representing the required logical expression."
                     (if (< (nfix regnum) (stype-count :reg aignet))
                         (lookup-stype regnum :reg aignet)
                       (aignet-add-regs (+ 1 (- (nfix regnum) (stype-count :reg aignet))) aignet))))
-    :hints(("Goal" :in-theory (enable lookup-stype))))
-
+    :hints(("Goal" :in-theory (e/d (lookup-stype) ((:d aignet-add-regs)))
+            :expand (<call>
+                     (:free (aignet) (aignet-add-regs 0 aignet))
+                     (:free (n) (aignet-add-regs (+ 1 n) aignet)))
+            :induct <call>)))
   
 
   (std::defret lookup-id-of-aignet-add-regs

@@ -54,6 +54,8 @@
   (and (node-listp aignet)
        (aignet-nodes-ok aignet)))
 
+(local (fty::deffixtype aignet$a :pred aignet$a::aignet-well-formedp :fix node-list-fix :equiv node-list-equiv))
+
 (define aignet$a::num-nodes ((aignet aignet$a::aignet-well-formedp))
   (1+ (node-count aignet))
   :enabled t)
@@ -177,31 +179,29 @@
 
 
 
-(defsection aignet$a::id->phase
-  (mutual-recursion
-   (defun aignet$a::lit->phase (lit aignet)
-     (declare (xargs :guard (and (aignet$a::aignet-well-formedp aignet)
-                                 (litp lit)
-                                 (aignet$a::fanin-litp lit aignet))
-                     :verify-guards nil
-                     :measure (acl2::two-nats-measure
-                               (lit-id lit) 1)))
-     (b-xor (lit-neg lit)
-            (aignet$a::id->phase (lit-id lit) aignet)))
+(defines aignet$a::id->phase
+  (define aignet$a::lit->phase ((lit litp)
+                                (aignet aignet$a::aignet-well-formedp))
+    :guard (aignet$a::fanin-litp lit aignet)
+    :verify-guards nil
+    :measure (acl2::two-nats-measure
+              (lit-id lit) 1)
+    (b-xor (lit-neg lit)
+           (aignet$a::id->phase (lit-id lit) aignet)))
 
-   (defun aignet$a::id->phase (id aignet)
-     (declare (Xargs :guard (and (aignet$a::aignet-well-formedp aignet)
-                                 (natp id)
-                                 (aignet$a::id-existsp id aignet))
-                     :measure (acl2::two-nats-measure
-                               (nfix id) 0)))
-     (let ((type (aignet$a::id->type id aignet)))
-       (cond ((eql type (out-type))
-              (aignet$a::lit->phase (aignet$a::co-id->fanin id aignet) aignet))
-             ((eql type (gate-type))
-              (b-and (aignet$a::lit->phase (aignet$a::gate-id->fanin0 id aignet) aignet)
-                     (aignet$a::lit->phase (aignet$a::gate-id->fanin1 id aignet) aignet)))
-             (t 0)))))
+  (define aignet$a::id->phase ((id natp)
+                               (aignet aignet$a::aignet-well-formedp))
+    :guard (aignet$a::id-existsp id aignet)
+    :measure (acl2::two-nats-measure
+              (nfix id) 0)
+    (let ((type (aignet$a::id->type id aignet)))
+      (cond ((eql type (out-type))
+             (aignet$a::lit->phase (aignet$a::co-id->fanin id aignet) aignet))
+            ((eql type (gate-type))
+             (b-and (aignet$a::lit->phase (aignet$a::gate-id->fanin0 id aignet) aignet)
+                    (aignet$a::lit->phase (aignet$a::gate-id->fanin1 id aignet) aignet)))
+            (t 0))))
+  ///
 
   (in-theory (disable aignet$a::lit->phase aignet$a::id->phase))
 
@@ -215,9 +215,7 @@
 
   (verify-guards aignet$a::id->phase)
 
-  (flag::make-flag phase-flg aignet$a::id->phase)
-
-  (defthm-phase-flg
+  (aignet$a::defthm-id->phase-flag
     (defthm aignet$a::id->phase-of-suffix
       (implies (and (aignet-extension-p new aignet)
                     (<= (nfix id) (node-count aignet)))
@@ -253,13 +251,15 @@
                            (new (cons node aignet))
                            (aignet aignet)))
              :expand ((:free (a b)
-                       (aignet-extension-p (cons b a) a)))))))
+                       (aignet-extension-p (cons b a) a))))))
+
+  (fty::deffixequiv-mutual aignet$a::id->phase))
 
 
 
 
 (define aignet$a::aignet-add-in ((aignet aignet$a::aignet-well-formedp))
-  (cons (pi-node) aignet)
+  (cons (pi-node) (node-list-fix aignet))
   :enabled t
   ///
   (defthm aignet$a::aignet-well-formedp-of-aignet-add-in
@@ -268,7 +268,7 @@
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
 
 (define aignet$a::aignet-add-reg ((aignet aignet$a::aignet-well-formedp))
-  (cons (reg-node) aignet)
+  (cons (reg-node) (node-list-fix aignet))
   :enabled t
   ///
   (defthm aignet-nodes-ok-of-aignet-add-reg
@@ -283,7 +283,7 @@
               (aignet$a::fanin-litp f1 aignet))
   (cons (gate-node (aignet-lit-fix f0 aignet)
                    (aignet-lit-fix f1 aignet))
-        aignet)
+        (node-list-fix aignet))
   :enabled t
   ///
   (defthm aignet-nodes-ok-of-aignet-add-gate
@@ -297,7 +297,7 @@
                         (aignet aignet$a::aignet-well-formedp))
   :guard (aignet$a::fanin-litp f aignet)
   (cons (po-node (aignet-lit-fix f aignet))
-        aignet)
+        (node-list-fix aignet))
   :enabled t
   ///
   (defthm aignet-nodes-ok-of-aignet-add-out
@@ -315,7 +315,7 @@
               (eql (aignet$a::io-id->regp regid aignet) 1))
   (cons (nxst-node (aignet-lit-fix f aignet)
                  (aignet-id-fix regid aignet))
-        aignet)
+        (node-list-fix aignet))
   :enabled t
   ///
   (local (defthm equal-reg-when-stype-is-reg
@@ -360,9 +360,9 @@
   nil)
 
 
-(define id-slots ((id natp) aignet)
-  :guard (and (aignet$a::aignet-well-formedp aignet)
-              (aignet$a::id-existsp id aignet))
+(define id-slots ((id natp)
+                  (aignet aignet$a::aignet-well-formedp))
+  :guard (aignet$a::id-existsp id aignet)
   :guard-debug t
   :returns (mv (slot0 natp :rule-classes :type-prescription)
                (slot1 natp :rule-classes :type-prescription))

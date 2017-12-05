@@ -42,6 +42,12 @@
 (local (in-theory (disable signed-byte-p)))
 (local (std::add-default-post-define-hook :fix))
 
+;; BOZO skipping node-list-fix congruence proofs here
+(local (table fty::fixtypes 'fty::fixtype-alist
+              (b* ((fixtype-alist (cdr (assoc 'fty::fixtype-alist (table-alist 'fty::fixtypes world)))))
+                (remove-equal (assoc 'aignet fixtype-alist)
+                              fixtype-alist))))
+
 (define s32-fix ((x :type (signed-byte 32)))
   :inline t
   :returns (new-x (signed-byte-p 32 new-x))

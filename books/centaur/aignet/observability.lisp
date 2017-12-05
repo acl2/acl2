@@ -53,7 +53,6 @@
 (local (xdoc::set-default-parents observability-fix))
 
 
-
 (define count-gates-mark-rec ((id natp)
                               (mark)
                               (aignet))
@@ -131,7 +130,8 @@
   ;;                    '(:in-theory (enable aignet-litp))))
   (b* (((when (mbe :logic (zp (- (num-ins aignet) (nfix n)))
                    :exec (eql (num-ins aignet) n)))
-        (mv copy strash aignet2))
+        (b* ((aignet2 (aignet-fix aignet2)))
+          (mv copy strash aignet2)))
        (input-lit (get-lit (innum->id n aignet) copy))
        ((mv fixed-lit strash aignet2)
         (if (eql 1 (get-bit n inmasks))
@@ -258,7 +258,8 @@
   ;;                    '(:in-theory (enable aignet-litp))))
   (b* (((when (mbe :logic (zp (- (num-regs aignet) (nfix n)))
                    :exec (eql (num-regs aignet) n)))
-        (mv copy strash aignet2))
+        (b* ((aignet2 (aignet-fix aignet2)))
+          (mv copy strash aignet2)))
        (reg-lit (get-lit (regnum->id n aignet) copy))
        ((mv fixed-lit strash aignet2)
         (if (eql 1 (get-bit n regmasks))
@@ -379,11 +380,11 @@
               (<= (num-ins aignet) (num-ins aignet2))
               (<= (num-regs aignet) (num-regs aignet2))
               (aignet-copies-in-bounds copy aignet2))
-  
   (b* (((acl2::local-stobjs invals regvals inmasks regmasks)
         (mv invals regvals inmasks regmasks status copy strash aignet2 state))
        ((mv status invals regvals inmasks regmasks state)
         (aignet-lit-ipasir-sat-minimize lit invals regvals inmasks regmasks aignet2 state))
+       (aignet2 (aignet-fix aignet2))
        ((unless (eql status :sat))
         ;; BOZO for unsat, map to constants or something?
         (mv invals regvals inmasks regmasks status copy strash aignet2 state))
@@ -737,7 +738,9 @@
   :guard (aignet-lit-listp lits aignet)
   :returns (mv (and-lit litp) new-strash new-aignet)
   :verify-guards nil
-  (b* (((when (atom lits)) (mv 1 strash aignet))
+  (b* (((when (atom lits))
+        (b* ((aignet (aignet-fix aignet)))
+          (mv 1 strash aignet)))
        ((mv rest strash aignet) (aignet-build-wide-and (cdr lits) strash aignet)))
     (aignet-hash-and (car lits) rest 9 strash aignet))
   ///
@@ -1020,7 +1023,9 @@
               (<= n (num-outs aignet)))
   :measure (nfix (- (num-outs aignet) (nfix n)))
   :returns (mv new-copy new-strash new-aignet2 new-aignet new-state)
-  (b* (((when (mbe :logic (zp (- (num-outs aignet) (nfix n)))
+  (b* ((aignet (aignet-fix aignet))
+       (aignet2 (aignet-fix aignet2))
+       ((when (mbe :logic (zp (- (num-outs aignet) (nfix n)))
                    :exec (Eql (num-outs aignet) n)))
         (mv copy strash aignet2 aignet state))
        (fanin-lit (co-id->fanin (outnum->id n aignet) aignet))
@@ -1029,6 +1034,8 @@
        (aignet2 (aignet-add-out copy-lit aignet2)))
     (observability-fix-outs (1+ (lnfix n)) config aignet copy strash aignet2 state))
   ///
+  (fty::deffixequiv observability-fix-outs)
+
   (defret aignet-extension-p-of-observability-fix-outs-2
     (aignet-extension-p new-aignet2 aignet2))
 
@@ -1089,7 +1096,9 @@
               (<= n (num-regs aignet)))
   :measure (nfix (- (num-regs aignet) (nfix n)))
   :returns (mv new-copy new-strash new-aignet2 new-aignet new-state)
-  (b* (((when (mbe :logic (zp (- (num-regs aignet) (nfix n)))
+  (b* ((aignet (aignet-fix aignet))
+       (aignet2 (aignet-fix aignet2))
+       ((when (mbe :logic (zp (- (num-regs aignet) (nfix n)))
                    :exec (Eql (num-regs aignet) n)))
         (mv copy strash aignet2 aignet state))
        (fanin-lit (reg-id->nxst-lit (regnum->id n aignet) aignet))
@@ -1098,6 +1107,8 @@
        (aignet2 (aignet-set-nxst copy-lit (regnum->id n aignet2) aignet2)))
     (observability-fix-nxsts (1+ (lnfix n)) config aignet copy strash aignet2 state))
   ///
+  (fty::deffixequiv observability-fix-nxsts)
+
   (defret aignet-extension-p-of-observability-fix-nxsts-2
     (aignet-extension-p new-aignet2 aignet2))
 

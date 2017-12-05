@@ -102,6 +102,7 @@
              (ec-call (truth::npn4arr-indices-bounded (smm-nblocks smm) npn4arr))
              (<= (smm-nblocks smm) (truth4s-length truth4arr))
              (eql (num-ins aignet) 4)
+             (eql (num-regs aignet) 0)
              (ec-call (smm-contains-aignet-lits smm aignet)))))
     ok)
   ///
@@ -116,6 +117,7 @@
                     (truth::npn4arr-indices-bounded (len smm) npn4arr)
                     (<= (len smm) (len truth4arr))
                     (equal (aignet::stype-count :pi aignet) 4)
+                    (equal (aignet::stype-count :reg aignet) 0)
                     (smm-contains-aignet-lits smm aignet)))))
 
   (defthm rwlib-wfp-implies-linear
@@ -393,7 +395,9 @@
                       :hints(("Goal" :in-theory (enable aignet-litp))))))
 
   :returns (new-aignet)
-  (b* (((when (atom nodes)) aignet)
+  (b* (((when (atom nodes))
+        (mbe :logic (non-exec (node-list-fix aignet))
+             :exec aignet))
        ((list fanin0 fanin1) nodes)
        (lit0 (make-lit (+ 1 (lit->var fanin0)) (lit->neg fanin0)))
        (lit1 (make-lit (+ 1 (lit->var fanin1)) (lit->neg fanin1)))
@@ -971,6 +975,8 @@
     :hints(("Goal" :in-theory (disable acl2::numlist)))))
                         
 
+
+
 (define truthmap-to-smm ((truthmap truthmap-p)
                          (truth4arr)
                          (priodata nat-listp)
@@ -982,6 +988,10 @@
              (local (defthm nat-listp-of-nthcdr
                       (implies (nat-listp x)
                                (nat-listp (nthcdr n x)))))
+             (local (defthm lit-listp-of-rev
+                      (implies (lit-listp x)
+                               (lit-listp (acl2::rev x)))
+                      :hints(("Goal" :in-theory (enable acl2::rev)))))
              (local (in-theory (enable nat-list-max-when-prios-are-permutation))))
   (b* ((n (acl2::smm-nblocks smm))
        ((when (mbe :logic (zp (- (truth4s-length truth4arr) n))
@@ -998,7 +1008,8 @@
                (raise "Bad priorities for block ~x0: ~x1~%"
                       n prios)))
        (lits (if prios-ok
-                 (reorder-lits-by-prios prios lits)
+                 ;; Lits are reversed when we collect them in the truthmap!!
+                 (reorder-lits-by-prios prios (acl2::rev lits))
                lits))
        (smm (smm-write-lits n 0 lits smm)))
     (truthmap-to-smm truthmap truth4arr (nthcdr len priodata) smm))
@@ -1101,8 +1112,9 @@
         (mv npn4arr truth4arr smm aignet truth4arr2))
        (truth4arr2 (resize-truth4s (num-nodes aignet) truth4arr2))
        (truth4arr2 (aignet-derive-truth4s 0 aignet truth4arr2))
-       (truthmap (aignet-id-list-collect-truthmap (incr-ids (abc-outs)) truth4arr2 nil))
-       (smm (truthmap-to-smm truthmap truth4arr (abc-prios) smm)))
+       ;; cons 0 to include the constant-0 node in the outputs
+       (truthmap (aignet-id-list-collect-truthmap (cons 0 (incr-ids (abc-outs))) truth4arr2 nil))
+       (smm (truthmap-to-smm truthmap truth4arr (cons 0 (abc-prios)) smm)))
     (fast-alist-free truthmap)
     (mv npn4arr truth4arr smm aignet truth4arr2))
   ///
@@ -1123,6 +1135,9 @@
 
   (defret num-ins-of-setup-abc-rwlib-aignet
     (equal (stype-count :pi new-aignet) 4))
+
+  (defret num-regs-of-setup-abc-rwlib-aignet
+    (equal (stype-count :reg new-aignet) 0))
 
   (defret aignet-litp-smm-lookup-of-setup-abc-rwlib
     (implies (and (< (nfix n) (len new-smm))
@@ -1152,9 +1167,10 @@
                  (smm-orig (smm-clear smm))
                  (truth4arr2-orig (resize-truth4s (num-nodes aignet) (create-truth4arr)))
                  (truth4arr2 (aignet-derive-truth4s 0 aignet truth4arr2-orig))
-                 (outs (incr-ids (abc-outs)))
+                 (outs (cons 0 (incr-ids (abc-outs))))
+                 (prios (cons 0 (abc-prios)))
                  (truthmap (aignet-id-list-collect-truthmap outs truth4arr2 nil))
-                 (smm (truthmap-to-smm truthmap truth4arr (abc-prios) smm-orig))
+                 (smm (truthmap-to-smm truthmap truth4arr prios smm-orig))
                  (lit (nth idx (nth n smm))))
               `'(:use ((:instance aignet-id-list-collect-truthmap-of-aignet-derive-truth4s
                         (lit ,(hq lit))
@@ -1166,7 +1182,7 @@
                         (k idx)
                         (truthmap ,(hq truthmap))
                         (truth4arr ,(hq truth4arr))
-                        (priodata ,(hq (abc-prios)))
+                        (priodata ,(hq prios))
                         (smm ,(hq smm-orig)))))))))
 
   (defret aignet-truth-impls-correct-of-setup-abc-rwlib

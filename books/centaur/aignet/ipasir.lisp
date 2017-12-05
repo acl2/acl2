@@ -44,6 +44,12 @@
 (local (std::add-default-post-define-hook :fix))
 (defstobj-clone ipasir ipasir::ipasir :strsubst (("zzzzzz" . "")))
 
+;; ;; BOZO skipping node-list-fix congruence proofs here
+;; (local (table fty::fixtypes 'fty::fixtype-alist
+;;               (b* ((fixtype-alist (cdr (assoc 'fty::fixtype-alist (table-alist 'fty::fixtypes world)))))
+;;                 (remove-equal (assoc 'aignet fixtype-alist)
+;;                               fixtype-alist))))
+
 
 (acl2::Def-universal-equiv eval-formula-equiv
   :qvars (env)

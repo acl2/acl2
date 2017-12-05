@@ -55,7 +55,7 @@
                            ;; (aignet$c::aignet-max-fanin-correct)
                            ;; (aignet$c::aignet-max-fanin-sufficient)
                            (aignet$c::aignet-nodes-nonconst))))
-
+(local (std::add-default-post-define-hook :fix))
 
 (local (defthm lookup-id-of-lookup-id
          (implies (and (<= m n)
@@ -812,6 +812,14 @@
             (aignet-clear :logic aignet$a::aignet-clear
                          :exec aignet$c::aignet-clear
                          :protect t)))
+
+
+(fty::deffixtype aignet :pred node-listp :fix node-list-fix :equiv node-list-equiv)
+
+(defmacro aignet-fix (aignet)
+  `(mbe :logic (non-exec (node-list-fix ,aignet))
+        :exec ,aignet))
+
 
 (defstobj-clone aignet2 aignet :suffix "2")
 

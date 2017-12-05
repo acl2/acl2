@@ -48,13 +48,21 @@
                            acl2::resize-list-when-atom)))
 (local (std::add-default-post-define-hook :fix))
 
+;; BOZO skipping node-list-fix congruence proofs here
+(local (table fty::fixtypes 'fty::fixtype-alist
+              (b* ((fixtype-alist (cdr (assoc 'fty::fixtype-alist (table-alist 'fty::fixtypes world)))))
+                (remove-equal (assoc 'aignet fixtype-alist)
+                              fixtype-alist))))
+
 (local (xdoc::set-default-parents fraig))
 
 
 (fty::defprod fraig-config
-  ((initial-sim-words posp "Number of 32-bit simulation words per word for initial simulation" :default 4)
+  :parents (fraig comb-transform)
+  :short "Object containing settings for the @(see fraig) aignet transformation"
+  ((initial-sim-words posp "Number of 32-bit simulation words per node for initial simulation" :default 4)
    (initial-sim-rounds posp "Number of times to simulate initially" :default 10)
-   (sim-words posp "Number of 32-bit simulation words per word for simulation during fraiging" :default 1)
+   (sim-words posp "Number of 32-bit simulation words per node for simulation during fraiging" :default 1)
    (ipasir-limit acl2::maybe-natp "Ipasir effort limit" :default 8)
    (ipasir-recycle-count acl2::maybe-natp "Number of callbacks after which to recycle the solver" :default 1000)
    (ctrex-queue-limit acl2::maybe-natp "Limit to number of counterexamples that may be queued before resimulation" :default 16)

@@ -316,6 +316,7 @@
 
   (local (in-theory (enable good-varmap-p)))
 
+  (fty::deffixequiv good-varmap-p :args ((aignet aignet)))
 
   (defthm lookup-when-good-varmap-p
     (implies (and (good-varmap-p varmap aignet)
