@@ -227,12 +227,22 @@ for that release.
 <p>
 
 Otherwise, it should be easy to obtain and build GCL yourself.  Note
-that ACL2 requires GCL version 2.6.12 or later, which can be fetched
-as a tarball from the <a href="http://www.gnu.org/software/gcl/">main
-GNU website for GCL</a> or perhaps
-from <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
-ACL2 also requires an ANSI Common Lisp executable;
-after unpacking the archive, an ANSI GCL can be built as follows.
+that ACL2 requires ANSI GCL version 2.6.12 or later.  Perhaps simplest
+is to fetch it via git and then build the
+executable <code>gcl/gcl/bin/gcl</code> as follows.
+
+<pre>
+git clone git://git.sv.gnu.org/gcl.git
+cd gcl/gcl
+git checkout Version_2_6_13pre
+./configure --enable-ansi && make
+</pre>
+
+It may also be possible to fetch it from
+the <a href="http://www.gnu.org/software/gcl/">main GNU website for
+GCL</a> or perhaps
+from <code><a href="http://backports.debian.org">backports.debian.org</a></code>,
+in which case ANSI GCL can be built as shown above:
 
 <pre>
 cd gcl && ./configure --enable-ansi && make
