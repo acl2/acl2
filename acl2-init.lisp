@@ -20,7 +20,7 @@
 
 ; This file cannot be compiled because it changes packages in the middle.
 
-#+skip
+#+cmucl
 (error "CMUCL builds are temporarily disabled, pending some necessary fixes for
 CMUCL.  To remove this error (which may cause failures in the build or book
 certification), just remove the initial form from ACL2 source file
@@ -913,9 +913,8 @@ implementations.")
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
  + (git commit hash: ~a).        +
- + The authors of ACL2 consider such distributions to be experimental; +
- + they may be incomplete, fragile, and unable to pass our own         +
- + regression tests.                                                   +
+ + On rare occasions development snapshots may be incomplete, fragile, +
+ + or unable to pass the usual regression tests.                       +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 "
    (git-commit-hash))
@@ -1142,7 +1141,10 @@ implementations.")
            (setq si::*optimize-maximum-pages* t)))
     (when *gcl-large-maxpages*
       (setq si::*code-block-reserve*
-            (make-array 40000000 :element-type 'character :static t)))
+
+; 50M was suggested just below by Camm Maguire.
+
+            (make-array 50000000 :element-type 'character :static t)))
     (chmod-executable sysout-name)
     (si::save-system (concatenate 'string sysout-name "." ext))))
 
