@@ -39,7 +39,8 @@ transforms.  The currently supported transforms are:</p>
    fraig-config
    rewrite-config
    abc-comb-simp-config
-   observability-config))
+   observability-config
+   snapshot-config))
 
 (define comb-transform->name ((x comb-transform-p))
   :returns (name stringp :rule-classes :type-prescription)

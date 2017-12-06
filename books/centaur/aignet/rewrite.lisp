@@ -1955,10 +1955,10 @@
                                         node-count-of-atom
                                         fanin-if-co-when-output))))
   (b* ((id (lit-id lit))
-       (slot0 (id->slot id 0 aignet))
-       (gatep (eql (snode->type slot0) (gate-type)))
        ((when (eql 1 (eba-get-bit id eba)))
         (mv eba eba2 copy2))
+       (slot0 (id->slot id 0 aignet))
+       (gatep (eql (snode->type slot0) (gate-type)))
        ((unless gatep)
         (b* ((eba (eba-set-bit id eba))
              (eba2 (eba-set-bit id eba2))

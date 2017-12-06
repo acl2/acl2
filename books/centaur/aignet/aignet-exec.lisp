@@ -127,7 +127,49 @@
       ;; NOTE: In CCL, binding (lnfix id) to id above instead of doing it inside, as
       ;; (lnfix (nodesi (+ slot (* 2 (lnfix id))) aignet)),
       ;; solves a problem where the inner call otherwise isn't inlined.
-      (lnfix (nodesi (+ slot (* 2 id)) aignet))))
+      (mbe :logic (lnfix (nodesi (+ slot (* 2 id)) aignet))
+           :exec (if (<= (the (integer 0 *) id) #x7fffffff)
+                     (nodesi (the (unsigned-byte 32)
+                                  (+ (the bit slot)
+                                     (the (unsigned-byte 32)
+                                          (ash (the (unsigned-byte 31) id) 1))))
+                             aignet)
+                   (nodesi (+ slot (* 2 id)) aignet)))))
+
+  (definline id->slot0 (id aignet)
+    (declare (type (integer 0 *) id)
+             (xargs :stobjs aignet
+                    :guard (and (aignet-sizes-ok aignet)
+                                (< id (num-nodes aignet)))))
+    (mbe :logic (id->slot id 0 aignet)
+         :exec (if (<= (the (integer 0 *) id) #x7fffffff)
+                   (nodesi (the (unsigned-byte 32)
+                                (the (unsigned-byte 32)
+                                     (ash (the (unsigned-byte 31) id) 1)))
+                           aignet)
+                 (nodesi (* 2 id) aignet))))
+
+  (definline id->slot1 (id aignet)
+    (declare (type (integer 0 *) id)
+             (xargs :stobjs aignet
+                    :guard (and (aignet-sizes-ok aignet)
+                                (< id (num-nodes aignet)))))
+    (mbe :logic (id->slot id 1 aignet)
+         :exec (if (<= (the (integer 0 *) id) #x7fffffff)
+                   (nodesi (the (unsigned-byte 32)
+                                (+ 1
+                                   (the (unsigned-byte 32)
+                                        (ash (the (unsigned-byte 31) id) 1))))
+                           aignet)
+                 (nodesi (+ 1 (* 2 id)) aignet))))
+
+  (defmacro id->slot$ (id slot aignet)
+    (cond ((equal slot 0)
+           `(id->slot0 ,id ,aignet))
+          ((equal slot 1)
+           `(id->slot1 ,id ,aignet))
+          (t `(id->slot ,id ,aignet))))
+
 
   (definlined set-snode->regid (regin slot0)
     (declare (type (integer 0 *) slot0)
@@ -141,56 +183,65 @@
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (snode->type (id->slot id 0 aignet)))
+    (mbe :logic (snode->type (id->slot id 0 aignet))
+         :exec (logand 3 (the (unsigned-byte 32) (id->slot$ id 0 aignet)))))
 
   (definline id->phase (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (snode->phase (id->slot id 1 aignet)))
+    (mbe :logic (snode->phase (id->slot id 1 aignet))
+         :exec (logand 1 (the (unsigned-byte 32)
+                              (ash (the (unsigned-byte 32) (id->slot$ id 1 aignet)) -1)))))
 
   (definline id->regp (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (snode->regp (id->slot id 1 aignet)))
+    (mbe :logic (snode->regp (id->slot id 1 aignet))
+         :exec (logand 1 (the (unsigned-byte 32) (id->slot$ id 1 aignet)))))
 
   (definline id->ionum (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (snode->ionum (id->slot id 1 aignet)))
+    (mbe :logic (snode->ionum (id->slot id 1 aignet))
+         :exec (ash (the (unsigned-byte 32) (id->slot$ id 1 aignet)) -2)))
 
   (definline id->fanin0 (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (snode->fanin (id->slot id 0 aignet)))
+    (mbe :logic (snode->fanin (id->slot id 0 aignet))
+         :exec (ash (the (unsigned-byte 32) (id->slot$ id 0 aignet)) -2)))
 
   (definline id->fanin1 (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (snode->fanin (id->slot id 1 aignet)))
+    (mbe :logic (snode->fanin (id->slot id 1 aignet))
+         :exec (ash (the (unsigned-byte 32) (id->slot$ id 1 aignet)) -2)))
 
   (definline reg-id->nxst (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (snode->regid (id->slot id 0 aignet)))
+    (mbe :logic (snode->regid (id->slot id 0 aignet))
+         :exec (ash (the (unsigned-byte 32) (id->slot$ id 0 aignet)) -2)))
 
   (definline nxst-id->reg (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< id (num-nodes aignet)))))
-    (snode->regid (id->slot id 1 aignet)))
+    (mbe :logic (snode->regid (id->slot id 1 aignet))
+         :exec (ash (the (unsigned-byte 32) (id->slot$ id 1 aignet)) -2)))
 
   (define update-nodesi-ec-call (idx val aignet)
     :enabled t
@@ -205,10 +256,14 @@
                                 (< id (num-nodes aignet)))))
     (mbe :logic (update-nodesi (+ (bfix slot) (* 2 (lnfix id)))
                               (nfix val) aignet)
-         :exec (b* ((idx (+ slot (* 2 (lnfix id)))))
-                 (if (< val (expt 2 32))
-                     (update-nodesi idx val aignet)
-                   (update-nodesi-ec-call idx val aignet))))))
+         :exec (if (and (<= (the (integer 0 *) id)  #x7fffffff)
+                        (<= (the (integer 0 *) val) #xffffffff))
+                   (b* ((idx (the (unsigned-byte 32)
+                                  (+ (the bit slot)
+                                     (the (unsigned-byte 32)
+                                          (ash (the (unsigned-byte 31) (lnfix id)) 1))))))
+                     (update-nodesi idx val aignet))
+                 (update-nodesi-ec-call (+ slot (* 2 id)) val aignet)))))
 
 
 
@@ -443,9 +498,7 @@
                                 (< (lit-id f1)
                                    (num-nodes aignet))
                                 (not (int= (id->type (lit-id f1) aignet)
-                                           (out-type))))
-                    :guard-hints (("goal" :in-theory (e/d (add-node)
-                                                          (len-update-nth-linear))))))
+                                           (out-type))))))
     (b* ((nodes  (lnfix (num-nodes aignet)))
          (aignet (add-node aignet))
          (aignet (update-max-fanin nodes aignet))         
@@ -464,9 +517,7 @@
                                 (< (lit-id f)
                                    (num-nodes aignet))
                                 (not (int= (id->type (lit-id f) aignet)
-                                           (out-type))))
-                    :guard-hints (("goal" :in-theory (enable add-node
-                                                             add-out)))))
+                                           (out-type))))))
     (b* ((nodes  (num-nodes aignet))
          (po-num (num-outs aignet))
          (aignet (add-node aignet))
@@ -491,14 +542,11 @@
                                 (< regid (num-nodes aignet))
                                 (int= (id->type regid aignet)
                                       (in-type))
-                                (int= (id->regp regid aignet) 1))
-                    :guard-hints ((and stable-under-simplificationp
-                                       '(:use aignet-sizes-ok
-                                         :in-theory (disable aignet-sizes-ok))))))
+                                (int= (id->regp regid aignet) 1))))
     (b* ((nodes  (num-nodes aignet))
          (aignet (add-node aignet))
          (aignet (update-num-nxsts (+ 1 (lnfix (num-nxsts aignet))) aignet))
-         (slot0 (id->slot regid 0 aignet))
+         (slot0 (id->slot$ regid 0 aignet))
          (new-slot0 (set-snode->regid nodes slot0))
          (aignet (update-node-slot regid 0 new-slot0 aignet))
          (phase  (lit->phase f aignet))
