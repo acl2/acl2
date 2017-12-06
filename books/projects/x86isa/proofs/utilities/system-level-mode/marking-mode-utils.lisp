@@ -906,7 +906,8 @@
                 (not (programmer-level-mode x86)))))
 
   (defthm get-prefixes-xw-rflags-not-ac-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+    (implies (and (64-bit-modep x86) ; added
+                  (not (programmer-level-mode x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
              (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt (xw :rflags 0 value x86)))
@@ -928,6 +929,7 @@
 
   (defthm get-prefixes-and-!flgi-state-in-system-level-mode
     (implies (and (not (equal index *ac*))
+                  (64-bit-modep x86) ; added
                   (not (programmer-level-mode x86))
                   (x86p x86))
              (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt (!flgi index value x86)))
@@ -950,7 +952,8 @@
                               (force (force))))))
 
   (defthm get-prefixes-xw-rflags-not-ac-values-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+    (implies (and (64-bit-modep x86) ; added
+                  (not (programmer-level-mode x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
              (and
@@ -966,6 +969,7 @@
 
   (defthm get-prefixes-values-and-!flgi-in-system-level-mode
     (implies (and (not (equal index *ac*))
+                  (64-bit-modep x86) ; added
                   (not (programmer-level-mode x86))
                   (x86p x86))
              (and (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (!flgi index value x86)))
@@ -1116,6 +1120,14 @@
 
   ;; Get-prefixes and xlate-equiv-memory:
 
+  ;; The following definition has not been changed after extending GET-PREFIXES
+  ;; to use INCREMENT-*IP instead of just incrementing RIP by 1 (and checking
+  ;; that the resulting address is canonical). In other words, the following
+  ;; definition implicitly assumes execution in 64-bit mode, which is what
+  ;; currently these proof utilities assume anyhow (usually via explicit
+  ;; (64-BIT-MODEP X86) hypotheses in theorems. If we generalize these proof
+  ;; utilities to include 32-bit mode, then we will probably need to edit the
+  ;; following definition to mirror GET-PREFIXES in using INCREMENT-*IP.
   (defun-nx get-prefixes-two-x86-induct-hint
     (start-rip prefixes cnt x86-1 x86-2)
     (declare (xargs :measure (nfix cnt)))
