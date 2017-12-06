@@ -2676,7 +2676,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (throw 'raw-ev-fncall val))))
 
 #-acl2-loop-only
-(defvar *hard-error-is-error* nil)
+(defvar *hard-error-is-error* t) ; set to nil at the end of the boot-strap
 
 (defun hard-error (ctx str alist)
 

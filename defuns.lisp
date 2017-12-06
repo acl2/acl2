@@ -1477,30 +1477,6 @@
 
   `(> (length ,names) 20))
 
-(defmacro update-w (condition new-w &optional retract-p)
-
-; WARNING: This function installs a world, so it may be necessary to call it
-; only in the (dynamic) context of revert-world-on-error.  For example, its
-; calls during definitional processing are all under the call of
-; revert-world-on-error in defuns-fn.
-
-  (let ((form `(pprogn ,(if retract-p
-                            '(set-w 'retraction wrld state)
-                          '(set-w 'extension wrld state))
-                       (value wrld))))
-
-; We handling condition t separately, to avoid a compiler warning (at least in
-; Allegro CL) that the final COND branch (t (value wrld)) is unreachable.
-
-    (cond
-     ((eq condition t)
-      `(let ((wrld ,new-w)) ,form))
-     (t
-      `(let ((wrld ,new-w))
-         (cond
-          (,condition ,form)
-          (t (value wrld))))))))
-
 (defun get-sig-fns1 (ee-lst)
   (cond ((endp ee-lst)
          nil)

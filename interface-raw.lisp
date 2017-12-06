@@ -7164,6 +7164,7 @@
     (locally (declare (special ccl::*stack-access-defeat-hook*))
              (setq ccl::*stack-access-defeat-hook*
                    'stack-access-defeat-hook-default)))
+  (setq *hard-error-is-error* nil)
   nil)
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)

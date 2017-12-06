@@ -4594,6 +4594,30 @@
                        wrld))
           (t wrld))))
 
+(defmacro update-w (condition new-w &optional retract-p)
+
+; WARNING: This function installs a world, so it may be necessary to call it
+; only in the (dynamic) context of revert-world-on-error.  For example, its
+; calls during definitional processing are all under the call of
+; revert-world-on-error in defuns-fn.
+
+  (let ((form `(pprogn ,(if retract-p
+                            '(set-w 'retraction wrld state)
+                          '(set-w 'extension wrld state))
+                       (value wrld))))
+
+; We handle condition t separately, to avoid a compiler warning (at least in
+; Allegro CL) that the final COND branch (t (value wrld)) is unreachable.
+
+    (cond
+     ((eq condition t)
+      `(let ((wrld ,new-w)) ,form))
+     (t
+      `(let ((wrld ,new-w))
+         (cond
+          (,condition ,form)
+          (t (value wrld))))))))
+
 (defun install-event (val form ev-type namex ttree cltl-cmd
                           chk-theory-inv-p ctx wrld state)
 
@@ -4787,10 +4811,11 @@
                                          currently-installed-wrld)
                        wrld3)))
        (er-let*
-         ((wrld5 (tau-visit-event t ev-type namex
-                                  (tau-auto-modep wrld4)
+         ((wrld4a (update-w t wrld4)) ; for ev-xxx calls under tau-visit-event
+          (wrld5 (tau-visit-event t ev-type namex
+                                  (tau-auto-modep wrld4a)
                                   (ens state)
-                                  ctx wrld4 state)))
+                                  ctx wrld4a state)))
 
 ; WARNING: Do not put down any properties here!  The cltl-command should be the
 ; last property laid down before the call of add-event-landmark.  We rely on
