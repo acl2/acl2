@@ -38,6 +38,9 @@
 
 (modify-raw-defun acl2::ld-print-results original-ld-print-results (trans-ans state)
   (if (or (not (acl2::live-state-p state))
+ ; Matt K. mod: make acl2::output-in-infixp call conditional on #+acl2infix, to
+ ; match ACL2 sources.
+          #+acl2-infix
           (acl2::output-in-infixp state)
           (not (evalable-ld-printingp state)))
     (original-ld-print-results trans-ans state)

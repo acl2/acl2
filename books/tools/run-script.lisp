@@ -135,10 +135,13 @@
 (defmacro unset-waterfall-parallelism ()
 
 ; This is just set-waterfall-parallelism, but with the same return value(s) in
-; ACL2 as in ACL2(p).
+; ACL2 as in ACL2(p).  We inhibit observations so that the output produced when
+; executing this form is independent of which output is globally inhibited.
 
-  '(er-progn (set-waterfall-parallelism1 nil)
-             (value :invisible)))
+  '(state-global-let*
+    ((inhibit-output-lst (cons 'observation (@ inhibit-output-lst))))
+    (er-progn (set-waterfall-parallelism1 nil)
+              (value :invisible))))
 
 (defmacro run-script (name &key
                            (inhibited-summary-types ''(time steps))

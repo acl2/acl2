@@ -58,7 +58,8 @@
                ENS ALL-FNNAMES)
              (union-eq *acl2-exports*
                        *common-lisp-symbols-from-main-lisp-package*))
-   '(*APPLY$-BADGE* *APPLY$-BOOT-FNS-BADGE-ALIST* *BADGE-PRIM-FALIST*
+   '(APPLY$ EV$ EV$-LIST ; now in *acl2-exports*
+     *APPLY$-BADGE* *APPLY$-BOOT-FNS-BADGE-ALIST* *BADGE-PRIM-FALIST*
      *EV$-BADGE* *FIRST-ORDER-LIKE-TERMS-AND-OUT-ARITIES*
      *GENERIC-TAME-BADGE-1* *GENERIC-TAME-BADGE-2* *GENERIC-TAME-BADGE-3*
      ACCEPTABLE-WARRANTED-JUSTIFICATIONP ACCUMULATE-ILK ALIST-OKP

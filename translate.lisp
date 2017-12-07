@@ -6681,7 +6681,7 @@
                           stobj))
                     ((member-equal actual (cdr actuals))
 
-; This case fixes a soundness bug for duplicated actuals (see :DOC note-7-5).
+; This case fixes a soundness bug for duplicated actuals (see :DOC note-8-0).
 ; It effectively checks no-duplicatesp-equal of the actuals, but doing it here
 ; one-by-one has the advantage that we can easily say which actual is
 ; duplicated.  Alternatively, we could check only that scalar accessor

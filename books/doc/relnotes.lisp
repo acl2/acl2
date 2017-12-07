@@ -77,7 +77,7 @@
          <p>The current version of ACL2 is the value of the constant @('(@
             acl2-version)').</p>")
 
-(defxdoc note-7-5-books
+(defxdoc note-8-0-books
 
 ; Note: To see all git log entries with a given author, for example Joe
 ; Q. Bignerd, you can issue a command such as the following (use a substring of
@@ -100,17 +100,13 @@
 ;  <h4>Your Library Title</h4>
 ;  <p>Details go here.</p>
 
-; I will change :doc note-7-5 in books/system/acl2-doc to point to
-; this topic, when (if?) this topic gets fleshed out (see :doc
-; note-7-2 for precedent).
-
-  :parents (note-7-5 release-notes-books)
-  :short "Release notes for the ACL2 Community Books for ACL2 7.5"
+  :parents (note-8-0 release-notes-books)
+  :short "Release notes for the ACL2 Community Books for ACL2 8.0"
 
   :long "<p>The following is a brief summary of changes made to the @(see
- community-books) between the releases of ACL2 7.4 and 7.5.</p>
+ community-books) between the releases of ACL2 7.4 and 8.0.</p>
 
- <p>See also @(see note-7-5) for the changes made to ACL2 itself.  For
+ <p>See also @(see note-8-0) for the changes made to ACL2 itself.  For
  additional details, you may also see the raw <a
  href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
 
@@ -432,7 +428,7 @@
  when the @('bash') shell is missing.  (Note that a version of @('sh') on a
  FreeBSD machine caused an error.)</p>
 
- <p>Also see @(see note-7-5), specifically the section on ``Changes at the
+ <p>Also see @(see note-8-0), specifically the section on ``Changes at the
  System Level''.</p>
 
  <h3>Testing</h3>
