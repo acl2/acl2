@@ -148,7 +148,7 @@
     "~@0 must be an APT print specifier.  See :DOC APT::PRINT-SPECIFIER."
     description))
   :parents (print-specifier acl2::error-checking)
-  :returns (val (and (implies acl2::erp (equal val error-val))
-                     (implies (and (not acl2::erp) error-erp)
+  :returns (val (and (implies erp (equal val error-val))
+                     (implies (and (not erp) error-erp)
                               (canonical-print-specifier-p val))))
   :result (canonicalize-print-specifier x))
