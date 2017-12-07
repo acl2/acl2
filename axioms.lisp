@@ -26744,14 +26744,15 @@ Lisp definition."
 
 (defun ev-fncall-w-guard1-cache-lookup (fn wrld temp-touchable-fns)
   (let ((tuple (assoc-eq fn (cdr *ev-fncall-w-guard1-cache*))))
-    (or (and (eq (cadr tuple) wrld)
-             (eq (caddr tuple) temp-touchable-fns)
-             (cdddr tuple))
+    (and (consp tuple)
+         (or (and (eq (cadr tuple) wrld)
+                  (eq (caddr tuple) temp-touchable-fns)
+                  (cdddr tuple))
 
 ; Otherwise eliminate the tuple's key, so that this tuple doesn't get found
 ; next time we look up fn in the cache.
 
-        (setf (car tuple) nil))))
+             (setf (car tuple) nil)))))
 
 (defun ev-fncall-w-guard1-cache-update (fn wrld temp-touchable-fns data)
 

@@ -1,0 +1,76 @@
+<HTML>
+<HEAD><TITLE>ACL2 Version 7.4 Installation Guide: Installing CCL</TITLE></HEAD>
+
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" STYLE="font-family:'Verdana'">
+
+<p>These self-contained instructions show how to install Clozure CL on
+  Linux.  They might be a bit more convenient for ACL2 users than
+  those on
+  the <a href="https://ccl.clozure.com/install.html">"Installing
+  Clozure CL"</a> page.  A table on that page shows how to make small
+  changes in the names below if your platform is other than Linxu,
+  e.g., Mac OS X (Darwin).</p>
+
+<hr size=3 noshade>
+
+<pre>
+# Initially, in a fresh directory:
+# git clone https://github.com/Clozure/ccl
+# Rename that directory suitably, e.g., using the
+# first 10 hex digits of the commit hash:
+cd ccl
+git rev-parse HEAD
+cd ../../
+# NOTE!! Change the name below (e.g., its date and hash) as appropriate:
+mv temp 2017-12-07-6be8298fe5
+
+# Back to ccl directory after the commands above:
+cd -
+
+# Build the lisp kernel in the appropriate directory:
+cd lisp-kernel/linuxx8664/
+make clean && make
+
+# Move back to ccl directory and fetch/unpack the heap image.
+# (Use curl instead appropriately if wget is not on your system.)
+cd ../../
+wget https://github.com/Clozure/ccl/releases/download/v1.12-dev.1/linuxx86.tar.gz
+tar xfz linuxx86.tar.gz
+
+# Rebuild the kernel:
+./lx86cl64
+# This welcomes you, e.g.:
+#   Clozure Common Lisp Version 1.12-dev/v1.12-dev.1  (LinuxX8664)
+# Now submit this command:
+? (rebuild-ccl :full t)
+# After it returns, quit:
+? (quit)
+# Now, back at the shell, rebuild the kernel again just to be safe:
+./lx86cl64
+? (rebuild-ccl :full t)
+? (quit)
+</pre>
+
+<hr size=3 noshade>
+
+Finally, create an executable script like the following.
+
+<hr size=3 noshade>
+
+<pre>
+#!/bin/sh
+
+export CCL_DEFAULT_DIRECTORY=/projects/acl2/lisps/ccl/2017-12-07-6be8298fe5/ccl
+${CCL_DEFAULT_DIRECTORY}/scripts/ccl64 "$@"
+</pre>
+
+<hr size=3 noshade>
+
+Make sure that your script is executable, e.g.:
+
+<pre>
+chmod +x my-script
+</pre>
+
+</BODY>
+</HTML>
