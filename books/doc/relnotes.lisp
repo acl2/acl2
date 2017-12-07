@@ -309,8 +309,9 @@
 
  <p>A few new verified <see topic='@(url aignet::aignet-comb-transforms)'>
  combinational logic transforms</see> have been
- added to aignet, most notably <see topic='@(url aignet::fraig)'>fraiging</see>
- and DAG-aware and-tree <see topic='@(url aignet::balance)'>balancing</see>.
+ added to aignet, most notably <see topic='@(url aignet::fraig)'>fraiging</see>,
+ DAG-aware <see topic='@(url aignet::rewrite)'>rewriting</see>, and
+ DAG-aware and-tree <see topic='@(url aignet::balance)'>balancing</see>.
  These can be used as preprocessors for SAT solving with GL via @(see
  gl::gl-simplify-satlink-mode).</p>
 
