@@ -174,7 +174,7 @@ by SunOS.  You may want to use the -i option, "<code>tar xpvfi
 7.4.tar</code>", if you have problems with other than Gnu tar.  You
 can see if you have Gnu tar by running "<code>tar -v</code>".)  The
 resulting tarball and its extracted directory will consist of
-less than 70 MB and 220 MB, respectively.  Additional space is
+less than 80 MB and 240 MB, respectively.  Additional space is
 required to build an executable image, perhaps a bit more than 200 MB
 depending on the platform (including the host Lisp); and more will be
 required to <A HREF="using.html#Certifying">certify books</A>.
@@ -192,11 +192,20 @@ required to <A HREF="using.html#Certifying">certify books</A>.
 
 <p>
 
-<b>Note</b>: Alternatively, for read-write access, become a member of
-the acl2-books project
-by <a href="https://github.com/acl2/acl2#contributors-wanted">contacting
-one of the project administrators as described on acl2-books project
-page</a>.
+<b>Note</b>: You can also fetch the latest "bleeding-edge" version of
+the ACL2 system and the community books using git, as shown below.
+(These generally work very well, but the authors of ACL2 issue this
+disclaimer at startup: <i>The authors of ACL2 consider such
+distributions to be experimental; they may be incomplete, fragile, and
+unable to pass our own regression tests.</i>)
+
+<pre>
+git clone https://github.com/acl2/acl2
+</pre>
+
+Moreover, you
+can <a href="https://github.com/acl2/acl2#contributors-wanted">contribute
+books by joining the GitHub project</a>.
 
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Create-Image">Creating or Obtaining an Executable Image</A></H2>

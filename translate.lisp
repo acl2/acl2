@@ -1370,6 +1370,7 @@
         :last-make-event-expansion last-make-event-expansion))
 
 (defun access-command-tuple-number (x)
+  (declare (xargs :guard (weak-command-tuple-p x)))
   (access command-tuple x :number))
 
 (defun access-command-tuple-defun-mode (x)
@@ -1439,9 +1440,11 @@
 ; its number or 'command-landmark with n as its number, depending on
 ; whether flg is 'event-landmark or 'command-landmark.
 
+  (declare (xargs :guard (and (natp n)
+                              (plist-worldp wrld))))
   #+acl2-metering
   (setq meter-maid-cnt (1+ meter-maid-cnt))
-  (cond ((null wrld)
+  (cond ((endp wrld)
          (er hard 'scan-to-landmark-number
              "We have scanned the world looking for absolute ~
               ~#0~[event~/command~] number ~x1 and failed to find it. ~
@@ -1938,7 +1941,7 @@
   (when (eq wrld w-state)
     (return-from raw-ev-fncall-okp :live))
   (let* ((fncall-cache *fncall-cache*)
-         (cached-w (car *fncall-cache*)))
+         (cached-w (car fncall-cache)))
     (cond ((and wrld
                 (eq wrld cached-w))
            t)
@@ -1980,8 +1983,7 @@
                                      (cdr fncall-cache) fns
                                      (car fncall-cache) wrld))
                          (t (return-from raw-ev-fncall-okp nil)))))
-           t)
-          (t nil))))
+           t))))
 
 (defun chk-raw-ev-fncall (fn wrld aokp)
   (let ((ctx 'raw-ev-fncall)
@@ -6679,7 +6681,7 @@
                           stobj))
                     ((member-equal actual (cdr actuals))
 
-; This case fixes a soundness bug for duplicated actuals (see :DOC note-7-5).
+; This case fixes a soundness bug for duplicated actuals (see :DOC note-8-0).
 ; It effectively checks no-duplicatesp-equal of the actuals, but doing it here
 ; one-by-one has the advantage that we can easily say which actual is
 ; duplicated.  Alternatively, we could check only that scalar accessor

@@ -394,10 +394,10 @@
     (json-encode-data-aux (cdr topics) topics-fal state acc)))
 
 (defun json-encode-data (topics topics-fal state acc)
-  (b* ((acc (cons #\{ acc))
-       ((mv acc state) (json-encode-data-aux topics topics-fal state acc))
-       (acc (cons #\} acc)))
-    (mv acc state)))
+   (b* ((acc (cons #\{ acc))
+        ((mv acc state) (json-encode-data-aux topics topics-fal state acc))
+        (acc (cons #\} acc)))
+     (mv acc state)))
 
 #||
 (b* ((topics (take 5 (get-xdoc-table (w state))))
@@ -415,6 +415,13 @@
                   (normalize-parents-list
                    (clean-topics topics)))))
 
+       (prev-event-table-binding
+        ;; save the previous binding (or lack) of xdoc-get-event-table, set it
+        ;; to one generated from the current world, and restore at the end
+        (and (acl2::f-boundp-global 'xdoc-get-event-table state)
+              (list (f-get-global 'xdoc-get-event-table state))))
+       (state (f-put-global 'xdoc-get-event-table (make-get-event*-table (w state) nil) state))
+        
        (- (cw "; Saving JSON files for ~x0 topics.~%" (len topics0)))
        ((mv topics xtopics ?sitemap state)
         (time$ (order-topics-by-importance topics0 state)
@@ -459,7 +466,13 @@
        (state (princ$ data channel state))
        (state (close-output-channel channel state))
 
-       (orphans (find-orphaned-topics topics topics-fal nil)))
+       (orphans (find-orphaned-topics topics topics-fal nil))
+
+       
+        (- (fast-alist-free (@ xdoc-get-event-table)))
+        (state (if prev-event-table-binding
+                   (f-put-global 'xdoc-get-event-table (car prev-event-table-binding) state)
+                 (makunbound-global 'xdoc-get-event-table state))))
 
     (or (not orphans)
         (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~

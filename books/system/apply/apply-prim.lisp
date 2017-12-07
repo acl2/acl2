@@ -1,0 +1,268 @@
+; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2017, Regents of the University of Texas
+
+; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
+
+; This program is free software; you can redistribute it and/or modify
+; it under the terms of the LICENSE file distributed with ACL2.
+
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; LICENSE for more details.
+
+; Written by:  Matt Kaufmann               and J Strother Moore
+; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
+; Department of Computer Science
+; University of Texas at Austin
+; Austin, TX 78712 U.S.A.
+
+; Many thanks to ForrestHunt, Inc. for supporting the preponderance of this
+; work, and for permission to include it here.
+
+; Refresher on books/system/, etc.
+
+; The books on books/system/ are critical to the construction of the released
+; version of ACL2 because they address certain bootstrapping problems.  See the
+; discussion of *system-verify-guards-alist* in boot-strap-pass-2-b.lisp.  But,
+; roughly put, during bootstrapping some functions cannot be admitted in logic
+; mode or cannot have their guards verified because the requisite logical
+; machinery (e.g., lexicographic relations) does not exist yet.  Such functions
+; are therefore admitted initially in :PROGRAM mode and then magically upgraded
+; to guard-verified :LOGIC mode at the very end of the bootstrapping process.
+; The books on books/system/ address the question ``Is the magic right?''
+
+; The books address that question by introducing the definitions of the
+; relevant functions, identical to the definitions in the source code but in
+; :logic mode and with appropriate :measures and :guards, and availing
+; themselves of all the normal events of ACL2 (including the inclusion of of
+; distributed books) to verify termination and guards.  The build process we
+; follow before an ACL2 release stipulates that we build an intermediate ACL2
+; image with the :acl2-devel feature on (where the problematic functions are
+; left in :program mode) and then use that image to certify the books/system/
+; books and the cone of books supporting it.  The process also confirms that
+; the data stored in *system-verify-guards-alist* is correct wrt to the
+; certified books/system/ books, thus insuring that the assumption of those
+; facts by the normal build is probably ok.  We say probably here because there
+; is, perhaps, still room for circularity but we are just using ``best
+; practice'' to assure ourselves that our claims are true.
+
+; Turning to the books/system/apply/ books specifically, they are concerned
+; with apply$ and its supporters.  See the Essay on the APPLY$ Integration for
+; some background.
+
+; One way to think of each of these books is that it was derived by taking its
+; source file counterpart, e.g., apply-prim.lisp in the case of this book,
+; books/system/apply/apply-prim, and sprinkling in the include-books, defthms,
+; declarations, and hints to get the source file admitted in guard-verified,
+; :logic mode fashion by a version of ACL2 in which these functions weren't
+; already defined.  But, historically, it happened the other way: apply$ wasn't
+; in ACL2 Version_7.4, it was introduced in a collection of certified books,
+; and then we stripped out of those books everything but the definitions, which
+; we moved into the ACL2 sources for Version_8.0.  These books are therefore
+; more aptly described as the ``original'' books admitting apply$, et al.
+
+; We supply minimal comments here except when discussing the termination/guard
+; verification issues.  See the corresponding source files for explanations of
+; the definitions below!
+
+; Historical Note: Prior to integration of apply$ into the sources, each of
+; these books introducing the logical definitions supporting apply$ carried a
+; warning not to edit the file except the version found on
+; books/projects/apply-model.  That warning was appropriate because we wanted
+; the distributed apply books in the Community Books to exactly match the
+; foundational books showing that models can be built.  But now apply$ is in
+; the sources, we regard the foundational work as static (supporting the paper
+; and justifying the basic approach to apply$), and we are free (under the
+; usual soundness caveats) to improve apply$ going forward, we no longer insist
+; that these files exactly match the foundational work on apply$.
+
+(in-package "ACL2")
+
+; We locally re-enable runes that were disabled during the build.
+(local (in-theory (enable apply$-primp badge-prim)))
+
+; We now prove that badge-prim returns either nil or a badge of the form
+; (APPLY$-BADGE flg arity . T).  This would be trivial except for the fact that
+; there are so many cases (because the alist is so long).  So we resort to a
+; standard trick for proving something about a big constant: define a function,
+; named check-it! below, to check the property computationally, prove that the
+; property holds of x if (check-it x) is t, then derive the main theorem by
+; instantiating that lemma with {x <-- '<big-constant>}.
+
+(encapsulate
+  nil
+  (local
+   (defthm apply$-badgep-properties ; only selected properties!
+     (implies (apply$-badgep x)
+              (and (consp x)
+                   (natp (access apply$-badge x :arity))
+                   (or (eq (access apply$-badge x :ilks) t)
+                       (and (true-listp (access apply$-badge x :ilks))
+                            (equal (len (access apply$-badge x :ilks))
+                                   (access apply$-badge x :arity))))))
+
+; Note: Unfortunately, record accessors translate into lambda applications.
+; :Rewrite rules handle this appropriately by beta reducing the lambda
+; applications in the conclusion.  But :linear rules do not.  So we've written
+; all the rules in terms of car/cdr nests rather than access terms.
+
+     :rule-classes
+     ((:compound-recognizer
+       :corollary (implies (apply$-badgep x)
+                           (consp x)))
+      (:linear
+       :corollary (implies (apply$-badgep x)
+                           (<= 0 (CAR (CDR (CDR x))))))
+      (:rewrite
+       :corollary (implies (apply$-badgep x)
+                           (integerp (CAR (CDR (CDR x))))))
+      (:rewrite
+       :corollary (implies (and (apply$-badgep x)
+                                (not (eq (CDR (CDR (CDR x))) t)))
+                           (and (true-listp (CDR (CDR (CDR x))))
+                                (equal (len (CDR (CDR (CDR x))))
+                                       (CAR (CDR (CDR x))))))))))
+
+  (local
+   (defun check-it! (alist)
+     (cond ((atom alist) t)
+           (t (and (consp (car alist))
+                   (apply$-badgep (cdr (car alist)))
+                   (eq (access apply$-badge (cdr (car alist)) :ilks) t)
+                   (check-it! (cdr alist)))))))
+  (local
+   (defthm check-it!-works
+     (implies (check-it! alist)
+              (implies (hons-get fn alist)
+                       (and (consp (hons-get fn alist))
+                            (apply$-badgep (cdr (hons-get fn alist)))
+                            (eq (access apply$-badge (cdr (hons-get fn alist)) :ilks) t))))
+     :rule-classes nil))
+
+  (defthm badge-prim-type
+
+; This lemma is needed in the proof of the lemma BADGE-TYPE in apply.lisp,
+; despite the fact that it is not named in the BADGE-TYPE's Summary.  Tau is
+; mentioned in Summary and BADGE-PRIM-TYPE generates a tau rule.
+
+    (implies (apply$-primp fn)
+             (and (apply$-badgep (badge-prim fn))
+                  (eq (cdr (cdr (cdr (badge-prim fn)))) t)))
+    :hints (("Goal" :use (:instance check-it!-works (alist *badge-prim-falist*))
+             :in-theory (disable check-it! hons-get)))
+    :rule-classes
+    ((:rewrite
+      :corollary (implies (apply$-primp fn)
+                          (and (apply$-badgep (badge-prim fn))
+                               (eq (cdr (cdr (cdr (badge-prim fn)))) t))))
+     (:forward-chaining
+      :corollary (implies (apply$-primp fn)
+                          (apply$-badgep (badge-prim fn)))))))
+
+(defun n-car-cadr-caddr-etc (n x)
+  (declare (xargs :guard (natp n)))
+  (if (zp n)
+      nil
+      (cons `(CAR ,x)
+            (n-car-cadr-caddr-etc (- n 1) `(CDR ,x)))))
+
+; The following is commented out, because otherwise we get an error due to an
+; attempt to redundantly define a function with raw Lisp code.
+; (defun apply$-prim (fn args)
+;   (declare (xargs :guard (true-listp args)))
+;   (make-apply$-prim-body))
+
+; To prove termination and guards of apply$, for example, we will need to
+; manipulate terms involving apply$-prim.  Leaving that function enabled causes
+; us to blow up because the defun of apply$-prim contains a case statement with
+; ~800 cases.  Rewriting it causes stack overflow with the nominal rewrite
+; stack size of 1000.  For example, we cannot prove: (thm (equal (apply$-prim
+; 'tamep (list x)) (tamep x))).  We will therefore temporarily enlarge the
+; stack and verify a metafunction which will enable MUCH faster reduction of
+; (apply$-prim 'fn args), and then disable apply$-prim.  We also disable
+; apply$-primp, leaving only the executable-counterpart enabled to resolve the
+; question of whether a given quoted symbol is a primitive.
+
+(set-rewrite-stack-limit 4000) ; local to this book
+
+(defun meta-apply$-prim (term)
+  (declare (xargs :guard (pseudo-termp term)
+
+; There is no need to verify guards here.  For that, see
+; books/projects/apply/apply-lemmas.lisp.
+
+                  :verify-guards nil))
+  (cond ((and (consp term)
+              (eq (ffn-symb term) 'apply$-prim)
+              (quotep (fargn term 1))
+              (symbolp (cadr (fargn term 1))))
+         (let* ((fn (cadr (fargn term 1)))
+                (args (fargn term 2))
+                (temp (hons-get fn *badge-prim-falist*)))
+           (cond
+            ((or (null temp)
+                 (null (access apply$-badge (cdr temp) :authorization-flg)))
+             term)
+            (t `(,fn ,@(n-car-cadr-caddr-etc
+                        (access apply$-badge (cdr temp) :arity)
+                        args))))))
+        (t term)))
+
+(make-event
+ `(encapsulate
+    nil
+
+; We introduce the relevant evaluator; defevaluator works in a
+; very restricted theory (*DEFEVALUATOR-FORM-BASE-THEORY*) and so
+; we do not have to worry about disabling all the functions
+; involved in the defun of apply$-prim.
+
+    (with-output
+      :off (prove event)
+      (defevaluator apply$-prim-meta-fn-ev
+        apply$-prim-meta-fn-ev-list
+        ((apply$-prim fn args)
+         ,@(strip-cars *first-order-like-terms-and-out-arities*))))
+
+; To prove correctness we need to force car-cadr-caddr-etc
+; to open.
+
+    (local
+     (defthm n-car-cadr-caddr-etc-opener
+       (implies (natp n)
+                (equal (n-car-cadr-caddr-etc (+ 1 n) args)
+                       (cons (list 'car args)
+                             (n-car-cadr-caddr-etc n (list 'CDR args)))))))
+
+; Next is correctness of the apply$-prim simplifier.
+
+; Some day we may fix the well-formedness-guarantee code so that at the time a
+; meta function is applied, we only check the non-primitive functions in the
+; supplied arities-alist.  That could be done by checking the list at the time
+; we store the meta lemma and removing any function that is a primitive.  We
+; know -- or can at least sanely assume -- that the arities of all the system
+; primitives won't change.  Then the built-in constant to be checked at
+; apply-time would be much reduced -- in fact, to NIL in the case of
+; meta-apply$-prim.
+
+; If the above fix is ever made, it would be good to add a well-formedness
+; guarantee lemma.
+
+    (with-output
+      :off (prove event)
+      (defthm apply$-prim-meta-fn-correct
+        (equal (apply$-prim-meta-fn-ev term alist)
+               (apply$-prim-meta-fn-ev (meta-apply$-prim term) alist))
+        :hints (("Goal" :in-theory (disable (:executable-counterpart break$))))
+        :rule-classes ((:meta :trigger-fns (apply$-prim)))))
+
+    (defthm apply$-primp-implies-symbolp
+      (implies (apply$-primp fn)
+               (symbolp fn))
+      :rule-classes :forward-chaining)
+
+    ))
+
+(in-theory (disable apply$-prim apply$-primp))

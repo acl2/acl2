@@ -51,24 +51,13 @@
 ; from the user!  The easiest way to do that would add a new property, e.g.,
 ; BADGE, to the logical world and store each symbol's badge (if any) there.
 
-; Standard Explanation: We currently distribute two sets of books,
-; /books/projects/apply/ and /books/projects/apply-model/.  The files
-; apply-prim.lisp, constraints.lisp, and apply.lisp on those two directories
-; are identical copies of their namesakes with one exception: in the former
-; directory, all the development is in "ACL2" package and in the latter
-; directory, all the development is in the "MODAPP" package.  The byte counts
-; of the files should be identical to that of their namesakes, it's just that
-; the semicolon below is on a different line!
-
-(in-package "ACL2")
-; (in-package "MODAPP")
+(in-package "MODAPP")
 (include-book "apply-prim")
 
 ; -----------------------------------------------------------------
 ; Handling the Primitives
 
-; Reminders and Warnings: The apply-prim.lisp book, included as part of the
-; portcullis so that all include-book relations in this family are explicit,
+; Reminders and Warnings: The apply-prim.lisp book, included below,
 ; defines APPLY$-PRIMP, BADGE-PRIM, and APPLY$-PRIM in :logic mode.  These
 ; functions are used to access information about and apply primitives like CAR
 ; and BINARY-+.  The first two are guard verified but APPLY$-PRIM cannot be
@@ -146,7 +135,7 @@
 
 ; One can imagine that knowing the extra conjunct would make some proofs easier
 ; or faster, e.g., if badge-userfn is non-nil (as implied by the warrant for
-; fn) then we'd know fn isn't among the 800+ primitives or the six boot
+; fn) then we'd know fn isn't among the ~800 primitives or the six boot
 ; functions.
 
 ; This additional conjunct is easily achieved, though it requires moving up a
@@ -191,7 +180,7 @@
 ; Three categories of function symbols have badges:
 
 ; * ACL2 primitives -- all the primitives and their badges are listed in
-;   *badge-prim-falist*, a fast alist whose length is 800+.  This constant is
+;   *badge-prim-falist*, a fast alist whose length is ~800.  This constant is
 ;   defined in apply-prim.lisp.
 
 ; * apply$ boot fns -- six symbols built into apply$ itself, which cannot get
@@ -238,7 +227,7 @@
 ; (``warrant\b'' or ``warranted,'' excluding ``warranty'' which occurs twice at
 ; the top of nearly every file).
 
-; Some functions have badges but not warrants!  All 800+ primitives have badges
+; Some functions have badges but not warrants!  All ~800 primitives have badges
 ; known to the logical definition of BADGE, but these primitives do not have
 ; warrants: there is no APPLY$-WARRANT-CONS because the badge of cons is
 ; built-in.  All 6 of the apply$ boot functions have badges known to BADGE and

@@ -26,10 +26,12 @@
 ;; ======================================================================
 
 ;; Added by Alessandro Coglio <coglio@kestrel.edu>
-(define x86-segment-base-and-bounds
+(define segment-base-and-bounds
   ((seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
    x86)
-  :returns (mv (base n32p) (lower-bound n33p) (upper-bound n32p))
+  :returns (mv (base n64p :hyp (x86p x86))
+               (lower-bound n33p)
+               (upper-bound n32p))
   :parents (x86-segmentation)
   :short "Return a segment's base linear address, lower bound, and upper bound."
   :long
@@ -37,15 +39,27 @@
    The segment is the one in the given segment register.
    </p>
    <p>
-   Even though @('*hidden-segment-register-layout*') uses 64 bits
-   for the segment base address,
-   addresses coming from segment descriptors are always 32 bits:
+   Base addresses coming from segment descriptors are always 32 bits:
    see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.5
-   and AMD manual, Apr'16, Vol. 2, Sec. 4-7 and 4-8.
-   Thus, this function returns an unsigned 32-bit integer as the base result.
+   and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4.8.
+   However, in 64-bit mode, segment bases for FS and GS are 64 bits:
+   see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.4
+   and AMD manual, Apr'16, Vol. 2, Sec 4.5.3.
    As an optimization, in 64-bit mode,
    since segment bases for CS, DS, SS, and ES are ignored,
    this function just returns 0 as the base result under these conditions.
+   In 64-bit mode, when the segment register is FS or GS,
+   we read the base address from the MSRs
+   mentioned in Intel manual, Mar'17, Vol. 3A, Sec. 3.4.4
+   and AMD manual, Apr'16, Vol. 2, Sec 4.5.3;
+   these are physically mapped to the relevant hidden portions of FS and GS,
+   so it should be a state invariant that they are equal to
+   the relevant hidden portions of FS and GS.
+   In 32-bit mode, since the high 32 bits are ignored
+   (see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.4
+   and AMD manual, Apr'16, Vol. 2, Sec 4.5.3),
+   we only return the low 32 bits of the base address
+   read from the hidden portion of the segment register.
    </p>
    <p>
    @('*hidden-segment-register-layout*') uses 32 bits
@@ -94,12 +108,11 @@
    the caller must ignore this result in 64-bit mode.
    </p>"
   (if (64-bit-modep x86)
-      (if (or (eql seg-reg *fs*)
-              (eql seg-reg *gs*))
-          (b* ((hidden (xr :seg-hidden seg-reg x86))
-               (base (hidden-seg-reg-layout-slice :base-addr hidden)))
-            (mv (n32 base) 0 0))
-        (mv 0 0 0))
+      (cond ((eql seg-reg *fs*)
+             (mv (msri *ia32_fs_base-idx* x86) 0 0))
+            ((eql seg-reg *gs*)
+             (mv (msri *ia32_gs_base-idx* x86) 0 0))
+            (t (mv 0 0 0)))
     (b* ((hidden (xr :seg-hidden seg-reg x86))
          (base (hidden-seg-reg-layout-slice :base-addr hidden))
          (limit (hidden-seg-reg-layout-slice :limit hidden))
@@ -109,20 +122,22 @@
          (lower (if e (1+ limit) 0))
          (upper (if e (if d/b #xffffffff #xffff) limit)))
       (mv (n32 base) lower upper)))
+  :inline t
   ///
 
   (defrule x86-segment-base-and-bound-of-xw
     (implies
      (and (not (equal fld :msr))
           (not (equal fld :seg-hidden)))
-     (equal (x86-segment-base-and-bounds seg-reg (xw fld index value x86))
-            (x86-segment-base-and-bounds seg-reg x86)))))
+     (equal (segment-base-and-bounds seg-reg (xw fld index value x86))
+            (segment-base-and-bounds seg-reg x86)))))
 
 ;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define ea-to-la ((eff-addr i64p)
                   (seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
                   x86)
-  :returns (mv flg (lin-addr i48p))
+  :returns (mv flg
+               (lin-addr i64p :hyp (i64p eff-addr)))
   :parents (x86-segmentation)
   :short "Translate an effective address to a linear address."
   :long
@@ -179,10 +194,17 @@
    </p>
    <p>
    If the translation is successful,
-   this function returns a signed 48-bit integer
-   that represents a canonical linear address.
-   In 64-bit mode, the 64-bit linear address that results from the translation
+   this function returns a signed 64-bit integer
+   that represents a linear address.
+   In 64-bit mode, when the segment register is FS or GS,
+   the 64-bit linear address that results from the translation
    is checked to be canonical before returning it.
+   In 64-bit mode, when the segment register is not FS or GS,
+   the effective address is returned unmodified as a linear address,
+   because segment translation should be a no-op in this case;
+   the returned linear address may be canonical or not,
+   but it is checked to be canonical elsewhere,
+   before accessing memory via paging.
    In 32-bit mode, the 32-bit linear address that results from the translation
    is always canonical.
    If the translation fails,
@@ -193,15 +215,15 @@
   (if (64-bit-modep x86)
       (if (or (eql seg-reg *fs*)
               (eql seg-reg *gs*))
-          (b* (((mv base & &) (x86-segment-base-and-bounds seg-reg x86))
+          (b* (((mv base & &) (segment-base-and-bounds seg-reg x86))
                (lin-addr (i64 (+ base (n64 eff-addr)))))
             (if (canonical-address-p lin-addr)
                 (mv nil lin-addr)
               (mv (list :non-canonical-address lin-addr) 0)))
-        (mv nil (i48 eff-addr)))
+        (mv nil eff-addr))
     (b* (((mv base
               lower-bound
-              upper-bound) (x86-segment-base-and-bounds seg-reg x86))
+              upper-bound) (segment-base-and-bounds seg-reg x86))
          ((unless (and (<= lower-bound eff-addr)
                        (<= eff-addr upper-bound)))
           (mv (list :segment-limit-fail
@@ -209,7 +231,8 @@
               0))
          (lin-addr (n32 (+ base eff-addr))))
       (mv nil lin-addr)))
-  :guard-hints (("Goal" :in-theory (enable x86-segment-base-and-bounds)))
+  :guard-hints (("Goal" :in-theory (enable segment-base-and-bounds)))
+  :inline t
   ///
 
   (defrule ea-to-la-of-xw
@@ -226,7 +249,7 @@
              (and (equal (mv-nth 0 (ea-to-la eff-addr seg-reg x86))
                          nil)
                   (equal (mv-nth 1 (ea-to-la eff-addr seg-reg x86))
-                         (i48 eff-addr))))))
+                         eff-addr)))))
 
 ;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define eas-to-las ((n natp)
@@ -235,7 +258,7 @@
                               0 *segment-register-names-len* seg-reg))
                     x86)
   :returns (mv flg
-               (lin-addrs "A @('nil')-terminated list of @(tsee i48p)s."))
+               (lin-addrs "A @('nil')-terminated list of @(tsee i64p)s."))
   :parents (x86-segmentation)
   :short "Translate a sequence of contiguous effective addresses
           to linear addresses."
@@ -244,16 +267,14 @@
    The contiguous effective addresses are
    @('eff-addr') through @('eff-addr + n - 1').
    These effective addresses are translated in increasing order.
-   As soon as the translation of an effective address fails,
+   When the translation of an effective address fails,
    the recursion stops and the error flag is returned.
    </p>"
   (if (zp n)
       (mv nil nil)
     (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
          ((when flg) (mv flg nil))
-         (eff-addr+1 (1+ eff-addr))
-         ((unless (i48p eff-addr+1))
-          (mv (list :effective-address-out-of-range eff-addr+1) nil))
+         (eff-addr+1 (i64 (1+ eff-addr)))
          ((mv flg lin-addrs) (eas-to-las (1- n) eff-addr+1 seg-reg x86))
          ((when flg) (mv flg nil)))
       (mv nil (cons lin-addr lin-addrs)))))

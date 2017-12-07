@@ -748,6 +748,33 @@ SystemVerilog-2012 Table 11-21.</p>"
              (and stable-under-simplificationp
                   '(:in-theory (enable acl2::member-of-cons)))))))
 
+(define vl-exprlist-has-extensional-const ((x vl-exprlist-p))
+  (if (atom x)
+      nil
+    (or (b* ((x1 (car x)))
+          (vl-expr-case x1
+            :vl-literal (vl-value-case x1.val :vl-extint x1.val.value :otherwise nil)
+            :otherwise nil))
+        (vl-exprlist-has-extensional-const (cdr x)))))
+
+
+(define vl-extensional-const-in-concat-check ((orig vl-expr-p)
+                                              (x vl-exprlist-p))
+  :returns (warnings vl-warninglist-p)
+  (b* ((constval (vl-exprlist-has-extensional-const (and (consp x) (cdr x))))
+       (warnings nil))
+    (and constval
+         (warn :type :vl-concat-with-extensional-integer
+               :msg "The following concatenation contains the extensional ~
+                     integer ~s0, which is not allowed except as the most ~
+                     significant element of the concatenation: ~a1"
+               :args (list (case constval
+                             (:vl-0val "'0")
+                             (:vl-1val "'1")
+                             (:vl-zval "'z")
+                             (otherwise "'x"))
+                           (vl-expr-fix orig))))))
+  
 
 
 (define vl-unaryop-selfsize
@@ -1033,6 +1060,7 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
         :vl-mintypmax (mv (ok) nil)
 
         :vl-concat (b* (((mv warnings part-sizes) (vl-exprlist-selfsize x.parts ss scopes))
+                        ((wmv warnings) (vl-extensional-const-in-concat-check x x.parts))
                         ((when (member nil part-sizes))
                          (mv warnings nil)))
                      (mv warnings (sum-nats part-sizes)))
@@ -1053,6 +1081,7 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
                                   nil))
                              ((mv warnings part-sizes)
                               (vl-exprlist-selfsize x.parts ss scopes))
+                             ((wmv warnings) (vl-extensional-const-in-concat-check x x.parts))
                              ((when (member nil part-sizes))
                               (mv warnings nil)))
                           (mv (ok) (* reps (sum-nats part-sizes))))

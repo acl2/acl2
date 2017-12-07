@@ -766,8 +766,7 @@ matches a current prefix.</p>"
                    @('name_2'), or similar.")
       (new-db vl-namedb-p
               "Extended name database with @('fresh-name') being marked as
-               used."
-              :hyp (vl-namedb-p db)))
+               used."))
   :prepwork((local (in-theory (enable vl-namedb-pmap-okp))))
 
   (b* ((name    (string-fix name))

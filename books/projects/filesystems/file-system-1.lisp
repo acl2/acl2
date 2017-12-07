@@ -1,3 +1,7 @@
+; Copyright (C) 2017, Regents of the University of Texas
+; Written by Mihir Mehta
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 (in-package "ACL2")
 
 ;  file-system-1.lisp                                  Mihir Mehta
@@ -145,6 +149,22 @@
                (len (insert-text oldtext start text))))
   :hints (("Goal" :in-theory (enable insert-text)) )
   :rule-classes :linear)
+
+(encapsulate ()
+  (local (INCLUDE-BOOK "std/lists/nthcdr" :dir :system))
+
+  (defthmd
+    len-of-insert-text
+    (implies (and (character-listp oldtext)
+                  (stringp text)
+                  (natp start))
+             (equal (len (insert-text oldtext start text))
+                    (+ start (len (coerce text 'list))
+                       (nfix (+ (len oldtext)
+                                (- (+ start (len (coerce text 'list)))))))))
+    :hints (("goal" :do-not-induct t
+             :expand (insert-text oldtext start text)))))
+
 
 ; The problem with this definition of l1-wrchs is that it deletes a directory if
 ; it's found where a text file is expected

@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Implementation
 ;
-; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,34 +23,6 @@
 (local (xdoc::set-default-parents soft-implementation))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define inputs-have-verbose-t-p ((inputs true-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of inputs (to a SOFT macro) includes @(':verbose t')."
-  :long
-  "<p>
-   The list is examined from right to left,
-   two elements at a time,
-   so long as the first of the two elements if a keyword.
-   If @(':verbose t') is found, @('t') is returned.
-   If @(':verbose x') is found and @('x') is not @('t'), @('nil') is returned.
-   If there are no more keyword-value pairs, @('nil') is returned.
-   </p>"
-  (inputs-have-verbose-t-p-aux (rev inputs))
-
-  :prepwork
-  ((define inputs-have-verbose-t-p-aux ((rev-inputs true-listp))
-     :returns (yes/no booleanp)
-     (if (or (endp rev-inputs)
-             (endp (cdr rev-inputs)))
-         nil
-       (b* ((value? (car rev-inputs))
-            (keyword? (cadr rev-inputs)))
-         (if (keywordp keyword?)
-             (if (eq keyword? :verbose)
-                 (eq value? t)
-               (inputs-have-verbose-t-p-aux (cddr rev-inputs)))
-           nil))))))
 
 (define *-listp (stars)
   :returns (yes/no booleanp)
@@ -147,18 +119,18 @@
                   result))
        ((unless (or (null options)
                     (and (= (len options) 2)
-                         (eq (car options) :verbose))))
+                         (eq (car options) :print))))
         (er-soft+ ctx t nil
-                  "After the * input there may be at most one :VERBOSE option, ~
+                  "After the * input there may be at most one :PRINT option, ~
                    but instead ~x0 was supplied."
                   options))
-       (verbose (if options
-                    (cadr options)
-                  nil))
-       ((unless (booleanp verbose))
+       (print (if options
+                  (cadr options)
+                nil))
+       ((unless (member-eq print '(nil :all)))
         (er-soft+ ctx t nil
-                  "The :VERBOSE input must be T or NIL, but ~x0 is not."
-                  verbose))
+                  "The :PRINT input must be NIL or :ALL, but ~x0 is not."
+                  print))
        ((when (funvarp funvar wrld))
         (b* ((arity (arity funvar wrld)))
           (if (= arity (len arguments))
@@ -169,7 +141,8 @@
        (event `(progn
                  (defstub ,funvar ,arguments ,arrow ,result)
                  (table function-variables ',funvar nil)
-                 (value-triple ',funvar))))
+                 (value-triple ',funvar)))
+       (event (restore-output? (eq print :all) event)))
     (value event)))
 
 (defsection defunvar-implementation
@@ -179,14 +152,11 @@
    @(def acl2::defunvar)"
 
   (defmacro defunvar (&whole call &rest inputs)
-    (control-screen-output
-     (inputs-have-verbose-t-p inputs)
-     `(make-event (defunvar-fn
-                    ',inputs
-                    ',call
-                    (cons 'defunvar ',(if (consp inputs) (car inputs) nil))
-                    state)
-                  :on-behalf-of :quiet)))
+    `(make-event-terse (defunvar-fn
+                         ',inputs
+                         ',call
+                         (cons 'defunvar ',(if (consp inputs) (car inputs) nil))
+                         state)))
 
   (defmacro acl2::defunvar (&rest inputs)
     `(defunvar ,@inputs)))
@@ -199,13 +169,13 @@
    @(def acl2::show-defunvar)"
 
   (defmacro show-defunvar (&whole call
-                                  funvar arguments arrow result &key verbose)
+                                  funvar arguments arrow result &key print)
     `(defunvar-fn
        ',funvar
        ',arguments
        ',arrow
        ',result
-       ',verbose
+       ',print
        ',call
        (cons 'defunvar ',funvar)
        state))

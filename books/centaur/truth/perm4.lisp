@@ -28,7 +28,6 @@
 ;
 ; Original authors: Sol Swords <sswords@centtech.com>
 
-
 (in-package "TRUTH")
 
 (include-book "sizes")
@@ -657,7 +656,7 @@
                   (<= final-count (nfix bound)))
              (npn4arr-indices-bounded bound new-npn4arr)))
 
-  
+
   (defret index-bound-preserved-of-record-all-npn4-perms
     (implies (not (equal 0 (maybe-npn4-fix (nth k npn4arr))))
              (equal (nth k new-npn4arr)

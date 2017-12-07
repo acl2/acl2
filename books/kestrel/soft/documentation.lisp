@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Documentation
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -380,7 +380,7 @@
 
    @({
      (defunvar fvar (* ... *) => *
-       :verbose ...)
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -413,15 +413,15 @@
      </blockquote>
 
    <p>
-   @(':verbose ...')
+   @(':print ...')
    </p>
 
      <blockquote>
 
      <p>
      An option to customize the screen output:
-     @('t') to show all the output;
-     @('nil') (the default) to suppress all the non-error output.
+     @(':all') to print all the output;
+     @('nil') (the default) to print only any error output.
      </p>
 
      </blockquote>

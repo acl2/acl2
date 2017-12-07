@@ -1,6 +1,6 @@
 ; APT Tail Recursion Transformation -- Implementation
 ;
-; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,7 @@
 (include-book "kestrel/utilities/named-formulas" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "utilities/print-specifiers")
 (include-book "utilities/transformation-table")
 
 (local (xdoc::set-default-parents tailrec-implementation))
@@ -195,7 +196,7 @@
   ((old "Input to the transformation.")
    (variant "Input to the transformation.")
    (verify-guards "Input to the transformation.")
-   (verbose booleanp "Input to the transformation, after validation.")
+   (verbose booleanp "Print informative messages or not.")
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
@@ -230,7 +231,7 @@
   :long
   "<p>
    Show the components of the function denoted by @('old')
-   if @('verbose') is non-@('nil').
+   if @('verbose') is @('t').
    </p>"
   (b* ((wrld (w state))
        ((er old-fn-name) (ensure-function-name-or-numbered-wildcard$
@@ -339,9 +340,6 @@
    if @('domain') is a macro name;
    the translation of @('domain'),
    if @('domain') is a lambda expression.
-   </p>
-   <p>
-   Show the domain being used if @('verbose') is non-@('nil').
    </p>"
   (b* (((er (list fn/lambda stobjs-in stobjs-out description))
         (ensure-function/macro/lambda$ domain "The :DOMAIN input" t nil))
@@ -544,7 +542,7 @@
                               (non-executable "Input to the transformation.")
                               (verify-guards "Input to the transformation.")
                               (hints "Input to the transformation.")
-                              (verbose "Input to the transformation.")
+                              (print "Input to the transformation.")
                               (show-only "Input to the transformation.")
                               (ctx "Context for errors.")
                               state)
@@ -566,7 +564,8 @@
                                     old-to-wrapper-thm-name
                                     make-non-executable
                                     do-verify-guards
-                                    hints-alist)')
+                                    hints-alist
+                                    print$)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -584,6 +583,7 @@
                                          booleanp
                                          booleanp
                                          symbol-alistp
+                                         canonical-print-specifier-p
                                          result)'),
                         where the first 8 components are
                         the results of @(tsee tailrec-check-old),
@@ -602,9 +602,11 @@
                         non-executable or not, and
                         @('do-verify-guards') indicates whether the guards of
                         the new and wrapper functions
-                        should be verified or not, and
+                        should be verified or not,
                         @('hints-alist') is
-                        the result of @(tsee tailrec-check-hints).")
+                        the result of @(tsee tailrec-check-hints), and
+                        @('print$') is a canonicalized version of
+                        the @(':print') input.")
                state)
   :mode :program
   :short "Ensure that all the inputs to the transformation are valid."
@@ -612,8 +614,9 @@
   "<p>
    The inputs are validated
    in the order in which they appear in the documentation,
-   except that @(':verbose') is validated just before @('old')
-   so it can be passed to @(tsee tailrec-check-old) as a boolean,
+   except that @(':print') is validated just before @('old')
+   so that the @('verbose') argument of @(tsee tailrec-check-old)
+   can be computed from @(':print'),
    and except that @(':verify-guards') is validated just before @('domain')
    because the result of validating @(':verify-guards')
    is used to validate @('domain').
@@ -624,7 +627,8 @@
    but it is only tested for equality with @('t')
    (see @(tsee tailrec-check-old)).
    </p>"
-  (b* (((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
+  (b* (((er print$) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
+       (verbose (if (member-eq :expand print$) t nil))
        ((er (list old-fn-name
                   test
                   base
@@ -677,7 +681,8 @@
                  old-to-wrapper-thm-name
                  make-non-executable
                  do-verify-guards
-                 hints-alist))))
+                 hints-alist
+                 print$))))
 
 (define tailrec-var-u
   ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs)."))
@@ -2018,6 +2023,7 @@
    (make-non-executable booleanp "Result of @(tsee tailrec-check-inputs).")
    (do-verify-guards booleanp "Result of @(tsee tailrec-check-inputs).")
    (hints-alist symbol-alistp "Result of @(tsee tailrec-check-inputs).")
+   (print$ booleanp "Result of @(tsee tailrec-check-inputs).")
    (show-only booleanp "Input to the transformation, after validation.")
    (app-conds symbol-alistp "Result of @(tsee tailrec-app-conds).")
    (call pseudo-event-formp "Call to the transformation.")
@@ -2034,8 +2040,8 @@
    the main theorem and its supporting lemmas,
    and the recording of the generated numbered names.
    The @(tsee encapsulate) is followed by events
-   for the recording in the transformation table
-   and for the screen outputs.
+   for the recording in the transformation table,
+   and possibly for printing the transformation results on the screen.
    </p>
    <p>
    The @(tsee encapsulate) starts with some implicitly local event forms to
@@ -2068,28 +2074,45 @@
    (with slight variations).
    </p>
    <p>
-   The @(tsee progn) ends with an event form to print nothing on screen,
-   because it already includes events
-   to print the exported function and theorem events on screen.
-   These exported events are printed on screen without hints;
-   they are the same event forms
-   that are introduced non-locally and redundantly in the @(tsee encapsulate).
-   </p>
-   <p>
    The @(tsee encapsulate) is stored into the transformation table,
    associated to the call to the transformation.
-   Thus, the table event and the screen output events
+   Thus, the table event and (if present) the screen output events
    (which are in the @(tsee progn) but not in the @(tsee encapsulate))
    are not stored into the transformation table,
-   because they carry no additional information
-   (and because otherwise the table event would have to contain itself).
+   because they carry no additional information,
+   and because otherwise the table event would have to contain itself.
+   </p>
+   <p>
+   If @(':print') includes @(':submit'),
+   the @(tsee encapsulate) is wrapped to show the normal screen output
+   for the submitted events.
+   This screen output always starts with a blank line,
+   so we do need to print a blank line to separate the submission output
+   from the expansion output (if any).
+   </p>
+   <p>
+   If @(':print') includes @(':result'),
+   the @(tsee progn) includes events to print
+   the exported events on the screen without hints.
+   They are the same event forms
+   that are introduced non-locally and redundantly in the @(tsee encapsulate).
+   If @(':print') also includes @(':expand') or @(':submit'),
+   an event to print a blank line is also generated
+   to separate the result output from the expansion or submission output.
+   </p>
+   <p>
+   The @(tsee progn) ends with an event form
+   to avoiding printing any return value on the screen.
    </p>
    <p>
    If @(':show-only') is @('t'),
-   an event to show the @(tsee encapsulate) on screen is returned.
-   The table event and the screen output events are excluded from this
-   because they just &ldquo;repeat&rdquo; things that are already present
-   in the @(tsee encapsulate) that is shown on the screen.
+   the @(tsee encapsulate) is just printed on screen, not submitted.
+   In this case,
+   the presence or absence of @(':submit') and @(':result') in @(':print')
+   is ignored.
+   If @(':print') includes @(':expand'),
+   a blank line is printed just before the @(tsee encapsulate)
+   to separate it from the expansion output.
    </p>
    <p>
    To ensure the absence of name conflicts inside the @(tsee encapsulate),
@@ -2304,24 +2327,29 @@
           ,new-fn-numbered-name-event
           ,wrapper-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
-       ((when show-only) `(progn
-                            (cw-event "~x0~|" ',encapsulate)
-                            (value-triple ':invisible)))
+       (expand-output-p (if (member-eq :expand print$) t nil))
+       ((when show-only)
+        (if expand-output-p
+            (cw "~%~x0~|" encapsulate)
+          (cw "~x0~|" encapsulate))
+        '(value-triple :invisible))
+       (submit-output-p (if (member-eq :submit print$) t nil))
+       (encapsulate+ (restore-output? submit-output-p encapsulate))
        (transformation-table-event (record-transformation-call-event
                                     call encapsulate wrld))
-       (new-fn-show-event `(cw-event "~x0~|"
-                                     ',new-fn-exported-event))
-       (wrapper-fn-show-event `(cw-event "~x0~|"
-                                         ',wrapper-fn-exported-event))
-       (old-to-wrapper-thm-show-event `(cw-event
-                                        "~x0~|"
-                                        ',old-to-wrapper-thm-exported-event)))
+       (result-output-p (if (member-eq :result print$) t nil))
+       (print-events (if result-output-p
+                         `(,@(and (or expand-output-p submit-output-p)
+                                  '((cw-event "~%")))
+                           (cw-event "~x0~|" ',new-fn-exported-event)
+                           (cw-event "~x0~|" ',wrapper-fn-exported-event)
+                           (cw-event "~x0~|"
+                                     ',old-to-wrapper-thm-exported-event))
+                       nil)))
     `(progn
-       ,encapsulate
+       ,encapsulate+
        ,transformation-table-event
-       ,new-fn-show-event
-       ,wrapper-fn-show-event
-       ,old-to-wrapper-thm-show-event
+       ,@print-events
        (value-triple :invisible))))
 
 (define tailrec-fn
@@ -2337,7 +2365,7 @@
    (non-executable "Input to the transformation.")
    (verify-guards "Input to the transformation.")
    (hints "Input to the transformation.")
-   (verbose "Input to the transformation.")
+   (print "Input to the transformation.")
    (show-only "Input to the transformation.")
    (call pseudo-event-formp "Call to the transformation.")
    (ctx "Context for errors.")
@@ -2354,18 +2382,15 @@
   :long
   "<p>
    If this call to the transformation is redundant,
-   a message to that effect is shown on screen.
+   a message to that effect is printed on the screen.
    If the transformation is redundant and @(':show-only') is @('t'),
    the @(tsee encapsulate), retrieved from the table, is shown on screen.
    </p>"
   (b* ((encapsulate? (previous-transformation-expansion call (w state)))
        ((when encapsulate?)
-        (value `(progn
-                  ,@(and show-only
-                         `((cw-event "~x0~|" ',encapsulate?)))
-                  (cw-event "~%The transformation ~x0 is redundant.~%"
-                            ',call)
-                  (value-triple :invisible))))
+        (b* (((run-when show-only) (cw "~x0~|" encapsulate?)))
+          (cw "~%The transformation ~x0 is redundant.~%" call)
+          (value '(value-triple :invisible))))
        ((er (list old-fn-name
                   test
                   base
@@ -2381,27 +2406,30 @@
                   old-to-wrapper-thm-name
                   make-non-executable
                   do-verify-guards
-                  hints-alist)) (tailrec-check-inputs old
-                                                      variant
-                                                      domain
-                                                      new-name
-                                                      new-enable
-                                                      wrapper-name
-                                                      wrapper-enable
-                                                      thm-name
-                                                      thm-enable
-                                                      non-executable
-                                                      verify-guards
-                                                      hints
-                                                      verbose
-                                                      show-only
-                                                      ctx state))
+                  hints-alist
+                  print$)) (tailrec-check-inputs old
+                                                 variant
+                                                 domain
+                                                 new-name
+                                                 new-enable
+                                                 wrapper-name
+                                                 wrapper-enable
+                                                 thm-name
+                                                 thm-enable
+                                                 non-executable
+                                                 verify-guards
+                                                 hints
+                                                 print
+                                                 show-only
+                                                 ctx state))
        (app-conds (tailrec-app-conds
                    old-fn-name test base nonrec combine q r variant domain$
                    do-verify-guards
                    state))
-       ((er &) (ensure-named-formulas
-                app-conds hints-alist verbose t nil ctx state))
+       ((er &) (ensure-named-formulas app-conds
+                                      hints-alist
+                                      (if (member-eq :expand print$) t nil)
+                                      t nil ctx state))
        (event (tailrec-event
                old-fn-name test base nonrec updates combine q r
                variant domain$
@@ -2409,7 +2437,7 @@
                wrapper-fn-name wrapper-enable
                old-to-wrapper-thm-name thm-enable
                make-non-executable do-verify-guards
-               hints-alist show-only app-conds
+               hints-alist print$ show-only app-conds
                call state)))
     (value event)))
 
@@ -2418,8 +2446,7 @@
   :short "Implementation of the tail recursion transformation."
   :long
   "<p>
-   Submit the event form generated by @(tsee tailrec-fn),
-   using the @(':verbose') input to control the screen output.
+   Submit the event form generated by @(tsee tailrec-fn),.
    </p>
    @(def tailrec)"
   (defmacro tailrec (&whole
@@ -2439,25 +2466,22 @@
                      (non-executable ':auto)
                      (verify-guards ':auto)
                      (hints 'nil)
-                     (verbose 'nil)
+                     (print ':result)
                      (show-only 'nil))
-    (control-screen-output
-     verbose
-     `(make-event (tailrec-fn ',old
-                              ',variant
-                              ',domain
-                              ',new-name
-                              ',new-enable
-                              ',wrapper-name
-                              ',wrapper-enable
-                              ',thm-name
-                              ',thm-enable
-                              ',non-executable
-                              ',verify-guards
-                              ',hints
-                              ',verbose
-                              ',show-only
-                              ',call
-                              (cons 'tailrec ',old)
-                              state)
-                  :on-behalf-of :quiet))))
+    `(make-event-terse (tailrec-fn ',old
+                                   ',variant
+                                   ',domain
+                                   ',new-name
+                                   ',new-enable
+                                   ',wrapper-name
+                                   ',wrapper-enable
+                                   ',thm-name
+                                   ',thm-enable
+                                   ',non-executable
+                                   ',verify-guards
+                                   ',hints
+                                   ',print
+                                   ',show-only
+                                   ',call
+                                   (cons 'tailrec ',old)
+                                   state))))

@@ -1,0 +1,465 @@
+; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2017, Regents of the University of Texas
+
+; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
+
+; This program is free software; you can redistribute it and/or modify
+; it under the terms of the LICENSE file distributed with ACL2.
+
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; LICENSE for more details.
+
+; Written by:  Matt Kaufmann               and J Strother Moore
+; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
+; Department of Computer Science
+; University of Texas at Austin
+; Austin, TX 78712 U.S.A.
+
+; Many thanks to ForrestHunt, Inc. for supporting the preponderance of this
+; work, and for permission to include it here.
+
+; Essay on the APPLY$ Integration
+
+; For an explanation of the logical foundations of apply$, see the paper
+; ``Limited Second Order Functionality in a First Order Setting''.  We assume
+; here that you are familiar with that paper and the terminology it uses.
+
+; The basic logical development of apply$ proceeds in three steps: (i) defining
+; apply$-prim, etc., to interpret built-in symbols like CONS and BINARY-+, (ii)
+; constraining badge-userfn and apply$-userfn which will be connected to
+; user-defined functions via warrants, and (iii) defining badge, tamep, apply$,
+; and def-warrant in terms of the functions in (i) and (ii).
+
+; The paper above explains how an ordinary certified book could be used to
+; introduce apply$ into an ACL2 without native support for apply$ -- with one
+; ``minor'' exception.  Indeed, that is how apply$ was developed (during the
+; period 2015-2017 with ACL2 Versions 7.2 through 7.4).  Each of the three
+; steps was carried out in its own certified book, appropriately named
+; apply-prim, apply-constraints (aka ``constraints''), and apply.  We preserve
+; that basic structure.
+
+; The ``minor'' exception noted above is that without native support it is
+; impossible to execute apply$: apply$-userfn is constrained.  Only by
+; implicitly assuming warrants can apply$ run a user-defined function, and the
+; implicit extension of the ``evaluation theory'' to include all warrants
+; required changes to ACL2 itself.  Our desire to support execution naturally
+; meant we had to make those changes and upon completion of that integration
+; task we named the resulting ACL2 Version_8.0.
+
+; Ground apply$ terms can only be executed at the top-level because execution
+; implicitly assumes warrants.  Conservativity forces us to require that
+; warrants be explicit in proofs.  Thus, execution of apply$ is via attachments
+; to badge-userfn and apply$-userfn and the concrete functions used must be
+; built into ACL2's sources since they must ``magically'' determine whether the
+; corresponding function symbols have warrants in the current world.
+
+; Below is a guide to the files primarily related to the integration of apply$.
+; Of course, the name ``APPLY$'' and related symbols are sprinkled throughout
+; the ACL2 source files now, e.g., in *primitive-logic-fns-with-raw-code* but
+; these are the main files and books and we list them in four groups explained
+; below.
+
+; Foundations:
+;  books/projects/apply-model/
+;    apply-prim.lisp
+;    apply-constraints.lisp
+;    apply.lisp
+;    ex1/*
+;    ex2/*
+
+; Source Code:
+;  apply-prim.lisp
+;  apply-constraints.lisp
+;  apply.lisp
+;  apply-raw.lisp
+
+; Bootstrapping:
+;  books/system/apply/apply-prim.lisp
+;  books/system/apply/apply-constraints.lisp
+;  books/system/apply/apply.lisp
+
+; User:
+;  books/projects/apply/apply-lemmas.lisp
+;  books/projects/apply/report.lisp
+
+; The Foundations group preserves the original construction of apply$ by
+; defining it exactly as in the paper ``Limited Second Order Functionality in a
+; First Order Setting'' but in a different symbol package (since a functions of
+; those names are now defined in ACL2).  The subdirectories ex1/ and ex2/
+; illustrate the claim (proved in the paper) that for any set of functions
+; accepted by def-warrant it is possible to define badge-userfn and
+; apply$-userfn so that all warrants are valid.  We regard the Foundation books
+; as a historic record and thus static; the books correspond to the paper.
+
+; The Source Code group contains the four files that introduce apply$, et al,
+; into the source code.  The first three, apply-prim, apply-constraints, and
+; apply, correspond to their Foundations counterparts except they only contain
+; the defuns and constraints but not the machinery needed to prove termination
+; and guards.  The fourth, apply-raw, defines the ``magic'' concrete functions
+; that will be attached to badge-userfn and apply$-userfn to enable top-level
+; execution of apply$.  At the time apply$ was integrated (Version_8.0) the
+; definitions in these files were the same (modulo some bootstrapping issues
+; noted below) as their counterparts in the Foundations files.  However, over
+; time we imagine the support for apply$ in ACL2 will go beyond what is
+; described in the paper, e.g., we might enlarge or shrink the set of
+; primitives, extend the syntactic class of tame expressions, or make
+; def-warrant able to handle mutual recursion.
+
+; The Boostrapping group contains the definitions of the Source Code group but
+; also contains the measures and other machinery needed to prove termination
+; and guards.  For example, the apply$ clique in the Foundations group is
+; justified by a well-founded lexicographic relation, but such relations are
+; not available in ACL2 until after the ordinals/ books have been certified.
+; So apply$ cannot be admitted in the Source Code group the way it was in the
+; Foundations group.  Similar problems are encountered several times during the
+; build of ACL2, specifically when the :acl2-devel feature is set.  For
+; documentation of the acl2-devel process, see :DOC
+; verify-guards-for-system-functions, or see the comment in source constant
+; *system-verify-guards-alist* in boot-strap-pass-2-b.lisp.
+
+; (The basic story is is that we first introduce such functions in :program
+; mode, build an ``:acl2-devel'' image of the system, redundantly define the
+; functions we wish to upgrade in various systems/ books, certify all those
+; systems/ books with the :acl2-devel image, check that the data in
+; *system-verify-guards-alist* is justified by the books just certified, and
+; then build the public image of ACL2 in which we trustingly use
+; *system-verify-guards-alist* to assert that the functions terminate and are
+; guard verified.  The books in the Bootstrapping group must track the
+; definitions in the Source Code group: changing one without the changing the
+; other will probably result in the failure of the :acl2-devel certification of
+; the system/ books.)
+
+; End of Essay on the APPLY$ Integration
+
+; The Maximal Defun of Apply$-Prim
+
+; We define *apply$-primitives*, apply$-primp, and apply$-prim to include
+; almost all functions in the bootstrap world that could have badges.  We
+; intentionally skip a few problematic or silly primitives, like wormhole1
+; which has some syntactic restrictions on how it can be called -- restrictions
+; that would complicate or confuse any attempt to apply$ 'wormhole1.
+
+; Historical Note: Before apply$ was integrated over 800 symbols satisfied
+; apply$-primp.  After integration, that number dropped to slightly fewer than
+; 800 because at the time this file is processed as part of the build not quite
+; all primitives have been introduced.  (Indeed, this is one of the reasons we
+; process this file rather late in the build.)  As a consequence, we have
+; changed occurrences of ``800+'' to ``~800'' and recognize that the exact
+; number may vary as the sources and build process change.
+
+(in-package "ACL2")
+
+; Handling the Primitives
+
+(defun first-order-like-terms-and-out-arities1 (runes avoid-fns wrld ans)
+  (declare (xargs :mode :program))
+
+; We return a list of the form (... ((fn . formals) . output-arity) ...).  See
+; first-order-like-terms-and-out-arities for details.
+
+  (cond
+   ((endp runes) ans)
+   (t (let ((fn (base-symbol (car runes))))
+        (cond
+         ((and (acl2-system-namep fn wrld)
+
+; In ACL2(r), we avoid non-classical functions, to avoid failure of the
+; defevaluator event in the book version of apply-prim.lisp.
+
+               #+:non-standard-analysis
+               (classicalp fn wrld)
+
+               (not (member-eq fn avoid-fns))
+               (all-nils (getpropc fn 'stobjs-in nil wrld))
+
+; Note that even functions taking state like state-p and global-table-cars,
+; i.e., that take a STATE-STATE input, will have STATE in their stobjs-in and
+; hence will fail the test just above.  So we don't need to give special
+; treatment to such functions.
+
+               (all-nils (getpropc fn 'stobjs-out nil wrld)))
+
+; Note that stobj creators take no stobjs in but return stobjs.  We don't want
+; any such functions in our answer!  Also, we don't want to think about
+; functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
+; STATE-STATE as a formal preventing their execution.
+
+          (first-order-like-terms-and-out-arities1
+           (cdr runes)
+           avoid-fns wrld
+           (cons (cons (cons fn (formals fn wrld))
+                       (length (getpropc fn 'stobjs-out nil wrld)))
+                 ans)))
+         (t (first-order-like-terms-and-out-arities1
+             (cdr runes)
+             avoid-fns wrld
+             ans)))))))
+
+(defun first-order-like-terms-and-out-arities (world)
+
+; Search the world for every ACL2 primitive function that does not traffic (in
+; or out) in stobjs or state and that are not among a select few (named below)
+; that require trust tags or have syntactic restrictions on their calls.  Note
+; that our final list includes functions that return multiple values, which are
+; not warranted but will have badges: they are first-order-like and could be
+; used in the subsequent definitions of warranted functions provided their
+; multiple values are ultimately turned into a single returned value.
+
+; Return (... ((fn . formals) . output-arity) ...), that for each identified
+; fn, pairs a term, (fn . formals), with its output arity.  We will ultimately
+; need those terms to generate the defevaluator event that will define
+; apply$-prim and to generate the :meta theorem we need.  We need the output
+; arity in computing the badges of the functions; see
+; compute-badge-of-primitives.
+
+; We accumulate the pairs in reverse order, which (it turns out) puts the most
+; basic, familiar ACL2 primitives first.
+
+; The ``select few'' we do not collect are prohibited as per the comments
+; below.  Note: Many functions that we do include actually have no utility in
+; this setting.  The symbols commented out below were once so identified (by
+; manual inspection).  E.g., does any user really want to call
+; make-wormhole-status via apply$?  But if all calls are legal without a trust
+; tag, we now include it, just to live up to the name "Maximal".
+
+  (declare (xargs :mode :program))
+  (first-order-like-terms-and-out-arities1
+   (function-theory :here)
+   `(SYNP                                      ; bad
+     HIDE                                      ; stupid
+     MV-LIST                                   ; restricts arguments
+     WORMHOLE1                                 ; restricts arguments
+     WORMHOLE-EVAL                             ; restricts arguments
+;    MAKE-WORMHOLE-STATUS
+;    SET-WORMHOLE-DATA
+;    SET-WORMHOLE-ENTRY-CODE
+;    WORMHOLE-DATA
+;    WORMHOLE-ENTRY-CODE
+;    WORMHOLE-STATUSP
+     SYS-CALL                                  ; bad -- requires trust tag
+     HONS-CLEAR!                               ; bad -- requires trust tag
+     HONS-WASH!                                ; bad -- requires trust tag
+;    BREAK$
+;    PRINT-CALL-HISTORY
+;    NEVER-MEMOIZE-FN
+;    MEMOIZE-FORM
+;    CLEAR-MEMOIZE-STATISTICS
+;    MEMOIZE-SUMMARY
+;    CLEAR-MEMOIZE-TABLES
+;    CLEAR-MEMOIZE-TABLE
+
+     )
+   world
+   nil))
+
+; We need to know the names, formals, and output arities of the primitives in
+; order to generate the defevaluator form, meta theorem, and badges below.  So
+; we save them in *first-order-like-terms-and-out-arities*, which looks like:
+
+; (defconst *first-order-like-terms-and-out-arities*
+;   '(((ACL2-NUMBERP X) . 1)
+;     ((BAD-ATOM<= X Y) . 1)
+;     ((BINARY-* X Y) . 1)
+;     ...))
+
+; But in apply.lisp and in the support for the execution of the stubs
+; badge-userfn and apply$-userfn we do not need the formals and we sometimes
+; need the arities.  So we define another constant which is used in those
+; places.  That constant, *badge-prim-falist*, is a fast alist.
+
+(when-pass-2
+
+; There is a bit of a boot-strap problem in defining the constant
+; *first-order-like-terms-and-out-arities*.  ACL2 rightly complains about
+; compiling make-event forms, so we mark this event with when-pass-2, along
+; with those below that depend on it, in order to avoid compiling such forms.
+; They will be evaluated during pass-2 of initialization.
+
+(make-event ` ; backquote here so that the next line can assist tags
+(defconst *first-order-like-terms-and-out-arities*
+  ',(first-order-like-terms-and-out-arities (w state)))
+))
+
+(defrec apply$-badge (authorization-flg arity . ilks) nil)
+
+; These constants are not actually used in this book but are used in several
+; books that include apply-prim.lisp so we define them once, here.
+
+(defconst *generic-tame-badge-1*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 1 :ILKS t))
+(defconst *generic-tame-badge-2*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS t))
+(defconst *generic-tame-badge-3*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 3 :ILKS t))
+(defconst *apply$-badge*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:FN NIL)))
+(defconst *ev$-badge*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:EXPR NIL)))
+
+(defun compute-badge-of-primitives (terms-and-out-arities)
+  (declare (xargs :mode :program))
+  (cond ((endp terms-and-out-arities) nil)
+        (t (let* ((term (car (car terms-and-out-arities)))
+                  (fn (ffn-symb term))
+                  (formals (fargs term))
+                  (output-arity (cdr (car terms-and-out-arities))))
+             (hons-acons fn
+                         (make apply$-badge
+                               :authorization-flg (eql output-arity 1)
+                               :arity (length formals)
+                               :ilks t)
+                         (compute-badge-of-primitives
+                          (cdr terms-and-out-arities)))))))
+
+; Much of the rest of the file depends on the make-event above that generates
+; (defconst *first-order-like-terms-and-out-arities* ...).  So we wrap the next
+; several forms in when-pass-2; see the comment at the make-event above.
+
+(when-pass-2 ; See comment above regarding "depends on the make-event above."
+
+(defconst *badge-prim-falist* ; this is a fast-alist!
+  (compute-badge-of-primitives *first-order-like-terms-and-out-arities*))
+
+(defun apply$-primp (fn)
+  (declare (xargs :mode :logic :guard t))
+  (and (hons-get fn *badge-prim-falist*) t))
+
+(defun badge-prim (fn)
+  (declare (xargs :mode :logic :guard t))
+  (cdr (hons-get fn *badge-prim-falist*)))
+
+)
+
+(defun apply$-badgep (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (eq (car x) 'apply$-badge)
+       (consp (cdr x))
+       (booleanp (access apply$-badge x :authorization-flg))
+       (consp (cddr x))
+       (natp (access apply$-badge x :arity))
+       (or (eq (access apply$-badge x :ilks) t)
+           (and (true-listp (access apply$-badge x :ilks))
+                (equal (len (access apply$-badge x :ilks))
+                       (access apply$-badge x :arity))
+                (not (all-nils (access apply$-badge x :ilks)))
+                (subsetp (access apply$-badge x :ilks) '(nil :fn :expr))))))
+
+(defun n-car-cadr-caddr-etc (n x)
+  (declare (xargs :guard (natp n)))
+  (if (zp n)
+      nil
+      (cons `(CAR ,x)
+            (n-car-cadr-caddr-etc (- n 1) `(CDR ,x)))))
+
+(defun make-apply$-prim-body-fn (falist acc)
+
+; WARNING: Keep this in sync with make-apply$-prim-body-fn-raw.
+
+; Falist = ((fn . badge) ...) and is a fast alist although we do not actually
+; use it as an alist here; we just cdr down it.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((endp falist) (reverse acc)) ; reversing might be unnecessary
+   (t (let ((fn (car (car falist)))
+            (badge (cdr (car falist))))
+        (cond
+         ((equal (access apply$-badge badge :authorization-flg) t)
+          (let ((call `(,fn ,@(n-car-cadr-caddr-etc
+                               (access apply$-badge badge :arity)
+                               'ARGS))))
+            (make-apply$-prim-body-fn
+             (cdr falist)
+             (cons `(,fn ,(if (member-eq fn *EC-CALL-BAD-OPS*)
+                              (if (eq fn 'return-last)
+                                  '(caddr args)
+                                call)
+                            `(ec-call ,call)))
+                   acc))))
+         (t (make-apply$-prim-body-fn (cdr falist) acc)))))))
+
+; It will be necessary to disable the executable-counterpart of break$ when
+; verifying the guards for apply$-prim, as is done by "make proofs".  It seems
+; reasonable actually to disable that rune globally, to avoid breaks during
+; proofs; so we do that.
+(in-theory (disable (:e break$)))
+
+#-acl2-loop-only
+(progn
+
+(defvar *apply$-prim-ht* (make-hash-table :test 'eq))
+
+(defun make-apply$-prim-body-fn-raw (falist ht)
+
+; WARNING: Keep this in sync with make-apply$-prim-body-fn.
+
+; The present function's name is perhaps a bit misleading, since it doesn't
+; create a function body, but rather, it populates the given hash-table, which
+; will actually be *apply$-prim-ht*.
+
+; See make-apply$-prim-body-fn.  Note that we do not handle return-last
+; specially here.
+
+  (cond
+   ((endp falist) nil) ; reversing might be unnecessary
+   (t (let ((fn (car (car falist)))
+            (badge (cdr (car falist))))
+        (cond
+         ((equal (access apply$-badge badge :authorization-flg) t)
+          (let ((fn-to-call (cond ((member fn *ec-call-bad-ops*
+                                           :test 'eq)
+                                   fn)
+                                  (t (let ((*1*fn (*1*-symbol fn)))
+                                       (assert (fboundp *1*fn))
+                                       *1*fn)))))
+            (setf (gethash fn ht)
+                  (cons fn-to-call
+                        (access apply$-badge badge :arity)))
+            (make-apply$-prim-body-fn-raw (cdr falist) ht)))
+         (t (make-apply$-prim-body-fn-raw (cdr falist) ht)))))))
+
+(defun apply$-prim (fn args)
+  (cond ((eq fn 'return-last)
+         (caddr args))
+        (t (let ((pair (gethash fn *apply$-prim-ht*)))
+             (and pair
+                  (let ((fn2 (car pair))
+                        (arity (cdr pair)))
+                    (let ((args (if (int= arity (length args))
+                                    args
+                                  (take arity args))))
+                      (apply fn2 args))))))))
+(defun-*1* apply$-prim (fn args)
+  (if (true-listp args) ; guard
+      (apply$-prim fn args)
+    (gv apply$-prim (fn args) (apply$-prim fn (fix-true-list args)))))
+
+)
+
+(when-pass-2
+
+; We use when-pass-2 because of dependence on *badge-prim-falist*.  See comment
+; above regarding "depends on the make-event above."
+
+(set-raw-mode t)
+
+(make-apply$-prim-body-fn-raw *badge-prim-falist* *apply$-prim-ht*)
+
+(set-raw-mode nil)
+
+(defmacro make-apply$-prim-body ()
+; We ignore primitives whose authorization-flg is nil.
+  `(case fn
+     ,@(make-apply$-prim-body-fn *badge-prim-falist* nil)
+     (otherwise nil)))
+
+#+acl2-loop-only
+(defun apply$-prim (fn args)
+  (declare (xargs :guard (true-listp args)))
+  (make-apply$-prim-body))
+
+)

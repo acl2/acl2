@@ -329,17 +329,20 @@
            (true-listp (reverse a)))
   :rule-classes (:type-prescription))
 
+; Matt K. mod: The following two lemmas are now type-prescription rules built
+; into ACL2.  So these are now only rewrite rules.
+
 (local
-   (defthm true-listp-first-n-ac
+   (defthm true-listp-first-n-ac-rewrite
      (implies (true-listp ac)
               (true-listp (first-n-ac i l ac)))
-     :rule-classes (:rewrite :type-prescription)
+     :rule-classes (:rewrite) ; Matt K. mod, explained above
      :hints (("Goal" :induct (first-n-ac i l ac)))))
 
 (local
- (defthm true-listp-take
+ (defthm true-listp-take-rewrite
    (true-listp (take n l))
-   :rule-classes (:rewrite :type-prescription)))
+   :rule-classes (:rewrite))) ; Matt K. mod, explained above
 
 (defthm true-listp-butlast
     (true-listp (butlast lst n))

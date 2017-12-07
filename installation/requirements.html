@@ -82,6 +82,20 @@ convenient foreign-function interface.''
 
 <p>
 
+<font color="red">NOTE</font>:
+Certain <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____HONS-ENABLED">ACL2
+features</a> are optimized for 64-bit CCL.  Some large developments
+may even fail with 32-bit CCL; so for CCL, the 64-bit version is
+preferred.  To check if your CCL is a 64-bit CCL, evaluate the
+following expression in your CCL; the result should
+be <code>YES</code>.
+
+<pre>
+#+x86_64 'yes #-x86_64 'no
+</pre>
+
+<p>
+
 Here is an easy way to obtain and build the latest version (generally
 recommended) for Linux (or another OS; see below) running on an x86 or
 x86-64.  First stand in any directory, though you might want to stand
@@ -189,13 +203,24 @@ Common Lisp implementations.</li>
 <li>Only minimal testing is done for ACL2 built on CLISP.</li>
 
 <li>CLISP does not support building the
-  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v7-4/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
+  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
   ACL2 (ACL2(h)), but only (with the limitations expressed above)
   a discontinued version, ACL2(c).</li>
 
 </ul>
 
 <P><B><A NAME="Obtaining-CMUCL">Obtaining CMU Common Lisp</A></B><P>
+
+<blockquote>
+
+<font color="red"><b>NOTE</b>: ACL2 Version 8.0 cannot be reliably run
+  on CMUCL, so we have disabled building ACL2 on CMUCL.  The CMUCL
+  implementor is aware of the problem, and we are hoping for a fix
+  before the next ACL2 release so that we can remove this note.</font>
+
+</blockquote>
+
+<p>
 
 CMU Common Lisp (sometimes called CMUCL) is a non-commercial Common Lisp
 implementation, available from <code><a
@@ -213,12 +238,22 @@ for that release.
 <p>
 
 Otherwise, it should be easy to obtain and build GCL yourself.  Note
-that ACL2 requires GCL version 2.6.12 or later, which can be fetched
-as a tarball from the <a href="http://www.gnu.org/software/gcl/">main
-GNU website for GCL</a> or perhaps
-from <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
-ACL2 also requires an ANSI Common Lisp executable;
-after unpacking the archive, an ANSI GCL can be built as follows.
+that ACL2 requires ANSI GCL version 2.6.12 or later.  Perhaps simplest
+is to fetch it via git and then build the
+executable <code>gcl/gcl/bin/gcl</code> as follows.
+
+<pre>
+git clone git://git.sv.gnu.org/gcl.git
+cd gcl/gcl
+git checkout Version_2_6_13pre
+./configure --enable-ansi && make
+</pre>
+
+It may also be possible to fetch it from
+the <a href="http://www.gnu.org/software/gcl/">main GNU website for
+GCL</a> or perhaps
+from <code><a href="http://backports.debian.org">backports.debian.org</a></code>,
+in which case ANSI GCL can be built as shown above:
 
 <pre>
 cd gcl && ./configure --enable-ansi && make

@@ -945,12 +945,27 @@ because... (BOZO)</p>
       (vl-stmt-case x
         :vl-nullstmt (mv t (ok) nil)
         :vl-assignstmt
-        (b* (((unless (or (eq x.type :vl-blocking)
-                          (and (svstmt-config->nonblockingp config)
-                               (eq x.type :vl-nonblocking))))
-              (fail (fatal :type :vl-stmt-unsupported
-                          :msg "Assignment type not supported: ~a0"
-                          :args (list x))))
+        (b* (((mv warnings blockingp)
+              (case x.type
+                ((:vl-assign :vl-force)
+                 (mv (fatal :type :vl-procedural-continuous-assignment
+                            :msg "Procedural continuous assignments are ~
+                                    unsupported: ~a0  Unsafely treating this ~
+                                    as a blocking assignment."
+                            :args (list x))
+                     t))
+                (:vl-nonblocking
+                 (if (svstmt-config->nonblockingp config)
+                     (mv warnings nil)
+                   (mv (fatal :type :vl-bad-nonblocking-assignment
+                              :msg "Nonblocking assignments are not ~
+                                      supported in this context: ~a0  ~
+                                      Unsafely treating this as a blocking ~
+                                      assignment."
+                              :args (list x))
+                       t)))
+                (otherwise ;; :vl-blocking
+                 (mv warnings t))))
              (warnings (if x.ctrl
                            (warn :type :vl-delay-ignored
                                  :msg "Ignoring delay or event control on ~
@@ -958,7 +973,7 @@ because... (BOZO)</p>
                                  :args (list x))
                          (ok)))
              ((vwmv ok vttree res)
-              (vl-assignstmt->svstmts x.lvalue x.expr (eq x.type :vl-blocking) ss scopes))
+              (vl-assignstmt->svstmts x.lvalue x.expr blockingp ss scopes))
              (constraints (vttree-constraints-to-svstmts vttree)))
           (mv ok warnings (append-without-guard constraints res)))
         :vl-ifstmt

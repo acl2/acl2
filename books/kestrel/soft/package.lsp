@@ -40,12 +40,14 @@
                          keywords-of-keyword-value-list
                          lambda-body
                          lambda-formals
+                         make-event-terse
                          make-lambda
                          measure
                          o<
                          pseudo-event-formp
                          pseudo-event-form-listp
                          recursivep
+                         restore-output?
                          restrict-alist
                          strip-keyword-list
                          symbol-symbol-alistp

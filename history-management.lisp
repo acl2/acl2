@@ -4594,6 +4594,30 @@
                        wrld))
           (t wrld))))
 
+(defmacro update-w (condition new-w &optional retract-p)
+
+; WARNING: This function installs a world, so it may be necessary to call it
+; only in the (dynamic) context of revert-world-on-error.  For example, its
+; calls during definitional processing are all under the call of
+; revert-world-on-error in defuns-fn.
+
+  (let ((form `(pprogn ,(if retract-p
+                            '(set-w 'retraction wrld state)
+                          '(set-w 'extension wrld state))
+                       (value wrld))))
+
+; We handle condition t separately, to avoid a compiler warning (at least in
+; Allegro CL) that the final COND branch (t (value wrld)) is unreachable.
+
+    (cond
+     ((eq condition t)
+      `(let ((wrld ,new-w)) ,form))
+     (t
+      `(let ((wrld ,new-w))
+         (cond
+          (,condition ,form)
+          (t (value wrld))))))))
+
 (defun install-event (val form ev-type namex ttree cltl-cmd
                           chk-theory-inv-p ctx wrld state)
 
@@ -4787,10 +4811,11 @@
                                          currently-installed-wrld)
                        wrld3)))
        (er-let*
-         ((wrld5 (tau-visit-event t ev-type namex
-                                  (tau-auto-modep wrld4)
+         ((wrld4a (update-w t wrld4)) ; for ev-xxx calls under tau-visit-event
+          (wrld5 (tau-visit-event t ev-type namex
+                                  (tau-auto-modep wrld4a)
                                   (ens state)
-                                  ctx wrld4 state)))
+                                  ctx wrld4a state)))
 
 ; WARNING: Do not put down any properties here!  The cltl-command should be the
 ; last property laid down before the call of add-event-landmark.  We rely on
@@ -16025,7 +16050,7 @@
              op bad-argn bad-arg))
         (t (value nil))))
 
-(defun chk-table-guard (name key val ctx wrld state)
+(defun chk-table-guard (name key val ctx wrld ens state)
 
 ; This function returns an error triple.  In the non-error case, the value is
 ; nil except when it is a pair as described in chk-acceptable-ttag1, based on
@@ -16053,7 +16078,8 @@
           (ev term
               (list (cons 'key key)
                     (cons 'val val)
-                    (cons 'world wrld))
+                    (cons 'world wrld)
+                    (cons 'ens ens))
               state nil nil nil)
           (declare (ignore latches))
           (cond
@@ -16073,21 +16099,21 @@
              (chk-acceptable-ttag val nil ctx wrld state)
            (value nil)))))))
 
-(defun chk-table-guards-rec (name alist ctx pair wrld state)
+(defun chk-table-guards-rec (name alist ctx pair wrld ens state)
   (if alist
       (er-let* ((new-pair (chk-table-guard name (caar alist) (cdar alist) ctx
-                                           wrld state)))
+                                           wrld ens state)))
                (if (and pair new-pair)
                    (assert$ (and (eq name 'acl2-defaults-table)
                                  (eq (caar alist) :ttag))
                             (er soft ctx
                                 "It is illegal to specify the :ttag twice in ~
                                  the acl2-defaults-table."))
-                 (chk-table-guards-rec name (cdr alist) ctx new-pair wrld
+                 (chk-table-guards-rec name (cdr alist) ctx new-pair wrld ens
                                        state)))
     (value pair)))
 
-(defun chk-table-guards (name alist ctx wrld state)
+(defun chk-table-guards (name alist ctx wrld ens state)
 
 ; Consider the case that name is 'acl2-defaults-table.  We do not allow a
 ; transition from a non-nil (ttag wrld) to a nil (ttag wrld) at the top level,
@@ -16098,7 +16124,7 @@
                               (null (assoc-eq :ttag alist)))
                          (chk-acceptable-ttag nil nil ctx wrld state))
                         (t (value nil)))))
-            (chk-table-guards-rec name alist ctx pair wrld state)))
+            (chk-table-guards-rec name alist ctx pair wrld ens state)))
 
 (defun put-assoc-equal-fast (name val alist)
 
@@ -16266,7 +16292,7 @@
              (t `(unmemoize ,key))))
       (t nil))))
 
-(defun table-fn1 (name key val op term ctx wrld state event-form)
+(defun table-fn1 (name key val op term ctx wrld ens state event-form)
 
 ; Warning: If the table event ever generates proof obligations, remove it from
 ; the list of exceptions in install-event just below its "Comment on
@@ -16304,7 +16330,7 @@
                  (and pair (equal val (cdr pair))))
                (stop-redundant-event ctx state))
               (t (er-let*
-                  ((pair (chk-table-guard name key val ctx wrld state))
+                  ((pair (chk-table-guard name key val ctx wrld ens state))
                    (wrld1 (cond
                            ((null pair)
                             (value wrld))
@@ -16352,7 +16378,8 @@
                           val)))
                (er-let*
                 ((wrld1
-                  (er-let* ((pair (chk-table-guards name val ctx wrld state)))
+                  (er-let* ((pair (chk-table-guards name val ctx wrld ens
+                                                    state)))
                            (cond
                             ((null pair)
                              (value wrld))
@@ -16392,11 +16419,10 @@
                                  ctx state)
              (er-let* ((tterm (translate term '(nil) nil nil ctx wrld state)))
 
-; known-stobjs = nil.  No variable is treated as a stobj in tterm.
-; But below we check that the only vars mentioned are KEY, VAL and
-; WORLD.  These could, in principle, be declared stobjs by the user.
-; But when we ev tterm in the future, we will always bind them to
-; non-stobjs.
+; known-stobjs = nil.  No variable is treated as a stobj in tterm.  But below
+; we check that the only vars mentioned are KEY, VAL, WORLD, and ENS.  These
+; could, in principle, be declared stobjs by the user.  But when we ev tterm in
+; the future, we will always bind them to non-stobjs.
 
                       (let ((old-guard
                              (getpropc name 'table-guard nil wrld)))
@@ -16425,7 +16451,7 @@
                                non-empty table ~x0.  See :DOC table."
                               name))
                          (t
-                          (let ((legal-vars '(key val world))
+                          (let ((legal-vars '(key val world ens))
                                 (vars (all-vars tterm)))
                             (cond ((not (subsetp-eq vars legal-vars))
                                    (er soft ctx
@@ -16499,6 +16525,7 @@
 
   (let* ((ctx (cons 'table name))
          (wrld (w state))
+         (ens (ens state))
          (event-form (or event-form
                          `(table ,name ,@args)))
          (n (length args))
@@ -16538,14 +16565,15 @@
                  val-form
                  (if (eq name 'acl2-defaults-table)
                      nil
-                     (list (cons 'world wrld)))
+                     (list (cons 'world wrld)
+                           (cons 'ens ens)))
                  nil
                  (if (eq name 'acl2-defaults-table)
                      "In (TABLE ACL2-DEFAULTS-TABLE key val ...), val"
                      "The third argument of TABLE")
                  ctx wrld state nil)))
               (table-fn1 name (cdr key-pair) (cdr val-pair) op term
-                         ctx wrld state event-form)))))
+                         ctx wrld ens state event-form)))))
 
 (defun set-override-hints-fn (lst at-end ctx wrld state)
   (er-let*

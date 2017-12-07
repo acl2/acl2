@@ -11,19 +11,12 @@
 ; that would complicate or confuse any attempt to apply$ 'wormhole1.  We also
 ; introduce and verify a metafunction for simplifying (apply$-prim 'fn args).
 
-; At some point we may fix these books to work with ACL2(r).
-; cert_param: (non-acl2r)
+; This model of APPLY$-PRIM, i.e., MODAPP::APPLY$-PRIM, handles more primitives
+; than the built-in ACL2::APPLY$-PRIM because the model is defined in a fully
+; booted ACL2 image while the built-in APPLY$-PRIM is defined before the
+; boot-strap process is completed.  For example, MODAPP::APPLY$-PRIM can apply
+; 'ACL2::APPLY$-PRIM, whereas ACL2::APPLY$-PRIM cannot!
 
-; Standard Explanation: We currently distribute two sets of books,
-; /books/projects/apply/ and /books/projects/apply-model/.  The files
-; apply-prim.lisp, constraints.lisp, and apply.lisp on those two directories
-; are identical copies of their namesakes with one exception: in the former
-; directory, all the development is in "ACL2" package and in the latter
-; directory, all the development is in the "MODAPP" package.  The byte counts
-; of the files should be identical to that of their namesakes, it's just that
-; the semicolon below is on a different line!
-
-; (in-package "ACL2")
 (in-package "MODAPP")
 
 ; Handling the Primitives
@@ -39,6 +32,13 @@
    (t (let ((fn (base-symbol (car runes))))
         (cond
          ((and (acl2-system-namep fn wrld)
+
+; In ACL2(r), we avoid non-classical functions, to avoid failure of the
+; defevaluator event in the book version of apply-prim.lisp.
+
+               #+:non-standard-analysis
+               (acl2::classicalp fn wrld)
+
                (not (member-eq fn avoid-fns))
                (all-nils (getpropc fn 'stobjs-in nil wrld))
 
@@ -305,6 +305,8 @@
 ; verify a metafunction which will enable MUCH faster reduction of (apply$-prim
 ; 'fn args).
 
+(set-rewrite-stack-limit 4000) ; local to this book
+
 (defun meta-apply$-prim (term)
   (cond ((and (consp term)
               (eq (ffn-symb term) 'apply$-prim)
@@ -325,8 +327,6 @@
 (make-event
  `(encapsulate
     nil
-
-    (set-rewrite-stack-limit 4000)
 
 ; We introduce the relevant evaluator; defevaluator works in a
 ; very restricted theory (*DEFEVALUATOR-FORM-BASE-THEORY*) and so
@@ -350,14 +350,28 @@
                        (cons (list 'car args)
                              (n-car-cadr-caddr-etc n (list 'CDR args)))))))
 
-; Here's correctness of the apply$-prim simplifier.
+; Next is correctness of the apply$-prim simplifier.
+
+; Some day we may fix the well-formedness-guarantee code so that at the time a
+; meta function is applied, we only check the non-primitive functions in the
+; supplied arities-alist.  That could be done by checking the list at the time
+; we store the meta lemma and removing any function that is a primitive.  We
+; know -- or can at least sanely assume -- that the arities of all the system
+; primitives won't change.  Then the built-in constant to be checked at
+; apply-time would be much reduced -- in fact, to NIL in the case of
+; meta-apply$-prim.
+
+; If the above fix is ever made, it would be good to add a well-formedness
+; guarantee lemma.
 
     (with-output
       :off (prove event)
       (defthm apply$-prim-meta-fn-correct
         (equal (apply$-prim-meta-fn-ev term alist)
                (apply$-prim-meta-fn-ev (meta-apply$-prim term) alist))
-        :hints (("Goal" :in-theory (disable (:executable-counterpart break$))))
+        :hints (("Goal" :in-theory (disable acl2::apply$-primp
+                                            acl2::apply$-prim
+                                            (:executable-counterpart break$))))
         :rule-classes ((:meta :trigger-fns (apply$-prim)))))
 
     (defthm apply$-primp-implies-symbolp

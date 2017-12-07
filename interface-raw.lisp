@@ -5762,6 +5762,9 @@
 ; This concludes development of code for early loading of compiled files
 ; (though other related such code may be found elsewhere).
 
+(defconst *boot-strap-pass-2-acl2-loop-only-fns*
+  '(apply$-prim))
+
 (defun-one-output add-trip (world-name world-key trip)
 
 ; Warning: If you change this function, consider making corresponding changes
@@ -5921,6 +5924,9 @@
 ; *1* def; see the next comment about ignorep.
 
                      (maybe-push-undo-stack 'defun (car def) ignorep))
+                    ((and boot-strap-flg
+                          (member-eq (car def)
+                                     *boot-strap-pass-2-acl2-loop-only-fns*)))
                     (t (maybe-push-undo-stack 'defun (car def) ignorep)
 
 ; Note: If ignorep is '(defstobj . stobj), we save both the current def and the
@@ -6244,11 +6250,28 @@
           (cond (boot-strap-flg
                  (or (boundp (cadr (cddr trip)))
                      (interface-er "~x0 is not boundp!"
-                                   (cadr (cddr trip)))))
+                                   (cadr (cddr trip))))
+
+; In the boot-strap, there are constants that will not get the necessary
+; 'redundant-raw-lisp-discriminator proprerty without the following code.  In
+; particular, the constant *badge-prim-falist* is defined under when-pass-2, so
+; its defconst form is not processed in raw Lisp.  As a result, without the
+; following code we get an error: "The following raw Lisp error occurred when
+; loading file <path>/apply-prim.dx64fsl: Illegal attempt to redeclare the
+; constant *BADGE-PRIM-FALIST*."  That error prevents loading of the compiled
+; file.
+
+                 (or (get (cadr (cddr trip))
+                          'redundant-raw-lisp-discriminator)
+                     (setf (get (cadr (cddr trip))
+                                'redundant-raw-lisp-discriminator)
+                           (list* 'defconst
+                                  (caddr (cddr trip)) ; form
+                                  (cadddr (cddr trip))))))
                 ((equal *main-lisp-package-name*
                         (symbol-package-name (cadr (cddr trip))))
-                 (interface-er "It is illegal to redefine a defconst in ~
-                                    the main Lisp package, such as ~x0!"
+                 (interface-er "It is illegal to redefine a defconst in the ~
+                                main Lisp package, such as ~x0!"
                                (cadr (cddr trip))))
                 (t (maybe-push-undo-stack 'defconst (cadr (cddr trip)))
 
@@ -6265,7 +6288,14 @@
                                          nil
                                          t))))
         (defmacro
-          (cond (boot-strap-flg
+          (cond ((and boot-strap-flg
+                      (not (global-val 'boot-strap-pass-2 wrld)))
+
+; During the first pass of initialization, we insist that every function
+; defined already be defined in raw lisp.  During pass two we can't expect this
+; because there may be LOCAL defuns that got skipped during compilation and the
+; first pass.
+
                  (or (fboundp (cadr (cddr trip)))
                      (interface-er "~x0 is not fboundp!"
                                    (cadr (cddr trip)))))
@@ -7134,6 +7164,7 @@
     (locally (declare (special ccl::*stack-access-defeat-hook*))
              (setq ccl::*stack-access-defeat-hook*
                    'stack-access-defeat-hook-default)))
+  (setq *hard-error-is-error* nil)
   nil)
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)
@@ -7167,7 +7198,7 @@
          (global-set 'boot-strap-pass-2 t (w *the-live-state*))
          *the-live-state*)
   (acl2-unwind *ld-level* nil)
-  #+hons (memoize-init) ; for memoize calls in boot-strap-pass-2.lisp
+  #+hons (memoize-init) ; for memoize calls in boot-strap-pass-2-b.lisp
 
 ; We use an explicit call of LD-fn to change the defun-mode to :logic just to
 ; lay down an event in the pre-history, in case we someday want to poke around
@@ -7191,8 +7222,14 @@
     "memoize"
     "hons"
     "serialize"
-    "boot-strap-pass-2"
+    "boot-strap-pass-2-a"
+    "apply-prim"
+    "apply-constraints"
+    "apply"
+    "boot-strap-pass-2-b"
     ))
+
+(assert (subsetp-equal *acl2-pass-2-files* *acl2-files*))
 
 ; Next we define fns-different-wrt-acl2-loop-only, used below in
 ; check-built-in-constants.  We base our code loosely on
@@ -7216,7 +7253,7 @@
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
             defmacro defabbrev defun@par defmacro-last defun-overrides
-            defun-with-guard-check)
+            defun-with-guard-check defun-sk)
           (our-update-ht (cadr form) form ht))
          (save-def
           (note-fns-in-form (cadr form) ht))
@@ -7232,7 +7269,7 @@
                            (nth 2 form)
                          (nth 1 form)))))
             (our-update-ht name form ht)))
-         ((mutual-recursion mutual-recursion@par progn)
+         ((mutual-recursion mutual-recursion@par progn when-pass-2)
           (loop for x in (cdr form)
                 do (note-fns-in-form x ht)))
          ((encapsulate when)
@@ -7245,6 +7282,7 @@
          ((add-custom-keyword-hint
            add-macro-alias
            add-macro-fn
+           assert
            #+ccl ccl:defstatic
            declaim
            def-basic-type-sets
@@ -7293,7 +7331,18 @@
            table
            value
            verify-guards
-           verify-termination-boot-strap)
+           verify-termination-boot-strap
+
+; We are generally unlikely to see make-event in our source files, since
+; compilation is so restricted for them.  An exception is the make-event form
+; in source file apply-prim.lisp, which is local and hence not compiled.  We
+; make things easy on ourselves here and avoid trying to check make-event
+; forms.
+
+           make-event
+           make-apply$-prim-body-fn-raw
+           set-raw-mode
+           set-compile-fns)
           nil)
          (t
           (error "Unexpected type of form, ~s.  See note-fns-in-form."
@@ -7754,24 +7803,14 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                  acc))))
    (t
     (let* ((trip (car trips))
-           (fn
-
-; We need to rule out triples such as the following (but for :ideal mode)
-
-;  (EVENT-LANDMARK GLOBAL-VALUE 5054
-;                  (DEFUN EVENS . :COMMON-LISP-COMPLIANT)
-;                  DEFUN EVENS (L)
-;                  (DECLARE (XARGS :GUARD (TRUE-LISTP L)))
-;                  (COND ((ENDP L) NIL)
-;                        (T (CONS (CAR L) (EVENS (CDDR L))))))
-
-            (and (eq (car trip) 'event-landmark)
-                 (true-listp trip)
-                 (eq (cadr trip) 'global-value)
-                 (eq (access-event-tuple-type (cddr trip)) 'defun)
-                 (nth 5 trip))))
+           (fn (and (eq (car trip) 'event-landmark)
+                    (eq (cadr trip) 'global-value)
+                    (case (access-event-tuple-type (cddr trip))
+                      (defun (access-event-tuple-namex (cddr trip)))
+                      (defuns (car (access-event-tuple-namex (cddr trip))))
+                      (otherwise nil)))))
       (cond ((and fn
-                  (symbolp fn)
+                  (symbolp fn) ; always true?
                   (eq (symbol-class fn (w state))
                       :ideal)
                   (not (eq (getpropc fn 'non-executablep)
@@ -7905,10 +7944,10 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; Note: if system-books-dir is supplied, it should be a Unix-style
 ; pathname (either absolute or not [doesn't matter which]).
 
-; This function first lds all of the *acl2-files* except boot-strap-pass-2.lisp
-; and *-raw.lisp in default-defun-mode :program (which is the default
-; default-defun-mode).  It then loads the files in acl2-pass-2-files in :logic
-; mode.
+; This function first lds all of the *acl2-files*, except
+; boot-strap-pass-2-*.lisp and *-raw.lisp, in default-defun-mode :program
+; (which is the default default-defun-mode).  It then loads the files in
+; acl2-pass-2-files in :logic mode.
 
 ; During the first pass, ld-skip-proofsp is 'initialize-acl2, which is like the
 ; setting t (doing syntactic checks but skipping proofs and LOCALs) but omits a
@@ -8060,7 +8099,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
              ans))
      (dolist
        (fl *acl2-files*)
-       (when (not (or (equal fl "boot-strap-pass-2")
+       (when (not (or (equal fl "boot-strap-pass-2-a")
+                      (equal fl "boot-strap-pass-2-b")
                       (raw-source-name-p fl)))
          (mv-let (er val st)
                  (ld-fn
@@ -8428,9 +8468,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 ;     The fix was for ACL2 function print-call-history to print backtraces to
 ;     *standard-output*, rather than to the default stream, *debug-io*.
-; 
+;
 ; BUT that fix caused a problem:
-; 
+;
 ; (2) Commit 6d7ad53ecdaaec9dcf3e3d05c19832b97fa7062a on Aug 26, 2016 provided
 ;     a fix for GitHub Issue 634 (https://github.com/acl2/acl2/issues/634),
 ;     namely, printing of a backtrace to the terminal.  The problem had been
@@ -8457,7 +8497,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; (defun foo (x) (declare (optimize (safety 0))) (car x))
 ; #+acl2-loop-only (set-debugger-enable t)
 ; (foo 3)
-; 
+;
 ; So now, in LP we bind *debug-io* to *our-standard-io* instead of
 ; *standard-output*, thus guaranteeing that debugger output is sent to standard
 ; output rather than the terminal, without the mistake of binding *debug-io* to
@@ -8539,27 +8579,30 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
        #-(and gcl (not cltl2))
        (setq *debugger-hook* 'our-abort)
 
-; Even with the setting of *stack-overflow-behaviour* to nil or :warn in
-; acl2-init.lisp, we cannot eliminate the following form for LispWorks.  (We
-; tried with LispWorks 6.0 and Lispworks 6.0.1 with *stack-overflow-behaviour*
-; = nil and without the following form, but we got segmentation faults when
-; certifying community books books/concurrent-programs/bakery/stutter2 and
-; books/unicode/read-utf8.lisp.)
+; We have found it necessary to extend the LispWorks stack size, in particular
+; for community books books/concurrent-programs/bakery/stutter2 and
+; books/unicode/read-utf8.lisp.
 
        #+lispworks (hcl:extend-current-stack 400)
 
-       #+(and lispworks acl2-par)
-       (when (< (hcl:current-stack-length)
+; David Rager agrees that the following block of code is fine to delete (note
+; that as of 11/2017 (hcl:current-stack-length) is 399998 when ACL2 comes up,
+; built on 64-bit LispWorks), though he wonders if it is needed for 32-bit
+; LispWorks.  We'll leave it as a comment in case something like it is useful
+; in the future.
 
-; Keep the below number (currently 80000) in sync with the value given to
-; *sg-default-size* (set elsewhere in our code).
-
-                80000)
-         (hcl:extend-current-stack
-
-; this calculation sets the current stack length to be within 1% of 80000
-
-          (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
+;;;        #+(and lispworks acl2-par)
+;;;        (when (< (hcl:current-stack-length)
+;;;
+;;; ; Keep the below number (currently 80000) in sync with the value given to
+;;; ; *sg-default-size* (set elsewhere in our code).
+;;;
+;;;                 80000)
+;;;          (hcl:extend-current-stack
+;;;
+;;; ; this calculation sets the current stack length to be within 1% of 80000
+;;;
+;;;           (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
 
        #+sbcl
        (define-our-sbcl-putenv) ; see comment on this in acl2-fns.lisp

@@ -1,6 +1,15 @@
-; Copyright (C) 2013, Regents of the University of Texas
-; Written by Matt Kaufmann (some years before that)
-; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+; Event-Level Assertions
+;
+; Copyright (C) 2017 Regents of the University of Texas
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Authors:
+;   Matt Kaufmann (kaufmann@cs.utexas.edu)
+;   Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The macro assert!, defined and illustrated below, allows for assertions
 ; within an ACL2 book, as requested by David Rager.
@@ -220,3 +229,12 @@
                         foo))
                   foo))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection assert-equal
+  :parents (testing-utilities errors)
+  :short "Abbreviation for calling @(tsee assert!) on an equality."
+  :long "@(def assert-equal)"
+  (defmacro assert-equal (x y)
+    `(assert! (equal ,x ,y))))

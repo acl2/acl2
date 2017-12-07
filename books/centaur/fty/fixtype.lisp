@@ -253,7 +253,6 @@
        (hints (getarg :hints nil kwd-alist))
        (skip-const-thm (or (getarg :skip-const-thm nil kwd-alist)
                            (not (fixtype->executablep fixtype))))
-       (out-equiv (getarg :out-equiv 'equal kwd-alist))
        ((unless (and (consp form) (symbolp (car form))))
         (raise "Form should be a function call term, but it's ~x0" form))
        (basename (getarg :basename (car form) kwd-alist))
@@ -262,6 +261,12 @@
        (pkg (if (equal (symbol-package-name pkg) "COMMON-LISP")
                 'acl2::foo
               pkg))
+       (out-equiv (getarg :out-equiv 'equal kwd-alist))
+       (out-equiv-equiv-rune (acl2::equivalence-rune
+                              (acl2::deref-macro-name out-equiv (macro-aliases world))
+                              world))
+       ((unless out-equiv-equiv-rune)
+        (raise "Expected ~s0 to be a known equivalence relation" out-equiv))
        (under-out-equiv (if (eq out-equiv 'equal) ""
                           (concatenate 'string "-UNDER-" (symbol-name out-equiv))))
        (suffix (getarg :thm-suffix "" kwd-alist))
@@ -287,7 +292,7 @@
                        'string (symbol-name arg) "-EQUIV")
                       pkg)))
        ((mv err tr-form) (acl2::translate-cmp form t t nil 'deffixequiv-basic-parse
-                                              (w state) (acl2::default-state-vars t)))
+                                              world (acl2::default-state-vars t)))
        ((when err)
         (raise "Error translating form: ~@0" tr-form))
        (vars (all-vars tr-form))
@@ -305,7 +310,9 @@
                           (implies (syntaxp (and (quotep ,arg)
                                                  (not (,pred (cadr ,arg)))))
                                    (,out-equiv ,form
-                                               ,(subst `(,fix ,arg) arg form))))))
+                                               ,(subst `(,fix ,arg) arg form)))
+                          :hints (("Goal" :in-theory
+                                   '(,out-equiv-equiv-rune ,fix-thmname))))))
        (cong-thm `(defthm ,congruence-thmname
                     (implies (,equiv ,arg ,argequiv)
                              (,out-equiv ,form

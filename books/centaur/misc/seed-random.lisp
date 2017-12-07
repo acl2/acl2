@@ -151,15 +151,24 @@ session by just calling @('(seed-random 'seed)').</p>")
    (include-book "std/util/bstar" :dir :system)
    (include-book "misc/assert" :dir :system)
 
-   (defund random-list (len limit state)
-     (declare (xargs :guard (and (natp len)
-                                 (posp limit))
-                     :stobjs state))
-     (if (zp len)
-         (mv nil state)
-       (b* (((mv r1 state) (random$ limit state))
-            ((mv rest state) (random-list (- len 1) limit state)))
-         (mv (cons r1 rest) state))))
+; Matt K. mod: Replace random-list with the tail-recursive version from
+; system/random.lisp, to avoid a stack overflow in LispWorks.
+
+   (local (include-book "system/random" :dir :system)) ; for random-list
+
+   (defund random-list (n limit state)
+     (declare (xargs :guard (and (natp n)
+                                 (posp limit))))
+     (random-list-aux n limit nil state))
+
+   (defund random-list-aux (n limit acc state)
+     (declare (xargs :guard (and (natp n)
+                                 (posp limit)
+                                 (true-listp acc))))
+     (if (zp n)
+         (mv (reverse acc) state)
+       (b* (((mv x1 state) (random$ limit state)))
+         (random-list-aux (- n 1) limit (cons x1 acc) state))))
 
    (value-triple (seed-random$ 'foo))
    (defconsts (*test1-a* state) (random-list 1000 100000 state))

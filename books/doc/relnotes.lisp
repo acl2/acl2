@@ -77,7 +77,7 @@
          <p>The current version of ACL2 is the value of the constant @('(@
             acl2-version)').</p>")
 
-(defxdoc note-7-5-books
+(defxdoc note-8-0-books
 
 ; Note: To see all git log entries with a given author, for example Joe
 ; Q. Bignerd, you can issue a command such as the following (use a substring of
@@ -100,17 +100,13 @@
 ;  <h4>Your Library Title</h4>
 ;  <p>Details go here.</p>
 
-; I will change :doc note-7-5 in books/system/acl2-doc to point to
-; this topic, when (if?) this topic gets fleshed out (see :doc
-; note-7-2 for precedent).
-
-  :parents (note-7-5 release-notes-books)
-  :short "Release notes for the ACL2 Community Books for ACL2 7.5"
+  :parents (note-8-0 release-notes-books)
+  :short "Release notes for the ACL2 Community Books for ACL2 8.0"
 
   :long "<p>The following is a brief summary of changes made to the @(see
- community-books) between the releases of ACL2 7.4 and 7.5.</p>
+ community-books) between the releases of ACL2 7.4 and 8.0.</p>
 
- <p>See also @(see note-7-5) for the changes made to ACL2 itself.  For
+ <p>See also @(see note-8-0) for the changes made to ACL2 itself.  For
  additional details, you may also see the raw <a
  href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
 
@@ -236,7 +232,11 @@
  component is not @('nil').</p>
 
  <p>New utility @(tsee manage-screen-output) is an improved version of @(tsee
- control-screen-output) (which may eventually be removed).</p>
+ control-screen-output) (which may eventually be removed).  Added utilities
+ @(tsee make-event-terse), @(tsee restore-output) and @(tsee restore-output?)
+ to fine-tune screen output in event-generating macros.  Moved obsolete utility
+ @('control-screen-output-and-maybe-replay') to Workshop supporting materials,
+ where the only remaining use of this utility was.</p>
 
  <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
  fails, then to evaluate a second event.</p>
@@ -424,7 +424,11 @@
  books that depend on quicklisp, except when the host Lisp is GCL.  Specify
  @('USE_QUICKLISP=0') if that is not what you want.</p>
 
- <p>Also see @(see note-7-5), specifically the section on ``Changes at the
+ <p>Improved @('books/GNUmakefile') so that by default, it reports an error
+ when the @('bash') shell is missing.  (Note that a version of @('sh') on a
+ FreeBSD machine caused an error.)</p>
+
+ <p>Also see @(see note-8-0), specifically the section on ``Changes at the
  System Level''.</p>
 
  <h3>Testing</h3>
@@ -434,6 +438,13 @@
  the testing utilities that are part of the @(see kestrel-books), so that now
  the topic @(see testing-utilities) is the top-level topic for the testing
  utilities.</p>
+
+ <p>The Kestrel Testing Utilities have been integrated with similar testing
+ utilities under @('[books]/misc').  The utilities in
+ @('kestrel/utilities/testing.lisp') have been added to @('misc/eval.lisp') and
+ @('misc/assert.lisp'), and the tests in
+ @('kestrel/utilities/testing-tests.lisp') have been moved into two new files
+ @('misc/eval-test.lisp') and @('misc/assert-tests.lisp').</p>
 
  <p>The utility @(tsee run-script) supports testing of evaluation of the forms
  in a given file, to check that the output is as expected.  So far, several

@@ -194,12 +194,8 @@
 
              (safety
 
-; Consider using (safety 3) if there is a problem with LispWorks.  It enabled
-; us to see a stack overflow involving collect-assumptions in the proof of
-; bitn-lam0 from community book books/rtl/rel2/support/lop3.lisp.  The safety
-; setting of 3 helped in this example, because, when the safety is set to 0,
-; the stack is not always automatically extended upon overflow (despite setting
-; system::*stack-overflow-behaviour* to nil in acl2-init.lisp).
+; Consider using (safety 3) if there is a problem with LispWorks.  It should
+; allow stack overflows to report an error, rather than simply to hang.
 
 ; Safety 1 for CCL has avoided the kernel debugger, e.g. for compiled calls
 ; of car on a non-nil atom.  The following results for CCL show why we have
@@ -995,7 +991,11 @@
     "apply-raw"
     "interface-raw"
     "defpkgs"
-    "boot-strap-pass-2" ; at the end so that it is compiled last
+    "boot-strap-pass-2-a"
+    "apply-prim"
+    "apply-constraints"
+    "apply"
+    "boot-strap-pass-2-b"
     )
   "*acl2-files* is the list of all the files necessary to build
 ACL2 from scratch.")

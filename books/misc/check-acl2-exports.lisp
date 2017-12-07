@@ -112,11 +112,13 @@
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they
 ; come from defpointers to system-utilities.
 
+    ARGLISTP
     ALL-CALLS
     BODY
     CONJOIN
     CONS-COUNT-BOUNDED
     CONS-TERM
+    CONS-TERM*
     DEFINED-CONSTANT
     DISJOIN
     DISJOIN2
@@ -135,6 +137,7 @@
     FLAMBDAP
     FN-SYMB
     FORMALS
+    FSUBCOR-VAR
     FQUOTEP
     GENVAR
     GET-BRR-LOCAL
@@ -168,16 +171,6 @@
     VARIABLEP
 
 ; Symbols below should probably be added to *acl2-exports*.
-
-    MAGIC-EV-FNCALL
-    ARGLISTP
-    CONS-TERM*
-    FSUBCOR-VAR
-    IGNORABLE IRRELEVANT OPTIMIZE ; from declare forms
-
-; Symbols below should be subtracted from *acl2-exports*.
-
-    ORACLE-APPLY ORACLE-APPLY-RAW ORACLE-FUNCALL ; to be removed
 
     ))
 
