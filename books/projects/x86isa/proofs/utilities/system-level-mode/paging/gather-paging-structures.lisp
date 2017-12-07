@@ -2059,7 +2059,9 @@
   :guard (and (x86p x86-1) (x86p x86-2))
 
   (if (and (equal (xr :programmer-level-mode 0 x86-1) nil)
-           (equal (xr :programmer-level-mode 0 x86-2) nil))
+           (equal (xr :programmer-level-mode 0 x86-2) nil)
+           (64-bit-modep x86-1)
+           (64-bit-modep x86-2))
 
       (and (xlate-equiv-structures x86-1 x86-2)
            (all-mem-except-paging-structures-equal x86-1 x86-2))
@@ -2076,7 +2078,9 @@
   (defthm xlate-equiv-memory-refines-all-mem-except-paging-structures-equal
     (implies (xlate-equiv-memory x86-1 x86-2)
              (all-mem-except-paging-structures-equal x86-1 x86-2))
-    :rule-classes :refinement))
+    :rule-classes :refinement)
+
+  (defcong xlate-equiv-memory equal (64-bit-modep x86) 1))
 
 ;; =====================================================================
 
@@ -2166,11 +2170,11 @@
       'xlate-equiv-structures-and-write-to-physical-memory-disjoint
       x86-2 'x86-1 mfc state)
      (x86-1))
-    (xlate-equiv-structures x86-1 (double-rewrite x86-2))    
+    (xlate-equiv-structures x86-1 (double-rewrite x86-2))
     (disjoint-p
      p-addrs
      (open-qword-paddr-list
-      (gather-all-paging-structure-qword-addresses x86-1)))    
+      (gather-all-paging-structure-qword-addresses x86-1)))
     (physical-address-listp p-addrs))
    (xlate-equiv-structures (write-to-physical-memory p-addrs val x86-2) x86-1))
   :hints (("Goal"

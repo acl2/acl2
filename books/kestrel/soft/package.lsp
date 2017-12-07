@@ -16,6 +16,7 @@
 
 (defpkg "SOFT" (append *std-pkg-symbols*
                        '(body
+                         control-screen-output
                          defchoose-body
                          defchoose-bound-vars
                          defchoose-strengthen
@@ -29,6 +30,7 @@
                          defun-sk-info->strengthen
                          defun-sk-info->witness
                          defun-sk-quantifier-p
+                         er-soft+
                          fargs
                          flambdap
                          fn-symb
@@ -38,12 +40,14 @@
                          keywords-of-keyword-value-list
                          lambda-body
                          lambda-formals
+                         make-event-terse
                          make-lambda
                          measure
                          o<
                          pseudo-event-formp
                          pseudo-event-form-listp
                          recursivep
+                         restore-output?
                          restrict-alist
                          strip-keyword-list
                          symbol-symbol-alistp

@@ -49,7 +49,7 @@
    width lsb
    accessor
    updater
-   type pred fix equiv
+   type pred fix equiv fullp
    signedp
    rule-classes
    doc
@@ -65,6 +65,7 @@
    width ;; full width
    pred fix equiv
    xvar
+   fullp
    kwd-alist
    orig-fields
    signedp
@@ -75,7 +76,7 @@
    equiv-under-mask))
    
 (defconst *defbitstruct-keywords*
-  '(:pred :fix :equiv :xvar :signedp
+  '(:pred :fix :equiv :xvar :signedp :fullp
     :parents :short :long))
 
 (define lookup-bitstruct (name bitstruct-table)
@@ -130,6 +131,7 @@
              :type field.type
              :pred field.pred
              :fix field.fix
+             :fullp t
              :equiv field.equiv
              :signedp field.signedp
              :subfield-hierarchy hier
@@ -162,6 +164,7 @@
                :name fieldname
                :width bitstruct.width
                :lsb lsb
+               :fullp bitstruct.fullp
                :accessor accessor
                :updater updater
                :rule-classes rule-classes
@@ -170,7 +173,8 @@
                :fix bitstruct.fix
                :doc doc
                :equiv bitstruct.equiv
-               :signedp bitstruct.signedp))
+               :signedp bitstruct.signedp
+               :kwd-alist field-kwd-alist))
        (subfield-treelst (getarg :subfields nil field-kwd-alist))
        (subfields (and subfield-treelst
                        (parse-bitstruct-subfields subfield-treelst bitstruct.fields
@@ -183,29 +187,34 @@
                                             :width 1
                                             :pred 'bitp
                                             :fix 'acl2::bfix
-                                            :equiv 'bit-equiv))
+                                            :equiv 'bit-equiv
+                                            :fullp t))
 
 (table bitstruct-table 'boolean (make-bitstruct :name 'boolean
                                                 :width 1
                                                 :pred 'booleanp
                                                 :fix 'acl2::bool-fix
-                                                :equiv 'iff))
+                                                :equiv 'iff
+                                                :fullp t))
 
 
 (define parse-bitstruct-fields-aux (x lsb structname bitstruct-table)
+  ;; returns (mv fields with fullp)
   (b* (((when (atom x))
-        (mv nil lsb)) ;; width
+        (mv nil lsb t)) ;; width
        (fields (parse-bitstruct-field (car x) lsb structname bitstruct-table))
        ((bitstruct-field field1) (car fields))
-       ((mv rest width)
+       ((mv rest width fullp)
         (parse-bitstruct-fields-aux
          (cdr x) (+ lsb field1.width) structname bitstruct-table)))
     (mv (append fields rest)
-        width)))
+        width
+        (and fullp field1.fullp))))
 
 (define parse-bitstruct-fields (x lsb structname bitstruct-table)
+  ;; returns (mv fields with fullp)
   (if (natp x)
-      (mv nil x)
+      (mv nil x t)
     (parse-bitstruct-fields-aux x lsb structname bitstruct-table)))
       
     
@@ -251,15 +260,17 @@
        (pred  (getarg! :pred  (intern-in-package-of-symbol (cat (symbol-name name) "-P") name) kwd-alist))
        (fix   (getarg! :fix   (intern-in-package-of-symbol (cat (symbol-name name) "-FIX") name) kwd-alist))
        (equiv (getarg! :equiv (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV") name) kwd-alist))
+       (fullp (getarg :fullp t kwd-alist))
        (signedp (getarg :signedp nil kwd-alist))
        (xvar (or (getarg :xvar nil kwd-alist)
                  (intern-in-package-of-symbol "X" name)))
 
 
-       ((mv fields width) (parse-bitstruct-fields orig-fields 0 name bitstruct-table)))
+       ((mv fields width fields-fullp) (parse-bitstruct-fields orig-fields 0 name bitstruct-table)))
     (make-bitstruct :name name
                     :pred pred
                     :fix fix
+                    :fullp (and fullp fields-fullp)
                     :equiv equiv
                     :width width
                     :fields fields
@@ -279,6 +290,34 @@
 
 
 
+(define bitstruct-accessor-term-logic-form (field xvar)
+  (b* (((bitstruct-field field))
+       (logic-form-base `(bitops::part-select ,xvar :low ,field.lsb :width ,field.width)))
+    (cond ((eq field.pred 'booleanp)
+           `(bit->bool ,logic-form-base))
+          (field.signedp `(acl2::logext ,field.width ,logic-form-base))
+          (t logic-form-base))))
+
+(define bitstruct-accessor-term-exec-form (field xvar)
+  (b* (((bitstruct-field field)))
+    (if (eql field.width 1)
+        (if (eq field.pred 'booleanp)
+            `(logbitp ,field.lsb ,xvar)
+          (if field.signedp
+              `(acl2::logext 1 (acl2::logbit ,field.lsb ,xvar))
+            `(acl2::logbit ,field.lsb ,xvar)))
+      (bitstruct-accessor-term-logic-form field xvar))))
+
+(define bitstruct-field-preds (fields xvar)
+  ;; Returns the list of predicates applied to non-fullp fields.
+  (b* (((when (atom fields)) nil)
+       ((bitstruct-field field) (car fields))
+       (rest (bitstruct-field-preds (cdr fields) xvar))
+       ((when field.fullp) rest))
+    (cons `(,field.pred ,(bitstruct-accessor-term-logic-form field xvar)) rest)))
+         
+  
+
 
 (define bitstruct-pred (x)
   (b* (((bitstruct x))
@@ -286,28 +325,34 @@
        (bool (intern-in-package-of-symbol "BOOL" x.name))
        (def (if x.signedp
                 `(signed-byte-p ,x.width ,x.xvar)
-              `(unsigned-byte-p ,x.width ,x.xvar))))
+              `(unsigned-byte-p ,x.width ,x.xvar)))
+       (field-preds (bitstruct-field-preds x.fields x.xvar))
+       (base-def `(mbe :logic ,def
+                       :exec ,(if x.signedp
+                                  `(and (integerp ,x.xvar)
+                                        (<= ,(- (ash 1 (1- x.width))) ,x.xvar)
+                                        (< ,x.xvar ,(ash 1 (1- x.width))))
+                                `(and (natp ,x.xvar)
+                                      (< ,x.xvar ,(ash 1 x.width))))))
+       (full-def (if field-preds
+                     `(and ,base-def . ,field-preds)
+                   base-def)))
     `(define ,x.pred (,x.xvar)
        :parents (,x.name)
        :short ,short
        :returns ,bool
        :progn t
        :guard-hints (("goal" :in-theory (enable unsigned-byte-p signed-byte-p)))
-       (mbe :logic ,def
-            :exec ,(if x.signedp
-                       `(and (integerp ,x.xvar)
-                             (<= ,(- (ash 1 (1- x.width))) ,x.xvar)
-                             (< ,x.xvar ,(ash 1 (1- x.width))))
-                     `(and (natp ,x.xvar)
-                           (< ,x.xvar ,(ash 1 x.width)))))
+       ,full-def
        ///
-       (defthm ,(intern-in-package-of-symbol
-                 (cat (symbol-name x.pred)
-                      (if x.signedp
-                          "-WHEN-SIGNED-BYTE-P"
-                        "-WHEN-UNSIGNED-BYTE-P"))
-                 x.name)
-         (implies ,def (,x.pred ,x.xvar)))
+       ,@(and x.fullp
+              `((defthm ,(intern-in-package-of-symbol
+                          (cat (symbol-name x.pred)
+                               (if x.signedp
+                                   "-WHEN-SIGNED-BYTE-P"
+                                 "-WHEN-UNSIGNED-BYTE-P"))
+                          x.name)
+                  (implies ,def (,x.pred ,x.xvar)))))
 
        (defthm ,(intern-in-package-of-symbol
                  (cat (if x.signedp
@@ -324,26 +369,62 @@
                   (,(if x.signedp 'integerp 'natp) ,x.xvar))
          :rule-classes :compound-recognizer))))
 
+(define bitstruct-fields-fix (fields xvar)
+  (b* (((when (atom fields)) xvar)
+       ((bitstruct-field field) (car fields))
+       (sel `(bitops::part-select ,xvar :width ,field.width :low ,field.lsb))
+       (signed (if field.signedp
+                   `(logext ,field.width ,sel)
+                 sel))
+       (fix (if field.fullp
+                signed
+              `(,field.fix ,signed)))
+       ((when (atom (cdr fields))) fix))
+    `(logapp ,field.width
+             ,fix
+             ,(bitstruct-fields-fix (cdr fields) xvar))))
+       
 
 (define bitstruct-fix (x)
   (b* (((bitstruct x))
-       (short (cat "Fixing function for @(see " (xdoc::full-escape-symbol x.name) ") bit structures.")))
+       (short (cat "Fixing function for @(see " (xdoc::full-escape-symbol x.name) ") bit structures."))
+       (x-fields-fixed (if x.fullp
+                           x.xvar
+                         (bitstruct-fields-fix x.fields x.xvar)))
+       (x-length-fixed (cond (x.signedp
+                              `(acl2::logext ,x.width ,x-fields-fixed))
+                             (t ;; x.fullp
+                              `(acl2::loghead ,x.width ,x-fields-fixed))
+                             ;; (t x-fields-fixed)
+                             )))
     `(define ,x.fix ((,x.xvar ,x.pred))
-       :guard-hints (("goal" :in-theory (enable acl2::loghead-identity acl2::logext-identity)))
+       :guard-hints (("goal" :in-theory (enable acl2::loghead-identity acl2::logext-identity
+                                                logext-part-select-at-0-identity
+                                                ,@(and (not x.fullp)
+                                                       `(,x.pred)))))
        :parents (,x.name)
        :short ,short
-       :returns (fixed ,x.pred)
+       :returns (fixed ,x.pred
+                       ,@(and (not x.fullp)
+                              `(:hints (("goal" :in-theory
+                                         (enable ,x.pred
+                                                 part-select-at-0-of-unsigned-byte-identity
+                                                 logext-part-select-at-0-identity))))))
        :progn t
-       (mbe :logic ,(if x.signedp `(acl2::logext ,x.width ,x.xvar) `(acl2::loghead ,x.width ,x.xvar))
+       (mbe :logic ,x-length-fixed
             :exec ,x.xvar)
        ///
-       (defret ,(intern-in-package-of-symbol
+       (defthm ,(intern-in-package-of-symbol
                  (cat (symbol-name x.fix) "-WHEN-" (symbol-name x.pred))
                  x.name)
          (implies (,x.pred ,x.xvar)
                   (equal (,x.fix ,x.xvar) ,x.xvar))
-         :hints(("Goal" :in-theory (enable acl2::loghead-identity acl2::logext-identity))))
+         :hints(("Goal" :in-theory (enable acl2::loghead-identity acl2::logext-identity
+                                           logext-part-select-at-0-identity
+                                           ,@(and (not x.fullp)
+                                                  `(,x.pred))))))
 
+       (local (in-theory (disable ,x.fix)))
        (fty::deffixtype ,x.name :pred ,x.pred :fix ,x.fix :equiv ,x.equiv :define t))))
 
 (define bitstruct-fields->ctor-formals (fields)
@@ -397,7 +478,12 @@
   (b* (((bitstruct x))
        (fieldnames (bitstruct-primary-fields->names x.fields)))
     `(define ,x.name ,(bitstruct-fields->ctor-formals x.fields)
-       :returns (,x.name ,x.pred)
+       :returns (,x.name ,x.pred
+                         ,@(and (not x.fullp)
+                                `(:hints (("goal" :in-theory
+                                           (enable ,x.pred
+                                                   part-select-at-0-of-unsigned-byte-identity
+                                                   logext-part-select-at-0-identity))))))
        :progn t
        (b* ,(bitstruct-fields->ctor-fixes x.fields)
          ,(bitstruct-fields->ctor-body x.fields x.signedp))
@@ -437,33 +523,32 @@
        (short (cat "Access the " (xdoc::full-escape-symbol field.name)
                    " field of a @(see " (xdoc::full-escape-symbol x.name)
                    ") bit structure."))
-       (logic-form-base `(bitops::part-select ,x.xvar :low ,field.lsb :width ,field.width))
-       (logic-form (cond ((eq field.pred 'booleanp)
-                          `(bit->bool ,logic-form-base))
-                         (field.signedp `(acl2::logext ,field.width ,logic-form-base))
-                         (t logic-form-base)))
-       (exec-form
-        (if (eql field.width 1)
-            (if (eq field.pred 'booleanp)
-                `(logbitp ,field.lsb ,x.xvar)
-              (if field.signedp
-                  `(acl2::logext 1 (acl2::logbit ,field.lsb ,x.xvar))
-                `(acl2::logbit ,field.lsb ,x.xvar)))
-          logic-form))
-       (logic-form (if field.subfield-hierarchy
-                       (bitstruct-subfield-accessor-form field.subfield-hierarchy x.xvar)
-                     logic-form))
+       (logic-form (bitstruct-accessor-term-logic-form field x.xvar))
+       (exec-form (bitstruct-accessor-term-exec-form field x.xvar))
+       (logic-form (cond (field.subfield-hierarchy
+                          (bitstruct-subfield-accessor-form field.subfield-hierarchy x.xvar))
+                         ;; (field.fullp logic-form)
+                         ;; (t `(,field.fix ,logic-form))
+                         (t logic-form)))
        (subfield-accs (bitstruct-subfield-accessor-fns field.subfield-hierarchy))
        (fieldnames (bitstruct-primary-fields->names x.fields)))
     `(define ,field.accessor ((,x.xvar ,x.pred))
-       :returns (,field.name ,field.pred)
+       :returns (,field.name ,field.pred
+                             ,@(and (not field.fullp)
+                                    `(:hints (("goal" :in-theory
+                                               (enable ,x.fix
+                                                       part-select-at-0-of-unsigned-byte-identity
+                                                       logext-part-select-at-0-identity))))))
        :parents (,x.name)
        :short ,short
-       :progn t
+       ;; :progn t
        ,@(and field.subfield-hierarchy '(:enabled t))
-       ,@(and (eql field.width 1)
-              `(:guard-hints (("goal" :in-theory (enable part-select-is-logbit
-                                                         . ,subfield-accs)))))
+       ,@(cond ((eql field.width 1)
+                `(:guard-hints (("goal" :in-theory (enable part-select-is-logbit
+                                                           . ,subfield-accs)))))
+               ((not field.fullp)
+                `(:guard-hints (("goal" :in-theory (enable ,x.pred))))))
+       
        (mbe :logic (let ((,x.xvar (,x.fix ,x.xvar)))
                      ,logic-form)
             :exec ,exec-form)
@@ -483,12 +568,49 @@
                            (bitstruct-field->name (car (last field.subfield-hierarchy))))
                         `(,field.fix ,field.name)))
               ,@(and (not field.subfield-hierarchy)
-                     `(:hints(("Goal" :in-theory (enable ,x.name))
+                     `(:hints(("Goal" :in-theory (enable ,x.name
+                                                         ,@(and (not x.fullp)
+                                                                `(,x.fix
+                                                                  part-select-at-0-of-unsigned-byte-identity))))
                               (and stable-under-simplificationp
                                    '(:in-theory (enable logext-part-select-at-0-identity
                                                         acl2::logext-identity)))))))
 
             (local (in-theory (enable equal-of-bool->bit)))
+
+            (local
+             (defthm defbitstruct-write-with-mask-lemma
+               (implies (,x.equiv-under-mask ,x.xvar y ,(ash (logmask field.width) field.lsb))
+                        (equal (,field.accessor ,x.xvar)
+                               (,field.accessor y)))
+              :hints (("goal" :in-theory (enable ,x.equiv-under-mask
+                                                 int-equiv-under-mask
+                                                 equal-of-bit->bool
+                                                 logand-mask-logxor-equal-0
+                                                 logand-const-of-logapp
+                                                 ,@(and (not field.fullp)
+                                                        `(,x.fix))
+                                                 . ,subfield-accs))
+                      (bitstruct-logbitp-reasoning)
+                      (and stable-under-simplificationp
+                           '(:in-theory (enable bool->bit))))
+              :rule-classes nil))
+               
+
+            ;; ,@(and (not field.fullp)
+            ;;        `((local
+            ;;           (defthm defbitstruct-write-with-mask-lemma
+            ;;             (implies (and (,x.equiv-under-mask ,x.xvar y mask)
+            ;;                           (equal (logand (lognot mask) ,(ash (logmask field.width) field.lsb)) 0))
+            ;;                      (equal ,(bitstruct-accessor-term-logic-form field x.xvar)
+            ;;                             ,(bitstruct-accessor-term-logic-form field 'y)))
+            ;;             :hints (("goal" :in-theory (enable ,x.equiv-under-mask
+            ;;                                                int-equiv-under-mask
+            ;;                                                equal-of-bit->bool
+            ;;                                                ,x.fix
+            ;;                                                . ,subfield-accs))
+            ;;                     (bitstruct-logbitp-reasoning))
+            ;;             :rule-classes nil))))
 
             (defthm ,(intern-in-package-of-symbol
                       (cat (symbol-name field.accessor) "-OF-WRITE-WITH-MASK")
@@ -499,10 +621,17 @@
                        (equal (,field.accessor ,x.xvar)
                               (,field.accessor y)))
               :hints (("goal" :in-theory (enable ,x.equiv-under-mask
-                                                 int-equiv-under-mask
-                                                 equal-of-bit->bool
-                                                 . ,subfield-accs))
-                      (bitstruct-logbitp-reasoning))))))))
+                                                 int-equiv-under-mask-of-submask)
+                       :use defbitstruct-write-with-mask-lemma))
+              ;; :hints (("goal" :in-theory (enable ,x.equiv-under-mask
+              ;;                                    int-equiv-under-mask
+              ;;                                    equal-of-bit->bool
+              ;;                                    logand-mask-logxor-equal-0
+              ;;                                    ,@(and (not field.fullp)
+              ;;                                           `(,x.fix))
+              ;;                                    . ,subfield-accs))
+              ;;         (bitstruct-logbitp-reasoning))
+              ))))))
 
 
 (define bitstruct-subfield-updater-form-aux (hier subfield-term xvar)
@@ -623,7 +752,7 @@
                                                  (,x.xvar (,x.fix ,x.xvar)))
                                               ,logic-form-base)
                                      :exec ,exec-form)))
-                 (if (and last-field x.signedp (not field.signedp))
+                 (if (and last-field x.signedp)
                      `(fast-logext ,x.width ,body-base)
                    body-base))))
 
@@ -634,7 +763,11 @@
        (new-x (intern-in-package-of-symbol (cat "NEW-" (symbol-name x.xvar)) x.name)))
     `(define ,field.updater ((,field.name ,field.pred)
                              (,x.xvar ,x.pred))
-       :returns (,new-x ,x.pred)
+       :returns (,new-x ,x.pred
+                        ,@(and (not x.fullp)
+                               `(:hints (("goal" :in-theory (enable ,x.pred ,x.fix
+                                                                    part-select-at-0-of-unsigned-byte-identity
+                                                                    logext-part-select-at-0-identity))))))
        :parents (,x.name)
        :short ,short
        :progn t
@@ -688,8 +821,11 @@
                                    ,(if last-field
                                         (lognot (ash -1 field.lsb))
                                       (lognot (ash (logmask field.width) field.lsb))))
-              :hints(("Goal" :in-theory (enable ,x.equiv-under-mask
-                                                int-equiv-under-mask))
+              :hints(("Goal" :in-theory (e/d (,x.equiv-under-mask
+                                              int-equiv-under-mask)
+                                             (,field.updater)))
+                     (and stable-under-simplificationp
+                          '(:in-theory (enable ,field.updater)))
                      (bitstruct-logbitp-reasoning))))))))
 
 
@@ -827,7 +963,8 @@
                           (,(std::da-changer-name x.name) ,x.xvar))
                    :hints(("Goal" :in-theory (enable ,x.fix ,x.name . ,(bitstruct-fields->accessors x.fields)))
                           (and stable-under-simplificationp
-                               '(:in-theory (enable logext-part-select-at-0-identity)))
+                               '(:in-theory (enable logext-part-select-at-0-identity
+                                                    part-select-at-0-of-unsigned-byte-identity)))
                           ;; (bitops::logbitp-reasoning)
                           ))))
         ,@(bitstruct-field-updaters x.fields x)
@@ -1020,6 +1157,31 @@ accessors, in addition to the direct accessors @('toplevel->ss') and
 ")
 
 
+(defconst *fixtype-to-bitstruct-keywords*
+  '(:width :signedp :fullp))
+
+(define fixtype-to-bitstruct-fn (name args wrld)
+  (b* (((fixtype fty) (find-fixtype name (get-fixtypes-alist wrld)))
+       ((mv kwd-alist rest) (extract-keywords name *fixtype-to-bitstruct-keywords*
+                                              args nil))
+       ((when rest)
+        (raise "Extra arguments to fixtype-to-bitstruct: ~x0" rest))
+       (width (cdr (assoc :width kwd-alist)))
+       ((unless width)
+        (raise "Must specify :width for fixtype-to-bitstruct"))
+       (signedp (getarg :signedp nil kwd-alist))
+       (fullp (getarg :fullp nil kwd-alist))
+       (bitstruct (make-bitstruct :name fty.name
+                                  :pred fty.pred
+                                  :fix fty.fix
+                                  :equiv fty.equiv
+                                  :width width
+                                  :signedp signedp
+                                  :fullp fullp)))
+    `(table bitstruct-table ',fty.name ',bitstruct)))
+
+(defmacro fixtype-to-bitstruct (name &rest args)
+  `(make-event (fixtype-to-bitstruct-fn ',name ',args (w state))))
 
 
 
@@ -1094,6 +1256,142 @@ accessors, in addition to the direct accessors @('toplevel->ss') and
 ;;    (pm bitp)
 ;;    (rc  rc)
 ;;    (ftz bitp)))
+
+(define ternary-p (x)
+  (and (natp x)
+       (<= x 2))
+  ///
+  (defthm unsigned-byte-2-when-ternary-p
+    (implies (ternary-p x)
+             (unsigned-byte-p 2 x)))
+
+  (defthm ternary-p-compound-recognizer
+    (implies (ternary-p x)
+             (natp x))
+    :rule-classes :compound-recognizer))
+
+(define ternary-fix ((x ternary-p))
+  :prepwork ((local (in-theory (enable ternary-p))))
+  :returns (xx ternary-p
+               :rule-classes (:rewrite (:type-prescription :typed-term xx)))
+  (if (ternary-p x) x 0)
+  ///
+  (defthm ternary-fix-when-ternary-p
+    (implies (ternary-p x)
+             (equal (ternary-fix x) x)))
+
+  (defthm unsigned-byte-p-of-ternary-fix
+    (unsigned-byte-p 2 (ternary-fix x)))
+
+  (fty::deffixtype ternary :pred ternary-p :fix ternary-fix :equiv ternary-equiv :define t :forward t))
+
+(fixtype-to-bitstruct ternary :width 2)
+;; (table bitstruct-table
+;;        'ternary
+;;        (fty::make-bitstruct :name 'ternary
+;;                             :pred 'ternary-p
+;;                             :fix 'ternary-fix
+;;                             :equiv 'ternary-equiv
+;;                             :width 2
+;;                             :fullp nil))
+
+(defbitstruct fafaf
+  ((a ternary)
+   (b baz)
+   (c bit)
+   (d ternary)
+   (e boolean)
+   (f ternary)))
+
+(defbitstruct fafafa
+  :signedp t
+  ((a ternary)
+   (b baz)
+   (c bit)
+   (d ternary)
+   (e boolean)
+   (f ternary)))
+
+(defbitstruct bababa
+  :signedp t
+  ((a rc)
+   (b baz)
+   (c bit)
+   (d rc)
+   (e boolean)
+   (f rc)))
+
+
+
+
+(define sternary-p (x)
+  (or (equal x 0)
+      (equal x 1)
+      (equal x -1))
+  ///
+  (defthm signed-byte-2-when-sternary-p
+    (implies (sternary-p x)
+             (signed-byte-p 2 x)))
+
+  (defthm sternary-p-compound-recognizer
+    (implies (sternary-p x)
+             (and (integerp x)
+                  (<= x 1)))
+    :rule-classes :compound-recognizer))
+
+(define sternary-fix ((x sternary-p))
+  :prepwork ((local (in-theory (enable sternary-p))))
+  :returns (xx sternary-p
+               :rule-classes (:rewrite (:type-prescription :typed-term xx)))
+  (if (sternary-p x) x 0)
+  ///
+  (defthm sternary-fix-when-sternary-p
+    (implies (sternary-p x)
+             (equal (sternary-fix x) x)))
+
+  (defthm signed-byte-p-of-sternary-fix
+    (signed-byte-p 2 (sternary-fix x)))
+
+  (fty::deffixtype sternary :pred sternary-p :fix sternary-fix :equiv sternary-equiv :define t :forward t))
+
+(fixtype-to-bitstruct sternary :width 2 :signedp t)
+;; (table bitstruct-table
+;;        'sternary
+;;        (fty::make-bitstruct :name 'sternary
+;;                             :pred 'sternary-p
+;;                             :fix 'sternary-fix
+;;                             :equiv 'sternary-equiv
+;;                             :signedp t
+;;                             :width 2
+;;                             :fullp nil))
+
+(defbitstruct afafaf
+  ((a sternary)
+   (b baz)
+   (c bit)
+   (d sternary)
+   (e boolean)
+   (f sternary)))
+
+(defbitstruct afafafa
+  :signedp t
+  ((a sternary)
+   (b baz)
+   (c bit)
+   (d sternary)
+   (e boolean)
+   (f sternary)))
+
+(defbitstruct s2 2 :signedp t)
+
+(defbitstruct abababa
+  :signedp t
+  ((a s2)
+   (b baz)
+   (c bit)
+   (d s2)
+   (e boolean)
+   (f s2)))
 
 ||#
 

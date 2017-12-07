@@ -30,14 +30,14 @@
                                       ,restart-on-new-id
                                       ,(list 'quote hint-lst)
                                       id ,calc-last-id 1)))
-                      (nth 0 hint-lst)))
+                     (nth 0 hint-lst)))
             ((< counter (len hint-lst))
              (append `(:computed-hint-replacement
                        ((staged-hints stable-under-simplificationp
                                       ,restart-on-new-id
                                       ,(list 'quote hint-lst)
                                       id ,calc-last-id ,(1+ counter))))
-                      (nth counter hint-lst)))
+                     (nth counter hint-lst)))
             (t nil)))
           (t nil))))
 #|

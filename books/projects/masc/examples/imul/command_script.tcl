@@ -24,13 +24,13 @@ proc compile_spec {} {
   create_design -name spec -top hectorWrapper
   scdtan imul64.cpp
   compile_design spec
-} 
+}
 
 proc compile_impl {} {
   create_design -name impl -top imul64 -options "-cutpoints=imul64.tble"
   vcs -sverilog imul64.vs
   compile_design impl
-} 
+}
 
 set_interface_definition_procedure "idf"
 
@@ -51,7 +51,7 @@ proc assumptionsAndLemmas {} {
 proc verify {} {
   if {[compile_spec] == 0 ||
       [compile_impl] == 0 ||
-      [compose] == 0 || 
+      [compose] == 0 ||
       [solve] == 0} {
     puts "FAIL"
   } else {

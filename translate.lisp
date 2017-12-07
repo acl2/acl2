@@ -178,11 +178,14 @@
 
 (defun program-only-er-msg (fn args safe-mode)
   (msg
-   "The call ~x0 is an illegal call of a function that has been marked as ~
-    ``program-only,'' presumably because it has special raw Lisp code.  See ~
-    :DOC program-only."
+   "The call ~x0~|is an illegal call of a function that has been marked as ~
+    ``program-only,'' presumably because it has special raw Lisp code~@1.  ~
+    See :DOC program-only for further explanation and a link to possible ~
+    workarounds."
    (cons fn args)
-   (if safe-mode 1 0)))
+   (if safe-mode
+       " and safe-mode is active"
+     "")))
 
 (defconst *safe-mode-guard-er-addendum*
 
@@ -1367,6 +1370,7 @@
         :last-make-event-expansion last-make-event-expansion))
 
 (defun access-command-tuple-number (x)
+  (declare (xargs :guard (weak-command-tuple-p x)))
   (access command-tuple x :number))
 
 (defun access-command-tuple-defun-mode (x)
@@ -1436,9 +1440,11 @@
 ; its number or 'command-landmark with n as its number, depending on
 ; whether flg is 'event-landmark or 'command-landmark.
 
+  (declare (xargs :guard (and (natp n)
+                              (plist-worldp wrld))))
   #+acl2-metering
   (setq meter-maid-cnt (1+ meter-maid-cnt))
-  (cond ((null wrld)
+  (cond ((endp wrld)
          (er hard 'scan-to-landmark-number
              "We have scanned the world looking for absolute ~
               ~#0~[event~/command~] number ~x1 and failed to find it. ~
@@ -1935,7 +1941,7 @@
   (when (eq wrld w-state)
     (return-from raw-ev-fncall-okp :live))
   (let* ((fncall-cache *fncall-cache*)
-         (cached-w (car *fncall-cache*)))
+         (cached-w (car fncall-cache)))
     (cond ((and wrld
                 (eq wrld cached-w))
            t)
@@ -1977,8 +1983,7 @@
                                      (cdr fncall-cache) fns
                                      (car fncall-cache) wrld))
                          (t (return-from raw-ev-fncall-okp nil)))))
-           t)
-          (t nil))))
+           t))))
 
 (defun chk-raw-ev-fncall (fn wrld aokp)
   (let ((ctx 'raw-ev-fncall)
@@ -4273,12 +4278,6 @@
        (equal 2 (length x))
        (eq (car x) 'quote)))
 
-; The following function is just the negation of chk-macro-arglist-keysp, when
-; applied to a true-listp args.  The reason it must be applied to a true-listp
-; is that macro-arglist-keysp terminates on an endp test and its counterpart
-; checker terminates on a null test and may recur one additional time on
-; non-true-lists.
-
 (defun macro-arglist-keysp (args keys-passed)
   (declare (xargs :guard (and (true-listp args)
                               (true-listp keys-passed))))
@@ -4409,7 +4408,7 @@
 ; We need parameter state-vars because of the call of warning$-cw1 below.
 
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-keysp args nil)
                               (keyword-value-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4487,7 +4486,7 @@
 
 (defun bind-macro-args-keys (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-keysp args nil)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4512,7 +4511,7 @@
 
 (defun bind-macro-args-after-rest (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-after-restp args)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4529,7 +4528,7 @@
 
 (defun bind-macro-args-optional (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
-                              (macro-arglist1p args)
+                              (macro-arglist-optionalp args)
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
@@ -4681,7 +4680,7 @@
               (erp (er-cmp ctx
                            "In the attempt to macroexpand the form ~x0 ~
                             evaluation of the guard for ~x2 caused the ~
-                            following error:~|~%~@1"
+                            error below.~|~%~@1"
                            x
                            guard-val
                            (car x)))
@@ -4709,8 +4708,7 @@
                                 (er-cmp ctx
                                         "In the attempt to macroexpand the ~
                                          form ~x0, evaluation of the macro ~
-                                         body caused the following ~
-                                         error:~|~%~@1"
+                                         body caused the error below.~|~%~@1"
                                         x
                                         expansion))
                                (t (value-cmp expansion))))))))))
@@ -6683,7 +6681,7 @@
                           stobj))
                     ((member-equal actual (cdr actuals))
 
-; This case fixes a soundness bug for duplicated actuals (see :DOC note-7-5).
+; This case fixes a soundness bug for duplicated actuals (see :DOC note-8-0).
 ; It effectively checks no-duplicatesp-equal of the actuals, but doing it here
 ; one-by-one has the advantage that we can easily say which actual is
 ; duplicated.  Alternatively, we could check only that scalar accessor

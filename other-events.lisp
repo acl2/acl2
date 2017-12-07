@@ -194,6 +194,27 @@
   #-acl2-loop-only
   (cond
    ((f-get-global 'boot-strap-flg state)
+    (cond
+     ((member name '(*first-order-like-terms-and-out-arities*
+                     *badge-prim-falist*
+                     *apply$-boot-fns-badge-alist*)
+              :test 'eq)
+
+; The boot-strap is performed after loading the compiled ACL2 source files.
+; Thus, we generally expect that name is already bound, and we return that
+; value as explained below.  But in apply.lisp we avoid compiling
+; *badge-prim-falist* because it depends on
+; *first-order-like-terms-and-out-arities*, which is defined with a make-event
+; that cannot be compiled.  Since *apply$-boot-fns-badge-alist* is only defined
+; in pass 2, we deal with it similarly here.  We use defparameter so that the
+; compiler knows that the variable is special.
+
+      (eval `(defparameter ,name ,form)))
+     (t (or (boundp name)
+            (er hard 'defconst
+                "Implementation error!  Expected ~x0 to be boundp.  Please ~
+                 contact the ACL2 implementors."
+                name))))
 
 ; We want the symbol-value of name to be EQ to what is returned, especially to
 ; avoid duplication of large values.  Note that starting with Version_7.0, the
@@ -202,7 +223,6 @@
 ; symbol-value is EQ to what is returned by defconst-val even without the
 ; assumption that the defconst expression is of the form (quote val).
 
-    (assert (boundp name))
     (return-from defconst-val
                  (value (symbol-value name))))
    (t (let ((full-book-name (car (global-val 'include-book-path wrld))))
@@ -3360,6 +3380,7 @@
                                nil
                                'theory-invariant
                                (w state)
+                               (ens state)
                                state
                                ',event-form))))
                  (cond
@@ -9850,7 +9871,8 @@
    ((new-defpkg-p new-kpa old-kpa)
     (state-global-let*
      ((inhibit-output-lst (cons 'error
-                                (f-get-global 'inhibit-output-lst state))))
+                                (f-get-global 'inhibit-output-lst state)))
+      (inhibit-er-hard t))
      (mv-let
        (erp val state)
        (defpkg-items-rec new-kpa old-kpa
@@ -22850,6 +22872,7 @@
                                    keep-unify-subst wrld state ens ttree)
 
 ; This function is adapted from ACL2 function relieve-hyps1-iter.
+; Keep-unify-subst must be t, nil, or :FAILED.
 
   (mv-let
    (relieve-hyps1-ans unify-subst1 ttree1)
@@ -22874,10 +22897,11 @@
 ; simplify-clause-pot-lst.  Also notice that rcnst has been replaced by ens (an
 ; enable structure).
 
-; When keep-unify-subst is non-nil, we run through all of the hyps in order to
-; find extensions of unify-subst that bind free variables in order to make hyps
-; true.  Keep-unify-subst is true at the top level, but when we get a failure,
-; we set it to :FAILED so that we can return nil at the end.
+; Keep-unify-subst should be t, :FAILED, or nil.  When it is non-nil, we run
+; through all of the hyps in order to find extensions of unify-subst that bind
+; free variables in order to make hyps true.  Keep-unify-subst is t at the top
+; level, but when we get a failure, we set it to :FAILED so that we can return
+; nil at the end.
 
 ; This function a No-Change Loser when keep-unify-subst is nil.  In order to
 ; accomplish this without requiring it have to test the answer to its own
@@ -22909,7 +22933,7 @@
                                 new-unify-subst
                                 unify-subst0 ttree0
                                 type-alist
-                                (if (and (eq keep-unify-subst t)
+                                (if (and keep-unify-subst
                                          (not relieve-hyp-ans))
                                     :FAILED
                                   keep-unify-subst)
@@ -22928,7 +22952,11 @@
 ; a new ttree.  This function is a No-Change Loser.
 
   (pc-relieve-hyps1 rune hyps unify-subst unify-subst ttree type-alist
-                    keep-unify-subst wrld state ens ttree))
+
+; Pc-relieve-hyps1 expects keep-unify-subst to be t, nil, or :failed.
+
+                    (not (null keep-unify-subst))
+                    wrld state ens ttree))
 
 (defun remove-trivial-lits (lst type-alist alist wrld ens ttree)
 
@@ -27947,14 +27975,23 @@
 
 #-acl2-loop-only
 (defun hard-error-is-error (ctx str alist)
-  (error "~a" (channel-to-string
-               (error-fms-channel t ctx str alist chan
+  (state-free-global-let*
+   (#+acl2-par (parallel-execution-enabled
+
+; We avoid an infinite loop here that is caused when calling channel-to-string
+; with non-nil parallel-execution-enabled in ACL2(p).  The problem was that
+; channel-to-string calls with-local-state, which is illegal when
+; parallel-execution is enabled.
+
+                nil))
+   (error "~a" (channel-to-string
+                (error-fms-channel t ctx str alist chan
 
 ; Leave the following as state, not *the-live-state*, to avoid compiler
 ; warning.
 
-                                  state)
-               chan nil nil t)))
+                                   state)
+                chan nil nil t))))
 
 ; Essay on Memoization with Attachments (relevant for #+hons version only)
 
@@ -28678,10 +28715,11 @@
   (cons 'defun def))
 
 ; The next three events define a :logic mode version of ev-fncall that has
-; unknown constraints.  We originally put this in boot-strap-pass-2.lisp, but
-; it didn't work there, because add-trip doesn't give special treatment for
-; defun-overrides in pass 2 of the boot-strap, which is the only time that the
-; events in boot-strap-pass-2.lisp are evaluated.
+; unknown constraints.  We originally put this in boot-strap-pass-2.lisp (a
+; precursor to the combination of boot-strap-pass-2-a.lisp and
+; boot-strap-pass-2-b.lisp), but it didn't work there, because add-trip doesn't
+; give special treatment for defun-overrides in pass 2 of the boot-strap, which
+; is the only time that the events in boot-strap-pass-2.lisp were evaluated.
 
 (defun magic-ev-fncall-cl-proc (x)
 
@@ -28899,17 +28937,17 @@
                     But the shape of ~x0 is ~x1."
                    form
                    (prettyify-stobjs-out stobjs-out)))
-              ((eq on-behalf-of :quiet!)
-               (silent-error state))
-              ((stringp (car vals))
-               (er soft ctx
-                   (car vals)))
-              ((tilde-@p (car vals)) ; a message
-               (er soft ctx
-                   "~@0"
-                   (car vals)))
               ((car vals)
                (cond
+                ((eq on-behalf-of :quiet!)
+                 (silent-error state))
+                ((stringp (car vals))
+                 (er soft ctx
+                     (car vals)))
+                ((tilde-@p (car vals)) ; a message
+                 (er soft ctx
+                     "~@0"
+                     (car vals)))
                 ((eq on-behalf-of :quiet)
                  (silent-error state))
                 (t (er soft ctx
@@ -29253,8 +29291,8 @@
                      (cond
                       ((f-get-global 'last-make-event-expansion state)
                        (mv-let
-                        (wrappers base)
-                        (destructure-expansion expansion1)
+                         (wrappers base)
+                         (destructure-expansion expansion1)
 
 ; At this point we know that (car base) is from the list '(make-event progn
 ; progn! encapsulate); indeed, just after the release of v3-5, we ran a
@@ -29264,11 +29302,11 @@
 ; ACL2s can create make-event expansions out of events other than the four
 ; types above, e.g., defun.
 
-                        (declare (ignore base))
-                        (rebuild-expansion
-                         wrappers
-                         (ultimate-expansion
-                          (f-get-global 'last-make-event-expansion state)))))
+                         (declare (ignore base))
+                         (rebuild-expansion
+                          wrappers
+                          (ultimate-expansion
+                           (f-get-global 'last-make-event-expansion state)))))
                       (t (ultimate-expansion expansion1)))))
                (assert$
                 (equal stobjs-out *error-triple-sig*) ; evaluated an event form
@@ -29368,26 +29406,53 @@
                                     current ACL2 world.  ~@1"
                                    form
                                    msg)))
-                           (pprogn
-                            (f-put-global 'last-make-event-expansion
-                                          actual-expansion
-                                          state)
-                            (cond
-                             ((f-get-global 'make-event-debug state)
-                              (fms "Saving make-event replacement into state ~
-                                    global 'last-make-event-expansion (debug ~
-                                    level ~
-                                    ~x0):~|Form:~|~X13~|Expansion:~|~X23~|"
-                                   (list (cons #\0 debug-depth)
-                                         (cons #\1 form)
-                                         (cons #\2 actual-expansion)
-                                         (cons #\3 (abbrev-evisc-tuple state)))
-                                   (proofs-co state)
-                                   state
-                                   nil))
-                             (t state))
-                            (er-progn
-                             (cond (need-event-landmark-p ; optimization
+                           (er-progn
+                            (cond ((f-get-global 'boot-strap-flg state)
+
+; In the boot-strap, we prevent make-event from storing an expansion, since
+; otherwise we get an error for (when-pass-2 ... (make-event ...) ...), because
+; make-event is not in an event context.  We are tempted to safeguard against
+; putting make-event inside an encapsulate or progn in the boot-strap.  That is
+; probably not necessary for progn, but if we avoid that check with encapsulate
+; then we fear that we may get the wrong event in the second pass.  So we
+; check.
+
+                                   (pprogn
+                                    (if (in-encapsulatep
+                                         (global-val 'embedded-event-lst
+                                                     (w state))
+                                         nil)
+                                        (er soft ctx
+                                            "Illegal form:~|~x0~|~%Make-event ~
+                                             is illegal inside an encapsulate ~
+                                             when in the boot-strap. See the ~
+                                             relevant discussion in ~
+                                             make-event-fn."
+                                            form)
+                                      (value nil))))
+                                  (t
+                                   (pprogn
+                                    (f-put-global 'last-make-event-expansion
+                                                  actual-expansion
+                                                  state)
+                                    (value nil))))
+                            (pprogn
+                             (cond
+                              ((f-get-global 'make-event-debug state)
+                               (fms "Saving make-event replacement into state ~
+                                     global 'last-make-event-expansion (debug ~
+                                     level ~
+                                     ~x0):~|Form:~|~X13~|Expansion:~|~X23~|"
+                                    (list (cons #\0 debug-depth)
+                                          (cons #\1 form)
+                                          (cons #\2 actual-expansion)
+                                          (cons #\3 (abbrev-evisc-tuple state)))
+                                    (proofs-co state)
+                                    state
+                                    nil))
+                              (t state))
+                             (er-progn
+                              (cond (need-event-landmark-p ; optimization
 
 ; We lay down an event landmark if we aren't already looking at one.  Before we
 ; did so, an error was reported by print-redefinition-warning in the following
@@ -29397,9 +29462,9 @@
 ; (make-event (er-progn (defttag t)
 ;                       (value '(value-triple nil))))
 
-                                    (maybe-add-event-landmark state))
-                                   (t (value nil)))
-                             (value result)))))))))))))))
+                                     (maybe-add-event-landmark state))
+                                    (t (value nil)))
+                              (value result))))))))))))))))
      :event-type 'make-event)))
 
 (defun get-check-invariant-risk (state)
@@ -29710,16 +29775,10 @@
 (defmacro read-file-into-string (filename &key (start '0) bytes)
   `(read-file-into-string2 ,filename ,start ,bytes state))
 
-; Support for experiments with apply$: logic code.  See apply-raw.lisp for raw
-; Lisp support and relevant background.
-
 ; Below we define two ``acl2-magic-concrete...'' functions whose only uses are
 ; to allow us to introduce concrete-badge-userfn and concrete-apply$-userfn as
-; partially constrained functions.  Despite the word ``magic'' in their names
-; they are relevant to the normal ACL2 user (and to the ACL2(a) user) because
-; in the normal ACL2, concrete-badge-userfn and concrete-apply$-userfn are
-; partially constrained.  It's just that in ACL2(a) their executable
-; counterparts are really interesting while in ACL2 they're not interesting.
+; partially constrained functions.  See apply-raw.lisp for raw Lisp support and
+; relevant background.
 
 (defun acl2-magic-concrete-badge-userfn (x)
 
@@ -29814,4 +29873,13 @@
       (local (defun concrete-apply$-userfn (fn args)
                (declare (xargs :mode :logic))
                (declare (ignore fn args))
-               nil)))))
+               nil))
+      (defthm concrete-apply$-userfn-takes-arity-args
+        (implies
+         (concrete-badge-userfn fn)
+         (equal (concrete-apply$-userfn fn args)
+                (concrete-apply$-userfn
+                 fn
+                 (take (caddr (concrete-badge-userfn fn))
+                       args))))
+        :rule-classes nil))))

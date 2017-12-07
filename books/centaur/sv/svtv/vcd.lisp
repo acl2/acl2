@@ -32,7 +32,7 @@
 (in-package "SV")
 (include-book "../mods/moddb")
 (include-book "std/stobjs/clone" :dir :system)
-(include-book "centaur/vl/util/printedlist" :dir :system)
+(include-book "../mods/path-string")
 (include-book "std/strings/decimal" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
@@ -91,53 +91,6 @@
 
 
 
-(defmacro rlist* (&rest args)
-  (xxxjoin 'cons (reverse args)))
-
-(define name->string-under-path ((x name-p) (p vl-printedlist-p))
-  :returns (p1 vl-printedlist-p)
-  (let ((p (vl::vl-printedlist-fix p))
-        (x (name-fix x)))
-    (if (integerp x)
-        (rlist* p "[" (if (< x 0) "-" "") (str::natstr (abs x)) "]")
-      (if (stringp x)
-          (rlist* p "." x)
-        (rlist* p ".SELF")))))
-
-(define name->string-base ((x name-p) (p vl-printedlist-p))
-  :returns (p1 vl-printedlist-p)
-  (let ((p (vl::vl-printedlist-fix p))
-        (x (name-fix x)))
-    (if (integerp x)
-        (rlist* p "_" (if (< x 0) "-" "") (str::natstr (abs x)) "_")
-      (if (stringp x)
-          (rlist* p x)
-        (rlist* p "SELF")))))
-
-(define name->string ((x name-p))
-  :returns (s stringp)
-  (vl::vl-printedlist->string (name->string-base x nil)))
-
-(define path->string-aux ((x path-p) (p vl-printedlist-p))
-  :returns (p1 vl-printedlist-p)
-  :measure (path-count x)
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable name-p))))
-  (path-case x
-    :wire (name->string-under-path x.name p)
-    :scope (b* ((p (name->string-under-path x.namespace p)))
-             (path->string-aux x.subpath p))))
-
-(define path->string ((x path-p) (p vl-printedlist-p))
-  :returns (p1 vl-printedlist-p)
-  (path-case x
-    :wire (name->string-base x.name p)
-    :scope (b* ((p (name->string-base x.namespace p)))
-             (path->string-aux x.subpath p))))
-
-(define path->string-top ((x path-p))
-  :returns (str stringp)
-  (vl::vl-printedlist->string (path->string x nil)))
 
 
 (define elab-mod->vcd-wires ((n natp)

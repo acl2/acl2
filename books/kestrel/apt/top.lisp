@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations)
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "APT")
+
+(include-book "utilities/top")
 
 (include-book "restrict")
 (include-book "restrict-design")
@@ -115,3 +117,5 @@
 (defxdoc implementation
   :parents (apt)
   :short "Implementation of the APT tools.")
+
+(xdoc::order-subtopics implementation (utilities) t)

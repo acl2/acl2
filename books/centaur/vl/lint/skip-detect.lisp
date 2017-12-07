@@ -94,7 +94,7 @@ assign bcNxtWCBEntSrc_P =
 
 (local (xdoc::set-default-parents skip-detection))
 
-(defaggregate sd-key
+(defprod sd-key
   :tag :sd-key
   :layout :fulltree
   :short "Keys are derived from wire names and are the basis of our skip
@@ -124,13 +124,10 @@ pattern @('bcL2RB*NoRtry_P').  We had previously considered using a list of
 indices, but found it easier to just generate multiple keys, each with a single
 index.</p>")
 
-(deflist sd-keylist-p (x)
-  (sd-key-p x)
-  :guard t)
+(fty::deflist sd-keylist :elt-type sd-key-p)
 
-(defprojection sd-keylist->indicies (x)
-  (sd-key->index x)
-  :guard (sd-keylist-p x))
+(defprojection sd-keylist->indicies ((x sd-keylist-p))
+  (sd-key->index x))
 
 
 (defsection sd-keygen
@@ -199,39 +196,41 @@ wire name, and accumulates them into @('acc')."
 (defsection sd-patalist-p
   :short "@(call sd-patalist-p) recognizes alists that bind strings to @(see
 sd-keylist-p)s."
+ 
+  (fty::defalist sd-patalist :key-type string :val-type sd-keylist)
+  ;; (defund sd-patalist-p (x)
+  ;;   (declare (xargs :guard t))
+  ;;   (if (atom x)
+  ;;       t
+  ;;     (and (consp (car x))
+  ;;          (stringp (caar x))
+  ;;          (sd-keylist-p (cdar x))
+  ;;          (sd-patalist-p (cdr x)))))
 
-  (defund sd-patalist-p (x)
-    (declare (xargs :guard t))
-    (if (atom x)
-        t
-      (and (consp (car x))
-           (stringp (caar x))
-           (sd-keylist-p (cdar x))
-           (sd-patalist-p (cdr x)))))
+  ;; (local (in-theory (enable sd-patalist-p)))
 
-  (local (in-theory (enable sd-patalist-p)))
+  ;; (defthm sd-patalist-p-when-not-consp
+  ;;   (implies (not (consp x))
+  ;;            (equal (sd-patalist-p x)
+  ;;                   t)))
 
-  (defthm sd-patalist-p-when-not-consp
-    (implies (not (consp x))
-             (equal (sd-patalist-p x)
-                    t)))
+  ;; (defthm sd-patalist-p-of-cons
+  ;;   (equal (sd-patalist-p (cons a x))
+  ;;          (and (consp a)
+  ;;               (stringp (car a))
+  ;;               (sd-keylist-p (cdr a))
+  ;;               (sd-patalist-p x))))
 
-  (defthm sd-patalist-p-of-cons
-    (equal (sd-patalist-p (cons a x))
-           (and (consp a)
-                (stringp (car a))
-                (sd-keylist-p (cdr a))
-                (sd-patalist-p x))))
+  ;; (defthm sd-keylist-p-of-cdr-of-hons-assoc-equal-when-sd-patalist-p
+  ;;   (implies (force (sd-patalist-p x))
+  ;;            (sd-keylist-p (cdr (hons-assoc-equal a x)))))
 
-  (defthm sd-keylist-p-of-cdr-of-hons-assoc-equal-when-sd-patalist-p
-    (implies (force (sd-patalist-p x))
-             (sd-keylist-p (cdr (hons-assoc-equal a x)))))
-
-  (defthm sd-patalist-p-of-hons-shrink-alist
-    (implies (and (sd-patalist-p x)
-                  (sd-patalist-p y))
-             (sd-patalist-p (hons-shrink-alist x y)))
-    :hints(("Goal" :in-theory (enable (:i hons-shrink-alist))))))
+  ;; (defthm sd-patalist-p-of-hons-shrink-alist
+  ;;   (implies (and (sd-patalist-p x)
+  ;;                 (sd-patalist-p y))
+  ;;            (sd-patalist-p (hons-shrink-alist x y)))
+  ;;   :hints(("Goal" :in-theory (enable (:i hons-shrink-alist)))))
+  )
 
 
 
@@ -280,7 +279,7 @@ patterns, producing a @(see sd-patalist-p)."
     (alistp (sd-patalist x))))
 
 
-(defaggregate sd-problem
+(defprod sd-problem
   :tag :sd-problem
   :layout :fulltree
   :short "An alleged problem noticed by skip detection."
@@ -308,9 +307,7 @@ patterns, producing a @(see sd-patalist-p)."
 
    (ctx vl-context1-p "Says where this problem originates.")))
 
-(deflist sd-problemlist-p (x)
-  (sd-problem-p x)
-  :elementp-of-nil nil)
+(fty::deflist sd-problemlist :elt-type sd-problem-p)
 
 (define sd-problem-score ((x sd-problem-p))
   :returns (score natp :rule-classes :type-prescription)
@@ -343,20 +340,8 @@ patterns, producing a @(see sd-patalist-p)."
 (acl2::defsort
  :comparablep sd-problem-p
  :compare< sd-problem->
- :prefix sd-problem)
-
-(defthm sd-problem-list-p-removal
-  (equal (sd-problem-list-p x)
-         (sd-problemlist-p x))
-  :hints(("Goal" :in-theory (enable sd-problem-list-p sd-problemlist-p))))
-
-(defthm sd-problemlist-p-of-sd-problem-sort
-  (implies (sd-problemlist-p x)
-           (sd-problemlist-p (sd-problem-sort x)))
-  :hints(("Goal"
-          :in-theory (disable SD-PROBLEM-SORT-CREATES-COMPARABLE-LISTP)
-          :use ((:instance SD-PROBLEM-SORT-CREATES-COMPARABLE-LISTP
-                           (acl2::x x))))))
+ :prefix sd-problem
+ :comparable-listp sd-problemlist-p)
 
 
 
@@ -543,7 +528,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 (define sd-analyze-module-aux
   :short "Collect all the problems."
   ((x vl-module-p))
-  :returns (probs sd-problemlist-p :hyp :fguard "Not sorted yet.")
+  :returns (probs sd-problemlist-p "Not sorted yet.")
   (b* (;;(modname (vl-module->name x))
        ;;(- (cw "Analyzing ~s0.~%" modname))
        (ctxexprs  (cwtime (vl-module-ctxexprs x nil) ;; empty scopestack
@@ -571,7 +556,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 (define sd-analyze-module
   :short "Perform skip-detection on a module."
   ((x vl-module-p))
-  :returns (probs sd-problemlist-p :hyp :fguard "Sorted in priority order.")
+  :returns (probs sd-problemlist-p "Sorted in priority order.")
   (sd-problem-sort (sd-analyze-module-aux x))
   ///
   (defthm true-listp-of-sd-analyze-module
@@ -580,7 +565,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 
 
 (define sd-analyze-modulelist-aux ((x vl-modulelist-p))
-  :returns (probs sd-problemlist-p :hyp :fguard "Not sorted yet.")
+  :returns (probs sd-problemlist-p "Not sorted yet.")
   (if (atom x)
       nil
     (append (sd-analyze-module-aux (car x))
@@ -589,7 +574,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 (define sd-analyze-modulelist
   :short "Perform skip-detection on a module list."
   ((x vl-modulelist-p))
-  :returns (probs sd-problemlist-p :hyp :fguard "Sorted in priority order.")
+  :returns (probs sd-problemlist-p "Sorted in priority order.")
   (b* ((analyze (cwtime (sd-analyze-modulelist-aux x)
                         :name sd-analyze-modulelist-aux
                         :mintime 1))

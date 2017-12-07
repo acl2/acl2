@@ -16,6 +16,8 @@
 (include-book "kestrel/utilities/named-formulas" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "utilities/print-specifiers")
+(include-book "utilities/transformation-table")
 
 (local (xdoc::set-default-parents restrict-implementation))
 
@@ -261,7 +263,7 @@
                                (non-executable "Input to the transformation.")
                                (verify-guards "Input to the transformation.")
                                (hints "Input to the transformation.")
-                               (verbose "Input to the transformation.")
+                               (print "Input to the transformation.")
                                (show-only "Input to the transformation.")
                                (ctx "Context for errors.")
                                state)
@@ -276,7 +278,8 @@
                                     old-to-new-thm-name
                                     make-non-executable
                                     do-verify-guards
-                                    hints-alist)')
+                                    hints-alist
+                                    print$)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -287,6 +290,7 @@
                                          booleanp
                                          booleanp
                                          symbol-alistp
+                                         canonical-print-specifier-p
                                          result)'),
                         where @('old-fn-name') is
                         the result of @(tsee restrict-check-old),
@@ -304,9 +308,11 @@
                         the new function should be
                         non-executable or not,
                         @('do-verify-guards') indicates whether the guards of
-                        the new function should be verified or not, and
+                        the new function should be verified or not,
                         @('hints-alist') is
-                        the result of @(tsee restrict-check-hints).")
+                        the result of @(tsee restrict-check-hints), and
+                        @('print$') is a canonicalized version of
+                        the @(':print') input.")
                state)
   :mode :program
   :short "Ensure that all the inputs to the transformation are valid."
@@ -347,7 +353,7 @@
                                   (non-executablep old (w state))
                                   "The :NON-EXECUTABLE input" t nil))
        ((er hints-alist) (restrict-check-hints hints ctx state))
-       ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
+       ((er print$) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
        ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
     (value (list old-fn-name
                  restriction$
@@ -357,7 +363,8 @@
                  old-to-new-thm-name
                  make-non-executable
                  do-verify-guards
-                 hints-alist))))
+                 hints-alist
+                 print$))))
 
 (define restrict-restriction-of-rec-calls-consequent
   ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
@@ -769,11 +776,10 @@
    (make-non-executable booleanp "Result of @(tsee restrict-check-inputs).")
    (do-verify-guards booleanp "Result of @(tsee restrict-check-inputs).")
    (hints-alist symbol-alistp "Result of @(tsee restrict-check-inputs).")
+   (print$ booleanp "Result of @(tsee restrict-check-inputs).")
    (show-only booleanp "Input to the transformation, after validation.")
    (app-conds symbol-alistp "Result of @(tsee restrict-app-conds).")
-   (call-w/o-verbose-showonly pseudo-event-formp
-                              "Call to the transformation,
-                               without @(':verbose') and @(':show-only').")
+   (call pseudo-event-formp "Call to the transformation.")
    (wrld plist-worldp))
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
@@ -787,8 +793,8 @@
    the theorem that relates the old and new functions,
    and the recording of the generated numbered name.
    The @(tsee encapsulate) is followed by events
-   for the recording in the transformation table
-   and for the screen outputs.
+   for the recording in the transformation table,
+   and possibly for printing the transformation results on the screen.
    </p>
    <p>
    The @(tsee encapsulate) starts with some implicitly local event forms to
@@ -824,30 +830,45 @@
    after the theorem that relates the old and new functions.
    </p>
    <p>
-   The @(tsee progn) ends with an event form to print nothing on screen,
-   because it already includes events
-   to print the exported function and theorem events on screen.
-   These exported events are printed on screen without hints;
-   they are the same event forms
-   that are introduced non-locally and redundantly in the @(tsee encapsulate).
-   </p>
-   <p>
    The @(tsee encapsulate) is stored into the transformation table,
-   associated to the call to the transformation
-   (without @(':verbose') and @(':show-only'), if any,
-   because they only affect the transformation's screen output).
-   Thus, the table event and the screen output events
+   associated to the call to the transformation.
+   Thus, the table event and (if present) the screen output events
    (which are in the @(tsee progn) but not in the @(tsee encapsulate))
    are not stored into the transformation table,
-   because they carry no additional information
-   (and because otherwise the table event would have to contain itself).
+   because they carry no additional information,
+   and because otherwise the table event would have to contain itself.
+   </p>
+   <p>
+   If @(':print') includes @(':submit'),
+   the @(tsee encapsulate) is wrapped to show the normal screen output
+   for the submitted events.
+   This screen output always starts with a blank line,
+   so we do need to print a blank line to separate the submission output
+   from the expansion output (if any).
+   </p>
+   <p>
+   If @(':print') includes @(':result'),
+   the @(tsee progn) includes events to print
+   the exported events on the screen without hints.
+   They are the same event forms
+   that are introduced non-locally and redundantly in the @(tsee encapsulate).
+   If @(':print') also includes @(':expand') or @(':submit'),
+   an event to print a blank line is also generated
+   to separate the result output from the expansion or submission output.
+   </p>
+   <p>
+   The @(tsee progn) ends with an event form
+   to avoiding printing any return value on the screen.
    </p>
    <p>
    If @(':show-only') is @('t'),
-   an event to show the @(tsee encapsulate) on screen is returned.
-   The table event and the screen output events are excluded from this
-   because they just &ldquo;repeat&rdquo; things that are already present
-   in the @(tsee encapsulate) that is shown on the screen.
+   the @(tsee encapsulate) is just printed on screen, not submitted.
+   In this case,
+   the presence or absence of @(':submit') and @(':result') in @(':print')
+   is ignored.
+   If @(':print') includes @(':expand'),
+   a blank line is printed just before the @(tsee encapsulate)
+   to separate it from the expansion output.
    </p>
    <p>
    To ensure the absence of name conflicts inside the @(tsee encapsulate),
@@ -921,22 +942,27 @@
                              ,old-to-new-thm-exported-event
                              ,new-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
-       ((when show-only) `(progn
-                            (cw-event "~x0~|" ',encapsulate)
-                            (value-triple :invisible)))
-       (transformation-table-event `(table transformation-table
-                                      ',call-w/o-verbose-showonly
-                                      ',encapsulate))
-       (new-fn-show-event `(cw-event "~x0~|"
-                                     ',new-fn-exported-event))
-       (old-to-new-thm-show-event `(cw-event
-                                    "~x0~|"
-                                    ',old-to-new-thm-exported-event)))
+       (expand-output-p (if (member-eq :expand print$) t nil))
+       ((when show-only)
+        (if expand-output-p
+            (cw "~%~x0~|" encapsulate)
+          (cw "~x0~|" encapsulate))
+        '(value-triple :invisible))
+       (submit-output-p (if (member-eq :submit print$) t nil))
+       (encapsulate+ (restore-output? submit-output-p encapsulate))
+       (transformation-table-event (record-transformation-call-event
+                                    call encapsulate wrld))
+       (result-output-p (if (member-eq :result print$) t nil))
+       (print-events (if result-output-p
+                         `(,@(and (or expand-output-p submit-output-p)
+                                  '((cw-event "~%")))
+                           (cw-event "~x0~|" ',new-fn-exported-event)
+                           (cw-event "~x0~|" ',old-to-new-thm-exported-event))
+                       nil)))
     `(progn
-       ,encapsulate
+       ,encapsulate+
        ,transformation-table-event
-       ,new-fn-show-event
-       ,old-to-new-thm-show-event
+       ,@print-events
        (value-triple :invisible))))
 
 (define restrict-fn
@@ -950,7 +976,7 @@
    (non-executable "Input to the transformation.")
    (verify-guards "Input to the transformation.")
    (hints "Input to the transformation.")
-   (verbose "Input to the transformation.")
+   (print "Input to the transformation.")
    (show-only "Input to the transformation.")
    (call pseudo-event-formp "Call to the transformation.")
    (ctx "Context for errors.")
@@ -967,28 +993,15 @@
   :long
   "<p>
    If this call to the transformation is redundant,
-   a message to that effect is shown on screen.
-   Redundancy is checked
-   after removing @(':verbose') and @(':show-only') from the call,
-   because those two options only affect screen output.
+   a message to that effect is printed on the screen.
    If the transformation is redundant and @(':show-only') is @('t'),
    the @(tsee encapsulate), retrieved from the table, is shown on screen.
    </p>"
-  (b* ((number-of-required-args-plus-1 3)
-       (call-options (nthcdr number-of-required-args-plus-1 call))
-       (call-options (remove-keyword :verbose call-options))
-       (call-options (remove-keyword :show-only call-options))
-       (call-w/o-verbose-showonly
-        (append (take number-of-required-args-plus-1 call) call-options))
-       (table (table-alist 'transformation-table (w state)))
-       (encapsulate? (cdr (assoc-equal call-w/o-verbose-showonly table)))
+  (b* ((encapsulate? (previous-transformation-expansion call (w state)))
        ((when encapsulate?)
-        (value `(progn
-                  ,@(and show-only
-                         `((cw-event "~x0~|" ',encapsulate?)))
-                  (cw-event "~%The transformation ~x0 is redundant.~%"
-                            ',call)
-                  (value-triple :invisible))))
+        (b* (((run-when show-only) (cw "~x0~|" encapsulate?)))
+          (cw "~%The transformation ~x0 is redundant.~%" call)
+          (value '(value-triple :invisible))))
        ((er (list old-fn-name
                   restriction$
                   undefined$
@@ -997,25 +1010,28 @@
                   old-to-new-thm-name
                   make-non-executable
                   do-verify-guards
-                  hints-alist)) (restrict-check-inputs old
-                                                       restriction
-                                                       undefined
-                                                       new-name
-                                                       new-enable
-                                                       thm-name
-                                                       thm-enable
-                                                       non-executable
-                                                       verify-guards
-                                                       hints
-                                                       verbose
-                                                       show-only
-                                                       ctx state))
+                  hints-alist
+                  print$)) (restrict-check-inputs old
+                                                  restriction
+                                                  undefined
+                                                  new-name
+                                                  new-enable
+                                                  thm-name
+                                                  thm-enable
+                                                  non-executable
+                                                  verify-guards
+                                                  hints
+                                                  print
+                                                  show-only
+                                                  ctx state))
        (app-conds (restrict-app-conds old-fn-name
                                       restriction$
                                       do-verify-guards
                                       state))
-       ((er &) (ensure-named-formulas
-                app-conds hints-alist verbose t nil ctx state))
+       ((er &) (ensure-named-formulas app-conds
+                                      hints-alist
+                                      (if (member-eq :expand print$) t nil)
+                                      t nil ctx state))
        (event (restrict-event old-fn-name
                               restriction$
                               undefined$
@@ -1026,9 +1042,10 @@
                               make-non-executable
                               do-verify-guards
                               hints-alist
+                              print$
                               show-only
                               app-conds
-                              call-w/o-verbose-showonly
+                              call
                               (w state))))
     (value event)))
 
@@ -1037,8 +1054,7 @@
   :short "Implementation of the domain restriction transformation."
   :long
   "<p>
-   Submit the event form generated by @(tsee restrict-fn),
-   using the @(':verbose') input to control the screen output.
+   Submit the event form generated by @(tsee restrict-fn).
    </p>
    @(def restrict)"
   (defmacro restrict (&whole
@@ -1056,23 +1072,20 @@
                       (non-executable ':auto)
                       (verify-guards ':auto)
                       (hints 'nil)
-                      (verbose 'nil)
+                      (print ':result)
                       (show-only 'nil))
-    (control-screen-output
-     verbose
-     `(make-event (restrict-fn ',old
-                               ',restriction
-                               ',undefined
-                               ',new-name
-                               ',new-enable
-                               ',thm-name
-                               ',thm-enable
-                               ',non-executable
-                               ',verify-guards
-                               ',hints
-                               ',verbose
-                               ',show-only
-                               ',call
-                               (cons 'restrict ',old)
-                               state)
-                  :on-behalf-of :quiet))))
+    `(make-event-terse (restrict-fn ',old
+                                    ',restriction
+                                    ',undefined
+                                    ',new-name
+                                    ',new-enable
+                                    ',thm-name
+                                    ',thm-enable
+                                    ',non-executable
+                                    ',verify-guards
+                                    ',hints
+                                    ',print
+                                    ',show-only
+                                    ',call
+                                    (cons 'restrict ',old)
+                                    state))))

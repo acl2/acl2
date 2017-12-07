@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) -- Package
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -29,6 +29,7 @@
                          append?
                          apply-term
                          apply-term*
+                         assert-equal
                          body
                          conjoin
                          conjoin-untranslated-terms
@@ -137,19 +138,23 @@
                          keyword-value-list-to-alist
                          lambda-body
                          lambda-formals
+                         macro-required-args
+                         make-event-terse
                          make-implication
                          make-lambda
                          make-paired-name
                          measure
                          msg-downcase-first
+                         must-eval-to-t
+                         must-succeed*
                          named-formulas-to-thm-events
                          next-numbered-name
                          non-executablep
                          packn
                          pairlis-x1
                          pseudo-event-formp
-                         pseudo-fn/lambda-p
                          pseudo-lambdap
+                         pseudo-termfnp
                          pseudo-tests-and-call-listp
                          recursive-calls
                          recursivep
@@ -158,6 +163,7 @@
                          rename-fns
                          rename-fns-lst
                          resolve-numbered-name-wildcard
+                         restore-output?
                          ruler-extenders-lst
                          run-when
                          set-numbered-name-index-end

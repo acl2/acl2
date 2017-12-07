@@ -709,6 +709,11 @@ svex-assigns-compose)).</li>
          :hints(("Goal" :in-theory (enable lhs-overridelist-keys))))))
 
 
+(define cap-length ((n natp) x)
+  (if (< (lnfix n) (len x))
+      (take n (list-fix x))
+    x))
+
 
 (define svex-design-flatten ((x design-p)
                              &key
@@ -734,14 +739,16 @@ svex-assigns-compose)).</li>
        (modalist x.modalist)
        (topmod x.top)
        ((with-fast modalist))
-       ((unless (cwtime (modhier-loopfree-p topmod modalist)))
+       ((unless (cwtime (modhier-loopfree-p topmod modalist)
+                        :mintime 1))
         (mv
          (msg "Module ~s0 has an instance loop!~%" topmod)
          nil nil nil moddb aliases))
 
        ;; Create a moddb structure from the module hierarchy.
        ;; This involves enumerating the modules, instances, and wires.
-       (moddb (cwtime (module->db topmod modalist moddb)))
+       (moddb (cwtime (module->db topmod modalist moddb)
+                      :mintime 1))
        (modidx (moddb-modname-get-index topmod moddb))
 
        ;; Clear and size the aliases
@@ -758,7 +765,8 @@ svex-assigns-compose)).</li>
 
        ;; Now translate the modalist by replacing all variables (nets/HIDs)
        ;; with their moddb indices.
-       ((mv err modalist) (cwtime (modalist-named->indexed modalist moddb :quiet t)))
+       ((mv err modalist) (cwtime (modalist-named->indexed modalist moddb :quiet t)
+                                  :mintime 1))
        ((when err)
         (mv (msg "Error indexing wire names: ~@0~%" err)
             nil nil nil moddb aliases))
@@ -768,20 +776,23 @@ svex-assigns-compose)).</li>
        (scope (make-modscope-top :modidx modidx))
 
        ;; Gather the full flattened lists of aliases and assignments from the module DB.
-       ((mv modfails varfails flat-aliases flat-assigns flat-fixups flat-constraints)
-        (cwtime (svex-mod->flatten scope modalist moddb)))
+       ((mv varfails modfails flat-aliases flat-assigns flat-fixups flat-constraints)
+        (cwtime (svex-mod->flatten scope modalist moddb)
+                :mintime 1))
        ((when modfails)
-        (mv (msg "Module names referenced but not found: ~x0~%" modfails)
+        (mv (msg "Module names referenced but not found: ~x0~%" (cap-length 20 modfails))
             nil nil nil moddb aliases))
        ((when varfails)
-        (mv (msg "Variable names malformed/unresolved: ~x0~%" varfails)
+        (mv (msg "Variable names malformed/unresolved: ~x0~%" (cap-length 20 varfails))
             nil nil nil moddb aliases))
 
        ;; Compute a normal form for each variable by running a
        ;; union/find-like algorithm on the list of alias pairs.  This
        ;; populates aliases, which maps each wire's index to its canonical form.
-       (aliases (cwtime (svex-mod->initial-aliases modidx 0 moddb aliases)))
-       (aliases (cwtime (canonicalize-alias-pairs flat-aliases aliases))))
+       (aliases (cwtime (svex-mod->initial-aliases modidx 0 moddb aliases)
+                        :mintime 1))
+       (aliases (cwtime (canonicalize-alias-pairs flat-aliases aliases)
+                        :mintime 1)))
     (mv nil flat-assigns flat-fixups flat-constraints moddb aliases))
   ///
 
@@ -1081,7 +1092,22 @@ should address this again later.</p>"
     :rule-classes (:rewrite
                    (:type-prescription :corollary
                     (implies (not err)
-                             (natp (moddb-modname-get-index (design->top x) new-moddb)))))))
+                             (natp (moddb-modname-get-index (design->top x) new-moddb))))))
+
+  (defret vars-of-svex-design-flatten-and-normalize
+    (implies (and (modalist-addr-p (design->modalist x))
+                  (not indexedp))
+             (svarlist-addr-p (svex-alist-vars flat-assigns))))
+
+  (defret vars-of-svex-design-flatten-and-normalize-delays
+    (implies (and (modalist-addr-p (design->modalist x))
+                  (not indexedp))
+             (svarlist-addr-p (svar-map-vars flat-delays))))
+
+  (defret vars-of-svex-design-flatten-and-normalize-constraints
+    (implies (and (modalist-addr-p (design->modalist x))
+                  (not indexedp))
+             (svarlist-addr-p (constraintlist-vars flat-constraints)))))
 
 
 (define svex-design-compile ((x design-p)

@@ -187,4 +187,8 @@ no(:m0, "wire_no2")
 no(:m0, "wire_no3")
 no(:m0, "wire_no4")
 
+yes(:m0, "subinst1")
+no(:m0, "subinst2")
+no(:m0, "subinst3")
+
 test_passed()

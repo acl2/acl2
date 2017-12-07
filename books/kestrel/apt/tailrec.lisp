@@ -1,6 +1,6 @@
 ; APT Tail Recursion Transformation -- Implementation
 ;
-; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,8 @@
 (include-book "kestrel/utilities/named-formulas" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "utilities/print-specifiers")
+(include-book "utilities/transformation-table")
 
 (local (xdoc::set-default-parents tailrec-implementation))
 
@@ -194,7 +196,7 @@
   ((old "Input to the transformation.")
    (variant "Input to the transformation.")
    (verify-guards "Input to the transformation.")
-   (verbose booleanp "Input to the transformation, after validation.")
+   (verbose booleanp "Print informative messages or not.")
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
@@ -229,7 +231,7 @@
   :long
   "<p>
    Show the components of the function denoted by @('old')
-   if @('verbose') is non-@('nil').
+   if @('verbose') is @('t').
    </p>"
   (b* ((wrld (w state))
        ((er old-fn-name) (ensure-function-name-or-numbered-wildcard$
@@ -325,7 +327,7 @@
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (domain$ "A @(tsee pseudo-fn/lambda-p) that is
+               (domain$ "A @(tsee pseudo-termfnp) that is
                          the predicate denoted by @('domain').")
                state)
   :mode :program
@@ -338,9 +340,6 @@
    if @('domain') is a macro name;
    the translation of @('domain'),
    if @('domain') is a lambda expression.
-   </p>
-   <p>
-   Show the domain being used if @('verbose') is non-@('nil').
    </p>"
   (b* (((er (list fn/lambda stobjs-in stobjs-out description))
         (ensure-function/macro/lambda$ domain "The :DOMAIN input" t nil))
@@ -543,7 +542,7 @@
                               (non-executable "Input to the transformation.")
                               (verify-guards "Input to the transformation.")
                               (hints "Input to the transformation.")
-                              (verbose "Input to the transformation.")
+                              (print "Input to the transformation.")
                               (show-only "Input to the transformation.")
                               (ctx "Context for errors.")
                               state)
@@ -565,7 +564,8 @@
                                     old-to-wrapper-thm-name
                                     make-non-executable
                                     do-verify-guards
-                                    hints-alist)')
+                                    hints-alist
+                                    print$)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -575,7 +575,7 @@
                                          pseudo-termp
                                          symbolp
                                          symbolp
-                                         pseudo-fn/lambda-p
+                                         pseudo-termfnp
                                          symbolp
                                          booleanp
                                          symbolp
@@ -583,6 +583,7 @@
                                          booleanp
                                          booleanp
                                          symbol-alistp
+                                         canonical-print-specifier-p
                                          result)'),
                         where the first 8 components are
                         the results of @(tsee tailrec-check-old),
@@ -601,9 +602,11 @@
                         non-executable or not, and
                         @('do-verify-guards') indicates whether the guards of
                         the new and wrapper functions
-                        should be verified or not, and
+                        should be verified or not,
                         @('hints-alist') is
-                        the result of @(tsee tailrec-check-hints).")
+                        the result of @(tsee tailrec-check-hints), and
+                        @('print$') is a canonicalized version of
+                        the @(':print') input.")
                state)
   :mode :program
   :short "Ensure that all the inputs to the transformation are valid."
@@ -611,8 +614,9 @@
   "<p>
    The inputs are validated
    in the order in which they appear in the documentation,
-   except that @(':verbose') is validated just before @('old')
-   so it can be passed to @(tsee tailrec-check-old) as a boolean,
+   except that @(':print') is validated just before @('old')
+   so that the @('verbose') argument of @(tsee tailrec-check-old)
+   can be computed from @(':print'),
    and except that @(':verify-guards') is validated just before @('domain')
    because the result of validating @(':verify-guards')
    is used to validate @('domain').
@@ -623,7 +627,8 @@
    but it is only tested for equality with @('t')
    (see @(tsee tailrec-check-old)).
    </p>"
-  (b* (((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
+  (b* (((er print$) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
+       (verbose (if (member-eq :expand print$) t nil))
        ((er (list old-fn-name
                   test
                   base
@@ -676,7 +681,8 @@
                  old-to-wrapper-thm-name
                  make-non-executable
                  do-verify-guards
-                 hints-alist))))
+                 hints-alist
+                 print$))))
 
 (define tailrec-var-u
   ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs)."))
@@ -751,7 +757,7 @@
    (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    state)
   :returns (formula "An untranslated term.")
   :mode :program
@@ -764,7 +770,9 @@
        (combine-op (tailrec-combine-op combine q r)))
     (case name
       (:domain-of-base
-       (untranslate (apply-term* domain$ base) t wrld))
+       (untranslate (implicate test
+                               (apply-term* domain$ base))
+                    t wrld))
       (:domain-of-nonrec
        (untranslate (implicate (dumb-negate-lit test)
                                (apply-term* domain$ nonrec))
@@ -800,12 +808,14 @@
                                           w))
                     t wrld))
       (:combine-left-identity
-       (untranslate (implicate (apply-term* domain$ u1)
+       (untranslate (implicate (conjoin2 test
+                                         (apply-term* domain$ u1))
                                `(equal ,(apply-term* combine-op base u1)
                                        ,u1))
                     t wrld))
       (:combine-right-identity
-       (untranslate (implicate (apply-term* domain$ u1)
+       (untranslate (implicate (conjoin2 test
+                                         (apply-term* domain$ u1))
                                `(equal ,(apply-term* combine-op u1 base)
                                        ,u1))
                     t wrld))
@@ -859,7 +869,7 @@
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (do-verify-guards booleanp "Result of @(tsee tailrec-check-inputs).")
    state)
   :returns (app-conds "A @(tsee symbol-alistp).")
@@ -881,7 +891,7 @@
       (q symbolp)
       (r symbolp)
       (variant tailrec-variantp)
-      (domain$ pseudo-fn/lambda-p)
+      (domain$ pseudo-termfnp)
       (do-verify-guards booleanp)
       (rev-app-conds symbol-alistp)
       state)
@@ -914,7 +924,7 @@
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (names-to-avoid symbol-listp "Names of other events
                                  (calculated in @(tsee tailrec-event)).")
    (app-cond-thm-names symbol-symbol-alistp
@@ -1008,7 +1018,7 @@
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-enable booleanp "Result of @(tsee tailrec-check-inputs).")
    (make-non-executable booleanp "Result of @(tsee tailrec-check-inputs).")
@@ -1213,7 +1223,7 @@
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (names-to-avoid symbol-listp "Names of other events
                                  (calculated in @(tsee tailrec-event)).")
@@ -1361,6 +1371,342 @@
                         :hints ,hints))))
     (mv event name)))
 
+(define tailrec-alpha-fn-intro-event
+  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
+   (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
+   (names-to-avoid symbol-listp "Names already used by preceding events.")
+   (wrld plist-worldp))
+  :returns (mv (alpha-fn-event "A @(tsee pseudo-event-formp).")
+               (alpha-fn-name "A @(tsee symbolp)."))
+  :mode :program
+  :short "Event to introduce the @($\\alpha$) function of the design notes."
+  :long
+  "<p>
+   This function is generated only locally,
+   because its purpose is just to prove local theorems
+   (@($a\\alpha$) and @($\\gamma_f\\alpha$) in the design notes).
+   Since this function is only used in theorems,
+   it has a @('t') guard and its guards are not verified.
+   The termination proof follows the design notes:
+   measure and well-founded relation are the same as @('old').
+   We do not normalize the function, so we can better control the proofs.
+   </p>
+   <p>
+   The name used for @($\\alpha$) is returned, along with the event.
+   </p>"
+  (b* ((name (fresh-name-in-world-with-$s 'alpha names-to-avoid wrld))
+       (formals (formals old-fn-name wrld))
+       (body `(if ,test (list ,@formals) (,name ,@updates)))
+       (wfrel (well-founded-relation old-fn-name wrld))
+       (measure (measure old-fn-name wrld))
+       (termination-hints
+        `(("Goal" :use (:termination-theorem ,old-fn-name) :in-theory nil)))
+       (event `(local
+                (defun ,name ,formals
+                  (declare (xargs :well-founded-relation ,wfrel
+                                  :measure ,measure
+                                  :hints ,termination-hints
+                                  :guard t
+                                  :verify-guards nil
+                                  :normalize nil))
+                  ,body))))
+    (mv event name)))
+
+(define tailrec-alpha-component-terms
+  ((alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
+   (old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (wrld plist-worldp))
+  :returns (terms "A @(tsee pseudo-term-listp).")
+  :verify-guards nil
+  :short "Generate the terms of the components of the result of @($\\alpha$)."
+  :long
+  "<p>
+   These are the terms
+   @('(nth 0 (alpha x1 ... xn))'), ... @('(nth n-1 (alpha x1 ... xn))').
+   </p>
+   <p>
+   The recursion constructs the terms in reverse order,
+   with @('i') going from @('n') down to 1, exiting when it reaches 0.
+   </p>"
+  (b* ((formals (formals old-fn-name wrld))
+       (n (len formals)))
+    (tailrec-alpha-component-terms-aux n alpha-fn-name formals nil))
+
+  :prepwork
+  ((define tailrec-alpha-component-terms-aux ((i natp)
+                                              (alpha-fn-name symbolp)
+                                              (formals symbol-listp)
+                                              (terms pseudo-term-listp))
+     :returns (final-terms) ; PSEUDO-TERM-LISTP
+     :verify-guards nil
+     (if (zp i)
+         terms
+       (b* ((i-1 (1- i))
+            (term `(nth ',i-1 (,alpha-fn-name ,@formals))))
+         (tailrec-alpha-component-terms-aux i-1
+                                            alpha-fn-name
+                                            formals
+                                            (cons term terms)))))))
+
+(define tailrec-test-of-alpha-intro-event
+  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
+   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
+   (names-to-avoid symbol-listp "Names already used by preceding events.")
+   (wrld plist-worldp))
+  :returns (mv (test-of-alpha-thm-event "A @(tsee pseudo-event-formp).")
+               (test-of-alpha-thm-name "A @(tsee symbolp)
+                                        that names the theorem."))
+  :mode :program
+  :short "Event form for the theorem asserting that
+          the recursion exit test succeeds on the result of @($\\alpha$)
+          (@($a\\alpha$) in the design notes)."
+  :long
+  "<p>
+   The theorem's formula is @('test<alpha_x1,...,alpha_xn>'),
+   where @('alpha_xi') is the @('i')-th result of @($\\alpha$),
+   counting from 1.
+   </p>
+   <p>
+   The hints follow the proof in the design notes.
+   Since the theorem involves @(tsee nth) applied to @(tsee cons),
+   we enable the built-in theorems @('nth-0-cons') and @('nth-add1');
+   this is implicit in the design notes.
+   </p>
+   <p>
+   This theorem event
+   is local to the @(tsee encapsulate) generated by the transformation,
+   because it is just a lemma used to prove other theorems.
+   </p>"
+  (b* ((name (fresh-name-in-world-with-$s 'test-of-alpha names-to-avoid wrld))
+       (formals (formals old-fn-name wrld))
+       (alpha-component-terms (tailrec-alpha-component-terms alpha-fn-name
+                                                             old-fn-name
+                                                             wrld))
+       (formula (subcor-var formals alpha-component-terms test))
+       (hints `(("Goal"
+                 :in-theory '(,alpha-fn-name nth-0-cons nth-add1)
+                 :induct (,alpha-fn-name ,@formals))))
+       (event `(local (defthm ,name
+                        ,formula
+                        :rule-classes nil
+                        :hints ,hints))))
+    (mv event name)))
+
+(define tailrec-old-guard-of-alpha-intro-event
+  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
+   (names-to-avoid symbol-listp "Names already used by preceding events.")
+   (wrld plist-worldp))
+  :returns (mv (old-guard-of-alpha-thm-event "A @(tsee pseudo-event-formp).")
+               (old-guard-of-alpha-thm-name "A @(tsee symbolp)
+                                             that names the theorem."))
+  :mode :program
+  :short "Event form for the theorem asserting that
+          the guard of the old function is preserved by @($\\alpha$)
+          (@($\\gamma_f\\alpha$) in the design notes)."
+  :long
+  "<p>
+   The theorem's formula is
+   @('(implies old-guard<x1,...,xn> old-guard<alpha_x1,...,alpha_xn>)'),
+   where @('alpha_xi') is the @('i')-th result of @($\\alpha$),
+   counting from 1.
+   </p>
+   <p>
+   The hints follow the proof in the design notes.
+   Since the theorem involves @(tsee nth) applied to @(tsee cons),
+   we enable the built-in theorems @('nth-0-cons') and @('nth-add1');
+   this is implicit in the design notes.
+   </p>
+   <p>
+   This theorem event
+   is local to the @(tsee encapsulate) generated by the transformation,
+   because it is just a lemma used to prove other theorems.
+   </p>"
+  (b* ((name (fresh-name-in-world-with-$s 'old-guard-of-alpha
+                                          names-to-avoid
+                                          wrld))
+       (formals (formals old-fn-name wrld))
+       (alpha-component-terms (tailrec-alpha-component-terms alpha-fn-name
+                                                             old-fn-name
+                                                             wrld))
+       (old-guard (guard old-fn-name nil wrld))
+       (formula (implicate old-guard
+                           (subcor-var
+                            formals alpha-component-terms old-guard)))
+       (hints `(("Goal"
+                 :in-theory '(,alpha-fn-name nth-0-cons nth-add1)
+                 :induct (,alpha-fn-name ,@formals))
+                '(:use (:guard-theorem ,old-fn-name))))
+       (event `(local (defthm ,name
+                        ,formula
+                        :rule-classes nil
+                        :hints ,hints))))
+    (mv event name)))
+
+(define tailrec-domain-of-ground-base-intro-event
+  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
+   (app-cond-thm-names symbol-symbol-alistp
+                       "Map from the names of the applicability conditions
+                        to the corresponding theorems
+                        (calculated in @(tsee tailrec-event)).")
+   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
+   (test-of-alpha-thm-name
+    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event).")
+   (names-to-avoid symbol-listp "Names already used by preceding events.")
+   (wrld plist-worldp))
+  :returns (mv (domain-of-ground-base-thm-event "A @(tsee pseudo-event-formp).")
+               (domain-of-ground-base-thm-name "A @(tsee symbolp)
+                                                that names the theorem."))
+  :mode :program
+  :short "Event form for the theorem asserting that
+          the base value of the recursion is in the domain
+          (@($D{}b_0$) in the design notes)."
+  :long
+  "<p>
+   The hints follow the proof in the design notes.
+   </p>
+   <p>
+   This theorem event
+   is local to the @(tsee encapsulate) generated by the transformation,
+   because it is just a lemma used to prove other theorems.
+   </p>"
+  (b* ((name (fresh-name-in-world-with-$s 'domain-of-ground-base
+                                          names-to-avoid
+                                          wrld))
+       (formula (apply-term* domain$ base))
+       (domain-of-base-thm
+        (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
+       (formals (formals old-fn-name wrld))
+       (alpha-comps (tailrec-alpha-component-terms alpha-fn-name
+                                                   old-fn-name
+                                                   wrld))
+       (hints `(("Goal"
+                 :in-theory nil
+                 :use (,test-of-alpha-thm-name
+                       (:instance ,domain-of-base-thm
+                        :extra-bindings-ok
+                        ,@(alist-to-doublets (pairlis$ formals
+                                                       alpha-comps)))))))
+       (event `(local (defthm ,name
+                        ,formula
+                        :rule-classes nil
+                        :hints ,hints))))
+    (mv event name)))
+
+(define tailrec-combine-left-identity-ground-intro-event
+  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
+   (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
+   (q symbolp "Result of @(tsee tailrec-check-inputs).")
+   (r symbolp "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
+   (app-cond-thm-names symbol-symbol-alistp
+                       "Map from the names of the applicability conditions
+                        to the corresponding theorems
+                        (calculated in @(tsee tailrec-event)).")
+   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
+   (test-of-alpha-thm-name
+    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event).")
+   (names-to-avoid symbol-listp "Names already used by preceding events.")
+   (wrld plist-worldp))
+  :returns (mv (combine-left-identity-ground-thm-event
+                "A @(tsee pseudo-event-formp).")
+               (combine-left-identity-ground-thm-name
+                "A @(tsee symbolp) that names the theorem."))
+  :mode :program
+  :short "Event form for the theorem asserting that
+          the base value of the recursion
+          is left identity of the combination operator
+          (@($L{}I_0$) in the design notes)."
+  :long
+  "<p>
+   The hints follow the proof in the design notes.
+   </p>
+   <p>
+   This theorem event
+   is local to the @(tsee encapsulate) generated by the transformation,
+   because it is just a lemma used to prove other theorems.
+   </p>"
+  (b* ((name (fresh-name-in-world-with-$s 'combine-left-identity-ground
+                                          names-to-avoid
+                                          wrld))
+       (u (tailrec-var-u old-fn-name))
+       (combine-op (tailrec-combine-op combine q r))
+       (formula (implicate (apply-term* domain$ u)
+                           `(equal ,(apply-term* combine-op base u)
+                                   ,u)))
+       (combine-left-identity-thm
+        (cdr (assoc-eq :combine-left-identity app-cond-thm-names)))
+       (formals (formals old-fn-name wrld))
+       (alpha-comps (tailrec-alpha-component-terms alpha-fn-name
+                                                   old-fn-name
+                                                   wrld))
+       (hints `(("Goal"
+                 :in-theory nil
+                 :use (,test-of-alpha-thm-name
+                       (:instance ,combine-left-identity-thm
+                        :extra-bindings-ok
+                        ,@(alist-to-doublets (pairlis$ formals
+                                                       alpha-comps)))))))
+       (event `(local (defthm ,name
+                        ,formula
+                        :rule-classes nil
+                        :hints ,hints))))
+    (mv event name)))
+
+(define tailrec-base-guard-intro-event
+  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
+   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
+   (test-of-alpha-thm-name
+    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event).")
+   (old-guard-of-alpha-thm-name
+    symbolp "Result of @(tsee tailrec-old-guard-of-alpha-intro-event).")
+   (names-to-avoid symbol-listp "Names already used by preceding events.")
+   state)
+  :returns (mv (base-guard-thm-event "A @(tsee pseudo-event-formp).")
+               (base-guard-thm-name "A @(tsee symbolp)
+                                     that names the theorem."))
+  :mode :program
+  :short "Event form for the theorem asserting that
+          the guard of the base term is satisfied
+          if the guard of the target function is
+          (@($G{}b$) in the design notes)."
+  :long
+  "<p>
+   The hints follow the proof in the design notes.
+   </p>
+   <p>
+   This theorem event
+   is local to the @(tsee encapsulate) generated by the transformation,
+   because it is just a lemma used to prove other theorems.
+   </p>"
+  (b* ((wrld (w state))
+       (name (fresh-name-in-world-with-$s 'base-guard names-to-avoid wrld))
+       (formula (implicate (guard old-fn-name nil wrld)
+                           (term-guard-obligation base state)))
+       (formals (formals old-fn-name wrld))
+       (alpha-comps (tailrec-alpha-component-terms alpha-fn-name
+                                                   old-fn-name
+                                                   wrld))
+       (hints `(("Goal"
+                 :in-theory nil
+                 :use (,old-guard-of-alpha-thm-name
+                       ,test-of-alpha-thm-name
+                       (:instance (:guard-theorem ,old-fn-name)
+                        :extra-bindings-ok
+                        ,@(alist-to-doublets (pairlis$ formals
+                                                       alpha-comps)))))))
+       (event `(local (defthm ,name
+                        ,formula
+                        :rule-classes nil
+                        :hints ,hints))))
+    (mv event name)))
+
 (define tailrec-old-as-new
   ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
@@ -1419,6 +1765,11 @@
                         (calculated in @(tsee tailrec-event)).")
    (domain-of-old-thm-name
     symbolp "Result of @(tsee tailrec-domain-of-old-intro-event).")
+   (domain-of-ground-base-thm-name
+    symbolp "Result of @(tsee tailrec-domain-of-ground-base-intro-event).")
+   (combine-left-identity-ground-thm-name
+    symbolp
+    "Result of @(tsee tailrec-combine-left-identity-ground-intro-event).")
    (new-fn-formals symbol-listp
                    "Result of @(tsee tailrec-new-fn-intro-events).")
    (new-to-old-thm-name
@@ -1430,23 +1781,22 @@
   :mode :program
   :short "Event form for the theorem that relates
           the old function to the new function
-          (@($f{}f'$) in the design notes)."
+          (@($f{}f'$) and @($f{}f'_0$) in the design notes)."
   :long
   "<p>
+   The theorem is @($f{}f'$) when the variant is @(':assoc')
+   (in this case, left identity does not hold),
+   and @($f{}f'_0$) when the variant is @(':monoid') or @(':monoid-alt')
+   (in this case, left identity holds,
+   and we are in the special case of a ground base term).
+   </p>
+   <p>
    The hints follow the proof in the design notes,
    for the case in which left identity holds
    when the variant is @(':monoid') or @(':monoid-alt'),
    and for the case in which left identity does not hold
    when the variant is @(':assoc').
-   </p>
-   <p>
-   For the @(':monoid') and @(':monoid-alt') variants,
-   since the @(':domain-of-base') and @(':combine-left-identity')
-   applicabiilty conditions are unconditional
-   (unlike @($D{}b$) and @($L{}I$) in the design notes),
-   we can use these two applicability conditions in the proofs,
-   instead of the theorems @($D{}\\beta$) and @($L{}I{}\\beta$)
-   used in the design notes.
+   In the first case, the proof is for the special case of a ground base term.
    </p>
    <p>
    For the @(':assoc') variant,
@@ -1462,12 +1812,8 @@
        (hints
         (case variant
           ((:monoid :monoid-alt)
-           (b* ((domain-of-base-thm
-                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
-                (combine-left-identity-thm
-                 (cdr (assoc-eq :combine-left-identity app-cond-thm-names)))
-                (combine-left-identity-instance
-                 `(:instance ,combine-left-identity-thm
+           (b* ((combine-left-identity-ground-instance
+                 `(:instance ,combine-left-identity-ground-thm-name
                              :extra-bindings-ok
                              (,(tailrec-id-var-u old-fn-name wrld)
                               ,(apply-term old-fn-name (formals old-fn-name
@@ -1478,10 +1824,10 @@
                              (,r ,base))))
              `(("Goal"
                 :in-theory nil
-                :use (,domain-of-base-thm
+                :use (,domain-of-ground-base-thm-name
                       ,domain-of-old-thm-name
                       ,new-to-old-thm-instance
-                      ,combine-left-identity-instance)))))
+                      ,combine-left-identity-ground-instance)))))
           (:assoc
            (b* ((formals (formals old-fn-name wrld))
                 (domain-of-nonrec-thm
@@ -1520,6 +1866,10 @@
                        "Map from the names of the applicability conditions
                         to the corresponding theorems
                         (calculated in @(tsee tailrec-event)).")
+   (domain-of-ground-base-thm-name
+    symbolp "Result of @(tsee tailrec-domain-of-ground-base-intro-event).")
+   (base-guard-thm-name
+    symbolp "Result of @(tsee tailrec-base-guard-intro-event).")
    (new-fn-formals symbol-listp
                    "Result of @(tsee tailrec-new-fn-intro-events).")
    (wrld plist-worldp))
@@ -1554,18 +1904,10 @@
    </p>
    <p>
    The guard hints are based on the proofs in the design notes.
-   Since we do not use the @($\\beta$) function described in the design notes
-   (as explained in the documentation of the transformation),
+   Since the base term is always ground,
    the proof for the case in which left identity holds
-   uses the @(':domain-of-base') applicability condition
-   instead of the @($D{}\\beta$) theorem in the design notes.
-   The @(':domain-of-nonrec') applicability condition theorem is used
-   iff the applicability condition is present,
-   i.e. iff the @(':variant') input to the transformation
-   is @(':monoid') or @(':assoc');
-   if it is @(':monoid'), the theorem is not needed in the proof
-   (because left identity holds, and the wrapper has a simpler form),
-   but it is simply ignored in the proof.
+   (i.e. when the variant is @(':monoid') or @(':monoid-alt'))
+   follows the proof for the special case of a ground base term.
    </p>"
   (b* ((macro (function-intro-macro wrapper-enable make-non-executable))
        (formals (formals old-fn-name wrld))
@@ -1573,16 +1915,21 @@
                                  new-fn-name new-fn-formals wrld))
        (guard (untranslate (guard old-fn-name nil wrld) t wrld))
        (guard-hints
-        (b* ((domain-of-base-thm
-              (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
-             (domain-of-nonrec-thm?
-              (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names))))
-          `(("Goal"
-             :in-theory nil
-             :use ((:guard-theorem ,old-fn-name)
-                   ,domain-of-base-thm
-                   ,@(and domain-of-nonrec-thm?
-                          (list domain-of-nonrec-thm?)))))))
+        (case variant
+          ((:monoid :monoid-alt)
+           `(("Goal"
+              :in-theory nil
+              :use ((:guard-theorem ,old-fn-name)
+                    ,domain-of-ground-base-thm-name
+                    ,base-guard-thm-name))))
+          (:assoc
+           (b* ((domain-of-nonrec-thm
+                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names))))
+             `(("Goal"
+                :in-theory nil
+                :use ((:guard-theorem ,old-fn-name)
+                      ,domain-of-nonrec-thm)))))
+          (t (impossible))))
        (local-event
         `(local
           (,macro ,wrapper-fn-name (,@formals)
@@ -1666,7 +2013,7 @@
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
    (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-fn/lambda-p "Result of @(tsee tailrec-check-inputs).")
+   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-enable booleanp "Result of @(tsee tailrec-check-inputs).")
    (wrapper-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
@@ -1676,12 +2023,11 @@
    (make-non-executable booleanp "Result of @(tsee tailrec-check-inputs).")
    (do-verify-guards booleanp "Result of @(tsee tailrec-check-inputs).")
    (hints-alist symbol-alistp "Result of @(tsee tailrec-check-inputs).")
+   (print$ booleanp "Result of @(tsee tailrec-check-inputs).")
    (show-only booleanp "Input to the transformation, after validation.")
    (app-conds symbol-alistp "Result of @(tsee tailrec-app-conds).")
-   (call-w/o-verbose-showonly pseudo-event-formp
-                              "Call to the transformation,
-                               without @(':verbose') and @(':show-only').")
-   (wrld plist-worldp))
+   (call pseudo-event-formp "Call to the transformation.")
+   state)
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
   :short "Event form generated by the transformation."
@@ -1694,8 +2040,8 @@
    the main theorem and its supporting lemmas,
    and the recording of the generated numbered names.
    The @(tsee encapsulate) is followed by events
-   for the recording in the transformation table
-   and for the screen outputs.
+   for the recording in the transformation table,
+   and possibly for printing the transformation results on the screen.
    </p>
    <p>
    The @(tsee encapsulate) starts with some implicitly local event forms to
@@ -1728,37 +2074,53 @@
    (with slight variations).
    </p>
    <p>
-   The @(tsee progn) ends with an event form to print nothing on screen,
-   because it already includes events
-   to print the exported function and theorem events on screen.
-   These exported events are printed on screen without hints;
-   they are the same event forms
-   that are introduced non-locally and redundantly in the @(tsee encapsulate).
-   </p>
-   <p>
    The @(tsee encapsulate) is stored into the transformation table,
-   associated to the call to the transformation
-   (without @(':verbose') and @(':show-only'), if any,
-   because they only affect the transformation's screen output).
-   Thus, the table event and the screen output events
+   associated to the call to the transformation.
+   Thus, the table event and (if present) the screen output events
    (which are in the @(tsee progn) but not in the @(tsee encapsulate))
    are not stored into the transformation table,
-   because they carry no additional information
-   (and because otherwise the table event would have to contain itself).
+   because they carry no additional information,
+   and because otherwise the table event would have to contain itself.
+   </p>
+   <p>
+   If @(':print') includes @(':submit'),
+   the @(tsee encapsulate) is wrapped to show the normal screen output
+   for the submitted events.
+   This screen output always starts with a blank line,
+   so we do need to print a blank line to separate the submission output
+   from the expansion output (if any).
+   </p>
+   <p>
+   If @(':print') includes @(':result'),
+   the @(tsee progn) includes events to print
+   the exported events on the screen without hints.
+   They are the same event forms
+   that are introduced non-locally and redundantly in the @(tsee encapsulate).
+   If @(':print') also includes @(':expand') or @(':submit'),
+   an event to print a blank line is also generated
+   to separate the result output from the expansion or submission output.
+   </p>
+   <p>
+   The @(tsee progn) ends with an event form
+   to avoiding printing any return value on the screen.
    </p>
    <p>
    If @(':show-only') is @('t'),
-   an event to show the @(tsee encapsulate) on screen is returned.
-   The table event and the screen output events are excluded from this
-   because they just &ldquo;repeat&rdquo; things that are already present
-   in the @(tsee encapsulate) that is shown on the screen.
+   the @(tsee encapsulate) is just printed on screen, not submitted.
+   In this case,
+   the presence or absence of @(':submit') and @(':result') in @(':print')
+   is ignored.
+   If @(':print') includes @(':expand'),
+   a blank line is printed just before the @(tsee encapsulate)
+   to separate it from the expansion output.
    </p>
    <p>
    To ensure the absence of name conflicts inside the @(tsee encapsulate),
    the event names to avoid are accumulated
    and threaded through the event-generating code.
    </p>"
-  (b* ((names-to-avoid (list new-fn-name
+  (b* ((wrld (w state))
+       (names-to-avoid (list new-fn-name
                              wrapper-fn-name
                              old-to-wrapper-thm-name))
        ((mv app-cond-thm-events
@@ -1815,6 +2177,74 @@
                                   new-fn-unnorm-name
                                   wrld))
        (names-to-avoid (rcons new-to-old-thm-name names-to-avoid))
+       (gen-alpha (member-eq variant '(:monoid :monoid-alt)))
+       ((mv alpha-fn-event?
+            alpha-fn-name?) (if gen-alpha
+                                (tailrec-alpha-fn-intro-event
+                                 old-fn-name test updates
+                                 names-to-avoid wrld)
+                              (mv nil nil)))
+       (names-to-avoid (if gen-alpha
+                           (rcons alpha-fn-name? names-to-avoid)
+                         names-to-avoid))
+       ((mv test-of-alpha-thm-event?
+            test-of-alpha-thm-name?) (if gen-alpha
+                                         (tailrec-test-of-alpha-intro-event
+                                          old-fn-name test
+                                          alpha-fn-name?
+                                          names-to-avoid wrld)
+                                       (mv nil nil)))
+       (names-to-avoid (if gen-alpha
+                           (rcons test-of-alpha-thm-name? names-to-avoid)
+                         names-to-avoid))
+       ((mv old-guard-of-alpha-thm-event?
+            old-guard-of-alpha-thm-name?)
+        (if (and gen-alpha
+                 do-verify-guards)
+            (tailrec-old-guard-of-alpha-intro-event
+             old-fn-name alpha-fn-name? names-to-avoid wrld)
+          (mv nil nil)))
+       (names-to-avoid (if (and gen-alpha
+                                do-verify-guards)
+                           (rcons old-guard-of-alpha-thm-name? names-to-avoid)
+                         names-to-avoid))
+       ((mv domain-of-ground-base-thm-event?
+            domain-of-ground-base-thm-name?)
+        (if gen-alpha
+            (tailrec-domain-of-ground-base-intro-event
+             old-fn-name base domain$ app-cond-thm-names
+             alpha-fn-name? test-of-alpha-thm-name?
+             names-to-avoid wrld)
+          (mv nil nil)))
+       (names-to-avoid (if gen-alpha
+                           (rcons domain-of-ground-base-thm-name?
+                                  names-to-avoid)
+                         names-to-avoid))
+       ((mv combine-left-identity-ground-thm-event?
+            combine-left-identity-ground-thm-name?)
+        (if gen-alpha
+            (tailrec-combine-left-identity-ground-intro-event
+             old-fn-name base combine q r domain$ app-cond-thm-names
+             alpha-fn-name? test-of-alpha-thm-name?
+             names-to-avoid wrld)
+          (mv nil nil)))
+       (names-to-avoid (if gen-alpha
+                           (rcons combine-left-identity-ground-thm-name?
+                                  names-to-avoid)
+                         names-to-avoid))
+       ((mv base-guard-thm-event?
+            base-guard-thm-name?) (if (and gen-alpha
+                                           do-verify-guards)
+                                      (tailrec-base-guard-intro-event
+                                       old-fn-name base
+                                       alpha-fn-name? test-of-alpha-thm-name?
+                                       old-guard-of-alpha-thm-name?
+                                       names-to-avoid state)
+                                    (mv nil nil)))
+       (names-to-avoid (if (and gen-alpha
+                                do-verify-guards)
+                           (rcons base-guard-thm-name? names-to-avoid)
+                         names-to-avoid))
        ((mv old-to-new-thm-event
             old-to-new-thm-name) (tailrec-old-to-new-intro-event
                                   old-fn-name test base nonrec updates r
@@ -1823,6 +2253,8 @@
                                   names-to-avoid
                                   app-cond-thm-names
                                   domain-of-old-thm-name
+                                  domain-of-ground-base-thm-name?
+                                  combine-left-identity-ground-thm-name?
                                   new-fn-formals
                                   new-to-old-thm-name
                                   wrld))
@@ -1836,6 +2268,8 @@
                                         wrapper-fn-name wrapper-enable
                                         make-non-executable do-verify-guards
                                         app-cond-thm-names
+                                        domain-of-ground-base-thm-name?
+                                        base-guard-thm-name?
                                         new-fn-formals
                                         wrld))
        ((mv wrapper-fn-unnorm-event
@@ -1857,46 +2291,65 @@
                                      ,new-fn-name))
        (wrapper-fn-numbered-name-event `(add-numbered-name-in-use
                                          ,wrapper-fn-name))
-       (encapsulate-events `((logic)
-                             (set-ignore-ok t)
-                             (set-irrelevant-formals-ok t)
-                             ,@app-cond-thm-events
-                             (set-default-hints nil)
-                             (set-override-hints nil)
-                             ,old-fn-unnorm-event
-                             ,domain-of-old-thm-event
-                             ,new-fn-local-event
-                             ,new-fn-unnorm-event
-                             ,new-to-old-thm-event
-                             ,old-to-new-thm-event
-                             ,wrapper-fn-local-event
-                             ,wrapper-fn-unnorm-event
-                             ,old-to-wrapper-thm-local-event
-                             ,new-fn-exported-event
-                             ,wrapper-fn-exported-event
-                             ,old-to-wrapper-thm-exported-event
-                             ,new-fn-numbered-name-event
-                             ,wrapper-fn-numbered-name-event))
+       (encapsulate-events
+        `((logic)
+          (set-ignore-ok t)
+          (set-irrelevant-formals-ok t)
+          ,@app-cond-thm-events
+          (set-default-hints nil)
+          (set-override-hints nil)
+          ,old-fn-unnorm-event
+          ,domain-of-old-thm-event
+          ,new-fn-local-event
+          ,new-fn-unnorm-event
+          ,new-to-old-thm-event
+          ,@(and gen-alpha
+                 (list alpha-fn-event?))
+          ,@(and gen-alpha
+                 (list test-of-alpha-thm-event?))
+          ,@(and gen-alpha
+                 do-verify-guards
+                 (list old-guard-of-alpha-thm-event?))
+          ,@(and gen-alpha
+                 (list domain-of-ground-base-thm-event?))
+          ,@(and gen-alpha
+                 (list combine-left-identity-ground-thm-event?))
+          ,@(and gen-alpha
+                 do-verify-guards
+                 (list base-guard-thm-event?))
+          ,old-to-new-thm-event
+          ,wrapper-fn-local-event
+          ,wrapper-fn-unnorm-event
+          ,old-to-wrapper-thm-local-event
+          ,new-fn-exported-event
+          ,wrapper-fn-exported-event
+          ,old-to-wrapper-thm-exported-event
+          ,new-fn-numbered-name-event
+          ,wrapper-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
-       ((when show-only) `(progn
-                            (cw-event "~x0~|" ',encapsulate)
-                            (value-triple ':invisible)))
-       (transformation-table-event `(table transformation-table
-                                      ',call-w/o-verbose-showonly
-                                      ',encapsulate))
-       (new-fn-show-event `(cw-event "~x0~|"
-                                     ',new-fn-exported-event))
-       (wrapper-fn-show-event `(cw-event "~x0~|"
-                                         ',wrapper-fn-exported-event))
-       (old-to-wrapper-thm-show-event `(cw-event
-                                        "~x0~|"
-                                        ',old-to-wrapper-thm-exported-event)))
+       (expand-output-p (if (member-eq :expand print$) t nil))
+       ((when show-only)
+        (if expand-output-p
+            (cw "~%~x0~|" encapsulate)
+          (cw "~x0~|" encapsulate))
+        '(value-triple :invisible))
+       (submit-output-p (if (member-eq :submit print$) t nil))
+       (encapsulate+ (restore-output? submit-output-p encapsulate))
+       (transformation-table-event (record-transformation-call-event
+                                    call encapsulate wrld))
+       (result-output-p (if (member-eq :result print$) t nil))
+       (print-events (if result-output-p
+                         `(,@(and (or expand-output-p submit-output-p)
+                                  '((cw-event "~%")))
+                           (cw-event "~x0~|" ',new-fn-exported-event)
+                           (cw-event "~x0~|" ',wrapper-fn-exported-event)
+                           (cw-event "~x0~|"
+                                     ',old-to-wrapper-thm-exported-event))
+                       nil)))
     `(progn
-       ,encapsulate
+       ,encapsulate+
        ,transformation-table-event
-       ,new-fn-show-event
-       ,wrapper-fn-show-event
-       ,old-to-wrapper-thm-show-event
+       ,@print-events
        (value-triple :invisible))))
 
 (define tailrec-fn
@@ -1912,7 +2365,7 @@
    (non-executable "Input to the transformation.")
    (verify-guards "Input to the transformation.")
    (hints "Input to the transformation.")
-   (verbose "Input to the transformation.")
+   (print "Input to the transformation.")
    (show-only "Input to the transformation.")
    (call pseudo-event-formp "Call to the transformation.")
    (ctx "Context for errors.")
@@ -1929,28 +2382,15 @@
   :long
   "<p>
    If this call to the transformation is redundant,
-   a message to that effect is shown on screen.
-   Redundancy is checked
-   after removing @(':verbose') and @(':show-only') from the call,
-   because those two options only affect screen output.
+   a message to that effect is printed on the screen.
    If the transformation is redundant and @(':show-only') is @('t'),
    the @(tsee encapsulate), retrieved from the table, is shown on screen.
    </p>"
-  (b* ((number-of-required-args-plus-1 2)
-       (call-options (nthcdr number-of-required-args-plus-1 call))
-       (call-options (remove-keyword :verbose call-options))
-       (call-options (remove-keyword :show-only call-options))
-       (call-w/o-verbose-showonly
-        (append (take number-of-required-args-plus-1 call) call-options))
-       (table (table-alist 'transformation-table (w state)))
-       (encapsulate? (cdr (assoc-equal call-w/o-verbose-showonly table)))
+  (b* ((encapsulate? (previous-transformation-expansion call (w state)))
        ((when encapsulate?)
-        (value `(progn
-                  ,@(and show-only
-                         `((cw-event "~x0~|" ',encapsulate?)))
-                  (cw-event "~%The transformation ~x0 is redundant.~%"
-                            ',call)
-                  (value-triple :invisible))))
+        (b* (((run-when show-only) (cw "~x0~|" encapsulate?)))
+          (cw "~%The transformation ~x0 is redundant.~%" call)
+          (value '(value-triple :invisible))))
        ((er (list old-fn-name
                   test
                   base
@@ -1966,27 +2406,30 @@
                   old-to-wrapper-thm-name
                   make-non-executable
                   do-verify-guards
-                  hints-alist)) (tailrec-check-inputs old
-                                                      variant
-                                                      domain
-                                                      new-name
-                                                      new-enable
-                                                      wrapper-name
-                                                      wrapper-enable
-                                                      thm-name
-                                                      thm-enable
-                                                      non-executable
-                                                      verify-guards
-                                                      hints
-                                                      verbose
-                                                      show-only
-                                                      ctx state))
+                  hints-alist
+                  print$)) (tailrec-check-inputs old
+                                                 variant
+                                                 domain
+                                                 new-name
+                                                 new-enable
+                                                 wrapper-name
+                                                 wrapper-enable
+                                                 thm-name
+                                                 thm-enable
+                                                 non-executable
+                                                 verify-guards
+                                                 hints
+                                                 print
+                                                 show-only
+                                                 ctx state))
        (app-conds (tailrec-app-conds
                    old-fn-name test base nonrec combine q r variant domain$
                    do-verify-guards
                    state))
-       ((er &) (ensure-named-formulas
-                app-conds hints-alist verbose t nil ctx state))
+       ((er &) (ensure-named-formulas app-conds
+                                      hints-alist
+                                      (if (member-eq :expand print$) t nil)
+                                      t nil ctx state))
        (event (tailrec-event
                old-fn-name test base nonrec updates combine q r
                variant domain$
@@ -1994,8 +2437,8 @@
                wrapper-fn-name wrapper-enable
                old-to-wrapper-thm-name thm-enable
                make-non-executable do-verify-guards
-               hints-alist show-only app-conds
-               call-w/o-verbose-showonly (w state))))
+               hints-alist print$ show-only app-conds
+               call state)))
     (value event)))
 
 (defsection tailrec-implementation
@@ -2003,8 +2446,7 @@
   :short "Implementation of the tail recursion transformation."
   :long
   "<p>
-   Submit the event form generated by @(tsee tailrec-fn),
-   using the @(':verbose') input to control the screen output.
+   Submit the event form generated by @(tsee tailrec-fn),.
    </p>
    @(def tailrec)"
   (defmacro tailrec (&whole
@@ -2024,25 +2466,22 @@
                      (non-executable ':auto)
                      (verify-guards ':auto)
                      (hints 'nil)
-                     (verbose 'nil)
+                     (print ':result)
                      (show-only 'nil))
-    (control-screen-output
-     verbose
-     `(make-event (tailrec-fn ',old
-                              ',variant
-                              ',domain
-                              ',new-name
-                              ',new-enable
-                              ',wrapper-name
-                              ',wrapper-enable
-                              ',thm-name
-                              ',thm-enable
-                              ',non-executable
-                              ',verify-guards
-                              ',hints
-                              ',verbose
-                              ',show-only
-                              ',call
-                              (cons 'tailrec ',old)
-                              state)
-                  :on-behalf-of :quiet))))
+    `(make-event-terse (tailrec-fn ',old
+                                   ',variant
+                                   ',domain
+                                   ',new-name
+                                   ',new-enable
+                                   ',wrapper-name
+                                   ',wrapper-enable
+                                   ',thm-name
+                                   ',thm-enable
+                                   ',non-executable
+                                   ',verify-guards
+                                   ',hints
+                                   ',print
+                                   ',show-only
+                                   ',call
+                                   (cons 'tailrec ',old)
+                                   state))))

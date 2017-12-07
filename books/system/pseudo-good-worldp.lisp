@@ -1183,9 +1183,14 @@
 (defun ttags-seenp (val)
   (cond ((atom val) (null val))
         (t (and (consp (car val))
-                (symbolp (car (car val)))            ; a ttag
-                (or (equal (cdr (car val)) '(NIL))   ; ttag declared at top-level
-                    (string-listp (cdr (car val))))  ; ttag declared in given filenames
+                (symbolp (car (car val))) ; a ttag
+                (true-listp (cdr (car val))) ; guard for next conjunct
+
+; The cdr of (car val) is a list of strings, indicating books in which the ttag
+; has been declared, and possibly nil, indicating that the ttag was declared at
+; top-level.
+
+                (string-listp (remove1-eq 'nil (cdr (car val))))
                 (ttags-seenp (cdr val))))))
 
 ; -----------------------------------------------------------------

@@ -29,57 +29,57 @@
   :rule-classes ((:type-prescription)))
 
 (encapsulate
- ()
- 
- (local (defthm arith-4
-          (implies
-           (and
-            (realp x)
-            (realp y)
-            (not (equal x 0))
-            (not (equal y 0))
-            (<= (abs x)
-                (abs y)))
-           (<= (abs (/ y))
-               (abs (/ x))))
-          :rule-classes nil))
+  ()
 
- (defthm standard-bound-x-implies-limited-x-thm
-   (implies
-    (and
-     (standard-numberp y)
-     (realp y)
-     (realp x)
-     (not (equal y 0))
-     (<= (abs x)
-         (abs y)))
-    (i-limited x))
-   :rule-classes nil
-   :hints (("Goal" :cases ((equal y 0) (not (equal y 0)))
-            :in-theory (disable abs))
-           ("Goal'" :use ((:instance arith-4)
-                          (:instance standard-part-<= (x (abs (/ y)))
-                                     (y (abs (/ x))))))))
+  (local (defthm arith-4
+           (implies
+            (and
+             (realp x)
+             (realp y)
+             (not (equal x 0))
+             (not (equal y 0))
+             (<= (abs x)
+                 (abs y)))
+            (<= (abs (/ y))
+                (abs (/ x))))
+           :rule-classes nil))
 
- (defthm limited-bound-x-implies-limited-x-thm
-   (implies
-    (and
-     (i-limited y)
-     (realp y)
-     (realp x)
-     (not (equal y 0))
-     (<= (abs x)
-         (abs y)))
-    (i-limited x))
-   :rule-classes nil
-   :hints (("Goal" :cases ((i-small y) (not (i-small y)))
-            :in-theory (disable abs))
-           ("Subgoal 2" :use ((:instance arith-4)
-                              (:instance standard-part-<= (x (abs (/ y)))
-                                         (y (abs (/ x))))))
-           ("Subgoal 1" :use ((:instance arith-4)
-                              (:instance standard-part-<= (x (abs (/ y)))
-                                         (y (abs (/ x)))))))))
+  (defthm standard-bound-x-implies-limited-x-thm
+    (implies
+     (and
+      (standard-numberp y)
+      (realp y)
+      (realp x)
+      (not (equal y 0))
+      (<= (abs x)
+          (abs y)))
+     (i-limited x))
+    :rule-classes nil
+    :hints (("Goal" :cases ((equal y 0) (not (equal y 0)))
+             :in-theory (disable abs))
+            ("Goal'" :use ((:instance arith-4)
+                           (:instance standard-part-<= (x (abs (/ y)))
+                                      (y (abs (/ x))))))))
+
+  (defthm limited-bound-x-implies-limited-x-thm
+    (implies
+     (and
+      (i-limited y)
+      (realp y)
+      (realp x)
+      (not (equal y 0))
+      (<= (abs x)
+          (abs y)))
+     (i-limited x))
+    :rule-classes nil
+    :hints (("Goal" :cases ((i-small y) (not (i-small y)))
+             :in-theory (disable abs))
+            ("Subgoal 2" :use ((:instance arith-4)
+                               (:instance standard-part-<= (x (abs (/ y)))
+                                          (y (abs (/ x))))))
+            ("Subgoal 1" :use ((:instance arith-4)
+                               (:instance standard-part-<= (x (abs (/ y)))
+                                          (y (abs (/ x)))))))))
 
 (defthm plus-limited
   (implies
@@ -93,7 +93,7 @@
   :hints (("Goal" :use ((:instance standard+small->i-limited
                                    (x (standard-part (+ x y)))
                                    (eps (- (+ x y) (standard-part (+ x y)))))))))
-                                  
+
 (defthm times-limited
   (implies
    (and

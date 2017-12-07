@@ -133,4 +133,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(include-book "subcor-var") ; for subcor-var1
+
 (verify-termination fsubcor-var) ; and guards

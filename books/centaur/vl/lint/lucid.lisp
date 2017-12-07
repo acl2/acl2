@@ -3408,6 +3408,14 @@ doesn't have to recreate the default heuristics.</p>"
   (verify-guards vl-lucid-check-uses-are-spurious-instances))
 
     
+(define vl-lucid-warning-type ((warning symbolp)
+                               &key (tag 'tag))
+  :returns (type symbolp :rule-classes :type-prescription)
+  (if (eq tag :vl-vardecl)
+      (intern$ (cat (symbol-name warning) "-VARIABLE")
+               "KEYWORD")
+    (mbe :logic (acl2::symbol-fix warning)
+         :exec warning)))
 
 (define vl-lucid-dissect-var-main
   ((ss         vl-scopestack-p)
@@ -3421,10 +3429,11 @@ doesn't have to recreate the default heuristics.</p>"
   :returns (warnings vl-warninglist-p)
   (b* ((used     (vl-lucidocclist-fix used))
        (set      (vl-lucidocclist-fix set))
-       (vartype  (if (eq (tag item) :vl-vardecl)
+       (tag  (tag item))
+       (vartype  (if (eq tag :vl-vardecl)
                      "Variable"
                    "Parameter"))
-       (name     (if (eq (tag item) :vl-vardecl)
+       (name     (if (eq tag :vl-vardecl)
                      (vl-vardecl->name item)
                    (vl-paramdecl->name item)))
 
@@ -3434,7 +3443,7 @@ doesn't have to recreate the default heuristics.</p>"
         ;; No uses and no sets of this variable.  It seems best, in this case,
         ;; to issue only a single warning about this spurious variable, rather
         ;; than separate unused/unset warnings.
-        (warn :type :vl-lucid-spurious
+        (warn :type (vl-lucid-warning-type :vl-lucid-spurious)
               :msg "~s0 ~w1 is never used or set anywhere. (~s2)"
               :args (list vartype name
                           (with-local-ps (vl-pp-scopestack-path ss)))))
@@ -3455,7 +3464,7 @@ doesn't have to recreate the default heuristics.</p>"
         (b* (((when (atom used))
               ;; No uses of this variable at all.  No need to do any special
               ;; bit-level analysis.
-              (warn :type :vl-lucid-unused
+              (warn :type (vl-lucid-warning-type :vl-lucid-unused)
                     :msg "~s0 ~w1 is set but is never used. (~s2)"
                     :args (list vartype name
                                 (with-local-ps (vl-pp-scopestack-path ss))
@@ -3479,7 +3488,7 @@ doesn't have to recreate the default heuristics.</p>"
              ((unless unused-bits)
               ;; All of the bits get used somewhere so this is fine.
               warnings))
-          (warn :type :vl-lucid-unused
+          (warn :type (vl-lucid-warning-type :vl-lucid-unused)
                 :msg "~s0 ~w1 has some bits that are never used: ~s2. (~s3)"
                 :args (list vartype name
                             (vl-lucid-summarize-bits unused-bits)
@@ -3496,7 +3505,7 @@ doesn't have to recreate the default heuristics.</p>"
                           :msg "~s0 ~w1 is never set and is only passed to module instances where it is not used. (~s2)"
                           :args (list vartype name (with-local-ps (vl-pp-scopestack-path ss))
                                       item))))
-                (warn :type :vl-lucid-unset
+                (warn :type (vl-lucid-warning-type :vl-lucid-unset)
                       :msg "~s0 ~w1 is used but is never initialized. (~s2)"
                       :args (list vartype name
                                   (with-local-ps (vl-pp-scopestack-path ss))
@@ -3511,7 +3520,7 @@ doesn't have to recreate the default heuristics.</p>"
              (unset-bits  (difference valid-bits set-bits))
              ((unless unset-bits)
               warnings))
-          (warn :type :vl-lucid-unset
+          (warn :type (vl-lucid-warning-type :vl-lucid-unset)
                 :msg "~s0 ~w1 has some bits that are never set: ~s2. (~s3)"
                 :args (list vartype name
                             (vl-lucid-summarize-bits unset-bits)

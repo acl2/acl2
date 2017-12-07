@@ -1,5 +1,5 @@
 #ifndef PARSER_H
-#define PARSER_H 
+#define PARSER_H
 #include <stdio.h>
 #include <assert.h>
 #include <iostream>
@@ -38,7 +38,7 @@ public:
   List<T>* copy();
   void displayList(ostream& os, uint indent=0);
   void displayDefs(ostream& os);
-}; 
+};
 
 // Length of a list;
 
@@ -124,7 +124,7 @@ List<T>* List<T>::pop() {
   List<T>* result = this->next;
   delete this;
   return result;
-}  
+}
 
 // Create a copy of a list:
 
@@ -137,7 +137,7 @@ List<T>* List<T>::copy() {
     ptr = ptr->next;
   }
   return result;
-}  
+}
 
 // Call "display" on each element of a list:
 
@@ -170,7 +170,7 @@ public:
   List<T> *front;
   List<T> *back;
   BigList<T>(T *v) {
-    front = new List<T>(v); 
+    front = new List<T>(v);
     back = front;
   }
   BigList<T> *add(T *v) {
@@ -178,7 +178,7 @@ public:
     back = back->next;
     return this;
   }
-}; 
+};
 
 
 // Stacks:
@@ -374,7 +374,7 @@ public:
   void display(ostream& os=cout);
   Sexpression *ACL2Eval(Sexpression *s);
 };
-  
+
 class BigIntType : public RegType {
 public:
   bool isSigned();
@@ -395,23 +395,23 @@ public:
   bool isLimitedType();
   bool isIntegerType();
   Sexpression *ACL2Assign(Expression *rval);
-};  
-    
+};
+
 class UfixedType :public FPType {
 public:
   UfixedType(Expression *w, Expression *iw);
   void display(ostream& os=cout);
   Sexpression *ACL2Eval(Sexpression *s);
-};  
-    
+};
+
 class FixedType :public FPType {
 public:
   bool isSigned();
   FixedType(Expression *w, Expression *iw);
   void display(ostream& os=cout);
   Sexpression *ACL2Eval(Sexpression *s);
-};  
-    
+};
+
 class ArrayType : public Type {
 public:
   Type *baseType;
@@ -588,7 +588,7 @@ public:
   bool isSymRef();
   Type* exprType();
   virtual bool isConst();
-  virtual int evalConst(); 
+  virtual int evalConst();
   bool isArray();
   bool isArrayParam();
   bool isStruct();
@@ -1187,7 +1187,7 @@ public:
   void displayFunDefs(ostream& os, DispMode mode, const char *prefix="");
   void displayFunDecs(ostream& os);
   void display(ostream& os, DispMode mode=masc);
-};    
+};
 
 extern Program prog;
 

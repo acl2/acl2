@@ -82,97 +82,22 @@ convenient foreign-function interface.''
 
 <p>
 
-Here is an easy way to obtain and build the latest version (generally
-recommended) for Linux (or another OS; see below) running on an x86 or
-x86-64.  First stand in any directory, though you might want to stand
-in a fresh directory.  Then execute the following shell command to create
-a new <code>ccl</code> subdirectory, but substituting
-for <code>linuxx86</code>, if appropriate, any of
-<code>darwinx86</code> (which we use for modern Macs), <code>freebsdx86</code>,
-<code>solarisx86</code>, <code>windows</code>, <code>darwinppc</code>,
-or <code>linuxppc</code>.
+<font color="red">NOTE</font>:
+Certain <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____HONS-ENABLED">ACL2
+features</a> are optimized for 64-bit CCL.  Some large developments
+may even fail with 32-bit CCL; so for CCL, the 64-bit version is
+preferred.  To check if your CCL is a 64-bit CCL, evaluate the
+following expression in your CCL; the result should
+be <code>YES</code>.
 
 <pre>
-svn co http://svn.clozure.com/publicsvn/openmcl/trunk/linuxx86/ccl
+#+x86_64 'yes #-x86_64 'no
 </pre>
 
-Note: if however you insist on using the latest release, you can
-obtain that instead, for example as follows (but replace "1.9" by the
-latest version, for example as described
-at <code>http://ccl.clozure.com/download.html</code>, and
-replace <code>linuxx86</code> if appropriate as described above).
-
-<pre>
-svn co http://svn.clozure.com/publicsvn/openmcl/release/1.9/linuxx86/ccl
-</pre>
-
-Next rebuild the executable by issuing the following commands, but
-replace "<code>./lx86cl64</code>" by a suitable executable; e.g., for
-64-bit Darwin (on Mac OS) use "<code>./dx86cl64</code>".
-
-<hr>
-<pre>
-cd ccl
-./lx86cl64
-(rebuild-ccl :full t)
-(quit)
-./lx86cl64
-(rebuild-ccl :full t)
-(quit)
-</pre>
-<hr>
+Here are <a href="ccl.html">instructions for fetching and installing
+CCL</a>.
 
 <p>
-
-Now your CCL executable is up to date.  Next, create a suitable
-script, say as follows, where <code>DIR</code> is the full pathname
-for the directory above the new <code>ccl</code> directory.
-
-<hr>
-<pre>
-#!/bin/sh
-
-tmp=`uname -a | fgrep x86_64`
-export CCL_DEFAULT_DIRECTORY=DIR/ccl
-# Start up 64-bit or 32-bit lisp, respectively:
-if [ "$tmp" != "" ] ; then \
-    DIR/ccl/scripts/ccl64 $* ; \
-else \
-    DIR/ccl/scripts/ccl $* ; \
-fi
-</pre>
-<hr>
-
-Be sure to make your script executable.  For example, if your script
-filename is <code>my-script</code> then on linux you might want to
-execute the following shell command.
-
-<pre>
-chmod +x my-script
-</pre>
-
-Your script (invoked with a suitable pathname, or just the filename if
-the directory is on your path) will now start the updated CCL lisp
-image.
-
-<p>
-
-More details if you want or need them:<br>
-
-Step 3 in
-<code><a
-href="http://trac.clozure.com/openmcl/wiki/UpdatingFromSource">http://trac.clozure.com/openmcl/wiki/UpdatingFromSource</a></code>
-has more details on building from source.
-Alternatively, you can download a gzipped tar
-file; see <a href="http://trac.clozure.com/openmcl">the main
-Clozure CL page</a>.  (Note: Subversion and gzipped tar
-files are great, but not so much a CCL disk image (<code>.dmg</code>
-file), as we have had a report of the extracted CCL opening its own
-window when you start it up.)  If you don't want to write your own
-script (as suggested above) then after obtaining CCL, you may wish to
-edit file <code>ccl/scripts/ccl</code> or file
-<code>ccl/scripts/ccl64</code>, depending on whether you want to
-use a 32-bit or 64-bit version (respectively).
 
 <P><B><A NAME="Obtaining-CLISP">Obtaining CLISP</A></B><P>
 
@@ -189,13 +114,24 @@ Common Lisp implementations.</li>
 <li>Only minimal testing is done for ACL2 built on CLISP.</li>
 
 <li>CLISP does not support building the
-  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v7-4/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
+  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
   ACL2 (ACL2(h)), but only (with the limitations expressed above)
   a discontinued version, ACL2(c).</li>
 
 </ul>
 
 <P><B><A NAME="Obtaining-CMUCL">Obtaining CMU Common Lisp</A></B><P>
+
+<blockquote>
+
+<font color="red"><b>NOTE</b>: ACL2 Version 8.0 cannot be reliably run
+  on CMUCL, so we have disabled building ACL2 on CMUCL.  The CMUCL
+  implementor is aware of the problem, and we are hoping for a fix
+  before the next ACL2 release so that we can remove this note.</font>
+
+</blockquote>
+
+<p>
 
 CMU Common Lisp (sometimes called CMUCL) is a non-commercial Common Lisp
 implementation, available from <code><a
@@ -213,12 +149,22 @@ for that release.
 <p>
 
 Otherwise, it should be easy to obtain and build GCL yourself.  Note
-that ACL2 requires GCL version 2.6.12 or later, which can be fetched
-as a tarball from the <a href="http://www.gnu.org/software/gcl/">main
-GNU website for GCL</a> or perhaps
-from <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
-ACL2 also requires an ANSI Common Lisp executable;
-after unpacking the archive, an ANSI GCL can be built as follows.
+that ACL2 requires ANSI GCL version 2.6.12 or later.  Perhaps simplest
+is to fetch it via git and then build the
+executable <code>gcl/gcl/bin/gcl</code> as follows.
+
+<pre>
+git clone git://git.sv.gnu.org/gcl.git
+cd gcl/gcl
+git checkout Version_2_6_13pre
+./configure --enable-ansi && make
+</pre>
+
+It may also be possible to fetch it from
+the <a href="http://www.gnu.org/software/gcl/">main GNU website for
+GCL</a> or perhaps
+from <code><a href="http://backports.debian.org">backports.debian.org</a></code>,
+in which case ANSI GCL can be built as shown above:
 
 <pre>
 cd gcl && ./configure --enable-ansi && make

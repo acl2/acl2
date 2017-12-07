@@ -1,5 +1,3 @@
-# -*- mode: makefile -*-
-
 # ACL2 Community Books Makefile
 # Copyright (C) 2013 Centaur Technology
 #
@@ -89,12 +87,14 @@
 # Basic Options:
 #
 #   USE_QUICKLISP=1
-#                 Experimental; needed for certain books.  Quicklisp is a
-#                 packaging system for Common Lisp libraries, sort of like CPAN
-#                 for Perl or RubyGems for Ruby.  May not work with some Lisps.
-#                 This might still work if the system books directory is
-#                 relocated after certification.  But if, after the move, you
-#                 want to certify books that depend on quicklisp, you should
+#                 Needed for certain books.  Quicklisp is a packaging
+#                 system for Common Lisp libraries, sort of like CPAN
+#                 for Perl or RubyGems for Ruby.  May not work with
+#                 some Lisps (but seems to work with all ACL2 host
+#                 Lisps except GCL).  This might still work if the
+#                 system books directory is relocated after
+#                 certification.  But if, after the move, you want to
+#                 certify books that depend on quicklisp, you should
 #                 probably run "make quicklisp_clean" first.
 #
 # Advanced Options:
@@ -262,7 +262,7 @@ $(info Determining whether Glucose is installed)
 # If glucose doesn't exist, then the error message saying it can't be
 # found is redirected to /dev/null, resulting in an empty value for
 # GLUCOSE_EXISTS
-GLUCOSE_EXISTS := $(shell glucose --version 2>/dev/null)
+GLUCOSE_EXISTS := $(shell glucose --help 2>/dev/null)
 ifdef GLUCOSE_EXISTS
   OS_HAS_GLUCOSE ?= 1
 endif # ifdef GLUCOSE_EXISTS
@@ -294,6 +294,17 @@ SMTLINK_EXISTS := $(shell z3 --version 2>/dev/null)
 ifdef SMTLINK_EXISTS
   OS_HAS_SMTLINK ?= 1
 endif # ifdef SMTLINK_EXISTS
+
+# The default for USE_QUICKLISP is now 1 for all ACL2 host Lisps
+# except for GCL, which we believe does not support quicklisp.
+# (Probably we could avoid the ifndef and just use ?= instead of :=;
+# but that seems potentially unsafe if ?= can assign like = instead of
+# like :=.
+ifndef USE_QUICKLISP
+  ifneq ($(ACL2_HOST_LISP), GCL)
+    USE_QUICKLISP := 1
+  endif
+endif
 
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
@@ -483,6 +494,8 @@ endif # ifneq ($(ACL2_HAS_REALS), )
 #
 # I would much prefer to just reassign USE_QUICKLISP to 0 when we don't want
 # it, but I can't get that to work in Make for whatever reason.
+# (Note: Things have changed since the comment just above was written,
+# so someone might want to try to simplify.)
 
 ifeq ($(USE_QUICKLISP), 1)
   ifeq ($(ACL2_HOST_LISP), GCL)
@@ -529,24 +542,7 @@ quicklisp_clean:
 	@echo "Cleaning up Quicklisp files"
 	cd $(QUICKLISP_DIR); ./clean.sh
 
-# The following hack was useful briefly in late January, 2014, when
-# there were issues with quicklisp that caused us not to want to clean
-# quicklisp files.  Rager likes this hack (because his company-wide
-# ACL2 installation isn't writable by those that use it and he doesn't
-# always want to clean quicklisp since proxies have to be configured
-# and because it's good to preserve the
-# quicklisp/inst/cache/asdf-installs directory), and so he prefers
-# that the "hack" be preserved.
-
-# May 2015 update: since the quicklisp installation procedure has
-# changed, the conditional part of this code is hypothetically dead.
-# We leave it commented for now, but if December 2015 comes around,
-# and it's still unnecessary, the conditional part of this (and the
-# above comments) should be deleted.
-#ifndef ACL2_SAVE_QUICKLISP
 clean: quicklisp_clean
-#endif # ifndef ACL2_SAVE_QUICKLISP
-
 
 ifeq ($(REALLY_USE_QUICKLISP), 0)
 $(info Excluding books that depend on Quicklisp: [$(CERT_PL_USES_QUICKLISP)])
@@ -630,7 +626,7 @@ OK_CERTS := $(filter-out $(SLOW_BOOKS) models/y86/%, $(OK_CERTS))
 
 # Books that currently don't certify (or don't certify on some
 # systems), and that we want to work around for the moment:
-BROKEN_BOOKS := 
+BROKEN_BOOKS :=
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 
 ##############################
@@ -1416,15 +1412,17 @@ dummy:
 # PREDEFINED property for PROGN! (indicating a use of :REDEF);
 # presumably these books mess with raw mode.  Since we have had such
 # problems with acl2s/ccg/ccg.lisp (presumably because it includes
-# hacking/hacker), we exclude all books in that directory.  Finally,
-# we exclude books in books/build/test/, since some have caused
-# problems; there's nothing of interest in those books from a world
-# perspective, so it's not worth figuring out the problem.
+# hacking/hacker), and acl2s/doc.lisp, we exclude all books under
+# acl2s/ as well as doc/top.lisp.  Finally, we exclude books in
+# books/build/test/, since some have caused problems; there's nothing
+# of interest in those books from a world perspective, so it's not
+# worth figuring out the problem.
 
 BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
 BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
-BOOKS_BKCHK_OUT := $(filter-out acl2s/ccg/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
@@ -1609,6 +1607,14 @@ TAGS : $(CERT_PL_SOURCES)
 	cat $(BUILD_DIR)/Makefile-sources | xargs -n 100 --delimiter='\n' $(ETAGS) -a
 
 
+##############################
+### Section: Git Status
+##############################
+# This is helpful for checking whether you have any new source files
+# that need to be added before your commit -- candidates are things
+# that show up under "Untracked files".
+git_status:
+	@xargs --delimiter='\n' git status -- < $(BUILD_DIR)/Makefile-sources
 
 
 ##############################

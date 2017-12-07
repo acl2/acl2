@@ -52,7 +52,9 @@
 (include-book "../transforms/annotate/top")
 (include-book "../transforms/addnames")
 (include-book "../transforms/clean-warnings")
+(include-book "../transforms/lintstub")
 (include-book "centaur/sv/vl/moddb" :dir :system)
+(include-book "centaur/sv/vl/use-set" :dir :system)
 (include-book "../../misc/sneaky-load")
 (include-book "../mlib/json")
 (include-book "centaur/getopt/top" :dir :system)
@@ -414,12 +416,12 @@ shown.</p>"
         (vl-println ""))))))
 
 
-(defaggregate vl-lintresult
+(defprod vl-lintresult
   :short "Results from running the linter."
   :tag :vl-lintresult
   ((design    vl-design-p
-              "Final, transformed list of modules.  Typically this isn't very
-               interesting or relevant to anything.")
+              "Final, transformed list of modules.  Useful to know whether a module
+               is unexpectedly included or not included.")
 
    (design0   vl-design-p
               "Almost: the initial, pre-transformed modules.  The only twist is
@@ -427,6 +429,9 @@ shown.</p>"
                that we wanted to drop; see, e.g., the @('topmods') and
                @('ignore') options of @(see vl-lintconfig-p).  This is used for
                @(see skip-detection), for instance.")
+
+   (design-orig   vl-design-p
+              "Really the initial, pre-transformed modules.")
 
    (reportcard vl-reportcard-p
                "The main result: binds \"original\" (pre-unparameterization)
@@ -537,9 +542,10 @@ shown.</p>"
 (define run-vl-lint-main ((design vl-design-p)
                           (config vl-lintconfig-p))
   :guard-debug t
-  :returns (result vl-lintresult-p)
+  :returns (result vl-lintresult-p :hints(("Goal" :in-theory (disable (force)))))
 
   (b* (((vl-lintconfig config) config)
+       (design-orig design)
        (design (vl-annotate-design design))
 
        ;; We originally did this before annotate, but that doesn't work in the
@@ -613,6 +619,8 @@ shown.</p>"
        ;; (design (cwtime (vl-design-check-good-paramdecls design)))
        (design (xf-cwtime (vl-design-elaborate design :config simpconfig)))
 
+       ((mv design stubnames) (vl-design-lint-stubs design))
+
        ;; these are part of elaboration now
        ;;(design (cwtime (vl-design-rangeresolve design)))
        ;;(design (cwtime (vl-design-selresolve design)))
@@ -672,9 +680,10 @@ shown.</p>"
        ;;                   (len lost) lost))
        ;;           design))
 
-       ((mv reportcard ?modalist) (xf-cwtime (vl-design->svex-modalist
+       ((mv reportcard modalist) (xf-cwtime (vl-design->svex-modalist
                                               design :config simpconfig)))
        (design (xf-cwtime (vl-apply-reportcard design reportcard)))
+       (design (xf-cwtime (vl-design-sv-use-set design modalist)))
 
        (design (xf-cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 
@@ -708,12 +717,13 @@ shown.</p>"
        (design   (xf-cwtime (vl-design-clean-warnings design)))
        (design   (xf-cwtime (vl-design-suppress-lint-warnings design)))
        (design   (xf-cwtime (vl-design-lint-ignoreall design config.ignore)))
-       (design   (xf-cwtime (vl-lint-apply-quiet config.quiet design)))
-       (sd-probs (xf-cwtime (vl-delete-sd-problems-for-modnames config.quiet sd-probs)))
+       (design   (xf-cwtime (vl-lint-apply-quiet (append stubnames config.quiet) design)))
+       (sd-probs (xf-cwtime (vl-delete-sd-problems-for-modnames (append stubnames config.quiet) sd-probs)))
        (reportcard  (xf-cwtime (vl-design-origname-reportcard design))))
 
     (make-vl-lintresult :design design
                         :design0 design0
+                        :design-orig design-orig
                         :reportcard reportcard
                         :sd-probs sd-probs
                         )))
@@ -854,7 +864,7 @@ shown.</p>"
   :returns (new-x vl-descriptionlist-p)
   (cond ((atom x)
          nil)
-        ((not (vl-description->name (car x)))
+        ((not (vl-description->origname (car x)))
          (vl-remove-nameless-descriptions (cdr x)))
         (t
          (cons (vl-description-fix (car x))
@@ -863,7 +873,7 @@ shown.</p>"
 (define vl-jp-description-locations ((x vl-descriptionlist-p) &key (ps 'ps))
   (b* (((when (atom x))
         ps)
-       (name (or (vl-description->name (car x))
+       (name (or (vl-description->origname (car x))
                  (raise "Shouldn't have nameless descriptions here but got ~x0" (car x))
                  ""))
        (loc  (vl-description->minloc (car x))))
@@ -957,6 +967,24 @@ shown.</p>"
         :vl-lucid-unset
         :vl-lucid-multidrive))
 
+(defconst *lucid-variable-warnings*
+  (list :vl-lucid-unused-variable
+        :vl-lucid-spurious-variable
+        :vl-lucid-unset-variable))
+
+(defconst *sv-use-set-warnings*
+  (list 
+   :sv-use-set-spurious
+   :sv-use-set-spurious-inout
+   :sv-use-set-unused-input
+   :sv-use-set-unset-output
+   :sv-use-set-partly-unset-output
+   :sv-use-set-unused
+   :sv-use-set-unset
+   :sv-use-set-partly-unset
+   :sv-use-set-partly-unused
+   :sv-use-set-partly-spurious))
+   
 
 
 (defconst *warnings-covered*
@@ -974,6 +1002,8 @@ shown.</p>"
           *same-ports-warnings*
           *same-ports-minor-warnings*
           *lucid-warnings*
+          *lucid-variable-warnings*
+          *sv-use-set-warnings*
           ))
 
 (defconst *warnings-ignored*
@@ -1034,6 +1064,28 @@ shown.</p>"
               (vl-reportcard-keep-suppressed (cdr x)))
       (vl-reportcard-keep-suppressed (cdr x)))))
 
+
+(define vl-pp-stringlist-lines ((x string-listp)
+                          &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-println (string-fix (car x)))
+               (vl-pp-stringlist-lines (cdr x)))))
+
+(define vl-print-eliminated-descs ((final vl-design-p "final design")
+                                   (orig vl-design-p "original design")
+                                   &key (ps 'ps))
+  (b* ((final-descs (mergesort
+                     (vl-descriptionlist->orignames
+                      (vl-remove-nameless-descriptions
+                       (vl-design-descriptions final)))))
+       (orig-descs (mergesort
+                    (vl-descriptionlist->orignames
+                     (vl-remove-nameless-descriptions
+                      (vl-design-descriptions orig)))))
+       (missing (difference orig-descs final-descs)))
+    (vl-pp-stringlist-lines missing)))
+    
 
 
 
@@ -1132,6 +1184,27 @@ you can see \"vl-trunc-minor.txt\" to review them.")))
          "vl-lucid.txt"
          (vl-ps-update-autowrap-col 68)
          (vl-lint-print-warnings "vl-lucid.txt" "Lucidity Checking" *lucid-warnings* reportcard)))
+
+       (state
+        (with-ps-file
+         "vl-lucid-vars.txt"
+         (vl-ps-update-autowrap-col 68)
+         (vl-lint-print-warnings "vl-lucid-vars.txt" "Lucidity Checking" *lucid-variable-warnings* reportcard)))
+
+       (state
+        (with-ps-file
+         "vl-sv-use-set.txt"
+         (vl-ps-update-autowrap-col 68)
+         (vl-lint-print-warnings "vl-sv-use-set.txt" "SV Use/Set Checking" *sv-use-set-warnings* reportcard)))
+
+       (state
+        (with-ps-file
+          "vl-eliminated-mods.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-print "
+Note: These modules were eliminated because they were never instantiated anywhere in the top module's hierarchy.
+")
+          (vl-print-eliminated-descs lintresult.design lintresult.design-orig)))
 
        (state
         (if (not major)
@@ -1262,7 +1335,7 @@ wide addition instead of a 10-bit wide addition.")))
                       (vl-print "{\"warnings\":")
                       (vl-jp-reportcard reportcard)
                       (vl-print ",\"locations\":")
-                      (vl-jp-locations lintresult.design0)
+                      (vl-jp-locations lintresult.design)
                       (vl-println "}"))
         :name write-warnings-json))
 
@@ -1272,7 +1345,7 @@ wide addition instead of a 10-bit wide addition.")))
                       (vl-print "{\"warnings\":")
                       (vl-jp-reportcard suppressed)
                       (vl-print ",\"locations\":")
-                      (vl-jp-locations lintresult.design0)
+                      (vl-jp-locations lintresult.design)
                       (vl-println "}"))
         :name write-warnings-json)))
 

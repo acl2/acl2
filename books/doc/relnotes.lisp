@@ -77,7 +77,7 @@
          <p>The current version of ACL2 is the value of the constant @('(@
             acl2-version)').</p>")
 
-(defxdoc note-7-5-books
+(defxdoc note-8-0-books
 
 ; Note: To see all git log entries with a given author, for example Joe
 ; Q. Bignerd, you can issue a command such as the following (use a substring of
@@ -100,17 +100,13 @@
 ;  <h4>Your Library Title</h4>
 ;  <p>Details go here.</p>
 
-; I will change :doc note-7-5 in books/system/acl2-doc to point to
-; this topic, when (if?) this topic gets fleshed out (see :doc
-; note-7-2 for precedent).
-
-  :parents (note-7-5 release-notes-books)
-  :short "Release notes for the ACL2 Community Books for ACL2 7.5"
+  :parents (note-8-0 release-notes-books)
+  :short "Release notes for the ACL2 Community Books for ACL2 8.0"
 
   :long "<p>The following is a brief summary of changes made to the @(see
- community-books) between the releases of ACL2 7.4 and 7.5.</p>
+ community-books) between the releases of ACL2 7.4 and 8.0.</p>
 
- <p>See also @(see note-7-5) for the changes made to ACL2 itself.  For
+ <p>See also @(see note-8-0) for the changes made to ACL2 itself.  For
  additional details, you may also see the raw <a
  href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
 
@@ -141,9 +137,9 @@
 
  <h4>try-gl-concls</h4>
 
- <p>See @('centaur/misc/try-gl-concls') for a small but convenient utility to
- find all the true conclusions (if any) from a user-provided list of possible
- conclusions using @(see GL::GL).</p>
+ <p>See @(see try-gl-concls) for a small but convenient utility to
+ find all the true conclusions (if any) from a user-provided list of
+ possible conclusions using @(see GL::GL).</p>
 
  <h4>GLMC</h4>
 
@@ -204,6 +200,10 @@
  rewrite rule @('sets-are-true-lists-cheap') whose @(see backchain-limit) is
  1.</p>
 
+ <p>A new utility @('def-updater-independence-thm') for proving stobj (and
+ stobj-style) accessors independent of updaters has been added to
+ @('std/stobjs/updater-independence.lisp').</p>
+
  <h4>Kestrel Utilities</h4>
 
  <p>The <see topic='@(url kestrel-utilities)'>Kestrel Utilities</see> have
@@ -232,7 +232,11 @@
  component is not @('nil').</p>
 
  <p>New utility @(tsee manage-screen-output) is an improved version of @(tsee
- control-screen-output) (which may eventually be removed).</p>
+ control-screen-output) (which may eventually be removed).  Added utilities
+ @(tsee make-event-terse), @(tsee restore-output) and @(tsee restore-output?)
+ to fine-tune screen output in event-generating macros.  Moved obsolete utility
+ @('control-screen-output-and-maybe-replay') to Workshop supporting materials,
+ where the only remaining use of this utility was.</p>
 
  <p>The new utility @(tsee orelse) arranges to evaluate an event and, if that
  fails, then to evaluate a second event.</p>
@@ -273,7 +277,7 @@
  <p>The <see topic='@(url world-queries)'>world query</see>, <see topic='@(url
  term-utilities)'>term</see>, <see topic='@(url
  string-utilities)'>string</see>, and <see topic='@(url
- character-utilities)'>character</see> utilities have undergone a few
+ character-utilities)'>character</see> utilities have undergone several
  improvements and extensions.</p>
 
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
@@ -327,6 +331,13 @@
  <li>When composing together 0-delay update functions, if bit-level
  combinational loops are present, these are composed together to a fixpoint.</li>
 
+ <li>@(see Vl::vl-lint) has yet another use-set check, @(see vl::vl-design-sv-use-set),
+ which uses SV's interpretation of SystemVerilog semantics to more exactly
+ analyze the usage and updates of module variables.  The previous @(see vl::Lucid)
+ use-set check is still useful since sv-use-set only checks variables, not
+ parameters, functions, types, etc., and also does not analyze variables local
+ to procedural code blocks.</li>
+
  </ul>
 
  <h4>SOFT</h4>
@@ -334,18 +345,38 @@
  <p>The <see topic='@(url soft::soft)'>SOFT (Second-Order Functions and
  Theorems) library</see> has been improved in several ways. The @(':thm-name')
  option is now fully supported for second-order quantifier functions and their
- instances.  The treatment of user inputs is more robust. The implementation is
- more streamlined. A more comprehensive test suite now exists.</p>
+ instances.  The treatment of user inputs is more robust. The user interface is
+ more terse. The implementation is more streamlined. A more comprehensive test
+ suite now exists.</p>
 
  <h4>X86ISA</h4>
 
- <p>The <see topic='@(url x86isa)'>X86ISA</see> has been slightly extended with
+ <ul>
+
+ <li>The <see topic='@(url x86isa)'>X86ISA</see> has been slightly extended with
  infrastructure to support 32-bit mode of operation; in particular, the
  @('64-bit-modep') predicate is no longer always true. Some documentation
  topics and some comments have been expanded and clarified. Some exceptions are
  now being added to the fault field of the x86 state rather than the
- model-specific field. A more complete model of segment address translation has
- been added.</p>
+ model-specific field. A complete model of segment address translation has been
+ added.</li>
+
+ <li>Codewalker can now be used to reason about 64-bit user-level x86
+ programs --- see
+ @('books/projects/x86isa/proofs/codewalker-examples') for demos.</li>
+
+ <li>Memory functions do not traffic in lists anymore.  Instead of a
+ list of canonical addresses, a contiguous linear memory region is now
+ specified by: @('<n, lin-addr>'), where @('n') is the number of bytes
+ to be read or written and @('lin-addr') is the first address of the
+ memory region.</li>
+
+ <li>In the programmer-level mode, disjointness of memory regions can
+ be conveniently expressed using a function called @('separate').  All
+ the proofs in the programmer-level mode have been updated to use this
+ paradigm.</li>
+
+ </ul>
 
  <h4>AVR ISA</h4>
  <p>Julien Schmaltz and Peter Schwabes' AVR ISA model has been contributed in book
@@ -389,7 +420,15 @@
 
  <p>Improved books cleaning slightly, in @('books/GNUmakefile').</p>
 
- <p>Also see @(see note-7-5), specifically the section on ``Changes at the
+ <p>By default, the @(''make'') targets for certifying books now include the
+ books that depend on quicklisp, except when the host Lisp is GCL.  Specify
+ @('USE_QUICKLISP=0') if that is not what you want.</p>
+
+ <p>Improved @('books/GNUmakefile') so that by default, it reports an error
+ when the @('bash') shell is missing.  (Note that a version of @('sh') on a
+ FreeBSD machine caused an error.)</p>
+
+ <p>Also see @(see note-8-0), specifically the section on ``Changes at the
  System Level''.</p>
 
  <h3>Testing</h3>
@@ -399,6 +438,13 @@
  the testing utilities that are part of the @(see kestrel-books), so that now
  the topic @(see testing-utilities) is the top-level topic for the testing
  utilities.</p>
+
+ <p>The Kestrel Testing Utilities have been integrated with similar testing
+ utilities under @('[books]/misc').  The utilities in
+ @('kestrel/utilities/testing.lisp') have been added to @('misc/eval.lisp') and
+ @('misc/assert.lisp'), and the tests in
+ @('kestrel/utilities/testing-tests.lisp') have been moved into two new files
+ @('misc/eval-test.lisp') and @('misc/assert-tests.lisp').</p>
 
  <p>The utility @(tsee run-script) supports testing of evaluation of the forms
  in a given file, to check that the output is as expected.  So far, several
@@ -427,6 +473,12 @@
 
  <p>Added file @('system/to-do.txt') to list some potential developer
  tasks.</p>
+
+ <p>Fixed a bug in the package redefinition utility in community book
+ @('books/misc/redef-pkg.lisp').</p>
+
+ <p>Defined a constant @(tsee *acl2-system-exports*) that extends @(tsee
+ *acl2-exports*) for system programmers.</p>
 
  ")
 

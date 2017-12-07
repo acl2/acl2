@@ -12,6 +12,9 @@
 
 (include-book "xdoc/top" :dir :system)
 
+; (depends-on "design-notes/restrict.pdf")
+; (depends-on "design-notes/notation.pdf")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; documentation topic for the design notes,
@@ -21,7 +24,7 @@
 
   :parents (design-notes restrict)
 
-  :short "Design notes for the domain restriction transformation."
+  :short "Design notes for the APT domain restriction transformation."
 
   :long
 

@@ -107,13 +107,6 @@
       state)))
 
 (defun waterfall-printing-value-for-parallelism-value (value)
-
-; Warning: We assume the the value of this function on input nil is :full.  If
-; that changes, then we will need to replace the definition of
-; waterfall-printing-full in front of the defproxy event below for
-; waterfall-printing, as well as the corresponding defattach event in
-; boot-strap-pass-2.lisp.
-
   (declare (xargs :guard (member-eq value *waterfall-parallelism-values*)))
   (cond ((eq value nil)
          :full)

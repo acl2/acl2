@@ -40,13 +40,13 @@ match_warning(:m0, "VL-LUCID-UNUSED", "height");
 
 match_warning(:m1, "VL-WARN-TRUNCATION", "a & b");
 
-match_warning(:m2, "VL-LUCID-UNUSED", "alpha")
-match_warning(:m2, "VL-LUCID-UNUSED", "beta")
-match_warning(:m2, "VL-LUCID-UNSET", "omega")
+match_warning(:m2, "VL-LUCID-UNUSED-VARIABLE", "alpha")
+match_warning(:m2, "VL-LUCID-UNUSED-VARIABLE", "beta")
+match_warning(:m2, "VL-LUCID-UNSET-VARIABLE", "omega")
 
-match_warning(:m3, "VL-LUCID-UNUSED", "alpha")
-match_warning(:m3, "VL-LUCID-UNUSED", "beta")
-match_warning(:m3, "VL-LUCID-UNSET", "omega")
+match_warning(:m3, "VL-LUCID-UNUSED-VARIABLE", "alpha")
+match_warning(:m3, "VL-LUCID-UNUSED-VARIABLE", "beta")
+match_warning(:m3, "VL-LUCID-UNSET-VARIABLE", "omega")
 
 test_passed()
 

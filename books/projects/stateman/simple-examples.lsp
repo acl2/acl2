@@ -1,5 +1,10 @@
-; Simple Examples to accompany the paper
-
+; Copyright (C) 2014, ForrestHunt, Inc.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+; Symbolic State Management -- Version 22
+; J Strother Moore
+; Fall/Winter, 2014/2015
+; Georgetown, TX and Edinburgh, Scotland
+;
 ; Stateman: Using Metafunctions to Manage Large Terms Representing Machine States
 ; J Strother Moore
 ; July, 2015

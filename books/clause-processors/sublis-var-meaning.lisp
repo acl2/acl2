@@ -169,13 +169,13 @@
 (defthm-term-subst-flg
   (defthm sublis-var1-when-unchanged
     (implies (not (mv-nth 0 (sublis-var1 alist x)))
-             (equal (cterm-ev (mv-nth 1 (sublis-var1 alist x)) a)
-                    (cterm-ev x a)))
+             (equal (mv-nth 1 (sublis-var1 alist x))
+                    x))
     :flag term)
   (defthm sublis-var1-lst-when-unchanged
     (implies (not (mv-nth 0 (sublis-var1-lst alist x)))
-             (equal (cterm-ev-lst (mv-nth 1 (sublis-var1-lst alist x)) a)
-                    (cterm-ev-lst x a)))
+             (equal (mv-nth 1 (sublis-var1-lst alist x))
+                    x))
     :flag list))
 
 (defthm len-of-sublis-var1-lst

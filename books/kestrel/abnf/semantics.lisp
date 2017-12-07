@@ -1,6 +1,6 @@
 ; ABNF Library -- Semantics
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -68,10 +68,11 @@
   :pred symbolp
   ///
 
-  (defruled disjoint-nat/rulename
+  (defrule disjoint-nat/rulename
     :parents (symbol)
     (not (and (natp x)
-              (rulenamep x))))
+              (rulenamep x)))
+    :rule-classes nil)
 
   (defrule symbolp-when-natp
     :parents (symbol)

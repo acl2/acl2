@@ -89,10 +89,8 @@
 
 ; Note: We explicitly check that an equivalence relation has no guard because
 ; we never otherwise consider their guards.  (The "guard" on an ACL2 function
-; definition is a predicate that must be true of the actuals in order for the
-; defining equation to hold.  It can be thought of as a "precondition" or a
-; characterization of the domain of the function definition.  In Common Lisp
-; (and ACL2 is just a subset of Common Lisp) many functions, e.g., car and cdr,
+; can be thought of as a "precondition" or a characterization of the domain of
+; the function definition.  In Common Lisp many functions, e.g., car and cdr,
 ; are not defined everywhere and guards are our way of taking note of this.
 ; Equivalence relations have "no" guard, meaning their guard is t, i.e., they
 ; are defined everywhere.)
@@ -10436,10 +10434,12 @@
 ; "insert-proof" example sent to us by Dave Greve.
 
   (cond
-   ((rw-cacheable-failure-reason failure-reason)
+   ((and failure-reason ; could be nil; see "save some conses" in relieve-hyps1
+         (rw-cacheable-failure-reason failure-reason))
 
-; We take advantage here of the guard on rw-cacheable-failure-reason, i.e.,
-; that (consp failure-reason) and (posp (car failure-reason)).
+; Since failure-reason is non-nil, we expect (just as in the guard on
+; rw-cacheable-failure-reason) that (consp failure-reason) and (posp (car
+; failure-reason)).
 
     (let* ((hyp (nth (1- (car failure-reason)) hyps))
            (entry (make rw-cache-entry
@@ -10926,6 +10926,7 @@
 ; but for a free-failure reason.
 
   (cond ((and (rw-cache-active-p rcnst)
+              failure-reason ; always true?
               (rw-cacheable-failure-reason failure-reason))
          (acons new-unify-subst
                 failure-reason

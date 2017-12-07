@@ -14,7 +14,7 @@ using namespace std;
 typedef sc_uint<32> ui32;
 typedef sc_uint<64> ui64;
 typedef sc_uint<35> ui35;
-typedef sc_uint<3>  ui3; 
+typedef sc_uint<3>  ui3;
 typedef sc_biguint<33> ui33;
 typedef sc_biguint<67> ui67;
 
@@ -41,7 +41,7 @@ ui3 Encode(ui3 slice) {
   case 3:
     enc = 2; // +2 -> 010
     break;
-  default: 
+  default:
     assert(false);
   }
   return enc;
@@ -161,7 +161,7 @@ ui64 Sum(array<ui64, 17> in) {
   // The final sum:
   return A4[0] + A4[1];
 }
-  
+
 // Stitch it together
 
 ui64 Imul(ui32 s1, ui32 s2) {
@@ -208,7 +208,7 @@ tuple<bool, ui64, ui64>ImulTest(ui32 s1, ui32 s2) {
   ui64 spec_result = s1 * s2;
   ui64 imul_result = Imul(s1, s2);
   return tuple<bool, ui64, ui64>(spec_result == imul_result, spec_result, imul_result);
-}  
+}
 
 // Masc end
 
@@ -225,7 +225,7 @@ void hectorWrapper() {
 
   Hector::beginCapture();
 
-  prod = Imul(x, y); 
+  prod = Imul(x, y);
 
   Hector::endCapture();
 

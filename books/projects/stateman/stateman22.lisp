@@ -1,12 +1,14 @@
+; Copyright (C) 2014, ForrestHunt, Inc.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 ; Symbolic State Management -- Version 22
 ; J Strother Moore
 ; Fall/Winter, 2014/2015
 ; Georgetown, TX and Edinburgh, Scotland
-
+;
 ; (ld "stateman22.lisp" :ld-pre-eval-print t)
 ; (certify-book "stateman22")
 
-(in-package "ACL2")
+(in-package "SMAN")
 
 (set-state-ok t)
 
@@ -7003,4 +7005,7 @@
 (memoize 'memoizable-meta-!r)
 (memoize 'memoizable-meta-mod)
 (memoize 'memoizable-meta-<)
-(memoize 'sublis-var1 :condition '(and (null alist) (consp form) (eq (car form) 'HIDE)))
+(memoize 'acl2::sublis-var1
+         :condition '(and (null acl2::alist)
+                          (consp acl2::form)
+                          (eq (car acl2::form) 'HIDE)))

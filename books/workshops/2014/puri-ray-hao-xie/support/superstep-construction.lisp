@@ -3,7 +3,7 @@
 superstep-construction.lisp
 ~~~~~~~~~~~~~~~~~~~~~~
 Author: Disha Puri
-Last Updated: 12th April 2014 
+Last Updated: 12th April 2014
 
 This file contains the functions to create scheduling supersteps for pipelined CCDFG
 from the sequential CCDFG.
@@ -41,19 +41,19 @@ pipelined CCDFG = (list pre loop post)
 (defun pre-supersteps-from-loop-in-parallel (new-ccdfg m loop pp-interval n)
   (if (or (not (posp m))
           (not (posp pp-interval))) nil
-    (if (<= m pp-interval) 
-      (combine-iters new-ccdfg (take-n m loop) (* n pp-interval))
+    (if (<= m pp-interval)
+        (combine-iters new-ccdfg (take-n m loop) (* n pp-interval))
       (pre-supersteps-from-loop-in-parallel (combine-iters new-ccdfg (take-n m loop) (* n pp-interval))
-                                             (- m pp-interval)
-                                             loop
-                                             pp-interval
-                                             (+ n 1)))))
+                                            (- m pp-interval)
+                                            loop
+                                            pp-interval
+                                            (+ n 1)))))
 
 (defun pre-supersteps-in-parallel (m pre loop pp-interval)
   (if (or (not (posp m))
           (not (posp pp-interval))) nil
     (if (<= m pp-interval) (take-n m pre)
-      (pre-supersteps-from-loop-in-parallel (take-n m pre) 
+      (pre-supersteps-from-loop-in-parallel (take-n m pre)
                                             (- m pp-interval)
                                             loop pp-interval 1))))
 
@@ -69,21 +69,21 @@ pipelined CCDFG = (list pre loop post)
       (if (equal (loop-superstep-from-loop (- m pp-interval) loop pp-interval) "error") "error"
         (if (no-conflict (take-n pp-interval (remove-n m loop))
                          (pre-superstep-from-loop (- m pp-interval) loop pp-interval))
-          (append (take-n pp-interval (remove-n m loop))
-                  (loop-superstep-from-loop (- m pp-interval) loop pp-interval))
+            (append (take-n pp-interval (remove-n m loop))
+                    (loop-superstep-from-loop (- m pp-interval) loop pp-interval))
           "error")))))
 
 (defun loop-superstep-in-order (m pre loop pp-interval)
   (if (or (not (posp m))
           (not (posp pp-interval))) nil
-      (if (<= m pp-interval) (append (remove-n m pre)
-                                     (take-n m loop))
-        (if (equal (loop-superstep-from-loop (- m pp-interval) loop pp-interval) "error") "error"
-          (if (no-conflict (remove-n m pre) (pre-superstep-from-loop 
-                                             (- m pp-interval) loop pp-interval))
+    (if (<= m pp-interval) (append (remove-n m pre)
+                                   (take-n m loop))
+      (if (equal (loop-superstep-from-loop (- m pp-interval) loop pp-interval) "error") "error"
+        (if (no-conflict (remove-n m pre) (pre-superstep-from-loop
+                                           (- m pp-interval) loop pp-interval))
             (append (remove-n m pre)
                     (loop-superstep-from-loop (- m pp-interval) loop pp-interval))
-            "error")))))
+          "error")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; loop superstep construction in parallel
@@ -97,40 +97,40 @@ pipelined CCDFG = (list pre loop post)
                                           pos)
       (if (no-conflict (take-n pp-interval (remove-n m loop))
                        (pre-superstep-from-loop (- m pp-interval) loop pp-interval))
-        (loop-superstep-from-loop-in-parallel 
-         (combine-iters new-ccdfg (take-n pp-interval (remove-n m loop)) pos)
-         (- m pp-interval)
-         loop
-         pp-interval
-         pos)
+          (loop-superstep-from-loop-in-parallel
+           (combine-iters new-ccdfg (take-n pp-interval (remove-n m loop)) pos)
+           (- m pp-interval)
+           loop
+           pp-interval
+           pos)
         "error"))))
 
 (defun loop-superstep-in-parallel (m pre loop pp-interval)
   (if (or (not (posp m))
           (not (posp pp-interval))) nil
     (if (<= m pp-interval) (combine-iters (remove-n m pre) (take-n m loop) 0)
-      (if (no-conflict (remove-n m pre) (pre-superstep-from-loop 
+      (if (no-conflict (remove-n m pre) (pre-superstep-from-loop
                                          (- m pp-interval) loop pp-interval))
-        (loop-superstep-from-loop-in-parallel (remove-n m pre)
-                                              (- m pp-interval)
-                                              loop
-                                              pp-interval
-                                              0)
+          (loop-superstep-from-loop-in-parallel (remove-n m pre)
+                                                (- m pp-interval)
+                                                loop
+                                                pp-interval
+                                                0)
         "error"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; post superstep construction in order
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
- 
+
 (defun post-superstep-in-order (m loop pp-interval)
   (if (or (not (posp m))
           (not (posp pp-interval))) nil
     (if (<= m pp-interval) (remove-n m loop)
       (if (equal (post-superstep-in-order (- m pp-interval) loop pp-interval) "error") "error"
-        (if (no-conflict (remove-n m loop) (pre-superstep-from-loop (- m pp-interval) 
+        (if (no-conflict (remove-n m loop) (pre-superstep-from-loop (- m pp-interval)
                                                                     loop pp-interval))
-          (append (remove-n m loop)
-                  (post-superstep-in-order (- m pp-interval) loop pp-interval))
+            (append (remove-n m loop)
+                    (post-superstep-in-order (- m pp-interval) loop pp-interval))
           "error")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,13 +141,13 @@ pipelined CCDFG = (list pre loop post)
   (if (or (not (posp m))
           (not (posp pp-interval))) nil
     (if (<= m pp-interval) (combine-iters new-ccdfg (remove-n m loop) 0)
-      (if (no-conflict (remove-n m loop) 
-                       (pre-superstep-from-loop (- m pp-interval) 
+      (if (no-conflict (remove-n m loop)
+                       (pre-superstep-from-loop (- m pp-interval)
                                                 loop pp-interval))
-        (post-superstep-sub (combine-iters new-ccdfg (remove-n m loop) 0)
-                            (- m pp-interval)
-                            loop 
-                            pp-interval)
+          (post-superstep-sub (combine-iters new-ccdfg (remove-n m loop) 0)
+                              (- m pp-interval)
+                              loop
+                              pp-interval)
         "error"))))
 
 (defun post-superstep-in-parallel (m loop pp-interval)
@@ -155,7 +155,7 @@ pipelined CCDFG = (list pre loop post)
           (not (posp pp-interval))) nil
     (if (<= m pp-interval) (remove-n m loop)
       (post-superstep-sub (remove-n m loop) (- m pp-interval) loop pp-interval))))
-  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; superstep construction
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -182,16 +182,16 @@ pipelined CCDFG = (list pre loop post)
            (not (equal (loop-superstep-from-loop (- m pp-interval) loop pp-interval) "error"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Theorems related to branch restriction 
+;; Theorems related to branch restriction
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm branch-restriction-extended
   (implies (and (branch-restriction-ccdfg b)
                 (branch-restriction-ccdfg c))
            (branch-restriction-ccdfg (cons (list (car (nth pos c))
-                                                 (append (cadr (nth pos c)) 
+                                                 (append (cadr (nth pos c))
                                                          (cadar b)))
-                                                 (remove-n (+ 1 pos) c)))))
+                                           (remove-n (+ 1 pos) c)))))
 
 (defthm branch-restriction-extended-2
   (implies (and (branch-restriction-ccdfg b)
@@ -224,9 +224,9 @@ pipelined CCDFG = (list pre loop post)
   (implies (and (branch-restriction-ccdfg a)
                 (branch-restriction-ccdfg b))
            (branch-restriction-ccdfg (cons (list (car (nth pos a))
-                                              (append (cadr (nth pos a))
-                                                      (cadar b)))
-                                        (remove-n (+ 1 pos) a)))))
+                                                 (append (cadr (nth pos a))
+                                                         (cadar b)))
+                                           (remove-n (+ 1 pos) a)))))
 
 (defthm branch-restriction-combine-blocks
   (implies (and (branch-restriction-ccdfg a)
@@ -262,7 +262,7 @@ pipelined CCDFG = (list pre loop post)
                                  branch-restriction-list-car))
     :use
     ((:instance branch-restriction-combine-blocks
-      (b (list (car b))))))))
+                (b (list (car b))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; theorems related to true-listp
@@ -353,14 +353,14 @@ pipelined CCDFG = (list pre loop post)
                                  blocks-iters-error))
     :use
     ((:instance true-listp-combine-blocks
-      (c2 (list (car c2))))))))
+                (c2 (list (car c2))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Prove iterations in order is same as combine-iters in parallel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm run-block-set-not-consp
-  (equal (run-block-set '(nil) init-state nil prev) 
+  (equal (run-block-set '(nil) init-state nil prev)
          init-state)
   :hints
   (("Goal"
@@ -373,9 +373,9 @@ pipelined CCDFG = (list pre loop post)
                 (branch-restriction-block b))
            (equal (run-block (append a b)
                              init-state nil prev)
-                  (run-block b 
+                  (run-block b
                              (run-block a init-state nil prev)
-                                        nil prev)))
+                             nil prev)))
   :hints
   (("Goal"
     :in-theory (union-theories (theory 'ground-zero)
@@ -469,7 +469,7 @@ pipelined CCDFG = (list pre loop post)
 (defthm nth-append
   (implies (natp i)
            (equal (nth i (append x y))
-                  (if (< i (len x)) 
+                  (if (< i (len x))
                       (nth i x)
                     (nth (- i (len x)) y)))))
 
@@ -486,7 +486,7 @@ pipelined CCDFG = (list pre loop post)
                 (natp i))
            (equal (nth i (append (take-n pos c)
                                  (list (nth pos c))
-                        (remove-n (+ 1 pos) c)))
+                                 (remove-n (+ 1 pos) c)))
                   (nth i c))))
 
 (defthm nth-car
@@ -516,7 +516,7 @@ pipelined CCDFG = (list pre loop post)
                                   (list (nth pos c)))
                           (remove-n (+ 1 pos) c))
                   c)))
- 
+
 (defthm run-block-set-combined
   (implies (and (branch-restriction-ccdfg c)
                 (true-listp c)
@@ -549,13 +549,13 @@ pipelined CCDFG = (list pre loop post)
   (("Goal"
     :in-theory (union-theories (theory 'ground-zero)
                                '(run-block)))))
-   
+
 (defthm branch-restriction-extended-4
   (implies (and (branch-restriction-ccdfg c)
                 (branch-restriction-ccdfg b))
            (branch-restriction-ccdfg (list (list (car (nth pos c))
-                                                      (cadar b))))))
-   
+                                                 (cadar b))))))
+
 (defthm block-in-parallel
   (implies (and (branch-restriction-ccdfg c)
                 (branch-restriction-ccdfg b)
@@ -566,7 +566,7 @@ pipelined CCDFG = (list pre loop post)
                 (not (equal (combine-blocks c b pos) "error")))
            (equal (run-block-set (combine-blocks c b pos) init-state nil prev)
                   (run-block-set b
-                                 (run-block-set c init-state nil prev) 
+                                 (run-block-set c init-state nil prev)
                                  nil prev)))
   :hints
   (("Goal"
@@ -589,38 +589,38 @@ pipelined CCDFG = (list pre loop post)
                                  no-conflict-extended))
     :use
     ((:instance run-block-set-append-block
-      (name (car (nth pos c)))
-      (a (cadr (nth pos c)))
-      (b (cadar b))
-      (init-state (run-block-set (take-n pos c) init-state nil prev)))
+                (name (car (nth pos c)))
+                (a (cadr (nth pos c)))
+                (b (cadar b))
+                (init-state (run-block-set (take-n pos c) init-state nil prev)))
      (:instance run-block-set-no-conflict
-      (b (list (list (car (nth pos c)) (cadar b))))
-      (a (remove-n (+ 1 pos) c))
-      (init-state (run-block-set (list (list (car (nth pos c))
-                                             (cadr (nth pos c))))
-                                 (run-block-set (take-n pos c)
-                                                init-state nil prev)
-                                 nil prev)))))
+                (b (list (list (car (nth pos c)) (cadar b))))
+                (a (remove-n (+ 1 pos) c))
+                (init-state (run-block-set (list (list (car (nth pos c))
+                                                       (cadr (nth pos c))))
+                                           (run-block-set (take-n pos c)
+                                                          init-state nil prev)
+                                           nil prev)))))
    ("Subgoal 2'"
     :use
     ((:instance run-block-set
-      (c (list (list (car (nth pos c)) (cadar b))))
-      (init-state (run-block-set c init-state nil prev))
-      (next-bb nil))
+                (c (list (list (car (nth pos c)) (cadar b))))
+                (init-state (run-block-set c init-state nil prev))
+                (next-bb nil))
      (:instance run-block-set
-      (c b)
-      (init-state (run-block-set c init-state nil prev))
-      (next-bb nil))))
+                (c b)
+                (init-state (run-block-set c init-state nil prev))
+                (next-bb nil))))
    ("Subgoal 1'"
     :use
     ((:instance run-block-set
-      (c (list (list (car (nth pos c)) (cadar b))))
-      (init-state (run-block-set c init-state nil prev))
-      (next-bb nil))
+                (c (list (list (car (nth pos c)) (cadar b))))
+                (init-state (run-block-set c init-state nil prev))
+                (next-bb nil))
      (:instance run-block-set
-      (c b)
-      (init-state (run-block-set c init-state nil prev))
-      (next-bb nil))))))
+                (c b)
+                (init-state (run-block-set c init-state nil prev))
+                (next-bb nil))))))
 
 (defthm run-block-set-not-cons
   (implies (not (consp c))
@@ -635,7 +635,7 @@ pipelined CCDFG = (list pre loop post)
                 (natp pos)
                 (not (equal (combine-iters c1 c2 pos) "error")))
            (equal (run-block-set (combine-iters c1 c2 pos) init-state nil prev)
-                  (run-block-set c2 
+                  (run-block-set c2
                                  (run-block-set c1 init-state nil prev)
                                  nil prev)))
   :hints
@@ -653,22 +653,22 @@ pipelined CCDFG = (list pre loop post)
    ("Subgoal *1/2.2'"
     :use
     ((:instance block-in-parallel
-      (c c1)
-      (b (list (car c2))))
+                (c c1)
+                (b (list (car c2))))
      (:instance run-block-set-reverse-append
-      (a (cdr c2))
-      (b (list (car c2)))
-     (init-state (run-block-set c1 init-state nil prev)))))
+                (a (cdr c2))
+                (b (list (car c2)))
+                (init-state (run-block-set c1 init-state nil prev)))))
    ("Subgoal *1/2.1'"
     :use
     ((:instance block-in-parallel
-      (c c1)
-      (b (list (car c2))))
+                (c c1)
+                (b (list (car c2))))
      (:instance run-block-set-reverse-append
-      (a (cdr c2))
-      (b (list (car c2)))
-      (init-state (run-block-set c1 init-state nil prev)))))))
-               
+                (a (cdr c2))
+                (b (list (car c2)))
+                (init-state (run-block-set c1 init-state nil prev)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; for pre
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -688,7 +688,7 @@ pipelined CCDFG = (list pre loop post)
                 (posp pp-interval))
            (not (equal (combine-iters new-ccdfg (take-n m loop) (* pos pp-interval)) "error")))
   :hints
-    (("Goal"
+  (("Goal"
     :in-theory (union-theories (theory 'ground-zero)
                                '(pre-supersteps-from-loop-in-parallel
                                  combine-iters)))))
@@ -703,7 +703,7 @@ pipelined CCDFG = (list pre loop post)
                 (true-listp new-ccdfg)
                 (not (equal (pre-supersteps-from-loop-in-parallel new-ccdfg m loop pp-interval pos) "error")))
            (equal (run-block-set (pre-supersteps-from-loop-in-parallel new-ccdfg m loop pp-interval pos) init-state nil prev)
-                  (run-block-set (pre-superstep-from-loop m loop pp-interval) 
+                  (run-block-set (pre-superstep-from-loop m loop pp-interval)
                                  (run-block-set new-ccdfg init-state nil prev)
                                  nil prev)))
   :hints
@@ -777,7 +777,7 @@ pipelined CCDFG = (list pre loop post)
                 (posp pp-interval))
            (not (equal (combine-iters new-ccdfg (take-n pp-interval (remove-n m loop)) pos) "error")))
   :hints
-    (("Goal"
+  (("Goal"
     :in-theory (union-theories (theory 'ground-zero)
                                '(loop-superstep-from-loop-in-parallel
                                  combine-iters)))))
@@ -792,9 +792,9 @@ pipelined CCDFG = (list pre loop post)
                 (true-listp new-ccdfg)
                 (not (equal (loop-superstep-from-loop m loop pp-interval) "error"))
                 (not (equal (loop-superstep-from-loop-in-parallel new-ccdfg m loop pp-interval pos) "error")))
-           (equal (run-block-set (loop-superstep-from-loop-in-parallel new-ccdfg m loop pp-interval pos) 
+           (equal (run-block-set (loop-superstep-from-loop-in-parallel new-ccdfg m loop pp-interval pos)
                                  init-state nil prev)
-                  (run-block-set (loop-superstep-from-loop m loop pp-interval) 
+                  (run-block-set (loop-superstep-from-loop m loop pp-interval)
                                  (run-block-set new-ccdfg init-state nil prev)
                                  nil prev)))
   :hints
@@ -868,7 +868,7 @@ pipelined CCDFG = (list pre loop post)
                 (not (equal (post-superstep-sub new-ccdfg m loop pp-interval) "error")))
            (not (equal (combine-iters new-ccdfg (remove-n m loop) 0) "error")))
   :hints
-    (("Goal"
+  (("Goal"
     :in-theory (union-theories (theory 'ground-zero)
                                '(post-superstep-sub
                                  combine-iters)))))
@@ -904,7 +904,7 @@ pipelined CCDFG = (list pre loop post)
                                  true-listp-remove-n
                                  true-listp-cdr)))))
 
-  
+
 (defthm post-parallel-order-same
   (implies (and (posp m)
                 (posp pp-interval)
@@ -931,7 +931,7 @@ pipelined CCDFG = (list pre loop post)
                                  true-listp-take-n
                                  true-listp-remove-n
                                  true-listp-cdr)))))
-  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Theorems related to phi-restriction
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1004,11 +1004,11 @@ pipelined CCDFG = (list pre loop post)
     :do-not-induct t
     :use
     ((:instance phi-restriction-append-reverse
-      (a (take-n pos a))
-      (b (cons (list (car (nth pos a))
-                     (append (cadr (nth pos a)) 
-                             (cadar b)))
-               (remove-n (+ 1 pos) a))))))))
+                (a (take-n pos a))
+                (b (cons (list (car (nth pos a))
+                               (append (cadr (nth pos a))
+                                       (cadar b)))
+                         (remove-n (+ 1 pos) a))))))))
 
 (defthm phi-restriction-list-car
   (implies (phi-restriction-ccdfg a)
@@ -1030,7 +1030,7 @@ pipelined CCDFG = (list pre loop post)
                                  phi-restriction-list-car))
     :use
     ((:instance phi-restriction-combine-blocks
-      (b (list (car b))))))))
+                (b (list (car b))))))))
 
 (defthm phi-restriction-take-remove
   (implies (phi-restriction-ccdfg loop)

@@ -170,13 +170,13 @@
        (* (+ 1 (* eps (L))) (abs (f x)))))
   :rule-classes nil
   :hints (("Goal" :in-theory (disable abs)
-                  :use ((:instance f-run-bound-hint-1)
-                        (:instance abs-triangular-inequality-thm
-                                   (x (f x))
-                                   (y (- (f (step1 x eps)) (f x))))
-                        (:instance f-lim-thm
-                                   (x1 (step1 x eps))
-                                   (x2 x))))))
+           :use ((:instance f-run-bound-hint-1)
+                 (:instance abs-triangular-inequality-thm
+                            (x (f x))
+                            (y (- (f (step1 x eps)) (f x))))
+                 (:instance f-lim-thm
+                            (x1 (step1 x eps))
+                            (x2 x))))))
 
 (defthm f-run-bound-thm
   (implies
@@ -1017,7 +1017,7 @@
   :hints ((standard-part-hint stable-under-simplificationp clause)
           ("Goal" :in-theory (disable abs)
            :use ((:instance L-STANDARD-THM)
-                            (:instance f-run-bound-thm
+                 (:instance f-run-bound-thm
                             (eps (/ (i-large-integer)))
                             (n (floor1 (* tm (i-large-integer))))
                             )))))

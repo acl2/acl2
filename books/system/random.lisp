@@ -64,18 +64,31 @@
   :short "Add random numbers onto an accumulator."
 
   (defund random-list-aux (n limit acc state)
+
+; Matt K. mod: Reverse acc before the return.  This is probably not important;
+; I've done it for backward compatibility in centaur/misc/seed-random.lisp when
+; replacing the definition of random-list there, which was not tail-recursive,
+; with the one here.
+
     (declare (xargs :guard (and (natp n)
-                                (posp limit))))
+                                (posp limit)
+                                (true-listp acc))))
     (if (zp n)
-        (mv acc state)
+        (mv (reverse acc) state)
       (b* (((mv x1 state) (random$ limit state)))
         (random-list-aux (- n 1) limit (cons x1 acc) state))))
 
   (local (in-theory (enable random-list-aux)))
 
+  (local (defthm nat-listp-revappend
+           (implies (nat-listp x)
+                    (equal (nat-listp (revappend x y))
+                           (nat-listp y)))))
+
   (defthm nat-listp-of-random-list-aux
-    (equal (nat-listp (mv-nth 0 (random-list-aux n limit acc state)))
-           (nat-listp acc)))
+    (implies (nat-listp acc)
+             (equal (nat-listp (mv-nth 0 (random-list-aux n limit acc state)))
+                    (nat-listp acc))))
 
   (defthm state-p1-of-random-list-aux
     (implies (force (state-p1 state))

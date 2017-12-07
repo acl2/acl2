@@ -1,6 +1,6 @@
 ; Term Utilities
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,6 +15,7 @@
 (in-package "ACL2")
 
 (include-book "std/util/defines" :dir :system)
+(include-book "term-function-recognizers")
 (include-book "world-queries")
 
 (local (include-book "all-vars-theorems"))
@@ -26,71 +27,6 @@
   :parents (kestrel-utilities system-utilities)
   :short "Utilities for @(see term)s.")
 
-(define pseudo-lambdap (x)
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize lambda expressions of
-          <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
-  :long
-  "<p>
-   Check whether @('x') is
-   a @('nil')-terminated list of exactly three elements,
-   whose first element is the symbol @('lambda'),
-   whose second element is a list of symbols, and
-   whose third element is a pseudo-term.
-   </p>"
-  (and (true-listp x)
-       (= (len x) 3)
-       (eq (first x) 'lambda)
-       (symbol-listp (second x))
-       (pseudo-termp (third x))))
-
-(define pseudo-fn/lambda-p (x)
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize symbols and
-          lambda expressions of
-          <see topic='@(url pseudo-termp)'>pseudo-terms</see>."
-  :long
-  "<p>
-   Check whether @('x') is a symbol or a
-   <see topic='@(url pseudo-lambdap)'>pseudo-lambda-expression</see>.
-   These are the possible values of the first element of
-   a pseudo-term that is not a variable or a quoted constant
-   (i.e. a pseudo-term that is a function application).
-   </p>"
-  (or (symbolp x)
-      (pseudo-lambdap x)))
-
-(define lambdap (x (wrld plist-worldp-with-formals))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize valid
-          <see topic='@(url term)'>translated</see> lambda expression."
-  :long
-  "<p>
-   Check whether @('x') is a @('nil')-terminated list of exactly three elements,
-   whose first element is the symbol @('lambda'),
-   whose second element is a list of legal variable symbols without duplicates,
-   and whose third element is a valid translated term
-   whose free variables are all among the ones in the second element.
-   </p>"
-  (and (true-listp x)
-       (= (len x) 3)
-       (eq (first x) 'lambda)
-       (arglistp (second x))
-       (termp (third x) wrld)
-       (subsetp-eq (all-vars (third x))
-                   (second x))))
-
-(define fn/lambda-p (x (wrld plist-worldp-with-formals))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Recognize valid function symbols and
-          <see topic='@(url term)'>translated</see> lambda expression."
-  (or (function-namep x wrld)
-      (lambdap x wrld)))
-
 (define lambda-closedp ((lambd pseudo-lambdap))
   :returns (yes/no booleanp)
   :parents (term-utilities)
@@ -100,7 +36,7 @@
               (lambda-formals lambd))
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
-(define apply-term ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
+(define apply-term ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= (len terms)
                 (len (lambda-formals fn))))
@@ -116,7 +52,7 @@
    </p>"
   (cond ((symbolp fn) (cons-term fn terms))
         (t (subcor-var (lambda-formals fn) terms (lambda-body fn))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-fn/lambda-p pseudo-lambdap))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))
 
 (defsection apply-term*
   :parents (term-utilities)
@@ -132,7 +68,7 @@
   (defmacro apply-term* (fn &rest terms)
     `(apply-term ,fn (list ,@terms))))
 
-(define apply-unary-to-terms ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
+(define apply-unary-to-terms ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= 1 (len (lambda-formals fn))))
   :returns (applied-terms "A @(tsee pseudo-term-listp).")
@@ -144,7 +80,7 @@
   :verify-guards nil
 
   :prepwork
-  ((define apply-unary-to-terms-aux ((fn pseudo-fn/lambda-p)
+  ((define apply-unary-to-terms-aux ((fn pseudo-termfnp)
                                      (terms pseudo-term-listp)
                                      (rev-result pseudo-term-listp))
      :guard (or (symbolp fn)
@@ -157,7 +93,7 @@
                                               rev-result))))
      :verify-guards nil)))
 
-(define fapply-term ((fn pseudo-fn/lambda-p) (terms pseudo-term-listp))
+(define fapply-term ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= (len terms)
                 (len (lambda-formals fn))))
@@ -171,7 +107,7 @@
    </p>"
   (cond ((symbolp fn) (fcons-term fn terms))
         (t (fsubcor-var (lambda-formals fn) terms (lambda-body fn))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-fn/lambda-p pseudo-lambdap))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))
 
 (defsection fapply-term*
   :parents (term-utilities)
@@ -185,7 +121,7 @@
   (defmacro fapply-term* (fn &rest terms)
     `(fapply-term ,fn (list ,@terms))))
 
-(define fapply-unary-to-terms ((fn pseudo-fn/lambda-p)
+(define fapply-unary-to-terms ((fn pseudo-termfnp)
                                (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= 1 (len (lambda-formals fn))))
@@ -202,7 +138,7 @@
   :verify-guards nil
 
   :prepwork
-  ((define fapply-unary-to-terms-aux ((fn pseudo-fn/lambda-p)
+  ((define fapply-unary-to-terms-aux ((fn pseudo-termfnp)
                                       (terms pseudo-term-listp)
                                       (rev-result pseudo-term-listp))
      :guard (or (symbolp fn)

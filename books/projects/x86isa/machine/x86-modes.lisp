@@ -29,8 +29,6 @@
    No real-address mode, virtual-8086 mode, or system management mode for now.
    </p>")
 
-;; Extended by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
-;; Extended from always T to discriminating between 64-bit and 32-bit mode.
 (define 64-bit-modep (x86)
   :parents (x86-modes)
   :short "Check whether we are in 64-bit mode."
@@ -39,19 +37,19 @@
    Given the above modeling assumption stated in @(see x86-modes),
    this predicate discriminates between
    64-bit mode and the other two modes (collectively, 32-bit mode).
-   Based on Section 2.2 of in Intel Volume 3A (near Figure 2-3),
+   Based on Intel manual, Mar'17, Vol. 3A, Sec. 2.2 (near Fig. 2-3),
    the discrimination is based on the IA32_EFER.LME and CS.L bits:
    if they are both 1, we are in 64-bit mode,
    otherwise we are in 32-bit mode
    (protected mode if IA32_EFER.LME is 0,
    compatibility mode if IA32_EFER.LME is 1 and CS.L is 0;
    note that when IA32_EFER.LME is 0, CS.L should be 0,
-   according to Section 3.4.5 of Intel Volume 3A).
+   according to Intel manual, Mar'17, Vol. 3A, Sec. 3.4.5).
    </p>
    <p>
    This predicate does not include state invariants such as
    the constraints imposed by the 64-bit mode consistency checks
-   described in Section 9.8.5 of Intel Volume 3A.
+   described in Intel manual, Mar'17, Vol. 3A, Sec. 9.8.5.
    </p>
    <p>
    This predicate is useful as a hypothesis of theorems

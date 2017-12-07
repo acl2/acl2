@@ -1,0 +1,109 @@
+; Copyright (C) 2017, ForrestHunt, Inc.
+; Matt Kaufmann, October, 2017
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+; See acl2-system-exports.lisp for explanations.
+
+(defconst *acl2-system-exports-additions*
+
+; This list should include everything in :doc system-utilities, but may include
+; more.  For example, its initial construction benefited from consulting the
+; list put together by David Rager in community book
+; books/projects/stateman/package.lsp.  Feel free to add any ACL2 system
+; function that you find useful for writing system-level code.
+
+  '(*0*
+    *nil*
+    *t*
+    *ts-nil*
+    *ts-t*
+    alist-to-doublets
+    all-calls
+    all-ffn-symbs
+    all-ffn-symbs-lst
+    arglistp
+    binary-logand
+    binary-logior
+    binary-logxor
+    body
+    conjoin
+    cons-count-bounded
+    cons-term
+    cons-term*
+    defined-constant
+    defun-mode
+    disjoin
+    disjoin2
+    dumb-negate-lit
+    enabled-numep
+    enabled-runep
+    fargn
+    fargs
+    fcons-term
+    fcons-term*
+    fdefun-mode
+    ffn-symb
+    ffn-symb-p
+    ffnnamep
+    ffnnamep-lst
+    find-rules-of-rune
+    flambda-applicationp
+    flambdap
+    fn-symb
+    formals
+    fquotep
+    fsubcor-var
+    genvar
+    get-brr-local
+    get-event
+    get-skipped-proofs-p
+    implicate
+    lambda-applicationp
+    lambda-body
+    lambda-formals
+    logicp
+    loop-stopper
+    make-lambda
+    mbe1
+    merge-sort-lexorder
+    merge-sort-term-order
+    merge-term-order
+    non-linear-arithmetic
+    normalize
+    nvariablep
+    pos-listp
+    prettyify-clause
+    programp
+    proof-builder
+    recursivep
+    rw-cache-state
+    safe-mode
+    stobjp
+    stobjs-in
+    stobjs-out
+    subcor-var
+    sublis-var
+    subst-expr
+    subst-var
+    symbol-class
+    tag-tree
+    trans-eval
+    translate
+    translate-cmp
+    translate1
+    translate1-cmp
+    translate11
+    ts=
+    type-alistp
+    type-set
+    variablep
+    waterfall))
+
+(defconst *acl2-system-exports*
+  (append *acl2-system-exports-additions*
+          *acl2-exports*))
+
+; It may be fine to define the following package, but we hold off since there
+; may be no interest in using it.
+; (defpkg "ACL2-SYSTEM"
+;   *acl2-system-exports*)

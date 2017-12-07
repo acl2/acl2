@@ -251,8 +251,24 @@ expression with @(see vl-expr-to-svex).</p>")
                            default-cdr
                            acl2::nfix-when-not-natp
                            nth
-                           ;; acl2::member-of-cons
+                           acl2::member-of-cons
+                           acl2::subsetp-append1
+                           acl2::append-atom-under-list-equiv
+                           acl2::subsetp-trans2
+                           acl2::subsetp-trans
+                           acl2::consp-of-append
                            cons-equal)))
+
+#!sv
+(define svex-constval ((x svex-p))
+  :returns (val maybe-4vec-p)
+  (svex-case x :quote x.val :otherwise nil))
+
+(local
+ (defthm member-singleton
+   (iff (member x (list y))
+        (equal x y))
+   :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
 
 (fty::defvisitor-multi vl-elaborate
   :defines-args (:ruler-extenders :all ;; :measure-debug t
@@ -842,8 +858,8 @@ expression with @(see vl-expr-to-svex).</p>")
                  (new-x vl-vardecl-p)
                  new-elabindex)
     (b* ((warnings nil)
-         (name  (vl-vardecl->name x))
-         (item (vl-elabscopes-item-info name (vl-elabindex->scopes)))
+         ((vl-vardecl x) (vl-vardecl-fix x))
+         (item (vl-elabscopes-item-info x.name (vl-elabindex->scopes)))
          ((when item)
           (if (eq (tag item) :vl-vardecl)
               (mv t warnings item elabindex)
@@ -858,7 +874,31 @@ expression with @(see vl-expr-to-svex).</p>")
          (warnings (vl-warninglist-add-ctx warnings (vl-vardecl-fix x)))
          ((unless ok)
           (mv nil warnings new-x elabindex))
-         (elabindex (vl-elabindex-update-item-info name new-x)))
+         ((vl-vardecl new-x))
+         ((unless (and new-x.constp new-x.initval))
+          (b* ((elabindex (vl-elabindex-update-item-info x.name new-x)))
+            (mv ok warnings new-x elabindex)))
+         ;; analogous to the explicitvalueparam case in paramdecl-elaborate
+         ((wmv ok1 warnings ?new-expr svex elabindex :ctx x)
+          (vl-expr-resolve-to-constant
+           new-x.initval elabindex :reclimit reclimit
+           :type new-x.type
+           :lhs (vl-idexpr x.name)))
+
+         (val (sv::svex-constval svex))
+         ((unless (and ok1 val))
+          (mv nil
+              (fatal :type :vl-resolve-constants-fail
+                     :msg "Couldn't resolve const variable ~a0.  Other ~
+                                 warnings should explain why."
+                     :args (list x))
+              new-x
+              elabindex))
+
+         (new-x (change-vl-vardecl new-x :constval val))
+
+         (elabindex (vl-elabindex-update-item-info x.name new-x)))
+
       (mv ok warnings new-x elabindex)))
 
   (define vl-typedef-elaborate ((x vl-typedef-p)
@@ -937,7 +977,7 @@ expression with @(see vl-expr-to-svex).</p>")
                :type decl.type.type
                :lhs (vl-idexpr name)))
 
-             (val (sv::svex-case svex :quote svex.val :otherwise nil))
+             (val (sv::svex-constval svex))
              ((unless (and ok1 val))
               (mv nil
                   (fatal :type :vl-resolve-constants-fail
@@ -1009,7 +1049,7 @@ expression with @(see vl-expr-to-svex).</p>")
                decl.type.default
                ;; Resolve it relative to 
                elabindex :reclimit reclimit :ctxsize size))
-             (val (sv::svex-case svex :quote svex.val :otherwise nil))
+             (val (sv::svex-constval svex))
              ((unless (and ok val))
               (mv nil
                   (fatal :type :vl-resolve-constants-fail

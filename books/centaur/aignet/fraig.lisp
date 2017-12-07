@@ -1,7 +1,37 @@
+; AIGNET - And-Inverter Graph Networks
+; Copyright (C) 2017 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 
 (in-package "AIGNET")
 
+(include-book "sweep")
 (include-book "transform-utils")
 (include-book "centaur/aignet/ipasir" :dir :system)
 (include-book "equiv-classes")
@@ -206,141 +236,7 @@
 ;;   :hints(("Goal" :in-theory (enable aignet-copies-ok))))
            
 
-(defsection aignet-lits-comb-equivalent
-  (defun-sk aignet-lits-comb-equivalent (lit1 aignet1 lit2 aignet2)
-    (forall (invals regvals)
-            (equal (lit-eval lit2 invals regvals aignet2)
-                   (lit-eval lit1 invals regvals aignet1)))
-    :rewrite :direct)
 
-  (in-theory (disable aignet-lits-comb-equivalent))
-
-  (defthm aignet-lits-comb-equivalent-of-aignet-extension2
-    (implies (and (aignet-extension-binding)
-                  (aignet-lits-comb-equivalent lit1 aignet1 lit2 orig)
-                  (aignet-idp (lit-id lit2) orig))
-             (aignet-lits-comb-equivalent lit1 aignet1 lit2 new))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
-  (defthm aignet-lits-comb-equivalent-of-aignet-extension1
-    (implies (and (aignet-extension-binding)
-                  (aignet-lits-comb-equivalent lit1 orig lit2 aignet2)
-                  (aignet-idp (lit-id lit1) orig))
-             (aignet-lits-comb-equivalent lit1 new lit2 aignet2))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
-  (fty::deffixcong lit-equiv equal (aignet-lits-comb-equivalent lit1 aignet1 lit2 aignet2) lit1
-    :hints (("goal" :cases ((aignet-lits-comb-equivalent lit1 aignet1 lit2 aignet2)))
-            (And stable-under-simplificationp
-                 (b* ((lit (assoc 'aignet-lits-comb-equivalent clause)))
-                   `(:expand (,lit))))))
-
-  (defthmd aignet-lits-comb-equivalent-necc-rev
-    (implies (aignet-lits-comb-equivalent lit1 aignet1 lit2 aignet2)
-             (equal (lit-eval lit1 invals regvals aignet1)
-                    (lit-eval lit2 invals regvals aignet2))))
-
-  (fty::deffixcong lit-equiv equal (aignet-lits-comb-equivalent lit1 aignet1 lit2 aignet2) lit2
-    :hints (("goal" :cases ((aignet-lits-comb-equivalent lit1 aignet1 lit2 aignet2)))
-            (And stable-under-simplificationp
-                 (b* ((lit (assoc 'aignet-lits-comb-equivalent clause)))
-                   `(:expand (,lit)
-                     :in-theory (e/d (aignet-lits-comb-equivalent-necc-rev)
-                                     (aignet-lits-comb-equivalent-necc))))))))
-
-(define aignet-copy-is-comb-equivalent ((n natp)
-                                        aignet
-                                        copy
-                                        aignet2)
-  :non-executable t
-  :verify-guards nil
-  (if (zp n)
-      t
-    (and (or (equal (id->type (1- n) aignet) (out-type))
-             (aignet-lits-comb-equivalent (make-lit (1- n) 0) aignet
-                                          (get-lit (1- n) copy) aignet2))
-         (aignet-copy-is-comb-equivalent (1- n) aignet copy aignet2)))
-  ///
-  (defthm aignet-copy-is-comb-equivalent-implies
-    (implies (and (aignet-copy-is-comb-equivalent n aignet copy aignet2)
-                  (< (nfix m) (nfix n))
-                  (not (equal (id->type m aignet) (out-type)))
-                  (equal lit (make-lit m 0)))
-             (aignet-lits-comb-equivalent lit aignet (nth-lit m copy) aignet2)))
-
-  (defthm aignet-copy-is-comb-equivalent-implies-lit-eval
-    (implies (and (aignet-copy-is-comb-equivalent n aignet copy aignet2)
-                  (< (nfix m) (nfix n))
-                  (not (equal (id->type m aignet) (out-type))))
-             (equal (lit-eval (nth-lit m copy) invals regvals aignet2)
-                    (id-eval m invals regvals aignet)))
-    :hints (("goal" :induct t)
-            (and stable-under-simplificationp
-                 '(:expand ((:free (invals regvals) (lit-eval (make-lit m 0) invals regvals aignet)))))))
-
-  (defthm aignet-copy-is-comb-equivalent-of-aignet-extension
-    (implies (and (aignet-extension-binding)
-                  (aignet-copy-is-comb-equivalent n aignet copy orig)
-                  (aignet-copies-in-bounds copy orig))
-             (aignet-copy-is-comb-equivalent n aignet copy new)))
-
-  (defthm aignet-copy-is-comb-equivalent-of-update-later
-    (implies (and (aignet-copy-is-comb-equivalent n aignet copy aignet2)
-                  (<= (nfix n) (nfix m)))
-             (aignet-copy-is-comb-equivalent n aignet
-                                             (update-nth-lit m lit copy) aignet2)))
-
-  (defthm aignet-copy-is-comb-equivalent-0
-    (aignet-copy-is-comb-equivalent 0 aignet copy aignet2)))
-
-
-(define aignet-copy-is-comb-equivalent-for-non-gates ((n natp)
-                                                      aignet
-                                                      copy
-                                                      aignet2)
-  :non-executable t
-  :verify-guards nil
-  (if (zp n)
-      t
-    (and (or (equal (id->type (1- n) aignet) (gate-type))
-             (equal (id->type (1- n) aignet) (out-type))
-             (aignet-lits-comb-equivalent (make-lit (1- n) 0) aignet
-                                          (get-lit (1- n) copy) aignet2))
-         (aignet-copy-is-comb-equivalent-for-non-gates (1- n) aignet copy aignet2)))
-  ///
-  (defthm aignet-copy-is-comb-equivalent-for-non-gates-implies
-    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates n aignet copy aignet2)
-                  (< (nfix m) (nfix n))
-                  (not (equal (id->type m aignet) (out-type)))
-                  (not (equal (id->type m aignet) (gate-type)))
-                  (equal lit (make-lit m 0)))
-             (aignet-lits-comb-equivalent lit aignet (nth-lit m copy) aignet2)))
-
-  (defthm aignet-copy-is-comb-equivalent-for-non-gates-implies-lit-eval
-    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates n aignet copy aignet2)
-                  (not (equal (id->type m aignet) (out-type)))
-                  (not (equal (id->type m aignet) (gate-type)))
-                  (< (nfix m) (nfix n)))
-             (equal (lit-eval (nth-lit m copy) invals regvals aignet2)
-                    (id-eval m invals regvals aignet)))
-    :hints (("goal" :induct t)
-            (and stable-under-simplificationp
-                 '(:expand ((:free (invals regvals) (lit-eval (make-lit m 0) invals regvals aignet)))))))
-
-  (defthm aignet-copy-is-comb-equivalent-for-non-gates-of-aignet-extension
-    (implies (and (aignet-extension-binding)
-                  (aignet-copy-is-comb-equivalent-for-non-gates n aignet copy orig)
-                  (aignet-copies-in-bounds copy orig))
-             (aignet-copy-is-comb-equivalent-for-non-gates n aignet copy new)))
-
-  (defthm aignet-copy-is-comb-equivalent-for-non-gates-of-update-gate
-    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates n aignet copy aignet2)
-                  (equal (id->type m aignet) (gate-type)))
-             (aignet-copy-is-comb-equivalent-for-non-gates n aignet
-                                                           (update-nth-lit m new-lit copy)
-                                                           aignet2))))
 
 
 

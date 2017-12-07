@@ -29,7 +29,7 @@ proof-by-generalization-sum.events
  (:TITLE "Generic Theories as Proof Strategies: A Case Study for Weakest Precondition Style Proofs")
  (:AUTHOR/S "Wilfred Legato")
  (:KEYWORDS "Program Verification" "Weakest Preconditions" "Generic Theories"
-	    "Proof Strategies" "NQTHM" "Assembly Language")
+            "Proof Strategies" "NQTHM" "Assembly Language")
  (:ABSTRACT
   "This book demonstrates the use of generic theories to structure program
  correctness proofs using weakest preconditions.  Comparisons of NQTHM and ACL2

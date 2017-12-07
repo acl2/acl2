@@ -1,3 +1,10 @@
+; Copyright (C) 2014, ForrestHunt, Inc.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+; Symbolic State Management -- Version 22
+; J Strother Moore
+; Fall/Winter, 2014/2015
+; Georgetown, TX and Edinburgh, Scotland
+
 #|| Certification:
 
 ; (ld "byte-addressed-state.lisp" :ld-pre-eval-print t)
@@ -16,7 +23,7 @@
 
 ; Most comments have been stripped out to keep this file as simple as possible.
 
-(in-package "ACL2")
+(in-package "SMAN")
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
@@ -410,7 +417,7 @@
           (expt 256 sz)))
   :hints (("Goal"
            :expand ((expt 256 sz))
-           :in-theory (disable normalize-factors-gather-exponents)
+           :in-theory (disable acl2::normalize-factors-gather-exponents)
            ))
   :rule-classes :linear)
 
@@ -1195,8 +1202,8 @@
   :hints (("Goal" :in-theory (e/d (one-byte-read r-1-!mi)
                                   (mod floor ash logior logxor
                                        ash-to-floor
-                                       logand-constant-mask
-                                       |(* x (- y))|)))
+                                       acl2::logand-constant-mask
+                                       acl2::|(* x (- y))|)))
           ("Subgoal 12" :cases ((< b 0)))
           ("Subgoal 11" :cases ((< b 0)))))
 
@@ -1259,8 +1266,8 @@
                            (!r b sz v2
                                st)))
                    ))
-   :hints (("Goal" :in-theory '((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
-                                (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+   :hints (("Goal" :in-theory '((:COMPOUND-RECOGNIZER acl2::NATP-COMPOUND-RECOGNIZER)
+                                (:COMPOUND-RECOGNIZER acl2::ZP-COMPOUND-RECOGNIZER)
                                 (:DEFINITION ASH)
                                 (:DEFINITION FIX)
                                 (:DEFINITION FLOOR)
@@ -1500,8 +1507,8 @@
                                                    (integerp (* v (expt base n))))
                                               (integerp (* v (expt base (+ n delta))))))
                            (delta (- m n)))
-           :in-theory (e/d (scatter-exponents-theory)
-                           (gather-exponents-theory)))))
+           :in-theory (e/d (acl2::scatter-exponents-theory)
+                           (acl2::gather-exponents-theory)))))
 
 ; We need to express (expt 2 (* 8 sum)) as (expt 256 sum), except the product
 ; is distributed over the sum, there are 1, 2, or 3 terms in the sums in

@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Implementation
 ;
-; Copyright (C) 2015-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,9 +12,11 @@
 
 (include-book "kestrel/utilities/defchoose-queries" :dir :system)
 (include-book "kestrel/utilities/defun-sk-queries" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)
+(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
@@ -70,8 +72,16 @@
     (and (symbolp funvar)
          (not (null (assoc-eq funvar table))))))
 
-(define defunvar-fn (funvar arguments arrow result)
-  :returns (event (or (pseudo-event-formp event) (null event)))
+(define defunvar-fn ((inputs true-listp)
+                     (call pseudo-event-formp "Call to @(tsee defunvar).")
+                     (ctx "Context for errors.")
+                     state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (event (or (pseudo-event-formp event) (null event)))
+               state)
+  :verify-guards nil
   :short "Validate the inputs to @(tsee defunvar)
           and generate the event form to submit."
   :long
@@ -79,19 +89,61 @@
    Similary to @(tsee *-listp),
    any @('*') and @('=>') symbol (i.e. in any package) is allowed.
    </p>"
-  (b* (((unless (symbolp funvar))
-        (raise "~x0 must be a name." funvar))
+  (b* ((wrld (w state))
+       ((unless (>= (len inputs) 4))
+        (er-soft+ ctx t nil
+                  "At least four inputs must be supplied, not ~n0."
+                  (len inputs)))
+       (funvar (first inputs))
+       (arguments (second inputs))
+       (arrow (third inputs))
+       (result (fourth inputs))
+       (options (nthcdr 4 inputs))
+       ((unless (symbolp funvar))
+        (er-soft+ ctx t nil
+                  "The first input must be a symbol, but ~x0 is not."
+                  funvar))
        ((unless (*-listp arguments))
-        (raise "~x0 must be a list (* ... *)." arguments))
+        (er-soft+ ctx t nil
+                  "The second input must be a list (* ... *), but ~x0 is not."
+                  arguments))
        ((unless (and (symbolp arrow)
                      (equal (symbol-name arrow) "=>")))
-        (raise "~x0 must be =>." arrow))
+        (er-soft+ ctx t nil
+                  "The third input must be =>, but ~x0 is not."
+                  arrow))
        ((unless (and (symbolp result)
                      (equal (symbol-name result) "*")))
-        (raise "~x0 must be *." result)))
-    `(progn
-       (defstub ,funvar ,arguments ,arrow ,result)
-       (table function-variables ',funvar nil))))
+        (er-soft+ ctx t nil
+                  "The fourth input must be *, but ~x0 is not."
+                  result))
+       ((unless (or (null options)
+                    (and (= (len options) 2)
+                         (eq (car options) :print))))
+        (er-soft+ ctx t nil
+                  "After the * input there may be at most one :PRINT option, ~
+                   but instead ~x0 was supplied."
+                  options))
+       (print (if options
+                  (cadr options)
+                nil))
+       ((unless (member-eq print '(nil :all)))
+        (er-soft+ ctx t nil
+                  "The :PRINT input must be NIL or :ALL, but ~x0 is not."
+                  print))
+       ((when (funvarp funvar wrld))
+        (b* ((arity (arity funvar wrld)))
+          (if (= arity (len arguments))
+              (prog2$ (cw "~%The call ~x0 is redundant.~%" call)
+                      (value `(value-triple :invisible)))
+            (er-soft+ ctx t nil "A function variable ~x0 with arity ~x1 ~
+                                 already exists.~%" funvar arity))))
+       (event `(progn
+                 (defstub ,funvar ,arguments ,arrow ,result)
+                 (table function-variables ',funvar nil)
+                 (value-triple ',funvar)))
+       (event (restore-output? (eq print :all) event)))
+    (value event)))
 
 (defsection defunvar-implementation
   :short "Implementation of @(tsee defunvar)."
@@ -99,11 +151,15 @@
   "@(def defunvar)
    @(def acl2::defunvar)"
 
-  (defmacro defunvar (funvar arguments arrow result)
-    `(make-event (defunvar-fn ',funvar ',arguments ',arrow ',result)))
+  (defmacro defunvar (&whole call &rest inputs)
+    `(make-event-terse (defunvar-fn
+                         ',inputs
+                         ',call
+                         (cons 'defunvar ',(if (consp inputs) (car inputs) nil))
+                         state)))
 
-  (defmacro acl2::defunvar (&rest args)
-    `(defunvar ,@args)))
+  (defmacro acl2::defunvar (&rest inputs)
+    `(defunvar ,@inputs)))
 
 (defsection show-defunvar
   :short "Show the event form generated by @(tsee defunvar),
@@ -112,8 +168,17 @@
   "@(def show-defunvar)
    @(def acl2::show-defunvar)"
 
-  (defmacro show-defunvar (funvar arguments arrow result)
-    `(defunvar-fn ',funvar ',arguments ',arrow ',result))
+  (defmacro show-defunvar (&whole call
+                                  funvar arguments arrow result &key print)
+    `(defunvar-fn
+       ',funvar
+       ',arguments
+       ',arrow
+       ',result
+       ',print
+       ',call
+       (cons 'defunvar ',funvar)
+       state))
 
   (defmacro acl2::show-defunvar (&rest args)
     `(show-defunvar ,@args)))

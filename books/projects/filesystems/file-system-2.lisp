@@ -1,3 +1,7 @@
+; Copyright (C) 2017, Regents of the University of Texas
+; Written by Mihir Mehta
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 (in-package "ACL2")
 
 ;  file-system-2.lisp                                  Mihir Mehta
@@ -229,8 +233,7 @@
 ; This function writes a specified text string to a specified position to a
 ; text file at a specified path.
 (defun l2-wrchs (hns fs start text)
-  (declare (xargs :guard-debug t
-                  :guard (and (symbol-listp hns)
+  (declare (xargs :guard (and (symbol-listp hns)
                               (l2-fs-p fs)
                               (natp start)
                               (stringp text))

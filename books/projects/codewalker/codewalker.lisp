@@ -321,7 +321,7 @@
 ; those components, develop a collection of lemmas about your model for
 ; reducing finite-length runs of program segments to those terms, and develop
 ; the ``opener'' and ``seqential execution'' lemmas you'd need if you were
-; doing code profos about your model.  To see the lemmas actually proved about
+; doing code proofs about your model.  To see the lemmas actually proved about
 ; the M1 model here, see the tail end of the file m1-version-3.lisp which
 ; contains the most basic code proof lemmas, plus the lemmas in the encapsulate
 ; after (hyps s) is defined in the basic-demo.lsp script.

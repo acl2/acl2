@@ -1,6 +1,6 @@
 ; ABNF Library -- Parser and Abstractor Validation
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,9 @@
 
 (include-book "parser")
 (include-book "abstractor")
+
+; (depends-on "core-rules.txt")
+; (depends-on "concrete-syntax-rules.txt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

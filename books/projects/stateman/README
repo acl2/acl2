@@ -30,3 +30,8 @@ The user wishing to run a few simple examples, to understand better the
 input/output conventions and capabilities of some of the functions defined in
 stateman22.lisp, should then execute the forms in simple-examples.lsp one by
 one at the top-level of an ACL2 session.
+
+After the publication of the Stateman paper, it was decided to put the
+stateman work in a separate package named "SMAN" (contributed by David Rager).
+To keep things simple, David Rager assigned the copyright from these changes
+to ForrestHunt, Inc.

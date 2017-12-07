@@ -619,7 +619,13 @@ line\""
                :nwarnings 1)
 
    (make-itest :input "0'h0" ;; size 0 illegal
-               :successp nil)
+               :successp t
+               :width 32
+               :value 0
+               :signedp nil
+               :bits ""
+               :wasunsized t
+               :nwarnings 1)
 
    (make-itest :input "1'h" ;; no value is illegal
                :successp nil)

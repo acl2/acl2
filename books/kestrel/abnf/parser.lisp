@@ -1,6 +1,6 @@
 ; ABNF Library -- Parser
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1712,34 +1712,6 @@
     (equal (parse-quoted-string (nat-list-fix input))
            (parse-quoted-string input))))
 
-(define parse-case-sensitive-string ((input nat-listp))
-  :returns (mv (error? maybe-msgp)
-               (tree? (and (maybe-treep tree?)
-                           (implies (not error?) (treep tree?))
-                           (implies error? (not tree?))))
-               (rest-input nat-listp))
-  :parents (grammar-parser-implementation)
-  :short "Parse a case-sensitive character value notation."
-  (seq input
-       (tree-%s := (parse-ichars #\% #\s input))
-       (tree-qstring := (parse-quoted-string input))
-       (return (make-tree-nonleaf :rulename? *case-sensitive-string*
-                                  :branches (list (list tree-%s)
-                                                  (list tree-qstring)))))
-  :no-function t
-  ///
-
-  (more-returns
-   (rest-input (and (<= (len rest-input) (len input))
-                    (implies (not error?)
-                             (< (len rest-input) (len input))))
-               :name len-of-parse-case-sensitive-string-linear
-               :rule-classes :linear))
-
-  (defrule parse-case-sensitive-string-of-nat-list-fix
-    (equal (parse-case-sensitive-string (nat-list-fix input))
-           (parse-case-sensitive-string input))))
-
 (define parse-?%i ((input nat-listp))
   :returns (mv (error? not)
                (tree treep)
@@ -1793,6 +1765,34 @@
     (equal (parse-case-insensitive-string (nat-list-fix input))
            (parse-case-insensitive-string input))))
 
+(define parse-case-sensitive-string ((input nat-listp))
+  :returns (mv (error? maybe-msgp)
+               (tree? (and (maybe-treep tree?)
+                           (implies (not error?) (treep tree?))
+                           (implies error? (not tree?))))
+               (rest-input nat-listp))
+  :parents (grammar-parser-implementation)
+  :short "Parse a case-sensitive character value notation."
+  (seq input
+       (tree-%s := (parse-ichars #\% #\s input))
+       (tree-qstring := (parse-quoted-string input))
+       (return (make-tree-nonleaf :rulename? *case-sensitive-string*
+                                  :branches (list (list tree-%s)
+                                                  (list tree-qstring)))))
+  :no-function t
+  ///
+
+  (more-returns
+   (rest-input (and (<= (len rest-input) (len input))
+                    (implies (not error?)
+                             (< (len rest-input) (len input))))
+               :name len-of-parse-case-sensitive-string-linear
+               :rule-classes :linear))
+
+  (defrule parse-case-sensitive-string-of-nat-list-fix
+    (equal (parse-case-sensitive-string (nat-list-fix input))
+           (parse-case-sensitive-string input))))
+
 (define parse-char-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
                (tree? (and (maybe-treep tree?)
@@ -1803,10 +1803,10 @@
   :short "Parse a character value notation."
   (seq-backtrack
    input
-   ((tree := (parse-case-sensitive-string input))
+   ((tree := (parse-case-insensitive-string input))
     (return (make-tree-nonleaf :rulename? *char-val*
                                :branches (list (list tree)))))
-   ((tree := (parse-case-insensitive-string input))
+   ((tree := (parse-case-sensitive-string input))
     (return (make-tree-nonleaf :rulename? *char-val*
                                :branches (list (list tree))))))
   :no-function t
@@ -3666,16 +3666,6 @@
                     (nat-list-fix input))))
   :enable parse-quoted-string)
 
-(defrule input-decomposition-of-parse-case-sensitive-string
-  :parents (grammar-parser-input-decomposition)
-  :short "Input decomposition theorem for @(tsee parse-case-sensitive-string)."
-  (b* (((mv error? tree? rest-input) (parse-case-sensitive-string input)))
-    (implies (not error?)
-             (equal (append (tree->string tree?)
-                            rest-input)
-                    (nat-list-fix input))))
-  :enable parse-case-sensitive-string)
-
 (defrule input-decomposition-of-parse-?%i
   :parents (grammar-parser-input-decomposition)
   :short "Input decomposition theorem for @(tsee parse-?%i)."
@@ -3695,6 +3685,16 @@
                             rest-input)
                     (nat-list-fix input))))
   :enable parse-case-insensitive-string)
+
+(defrule input-decomposition-of-parse-case-sensitive-string
+  :parents (grammar-parser-input-decomposition)
+  :short "Input decomposition theorem for @(tsee parse-case-sensitive-string)."
+  (b* (((mv error? tree? rest-input) (parse-case-sensitive-string input)))
+    (implies (not error?)
+             (equal (append (tree->string tree?)
+                            rest-input)
+                    (nat-list-fix input))))
+  :enable parse-case-sensitive-string)
 
 (defrule input-decomposition-of-parse-char-val
   :parents (grammar-parser-input-decomposition)
@@ -4694,16 +4694,6 @@
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-quoted-string)
 
-(defrule tree-match-of-parse-case-sensitive-string
-  :parents (grammar-parser-tree-matching)
-  :short "Tree matching theorem for @(tsee parse-case-sensitive-string)."
-  (b* (((mv error? tree? &) (parse-case-sensitive-string input)))
-    (implies (and (not error?)
-                  (equal element (element-rulename *case-sensitive-string*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
-  :expand (:free (tree element rules) (tree-match-element-p tree element rules))
-  :enable parse-case-sensitive-string)
-
 (defrule tree-match-of-parse-?%i
   :parents (grammar-parser-tree-matching)
   :short "Tree matching theorem for @(tsee parse-?%i)."
@@ -4722,6 +4712,16 @@
              (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-case-insensitive-string)
+
+(defrule tree-match-of-parse-case-sensitive-string
+  :parents (grammar-parser-tree-matching)
+  :short "Tree matching theorem for @(tsee parse-case-sensitive-string)."
+  (b* (((mv error? tree? &) (parse-case-sensitive-string input)))
+    (implies (and (not error?)
+                  (equal element (element-rulename *case-sensitive-string*)))
+             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+  :expand (:free (tree element rules) (tree-match-element-p tree element rules))
+  :enable parse-case-sensitive-string)
 
 (defrule tree-match-of-parse-char-val
   :parents (grammar-parser-tree-matching)
@@ -5760,15 +5760,21 @@
   :enable parse-num-val
   :use (:instance constraints-from-parse-ichar (char #\%)))
 
-(defrule constraints-from-parse-case-sensitive-string
+(defrule constraints-from-parse-case-insensitive-string
   :parents (grammar-parser-constraints-from-parsing)
-  :short "Constraints induced by @(tsee parse-case-sensitive-string)."
-  (implies (not (mv-nth 0 (parse-case-sensitive-string input)))
-           (and (equal (car input) (char-code #\%))
-                (member-equal (cadr input) (chars=>nats '(#\S #\s)))))
+  :short "Constraints induced by @(tsee parse-case-insensitive-string)."
+  (implies (not (mv-nth 0 (parse-case-insensitive-string input)))
+           (or (and (equal (car input) (char-code #\%))
+                    (member-equal (cadr input) (chars=>nats '(#\I #\i))))
+               (equal (car input) (char-code #\"))))
   :rule-classes nil
-  :enable parse-case-sensitive-string
-  :use (:instance constraints-from-parse-ichars (char1 #\%) (char2 #\s)))
+  :enable (parse-case-insensitive-string
+           parse-?%i
+           parse-quoted-string
+           parse-dquote
+           parse-exact
+           parse-any)
+  :use (:instance constraints-from-parse-ichars (char1 #\%) (char2 #\i)))
 
 (defrule constraints-from-parse-char-val
   :parents (grammar-parser-constraints-from-parsing)
@@ -5780,14 +5786,13 @@
                (equal (car input) (char-code #\"))))
   :rule-classes nil
   :enable (parse-char-val
-           parse-case-insensitive-string
+           parse-case-sensitive-string
            parse-quoted-string
            parse-dquote
            parse-exact
-           parse-any
-           parse-?%i)
-  :use ((:instance constraints-from-parse-ichars (char1 #\%) (char2 #\i))
-        constraints-from-parse-case-sensitive-string))
+           parse-any)
+  :use (constraints-from-parse-case-insensitive-string
+        (:instance constraints-from-parse-ichars (char1 #\%) (char2 #\s))))
 
 (defrule constraints-from-parse-wsp/vchar
   :parents (grammar-parser-constraints-from-parsing)
@@ -6633,8 +6638,10 @@
                                       (element-rulename *case-sensitive-string*)
                                       *all-concrete-syntax-rules*)
                 (tree-terminatedp tree))
-           (equal (car (tree->string tree))
-                  (char-code #\%)))
+           (and (equal (car (tree->string tree))
+                       (char-code #\%))
+                (member-equal (cadr (tree->string tree))
+                              (chars=>nats '(#\S #\s)))))
   :rule-classes nil
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-ichars
@@ -7418,7 +7425,7 @@
 
    <p>
    The disambiguation theorems
-   @(tsee fail-case-sensitive-string-when-match-case-insensitive-string) and
+   @(tsee fail-case-insensitive-string-when-match-case-sensitive-string) and
    @(tsee fail-char-val-when-match-num/prose-val)
    have a @(':cases') hint on whether
    the string at the leaves of the tree has a second natural number or not.
@@ -7868,19 +7875,19 @@
                    (char2 #\i)
                    (input (append (tree->string tree) rest-input)))))
 
-(defruled fail-case-sensitive-string-when-match-case-insensitive-string
+(defruled fail-case-insensitive-string-when-match-case-sensitive-string
   :parents (grammar-parser-disambiguation)
-  :short "Disambiguation between @('case-sensitive-string') and
-          @('case-insensitive-string')."
+  :short "Disambiguation between @('case-insensitive-string') and
+          @('case-sensitive-string')."
   (implies (and (tree-match-element-p tree
-                                      (element-rulename *case-insensitive-string*)
+                                      (element-rulename *case-sensitive-string*)
                                       *all-concrete-syntax-rules*)
                 (tree-terminatedp tree))
-           (mv-nth 0 (parse-case-sensitive-string (append (tree->string tree)
-                                                          rest-input))))
+           (mv-nth 0 (parse-case-insensitive-string (append (tree->string tree)
+                                                            rest-input))))
   :cases ((consp (cdr (tree->string tree))))
-  :use (constraints-from-tree-match-case-insensitive-string
-        (:instance constraints-from-parse-case-sensitive-string
+  :use (constraints-from-tree-match-case-sensitive-string
+        (:instance constraints-from-parse-case-insensitive-string
                    (input (append (tree->string tree) rest-input)))))
 
 (defruled fail-wsp-when-match-vchar-/-rule-/-cnl-wsp
@@ -10569,7 +10576,7 @@
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :enable (parse-char-val
-           fail-case-sensitive-string-when-match-case-insensitive-string))
+           fail-case-insensitive-string-when-match-case-sensitive-string))
 
 (defrule parse-wsp/vchar-when-tree-match
   :parents (grammar-parser-completeness)

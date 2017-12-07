@@ -24,7 +24,7 @@
   :returns (pkg stringp)
   :enabled t
   :parents (symbol-utilities)
-  :short "The @(tsee symbol-package-name) of a symbol, but not \"COMMON-LISP\."
+  :short "The @(tsee symbol-package-name) of a symbol, but not \"COMMON-LISP\"."
   :long "
   <p>
   This function is just @(tsee symbol-package-name), except that it it is

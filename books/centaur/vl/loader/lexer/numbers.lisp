@@ -792,20 +792,23 @@ grammar is:</p>
          ;; Otherwise there is a base.  This means that if there is a NUMBER,
          ;; it is the size specifier.
 
-         ((when (and number (equal value-of-number 0)))
-          ;; It's illegal to have a width of zero.  After reading the
-          ;; Verilog-2005 grammar, we believe it is never allowed for two
-          ;; numbers to follow one another when separated only by whitespace.
-          ;; So there is no way to parse this, and we are justified in causing
-          ;; an error rather than returning number as its own inttoken.
+         ;; ((when (and number (equal value-of-number 0)))
+         ;;  ;; It's illegal to have a width of zero.  After reading the
+         ;;  ;; Verilog-2005 grammar, we believe it is never allowed for two
+         ;;  ;; numbers to follow one another when separated only by whitespace.
+         ;;  ;; So there is no way to parse this, and we are justified in causing
+         ;;  ;; an error rather than returning number as its own inttoken.
 
-          ;; BOZO is this still true for the SystemVerilog-2012 grammar?
-          (mv (cw "Lexer error (~s0): found a number whose size is zero.~%"
-                  (vl-location-string (vl-echar->loc firstchar)))
-              echars warnings))
+         ;;  ;; BOZO is this still true for the SystemVerilog-2012 grammar?
+         ;;  (mv (cw "Lexer error (~s0): found a number whose size is zero.~%"
+         ;;          (vl-location-string (vl-echar->loc firstchar)))
+         ;;      echars warnings))
 
-         (unsizedp (not number))
-         (width    (or value-of-number 32))
+         (width-was-0 (eql 0 value-of-number))
+         (unsizedp (or (not number) width-was-0))
+         (width (if unsizedp
+                    32
+                  value-of-number))
 
          ;; The signedness and radix are determined by the base.
          (chars-of-base  (vl-echarlist->chars base))
@@ -848,6 +851,16 @@ grammar is:</p>
                                           :bits nil
                                           :wasunsized unsizedp
                                           :breakp breakp))
+               (warnings
+                (if width-was-0
+                    (warn :type :vl-0-width-number-literal
+                          :msg "~l0: Number ~s1 has explicit width 0, which ~
+                                is not allowed by the SystemVerilog standard. ~
+                                Implementations usually interpret these as ~
+                                unsized (that is, actually 32 bits wide)."
+                          :args (list (vl-echar->loc firstchar)
+                                      (vl-echarlist->string etext)))
+                  warnings))
                (warnings
                 ;; Truncation warnings.
                 (cond ((not unsizedp)
@@ -910,7 +923,7 @@ grammar is:</p>
          ((mv warnings bits)
           (vl-correct-bitlist (vl-echar->loc firstchar)
                               bits
-                              value-of-number
+                              (and (not width-was-0) value-of-number)
                               etext
                               warnings))
          (token (make-vl-inttoken :etext etext

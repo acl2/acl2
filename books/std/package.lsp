@@ -388,7 +388,9 @@
   '(defabsstobj-events
     def-1d-arr
     def-2d-arr
-    defstobj-clone))
+    def-updater-independence-thm
+    defstobj-clone
+    new old))
 
 (defpkg "STOBJS"
   (append '(

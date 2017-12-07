@@ -135,17 +135,37 @@ either upper or lower case, treating - and _ as equivalent, and with or without
   :returns (mashed stringp :rule-classes :type-prescription)
   (vl-mash-warning-string (symbol-name x)))
 
+(encapsulate
+  (((vl-lint-suppress-warnings-att-compare * *) => *
+    :formals (mashed-att mashed-warning-type)
+    :guard (and (stringp mashed-att)
+                (stringp mashed-warning-type))))
+
+  (local (defun vl-lint-suppress-warnings-att-compare (mashed-att mashed-warning-type)
+           (declare (xargs :guard (and (stringp mashed-att)
+                                       (stringp mashed-warning-type))))
+           (str::istrprefixp mashed-att mashed-warning-type)))
+
+  (defthm booleanp-of-vl-lint-suppress-warnings-att-compare
+    (booleanp (vl-lint-suppress-warnings-att-compare mashed-att mashed-warning-type))
+    :rule-classes :type-prescription)
+
+  (fty::deffixequiv vl-lint-suppress-warnings-att-compare
+    :args ((mashed-att stringp) (mashed-warning-type stringp))))
+
+(define vl-lint-suppress-warnings-att-compare-default ((mashed-att stringp)
+                                                       (mashed-warning-type stringp))
+  (str::istrprefixp mashed-att mashed-warning-type))
+
+(defattach vl-lint-suppress-warnings-att-compare vl-lint-suppress-warnings-att-compare-default) 
+
 (define vl-lint-attname-says-ignore ((attname stringp)
                                      (mashed-warning-type stringp))
   :returns (ignorep booleanp :rule-classes :type-prescription)
   (b* (((unless (vl-lint-ignore-att-p attname))
         nil)
-       (mashed-att (vl-lint-ignore-att-mash attname))
-       ((when (equal mashed-att ""))
-        ;; Ignore everything!
-        t))
-    ;; Otherwise, only ignore certain warning types
-    (str::istrprefixp mashed-att mashed-warning-type))
+       (mashed-att (vl-lint-ignore-att-mash attname)))
+    (vl-lint-suppress-warnings-att-compare mashed-att mashed-warning-type))
   ///
   (local
    (assert!
@@ -192,7 +212,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 
 (fty::defvisitors vl-lint-scan-for-ignore-genelement
   :template vl-lint-scan-for-ignore
-  :types (vl-genelement))
+  :types (vl-genelement vl-context1))
   
 
 
@@ -245,6 +265,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
             (:vl-plainarg     (and (vl-plainarg-p x)      (vl-plainarg-scan-for-ignore x      mwtype)))
             (:vl-namedarg     (and (vl-namedarg-p x)      (vl-namedarg-scan-for-ignore x      mwtype)))
 
+            (:vl-context      (and (vl-context1-p x)      (vl-context1-scan-for-ignore x      mwtype)))
 
             ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt
               :vl-callstmt :vl-disablestmt :vl-eventtriggerstmt

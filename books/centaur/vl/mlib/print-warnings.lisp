@@ -257,7 +257,9 @@ warnings\".</p>"
        (elide (maybe-natp-fix elide))
        ((when (atom x))
         ps)
-       ((cons name warnings) (car x)))
+       ((cons name warnings) (car x))
+       ((unless warnings)
+        (vl-print-reportcard-aux (cdr x) elide)))
     (vl-ps-seq (vl-print-warnings-with-named-header
                 (if (equal name :design) "Design Root" name)
                 (vl-elide-warnings warnings elide))

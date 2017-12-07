@@ -4464,8 +4464,14 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                (fixups sv::assigns-p)
                (aliases sv::lhspairs-p)
                (modinsts sv::modinstlist-p)
+               (assigns sv::assigns-p)
                (modalist1 sv::modalist-p))
-  :prepwork ((local (in-theory (enable sv::svar-p sv::name-p))))
+  :prepwork ((local (in-theory (enable sv::svar-p ;; sv::name-p
+                                       )))
+             (local (defthm name-p-when-stringp
+                      (implies (stringp x)
+                               (sv::name-p x))
+                      :hints(("Goal" :in-theory (enable sv::name-p))))))
   (b* ((?portdecls portdecls) ;; ignorable
        ((vl-vardecl x) (vl-vardecl-fix x))
        (modalist (sv::modalist-fix modalist))
@@ -4474,27 +4480,40 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
         (mv (vfatal :type :vl-vardecl->svex-fail
                    :msg "~a0: Failed to resolve usertypes"
                    :args (list x))
-            0 nil nil nil nil modalist))
+            0 nil nil nil nil nil modalist))
        ((mv err size) (vl-datatype-size x.type))
        ((when (or err (not size)))
         (mv (vfatal :type :vl-vardecl->svex-fail
                    :msg "~a0: Failed to size datatype ~a1: ~@2"
                    :args (list x x.type
                                (if err err "exact error unknown")))
-            0 nil nil nil nil modalist))
+            0 nil nil nil nil nil modalist))
        ((mv err subwire datamod modalist)
         (vl-datatype->mods x.type modalist))
        ((when err)
         (mv (vfatal :type :vl-vardecl->svex-fail
                    :msg "~a0: Failed to process datatype ~a1: ~@2"
                    :args (list x x.type err))
-            0 nil nil nil nil modalist))
+            0 nil nil nil nil nil modalist))
        ((vmv vttree) (vl-vardecl-enum-constraint x portdecls config))
        (fixups (vl-vardecl-enum-fixup x portdecls config))
        ((mv wire insts aliases)
-        (vl-datatype-elem->mod-components x.name subwire self-lsb datamod)))
+        (vl-datatype-elem->mod-components x.name subwire self-lsb datamod))
+       ((sv::wire wire))
+       (assigns (cond (x.constval
+                       (list (cons (sv::make-simple-lhs :width wire.width
+                                                        :var (sv::make-simple-svar wire.name))
+                                   (sv::make-driver :value (sv::svex-quote x.constval) :strength 7))))
+                      ((eq x.nettype :vl-supply0)
+                       (list (cons (sv::make-simple-lhs :width wire.width
+                                                        :var (sv::make-simple-svar wire.name))
+                                   (sv::make-driver :value (svex-int 0) :strength 7))))
+                      ((eq x.nettype :vl-supply1)
+                       (list (cons (sv::make-simple-lhs :width wire.width
+                                                        :var (sv::make-simple-svar wire.name))
+                                   (sv::make-driver :value (svex-int (1- (ash 1 wire.width))) :strength 7)))))))
     (mv vttree size
-        (list wire) fixups aliases insts modalist))
+        (list wire) fixups aliases insts assigns modalist))
   ///
   (defret vars-of-vl-vardecl->svex-modalist
     (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
@@ -4503,7 +4522,11 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
     (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
 
   (defret vars-of-vl-vardecl->svex-fixups
-    (sv::svarlist-addr-p (sv::assigns-vars fixups))))
+    (sv::svarlist-addr-p (sv::assigns-vars fixups)))
+
+  (defret vars-of-vl-vardecl->svex-assigns
+    (sv::svarlist-addr-p (sv::assigns-vars assigns))
+    :hints(("Goal" :in-theory (enable sv::assigns-vars)))))
 
 
 
@@ -4526,13 +4549,14 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                (fixups sv::assigns-p)
                (aliases sv::lhspairs-p)
                (modinsts sv::modinstlist-p)
+               (assigns sv::assigns-p)
                (modalist1 sv::modalist-p))
   :verify-guards nil
-  (b* (((when (atom x)) (mv nil 0 nil nil nil nil (sv::modalist-fix modalist)))
+  (b* (((when (atom x)) (mv nil 0 nil nil nil nil nil (sv::modalist-fix modalist)))
        (vttree nil)
-       ((vmv vttree width2 wires2 fixups2 aliases2 modinsts2 modalist)
+       ((vmv vttree width2 wires2 fixups2 aliases2 modinsts2 assigns2 modalist)
         (vl-vardecllist->svex (cdr x) portdecls modalist interfacep config))
-       ((vmv vttree width1 wire1 fixups1 aliases1 modinsts1 modalist)
+       ((vmv vttree width1 wire1 fixups1 aliases1 modinsts1 assigns1 modalist)
         (vl-vardecl->svex (car x) portdecls modalist (and interfacep width2) config)))
     (mv vttree
         (+ width1 width2)
@@ -4540,6 +4564,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
         (append-without-guard fixups1 fixups2)
         (append-without-guard aliases1 aliases2)
         (append-without-guard modinsts1 modinsts2)
+        (append-without-guard assigns1 assigns2)
         modalist))
   ///
   (verify-guards vl-vardecllist->svex)
@@ -4550,7 +4575,10 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
   (defret vars-of-vl-vardecllist->svex-aliases
     (sv::svarlist-addr-p (sv::lhspairs-vars aliases)))
   (defret vars-of-vl-vardecllist->svex-fixups
-    (sv::svarlist-addr-p (sv::assigns-vars fixups))))
+    (sv::svarlist-addr-p (sv::assigns-vars fixups)))
+
+  (defret vars-of-vl-vardecllist->svex-assigns
+    (sv::svarlist-addr-p (sv::assigns-vars assigns))))
 
 
 ;; (define vl-delay-primitive->svex-module ((x vl-atts-p) (modname stringp))
@@ -4759,7 +4787,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          (scopes (vl-elabindex->scopes))
 
          (portalist (vl-portdecllist-alist x.portdecls nil))
-         ((vmv vttree vars-width wires fixups aliases datainsts modalist)
+         ((vmv vttree vars-width wires fixups aliases datainsts vardecl-assigns modalist)
           (with-fast-alist portalist
             (vl-vardecllist->svex x.vardecls
                                   portalist
@@ -4802,7 +4830,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
          (module (sv::make-module :wires (append-without-guard self-wire ifportwires wires gen-wires)
                                   :insts (append-without-guard ifportinsts datainsts ginsts insts gen-insts)
-                                  :assigns (append-without-guard always-assigns assigns)
+                                  :assigns (append-without-guard vardecl-assigns always-assigns assigns)
                                   :aliaspairs (append-without-guard ifportaliases aliases gen-aliases)
                                   :fixups fixups
                                   :constraints (vttree->constraints vttree)))

@@ -34,9 +34,10 @@
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
-(include-book "centaur/bitops/install-bit" :dir :system)
+(include-book "centaur/bitops/extra-defs" :dir :system)
 (include-book "centaur/bitops/fast-logext" :dir :system)
 (include-book "centaur/misc/rewrite-rule" :dir :system)
+(include-book "fixequiv")
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -208,6 +209,12 @@
   :hints (("goal" :in-theory (enable* arith-equiv-forwarding)
            :use logapp-of-part-selects-with-logext-consolidate-lemma)))
 
+
+(defthm logapp-with-part-select-of-head
+  (equal (logapp width x (part-select x :width selwidth :low width))
+         (loghead (+ (nfix selwidth) (nfix width)) x))
+  :hints ((logbitp-reasoning)))
+
 ;; When we've rewritten away the logapps, we have one part-select left and it's
 ;; the whole thing.  We just need to know that it equals the fix, which is
 ;; loghead for unsigned or logext for signed.
@@ -322,6 +329,18 @@
   :hints ((logbitp-reasoning)))
 
 
+(defthm logapp-with-logext-part-select-of-head
+  (implies (posp selwidth)
+           (equal (logapp width x (logext selwidth (part-select x :width selwidth :low width)))
+                  (logext (+ selwidth (nfix width)) x)))
+  :hints (("goal" :use ((:instance logext-of-logapp-above
+                         (a x)
+                         (b (part-select x :width selwidth :low width))
+                         (width (+ selwidth (nfix width)))
+                         (width1 width)))
+           :in-theory (e/d (logext-part-select-at-0-identity)
+                           (logext-of-logapp-above)))))
+
 ;; For read-over-write theorems we'll use a function equiv-under-mask,
 ;; customized to each type.  Each writer will have a rule saying it is
 ;; equivalent under some mask to the base variable, and each reader will have a
@@ -408,9 +427,31 @@
                       :add-hints (:in-theory (enable* logbitp-case-splits
                                                       bitops::logbitp-of-const-split
                                                       equal-of-bool->bit
-                                                      not-of-b-xor))))
+                                                      not-of-b-xor))
+                      :prune-examples nil
+                      :passes 2))
 
 
+(defthmd logand-mask-logxor-equal-0
+  (equal (equal (logand mask (logxor x y)) 0)
+         (equal (logand mask x) (logand mask y)))
+  :hints ((bitstruct-logbitp-reasoning)))
+
+(defthmd logand-const-of-logapp
+  (implies (syntaxp (and (quotep mask) (quotep width)))
+           (equal (logand mask (logapp width a b))
+                  (logapp width (logand (loghead width mask) a)
+                          (logand (logtail width mask) b))))
+  :hints ((bitstruct-logbitp-reasoning)
+          (and stable-under-simplificationp
+               '(:in-theory (enable bool->bit)))))
+
+(defthmd int-equiv-under-mask-of-submask
+  (implies (and (int-equiv-under-mask x y mask)
+                (equal (logand mask1 (lognot mask)) 0))
+           (int-equiv-under-mask x y mask1))
+  :hints(("Goal" :in-theory (enable int-equiv-under-mask))
+         (bitstruct-logbitp-reasoning)))
 
 ;; practice
 (local

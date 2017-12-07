@@ -6,7 +6,7 @@
 ; :check-expansion t.  Now, misc/eval.lisp provides utilities with a
 ; :check-expansion option, which is used in this file to create "!" versions of
 ; the macros that check expansions, leave output on, and generally leave
-; ld-skip-profosp alone, to obtain behavior originally (and still) tested in
+; ld-skip-proofsp alone, to obtain behavior originally (and still) tested in
 ; eval-check-tests.lisp.  One can similarly define one's own "!" versions,
 ; rather than including the present book.
 
@@ -48,4 +48,3 @@
  @('must-fail!').  @('Must-fail!') is a convenient wrapper for calling
  @('must-fail') using @(':with-output-off nil') and @(':check-expansion
  t').</p>")
-

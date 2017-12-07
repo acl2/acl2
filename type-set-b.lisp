@@ -875,6 +875,41 @@
    array-name-root . array-name-suffix)
   t)
 
+(defun enabled-structure-p (ens)
+
+; We use this function in the guards of other functions.
+
+  (declare (xargs :guard t))
+  (and (weak-enabled-structure-p ens)
+       (array1p (access enabled-structure ens
+                        :array-name)
+                (access enabled-structure ens
+                        :theory-array))
+       (symbolp (access enabled-structure ens
+                        :array-name))
+       (signed-byte-p 30 (access enabled-structure ens
+                                 :array-length))
+       (signed-byte-p 30 (access enabled-structure ens
+                                 :index-of-last-enabling))
+
+; The following must be true in order for the array access in enabled-numep to
+; be in bounds.
+
+       (< (access enabled-structure ens
+                  :index-of-last-enabling)
+          (access enabled-structure ens
+                  :array-length))
+       (character-listp (access enabled-structure ens
+                                :array-name-root))
+       (natp (access enabled-structure ens
+                     :array-name-suffix))
+       (equal (access enabled-structure ens
+                      :array-length)
+              (car (dimensions (access enabled-structure ens
+                                       :array-name)
+                               (access enabled-structure ens
+                                       :theory-array))))))
+
 ; The following invariant is maintained in all instances of this structure.
 ; Theory-array is an array1p whose array length is array-length.  Furthermore
 ; array-name is a symbol of the form rootj, root is the array-name-root (as a
@@ -956,6 +991,11 @@
 ; in the enabled structure ens.  We treat nil as though it were
 ; enabled.
 
+  (declare (type (or null
+                     (and (signed-byte 30)
+                          (integer 0 *)))
+                 nume)
+           (xargs :guard (enabled-structure-p ens)))
   (cond ((null nume) t)
         ((> (the-fixnum nume)
             (the-fixnum
@@ -985,12 +1025,36 @@
                   (access enabled-structure ens :theory-array)
                   (the-fixnum nume)))))
 
+(defun bounded-nat-alistp (x n)
+
+; Check that x is a true-list of pairs (i . y) with i < n.
+
+  (declare (xargs :guard (natp n)))
+  (cond ((atom x) (null x))
+        (t (and (consp (car x))
+                (natp (caar x))
+                (< (caar x) n)
+                (bounded-nat-alistp (cdr x) n)))))
+
 (defun enabled-runep (rune ens wrld)
 
 ; This takes a rune and determines if it is enabled in the enabled structure
 ; ens.  Since fnume returns nil on fake-runes, this function answers that a
 ; fake rune is enabled.  See also active-runep.
 
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (consp rune)
+                       (consp (cdr rune))
+                       (symbolp (base-symbol rune))
+                       (enabled-structure-p ens)
+                       (bounded-nat-alistp
+                        (getpropc (base-symbol rune)
+                                  'runic-mapping-pairs nil
+                                  wrld)
+                        (access enabled-structure ens
+                                :array-length)))
+                  :guard-hints (("Goal" :do-not-induct t))))
   (enabled-numep (fnume rune wrld) ens))
 
 (defmacro active-runep (rune)

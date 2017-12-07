@@ -1,6 +1,6 @@
 ; ABNF Library -- Examples
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,13 @@
 (include-book "concrete-syntax")
 (include-book "parser")
 (include-book "abstractor")
+
+; (depends-on "uri-grammar.txt")
+; (depends-on "http-grammar.txt")
+; (depends-on "imf-grammar.txt")
+; (depends-on "smtp-grammar.txt")
+; (depends-on "imap-grammar.txt")
+; (depends-on "json-grammar.txt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

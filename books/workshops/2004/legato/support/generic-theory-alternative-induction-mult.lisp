@@ -38,12 +38,12 @@
   (if (equal (dec x) 0)
       (equal
        (+ (* (+ (* 128 c) (floor a 2)) 256)
-	  (+ (* 128 (mod a 2))
-	     (floor low 2)))
+          (+ (* 128 (mod a 2))
+             (floor low 2)))
        (* f1save f2))
     (wp-zcoef
      (+ (* 128 (mod low 2))
-	(floor f1 2))
+        (floor f1 2))
      (dec x)
      (*
       (mod f1 2)
@@ -51,13 +51,13 @@
        (+ (+ (* 128 c) (floor a 2)) f2)
        256))
      (+ (* 128 (mod a 2))
-	(floor low 2))
+        (floor low 2))
      (if (equal (mod f1 2) 0)
-	 (+ (* 128 c) (floor a 2))
+         (+ (* 128 c) (floor a 2))
        (mod
-	(+ (+ (* 128 c) (floor a 2))
-	   f2)
-	256))
+        (+ (+ (* 128 c) (floor a 2))
+           f2)
+        256))
      f1save
      f2)))
 
@@ -80,12 +80,12 @@
   (if (equal (dec x) 0)
       (equal
        (+ (* (+ (* (expt 2 (1- i)) c) (floor a 2)) (expt 2 i))
-	  (+ (* (expt 2 (1- i)) (mod a 2))
-	     (floor low 2)))
+          (+ (* (expt 2 (1- i)) (mod a 2))
+             (floor low 2)))
        result)
     (wp-zcoef-g
      (+ (* (expt 2 (1- i)) (mod low 2))
-	(floor f1 2))
+        (floor f1 2))
      (dec x)
      (*
       (mod f1 2)
@@ -93,13 +93,13 @@
        (+ (+ (* (expt 2 (1- i)) c) (floor a 2)) f2)
        (expt 2 i)))
      (+ (* (expt 2 (1- i)) (mod a 2))
-	(floor low 2))
+        (floor low 2))
      (if (equal (mod f1 2) 0)
-	 (+ (* (expt 2 (1- i)) c) (floor a 2))
+         (+ (* (expt 2 (1- i)) c) (floor a 2))
        (mod
-	(+ (+ (* (expt 2 (1- i)) c) (floor a 2))
-	   f2)
-	(expt 2 i)))
+        (+ (+ (* (expt 2 (1- i)) c) (floor a 2))
+           f2)
+        (expt 2 i)))
      result
      f2
      i)))
@@ -108,7 +108,7 @@
 
 (defthm wp-zcoef-g-instance
   (equal (wp-zcoef f1 x c low a f1save f2)
-	 (wp-zcoef-g f1 x c low a (* f1save f2) f2 8)))
+         (wp-zcoef-g f1 x c low a (* f1save f2) f2 8)))
 
 ;;; Since c effectively behaves as an extension of a, combining them into
 ;;;
@@ -121,15 +121,15 @@
   (declare (xargs :measure (dec x)))
   (if (equal (dec x) 0)
       (equal (+ (floor low 2) (* ac (expt 2 (1- i))))
-	     result)
+             result)
     (wp-zcoef-ac
      (+ (floor f1 2) (* (expt 2 (1- i)) (mod low 2)))
      (dec x)
      (if (equal (mod f1 2) 0)
-	 (floor ac 2)
+         (floor ac 2)
        (+ f2 (floor ac 2)))
      (+ (floor low 2)
-	   (* (expt 2 (1- i)) (mod ac 2)))
+        (* (expt 2 (1- i)) (mod ac 2)))
      result
      f2
      i)))
@@ -153,23 +153,23 @@
 
 (defthm wp-zcoef-g-as-ac
   (implies (and (not (zp x))
-		(integerp i)
-		(natp f1)
-		(natp c)
-		(natp low)
-		(natp a)
-		(natp result)
-		(natp f2)
-		(not (< i x)))
-	   (equal (wp-zcoef-g f1 x c low a result f2 i)
-		  (wp-zcoef-ac f1 x (+ a (* c (expt 2 i))) low result f2 i)))
+                (integerp i)
+                (natp f1)
+                (natp c)
+                (natp low)
+                (natp a)
+                (natp result)
+                (natp f2)
+                (not (< i x)))
+           (equal (wp-zcoef-g f1 x c low a result f2 i)
+                  (wp-zcoef-ac f1 x (+ a (* c (expt 2 i))) low result f2 i)))
   :hints
   (("Goal"
     :nonlinearp t
     :in-theory (disable (:rewrite reduce-integerp-+)
-			(:rewrite floor-zero . 3)
-			(:rewrite floor-zero . 4)
-			(:rewrite mod-x-y-=-x . 4))
+                        (:rewrite floor-zero . 3)
+                        (:rewrite floor-zero . 4)
+                        (:rewrite mod-x-y-=-x . 4))
     :use
     (:instance
      (:functional-instance
@@ -177,117 +177,117 @@
       (b1 (lambda (s) (equal (dec (x s)) 0)))
       (b2 (lambda (s) (equal (dec (x s)) 0)))
       (q1 (lambda (s) (equal (+ (* (+ (* (expt 2 (1- (i s))) (c s))
-				      (floor (a s) 2))
-				   (expt 2 (i s)))
-				(+ (* (expt 2 (1- (i s))) (mod (a s) 2))
-				   (floor (low s) 2)))
-			     (result s))))
+                                      (floor (a s) 2))
+                                   (expt 2 (i s)))
+                                (+ (* (expt 2 (1- (i s))) (mod (a s) 2))
+                                   (floor (low s) 2)))
+                             (result s))))
       (q2 (lambda (s) (equal (+ (floor (low s) 2)
-				(* (ac s) (expt 2 (1- (i s)))))
-			     (result s))))
+                                (* (ac s) (expt 2 (1- (i s)))))
+                             (result s))))
       (p (lambda (s) (and (not (zp (x s)))
-			  (integerp (i s))
-			  (natp (f1 s))
-			  (natp (c s))
-			  (natp (low s))
-			  (natp (a s))
-			  (natp (result s))
-			  (natp (f2 s))
-			  (natp (ac s))
-			  (not (< (i s) (x s))))))
+                          (integerp (i s))
+                          (natp (f1 s))
+                          (natp (c s))
+                          (natp (low s))
+                          (natp (a s))
+                          (natp (result s))
+                          (natp (f2 s))
+                          (natp (ac s))
+                          (not (< (i s) (x s))))))
       (fn1 (lambda (s)
-	     (wp-zcoef-g (f1 s) (x s) (c s) (low s) (a s) (result s) (f2 s) (i s))))
+             (wp-zcoef-g (f1 s) (x s) (c s) (low s) (a s) (result s) (f2 s) (i s))))
       (fn2 (lambda (s)
-	     (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
+             (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
       (sigma1 (lambda (s)
-		(list
-		 (+ (* (expt 2 (1- (i s))) (mod (low s) 2))
-		    (floor (f1 s) 2))
-		 (dec (x s))
-		 (if (equal (mod (f1 s) 2) 0)
-		     0
-		   (floor
-		    (+ (+ (* (expt 2 (1- (i s))) (c s))
-			  (floor (a s) 2))
-		       (f2 s))
-		    (expt 2 (i s))))
-		 (+ (* (expt 2 (1- (i s))) (mod (a s) 2))
-		    (floor (low s) 2))
-		 (if (equal (mod (f1 s) 2) 0)
-		     (+ (* (expt 2 (1- (i s))) (c s))
-			(floor (a s) 2))
-		   (mod
-		    (+ (+ (* (expt 2 (1- (i s))) (c s))
-			  (floor (a s) 2))
-		       (f2 s))
-		    (expt 2 (i s))))
-		 (result s)
-		 (f2 s)
-		 (i s)
-		 (ac s))))
+                (list
+                 (+ (* (expt 2 (1- (i s))) (mod (low s) 2))
+                    (floor (f1 s) 2))
+                 (dec (x s))
+                 (if (equal (mod (f1 s) 2) 0)
+                     0
+                   (floor
+                    (+ (+ (* (expt 2 (1- (i s))) (c s))
+                          (floor (a s) 2))
+                       (f2 s))
+                    (expt 2 (i s))))
+                 (+ (* (expt 2 (1- (i s))) (mod (a s) 2))
+                    (floor (low s) 2))
+                 (if (equal (mod (f1 s) 2) 0)
+                     (+ (* (expt 2 (1- (i s))) (c s))
+                        (floor (a s) 2))
+                   (mod
+                    (+ (+ (* (expt 2 (1- (i s))) (c s))
+                          (floor (a s) 2))
+                       (f2 s))
+                    (expt 2 (i s))))
+                 (result s)
+                 (f2 s)
+                 (i s)
+                 (ac s))))
       (sigma2 (lambda (s)
-		(list
-		 (+ (* (expt 2 (1- (i s))) (mod (low s) 2))
-		    (floor (f1 s) 2))
-		 (dec (x s))
-		 (if (equal (mod (f1 s) 2) 0)
-		     0
-		   (floor
-		    (+ (+ (* (expt 2 (1- (i s))) (c s))
-			  (floor (a s) 2))
-		       (f2 s))
-		    (expt 2 (i s))))
-		 (+ (* (expt 2 (1- (i s))) (mod (ac s) 2))
-		    (floor (low s) 2))
-		 (if (equal (mod (f1 s) 2) 0)
-		     (+ (* (expt 2 (1- (i s))) (c s))
-			(floor (a s) 2))
-		   (mod
-		    (+ (+ (* (expt 2 (1- (i s))) (c s))
-			  (floor (a s) 2))
-		       (f2 s))
-		    (expt 2 (i s))))
-		 (result s)
-		 (f2 s)
-		 (i s)
-		 (if (equal (mod (f1 s) 2) 0)
-		     (floor (ac s) 2)
-		   (+ (f2 s) (floor (ac s) 2))))))
+                (list
+                 (+ (* (expt 2 (1- (i s))) (mod (low s) 2))
+                    (floor (f1 s) 2))
+                 (dec (x s))
+                 (if (equal (mod (f1 s) 2) 0)
+                     0
+                   (floor
+                    (+ (+ (* (expt 2 (1- (i s))) (c s))
+                          (floor (a s) 2))
+                       (f2 s))
+                    (expt 2 (i s))))
+                 (+ (* (expt 2 (1- (i s))) (mod (ac s) 2))
+                    (floor (low s) 2))
+                 (if (equal (mod (f1 s) 2) 0)
+                     (+ (* (expt 2 (1- (i s))) (c s))
+                        (floor (a s) 2))
+                   (mod
+                    (+ (+ (* (expt 2 (1- (i s))) (c s))
+                          (floor (a s) 2))
+                       (f2 s))
+                    (expt 2 (i s))))
+                 (result s)
+                 (f2 s)
+                 (i s)
+                 (if (equal (mod (f1 s) 2) 0)
+                     (floor (ac s) 2)
+                   (+ (f2 s) (floor (ac s) 2))))))
       (measure1 (lambda (s) (if (zp (x s)) 256 (x s))))
       (id-alt
        (lambda (s)
-	 (list 
-	  (f1 s)
-	  (x s)
-	  (c s)
-	  (low s)
-	  (a s)
-	  (result s)
-	  (f2 s)
-	  (i s)
-	  (+ (a s) (* (c s) (expt 2 (i s))))))))
+         (list
+          (f1 s)
+          (x s)
+          (c s)
+          (low s)
+          (a s)
+          (result s)
+          (f2 s)
+          (i s)
+          (+ (a s) (* (c s) (expt 2 (i s))))))))
      (s (list f1 x c low a result f2 i 0))))))
 
 ;;; Needed for mod-+-1
 
 (defthm equal-odd-even
   (implies (and (equal (mod a 2) (mod b 2))
-		(integerp a)
-		(integerp b))
-	   (not (equal (+ 1 a) b))))
+                (integerp a)
+                (integerp b))
+           (not (equal (+ 1 a) b))))
 
 ;;; Needed for f2-induction
 
 (defthm mod-+-1
-  (implies (and	(equal (mod a 2) 0)
-		(natp i)
-		(integerp a))
-	   (equal (mod (+ 1 a) (expt 2 i))
-		  (if (equal i 0)
-		      0
-		    (+ 1 (mod a (expt 2 i))))))
+  (implies (and (equal (mod a 2) 0)
+                (natp i)
+                (integerp a))
+           (equal (mod (+ 1 a) (expt 2 i))
+                  (if (equal i 0)
+                      0
+                    (+ 1 (mod a (expt 2 i))))))
   :hints (("Goal"
-	   :in-theory (disable simplify-mod-+-mod-weak))))
+           :in-theory (disable simplify-mod-+-mod-weak))))
 
 ;;; We now look for a substitution id-alt, which leaves wp-zcoef-ac invariant.
 ;;; Since we will be proving that sigma1 and id-alt commute, we would indeed have
@@ -301,26 +301,26 @@
 
 (defthm f2-induction
   (implies (and (not (zp f2))
-		(not (zp x))
-		(natp f1)
-		(natp ac)
-		(natp low)
-		(natp result)
-		(integerp i)
-		(not (< i x)))
-	   (equal (wp-zcoef-ac f1 x ac low result f2 i)
-		  (wp-zcoef-ac f1
-			       x
-			       (+ ac (* 2 (mod f1 (expt 2 (1- x)))))
-			       low
-			       result
-			       (1- f2)
-			       i)))
+                (not (zp x))
+                (natp f1)
+                (natp ac)
+                (natp low)
+                (natp result)
+                (integerp i)
+                (not (< i x)))
+           (equal (wp-zcoef-ac f1 x ac low result f2 i)
+                  (wp-zcoef-ac f1
+                               x
+                               (+ ac (* 2 (mod f1 (expt 2 (1- x)))))
+                               low
+                               result
+                               (1- f2)
+                               i)))
   :hints
   (("Goal"
     :nonlinearp t
     :in-theory (disable (:rewrite prefer-positive-addends-equal))
-;			(:rewrite equal-odd-even))
+;       (:rewrite equal-odd-even))
     :use
     (:instance
      (:functional-instance
@@ -328,92 +328,92 @@
       (b1 (lambda (s) (equal (dec (x s)) 0)))
       (b2 (lambda (s) (equal (dec (x s)) 0)))
       (q1 (lambda (s) (equal (+ (floor (low s) 2)
-				(* (ac s) (expt 2 (1- (i s)))))
-			     (result s))))
+                                (* (ac s) (expt 2 (1- (i s)))))
+                             (result s))))
       (q2 (lambda (s) (equal (+ (floor (low s) 2)
-				(* (ac s) (expt 2 (1- (i s)))))
-			     (result s))))
+                                (* (ac s) (expt 2 (1- (i s)))))
+                             (result s))))
       (p (lambda (s) (and (not (zp (f2 s)))
-			  (not (zp (x s)))
-			  (integerp (i s))
-			  (natp (f1 s))
-			  (natp (c s))
-			  (natp (low s))
-			  (natp (a s))
-			  (natp (result s))
-			  (natp (ac s))
-			  (not (< (i s) (x s))))))
+                          (not (zp (x s)))
+                          (integerp (i s))
+                          (natp (f1 s))
+                          (natp (c s))
+                          (natp (low s))
+                          (natp (a s))
+                          (natp (result s))
+                          (natp (ac s))
+                          (not (< (i s) (x s))))))
       (fn1 (lambda (s)
-	     (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
+             (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
       (fn2 (lambda (s)
-	     (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
+             (wp-zcoef-ac (f1 s) (x s) (ac s) (low s) (result s) (f2 s) (i s))))
       (sigma1 (lambda (s)
-		(list
-		 (+ (* (expt 2 (1- (i s))) (mod (low s) 2))
-		    (floor (f1 s) 2))
-		 (dec (x s))
-		 (c s)
-		 (+ (* (expt 2 (1- (i s))) (mod (ac s) 2))
-		    (floor (low s) 2))
-		 (a s)
-		 (result s)
-		 (f2 s)
-		 (i s)
-		 (if (equal (mod (f1 s) 2) 0)
-		     (floor (ac s) 2)
-		   (+ (f2 s) (floor (ac s) 2))))))
+                (list
+                 (+ (* (expt 2 (1- (i s))) (mod (low s) 2))
+                    (floor (f1 s) 2))
+                 (dec (x s))
+                 (c s)
+                 (+ (* (expt 2 (1- (i s))) (mod (ac s) 2))
+                    (floor (low s) 2))
+                 (a s)
+                 (result s)
+                 (f2 s)
+                 (i s)
+                 (if (equal (mod (f1 s) 2) 0)
+                     (floor (ac s) 2)
+                   (+ (f2 s) (floor (ac s) 2))))))
       (sigma2 (lambda (s)
-		(list
-		 (+ (* (expt 2 (1- (i s))) (mod (low s) 2))
-		    (floor (f1 s) 2))
-		 (dec (x s))
-		 (c s)
-		 (+ (* (expt 2 (1- (i s))) (mod (ac s) 2))
-		    (floor (low s) 2))
-		 (a s)
-		 (result s)
-		 (f2 s)
-		 (i s)
-		 (if (equal (mod (f1 s) 2) 0)
-		     (floor (ac s) 2)
-		   (+ (f2 s) (floor (ac s) 2))))))
+                (list
+                 (+ (* (expt 2 (1- (i s))) (mod (low s) 2))
+                    (floor (f1 s) 2))
+                 (dec (x s))
+                 (c s)
+                 (+ (* (expt 2 (1- (i s))) (mod (ac s) 2))
+                    (floor (low s) 2))
+                 (a s)
+                 (result s)
+                 (f2 s)
+                 (i s)
+                 (if (equal (mod (f1 s) 2) 0)
+                     (floor (ac s) 2)
+                   (+ (f2 s) (floor (ac s) 2))))))
       (measure1 (lambda (s) (if (zp (x s)) 256 (x s))))
       (id-alt
        (lambda (s)
-	 (list 
-	  (f1 s)
-	  (x s)
-	  (c s)
-	  (low s)
-	  (a s)
-	  (result s)
-	  (1- (f2 s))
-	  (i s)
-	  (+ (ac s) (* 2 (mod (f1 s) (expt 2 (1- (x s))))))))))
+         (list
+          (f1 s)
+          (x s)
+          (c s)
+          (low s)
+          (a s)
+          (result s)
+          (1- (f2 s))
+          (i s)
+          (+ (ac s) (* 2 (mod (f1 s) (expt 2 (1- (x s))))))))))
      (s (list f1 x 0 low 0 result f2 i ac))))
    ("Subgoal 3"
     :nonlinearp t
-    :in-theory (disable	(:rewrite reduce-integerp-+)))
+    :in-theory (disable   (:rewrite reduce-integerp-+)))
    ("Subgoal 2"
     :nonlinearp t
-    :in-theory (disable	(:rewrite reduce-integerp-+)))))
+    :in-theory (disable   (:rewrite reduce-integerp-+)))))
 
 ;;; This is the base case for the alternative induction.  Its form is readily
 ;;; apparent, since the program simply right shifts ac and low x times when f2=0.
 
 (defthm f2-induction-base-case
   (implies (and (equal f2 0)
-		(not (zp x))
-		(natp f1)
-		(natp ac)
-		(natp low)
-		(natp result)
-		(integerp i)
-		(not (< i x)))
-	   (equal (wp-zcoef-ac f1 x ac low result f2 i)
-		  (equal (+ (floor low (expt 2 x))
-			    (* ac (expt 2 (- i x))))
-			 result)))
+                (not (zp x))
+                (natp f1)
+                (natp ac)
+                (natp low)
+                (natp result)
+                (integerp i)
+                (not (< i x)))
+           (equal (wp-zcoef-ac f1 x ac low result f2 i)
+                  (equal (+ (floor low (expt 2 x))
+                            (* ac (expt 2 (- i x))))
+                         result)))
   :hints
   (("Goal"
     :induct (wp-zcoef-ac f1 x ac low result f2 i)
@@ -429,33 +429,33 @@
     (wp-ind-id-alt f1 x (+ ac (* 2 (mod f1 (expt 2 (1- x))))) (1- f2))))
 
 (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
-                                             hist pspv)))
+                                              hist pspv)))
 
 ;;; Rewrite an arbitrary application of wp-zcoef-ac into the base case.
 
 (defthm wp-zcoef-ac-as-0
   (implies
    (and (not (zp x))
-	(natp f1)
-	(natp ac)
-	(natp low)
-	(natp result)
-	(natp f2)
-	(integerp i)
-	(not (< i x)))
+        (natp f1)
+        (natp ac)
+        (natp low)
+        (natp result)
+        (natp f2)
+        (integerp i)
+        (not (< i x)))
    (equal (wp-zcoef-ac f1 x ac low result f2 i)
-	  (if (zp f2)
-	      (equal (+ (floor low (expt 2 x))
-			(* ac (expt 2 (- i x))))
-		     result)
-	    (wp-zcoef-ac
-	     f1
-	     x
-	     (+ ac (* 2 f2 (mod f1 (expt 2 (1- x)))))
-	     low
-	     result
-	     0
-	     i))))
+          (if (zp f2)
+              (equal (+ (floor low (expt 2 x))
+                        (* ac (expt 2 (- i x))))
+                     result)
+            (wp-zcoef-ac
+             f1
+             x
+             (+ ac (* 2 f2 (mod f1 (expt 2 (1- x)))))
+             low
+             result
+             0
+             i))))
   :hints
   (("Goal"
     :nonlinearp t
@@ -465,12 +465,10 @@
 
 (defthm mult-program-is-correct
   (implies (and (< low 256)
-		(< f1 256)
-		(< f2 256)
-		(natp f1)
-		(natp c)
-		(natp low)
-		(natp f2))
-	   (wp-zcoef-1 f1 c low f2)))
-
-
+                (< f1 256)
+                (< f2 256)
+                (natp f1)
+                (natp c)
+                (natp low)
+                (natp f2))
+           (wp-zcoef-1 f1 c low f2)))

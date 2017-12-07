@@ -1,0 +1,14 @@
+(ld "cert.acl2")
+
+; (Matt K. mod): Turning off waterfall-parallelism because of an error
+; it caused for the theorem
+; sv-tutorial-glcp-geval-apply-agrees-with-sv-tutorial-glcp-geval-ev.
+; It could be turned off for just that theorem, but here we prevent
+; future possible failures of that computed hint, which returns a
+; value, when waterfall-parallelism is active.
+
+#+acl2-par
+(set-waterfall-parallelism nil)
+
+; Copied from cert.acl2:
+; cert-flags: ? t :ttags :all

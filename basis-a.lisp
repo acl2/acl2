@@ -4735,6 +4735,8 @@
   t)
 
 (defun push-io-record (io-marker form state)
+  (declare (xargs :stobjs state
+                  :guard (f-boundp-global 'saved-output-reversed state)))
   (f-put-global 'saved-output-reversed
                 (cons (make io-record
                             :io-marker io-marker
@@ -4743,6 +4745,15 @@
                 state))
 
 (defun saved-output-token-p (token state)
+  (declare (xargs :stobjs state
+                  :guard
+                  (and (symbolp token)
+                       (f-boundp-global 'saved-output-p state)
+                       (f-boundp-global 'saved-output-token-lst state)
+                       (or (eq (f-get-global 'saved-output-token-lst state)
+                               :all)
+                           (true-listp (f-get-global 'saved-output-token-lst
+                                                     state))))))
   (and (f-get-global 'saved-output-p state)
        (or (eq (f-get-global 'saved-output-token-lst state) :all)
            (member-eq token (f-get-global 'saved-output-token-lst state)))))
@@ -4991,8 +5002,9 @@
 ; be printed.  See also warning-disabled-p, which we can use to avoid needless
 ; computation on behalf of disabled warnings.
 
-  (declare (xargs :guard (and (stringp summary)
-                              (standard-string-p summary)
+  (declare (xargs :guard (and (or (null summary)
+                                  (and (stringp summary)
+                                       (standard-string-p summary)))
                               (plist-worldp wrld)
                               (standard-string-alistp
                                (table-alist 'inhibit-warnings-table wrld)))))

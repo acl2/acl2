@@ -1,6 +1,6 @@
 ; ABNF Library -- Operations
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -786,45 +786,67 @@
            acl2::equal-len-const
            list-in))
 
-(defrule nat-in-termset-when-match-sensitive-char-in-termset
+(defruled nat-in-termset-when-match-sensitive-char-in-termset
   :parents (in-terminal-set)
   :short "Lemma to prove
           @(tsee nats-in-termset-when-match-sensitive-chars-in-termset)."
+  :long
+  "<p>
+   This is disabled by default because its conclusion is fairly general,
+   not specific to terminal sets.
+   </p>"
   (implies (and (nat-match-sensitive-char-p nat char)
                 (char-sensitive-in-termset-p char termset))
            (in nat termset))
   :enable (nat-match-sensitive-char-p
            char-sensitive-in-termset-p))
 
-(defrule nats-in-termset-when-match-sensitive-chars-in-termset
+(defruled nats-in-termset-when-match-sensitive-chars-in-termset
   :parents (in-terminal-set)
   :short "Lemma to prove
           @(tsee leaves-in-termset-when-match-char-val-in-termset)."
+  :long
+  "<p>
+   This is disabled by default because its conclusion is fairly general,
+   not specific to terminal sets.
+   </p>"
   (implies (and (nats-match-sensitive-chars-p nats chars)
                 (chars-sensitive-in-termset-p chars termset))
            (list-in nats termset))
   :enable (nats-match-sensitive-chars-p
-           chars-sensitive-in-termset-p))
+           chars-sensitive-in-termset-p
+           nat-in-termset-when-match-sensitive-char-in-termset))
 
-(defrule nat-in-termset-when-match-insensitive-char-in-termset
+(defruled nat-in-termset-when-match-insensitive-char-in-termset
   :parents (in-terminal-set)
   :short "Lemma to prove
           @(tsee nats-in-termset-when-match-insensitive-chars-in-termset)."
+  :long
+  "<p>
+   This is disabled by default because its conclusion is fairly general,
+   not specific to terminal sets.
+   </p>"
   (implies (and (nat-match-insensitive-char-p nat char)
                 (char-insensitive-in-termset-p char termset))
            (in nat termset))
   :enable (nat-match-insensitive-char-p
            char-insensitive-in-termset-p))
 
-(defrule nats-in-termset-when-match-insensitive-chars-in-termset
+(defruled nats-in-termset-when-match-insensitive-chars-in-termset
   :parents (in-terminal-set)
   :short "Lemma to prove
           @(tsee leaves-in-termset-when-match-char-val-in-termset)."
+  :long
+  "<p>
+   This is disabled by default because its conclusion is fairly general,
+   not specific to terminal sets.
+   </p>"
   (implies (and (nats-match-insensitive-chars-p nats chars)
                 (chars-insensitive-in-termset-p chars termset))
            (list-in nats termset))
   :enable (nats-match-insensitive-chars-p
-           chars-insensitive-in-termset-p))
+           chars-insensitive-in-termset-p
+           nat-in-termset-when-match-insensitive-char-in-termset))
 
 (defrule leaves-in-termset-when-match-char-val-in-termset
   :parents (in-terminal-set)
@@ -835,7 +857,9 @@
            (string-in-termset-p (tree->string tree) termset))
   :enable (tree-match-char-val-p
            char-val-in-termset-p
-           tree->string))
+           tree->string
+           nats-in-termset-when-match-sensitive-chars-in-termset
+           nats-in-termset-when-match-insensitive-chars-in-termset))
 
 (defsection leaves-in-termset-when-match-alt/conc/rep/elem-in-termset
   :parents (in-terminal-set)
@@ -908,10 +932,15 @@
                      leaves-in-termset-when-match-num-val-in-termset
                      leaves-in-termset-when-match-char-val-in-termset)))))
 
-(defrule language-in-termset-when-rules-in-termset
+(defruled language-in-termset-when-rules-in-termset
   :parents (in-terminal-set)
   :short "Rules whose terminal value notations all denote values in a set,
           generate languages consisting of terminals in the set."
+  :long
+  "<p>
+   This is disabled by default because its conclusion is fairly general,
+   not specific to terminal sets.
+   </p>"
   (implies (and (languagep nats rules)
                 (rulelist-in-termset-p rules termset))
            (list-in nats termset))

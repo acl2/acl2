@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Documentation
 ;
-; Copyright (C) 2016-2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -379,7 +379,8 @@
   "<h3>General Form</h3>
 
    @({
-     (defunvar fvar (* ... *) => *)
+     (defunvar fvar (* ... *) => *
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -407,6 +408,20 @@
      <p>
      A list of zero or more @('*') signs,
      which defines the arity of @('fvar').
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') (the default) to print only any error output.
      </p>
 
      </blockquote>

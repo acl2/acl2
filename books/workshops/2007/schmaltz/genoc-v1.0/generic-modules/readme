@@ -14,67 +14,66 @@
 1 Structure of the books for GeNoC
 -----------------------------------
 
-1.1 GeNoC-types 
+1.1 GeNoC-types
 --------------
-	
-	This book defines the data types used in GeNoC: transactions, 
+
+        This book defines the data types used in GeNoC: transactions,
 missives, travels, etc. It contains basic functions used to manipulate
-these datatypes. 
-	It does not import any book.
+these datatypes.
+        It does not import any book.
 
 1.2 GeNoC-misc
 --------------
 
-	This book imports GeNoC-types.
-	This book contains miscellaneous definitions. For instance, it 
+        This book imports GeNoC-types.
+        This book contains miscellaneous definitions. For instance, it
 defines predicates like CorrectRoutep, the filtering operator extrac-sublst,
 some lemmas about subsetp, etc.
 
 1.3 GeNoC-nodeset
 -----------------
 
-	This book contains functions about the definition and the validation 
-of the set of the existing nodes of a particular network. 
-	It does not import any book.
+        This book contains functions about the definition and the validation
+of the set of the existing nodes of a particular network.
+        It does not import any book.
 
 1.4 GeNoC-routing
 -----------------
 
-	This book imports GeNoC-nodeset and GeNoC-misc.
-	It contains functions about the definition and the validation 
-of the routing algorithm. 
+        This book imports GeNoC-nodeset and GeNoC-misc.
+        It contains functions about the definition and the validation
+of the routing algorithm.
 
 1.5 GeNoC-scheduling
 --------------------
 
-	This book imports GeNoC-misc and GeNoC-nodeset.
-	It contains functions about the scheduling policy of GeNoC. It
-also adds some lemmas used in the final proof. These lemmas link 
+        This book imports GeNoC-misc and GeNoC-nodeset.
+        It contains functions about the scheduling policy of GeNoC. It
+also adds some lemmas used in the final proof. These lemmas link
 functions like extract-sublst, missivesp, etc. They are about NodeSet
 and this is why we need the corresponding book.
 
 1.7 GeNoC-interfaces
 --------------------
 
-	This book contains functions about the definition and the validation
-of the interfaces. 
-	It does not import any book.
+        This book contains functions about the definition and the validation
+of the interfaces.
+        It does not import any book.
 
 1.7 GeNoC
 ---------
-	This book imports the previous books. It contains the definition 
-of GeNoC and its proof of correctness. 
+        This book imports the previous books. It contains the definition
+of GeNoC and its proof of correctness.
 
 1.8 Global Structure
 --------------------
 
-	The global "book tree" is the following:
+        The global "book tree" is the following:
 
                                  GeNoC
-			/         | 	          \ 
+                        /         |               \
        GeNoC-scheduling    GeNoC-routing       GeNoC-interfaces
-         |          |      |          | 	
+         |          |      |          |
  GeNoC-nodeset     GeNoC-misc     GeNoC-nodeset
                        |
                    GeNoC-types
-

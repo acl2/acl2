@@ -18,41 +18,35 @@
 ; University of Texas at Austin
 ; Austin, TX 78712 U.S.A.
 
+; Many thanks to ForrestHunt, Inc. for supporting the preponderance of this
+; work, and for permission to include it here.
+
 (in-package "ACL2")
 
-; Support for experiments with apply$: raw Lisp code.  See other-events.lisp
-; for logic code support (search for "Support for experiments with apply$").
+; Support for top-level execution of apply$: raw Lisp code.  See
+; other-events.lisp for logic code support (visit the defuns and comments
+; dealing with acl2-magic-concrete-badge-userfn and
+; acl2-magic-concrete-apply$-userfn).  This file concludes with the FULL
+; VERSION of the proof (mentioned in the paper ``Limited Second Order
+; Functionality in a First Order Setting'') of termination for the clique
+; defining the dopplegangers of apply$ and all def-warranted functions.  See
+; Essay on Admitting a Model for Apply$ and the Functions that Use It.
 
 ; In this file we include essays and code in support of an experiment in how we
 ; might allow the evaluation of forms ancestrally dependent on apply$ (as
-; defined in the community book /projects/apply/apply.lisp) at the top-level of
-; the ACL2 loop.  This support is not enabled in ACL2, but can be activated (at
-; the cost of invalidating our soundness assurances) as described below.
-; This file is to be loaded in raw Lisp; for related code that can be loaded in
-; the ACL2 loop, see the end of other-events.lisp.
+; defined in the community book books/projects/apply/apply.lisp) at the
+; top-level of the ACL2 loop.  This support is not enabled in ACL2, but can be
+; activated (at the cost of invalidating our soundness assurances) as described
+; below.  This file is to be loaded in raw Lisp; for related code that can be
+; loaded in the ACL2 loop, see the end of other-events.lisp.
 
-; This section implements raw Lisp code for apply$-lambda as well as the
-; ``dopplegangers'' for apply$-userfn and badge-userfn.  For relevant
-; background not provided here, we refer you to the files in community books
-; directory books/projects/apply/ and especially:
-
-; * files that introduce apply$:
-;   - apply-prim.lisp
-;   - constraints.lisp
-;   - apply.lisp
-
-; * a wide variety of functions using apply$:
-;   - user-book.lisp
-
-; * files that illustrate how to define the ``doppelgangers'' of badge-userfn
-;   and apply$-userfn, suitable for attaching to those two constrained
-;   functions, enabling evaluation in the evaluation theory and making all of
-;   the warrants issued in the above user-book.lisp valid in the evaluation
-;   theory:
-
-;   - doppelgangers.lisp
-;   - defattach-demo.lisp
-;   - all-warrants-valid.lisp
+; This section implements raw Lisp code for apply$-lambda as well as the raw
+; Lisp ``dopplegangers'' for apply$-userfn and badge-userfn.  For relevant
+; background not provided here, we refer you to the paper ``Limited Second
+; Order Functionality in a First Order Setting'', the ACL2 source files
+; apply-prim.lisp, apply-constraints.lisp, and apply.lisp, and the foundational
+; work illustrated in books/projects/apply-model/.  We assume you're familiar
+; with the terminology introduced by the above material!
 
 ; A Little Background
 
@@ -125,7 +119,8 @@
 ; apply.lisp is just an abbreviation for a defun followed by a def-warrant.
 
 ; Since APPLY$ involves the two critical constrained functions, it simply can't
-; be executed on most terms containing functions that are not built into it.
+; be executed without ``magical'' system-level support on most terms containing
+; functions that are not built into it.
 
 ; But we would like to be able to execute it in contexts allowing attachments.
 ; We would like be able to type (APPLY$ 'SQ '(3)) at the top-level of the ACL2
@@ -145,13 +140,14 @@
 ;                    (equal (collect '(1 2 3) 'SQ) '(1 4 9))))
 ;      :hints (("Goal" :in-theory (disable (collect)))))
 
-; But true evaluation is impossible in any current version of ACL2 because
-; BADGE-USERFN and APPLY$-USERFN are undefined.
+; But true evaluation of (apply$ 'SQ '(3)) and (collect '(1 2 3) 'SQ) is only
+; possible if we IMPLICITLY assume we have the warrant for SQ.  And ACL2 does
+; not support the general idea of ``evaluation under random hypotheses!''
 
-; Of course, this theorem may be meaningless because there may be no way to
-; make (apply$-warrant-SQ) true.  However, in the files doppelgangers.lisp,
-; defattach-demo.lisp and all-warrants-valid.lisp we show that for all the
-; warranted functions defined in user-book.lisp we can define two functions,
+; Of course, this theorem -- and all theorems burdened by these warrants -- may
+; be meaningless because there may be no way to make the warrants true.
+; However, in the paper cited above we show that for all the warranted
+; functions (approved by def-warrant) we can define two functions,
 ; badge-userfn! and apply$-userfn! (note the exclamation point distinguishing
 ; the symbols from the previously mentioned constrained functions), in such a
 ; way that (a) we can do:
@@ -160,39 +156,30 @@
 ; (defattach apply$-userfn apply$-userfn!)
 
 ; so that the expected evaluations are possible in the evaluation theory, and
-; (b) all the warrants issued in user-book.lisp are provably valid in the
-; evaluation theory.
+; (b) all the warrants issued by def-warrant are provably valid in the
+; evaluation theory.  These claims are illustrated by the constructions
+; shown for two ``typical'' user books in the ex1/ and ex2/ subdirectories
+; of the foundational work at books/projects/apply-model/ cited above.
 
-; Of course, these attachments only work for that fixed set of functions
-; defined in user-book.lisp.  If the user defines a new tame or mapping
-; function, we would have to compute a new pair of attachment functions.
+; This suggests the way forward: define raw code for ``badge-userfn!'' and
+; ``apply$-userfn!''  that acts just like the illustrated badge-userfn! and
+; apply$-userfn! for whatever finite set of functions def-warrant has approved
+; in the current session.
 
-; So the strategy we take in the experimental code below (to support evaluation
-; of apply$ in the evaluation theory) is to define raw Lisp versions of the
-; attachment functions that secretly inspect the logical world to see whether
-; the symbol being considered has a warrant and if so then behave as the
-; doppelganger of badge-userfn or apply$-userfn would behave.  These raw Lisp
-; versions of the doppelgangers are named concrete-badge-userfn and
-; concrete-apply$-userfn.
+; So the strategy we take in the code below (to support evaluation of apply$ in
+; the evaluation theory) is to define raw Lisp versions of the attachment
+; functions that secretly inspect the logical world to see whether the symbol
+; being considered has a warrant and if so then behave as the doppelganger of
+; badge-userfn or apply$-userfn would behave.  These raw Lisp versions of the
+; doppelgangers are named concrete-badge-userfn and concrete-apply$-userfn.
 
-; But we have not yet established that the resulting evaluation theory
-; satisfies the consistency requirements of the Essay on Defattach.  Therefore,
-; we do not make this experimental support available in ACL2.
-
-; This support is only activated if the user executes certain commands, among
-; which is one that voids the soundness guarantees we offer.  This activation
-; is accomplished by carrying out The Rubric discussed below.
-
-; Executing The Rubric immediately after starting up the ACL2 image built from
-; these sources converts ACL2 into what we will temporarily call ``ACL2(a)''
-; which allegedly supports the execution of apply$ as defined in apply.lisp.
-; Eventually, either we'll abandon ACL2(a) or make trusted versions of these
-; features a permanent part of ACL2.  But it may us take several release cycles
-; to decide!
-
-; To tell whether we're in ACL2 or ACL2(a) we test the raw Lisp special
-; variable *allow-concrete-execution-of-apply-stubs*.  That variable is t iff
-; we're in ACL2(a) and we assume the only assignment to it is via The Rubric.
+; Historical Note: Prior to Version_8.0, apply$ was introduced in a user book
+; and had no built-in support.  Therefore, it was impossible to execute it in
+; general.  However, to facilitate experimentation, we ``secretly'' supported
+; it and allowed the user to activate that support -- and render moot any
+; soundness guarantees of ACL2! -- by executing ``The Rubric''.  That code
+; changed ``ACL2'' into the possibly unsound ``ACL2(a)''.  Here is the (now
+; obsolete) comment introducing The Rubric:
 
 ; The Rubric
 
@@ -200,10 +187,12 @@
 ; immediately after starting your ACL2 session.
 
 ;   (include-book "projects/apply/apply" :dir :system)
-;   (defattach (badge-userfn concrete-badge-userfn)
+;   (defattach
+;     (badge-userfn concrete-badge-userfn)
+;     (apply$-userfn concrete-apply$-userfn)
 ;     :hints
-;     (("Goal" :use concrete-badge-userfn-type)))
-;   (defattach apply$-userfn concrete-apply$-userfn)
+;     (("Goal" :use (concrete-badge-userfn-type
+;                    concrete-apply$-userfn-takes-arity-args))))
 ;   (value :q)
 ;   (defun apply$-lambda (fn args) (concrete-apply$-lambda fn args))
 ;   (setq *allow-concrete-execution-of-apply-stubs* t)
@@ -213,15 +202,19 @@
 ; Because The Rubric requires you execute a form in raw Lisp, The Rubric
 ; eliminates the soundness guarantees provided by the ACL2 implementors!
 
-; Some of the code below affects the behavior of ACL2.  Other parts of the code
-; is only active in ACL2(a).  We identify the latter with comments that start
-; with ``; ACL2(a) only''.
+; End of Historical Note
 
 ; -----------------------------------------------------------------
 
-(defvar *allow-concrete-execution-of-apply-stubs* nil)
+; In the days when The Rubric was necessary, the raw lisp variable
+; *allow-concrete-execution-of-apply-stubs* told us whether it had been
+; executed.  We now just set that variable to t.  We could have eliminated it
+; entirely, but left references to that variable in our code to mark places
+; where we're providing explicit support for execution of apply$.
 
-; ACL2(a) only -- the definition below is only relevant in ACL2(a)
+(defvar *allow-concrete-execution-of-apply-stubs*
+  t)
+
 (defun query-badge-userfn-structure (msgp fn wrld)
 
 ; This function is only called in contexts in which
@@ -274,8 +267,7 @@
              fn
              (cdr
               (assoc-eq :badge-userfn-structure
-                        (table-alist 'badge-table
-                                     wrld)))))))
+                        (table-alist 'badge-table wrld)))))))
       (cond
        ((null bdg) ; fn is a function symbol with no badge assigned
         (cond ((null msgp) (mv t nil))
@@ -283,11 +275,11 @@
                      nil))))
        (t (mv nil bdg)))))))
 
-; The Rubric will:
-; (defattach (badge-userfn concrete-badge-userfn) ...)
-; (defattach (apply$-userfn concrete-apply$-userfn) ...)
-
-; We define the two concrete- functions below.
+; The extensible dopplegangers of badge-userfn and apply$-userfn are
+; concrete-badge-userfn and concrete-apply$-userfn.  They will be attached to
+; badge-userfn and apply$-userfn to extend the evaluation theory appropriately.
+; See the defattach event at the end of apply.lisp.  We define the two
+; concrete- functions below.
 
 ; Because we want to implement their bodies in raw Lisp, we would like to
 ; introduce them with defun-overrides commands like
@@ -337,8 +329,6 @@
             'concrete-badge-userfn
             (print-list-without-stobj-arrays
              (list fn)))))
-
-; ACL2(a) only - the rest of this cond is only relevant in ACL2(a)
 
 ; If the constraint on badge-userfn includes the requirement that (badge-userfn
 ; fn) = nil when fn is a primitive or a boot function, as discussed in the Note
@@ -455,23 +445,22 @@
 
 ; Here is an example.
 
-; In ACL2, even versions not supporting evaluation of apply$, we can include
-; the distributed apply.lisp book and introduce these two functions:
+; In ACL2, prior to the integration of apply$, we could include the distributed
+; apply.lisp book and introduce these two functions:
 
 ; (defun$ sq (x) (* x x))
 ; (defun$ foo (fn1 fn2 x)
 ;   (cons (apply$ fn1 (list x))
 ;         (apply$ fn2 (list x))))
 
-; Then trying to evaluate (foo 'sq 'cube 3) causes the error:
+; Then trying to evaluate (foo 'sq 'cube 3) would cause the error:
 
 ; ACL2 Error in TOP-LEVEL: ACL2 cannot ev the call of undefined function
 ; APPLY$-USERFN on argument list: (SQ (5))
 
 ; because we can't apply$ 'SQ.
 
-; But if we execute The Rubric in an ACL2 that supports the evaluation of
-; apply$ and try that same form, we get a different error:
+; But if we repeat that experiment today, we get a different error:
 
 ; ACL2 Error in TOP-LEVEL: The value of APPLY$-USERFN is not specified on CUBE
 ; because CUBE is not a known function symbol.
@@ -483,7 +472,6 @@
 
 ; End of Essay on A Misguided Desire...
 
-; ACL2(a) only -- the next defun is only relevant in ACL2(a)
 (defun concrete-check-apply$-hyp-tamep-hyp (ilks args wrld)
 
 ; Compare to tameness-conditions in apply.lisp.
@@ -522,7 +510,6 @@
             'concrete-apply$-userfn
             (print-list-without-stobj-arrays
              (list fn args)))))
-; ACL2(a) only -- rest of this cond is only relevant in ACL2(a)
    (t (mv-let (failure-msg bdg)
         (query-badge-userfn-structure t fn (w *the-live-state*))
         (cond
@@ -532,8 +519,8 @@
                   (if failure-msg
                       failure-msg
 ; Error {[8.5]}
-                      (msg "~x0 returns multiple values, it has a badge but ~
-                            no warrant"
+                      (msg "~x0 returns multiple values, so it has a badge ~
+                            but no warrant"
                            fn)))
                  (msg (cond
                        ((eq *aokp* 'apply$-userfn)
@@ -628,29 +615,36 @@
 ; End of progn from ``defun-overrides''
 )
 
-; ACL2(a) only -- everything else in this file is only relevant in ACL2(a)
-
 ; What we've described so far is adequate to run APPLY$ and EV$ forms in the
 ; evaluation theory after attaching the doppelgangers of badge-userfn and
 ; apply$-userfn for the current world to those critical functions.
 
-; Now we turn to the optimization of APPLY$-LAMBDA.  In apply.lisp,
-; we have the theorem:
+; Now we turn to the optimization of APPLY$-LAMBDA.  The following is provable:
+
 ; (equal (apply$-lambda fn args)
 ;        (ev$ (lambda-body fn)
 ;             (pairlis$ (lambda-formals fn)
 ;                       args)))
 
+; Indeed, it is apply$-lambda-opener in books/projects/apply/apply-lemmas.lisp.
+
 ; But we wish to apply certain lambdas more efficiently in the evaluation
 ; theory.
 
-; A rough sketch of what we do is: The Rubric redefines APPLY$-LAMBDA in raw
-; Lisp to check that the LAMBDA has a variety of important properties,
-; including that the lambda is a well-formed, fully translated, closed, ACL2
-; lambda expression whose body is guard verified as though the input guard on
-; the lambda were :guard T.  If it has these properties we compile it and apply
-; that compiled function object with CLTL's apply instead of interpreting its
-; body with *1* EV$.
+; You can skip all this and just read how apply$-lambda works by looking at the
+; definition of apply$-lambda in apply.lisp.  There you will notice a read-time
+; directive for not acl2-loop-only code that sometimes short-cuts the logic
+; code above by invoking raw lisp code produced by
+; compile-tame-compliant-unrestricted-lambda.  That function is explained and
+; then defined below.
+
+; A rough sketch of what we do is provide raw lisp code in APPLY$-LAMBDA to
+; check that the LAMBDA has a variety of important properties, including that
+; the lambda is a well-formed, fully translated, closed, ACL2 lambda expression
+; whose body is guard verified as though the input guard on the lambda were
+; :guard T.  If it has these properties we compile it and apply that compiled
+; function object with CLTL's apply instead of interpreting its body with *1*
+; EV$.
 
 ; TODO: Something to think about: Do attachments affect this?  I'm not sure
 ; they do.  Attachments already, supposedly, are correct in the case of our
@@ -666,10 +660,10 @@
 ; variable symbols, body is an ACL2 term in logic mode, that there are no free
 ; variables in the body other than the formals, and that the body is tame.
 
-; From apply.lisp we have the theorem above saying that (apply$-lambda fn args)
-; is unconditionally equal to the ev$ of the body under an alist created from
-; the formals and args.  So if the lambda object in question does not satisfy the
-; rules above, we can still ev$ it as per the theorem.
+; From apply-lemmas.lisp we have the theorem above saying that (apply$-lambda
+; fn args) is unconditionally equal to the ev$ of the body under an alist
+; created from the formals and args.  So if the lambda object in question does
+; not satisfy the rules above, we can still ev$ it as per the theorem.
 
 ; Even if all those conditions are met, the compiled code can't be executed
 ; unless the LAMBDA is Common Lisp compliant -- a notion that is not currently
@@ -681,9 +675,9 @@
 
 ; To finesse these guard issues we insist that the LAMBDA be Common Lisp
 ; compliant when the input guard is T, making the determination of compliance
-; completely independent of the particular actuals to which the LAMBDA will be
-; applied, i.e., LAMBDAs passing our tests can be compiled and applied in raw
-; Lisp to any ACL2 objects.
+; of an application completely independent of the particular actuals to which
+; the LAMBDA is applied, i.e., LAMBDAs passing our tests can be compiled and
+; applied in raw Lisp to any ACL2 objects.
 
 ; The last condition above is like saying that the LAMBDA is ``guard verified
 ; and has an input guard of T.''  We call these LAMBDAs ``unrestricted.''
@@ -711,14 +705,14 @@
 
 ; When the ``variety of important properties'' noted above are met, we will
 ; arrange for APPLY$-LAMBDA to compile the LAMBDA and use CLTL's apply function
-; to apply the resulting CLTL function object.  Our code has only been tested
-; for CCL.
+; to apply the resulting CLTL function object.  Our code has only been
+; benchmarked in CCL, prior to December 2017.
 
 ; Our decision to optimize only the application of unrestricted LAMBDAs, while
 ; somewhat dissatisfying, probably allows the user to efficiently use most
-; mapping functions (by ensuring that the LAMBDA expression is unrestricted).
-; This generally means typing LAMBDA expressions with ``fixers'' around each
-; use of a formal in the body.
+; mapping functions (if the user ensures that the LAMBDA expression is
+; unrestricted).  This generally means typing LAMBDA expressions with
+; ``fixers'' around each use of a formal in the body.
 
 ; We will cache this check for well-formed, translated, tame, compliant,
 ; unrestricted LAMBDAs, with their compiled versions, so that if we encounter
@@ -728,7 +722,7 @@
 
 ; We implemented our own cache.  We considered four alternatives:
 
-; (a) Do Nothing: Let ACL2(a) behave normally by running the *1* code for
+; (a) Do Nothing: Let ACL2 behave normally by running the *1* code for
 ; APPLY$-LAMBDA, which just interprets the lambda-body with EV$.
 
 ; (b) Compile but Don't Cache: recognize and compile unrestricted lambdas every
@@ -777,7 +771,7 @@
 ; the fast execution of mapping functions, like sum, over large domains.  This
 ; is motivated by the original problem that inspired work on apply$: how to
 ; provide robust and convenient iterative primitives for interactive use to the
-; ACL2(a) user.
+; ACL2 user.
 
 ; Two severe disadvantages of the current Home-Grown Cache are that it
 ; maintains only 3 cache lines (i.e., is capable of remembering only three
@@ -1098,6 +1092,10 @@
        (setq *cl-cache-world* *cl-cache-saved-world*)))
 
 (defun compile-tame-compliant-unrestricted-lambda (fn)
+
+; This function is used directly in the raw Lisp code for apply$-lambda, as
+; defined in apply.lisp.
+
   (without-cache-interrupts
 
 ; Because we're in a without-cache-interrupts, we know the cache world is
@@ -1234,74 +1232,14 @@
          (setq *cl-cache-bad-lambdas* (add-to-set-eq fn nil))
          nil))))))
 
-; We define concrete-apply$-lambda with the intention that it will be used
-; (under the hood) as the raw Lisp definition of apply$-lambda.  Apply$-lambda
-; will be a guard-verified :logic mode function and so when supplied with
-; constant arguments satisfying its guard, it will be invoked directly.  If the
-; apply.lisp book were part of the sources we could provide a #-acl2-loop-only
-; clause in the logical definition to do the work below.  We cannot provide an
-; MBE solution: the raw Lisp involves a call to the compiler, which produces a
-; non-ACL2 compiled code object.  But as long as the apply book is ``user
-; written'' and not part of the sources, the only solution we can think of is
-; to load the apply book and then go under the hood and redefine apply$-lambda
-; to be concrete-apply$-lambda.
+; Historical Essay on the Performance of APPLY$
 
-; We originally tried to do this with the ``defun-overrides'' approach used
-; above for badge-userfn and apply$-userfn.  In that approach, we would
-; defattach concrete-apply$-lambda to apply$-lambda after loading the apply
-; book.  But that's impossible because apply$-lambda is a defun'd, not
-; constrained, function.
-
-(defun concrete-apply$-lambda (fn args)
-
-; This function must be equal to APPLY$-LAMBDA when the fn is a consp and args
-; is a true-list.  But it must also implement the feature that it allows
-; top-level evaluation.  So, if we are in an environment where attachments are
-; allowed and we're in ACL2(a), we get the compiled code for the LAMBDA (if
-; it's equivalent to the slower way) and just apply that code.  Otherwise, we
-; just do what apply$-lambda itself would do: call ev$ on the body.  Since this
-; function is only called when the raw Lisp version of apply$-lambda is called,
-; we know that the guard of apply$-lambda is satisfied, i.e., (consp fn) and
-; (true-listp args).  But we don't know anything else and so have to use the
-; same ec-calls we see in the comparable branch of apply$-lambda.
-
-  (declare (ftype (function (t t) (values t))
-                  ev$))
-  (if (and *aokp*
-           *allow-concrete-execution-of-apply-stubs*)
-      (let ((compiled-version ; see the Essay on the Compiled-LAMBDA Cache
-             (compile-tame-compliant-unrestricted-lambda fn)))
-        (cond
-         ((null compiled-version)
-          (EV$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
-               (ec-call
-                (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
-                          args))))
-         (t
-
-; We know that fn is a well-formed, tame, compliant, unrestricted (:guard t)
-; LAMBDA expression and compiled-version is its compiled code.  We can run it!
-
-          (let ((arity (length (cadr fn))))
-            (apply compiled-version
-                   (if (= arity
-                          (length args))
-                       args
-                       (take arity args)))))))
-      (EV$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
-           (ec-call
-            (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
-                      args)))))
-
-; The Rubric for Setting Up the Execution of APPLY$ includes the redefinition
-; of the raw Lisp version of apply$-lambda:
-
-; (defun apply$-lambda (fn args)
-;   (concrete-apply$-lambda fn args))
-
-; overriding the strictly logical defun of that function.
-
-; Essay on the Performance of APPLY$
+; This essay describes an experiment performed before apply$ was integrated
+; into the sources.  It can no longer be performed as described!  We might do a
+; similar experiment with the integrated handling of apply$ as we test other
+; approaches to caching compiled lambdas.  But for the moment, we'll leave this
+; comment in place merely as a historical note to justify the initial support
+; for speeding up apply$-lambda.
 
 ; In this experiment we will time runs of variations of
 
@@ -1311,7 +1249,11 @@
 ; and sometimes by a Common Lisp compliant (with guard T) function symbol.
 
 ; Fire up this version of ACL2 and run The Rubric EXCEPT the redefinition of
-; apply$-lambda!
+; apply$-lambda!  [Remember:  these instructions cannot be followed any more!
+; For example, we don't redefine apply$-lambda anymore, so you can't not
+; redefine it!  But you can sort of guess what we mean just knowing that
+; (concrete-apply$-lambda fn args) is raw Lisp for what you now see in the raw
+; Lisp code of the defun apply$-lambda.]
 
 ;   (include-book "projects/apply/apply" :dir :system)
 ;   (defattach (badge-userfn concrete-badge-userfn)
@@ -1707,8 +1649,10 @@
 ; apply$-lambda is handled so the user can optimize the sort of computations
 ; being done.
 
-; Essay on Admitting a Model for Apply$ and the Functions that Use It
+; End of  Historical Essay on the Performance of APPLY$
 ; =================================================================
+
+; Essay on Admitting a Model for Apply$ and the Functions that Use It
 
 ; Throughout the essay below we occasionally refer to books, e.g., apply.lisp.
 ; All such books are in community books directory books/projects/apply-model/.

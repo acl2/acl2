@@ -10371,6 +10371,11 @@
   (list 'pr!-fn cd 'state))
 
 (defun disabledp-fn-lst (runic-mapping-pairs ens)
+  (declare (xargs :guard ; see guard on enabled-runep
+                  (and (enabled-structure-p ens)
+                       (bounded-nat-alistp runic-mapping-pairs
+                                           (access enabled-structure ens
+                                                   :array-length)))))
   (cond ((endp runic-mapping-pairs) nil)
         ((enabled-numep (caar runic-mapping-pairs) ens)
          (disabledp-fn-lst (cdr runic-mapping-pairs) ens))
@@ -10378,7 +10383,39 @@
                  (disabledp-fn-lst (cdr runic-mapping-pairs) ens)))))
 
 (defun disabledp-fn (name ens wrld)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (and (enabled-structure-p ens)
+                              (plist-worldp wrld)
+                              (symbol-alistp (macro-aliases wrld))
+                              (r-symbol-alistp (macro-aliases wrld))
+                              (known-package-alistp
+                               (global-val 'known-package-alist wrld))
+                              (cond
+                               ((symbolp name)
+                                (let ((name2 (deref-macro-name
+                                              name
+                                              (macro-aliases wrld))))
+                                  (cond ((and (not (eq name2 :here))
+                                              name2
+                                              (logical-namep name2 wrld))
+                                         (bounded-nat-alistp
+                                          (getpropc name2 'runic-mapping-pairs
+                                                    nil wrld)
+                                          (access enabled-structure ens
+                                                  :array-length)))
+                                        (t t))))
+                               (t (and (consp name)
+                                       (consp (cdr name))
+                                       (symbolp (cadr name))
+                                       (let ((rune (translate-abbrev-rune
+                                                     name
+                                                     (macro-aliases wrld))))
+                                         (bounded-nat-alistp
+                                          (getpropc (base-symbol rune)
+                                                    'runic-mapping-pairs
+                                                    nil
+                                                    wrld)
+                                          (access enabled-structure ens
+                                                  :array-length)))))))))
   (cond ((symbolp name)
          (let ((name2 (deref-macro-name name (macro-aliases wrld))))
            (cond
@@ -10387,7 +10424,7 @@
                   (logical-namep name2 wrld))
              (disabledp-fn-lst (getpropc name2 'runic-mapping-pairs nil wrld)
                                ens))
-            (t (er hard 'disabledp
+            (t (er hard? 'disabledp
                    "Illegal call of disabledp on symbolp argument ~x0.  See ~
                     :DOC disabledp."
                    name)))))
@@ -10395,7 +10432,7 @@
              (cond
               ((runep rune wrld)
                (not (enabled-runep rune ens wrld)))
-              (t (er hard 'disabledp
+              (t (er hard? 'disabledp
                      "Illegal call of disabledp: ~x0 does not designate a ~
                       rune or a list of runes.  See :DOC disabledp."
                      name)))))))

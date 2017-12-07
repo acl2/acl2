@@ -39,21 +39,21 @@ char yyfilenm[1024];
 "struct"                    {return STRUCT;}
 "enum"                      {return ENUM;}
 "const"                     {return CONST;}
-"int"	                    {return INT;}
-"uint"	                    {return UINT;}
-"int64"	                    {return INT64;}
-"uint64"	            {return UINT64;}
-"bool"	                    {return BOOL;}
-"wait"	                    {return WAIT;}
-"for"	                    {return FOR;}
-"if"	                    {return IF;}
-"else"	                    {return ELSE;}
-"while"	                    {return WHILE;}
-"do"	                    {return DO;}
-"switch"	            {return SWITCH;}
-"case"	                    {return CASE;}
+"int"                       {return INT;}
+"uint"                      {return UINT;}
+"int64"                     {return INT64;}
+"uint64"                    {return UINT64;}
+"bool"                      {return BOOL;}
+"wait"                      {return WAIT;}
+"for"                       {return FOR;}
+"if"                        {return IF;}
+"else"                      {return ELSE;}
+"while"                     {return WHILE;}
+"do"                        {return DO;}
+"switch"                    {return SWITCH;}
+"case"                      {return CASE;}
 "default"                   {return DEFAULT;}
-"break"	                    {return BREAK;}
+"break"                     {return BREAK;}
 "continue"                  {return CONTINUE;}
 "return"                    {return RETURN;}
 "assert"                    {return ASSERT;}
@@ -84,28 +84,28 @@ char yyfilenm[1024];
 [0-9]+ |
 "0x"[a-fA-F_0-9]+           {yylval.s = tokstr(); return NAT;}
 
-">>="			    {yylval.s = tokstr(); return RSHFT_ASSIGN;}
-"<<="			    {yylval.s = tokstr(); return LSHFT_ASSIGN;}
-"+="			    {yylval.s = tokstr(); return ADD_ASSIGN;}
-"-="			    {yylval.s = tokstr(); return SUB_ASSIGN;}
-"*="			    {yylval.s = tokstr(); return MUL_ASSIGN;}
-"%="			    {yylval.s = tokstr(); return MOD_ASSIGN;}
-"&="			    {yylval.s = tokstr(); return AND_ASSIGN;}
-"^="			    {yylval.s = tokstr(); return XOR_ASSIGN;}
-"|="			    {yylval.s = tokstr(); return OR_ASSIGN;}
+">>="                       {yylval.s = tokstr(); return RSHFT_ASSIGN;}
+"<<="                       {yylval.s = tokstr(); return LSHFT_ASSIGN;}
+"+="                        {yylval.s = tokstr(); return ADD_ASSIGN;}
+"-="                        {yylval.s = tokstr(); return SUB_ASSIGN;}
+"*="                        {yylval.s = tokstr(); return MUL_ASSIGN;}
+"%="                        {yylval.s = tokstr(); return MOD_ASSIGN;}
+"&="                        {yylval.s = tokstr(); return AND_ASSIGN;}
+"^="                        {yylval.s = tokstr(); return XOR_ASSIGN;}
+"|="                        {yylval.s = tokstr(); return OR_ASSIGN;}
 
-"++"			    {yylval.s = tokstr(); return INC_OP;}
-"--"			    {yylval.s = tokstr(); return DEC_OP;}
+"++"                        {yylval.s = tokstr(); return INC_OP;}
+"--"                        {yylval.s = tokstr(); return DEC_OP;}
 
-">>"			    {yylval.s = tokstr(); return RSHFT_OP;}
-"<<"			    {yylval.s = tokstr(); return LSHFT_OP;}
+">>"                        {yylval.s = tokstr(); return RSHFT_OP;}
+"<<"                        {yylval.s = tokstr(); return LSHFT_OP;}
 
-"&&"			    {yylval.s = tokstr(); return AND_OP;}
-"||"			    {yylval.s = tokstr(); return OR_OP;}
-"<="			    {yylval.s = tokstr(); return LE_OP;}
-">="			    {yylval.s = tokstr(); return GE_OP;}
-"=="			    {yylval.s = tokstr(); return EQ_OP;}
-"!="			    {yylval.s = tokstr(); return NE_OP;}
+"&&"                        {yylval.s = tokstr(); return AND_OP;}
+"||"                        {yylval.s = tokstr(); return OR_OP;}
+"<="                        {yylval.s = tokstr(); return LE_OP;}
+">="                        {yylval.s = tokstr(); return GE_OP;}
+"=="                        {yylval.s = tokstr(); return EQ_OP;}
+"!="                        {yylval.s = tokstr(); return NE_OP;}
 
 "=" |
 "+" |
@@ -119,7 +119,7 @@ char yyfilenm[1024];
 "<" |
 ">" |
 "|" |
-"^"                        {yylval.s = tokstr(); return yytext[0];}
+"^"                         {yylval.s = tokstr(); return yytext[0];}
 
 "(" |
 ")" |

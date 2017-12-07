@@ -38,28 +38,35 @@ outlaw_bad_warnings()
 # BOZO whaaat is going on here??
 # outlaw_warning_global("VL-PROGRAMMING-ERROR")
 
-def unset(modname, wirename)
+def unset(modname, wirename, var=1)
   # It's okay for it to be unset and unused, because some bits may be unset
   # while other bits may be unused.  However, nothing should ever be marked
   # as both unset and spurious.
-  match_warning(modname, "VL-LUCID-UNSET", wirename)
+  match_warning(modname, var ? "VL-LUCID-UNSET-VARIABLE" : "VL-LUCID-UNSET", wirename)
+  # outlaw_warning(modname, var ? "VL-LUCID-UNSET" : "VL-LUCID-UNSET-VARIABLE", wirename)
   outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
+  outlaw_warning(modname, "VL-LUCID-SPURIOUS-VARIABLE", wirename)
   outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
-def unused(modname, wirename)
+def unused(modname, wirename, var=1)
   # It's okay for it to be unset and unused, because some bits may be unset
   # while other bits may be unused.  However, nothing should ever be marked as
   # both unused and spurious.
-  match_warning(modname, "VL-LUCID-UNUSED", wirename)
+  match_warning(modname, var ? "VL-LUCID-UNUSED-VARIABLE" : "VL-LUCID-UNUSED", wirename)
+  # outlaw_warning(modname, var ? "VL-LUCID-UNUSED" : "VL-LUCID-UNUSED-VARIABLE", wirename)
   outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
+  outlaw_warning(modname, "VL-LUCID-SPURIOUS-VARIABLE", wirename)
   outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
-def spurious(modname, wirename)
-  match_warning(modname, "VL-LUCID-SPURIOUS", wirename)
+def spurious(modname, wirename, var=1)
+  match_warning(modname, var ? "VL-LUCID-SPURIOUS-VARIABLE" : "VL-LUCID-SPURIOUS", wirename)
+  # outlaw_warning(modname, var ? "VL-LUCID-SPURIOUS" : "VL-LUCID-SPURIOUS-VARIABLE", wirename)
   outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
   outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNSET-VARIABLE", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNUSED-VARIABLE", wirename)
   outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
@@ -67,6 +74,9 @@ def normal(modname, wirename)
   outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
   outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
   outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
+  outlaw_warning(modname, "VL-LUCID-SPURIOUS-VARIABLE", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNSET-VARIABLE", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNUSED-VARIABLE", wirename)
   outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
@@ -76,7 +86,7 @@ end
 
 
 normal(:"Design Root", "top_normal ")
-unused(:"Design Root", "top_unused ")
+unused(:"Design Root", "top_unused ", false)
 
 
 normal(:m0, "w1_normal ")
@@ -84,13 +94,13 @@ spurious(:m0, "w1_spurious ")
 unset(:m0, "w1_unset ")
 unused(:m0, "w1_unused ")
 
-unused(:"Design Root", "Type top_unused_t ")
+unused(:"Design Root", "Type top_unused_t ", false)
 normal(:"Design Root", "Type top_used_t ")
 
-unused(:"Design Root", "Function top_f_unused ")
+unused(:"Design Root", "Function top_f_unused ", false)
 normal(:"Design Root", "Function top_f_used ")
 normal(:"Design Root", "Function top_f_dpiexported ")
-unused(:"Design Root", "top_f_dpiimported_unused ")
+unused(:"Design Root", "top_f_dpiimported_unused ", false)
 normal(:"Design Root", "top_f_dpiimported_normal ")
 
 normal(:m1, "myout ")
@@ -111,7 +121,7 @@ normal(:m3, "r1_normal ")
 unused(:m3, "r1_unused ")
 
 normal(:"Design Root", "Type opcode_t ")
-unused(:"Design Root", "Type instruction_t ")
+unused(:"Design Root", "Type instruction_t ", false)
 
 normal(:pkg1, "p1_normal ")
 unset(:pkg1, "p1_unset ")
@@ -126,15 +136,17 @@ normal(:pkg1, "pr1_normal ")
 normal(:pkg1, "pr2_normal ")
 
 normal(:pkg1, "Function pfn_used ")
-unused(:pkg1, "Function pfn_unused ")
+unused(:pkg1, "Function pfn_unused ", false)
 
 normal(:m4, "u1 ")
 normal(:m4, "u2 ")
 
 
-unused(:"Design Root", "Function noreturn ")
+unused(:"Design Root", "Function noreturn ", false)
 unused(:"Design Root", "nr_unused ")
 unset(:"Design Root", "noreturn ")
+# this doesn't work yet
+# normal(:"Design Root", "noreturn2 ")
 
 normal(:m5, "width ")
 unused(:m5, "m5_unused ")
@@ -185,7 +197,7 @@ normal(:m9readwrap, "foo ")
 
 normal(:m9, "mr_used1 ")
 normal(:m9, "mr_used2 ")
-spurious(:m9, "mr_spurious ")
+spurious(:m9, "mr_spurious ", false)
 
 
 spurious(:mh1, "w1_spurious ")
@@ -227,7 +239,7 @@ spurious(:ImPort, "reqMain ")
 unused(:ImPort, "dataVld ")
 unused(:ImPort, "dataMain ")
 unset(:ImPort, "reqVld ")
-unused(:ImPort, "client ")
+unused(:ImPort, "client ", false)
 normal(:ImPort, "server ")
 
 normal(:imserve, "w1_normal ")
@@ -251,7 +263,7 @@ normal(:mg1, "p1_used ")
 unused(:mg1, "w1_normal ")
 
 normal(:mg2, "genvar1")
-spurious(:mg2, "genvar2")
+spurious(:mg2, "genvar2", false)
 
 
 unset(:useprim, "w1_unset ")
@@ -286,19 +298,19 @@ spurious(:fancy_mp, "foo")
 normal(:fancy_mp, "mp1")
 normal(:fancy_mp, "mp2")
 normal(:fancy_mp, "mp3")
-unused(:fancy_mp, "mp4")
+unused(:fancy_mp, "mp4", false)
 
 
 spurious(:'fancy_mp_param$width=5', "foo")
 normal(:'fancy_mp_param$width=5', "mp1")
 normal(:'fancy_mp_param$width=5', "mp2")
 normal(:'fancy_mp_param$width=5', "mp3")
-unused(:'fancy_mp_param$width=5', "mp4")
+unused(:'fancy_mp_param$width=5', "mp4", false)
 
 
 normal(:fcasttest_package, "yes_usedfun1")
 normal(:fcasttest_package, "yes_usedfun2")
-unused(:fcasttest_package, "not_usedfun")
+unused(:fcasttest_package, "not_usedfun", false)
 
 normal(:fcasttest, "yes_usedfun1")
 normal(:fcasttest, "yes_usedfun2")

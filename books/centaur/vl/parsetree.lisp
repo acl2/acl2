@@ -1482,14 +1482,19 @@ properly preserve them.</p>")
               declarations have initial values, the parser turns them into
               separate continuous assignment statements, instead.")
 
-   (varp     booleanp
-             :rule-classes :type-prescription
-             "(Variables only).  Indicates whether the @('var') keyword was
-              provided.")
-
    (constp   booleanp
              :rule-classes :type-prescription
              "(Variables only).  Indicates whether the @('const') keyword was
+              provided.")
+
+   (constval sv::maybe-4vec-p
+             "If the @('const') keyword was given, we try and resolve the ~
+              @('initval') to a constant.  If successful, we store that value ~
+              here.")
+
+   (varp     booleanp
+             :rule-classes :type-prescription
+             "(Variables only).  Indicates whether the @('var') keyword was
               provided.")
 
    (lifetime vl-lifetime-p
