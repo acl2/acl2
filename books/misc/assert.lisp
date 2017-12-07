@@ -26,7 +26,7 @@
 ; have less clutter when including the book.
 
 (defxdoc assert!
-  :parents (assert$ errors)
+  :parents (testing-utilities assert$ errors)
   :short "Form of @(tsee assert$) that is an event"
   :long "<p>The @('assert!') macro is similar to @('assert$'), but its calls
   may appear as top-level @(see events) in @(see books) and @(see encapsulate)
@@ -95,7 +95,7 @@
 ; assertion.
 
 (defxdoc assert!-stobj
-  :parents (assert$ errors)
+  :parents (testing-utilities assert$ errors)
   :short "Form of @(tsee assert$) involving @(see stobj)s that is an event"
   :long "<p>This variant of @(see assert!) allows forms that modify @(see
  stobj)s.</p>

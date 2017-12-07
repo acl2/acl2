@@ -86,7 +86,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc must-succeed
-  :parents (errors)
+  :parents (testing-utilities errors)
   :short "A top-level @(see assert$)-like command.  Ensures that a command
 which returns an @(see error-triple)&mdash;e.g., a @(see defun) or
 @(see defthm)&mdash;will return successfully."
@@ -232,7 +232,7 @@ customize this, as in @(see make-event).</p>
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc must-fail
-  :parents (errors)
+  :parents (testing-utilities errors)
   :short "A top-level @(see assert$)-like command.  Ensures that a command
 which returns an @(see error-triple)&mdash;e.g., @(see defun) or @(see
 defthm)&mdash;will not be successful."
@@ -376,7 +376,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc ensure-error
-  :parents (errors)
+  :parents (testing-utilities errors)
   :short "Ensure that an error occurs"
 
   :long "<p>Evaluation of @('(ensure-error <form>)') returns without error
@@ -395,7 +395,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc ensure-soft-error
-  :parents (errors)
+  :parents (testing-utilities errors)
   :short "Ensure that a soft error occurs"
 
   :long "<p>Evaluation of @('(ensure-soft-error <form>)') returns without error
@@ -414,7 +414,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc ensure-hard-error
-  :parents (errors)
+  :parents (testing-utilities errors)
   :short "Ensure that a hard error occurs"
 
   :long "<p>Evaluation of @('(ensure-hard-error <form>)') returns without error
