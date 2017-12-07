@@ -1300,13 +1300,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fresh-namep-msg-weak (name type (wrld plist-worldp))
+(define fresh-namep-msg-weak ((name symbolp) type (wrld plist-worldp))
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
   :returns (msg/nil "A message (see @(tsee msg)) or @('nil').")
   :mode :program
   :parents (world-queries)
-  :short "Returns either @('nil') or a message indicating why the name is not ~
+  :short "Return either @('nil') or a message indicating why the name is not
           a legal new name."
   :long
   "<p>
@@ -1314,20 +1314,23 @@
    check ensuring that the name is not already defined in raw Lisp.  See @(tsee
    fresh-namep-msg).
    </p>"
-
   (flet ((not-new-namep-msg (name wrld)
-
-; It is tempting to report that the properties 'global-value, 'table-alist,
-; 'table-guard are not relevant for this check.  But that would probably make
-; the message confusing.
-
+                            ;; It is tempting to report that the properties
+                            ;; 'global-value, 'table-alist, 'table-guard are
+                            ;; not relevant for this check.  But that would
+                            ;; probably make the message confusing.
                             (let ((old-type (logical-name-type name wrld t)))
                               (cond
                                (old-type
                                 (msg "~x0 is already the name for a ~s1."
                                      name
-                                     (string-downcase
-                                      (symbol-name old-type))))
+                                     (case old-type
+                                       (function "function")
+                                       (macro "macro")
+                                       (const "constant")
+                                       (stobj "stobj")
+                                       (constrained-function
+                                        "constrained function"))))
                                (t
                                 (msg "~x0 has properties in the world; it is ~
                                       not a new name."
@@ -1342,10 +1345,8 @@
      (t (case type
           (const
            (and (not (legal-constantp name))
-
-; A somewhat more informative error message is produced by
-; chk-legal-defconst-name, but I think the following suffices.
-
+                ;; A somewhat more informative error message is produced by
+                ;; chk-legal-defconst-name, but I think the following suffices.
                 (msg "~x0 is not a legal constant name."
                      name)))
           (stobj
@@ -1353,19 +1354,20 @@
                 (not-new-namep-msg (the-live-var name) wrld)))
           (t nil))))))
 
-(define fresh-namep-msg (name type (wrld plist-worldp) state)
+(define fresh-namep-msg ((name symbolp) type (wrld plist-worldp) state)
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
-  :returns (mv (erp "Always @('nil')")
+  :returns (mv (erp "Always @('nil').")
                (msg/nil "A message (see @(tsee msg)) or @('nil').")
                state)
   :mode :program
   :parents (world-queries)
-  :short "Returns either @('nil') or a message indicating why the name is not ~
+  :short "Return either @('nil') or a message indicating why the name is not
           a legal new name."
   :long
   "<p>
-   Returns an @('error-triple') @('(mv nil msg/nil state)'), where @('msg/nil')
+   Returns an <see topic='@(url error-triple)'>error triple</see>
+   @('(mv nil msg/nil state)'), where @('msg/nil')
    is either @('nil') or a message (see @(tsee msg)) indicating why the given
    name is not legal for a definition of the given type: @('function') for
    @(tsee defun), @('macro') for @(tsee defmacro), @('const') for @(tsee
@@ -1373,13 +1375,11 @@
    @(tsee defchoose), and otherwise @('nil') (for other kinds of @(see events),
    for example @(tsee defthm) and @(tsee deflabel)).  See @(see name).
    </p>
-
    <p>
    WARNING: This is an incomplete check in the case of a stobj name, because
    the field names required for a more complete check are not supplied as
    inputs.
    </p>
-
    <p>
    Implementation Note.  This function modifies @(see state), because the check
    for legality of new definitions (carried out by ACL2 source function
@@ -1388,31 +1388,31 @@
    don't know about without our having modified state; so logically, we pop the
    oracle when making this check.  End of Implementation Note.
    </p>"
-
   (let ((msg (fresh-namep-msg-weak name type wrld)))
     (cond (msg (value msg))
           (t (mv-let (msg state)
                (chk-virgin-msg name type wrld state)
                (value msg))))))
 
-(define chk-fresh-namep (name type ctx (wrld plist-worldp) state)
+(define chk-fresh-namep ((name symbolp) type ctx (wrld plist-worldp) state)
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
   :returns (mv erp val state)
   :mode :program
   :parents (world-queries)
-  :short "Checks whether name is a legal new name."
+  :short "Check whether name is a legal new name."
   :long
   "<p>
-   Returns an @(see error-triple) @('(mv erp val state)') where @('erp') is
+   Returns an <see topic='@(url error-triple)'>error triple</see>
+   @('(mv erp val state)') where @('erp') is
    @('nil') if and only if name is a legal new name, and @('val') is
    irrelevant.  If @('erp') is not nil, then an explanatory error message is
    printed.
    </p>
-
    <p>
    For more information about legality of new names see @(tsee fresh-namep-msg),
-   which returns an @(see error-triple), @('(mv nil msg/nil state)').  When
+   which returns an <see topic='@(url error-triple)'>error triple</see>,
+   @('(mv nil msg/nil state)').  When
    non-@('nil'), the value @('msg/nil') provides the message printed by
    @('chk-fresh-namep').
    </p>"
