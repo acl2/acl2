@@ -1293,3 +1293,8 @@ more complicated than other kinds.</p>")
   :short "See @(see satlink::litp)."
   :long "<p>Aignet used to use a literal representation of its own, but now it
 just borrows @(see satlink::satlink)'s.</p>")
+
+
+(defxdoc utilities
+  :parents (aignet)
+  :short "Basic tools for using @(see aignet) networks.")

@@ -745,6 +745,7 @@
                (bfr-constrained-mcrun prop constr updates init-st ins)))))
 
 (defxdoc bfr-mcheck
+  :parents (glmc)
   :short "Attachable interface for @(see GLMC)'s model-checking backend"
   :long "<p>@('Bfr-mcheck') is a constrained function that GLMC calls in order
 to solve hardware model-checking queries.</p>

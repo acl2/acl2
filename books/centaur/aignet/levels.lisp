@@ -46,9 +46,6 @@
 (define aignet-record-levels-aux ((n natp)
                                   (aignet)
                                   (aignet-levels))
-  :short "Records the level of each node in aignet-levels, where combinational inputs and constants have level 0 and a node has level n+1 if its children have maximum level n."
-  :long "<p>Does not record a level value for combinational outputs.  Look up the
-         level of its fanin node instead.</p>"
   :guard (and (<= (+ 1 (max-fanin aignet)) (u32-length aignet-levels))
               (<= n (+ 1 (max-fanin aignet))))
   :measure (nfix (- (+ 1 (max-fanin aignet)) (nfix n)))
@@ -168,6 +165,12 @@
 
 (define aignet-record-levels (aignet
                               aignet-levels)
+  :parents (utilities)
+  :short "Records the level of each node in aignet-levels, where combinational
+          inputs and constants have level 0 and a node has level n+1 if its children
+          have maximum level n."
+  :long "<p>Does not record a level value for combinational outputs.  Look up the
+         level of its fanin node instead.</p>"
   :returns (aignet-levels
             (< (node-count (find-max-fanin aignet))
                (len aignet-levels))

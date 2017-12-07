@@ -54,8 +54,22 @@
 ; returns more than two values).
 (set-waterfall-parallelism nil)
 
+(defxdoc truth
+  :parents (acl2::bit-vectors)
+  :short "Library for reasoning about and computing with integer-encoded truth tables."
+  :long "<p>A Boolean function of @('n') variables can be represented using a
+bit vector of @('2^n') bits.  Operators such as AND/OR/XOR can then be computed
+using @('logand'), @('logior'), and @('logxor'), respectively.  This library
+provides utilities for using this encoding of Boolean functions and reasoning
+about them.  It is particularly useful in the @(see aignet::rewrite) AIG
+transformation.</p>")
+
+(local (xdoc::set-default-parents truth))
+
 (define true  () -1)
 (define false () 0)
+
+
 
 (define truth-eval ((truth integerp) (env natp) (numvars natp))
   :guard (unsigned-byte-p numvars env)
