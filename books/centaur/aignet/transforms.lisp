@@ -38,6 +38,7 @@
 (include-book "abc-wrappers")
 
 (defxdoc aignet-comb-transforms
+  :parents (aignet)
   :short "Aignet transforms that simplify the network while preserving combinational equivalence"
   :long "<p>The functions @(see apply-comb-transforms) and @(see
 apply-comb-transforms!) may be used to apply several transforms to an aignet
@@ -48,9 +49,13 @@ transforms.  The currently supported transforms are:</p>
 <ul>
 <li>@(see balance)</li>
 <li>@(see fraig)</li>
+<li>@(see rewrite)</li>
 <li>@(see observability-fix)</li>
 <li>@(see abc-comb-simplify)</li>
-</ul>")
+</ul>
+
+<p>An additional \"transform\" that simply writes a snapshot of the network to
+an aiger file is also supported.</p>")
 
 (local (xdoc::set-default-parents aignet-comb-transforms))
 
@@ -237,6 +242,7 @@ transforms.  The currently supported transforms are:</p>
   :long "<p>See @(see apply-comb-transforms!) for a version that overwrites the original network.</p>"
   :verify-guards nil
   :enabled t
+  :returns (mv new-aignet2 state)
   (mbe :logic (non-exec (apply-comb-transforms-logic aignet transforms state))
        :exec (if (atom transforms)
                  (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
@@ -296,6 +302,7 @@ transforms.  The currently supported transforms are:</p>
 (define apply-comb-transforms! ((aignet)
                                 (transforms comb-transformlist-p)
                                 (state))
+  :parents (apply-comb-transforms)
   :short "Apply a sequence of combinational transforms to a network and return
           the transformed network, overwriting the original network."
   :long "<p>See @(see apply-comb-transforms) for a version that preserves the original network.</p>"

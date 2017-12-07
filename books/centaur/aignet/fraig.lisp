@@ -58,8 +58,6 @@
 
 
 (fty::defprod fraig-config
-  :parents (fraig comb-transform)
-  :short "Object containing settings for the @(see fraig) aignet transformation"
   ((initial-sim-words posp "Number of 32-bit simulation words per node for initial simulation" :default 4)
    (initial-sim-rounds posp "Number of times to simulate initially" :default 10)
    (sim-words posp "Number of 32-bit simulation words per node for simulation during fraiging" :default 1)
@@ -69,6 +67,8 @@
    (ctrex-force-resim booleanp "Force resimulation of a counterexample before checking another node in the same equivalence class" :default t)
    (random-seed-name symbolp "Name to use for seed-random, or NIL to not reseed the random number generator")
    (outs-only booleanp "Only check the combinational outputs of the network" :default nil))
+  :parents (fraig comb-transform)
+  :short "Configuration object for the @(see fraig) aignet transform."
   :tag :fraig-config)
 
 (defconst *fraig-default-config* (make-fraig-config))
@@ -2553,12 +2553,16 @@
 
 (define fraig ((aignet  "Input aignet")
                (aignet2 "New aignet -- will be emptied")
-               (config fraig-config-p)
+               (config fraig-config-p
+                       "Settings for the transform")
                (state))
   :parents (aignet-comb-transforms)
   :short "Apply combinational SAT sweeping (fraiging) to remove redundancies in the input network."
   :long "<p>Note: This fraiging implementation is heavily based on the one in
-ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>"
+ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>
+
+<p>Settings for the transform can be tweaked using the @('config') input, which
+is a @(see fraig-config) object.</p>"
   :guard-debug t
   :returns (mv new-aignet2 state)
   (b* (((acl2::local-stobjs aignet-tmp)

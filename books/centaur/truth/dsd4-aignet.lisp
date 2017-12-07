@@ -490,7 +490,8 @@
                (new-aignet))
   :measure (len indices)
   :verify-guards nil
-  (b* (((when (atom indices))
+  (b* ((aignet (aignet::aignet-fix aignet))
+       ((when (atom indices))
         (if (eql 0 (truth4-fix x))
             (mv 0 strash aignet)
           (mv 1 strash aignet)))
@@ -614,7 +615,8 @@
     :well-founded-relation acl2::nat-list-<
     :measure (list (count-truth4-deps x) 0)
     :verify-guards nil
-    (b* (((unless (mbt (< (nfix n) 4)))
+    (b* ((aignet (aignet::aignet-fix aignet))
+         ((unless (mbt (< (nfix n) 4)))
           (mv nil 0 strash aignet))
          (cof1 (positive-cofactor4 n x))
          ((when (eql cof1 (truth4-fix x)))
@@ -696,7 +698,8 @@
                  (lit aignet::litp :rule-classes :type-prescription)
                  (new-strash)
                  (new-aignet))
-    (b* (((when (atom indices))
+    (b* ((aignet (aignet::aignet-fix aignet))
+         ((when (atom indices))
           (mv nil 0 strash aignet))
          ((mv ok lit strash aignet)
           (aignet-build-truth4-decomp-single-try (car indices) x strash aignet full-indices))
@@ -989,6 +992,8 @@
        (f01 (positive-cofactor4 m f0))
        (f10 (negative-cofactor4 m f1))
        (f11 (positive-cofactor4 m f1))
+
+       (aignet (aignet::aignet-fix aignet))
 
        ((when (or (and (eql f00 f01)
                        (eql f10 f11))
@@ -1291,7 +1296,7 @@
 
   (defret stobjs-preserved-when-unsuccessful-of-aignet-build-truth4-decomp-try
     (implies (not success)
-             (and (equal new-aignet aignet)
+             (and (equal new-aignet (aignet::node-list-fix aignet))
                   (equal new-strash strash)))))
 
 
@@ -1314,7 +1319,8 @@
   :well-founded-relation acl2::nat-list-<
   :measure (len indices)
   :guard-hints (("goal" :expand ((index-listp indices 4))))
-  (b* (((when (atom indices))
+  (b* ((aignet (aignet::aignet-fix aignet))
+       ((when (atom indices))
         (mv nil 0 strash aignet))
        (m (lnfix (car indices)))
        ((when (eql (lnfix n) (lnfix m)))
@@ -1371,7 +1377,8 @@
   :well-founded-relation acl2::nat-list-<
   :measure (len indices)
   :guard-hints (("goal" :expand ((index-listp indices 4))))
-  (b* (((when (atom (cdr indices)))
+  (b* ((aignet (aignet::aignet-fix aignet))
+       ((when (atom (cdr indices)))
         (mv nil 0 strash aignet))
        ((mv success lit strash aignet)
         (aignet-build-truth4-decomp-rec1 (car indices) (cdr indices) x strash aignet full-indices))
@@ -1562,7 +1569,8 @@
                (new-dsd4stats))
   :guard (<= 4 (num-ins aignet))  
   :verify-guards nil
-  (b* (((when (atom perms)) (mv nil strash aignet dsd4stats))
+  (b* ((aignet (aignet::aignet-fix aignet))
+       ((when (atom perms)) (mv nil strash aignet dsd4stats))
        ((mv lits1 strash aignet dsd4stats)
         (aignet-build-truth4-decomp x strash aignet dsd4stats (car perms)))
        ((mv rest strash aignet dsd4stats)
@@ -1958,6 +1966,7 @@
                       (implies (aignet::lit-listp x)
                                (eqlable-listp x)))))
   (b* ((n (acl2::smm-nblocks smm))
+       (aignet (aignet::aignet-fix aignet))
        ((when (mbe :logic (zp (- (nfix canonical-count) n))
                    :exec (eql n canonical-count)))
         (mv smm strash aignet dsd4stats))
@@ -2061,6 +2070,9 @@
   (defret num-ins-of-aignet-build-truth4arr-decomps-top
     (equal (aignet::stype-count :pi new-aignet) 4))
 
+  (defret num-regs-of-aignet-build-truth4arr-decomps-top
+    (equal (aignet::stype-count :reg new-aignet) 0))
+
   (defret aignet-litp-smm-lookup-of-aignet-build-truth4arr-decomps-top
     (implies (and (< (nfix n) (nfix canonical-count))
                   (< (nfix idx) (len (nth n new-smm))))
@@ -2102,6 +2114,9 @@
 
   (defret num-ins-of-setup-dsd4-lib-aignet
     (equal (aignet::stype-count :pi new-aignet) 4))
+
+  (defret num-regs-of-setup-dsd4-lib-aignet
+    (equal (aignet::stype-count :reg new-aignet) 0))
 
   (defret aignet-litp-smm-lookup-of-setup-dsd4-lib
     (implies (and (< (nfix n) (len new-smm))

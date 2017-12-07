@@ -904,7 +904,7 @@
   (b* (((bitstruct x))
        (long (or (cdr (assoc :long x.kwd-alist)) ""))
        (acc nil)
-       (acc (revappend-chars "<p>This is a bitstruct type introduced by @(see defbitstruct)," acc))
+       (acc (revappend-chars "<p>This is a bitstruct type introduced by @(see fty::defbitstruct)," acc))
        (acc (revappend-chars " represented as a " acc))
        (acc (revappend-chars (if x.signedp "signed " "unsigned ") acc))
        (acc (revappend-chars (str::natstr x.width) acc))

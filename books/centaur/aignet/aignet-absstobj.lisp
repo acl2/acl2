@@ -1222,13 +1222,6 @@ more complicated than other kinds.</p>")
   @(def aignet$a::nxst-id->reg)")
 
 
-;; Fanin Lookup
-(defxdoc fanin
-  :short "@(call fanin) gets the specified kind of fanin from the first node of
-          the input network and fixes it to be a valid fanin literal of the rest
-          of the network.")
-
-
 (defxdoc gate-id->fanin0
   :short "@(call gate-id->fanin0) gets the 0th fanin @(see literal) of the AND
   gate node whose ID is @('id')."

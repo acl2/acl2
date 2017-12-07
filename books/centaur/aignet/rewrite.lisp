@@ -27,7 +27,8 @@
 (local (in-theory (disable nth update-nth unsigned-byte-p)))
 
 (std::defenum rewrite-eval-method-p
-  (:build :nobuild))
+  (:build :nobuild)
+  :parents (rewrite-config))
 
 
 (fty::defprod rewrite-config
@@ -35,6 +36,8 @@
    (cut-tries-limit acl2::maybe-natp :rule-classes :type-prescription :default 5)
    (zero-cost-replace booleanp :rule-classes :type-prescription)
    (evaluation-method rewrite-eval-method-p :default :nobuild))
+  :parents (rewrite comb-transform)
+  :short "Configuration object for the @(see rewrite) aignet transform."
   :tag :rewrite-config)
 
 ;; note: these are needed for fixequivs as long as the config is empty...
@@ -4057,6 +4060,11 @@
                  (config rewrite-config-p))
   :parents (aignet-comb-transforms)
   :short "Apply DAG-aware rewriting to the network."
+  :long "<p>Note: This implementation is heavily based on the one in
+ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>
+
+<p>Settings for the transform can be tweaked using the @('config') input, which
+is a @(see rewrite-config) object.</p>"
   :returns (new-aignet)
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp))

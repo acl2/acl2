@@ -39,6 +39,8 @@
 (fty::defprod abc-comb-simp-config
   ((script stringp :rule-classes :type-prescription)
    (quiet booleanp))
+  :parents (abc-comb-simplify comb-transform)
+  :short "Configuration object for using the @(see abc-comb-simplify) transform on an aignet."
   :tag :abc-comb-simp-config)
 
 (defconst *default-abc-comb-simp-config*
@@ -103,6 +105,7 @@
                             (config abc-comb-simp-config-p)
                             (state))
   :returns (mv new-aignet new-state)
+  :parents (abc-comb-simplify)
   :short "Like @(see abc-comb-simplify), but overwrites the original network instead of returning a new one."
   (b* (((abc-comb-simp-config config))
        ((mv input-filename state) (oslib::tempfile "abc-comb-simplify-input.aig"))

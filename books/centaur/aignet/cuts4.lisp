@@ -61,7 +61,11 @@
 
 
 (fty::defprod cuts4-config
-  ((max-cuts posp :rule-classes :type-prescription))
+  ((max-cuts posp :rule-classes :type-prescription
+             :default 10
+             "Maximum number of cuts to keep for each node"))
+  :short "Configuration object for the 4-cut sweeping algorithm used in the aignet @(see rewrite) transform."
+  :parents (rewrite rewrite-config)
   :layout :tree)
 
 

@@ -1128,7 +1128,7 @@ conses.</p>
                 (equal (aig-and x y z) (aig-binary-and x (aig-binary-and y z))))
            :rule-classes nil)))
 
-(local (xdoc::set-default-parents nil))
+(local (xdoc::set-default-parents))
 
 
 (define aig-binary-or (x y)

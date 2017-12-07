@@ -232,7 +232,8 @@
                            (:free (count stype aignet aignet2)
                             (id-eval (node-count (lookup-stype count stype aignet))
                                      invals regvals aignet2))
-                           (id-eval (+ -1 n) invals regvals aignet)))))))
+                           (id-eval (+ -1 n) invals regvals aignet)))))
+    :fn init-copy-comb))
 
 (defsection finish-copy-comb-sweep
   (local (in-theory (enable finish-copy-comb)))
@@ -258,5 +259,6 @@
                   (equal (stype-count :reg aignet2)
                          (stype-count :reg aignet)))
              (comb-equiv new-aignet2 aignet))
-    :hints(("Goal" :in-theory (e/d (comb-equiv) (finish-copy-comb))))))
+    :hints(("Goal" :in-theory (e/d (comb-equiv) (finish-copy-comb))))
+    :fn finish-copy-comb))
   

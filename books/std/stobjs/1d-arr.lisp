@@ -323,7 +323,7 @@ documentation can be generated automatically.</dd>
        :short (or _short_
                   (if '_pred_
                       (str::cat "Abstract stobj: logically this just represents a list of
-                                 @(see " (xdoc::full-escape-symbol '_pred_) ")s, but it is
+                                 @('" (xdoc::full-escape-symbol '_pred_) "')s, but it is
                                  implemented as an array.")
                     (str::cat "Abstract stobj: logically this just represents
                                an untyped list, but it is implemented as an

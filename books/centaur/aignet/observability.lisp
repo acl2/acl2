@@ -479,6 +479,8 @@
    (min-ratio rationalp :rule-classes :type-prescription
               "Minimum ratio of conclusion to hyp"
               :default 10))
+  :parents (observability-fix comb-transform)
+  :short "Configuration object for the @(see observability-fix) aignet transform."
   :tag :observability-config)
 
 (define observability-size-check ((lit-size natp)
@@ -1266,7 +1268,8 @@
 
 (define observability-fix ((aignet  "Input aignet")
                            (aignet2 "New aignet -- will be emptied")
-                           (config observability-config-p)
+                           (config observability-config-p
+                                   "Settings for the transform")
                            (state))
   :guard-debug t
   :returns (mv new-aignet2 state)
@@ -1274,7 +1277,9 @@
   :short "Transform the aignet so that some observability don't-care conditions
           don't affect the logical equivalence of nodes."
   :long "<p>This is mainly intended to be used on a single-output aignet, and
-mainly as a precursor to fraiging.</p>
+mainly as a precursor to fraiging.  Settings for the transform can be tweaked
+using the @('config') input, which is an @(see observability-config)
+object.</p>
 
 <p>Suppose we have a single-output AIG whose function is @('A & B'), and that
 @('A') is a small, simple function and @('B') a large, complicated function.
