@@ -243,6 +243,8 @@
              result fn)))
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define arity+ ((fn (or (function-namep fn wrld)
                         (pseudo-lambdap fn)))
                 (wrld plist-worldp-with-formals))
@@ -258,6 +260,8 @@
    </p>"
   (arity fn wrld)
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stobjs-in+ ((fn (function-namep fn wrld))
                     (wrld plist-worldp))
@@ -305,6 +309,8 @@
               the STOBJS-OUT property ~x0 of ~x1 ~
               is not a a NIL-terminated list of symbols."
              result fn))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define macro-args+ ((mac (macro-namep mac wrld))
                      (wrld plist-worldp))
