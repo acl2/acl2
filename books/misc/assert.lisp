@@ -11,16 +11,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(in-package "ACL2")
+
+(include-book "xdoc/top" :dir :system)
+(include-book "eval")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; The macro assert!, defined and illustrated below, allows for assertions
 ; within an ACL2 book, as requested by David Rager.
 
 ; 2012-03-12: David Rager made the calls to assert! that fail local, so that
 ; break-on-error wouldn't break when including this book.  Also, it's nice to
 ; have less clutter when including the book.
-
-(in-package "ACL2")
-(include-book "eval")
-(include-book "xdoc/top" :dir :system)
 
 (defxdoc assert!
   :parents (assert$ errors)
@@ -55,6 +58,42 @@
  that return @('stobj')s.  Also see @(see must-fail) and @(see must-succeed)
  for other tests that certain commands fail or succeed.</p>")
 
+(defun assert!-body (assertion form)
+
+; Note that assertion should evaluate to a single non-stobj value.  See also
+; assert!-stobj-body.
+
+  (declare (xargs :guard t))
+  `(let ((assertion ,assertion))
+     (value (if assertion
+                ',(if form
+                      `(with-output :stack :pop ,form)
+                    '(value-triple :success))
+              '(value-triple nil
+                             :check (msg "~x0" ',assertion)
+                             :ctx 'assert!)))))
+
+(defmacro assert! (&whole whole-form
+                          assertion &optional form)
+
+; Note that assertion should evaluate to a single non-stobj value.  See also
+; assert!-stobj.
+
+  `(with-output
+     :stack :push
+     :off summary
+     (make-event ,(assert!-body assertion form)
+                 :on-behalf-of ,whole-form)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; We turn now to developing an extension of assert! that works with stobjs, in
+; this case for assertions that return (mv val st) where val is an ordinary
+; value and st is a stobj.  Our intention is to illustrate how to write other
+; versions of assert!.  If you understand this extension, you can then write
+; your own extensions that can similarly handle other signatures for the
+; assertion.
+
 (defxdoc assert!-stobj
   :parents (assert$ errors)
   :short "Form of @(tsee assert$) involving @(see stobj)s that is an event"
@@ -88,89 +127,6 @@
  stobj) (either user-defined or @(tsee state)).  The second argument should be
  the name of the stobj that is being returned.</p>")
 
-(defun assert!-body (assertion form)
-
-; Note that assertion should evaluate to a single non-stobj value.  See also
-; assert!-stobj-body.
-
-  (declare (xargs :guard t))
-  `(let ((assertion ,assertion))
-     (value (if assertion
-                ',(if form
-                      `(with-output :stack :pop ,form)
-                    '(value-triple :success))
-              '(value-triple nil
-                             :check (msg "~x0" ',assertion)
-                             :ctx 'assert!)))))
-
-(defmacro assert! (&whole whole-form
-                          assertion &optional form)
-
-; Note that assertion should evaluate to a single non-stobj value.  See also
-; assert!-stobj.
-
-  `(with-output
-     :stack :push
-     :off summary
-     (make-event ,(assert!-body assertion form)
-                 :on-behalf-of ,whole-form)))
-
-(local
- (progn
-   (assert! (equal 3 3)
-            (defun assert-test1 (x) x))
-
-; Check that above defun was evaluated.
-   (value-triple (or (equal (assert-test1 3) 3)
-                     (er hard 'top-level
-                         "Failed to evaluate (assert-test1 3) to 3.")))))
-
-(local
- (progn
-   (must-fail
-    (assert! (equal 3 4)
-             (defun assert-test2 (x) x)))
-
-; Check that above defun was not evaluated.
-   (defun assert-test2 (x)
-     (cons x x))))
-
-; Simple test with no second argument:
-(assert! (equal (append '(a b c) '(d e f))
-                '(a b c d e f)))
-
-; Check failure of assertion when condition is false:
-(local
- (must-fail
-  (assert! (equal (append '(a b c) '(d e f))
-                  '(a b)))))
-
-; The following requires that this book be certified in the initial
-; certification world, unless an acl2-customization file has been supplied.  It
-; also succeeds at include-book time even if we include the book after
-; executing another command, because assert! uses make-event with
-; :check-expansion nil.  See assert-include.lisp.
-; HOWEVER....
-; This book is no longer certified in the initial certification world during
-; regressions, because cert.pl causes LD of books/xdoc/top.port and also, in
-; the current directory, eval.port.  So we comment out the following form.
-;   (local (make-event
-;           (er-let* ((c (getenv$ "ACL2_CUSTOMIZATION" state)))
-;             (value
-;              (if (and c (not (equal c "NONE")))
-;                  `(value-triple
-;                    (cw "SKIPPING due to ACL2_CUSTOMIZATION=~x0~%" ,c))
-;                '(assert! (equal (access-command-tuple-form
-;                                  (cddr (car (scan-to-command (w state)))))
-;                                 '(exit-boot-strap-mode))))))))
-
-; We turn now to developing an extension of assert! that works with stobjs, in
-; this case for assertions that return (mv val st) where val is an ordinary
-; value and st is a stobj.  Our intention is to illustrate how to write other
-; versions of assert!.  If you understand this extension, you can then write
-; your own extensions that can similarly handle other signatures for the
-; assertion.
-
 (defun assert!-stobj-body (assertion st form)
 
 ; Assertion should evaluate to (mv val st), where val is an ordinary value and
@@ -202,33 +158,6 @@
      :off summary
      (make-event ,(assert!-stobj-body assertion st form)
                  :on-behalf-of ,whole-form)))
-
-; Test-stobj example from David Rager.
-(local
- (encapsulate
-  ()
-
-  (defstobj foo field1 field2)
-
-  (defun test-stobj (x foo)
-    (declare (xargs :stobjs foo))
-    (let ((foo (update-field1 17 foo)))
-      (update-field2 x foo)))
-
-; Passes.
-  (assert!-stobj (let* ((foo (test-stobj 14 foo)))
-                   (mv (equal (field1 foo)
-                              17)
-                       foo))
-                 foo)
-
-  (must-fail
-   (assert!-stobj (let* ((foo (test-stobj 14 foo)))
-                    (mv (equal (field1 foo)
-                               14)
-                        foo))
-                  foo))
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

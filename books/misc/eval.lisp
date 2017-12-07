@@ -15,8 +15,13 @@
 ; See community book make-event/eval-tests.lisp (and many other .lisp files in
 ; that directory) for how these macros may be employed.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
+
 (include-book "xdoc/top" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro must-eval-to (&whole must-eval-to-form
                                form expr
@@ -59,6 +64,8 @@
     (cond (with-output-off `(with-output :off ,with-output-off ,form))
           (t form))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro must-eval-to-t (form &key
                                (ld-skip-proofsp ':default)
                                (with-output-off ':all)
@@ -75,6 +82,8 @@
                         `(:check-expansion ,check-expansion))
                  ,@(and (not (eq ld-skip-proofsp :default))
                         `(:ld-skip-proofsp ,ld-skip-proofsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc must-succeed
   :parents (errors)
@@ -159,6 +168,69 @@ customize this, as in @(see make-event).</p>
              `(:check-expansion ,check-expansion)))
     :on-behalf-of ,must-succeed-form))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection must-succeed*
+
+  :parents (testing-utilities errors must-succeed)
+
+  :short "A variant of @(tsee must-succeed) that accepts multiple forms."
+
+  :long
+
+  "@({
+     (must-succeed* form1
+                    ...
+                    formN
+                    :with-output-off ...
+                    :check-expansion ...)
+   })
+
+   <p>
+   The @('N') forms must be
+   <see topic='@(url embedded-event-form)'>embedded event forms</see>,
+   because they are put into a @(tsee progn)
+   so that earlier forms are evaluated
+   before considering later forms in the sequence.
+   This is a difference with @(tsee must-succeed),
+   whose form is required to return
+   an <see topic='@(url error-triple)'>error triple</see>
+   without necessarily being an embedded event form;
+   since @(tsee must-succeed) takes only one form,
+   there is no issue of earlier forms being evaluated
+   before considering later forms
+   as in @(tsee must-succeed*).
+   </p>
+
+   <p>
+   The forms may be followed by
+   @(':with-output-off') and/or @(':check-expansion'),
+   as in @(tsee must-succeed).
+   </p>
+
+   @(def must-succeed*)"
+
+  (defmacro must-succeed* (&rest args)
+    (mv-let (erp forms options)
+      (partition-rest-and-keyword-args args
+                                       '(:with-output-off :check-expansion))
+      (if erp
+          '(er hard?
+               'must-succeed*
+               "The arguments of MUST-SUCCEED* must be zero or more forms ~
+                followed by the options :WITH-OUTPUT-OFF and :CHECK-EXPANSION.")
+        (let ((with-output-off-pair (assoc :with-output-off options))
+              (check-expansion-pair (assoc :check-expansion options)))
+          `(must-succeed (progn ,@forms)
+                         ,@(if with-output-off-pair
+                               `(:with-output-off ,(cdr with-output-off-pair))
+                             nil)
+                         ,@(if check-expansion-pair
+                               `(:check-expansion ,(cdr check-expansion-pair))
+                             nil)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc must-fail
   :parents (errors)
   :short "A top-level @(see assert$)-like command.  Ensures that a command
@@ -217,48 +289,6 @@ wrapper @(tsee must-fail!) that creates a call of @('must-fail') with
 @(':check-expansion') to @('t'); that causes proofs to be done even when
 including a book (because of the way that @('must-fail') is implemented using
 @(tsee make-event)).</p>")
-
-(defxdoc ensure-error
-  :parents (errors)
-  :short "Ensure that an error occurs"
-
-  :long "<p>Evaluation of @('(ensure-error <form>)') returns without error
- exactly when evaluation of @('<form>') causes an error.</p>
-
- <p>See @(see must-fail) for more details, as @('ensure-error') abbreviates
- @('must-fail') as follows.</p>
-
- @(def ensure-error)
-
- <p>Also see @(see ensure-soft-error) and @(see ensure-hard-error).</p>")
-
-(defxdoc ensure-soft-error
-  :parents (errors)
-  :short "Ensure that a soft error occurs"
-
-  :long "<p>Evaluation of @('(ensure-soft-error <form>)') returns without error
- exactly when evaluation of @('<form>') causes a soft error.</p>
-
- <p>See @(see must-fail) for more details, as @('ensure-soft-error')
- abbreviates @('must-fail') as follows.</p>
-
- @(def ensure-soft-error)
-
- <p>Also see @(see ensure-error) and @(see ensure-hard-error).</p>")
-
-(defxdoc ensure-hard-error
-  :parents (errors)
-  :short "Ensure that a hard error occurs"
-
-  :long "<p>Evaluation of @('(ensure-hard-error <form>)') returns without error
- exactly when evaluation of @('<form>') causes a hard error.</p>
-
- <p>See @(see must-fail) for more details, as @('ensure-hard-error')
- abbreviates @('must-fail') as follows.</p>
-
- @(def ensure-hard-error)
-
- <p>Also see @(see ensure-error) and @(see ensure-soft-error).</p>")
 
 (defun error-from-eval-fn (form ctx aok)
   `(let ((form ',form)
@@ -329,81 +359,84 @@ including a book (because of the way that @('must-fail') is implemented using
                `(:check-expansion ,check-expansion)))
       :on-behalf-of ,must-fail-form)))
 
-(defmacro ensure-hard-error (form &rest args)
-  (list* 'must-fail form :expected :hard args))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection must-fail-local
+  :parents (testing-utilities errors must-fail)
+  :short "A @(see local) variant of @(tsee must-fail)."
+  :long
+  "<p>
+   This is useful to overcome the problem discussed in the caveat
+   in the documentation of @(tsee must-fail).
+   </p>
+   @(def must-fail-local)"
+  (defmacro must-fail-local (&rest args)
+    `(local (must-fail ,@args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc ensure-error
+  :parents (errors)
+  :short "Ensure that an error occurs"
+
+  :long "<p>Evaluation of @('(ensure-error <form>)') returns without error
+ exactly when evaluation of @('<form>') causes an error.</p>
+
+ <p>See @(see must-fail) for more details, as @('ensure-error') abbreviates
+ @('must-fail') as follows.</p>
+
+ @(def ensure-error)
+
+ <p>Also see @(see ensure-soft-error) and @(see ensure-hard-error).</p>")
+
+(defmacro ensure-error (form &rest args)
+  (list* 'must-fail form :expected :any args))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc ensure-soft-error
+  :parents (errors)
+  :short "Ensure that a soft error occurs"
+
+  :long "<p>Evaluation of @('(ensure-soft-error <form>)') returns without error
+ exactly when evaluation of @('<form>') causes a soft error.</p>
+
+ <p>See @(see must-fail) for more details, as @('ensure-soft-error')
+ abbreviates @('must-fail') as follows.</p>
+
+ @(def ensure-soft-error)
+
+ <p>Also see @(see ensure-error) and @(see ensure-hard-error).</p>")
 
 (defmacro ensure-soft-error (form &rest args)
   (list* 'must-fail form :expected :soft args))
 
-(defmacro ensure-error (form &rest args)
-  (list* 'must-fail form :expected :any args))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc ensure-hard-error
+  :parents (errors)
+  :short "Ensure that a hard error occurs"
+
+  :long "<p>Evaluation of @('(ensure-hard-error <form>)') returns without error
+ exactly when evaluation of @('<form>') causes a hard error.</p>
+
+ <p>See @(see must-fail) for more details, as @('ensure-hard-error')
+ abbreviates @('must-fail') as follows.</p>
+
+ @(def ensure-hard-error)
+
+ <p>Also see @(see ensure-error) and @(see ensure-soft-error).</p>")
+
+(defmacro ensure-hard-error (form &rest args)
+  (list* 'must-fail form :expected :hard args))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro thm? (&rest args)
   `(must-succeed (thm ,@args)))
 
 (defmacro not-thm? (&rest args)
   `(must-fail (thm ,@args)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-succeed*
-
-  :parents (testing-utilities errors must-succeed)
-
-  :short "A variant of @(tsee must-succeed) that accepts multiple forms."
-
-  :long
-
-  "@({
-     (must-succeed* form1
-                    ...
-                    formN
-                    :with-output-off ...
-                    :check-expansion ...)
-   })
-
-   <p>
-   The @('N') forms must be
-   <see topic='@(url embedded-event-form)'>embedded event forms</see>,
-   because they are put into a @(tsee progn)
-   so that earlier forms are evaluated
-   before considering later forms in the sequence.
-   This is a difference with @(tsee must-succeed),
-   whose form is required to return
-   an <see topic='@(url error-triple)'>error triple</see>
-   without necessarily being an embedded event form;
-   since @(tsee must-succeed) takes only one form,
-   there is no issue of earlier forms being evaluated
-   before considering later forms
-   as in @(tsee must-succeed*).
-   </p>
-
-   <p>
-   The forms may be followed by
-   @(':with-output-off') and/or @(':check-expansion'),
-   as in @(tsee must-succeed).
-   </p>
-
-   @(def must-succeed*)"
-
-  (defmacro must-succeed* (&rest args)
-    (mv-let (erp forms options)
-      (partition-rest-and-keyword-args args
-                                       '(:with-output-off :check-expansion))
-      (if erp
-          '(er hard?
-               'must-succeed*
-               "The arguments of MUST-SUCCEED* must be zero or more forms ~
-                followed by the options :WITH-OUTPUT-OFF and :CHECK-EXPANSION.")
-        (let ((with-output-off-pair (assoc :with-output-off options))
-              (check-expansion-pair (assoc :check-expansion options)))
-          `(must-succeed (progn ,@forms)
-                         ,@(if with-output-off-pair
-                               `(:with-output-off ,(cdr with-output-off-pair))
-                             nil)
-                         ,@(if check-expansion-pair
-                               `(:check-expansion ,(cdr check-expansion-pair))
-                             nil)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -422,17 +455,3 @@ including a book (because of the way that @('must-fail') is implemented using
        ()
        (set-enforce-redundancy t)
        ,@forms)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-fail-local
-  :parents (testing-utilities errors must-fail)
-  :short "A @(see local) variant of @(tsee must-fail)."
-  :long
-  "<p>
-   This is useful to overcome the problem discussed in the caveat
-   in the documentation of @(tsee must-fail).
-   </p>
-   @(def must-fail-local)"
-  (defmacro must-fail-local (&rest args)
-    `(local (must-fail ,@args))))
