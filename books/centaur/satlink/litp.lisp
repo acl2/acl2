@@ -231,6 +231,16 @@ identifiers as natural numbers.)</p>"
                    (x x)))))
     :rule-classes :linear))
 
+(define lit->var^ ((lit litp :type (unsigned-byte 32)))
+  :parents (lit->var)
+  :short "Same as @(see lit->var), but with a type declaration that the input is 32 bits unsigned."
+  :enabled t
+  :inline t
+  :guard-hints (("goal" :in-theory (enable lit->var)))
+  (mbe :logic (lit->var lit)
+       :exec (the (unsigned-byte 31)
+                  (ash (the (unsigned-byte 32) lit) -1))))
+
 
 (define lit->neg ((lit litp))
   :parents (litp)
@@ -256,6 +266,15 @@ identifiers as natural numbers.)</p>"
     (<= (lit->neg lit) 1)
     :rule-classes :linear))
 
+(define lit->neg^ ((lit litp :type (unsigned-byte 32)))
+  :parents (lit->neg)
+  :short "Same as @(see lit->neg), but with a type declaration that the input is 32 bits unsigned."
+  :enabled t
+  :inline t
+  :guard-hints (("goal" :in-theory (enable lit->neg)))
+  (mbe :logic (lit->neg lit)
+       :exec (the bit (logand 1 (the (unsigned-byte 32) lit)))))
+
 
 
 ;; (acl2::def-b*-decomp lit
@@ -263,7 +282,8 @@ identifiers as natural numbers.)</p>"
 ;;                      (neg . lit->neg))
 
 
-(define make-lit ((var varp) (neg bitp))
+(define make-lit ((var varp :type (integer 0 *)) (neg bitp :type bit))
+  :split-types t
   :parents (litp)
   :short "Construct a literal with the given @('var') and @('neg')."
 
@@ -311,6 +331,20 @@ identifiers as natural numbers.)</p>"
            (and (litp a)
                 (equal (lit->var a) (var-fix var))
                 (equal (lit->neg a) (bfix neg))))))
+
+(define make-lit^ ((var varp :type (unsigned-byte 31)) (neg bitp :type bit))
+  :split-types t
+  :guard (unsigned-byte-p 31 var)
+  :parents (make-lit)
+  :short "Same as @(see make-lit), but with a type declaration that the input variable is 31 bits unsigned."
+  :inline t
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable make-lit)))
+  (mbe :logic (make-lit var neg)
+       :exec (the (unsigned-byte 32)
+                  (logior (the (unsigned-byte 32)
+                               (ash (the (unsigned-byte 31) var) 1))
+                          (the bit neg)))))
 
 (defthm equal-of-lit->var-equal-hyp
   (implies (and (syntaxp (acl2::rewriting-negative-literal-fn
@@ -369,7 +403,8 @@ identifiers as natural numbers.)</p>"
                        (bitops::logior$ bitops::logxor$))))
 
 
-(define lit-negate ((lit litp))
+(define lit-negate ((lit litp :type (integer 0 *)))
+  :split-types t
   :parents (litp)
   :short "Efficiently negate a literal."
   :inline t
@@ -468,9 +503,22 @@ identifiers as natural numbers.)</p>"
            (equal (lit-fix x) (lit-fix y)))
     :hints(("Goal" :in-theory (enable equal-of-make-lit)))))
 
+(define lit-negate^ ((lit litp :type (unsigned-byte 32)))
+  :parents (lit-negate)
+  :short "Same as @(see lit-negate), but with a type declaration that the input is 32 bits unsigned."
+  :enabled t
+  :inline t
+  :guard-hints (("goal" :in-theory (enable lit-negate make-lit lit->var lit->neg)))
+  (mbe :logic (lit-negate lit)
+       :exec (the (unsigned-byte 32)
+                  (logxor 1 (the (unsigned-byte 32) lit)))))
 
 
-(define lit-negate-cond ((lit litp) (c bitp))
+
+
+
+(define lit-negate-cond ((lit litp :type (integer 0 *)) (c bitp :type bit))
+  :split-types t
   :parents (litp)
   :short "Efficiently negate a literal."
   :long "<p>When @('c') is 1, we negate @('lit').  Otherwise, when @('c') is 0,
@@ -539,6 +587,19 @@ we return @('lit') unchanged.</p>"
                   (equal (lit->neg x) (b-xor c (lit->neg y))))
              (equal (equal (lit-negate-cond x c) y) t))
     :hints(("Goal" :in-theory (enable equal-of-make-lit)))))
+
+(define lit-negate-cond^ ((lit litp :type (unsigned-byte 32))
+                          (neg bitp :type bit))
+  :split-types t
+  :guard (unsigned-byte-p 32 lit)
+  :parents (lit-negate-cond)
+  :short "Same as @(see lit-negate-cond), but with a type declaration that the input literal is 32 bits unsigned."
+  :enabled t
+  :inline t
+  :guard-hints (("goal" :in-theory (enable lit-negate-cond make-lit lit->var lit->neg)))
+  (mbe :logic (lit-negate-cond lit neg)
+       :exec (the (unsigned-byte 32)
+                  (logxor neg (the (unsigned-byte 32) lit)))))
 
 
 

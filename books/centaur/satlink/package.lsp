@@ -103,4 +103,5 @@
          lit-negate-cond lit->index
          max-index-clause max-index-formula clause-indices formula-indices
          satlink-to-dimacs-lit
-         dimacs-to-satlink-lit))
+         dimacs-to-satlink-lit
+         lit->var^ lit->neg^ make-lit^ lit-negate^ lit-negate-cond^))

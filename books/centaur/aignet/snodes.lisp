@@ -58,6 +58,13 @@
   (defcong nat-equiv equal (snode->type slot) 1
     :hints(("Goal" :in-theory (enable snode->type))))
 
+  (define snode->type^ ((slot0 :type (unsigned-byte 32)))
+    :inline t
+    :enabled t
+    :guard-hints (("goal" :in-theory (enable snode->type)))
+    (mbe :logic (snode->type slot0)
+         :exec (logand 3 (the (unsigned-byte 32) slot0))))
+
   (defthm snode->type-bound
     (< (snode->type slot0) 4)
     :hints(("Goal" :in-theory (enable snode->type)
@@ -74,6 +81,14 @@
                                   (ash (the (unsigned-byte 32) slot1) -1)))
                  (logand 1 (ash (lnfix slot1) -1)))))
 
+  (define snode->phase^ ((slot1 :type (unsigned-byte 32)))
+    :inline t
+    :enabled t
+    :guard-hints (("goal" :in-theory (enable snode->phase)))
+    (mbe :logic (snode->phase slot1)
+         :exec (logand 1 (the (unsigned-byte 32)
+                                  (ash (the (unsigned-byte 32) slot1) -1)))))
+
   (defcong nat-equiv equal (snode->phase slot) 1
     :hints(("Goal" :in-theory (enable snode->phase))))
 
@@ -87,6 +102,13 @@
          :exec (if (<= slot1 #xffffffff)
                    (logand 1 (the (unsigned-byte 32) slot1))
                  (logand 1 (lnfix slot1)))))
+
+  (define snode->regp^ ((slot1 :type (unsigned-byte 32)))
+    :inline t
+    :enabled t
+    :guard-hints (("goal" :in-theory (enable snode->regp)))
+    (mbe :logic (snode->regp slot1)
+         :exec (logand 1 (the (unsigned-byte 32) slot1))))
 
   (defcong nat-equiv equal (snode->regp slot) 1
     :hints(("Goal" :in-theory (enable snode->regp))))
@@ -102,6 +124,13 @@
                    (ash (the (unsigned-byte 32) slot) -2)
                  (ash (lnfix slot) -2))))
 
+  (define snode->fanin^ ((slot :type (unsigned-byte 32)))
+    :inline t
+    :enabled t
+    :guard-hints (("goal" :in-theory (enable snode->fanin)))
+    (mbe :logic (snode->fanin slot)
+         :exec (the (unsigned-byte 30) (ash (the (unsigned-byte 32) slot) -2))))
+
   (defcong nat-equiv equal (snode->fanin slot) 1
     :hints(("Goal" :in-theory (enable snode->fanin))))
 
@@ -111,6 +140,13 @@
          :exec (if (<= slot1 #xffffffff)
                    (ash (the (unsigned-byte 32) slot1) -2)
                  (ash (lnfix slot1) -2))))
+
+  (define snode->ionum^ ((slot1 :type (unsigned-byte 32)))
+    :inline t
+    :enabled t
+    :guard-hints (("goal" :in-theory (enable snode->ionum)))
+    (mbe :logic (snode->ionum slot1)
+         :exec (the (unsigned-byte 30) (ash (the (unsigned-byte 32) slot1) -2))))
 
   (defcong nat-equiv equal (snode->ionum slot) 1
     :hints(("Goal" :in-theory (enable snode->ionum))))
@@ -133,6 +169,13 @@
          :exec (if (<= slot0 #xffffffff)
                    (ash (the (unsigned-byte 32) slot0) -2)
                  (ash (lnfix slot0) -2))))
+
+  (define snode->regid^ ((slot0 :type (unsigned-byte 32)))
+    :inline t
+    :enabled t
+    :guard-hints (("goal" :in-theory (enable snode->regid)))
+    (mbe :logic (snode->regid slot0)
+         :exec (the (unsigned-byte 30) (ash (the (unsigned-byte 32) slot0) -2))))
 
   (defthm natp-of-snode->regid
     (natp (snode->regid slot0))
@@ -167,6 +210,24 @@
                      (logior (the bit regp)
                              (the (unsigned-byte 2) (ash (the bit phase) 1))
                              (ash (lnfix fanin1) 2))))))
+
+  (define mk-snode^ ((type (unsigned-byte-p 2 type) :type (unsigned-byte 2))
+                     (regp bitp :type bit)
+                     (phase bitp :type bit)
+                     (fanin0 (unsigned-byte-p 30 fanin0) :type (unsigned-byte 30))
+                     (fanin1 (unsigned-byte-p 30 fanin1) :type (unsigned-byte 30)))
+    :inline t
+    :enabled t
+    :split-types t
+    :guard-hints (("goal" :in-theory (enable mk-snode)))
+    (mbe :logic (mk-snode type regp phase fanin0 fanin1)
+         :exec (mv (the (unsigned-byte 32)
+                        (logior (the (unsigned-byte 32) (ash (the (unsigned-byte 30) fanin0) 2))
+                                (the (unsigned-byte 2) type)))
+                   (the (unsigned-byte 32)
+                        (logior (the bit regp)
+                                (the (unsigned-byte 2) (ash (the bit phase) 1))
+                                (the (unsigned-byte 32) (ash (the (unsigned-byte 30) fanin1) 2)))))))
 
   (defmvtypes aignet::mk-snode$inline (natp natp))
 
