@@ -4210,7 +4210,11 @@
                                      (rb
                                       unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
-                                      negative-logand-to-positive-logand-with-integerp-x))))))
+                                      negative-logand-to-positive-logand-with-integerp-x)))))
+
+  (defrule 64-bit-modep-of-get-prefixes
+    (equal (64-bit-modep (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+           (64-bit-modep x86))))
 
 ;; ======================================================================
 
@@ -4226,7 +4230,23 @@ instruction, and dispatches control to the appropriate instruction
 semantic function.</p>"
 
   :prepwork
-  ((local (in-theory (e/d* () (unsigned-byte-p not)))))
+  ((local (in-theory (e/d* () (unsigned-byte-p not))))
+   ;; The following lemma is the same as the one in the :PREPWORK of
+   ;; TWO-BYTE-OPCODE-DECODE-AND-EXECUTE; without it, guard verification and
+   ;; some of the following theorems fail for X86-FETCH-DECODE-EXECUTE. See
+   ;; the comment about this lemma in TWO-BYTE-OPCODE-DECODE-AND-EXECUTE.
+   (local
+    (defrule lemma
+      (implies
+       (and (integerp *ip)
+            (<= -140737488355328 *ip)
+            (< *ip 140737488355328)
+            (natp delta))
+       (and (integerp (mv-nth 1 (increment-*ip *ip delta x86)))
+            (rationalp (mv-nth 1 (increment-*ip *ip delta x86)))
+            (<= -140737488355328 (mv-nth 1 (increment-*ip *ip delta x86)))
+            (< (mv-nth 1 (increment-*ip *ip delta x86)) 140737488355328)))
+      :enable increment-*ip)))
 
   (b* ((ctx 'x86-fetch-decode-execute)
        ;; (64-bit-mode (64-bit-modep x86))
@@ -4255,17 +4275,11 @@ semantic function.</p>"
         (prefixes-slice :next-byte prefixes))
 
        ((the (unsigned-byte 4) prefix-length) (prefixes-slice :num-prefixes prefixes))
-       ((the (signed-byte 49) temp-rip)
-        (if (equal 0 prefix-length)
-            (+ 1 start-rip)
-          (+ 1 prefix-length start-rip)))
 
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                                  temp-rip))))
-        (!!ms-fresh :non-canonical-address-encountered temp-rip))
+       ((mv flg temp-rip) (if (equal 0 prefix-length)
+                              (increment-*ip start-rip 1 x86)
+                            (increment-*ip start-rip (1+ prefix-length) x86)))
+       ((when flg) (!!ms-fresh :increment-error flg))
 
        ;; If opcode/rex/escape-byte is a rex byte, it is filed away in
        ;; "rex-byte".
@@ -4284,24 +4298,11 @@ semantic function.</p>"
        ((when flg1)
         (!!ms-fresh :opcode/escape-byte-read-error flg1))
 
-       ((mv flg2 (the (signed-byte 49) temp-rip))
+       ((mv flg2 temp-rip)
         (if (equal rex-byte 0)
-            ;; We know temp-rip is canonical from the previous check.
             (mv nil temp-rip)
-          (let ((temp-rip (the (signed-byte
-                                #.*max-linear-address-size+1*) (1+ temp-rip))))
-            ;; We need to check whether (1+ temp-rip) is canonical or
-            ;; not.
-            (if (mbe :logic (canonical-address-p temp-rip)
-                     :exec (< (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                   temp-rip)
-                              #.*2^47*))
-                (mv nil temp-rip)
-              (mv t temp-rip)))))
-
-       ((when flg2)
-        (!!ms-fresh :non-canonical-address-encountered temp-rip))
+          (increment-*ip temp-rip 1 x86)))
+       ((when flg2) (!!ms-fresh :increment-error flg2))
 
        ;; Possible values of opcode/escape-byte:
 
@@ -4348,25 +4349,11 @@ semantic function.</p>"
        ((when flg3)
         (!!ms-fresh :modr/m-byte-read-error flg2))
 
-       ((mv flg4 (the (signed-byte 49) temp-rip))
+       ((mv flg4 temp-rip)
         (if modr/m?
-            (let ((temp-rip (the (signed-byte
-                                  #.*max-linear-address-size+1*) (1+ temp-rip))))
-              ;; We need to check whether (1+ temp-rip) is
-              ;; canonical or not.
-              (if (mbe :logic (canonical-address-p temp-rip)
-                       :exec (< (the (signed-byte
-                                      #.*max-linear-address-size+1*)
-                                     temp-rip)
-                                #.*2^47*))
-                  (mv nil temp-rip)
-                (mv t temp-rip)))
-          ;; We know from the previous check that temp-rip is
-          ;; canonical.
+            (increment-*ip temp-rip 1 x86)
           (mv nil temp-rip)))
-
-       ((when flg4)
-        (!!ms-fresh :non-canonical-address-encountered temp-rip))
+       ((when flg4) (!!ms-fresh :increment-error flg2))
 
        (sib? (and modr/m? (x86-decode-SIB-p modr/m)))
 
@@ -4377,25 +4364,11 @@ semantic function.</p>"
        ((when flg5)
         (!!ms-fresh :sib-byte-read-error flg3))
 
-       ((mv flg6 (the (signed-byte 49) temp-rip))
+       ((mv flg6 temp-rip)
         (if sib?
-            (let ((temp-rip
-                   (the (signed-byte #.*max-linear-address-size+2*)
-                        (1+ temp-rip))))
-              ;; We need to check whether (1+ temp-rip) is canonical.
-              (if (mbe :logic (canonical-address-p temp-rip)
-                       :exec (< (the (signed-byte
-                                      #.*max-linear-address-size+2*)
-                                     temp-rip)
-                                #.*2^47*))
-                  (mv nil temp-rip)
-                (mv t temp-rip)))
-          ;; We know from the previous check that temp-rip is
-          ;; canonical.
+            (increment-*ip temp-rip 1 x86)
           (mv nil temp-rip)))
-
-       ((when flg6)
-        (!!ms-fresh :virtual-address-error temp-rip)))
+       ((when flg6) (!!ms-fresh :increment-error flg6)))
     (top-level-opcode-execute
      start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
 
@@ -4416,9 +4389,10 @@ semantic function.</p>"
       (equal opcode/rex/escape-byte
              (prefixes-slice :next-byte prefixes))
       (equal prefix-length (prefixes-slice :num-prefixes prefixes))
-      (equal temp-rip0 (if (equal prefix-length 0)
-                           (+ 1 start-rip)
-                         (+ prefix-length start-rip 1)))
+      (equal temp-rip0
+             (if (equal prefix-length 0)
+                 (mv-nth 1 (increment-*ip start-rip 1 x86))
+               (mv-nth 1 (increment-*ip start-rip (1+ prefix-length) x86))))
       (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4) 4)
                           opcode/rex/escape-byte
                         0))
@@ -4426,19 +4400,27 @@ semantic function.</p>"
                                     opcode/rex/escape-byte
                                   (mv-nth 1 (rme08 temp-rip0 *cs* :x x86))))
       (equal temp-rip1 (if (equal rex-byte 0)
-                           temp-rip0 (1+ temp-rip0)))
+                           temp-rip0
+                         (mv-nth 1 (increment-*ip temp-rip0 1 x86))))
       (equal modr/m? (x86-one-byte-opcode-modr/m-p opcode/escape-byte))
       (equal modr/m (if modr/m?
                         (mv-nth 1 (rme08 temp-rip1 *cs* :x x86))
                       0))
-      (equal temp-rip2 (if modr/m? (1+ temp-rip1) temp-rip1))
+      (equal temp-rip2 (if modr/m?
+                           (mv-nth 1 (increment-*ip temp-rip1 1 x86))
+                         temp-rip1))
       (equal sib? (and modr/m? (x86-decode-sib-p modr/m)))
       (equal sib (if sib? (mv-nth 1 (rme08 temp-rip2 *cs* :x x86)) 0))
-      (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
+
+      (equal temp-rip3 (if sib?
+                           (mv-nth 1 (increment-*ip temp-rip2 1 x86))
+                         temp-rip2))
 
       (or (programmer-level-mode x86)
           (not (page-structure-marking-mode x86)))
-      (canonical-address-p temp-rip0)
+      (not (if (equal prefix-length 0)
+               (mv-nth 0 (increment-*ip start-rip 1 x86))
+             (mv-nth 0 (increment-*ip start-rip (1+ prefix-length) x86))))
       (if (and (equal prefix-length 0)
                (equal rex-byte 0)
                (not modr/m?))
@@ -4449,13 +4431,13 @@ semantic function.</p>"
         (not (mv-nth 0 (rme08 temp-rip0 *cs* :x x86))))
       (if (equal rex-byte 0)
           t
-        (canonical-address-p temp-rip1))
+        (not (mv-nth 0 (increment-*ip temp-rip0 1 x86))))
       (if modr/m?
-          (and (canonical-address-p temp-rip2)
+          (and (not (mv-nth 0 (increment-*ip temp-rip1 1 x86)))
                (not (mv-nth 0 (rme08 temp-rip1 *cs* :x x86))))
         t)
       (if sib?
-          (and (canonical-address-p temp-rip3)
+          (and (not (mv-nth 0 (increment-*ip temp-rip2 1 x86)))
                (not (mv-nth 0 (rme08 temp-rip2 *cs* :x x86))))
         t)
       (x86p x86)
