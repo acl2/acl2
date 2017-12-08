@@ -318,7 +318,7 @@
   (defiteration aignet-copy-dfs-outs
     (aignet mark copy strash gatesimp aignet2)
     (declare (xargs :stobjs (aignet mark copy strash aignet2)
-                    :guard (and (natp gatesimp)
+                    :guard (and (gatesimp-p gatesimp)
                                 (<= (num-nodes aignet) (bits-length mark))
                                 (<= (num-nodes aignet) (lits-length copy))
                                 (aignet-copies-in-bounds copy aignet2))))
@@ -460,7 +460,7 @@
   (defiteration aignet-copy-dfs-regs
     (aignet mark copy strash gatesimp aignet2)
     (declare (xargs :stobjs (aignet mark copy strash aignet2)
-                    :guard (and (natp gatesimp)
+                    :guard (and (gatesimp-p gatesimp)
                                 (<= (num-nodes aignet) (bits-length mark))
                                 (<= (num-nodes aignet) (lits-length copy))
                                 (aignet-copies-in-bounds copy aignet2))))
@@ -684,7 +684,7 @@
 
   (defun aignet-copy-dfs (aignet aignet2 gatesimp)
     (declare (xargs :stobjs (aignet aignet2)
-                    :guard (natp gatesimp)))
+                    :guard (gatesimp-p gatesimp)))
     (b* (((local-stobjs mark copy strash)
           (mv mark copy strash aignet2))
          ((mv mark copy aignet2)
@@ -1532,7 +1532,7 @@
                     :guard (and (<= (num-nodes aignet) (bits-length mark))
                                 (<= (num-nodes aignet) (lits-length copy))
                                 (aignet-copies-in-bounds copy aignet2)
-                                (natp gatesimp))
+                                (gatesimp-p gatesimp))
                     :guard-hints (("goal" :in-theory (enable aignet-idp)))))
     (b* ((id n)
          (copyp (int= (get-bit id mark) 1))
@@ -1782,7 +1782,7 @@
             ))
 
   (define aignet-prune-comb-aux (mark copy aignet
-                                      (gatesimp :type (integer 0 *))
+                                      (gatesimp gatesimp-p)
                                       strash aignet2)
     (b* (((mv mark copy aignet2)
           (aignet-copy-dfs-setup aignet mark copy aignet2))
@@ -1881,7 +1881,7 @@
                                      (aignet-prune-comb-aux))))))
 
 
-  (define aignet-prune-comb (aignet aignet2 (gatesimp :type (integer 0 *)))
+  (define aignet-prune-comb (aignet aignet2 (gatesimp gatesimp-p))
     (b* (((local-stobjs mark copy strash)
           (mv mark copy strash aignet2)))
       (aignet-prune-comb-aux mark copy aignet gatesimp strash aignet2))
@@ -3641,7 +3641,7 @@
 
 (define aignet-prune-seq-aux (aignet
                               mark copy
-                              (gatesimp :type (integer 0 *))
+                              (gatesimp gatesimp-p)
                               strash
                               aignet2)
   :prepwork ((local (defthm resize-list-0
@@ -3939,7 +3939,7 @@
 
 
 (define aignet-prune-seq (aignet
-                          (gatesimp :type (integer 0 *))
+                          (gatesimp gatesimp-p)
                           aignet2)
   (b* (((local-stobjs copy mark strash)
         (mv mark copy strash aignet2)))

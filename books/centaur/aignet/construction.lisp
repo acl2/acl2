@@ -30,6 +30,7 @@
 
 (in-package "AIGNET")
 (include-book "semantics")
+(include-book "centaur/fty/bitstruct" :dir :system)
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -51,6 +52,89 @@
 
 (local (acl2::use-trivial-ancestors-check))
 (local (std::add-default-post-define-hook :fix))
+
+(local (in-theory (disable unsigned-byte-p)))
+
+(local (defthm unsigned-byte-p-of-lit->var
+         (implies (and (unsigned-byte-p (+ 1 n) lit)
+                       (natp n))
+                  (unsigned-byte-p n (lit->var lit)))
+         :hints(("Goal" :in-theory (enable lit->var)))))
+
+(local (defthmd unsigned-byte-p-of-lit-when-lit->var
+         (implies (and (unsigned-byte-p (+ -1 n) (lit->var lit))
+                       (litp lit)
+                       (posp n))
+                  (unsigned-byte-p n lit))
+         :hints(("Goal" :in-theory (enable lit->var)))
+         :rule-classes ((:rewrite :backchain-limit-lst (3 nil nil)))))
+
+(local (defthm unsigned-byte-p-of-lit->var-when-aignet-litp
+         (implies (and (aignet-litp lit aignet)
+                       (< (node-count aignet) #x1fffffff))
+                  (unsigned-byte-p 29 (lit->var lit)))
+         :hints(("Goal" :in-theory (enable aignet-litp unsigned-byte-p)))))
+
+(local (defthm unsigned-byte-p-when-aignet-litp
+         (implies (and (aignet-litp lit aignet)
+                       (litp lit)
+                       (< (node-count aignet) #x1fffffff))
+                  (unsigned-byte-p 30 lit))
+         :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var)))))
+
+(local (defthm unsigned-byte-p-32-when-aignet-litp
+         (implies (and (aignet-litp lit aignet)
+                       (litp lit)
+                       (< (node-count aignet) #x1fffffff))
+                  (unsigned-byte-p 32 lit))
+         :hints(("Goal" :use unsigned-byte-p-when-aignet-litp
+                 :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+
+(local (defthmd unsigned-byte-p-when-bit
+         (implies (and (bitp x)
+                       (posp n))
+                  (unsigned-byte-p n x))
+         :hints(("Goal" :in-theory (enable bitp)))))
+                  
+
+(local (defthm unsigned-byte-p-of-lit-negate
+         (implies (and (unsigned-byte-p n x)
+                       (posp n))
+                  (unsigned-byte-p n (lit-negate x)))
+         :hints(("Goal" :in-theory (enable lit-negate make-lit lit->var
+                                           unsigned-byte-p-when-bit)))))
+
+(local (defthm unsigned-byte-p-of-fanin
+         (implies (< (node-count aignet) #x1fffffff)
+                  (unsigned-byte-p 30 (fanin type (lookup-id id aignet))))
+         :hints(("Goal" :use ((:instance unsigned-byte-p-when-aignet-litp
+                               (lit (fanin type (lookup-id id aignet)))))
+                 :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+
+(local (defthm unsigned-byte-p-32-of-fanin
+         (implies (< (node-count aignet) #x1fffffff)
+                  (unsigned-byte-p 32 (fanin type (lookup-id id aignet))))
+         :hints(("Goal" :use ((:instance unsigned-byte-p-of-fanin))
+                 :in-theory (disable unsigned-byte-p-of-fanin)))))
+
+(defmacro =30 (a b)
+  `(eql (the (unsigned-byte 30) ,a)
+        (the (unsigned-byte 30) ,b)))
+
+(defmacro =2 (a b)
+  `(eql (the (unsigned-byte 2) ,a)
+        (the (unsigned-byte 2) ,b)))
+
+(defmacro =b (a b)
+  `(eql (the bit ,a)
+        (the bit ,b)))
+
+(defmacro <29 (a b)
+  `(< (the (unsigned-byte 29) ,a)
+      (the (unsigned-byte 29) ,b)))
+                  
+
+
 
 (defsection simplify-gate
 
@@ -112,11 +196,10 @@
     ;;                       (two-id-measure id2 id1))))))
     )
 
-  (define aignet-gate-simp-order ((lit1 litp)
-                                  (lit2 litp)
+  (define aignet-gate-simp-order ((lit1 litp :type (unsigned-byte 30))
+                                  (lit2 litp :type (unsigned-byte 30))
                                   aignet)
-    (declare (type (integer 0 *) lit1)
-             (type (integer 0 *) lit2))
+    :split-types t
     :guard (and (fanin-litp lit1 aignet)
                 (fanin-litp lit2 aignet))
     :returns (mv (lit1 litp)
@@ -124,10 +207,10 @@
                  both neither)
     (b* ((lit1 (lit-fix lit1))
          (lit2 (lit-fix lit2))
-         (id1 (lit-id lit1))
-         (id2 (lit-id lit2))
-         (gatep1 (int= (id->type id1 aignet) (gate-type)))
-         (gatep2 (int= (id->type id2 aignet) (gate-type)))
+         (id1 (lit->var^ lit1))
+         (id2 (lit->var^ lit2))
+         (gatep1 (=2 (id->type id1 aignet) (gate-type)))
+         (gatep2 (=2 (id->type id2 aignet) (gate-type)))
          ((mv lit1 lit2 both neither)
           (if gatep1
               (if gatep2
@@ -139,7 +222,7 @@
          ((when (and (not both) (not neither)))
           (mv lit1 lit2 nil nil))
          ((mv lit1 lit2)
-          (if (< id2 id1)
+          (if (<29 id2 id1)
               (mv lit2 lit1)
             (mv lit1 lit2))))
       (mv lit1 lit2 both neither))
@@ -246,124 +329,94 @@
                        (skip-measure 'nil)
                        (skip-precedes 'nil)
                        (aignet-litp-hints 'nil)
-                       (lit-cong1-hints 'nil)
-                       (lit-cong2-hints 'nil)
-                       (list-cong-hints 'nil)
+                       ;; (lit-cong1-hints 'nil)
+                       ;; (lit-cong2-hints 'nil)
+                       ;; (list-cong-hints 'nil)
 ; (nth-cong-hints 'nil)
                        (xargs 'nil))
-   `(define ,name ((lit1 litp)
-                   (lit2 litp)
+   `(define ,name ((lit1 litp :type (unsigned-byte 30))
+                   (lit2 litp :type (unsigned-byte 30))
                    ,@extra-args
                    aignet)
-      (declare (type (integer 0 *) lit1)
-               (type (integer 0 *) lit2)
-               (xargs . ,xargs))
+      (declare (xargs . ,xargs))
+      :split-types t
       :guard (and (fanin-litp lit1 aignet)
                   (fanin-litp lit2 aignet)
                   ,guard)
       :guard-hints ,guard-hints
+      :returns (mv (extra acl2::maybe-natp :rule-classes :type-prescription)
+                   (flg)
+                   (nlit1 litp :rule-classes :type-prescription)
+                   (nlit2 litp :rule-classes :type-prescription))
       ,body
       ///
-      (local (in-theory (enable ,name)))
 
-      (defmvtypes ,name (nil nil natp natp))
-
-      (defthm ,(mksym name (symbol-name name) "-TYPE")
-        (or (not (mv-nth 0 (,name lit1 lit2 ,@extra-args aignet)))
-            (natp (mv-nth 0 (,name lit1 lit2 ,@extra-args aignet))))
-        :rule-classes :type-prescription)
-
-      ;; (def-aignet-frame ,name
-      ;;   ,@(and frame-hints `(:hints ,frame-hints)))
-
-      ;; (defthmd ,(mksym name (symbol-name name) "-FRAME")
-      ;;   (implies
-      ;;    (and (not (equal (nfix n) *num-nodes*))
-      ;;         (not (equal (nfix n) *nodesi*)))
-      ;;    (equal (let ((aignet (update-nth n v aignet)))
-      ;;             (,name lit1 lit2 ,@extra-args aignet))
-      ;;           (,name lit1 lit2 ,@extra-args aignet)))
-      ;;   :hints ,(or frame-hints
-      ;;               '(("Goal" :in-theory (enable* aignet-frame-thms)))))
-
-      ;; (add-to-ruleset aignet-frame-thms
-      ;;                 ,(mksym name (symbol-name name) "-FRAME"))
-
-      (defcong lit-equiv equal (,name lit1 lit2 ,@extra-args aignet) 1
-        :hints ,lit-cong1-hints)
-      (defcong lit-equiv equal (,name lit1 lit2 ,@extra-args aignet) 2
-        :hints ,lit-cong2-hints)
-      (defcong list-equiv equal (,name lit1 lit2 ,@extra-args aignet)
-        ,(+ 3 (len extra-args))
-        :hints ,list-cong-hints)
+      ;; (defcong lit-equiv equal (,name lit1 lit2 ,@extra-args aignet) 1
+      ;;   :hints ,lit-cong1-hints)
+      ;; (defcong lit-equiv equal (,name lit1 lit2 ,@extra-args aignet) 2
+      ;;   :hints ,lit-cong2-hints)
+      ;; (defcong list-equiv equal (,name lit1 lit2 ,@extra-args aignet)
+      ;;   ,(+ 3 (len extra-args))
+      ;;   :hints ,list-cong-hints)
 
       ,@(and
          (not skip-precedes)
-         `((defthm ,(mksym name "FANIN-PRECEDES-GATE-OF-" (symbol-name name))
+         `((defret ,(mksym name "FANIN-PRECEDES-GATE-OF-" (symbol-name name))
              (implies (and (< (lit-id lit1) gate)
                            (< (lit-id lit2) gate)
                            ;; (aignet-litp lit1 aignet)
                            ;; (aignet-litp lit2 aignet)
                            (natp gate)
                            . ,reqs)
-                      (b* (((mv extra ?flg nlit1 nlit2)
-                            (,name lit1 lit2 ,@extra-args aignet)))
-                        (and (implies extra
-                                      (< (lit-id extra) gate))
-                             (< (lit-id nlit1) gate)
-                             (< (lit-id nlit2) gate))))
+                      (and (implies extra
+                                    (< (lit-id extra) gate))
+                           (< (lit-id nlit1) gate)
+                           (< (lit-id nlit2) gate)))
              :hints ,fanin-hints
              :rule-classes (:rewrite))))
 
       ,@(and
          (not skip-measure)
-         `((defthm ,(mksym name "TWO-ID-MEASURE-OF-" (symbol-name name))
+         `((defret ,(mksym name "TWO-ID-MEASURE-OF-" (symbol-name name))
              (implies (and ;; (aignet-litp lit1 aignet)
                            ;; (aignet-litp lit2 aignet)
                            . ,reqs)
-                      (b* (((mv ?extra flg nlit1 nlit2)
-                            (,name lit1 lit2 ,@extra-args aignet)))
-                        (implies flg
-                                 (o< (two-id-measure (lit-id nlit1)
-                                                     (lit-id nlit2))
-                                     (two-id-measure (lit-id lit1)
-                                                     (lit-id lit2))))))
+                      (implies flg
+                               (o< (two-id-measure (lit-id nlit1)
+                                                   (lit-id nlit2))
+                                   (two-id-measure (lit-id lit1)
+                                                   (lit-id lit2)))))
              :hints ,measure-hints)))
 
-      (defthm ,(mksym name "AIGNET-LITP-OF-" (symbol-name name))
-        (b* (((mv extra ?flg nlit1 nlit2)
-              (,name lit1 lit2 ,@extra-args aignet)))
-          (implies (and (aignet-litp lit1 aignet)
-                        (aignet-litp lit2 aignet)
-                        . ,reqs)
-                   (and (implies extra
-                                 (aignet-litp extra aignet))
-                        (aignet-litp nlit1 aignet)
-                        (aignet-litp nlit2 aignet))))
+      (defret ,(mksym name "AIGNET-LITP-OF-" (symbol-name name))
+        (implies (and (aignet-litp lit1 aignet)
+                      (aignet-litp lit2 aignet)
+                      . ,reqs)
+                 (and (implies extra
+                               (aignet-litp extra aignet))
+                      (aignet-litp nlit1 aignet)
+                      (aignet-litp nlit2 aignet)))
         :hints ,aignet-litp-hints)
 
 
-      (defthm ,(mksym name "EVAL-OF-" (symbol-name name))
-        (b* (((mv extra ?flg nlit1 nlit2)
-              (,name lit1 lit2 ,@extra-args aignet)))
-          (implies (and ;; (aignet-litp lit1 aignet)
-                        ;; (aignet-litp lit2 aignet)
-                        . ,reqs)
-                   (and (implies extra
-                                 (equal (lit-eval extra aignet-invals aignet-regvals aignet)
-                                        (eval-and-of-lits lit1 lit2 aignet-invals aignet-regvals
-                                                          aignet)))
-                        (equal (eval-and-of-lits nlit1 nlit2 aignet-invals aignet-regvals aignet)
-                               (eval-and-of-lits lit1 lit2 aignet-invals aignet-regvals aignet)))))
+      (defret ,(mksym name "EVAL-OF-" (symbol-name name))
+        (implies (and ;; (aignet-litp lit1 aignet)
+                  ;; (aignet-litp lit2 aignet)
+                  . ,reqs)
+                 (and (implies extra
+                               (equal (lit-eval extra aignet-invals aignet-regvals aignet)
+                                      (eval-and-of-lits lit1 lit2 aignet-invals aignet-regvals
+                                                        aignet)))
+                      (equal (eval-and-of-lits nlit1 nlit2 aignet-invals aignet-regvals aignet)
+                             (eval-and-of-lits lit1 lit2 aignet-invals aignet-regvals aignet))))
         :hints ,eval-hints)
 
-      (defthm ,(mksym name "LITP-OF-" (symbol-name name))
-        (b* (((mv extra ?flg nlit1 nlit2)
-              (,name lit1 lit2 ,@extra-args aignet)))
-          (and (implies extra
-                        (litp extra))
-               (litp nlit1)
-               (litp nlit2))))))
+      ;; (defret ,(mksym name "LITP-OF-" (symbol-name name))
+      ;;   (and (implies extra
+      ;;                 (litp extra))
+      ;;        (litp nlit1)
+      ;;        (litp nlit2)))
+      ))
 
 
   (local (in-theory (disable len)))
@@ -431,19 +484,19 @@
   (def-gate-simp aignet-gate-simp-level1
     (b* ((lit1 (lit-fix lit1))
          (lit2 (lit-fix lit2))
-         ((when (int= (id->type (lit-id lit1) aignet) (const-type)))
-          (mv (if (int= (lit-neg lit1) 1)
+         ((when (=2 (id->type (lit->var^ lit1) aignet) (const-type)))
+          (mv (if (=b (lit->neg^ lit1) 1)
                   lit2    ;; neutrality
                 0)
               nil lit1 lit2))       ;; boundedness
-         ((when (int= (id->type (lit-id lit2) aignet) (const-type)))
-          (mv (if (int= (lit-neg lit2) 1)
+         ((when (=2 (id->type (lit->var^ lit2) aignet) (const-type)))
+          (mv (if (=b (lit->neg^ lit2) 1)
                   lit1    ;; neutrality
                 0)
               nil lit1 lit2))       ;; boundedness
-         ((when (= lit1 lit2))
+         ((when (=30 lit1 lit2))
           (mv lit1 nil lit1 lit2))       ;; idempotence
-         ((when (= lit1 (lit-negate lit2)))
+         ((when (=30 lit1 (lit-negate^ lit2)))
           (mv 0 nil lit1 lit2)))         ;; contradiction
       (mv nil nil lit1 lit2))
     :eval-hints (("Goal" :in-theory (e/d* (eval-and-of-lits
@@ -464,19 +517,20 @@
   (def-gate-simp aignet-gate-simp-l2-step1
     (b* ((lit1 (lit-fix lit1))
          (lit2 (lit-fix lit2))
-         (id1 (lit-id lit1))
+         (id1 (lit->var^ lit1))
          (a (gate-id->fanin0 id1 aignet))
          (b (gate-id->fanin1 id1 aignet))
-         (lit2b (lit-negate lit2))
+         (lit2b (lit-negate^ lit2))
          (res (or (and (mbe :logic (aignet-gate-simp-l2-step1-cond a b lit2b)
-                            :exec (or (= a lit2b)
-                                      (= b lit2b)))
-                       (if (int= (lit-neg lit1) 1)
+                            :exec (or (=30 a lit2b)
+                                      (=30 b lit2b)))
+                       (if (=b (lit->neg^ lit1) 1)
                            lit2 ;; subsumption1
                          0))    ;; contradiction1
-                  (and (int= (lit-neg lit1) 0)
+                  (and (eql (the bit (lit->neg^ lit1)) 0)
                        (mbe :logic (aignet-gate-simp-l2-step1-cond a b lit2)
-                            :exec (or (= a lit2) (= b lit2)))
+                            :exec (or (=30 a lit2)
+                                      (=30 b lit2)))
                        lit1))))  ;; idempotence1
       (mv res nil lit1 lit2))
     :guard (int= (id->type (lit-id lit1) aignet) (gate-type))
@@ -555,22 +609,22 @@
   (def-gate-simp aignet-gate-simp-l2-step2
     (b* ((lit1 (lit-fix lit1))
          (lit2 (lit-fix lit2))
-         (id1 (lit-id lit1))
-         (id2 (lit-id lit2))
+         (id1 (lit->var^ lit1))
+         (id2 (lit->var^ lit2))
          (a (gate-id->fanin0 id1 aignet))
          (b (gate-id->fanin1 id1 aignet))
          (c (gate-id->fanin0 id2 aignet))
          (d (gate-id->fanin1 id2 aignet))
-         (negp1 (int= (lit-neg lit1) 1))
-         (negp2 (int= (lit-neg lit2) 1))
-         (cb (lit-negate c))
-         (db (lit-negate d))
-         (res (and (int= 0 (b-and (lit-neg lit1) (lit-neg lit2)))
+         (negp1 (=b (lit->neg^ lit1) 1))
+         (negp2 (=b (lit->neg^ lit2) 1))
+         (cb (lit-negate^ c))
+         (db (lit-negate^ d))
+         (res (and (=b 0 (b-and (lit->neg^ lit1) (lit->neg^ lit2)))
                    (mbe :logic (aignet-gate-simp-l2-step2-cond a b cb db)
-                        :exec (or (= a cb)
-                                  (= a db)
-                                  (= b cb)
-                                  (= b db)))
+                        :exec (or (=30 a cb)
+                                  (=30 a db)
+                                  (=30 b cb)
+                                  (=30 b db)))
                    (cond (negp1 lit2)   ;; subsumption2
                          (negp2 lit1)   ;; subsumption2
                          (t     0)))))  ;; contradiction2
@@ -606,25 +660,27 @@
   (def-gate-simp aignet-gate-simp-l2-step3
     (b* ((lit1 (lit-fix lit1))
          (lit2 (lit-fix lit2))
-         ((unless (int= 1 (b-and (lit-neg lit1)
-                                 (lit-neg lit2))))
+         ((unless (=b 1 (b-and (lit->neg^ lit1)
+                               (lit->neg^ lit2))))
           (mv nil nil lit1 lit2))
-         (id1 (lit-id lit1))
-         (id2 (lit-id lit2))
+         (id1 (lit->var^ lit1))
+         (id2 (lit->var^ lit2))
          (a (gate-id->fanin0 id1 aignet))
          (b (gate-id->fanin1 id1 aignet))
          (c (gate-id->fanin0 id2 aignet))
          (d (gate-id->fanin1 id2 aignet))
-         (cb (lit-negate c))
-         (db (lit-negate d))
+         (cb (lit-negate^ c))
+         (db (lit-negate^ d))
          ((when (mbe :logic (aignet-gate-simp-l2-step3-cond a b c d cb db)
-                     :exec (or (and (= a d) (= b cb))
-                               (and (= a c) (= b db)))))
-          (mv (lit-negate a) nil lit1 lit2))
+                     :exec (or (and (=30 a d)
+                                    (=30 b cb))
+                               (and (=30 a c)
+                                    (=30 b db)))))
+          (mv (lit-negate^ a) nil lit1 lit2))
          ((when (mbe :logic (aignet-gate-simp-l2-step3-cond b a c d cb db)
-                     :exec (or (and (= b d) (= a cb))
-                               (and (= b c) (= a db)))))
-          (mv (lit-negate b) nil lit1 lit2)))
+                     :exec (or (and (=30 b d) (=30 a cb))
+                               (and (=30 b c) (=30 a db)))))
+          (mv (lit-negate^ b) nil lit1 lit2)))
       (mv nil nil lit1 lit2))
     :guard (and (int= (id->type (lit-id lit1) aignet) (gate-type))
                 (int= (id->type (lit-id lit2) aignet) (gate-type)))
@@ -694,37 +750,37 @@
   (def-gate-simp aignet-gate-simp-level3
     (b* ((lit1 (lit-fix lit1))
          (lit2 (lit-fix lit2))
-         (id1 (lit-id lit1))
+         (id1 (lit->var^ lit1))
          (a (gate-id->fanin0 id1 aignet))
          (b (gate-id->fanin1 id1 aignet))
          ((mv c d) (if both
-                       (let ((id2 (lit-id lit2)))
+                       (let ((id2 (lit->var^ lit2)))
                          (mv (gate-id->fanin0 id2 aignet)
                              (gate-id->fanin1 id2 aignet)))
                      (mv nil nil)))
-         (negp1 (int= (lit-neg lit1) 1))
-         (negp2 (int= (lit-neg lit2) 1))
+         (negp1 (=b (lit->neg^ lit1) 1))
+         (negp2 (=b (lit->neg^ lit2) 1))
 
          ((when (and negp1
                      (mbe :logic (aignet-gate-simp-level3-cond1 b c d lit2 negp2 both)
                           :exec
-                          (or (= b lit2)                                      ;; substitution1
-                              (and both (not negp2) (or (= b c) (= b d))))))) ;; substitution2
-          (mv nil t (lit-negate a) lit2))
+                          (or (=30 b lit2)                                      ;; substitution1
+                              (and both (not negp2) (or (=30 b c) (=30 b d))))))) ;; substitution2
+          (mv nil t (lit-negate^ a) lit2))
          ((when (and negp1
                      (mbe :logic (aignet-gate-simp-level3-cond1 a c d lit2 negp2 both)
                           :exec
-                          (or (= a lit2)                                      ;; substitution1
-                              (and both (not negp2) (or (= a c) (= a d))))))) ;; substitution2
-          (mv nil t (lit-negate b) lit2))
-         ((when (and both (int= 1 (b-and (lit-neg lit2) (b-not (lit-neg lit1))))
+                          (or (=30 a lit2)                                      ;; substitution1
+                              (and both (not negp2) (or (=30 a c) (=30 a d))))))) ;; substitution2
+          (mv nil t (lit-negate^ b) lit2))
+         ((when (and both (=b 1 (b-and (lit->neg^ lit2) (b-not (lit->neg^ lit1))))
                      (mbe :logic (aignet-gate-simp-level3-cond2 a b c)
-                          :exec (or (= c b) (= c a))))) ;; substitution2
-          (mv nil t (lit-negate d) lit1))
-         ((when  (and both (int= 1 (b-and (lit-neg lit2) (b-not (lit-neg lit1))))
+                          :exec (or (=30 c b) (=30 c a))))) ;; substitution2
+          (mv nil t (lit-negate^ d) lit1))
+         ((when  (and both (=b 1 (b-and (lit->neg^ lit2) (b-not (lit->neg^ lit1))))
                       (mbe :logic (aignet-gate-simp-level3-cond2 a b d)
-                           :exec (or (= d b) (= d a))))) ;; substitution2
-          (mv nil t (lit-negate c) lit1)))
+                           :exec (or (=30 d b) (=30 d a))))) ;; substitution2
+          (mv nil t (lit-negate^ c) lit1)))
       (mv nil nil lit1 lit2))
     :extra-args (both)
     :guard (and (int= (id->type (lit-id lit1) aignet) (gate-type))
@@ -759,11 +815,11 @@
   (def-gate-simp aignet-gate-simp-level4
     (b* ((lit1 (lit-fix lit1))
          (lit2 (lit-fix lit2))
-         ((when (or (int= (lit-neg lit1) 1)
-                    (int= (lit-neg lit2) 1)))
+         ((when (or (int= (lit->neg^ lit1) 1)
+                    (int= (lit->neg^ lit2) 1)))
           (mv nil nil lit1 lit2))
-         (id1 (lit-id lit1))
-         (id2 (lit-id lit2))
+         (id1 (lit->var^ lit1))
+         (id2 (lit->var^ lit2))
          (a (gate-id->fanin0 id1 aignet))
          (b (gate-id->fanin1 id1 aignet))
          (c (gate-id->fanin0 id2 aignet))
@@ -772,10 +828,10 @@
          ;; Maybe experiment with this.  Atm. we'll prefer to reduce the
          ;; higher-numbered gate, lit1.
          ((when (mbe :logic (aignet-gate-simp-level4-cond a c d)
-                     :exec (or (= a c) (= a d))))
+                     :exec (or (=30 a c) (=30 a d))))
           (mv nil t b lit2))
          ((when (mbe :logic (aignet-gate-simp-level4-cond b c d)
-                     :exec (or (= b c) (= b d))))
+                     :exec (or (=30 b c) (=30 b d))))
           (mv nil t a lit2)))
       (mv nil nil lit1 lit2))
     :guard (and (int= (id->type (lit-id lit1) aignet) (gate-type))
@@ -810,7 +866,7 @@
          ((mv lit1 lit2 both neither)
           (aignet-gate-simp-order lit1 lit2 aignet))
 
-         ((when (or (< level 2) neither))
+         ((when (or (< (the (integer 0 4) level) 2) neither))
           (mv nil nil lit1 lit2))
 
          ;; O2.
@@ -819,7 +875,7 @@
          ((when level2-result)
           (mv level2-result nil lit1 lit2))
 
-         ((when (< level 3))
+         ((when (< (the (integer 0 4) level) 3))
           (mv nil nil lit1 lit2))
 
 
@@ -829,7 +885,7 @@
          ((when succ)
           (mv nil succ nlit1 nlit2))
 
-         ((when (or (< level 4) (not both)))
+         ((when (or (< (the (integer 0 4) level) 4) (not both)))
           (mv nil nil lit1 lit2))
 
          ;; O4.
@@ -841,7 +897,7 @@
       (mv nil nil lit1 lit2))
 
     :extra-args (level)
-    :guard (natp level)
+    :guard (and (natp level) (<= level 4))
     :fanin-hints (("goal" :cases ((mv-nth 2 (aignet-gate-simp-order lit1 lit2 aignet)))))
     :measure-hints (("goal" :use ((:instance
                                    two-id-measure-of-aignet-gate-simp-order))
@@ -875,7 +931,7 @@
       (aignet-gate-simp nlit1 nlit2 level aignet))
 
     :extra-args (level)
-    :guard (natp level)
+    :guard (and (natp level) (<= level 4))
     :xargs (:measure (two-id-measure (lit-id lit1) (lit-id lit2))
             :hints (("goal" :in-theory (enable two-id-measure)))
             :guard-hints (("goal" :no-thanks t)))
@@ -927,32 +983,20 @@
                     (equal (floor n 1) n))
            :hints(("Goal" :in-theory (enable floor)))))
 
-  (defund aignet-addr-combine (a b)
-    (declare (type (integer 0 *) a b)
-             (xargs ;; :guard (and (natp a) (natp b))
-                    :verify-guards nil))
-    (if (and (< a 1073741824)
-             (< b 1073741824))
-        ;; Optimized version of the small case
-        (the (signed-byte 61)
-          (- (the (signed-byte 61)
-               (logior (the (signed-byte 61)
-                         (ash (the (signed-byte 31) a) 30))
-                       (the (signed-byte 31) b)))))
-      ;; Large case.
-      (- (+ (let* ((a+b   (+ a b))
-                   (a+b+1 (+ 1 a+b)))
-              (if (= (logand a+b 1) 0)
-                  (* (ash a+b -1) a+b+1)
-                (* a+b (ash a+b+1 -1))))
-            b)
-         576460752840294399)))
+  (define aignet-addr-combine ((a :type (unsigned-byte 30))
+                               (b :type (unsigned-byte 30)))
+    :verify-guards nil
+    (the (signed-byte 61)
+         (- (the (signed-byte 61)
+                 (logior (the (signed-byte 61)
+                              (ash (the (signed-byte 31) a) 30))
+                         (the (signed-byte 31) b))))))
 
   (local (in-theory (enable aignet-addr-combine)))
 
   (verify-guards aignet-addr-combine
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable ash))))
+                 '(:in-theory (enable ash unsigned-byte-p))))
     :otf-flg t))
 
 (defsection strash
@@ -962,18 +1006,24 @@
 
   ;; returns (mv exists key id).
   ;; exists implies that id is a gate with the two specified fanins.
-  (define strash-lookup ((lit1 litp) (lit2 litp) strash aignet)
+  (define strash-lookup ((lit1 litp :type (unsigned-byte 30))
+                         (lit2 litp :type (unsigned-byte 30))
+                         strash aignet)
+    :split-types t
     :inline t
     :guard (and (fanin-litp lit1 aignet)
                 (fanin-litp lit2 aignet))
+    :returns (mv (found)
+                 (key)
+                 (id natp :rule-classes :type-prescription))
     (b* ((key (aignet-addr-combine (lit-fix lit1) (lit-fix lit2)))
          (id (strashtab-get key strash))
          ((when id)
           (b* (((unless (and (natp id)
                              (id-existsp id aignet)
-                             (int= (id->type id aignet) (gate-type))
-                             (int= (gate-id->fanin0 id aignet) (lit-fix lit1))
-                             (int= (gate-id->fanin1 id aignet) (lit-fix lit2))))
+                             (=2 (id->type id aignet) (gate-type))
+                             (=30 (gate-id->fanin0 id aignet) (lit-fix lit1))
+                             (=30 (gate-id->fanin1 id aignet) (lit-fix lit2))))
                 (er hard? 'strash-lookup "Strash lookup found bogus value!")
                 (mv nil key 0)))
             (mv t key id))))
@@ -1002,6 +1052,24 @@
       (acl2-numberp (mv-nth 1 (strash-lookup lit1 lit2 strash aignet)))
       :rule-classes :type-prescription)
 
+    (local (defret unsigned-byte-p-of-strash-lookup-1
+             (implies (and found
+                           (< (node-count aignet) #x1fffffff))
+                      (unsigned-byte-p 29 id))
+             :hints(("Goal" :in-theory (e/d (unsigned-byte-p aignet-idp)
+                                            (lookup-id-consp-forward-to-id-bound))))))
+
+    (defret unsigned-byte-p-of-strash-lookup
+      (implies (and found
+                    (< (node-count aignet) #x1fffffff)
+                    (natp n)
+                    (<= 29 n))
+               (unsigned-byte-p n id))
+      :hints(("Goal" :in-theory (e/d ()
+                                     (unsigned-byte-p-of-strash-lookup-1
+                                      strash-lookup))
+              :use unsigned-byte-p-of-strash-lookup-1)))
+
     (defcong list-equiv equal (strash-lookup lit1 lit2 strash aignet) 4)))
 
 (defsection gatesimp
@@ -1019,44 +1087,44 @@ R. Brummayer and A. Biere.  Local two-level And-Inverter Graph minimization
 without blowup.  Proc. MEMCIS 6 (2006): 32-38,
 </blockquote>
 <p>Values of @('level') greater than 4 are treated the same as level 4.</p>"
-  (local (in-theory (disable len-update-nth)))
-  (local (in-theory (enable* acl2::ihsext-recursive-redefs
-                             acl2::ihsext-bounds-thms
-                             nfix natp)))
 
-  (definlined gatesimp-level (gatesimp)
-    (declare (Xargs :guard (natp gatesimp)))
-    (ash (lnfix gatesimp) -1))
+  (define gatesimp-level-p (x)
+    (and (natp x) (<= x 4))
+    ///
+    (define gatesimp-level-fix ((x gatesimp-level-p))
+      :returns (new-x gatesimp-level-p)
+      (mbe :logic (if (gatesimp-level-p x) x 4)
+           :exec x)
+      ///
+      (defret gatesimp-level-fix-when-gatesimp-level-p
+        (implies (gatesimp-level-p x) (equal new-x x)))
 
-  (defthm natp-gatesimp-level
-    (natp (gatesimp-level gatesimp))
-    :hints(("Goal" :in-theory (enable gatesimp-level)))
-    :rule-classes :type-prescription)
+      (fty::deffixtype gatesimp-level :pred gatesimp-level-p :fix gatesimp-level-fix :equiv gatesimp-level-equiv
+        :define t))
 
-  (definlined gatesimp-hashp (gatesimp)
-    (declare (Xargs :guard (natp gatesimp)))
-    (logbitp 0 gatesimp))
+    (defthm gatesimp-level-p-compound-recognizer
+      (implies (gatesimp-level-p x)
+               (natp x))
+      :rule-classes :compound-recognizer))
 
-  (definlined mk-gatesimp (level hashp)
-    (declare (xargs :guard (natp level)))
-    (logior (ash (lnfix level) 1) (if hashp 1 0)))
+  (local (defthm unsigned-byte-p-when-gatesimp-level-p
+           (implies (gatesimp-level-p x)
+                    (unsigned-byte-p 3 x))
+           :hints(("Goal" :in-theory (enable gatesimp-level-p unsigned-byte-p)))))
 
-  (defthm gatesimp-level-of-mk-gatesimp
-    (equal (gatesimp-level (mk-gatesimp level hashp))
-           (nfix level))
-    :hints(("Goal" :in-theory (enable gatesimp-level mk-gatesimp))))
+  (local (defthm bound-when-gatesimp-level-p
+           (implies (gatesimp-level-p x)
+                    (<= x 4))
+           :hints(("Goal" :in-theory (enable gatesimp-level-p unsigned-byte-p)))))
 
-  (defthm gatesimp-hashp-of-mk-gatesimp
-    (equal (gatesimp-hashp (mk-gatesimp level hashp))
-           (if hashp
-               t
-             nil))
-    :hints(("Goal" :in-theory (enable gatesimp-hashp mk-gatesimp))))
+  (fty::fixtype-to-bitstruct gatesimp-level :width 3)
+  (fty::defbitstruct gatesimp
+    ((hashp booleanp)
+     (level gatesimp-level)))
 
-  (defthm natp-mk-gatesimp
-    (natp (mk-gatesimp level hashp))
-    :hints(("Goal" :in-theory (enable mk-gatesimp)))
-    :rule-classes :type-prescription))
+  (defthm gatesimp->level-bound
+    (<= (gatesimp->level x) 4)
+    :rule-classes (:rewrite :linear)))
 
 (defsection aignet-and-gate-simp/strash
   (def-gate-simp aignet-and-gate-simp/strash
@@ -1066,20 +1134,19 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
     ;; when no simplification is found.
     (b* ((lit1 (lit-fix lit1))
          (lit2 (lit-fix lit2))
-         (gatesimp (lnfix gatesimp))
          ((mv existing ?flg lit1 lit2)
-          (aignet-gate-simp lit1 lit2 (gatesimp-level gatesimp) aignet))
+          (aignet-gate-simp lit1 lit2 (gatesimp->level gatesimp) aignet))
          ((when existing)
           (mv existing nil lit1 lit2))
-         ((when (not (gatesimp-hashp gatesimp)))
+         ((when (not (gatesimp->hashp gatesimp)))
           (mv nil nil lit1 lit2))
          ((mv found ?key id) (strash-lookup lit1 lit2 strash aignet))
          ((when found)
-          (mv (mk-lit id 0) nil lit1 lit2)))
+          (mv (make-lit^ id 0) nil lit1 lit2)))
       (mv nil key lit1 lit2))
 
     :extra-args (gatesimp strash)
-    :guard (natp gatesimp)
+    :guard (gatesimp-p gatesimp)
     :xargs (:stobjs strash
             :guard-hints (("goal" :no-thanks t)))
     :eval-hints (("goal" :expand ((:free (id) (lit-eval (make-lit id 0) aignet-invals aignet-regvals aignet))
@@ -1092,28 +1159,27 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
     (or (not (mv-nth 1 (aignet-and-gate-simp/strash lit1 lit2 gatesimp strash aignet)))
         (acl2-numberp (mv-nth 1 (aignet-and-gate-simp/strash lit1 lit2 gatesimp strash aignet))))
     :hints(("Goal" :in-theory (enable aignet-and-gate-simp/strash)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
 
-(define aignet-hash-and ((lit1 litp "Literal to AND with lit2")
-                         (lit2 litp)
-                         (gatesimp natp "Configuration for how much simplification to try and whether to use hashing")
+  (fty::deffixequiv aignet-and-gate-simp/strash :args ((gatesimp gatesimp-p))))
+
+(define aignet-hash-and ((lit1 litp :type (unsigned-byte 30) "Literal to AND with lit2")
+                         (lit2 litp :type (unsigned-byte 30))
+                         (gatesimp gatesimp-p :type (unsigned-byte 4)
+                                   "Configuration for how much simplification to try and whether to use hashing")
                          (strash "Stobj containing the aignet's structural hash table")
                          aignet)
+  :split-types t
   :parents (aignet-construction)
   :short "Add an AND node to an AIGNET, or find a node already representing the required logical expression."
   :long "<p>See @(see aignet-construction).</p>"
-  (declare (type (integer 0 *) lit1)
-           (type (integer 0 *) lit2)
-           (type (integer 0 *) gatesimp)
-           (xargs :guard (and (fanin-litp lit1 aignet)
-                              (fanin-litp lit2 aignet))
-                  :split-types t))
+  :guard (and (fanin-litp lit1 aignet)
+              (fanin-litp lit2 aignet))
   :returns (mv (and-lit litp :rule-classes (:rewrite :type-prescription))
                (new-strash)
                (new-aignet))
   (b* ((lit1 (lit-fix lit1))
        (lit2 (lit-fix lit2))
-       (gatesimp (lnfix gatesimp))
        ((mv existing key lit1 lit2)
         (aignet-and-gate-simp/strash lit1 lit2 gatesimp strash aignet))
        ((when existing)
@@ -1121,7 +1187,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                           :exec aignet)))
           (mv existing strash aignet)))
        (new-id (num-nodes aignet))
-       (new-lit (mk-lit new-id 0))
+       (new-lit (make-lit new-id 0))
        (aignet (aignet-add-gate lit1 lit2 aignet))
        ((when (not key))
         (mv new-lit strash aignet))
@@ -1135,9 +1201,9 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
 
   (defmvtypes aignet-hash-and (natp nil nil))
 
-  (defcong lit-equiv equal (aignet-hash-and lit1 lit2 gatesimp strash aignet) 1)
-  (defcong lit-equiv equal (aignet-hash-and lit1 lit2 gatesimp strash aignet) 2)
-  (defcong nat-equiv equal (aignet-hash-and lit1 lit2 gatesimp strash aignet) 3)
+  ;; (defcong lit-equiv equal (aignet-hash-and lit1 lit2 gatesimp strash aignet) 1)
+  ;; (defcong lit-equiv equal (aignet-hash-and lit1 lit2 gatesimp strash aignet) 2)
+  ;; (defcong nat-equiv equal (aignet-hash-and lit1 lit2 gatesimp strash aignet) 3)
 
   (def-aignet-preservation-thms aignet-hash-and)
 
@@ -1183,7 +1249,6 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                                 lit-eval)
                                (eval-of-aignet-and-gate-simp/strash))
                    :use ((:instance eval-of-aignet-and-gate-simp/strash
-                          (gatesimp (nfix gatesimp))
                           (lit1 (lit-fix lit1))
                           (lit2 (lit-fix lit2))))))))
 
@@ -1193,14 +1258,33 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
              (equal (stype-count stype
                                  (mv-nth 2 (aignet-hash-and
                                             lit1 lit2 gatesimp strash aignet)))
-                    (stype-count stype aignet)))))
+                    (stype-count stype aignet))))
 
-(define aignet-install-and ((existing)
+  (local (defret unsigned-byte-p-of-aignet-hash-and-1
+           (implies (and (< (node-count aignet) #x1fffffff)
+                         (aignet-litp lit1 aignet)
+                         (aignet-litp lit2 aignet))
+                    (unsigned-byte-p 31 and-lit))
+           :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
+                                  (lit and-lit) (aignet new-aignet)))
+                    :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+
+  (defret unsigned-byte-p-of-aignet-hash-and
+    (implies (and (< (node-count aignet) #x1fffffff)
+                  (aignet-litp lit1 aignet)
+                  (aignet-litp lit2 aignet)
+                  (natp n) (<= 31 n))
+             (unsigned-byte-p n and-lit))
+    :hints (("goal" :use unsigned-byte-p-of-aignet-hash-and-1
+             :in-theory (disable unsigned-byte-p-of-aignet-hash-and-1)))))
+
+(define aignet-install-and ((existing :type (or null (unsigned-byte 30)))
                             (key (or (not key) (acl2-numberp key)))
-                            (lit1 litp)
-                            (lit2 litp)
+                            (lit1 litp :type (unsigned-byte 30))
+                            (lit2 litp :type (unsigned-byte 30))
                             (strash)
                             (aignet))
+  :split-types t
   :guard (and (fanin-litp lit1 aignet)
               (fanin-litp lit2 aignet)
               (or (not existing)
@@ -1219,8 +1303,6 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
        (strash (strashtab-put key new-id strash)))
     (mv new-lit strash aignet))
   ///
-  (fty::deffixcong nat-equiv equal (aignet-and-gate-simp/strash lit1 lit2 gatesimp strash aignet) gatesimp
-    :hints(("Goal" :in-theory (enable aignet-and-gate-simp/strash))))
 
   (defthm aignet-install-and-of-aignet-and-gate-simp/strash
     (b* (((mv existing key nlit1 nlit2)
@@ -1352,7 +1434,7 @@ to be done if non-<tt>NIL</tt>.</p>")
 
 (define aignet-hash-or ((f0 litp)
                         (f1 litp)
-                        (gatesimp natp)
+                        (gatesimp gatesimp-p)
                         strash
                         aignet)
   :parents (aignet-construction)
@@ -1363,8 +1445,8 @@ find a node already representing the required logical expression."
   :guard (and (fanin-litp f0 aignet)
               (fanin-litp f1 aignet))
   (b* (((mv lit strash aignet)
-        (aignet-hash-and (lit-negate f0) (lit-negate f1) gatesimp strash aignet)))
-    (mv (lit-negate lit) strash aignet))
+        (aignet-hash-and (lit-negate^ f0) (lit-negate^ f1) gatesimp strash aignet)))
+    (mv (lit-negate^ lit) strash aignet))
 
   ///
 
@@ -1372,10 +1454,6 @@ find a node already representing the required logical expression."
 
   (defthm litp-aignet-hash-or
     (litp (mv-nth 0 (aignet-hash-or lit1 lit2 gatesimp strash aignet))))
-
-  (defcong lit-equiv equal (aignet-hash-or f0 f1 gatesimp strash aignet) 1)
-  (defcong lit-equiv equal (aignet-hash-or f0 f1 gatesimp strash aignet) 2)
-  (defcong nat-equiv equal (aignet-hash-or f0 f1 gatesimp strash aignet) 3)
 
   (defthm aignet-litp-aignet-hash-or
     (implies (and (aignet-litp lit1 aignet)
@@ -1404,7 +1482,7 @@ find a node already representing the required logical expression."
 (define aignet-hash-mux ((c litp)
                          (tb litp)
                          (fb litp)
-                         (gatesimp natp)
+                         (gatesimp gatesimp-p)
                          strash
                          aignet)
   :inline t
@@ -1420,7 +1498,7 @@ find a node already representing the required logical expression."
        ((mv c-tb strash aignet)
         (aignet-hash-and c tb gatesimp strash aignet))
        ((mv nc-fb strash aignet)
-        (aignet-hash-and (lit-negate c) fb gatesimp strash aignet)))
+        (aignet-hash-and (lit-negate^ c) fb gatesimp strash aignet)))
     (aignet-hash-or c-tb nc-fb gatesimp strash aignet))
 
   ///
@@ -1430,10 +1508,10 @@ find a node already representing the required logical expression."
   (defthm litp-aignet-hash-mux
     (litp (mv-nth 0 (aignet-hash-mux c tb fb gatesimp strash aignet))))
 
-  (defcong lit-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 1)
-  (defcong lit-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 2)
-  (defcong lit-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 3)
-  (defcong nat-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 4)
+  ;; (defcong lit-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 1)
+  ;; (defcong lit-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 2)
+  ;; (defcong lit-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 3)
+  ;; (defcong nat-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 4)
 
   (defthm aignet-litp-aignet-hash-mux
     (implies (and (aignet-litp c aignet)
@@ -1466,13 +1544,13 @@ find a node already representing the required logical expression."
 
 (define aignet-hash-xor ((f0 litp)
                          (f1 litp)
-                         (gatesimp natp)
+                         (gatesimp gatesimp-p)
                          strash
                          aignet)
   :inline t
   :guard (and (fanin-litp f0 aignet)
               (fanin-litp f1 aignet))
-  (aignet-hash-mux f0 (lit-negate f1) f1 gatesimp strash aignet)
+  (aignet-hash-mux f0 (lit-negate^ f1) f1 gatesimp strash aignet)
 
   ///
 
@@ -1481,9 +1559,9 @@ find a node already representing the required logical expression."
   (defthm litp-aignet-hash-xor
     (litp (mv-nth 0 (aignet-hash-xor lit1 lit2 gatesimp strash aignet))))
 
-  (defcong lit-equiv equal (aignet-hash-xor f0 f1 gatesimp strash aignet) 1)
-  (defcong lit-equiv equal (aignet-hash-xor f0 f1 gatesimp strash aignet) 2)
-  (defcong nat-equiv equal (aignet-hash-xor f0 f1 gatesimp strash aignet) 3)
+  ;; (defcong lit-equiv equal (aignet-hash-xor f0 f1 gatesimp strash aignet) 1)
+  ;; (defcong lit-equiv equal (aignet-hash-xor f0 f1 gatesimp strash aignet) 2)
+  ;; (defcong nat-equiv equal (aignet-hash-xor f0 f1 gatesimp strash aignet) 3)
 
   (defthm aignet-litp-aignet-hash-xor
     (implies (and (aignet-litp lit1 aignet)

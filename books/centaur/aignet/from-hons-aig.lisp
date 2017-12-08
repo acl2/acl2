@@ -346,7 +346,7 @@
 (define aig-to-aignet ((x "hons aig")
                        (xmemo "memo table (fast alist)")
                        (varmap "input variable mapping")
-                       (gatesimp natp)
+                       (gatesimp gatesimp-p)
                        strash
                        aignet)
   :returns (mv (lit litp :rule-classes (:rewrite :type-prescription))
@@ -664,7 +664,7 @@
 
   (defund aiglist-to-aignet-aux (x xmemo varmap gatesimp strash aignet lits)
     (declare (xargs :stobjs (aignet strash)
-                    :guard (and (natp gatesimp)
+                    :guard (and (gatesimp-p gatesimp)
                                 (good-varmap-p varmap aignet)
                                 (xmemo-well-formedp xmemo aignet)
                                 (true-listp lits))
@@ -680,7 +680,7 @@
   ;; outputs or reg inputs
   (defund aiglist-to-aignet (x xmemo varmap gatesimp strash aignet)
     (declare (xargs :stobjs (aignet strash)
-                    :guard (and (natp gatesimp)
+                    :guard (and (gatesimp-p gatesimp)
                                 (good-varmap-p varmap aignet)
                                 (xmemo-well-formedp xmemo aignet))
                     :verify-guards nil))
@@ -805,7 +805,7 @@
 
   (defun aiglist-to-aignet-top (x varmap gatesimp strash aignet)
     (declare (xargs :stobjs (aignet strash)
-                    :guard (and (natp gatesimp)
+                    :guard (and (gatesimp-p gatesimp)
                                 (good-varmap-p varmap aignet))))
     (b* (((mv lits xmemo strash aignet)
           (aiglist-to-aignet x nil varmap gatesimp strash aignet)))
@@ -2122,7 +2122,7 @@
   (define aig-fsm-to-aignet (reg-alist out-list max-nodes gatesimp aignet)
     (declare (xargs :stobjs aignet
                     :guard (and (posp max-nodes)
-                                (natp gatesimp)
+                                (gatesimp-p gatesimp)
                                 (non-bool-atom-listp (alist-keys reg-alist)))
                     :verify-guards nil
                     ;;:guard-hints (("goal" :do-not-induct t
@@ -2138,7 +2138,7 @@
          (reg-aigs (alist-vals reg-alist))
          ((mv varmap invars regvars aignet)
           (aig-fsm-prepare-aignet/varmap reg-alist out-list max-nodes aignet))
-         (strash    (if (gatesimp-hashp gatesimp)
+         (strash    (if (gatesimp->hashp gatesimp)
                         (strashtab-init max-nodes nil nil strash)
                       strash))
          ((mv lits strash aignet)

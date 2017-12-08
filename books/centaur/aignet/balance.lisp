@@ -502,8 +502,7 @@
                              (node-count (find-max-fanin aignet))))))
          :hints(("Goal" :in-theory (e/d (aignet-hash-and)
                                         (aignet-litp-of-aignet-and-gate-simp/strash))
-                 :use ((:instance AIGNET-LITP-OF-AIGNET-AND-GATE-SIMP/STRASH
-                        (gatesimp (nfix gatesimp))))))))
+                 :use ((:instance AIGNET-LITP-OF-AIGNET-AND-GATE-SIMP/STRASH))))))
 
 (defthm aignet-hash-and-id-less-than-max-fanin
   (implies (and (aignet-litp lit1 aignet)
