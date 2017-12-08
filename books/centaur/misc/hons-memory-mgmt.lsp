@@ -28,6 +28,12 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+; Added by Matt K., 12/8/2017: Some of the code to be executed only when
+; #+static-hons has symbols ccl::xxx.  I'm thus replacing the static-hons
+; readtime conditional with (and static-hons Clozure).  A more fine-grained fix
+; might be possible by tracking down dependencies on functions with bodies that
+; contain ccl::xxx symbols.
+
 (in-package "ACL2")
 
 (defvar *last-chance-threshold*
@@ -111,7 +117,7 @@
 
 ; Raw lisp definition of hons-analyze-memory.
 
-#+static-hons
+#+(and static-hons Clozure)
 (defun hl-sizeof (thing)
 
 ; Highly CCL-specific.  This function computes something like "the size of
@@ -159,10 +165,10 @@
         (t 0)))
 
 
-#+static-hons
+#+(and static-hons Clozure)
 (defconstant hl-size-of-cons (hl-sizeof (cons nil nil)))
 
-#+static-hons
+#+(and static-hons Clozure)
 (defun hl-hash-table-bytes (ht)
 
 ; This is Jared's approximation of the actual memory being used by the hash
@@ -177,7 +183,7 @@
      (hl-sizeof (ccl::nhash.vector ht))))
 
 
-#+static-hons
+#+(and static-hons Clozure)
 (defun hl-hash-table-key-bytes (ht)
 
 ; This is Jared's approximation of the actual memory being used for the keys of
@@ -193,7 +199,7 @@
     size))
 
 
-#+static-hons
+#+(and static-hons Clozure)
 (defun hl-hash-table-val-bytes (ht)
 
 ; This is Jared's approximation of the actual memory being used for the values
@@ -212,7 +218,7 @@
 
 
 
-#+static-hons
+#+(and static-hons Clozure)
 (defun hl-hspace-analyze-memory (slowp hs)
 
 ; Print a brief report about the memory being used by the hons space.  When
@@ -276,7 +282,7 @@
 
 
 
-#+static-hons
+#+(and static-hons Clozure)
 (defun hl-ponstable-bytes-aux (elem)
   ;; Suppose a pons-table contains (Y . ELEM).  I think that ELEM is either
   ;;   (1) an list of XYC = (X . Y) pairs, where each XYC represents the
@@ -305,7 +311,7 @@
     (+ (hl-hash-table-bytes elem)
        (hl-hash-table-val-bytes elem))))
 
-#+static-hons
+#+(and static-hons Clozure)
 (defun hl-ponstable-bytes (pt)
   (if (not pt)
       0
@@ -317,7 +323,7 @@
                   pt)
          sum))))
 
-#+static-hons
+#+(and static-hons Clozure)
 (defun memo-table-size-debug1 (fn info)
   ;; (FN -> INFO) is an entry in the *memo-info-ht*.
   (when (natp fn)
@@ -338,7 +344,7 @@
               (> total-bytes 0))
       (list fn ponstable-size table-size total-bytes))))
 
-#+static-hons
+#+(and static-hons Clozure)
 (defun memo-table-size-debug ()
   (cw "Memoize table sizes.  Note: the reported \"overhead\" does NOT include ~
        the sizes of the actual argument/result data stored in the memo ~
@@ -366,12 +372,12 @@
 
 (defun hons-analyze-memory (slowp)
   (hl-maybe-initialize-default-hs)
-  #+static-hons
+  #+(and static-hons Clozure)
   (progn
     (hl-hspace-analyze-memory slowp *default-hs*)
     (memo-table-size-debug)
     (print-memo-max-sizes))
-  #-static-hons
+  #-(and static-hons Clozure)
   (cw "Hons-analyze-memory is only available for static honsing.~%"))
 
 
