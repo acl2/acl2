@@ -1618,7 +1618,13 @@ TAGS : $(CERT_PL_SOURCES)
 # that need to be added before your commit -- candidates are things
 # that show up under "Untracked files".
 git_status:
-	@xargs --delimiter='\n' git status -- < $(BUILD_DIR)/Makefile-sources
+	git ls-files -c | egrep '\.lisp$$' > $(BUILD_DIR)/git_lisp_sources
+	$(BUILD_DIR)/cert.pl --quiet --no-build \
+                      --cache $(BUILD_DIR)/Makefile-cache \
+                      --acl2-books `pwd` \
+                      --write-sources $(BUILD_DIR)/git_source_deps \
+                      --targets $(BUILD_DIR)/git_lisp_sources
+	xargs --delimiter='\n' git status -- < $(BUILD_DIR)/git_source_deps
 
 
 ##############################

@@ -695,11 +695,6 @@
     (mbe :logic (snode->regid (id->slot id 1 aignet))
          :exec (ash (the (unsigned-byte 32) (id->slot$ id 1 aignet)) -2)))
 
-
-  (define update-nodesi-ec-call (idx val aignet)
-    :enabled t
-    (ec-call (update-nodesi idx val aignet)))
-
   (define update-node-slot ((id natp :type (unsigned-byte 29))
                             (slot bitp :type bit)
                             (val (unsigned-byte-p 32 val) :type (unsigned-byte 32))
@@ -1162,17 +1157,6 @@
 ;;                     ((id-val (nth m (nth *regsi* aignet))))))))
 
 (defsection io-accessors/updaters
-  (define update-insi-ec-call (n id aignet)
-    :enabled t
-    (ec-call (update-insi n id aignet)))
-
-  (define update-regsi-ec-call (n id aignet)
-    :enabled t
-    (ec-call (update-regsi n id aignet)))
-
-  (define update-outsi-ec-call (n id aignet)
-    :enabled t
-    (ec-call (update-outsi n id aignet)))
 
   (defthm unsigned-byte-when-less-than-num-ins
     (implies (and (< n (nth *num-ins* aignet))
@@ -1706,8 +1690,8 @@
          (aignet (set-innum->id pi-num nodes aignet))
          ((mv slot0 slot1)
           (mk-snode^ (in-type) 0 0 0 pi-num))
-         (aignet (update-node-slot nodes 0 slot0 aignet))
-         (aignet (update-node-slot nodes 1 slot1 aignet)))
+         (aignet (update-node-slot$ nodes 0 slot0 aignet))
+         (aignet (update-node-slot$ nodes 1 slot1 aignet)))
       aignet)
     ///
 
@@ -1822,8 +1806,8 @@
          (aignet (set-regnum->id ro-num nodes aignet))
          ((mv slot0 slot1)
           (mk-snode^ (in-type) 1 0 nodes ro-num))
-         (aignet (update-node-slot nodes 0 slot0 aignet))
-         (aignet (update-node-slot nodes 1 slot1 aignet)))
+         (aignet (update-node-slot$ nodes 0 slot0 aignet))
+         (aignet (update-node-slot$ nodes 1 slot1 aignet)))
       aignet)
     ///
     (def-aignet-frame aignet-add-reg)
@@ -1965,8 +1949,8 @@
          (aignet (update-max-fanin nodes aignet))
          ((mv slot0 slot1)
           (mk-snode^ (gate-type) 0 phase (lit-fix f0) (lit-fix f1)))
-         (aignet (update-node-slot nodes 0 slot0 aignet))
-         (aignet (update-node-slot nodes 1 slot1 aignet)))
+         (aignet (update-node-slot$ nodes 0 slot0 aignet))
+         (aignet (update-node-slot$ nodes 1 slot1 aignet)))
       aignet)
     ///
     (def-aignet-frame aignet-add-gate)
@@ -2084,8 +2068,8 @@
          (aignet (set-outnum->id po-num nodes aignet))
          ((mv slot0 slot1)
           (mk-snode^ (out-type) 0 phase (lit-fix f) po-num))
-         (aignet (update-node-slot nodes 0 slot0 aignet))
-         (aignet (update-node-slot nodes 1 slot1 aignet)))
+         (aignet (update-node-slot$ nodes 0 slot0 aignet))
+         (aignet (update-node-slot$ nodes 1 slot1 aignet)))
       aignet)
     ///
 
@@ -2246,11 +2230,11 @@
                                    aignet))
          (slot0 (id->slot$ regid 0 aignet))
          (new-slot0 (set-snode->regid nodes slot0))
-         (aignet (update-node-slot regid 0 new-slot0 aignet))
+         (aignet (update-node-slot$ regid 0 new-slot0 aignet))
          ((mv slot0 slot1)
           (mk-snode (out-type) 1 phase (lit-fix f) (lnfix regid)))
-         (aignet (update-node-slot nodes 0 slot0 aignet))
-         (aignet (update-node-slot nodes 1 slot1 aignet)))
+         (aignet (update-node-slot$ nodes 0 slot0 aignet))
+         (aignet (update-node-slot$ nodes 1 slot1 aignet)))
       aignet)
     ///
 
@@ -2951,10 +2935,11 @@
       aignet))
 
 
-  (defun aignet-init (max-outs max-regs max-ins max-nodes aignet)
-    (declare (type (integer 0 *) max-outs max-regs max-ins)
-             (type (integer 1 *) max-nodes)
-             (xargs :stobjs aignet))
+  (define aignet-init ((max-outs :type (unsigned-byte 29))
+                       (max-regs :type (unsigned-byte 29))
+                       (max-ins :type (unsigned-byte 29))
+                       (max-nodes posp :type (unsigned-byte 29))
+                       aignet)
     (b* ((max-nodes (mbe :logic (if (< 0 (nfix max-nodes))
                                    max-nodes
                                  1)

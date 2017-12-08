@@ -1375,7 +1375,7 @@
         (eval-cut-implementations cut 0 blocksize eba copy2 cutsdb
                                   rwlib strash2 aignet2 eba2 refcounts2 rewrite-stats config))
        (strash2 (strash-delete-nodes-above nnodes strash2 aignet2))
-       (aignet2 (aignet-rollback (1- nnodes) aignet2)))
+       (aignet2 (aignet-rollback nnodes aignet2)))
     (mv t impl cost eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats))
   ///
 
