@@ -38,6 +38,126 @@
 
 ;; ======================================================================
 
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+(define read-*ip (x86)
+  :returns (*ip i48p :hyp (x86p x86))
+  :parents (x86-decoder)
+  :short "Read the instruction pointer from the register RIP, EIP, or IP."
+  :long
+  "<p>
+   In 64-bit mode, a 64-bit instruction pointer is read from the full RIP.
+   Since, in the model, this is a (48-bit) signed integer,
+   this function returns a 48-bit signed integer.
+   </p>
+   <p>
+   In 32-bit mode, a 32-bit or 16-bit instruction pointer is read from
+   EIP (i.e. the low 32 bits of RIP)
+   or IP (i.e. the low 16 bits of RIP),
+   based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
+   Either way, this function returns an unsigned 32-bit or 16-bit integer,
+   which is also a signed 48-bit integer.
+   </p>
+   <p>
+   See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
+   AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
+   and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
+   </p>"
+  (b* ((*ip (rip x86)))
+    (if (64-bit-modep x86)
+        *ip
+      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+           (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+           (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+        (if (= cs.d 1)
+            (n32 *ip)
+          (n16 *ip)))))
+  :inline t
+  ///
+
+  (defthm-sb read-*ip-is-i48p
+    :hyp (x86p x86)
+    :bound 48
+    :concl (read-*ip x86)
+    :gen-type t
+    :gen-linear t)
+
+  (defrule read-*ip-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (equal (read-*ip x86)
+                    (rip x86)))))
+
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+(define increment-*ip ((*ip i48p) (delta natp) x86)
+  :returns (mv flg
+               (*ip+delta i48p :hyp (and (i48p *ip) (natp delta))))
+  :parents (x86-decoder)
+  :short "Increment an instruction pointer by a specified amount."
+  :long
+  "<p>
+   This just calculates the incremented value,
+   without storing it into the register RIP, EIP, or IP.
+   The starting value is the result of @(tsee read-*ip)
+   or a previous invocation of @('increment-*ip').
+   </p>
+   <p>
+   In 64-bit mode, we check whether the result is a canonical address;
+   in 32-bit mode, we check whether the result is within the segment limit.
+   If these checks are not satisfied,
+   this function returns an error flag (and 0 as incremented address),
+   which causes the x86 model to stop execution with an error.
+   It is not clear whether these checks should be performed
+   when the instruction pointer is incremented
+   or when an instruction byte is eventually accessed;
+   the Intel and AMD manuals seem unclear in this respect.
+   But since the failure of these checks stops execution with an error,
+   and it is in a way always \"safe\" to stop execution with an error
+   (in the sense that the model provides no guarantees when this happens),
+   for now we choose to perform these checks here.
+   </p>
+   <p>
+   Note that a code segment is never expand-down,
+   so the valid effective addresses are always between 0 and the segment limit
+   (cf. @(tsee segment-base-and-bounds)).
+   </p>"
+  (b* ((*ip+delta (+ *ip delta)))
+    (if (64-bit-modep x86)
+        (if (canonical-address-p *ip+delta)
+            (mv nil *ip+delta)
+          (mv (list 'non-canonical-address *ip+delta) 0))
+      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+           (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
+        (if (<= *ip+delta cs.limit)
+            (mv nil *ip+delta)
+          (mv (list 'out-of-segment-limit cs.limit *ip+delta) 0)))))
+  :inline t
+  ///
+
+  (defthm-sb increment-*ip-is-i48p
+    :hyp (and (integerp *ip)
+              (<= -140737488355328 *ip)
+              (< *ip 140737488355328)
+              (natp delta))
+    :bound 48
+    :concl (mv-nth 1 (increment-*ip *ip delta x86))
+    :gen-type t
+    :gen-linear t)
+
+  (defrule mv-nth-0-of-increment-*ip-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (equal (mv-nth 0 (increment-*ip *ip delta x86))
+                    (if (canonical-address-p (+ *ip delta))
+                        nil
+                      (list 'non-canonical-address (+ *ip delta))))))
+
+  (defrule mv-nth-1-of-increment-*ip-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (equal (mv-nth 1 (increment-*ip *ip delta x86))
+                    (if (canonical-address-p (+ *ip delta))
+                        (+ *ip delta)
+                      0)))))
+
+;; ======================================================================
+
 ;; Some unfinished utilities for generating the dispatch function from
 ;; implemented-opcodes-table:
 
@@ -1368,32 +1488,20 @@
        ((when flg0)
         (!!ms-fresh :opcode-byte-access-error flg0))
 
-       ((the (signed-byte 49) temp-rip)
-        (1+ temp-rip))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                                  temp-rip))))
-        (!!ms-fresh :non-canonical-address-encountered temp-rip))
+       ((mv flg temp-rip) (increment-*ip temp-rip 1 x86))
+       ((when flg) (!!ms-fresh :increment-error flg))
 
        (modr/m? (x86-two-byte-opcode-ModR/M-p opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
             (rme08 temp-rip *cs* :x x86)
           (mv nil 0 x86)))
-       ((when flg1)
-        (!!ms-fresh :modr/m-byte-read-error flg1))
+       ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
 
-       ((the (signed-byte 49) temp-rip)
-        (if modr/m? (1+ temp-rip) temp-rip))
-
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                                  temp-rip))))
-        (!!ms-fresh :temp-rip-too-large temp-rip))
+       ((mv flg temp-rip) (if modr/m?
+                              (increment-*ip temp-rip 1 x86)
+                            (mv nil temp-rip)))
+       ((when flg) (!!ms-fresh :increment-error flg))
 
        (sib? (and modr/m?
                   (x86-decode-SIB-p modr/m)))
@@ -1404,17 +1512,36 @@
        ((when flg2)
         (!!ms-fresh :sib-byte-read-error flg2))
 
-       ((the (signed-byte 49) temp-rip)
-        (if sib? (1+ temp-rip) temp-rip))
+       ((mv flg temp-rip) (if sib?
+                              (increment-*ip temp-rip 1 x86)
+                            (mv nil temp-rip)))
+       ((when flg) (!!ms-fresh :increment-error flg)))
 
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                                  temp-rip))))
-        (!!ms-fresh :virtual-address-error temp-rip)))
     (two-byte-opcode-execute start-rip temp-rip prefixes rex-byte
                              opcode modr/m sib x86))
+
+  :prepwork
+  ;; This rewrite lemma is somewhat inelegant, but without it both guard
+  ;; verification and the return type theorem
+  ;; X86P-TWO-BYTE-OPCODE-DECODE-AND-EXECUTE below fail, with subgoals about
+  ;; nested INCREMENT-*IPs being 48-bit signed integers. Perhaps the reason is
+  ;; that the type prescription and linear rules generated by the DEFTHM-SB in
+  ;; INCREMENT-*IP are not triggered on the outer INCREMENT-*IPs of the nests
+  ;; because no hypotheses about the inner INCREMENT-*IPs are available in the
+  ;; current proof context. With a rewrite rule like the following one,
+  ;; instead, the prover is able to backchain.
+  ((local
+    (defrule lemma
+      (implies
+       (and (integerp *ip)
+            (<= -140737488355328 *ip)
+            (< *ip 140737488355328)
+            (natp delta))
+       (and (integerp (mv-nth 1 (increment-*ip *ip delta x86)))
+            (rationalp (mv-nth 1 (increment-*ip *ip delta x86)))
+            (<= -140737488355328 (mv-nth 1 (increment-*ip *ip delta x86)))
+            (< (mv-nth 1 (increment-*ip *ip delta x86)) 140737488355328)))
+      :enable increment-*ip)))
 
   ///
 
@@ -3620,123 +3747,6 @@
                        modr/m sib x86))))))
 
 (make-event (create-top-level-opcode-execute-fn))
-
-;; ======================================================================
-
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-(define read-*ip (x86)
-  :returns (*ip i48p :hyp (x86p x86))
-  :parents (x86-decoder)
-  :short "Read the instruction pointer from the register RIP, EIP, or IP."
-  :long
-  "<p>
-   In 64-bit mode, a 64-bit instruction pointer is read from the full RIP.
-   Since, in the model, this is a (48-bit) signed integer,
-   this function returns a 48-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, a 32-bit or 16-bit instruction pointer is read from
-   EIP (i.e. the low 32 bits of RIP)
-   or IP (i.e. the low 16 bits of RIP),
-   based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
-   Either way, this function returns an unsigned 32-bit or 16-bit integer,
-   which is also a signed 48-bit integer.
-   </p>
-   <p>
-   See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
-   AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
-   and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
-   </p>"
-  (b* ((*ip (rip x86)))
-    (if (64-bit-modep x86)
-        *ip
-      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-           (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-           (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-        (if (= cs.d 1)
-            (n32 *ip)
-          (n16 *ip)))))
-  :inline t
-  ///
-
-  (defthm-sb read-*ip-is-i48p
-    :hyp (x86p x86)
-    :bound 48
-    :concl (read-*ip x86)
-    :gen-type t
-    :gen-linear t)
-
-  (defrule read-*ip-when-64-bit-modep
-    (implies (64-bit-modep x86)
-             (equal (read-*ip x86)
-                    (rip x86)))))
-
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-(define increment-*ip ((*ip i48p) (delta natp) x86)
-  :returns (mv flg
-               (*ip+delta i48p :hyp (and (i48p *ip) (natp delta))))
-  :parents (x86-decoder)
-  :short "Increment an instruction pointer by a specified amount."
-  :long
-  "<p>
-   This just calculates the incremented value,
-   without storing it into the register RIP, EIP, or IP.
-   The starting value is the result of @(tsee read-*ip)
-   or a previous invocation of @('increment-*ip').
-   </p>
-   <p>
-   In 64-bit mode, we check whether the result is a canonical address;
-   in 32-bit mode, we check whether the result is within the segment limit.
-   If these checks are not satisfied,
-   this function returns an error flag (and 0 as incremented address),
-   which causes the x86 model to stop execution with an error.
-   It is not clear whether these checks should be performed
-   when the instruction pointer is incremented
-   or when an instruction byte is eventually accessed;
-   the Intel and AMD manuals seem unclear in this respect.
-   But since the failure of these checks stops execution with an error,
-   and it is in a way always \"safe\" to stop execution with an error
-   (in the sense that the model provides no guarantees when this happens),
-   for now we choose to perform these checks here.
-   </p>
-   <p>
-   Note that a code segment is never expand-down,
-   so the valid effective addresses are always between 0 and the segment limit
-   (cf. @(tsee segment-base-and-bounds)).
-   </p>"
-  (b* ((*ip+delta (+ *ip delta)))
-    (if (64-bit-modep x86)
-        (if (canonical-address-p *ip+delta)
-            (mv nil *ip+delta)
-          (mv (list 'non-canonical-address *ip+delta) 0))
-      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-           (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
-        (if (<= *ip+delta cs.limit)
-            (mv nil *ip+delta)
-          (mv (list 'out-of-segment-limit cs.limit *ip+delta) 0)))))
-  :inline t
-  ///
-
-  (defthm-sb increment-*ip-is-i48p
-    :hyp (and (i48p *ip) (natp delta))
-    :bound 48
-    :concl (mv-nth 1 (increment-*ip *ip delta x86))
-    :gen-type t
-    :gen-linear t)
-
-  (defrule mv-nth-0-of-increment-*ip-when-64-bit-modep
-    (implies (64-bit-modep x86)
-             (equal (mv-nth 0 (increment-*ip *ip delta x86))
-                    (if (canonical-address-p (+ *ip delta))
-                        nil
-                      (list 'non-canonical-address (+ *ip delta))))))
-
-  (defrule mv-nth-1-of-increment-*ip-when-64-bit-modep
-    (implies (64-bit-modep x86)
-             (equal (mv-nth 1 (increment-*ip *ip delta x86))
-                    (if (canonical-address-p (+ *ip delta))
-                        (+ *ip delta)
-                      0)))))
 
 ;; ======================================================================
 
