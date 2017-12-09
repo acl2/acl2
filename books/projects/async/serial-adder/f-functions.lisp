@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; December 2017
 
 ;; Definitions of basic 3- and 4-valued specifications for DE.
 ;; This file also includes some 3- and 4-valued vector specifications.
@@ -23,6 +28,10 @@
     (if (and (equal a t) (equal b t))
         t
       *x*)))
+
+(defthm 3vp-f-and
+  (3vp (f-and a b))
+  :rule-classes (:rewrite :type-prescription))
 
 (defun f-and3 (a b c)
   (declare (xargs :guard t))
@@ -83,6 +92,10 @@
   (declare (xargs :guard t))
   (f-or a (f-or b (f-or c d))))
 
+(defun f-or5 (a b c d e)
+  (declare (xargs :guard t))
+  (f-or a (f-or b (f-or c (f-or d e)))))
+
 (defun f-nor (a b)
   (declare (xargs :guard t))
   (f-not (f-or a b)))
@@ -119,6 +132,14 @@
 (defun f-xor3 (a b c)
   (declare (xargs :guard t))
   (f-xor a (f-xor b c)))
+
+(defun f-xnor (a b)
+  (declare (xargs :guard t))
+  (if (equal a t)
+      (3v-fix b)
+    (if (equal a nil)
+        (f-not b)
+      *x*)))
 
 (defun f-equv (a b)
   (declare (xargs :guard t))
@@ -252,6 +273,18 @@
           (f-buf y)))
   :hints (("Goal" :in-theory (enable 3vp))))
 
+(defthm f-xnor-rewrite
+  (and 
+   (equal (f-xnor x T)
+          (f-buf x))
+   (equal (f-xnor T y)
+          (f-buf y))
+   (equal (f-xnor x NIL)
+          (f-not x))
+   (equal (f-xnor NIL y)
+          (f-not y)))
+  :hints (("Goal" :in-theory (enable 3vp))))
+
 (defthm f-nand-rewrite
   (and (equal (f-nand nil x) t)
        (equal (f-nand x nil) t)
@@ -309,6 +342,7 @@
    (equal (3v-fix (f-and x y))  (f-and x y))
    (equal (3v-fix (f-or x y))   (f-or x y))
    (equal (3v-fix (f-xor x y))  (f-xor x y))
+   (equal (3v-fix (f-xnor x y)) (f-xnor x y))
    (equal (3v-fix (f-equv x y)) (f-equv x y))))
 
 (defthmd f-not-f-not=f-buf
@@ -344,10 +378,14 @@
           (f-or3 a b c))
    (equal (f-buf (f-or4 a b c d))
           (f-or4 a b c d))
+   (equal (f-buf (f-or5 a b c d e))
+          (f-or5 a b c d e))
    (equal (f-buf (f-xor a b))
           (f-xor a b))
    (equal (f-buf (f-xor3 a b c))
           (f-xor3 a b c))
+   (equal (f-buf (f-xnor a b))
+          (f-xnor a b))
    (equal (f-buf (f-equv a b))
           (f-equv a b))
    (equal (f-buf (f-equv3 a b c))
@@ -409,6 +447,17 @@
    (equal (f-or3 x y (f-buf z))
           (f-or3 x y z))
 
+   (equal (f-or5 (f-buf a) b c d e)
+          (f-or5 a b c d e))
+   (equal (f-or5 a (f-buf b) c d e)
+          (f-or5 a b c d e))
+   (equal (f-or5 a b (f-buf c) d e)
+          (f-or5 a b c d e))
+   (equal (f-or5 a b c (f-buf d) e)
+          (f-or5 a b c d e))
+   (equal (f-or5 a b c d (f-buf e))
+          (f-or5 a b c d e))
+
    (equal (f-nor3 (f-buf x) y z)
           (f-nor3 x y z))
    (equal (f-nor3 x (f-buf y) z)
@@ -427,6 +476,11 @@
           (f-xor3 x y z))
    (equal (f-xor3 x y (f-buf z))
           (f-xor3 x y z))
+
+   (equal (f-xnor (f-buf x) y)
+          (f-xnor x y))
+   (equal (f-xnor x (f-buf y))
+          (f-xnor x y))
    
    (equal (f-if (f-buf c) a b)
           (f-if c a b))
@@ -457,6 +511,10 @@
           (f-xor a b))
    (equal (f-xor a (3v-fix b))
           (f-xor a b))
+   (equal (f-xnor (3v-fix a) b)
+          (f-xnor a b))
+   (equal (f-xnor a (3v-fix b))
+          (f-xnor a b))
    (equal (f-equv (3v-fix a) b)
           (f-equv a b))
    (equal (f-equv a (3v-fix b))
@@ -563,6 +621,17 @@
    (equal (f-or4 a b c (3v-fix d))
           (f-or4 a b c d))
 
+   (equal (f-or5 (3v-fix a) b c d e)
+          (f-or5 a b c d e))
+   (equal (f-or5 a (3v-fix b) c d e)
+          (f-or5 a b c d e))
+   (equal (f-or5 a b (3v-fix c) d e)
+          (f-or5 a b c d e))
+   (equal (f-or5 a b c (3v-fix d) e)
+          (f-or5 a b c d e))
+   (equal (f-or5 a b c d (3v-fix e))
+          (f-or5 a b c d e))
+
    (equal (f-xor (3v-fix a) b)
           (f-xor a b))
    (equal (f-xor a (3v-fix b))
@@ -574,6 +643,11 @@
           (f-xor3 a b c))
    (equal (f-xor3 a (3v-fix b) c)
           (f-xor3 a b c))
+
+   (equal (f-xnor (3v-fix a) b)
+          (f-xnor a b))
+   (equal (f-xnor a (3v-fix b))
+          (f-xnor a b))
 
    (equal (f-equv (3v-fix a) b)
           (f-equv a b))
@@ -683,8 +757,8 @@
   '(f-buf
     f-not
     f-nand f-nand3 f-nand4 f-nand5 f-nand6 f-nand8
-    f-or f-or3 f-or4
-    f-xor f-xor3 
+    f-or f-or3 f-or4 f-or5
+    f-xor f-xor3 f-xnor
     f-equv f-equv3
     f-and f-and3 f-and4
     f-nor f-nor3 f-nor4 f-nor5 f-nor6 f-nor8
@@ -696,49 +770,64 @@
 
 (defthm f-gates=b-gates
   (and
-   (implies (booleanp a) (equal (f-buf a) (b-buf a)))
-   (implies (booleanp a) (equal (f-not a) (b-not a)))
-   (implies (and (booleanp a) (booleanp b)) (equal (f-nand a b) (b-nand a b)))
+   (implies (booleanp a)
+            (equal (f-buf a) (b-buf a)))
+   (implies (booleanp a)
+            (equal (f-not a) (b-not a)))
+   (implies (and (booleanp a) (booleanp b))
+            (equal (f-nand a b) (b-nand a b)))
    (implies (and (booleanp a) (booleanp b) (booleanp c))
             (equal (f-nand3 a b c) (b-nand3 a b c)))
    (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d))
             (equal (f-nand4 a b c d) (b-nand4 a b c d)))
-   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d) (booleanp e))
+   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d)
+                 (booleanp e))
             (equal (f-nand5 a b c d e) (b-nand5 a b c d e)))
-   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d) (booleanp e)
-                 (booleanp g))
+   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d)
+                 (booleanp e) (booleanp g))
             (equal (f-nand6 a b c d e g) (b-nand6 a b c d e g)))
-   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d) (booleanp e)
-                 (booleanp g) (booleanp h) (booleanp i))
+   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d)
+                 (booleanp e) (booleanp g) (booleanp h) (booleanp i))
             (equal (f-nand8 a b c d e g h i) (b-nand8 a b c d e g h i)))
-   (implies (and (booleanp a) (booleanp b)) (equal (f-or a b) (b-or a b)))
+   (implies (and (booleanp a) (booleanp b))
+            (equal (f-or a b) (b-or a b)))
    (implies (and (booleanp a) (booleanp b) (booleanp c))
             (equal (f-or3 a b c) (b-or3 a b c)))
    (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d))
             (equal (f-or4 a b c d) (b-or4 a b c d)))
-   (implies (and (booleanp a) (booleanp b)) (equal (f-xor a b) (b-xor a b)))
+   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d)
+                 (booleanp e))
+            (equal (f-or5 a b c d e) (b-or5 a b c d e)))
+   (implies (and (booleanp a) (booleanp b))
+            (equal (f-xor a b) (b-xor a b)))
    (implies (and (booleanp a) (booleanp b) (booleanp c))
             (equal (f-xor3 a b c) (b-xor3 a b c)))
-   (implies (and (booleanp a) (booleanp b)) (equal (f-equv a b) (b-equv a b)))
+   (implies (and (booleanp a) (booleanp b))
+            (equal (f-xnor a b) (b-xnor a b)))
+   (implies (and (booleanp a) (booleanp b))
+            (equal (f-equv a b) (b-equv a b)))
    (implies (and (booleanp a) (booleanp b) (booleanp c))
             (equal (f-equv3 a b c) (b-equv3 a b c)))
-   (implies (and (booleanp a) (booleanp b)) (equal (f-and a b) (b-and a b)))
+   (implies (and (booleanp a) (booleanp b))
+            (equal (f-and a b) (b-and a b)))
    (implies (and (booleanp a) (booleanp b) (booleanp c))
             (equal (f-and3 a b c) (b-and3 a b c)))
    (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d))
             (equal (f-and4 a b c d) (b-and4 a b c d)))
-   (implies (and (booleanp a) (booleanp b)) (equal (f-nor a b) (b-nor a b)))
+   (implies (and (booleanp a) (booleanp b))
+            (equal (f-nor a b) (b-nor a b)))
    (implies (and (booleanp a) (booleanp b) (booleanp c))
             (equal (f-nor3 a b c) (b-nor3 a b c)))
    (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d))
             (equal (f-nor4 a b c d) (b-nor4 a b c d)))
-   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d) (booleanp e))
+   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d)
+                 (booleanp e))
             (equal (f-nor5 a b c d e) (b-nor5 a b c d e)))
-   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d) (booleanp e)
-                 (booleanp g))
+   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d)
+                 (booleanp e) (booleanp g))
             (equal (f-nor6 a b c d e g) (b-nor6 a b c d e g)))
-   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d) (booleanp e)
-                 (booleanp g) (booleanp h) (booleanp i))
+   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d)
+                 (booleanp e) (booleanp g) (booleanp h) (booleanp i))
             (equal (f-nor8 a b c d e g h i) (b-nor8 a b c d e g h i)))
    (implies (and (booleanp c) (booleanp a) (booleanp b))
             (equal (f-if c a b) (b-if c a b)))))
@@ -764,28 +853,28 @@
 
 ;; (in-theory (disable fv-not))
 
-;; ;; FV-AND
+;; FV-AND
 
-;; (defun fv-and (a b)
-;;   (declare (xargs :guard (true-listp b)))
-;;   (if (atom a)
-;;       nil
-;;     (cons (f-and (car a) (car b))
-;;           (fv-and (cdr a) (cdr b)))))
+(defun fv-and (a b)
+  (declare (xargs :guard (true-listp b)))
+  (if (atom a)
+      nil
+    (cons (f-and (car a) (car b))
+          (fv-and (cdr a) (cdr b)))))
 
-;; (defthm len-fv-and
-;;   (equal (len (fv-and a b))
-;;          (len a)))
+(defthm len-fv-and
+  (equal (len (fv-and a b))
+         (len a)))
 
-;; (defthm fv-and=v-and
-;;   (implies (and (bvp a)
-;;                 (bvp b)
-;;                 (equal (len a) (len b)))
-;;            (equal (fv-and a b)
-;;                   (v-and a b)))
-;;   :hints (("Goal" :in-theory (enable bvp v-and))))
+(defthm fv-and=v-and
+  (implies (and (bvp a)
+                (bvp b)
+                (equal (len a) (len b)))
+           (equal (fv-and a b)
+                  (v-and a b)))
+  :hints (("Goal" :in-theory (enable bvp v-and))))
 
-;; (in-theory (disable fv-and))
+(in-theory (disable fv-and))
 
 ;; FV-OR
 
@@ -803,6 +892,12 @@
 (defthm len-fv-or
   (equal (len (fv-or a b))
          (len a)))
+
+(defthm fv-or-of-v-threefix-canceled
+  (and (equal (fv-or (v-threefix a) b)
+              (fv-or a b))
+       (equal (fv-or a (v-threefix b))
+              (fv-or a b))))
 
 (defthm fv-or=v-or
   (implies (and (bvp a)
@@ -831,13 +926,11 @@
   (equal (len (fv-xor a b))
          (len a)))
 
-(defthm fv-xor-of-v-threefix-canceled-1
- (equal (fv-xor (v-threefix a) b)
-        (fv-xor a b)))
-
-(defthm fv-xor-of-v-threefix-canceled-2
- (equal (fv-xor a (v-threefix b))
-        (fv-xor a b)))
+(defthm fv-xor-of-v-threefix-canceled
+  (and (equal (fv-xor (v-threefix a) b)
+              (fv-xor a b))
+       (equal (fv-xor a (v-threefix b))
+              (fv-xor a b))))
 
 (defthm fv-xor=v-xor
   (implies (and (bvp a)
@@ -848,6 +941,35 @@
   :hints (("Goal" :in-theory (enable bvp v-xor))))
 
 (in-theory (disable fv-xor))
+
+;; FV-XNOR
+
+(defun fv-xnor (a b)
+  (declare (xargs :guard (true-listp b)))
+  (if (atom a)
+      nil
+    (cons (f-xnor (car a) (car b))
+          (fv-xnor (cdr a) (cdr b)))))
+
+(defthm len-fv-xnor
+  (equal (len (fv-xnor a b))
+         (len a)))
+
+(defthm fv-xnor-of-v-threefix-canceled
+  (and (equal (fv-xnor (v-threefix a) b)
+              (fv-xnor a b))
+       (equal (fv-xnor a (v-threefix b))
+              (fv-xnor a b))))
+
+(defthm fv-xnor=v-xnor
+  (implies (and (bvp a)
+                (bvp b)
+                (equal (len a) (len b)))
+           (equal (fv-xnor a b)
+                  (v-xnor a b)))
+  :hints (("Goal" :in-theory (enable bvp v-xnor))))
+
+(in-theory (disable fv-xnor))
 
 ;; FV-IF
 
@@ -871,12 +993,11 @@
          (fv-if c a b)))
 
 (defthm fv-if-when-booleanp-c
-  (implies (equal (len a) (len b))
-           (and
-            (equal (fv-if t a b)
-                   (v-threefix a))
-            (equal (fv-if nil a b)
-                   (v-threefix b)))))
+  (and (equal (fv-if t a b)
+              (v-threefix a))
+       (implies (equal (len a) (len b))
+                (equal (fv-if nil a b)
+                       (v-threefix b)))))
 
 (defthm fv-if-when-bvp
   (implies (and (booleanp c)

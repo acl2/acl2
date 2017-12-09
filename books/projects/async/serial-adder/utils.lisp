@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2017
+;; December 2017
 
 (in-package "ADE")
 
@@ -87,14 +92,16 @@
   (and
    (implies (atom l)
             (not (nth n l)))
-   (implies (and (consp l)
-                 (zp n))
+   (implies (zp n)
             (equal (nth n l)
                    (car l)))
-   (implies (and (consp l)
-                 (not (zp n)))
+   (implies (not (zp n))
             (equal (nth n l)
                    (nth (- n 1) (cdr l))))))
+
+(defthmd left-associativity-of-append
+  (equal (append a (append b c))
+         (append (append a b) c)))
 
 (defthm nth-append
   (implies (and (natp i)
@@ -123,10 +130,14 @@
                 (not (member e y)))
            (not (member e (append x y)))))
 
-(defthm not-member=>not-equal-nth
-  (implies (and (<= 0 n)
-                (< n (len x))
-                (not (member e x)))
+(defthm not-member-rev
+  (implies (not (member e x))
+           (not (member e (rev x)))))
+
+(defthmd not-member=>not-equal-nth
+  (implies (and (not (member e x))
+                (<= 0 n)
+                (< n (len x)))
            (not (equal e (nth n x)))))
 
 (defthm subsetp=>member-nth
@@ -326,6 +337,13 @@
           (and (disjoint y x)
                (disjoint z x)))))
 
+(defthm disjoint-rev
+  (and 
+   (implies (disjoint x y)
+            (disjoint (rev x) y))
+   (implies (disjoint x y)
+            (disjoint x (rev y)))))
+
 (defthm disjoint=>not-member-nth
   (implies (and (disjoint x y)
                 (<= 0 n)
@@ -344,10 +362,18 @@
             (equal (take n x)
                    (cons (car x) (take (1- n) (cdr x)))))))
 
-(defthmd take-of-len-is-itself
-  (implies (and (true-listp l)
-                (equal (len l) n))
+(defthm take-of-len-is-itself
+  (implies (and (equal n (len l))
+                (true-listp l))
            (equal (take n l) l)))
+
+(defthm append-take-lemma
+  (implies (and (consp l)
+                (true-listp l)
+                (equal n (1- (len l))))
+           (equal (append (take n l)
+                          (list (nth n l)))
+                  l)))
 
 (defthmd open-nthcdr
   (and
@@ -466,7 +492,7 @@
                 (<= n2 (len l2)))
            (disjoint (nthcdr n1 l1) (take n2 l2))))
 
-;; POSITION
+;; POSITION1
 
 (defun position1 (x l)
   (declare (xargs :guard t))
@@ -561,9 +587,9 @@
 (defun make-tree (n)
   (declare (xargs :guard (natp n)))
   (if (zp n)
-      0
+      nil
     (if (equal n 1)
-        0
+        nil
       (cons (make-tree (floor n 2))
             (make-tree (- n (floor n 2)))))))
 
@@ -580,21 +606,46 @@
 
 (in-theory (disable make-tree))
 
-;; TV-GUARD
+;; APPEND-REC & PREPEND-REC
 
-(defun tv-guard (tree)
+(defun append-rec (x y)
+  (declare (xargs :guard (true-listp x)))
+  (if (atom y)
+      nil
+    (cons (append x (car y))
+          (append-rec x (cdr y)))))
+
+(defun prepend-rec (x y)
+  (declare (xargs :guard (true-list-listp x)))
+  (if (atom x)
+      nil
+    (cons (append (car x) y)
+          (prepend-rec (cdr x) y))))
+
+;; BOOL->BIT
+
+(defun-inline bool->bit (x)
   (declare (xargs :guard t))
-  (if (atom tree)
-      (null tree)
-    (and (tv-guard (car tree))
-         (tv-guard (cdr tree)))))
+  (if x 1 0))
+
+(in-theory (disable bool->bit))
+
+;; GET-FIELD
+
+;; We use this function as a wrapper of NTH. This is useful when we don't want
+;; to apply rewrite rules to NTH by letting GET-FIELD remain disabled.
+
+(defund get-field (n l)
+  (declare (xargs :guard (and (natp n)
+                              (true-listp l))))
+  (nth n l))
 
 ;; LEN-1-LISTP
 
-(defund len-1-listp (x)
+(defun len-1-listp (x)
   (declare (xargs :guard t))
   (if (atom x)
-      t
+      (null x)
     (and (equal (len (car x)) 1)
          (len-1-listp (cdr x)))))
 
@@ -604,6 +655,11 @@
   (declare (xargs :guard t))
   (and (true-list-listp x)
        (len-1-listp x)))
+
+(defthmd len-1-true-listp=>true-listp
+  (implies (len-1-true-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
 
 (defthm pairlis$-strip-cars
   (implies (len-1-true-listp x)
@@ -619,22 +675,6 @@
 
 (in-theory (disable len-1-true-listp))
 
-;; APPEND-REC & PREPEND-REC
-
-(defund append-rec (x y)
-  (declare (xargs :guard (true-listp x)))
-  (if (atom y)
-      nil
-    (cons (append x (car y))
-          (append-rec x (cdr y)))))
-
-(defund prepend-rec (x y)
-  (declare (xargs :guard (true-list-listp x)))
-  (if (atom x)
-      nil
-    (cons (append (car x) y)
-          (prepend-rec (cdr x) y))))
-
 ;; REMOVE-LST
 
 (defun remove-lst (x y)
@@ -644,9 +684,37 @@
     (remove-lst (cdr x)
                 (remove-equal (car x) y))))
 
+;; SUFFIXP
+
+(defthm suffixp-nil
+  (implies (true-listp y)
+           (suffixp nil y))
+  :hints (("Goal" :in-theory (enable suffixp)))
+  :rule-classes :type-prescription)
+
+(defthm suffixp-append
+  (implies (suffixp x y)
+           (suffixp (append x z) (append y z)))
+  :hints (("Goal" :in-theory (enable suffixp)))
+  :rule-classes :type-prescription)
+
+;; TV-GUARD
+
+(defun tv-guard (tree)
+  (declare (xargs :guard t))
+  (if (atom tree)
+      (null tree)
+    (and (tv-guard (car tree))
+         (tv-guard (cdr tree)))))
+
+(defthm tv-guard-make-tree
+  (tv-guard (make-tree n))
+  :hints (("Goal" :in-theory (enable make-tree)))
+  :rule-classes :type-prescription)
+
 ;; ======================================================================
 
-;; Interleave two lists
+;; Shuffle two lists
 
 (defun insert (x i l)
   (declare (xargs :guard (natp i)))
@@ -759,37 +827,37 @@
 
 (in-theory (disable insert-up-to-rec))
 
-(defun interleave (l1 l2)
+(defun shuffle (l1 l2)
   (declare (xargs :guard (and (true-listp l1)
                               (true-listp l2))))
   (if (atom l1)
       (list l2)
     (insert-up-to-rec (car l1) (cadr l1)
-                      (interleave (cdr l1) l2))))
+                      (shuffle (cdr l1) l2))))
 
-(defthm true-list-listp-interleave
+(defthm true-list-listp-shuffle
   (implies (and (true-listp l1)
                 (true-listp l2))
-           (true-list-listp (interleave l1 l2)))
+           (true-list-listp (shuffle l1 l2)))
   :rule-classes :type-prescription)
 
-(in-theory (disable interleave))
+(in-theory (disable shuffle))
 
-(defun interleave-rec1 (x y)
+(defun shuffle-rec1 (x y)
   (declare (xargs :guard (and (true-list-listp x)
                               (true-listp y))))
   (if (atom x)
       nil
-    (append (interleave (car x) y)
-            (interleave-rec1 (cdr x) y))))
+    (append (shuffle (car x) y)
+            (shuffle-rec1 (cdr x) y))))
 
-(defun interleave-rec2 (x y)
+(defun shuffle-rec2 (x y)
   (declare (xargs :guard (and (true-listp x)
                               (true-list-listp y))))
   (if (atom y)
       nil
-    (append (interleave x (car y))
-            (interleave-rec2 x (cdr y)))))
+    (append (shuffle x (car y))
+            (shuffle-rec2 x (cdr y)))))
 
 ;; Compute a powerset
 
@@ -988,12 +1056,24 @@
   (implies (natp m)
            (no-duplicatesp (sis s m n))))
 
+(defthm sis-of-singleton
+  (equal (sis s m 1)
+         (list (si s m)))
+  :hints (("Goal" :expand (sis s m 1))))
+
 (defthm disjoint-sis-diff-syms
   (implies (and (not (str::istrprefixp (str-append-symbol-underscore s1)
                                        (str-append-symbol-underscore s2)))
                 (not (str::istrprefixp (str-append-symbol-underscore s2)
                                        (str-append-symbol-underscore s1))))
            (disjoint (sis s1 m1 n1) (sis s2 m2 n2))))
+
+(defthm disjoint-rev-sis-diff-syms
+  (implies (and (not (str::istrprefixp (str-append-symbol-underscore s1)
+                                       (str-append-symbol-underscore s2)))
+                (not (str::istrprefixp (str-append-symbol-underscore s2)
+                                       (str-append-symbol-underscore s1))))
+           (disjoint (rev (sis s1 m1 n1)) (sis s2 m2 n2))))
 
 (defthm si-member-sis
   (implies (and (natp m)
@@ -1006,6 +1086,15 @@
            :expand ((sis s 0 n)
                     (sis s i 1)
                     (sis s i n)))))
+
+(defthm sis-subset-sis
+  (implies (and (natp m)
+                (posp n)
+                (natp i)
+                (<= m i)
+                (<= (+ i j) (+ m n)))
+           (subsetp (sis s i j)
+                    (sis s m n))))
 
 (defthmd si-is-nth-of-sis
   (implies (and (natp m)

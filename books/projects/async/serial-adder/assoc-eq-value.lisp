@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; August 2016
+;; December 2017
 
 (in-package "ADE")
 
@@ -136,13 +141,9 @@
            (equal (assoc-eq-values x (append (pairlis$ x a) alist))
                   a)))
 
-(defthm assoc-eq-values-append-when-disjoint-1
-  (implies (disjoint syms (strip-cars x))
-           (equal (assoc-eq-values syms (append x y))
-                  (assoc-eq-values syms y))))
-
-(defthm assoc-eq-values-append-when-disjoint-2
-  (implies (disjoint (strip-cars x) syms)
+(defthm assoc-eq-values-append-when-disjoint
+  (implies (or (disjoint syms (strip-cars x))
+               (disjoint (strip-cars x) syms))
            (equal (assoc-eq-values syms (append x y))
                   (assoc-eq-values syms y))))
 
@@ -159,20 +160,22 @@
          (append (assoc-eq-values a alist)
                  (assoc-eq-values b alist))))
 
+(defthm assoc-eq-values-rev-append-pairlis$
+  (implies (and (no-duplicatesp x)
+                (true-listp a)
+                (equal (len x) (len a)))
+           (equal (assoc-eq-values (rev x) (append (pairlis$ x a) alist))
+                  (rev a))))
+
 (defthm assoc-eq-values-append-pairlis$-when-subset
   (implies (subsetp args1 args2)
            (equal (assoc-eq-values args1 (append (pairlis$ args2 answer)
                                                  x))
                   (assoc-eq-values args1 (pairlis$ args2 answer)))))
 
-(defthm assoc-eq-values-append-pairlis$-when-disjoint-1
-  (implies (disjoint args1 args2)
-           (equal (assoc-eq-values args1 (append (pairlis$ args2 a)
-                                                 b))
-                  (assoc-eq-values args1 b))))
-
-(defthm assoc-eq-values-append-pairlis$-when-disjoint-2
-  (implies (disjoint args2 args1)
+(defthm assoc-eq-values-append-pairlis$-when-disjoint
+  (implies (or (disjoint args1 args2)
+               (disjoint args2 args1))
            (equal (assoc-eq-values args1 (append (pairlis$ args2 a)
                                                  b))
                   (assoc-eq-values args1 b))))
@@ -284,7 +287,7 @@
 
 (in-theory (disable assoc-eq-values))
 
-(defthmd assoc-eq-values-of-sis-pairlis$-sis
+(defthm assoc-eq-values-of-sis-pairlis$-sis
   (implies (and (natp m)
                 (posp n)
                 (natp i)

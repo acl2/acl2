@@ -1,12 +1,40 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; June 2017
+;; December 2017
 
 (in-package "ADE")
 
 (include-book "de")
 (include-book "macros")
 
+(include-book "std/lists/flatten" :dir :system)
+
 ;; ======================================================================
+
+(defun fullp (link-st)
+  (declare (xargs :guard t))
+  (equal link-st '(t)))
+
+(defun emptyp (link-st)
+  (declare (xargs :guard t))
+  (equal link-st '(nil)))
+
+(defun validp (link-st)
+  (declare (xargs :guard t))
+  (or (fullp link-st) (emptyp link-st)))
+
+(defun extract-state (st)
+  (declare (xargs :guard (true-listp st)))
+  (if (atom st)
+      nil
+    (if (fullp (car st))
+        (cons (cadr st)
+              (extract-state (cddr st)))
+      (extract-state (cddr st)))))
 
 ;; Some utility functions that help print out a readable format of link states.
 
@@ -20,40 +48,55 @@
          (4v->link-st (car x)))
         (t nil)))
 
-(defun 4v->data (x)
-  (declare (xargs :guard t))
-  (cond ((equal x T)
-         1)
-        ((equal x NIL)
-         0)
-        ((equal x *X*)
-         x)
-        ((equal x *Z*)
-         x)
-        ((consp x)
-         (cons (4v->data (car x))
-               (4v->data (cdr x))))
-        (t nil)))
-
-(defun map-to-links (x idx)
-  (declare (xargs :guard (and (true-listp x)
-                              (natp idx))))
+(defun map-to-links (x)
+  (declare (xargs :guard (true-list-listp x)))
   (if (endp x)
       nil
     (cons
-     (list (string-append "L" (str::natstr idx))
-           (4v->link-st (car x))
-           (reverse (list-fix (4v->data (cadr x)))))
-     (map-to-links (cddr x) (1+ idx)))))
+     (b* ((tuple (car x))
+          (name (first tuple))
+          (status (second tuple))
+          (value (third tuple)))
+       (list* name
+              (if (fullp status)
+                  (list (4v->link-st status)
+                        (v-to-nat (acl2::flatten value)))
+                (list (4v->link-st status) '_))))
+     (map-to-links (cdr x)))))
 
-(defun map-to-links-list (x count)
-  (declare (xargs :guard (and (true-list-listp x)
-                              (natp count))))
-  (if (endp x)
+(defun remove-dup-neighbors (x)
+  (declare (xargs :guard t))
+  (cond ((atom x)
+         nil)
+        ((atom (cdr x))
+         x)
+        ((equal (car x) (cadr x))
+         (remove-dup-neighbors (cdr x)))
+        (t (cons (car x)
+                 (remove-dup-neighbors (cdr x))))))
+
+(defun pretty-list (x count)
+  (declare (xargs :guard (natp count)))
+  (if (atom x)
       nil
-    (cons (map-to-links (car x) 0)
-          (cons (string-append (str::natstr count) "-----")
-                (map-to-links-list (cdr x) (1+ count))))))
+    (cons (car x)
+          (cons (string-append (str::natstr count) "----------")
+                (pretty-list (cdr x) (1+ count))))))
+
+;; GO-VALS-GEN generates randomly a sequence of GO signals' values.
+
+(defun go-vals-gen (num-signals n state go-signals-lst)
+  (declare (xargs :guard (and (natp num-signals)
+                              (natp n))
+                  :guard-hints
+                  (("Goal" :in-theory (enable random$)))
+                  :stobjs state))
+  (if (zp n)
+      (mv go-signals-lst state)
+    (b* (((mv oracle state) (random$ (expt 2 num-signals) state))
+         (go-signals (nat-to-v oracle num-signals))
+         (go-signals-lst (cons go-signals go-signals-lst)))
+      (go-vals-gen num-signals (1- n) state go-signals-lst))))
 
 ;; ======================================================================
 
@@ -103,18 +146,6 @@
   (declare (xargs :guard t))
   (equal sw nil))
 
-(defun fullp (link-st)
-  (declare (xargs :guard t))
-  (equal link-st '((t))))
-
-(defun emptyp (link-st)
-  (declare (xargs :guard t))
-  (equal link-st '((nil))))
-
-(defun validp (link-st)
-  (declare (xargs :guard t))
-  (or (fullp link-st) (emptyp link-st)))
-
 ;; ======================================================================
 
 ;; Joint control circuit
@@ -142,6 +173,12 @@
   (f-and (f-and fin (f-not fout))
          (f-bool go)))
 
+(defthm booleanp-joint-act
+  (implies (and (booleanp fin)
+                (booleanp fout))
+           (booleanp (joint-act fin fout go)))
+  :rule-classes :type-prescription)
+
 (defthm joint-act-rewrite
   (and (not (joint-act nil fout go))
        (not (joint-act fin t go))
@@ -150,7 +187,9 @@
               (f-bool go))))
 
 (defthm joint-act-removes-f-buf
-  (and (equal (joint-act (f-buf fin) fout go)
+  (and (equal (f-buf (joint-act fin fout go))
+              (joint-act fin fout go))
+       (equal (joint-act (f-buf fin) fout go)
               (joint-act fin fout go))
        (equal (joint-act fin (f-buf fout) go)
               (joint-act fin fout go))
@@ -162,7 +201,7 @@
   (implies (joint-cntl& netlist)
            (equal (se 'joint-cntl (list fin fout go) sts netlist)
                   (list (joint-act fin fout go))))
-  :hints (("Goal" :in-theory (enable* se-rules joint-cntl&))))
+  :hints (("Goal" :in-theory (enable se-rules joint-cntl&))))
 
 (in-theory (disable joint-act))
 
@@ -193,9 +232,9 @@
   (implies (click-link-st& netlist)
            (equal (se 'click-link-st (list fi dr) (list ff0 ff1) netlist)
                   (list (f-xor (car ff0) (car ff1)))))
-  :hints (("Goal" :in-theory (enable* se-rules
-                                      click-link-st&
-                                      f-gates))))
+  :hints (("Goal" :in-theory (enable se-rules
+                                     click-link-st&
+                                     f-gates))))
 
 (defthmd click-link-st$state
   (implies (click-link-st& netlist)
@@ -206,75 +245,7 @@
                         (list (f-if dr
                                     (f-not (car ff1))
                                     (car ff1))))))
-  :hints (("Goal" :in-theory (enable* de-rules
-                                      click-link-st&
-                                      f-gates))))
-
-;; ======================================================================
-
-;; SR link-state circuit
-
-(defconst *sr-link-st*
-  '((sr-link-st
-     (fi dr)
-     (ls)
-     (sr-st)
-     ((sr-st (ls ls~) sr (fi dr))))))
-
-(defthmd sr-link-st-okp
-  (and (net-syntax-okp *sr-link-st*)
-       (net-arity-okp *sr-link-st*)))
-
-(defund sr-link-st& (netlist)
-  (declare (xargs :guard (alistp netlist)))
-  (netlist-hyps netlist sr-link-st))
-
-(defthmd sr-link-st$value
-  (implies (sr-link-st& netlist)
-           (equal (se 'sr-link-st ins sts netlist)
-                  (list (f-buf (caar sts)))))
-  :hints (("Goal" :in-theory (enable* se-rules sr-link-st&))))
-
-(defthmd sr-link-st$state
-  (implies (sr-link-st& netlist)
-           (equal (de 'sr-link-st (list fi dr) sts netlist)
-                  (list (list (f-sr fi dr (caar sts))))))
-  :hints (("Goal" :in-theory (enable* de-rules sr-link-st&))))
-
-;; ======================================================================
-
-(defun or-list (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (or (car x)
-        (or-list (cdr x)))))
-
-(defconst *link-st*
-  '((link-st
-     (fi dr)
-     (ls)
-     (sr-st)
-     ((sr-st (ls ls~) sr (fi dr))))))
-
-(defthmd link-st-okp
-  (and (net-syntax-okp *link-st*)
-       (net-arity-okp *link-st*)))
-
-(defund link-st& (netlist)
-  (declare (xargs :guard (alistp netlist)))
-  (netlist-hyps netlist link-st))
-
-(defthmd link-st$value
-  (implies (link-st& netlist)
-           (equal (se 'link-st ins sts netlist)
-                  (list (f-buf (caar sts)))))
-  :hints (("Goal" :in-theory (enable* se-rules link-st&))))
-
-(defthmd link-st$state
-  (implies (link-st& netlist)
-           (equal (de 'link-st (list fi dr) sts netlist)
-                  (list (list (f-sr fi dr (caar sts))))))
-  :hints (("Goal" :in-theory (enable* de-rules link-st&))))
-
+  :hints (("Goal" :in-theory (enable de-rules
+                                     click-link-st&
+                                     f-gates))))
 

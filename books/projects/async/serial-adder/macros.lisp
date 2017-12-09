@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2017
+;; December 2017
 
 (in-package "ADE")
 
@@ -781,6 +786,80 @@
 
 ;; ======================================================================
 
+(defmacro state-fn-n-gen (name)
+  (declare (xargs :guard (symbolp name)))
+  (b* ((state-fn (intern$ (concatenate 'string
+                                       (symbol-name name)
+                                       "$STATE-FN")
+                          "ADE"))
+       (state-fn-n (intern$ (concatenate 'string
+                                         (symbol-name name)
+                                         "$STATE-FN-N")
+                            "ADE"))
+       (len-of-state-fn-n (intern$ (concatenate 'string
+                                                "LEN-OF-"
+                                                (symbol-name name)
+                                                "$STATE-FN-N")
+                                   "ADE"))
+       (st-len-const (intern$ (concatenate 'string
+                                           "*"
+                                           (symbol-name name)
+                                           "$ST-LEN*")
+                              "ADE"))
+       (open-state-fn-n-zp (intern$ (concatenate 'string
+                                                 "OPEN-"
+                                                 (symbol-name name)
+                                                 "$STATE-FN-N-ZP")
+                                    "ADE"))
+       (open-state-fn-n (intern$ (concatenate 'string
+                                              "OPEN-"
+                                              (symbol-name name)
+                                              "$STATE-FN-N")
+                                 "ADE"))
+       (state-fn-m+n (intern$ (concatenate 'string
+                                           (symbol-name name)
+                                           "$STATE-FN-M+N")
+                              "ADE"))
+       (inputs-lst 'inputs-lst))
+    `(progn
+       
+       (defun ,state-fn-n (,inputs-lst st n)
+         (if (zp n)
+             st
+           (,state-fn-n (cdr ,inputs-lst)
+                        (,state-fn (car ,inputs-lst) st)
+                        (1- n))))
+
+       (defthm ,len-of-state-fn-n
+         (implies (equal (len st) ,st-len-const)
+                  (equal (len (,state-fn-n ,inputs-lst st n))
+                         ,st-len-const)))
+
+       (defthm ,open-state-fn-n-zp
+         (implies (zp n)
+                  (equal (,state-fn-n ,inputs-lst st n)
+                         st)))
+
+       (defthm ,open-state-fn-n
+         (implies
+          (not (zp n))
+          (equal (,state-fn-n ,inputs-lst st n)
+                 (,state-fn-n (cdr ,inputs-lst)
+                              (,state-fn (car ,inputs-lst) st)
+                              (1- n)))))
+
+       (defthm ,state-fn-m+n
+         (implies (and (natp m)
+                       (natp n))
+                  (equal (,state-fn-n ,inputs-lst st (+ m n))
+                         (,state-fn-n
+                          (nthcdr m ,inputs-lst)
+                          (,state-fn-n ,inputs-lst st m)
+                          n)))
+         :hints (("Goal"
+                  :induct (,state-fn-n ,inputs-lst st m))))
+       )))
+
 (defmacro input-format-n-gen (name)
   (declare (xargs :guard (symbolp name)))
   (b* ((input-format (intern$ (concatenate 'string
@@ -791,6 +870,11 @@
                                              (symbol-name name)
                                              "$INPUT-FORMAT-N")
                                 "ADE"))
+       (open-input-format-n-zp (intern$ (concatenate 'string
+                                                     "OPEN-"
+                                                     (symbol-name name)
+                                                     "$INPUT-FORMAT-N-ZP")
+                                        "ADE"))
        (open-input-format-n (intern$ (concatenate 'string
                                                   "OPEN-"
                                                   (symbol-name name)
@@ -811,18 +895,17 @@
            (and (,input-format (car ,inputs-lst))
                 (,input-format-n (cdr ,inputs-lst) (1- n)))))
 
-       (defthm ,open-input-format-n
-         (and
-          (implies (zp n)
-                   (equal (,input-format-n ,inputs-lst n)
-                          t))
-          (implies (not (zp n))
-                   (equal (,input-format-n ,inputs-lst n)
-                          (and (,input-format (car ,inputs-lst))
-                               (,input-format-n (cdr ,inputs-lst)
-                                                (1- n)))))))
+       (defthm ,open-input-format-n-zp
+         (implies (zp n)
+                  (equal (,input-format-n ,inputs-lst n)
+                         t)))
 
-       (in-theory (disable ,input-format-n))
+       (defthm ,open-input-format-n
+         (implies (not (zp n))
+                  (equal (,input-format-n ,inputs-lst n)
+                         (and (,input-format (car ,inputs-lst))
+                              (,input-format-n (cdr ,inputs-lst)
+                                               (1- n))))))
 
        (defthm ,input-format-m+n
          (implies (and (natp m)
@@ -830,6 +913,77 @@
                   (equal (,input-format-n ,inputs-lst (+ m n))
                          (and (,input-format-n ,inputs-lst m)
                               (,input-format-n (nthcdr m ,inputs-lst) n)))))
+       )))
+
+(defmacro input-format-n-with-state-gen (name)
+  (declare (xargs :guard (symbolp name)))
+  (b* ((input-format (intern$ (concatenate 'string
+                                           (symbol-name name)
+                                           "$INPUT-FORMAT")
+                              "ADE"))
+       (input-format-n (intern$ (concatenate 'string
+                                             (symbol-name name)
+                                             "$INPUT-FORMAT-N")
+                                "ADE"))
+       (open-input-format-n-zp (intern$ (concatenate 'string
+                                                     "OPEN-"
+                                                     (symbol-name name)
+                                                     "$INPUT-FORMAT-N-ZP")
+                                        "ADE"))
+       (open-input-format-n (intern$ (concatenate 'string
+                                                  "OPEN-"
+                                                  (symbol-name name)
+                                                  "$INPUT-FORMAT-N")
+                                     "ADE"))
+       (input-format-m+n (intern$ (concatenate 'string
+                                               (symbol-name name)
+                                               "$INPUT-FORMAT-M+N")
+                                  "ADE"))
+       (state-fn (intern$ (concatenate 'string
+                                       (symbol-name name)
+                                       "$STATE-FN")
+                          "ADE"))
+       (state-fn-n (intern$ (concatenate 'string
+                                         (symbol-name name)
+                                         "$STATE-FN-N")
+                            "ADE"))
+       (inputs-lst 'inputs-lst))
+    `(progn
+       
+       (defun ,input-format-n (,inputs-lst st n)
+         (declare (xargs :measure (acl2-count n)))
+         (if (zp n)
+             t
+           (and (,input-format (car ,inputs-lst) st)
+                (,input-format-n (cdr ,inputs-lst)
+                                 (,state-fn (car ,inputs-lst) st)
+                                 (1- n)))))
+
+       (defthm ,open-input-format-n-zp
+         (implies (zp n)
+                  (equal (,input-format-n ,inputs-lst st n)
+                         t)))
+
+       (defthm ,open-input-format-n
+         (implies
+          (not (zp n))
+          (equal (,input-format-n ,inputs-lst st n)
+                 (and (,input-format (car ,inputs-lst) st)
+                      (,input-format-n (cdr ,inputs-lst)
+                                       (,state-fn (car ,inputs-lst) st)
+                                       (1- n))))))
+
+       (defthm ,input-format-m+n
+         (implies (and (natp m)
+                       (natp n))
+                  (equal (,input-format-n ,inputs-lst st (+ m n))
+                         (and (,input-format-n ,inputs-lst st m)
+                              (,input-format-n
+                               (nthcdr m ,inputs-lst)
+                               (,state-fn-n ,inputs-lst st m)
+                               n))))
+         :hints (("Goal"
+                  :induct (,input-format-n ,inputs-lst st m))))
        )))
 
 ;; ST-TRANS-FN generates (1) condition functions on GO signals' values based on
@@ -956,6 +1110,11 @@
                                          (symbol-name name)
                                          "$ST-TRANS-N")
                             "ADE"))
+       (open-st-trans-n-zp (intern$ (concatenate 'string
+                                                 "OPEN-"
+                                                 (symbol-name name)
+                                                 "$ST-TRANS-N-ZP")
+                                    "ADE"))
        (open-st-trans-n (intern$ (concatenate 'string
                                               "OPEN-"
                                               (symbol-name name)
@@ -973,6 +1132,12 @@
                                                    (symbol-name name)
                                                    "$ST-TRANS-N->NUMSTEPS")
                                       "ADE"))
+       (open-st-trans-n->numsteps-zp
+        (intern$ (concatenate 'string
+                              "OPEN-"
+                              (symbol-name name)
+                              "$ST-TRANS-N->NUMSTEPS-ZP")
+                 "ADE"))
        (open-st-trans-n->numsteps
         (intern$ (concatenate 'string
                               "OPEN-"
@@ -1024,17 +1189,18 @@
                  (nthcdr (,st-trans->numsteps ,inputs-lst) ,inputs-lst)
                  (1- n)))))
 
+       (defthm ,open-st-trans-n-zp
+         (implies (zp n)
+                  (equal (,st-trans-n ,inputs-lst n) t)))
+
        (defthm ,open-st-trans-n
-         (and
-          (implies (zp n)
-                   (equal (,st-trans-n ,inputs-lst n) t))
-          (implies (not (zp n))
-                   (equal (,st-trans-n ,inputs-lst n)
-                          (and (,st-trans ,inputs-lst)
-                               (,st-trans-n
-                                (nthcdr (,st-trans->numsteps ,inputs-lst)
-                                        ,inputs-lst)
-                                (1- n)))))))
+         (implies (not (zp n))
+                  (equal (,st-trans-n ,inputs-lst n)
+                         (and (,st-trans ,inputs-lst)
+                              (,st-trans-n
+                               (nthcdr (,st-trans->numsteps ,inputs-lst)
+                                       ,inputs-lst)
+                               (1- n))))))
 
        (defun ,st-trans-n->numsteps (,inputs-lst n)
          (declare (xargs :guard (and (true-list-listp ,inputs-lst)
@@ -1046,17 +1212,18 @@
                 (,st-trans-n->numsteps (nthcdr numsteps ,inputs-lst)
                                        (1- n))))))
 
+       (defthm ,open-st-trans-n->numsteps-zp
+         (implies (zp n)
+                  (equal (,st-trans-n->numsteps ,inputs-lst n) 0)))
+
        (defthm ,open-st-trans-n->numsteps
-         (and
-          (implies (zp n)
-                   (equal (,st-trans-n->numsteps ,inputs-lst n) 0))
-          (implies (not (zp n))
-                   (equal (,st-trans-n->numsteps ,inputs-lst n)
-                          (b* ((numsteps (,st-trans->numsteps ,inputs-lst)))
-                            (+ numsteps
-                               (,st-trans-n->numsteps
-                                (nthcdr numsteps ,inputs-lst)
-                                (1- n))))))))
+         (implies (not (zp n))
+                  (equal (,st-trans-n->numsteps ,inputs-lst n)
+                         (b* ((numsteps (,st-trans->numsteps ,inputs-lst)))
+                           (+ numsteps
+                              (,st-trans-n->numsteps
+                               (nthcdr numsteps ,inputs-lst)
+                               (1- n)))))))
 
        (defthm ,st-trans-m+n
          (implies (and (natp m)

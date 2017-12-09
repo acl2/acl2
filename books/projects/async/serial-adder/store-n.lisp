@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; December 2017
 
 (in-package "ADE")
 
@@ -87,7 +92,7 @@
                           (assoc-eq-values (sis 'G m n) sts-alist)))))
   :hints (("Goal"
            :induct (latch-n-body-induct m n wire-alist sts-alist netlist)
-           :in-theory (enable* se-rules
+           :in-theory (enable se-rules
                                latch-n-body
                                fv-if-rewrite
                                f-gates
@@ -157,7 +162,7 @@
                    nil)))
   :hints (("Goal"
            :induct (latch-n-body-state-induct m n wire-alist sts-alist netlist)
-           :in-theory (enable* de-rules
+           :in-theory (enable de-rules
                                latch-n-body
                                fv-if-rewrite
                                f-gates
@@ -265,7 +270,7 @@
                                                 sts-alist)))))
   :hints (("Goal"
            :induct (ff-n-body-induct m n wire-alist sts-alist netlist)
-           :in-theory (enable* se-rules ff-n-body sis))))
+           :in-theory (enable se-rules ff-n-body sis))))
 
 (not-primp-lemma ff-n)
 
@@ -327,12 +332,12 @@
                    nil)))
   :hints (("Goal"
            :induct (ff-n-body-state-induct m n wire-alist sts-alist netlist)
-           :in-theory (enable* de-rules
-                               ff-n-body
-                               fv-if-rewrite
-                               f-gates
-                               repeat
-                               sis))
+           :in-theory (enable de-rules
+                              ff-n-body
+                              fv-if-rewrite
+                              f-gates
+                              repeat
+                              sis))
           ("Subgoal *1/2"
            :use (:instance si-of-diff-symbols-2
                            (s1 nil)
