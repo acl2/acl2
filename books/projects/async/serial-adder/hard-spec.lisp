@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; December 2017
 
 (in-package "ADE")
 
@@ -108,6 +113,11 @@
   (implies (bvp a)
            (equal (bvp (append a b))
                   (bvp b))))
+
+(defthm bvp-rev
+  (implies (bvp x)
+           (bvp (rev x)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm bvp-is-true-listp
   (implies (bvp x)
@@ -223,6 +233,10 @@
 (defun b-or4 (a b c d)
   (declare (xargs :guard t))
   (or (bool-fix a) (bool-fix b) (bool-fix c) (bool-fix d)))
+
+(defun b-or5 (a b c d e)
+  (declare (xargs :guard t))
+  (or (bool-fix a) (bool-fix b) (bool-fix c) (bool-fix d) (bool-fix e)))
     
 (defun b-xor (a b)
   (declare (xargs :guard t))
@@ -231,6 +245,10 @@
 (defun b-xor3 (a b c)
   (declare (xargs :guard t))
   (b-xor (b-xor a b) c))
+
+(defun b-xnor (a b)
+  (declare (xargs :guard t))
+  (not (xor a b)))
     
 (defun b-equv (a b)
   (declare (xargs :guard t))
@@ -287,8 +305,8 @@
   '(b-buf
     b-not
     b-nand b-nand3 b-nand4 b-nand5 b-nand6 b-nand8
-    b-or b-or3 b-or4
-    b-xor b-xor3
+    b-or b-or3 b-or4 b-or5
+    b-xor b-xor3 b-xnor
     b-equv b-equv3
     b-and b-and3 b-and4 
     b-nor b-nor3 b-nor4 b-nor5 b-nor6 b-nor8
@@ -313,8 +331,10 @@
    (booleanp (b-or a b))
    (booleanp (b-or3 a b c))
    (booleanp (b-or4 a b c d))
+   (booleanp (b-or5 a b c d e))
    (booleanp (b-xor a b))
    (booleanp (b-xor3 a b c))
+   (booleanp (b-xnor a b))
    (booleanp (b-equv a b))
    (booleanp (b-equv3 a b c))
    (booleanp (b-and a b))
@@ -395,6 +415,13 @@
     (cons (b-xor (car x) (car y))
           (v-xor (cdr x) (cdr y)))))
 
+(defun v-xnor (x y)
+  (declare (xargs :guard (true-listp y)))
+  (if (atom x)
+      nil
+    (cons (b-xnor (car x) (car y))
+          (v-xnor (cdr x) (cdr y)))))
+
 (defun v-shift-right (a si)
   (declare (xargs :guard t))
   (if (atom a)
@@ -451,6 +478,11 @@
   :hints (("Goal" :in-theory (enable bvp)))
   :rule-classes (:rewrite :type-prescription))
 
+(defthm bvp-v-xnor
+  (bvp (v-xnor a b))
+  :hints (("Goal" :in-theory (enable bvp)))
+  :rule-classes (:rewrite :type-prescription))
+
 (defthm bvp-v-shift-right
   (bvp (v-shift-right a si))
   :hints (("Goal" :in-theory (enable bvp)))
@@ -498,6 +530,10 @@
   (equal (len (v-xor a b))
          (len a)))
 
+(defthm len-v-xnor
+  (equal (len (v-xnor a b))
+         (len a)))
+
 (defthm len-v-shift-right
   (equal (len (v-shift-right a b))
          (len a)))
@@ -537,6 +573,12 @@
            (equal (append (v-xor a b)
                           (v-xor d e))
                   (v-xor (append a d) (append b e)))))
+
+(defthm append-v-xnor
+  (implies (equal (len a) (len b))
+           (equal (append (v-xnor a b)
+                          (v-xnor d e))
+                  (v-xnor (append a d) (append b e)))))
 
 (defthm append-v-not
   (equal (append (v-not a) (v-not b))
@@ -599,7 +641,7 @@
   :hints (("Goal" :in-theory (enable bvp))))
 
 (in-theory (disable v-buf v-not
-                    v-and v-or v-xor
+                    v-and v-or v-xor v-xnor
                     v-shift-right
                     v-if))
 
@@ -615,6 +657,13 @@
 (defthm natp-v-to-nat
   (natp (v-to-nat v))
   :rule-classes :type-prescription)
+
+(defun v-to-nat-flatten-lst (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      nil
+    (cons (v-to-nat (acl2::flatten (car x)))
+          (v-to-nat-flatten-lst (cdr x)))))
 
 (in-theory (disable v-to-nat))
 

@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; August 2016
+;; December 2017
 
 (in-package "ADE")
 
@@ -77,6 +82,8 @@
     (b-or                   2    1    0)
     (b-or3                  3    1    0)
     (b-or4                  4    1    0)
+    (b-or5                  5    1    0)
+    (b-xnor                 2    1    0)
     (b-xor                  2    1    0)
     ;; (b-xor3                 3    1    0)
     ;; (del2                   1    1    0)
@@ -91,7 +98,7 @@
     (fd1slp                 5    2    1)
 
     (latch                  2    2    1)
-    (sr                     2    2    1)
+    (link-cntl              2    1    1)
 
     (id                     1    1    0)
 

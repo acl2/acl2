@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; July 2016
+;; December 2017
 
 ;; Automatic definition and proofs for simple linear vector modules of
 ;; primitives or other modules.  VECTOR-MODULE is defined in
@@ -27,12 +32,15 @@
      netlist)))
 
 ;; V-BUF
+;; V-AND
 ;; V-OR
 ;; V-XOR
 ;; V-PULLUP
 ;; V-WIRE
 
 (vector-module v-buf (g (y) b-buf (a)) ((v-threefix a)))
+
+(vector-module v-and (g (y) b-and (a b)) ((fv-and a b)) :enable (fv-and))
 
 (vector-module v-or (g (y) b-or (a b)) ((fv-or a b)) :enable (fv-or))
 

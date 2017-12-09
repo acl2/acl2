@@ -1,6 +1,11 @@
-;; Warren Hunt <hunt@cs.utexas.edu>
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Warren A. Hunt, Jr. and Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
+;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2017
+;; December 2017
 
 ; (ld "de.lisp" :ld-pre-eval-print t)
 
@@ -149,6 +154,10 @@
     (b-or3       (list (f-or3  (car ins) (cadr ins) (caddr ins))))
     (b-or4       (list (f-or4  (car ins) (cadr ins)
                                (caddr ins) (cadddr ins))))
+    (b-or5       (list (f-or5  (car ins) (cadr ins)
+                               (caddr ins) (cadddr ins)
+                               (car (cddddr ins)))))
+    (b-xnor      (list (f-xnor (car ins) (cadr ins))))
     (b-xor       (list (f-xor  (car ins) (cadr ins))))
 
     (del4        (list (f-buf (car ins))))
@@ -171,11 +180,10 @@
                        (f-if (car ins)
                              (f-not (cadr ins))
                              (f-not (car sts)))))
-    (sr          (list (f-buf (car sts))
-                       (f-not (car sts))))
+    (link-cntl   (list (f-buf (car sts))))
 
     (id          (list (car ins)))
-    
+
     (ram-enable-circuit  (list (f-nand (caddr ins) (cadddr ins))))
 
     (par-shift-reg32 (read-reg (car sts)))
@@ -205,7 +213,7 @@
     (vdd                    (list T))
     (vdd-parametric         (list T))
     (vss                    (list NIL))
-    
+
     (otherwise   nil)))
 
 (defun de-primp-apply (fn ins sts)
@@ -219,7 +227,7 @@
                            (f-if (caddr ins) (car ins) (car sts)))))
 
     (latch     (list (f-if (car ins) (cadr ins) (car sts))))
-    
+
     (par-shift-reg32
      (list (write-par-shift-reg (car ins) (cadr ins) (caddr ins)
                                 (list (nth 3 ins)
@@ -256,9 +264,9 @@
                                       (nth 34 ins))
                                 (car sts))))
     (shift-reg32 (list (write-shift-reg (car ins) (cadr ins) (car sts))))
-    
-    (sr        (list (f-sr (car ins) (cadr ins) (car sts))))
-    
+
+    (link-cntl   (list (f-sr (car ins) (cadr ins) (car sts))))
+
     (otherwise nil)))
 
 ; se-primp-apply lemmas
@@ -272,7 +280,7 @@
   (declare (xargs :guard t)
            (ignore ins sts))
   (case fn
-    ((b-nbuf fd1 fd1s fd1slp latch sr ttl-clk-input ttl-input) 2)
+    ((b-nbuf fd1 fd1s fd1slp latch link-cntl ttl-clk-input ttl-input) 2)
     ((par-shift-reg32 shift-reg32) 32)
     (ttl-bidirect  3)
     (otherwise     1)))
@@ -294,7 +302,7 @@
   (declare (xargs :guard (true-listp ins))
            (ignore ins sts))
   (case fn
-    ((fd1 fd1s fd1slp latch par-shift-reg32 shift-reg32 sr) 1)
+    ((fd1 fd1s fd1slp latch par-shift-reg32 shift-reg32 link-cntl) 1)
     (otherwise 0)))
 
 (defthm len-de-primp-apply-lemma
@@ -1233,7 +1241,7 @@
                  (NOT (EQUAL FN 'LATCH))
                  (NOT (EQUAL FN 'SHIFT-REG32))
                  (NOT (EQUAL FN 'PAR-SHIFT-REG32))
-                 (NOT (EQUAL FN 'SR)))
+                 (NOT (EQUAL FN 'LINK-CNTL)))
             (EQUAL (LEN STS) 0))
    :hints (("Goal" :in-theory (enable primp)))))
 
@@ -1302,16 +1310,17 @@
             (de fn (car ins-list) sts netlist)
             netlist)))
 
+(defthm open-de-sim-atom
+  (implies (atom ins-list)
+           (equal (de-sim fn ins-list sts netlist)
+                  sts)))
+
 (defthm open-de-sim
-  (and
-   (implies (atom ins-list)
-            (equal (de-sim fn ins-list sts netlist)
-                   sts))
-   (implies (consp ins-list)
-            (equal (de-sim fn ins-list sts netlist)
-                   (de-sim fn (cdr ins-list)
-                           (de fn (car ins-list) sts netlist)
-                           netlist)))))
+  (implies (consp ins-list)
+           (equal (de-sim fn ins-list sts netlist)
+                  (de-sim fn (cdr ins-list)
+                          (de fn (car ins-list) sts netlist)
+                          netlist))))
 
 (in-theory (disable de-sim))
 
@@ -1363,18 +1372,19 @@
   :hints (("Goal"
            :induct (de-sim-n fn ins-list sts netlist m))))
 
+(defthm open-de-sim-n-zp
+  (implies (zp n)
+           (equal (de-sim-n fn ins-list sts netlist n)
+                  sts)))
+
 (defthm open-de-sim-n
-  (and
-   (implies (zp n)
-            (equal (de-sim-n fn ins-list sts netlist n)
-                   sts))
-   (implies (not (zp n))
-            (equal (de-sim-n fn ins-list sts netlist n)
-                   (de-sim-n fn
-                             (cdr ins-list)
-                             (de fn (car ins-list) sts netlist)
-                             netlist
-                             (1- n))))))
+  (implies (not (zp n))
+           (equal (de-sim-n fn ins-list sts netlist n)
+                  (de-sim-n fn
+                            (cdr ins-list)
+                            (de fn (car ins-list) sts netlist)
+                            netlist
+                            (1- n)))))
 
 (in-theory (disable de-sim-n))
 
@@ -1406,37 +1416,20 @@
 (in-theory (disable se-guard se-occ-guard
                     well-formed-sts well-formed-sts-occs))
 
-(defun ins-propagate (ins n)
-  (declare (xargs :guard (natp n)))
-  (if (zp n)
-      nil
-    (cons ins (ins-propagate ins (1- n)))))
-
-(defthm open-ins-propagate
-  (and
-   (implies (zp n)
-            (equal (ins-propagate ins n)
-                   nil))
-   (implies (not (zp n))
-            (equal (ins-propagate ins n)
-                   (cons ins (ins-propagate ins (1- n)))))))
-
-(in-theory (disable ins-propagate))
-
 ;; ======================================================================
 
 ;; Define some theories.
 
 (deftheory se-rules
-  '(se
-    se-primp-apply
+  '(se-primp-apply
+    se
     open-se
     md-name md-ins md-outs md-sts md-occs
     occ-name occ-outs occ-fn occ-ins))
 
 (deftheory de-rules
-  '(de
-    de-primp-apply
+  '(de-primp-apply
+    de
     open-de
     se
     se-primp-apply
@@ -1459,5 +1452,3 @@
     str::iprefixp-of-cons-left
     str::istrprefixp$inline
     str::iprefixp-when-prefixp))
-
-
