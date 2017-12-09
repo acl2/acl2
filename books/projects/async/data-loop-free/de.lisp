@@ -1,6 +1,11 @@
-;; Warren Hunt <hunt@cs.utexas.edu>
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Warren A. Hunt, Jr. and Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
+;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2017
+;; December 2017
 
 ; (ld "de.lisp" :ld-pre-eval-print t)
 

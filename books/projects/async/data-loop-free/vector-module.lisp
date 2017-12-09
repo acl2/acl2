@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; July 2016
+;; December 2017
 
 ;; Automatic definition and proofs for simple linear vector modules of
 ;; primitives or other modules.  VECTOR-MODULE is defined in
