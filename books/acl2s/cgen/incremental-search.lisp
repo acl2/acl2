@@ -201,8 +201,8 @@ additional hyps")
 ; tested carefully I would not have gotten hold of this simple programming err.
 ; May 24th '12: making this into a defun
 ; 18 July '13 -- modified to a simplified signature
-(def assign-propagate (a% name sm vl ctx state)
-  (decl :sig ((a% string sampling-method 
+(def assign-propagate (a% name sm top-vt-alist vl ctx state)
+  (decl :sig ((a% string sampling-method symbol-doublet-list
                   fixnum symbol state)
               -> (mv erp (list pseudo-term-list pseudo-term symbol-list 
                                symbol-doublet-list symbol-alist symbol-alist a%) state))
@@ -213,11 +213,16 @@ additional hyps")
         ((list H C vars partial-A elim-bindings type-alist tau-interval-alist) LV)
         ((mv x i) (mv (access a% var) (access a% i)))
         (wrld (w state))
+        (acl2-vt-dlist (var-types-alist-from-acl2-type-alist type-alist vars '()))
+       ((mv erp top+-vt-dlist) (meet-type-alist acl2-vt-dlist top-vt-alist vl (w state)))
+       (top+-vt-dlist (if erp (make-weakest-type-alist vars) top+-vt-dlist))
 ; infer enum shape
         (cs% (or (access a% cs) ;already computed
                  (assert$ (member-eq x vars)
                           (cdr (assoc-eq x (collect-constraints% 
-                                             (cons (cgen-dumb-negate-lit C) H) vars type-alist tau-interval-alist
+                                            (cons (cgen-dumb-negate-lit C) H) vars
+                                            top+-vt-dlist
+                                            type-alist tau-interval-alist
                                              vl wrld))))))
        
         ((mv erp ans state) (assign-value x cs% (cons (cgen-dumb-negate-lit C) H)
@@ -249,7 +254,7 @@ additional hyps")
      (b* (((list vars~ H~ C~) res)
           (cl~ (clausify-hyps-concl H~ C~))
           ;(name~ (acl2::concatenate 'acl2::string name " incremental " (to-string x) " i=" (to-string i)))
-          (type-alist~ (get-acl2-type-alist cl~ vars~))
+          (type-alist~ (get-acl2-type-alist cl~))
           (tau-interval-alist~ (tau-interval-alist-clause cl~ vars~))
           (- (cw? nil "~% new ta = ~x0 and old ta = ~x1~%" type-alist~ type-alist))
           (- (cw? nil "~% new tau-int-alist = ~x0 and old tau-int-alist = ~x1~%" tau-interval-alist~ tau-interval-alist))
@@ -329,7 +334,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                                             ctx state)))
 
       (b* (((mv erp ap-res state) ;snapshot a% moves to second stage/form
-            (trans-eval `(assign-propagate ',a% ',name ',(cget sampling-method) ',vl ',ctx state)
+            (trans-eval `(assign-propagate ',a% ',name ',(cget sampling-method) ',(cget top-vt-alist) ',vl ',ctx state)
                         ctx state t))
            ((when erp) ;error in assign value
             (prog2$

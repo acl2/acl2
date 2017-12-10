@@ -65,9 +65,9 @@
       (mod/complex x m)
     (mod x m)))
 
-(defun make-numeric-range-enum-info (exp exp2)
+(defun make-numeric-range-enum-info (size exp exp2)
   (acl2::make enum-info% 
-              :domain-size 't
+              :domain-size size
               :min-rec-depth 0
               :max-rec-depth 30
               :category :numeric-range 
@@ -79,6 +79,7 @@
 ; trivial mistakes that could have been easily caught had we compiled these
 ; snippets.
 
+#|
 (def make-range-enum-info% (type interval M)
   (decl :sig ((symbolp non-empty-non-universal-interval-p symbol-alist) -> enum-info%-p)
         :doc "given tau-interval interval construct an enum-info% rec with appropriate enum calls")
@@ -151,10 +152,26 @@
                                                                  (mv-let (ans seed.)
                                                                          (,(defdata::enum/acc-name type M) r seed.)
                                                                          (mv (- ,hi ans) seed.))))))))))
-                   
+|#                   
                           
                          
-  
+
+(include-book "../defdata/builtin-combinators")
+
+(def make-range-enum-info% (interval integer-p)
+  (decl :sig ((non-empty-non-universal-interval-p booleanp) -> enum-info%-p)
+        :doc "given tau-interval interval construct an enum-info% rec with appropriate enum calls")
+  (b* ((lo (acl2::access acl2::tau-interval interval :lo))
+       (hi (acl2::access acl2::tau-interval interval :hi))
+       (lo-rel (acl2::access acl2::tau-interval interval :lo-rel))
+       (hi-rel (acl2::access acl2::tau-interval interval :hi-rel))
+       (domain (if integer-p 'acl2s::integer 'acl2s::rational))
+       (dom-size (if (and lo hi integer-p)
+                     (- (if hi-rel (1- hi) hi) (if lo-rel (1+ lo) lo))
+                   't)))
+    (make-numeric-range-enum-info dom-size
+                                  (defdata::make-enum-body-for-range 'r domain lo hi lo-rel hi-rel)
+                                  (defdata::make-enum/acc-body-for-range 'r 'seed. domain lo hi lo-rel hi-rel))))
               
 
 (def get-enum-info% (type range vl wrld)
@@ -190,34 +207,16 @@
                          (posp TI.size)))
               (prog2$
                (cw? (normal-output-flag vl)
-                    "~|CEgen/Error: size in type-info ~x0 should be posp.~%" (cdr entry))
+                    "~|Cgen/Error: size in type-info ~x0 should be posp.~%" (cdr entry))
                (acl2::make enum-info% :domain-size 0 :min-rec-depth 0 :max-rec-depth 1
                            :category :empty :expr nil :expr2 nil)))
-             
-; 15 July '13 added support for integer and rational ranges
-; (acl2-numberp ranges reduce to rational ranges) custom types dont
-; take ranges in hyps into account, since they are explicitly given by
-; user, the user is burdened with the resposibility of taking them
-; into account manually. In any case even defined defdata types play
-; well only for integers and rationals, but then you cannot define an
-; interesting numeric type, like 4divp, primep, arithmetic
-; progression, etc. But you can use / constructor to define some
-; interesting types, so I need to think about how to make this more general!! TODO
-             ((when (and (and (consp TI.def) (eq 'ACL2S::RANGE (car TI.def))
-                              (defdata::range-subtype-p
-                                range
-                                (defdata::get-tau-int (cadr TI.def) (third TI.def))))
-                         (defdata::subtype-p TI.pred 'integerp wrld)
-                         (non-empty-non-universal-interval-p range)))
-              (make-range-enum-info% 'acl2s::integer range (list entry)))
 
-             ((when (and (and (consp TI.def) (eq 'ACL2S::RANGE (car TI.def))
-                              (defdata::range-subtype-p
-                                range
-                                (defdata::get-tau-int (cadr TI.def) (third TI.def))))
-                         (defdata::subtype-p TI.pred 'acl2-numberp wrld)
-                         (non-empty-non-universal-interval-p range)))
-              (make-range-enum-info% type range (list entry))))
+             ((when (or (and (consp TI.def)
+                             (eq 'ACL2S::RANGE (car TI.def))
+                             (defdata::range-subtype-p range (defdata::get-tau-int (cadr TI.def) (third TI.def))))
+                        (and (defdata::subtype-p TI.pred 'acl2-numberp wrld)
+                             (non-empty-non-universal-interval-p range))))
+              (make-range-enum-info% range (defdata::subtype-p TI.pred 'integerp wrld))))
                                              
               
              ;first check for test-enum
@@ -231,7 +230,7 @@
                            :expr2 (list TI.test-enumerator/acc 'm 'seed.)))
               (t (prog2$
                   (cw? (normal-output-flag vl)
-                       "~|CEgen/Error: ~x0 should be an enum function of arity 1.~%" TI.test-enumerator)
+                       "~|Cgen/Error: ~x0 should be an enum function of arity 1.~%" TI.test-enumerator)
                   (acl2::make enum-info% :domain-size 0 :min-rec-depth 0 :max-rec-depth 0
                               :category :empty :expr nil :expr2 nil))))
 
@@ -250,7 +249,7 @@
                        ((unless (posp len-v))
                         (prog2$
                          (cw? (normal-output-flag vl)
-                              "~|CEgen/Error: stored-defconst ~x0 has 0 values~%" stored-defconst)
+                              "~|Cgen/Error: stored-defconst ~x0 has 0 values~%" stored-defconst)
                          (acl2::make enum-info% :domain-size 0 :min-rec-depth 0 :max-rec-depth 0
                                      :category :empty :expr nil :expr2 nil))))
                    (acl2::make enum-info%
@@ -275,7 +274,7 @@
                   
                   (prog2$
                      (cw? (normal-output-flag vl)
-                          "~|CEgen/Error: ~x0 is neither one of constant, an enum function or a values defconst.~%" TI.enumerator)
+                          "~|Cgen/Error: ~x0 is neither one of constant, an enum function or a values defconst.~%" TI.enumerator)
                      (acl2::make enum-info% :domain-size 0 :category :empty :expr nil :expr2 nil))))))))
 
       ;;;o.w (possibly) custom 
@@ -311,7 +310,7 @@
                   (t 
                    (prog2$
                      (cw? (normal-output-flag vl)
-                          "~|CEgen/Error: ~x0 doesnt appear to be a type.~%" type)
+                          "~|Cgen/Error: ~x0 doesnt appear to be a type.~%" type)
                      (acl2::make enum-info% :domain-size 0 :category :empty :expr nil :expr2 nil)))))))))))
 
 
@@ -403,7 +402,28 @@ thought about how to implement it.
       nil
     (cons `(assoc-eq ',(car vars) ,alst)
           (make-guard-var-assoc-eq (cdr vars) alst))))
-  
+
+(def cs%-enumcalls-defdata (cs% vl wrld)
+  (decl :sig ((cs%-p fixnump plist-worldp) 
+              -> (mv fixnum (cons pseudo-termp pseudo-termp)))
+        :doc "see cs%-enumcalls")
+  (declare (xargs :verify-guards nil))
+;;; TODO: optimize/complete here using extra information in
+;;; spilled-types and additional-constraints
+  (case-match cs%
+;('cs% defdata-type spilled-types eq-constraint interval additional-constraints)
+    (('cs% defdata-type & & range & &)
+; ACHTUNG: cs% defrec exposed
+     (b* ((enum-info% (get-enum-info% defdata-type range vl wrld )))
+       (mv (access enum-info% domain-size)
+           (access enum-info% min-rec-depth)
+           (access enum-info% max-rec-depth)
+           (list (access enum-info% expr)
+                 (access enum-info% expr2)))))
+    (& (prog2$ 
+        (cw? (normal-output-flag vl) "~|Cgen/Error: BAD record cs% passed to cs%-enumcalls")
+        (mv 0 0 0 NIL)))))
+
 (def cs%-enumcalls (cs% vl wrld bound-vars)
   (decl :sig ((cs%-p fixnump plist-worldp  symbol-listp) 
               -> (mv fixnum (cons pseudo-termp pseudo-termp)))
@@ -466,11 +486,11 @@ thought about how to implement it.
                             (mv (nth (mod seed. len-v) ,mem-constraint) seed.))))))))
   
     (& (prog2$ 
-        (cw? (normal-output-flag vl) "~|CEgen/Error: BAD record cs% passed to cs%-enumcalls")
+        (cw? (normal-output-flag vl) "~|Cgen/Error: BAD record cs% passed to cs%-enumcalls")
         (mv 0 0 0 NIL)))))     
 
-(def make-next-sigma_mv-let (v-cs%-alst seen-vars vl wrld body)
-  (decl :sig ((symbol-alistp symbol-listp plist-worldp pseudo-termp) -> pseudo-termp)
+(def make-next-sigma_mv-let (v-cs%-alst seen-vars use-fixers-p vl wrld body)
+  (decl :sig ((symbol-alistp symbol-listp booleanp fixnum plist-worldp pseudo-termp) -> pseudo-termp)
         :doc "helper function to make-next-sigma")
   (f* ((_mv-value (v min max exp exp2) 
           `(case sampling-method 
@@ -490,37 +510,39 @@ thought about how to implement it.
       body
     (b* (((cons var cs%) (car v-cs%-alst))
          ((mv & min-rec-depth max-rec-depth (list exp exp2))
-          (cs%-enumcalls cs% vl wrld seen-vars)))
+          (if use-fixers-p
+              (cs%-enumcalls-defdata cs% vl wrld)
+              (cs%-enumcalls cs% vl wrld seen-vars))))
 ;    in 
      `(mv-let (seed. BE. ,var)
               ,(_mv-value var min-rec-depth max-rec-depth exp exp2)
               (declare (ignorable ,var))
-            ,(make-next-sigma_mv-let (cdr v-cs%-alst) (cons var seen-vars) vl wrld body ))))))
+            ,(make-next-sigma_mv-let (cdr v-cs%-alst) (cons var seen-vars) use-fixers-p vl wrld body ))))))
 
 
                
 ;; dead code 
-(def make-enumerator-calls-alist (v-cs%-alst vl wrld  ans.)
-  (decl :sig ((symbol-cs%-alist fixnum plist-world  symbol-alist) 
-              -> (mv erp symbol-alist))
-        :doc 
-        "given an alist mapping variables to cs% records (in dependency order),
-  we walk down the alist, translating each type constraint to the corresponding
-enumerator call expression")
-  (declare (xargs :verify-guards nil))
-  (if (endp v-cs%-alst)
-      (mv nil (reverse ans.)) ;dont change the original dependency order
-    (b* (((cons x cs%) (car v-cs%-alst))
-         ((mv domain-size ?min-rec-depth ?max-rec-depth calls)
-          (cs%-enumcalls cs% vl wrld  (strip-cars ans.)))
+;; (def make-enumerator-calls-alist (v-cs%-alst vl wrld ans.)
+;;   (decl :sig ((symbol-cs%-alist fixnum plist-world  symbol-alist) 
+;;               -> (mv erp symbol-alist))
+;;         :doc 
+;;         "given an alist mapping variables to cs% records (in dependency order),
+;;   we walk down the alist, translating each type constraint to the corresponding
+;; enumerator call expression")
+;;   (declare (xargs :verify-guards nil))
+;;   (if (endp v-cs%-alst)
+;;       (mv nil (reverse ans.)) ;dont change the original dependency order
+;;     (b* (((cons x cs%) (car v-cs%-alst))
+;;          ((mv domain-size ?min-rec-depth ?max-rec-depth calls)
+;;           (cs%-enumcalls cs% vl wrld  (strip-cars ans.)))
 
-; simple bug July 9 2013: below comparison, replaced int= with equal,
-; this could have been caught by type-checking/guard-verif
-         ((when (equal domain-size 0)) (mv t '()))) 
-;    in
-     (make-enumerator-calls-alist (cdr v-cs%-alst) vl wrld
-                                 ;; add in reverse order
-                                 (cons (cons x calls) ans.)))))
+;; ; simple bug July 9 2013: below comparison, replaced int= with equal,
+;; ; this could have been caught by type-checking/guard-verif
+;;          ((when (equal domain-size 0)) (mv t '()))) 
+;; ;    in
+;;      (make-enumerator-calls-alist (cdr v-cs%-alst) vl wrld
+;;                                  ;; add in reverse order
+;;                                  (cons (cons x calls) ans.)))))
 
 
 (defun displayed-range (interval)

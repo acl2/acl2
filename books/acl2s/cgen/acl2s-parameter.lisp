@@ -31,6 +31,8 @@
                                :print-cgen-summary
                                :use-fixers
                                :recursively-fix
+                               :num-print-counterexamples
+                               :num-print-witnesses
                                ))
 
 ;All user-defined parameters are stored here
@@ -111,6 +113,8 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
                   cgen-local-timeout
                   print-cgen-summary
                   use-fixers
+                  num-print-counterexamples
+                  num-print-witnesses
 
 })
 </p>
@@ -160,16 +164,14 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
  :guard (natp value))
 
 
-(add-acl2s-parameter 
+(add-acl2s-parameter
   num-counterexamples 3
- :short "Number of Counterexamples to be shown"
+ :short "Number of Counterexamples to be searched"
  :long "
-  Set the number of counterexamples desired to be shown
+  Set the number of counterexamples desired to be searched.
   By default this parameter is set to 3. Can be set to
   any natural number n. Setting this number to 0 implies
-  the user is not interested in seeing counterexamples, and
-  thus none will be printed in the testing output.
-  
+  the user is not interested in searching for counterexamples.
   <code>
   Usage:
   (acl2s-defaults :set num-counterexamples 3)
@@ -178,6 +180,23 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   </code>"
    :guard (natp value))
 
+(add-acl2s-parameter
+  num-print-counterexamples 3
+ :short "Number of Counterexamples to be printed"
+ :long "
+  Set the number of counterexamples desired to be printed.
+  By default this parameter is set to 3. Can be set to
+  any natural number n. Setting this number to 0 implies
+  the user is not interested in seeing counterexamples, and
+  thus none will be printed in the testing output.
+  
+  <code>
+  Usage:
+  (acl2s-defaults :set num-print-counterexamples 3)
+  (acl2s-defaults :get num-print-counterexamples)
+  :doc num-counterexamples
+  </code>"
+   :guard (natp value))
 
 (add-acl2s-parameter 
   num-witnesses 3
@@ -197,6 +216,23 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   </code>"
    :guard (natp value))
 
+(add-acl2s-parameter 
+  num-print-witnesses 3
+ :short "Number of Witnesses to be printed"
+ :long "
+  Set the number of witnesses desired to be printed.
+  By default this parameter is set to 3. Can be set to
+  any natural number. Setting this number to 0 implies
+  the user is not interested in seeing witnesses, and
+  thus none will be printed in the testing output.
+  
+  <code>
+  Usage:
+  (acl2s-defaults :set num-print-witnesses 3)
+  (acl2s-defaults :get num-print-witnesses)
+  :doc num-print-witnesses
+  </code>"
+   :guard (natp value))
 
 (defconst *search-strategy-values* '(:simple :incremental :hybrid))
 (add-acl2s-parameter 
