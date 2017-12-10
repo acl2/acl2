@@ -496,6 +496,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (cweight-lst pterms Cwt{})
        (cweight-lst trivial-preserved-terms Cwt{}))))
 
+#|
 (defun pval0-lst (fnames cterms fxri{} Cwt{})
   (if (endp fnames)
       0
@@ -509,41 +510,52 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
     (pval0-max-lst (cdr fnames) cterms fxri{} Cwt{}
                    (max (pval0 (car fnames) cterms fxri{} Cwt{})
                         ans))))
-
+|#
 
 (mutual-recursion 
-(defun pval-fxr (fname cterms fxri{} Cwt{})
-  (b* ((fruleI (get1 fname fxri{}))
-       (cterms (remove1-equal (get1 :constraint-term fruleI) cterms))
-       (pterms (intersection-equal (get1 :preserves fruleI) cterms))
-       (trivial-preserved-terms (intersection-equal (get1 :trivially-preserves fruleI) cterms))
-       (all-pterms (append pterms trivial-preserved-terms)))
-    (+ (pval0 fname cterms fxri{} Cwt{})
-       (pval-terms all-pterms all-pterms fxri{} Cwt{}))))
+ (defun pval-fxr-aux (fname cterms fxri{} Cwt{})
+   ;; (if (member-equal fname seen)
+   ;;     (prog2$ (cw " Already seen ~x0~%" fname)
+   ;;             0)
+     (b* (
+          ;;(- (cw "fname :~x0~%" fname))
+          ;;(- (cw "len=~x0 seen :~x1~%" (len seen) seen))
+          (fruleI (get1 fname fxri{}))
+          (cterms (remove1-equal (get1 :constraint-term fruleI) cterms))
+          (pterms (intersection-equal (get1 :preserves fruleI) cterms))
+          (trivial-preserved-terms (intersection-equal (get1 :trivially-preserves fruleI) cterms))
+          (all-pterms (append pterms trivial-preserved-terms))
+          ;;(- (cw "len=~x0 pterms :~x1~%" (len pterms) pterms))
+          )
+       (+ (pval0 fname cterms fxri{} Cwt{})
+          (pval-terms pterms all-pterms fxri{} Cwt{} 0))))
 
-;; (defun pval-fxr-max-lst (fnames cterms fxri{} Cwt{} ans)
-;;   (if (endp fnames)
-;;       ans
-;;     (pval-fxr-max-lst (cdr fnames) cterms fxri{} Cwt{}
-;;                       (max (pval-fxr (car fnames) cterms fxri{} Cwt{})
-;;                            ans))))
-  
-(defun pval-terms (terms cterms fxri{} Cwt{})
-  (if (endp terms)
-      0
-    (b* ((term (car terms))
-         (fnames (get1-lst :name (assoc-all-frules term fxri{})))
-         ;; (pval-max (pval-fxr-max-lst fnames cterms fxri{} Cwt{} 0))
-         (pval-max (pval0-max-lst fnames cterms fxri{} Cwt{} 0))
-         )
-      (+ pval-max
-         (pval-terms (cdr terms) cterms fxri{} Cwt{})))))
-)    
+ (defun pval-fxr-max-lst (fnames cterms fxri{} Cwt{} ans)
+   (if (endp fnames)
+       ans
+     (pval-fxr-max-lst (cdr fnames) cterms fxri{} Cwt{}
+                       (max (pval0 (car fnames) cterms fxri{} Cwt{}) ans)
+                       ;; (max (pval-fxr-aux (car fnames) cterms fxri{} Cwt{} seen) ans)
+                       )))
+ 
+ (defun pval-terms (terms cterms fxri{} Cwt{} ans)
+   (if (endp terms)
+       ans
+     (b* ((term (car terms))
+          (fnames (get1-lst :name (assoc-all-frules term fxri{})))
+          ;; (- (cw "get max of ~x0 fxrs~%" (len fnames)))
+          (pval-max (pval-fxr-max-lst fnames cterms fxri{} Cwt{} 0))
+          )
+       
+       (pval-terms (cdr terms) cterms fxri{} Cwt{} (+ pval-max ans)))))
+ )    
 
-(memoize 'pval-fxr :ideal-okp t)
-(memoize 'pval-terms :ideal-okp t)
 (memoize 'pval0 :ideal-okp t)
 
+(defun pval-fxr (fname cterms fxri{} Cwt{})
+  (pval-fxr-aux fname cterms fxri{} Cwt{}))
+
+(memoize 'pval-fxr :ideal-okp t)
 
 ;; insert pval field into each frule in fxri-entries
 (defun assign-pval-scores-aux (fxri-entries cterms fxri{} Cwt{})
@@ -557,7 +569,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
             (assign-pval-scores-aux (cdr fxri-entries) cterms fxri{} Cwt{})))))
          
 (defun assign-pval-scores (fxri{} cterms Cwt{})
-  (b* ((- (cw? t "DEBUG:: assign-pval-scores - len(fxri) is ~x0~%" (len fxri{}))))
+  (b* ((- (cw? nil "DEBUG:: assign-pval-scores - len(fxri) is ~x0~%" (len fxri{}))))
     (assign-pval-scores-aux fxri{} cterms fxri{} Cwt{})))
 
 (defun max-pval-frule (fxri{} ans-frule)
@@ -578,9 +590,6 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
 
 
 
-;;; 1. remove all fixer rules that fix the constraint term of frule
-;;; 2. remove all fixer rules that fix terms not preserved by fixer of frule -- NO, just keep them
-;; [2017-10-16 Mon] For now just line up all fixers. This probably makes recursive fixing inconsequential.
 (defun remove-chosen-fixer (frule cterms fxri{}) ;; -> (mv cterms fxri{})
   (b* ((pterms (append (get1 :preserves frule)
                        (get1 :trivially-preserves frule)))
@@ -588,34 +597,37 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
        (not-preserved-terms (remove1-equal cterm (set-difference-equal cterms pterms)))
        (- (cw? nil "~% remove-chosen-fixer:~x0 cterm:~x1  ~% not-preserved-terms: ~x2~%"
                (get1 :fixer-term frule) cterm not-preserved-terms))
-       (remove-terms (cons (get1 :constraint-term frule) not-preserved-terms))
-       ;(remove-terms (cons (get1 :constraint-term frule) nil))
+
+       ;; get rid of cterms that are not preserved
+       (rest-cterms (set-difference-equal cterms not-preserved-terms)) 
+       (reduced-fxri{} (delete-frules not-preserved-terms fxri{}))
+
+       ;; remove what has already been taken care of
+       (rest-cterms (set-difference-equal rest-cterms (list cterm)))
+       (reduced-fxri{} (delete-frules (list cterm) reduced-fxri{}))
        )
-    (mv (set-difference-equal cterms remove-terms)
-        (delete-frules remove-terms fxri{}))))
+    (mv rest-cterms reduced-fxri{})))
        
 (defun maxsat-fxr-ckt-aux (fxri{} cterms Cwt{} ans-fxri{} fixer-B)
   (declare (ignorable Cwt{}))
   (if (endp fxri{})
       (mv ans-fxri{} fixer-B)
     (b* ((frule (max-pval-frule fxri{} (cdar fxri{})))
-         ((mv cterms fxri{}) (remove-chosen-fixer frule cterms fxri{}))
+         ((mv rest-cterms reduced-fxri{}) (remove-chosen-fixer frule cterms fxri{}))
          ;; (fxri{} (assign-pval-scores fxri{} cterms Cwt{}))
          )
-      (maxsat-fxr-ckt-aux fxri{} cterms Cwt{}
+      (maxsat-fxr-ckt-aux reduced-fxri{} rest-cterms Cwt{}
                           (acons (get1 :name frule) frule ans-fxri{})
                           (append (get1 :fixer-let-binding frule)
                                   fixer-B)))))
 
-;;; Compute a fixer circuit, as a let* binding, that greedily
-;;; satisfies the maximum number of constraint terms. Return also the
-;;; reduced fxri{} that has only the fixers that took part in the
-;;; solution.
+;;; Compute a fixer circuit, as a let* binding, that greedily satisfies the
+;;; maximum number of constraint terms. Return reduced fxri{} that has only the
+;;; fixers that took part in the solution and the solution as a B* binding.
 (defun maxsat-fxr-ckt (fxri{} cterms Cwt{})
   ;; TODO: perhaps its better to update pval scores everytime fxri{} changes!?
-  (maxsat-fxr-ckt-aux (time$ (assign-pval-scores fxri{} cterms Cwt{}))
-                      cterms Cwt{}
-                      '() '()))
+  (maxsat-fxr-ckt-aux (assign-pval-scores fxri{} cterms Cwt{})
+                      cterms Cwt{} '() '()))
 
 (defloop filter-fxri-constraint-terms (cterms fxri{})
   (for ((cterm in cterms))
