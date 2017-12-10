@@ -211,10 +211,11 @@
                (acl2::make enum-info% :domain-size 0 :min-rec-depth 0 :max-rec-depth 1
                            :category :empty :expr nil :expr2 nil)))
 
-             ((when (and (implies (and (consp TI.def) (eq 'ACL2S::RANGE (car TI.def)))
-                                  (defdata::range-subtype-p range (defdata::get-tau-int (cadr TI.def) (third TI.def))))
-                         (defdata::subtype-p TI.pred 'acl2-numberp wrld)
-                         (non-empty-non-universal-interval-p range)))
+             ((when (or (and (consp TI.def)
+                             (eq 'ACL2S::RANGE (car TI.def))
+                             (defdata::range-subtype-p range (defdata::get-tau-int (cadr TI.def) (third TI.def))))
+                        (and (defdata::subtype-p TI.pred 'acl2-numberp wrld)
+                             (non-empty-non-universal-interval-p range))))
               (make-range-enum-info% range (defdata::subtype-p TI.pred 'integerp wrld))))
                                              
               

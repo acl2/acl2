@@ -345,13 +345,10 @@
 (mutual-recursion
 ;; code taken from structures.lisp in data-structures book.
  (defun get-free-vars1 (term ans)
-    (declare (xargs :verify-guards nil
-                    :guard (and (or (atom term)
-                                    (true-listp term))
-                                (true-listp ans)
-                                )))
    "A free variable is a symbol that is not a constant, i.e., it excludes T,
     NIL, and *CONST*, and keywords"
+   (declare (xargs :guard (pseudo-termp term)
+                   :verify-guards nil))
    (cond
     ((atom term) (if (proper-symbolp term)
                    (add-to-set-eq term ans)
@@ -360,11 +357,8 @@
     (t (get-free-vars1-lst (cdr term) ans))))
 
  (defun get-free-vars1-lst (terms ans)
-    (declare (xargs :guard (and (true-listp terms)
-                                (or (atom (car terms))
-                                    (true-listp (car terms)))
-                                (true-listp ans)
-                                )))
+   (declare (xargs :guard (pseudo-term-listp terms)
+                   :verify-guards nil))
    (cond
     ((endp terms) ans)
     (t (get-free-vars1-lst (cdr terms)
