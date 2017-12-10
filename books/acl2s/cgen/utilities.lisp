@@ -345,13 +345,10 @@
 (mutual-recursion
 ;; code taken from structures.lisp in data-structures book.
  (defun get-free-vars1 (term ans)
-    (declare (xargs :verify-guards nil
-                    :guard (and (or (atom term)
-                                    (true-listp term))
-                                (true-listp ans)
-                                )))
    "A free variable is a symbol that is not a constant, i.e., it excludes T,
     NIL, and *CONST*, and keywords"
+   (declare (xargs :guard (pseudo-termp term)
+                   :verify-guards nil))
    (cond
     ((atom term) (if (proper-symbolp term)
                    (add-to-set-eq term ans)
@@ -360,11 +357,8 @@
     (t (get-free-vars1-lst (cdr term) ans))))
 
  (defun get-free-vars1-lst (terms ans)
-    (declare (xargs :guard (and (true-listp terms)
-                                (or (atom (car terms))
-                                    (true-listp (car terms)))
-                                (true-listp ans)
-                                )))
+   (declare (xargs :guard (pseudo-term-listp terms)
+                   :verify-guards nil))
    (cond
     ((endp terms) ans)
     (t (get-free-vars1-lst (cdr terms)
@@ -1109,3 +1103,35 @@ Mainly to be used for evaluating enum lists "
   (cond ((endp lst) nil)
         (t (cons (cgen-dumb-negate-lit (car lst))
                  (cgen-dumb-negate-lit-lst (cdr lst))))))
+
+
+(defun clause-mv-hyps-concl (cl)
+  (declare (xargs :verify-guards nil))
+  ;; (decl :sig ((clause) 
+  ;;             -> (mv pseudo-term-list pseudo-term))
+  ;;       :doc "return (mv hyps concl) which are proper terms given a
+  ;; clause cl. Adapted from prettyify-clause2 in other-processes.lisp")
+  (cond ((null cl) (mv '() ''NIL))
+        ((null (cdr cl)) (mv '() (car cl)))
+        ((null (cddr cl)) (mv (list (cgen-dumb-negate-lit (car cl)))
+                              (cadr cl)))
+        (t (mv (cgen-dumb-negate-lit-lst (butlast cl 1))
+               (car (last cl))))))
+
+(defun clausify-hyps-concl (hyps concl)
+  (declare (xargs :verify-guards nil))
+  ;; (decl :sig ((pseudo-term-list pseudo-term)
+  ;;             -> clause)
+  ;;       :doc "given hyps concl which are proper terms return equivalent
+  ;; clause cl. inverse of clause-mv-hyps-concl")
+  (cond ((and (endp hyps) (equal concl ''NIL)) 'NIL)
+        ((endp hyps) (list concl))
+        ((endp (cdr hyps)) (list (cgen-dumb-negate-lit (car hyps)) concl))
+        (t (append (cgen-dumb-negate-lit-lst hyps)
+                   (list concl)))))
+
+(defun is-var-equality-hyp (term)
+  (and (equal (len term) 3)
+       (member-equal (car term) '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL))
+       (or (proper-symbolp (second term))
+           (proper-symbolp (third term)))))

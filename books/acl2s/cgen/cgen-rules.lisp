@@ -26,8 +26,8 @@ date created: [2016-03-22 Tue]
 ; rules should satisfy all the body-contracts of the fixer-term *and* should be
 ; preserved after the fixing. [2016-03-22 Tue]
 
-
-(defconst *cgen-rule-keywords* '(:hyp :meta-precondition :rule :rule-classes :override-check :verbose))
+;; [2017-10-11 Wed] :test-hyp restricts the checking of the rule with extra "test" hypotheses.
+(defconst *cgen-rule-keywords* '(:test-hyp :hyp :meta-precondition :rule :rule-classes :override-check :verbose))
 (defconst *cgen-rule-classes* '(:fixer :preservation))
 
 
@@ -200,7 +200,8 @@ Invariants:
        ((when (assoc-equal key fixer-table-alist))
         (er soft ctx "~| Duplicate entry found in fixer-rules-table: ~x0~%" key))
        (table-ev `((TABLE FIXER-RULES-TABLE ',key ',rule-metadata :put)))
-       (hyps (defdata::get1 :hyps rule-metadata))
+       (hyps (union-equal (defdata::get1 :hyps rule-metadata)
+                          (defdata::get1 :test-hyps rule-metadata)))
        ;;(vl (if verbosep 4 (acl2::acl2s-defaults :get :verbosity-level)))
        (vl (if verbosep 4 1))
        (proof-obligation4 (if (> (len Out) 1)
@@ -357,7 +358,8 @@ of the entries is same as of the alist"
        ((when (assoc-equal key p-table-alist))
         (er soft ctx "~| Duplicate entry found in preservation-rules-table: ~x0~%" key))
        (table-ev `((TABLE PRESERVATION-RULES-TABLE ',key ',rule-metadata :put)))
-       (hyps (defdata::get1 :hyps rule-metadata))
+       (hyps (union-equal (defdata::get1 :hyps rule-metadata)
+                          (defdata::get1 :test-hyps rule-metadata)))
        ;;(vl (if verbosep 4 (acl2::acl2s-defaults :get :verbosity-level)))
        (vl (if verbosep 4 1))
        (relevant-fixer-binding (assoc-equal-lst (intersection-eq Out Vars) fixer-binding))
@@ -423,6 +425,17 @@ of the entries is same as of the alist"
                    nil
                  (list hyp)))) ;TODO naive
 
+       (test-hyp (or (defdata::get1 :test-hyp kwd-alist) 't))
+       ((unless (pseudo-termp test-hyp))
+        (er soft ctx "~| test-hyp ~x0 should be a pseudo-termp~%" test-hyp))
+       (test-hyps (if (and (consp test-hyp) (eq (car test-hyp) 'ACL2::AND))
+                      (cdr test-hyp)
+                    (if (equal test-hyp 't)
+                        nil
+                      (list test-hyp)))) ;TODO naive
+
+       
+
        (rule-class (defdata::get1 :rule-classes kwd-alist))
        ((unless (member-eq rule-class *cgen-rule-classes*))
         (er soft ctx "~| rule-class ~x0 should be one of ~x1~%" rule-class *cgen-rule-classes*))
@@ -430,7 +443,8 @@ of the entries is same as of the alist"
                                       rule-class
                                       (list (cons :meta-precondition pre)
                                             (cons :rule-name name)
-                                            (cons :hyps hyps))
+                                            (cons :hyps hyps)
+                                            (cons :test-hyps test-hyps))
                                       (defdata::get1 :override-check kwd-alist)
                                       verbosep ctx wrld state))
        (program-mode-p (eq :program (default-defun-mode wrld))))
