@@ -48,19 +48,27 @@
                            acl2::resize-list-when-atom)))
 (local (std::add-default-post-define-hook :fix))
 
+;; BOZO skipping node-list-fix congruence proofs here
+(local (table fty::fixtypes 'fty::fixtype-alist
+              (b* ((fixtype-alist (cdr (assoc 'fty::fixtype-alist (table-alist 'fty::fixtypes world)))))
+                (remove-equal (assoc 'aignet fixtype-alist)
+                              fixtype-alist))))
+
 (local (xdoc::set-default-parents fraig))
 
 
 (fty::defprod fraig-config
-  ((initial-sim-words posp "Number of 32-bit simulation words per word for initial simulation" :default 4)
+  ((initial-sim-words posp "Number of 32-bit simulation words per node for initial simulation" :default 4)
    (initial-sim-rounds posp "Number of times to simulate initially" :default 10)
-   (sim-words posp "Number of 32-bit simulation words per word for simulation during fraiging" :default 1)
+   (sim-words posp "Number of 32-bit simulation words per node for simulation during fraiging" :default 1)
    (ipasir-limit acl2::maybe-natp "Ipasir effort limit" :default 8)
    (ipasir-recycle-count acl2::maybe-natp "Number of callbacks after which to recycle the solver" :default 1000)
    (ctrex-queue-limit acl2::maybe-natp "Limit to number of counterexamples that may be queued before resimulation" :default 16)
    (ctrex-force-resim booleanp "Force resimulation of a counterexample before checking another node in the same equivalence class" :default t)
    (random-seed-name symbolp "Name to use for seed-random, or NIL to not reseed the random number generator")
    (outs-only booleanp "Only check the combinational outputs of the network" :default nil))
+  :parents (fraig comb-transform)
+  :short "Configuration object for the @(see fraig) aignet transform."
   :tag :fraig-config)
 
 (defconst *fraig-default-config* (make-fraig-config))
@@ -2446,73 +2454,9 @@
            (classes-size classes))))
     
   
-(local
- (defsection init-copy-comb-fraig
-   (local (in-theory (enable init-copy-comb)))
-   (local (std::set-define-current-function init-copy-comb))
 
-   (local (defthm lit-eval-when-const
-            (implies (equal (stype (car (lookup-id n aignet))) :const)
-                     (equal (lit-eval (make-lit n neg) invals regvals aignet)
-                            (bfix neg)))
-            :hints(("Goal" :expand ((lit-eval (make-lit n neg) invals regvals aignet)
-                                    (id-eval n invals regvals aignet))))))
 
-   (local (defthm nth-lit-of-nil
-            (equal (nth-lit n nil) 0)
-            :hints(("Goal" :in-theory (enable nth-lit nth)))))
 
-   (defret comb-equivalent-of-fraig-init-copy-lemma
-     (implies (<= (nfix n) (num-nodes aignet))
-              (aignet-copy-is-comb-equivalent-for-non-gates n aignet new-copy new-aignet2))
-     :hints(("Goal" :in-theory (enable aignet-copy-is-comb-equivalent-for-non-gates
-                                       aignet-lits-comb-equivalent
-                                       aignet-idp)
-             :induct (aignet-copy-is-comb-equivalent-for-non-gates n aignet new-copy new-aignet2))
-            (and stable-under-simplificationp
-                 (let ((witness (acl2::find-call-lst
-                                 'aignet-lits-comb-equivalent-witness
-                                 clause)))
-                   `(:clause-processor
-                     (acl2::simple-generalize-cp
-                      clause '(((mv-nth '0 ,witness) . invals)
-                               ((mv-nth '1 ,witness) . regvals))))))
-            (and stable-under-simplificationp
-                 '(:cases ((equal (stype (car (lookup-id (+ -1 n) aignet))) :const))))
-            (and stable-under-simplificationp
-                 '(:expand ((:free (n neg aignet) (lit-eval (make-lit n neg) invals regvals aignet))
-                            (:free (count stype aignet aignet2)
-                             (id-eval (node-count (lookup-stype count stype aignet))
-                                      invals regvals aignet2))
-                            (id-eval (+ -1 n) invals regvals aignet))))))))
-
-(local
- (defsection finish-copy-comb-fraig
-   (local (in-theory (enable finish-copy-comb)))
-   (local (std::set-define-current-function finish-copy-comb))
-
-   (local (defthm aignet-copy-is-comb-equivalent-implies-output-fanins-comb-equiv
-            (implies (aignet-copy-is-comb-equivalent (+ 1 (max-fanin aignet)) aignet copy aignet2)
-                     (output-fanins-comb-equiv aignet copy aignet2))
-            :hints(("Goal" :in-theory (e/d (output-fanins-comb-equiv)
-                                           (output-fanins-comb-equiv-necc))))))
-
-   (local (defthm aignet-copy-is-comb-equivalent-implies-nxst-fanins-comb-equiv
-            (implies (aignet-copy-is-comb-equivalent (+ 1 (max-fanin aignet)) aignet copy aignet2)
-                     (nxst-fanins-comb-equiv aignet copy aignet2))
-            :hints(("Goal" :in-theory (e/d (nxst-fanins-comb-equiv)
-                                           (nxst-fanins-comb-equiv-necc))))))
-
-   (defret fraig-finish-copy-comb-equivalent
-     (implies (and (aignet-copy-is-comb-equivalent (+ 1 (max-fanin aignet)) aignet copy aignet2)
-                   (aignet-copies-in-bounds copy aignet2)
-                   (equal (stype-count :po aignet2) 0)
-                   (equal (stype-count :nxst aignet2) 0)
-                   (equal (stype-count :reg aignet2)
-                          (stype-count :reg aignet)))
-              (comb-equiv new-aignet2 aignet))
-     :hints(("Goal" :in-theory (e/d (comb-equiv) (finish-copy-comb)))))))
-  
 
 (define fraig-core-aux ((aignet  "Input aignet")
                         (aignet2 "New aignet -- will be emptied")
@@ -2609,12 +2553,16 @@
 
 (define fraig ((aignet  "Input aignet")
                (aignet2 "New aignet -- will be emptied")
-               (config fraig-config-p)
+               (config fraig-config-p
+                       "Settings for the transform")
                (state))
   :parents (aignet-comb-transforms)
   :short "Apply combinational SAT sweeping (fraiging) to remove redundancies in the input network."
   :long "<p>Note: This fraiging implementation is heavily based on the one in
-ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>"
+ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>
+
+<p>Settings for the transform can be tweaked using the @('config') input, which
+is a @(see fraig-config) object.</p>"
   :guard-debug t
   :returns (mv new-aignet2 state)
   (b* (((acl2::local-stobjs aignet-tmp)

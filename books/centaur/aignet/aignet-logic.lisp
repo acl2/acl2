@@ -158,8 +158,7 @@ sequential) view of AIG node types.</p>")
    :no-ctor-macros t))
 
 (defsection stype
-  :parents (representation)
-  :short "Extract the kind of a node, producing an @(see stypep) keyword symbol."
+  :extension stype
   (defthm stypep-of-stype
     (stypep (stype x))
     :hints(("Goal" :in-theory (enable stypep))))
@@ -419,11 +418,13 @@ sequential) view of AIG node types.</p>")
   @(':nxst') (register input) node.  Note: returns a @(see bitp)."
   :returns (bit bitp)
   :enabled t
+  :parents (node)
   (regp (stype node)))
 
 (define proper-node-p (x)
   :short "Recognizer for any node except for the special constant node."
   :enabled t
+  :parents (node)
   (and (node-p x)
        (not (eq (stype x) :const))))
 
@@ -432,6 +433,7 @@ sequential) view of AIG node types.</p>")
   :returns (lit litp :rule-classes :type-prescription)
   :short "Access the fanin @(see literal) from a combinational output node,
           i.e., from a primary output or a next-state (register input) node."
+  :parents (node)
   :prepwork ((local (in-theory (e/d (node->type
                                      io-node->regp)
                                     ((force))))))
@@ -448,6 +450,7 @@ sequential) view of AIG node types.</p>")
            (lit-fix f))))
 
 (defsection aignet-case
+  :parents (base-api)
   :short "Macro for @(see combinational-type) case splits."
   :long "<p>Syntax:</p>
   @({
@@ -473,6 +476,7 @@ sequential) view of AIG node types.</p>")
        (otherwise         ,const))))
 
 (defsection aignet-seq-case
+  :parents (base-api)
   :short "Macro for @(see sequential-type) case splits."
   :long "<p>Basic example:</p>
   @({
@@ -1825,6 +1829,9 @@ suffix.</p>"
                   (eq (ctype (stype (car aignet))) :output)
                 (eq (stype (car aignet)) :gate)))
   :returns (lit litp :rule-classes :type-prescription)
+  :short "@(call fanin) gets the specified kind of fanin from the first node of
+          the input network and fixes it to be a valid fanin literal of the rest
+          of the network."
   (aignet-lit-fix (case (fanin-type-fix type)
                     (:gate0 (gate-node->fanin0 (car aignet)))
                     (:gate1 (gate-node->fanin1 (car aignet)))
@@ -1862,6 +1869,12 @@ suffix.</p>"
 
 (define fanin-if-co ((aignet node-listp))
   :returns (lit litp :rule-classes :type-prescription)
+  :short "@(call fanin-if-co) produces the fanin lit of the first node of the network
+          if it is a combinational output node, and otherwise produces the non-negated
+          literal for the node itself.  Useful for dealing with next-states, because
+          the next-state node of a register may be a next-state node (which is
+          a combinational output) or the register itself, when its next-state hasn't
+          been set yet."
   (if (and (consp aignet)
            (equal (ctype (stype (car aignet))) :output))
       (fanin :co aignet)

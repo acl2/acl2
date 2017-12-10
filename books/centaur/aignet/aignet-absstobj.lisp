@@ -55,7 +55,7 @@
                            ;; (aignet$c::aignet-max-fanin-correct)
                            ;; (aignet$c::aignet-max-fanin-sufficient)
                            (aignet$c::aignet-nodes-nonconst))))
-
+(local (std::add-default-post-define-hook :fix))
 
 (local (defthm lookup-id-of-lookup-id
          (implies (and (<= m n)
@@ -813,6 +813,14 @@
                          :exec aignet$c::aignet-clear
                          :protect t)))
 
+
+(fty::deffixtype aignet :pred node-listp :fix node-list-fix :equiv node-list-equiv)
+
+(defmacro aignet-fix (aignet)
+  `(mbe :logic (non-exec (node-list-fix ,aignet))
+        :exec ,aignet))
+
+
 (defstobj-clone aignet2 aignet :suffix "2")
 
 
@@ -1214,13 +1222,6 @@ more complicated than other kinds.</p>")
   @(def aignet$a::nxst-id->reg)")
 
 
-;; Fanin Lookup
-(defxdoc fanin
-  :short "@(call fanin) gets the specified kind of fanin from the first node of
-          the input network and fixes it to be a valid fanin literal of the rest
-          of the network.")
-
-
 (defxdoc gate-id->fanin0
   :short "@(call gate-id->fanin0) gets the 0th fanin @(see literal) of the AND
   gate node whose ID is @('id')."
@@ -1292,3 +1293,8 @@ more complicated than other kinds.</p>")
   :short "See @(see satlink::litp)."
   :long "<p>Aignet used to use a literal representation of its own, but now it
 just borrows @(see satlink::satlink)'s.</p>")
+
+
+(defxdoc utilities
+  :parents (aignet)
+  :short "Basic tools for using @(see aignet) networks.")

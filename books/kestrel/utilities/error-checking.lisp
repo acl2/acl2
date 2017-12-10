@@ -201,6 +201,14 @@
    </ul>
 
    <p>
+   The generated formal arguments
+   @('description'), @('error-erp'), and @('error-val')
+   and the generated return variables @('erp') and @('val')
+   are symbols with those names in the same package as
+   the @('<name>') symbol used as the name of the generated function.
+   </p>
+
+   <p>
    The macro is called as follows:
    </p>
 
@@ -330,6 +338,8 @@
          (description (intern-in-package-of-symbol "DESCRIPTION" name))
          (error-erp (intern-in-package-of-symbol "ERROR-ERP" name))
          (error-val (intern-in-package-of-symbol "ERROR-VAL" name))
+         (erp (intern-in-package-of-symbol "ERP" name))
+         (val (intern-in-package-of-symbol "VAL" name))
          (function
           `(define ,function-name
              (,@xs
@@ -340,20 +350,20 @@
               state)
              :returns (mv ,(case mode
                              (:logic
-                              `(erp (implies erp (equal erp ,error-erp))))
+                              `(,erp (implies ,erp (equal ,erp ,error-erp))))
                              (:program
-                              '(erp "@('nil') or @('error-erp')."))
+                              `(,erp "@('nil') or @('error-erp')."))
                              (t (impossible)))
                           ,(if returns-supplied-p
                                returns
                              (case mode
                                (:logic
-                                `(val (and (implies erp
-                                                    (equal val ,error-val))
-                                           (implies (and (not erp) ,error-erp)
-                                                    (not val)))))
+                                `(,val (and (implies ,erp
+                                                     (equal ,val ,error-val))
+                                            (implies (and (not ,erp) ,error-erp)
+                                                     (not ,val)))))
                                (:program
-                                '(val
+                                `(,val
                                   "@('nil') if @('erp') is @('nil'),
                                    otherwise @('error-val')."))
                                (t (impossible))))

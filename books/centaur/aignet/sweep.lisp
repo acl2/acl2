@@ -78,7 +78,23 @@
                  (b* ((lit (assoc 'aignet-lits-comb-equivalent clause)))
                    `(:expand (,lit)
                      :in-theory (e/d (aignet-lits-comb-equivalent-necc-rev)
-                                     (aignet-lits-comb-equivalent-necc))))))))
+                                     (aignet-lits-comb-equivalent-necc)))))))
+
+  (fty::deffixequiv aignet-lits-comb-equivalent :args ((aignet1 aignet) (aignet2 aignet))
+    :hints(("Goal" :in-theory (disable aignet-lits-comb-equivalent)
+            :cases ((aignet-lits-comb-equivalent lit1 aignet1 lit2 aignet2)))
+           (and stable-under-simplificationp
+                (b* ((lit (assoc 'aignet-lits-comb-equivalent clause))
+                     (other (cadr (assoc 'not clause))))
+                  `(:expand (,lit)
+                    :in-theory (disable aignet-lits-comb-equivalent-necc)
+                    :use ((:instance aignet-lits-comb-equivalent-necc
+                           (lit1 ,(cadr other))
+                           (aignet1 ,(caddr other))
+                           (lit2 ,(cadr (cddr other)))
+                           (aignet2 ,(caddr (cddr other)))
+                           (invals (mv-nth 0 (aignet-lits-comb-equivalent-witness . ,(cdr lit))))
+                           (regvals (mv-nth 1 (aignet-lits-comb-equivalent-witness . ,(cdr lit))))))))))))
 
 (define aignet-copy-is-comb-equivalent ((n natp)
                                         aignet
@@ -216,7 +232,8 @@
                            (:free (count stype aignet aignet2)
                             (id-eval (node-count (lookup-stype count stype aignet))
                                      invals regvals aignet2))
-                           (id-eval (+ -1 n) invals regvals aignet)))))))
+                           (id-eval (+ -1 n) invals regvals aignet)))))
+    :fn init-copy-comb))
 
 (defsection finish-copy-comb-sweep
   (local (in-theory (enable finish-copy-comb)))
@@ -242,5 +259,6 @@
                   (equal (stype-count :reg aignet2)
                          (stype-count :reg aignet)))
              (comb-equiv new-aignet2 aignet))
-    :hints(("Goal" :in-theory (e/d (comb-equiv) (finish-copy-comb))))))
+    :hints(("Goal" :in-theory (e/d (comb-equiv) (finish-copy-comb))))
+    :fn finish-copy-comb))
   

@@ -10,11 +10,10 @@ The included version of the ACL2 System is the latest, under-development
 version of the [ACL2 Theorem Prover][ACL2].  It is updated only by the
 ACL2 authors, Matt Kaufmann and J Moore.
 
-**WARNING**: The ACL2 System authors consider the snapshots of the
-system in this repository to be **experimental**; they may be
-incomplete, fragile, and unable to pass our own regression. If you want
-a stable system, you should instead download an official, released
-version of ACL2 from the [ACL2 Home Page][ACL2].
+**WARNING**: On rare occasions development versions of ACL2 may be
+incomplete, fragile, or unable to pass the usual regression tests.  If
+you want a more stable version of ACL2, you can download an official
+release version of ACL2 from the [ACL2 Home Page][ACL2].
 
 [ACL2]: http://www.cs.utexas.edu/users/moore/acl2 "ACL2 Home Page"
 

@@ -47,4 +47,12 @@
   (defthm iff*-of-nonnils
     (implies (and x y)
              (equal (iff* x y) t))
-    :rule-classes ((:rewrite :backchain-limit-lst 0))))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  (defthm iff*-with-nil
+    (and (equal (iff* x nil)
+                (not x))
+         (equal (iff* nil x)
+                (not x))))
+  (defthm iff*-with-t
+    (and (iff (iff* x t) x)
+         (iff (iff* t x) x))))

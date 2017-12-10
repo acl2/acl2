@@ -46,7 +46,10 @@
   ;; error should show up fairly quickly.
   (definlined snode->type (slot0)
     (declare (type (integer 0 *) slot0))
-    (logand 3 (lnfix slot0)))
+    (mbe :logic (logand 3 (lnfix slot0))
+         :exec (if (<= slot0 #xffffffff)
+                   (logand 3 (the (unsigned-byte 32) slot0))
+                 (logand 3 slot0))))
 
   (defthm snode->type-natp
     (natp (snode->type slot0))
@@ -65,7 +68,11 @@
 
   (definlined snode->phase (slot1)
     (declare (type (integer 0 *) slot1))
-    (logand 1 (ash (lnfix slot1) -1)))
+    (mbe :logic (logand 1 (ash (lnfix slot1) -1))
+         :exec (if (<= slot1 #xffffffff)
+                   (logand 1 (the (unsigned-byte 32)
+                                  (ash (the (unsigned-byte 32) slot1) -1)))
+                 (logand 1 (ash (lnfix slot1) -1)))))
 
   (defcong nat-equiv equal (snode->phase slot) 1
     :hints(("Goal" :in-theory (enable snode->phase))))
@@ -76,7 +83,10 @@
 
   (definlined snode->regp (slot1)
     (declare (type (integer 0 *) slot1))
-    (logand 1 (lnfix slot1)))
+    (mbe :logic (logand 1 (lnfix slot1))
+         :exec (if (<= slot1 #xffffffff)
+                   (logand 1 (the (unsigned-byte 32) slot1))
+                 (logand 1 (lnfix slot1)))))
 
   (defcong nat-equiv equal (snode->regp slot) 1
     :hints(("Goal" :in-theory (enable snode->regp))))
@@ -87,14 +97,20 @@
 
   (definlined snode->fanin (slot)
     (declare (type (integer 0 *) slot))
-    (ash (lnfix slot) -2))
+    (mbe :logic (ash (lnfix slot) -2)
+         :exec (if (<= slot #xffffffff)
+                   (ash (the (unsigned-byte 32) slot) -2)
+                 (ash (lnfix slot) -2))))
 
   (defcong nat-equiv equal (snode->fanin slot) 1
     :hints(("Goal" :in-theory (enable snode->fanin))))
 
   (definlined snode->ionum (slot1)
     (declare (type (integer 0 *) slot1))
-    (ash (lnfix slot1) -2))
+    (mbe :logic (ash (lnfix slot1) -2)
+         :exec (if (<= slot1 #xffffffff)
+                   (ash (the (unsigned-byte 32) slot1) -2)
+                 (ash (lnfix slot1) -2))))
 
   (defcong nat-equiv equal (snode->ionum slot) 1
     :hints(("Goal" :in-theory (enable snode->ionum))))
@@ -113,7 +129,10 @@
 
   (definlined snode->regid (slot0)
     (declare (type (integer 0 *) slot0))
-    (ash (lnfix slot0) -2))
+    (mbe :logic (ash (lnfix slot0) -2)
+         :exec (if (<= slot0 #xffffffff)
+                   (ash (the (unsigned-byte 32) slot0) -2)
+                 (ash (lnfix slot0) -2))))
 
   (defthm natp-of-snode->regid
     (natp (snode->regid slot0))
@@ -131,11 +150,23 @@
              (type (integer 0 3) type)
              (type bit regp)
              (type bit phase))
-    (mv (logior (ash (lnfix fanin0) 2)
-                (logand 3 type))
-        (logior (acl2::lbfix regp)
-                (ash (acl2::lbfix phase) 1)
-                (ash (lnfix fanin1) 2))))
+    (mbe :logic (mv (logior (ash (lnfix fanin0) 2)
+                            (logand 3 type))
+                    (logior (acl2::lbfix regp)
+                            (ash (acl2::lbfix phase) 1)
+                            (ash (lnfix fanin1) 2)))
+         :exec (if (and (<= fanin0 #x3fffffff)
+                        (<= fanin1 #x3fffffff))
+                   (mv (logior (the (unsigned-byte 32) (ash (the (unsigned-byte 30) fanin0) 2))
+                               (the (unsigned-byte 2) type))
+                       (logior (the bit regp)
+                               (the (unsigned-byte 2) (ash (the bit phase) 1))
+                               (the (unsigned-byte 32) (ash (the (unsigned-byte 30) fanin1) 2))))
+                 (mv (logior (ash (lnfix fanin0) 2)
+                             type)
+                     (logior (the bit regp)
+                             (the (unsigned-byte 2) (ash (the bit phase) 1))
+                             (ash (lnfix fanin1) 2))))))
 
   (defmvtypes aignet::mk-snode$inline (natp natp))
 

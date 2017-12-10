@@ -32,6 +32,7 @@
 (in-package "TRUTH")
 
 (include-book "truth")
+(include-book "centaur/fty/bitstruct" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "centaur/bitops/ash-bounds" :dir :system))
@@ -39,6 +40,8 @@
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (in-theory (disable unsigned-byte-p signed-byte-p)))
+(local (std::add-default-post-define-hook :fix))
+
 
 (define var-alist ((n natp) (numvars natp))
   :guard (<= n numvars)
@@ -382,15 +385,60 @@
   (defconst *truth-defs*
     '(defsection truth<NUMVARS>
        
+       (fty::defbitstruct truth<NUMVARS> <WIDTH>)
+
+       (defthm truth<NUMVARS>-fix-is-truth-norm
+         (equal (truth<NUMVARS>-fix x)
+                (truth-norm x <NUMVARS>))
+         :hints(("Goal" :in-theory (enable truth<NUMVARS>-fix
+                                           truth-norm))))
+
+       (defthm truth-norm-when-truth<NUMVARS>-p
+         (implies (truth<NUMVARS>-p x)
+                  (equal (truth-norm x <NUMVARS>) x))
+         :hints(("Goal" :in-theory (enable truth<NUMVARS>-p
+                                           truth-norm))))
+
+       (defthm truth-norm-under-when-truth<NUMVARS>-equiv
+         (truth<NUMVARS>-equiv (truth-norm x <NUMVARS>)
+                               x)
+         :hints(("Goal" :in-theory (enable truth<NUMVARS>-equiv))))
+
+       (defmacro truth<NUMVARS>-fix$ (x)
+         `(mbe :logic (truth-norm ,x <NUMVARS>)
+               :exec (truth<NUMVARS>-fix ,x)))
+
+       ;; override
+       (fty::deffixtype truth<NUMVARS>
+         :pred truth<NUMVARS>-p
+         :fix truth<NUMVARS>-fix$
+         :equiv truth<NUMVARS>-equiv)
+
+       (fty::deffixcong truth<NUMVARS>-equiv equal (truth-norm x <NUMVARS>) x)
+
+
+
+       ;; (local (defthm unsigned-byte-p-when-truth<NUMVARS>-p-strong
+       ;;          (implies (and (truth<NUMVARS>-p x)
+       ;;                        (natp size)
+       ;;                        (>= size <WIDTH>))
+       ;;                   (unsigned-byte-p size x))
+       ;;          :hints(("Goal" :in-theory (enable truth<NUMVARS>-p)))))
+
+       (local (defthm unsigned-byte-p-when-truth<NUMVARS>-p-forward
+                (implies (truth<NUMVARS>-p x)
+                         (unsigned-byte-p <WIDTH> x))
+                :rule-classes :forward-chaining))
+
        (define true<NUMVARS> ()
          :inline t :enabled t
          (mbe :logic (truth-norm (true) <NUMVARS>)
               :exec <MASK>))
 
-       (define truth-eval<NUMVARS> ((truth :type (unsigned-byte <WIDTH>))
+       (define truth-eval<NUMVARS> ((truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>))
                                     (env :type (unsigned-byte <NUMVARS>)))
-         :guard (and (unsigned-byte-p <WIDTH> truth)
-                     (unsigned-byte-p <NUMVARS> env))
+         :guard (and ;; (unsigned-byte-p <WIDTH> truth)
+                 (unsigned-byte-p <NUMVARS> env))
          :split-types t
          :guard-hints (("goal" :in-theory (enable truth-eval)))
          :enabled t :inline t
@@ -425,9 +473,11 @@
 
        
        (define swap-polarity<NUMVARS> ((m :type (integer 0 <NUMVARS-1>))
-                                       (truth :type (unsigned-byte <WIDTH>)))
+                                       (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp m) (< m <NUMVARS>)
-                     (unsigned-byte-p <WIDTH> truth))
+                     ;; (unsigned-byte-p <WIDTH> truth)
+                     )
+         ;; :guard-debug t
          :guard-hints (("Goal" :in-theory (enable swap-polarity)))
          :split-types t
          :enabled t
@@ -436,9 +486,10 @@
               :exec (swap-polarity-cases <NUMVARS>)))
 
        (define permute-polarity<NUMVARS> ((mask :type (unsigned-byte <NUMVARS>))
-                                          (truth :type (unsigned-byte <WIDTH>)))
+                                          (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (unsigned-byte-p <NUMVARS> mask)
-                     (unsigned-byte-p <WIDTH> truth))
+                     ;; (unsigned-byte-p <WIDTH> truth)
+                     )
          :guard-hints (("Goal" ;; :in-theory (enable swap-polarity)
                         :expand ((:free (a b c) (permute-polarity a b c <NUMVARS>))))
                        (and stable-under-simplificationp
@@ -446,16 +497,17 @@
                               (case-match lit
                                 (('equal ('swap-polarity n truth numvars) &)
                                  `(:expand ((swap-polarity ,n ,truth ,numvars))))))))
-         :guard-debug t
+         ;; :guard-debug t
          :enabled t
          (mbe :logic (permute-polarity 0 mask truth <NUMVARS>)
               :exec (permute-polarity-bindings <NUMVARS>)))
 
 
        (define positive-cofactor<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
-                                           (truth :type (unsigned-byte <WIDTH>)))
+                                           (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp n) (< n <NUMVARS>)
-                     (unsigned-byte-p <WIDTH> truth))
+                     ;; (unsigned-byte-p <WIDTH> truth)
+                     )
          :guard-hints(("Goal" :in-theory (enable positive-cofactor)))
          :split-types t
          :enabled t :inline t
@@ -472,9 +524,10 @@
                                             (the (integer 0 <NUMVARS-1>) (lnfix n))))))))))
 
        (define negative-cofactor<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
-                                           (truth :type (unsigned-byte <WIDTH>)))
+                                           (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp n) (< n <NUMVARS>)
-                     (unsigned-byte-p <WIDTH> truth))
+                     ;; (unsigned-byte-p <WIDTH> truth)
+                     )
          :guard-hints (("goal" :in-theory (e/d (negative-cofactor)
                                                (var-negated-masked-size
                                                 ash-of-logand))
@@ -500,9 +553,10 @@
                                                        (lnfix n))))))))))
 
        (define depends-on<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
-                                    (truth :type (unsigned-byte <WIDTH>)))
+                                    (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp n) (< n <NUMVARS>)
-                     (unsigned-byte-p <WIDTH> truth))
+                     ;; (unsigned-byte-p <WIDTH> truth)
+                     )
          :split-types t
          :guard-hints (("goal" :in-theory (enable depends-on truth-norm)))
          :enabled t
@@ -523,9 +577,10 @@
                                               (the (integer 0 <NUMVARS-1>) (lnfix n)))))))))))
 
        (define is-xor-with-var<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
-                                         (truth :type (unsigned-byte <WIDTH>)))
+                                         (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp n) (< n <NUMVARS>)
-                     (unsigned-byte-p <WIDTH> truth))
+                     ;; (unsigned-byte-p <WIDTH> truth)
+                     )
          :split-types t
          :guard-hints (("goal" :in-theory (enable is-xor-with-var truth-norm)))
          :enabled t
@@ -541,10 +596,11 @@
        ;; all the cases seems fastest for up to 6 vars
        (define swap-vars<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
                                    (m :type (integer 0 <NUMVARS-1>))
-                                   (truth :type (unsigned-byte <WIDTH>)))
+                                   (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp n) (< n <NUMVARS>)
                      (natp m) (< m <NUMVARS>)
-                     (unsigned-byte-p <WIDTH> truth))
+                     ;; (unsigned-byte-p <WIDTH> truth)
+                     )
          :guard-hints (("Goal" :in-theory (enable swap-vars swap-vars-aux)))
          :split-types t
          :enabled t
@@ -559,10 +615,11 @@
 
        (define swap-vars-ordered<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
                                            (m :type (integer 0 <NUMVARS-1>))
-                                           (truth :type (unsigned-byte <WIDTH>)))
+                                           (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp n) (< n <NUMVARS>)
                      (natp m) (<= m n)
-                     (unsigned-byte-p <WIDTH> truth))
+                     ;; (unsigned-byte-p <WIDTH> truth)
+                     )
          :guard-hints (("Goal" :in-theory (enable swap-vars swap-vars-aux)))
          :split-types t
          :enabled t
@@ -573,9 +630,10 @@
 
        ;; very marginally faster for the adjacent variables case
        (define swap-adjacent-vars<NUMVARS> ((m :type (integer 0 <NUMVARS-1>))
-                                   (truth :type (unsigned-byte <WIDTH>)))
+                                            (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp m) (< m <NUMVARS-1>)
-                     (unsigned-byte-p <WIDTH> truth))
+                     ;; (unsigned-byte-p <WIDTH> truth)
+                     )
          :guard-hints (("Goal" :in-theory (enable swap-vars swap-vars-aux)))
          :split-types t
          :enabled t
@@ -584,10 +642,10 @@
               :exec (swap-adjacent-cases <NUMVARS>)))
 
        (define permute-var-up<NUMVARS> ((m :type (integer 0 <NUMVARS-1>))
-                                           (n :type (integer 0 <NUMVARS-1>))
-                                           (truth :type (unsigned-byte <WIDTH>)))
+                                        (n :type (integer 0 <NUMVARS-1>))
+                                        (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp m) (natp n)
-                     (unsigned-byte-p <WIDTH> truth)
+                     ;; (unsigned-byte-p <WIDTH> truth)
                      (<= m n) (< n <NUMVARS>))
          :split-types t
          :enabled t
@@ -602,10 +660,10 @@
                       (permute-var-up<NUMVARS> next n truth))))
 
        (define permute-var-down<NUMVARS> ((m :type (integer 0 <NUMVARS-1>))
-                                           (n :type (integer 0 <NUMVARS-1>))
-                                           (truth :type (unsigned-byte <WIDTH>)))
+                                          (n :type (integer 0 <NUMVARS-1>))
+                                          (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp m) (natp n)
-                     (unsigned-byte-p <WIDTH> truth)
+                     ;; (unsigned-byte-p <WIDTH> truth)
                      (<= m n) (< n <NUMVARS>))
          :split-types t
          :enabled t
@@ -620,11 +678,11 @@
                       (swap-adjacent-vars<NUMVARS> m truth))))
 
        (define permute-stretch<NUMVARS> ((n :type (integer 0 <NUMVARS>))
-                                               (count :type (integer 0 <NUMVARS>))
-                                               (mask :type (unsigned-byte <NUMVARS>))
-                                               (truth :type (unsigned-byte <WIDTH>)))
+                                         (count :type (integer 0 <NUMVARS>))
+                                         (mask :type (unsigned-byte <NUMVARS>))
+                                         (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp n) (<= n <NUMVARS>)
-                     (unsigned-byte-p <WIDTH> truth)
+                     ;; (unsigned-byte-p <WIDTH> truth)
                      (unsigned-byte-p <NUMVARS> mask)
                      (equal count (logcount (loghead n mask))))
          :guard-hints (("goal" :expand ((:free (count numvars)
@@ -637,18 +695,18 @@
               :exec
               (b* (((when (eql n <NUMVARS>)) truth)
                    (bit (logbit (the (integer 0 <NUMVARS-1>) n)
-                                      (the (unsigned-byte <NUMVARS>) mask)))
+                                (the (unsigned-byte <NUMVARS>) mask)))
                    (truth (permute-stretch<NUMVARS> (1+ n) (+ bit count) mask truth)))
                 (if (eql (the bit bit) 1)
                     (permute-var-up<NUMVARS> count n truth)
                   truth))))
 
        (define permute-shrink<NUMVARS> ((n :type (integer 0 <NUMVARS>))
-                                              (count :type (integer 0 <NUMVARS>))
-                                              (mask :type (unsigned-byte <NUMVARS>))
-                                              (truth :type (unsigned-byte <WIDTH>)))
+                                        (count :type (integer 0 <NUMVARS>))
+                                        (mask :type (unsigned-byte <NUMVARS>))
+                                        (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
          :guard (and (natp n) (<= n <NUMVARS>)
-                     (unsigned-byte-p <WIDTH> truth)
+                     ;; (unsigned-byte-p <WIDTH> truth)
                      (unsigned-byte-p <NUMVARS> mask)
                      (equal count (logcount (loghead n mask))))
          :guard-hints (("goal" :expand ((:free (count numvars)
@@ -672,10 +730,11 @@
 
        ;; (define swap-vars-old<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
        ;;                             (m :type (integer 0 <NUMVARS-1>))
-       ;;                             (truth :type (unsigned-byte <WIDTH>)))
+       ;;                             (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
        ;;   :guard (and (natp n) (< n <NUMVARS>)
        ;;               (natp m) (< m <NUMVARS>)
-       ;;               (unsigned-byte-p <WIDTH> truth))
+       ;;               ;; (unsigned-byte-p <WIDTH> truth)
+       ;; )
        ;;   :guard-hints (("goal" :in-theory (enable swap-vars)))
        ;;   :enabled t
        ;;   :split-types t
@@ -712,10 +771,11 @@
 
        ;; (define swap-vars*<NUMVARS> ((n :type (integer 0 <NUMVARS-1>))
        ;;                             (m :type (integer 0 <NUMVARS-1>))
-       ;;                             (truth :type (unsigned-byte <WIDTH>)))
+       ;;                             (truth truth<NUMVARS>-p :type (unsigned-byte <WIDTH>)))
        ;;   :guard (and (natp n) (< n <NUMVARS>)
        ;;               (natp m) (< m n)
-       ;;               (unsigned-byte-p <WIDTH> truth))
+       ;;               ;; (unsigned-byte-p <WIDTH> truth)
+       ;; )
        ;;   :guard-hints (("Goal" :in-theory (enable swap-vars)))
        ;;   :split-types t
        ;;   :enabled t

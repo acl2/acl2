@@ -166,3 +166,8 @@ of proofs.")
 (defxdoc testing-utilities
   :parents (top)
   :short "Tools for developing and running tests.")
+
+
+(defxdoc hint-utils
+  :parents (proof-automation)
+  :short "Tools that produce hints to guide the prover.")

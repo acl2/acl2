@@ -40,6 +40,7 @@
 (local (in-theory (disable nth update-nth
                            acl2::nth-with-large-index
                            true-listp-update-nth)))
+(local (std::add-default-post-define-hook :fix))
 
 (defstobj-clone aignet-refcounts u32arr :suffix "-COUNTS")
 
@@ -96,5 +97,8 @@
   (defthm aignet-count-refs-does-not-shrink-refcounts
     (<= (len aignet-refcounts)
         (len (aignet-count-refs aignet-refcounts aignet)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (fty::deffixequiv aignet-count-refs-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-count-refs$inline :args ((aignet aignet))))
 

@@ -35,6 +35,7 @@
 
 
 (defparser vl-maybe-parse-lifetime ()
+  :parents (parser)
   :short "Match an optional @('lifetime') for SystemVerilog-2012."
   :long "<p>Grammar:</p>
          @({

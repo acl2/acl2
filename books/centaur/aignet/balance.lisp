@@ -51,6 +51,12 @@
                            acl2::resize-list-when-atom)))
 (local (std::add-default-post-define-hook :fix))
 
+;; BOZO skipping node-list-fix congruence proofs here
+(local (table fty::fixtypes 'fty::fixtype-alist
+              (b* ((fixtype-alist (cdr (assoc 'fty::fixtype-alist (table-alist 'fty::fixtypes world)))))
+                (remove-equal (assoc 'aignet fixtype-alist)
+                              fixtype-alist))))
+
 (local (xdoc::set-default-parents balance))
 
 (fty::defprod balance-config
@@ -1530,7 +1536,10 @@
   :parents (aignet-comb-transforms)
   :short "Apply DAG-aware AND tree balancing to the network."
   :long "<p>Note: This implementation is heavily based on the one in
-ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>"
+ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>
+
+<p>Settings for the transform can be tweaked using the @('config') input, which
+is a @(see balance-config) object.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet2 aignet-tmp))
        (- (cw "Balance input: ") (print-aignet-levels aignet))

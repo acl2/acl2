@@ -1052,6 +1052,10 @@ BOOKS_SKIP_COMP += system/optimize-check.$(ACL2_COMP_EXT)
 # in all Lisps for this book.
 BOOKS_SKIP_COMP += demos/modeling/nested-stobj-toy-isa.$(ACL2_COMP_EXT)
 
+# This book has a make-event guarded by #+Clozure, which might explain
+# why compilation failed failed for Allegro CL.
+BOOKS_SKIP_COMP += tools/oracle-timelimit-tests.$(ACL2_COMP_EXT)
+
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 
 # Avoid trying to make compiled files; target %.$(ACL2_COMP_EXT) still
