@@ -41,7 +41,7 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) 0 x86)))
     (rml08 lin-addr r-x x86))
-  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
+;  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
   :inline t
   ///
 
@@ -101,7 +101,8 @@
           ;; No need for the conclusion about the state because
           ;; "rme08-does-not-affect-state-in-programmer-level-mode".
           ))
-    :enable (ea-to-la segment-base-and-bounds))
+    ;:enable ea-to-la
+    )
 
   (defrule rme08-xw-system-level-mode
     (implies
@@ -164,7 +165,7 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) 0 x86)))
     (riml08 lin-addr r-x x86))
-  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
+;  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
   :inline t)
 
 (define wme08
@@ -187,7 +188,7 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) x86)))
     (wml08 lin-addr val x86))
-  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
+;  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
   :inline t)
 
 (define wime08
@@ -210,7 +211,7 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) x86)))
     (wiml08 lin-addr val x86))
-  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
+;  :guard-hints (("Goal" :in-theory (enable ea-to-la)))
   :inline t)
 
 ;; ======================================================================
