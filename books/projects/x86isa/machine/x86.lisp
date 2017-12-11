@@ -121,7 +121,8 @@
    </p>"
   (b* ((*ip+delta (+ *ip delta)))
     (if (64-bit-modep x86)
-        (if (canonical-address-p *ip+delta)
+        (if (mbe :logic (canonical-address-p *ip+delta)
+                 :exec (< *ip+delta #.*2^47*))
             (mv nil *ip+delta)
           (mv (list 'non-canonical-address *ip+delta) 0))
       (b* ((cs-hidden (xr :seg-hidden *cs* x86))
