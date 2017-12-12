@@ -3758,6 +3758,8 @@
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
             splitter-output            ;;; allow user to modify this in a book
+            serialize-character        ;;; allow user to modify this in a book
+            serialize-character-system ;;; ditto; useful during certification
             top-level-errorp           ;;; allow TOP-LEVEL errors to propagate
 
 ; Do not remove deferred-ttag-notes or deferred-ttag-notes-saved from this

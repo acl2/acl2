@@ -44,6 +44,12 @@
 (local (in-theory (disable unsigned-byte-p signed-byte-p nth update-nth)))
 (local (std::add-default-post-define-hook :fix))
 
+; Matt K. addition: Avoid stack overflow when writing the .cert file, which has
+; happened using Allegro CL (with ACL2(r) but probably would happen with ACL2
+; as well).
+(make-event
+ (pprogn (set-serialize-character-system nil state)
+         (value '(value-triple nil))))
 
 (local (in-theory (disable nth update-nth acl2::nth-when-zp
                            acl2::nth-when-too-large-cheap
@@ -362,6 +368,9 @@
 
 (defstobj-clone truth4arr truth::truth4arr :strsubst (("a" . "a")))
 
+; Matt K. mod: avoid Allegro CL stack overflow for a call of
+; abc-nodes-wellformed.
+(set-compile-fns t)
 
 (define abc-nodes-wellformed ((num-nodes natp)
                               (nodedata nat-listp))

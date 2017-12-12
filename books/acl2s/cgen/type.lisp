@@ -98,14 +98,16 @@
 (defun decode-ts (ts)
   (declare (xargs :verify-guards nil
                   :guard (integerp ts)))
-                              
+
 
 ; This function converts a type-set into an untranslated term in the ACL2
 ; coding world.  For example, 1536 is converted into *TS-CONS* (which is the
 ; (TS-UNION *TS-PROPER-CONS* *TS-IMPROPER-CONS*)).  We do this only so that we
 ; can look at computed type-sets symbolically.
 
-  (cond ((ts= ts *ts-unknown*) '*ts-unknown*)
+  (cond #+non-standard-analysis ; case added by Matt K. for termination in ACL2(r)
+        ((not (mbt (integerp ts))) *ts-unknown*)
+        ((ts= ts *ts-unknown*) '*ts-unknown*)
         ((ts= ts *ts-empty*) '*ts-empty*)
         ((ts-complementp ts)
          (list 'ts-complement
@@ -148,10 +150,10 @@
          (ts (if (consp ts-info) (cadr ts-info) nil)))
       (if ts
           (let ((types (get-type-list-from-type-set ts)))
-            (var-types-alist-from-acl2-type-alist acl2-type-alist 
-                                                   (cdr freevars) 
+            (var-types-alist-from-acl2-type-alist acl2-type-alist
+                                                   (cdr freevars)
                                                    (acons var types ans)))
-        (var-types-alist-from-acl2-type-alist acl2-type-alist 
+        (var-types-alist-from-acl2-type-alist acl2-type-alist
                                                (cdr freevars) ans)))))
 
 
@@ -182,11 +184,11 @@
 ;This context, gives us the type-alist ACL2 inferred from the
 ;the current subgoal i.e. cl
     (if erp nil type-alist)))
-       
+
 
 
 (defmacro get-acl2-type-alist (cl &optional ens)
-  `(get-acl2-type-alist-fn ,cl 
+  `(get-acl2-type-alist-fn ,cl
                            ;,(or vars `(acl2::all-vars1-lst ,cl '()))
                            ,(or ens '(acl2::ens state))
                            state))
@@ -418,7 +420,7 @@
      typ2)))
 
 (def dumb-type-alist-infer-from-term (term vl wrld  ans.)
-  (decl :sig ((pseudo-term-listp fixnum plist-worldp  symbol-alistp) 
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp  symbol-alistp)
               -> symbol-doublet-listp)
         :doc "main aux function to infer type-alist from term")
   (declare (xargs :verify-guards nil))
@@ -475,7 +477,7 @@
     (&                   ans.))))
 
 (def dumb-type-alist-infer-from-terms (H vl wrld  ans.)
-  (decl :sig ((pseudo-term-listp fixnum plist-worldp  
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp
                                  symbol-alistp) -> symbol-doublet-listp)
         :doc "aux function for dumb extraction of defdata types from terms in H")
   (declare (xargs :verify-guards nil))
