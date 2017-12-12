@@ -231,10 +231,11 @@
  property needed of the returned @(see error-triple) is that its error
  component is not @('nil').</p>
 
- <p>New utility @(tsee manage-screen-output) is an improved version of @(tsee
- control-screen-output) (which may eventually be removed).  Added utilities
- @(tsee make-event-terse), @(tsee restore-output) and @(tsee restore-output?)
- to fine-tune screen output in event-generating macros.  Moved obsolete utility
+ <p>Added utility @(tsee manage-screen-output) which is an improved version of
+ @(tsee control-screen-output) (which may eventually be removed).  Added
+ utilities @(tsee make-event-terse), @(tsee restore-output), @(tsee
+ restore-output?), @(tsee fail-event), and @(tsee try-event) to fine-tune
+ screen output in event-generating macros.  Moved obsolete utility
  @('control-screen-output-and-maybe-replay') to Workshop supporting materials,
  where the only remaining use of this utility was.</p>
 
