@@ -157,7 +157,8 @@
    </p>
    <p>
    @('make-event-terse') may be useful in event-generating macros.
-   </p>"
+   </p>
+   @(def make-event-terse)"
   (defmacro make-event-terse (form)
     `(with-output
        :gag-mode nil
@@ -196,13 +197,13 @@
 (defsection fail-event
   :parents (user-interface)
   :short "An event that always fails
-          with a specified context, error flag, error value, and error message."
+          with a specified error context, flag, value, and message."
   :long
   "<p>
    This is realized by always generating a soft error (via @(tsee er-soft+))
    during the expansion phase of @(tsee make-event).
-   The context, error flag, error value, and error message
-   passed to this macro are not evaluated.
+   The error context, flag, value, and message passed to this macro
+   are not evaluated.
    </p>
    <p>
    The use of @(tsee make-event-terse) instead of @(tsee make-event)
@@ -230,7 +231,7 @@
    so there is no output if the submission succeeds.
    If the submission fails,
    @(tsee orelse) is used to submit a @(tsee fail-event) to cause an error
-   with the specified context, error flag, error flag, and error message.
+   with the specified context, flag, value, and message.
    </p>"
   `(orelse
     (with-output :gag-mode nil :off :all ,form)
