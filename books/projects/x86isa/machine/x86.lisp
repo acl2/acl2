@@ -2283,7 +2283,7 @@
                  "REX prefix in 64-bit mode"
                  (list start-rip temp-rip prefixes rex-byte opcode)) x86)
        (x86-step-unimplemented
-        (cons (cons "REX prefixes are not implemented in 32-bit mode."
+        (cons (cons "INC/DEC are not implemented in 32-bit mode."
                     (ms x86))
               (list start-rip temp-rip prefixes rex-byte opcode))
         x86)))
