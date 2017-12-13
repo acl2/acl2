@@ -4269,12 +4269,14 @@ semantic function.</p>"
        ((when flg) (!!ms-fresh :increment-error flg))
 
        ;; If opcode/rex/escape-byte is a rex byte, it is filed away in
-       ;; "rex-byte".
+       ;; "rex-byte". A REX byte has the form 4xh, but this applies only to
+       ;; 64-bit mode; in 32-bit mode, 4xh is an opcode for INC or DEC,
+       ;; so in 32-bit mode there is no REX byte "by construction".
        ((the (unsigned-byte 8) rex-byte)
-        (if (and ;; 64-bit-mode
-             (equal (the (unsigned-byte 4)
-                         (ash opcode/rex/escape-byte -4))
-                    4))
+        (if (and (64-bit-modep x86)
+                 (equal (the (unsigned-byte 4)
+                             (ash opcode/rex/escape-byte -4))
+                        4))
             opcode/rex/escape-byte
           0))
 
@@ -4383,7 +4385,8 @@ semantic function.</p>"
              (if (equal prefix-length 0)
                  (mv-nth 1 (increment-*ip start-rip 1 x86))
                (mv-nth 1 (increment-*ip start-rip (1+ prefix-length) x86))))
-      (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4) 4)
+      (equal rex-byte (if (and (64-bit-modep x86)
+                               (equal (ash opcode/rex/escape-byte -4) 4))
                           opcode/rex/escape-byte
                         0))
       (equal opcode/escape-byte (if (equal rex-byte 0)
