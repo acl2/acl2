@@ -19,15 +19,16 @@
 ; the L bit, just before Section 3.4.5.1 starts) that in 64-bit mode the L bit
 ; is 1 and that therefore the D bit is 0. The same Section 3.4.5 (in the
 ; description of the D/B bit, a little before the description of the L bit),
-; says that when D is 0 the default operand size is 16 bits. Table 6-4 of
+; says that when D is 0 the default operand size is 16 bits. Table 2-4 of
 ; Vol. 2A says that if the W bit of the REX prefix is 1 then the operand size
 ; is 64 bits; otherwise it is as determined by CS.D (i.e. 16 bits, as mentioned
-; above).  Section 2.2.1.2 of Vol. 2A (where Table 6-4 is) says that the 66H
+; above).  Section 2.2.1.2 of Vol. 2A (where Table 2-4 is) says that the 66H
 ; prefix is ignored when REX.W is 1, and that if there is a 66H prefix and
 ; REX.W is 0 then the operand size is 16 bits. From these parts of the
 ; documentation, we would conclude that in 64-bit mode the operand size for
 ; PUSH and POP is 64 bits if REX.W is 1, otherwise it is 16 bits, and the 66H
-; prefix is irrelevant.
+; prefix is irrelevant. (Note that the tables at the beginning of the PUSH and
+; POP instructions disallow a 32-bit operand size in 64-bit mode.)
 ;
 ; However, the PUSH and POP instruction reference in AMD manual, Jun'15, Vol. 3
 ; says that in 64-bit mode the default operand size is 64 bits. Furthermore,
