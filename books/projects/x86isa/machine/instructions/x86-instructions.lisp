@@ -74,7 +74,7 @@
   decoder function @(see x86-fetch-decode-execute).</li>
 
 <li> They contain or act as the functional specification of the
-instructions.  For e.g., the functional specification function of the
+instructions.  For example, the functional specification function of the
 ADD instruction returns two values: the appropriately truncated sum of
 the operands and the modified flags. We do not deal with the x86 state
 in these specifications.</li>

@@ -46,7 +46,7 @@
   :long
   "<p>
    In 64-bit mode, a 64-bit instruction pointer is read from the full RIP.
-   Since, in the model, this is a (48-bit) signed integer,
+   Since, in the model, this is a 48-bit signed integer,
    this function returns a 48-bit signed integer.
    </p>
    <p>
