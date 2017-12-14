@@ -104,6 +104,12 @@
 
  <h3>Changes to Existing Libraries</h3>
 
+ <h4>Kestrel Utilities</h4>
+
+ <p>Added utility @(see include-book-paths) to list paths via @(tsee
+ include-book) down to a given book, which may be useful for reducing book
+ dependencies.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
