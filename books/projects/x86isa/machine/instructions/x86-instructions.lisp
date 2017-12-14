@@ -78,7 +78,20 @@ instructions.  For example, the functional specification function of the
 ADD instruction returns two values: the appropriately truncated sum of
 the operands and the modified flags. We do not deal with the x86 state
 in these specifications.</li>
-</ol>"
+</ol>
+
+<p>
+Each semantic function takes, among other arguments,
+the value @('start-rip') of the instruction pointer
+at the beginning of the instruction,
+and the value @('temp-rip') of the instruction pointer
+after the decoding of the prefixes, REX byte, ModR/M byte, and SIB byte
+(if present).
+The semantic function may further increment the instruction pointer
+beyond @('temp-rip').
+The semantic function writes the final value of the instruction pointer
+into RIP.
+</p>"
   )
 
 ;; Misc. instructions not categorized yet into the books included above or not
