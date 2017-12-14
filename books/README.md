@@ -11,9 +11,9 @@ version of the [ACL2 Theorem Prover][ACL2].  It is updated only by the
 ACL2 authors, Matt Kaufmann and J Moore.
 
 **WARNING**: On rare occasions development versions of ACL2 may be
-incomplete, fragile, or unable to pass the usual regression tests.  If
-you want a more stable version of ACL2, you can download an official
-release version of ACL2 from the [ACL2 Home Page][ACL2].
+incomplete, fragile, or unable to pass the usual regression tests.
+You may choose to download an official ACL2 release from the
+[ACL2 Home Page][ACL2].
 
 [ACL2]: http://www.cs.utexas.edu/users/moore/acl2 "ACL2 Home Page"
 
@@ -46,10 +46,10 @@ top of github.com/acl2/acl2.  Alternatively you get a copy from git as
 follows:
 
 ```
-git clone git://github.com/acl2/acl2 acl2; cd acl2; git checkout -b acl2-7.4-local-branch v7.4
+git clone git://github.com/acl2/acl2 acl2; cd acl2; git checkout -b acl2-8.0-local-branch v8.0
 ```
 
-Your current directory is now a copy of ACL2 Version 7.4.  Please see
+Your current directory is now a copy of ACL2 Version 8.0.  Please see
 the [ACL2 home page][ACL2], specifically its [installation
 instructions][installation], for how to build an executable and
 certify books in your new directory.

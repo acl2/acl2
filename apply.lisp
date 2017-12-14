@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1575,7 +1575,7 @@
             (er hard 'badge-table
                 "The badge-table update for the name ~x0 specifies a badge of ~
                  ~x1, but the correct badge is ~x2."
-                fn specified-badge actual-badge)) 
+                fn specified-badge actual-badge))
            (t t)))))))
 
 (table badge-table nil nil
