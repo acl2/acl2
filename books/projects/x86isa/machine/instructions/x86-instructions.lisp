@@ -85,12 +85,13 @@ Each semantic function takes, among other arguments,
 the value @('start-rip') of the instruction pointer
 at the beginning of the instruction,
 and the value @('temp-rip') of the instruction pointer
-after the decoding of the prefixes, REX byte, ModR/M byte, and SIB byte
-(if present).
+after the decoding of the prefixes, REX byte, opcode, ModR/M byte, and SIB byte
+(some of these bytes may not be present).
 The semantic function may further increment the instruction pointer
-beyond @('temp-rip').
-The semantic function writes the final value of the instruction pointer
-into RIP.
+beyond @('temp-rip') to read the ending bytes of the instruction,
+e.g. to read a displacement or an immediate.
+The semantic function eventually writes
+the final value of the instruction pointer into RIP.
 </p>"
   )
 
