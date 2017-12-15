@@ -112,11 +112,13 @@ decoding with the execution in this case.</p>"
 
        ;; Update the x86 state:
        ((mv flg x86)
-        (wml-size operand-size
-                 (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                 val x86))
+        (wme-size operand-size
+                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                  *ss*
+                  val
+                  x86))
        ((when flg) ;; Would also handle bad rsp values.
-        (!!ms-fresh :SS-error-wml-size-error flg))
+        (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
 
        (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
        (x86 (!rip temp-rip x86)))
@@ -231,11 +233,13 @@ extension (ModR/m.reg = 6).</p>"
        ;; Update the x86 state:
 
        ((mv flg x86)
-        (wml-size operand-size
-                 (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                 E x86))
+        (wme-size operand-size
+                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                  *ss*
+                  E
+                  x86))
        ((when flg) ;; Would also handle bad rsp values.
-        (!!ms-fresh :SS-error-wml-size-error flg))
+        (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
 
        (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
        (x86 (!rip temp-rip x86)))
@@ -331,17 +335,18 @@ decoding with the execution in this case.</p>"
        ;; Update the x86 state:
 
        ((mv flg1 x86)
-        (wml-size operand-size
-                 (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                 (mbe :logic (loghead (ash operand-size 3) imm)
-                      :exec (logand
-                             (case operand-size
-                               (2 #.*2^16-1*)
-                               (8 #.*2^64-1*))
-                             (the (signed-byte 32) imm)))
-                 x86))
+        (wme-size operand-size
+                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                  *ss*
+                  (mbe :logic (loghead (ash operand-size 3) imm)
+                       :exec (logand
+                              (case operand-size
+                                (2 #.*2^16-1*)
+                                (8 #.*2^64-1*))
+                              (the (signed-byte 32) imm)))
+                  x86))
        ((when flg1) ;; Would also handle "bad" rsp values.
-        (!!ms-fresh :SS-exception-wml-size-error flg1))
+        (!!fault-fresh :ss 0 :SS-exception-wme-size-error flg1)) ;; #SS(0)
        (x86 (!rgfi *rsp* new-rsp x86))
        (x86 (!rip temp-rip x86)))
 
@@ -413,14 +418,15 @@ the execution in this case.</p>"
        ;; Update the x86 state:
 
        ((mv flg x86)
-        (wml-size operand-size
-                 (the (signed-byte #.*max-linear-address-size*)
-                   new-rsp)
-                 ;; If operand-size is 64, val is zero-extended here
-                 ;; automatically.
-                 val x86))
+        (wme-size operand-size
+                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                  *ss*
+                  ;; If operand-size is 64, val is zero-extended here
+                  ;; automatically.
+                  val
+                  x86))
        ((when flg) ;; Would also handle bad rsp values.
-        (!!ms-fresh :SS-error-wml-size-error flg))
+        (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
 
        (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
        (x86 (!rip temp-rip x86)))
@@ -481,9 +487,9 @@ the execution in this case.</p>"
                        :ss-exception-new-rsp-not-canonical new-rsp)) ;; #SS(0)
 
        ((mv flg0 val x86)
-        (rml-size operand-size rsp :r x86))
+        (rme-size operand-size rsp *ss* :r x86))
        ((when flg0)
-        (!!ms-fresh :rml-size-error flg0))
+        (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
 
        ;; See "Z" in http://ref.x86asm.net/geek.html#x58.
        (reg (logand opcode #x07))
@@ -506,6 +512,8 @@ the execution in this case.</p>"
        (x86 (!rip temp-rip x86)))
 
     x86)
+
+  :guard-hints (("Goal" :in-theory (enable rme-size)))
 
   :implemented
   (progn
@@ -581,9 +589,9 @@ extension (ModR/m.reg = 0).</p>"
                        :ss-exception-new-rsp-not-canonical new-rsp)) ;; #SS(0)
 
        ((mv flg0 val x86)
-        (rml-size operand-size rsp :r x86))
+        (rme-size operand-size rsp *ss* :r x86))
        ((when flg0)
-        (!!ms-fresh :rml-size-error flg0))
+        (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; # SS(0)
 
        ((mv flg1 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
@@ -652,7 +660,10 @@ extension (ModR/m.reg = 0).</p>"
        (x86 (!rgfi *rsp* new-rsp x86))
        (x86 (!rip temp-rip x86)))
 
-    x86))
+    x86)
+
+  :guard-hints (("Goal" :in-theory (enable rme-size)))
+  )
 
 ;; (def-inst x86-pop-segment-register
 ;;   :parents (one-byte-opcodes)
@@ -710,9 +721,9 @@ extension (ModR/m.reg = 0).</p>"
 ;;         (!!ms-fresh :new-rsp-not-canonical new-rsp))
 
 ;;        ((mv flg0 val x86)
-;;         (rml-size operand-size rsp :r x86))
+;;         (rme-size operand-size rsp *ss* :r x86))
 ;;        ((when flg0) ;; #SS exception?
-;;         (!!ms-fresh :rml-size-error flg0))
+;;         (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
 
 ;;        (p4 (equal #.*addr-size-override*
 ;;               (prefixes-slice :group-4-prefix prefixes)))
@@ -828,11 +839,13 @@ extension (ModR/m.reg = 0).</p>"
 
        ;; Update the x86 state:
        ((mv flg x86)
-        (wml-size operand-size
-                 (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                 eflags x86))
+        (wme-size operand-size
+                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                  *ss*
+                  eflags
+                  x86))
        ((when flg)
-        (!!ms-fresh :wml-size-error flg))
+        (!!fault-fresh :ss 0 :wme-size-error flg)) ;; #SS(0)
        (x86 (!rip temp-rip x86))
        (x86 (!rgfi *rsp* new-rsp x86)))
     x86))
@@ -937,9 +950,9 @@ extension (ModR/m.reg = 0).</p>"
                        :ss-exception-new-rsp-not-canonical new-rsp)) ;; #SS(0)
 
        ((mv flg0 val x86)
-        (rml-size operand-size rsp :r x86))
+        (rme-size operand-size rsp *ss* :r x86))
        ((when flg0)
-        (!!ms-fresh :rml-size-error flg0))
+        (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
 
        ((the (unsigned-byte 32) val)
         ;; All reserved bits should be unaffected.  This ensures that the bit 1
