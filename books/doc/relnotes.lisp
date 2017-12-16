@@ -111,7 +111,7 @@
  dependencies.</p>
 
  <p>Added a <see topic='@(url fty)'>fixtype</see>
- for <see topic='@(url std/oset)'>finite sets</see>.</p>
+ for <see topic='@(url set::std/osets)'>finite sets</see>.</p>
 
  <h3>Licensing Changes</h3>
 

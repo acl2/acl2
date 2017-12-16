@@ -43,7 +43,7 @@
 (defsection set
   :parents (oset-utilities std/osets)
   :short "A <see topic='@(url acl2::fty)'>fixtype</see> of
-          <see topic='@(url std/oset)'>finite sets</see>."
+          <see topic='@(url std/osets)'>finite sets</see>."
   :long
   "<p>
    The fixing function used here is @(tsee sfix).
