@@ -13,6 +13,7 @@
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "centaur/fty/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,6 +37,27 @@
   (std::defrule list-in-of-sfix-2
     (equal (list-in list (sfix set))
            (list-in list set))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection set
+  :parents (oset-utilities std/osets)
+  :short "A <see topic='@(url acl2::fty)'>fixtype</see> of
+          <see topic='@(url std/oset)'>finite sets</see>."
+  :long
+  "<p>
+   The fixing function used here is @(tsee sfix).
+   </p>
+   <p>
+   The name @('sequiv') of the equivalence relation introduced here
+   is ``structurally similar'' to the name @('sfix') of the fixing function.
+   </p>"
+  (fty::deffixtype set
+    :pred setp
+    :fix sfix
+    :equiv sequiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
