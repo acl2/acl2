@@ -1449,8 +1449,11 @@
                    must be a keyword-value list, ~
                    but ~x0 is not."
                   options))
-       ((unless (subsetp (keywords-of-keyword-value-list options)
-                         '(:rule-classes :print)))
+       (keywords (keywords-of-keyword-value-list options))
+       ((unless (no-duplicatesp keywords))
+        (er-soft+ ctx t nil
+                  "The inputs keywords must be unique."))
+       ((unless (subsetp keywords '(:rule-classes :print)))
         (er-soft+ ctx t nil
                   "Only the input keywords ~
                    :RULE-CLASSES and :PRINT are allowed."))
@@ -1542,19 +1545,32 @@
        (funvar-instp (cdr sofun-inst) wrld)))
 
 (define defun-inst-plain-events ((fun symbolp)
-                                 (fparams (or (funvar-setp fparams wrld)
+                                 (fparams (or (funvar-setp fparams (w state))
                                               (null fparams)))
-                                 (sofun (plain-sofunp sofun wrld))
+                                 (sofun (plain-sofunp sofun (w state)))
                                  inst
                                  (options keyword-value-listp)
-                                 (wrld plist-worldp))
-  :returns (events "A @(tsee pseudo-event-form-listp).")
+                                 (ctx "Context for errors.")
+                                 state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (events+result "A tuple @('(events result)') where
+                               @('events') is a @(tsee pseudo-event-form-listp)
+                               and @('result') is
+                               a @(tsee pseudo-event-formp) or @('nil').")
+               state)
   :mode :program
   :short "Generate a list of events to submit,
           when instantiating a plain second-order function."
   :long
   "<p>
-   Only the @(':verify-guards') option may be present.
+   Also return the @(tsee defun2) or @(tsee defun) event form,
+   without the termination hints.
+   This is printed when @(':print') is @(':result').
+   </p>
+   <p>
+   Only the @(':verify-guards') and @(':print') options may be present.
    </p>
    <p>
    We add @('fun') to the table of second-order functions
@@ -1565,11 +1581,14 @@
    we extend the instantiation with @('(sofun . fun)'),
    to ensure that the recursive calls are properly transformed.
    </p>"
-  (b* (((unless (subsetp (keywords-of-keyword-value-list options)
-                         '(:verify-guards)))
-        (raise "~x0 must include only :VERIFY-GUARDS, ~
-                because ~x1 is a plain second-order function."
-               options sofun))
+  (b* ((wrld (w state))
+       ((unless (subsetp (keywords-of-keyword-value-list options)
+                         '(:verify-guards :print)))
+        (er-soft+ ctx t nil
+                  "Only the input keywords ~
+                   :VERIFY-GUARDS and :PRINT are allowed, ~
+                   because ~x0 is a plain second-order function."
+                  sofun))
        (verify-guards (let ((verify-guards-option
                              (assoc-keyword :verify-guards options)))
                         (if verify-guards-option
@@ -1595,78 +1614,128 @@
        (hints (if fun-measure `(:hints (("Goal" ,@fun-tt-proof))) nil))
        (measure (if fun-measure `(:measure ,fun-measure) nil))
        (info (list 'plain fparams))
+       (formals (formals sofun wrld))
+       (defun-event `(defun ,fun ,formals
+                       (declare (xargs :guard ,fun-guard
+                                       :verify-guards ,verify-guards
+                                  ,@measure
+                                  ,@hints))
+                       ,fun-body))
+       (result `(,(if fparams 'defun2 'defun)
+                 ,fun
+                 ,@(and fparams (list fparams))
+                 ,formals
+                 (declare (xargs :guard ,fun-guard
+                                 :verify-guards ,verify-guards
+                            ,@measure))
+                 ,fun-body))
        (table-event (if fparams
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
-    `((defun ,fun ,(formals sofun wrld)
-        (declare (xargs :guard ,fun-guard
-                        :verify-guards ,verify-guards
-                        ,@measure
-                        ,@hints))
-        ,fun-body)
-      ,@table-event)))
+    (value (list `(,defun-event ,@table-event)
+                 result))))
 
 (define defun-inst-choice-events ((fun symbolp)
-                                  (fparams (or (funvar-setp fparams wrld)
+                                  (fparams (or (funvar-setp fparams (w state))
                                                (null fparams)))
-                                  (sofun (choice-sofunp sofun wrld))
+                                  (sofun (choice-sofunp sofun (w state)))
                                   inst
                                   (options keyword-value-listp)
-                                  (wrld plist-worldp))
-  :returns (events "A @(tsee pseudo-event-form-listp).")
+                                  (ctx "Context for errors.")
+                                  state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (events+result "A tuple @('(events result)') where
+                               @('events') is a @(tsee pseudo-event-form-listp)
+                               and @('result') is
+                               a @(tsee pseudo-event-formp) or @('nil').")
+               state)
   :mode :program
   :short "Generate a list of events to submit,
           when instantiating a choice second-order function."
   :long
   "<p>
-   No option may be present.
+   Also return the @(tsee defchoose2) or @(tsee defchoose) event form.
+   This is printed when @(':print') is @(':result').
+   </p>
+   <p>
+   Only the @(':print') option may be present.
    </p>
    <p>
    We add @('fun') to the table of second-order functions
    iff it is second-order.
    </p>"
-  (b* (((unless (null options))
-        (raise "~x0 must include no options, ~
-                because ~x1 is a choice second-order function."
-               options sofun))
+  (b* ((wrld (w state))
+       ((unless (subsetp (keywords-of-keyword-value-list options)
+                         '(:print)))
+        (er-soft+ ctx t nil
+                  "Only the input keyword :PRINT is allowed, ~
+                   because ~x0 is a choice second-order function."
+                  sofun))
        (bound-vars (defchoose-bound-vars sofun wrld))
        (sofun-body (defchoose-body sofun wrld))
        (fun-body (fun-subst-term inst sofun-body wrld))
        (fun-body (untranslate fun-body nil wrld))
        (info (list 'choice fparams))
+       (formals (formals sofun wrld))
+       (strengthen (defchoose-strengthen sofun wrld))
+       (defchoose-event `(defchoose ,fun ,bound-vars ,formals
+                           ,fun-body
+                           :strengthen ,strengthen))
+       (result `(,(if fparams 'defchoose2 'defchoose)
+                 ,fun
+                 ,bound-vars
+                 ,@(and fparams (list fparams))
+                 ,formals
+                 ,fun-body
+                 :strengthen ,strengthen))
        (table-event (if fparams
                         (list `(table second-order-functions ',fun ',info))
                       nil)))
-    `((defchoose ,fun ,bound-vars ,(formals sofun wrld)
-        ,fun-body
-        :strengthen ,(defchoose-strengthen sofun wrld))
-      ,@table-event)))
+    (value (list `(,defchoose-event ,@table-event)
+                 result))))
 
 (define defun-inst-quant-events ((fun symbolp)
-                                 (fparams (or (funvar-setp fparams wrld)
+                                 (fparams (or (funvar-setp fparams (w state))
                                               (null fparams)))
-                                 (sofun (quant-sofunp sofun wrld))
+                                 (sofun (quant-sofunp sofun (w state)))
                                  inst
                                  (options keyword-value-listp)
-                                 (wrld plist-worldp))
-  :returns (events "A @(tsee pseudo-event-form-listp).")
+                                 (ctx "Context for errors.")
+                                 state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (events+result "A tuple @('(events result)') where
+                               @('events') is a @(tsee pseudo-event-form-listp)
+                               and @('result') is
+                               a @(tsee pseudo-event-formp) or @('nil').")
+               state)
   :mode :program
   :short "Generate a list of events to submit,
           when instantiating a quantifier second-order function."
   :long
   "<p>
-   Only the @(':skolem-name'), @(':thm-name'), and @(':rewrite') options
-   may be present.
+   Also return the @(tsee defun-sk2) or @(tsee defun-sk) event form.
+   This is printed when @(':print') is @(':result').
+   </p>
+   <p>
+   Only the @(':skolem-name'), @(':thm-name'), @(':rewrite'), and @(':print')
+   options may be present.
    </p>
    <p>
    We add @('fun') to the table of second-order functions
    iff it is second-order.
    </p>"
-  (b* (((unless (subsetp (keywords-of-keyword-value-list options)
-                         '(:skolem-name :thm-name :rewrite)))
-        (raise "~x0 must include only :SKOLEM-NAME, :THM-NAME, and :REWRITE, ~
-                because ~x1 is a quantifier second-order function."
-               options sofun))
+  (b* ((wrld (w state))
+       ((unless (subsetp (keywords-of-keyword-value-list options)
+                         '(:skolem-name :thm-name :rewrite :print)))
+        (er-soft+ ctx t nil
+                  "Only the input keywords ~
+                   :SKOLEM-NAME, :THM-NAME, :REWRITE, and :PRINT are allowed, ~
+                   because ~x0 is a quantifier second-order function."
+                  sofun))
        (sofun-info (defun-sk-check sofun wrld))
        (bound-vars (defun-sk-info->bound-vars sofun-info))
        (quant (defun-sk-info->quantifier sofun-info))
@@ -1701,27 +1770,48 @@
        (fun-guard (untranslate fun-guard t wrld))
        (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
        (info (list 'quant fparams))
+       (formals (formals sofun wrld))
+       (strengthen (defun-sk-info->strengthen sofun-info))
+       (body (list quant bound-vars fun-matrix))
+       (rest `(:strengthen ,strengthen
+               :quant-ok t
+               ,@(and (eq quant 'forall)
+                      (list :rewrite rewrite))
+               ,@skolem-name
+               ,@thm-name
+               :witness-dcls (,wit-dcl)))
+       (defun-sk-event `(defun-sk ,fun ,formals
+                          ,body
+                          ,@rest))
+       (result `(,(if fparams 'defun-sk2 'defun-sk)
+                 ,fun
+                 ,@(and fparams (list fparams))
+                 ,formals
+                 ,body
+                 ,@rest))
        (table-event (if fparams
                         (list `(table second-order-functions ',fun ',info))
-                      nil)))
-    `((defun-sk ,fun ,(formals sofun wrld)
-        (,quant ,bound-vars ,fun-matrix)
-        :strengthen ,(defun-sk-info->strengthen sofun-info)
-        :quant-ok t
-        ,@(and (eq quant 'forall)
-               (list :rewrite rewrite))
-        ,@skolem-name
-        ,@thm-name
-        :witness-dcls (,wit-dcl))
-      ,@table-event
-      (make-event-terse
-       (b* ((err-msg? (check-qrewrite-rule-funvars ',sofun (w state))))
-         (if err-msg?
-             (er-soft+ (cons 'defun-inst ',fun) t nil "~@0" err-msg?)
-           (value '(value-triple :invisible))))))))
+                      nil))
+       (check-event `(make-event-terse
+                      (b* ((err-msg?
+                            (check-qrewrite-rule-funvars ',sofun (w state))))
+                        (if err-msg?
+                            (er-soft+
+                             (cons 'defun-inst ',fun) t nil "~@0" err-msg?)
+                          (value '(value-triple :invisible)))))))
+    (value (list `(,defun-sk-event ,@table-event ,check-event)
+                 result))))
 
-(define defun-inst-fn (fun fparams-or-sofuninst rest (wrld plist-worldp))
-  :returns (event "A @(tsee pseudo-event-formp) or @('nil').")
+(define defun-inst-fn (fun
+                       fparams-or-sofuninst
+                       rest
+                       (ctx "Context for errors.")
+                       state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (event "A @(tsee pseudo-event-formp) or @('nil').")
+               state)
   :mode :program
   :short "Validate some of the inputs to @(tsee defun-inst)
           and generate the event form to submit."
@@ -1729,11 +1819,13 @@
   "<p>
    We directly check the name, function parameters, and instance designation,
    we directly check the correct presence of keyed options
-   (in @(tsee defun-inst-plain-events),
-   @(tsee defun-inst-choice-events),
-   and @(tsee defun-inst-quant-events)),
+   (we do that in
+   @(tsee defun-inst-plain-events),
+   @(tsee defun-inst-choice-events), and
+   @(tsee defun-inst-quant-events)), and
+   we directly check the correct value of the @(':print') option (if present),
    but rely on @(tsee defun), @(tsee defchoose), and @(tsee defun-sk)
-   to check the values of the keyed options.
+   to check the values of the other keyed options.
    </p>
    <p>
    Prior to introducing @('fun'),
@@ -1745,58 +1837,111 @@
    we check that the function parameters are
    all and only the function variables that the function depends on.
    </p>"
-  (b* (((unless (symbolp fun)) (raise "~x0 must be a name." fun))
+  (b* ((wrld (w state))
+       ((unless (symbolp fun))
+        (er-soft+ ctx t nil
+                  "The first input must be a name, but ~x0 is not."
+                  fun))
        (2nd-order (funvar-setp fparams-or-sofuninst wrld))
        ((unless (or 2nd-order
                     (check-sofun-inst fparams-or-sofuninst wrld)))
-        (raise "~x0 must be either a non-empty list of ~
-                function variables without duplicates ~
-                or the name of a second-order function ~
-                followed by the pairs of an instantiation."
-               fparams-or-sofuninst))
+        (er-soft+ ctx t nil
+                  "The second input must be ~
+                   either a non-empty list of function variables ~
+                   without duplicates ~
+                   or the name of a second-order function ~
+                   followed by the pairs of an instantiation, ~
+                   but ~x0 is not."
+                  fparams-or-sofuninst))
        (fparams (if 2nd-order fparams-or-sofuninst nil))
-       ((unless (or (not 2nd-order)
-                    (and (consp rest)
-                         (check-sofun-inst (car rest) wrld))))
-        (raise "~x0 must start with the name of a second-order function ~
-                followed by an instantiation."
-               rest))
+       ((when (and 2nd-order
+                   (not (consp rest))))
+        (er-soft+ ctx t nil
+                  "After the second input there must be ~
+                   the name of a second-order function ~
+                   followed by the pairs of an instantiation, ~
+                   but there are no more inputs."))
        (sofun-inst (if 2nd-order (car rest) fparams-or-sofuninst))
+       ((when (and 2nd-order
+                   (not (check-sofun-inst (car rest) wrld))))
+        (er-soft+ ctx t nil
+                  "The third input must be ~
+                   the name of a second-order function ~
+                   followed by the pairs of an instantiation, ~
+                   but ~x0 is not."
+                  sofun-inst))
        (sofun (car sofun-inst))
        (inst (cdr sofun-inst))
        ((unless (subsetp (alist-keys inst) (sofun-fparams sofun wrld)))
-        (raise "Each function variable key of ~x0 must be ~
-                among the function parameters ~x1 of ~x2."
-               inst (sofun-fparams sofun wrld) sofun))
+        (er-soft+ ctx t nil
+                  "Each function variable key of ~x0 must be ~
+                   among the function parameters ~x1 of ~x2."
+                  inst (sofun-fparams sofun wrld) sofun))
        (options (if 2nd-order (cdr rest) rest))
        ((unless (keyword-value-listp options))
-        (raise "~x0 must be a list of keyed options." options))
-       ((unless (no-duplicatesp (keywords-of-keyword-value-list options)))
-        (raise "~x0 must have unique keywords." options))
-       (fun-intro-events
+        (er-soft+ ctx t nil
+                  "The inputs after the ~s0 input ~
+                   must be a keyword-value list, ~
+                   but ~x1 is not."
+                  (if 2nd-order "third" "second")
+                  options))
+       (keywords (keywords-of-keyword-value-list options))
+       ((unless (no-duplicatesp keywords))
+        (er-soft+ ctx t nil
+                  "The input keywords must be unique."))
+       (print-pair (assoc-keyword :print options))
+       (print (if print-pair
+                  (cadr print-pair)
+                :result))
+       ((unless (member-eq print '(nil :all :result)))
+        (er-soft+ ctx t nil
+                  "The :PRINT input must be NIL, :ALL, or :RESULT, ~
+                   but ~x0 is not."
+                  print))
+       ((er (list fun-intro-events result))
         (case (sofun-kind sofun wrld)
           (plain
-           (defun-inst-plain-events fun fparams sofun inst options wrld))
+           (defun-inst-plain-events fun fparams sofun inst options ctx state))
           (choice
-           (defun-inst-choice-events fun fparams sofun inst options wrld))
+           (defun-inst-choice-events fun fparams sofun inst options ctx state))
           (quant
-           (defun-inst-quant-events fun fparams sofun inst options wrld))))
+           (defun-inst-quant-events fun fparams sofun inst options ctx state))
+          (t (prog2$ (impossible) (value (list nil nil))))))
        (instmap (sof-instances sofun wrld))
-       (new-instmap (put-sof-instance inst fun instmap wrld)))
-    `(encapsulate
-       ()
-       (set-ignore-ok t)
-       (set-irrelevant-formals-ok t)
-       ,@fun-intro-events
-       (table sof-instances ',sofun ',new-instmap)
-       (make-event-terse
-        (b* ((err-msg? (check-fparams-dependency ',fun
-                                                 ',(sofun-kind sofun wrld)
-                                                 ',fparams
-                                                 (w state))))
-          (if err-msg?
-              (er-soft+ (cons 'defun-inst ',fun) t nil "~@0" err-msg?)
-            (value '(value-triple :invisible))))))))
+       (new-instmap (put-sof-instance inst fun instmap wrld))
+       (encapsulate
+         `(encapsulate
+            ()
+            (set-ignore-ok t)
+            (set-irrelevant-formals-ok t)
+            ,@fun-intro-events
+            (table sof-instances ',sofun ',new-instmap)
+            (make-event-terse
+             (b* ((err-msg? (check-fparams-dependency ',fun
+                                                      ',(sofun-kind sofun wrld)
+                                                      ',fparams
+                                                      (w state))))
+               (if err-msg?
+                   (er-soft+ (cons 'defun-inst ',fun) t nil "~@0" err-msg?)
+                 (value '(value-triple :invisible)))))))
+       (result-event `(cw-event "~x0~|" ',result))
+       (return-value-event `(value-triple ',fun))
+       (event (cond ((eq print nil)
+                     `(progn
+                        ,encapsulate
+                        ,return-value-event))
+                    ((eq print :all)
+                     (restore-output
+                      `(progn
+                         ,encapsulate
+                         ,return-value-event)))
+                    ((eq print :result)
+                     `(progn
+                        ,encapsulate
+                        ,result-event
+                        ,return-value-event))
+                    (t (impossible)))))
+    (value event)))
 
 (defsection defun-inst-implementation
   :short "Implementation of @(tsee defun-inst)."
@@ -1805,8 +1950,12 @@
    @(def acl2::defun-inst)"
 
   (defmacro defun-inst (fun fparams-or-sofuninst &rest rest)
-    `(make-event
-      (defun-inst-fn ',fun ',fparams-or-sofuninst ',rest (w state))))
+    `(make-event-terse (defun-inst-fn
+                         ',fun
+                         ',fparams-or-sofuninst
+                         ',rest
+                         (cons 'defun-inst ',fun)
+                         state)))
 
   (defmacro acl2::defun-inst (&rest args)
     `(defun-inst ,@args)))
@@ -1819,7 +1968,12 @@
    @(def acl2::show-defun-inst)"
 
   (defmacro show-defun-inst (fun fparams-or-sofuninst &rest rest)
-    `(defun-inst-fn ',fun ',fparams-or-sofuninst ',rest (w state)))
+    `(defun-inst-fn
+       ',fun
+       ',fparams-or-sofuninst
+       ',rest
+       (cons 'defun-inst ',fun)
+       state))
 
   (defmacro acl2::show-defun-inst (&rest args)
     `(show-defun-inst ,@args)))
