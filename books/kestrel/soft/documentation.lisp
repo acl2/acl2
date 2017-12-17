@@ -484,7 +484,8 @@
      (defun2 sofun (fvar1 ... fvarN) (var1 ... varM)
        doc-string
        declaration ... declaration
-       body)
+       body
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -560,14 +561,30 @@
    @('body')
    </p>
 
-    <blockquote>
+     <blockquote>
 
-    <p>
-    A defining body, as in @(tsee defun).
-    If @('sofun') is recursive, its well-founded relation must be @(tsee o<).
-    </p>
+     <p>
+     A defining body, as in @(tsee defun).
+     If @('sofun') is recursive, its well-founded relation must be @(tsee o<).
+     </p>
 
-    </blockquote>
+     </blockquote>
+
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':fn-output') (the default) to print only
+     the (possibly error) output from the generated @(tsee defun).
+     </p>
+
+     </blockquote>
 
    <h3>Generated Events</h3>
 
@@ -655,7 +672,8 @@
    @({
      (defchoose2 sofun (bvar1 ... bvarP) (fvar1 ... fvarN) (var1 ... varM)
        body
-       :strengthen ...)
+       :strengthen ...
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -735,6 +753,22 @@
 
      </blockquote>
 
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':fn-output') (the default) to print only
+     the (possibly error) output from the generated @(tsee defchoose).
+     </p>
+
+     </blockquote>
+
    <h3>Generated Events</h3>
 
    @({
@@ -786,7 +820,8 @@
        :skolem-name ...
        :thm-name ...
        :witness-dcls ...
-       :strengthen ...)
+       :strengthen ...
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -927,6 +962,22 @@
      <p>
      An option to strengthen the axiom introduced by @(tsee defchoose),
      as in @(tsee defun-sk).
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':fn-output') (the default) to print only
+     the (possibly error) output from the generated @(tsee defun-sk).
      </p>
 
      </blockquote>

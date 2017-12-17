@@ -15,6 +15,7 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
+(include-book "kestrel/utilities/maybe-msgp" :dir :system)
 (include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
@@ -186,7 +187,7 @@
 (define funvar-listp (funvars (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
-  :short "Recognize @('nil')-terminated lists of function variables."
+  :short "Recoegnize @('nil')-terminated lists of function variables."
   (if (atom funvars)
       (null funvars)
     (and (funvarp (car funvars) wrld)
@@ -425,7 +426,7 @@
                                   (fparams (or (funvar-setp fparams wrld)
                                                (null fparams)))
                                   (wrld plist-worldp))
-  :returns (yes/no "A @(tsee booleanp).")
+  :returns (err-msg? "A @(tsee maybe-msgp).")
   :mode :program
   :short "Check if a second-order function, or an instance of it,
           depends exactly on a set of given function parameters."
@@ -435,6 +436,10 @@
    the submitted event form first introduces the function,
    and then checks whether it depends exactly on its function parameters.
    The following code performs that check.
+   </p>
+   <p>
+   If the check is satisfied, @('nil') is returned.
+   Otherwise, an error message is returned.
    </p>
    <p>
    The argument @('fparams') is @('nil') when the function in question
@@ -452,18 +457,18 @@
                    (plain (funvars-of-defun fun wrld))
                    (choice (funvars-of-defchoose fun wrld))
                    (quant (funvars-of-defun fun wrld)))))
-    (cond ((set-equiv funvars fparams) t)
+    (cond ((set-equiv funvars fparams) nil)
           (fparams
-           (raise "~x0 must depend on exactly its function parameters ~x1, ~
-                   but depends on ~x2 instead.~%"
-                  fun fparams funvars))
+           (msg "~x0 must depend on exactly its function parameters ~x1, ~
+                 but depends on ~x2 instead.~%"
+                fun fparams funvars))
           (t
-           (raise "~x0 must depend on no function parameters, ~
-                   but depends on ~x1 instead.~%"
-                  fun funvars)))))
+           (msg "~x0 must depend on no function parameters, ~
+                 but depends on ~x1 instead.~%"
+                fun funvars)))))
 
 (define check-wfrel-o< ((fun symbolp) (wrld plist-worldp))
-  :returns (yes/no booleanp)
+  :returns (err-msg? maybe-msgp)
   :verify-guards nil
   :short "Check if a recursive second-order function, or an instance of it,
           uses @(tsee o<) as well-founded relation."
@@ -474,16 +479,21 @@
    the submitted event form first introduces the function,
    and then checks whether its well-founded relation is @(tsee o<).
    The following code performs this check.
+   </p>
+   <p>
+   If the check is satisfied, @('nil') is returned.
+   Otherwise, an error message is returned.
    </p>"
   (if (recursivep fun nil wrld)
       (let ((wfrel (well-founded-relation fun wrld)))
-        (or (eq wfrel 'o<)
-            (raise "~x0 must use O< as well-founded relation, not ~x1.~%"
-                   fun wfrel)))
-    t))
+        (if (eq wfrel 'o<)
+            nil
+          (msg "~x0 must use O< as well-founded relation, not ~x1.~%"
+               fun wfrel)))
+    nil))
 
 (define check-qrewrite-rule-funvars ((fun symbolp) (wrld plist-worldp))
-  :returns (yes/no "A @(tsee booleanp).")
+  :returns (err-msg? "A @(tsee maybe-msgp).")
   :mode :program
   :short "Check if the rewrite rule of a quantifier second-order function,
           or of an instance of it,
@@ -498,48 +508,121 @@
    The following code performs this check.
    </p>
    <p>
+   If the check is satisfied, @('nil') is returned.
+   Otherwise, an error message is returned.
+   </p>
+   <p>
    This check is relevant when the rewrite rule is a custom one.
    Otherwise, it is a redundant check.
    </p>"
   (let* ((rule-name (defun-sk-info->rewrite-name (defun-sk-check fun wrld)))
          (rule-body (formula rule-name nil wrld))
          (fun-body (ubody fun wrld)))
-    (or (set-equiv (funvars-of-term rule-body wrld)
+    (if (set-equiv (funvars-of-term rule-body wrld)
                    (funvars-of-term fun-body wrld))
-        (raise "The custom rewrite rule ~x0 must have ~
-                the same function variables as the function body ~x1.~%"
-               rule-body fun-body))))
+        nil
+      (msg "The custom rewrite rule ~x0 must have ~
+            the same function variables as the function body ~x1.~%"
+           rule-body fun-body))))
 
-(define defun2-fn (sofun fparams rest (wrld plist-worldp))
-  :returns (event (or (pseudo-event-formp event) (null event)))
+(define defun2-fn (sofun
+                   fparams
+                   rest
+                   (ctx "Context for errors.")
+                   state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (event (or (pseudo-event-formp event) (null event)))
+               state)
   :verify-guards nil
   :short "Validate some of the inputs to @(tsee defun2)
           and generate the event form to submit."
   :long
   "<p>
-   We directly check the name and function parameters,
+   We directly check the name, function parameters,
+   and @(':print') option (if present),
    but rely on @(tsee defun) to check the rest of the form.
+   The second-to-last element of a valid @(tsee defun)
+   can never be the keyword @(':print')
+   (it must be a declaration, a documentation string, or a list of formals),
+   so if the second-to-last element of @(tsee defun2) is @(':print'),
+   the last element of @(tsee defun2)
+   must be the value of the @(':print') option.
    After submitting the @(tsee defun) form,
    we check that the function parameters are
    all and only the function variables that the function depends on,
    and, if the function is recursive,
    that the well-founded relation is @(tsee o<).
    </p>"
-  (b* (((unless (symbolp sofun))
-        (raise "~x0 must be a name." sofun))
+  (b* ((wrld (w state))
+       ((unless (symbolp sofun))
+        (er-soft+ ctx t nil
+                  "The first input must be a symbol, but ~x0 is not."
+                  sofun))
        ((unless (funvar-setp fparams wrld))
-        (raise "~x0 must be a non-empty list of function variables ~
-                without duplicates."
-               fparams))
-       (info (list 'plain fparams)))
-    `(progn
-       (defun ,sofun ,@rest)
-       (table second-order-functions ',sofun ',info)
-       (value-triple (and (check-wfrel-o< ',sofun (w state))
-                          (check-fparams-dependency ',sofun
-                                                    'plain
-                                                    ',fparams
-                                                    (w state)))))))
+        (er-soft+ ctx t nil
+                  "The second input must be ~
+                   a non-empty list of function variables without duplicates, ~
+                   bit ~x0 is not."
+                  fparams))
+       (len-rest (len rest))
+       (print-is-present (and (>= len-rest 2)
+                              (eq :print (nth (- len-rest 2) rest))))
+       (print (if print-is-present
+                  (nth (1- len-rest) rest)
+                :fn-output))
+       ((unless (member-eq print '(nil :all :fn-output)))
+        (er-soft+ ctx t nil
+                  "The :PRINT input must be NIL, :ALL, or :FN-OUTPUT, ~
+                   but ~x0 is not."
+                  print))
+       (rest (if print-is-present
+                 (butlast rest 2)
+               rest))
+       (info (list 'plain fparams))
+       (defun-event `(defun ,sofun ,@rest))
+       (table-event `(table second-order-functions ',sofun ',info))
+       (check1-event `(make-event-terse
+                       (b* ((err-msg? (check-wfrel-o< ',sofun (w state))))
+                         (if err-msg?
+                             (er-soft+ ',ctx t nil "~@0" err-msg?)
+                           (value '(value-triple :invisible))))))
+       (check2-event `(make-event-terse
+                       (b* ((err-msg? (check-fparams-dependency ',sofun
+                                                                'plain
+                                                                ',fparams
+                                                                (w state))))
+                         (if err-msg?
+                             (er-soft+ ',ctx t nil "~@0" err-msg?)
+                           (value '(value-triple :invisible))))))
+       (return-value-event `(value-triple ',sofun))
+       (event (cond ((eq print nil)
+                     `(progn
+                        ,defun-event
+                        ,table-event
+                        ,check1-event
+                        ,check2-event
+                        ,return-value-event))
+                    ((eq print :all)
+                     (restore-output
+                      `(progn
+                         ,defun-event
+                         ,table-event
+                         ,check1-event
+                         ,check2-event
+                         (cw-event "~%")
+                         ,return-value-event)))
+                    ((eq print :fn-output)
+                     `(progn
+                        ,(restore-output defun-event)
+                        ,table-event
+                        ,check1-event
+                        ,check2-event
+                        (cw-event "~%")
+                        ,return-value-event))
+                    (t (impossible)))))
+    (value event)))
 
 (defsection defun2-implementation
   :short "Implementation of @(tsee defun2)."
@@ -548,7 +631,12 @@
    @(def acl2::defun2)"
 
   (defmacro defun2 (sofun fparams &rest rest)
-    `(make-event (defun2-fn ',sofun ',fparams ',rest (w state))))
+    `(make-event-terse (defun2-fn
+                         ',sofun
+                         ',fparams
+                         ',rest
+                         (cons 'defun2 ',sofun)
+                         state)))
 
   (defmacro acl2::defun2 (&rest args)
     `(defun2 ,@args)))
@@ -561,42 +649,105 @@
    @(def acl2::show-defun2)"
 
   (defmacro show-defun2 (sofun fparams &rest rest)
-    `(defun2-fn ',sofun ',fparams ',rest (w state)))
+    `(defun2-fn
+       ',sofun
+       ',fparams
+       ',rest
+       (cons 'defun2 ',sofun)
+       state))
 
   (defmacro acl2::show-defun2 (&rest args)
     `(show-defun2 ,@args)))
 
-(define defchoose2-fn
-  (sofun bvars fparams params body options (wrld plist-worldp))
-  :returns (event (or (pseudo-event-formp event) (null event)))
+(define defchoose2-fn (sofun
+                       bvars
+                       fparams
+                       params
+                       body
+                       options
+                       (ctx "Context for errors.")
+                       state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (event (or (pseudo-event-formp event) (null event)))
+               state)
   :verify-guards nil
   :short "Validate some of the inputs to @(tsee defchoose2)
           and generate the event form to submit."
   :long
   "<p>
-   We directly check the name, bound variables, and function parameters,
+   We directly check the name, function parameters,
+   and @(':print') option (if present),
    but rely on @(tsee defchoose) to check the rest of the form.
    After submitting the @(tsee defchoose) form,
    we check that the function parameters are
    all and only the function variables that the function depends on.
    </p>"
-  (b* (((unless (symbolp sofun))
-        (raise "~x0 must be a name." sofun))
-       ((unless (or (symbolp bvars)
-                    (symbol-listp bvars)))
-        (raise "~x0 must be one or more bound variables." bvars))
+  (b* ((wrld (w state))
+       ((unless (symbolp sofun))
+        (er-soft+ ctx t nil
+                  "The first input must be a symbol, but ~x0 is not."
+                  sofun))
        ((unless (funvar-setp fparams wrld))
-        (raise "~x0 must be a non-empty list of function variables ~
-                without duplicates."
-               fparams))
-       (info (list 'choice fparams)))
-    `(progn
-       (defchoose ,sofun ,bvars ,params ,body ,@options)
-       (table second-order-functions ',sofun ',info)
-       (value-triple (check-fparams-dependency ',sofun
-                                               'choice
-                                               ',fparams
-                                               (w state))))))
+        (er-soft+ ctx t nil
+                  "The third input must be ~
+                   a non-empty list of function variables without duplicates, ~
+                   but ~x0 is not."
+                  fparams))
+       ((unless (keyword-value-listp options))
+        (er-soft+ ctx t nil
+                  "The inputs after the fifth input ~
+                   must be a keyword-value list, ~
+                   but ~x0 is not."
+                  options))
+       (print-pair (assoc-keyword :print options))
+       (print (if print-pair
+                  (cadr print-pair)
+                :fn-output))
+       ((unless (member-eq print '(nil :all :fn-output)))
+        (er-soft+ ctx t nil
+                  "The :PRINT input must be NIL, :ALL, or :FN-OUTPUT, ~
+                   but ~x0 is not."
+                  print))
+       (options (if print-pair
+                    (remove-keyword :print options)
+                  options))
+       (info (list 'choice fparams))
+       (defchoose-event `(defchoose ,sofun ,bvars ,params ,body ,@options))
+       (table-event `(table second-order-functions ',sofun ',info))
+       (check-event `(make-event-terse
+                      (b* ((err-msg? (check-fparams-dependency ',sofun
+                                                               'choice
+                                                               ',fparams
+                                                               (w state))))
+                        (if err-msg?
+                            (er-soft+ ',ctx t nil "~@0" err-msg?)
+                          (value '(value-triple :invisible))))))
+       (return-value-event `(value-triple ',sofun))
+       (event (cond ((eq print nil)
+                     `(progn
+                        ,defchoose-event
+                        ,table-event
+                        ,check-event
+                        ,return-value-event))
+                    ((eq print :all)
+                     (restore-output
+                      `(progn
+                         ,defchoose-event
+                         ,table-event
+                         ,check-event
+                         (cw-event "~%")
+                         ,return-value-event)))
+                    ((eq print :fn-output)
+                     `(progn
+                        ,(restore-output defchoose-event)
+                        ,table-event
+                        ,check-event
+                        (cw-event "~%")
+                        ,return-value-event))
+                    (t (impossible)))))
+    (value event)))
 
 (defsection defchoose2-implementation
   :short "Implementation of @(tsee defchoose2)."
@@ -605,9 +756,15 @@
    @(def acl2::defchoose2)"
 
   (defmacro defchoose2 (sofun bvars fparams vars body &rest options)
-  `(make-event
-    (defchoose2-fn
-      ',sofun ',bvars ',fparams ',vars ',body ',options (w state))))
+    `(make-event-terse (defchoose2-fn
+                         ',sofun
+                         ',bvars
+                         ',fparams
+                         ',vars
+                         ',body
+                         ',options
+                         (cons 'defchoose2 ',sofun)
+                         state)))
 
   (defmacro acl2::defchoose2 (&rest args)
     `(defchoose2 ,@args)))
@@ -621,53 +778,116 @@
 
   (defmacro show-defchoose2 (sofun bvars fparams vars body &rest options)
     `(defchoose2-fn
-       ',sofun ',bvars ',fparams ',vars ',body ',options (w state)))
+       ',sofun
+       ',bvars
+       ',fparams
+       ',vars
+       ',body
+       ',options
+       (cons 'defchoose2 ',sofun)
+       state))
 
   (defmacro acl2::show-defchoose2 (&rest args)
     `(show-defchoose2 ,@args)))
 
-(define defun-sk2-fn (sofun fparams params body options (wrld plist-worldp))
-  :returns (event (or (pseudo-event-formp event) (null event)))
+(define defun-sk2-fn (sofun
+                      fparams
+                      params
+                      body
+                      options
+                      (ctx "Context for errors.")
+                      state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (event (or (pseudo-event-formp event) (null event)))
+               state)
   :verify-guards nil
   :short "Validate some of the inputs to @(tsee defun-sk2)
           and generate the event form to submit."
   :long
   "<p>
-   We directly check the name, function parameters, individual parameters,
-   and top-level structure of the body
-   (we check that it has the form @('(forall/exists bound-var(s) ...)')),
+   We directly check the name, function parameters,
+   and @(':print') option (if present),
    but rely on @(tsee defun-sk) to check the rest of the form.
    After submitting the @(tsee defun-sk) form,
    we check that the function parameters are
    all and only the function variables that
    the function and the rewrite rule depend on.
    </p>"
-  (b* (((unless (symbolp sofun))
-        (raise "~x0 must be a name." sofun))
+  (b* ((wrld (w state))
+       ((unless (symbolp sofun))
+        (er-soft+ ctx t nil
+                  "The first input must be a symbol, but ~x0 is not."
+                  sofun))
        ((unless (funvar-setp fparams wrld))
-        (raise "~x0 must be a non-empty list of function variables ~
-                without duplicates."
-               fparams))
-       ((unless (symbol-listp params))
-        (raise "~x0 must be a list of symbols." params))
-       ((unless (and (consp body)
-                     (= (len body) 3)
-                     (defun-sk-quantifier-p (first body))
-                     (or (symbolp (second body))
-                         (symbol-listp (second body)))))
-        (raise "~x0 must be a quantified formula." body))
+        (er-soft+ ctx t nil
+                  "The second input must be ~
+                   a non-empty list of function variables without duplicates, ~
+                   but ~x0 is not."
+                  fparams))
        ((unless (keyword-value-listp options))
-        (raise "~x0 must be a list of keyed options." options))
-       (info (list 'quant fparams)))
-    `(progn
-       (defun-sk ,sofun ,params ,body ,@options)
-       (table second-order-functions ',sofun ',info)
-       (value-triple (check-fparams-dependency ',sofun
-                                               'quant
-                                               ',fparams
-                                               (w state)))
-       (value-triple (check-qrewrite-rule-funvars ',sofun
-                                                  (w state))))))
+        (er-soft+ ctx t nil
+                  "The inputs after the fourth input ~
+                   must be a keyword-value list, ~
+                   but ~x0 is not."
+                  options))
+       (print-pair (assoc-keyword :print options))
+       (print (if print-pair
+                  (cadr print-pair)
+                :fn-output))
+       ((unless (member-eq print '(nil :all :fn-output)))
+        (er-soft+ ctx t nil
+                  "The :PRINT input must be NIL, :ALL, or :FN-OUTPUT, ~
+                   but ~x0 is not."
+                  print))
+       (options (if print-pair
+                    (remove-keyword :print options)
+                  options))
+       (info (list 'quant fparams))
+       (defun-sk-event `(defun-sk ,sofun ,params ,body ,@options))
+       (table-event `(table second-order-functions ',sofun ',info))
+       (check1-event `(make-event-terse
+                       (b* ((err-msg? (check-fparams-dependency ',sofun
+                                                                'quant
+                                                                ',fparams
+                                                                (w state))))
+                         (if err-msg?
+                             (er-soft+ ',ctx t nil "~@0" err-msg?)
+                           (value '(value-triple :invisible))))))
+       (check2-event `(make-event-terse
+                       (b* ((err-msg? (check-qrewrite-rule-funvars ',sofun
+                                                                   (w state))))
+                         (if err-msg?
+                             (er-soft+ ',ctx t nil "~@0" err-msg?)
+                           (value '(value-triple :invisible))))))
+       (return-value-event `(value-triple ',sofun))
+       (event (cond ((eq print nil)
+                     `(progn
+                        ,defun-sk-event
+                        ,table-event
+                        ,check1-event
+                        ,check2-event
+                        ,return-value-event))
+                    ((eq print :all)
+                     (restore-output
+                      `(progn
+                         ,defun-sk-event
+                         ,table-event
+                         ,check1-event
+                         ,check2-event
+                         (cw-event "~%")
+                         ,return-value-event)))
+                    ((eq print :fn-output)
+                     `(progn
+                        ,(restore-output defun-sk-event)
+                        ,table-event
+                        ,check1-event
+                        ,check2-event
+                        (cw-event "~%")
+                        ,return-value-event))
+                    (t (impossible)))))
+    (value event)))
 
 (defsection defun-sk2-implementation
   :short "Implementation of @(tsee defun-sk2)."
@@ -676,8 +896,14 @@
    @(def acl2::defun-sk2)"
 
   (defmacro defun-sk2 (sofun fparams params body &rest options)
-    `(make-event
-      (defun-sk2-fn ',sofun ',fparams ',params ',body ',options (w state))))
+    `(make-event-terse (defun-sk2-fn
+                         ',sofun
+                         ',fparams
+                         ',params
+                         ',body
+                         ',options
+                         (cons 'defun-sk2 ',sofun)
+                         state)))
 
   (defmacro acl2::defun-sk2 (&rest args)
     `(defun-sk2 ,@args)))
@@ -690,7 +916,14 @@
    @(def acl2::show-defun-sk2)"
 
   (defmacro show-defun-sk2 (sofun fparams params body &rest options)
-    `(defun-sk2-fn ',sofun ',fparams ',params ',body ',options (w state)))
+    `(defun-sk2-fn
+       ',sofun
+       ',fparams
+       ',params
+       ',body
+       ',options
+       (cons 'defun-sk2 ',sofun)
+       state))
 
   (defmacro acl2::show-defun-sk2 (&rest args)
     `(show-defun-sk2 ,@args)))
@@ -1435,7 +1668,11 @@
         ,@thm-name
         :witness-dcls (,wit-dcl))
       ,@table-event
-      (value-triple (check-qrewrite-rule-funvars ',fun (w state))))))
+      (make-event-terse
+       (b* ((err-msg? (check-qrewrite-rule-funvars ',sofun (w state))))
+         (if err-msg?
+             (er-soft+ (cons 'defun-inst ',fun) t nil "~@0" err-msg?)
+           (value '(value-triple :invisible))))))))
 
 (define defun-inst-fn (fun fparams-or-sofuninst rest (wrld plist-worldp))
   :returns (event "A @(tsee pseudo-event-formp) or @('nil').")
@@ -1506,10 +1743,14 @@
        (set-irrelevant-formals-ok t)
        ,@fun-intro-events
        (table sof-instances ',sofun ',new-instmap)
-       (value-triple (check-fparams-dependency ',fun
-                                               ',(sofun-kind sofun wrld)
-                                               ',fparams
-                                               (w state))))))
+       (make-event-terse
+        (b* ((err-msg? (check-fparams-dependency ',fun
+                                                 ',(sofun-kind sofun wrld)
+                                                 ',fparams
+                                                 (w state))))
+          (if err-msg?
+              (er-soft+ (cons 'defun-inst ',fun) t nil "~@0" err-msg?)
+            (value '(value-triple :invisible))))))))
 
 (defsection defun-inst-implementation
   :short "Implementation of @(tsee defun-inst)."

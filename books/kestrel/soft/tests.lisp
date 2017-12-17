@@ -107,35 +107,46 @@
 ; DEFUN2:
 
 (must-fail ; bad name
- (defun2 "h" (?f ?g) (x y) (cons (?f x) (?g x y))))
+ (defun2 "h" (?f ?g) (x y) (cons (?f x) (?g x y)))
+ :with-output-off nil)
 
 (must-fail ; bad function parameters
- (defun2 h (1 2 3) (x y) (cons (?f x) (?g x y))))
+ (defun2 h (1 2 3) (x y) (cons (?f x) (?g x y)))
+ :with-output-off nil)
 
 (must-fail ; extra function parameters
- (defun2 h (?f ?g ?many) (x y) (cons (?f x) (?g x y))))
+ (defun2 h (?f ?g ?many) (x y) (cons (?f x) (?g x y)))
+ :with-output-off nil)
 
 (must-fail ; missing function parameters
- (defun2 h (?f) (x y) (cons (?f x) (?g x y))))
+ (defun2 h (?f) (x y) (cons (?f x) (?g x y)))
+ :with-output-off nil)
 
-(progn
-  (progn ;; a well-founded relation
-    (defun o-p$ (x) (o-p x))
-    (defun o<$ (x y) (o< x y))
-    (defun id (x) x)
-    (defthm o<$-is-well-founded-relation
-      (and (implies (o-p$ x) (o-p (id x)))
-           (implies (and (o-p$ x)
-                         (o-p$ y)
-                         (o<$ x y))
-                    (o< (id x) (id y))))
-      :rule-classes :well-founded-relation))
-  (must-fail ; well-founded relation is not O<
-   (defun2 h (?f) (x)
-     (declare (xargs :well-founded-relation o<$))
-     (if (zp x)
-         (?f x)
-       (h (1- x))))))
+(must-succeed*
+ ;; a well-founded relation
+ (defun o-p$ (x) (o-p x))
+ (defun o<$ (x y) (o< x y))
+ (defun id (x) x)
+ (defthm o<$-is-well-founded-relation
+   (and (implies (o-p$ x) (o-p (id x)))
+        (implies (and (o-p$ x)
+                      (o-p$ y)
+                      (o<$ x y))
+                 (o< (id x) (id y))))
+   :rule-classes :well-founded-relation)
+ ;; well-founded relation is not O<
+ (must-fail
+  (defun2 h (?f) (x)
+    (declare (xargs :well-founded-relation o<$))
+    (if (zp x)
+        (?f x)
+      (h (1- x))))
+  :with-output-off nil)
+ :with-output-off nil)
+
+(must-fail ; bad :PRINT option
+ (defun2 h (?f) (x) (?f x) :print 456)
+ :with-output-off nil)
 
 (defun2 nonrec (?f ?g) (x y)
   (cons (?f x) (?g x y)))
@@ -179,29 +190,47 @@
   (cond ((atom bt) (?f bt))
         (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))
 
+(must-succeed ; print everything
+ (defun2 h (?f) (x) (?f x) :print :all)
+ :with-output-off nil)
+
+(must-succeed ; print nothing
+ (defun2 h (?f) (x) (?f x) :print nil)
+ :with-output-off nil)
+
+(must-succeed ; print the function output only
+ (defun2 h (?f) (x) (?f x) :print :fn-output)
+ :with-output-off nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; DEFCHOOSE2:
 
 (must-fail ; bad name
  (defchoose2 #\h (b) (?f ?g) (x y)
-   (< (fix b) (fix (?f (?g x y))))))
-
-(must-fail ; bad bound variables
- (defchoose2 h ("b") (?f ?g) (x y)
-   (< (fix b) (fix (?f (?g x y))))))
+   (< (fix b) (fix (?f (?g x y)))))
+ :with-output-off nil)
 
 (must-fail ; bad function parameters
  (defchoose2 h (b) 789 (x y)
-   (< (fix b) (fix (?f (?g x y))))))
+   (< (fix b) (fix (?f (?g x y)))))
+ :with-output-off nil)
 
 (must-fail ; extra function parameters
  (defchoose2 h (b) (?nullary ?g ?f) (x y)
-   (< (fix b) (fix (?f (?g x y))))))
+   (< (fix b) (fix (?f (?g x y)))))
+ :with-output-off nil)
 
 (must-fail ; missing function paramters
  (defchoose2 h (b) (?g) (x y)
-   (< (fix b) (fix (?f (?g x y))))))
+   (< (fix b) (fix (?f (?g x y)))))
+ :with-output-off nil)
+
+(must-fail ; bad :PRINT option
+ (defchoose2 h (b) (?f) (x)
+   (equal b (?f x))
+   :print "all")
+ :with-output-off nil)
 
 (defchoose2 choose (b) (?g ?f) (x y)
   (< (fix b) (fix (?f (?g x y)))))
@@ -218,31 +247,74 @@
 (defchoose2 fixpoint[?f] x (?f) ()
   (equal (?f x) x))
 
+(must-succeed ; print everything
+ (defchoose2 h (b) (?f) (x)
+   (equal b (?f x))
+   :print :all)
+ :with-output-off nil)
+
+(must-succeed ; print nothing
+ (defchoose2 h (b) (?f) (x)
+   (equal b (?f x))
+   :print nil)
+ :with-output-off nil)
+
+(must-succeed ; print the function output only
+ (defchoose2 h (b) (?f) (x)
+   (equal b (?f x))
+   :print :fn-output)
+ :with-output-off nil)
+
+(must-succeed ; :PRINT after another option
+ (defchoose2 h (b) (?f) (x)
+   (equal b (?f x))
+   :strengthen t
+   :print :all)
+ :with-output-off nil)
+
+(must-succeed ; :PRINT before another option
+ (defchoose2 h (b) (?f) (x)
+   (equal b (?f x))
+   :print :all
+   :strengthen t)
+ :with-output-off nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; DEFUN-SK2:
 
 (must-fail ; bad name
  (defun-sk2 (h 1) (?f ?g) (x y)
-   (forall (z w) (equal (?f (?g x y)) (cons z w)))))
+   (forall (z w) (equal (?f (?g x y)) (cons z w))))
+ :with-output-off nil)
 
 (must-fail ; bad function parameters
  (defun-sk2 h ("?f" ?g) (x y)
-   (forall (z w) (equal (?f (?g x y)) (cons z w)))))
+   (forall (z w) (equal (?f (?g x y)) (cons z w))))
+ :with-output-off nil)
 
 (must-fail ; extra function parameters
  (defun-sk2 h (?f ?many ?g) (x y)
-   (forall (z w) (equal (?f (?g x y)) (cons z w)))))
+   (forall (z w) (equal (?f (?g x y)) (cons z w))))
+ :with-output-off nil)
 
 (must-fail ; missing function parameters (used in body)
  (defun-sk2 h (?g) (x y)
-   (forall (z w) (equal (?f (?g x y)) (cons z w)))))
+   (forall (z w) (equal (?f (?g x y)) (cons z w))))
+ :with-output-off nil)
 
 (must-fail ; missing function parameters (used in custom rewrite rule)
  (defun-sk2 h (?g) (x y)
    (forall (z w) (equal (?g x y) (cons z w)))
    :rewrite (implies (and (?f x) (h x y))
-                     (equal (?g x y) (cons z w)))))
+                     (equal (?g x y) (cons z w))))
+ :with-output-off nil)
+
+(must-fail ; bad :PRINT option
+ (defun-sk2 h (?f) (x)
+   (forall y (equal y (?f x)))
+   :print (1 2 2))
+ :with-output-off nil)
 
 (defun-sk2 ex (?f ?g) (x y)
   (exists (z w) (equal (?f (?g x y)) (cons z w))))
@@ -298,6 +370,46 @@
 ;; Example 1 in :DOC DEFUN-SK2:
 (defun-sk2 injective[?f] (?f) ()
   (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))
+
+(must-succeed ; print everything
+ (defun-sk2 h (?f) (x)
+   (forall y (equal y (?f x)))
+   :print :all)
+ :with-output-off nil)
+
+(must-succeed ; print nothing
+ (defun-sk2 h (?f) (x)
+   (forall y (equal y (?f x)))
+   :print nil)
+ :with-output-off nil)
+
+(must-succeed ; print the function output only
+ (defun-sk2 h (?f) (x)
+   (forall y (equal y (?f x)))
+   :print :fn-output)
+ :with-output-off nil)
+
+(must-succeed ; :PRINT after another option
+ (defun-sk2 h (?f) (x)
+   (forall y (equal y (?f x)))
+   :skolem-name h-wit
+   :print :all)
+ :with-output-off nil)
+
+(must-succeed ; :PRINT before another option
+ (defun-sk2 h (?f) (x)
+   (forall y (equal y (?f x)))
+   :print :all
+   :skolem-name h-wit)
+ :with-output-off nil)
+
+(must-succeed ; :PRINT between two options
+ (defun-sk2 h (?f) (x)
+   (forall y (equal y (?f x)))
+   :thm-name h-thm
+   :print :all
+   :skolem-name h-wit)
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
