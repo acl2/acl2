@@ -722,26 +722,43 @@
 ; DEFTHM-INST:
 
 (must-fail ; bad name
- (defthm-inst #\n (consp-of-nonrec (?g . cons))))
+ (defthm-inst #\n (consp-of-nonrec (?g . cons)))
+ :with-output-off nil)
 
 (must-fail ; bad reference to 2nd-order theorem to instantiate
- (defthm-inst i (consp-of-nonrec-wrong (?g . cons))))
+ (defthm-inst i (consp-of-nonrec-wrong (?g . cons)))
+ :with-output-off nil)
 
 (must-fail ; bad instantiation
- (defthm-inst i (consp-of-nonrec "AAA")))
+ (defthm-inst i (consp-of-nonrec "AAA"))
+ :with-output-off nil)
 
 (must-fail ; no instantiation
- (defthm-inst i (consp-of-nonrec)))
+ (defthm-inst i (consp-of-nonrec))
+ :with-output-off nil)
 
 (must-fail ; bad function variable in instantiation
- (defthm-inst i (consp-of-nonrec (?gg . cons))))
+ (defthm-inst i (consp-of-nonrec (?gg . cons)))
+ :with-output-off nil)
 
 (must-fail ; trivial pair in instantiation
- (defthm-inst i (consp-of-nonrec (?g . ?g))))
+ (defthm-inst i (consp-of-nonrec (?g . ?g)))
+ :with-output-off nil)
 
-(must-fail ; bad option
+(must-fail ; bad options
  (defthm-inst i (consp-of-nonrec (?g . cons))
-   :bad 3))
+   '(4/5 #\q))
+ :with-output-off nil)
+
+(must-fail ; bad options
+ (defthm-inst i (consp-of-nonrec (?g . cons))
+   :bad 3)
+ :with-output-off nil)
+
+(must-fail ; bad :PRINT option
+ (defthm-inst i (consp-of-nonrec (?g . cons))
+   :print 3/2)
+ :with-output-off nil)
 
 (defthm-inst consp-of-nonrec-i (consp-of-nonrec (?g . cons)))
 
@@ -772,7 +789,8 @@
 
 (must-fail ; missing ((?F . WRAP)) instance of INJECTIVE[?F]
  (defthm-inst injective[quad[wrap]]-when-injective[wrap]
-   (injective[quad[?f]]-when-injective[?f] (?f . wrap))))
+   (injective[quad[?f]]-when-injective[?f] (?f . wrap)))
+ :with-output-off nil)
 
 ; Example 2 in :DOC DEFTHM-INST:
 (progn
@@ -782,3 +800,30 @@
     (injective[?f] (?f . wrap)))
   (defthm-inst injective[quad[wrap]]-when-injective[wrap]
     (injective[quad[?f]]-when-injective[?f] (?f . wrap))))
+
+(must-succeed ; print everything
+ (defthm-inst i (consp-of-nonrec (?g . cons))
+   :print :all)
+ :with-output-off nil)
+
+(must-succeed ; print nothing
+ (defthm-inst i (consp-of-nonrec (?g . cons))
+   :print nil)
+ :with-output-off nil)
+
+(must-succeed ; print result
+ (defthm-inst i (consp-of-nonrec (?g . cons))
+   :print :result)
+ :with-output-off nil)
+
+(must-succeed ; print after another option
+ (defthm-inst i (consp-of-nonrec (?g . cons))
+   :rule-classes nil
+   :print :all)
+ :with-output-off nil)
+
+(must-succeed ; print before another option
+ (defthm-inst i (consp-of-nonrec (?g . cons))
+   :print :all
+   :rule-classes nil)
+ :with-output-off nil)

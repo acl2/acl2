@@ -1035,7 +1035,8 @@
        :verify-guards ...
        :skolem-name ...
        :thm-name ...
-       :rewrite ...)
+       :rewrite ...
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -1194,6 +1195,22 @@
      the rewrite rule of @('fun') has the same form as in @('sofun');
      in particular, the function variables in the rewrite rule of @('sofun')
      are instantiated via the instantiation passed to @(tsee defun-inst).
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':result') (the default) to print only
+     the generated function form and any error output.
      </p>
 
      </blockquote>
@@ -1638,7 +1655,8 @@
    @({
      (defthm-inst thm
        (sothm (fvar1 . fun1) ... (fvarN . funN))
-       :rule-classes ...)
+       :rule-classes ...
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -1694,6 +1712,22 @@
 
      <p>
      An option to specify the rule classes of @('thm').
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':result') (the default) to print only
+     the generated theorem form and any error output.
      </p>
 
      </blockquote>

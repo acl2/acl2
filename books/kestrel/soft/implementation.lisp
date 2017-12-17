@@ -611,7 +611,6 @@
                          ,table-event
                          ,check1-event
                          ,check2-event
-                         (cw-event "~%")
                          ,return-value-event)))
                     ((eq print :fn-output)
                      `(progn
@@ -619,7 +618,6 @@
                         ,table-event
                         ,check1-event
                         ,check2-event
-                        (cw-event "~%")
                         ,return-value-event))
                     (t (impossible)))))
     (value event)))
@@ -710,9 +708,7 @@
                   "The :PRINT input must be NIL, :ALL, or :FN-OUTPUT, ~
                    but ~x0 is not."
                   print))
-       (options (if print-pair
-                    (remove-keyword :print options)
-                  options))
+       (options (remove-keyword :print options))
        (info (list 'choice fparams))
        (defchoose-event `(defchoose ,sofun ,bvars ,params ,body ,@options))
        (table-event `(table second-order-functions ',sofun ',info))
@@ -737,14 +733,12 @@
                          ,defchoose-event
                          ,table-event
                          ,check-event
-                         (cw-event "~%")
                          ,return-value-event)))
                     ((eq print :fn-output)
                      `(progn
                         ,(restore-output defchoose-event)
                         ,table-event
                         ,check-event
-                        (cw-event "~%")
                         ,return-value-event))
                     (t (impossible)))))
     (value event)))
@@ -841,9 +835,7 @@
                   "The :PRINT input must be NIL, :ALL, or :FN-OUTPUT, ~
                    but ~x0 is not."
                   print))
-       (options (if print-pair
-                    (remove-keyword :print options)
-                  options))
+       (options (remove-keyword :print options))
        (info (list 'quant fparams))
        (defun-sk-event `(defun-sk ,sofun ,params ,body ,@options))
        (table-event `(table second-order-functions ',sofun ',info))
@@ -876,7 +868,6 @@
                          ,table-event
                          ,check1-event
                          ,check2-event
-                         (cw-event "~%")
                          ,return-value-event)))
                     ((eq print :fn-output)
                      `(progn
@@ -884,7 +875,6 @@
                         ,table-event
                         ,check1-event
                         ,check2-event
-                        (cw-event "~%")
                         ,return-value-event))
                     (t (impossible)))))
     (value event)))
@@ -1416,41 +1406,88 @@
        (sothmp (car sothm-inst) wrld)
        (funvar-instp (cdr sothm-inst) wrld)))
 
-(define defthm-inst-fn (thm sothm-inst rest (wrld plist-worldp))
-  :returns (event "A @(tsee pseudo-event-formp) or @('nil').")
+(define defthm-inst-fn (thm
+                        sothm-inst
+                        options
+                        (ctx "Context for errors.")
+                        state)
+  :returns (mv (erp "@(tsee booleanp) flag of the
+                     <see topic='@(url acl2::error-triple)'>error
+                     triple</see>.")
+               (event "A @(tsee pseudo-event-formp) or @('nil').")
+               state)
   :mode :program
-  :short "Validate the inputs to @(tsee defthm-inst)
+  :short "Validate some of the inputs to @(tsee defthm-inst)
           and generate the event form to submit."
   :long
   "<p>
-   We directly check the form except for the @(':rule-classes') option,
+   We directly check all the inputs except for the @(':rule-classes') option,
    relying on @(tsee defthm) to check it.
-   </p>
-   <p>
-   Supplying @(':hints') causes an error
-   because @(tsee defthm) disallows both @(':hints') and @(':instructions').
-   </p>
-   <p>
-   Supplying @('otf-flg') has no effect
-   because the proof is via the proof builder.
    </p>"
-  (b* (((unless (symbolp thm)) (raise "~x0 must be a name." thm))
+  (b* ((wrld (w state))
+       ((unless (symbolp thm))
+        (er-soft+ ctx t nil
+                  "The first input must be a symbol, but ~x0 is not."
+                  thm))
        ((unless (check-sothm-inst sothm-inst wrld))
-        (raise "~x0 must be the name of a second-order theorem ~
-                followed by the pairs of an instantiation."
-               sothm-inst))
+        (er-soft+ ctx t nil
+                  "The second input must be ~
+                   the name of a second-order theorem ~
+                   followed by the pairs of an instantiation, ~
+                   but ~x0 is not."
+                  sothm-inst))
        (sothm (car sothm-inst))
        (inst (cdr sothm-inst))
        ((unless (subsetp (alist-keys inst) (funvars-of-defthm sothm wrld)))
-        (raise "Each function variable key of ~x0 must be ~
-                among function variable that ~x1 depends on."
-               inst sothm))
+        (er-soft+ ctx t nil
+                  "Each function variable key of ~x0 must be ~
+                   among function variable that ~x1 depends on."
+                  inst sothm))
+       ((unless (keyword-value-listp options))
+        (er-soft+ ctx t nil
+                  "The inputs after the second input ~
+                   must be a keyword-value list, ~
+                   but ~x0 is not."
+                  options))
+       ((unless (subsetp (keywords-of-keyword-value-list options)
+                         '(:rule-classes :print)))
+        (er-soft+ ctx t nil
+                  "Only the input keywords ~
+                   :RULE-CLASSES and :PRINT are allowed."))
+       (print-pair (assoc-keyword :print options))
+       (print (if print-pair
+                  (cadr print-pair)
+                :result))
+       ((unless (member-eq print '(nil :all :result)))
+        (er-soft+ ctx t nil
+                  "The :PRINT input must be NIL, :ALL, or :RESULT, ~
+                   but ~x0 is not."
+                  print))
+       (options (remove-keyword :print options))
        (sothm-formula (formula sothm nil wrld))
        (thm-formula (fun-subst-term inst sothm-formula wrld))
        (thm-formula (untranslate thm-formula t wrld))
        (fsbs (ext-fun-subst-term sothm-formula inst wrld))
-       (thm-proof (sothm-inst-proof sothm fsbs wrld)))
-    `(defthm ,thm ,thm-formula ,@thm-proof ,@rest)))
+       (thm-proof (sothm-inst-proof sothm fsbs wrld))
+       (defthm-event `(defthm ,thm ,thm-formula ,@thm-proof ,@options))
+       (defthm-event-without-proof `(defthm ,thm ,thm-formula ,@options))
+       (return-value-event `(value-triple ',thm))
+       (event (cond ((eq print nil)
+                     `(progn
+                        ,defthm-event
+                        ,return-value-event))
+                    ((eq print :all)
+                     (restore-output
+                      `(progn
+                         ,defthm-event
+                         ,return-value-event)))
+                    ((eq print :result)
+                     `(progn
+                        ,defthm-event
+                        (cw-event "~x0~|" ',defthm-event-without-proof)
+                        ,return-value-event))
+                    (t (impossible)))))
+    (value event)))
 
 (defsection defthm-inst-implementation
   :short "Implementation of @(tsee defthm-inst)."
@@ -1458,9 +1495,13 @@
   "@(def defthm-inst)
    @(def acl2::defthm-inst)"
 
-  (defmacro defthm-inst (thm sothminst &rest rest)
-    `(make-event
-      (defthm-inst-fn ',thm ',sothminst ',rest (w state))))
+  (defmacro defthm-inst (thm sothminst &rest options)
+    `(make-event-terse (defthm-inst-fn
+                         ',thm
+                         ',sothminst
+                         ',options
+                         (cons 'defthm-inst ',thm)
+                         state)))
 
   (defmacro acl2::defthm-inst (&rest args)
     `(defthm-inst ,@args)))
@@ -1472,8 +1513,13 @@
   "@(def show-defthm-inst)
    @(def acl2::show-defthm-inst)"
 
-  (defmacro show-defthm-inst (thm sothminst &rest rest)
-    `(defthm-inst-fn ',thm ',sothminst ',rest (w state)))
+  (defmacro show-defthm-inst (thm sothminst &rest options)
+    `(defthm-inst-fn
+       ',thm
+       ',sothminst
+       ',options
+       (cons 'defthm-inst ',thm)
+       state))
 
   (defmacro acl2::show-defthm-inst (&rest args)
     `(show-defthm-inst ,@args)))
