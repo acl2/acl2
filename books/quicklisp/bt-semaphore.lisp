@@ -29,5 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-; cert_param: (reloc-stub)
-(include-book "quicklisp/html-template" :dir :system)
+(include-book "bordeaux")
+
+(defttag :quicklisp.bt-semaphore)
+; (depends-on "bt-semaphore-raw.lsp")
+(include-raw "bt-semaphore-raw.lsp" :host-readtable t)

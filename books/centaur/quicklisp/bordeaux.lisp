@@ -29,17 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "base")
-
-; [Jared] marking this as non-lispworks.  This is too bad: bordeaux-threads is
-; supposed to support Lispworks.  But before we can actually use it, we have
-; to do (bt:start-multiprocessing), which I don't know how to use successfully
-; because it seems to hang ACL2 when I try it.
-
-; cert_param: (non-lispworks)
-
-(defttag :quicklisp.bordeaux)
-; (depends-on "bordeaux-raw.lsp")
-(include-raw "bordeaux-raw.lsp" :host-readtable t)
-
-
+; cert_param: (reloc-stub)
+(include-book "quicklisp/bordeaux" :dir :system)
