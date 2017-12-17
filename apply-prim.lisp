@@ -385,8 +385,9 @@
 ; It will be necessary to disable the executable-counterpart of break$ when
 ; verifying the guards for apply$-prim, as is done by "make proofs".  It seems
 ; reasonable actually to disable that rune globally, to avoid breaks during
-; proofs; so we do that.
-(in-theory (disable (:e break$)))
+; proofs; so we do that.  We also disable the executable-counterpart of
+; good-bye-fn; otherwise ACL2 can quit during a proof!
+(in-theory (disable (:e break$) (:e good-bye-fn)))
 
 #-acl2-loop-only
 (progn
