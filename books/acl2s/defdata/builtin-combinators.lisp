@@ -91,35 +91,35 @@ data last modified: [2017-06-22 Thu]
                                `(acl2s::nth-integer-between ,r ,lo ,hi))
 
                              (lo ;hi is positive infinity
-                              `(+ ,lo ,r))
+                              `(+ ,lo (acl2s::nth-nat-testing ,r)))
 
                              ((posp hi) ;lo is neg infinity and hi is >=1
                               `(let ((i-ans (acl2s::nth-integer ,r)))
                                  (if (> i-ans ,hi)
                                      (mod i-ans (1+ ,hi))
-                                   i-ans)));ans shud be less than or equal to hi
-
-
+                                   i-ans))) ;ans shud be less than or equal to hi
+                             
+                             
                              (t ;lo is neg inf, and hi is <= 0
-                              `(- ,hi ,r))))) ;ans shud be less than or equal to hi
-
-      (otherwise  (let* ((gap (/ (- hi lo) 1000))
+                              `(- ,hi (acl2s::nth-nat-testing ,r)))))) ;ans shud be less than or equal to hi
+      
+      (otherwise  (let* ((gap (/ (- (rfix hi) (rfix lo)) 1000))
                         (lo (and lo (if lo-rel (+ gap lo) lo))) ;make both inclusive bounds
                         (hi (and hi (if hi-rel (- hi gap) hi))))
                     (cond ((and lo hi)
                          `(acl2s::nth-rational-between ,r ,lo ,hi))
 
                         (lo ;hi is positive infinity
-                         `(+ ,lo (acl2s::nth-positive-rational ,r)))
-
+                         `(+ ,lo (acl2s::nth-positive-rational-testing ,r)))
+                        
                         ((> hi 0) ;lo is neg infinity and hi is is >= 1
                          `(let ((rat-ans (acl2s::nth-rational ,r)))
                             (if (> rat-ans ,hi)
                                 (mod rat-ans (1+ ,hi))
-                              rat-ans)));ans shud be less than or equal to hi
-
-                        (t;lo is neg infinity and hi is is <= 0
-                         `(- ,hi (acl2s::nth-positive-rational ,r))))))))
+                              rat-ans))) ;ans shud be less than or equal to hi
+                        
+                        (t ;lo is neg infinity and hi is is <= 0
+                         `(- ,hi (acl2s::nth-positive-rational-testing ,r))))))))
 
 (defun range-enum-I (i s)
   (b* ((tau-interval (get-tau-int (cadr s) (third s)))
@@ -134,10 +134,10 @@ data last modified: [2017-06-22 Thu]
 
 (defun minimum-range-lo-builtin ()
   (declare (xargs :guard t))
-  (- 0 (expt 2 32)))
+  -1000); (- 0 (expt 2 32)))
 (defun maximum-range-hi-builtin ()
   (declare (xargs :guard t))
-  (+ 0 (expt 2 32)))
+  1000); (+ 0 (expt 2 32)))
 (defstub minimum-range-lo () => *)
 (defstub maximum-range-hi () => *)
 (defattach minimum-range-lo minimum-range-lo-builtin)
@@ -156,17 +156,19 @@ data last modified: [2017-06-22 Thu]
 
 ;; The keys should add up to 100
 (defun sampling-dist-default (min max mid1 mid2)
-`((1 :eq ,min)
-  (1 :eq ,max)
-  (1 :eq ,mid1)
-  (1 :eq ,mid2)
-  (10 :uniform -100 100)
-  (19 :geometric :around ,mid1)
-  (45 :uniform ,min ,max)
-  (10 :geometric :leq ,max)
-  (10 :geometric :geq ,min)
-  (1 :geometric :geq ,(1+ max))
-  (1 :geometric :leq ,(1- min))))
+  (b* ((small-low (if (< min -100) -100 min))
+       (small-hi (if (> max 100) 100 max)))
+    `((1 :eq ,min)
+      (1 :eq ,max)
+      (1 :eq ,mid1)
+      (1 :eq ,mid2)
+      (10 :uniform ,small-low ,small-hi)
+      (19 :geometric :around ,mid1)
+      (45 :uniform ,min ,max)
+      (10 :geometric :leq ,max)
+      (10 :geometric :geq ,min)
+      (1 :geometric :geq ,(1+ max))
+      (1 :geometric :leq ,(1- min)))))
 
 #|
 
@@ -205,30 +207,35 @@ data last modified: [2017-06-22 Thu]
 
 |#
 (defun sampling-dist-lo (min max mid1 mid2)
-`((1 :eq ,min)
-  (1 :eq ,max)
-  (1 :eq ,mid1)
-  (1 :eq ,mid2)
-  (1 :geometric :around ,mid1)
-  (22 :uniform ,min ,max)
-  (1 :geometric :leq ,max)
-  (10 :uniform -100 100)
-  (60 :geometric :geq ,min)
-  (1 :geometric :geq ,(1+ max))
-  (1 :geometric :leq ,(1- min))))
+  (b* ((small-low (if (< min -100) -100 min))
+       (small-hi (if (> max 100) 100 max)))
+
+    `((1 :eq ,min)
+      (1 :eq ,max)
+      (1 :eq ,mid1)
+      (1 :eq ,mid2)
+      (1 :geometric :around ,mid1)
+      (22 :uniform ,min ,max)
+      (1 :geometric :leq ,max)
+      (30 :uniform ,small-low ,small-hi)
+      (40 :geometric :geq ,min)
+      (1 :geometric :geq ,(1+ max))
+      (1 :geometric :leq ,(1- min)))))
 
 (defun sampling-dist-hi (min max mid1 mid2)
-`((1 :eq ,min)
-  (1 :eq ,max)
-  (1 :eq ,mid1)
-  (1 :eq ,mid2)
-  (1 :geometric :around ,mid1)
-  (22 :uniform ,min ,max)
-  (10 :uniform -100 100)
-  (60 :geometric :leq ,max)
-  (1 :geometric :geq ,min)
-  (1 :geometric :geq ,(1+ max))
-  (1 :geometric :leq ,(1- min))))
+  (b* ((small-low (if (< min -100) -100 min))
+       (small-hi (if (> max 100) 100 max)))
+    `((1 :eq ,min)
+      (1 :eq ,max)
+      (1 :eq ,mid1)
+      (1 :eq ,mid2)
+      (1 :geometric :around ,mid1)
+      (22 :uniform ,min ,max)
+      (30 :uniform ,small-low ,small-hi)
+      (40 :geometric :leq ,max)
+      (1 :geometric :geq ,min)
+      (1 :geometric :geq ,(1+ max))
+      (1 :geometric :leq ,(1- min)))))
 
 (defun midpoints (lo hi)
   (if (and (integerp lo) (integerp hi)
@@ -268,12 +275,14 @@ data last modified: [2017-06-22 Thu]
 
 
 (defun make-enum/acc-body-for-range (ivar seedvar domain lo hi lo-rel hi-rel)
-  (b* ((gap (if (eq domain 'acl2s::integer) 1 (/ (- hi lo) 1000)))
+  (b* ((gap (if (eq domain 'acl2s::integer)
+                1
+              (/ (- (rfix hi) (rfix lo)) 1000)))
        (lo (and lo (if lo-rel (+ gap lo) lo))) ;make both inclusive bounds
        (hi (and hi (if hi-rel (- hi gap) hi)))
        (lo1 (or lo (minimum-range-lo)))
        (hi1 (or hi (maximum-range-hi)))
-       ((mv mid1 mid2) (midpoints lo hi))
+       ((mv mid1 mid2) (midpoints lo1 hi1))
        (exp (cond ((and lo hi)
                    (make-enum-exp-for-bounded-range
                     ivar seedvar domain (sampling-dist-default lo hi mid1 mid2)))

@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3758,6 +3758,8 @@
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
             splitter-output            ;;; allow user to modify this in a book
+            serialize-character        ;;; allow user to modify this in a book
+            serialize-character-system ;;; ditto; useful during certification
             top-level-errorp           ;;; allow TOP-LEVEL errors to propagate
 
 ; Do not remove deferred-ttag-notes or deferred-ttag-notes-saved from this
@@ -16080,7 +16082,15 @@
                     (cons 'val val)
                     (cons 'world wrld)
                     (cons 'ens ens))
-              state nil nil nil)
+              state nil nil
+
+; We need aokp to be true; otherwise def-warrant can run into the following
+; problem.  The function badge-table-guard calls badger, which can call
+; acceptable-warranted-justificationp, which can call type-set, which can lead
+; to a call of ancestors-check, which typically has an attachment,
+; ancestors-check-builtin.
+
+              t)
           (declare (ignore latches))
           (cond
            (erp (pprogn

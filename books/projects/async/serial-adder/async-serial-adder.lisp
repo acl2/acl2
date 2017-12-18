@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; June 2017
+;; December 2017
 
 (in-package "ADE")
 
@@ -15,73 +20,77 @@
 (local (in-theory (e/d (f-buf-delete-lemmas-1
                         f-buf-delete-lemmas-2)
                        (nth-of-bvp-is-booleanp
-                        bvp-cvzbv))))
+                        bvp-cvzbv
+                        take-of-len-free))))
 
 ;; ======================================================================
 
 ;; One-Bit Full-Adder
 
+(defconst *1-bit-adder$go-num* 2)
+(defconst *1-bit-adder$st-len* 10)
+
 (module-generator
  1-bit-adder* ()
  '1-bit-adder
- (list* 'a-act 'a-in 'b-act 'b-in 'dr-l-ci 's-act
-        (sis 'go 0 2))
+ (list* 'a-act 'a-in 'b-act 'b-in 'dr-lci 's-act
+        (sis 'go 0 *1-bit-adder$go-num*))
  '(empty-a- empty-b- ready-out s-out ci-out)
- '(l-a a l-b b l-ci ci l-s s l-co co)
+ '(la a lb b lci ci ls s lco co)
  (list
-  ;;; Links
-  ;; L-A
-  '(l-a (l-a-status) link-st (a-act add-act))
+  ;; LINKS
+  ;; A
+  '(la (a-status) link-cntl (a-act add-act))
   '(a (a-out a-out~) latch (a-act a-in))
 
-  ;; L-B
-  '(l-b (l-b-status) link-st (b-act add-act))
+  ;; B
+  '(lb (b-status) link-cntl (b-act add-act))
   '(b (b-out b-out~) latch (b-act b-in))
 
-  ;; L-CI
-  '(l-ci (l-ci-status) link-st (carry-act comb-dr-l-ci))
+  ;; CI
+  '(lci (ci-status) link-cntl (carry-act comb-dr-lci))
   '(ci (ci-out ci-out~) latch (carry-act ci-in))
 
-  ;; L-S
-  '(l-s (l-s-status) link-st (add-act s-act))
+  ;; S
+  '(ls (s-status) link-cntl (add-act s-act))
   '(s (s-out s-out~) latch (add-act s-in))
 
-  ;; L-CO
-  '(l-co (l-co-status) link-st (add-act carry-act))
+  ;; CO
+  '(lco (co-status) link-cntl (add-act carry-act))
   '(co (co-out co-out~) latch (add-act co-in))
 
-  ;;; Joints
+  ;; JOINTS
   ;; Full-adder
-  '(g0 (add-full-in) b-and3 (l-a-status l-b-status l-ci-status))
-  '(g1 (add-empty-out) b-or (l-s-status l-co-status))
+  '(g0 (add-full-in) b-and3 (a-status b-status ci-status))
+  '(g1 (add-empty-out) b-or (s-status co-status))
   (list 'j-add
         '(add-act)
         'joint-cntl
         (list 'add-full-in 'add-empty-out (si 'go 0)))
       
-  '(h0 (s-in co-in) full-adder (a-out b-out ci-out))
+  '(h0 (s-in co-in) full-adder (ci-out a-out b-out))
 
   ;; CO to CI
   (list 'j-carry
         '(carry-act)
         'joint-cntl
-        (list 'l-co-status 'l-ci-status (si 'go 1)))
+        (list 'co-status 'ci-status (si 'go 1)))
       
   '(h1 (ci-in) b-buf (co-out))
 
-  '(c0 (comb-dr-l-ci) b-or (add-act dr-l-ci))
+  '(c0 (comb-dr-lci) b-or (add-act dr-lci))
 
-  ;;; Status
-  ;; '(s0 (l-a+b-status~) b-nand (l-a-status l-b-status))
-  ;; '(empty--s (empty-) b-nand (l-ci-status l-a+b-status~))
+  ;; STATUS
+  ;; '(s0 (l-a+b-status~) b-nand (a-status b-status))
+  ;; '(empty--s (empty-) b-nand (ci-status l-a+b-status~))
   
-  '(s0 (l-a-status~) b-not (l-a-status))
-  '(in-status-a (empty-a-) b-nand (l-ci-status l-a-status~))
+  '(s0 (a-status~) b-not (a-status))
+  '(in-status-a (empty-a-) b-nand (ci-status a-status~))
 
-  '(s1 (l-b-status~) b-not (l-b-status))
-  '(in-status-b (empty-b-) b-nand (l-ci-status l-b-status~))
+  '(s1 (b-status~) b-not (b-status))
+  '(in-status-b (empty-b-) b-nand (ci-status b-status~))
 
-  '(out-status (ready-out) b-and (l-ci-status l-s-status))
+  '(out-status (ready-out) b-and (ci-status s-status))
   )
 
  :guard t)
@@ -89,7 +98,7 @@
 (defun 1-bit-adder$netlist ()
   (declare (xargs :guard t))
   (cons (1-bit-adder*)
-        (union$ *link-st* *joint-cntl* *full-adder*
+        (union$ *joint-cntl* *full-adder*
                 :test 'equal)))
 
 (defthmd 1-bit-adder$netlist-okp
@@ -101,30 +110,44 @@
   (and (equal (assoc '1-bit-adder netlist)
               (1-bit-adder*))
        (b* ((netlist (delete-to-eq '1-bit-adder netlist)))
-         (and (link-st& netlist)
-              (joint-cntl& netlist)
+         (and (joint-cntl& netlist)
               (full-adder& netlist)))))
 
+(defthm check-1-bit-adder$netlist
+  (1-bit-adder& (1-bit-adder$netlist)))
+
+(defconst *1-bit-adder$la*  0)
+(defconst *1-bit-adder$a*   1)
+(defconst *1-bit-adder$lb*  2)
+(defconst *1-bit-adder$b*   3)
+(defconst *1-bit-adder$lci* 4)
+(defconst *1-bit-adder$ci*  5)
+(defconst *1-bit-adder$ls*  6)
+(defconst *1-bit-adder$s*   7)
+(defconst *1-bit-adder$lco* 8)
+(defconst *1-bit-adder$co*  9)
+
 (defund 1-bit-adder$empty-a- (st)
-  (b* ((l-a  (nth 0 st))
-       (l-ci (nth 4 st)))
-    (f-nand (car (car l-ci))
-            (f-not (car (car l-a))))))
+  (b* ((la  (nth *1-bit-adder$la* st))
+       (lci (nth *1-bit-adder$lci* st)))
+    (f-nand (car lci)
+            (f-not (car la)))))
 
 (defund 1-bit-adder$empty-b- (st)
-  (b* ((l-b  (nth 2 st))
-       (l-ci (nth 4 st)))
-    (f-nand (car (car l-ci))
-            (f-not (car (car l-b))))))
+  (b* ((lb  (nth *1-bit-adder$lb* st))
+       (lci (nth *1-bit-adder$lci* st)))
+    (f-nand (car lci)
+            (f-not (car lb)))))
 
 (defund 1-bit-adder$ready-out (st)
-  (b* ((l-ci (nth 4 st))
-       (l-s  (nth 6 st)))
-    (f-and (car (car l-ci))
-           (car (car l-s)))))
+  (b* ((lci (nth *1-bit-adder$lci* st))
+       (ls  (nth *1-bit-adder$ls* st)))
+    (f-and (car lci)
+           (car ls))))
 
 (defthmd 1-bit-adder$value
-  (b* ((st (list l-a a l-b b l-ci ci l-s s l-co co)))
+  (b* ((ci  (nth *1-bit-adder$ci* st))
+       (s   (nth *1-bit-adder$s* st)))
     (implies (1-bit-adder& netlist)
              (equal (se '1-bit-adder inputs st netlist)
                     (list (1-bit-adder$empty-a- st)
@@ -132,110 +155,105 @@
                           (1-bit-adder$ready-out st)
                           (f-buf (car s))
                           (f-buf (car ci))))))
-  :hints (("Goal" :in-theory (e/d* (se-rules
-                                    1-bit-adder&
-                                    1-bit-adder*$destructure
-                                    link-st$value
-                                    joint-cntl$value
-                                    full-adder$value
-                                    1-bit-adder$ready-out
-                                    1-bit-adder$empty-a-
-                                    1-bit-adder$empty-b-)
-                                   ((1-bit-adder*)
-                                    (si)
-                                    (sis)
-                                    tv-disabled-rules)))))
+  :hints (("Goal"
+           :cases ((consp st))
+           :in-theory (e/d (se-rules
+                            1-bit-adder&
+                            1-bit-adder*$destructure
+                            joint-cntl$value
+                            full-adder$value
+                            open-nth
+                            1-bit-adder$ready-out
+                            1-bit-adder$empty-a-
+                            1-bit-adder$empty-b-)
+                           ((1-bit-adder*)
+                            (si)
+                            (sis)
+                            tv-disabled-rules)))))
 
 (defun 1-bit-adder$state-fn (inputs st)
   (b* ((a-act    (nth 0 inputs))
        (a-in     (nth 1 inputs))
        (b-act    (nth 2 inputs))
        (b-in     (nth 3 inputs))
-       (dr-l-ci  (nth 4 inputs))
+       (dr-lci   (nth 4 inputs))
        (s-act    (nth 5 inputs))
        (go-signals (nthcdr 6 inputs))
        
        (go-add   (nth 0 go-signals))
        (go-carry (nth 1 go-signals))
        
-       (l-a  (nth 0 st))
-       (a   (nth 1 st))
-       (l-b  (nth 2 st))
-       (b   (nth 3 st))
-       (l-ci (nth 4 st))
-       (ci  (nth 5 st))
-       (l-s  (nth 6 st))
-       (s   (nth 7 st))
-       (l-co (nth 8 st))
-       (co  (nth 9 st))
+       (la  (nth *1-bit-adder$la* st))
+       (a   (nth *1-bit-adder$a* st))
+       (lb  (nth *1-bit-adder$lb* st))
+       (b   (nth *1-bit-adder$b* st))
+       (lci (nth *1-bit-adder$lci* st))
+       (ci  (nth *1-bit-adder$ci* st))
+       (ls  (nth *1-bit-adder$ls* st))
+       (s   (nth *1-bit-adder$s* st))
+       (lco (nth *1-bit-adder$lco* st))
+       (co  (nth *1-bit-adder$co* st))
        
-       (add-act (joint-act (f-and3 (caar l-a) (caar l-b) (caar l-ci))
-                           (f-or (caar l-s) (caar l-co))
+       (add-act (joint-act (f-and3 (car la) (car lb) (car lci))
+                           (f-or (car ls) (car lco))
                            go-add))
-       (carry-act (joint-act (caar l-co) (caar l-ci) go-carry)))
+       (carry-act (joint-act (car lco) (car lci) go-carry)))
     
-    (list (list
-           (list
-            (f-sr a-act add-act (caar l-a))))
-          (list
-           (f-if a-act a-in (car a)))
+    (list (list (f-sr a-act add-act (car la)))
+          (list (f-if a-act a-in (car a)))
                          
-          (list
-           (list
-            (f-sr b-act add-act (caar l-b))))
-          (list
-           (f-if b-act b-in (car b)))
+          (list (f-sr b-act add-act (car lb)))
+          (list (f-if b-act b-in (car b)))
                          
-          (list
-           (list
-            (f-sr carry-act (f-or add-act dr-l-ci) (caar l-ci))))
-          (list
-           (f-if carry-act (car co) (car ci)))
+          (list (f-sr carry-act (f-or add-act dr-lci) (car lci)))
+          (list (f-if carry-act (car co) (car ci)))
 
-          (list
-           (list
-            (f-sr add-act s-act (caar l-s))))
-          (list
-           (f-if add-act
-                 (f-xor3 (car ci)
-                         (f-if a-act a-in (car a))
-                         (f-if b-act b-in (car b)))
-                 (car s)))
-
-          (list
-           (list
-            (f-sr add-act carry-act (caar l-co))))
-          (list
-           (f-if add-act
-                 (f-or (f-and (f-if a-act a-in (car a))
+          (list (f-sr add-act s-act (car ls)))
+          (list (f-if add-act
+                      (f-xor3 (car ci)
+                              (f-if a-act a-in (car a))
                               (f-if b-act b-in (car b)))
-                       (f-and (f-xor (f-if a-act a-in (car a))
-                                     (f-if b-act b-in (car b)))
-                              (car ci)))
-                 (car co))))))
+                      (car s)))
+
+          (list (f-sr add-act carry-act (car lco)))
+          (list (f-if add-act
+                      (f-or (f-and (f-if a-act a-in (car a))
+                                   (f-if b-act b-in (car b)))
+                            (f-and (f-xor (f-if a-act a-in (car a))
+                                          (f-if b-act b-in (car b)))
+                                   (car ci)))
+                      (car co))))))
 
 (defthm len-of-1-bit-adder$state-fn
   (equal (len (1-bit-adder$state-fn inputs st))
-         10))
+         *1-bit-adder$st-len*))
+
+(local
+ (defthmd car-and-cdr-of-atom
+   (implies (atom x)
+            (and (not (car x))
+                 (not (cdr x))))))
 
 (defthmd 1-bit-adder$state
-  (b* ((inputs (list* a-act a-in b-act b-in dr-l-ci s-act go-signals))
-       (st (list l-a a l-b b l-ci ci l-s s l-co co)))
+  (b* ((inputs (list* a-act a-in b-act b-in dr-lci s-act go-signals)))
     (implies (and (1-bit-adder& netlist)
-                  (>= (len go-signals) 2))
+                  (equal (len go-signals) *1-bit-adder$go-num*))
              (equal (de '1-bit-adder inputs st netlist)
                     (1-bit-adder$state-fn inputs st))))
   :hints (("Goal"
-           :in-theory (e/d* (de-rules
-                             1-bit-adder&
-                             1-bit-adder*$destructure
-                             link-st$value link-st$state
-                             joint-cntl$value
-                             full-adder$value)
-                            ((1-bit-adder*)
-                             (si)
-                             (sis)
-                             tv-disabled-rules)))))
+           :in-theory (e/d (de-rules
+                            1-bit-adder&
+                            1-bit-adder*$destructure
+                            car-and-cdr-of-atom
+                            open-nth
+                            joint-cntl$value
+                            full-adder$value)
+                           ((1-bit-adder*)
+                            (si)
+                            (sis)
+                            acl2::hons-duplicity-alist-p-of-cons
+                            acl2::alistp-when-hons-duplicity-alist-p
+                            tv-disabled-rules)))))
 
 (in-theory (disable 1-bit-adder$state-fn))
 
@@ -245,44 +263,60 @@
 
 ;; Two operands and the sum are stored in shift registers.
 
+(defconst *serial-adder$prim-go-num* 3)
+(defconst *serial-adder$go-num* (+ *serial-adder$prim-go-num*
+                                   *1-bit-adder$go-num*))
+(defconst *serial-adder$st-len* 7)
+
 (module-generator
  serial-adder* ()
  'serial-adder
  (list* 'cntl-act 'bit-in 'result-act
-        (sis 'go 0 5))
+        (sis 'go 0 *serial-adder$go-num*))
  (list* 'ready-in- 'ready-out
-        (append (sis 'reg2-out 0 32) (list 'c-out)))
- '(l-reg0 reg0 l-reg1 reg1 l-reg2 reg2 bit-add-st)
+        (append (sis 'reg2-out 0 *data-width*) (list 'c-out)))
+ '(lreg0 reg0 lreg1 reg1 lreg2 reg2 bit-add)
  (list
-  ;;; Links
-  ;; L-REG0
-  '(l-reg0 (l-reg0-status) link-st (cntl-act a-act))
-  (list 'reg0 (sis 'reg0-out 0 32) 'shift-reg32 '(cntl-act bit-in))
+  ;; LINKS
+  ;; REG0
+  '(lreg0 (reg0-status) link-cntl (cntl-act a-act))
+  (list 'reg0
+        (sis 'reg0-out 0 *data-width*)
+        'shift-reg32
+        '(cntl-act bit-in))
   
-  ;; L-REG1
-  '(l-reg1 (l-reg1-status) link-st (cntl-act b-act))
-  (list 'reg1 (sis 'reg1-out 0 32) 'shift-reg32 '(cntl-act bit-in))
+  ;; REG1
+  '(lreg1 (reg1-status) link-cntl (cntl-act b-act))
+  (list 'reg1
+        (sis 'reg1-out 0 *data-width*)
+        'shift-reg32
+        '(cntl-act bit-in))
   
-  ;; L-REG2
-  '(g (dr-l-reg2) b-or (cntl-act result-act))
-  '(l-reg2 (l-reg2-status) link-st (s-act dr-l-reg2))
-  (list 'reg2 (sis 'reg2-out 0 32) 'shift-reg32 '(s-act s-out))
+  ;; REG2
+  '(g (dr-lreg2) b-or (cntl-act result-act))
+  '(lreg2 (reg2-status) link-cntl (s-act dr-lreg2))
+  (list 'reg2
+        (sis 'reg2-out 0 *data-width*)
+        'shift-reg32
+        '(s-act s-out))
   
-  ;; BIT-ADD-ST
-  (list 'bit-add-st
+  ;; BIT-ADD
+  (list 'bit-add
         '(bit-add-empty-a- bit-add-empty-b- bit-add-ready-out
                            s-out ci-out)
         '1-bit-adder
         (list* 'a-act 'a-in 'b-act 'b-in 'result-act 's-act
-               (sis 'go 3 2)))
+               (sis 'go
+                    *serial-adder$prim-go-num*
+                    *1-bit-adder$go-num*)))
   '(carry-out (c-out) b-buf (ci-out))
   
-  ;;; Joints
+  ;; JOINTS
   ;; Fetch operand A
   (list 'j-a
         '(a-act)
         'joint-cntl
-        (list 'l-reg0-status 'bit-add-empty-a- (si 'go 0)))
+        (list 'reg0-status 'bit-add-empty-a- (si 'go 0)))
   
   (list 'h0 '(a-in) 'b-buf (list (si 'reg0-out 0)))
   
@@ -290,7 +324,7 @@
   (list 'j-b
         '(b-act)
         'joint-cntl
-        (list 'l-reg1-status 'bit-add-empty-b- (si 'go 1)))
+        (list 'reg1-status 'bit-add-empty-b- (si 'go 1)))
   
   (list 'h1 '(b-in) 'b-buf (list (si 'reg1-out 0)))
   
@@ -298,14 +332,14 @@
   (list 'j-s
         '(s-act)
         'joint-cntl
-        (list 'bit-add-ready-out 'l-reg2-status (si 'go 2)))
+        (list 'bit-add-ready-out 'reg2-status (si 'go 2)))
   
   ;;'(h2 (bit2-in) b-buf (s-out))
   
-  ;;; Status
-  '(s0 (l-reg2-status~) b-not (l-reg2-status))
-  '(in-status (ready-in-) b-or3 (l-reg0-status l-reg1-status l-reg2-status~))
-  '(out-status (ready-out) b-buf (l-reg2-status))
+  ;; STATUS
+  '(s0 (reg2-status~) b-not (reg2-status))
+  '(in-status (ready-in-) b-or3 (reg0-status reg1-status reg2-status~))
+  '(out-status (ready-out) b-buf (reg2-status))
   )
 
  :guard t)
@@ -324,31 +358,39 @@
   (and (equal (assoc 'serial-adder netlist)
               (serial-adder*))
        (b* ((netlist (delete-to-eq 'serial-adder netlist)))
-         (and (link-st& netlist)
-              (joint-cntl& netlist)
+         (and (joint-cntl& netlist)
               (1-bit-adder& netlist)))))
 
 (defthm check-serial-adder$netlist
   (serial-adder& (serial-adder$netlist)))
 
+(defconst *serial-adder$lreg0*   0)
+(defconst *serial-adder$reg0*    1)
+(defconst *serial-adder$lreg1*   2)
+(defconst *serial-adder$reg1*    3)
+(defconst *serial-adder$lreg2*   4)
+(defconst *serial-adder$reg2*    5)
+(defconst *serial-adder$bit-add* 6)
+
 (defund serial-adder$ready-in- (st)
-  (b* ((l-reg0 (nth 0 st))
-       (l-reg1 (nth 2 st))
-       (l-reg2 (nth 4 st)))
-    (f-or3 (car (car l-reg0))
-           (car (car l-reg1))
-           (f-not (car (car l-reg2))))))
+  (b* ((lreg0 (nth *serial-adder$lreg0* st))
+       (lreg1 (nth *serial-adder$lreg1* st))
+       (lreg2 (nth *serial-adder$lreg2* st)))
+    (f-or3 (car lreg0)
+           (car lreg1)
+           (f-not (car lreg2)))))
 
 (defund serial-adder$ready-out (st)
-  (b* ((l-reg2 (nth 4 st)))
-    (f-buf (car (car l-reg2)))))
+  (b* ((lreg2 (nth *serial-adder$lreg2* st)))
+    (f-buf (car lreg2))))
 
 (defthmd serial-adder$value
-  (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-       (st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2 bit-add-st)))
+  (b* ((reg2    (nth *serial-adder$reg2* st))
+       (bit-add (nth *serial-adder$bit-add* st))
+       (ci      (nth *1-bit-adder$ci* bit-add)))
     (implies (and (serial-adder& netlist)
                   (true-listp (car reg2))
-                  (equal (len (car reg2)) 32))
+                  (equal (len (car reg2)) *data-width*))
              (equal (se 'serial-adder inputs st netlist)
                     (list* (serial-adder$ready-in- st)
                            (serial-adder$ready-out st)
@@ -357,7 +399,6 @@
   :hints (("Goal" :in-theory (e/d (se-rules
                                    serial-adder&
                                    serial-adder*$destructure
-                                   link-st$value
                                    joint-cntl$value
                                    1-bit-adder$value
                                    serial-adder$ready-out
@@ -376,87 +417,77 @@
        (go-a       (nth 0 go-signals))
        (go-b       (nth 1 go-signals))
        (go-s       (nth 2 go-signals))
-       (1-bit-adder$go-signals (nthcdr 3 go-signals))
+       (1-bit-adder$go-signals (nthcdr *serial-adder$prim-go-num*
+                                       go-signals))
 
-       (l-reg0    (nth 0 st))
-       (reg0     (nth 1 st))
-       (l-reg1    (nth 2 st))
-       (reg1     (nth 3 st))
-       (l-reg2    (nth 4 st))
-       (reg2     (nth 5 st))
-       (bit-add-st (nth 6 st))
+       (lreg0   (nth *serial-adder$lreg0* st))
+       (reg0    (nth *serial-adder$reg0*  st))
+       (lreg1   (nth *serial-adder$lreg1* st))
+       (reg1    (nth *serial-adder$reg1*  st))
+       (lreg2   (nth *serial-adder$lreg2* st))
+       (reg2    (nth *serial-adder$reg2*  st))
+       (bit-add (nth *serial-adder$bit-add* st))
        
-       (s   (nth 7 bit-add-st))
+       (s (nth *1-bit-adder$s* bit-add))
 
-       (a-act (joint-act (caar l-reg0)
-                         (1-bit-adder$empty-a- bit-add-st)
+       (a-act (joint-act (car lreg0)
+                         (1-bit-adder$empty-a- bit-add)
                          go-a))
        (a-in (f-buf (caar reg0)))
-       (b-act (joint-act (caar l-reg1)
-                         (1-bit-adder$empty-b- bit-add-st)
+       (b-act (joint-act (car lreg1)
+                         (1-bit-adder$empty-b- bit-add)
                          go-b))
        (b-in (f-buf (caar reg1)))
-       (s-act (joint-act (1-bit-adder$ready-out bit-add-st)
-                         (caar l-reg2)
+       (s-act (joint-act (1-bit-adder$ready-out bit-add)
+                         (car lreg2)
                          go-s))
        (1-bit-adder$inputs (list* a-act a-in b-act b-in result-act s-act
                                   1-bit-adder$go-signals)))
     
-    (list (list
-            (list
-             (f-sr cntl-act a-act (caar l-reg0))))
-           (list
-            (write-shift-reg cntl-act bit-in (car reg0)))
+    (list (list (f-sr cntl-act a-act (car lreg0)))
+          (list (write-shift-reg cntl-act bit-in (car reg0)))
            
-           (list
-            (list
-             (f-sr cntl-act b-act (caar l-reg1))))
-           (list
-            (write-shift-reg cntl-act bit-in (car reg1)))
+          (list (f-sr cntl-act b-act (car lreg1)))
+          (list (write-shift-reg cntl-act bit-in (car reg1)))
            
-           (list
-            (list
-             (f-sr s-act
-                   (f-or cntl-act result-act)
-                   (caar l-reg2))))
-           (list
-            (write-shift-reg s-act (car s) (car reg2)))
+          (list (f-sr s-act
+                      (f-or cntl-act result-act)
+                      (car lreg2)))
+          (list (write-shift-reg s-act (car s) (car reg2)))
            
-           (1-bit-adder$state-fn 1-bit-adder$inputs bit-add-st))))
+          (1-bit-adder$state-fn 1-bit-adder$inputs bit-add))))
 
 (defthm len-of-serial-adder$state-fn
   (equal (len (serial-adder$state-fn inputs st))
-         7))
+         *serial-adder$st-len*))
 
 (defthmd serial-adder$state
-  (b* ((inputs (list* cntl-act bit-in result-act
-                      go-signals))
-       (bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-       (st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2 bit-add-st)))
+  (b* ((inputs (list* cntl-act bit-in result-act go-signals))
+       (reg0   (nth *serial-adder$reg0* st))
+       (reg1   (nth *serial-adder$reg1* st)))
     (implies (and (serial-adder& netlist)
                   
                   (true-listp go-signals)
-                  (equal (len go-signals) 5)
+                  (equal (len go-signals) *serial-adder$go-num*)
                   
-                  (equal (len (car reg0)) 32)
-                  (equal (len (car reg1)) 32)
-                  (equal (len (car reg2)) 32))
+                  (equal (len (car reg0)) *data-width*)
+                  (equal (len (car reg1)) *data-width*))
              (equal (de 'serial-adder inputs st netlist)
                     (serial-adder$state-fn inputs st))))
   :hints (("Goal"
-           :in-theory (e/d* (de-rules
-                             serial-adder&
-                             serial-adder*$destructure
-                             link-st$value link-st$state
-                             joint-cntl$value
-                             1-bit-adder$value
-                             1-bit-adder$state
-                             take-of-len-is-itself
-                             assoc-eq-values-of-sis-pairlis$-sis)
-                            ((serial-adder*)
-                             (si)
-                             (sis)
-                             tv-disabled-rules)))))
+           :in-theory (e/d (de-rules
+                            serial-adder&
+                            serial-adder*$destructure
+                            car-and-cdr-of-atom
+                            joint-cntl$value
+                            1-bit-adder$value
+                            1-bit-adder$state)
+                           ((serial-adder*)
+                            (si)
+                            (sis)
+                            acl2::hons-duplicity-alist-p-of-cons
+                            acl2::alistp-when-hons-duplicity-alist-p
+                            tv-disabled-rules)))))
 
 (in-theory (disable serial-adder$state-fn))
 
@@ -464,89 +495,98 @@
 
 ;; 32-Bit Asynchronous Serial Adder with Control
 
+(defconst *async-adder$prim-go-num* 3)
+(defconst *async-adder$go-num* (+ *async-adder$prim-go-num*
+                                  *serial-adder$go-num*))
+(defconst *async-adder$st-len* 9)
+(defconst *async-adder$cntl-st-len* 5)
+
 (module-generator
  async-adder* ()
  'async-adder
- (list* 'dr-l-result (sis 'go 0 8))
- (list* 'ready-in- 'ready-out (sis 'result-out 0 33))
- '(l-cntl cntl l-next-cntl next-cntl l-done- done- l-result result
-          serial-add-st)
+ (list* 'dr-lresult (sis 'go 0 *async-adder$go-num*))
+ (list* 'ready-in- 'ready-out (sis 'result-out 0 (1+ *data-width*)))
+ '(lcntl cntl lnext-cntl next-cntl ldone- done- lresult result
+          serial-add)
  
  (list
-  ;;; Links
-  ;; L-CNTL
-  '(l-cntl (l-cntl-status) link-st (cntl-buf-act cntl-act))
+  ;; LINKS
+  ;; CNTL
+  '(lcntl (cntl-status) link-cntl (cntl-buf-act cntl-act))
   (list 'cntl
-        (sis 'cntl-out 0 5)
-        (si 'latch-n 5)
-        (list* 'cntl-buf-act (sis 'cntl-in 0 5)))
+        (sis 'cntl-out 0 *async-adder$cntl-st-len*)
+        (si 'latch-n *async-adder$cntl-st-len*)
+        (list* 'cntl-buf-act (sis 'cntl-in 0 *async-adder$cntl-st-len*)))
 
-  ;; L-NEXT-CNTL
-  '(l-next-cntl (l-next-cntl-status) link-st (cntl-act cntl-buf-act))
+  ;; NEXT-CNTL
+  '(lnext-cntl (next-cntl-status) link-cntl (cntl-act cntl-buf-act))
   (list 'next-cntl
-        (sis 'next-cntl-out 0 5)
+        (sis 'next-cntl-out 0 *async-adder$cntl-st-len*)
         (si 'latch-n 5)
-        (list* 'cntl-act (sis 'next-cntl-in 0 5)))
+        (list* 'cntl-act (sis 'next-cntl-in 0 *async-adder$cntl-st-len*)))
 
-  ;; L-DONE-
-  '(l-done- (l-done-status) link-st (cntl-act dr-l-done-))
+  ;; DONE-
+  '(ldone- (done-status) link-cntl (cntl-act dr-ldone-))
   '(done- (done-out- done-out) latch (cntl-act done-in-))
 
-  ;; L-RESULT
-  '(l-result (l-result-status) link-st (result-act dr-l-result))
+  ;; RESULT
+  '(lresult (result-status) link-cntl (result-act dr-lresult))
   (list 'result
-        (sis 'result-out 0 33)
-        (si 'latch-n 33)
-        (list* 'result-act (append (sis 'sum 0 32) (list 'carry))))
+        (sis 'result-out 0 (1+ *data-width*))
+        (si 'latch-n (1+ *data-width*))
+        (list* 'result-act (append (sis 'sum 0 *data-width*) (list 'carry))))
       
-  ;; SERIAL-ADD-ST
-  (list 'serial-add-st
+  ;; SERIAL-ADD
+  (list 'serial-add
         (list* 'serial-add-ready-in- 'serial-add-ready-out
-               (append (sis 'sum 0 32) (list 'carry)))
+               (append (sis 'sum 0 *data-width*) (list 'carry)))
         'serial-adder
-        (list* 'cntl-act 'low 'result-act (sis 'go 3 5)))
+        (list* 'cntl-act 'low 'result-act (sis 'go
+                                               *async-adder$prim-go-num*
+                                               *serial-adder$go-num*)))
 
-  ;;; Joints
+  ;; JOINTS
   ;; Next control state
-  '(g0 (cntl-ready) b-or3 (l-next-cntl-status l-done-status
+  '(g0 (cntl-ready) b-or3 (next-cntl-status done-status
                                               serial-add-ready-in-))
   (list 'j-next-state
         '(cntl-act)
         'joint-cntl
-        (list 'l-cntl-status 'cntl-ready (si 'go 0)))
+        (list 'cntl-status 'cntl-ready (si 'go 0)))
       
   (list 'h0
-        (list* 'low 'done-in- (sis 'next-cntl-in 0 5))
+        (list* 'low 'done-in-
+               (sis 'next-cntl-in 0 *async-adder$cntl-st-len*))
         'next-cntl-state
-        (sis 'cntl-out 0 5))
+        (sis 'cntl-out 0 *async-adder$cntl-st-len*))
 
   ;; Buffer control state
-  '(g1 (next-cntl-ready) b-and3 (l-next-cntl-status l-done-status done-out-))
+  '(g1 (next-cntl-ready) b-and3 (next-cntl-status done-status done-out-))
   (list 'j-buf-state
         '(cntl-buf-act)
         'joint-cntl
-        (list 'next-cntl-ready 'l-cntl-status (si 'go 1)))
+        (list 'next-cntl-ready 'cntl-status (si 'go 1)))
   
   (list 'buf-state
-        (sis 'cntl-in 0 5)
-        (si 'v-buf 5)
-        (sis 'next-cntl-out 0 5))
+        (sis 'cntl-in 0 *async-adder$cntl-st-len*)
+        (si 'v-buf *async-adder$cntl-st-len*)
+        (sis 'next-cntl-out 0 *async-adder$cntl-st-len*))
 
   ;; Store the result to RESULT register
-  '(g2 (result-ready) b-and3 (serial-add-ready-out l-done-status done-out))
+  '(g2 (result-ready) b-and3 (serial-add-ready-out done-status done-out))
   (list 'j-result
         '(result-act)
         'joint-cntl
-        (list 'result-ready 'l-result-status (si 'go 2)))
+        (list 'result-ready 'result-status (si 'go 2)))
 
-  '(j-done- (dr-l-done-) b-or (cntl-buf-act result-act))
+  '(j-done- (dr-ldone-) b-or (cntl-buf-act result-act))
 
-;;; Status
-  '(s0 (l-next-cntl-status~) b-not (l-next-cntl-status))
-  '(in-status (ready-in-) b-or3 (l-next-cntl-status~
-                                 l-done-status
-                                 l-result-status))
-  '(out-status (ready-out) b-buf (l-result-status))
+  ;; STATUS
+  '(s0 (next-cntl-status~) b-not (next-cntl-status))
+  '(in-status (ready-in-) b-or3 (next-cntl-status~
+                                 done-status
+                                 result-status))
+  '(out-status (ready-out) b-buf (result-status))
   )
 
  :guard t)
@@ -554,9 +594,9 @@
 (defun async-adder$netlist ()
   (declare (xargs :guard t))
   (cons (async-adder*)
-        (union$ (latch-n$netlist 5)
-                (latch-n$netlist 33)
-                (v-buf$netlist 5)
+        (union$ (latch-n$netlist *async-adder$cntl-st-len*)
+                (latch-n$netlist (1+ *data-width*))
+                (v-buf$netlist *async-adder$cntl-st-len*)
                 (serial-adder$netlist)
                 (next-cntl-state$netlist)
                 :test 'equal)))
@@ -570,41 +610,47 @@
   (and (equal (assoc 'async-adder netlist)
               (async-adder*))
        (b* ((netlist (delete-to-eq 'async-adder netlist)))
-         (and (link-st& netlist)
-              (joint-cntl& netlist)
-              (latch-n& netlist 5)
-              (latch-n& netlist 33)
-              (v-buf& netlist 5)
+         (and (joint-cntl& netlist)
+              (latch-n& netlist *async-adder$cntl-st-len*)
+              (latch-n& netlist (1+ *data-width*))
+              (v-buf& netlist *async-adder$cntl-st-len*)
               (serial-adder& netlist)
               (next-cntl-state& netlist)))))
 
 (defthm check-async-adder$netlist
   (async-adder& (async-adder$netlist)))
 
+(defconst *async-adder$lcntl*      0)
+(defconst *async-adder$cntl*       1)
+(defconst *async-adder$lnext-cntl* 2)
+(defconst *async-adder$next-cntl*  3)
+(defconst *async-adder$ldone-*     4)
+(defconst *async-adder$done-*      5)
+(defconst *async-adder$lresult*    6)
+(defconst *async-adder$result*     7)
+(defconst *async-adder$serial-add* 8)
+
 (defund async-adder$ready-in- (st)
-  (b* ((l-next-cntl (nth 2 st))
-       (l-done-     (nth 4 st))
-       (l-result    (nth 6 st)))
-    (f-or3 (f-not (caar l-next-cntl))
-           (caar l-done-)
-           (caar l-result))))
+  (b* ((lnext-cntl (nth *async-adder$lnext-cntl* st))
+       (ldone-     (nth *async-adder$ldone-* st))
+       (lresult    (nth *async-adder$lresult* st)))
+    (f-or3 (f-not (car lnext-cntl))
+           (car ldone-)
+           (car lresult))))
 
 (defund async-adder$ready-out (st)
-  (b* ((l-result (nth 6 st)))
-    (f-buf (caar l-result))))
+  (b* ((lresult (nth *async-adder$lresult* st)))
+    (f-buf (car lresult))))
 
 (defthmd async-adder$value
-  (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-       (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                         bit-add-st))
-       (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                 l-result result
-                 serial-add-st)))
+  (b* ((result     (nth *async-adder$result* st))
+       (serial-add (nth *async-adder$serial-add* st))
+       (reg2       (nth *serial-adder$reg2* serial-add)))
     (implies (and (async-adder& netlist)
                   (true-listp result)
-                  (equal (len result) 33)
+                  (equal (len result) (1+ *data-width*))
                   (true-listp (car reg2))
-                  (equal (len (car reg2)) 32))
+                  (equal (len (car reg2)) *data-width*))
              (equal (se 'async-adder inputs st netlist)
                     (list* (async-adder$ready-in- st)
                            (async-adder$ready-out st)
@@ -613,12 +659,12 @@
            :in-theory (e/d (se-rules
                             async-adder&
                             async-adder*$destructure
-                            link-st$value
                             joint-cntl$value
                             latch-n$value
                             v-buf$value
                             next-cntl-state$value
                             serial-adder$value
+                            open-nth
                             async-adder$ready-out
                             async-adder$ready-in-)
                            ((async-adder*)
@@ -628,166 +674,121 @@
                             tv-disabled-rules)))))
 
 (defun async-adder$state-fn (inputs st)
-  (b* ((dr-l-result (nth 0 inputs))
+  (b* ((dr-lresult (nth 0 inputs))
        (go-signals (nthcdr 1 inputs))
        
        (go-cntl     (nth 0 go-signals))
        (go-buf-cntl (nth 1 go-signals))
        (go-result   (nth 2 go-signals))
-       (serial-adder$go-signals (nthcdr 3 go-signals))
+       (serial-adder$go-signals (nthcdr *async-adder$prim-go-num*
+                                        go-signals))
        
-       (l-cntl (nth 0 st))
-       (cntl (nth 1 st))
-       (l-next-cntl (nth 2 st))
-       (next-cntl (nth 3 st))
-       (l-done- (nth 4 st))
-       (done- (nth 5 st))
-       (l-result (nth 6 st))
-       (result (nth 7 st))
-       (serial-add-st (nth 8 st))
+       (lcntl (nth *async-adder$lcntl* st))
+       (cntl (nth *async-adder$cntl* st))
+       (lnext-cntl (nth *async-adder$lnext-cntl* st))
+       (next-cntl (nth *async-adder$next-cntl* st))
+       (ldone- (nth *async-adder$ldone-* st))
+       (done- (nth *async-adder$done-* st))
+       (lresult (nth *async-adder$lresult* st))
+       (result (nth *async-adder$result* st))
+       (serial-add (nth *async-adder$serial-add* st))
        
-       (reg2 (nth 5 serial-add-st))
-       (bit-add-st (nth 6 serial-add-st))
+       (reg2 (nth *serial-adder$reg2* serial-add))
+       (bit-add (nth *serial-adder$bit-add* serial-add))
        
-       (ci (nth 5 bit-add-st)))
+       (ci (nth *1-bit-adder$ci* bit-add))
+
+       (cntl-act (joint-act (car lcntl)
+                            (f-or3 (car lnext-cntl)
+                                   (car ldone-)
+                                   (serial-adder$ready-in- serial-add))
+                            go-cntl))
+       (cntl-buf-act (joint-act (f-and3 (car lnext-cntl)
+                                        (car ldone-)
+                                        (car done-))
+                                (car lcntl)
+                                go-buf-cntl))
+       (result-act (joint-act (f-and3 (serial-adder$ready-out serial-add)
+                                      (car ldone-)
+                                      (f-not (car done-)))
+                              (car lresult)
+                              go-result))
+       (serial-adder$inputs
+        (list* cntl-act nil result-act serial-adder$go-signals)))
 
     (list
-     (list
-      (list (f-sr (joint-act (f-and3 (car (car l-next-cntl))
-                                     (car (car l-done-))
-                                     (car done-))
-                             (car (car l-cntl))
-                             go-buf-cntl)
-                  (joint-act (car (car l-cntl))
-                             (f-or3 (car (car l-next-cntl))
-                                    (car (car l-done-))
-                                    (serial-adder$ready-in- serial-add-st))
-                             go-cntl)
-                  (car (car l-cntl)))))
-     (pairlis$ (fv-if (joint-act (f-and3 (car (car l-next-cntl))
-                                         (car (car l-done-))
-                                         (car done-))
-                                 (car (car l-cntl))
-                                 go-buf-cntl)
+     (list (f-sr cntl-buf-act cntl-act (car lcntl)))
+     (pairlis$ (fv-if cntl-buf-act
                       (strip-cars next-cntl)
                       (strip-cars cntl))
                nil)
-     (list
-      (list (f-sr (joint-act (car (car l-cntl))
-                             (f-or3 (car (car l-next-cntl))
-                                    (car (car l-done-))
-                                    (serial-adder$ready-in- serial-add-st))
-                             go-cntl)
-                  (joint-act (f-and3 (car (car l-next-cntl))
-                                     (car (car l-done-))
-                                     (car done-))
-                             (car (car l-cntl))
-                             go-buf-cntl)
-                  (car (car l-next-cntl)))))
+     
+     (list (f-sr cntl-act cntl-buf-act (car lnext-cntl)))
      (pairlis$
-      (fv-if (joint-act (car (car l-cntl))
-                        (f-or3 (car (car l-next-cntl))
-                               (car (car l-done-))
-                               (serial-adder$ready-in- serial-add-st))
-                        go-cntl)
+      (fv-if cntl-act
              (f$next-cntl-state (v-threefix (strip-cars cntl)))
              (strip-cars next-cntl))
       nil)
-     (list
-      (list (f-sr (joint-act (car (car l-cntl))
-                             (f-or3 (car (car l-next-cntl))
-                                    (car (car l-done-))
-                                    (serial-adder$ready-in- serial-add-st))
-                             go-cntl)
-                  (f-or (joint-act (f-and3 (car (car l-next-cntl))
-                                           (car (car l-done-))
-                                           (car done-))
-                                   (car (car l-cntl))
-                                   go-buf-cntl)
-                        (joint-act (f-and3 (serial-adder$ready-out serial-add-st)
-                                           (car (car l-done-))
-                                           (f-not (car done-)))
-                                   (car (car l-result))
-                                   go-result))
-                  (car (car l-done-)))))
-     (list (f-if (joint-act (car (car l-cntl))
-                            (f-or3 (car (car l-next-cntl))
-                                   (car (car l-done-))
-                                   (serial-adder$ready-in- serial-add-st))
-                            go-cntl)
+     
+     (list (f-sr cntl-act
+                 (f-or cntl-buf-act result-act)
+                 (car ldone-)))
+     (list (f-if cntl-act
                  (compute-done- (v-threefix (strip-cars cntl)))
                  (car done-)))
-     (list (list (f-sr (joint-act (f-and3 (serial-adder$ready-out serial-add-st)
-                                          (car (car l-done-))
-                                          (f-not (car done-)))
-                                  (car (car l-result))
-                                  go-result)
-                       dr-l-result (car (car l-result)))))
-     (pairlis$ (fv-if (joint-act (f-and3 (serial-adder$ready-out serial-add-st)
-                                         (car (car l-done-))
-                                         (f-not (car done-)))
-                                 (car (car l-result))
-                                 go-result)
+     
+     (list (f-sr result-act dr-lresult (car lresult)))
+     (pairlis$ (fv-if result-act
                       (append (car reg2)
                               (list (f-buf (car ci))))
                       (strip-cars result))
                nil)
-     (serial-adder$state-fn
-      (list* (joint-act (car (car l-cntl))
-                        (f-or3 (car (car l-next-cntl))
-                               (car (car l-done-))
-                               (serial-adder$ready-in- serial-add-st))
-                        go-cntl)
-             nil
-             (joint-act (f-and3 (serial-adder$ready-out serial-add-st)
-                                (car (car l-done-))
-                                (f-not (car done-)))
-                        (car (car l-result))
-                        go-result)
-             serial-adder$go-signals)
-      serial-add-st))))
+     
+     (serial-adder$state-fn serial-adder$inputs serial-add))))
 
 (defthm len-of-async-adder$state-fn
   (equal (len (async-adder$state-fn inputs st))
-         9))
+         *async-adder$st-len*))
 
 (defthmd async-adder$state
- (b* ((inputs (list* dr-l-result go-signals))
-      (bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-      (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2 bit-add-st))
-      (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                l-result result
-                serial-add-st)))
-   (implies (and (async-adder& netlist)
+  (b* ((inputs (list* dr-lresult go-signals))
+
+       (cntl       (nth *async-adder$cntl* st))
+       (next-cntl  (nth *async-adder$next-cntl* st))
+       (result     (nth *async-adder$result* st))
+       (serial-add (nth *async-adder$serial-add* st))
+       
+       (reg0 (nth *serial-adder$reg0* serial-add))
+       (reg1 (nth *serial-adder$reg1* serial-add))
+       (reg2 (nth *serial-adder$reg2* serial-add)))
+    (implies (and (async-adder& netlist)
                  
-                 (true-listp go-signals)
-                 (equal (len go-signals) 8)
+                  (true-listp go-signals)
+                  (equal (len go-signals) *async-adder$go-num*)
                  
-                 (len-1-true-listp cntl)
-                 (equal (len cntl) 5)
-                 (len-1-true-listp next-cntl)
-                 (equal (len next-cntl) 5)
-                 (true-listp result)
-                 (equal (len result) 33)
-                 (equal (len (car reg0)) 32)
-                 (equal (len (car reg1)) 32)
-                 (true-listp (car reg2))
-                 (equal (len (car reg2)) 32))
-            (equal (de 'async-adder inputs st netlist)
-                   (async-adder$state-fn inputs st))))
- :hints (("Goal"
-          :in-theory (e/d* (de-rules
+                  (len-1-true-listp cntl)
+                  (equal (len cntl) *async-adder$cntl-st-len*)
+                  (len-1-true-listp next-cntl)
+                  (equal (len next-cntl) *async-adder$cntl-st-len*)
+                  (true-listp result)
+                  (equal (len result) (1+ *data-width*))
+                  (equal (len (car reg0)) *data-width*)
+                  (equal (len (car reg1)) *data-width*)
+                  (true-listp (car reg2))
+                  (equal (len (car reg2)) *data-width*))
+             (equal (de 'async-adder inputs st netlist)
+                    (async-adder$state-fn inputs st))))
+  :hints (("Goal"
+           :in-theory (e/d (de-rules
                             async-adder&
                             async-adder*$destructure
-                            link-st$value link-st$state
                             joint-cntl$value
                             latch-n$value latch-n$state
                             v-buf$value
                             next-cntl-state$value
                             serial-adder$value
                             serial-adder$state
-                            take-of-len-is-itself
-                            assoc-eq-values-of-sis-pairlis$-sis
+                            open-nth
                             open-nthcdr
                             list-rewrite-5
                             len-1-true-listp)
@@ -796,6 +797,8 @@
                             (async-adder*)
                             (si)
                             (sis)
+                            acl2::hons-duplicity-alist-p-of-cons
+                            acl2::alistp-when-hons-duplicity-alist-p
                             open-v-threefix
                             tv-disabled-rules)))))
 
@@ -823,33 +826,40 @@
 (defund async-adder$go-a (inputs)
   (declare (xargs :guard (true-listp inputs)))
   (b* ((go-signals (nthcdr 1 inputs))
-       (serial-adder$go-signals (nthcdr 3 go-signals)))
+       (serial-adder$go-signals (nthcdr *async-adder$prim-go-num*
+                                        go-signals)))
     (nth 0 serial-adder$go-signals)))
 
 (defund async-adder$go-b (inputs)
   (declare (xargs :guard (true-listp inputs)))
   (b* ((go-signals (nthcdr 1 inputs))
-       (serial-adder$go-signals (nthcdr 3 go-signals)))
+       (serial-adder$go-signals (nthcdr *async-adder$prim-go-num*
+                                        go-signals)))
     (nth 1 serial-adder$go-signals)))
 
 (defund async-adder$go-s (inputs)
   (declare (xargs :guard (true-listp inputs)))
   (b* ((go-signals (nthcdr 1 inputs))
-       (serial-adder$go-signals (nthcdr 3 go-signals)))
+       (serial-adder$go-signals (nthcdr *async-adder$prim-go-num*
+                                        go-signals)))
     (nth 2 serial-adder$go-signals)))
 
 (defund async-adder$go-add (inputs)
   (declare (xargs :guard (true-listp inputs)))
   (b* ((go-signals (nthcdr 1 inputs))
-       (serial-adder$go-signals (nthcdr 3 go-signals))
-       (1-bit-adder$go-signals (nthcdr 3 serial-adder$go-signals)))
+       (serial-adder$go-signals (nthcdr *async-adder$prim-go-num*
+                                        go-signals))
+       (1-bit-adder$go-signals (nthcdr *serial-adder$prim-go-num*
+                                       serial-adder$go-signals)))
     (nth 0 1-bit-adder$go-signals)))
 
 (defund async-adder$go-carry (inputs)
   (declare (xargs :guard (true-listp inputs)))
   (b* ((go-signals (nthcdr 1 inputs))
-       (serial-adder$go-signals (nthcdr 3 go-signals))
-       (1-bit-adder$go-signals (nthcdr 3 serial-adder$go-signals)))
+       (serial-adder$go-signals (nthcdr *async-adder$prim-go-num*
+                                        go-signals))
+       (1-bit-adder$go-signals (nthcdr *serial-adder$prim-go-num*
+                                       serial-adder$go-signals)))
     (nth 1 1-bit-adder$go-signals)))
 
 (deftheory async-adder$go-signals
@@ -864,174 +874,72 @@
 
 (defund async-adder$input-format (inputs)
   (declare (xargs :guard (true-listp inputs)))
-  (b* ((dr-l-result (nth 0 inputs))
+  (b* ((dr-lresult (nth 0 inputs))
        (go-signals (nthcdr 1 inputs)))
     (and
-     (equal dr-l-result nil)
+     (equal dr-lresult nil)
      (true-listp go-signals)
-     (equal (len go-signals) 8)
+     (equal (len go-signals) *async-adder$go-num*)
      (equal inputs
-            (list* dr-l-result go-signals)))))
+            (list* dr-lresult go-signals)))))
+
+(defthmd async-adder$state-alt
+  (b* ((cntl (nth *async-adder$cntl* st))
+       (next-cntl (nth *async-adder$next-cntl* st))
+       (result (nth *async-adder$result* st))
+       (serial-add (nth *async-adder$serial-add* st))
+       
+       (reg0 (nth *serial-adder$reg0* serial-add))
+       (reg1 (nth *serial-adder$reg1* serial-add))
+       (reg2 (nth *serial-adder$reg2* serial-add)))
+    (implies
+     (and (async-adder& netlist)
+          (async-adder$input-format inputs)
+          
+          (len-1-true-listp cntl)
+          (equal (len cntl) *async-adder$cntl-st-len*)
+          (len-1-true-listp next-cntl)
+          (equal (len next-cntl) *async-adder$cntl-st-len*)
+          (true-listp result)
+          (equal (len result) (1+ *data-width*))
+          (equal (len (car reg0)) *data-width*)
+          (equal (len (car reg1)) *data-width*)
+          (true-listp (car reg2))
+          (equal (len (car reg2)) *data-width*))
+     (equal (de 'async-adder inputs st netlist)
+            (async-adder$state-fn inputs st))))
+  :hints (("Goal"
+           :in-theory (enable async-adder$input-format)
+           :use (:instance async-adder$state
+                           (dr-lresult (nth 0 inputs))
+                           (go-signals (nthcdr 1 inputs))))))
+
+(state-fn-n-gen async-adder)
 
 (input-format-n-gen async-adder)
 
-(defthmd async-adder$state-alt
- (b* ((l-cntl (nth 0 st))
-      (cntl (nth 1 st))
-      (l-next-cntl (nth 2 st))
-      (next-cntl (nth 3 st))
-      (l-done- (nth 4 st))
-      (done- (nth 5 st))
-      (l-result (nth 6 st))
-      (result (nth 7 st))
-      (serial-add-st (nth 8 st))
-       
-      (l-reg0 (nth 0 serial-add-st))
-      (reg0 (nth 1 serial-add-st))
-      (l-reg1 (nth 2 serial-add-st))
-      (reg1 (nth 3 serial-add-st))
-      (l-reg2 (nth 4 serial-add-st))
-      (reg2 (nth 5 serial-add-st))
-      (bit-add-st (nth 6 serial-add-st))
-       
-      (l-a (nth 0 bit-add-st))
-      (a (nth 1 bit-add-st))
-      (l-b (nth 2 bit-add-st))
-      (b (nth 3 bit-add-st))
-      (l-ci (nth 4 bit-add-st))
-      (ci (nth 5 bit-add-st))
-      (l-s (nth 6 bit-add-st))
-      (s (nth 7 bit-add-st))
-      (l-co (nth 8 bit-add-st))
-      (co (nth 9 bit-add-st)))
-   (implies (and (async-adder& netlist)
-                 (async-adder$input-format inputs)
-                 (equal st (list l-cntl cntl l-next-cntl
-                                 next-cntl l-done- done- l-result result
-                                 (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                       (list l-a a l-b b l-ci ci l-s s l-co co))))
-                 (len-1-true-listp cntl)
-                 (equal (len cntl) 5)
-                 (len-1-true-listp next-cntl)
-                 (equal (len next-cntl) 5)
-                 (true-listp result)
-                 (equal (len result) 33)
-                 (equal (len (car reg0)) 32)
-                 (equal (len (car reg1)) 32)
-                 (true-listp (car reg2))
-                 (equal (len (car reg2)) 32))
-            (equal (de 'async-adder inputs st netlist)
-                   (async-adder$state-fn inputs st))))
- :hints (("Goal"
-           :in-theory (enable async-adder$input-format)
-           :use (:instance async-adder$state
-                           (dr-l-result (nth 0 inputs))
-                           (go-signals (nthcdr 1 inputs))
-
-                           (l-cntl (nth 0 st))
-                           (cntl (nth 1 st))
-                           (l-next-cntl (nth 2 st))
-                           (next-cntl (nth 3 st))
-                           (l-done- (nth 4 st))
-                           (done- (nth 5 st))
-                           (l-result (nth 6 st))
-                           (result (nth 7 st))
-                           
-                           (l-reg0 (nth 0 (nth 8 st)))
-                           (reg0 (nth 1 (nth 8 st)))
-                           (l-reg1 (nth 2 (nth 8 st)))
-                           (reg1 (nth 3 (nth 8 st)))
-                           (l-reg2 (nth 4 (nth 8 st)))
-                           (reg2 (nth 5 (nth 8 st)))
-      
-                           (l-a (nth 0 (nth 6 (nth 8 st))))
-                           (a (nth 1 (nth 6 (nth 8 st))))
-                           (l-b (nth 2 (nth 6 (nth 8 st))))
-                           (b (nth 3 (nth 6 (nth 8 st))))
-                           (l-ci (nth 4 (nth 6 (nth 8 st))))
-                           (ci (nth 5 (nth 6 (nth 8 st))))
-                           (l-s (nth 6 (nth 6 (nth 8 st))))
-                           (s (nth 7 (nth 6 (nth 8 st))))
-                           (l-co (nth 8 (nth 6 (nth 8 st))))
-                           (co (nth 9 (nth 6 (nth 8 st))))))))
-
-(defun async-adder$state-fn-n (inputs-lst st n)
-  (if (zp n)
-      st
-    (async-adder$state-fn-n
-     (cdr inputs-lst)
-     (async-adder$state-fn (car inputs-lst) st)
-     (1- n))))
-
-(defthm open-async-adder$state-fn-n
-  (and
-   (implies (zp n)
-            (equal (async-adder$state-fn-n inputs-lst st n)
-                   st))
-   (implies (not (zp n))
-            (equal (async-adder$state-fn-n inputs-lst st n)
-                   (async-adder$state-fn-n
-                    (cdr inputs-lst)
-                    (async-adder$state-fn (car inputs-lst) st)
-                    (1- n))))))
-
-(defthm async-adder$state-fn-m+n
-  (implies (and (natp m)
-                (natp n))
-           (equal (async-adder$state-fn-n inputs-lst st (+ m n))
-                  (async-adder$state-fn-n
-                   (nthcdr m inputs-lst)
-                   (async-adder$state-fn-n inputs-lst st m)
-                   n)))
-  :hints (("Goal" :induct (async-adder$state-fn-n inputs-lst st m))))
-
-(in-theory (disable async-adder$state-fn-n))
-
 (defthmd de-sim-n$async-adder
-  (b* ((l-cntl (nth 0 st))
-       (cntl (nth 1 st))
-       (l-next-cntl (nth 2 st))
-       (next-cntl (nth 3 st))
-       (l-done- (nth 4 st))
-       (done- (nth 5 st))
-       (l-result (nth 6 st))
-       (result (nth 7 st))
-       (serial-add-st (nth 8 st))
+  (b* ((cntl (nth *async-adder$cntl* st))
+       (next-cntl (nth *async-adder$next-cntl* st))
+       (result (nth *async-adder$result* st))
+       (serial-add (nth *async-adder$serial-add* st))
        
-       (l-reg0 (nth 0 serial-add-st))
-       (reg0 (nth 1 serial-add-st))
-       (l-reg1 (nth 2 serial-add-st))
-       (reg1 (nth 3 serial-add-st))
-       (l-reg2 (nth 4 serial-add-st))
-       (reg2 (nth 5 serial-add-st))
-       (bit-add-st (nth 6 serial-add-st))
-       
-       (l-a (nth 0 bit-add-st))
-       (a (nth 1 bit-add-st))
-       (l-b (nth 2 bit-add-st))
-       (b (nth 3 bit-add-st))
-       (l-ci (nth 4 bit-add-st))
-       (ci (nth 5 bit-add-st))
-       (l-s (nth 6 bit-add-st))
-       (s (nth 7 bit-add-st))
-       (l-co (nth 8 bit-add-st))
-       (co (nth 9 bit-add-st)))
+       (reg0 (nth *serial-adder$reg0* serial-add))
+       (reg1 (nth *serial-adder$reg1* serial-add))
+       (reg2 (nth *serial-adder$reg2* serial-add)))
     (implies (and (async-adder& netlist)
                   (async-adder$input-format-n inputs-lst n)
-                  (equal st (list l-cntl cntl l-next-cntl
-                                  next-cntl l-done- done- l-result result
-                                  (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                        (list l-a a l-b b l-ci ci l-s s l-co co))))
+                  
                   (len-1-true-listp cntl)
-                  (equal (len cntl) 5)
+                  (equal (len cntl) *async-adder$cntl-st-len*)
                   (len-1-true-listp next-cntl)
-                  (equal (len next-cntl) 5)
+                  (equal (len next-cntl) *async-adder$cntl-st-len*)
                   (true-listp result)
-                  (equal (len result) 33)
-                  (equal (len (car reg0)) 32)
-                  (equal (len (car reg1)) 32)
+                  (equal (len result) (1+ *data-width*))
+                  (equal (len (car reg0)) *data-width*)
+                  (equal (len (car reg1)) *data-width*)
                   (true-listp (car reg2))
-                  (equal (len (car reg2)) 32))
+                  (equal (len (car reg2)) *data-width*))
              (equal (de-sim-n 'async-adder inputs-lst st netlist n)
                     (async-adder$state-fn-n inputs-lst st n))))
   :hints (("Goal"
@@ -1049,73 +957,73 @@
                             true-listp)))))
 
 (defund async-adder$inv-st (st)
-  (b* ((l-cntl (nth 0 st))
-       (cntl (nth 1 st))
-       (l-next-cntl (nth 2 st))
-       (next-cntl (nth 3 st))
-       (l-done- (nth 4 st))
-       (done- (nth 5 st))
-       (l-result (nth 6 st))
-       (result (nth 7 st))
-       (serial-add-st (nth 8 st))
+  (b* ((lcntl      (nth *async-adder$lcntl* st))
+       (cntl       (nth *async-adder$cntl* st))
+       (lnext-cntl (nth *async-adder$lnext-cntl* st))
+       (next-cntl  (nth *async-adder$next-cntl* st))
+       (ldone-     (nth *async-adder$ldone-* st))
+       (done-      (nth *async-adder$done-* st))
+       (lresult    (nth *async-adder$lresult* st))
+       (result     (nth *async-adder$result* st))
+       (serial-add (nth *async-adder$serial-add* st))
        
-       (l-reg0 (nth 0 serial-add-st))
-       (reg0 (nth 1 serial-add-st))
-       (l-reg1 (nth 2 serial-add-st))
-       (reg1 (nth 3 serial-add-st))
-       (l-reg2 (nth 4 serial-add-st))
-       (reg2 (nth 5 serial-add-st))
-       (bit-add-st (nth 6 serial-add-st))
+       (lreg0   (nth *serial-adder$lreg0* serial-add))
+       (reg0    (nth *serial-adder$reg0*  serial-add))
+       (lreg1   (nth *serial-adder$lreg1* serial-add))
+       (reg1    (nth *serial-adder$reg1*  serial-add))
+       (lreg2   (nth *serial-adder$lreg2* serial-add))
+       (reg2    (nth *serial-adder$reg2*  serial-add))
+       (bit-add (nth *serial-adder$bit-add* serial-add))
        
-       (l-a (nth 0 bit-add-st))
-       (?a (nth 1 bit-add-st))
-       (l-b (nth 2 bit-add-st))
-       (?b (nth 3 bit-add-st))
-       (l-ci (nth 4 bit-add-st))
-       (?ci (nth 5 bit-add-st))
-       (l-s (nth 6 bit-add-st))
-       (?s (nth 7 bit-add-st))
-       (l-co (nth 8 bit-add-st))
-       (?co (nth 9 bit-add-st)))
+       (la  (nth *1-bit-adder$la* bit-add))
+       (?a  (nth *1-bit-adder$a* bit-add))
+       (lb  (nth *1-bit-adder$lb* bit-add))
+       (?b  (nth *1-bit-adder$b* bit-add))
+       (lci (nth *1-bit-adder$lci* bit-add))
+       (?ci (nth *1-bit-adder$ci* bit-add))
+       (ls  (nth *1-bit-adder$ls* bit-add))
+       (?s  (nth *1-bit-adder$s* bit-add))
+       (lco (nth *1-bit-adder$lco* bit-add))
+       (?co (nth *1-bit-adder$co* bit-add)))
     
-    (and (emptyp l-cntl)
+    (and (emptyp lcntl)
          (len-1-true-listp cntl)
-         (equal (len cntl) 5)
+         (equal (len cntl) *async-adder$cntl-st-len*)
                     
-         (fullp l-next-cntl)
+         (fullp lnext-cntl)
          (len-1-true-listp next-cntl)
-         (equal (len next-cntl) 5)
+         (equal (len next-cntl) *async-adder$cntl-st-len*)
          (bvp (strip-cars next-cntl))
                     
-         (fullp l-done-)
+         (fullp ldone-)
          (equal (car done-) t)
                     
-         (emptyp l-result)
+         (emptyp lresult)
          (true-listp result)
-         (equal (len result) 33)
+         (equal (len result) (1+ *data-width*))
           
-         (fullp l-reg0)
-         (equal (len (car reg0)) 32)
-         (fullp l-reg1)
-         (equal (len (car reg1)) 32)
-         (emptyp l-reg2)
+         (fullp lreg0)
+         (equal (len (car reg0)) *data-width*)
+         (fullp lreg1)
+         (equal (len (car reg1)) *data-width*)
+         (emptyp lreg2)
          (true-listp (car reg2))
-         (equal (len (car reg2)) 32)
+         (equal (len (car reg2)) *data-width*)
                     
-         (emptyp l-a)
-         (emptyp l-b)
-         (fullp l-ci)
-         (emptyp l-s)
-         (emptyp l-co))))
+         (emptyp la)
+         (emptyp lb)
+         (fullp lci)
+         (emptyp ls)
+         (emptyp lco))))
 
 (defconst *async-adder-interleavings*
   (prepend-rec
-   (interleave-rec2 '(async-adder$go-buf-cntl)
-                    (prepend-rec (interleave '(async-adder$go-a)
-                                             '(async-adder$go-b))
-                                 '(async-adder$go-add
-                                   async-adder$go-carry
-                                   async-adder$go-s)))
+   (shuffle-rec2 '(async-adder$go-buf-cntl)
+                 (prepend-rec (shuffle '(async-adder$go-a)
+                                       '(async-adder$go-b))
+                              '(async-adder$go-add
+                                async-adder$go-carry
+                                async-adder$go-s)))
    '(async-adder$go-cntl)))
 
 (defconst *async-adder-independ-lst*
@@ -1144,18 +1052,19 @@
           (async-adder$state-fn (car inputs-lst) st)
           (1- n)))))
 
+(defthm open-async-adder$result-empty-n-zp
+  (implies (zp n)
+           (equal (async-adder$result-empty-n inputs-lst st n)
+                  t)))
+
 (defthm open-async-adder$result-empty-n
-  (and
-   (implies (zp n)
-            (equal (async-adder$result-empty-n inputs-lst st n)
-                   t))
-   (implies (not (zp n))
-            (equal (async-adder$result-empty-n inputs-lst st n)
-                   (and (emptyp (extract-async-adder-result-status st))
-                        (async-adder$result-empty-n
-                         (cdr inputs-lst)
-                         (async-adder$state-fn (car inputs-lst) st)
-                         (1- n)))))))
+  (implies (not (zp n))
+           (equal (async-adder$result-empty-n inputs-lst st n)
+                  (and (emptyp (extract-async-adder-result-status st))
+                       (async-adder$result-empty-n
+                        (cdr inputs-lst)
+                        (async-adder$state-fn (car inputs-lst) st)
+                        (1- n))))))
 
 (defthm async-adder$result-emptyp-m+n
   (implies (and (natp m)
@@ -1199,53 +1108,47 @@
 
 (defun async-adder-invariant-gen (n)
   (declare (xargs :guard (natp n)))
-  (b* ((st '((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-             (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                bit-add-st))
-             (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                       l-result result
-                       serial-add-st))))
-       (hyps
+  (b* ((hyps
         '((async-adder$inv-st st)))
        (concl1
         '(async-adder$result-empty-n inputs-lst st n))
        (concl2
         '(equal
           (async-adder$state-fn-n inputs-lst st n)
-          (list '((nil))
+          (list '(nil)
                 next-cntl
-                '((t))
+                '(t)
                 (pairlis$ (next-cntl-state (strip-cars next-cntl))
                           nil)
-                '((t))
+                '(t)
                 (list (compute-done- (strip-cars next-cntl)))
-                '((nil))
+                '(nil)
                 (pairlis$ (v-threefix (strip-cars result))
                           nil)
-                (list '((t))
+                (list '(t)
                       (list (fv-shift-right (car reg0) nil))
-                      '((t))
+                      '(t)
                       (list (fv-shift-right (car reg1) nil))
-                      '((nil))
+                      '(nil)
                       (list (fv-shift-right (car reg2)
                                             (f-xor3 (car ci)
                                                     (car (car reg0))
                                                     (car (car reg1)))))
-                      (list '((nil))
+                      (list '(nil)
                             (list (f-buf (car (car reg0))))
-                            '((nil))
+                            '(nil)
                             (list (f-buf (car (car reg1))))
-                            '((t))
+                            '(t)
                             (list (f-or (f-and (car (car reg0))
                                                (car (car reg1)))
                                         (f-and (f-xor (car (car reg0))
                                                       (car (car reg1)))
                                                (car ci))))
-                            '((nil))
+                            '(nil)
                             (list (f-xor3 (car ci)
                                           (car (car reg0))
                                           (car (car reg1))))
-                            '((nil))
+                            '(nil)
                             (list (f-or (f-and (car (car reg0))
                                                (car (car reg1)))
                                         (f-and (f-xor (car (car reg0))
@@ -1254,13 +1157,12 @@
           )))
     (if (zp n)
         `((defthmd async-adder$invalid-result
-            (b* ,st
-              (implies
-               (and ,@hyps
-                    (async-adder$st-trans inputs-lst)
-                    (equal n (async-adder$st-trans->numsteps inputs-lst))
-                    (async-adder$input-format-n inputs-lst n))
-               ,concl1))
+            (implies
+             (and ,@hyps
+                  (async-adder$st-trans inputs-lst)
+                  (equal n (async-adder$st-trans->numsteps inputs-lst))
+                  (async-adder$input-format-n inputs-lst n))
+             ,concl1)
             :hints (("Goal"
                      :in-theory (e/d* (async-adder$st-trans
                                        async-adder$st-trans->numsteps)
@@ -1269,7 +1171,34 @@
                                        open-async-adder$input-format-n)))))
           
           (defthmd async-adder$state-invariant
-            (b* ,st
+            (b* ((?lcntl      (nth *async-adder$lcntl* st))
+                 (?cntl       (nth *async-adder$cntl* st))
+                 (?lnext-cntl (nth *async-adder$lnext-cntl* st))
+                 (?next-cntl  (nth *async-adder$next-cntl* st))
+                 (?ldone-     (nth *async-adder$ldone-* st))
+                 (?done-      (nth *async-adder$done-* st))
+                 (?lresult    (nth *async-adder$lresult* st))
+                 (?result     (nth *async-adder$result* st))
+                 (serial-add  (nth *async-adder$serial-add* st))
+       
+                 (?lreg0  (nth *serial-adder$lreg0* serial-add))
+                 (?reg0   (nth *serial-adder$reg0*  serial-add))
+                 (?lreg1  (nth *serial-adder$lreg1* serial-add))
+                 (?reg1   (nth *serial-adder$reg1*  serial-add))
+                 (?lreg2  (nth *serial-adder$lreg2* serial-add))
+                 (?reg2   (nth *serial-adder$reg2*  serial-add))
+                 (bit-add (nth *serial-adder$bit-add* serial-add))
+       
+                 (?la  (nth *1-bit-adder$la* bit-add))
+                 (?a   (nth *1-bit-adder$a* bit-add))
+                 (?lb  (nth *1-bit-adder$lb* bit-add))
+                 (?b   (nth *1-bit-adder$b* bit-add))
+                 (?lci (nth *1-bit-adder$lci* bit-add))
+                 (?ci  (nth *1-bit-adder$ci* bit-add))
+                 (?ls  (nth *1-bit-adder$ls* bit-add))
+                 (?s   (nth *1-bit-adder$s* bit-add))
+                 (?lco (nth *1-bit-adder$lco* bit-add))
+                 (?co  (nth *1-bit-adder$co* bit-add)))
               (implies
                (and ,@hyps
                     (async-adder$st-trans inputs-lst)
@@ -1309,13 +1238,12 @@
         (append
          `((local
             (defthm ,lemma-name-1
-              (b* ,st
-                (implies
-                 (and ,@hyps
-                      (,st-trans inputs-lst)
-                      (equal n ,st-trans->numsteps)
-                      (async-adder$input-format-n inputs-lst n))
-                 ,concl1))
+              (implies
+               (and ,@hyps
+                    (,st-trans inputs-lst)
+                    (equal n ,st-trans->numsteps)
+                    (async-adder$input-format-n inputs-lst n))
+               ,concl1)
               :hints (("Goal"
                        :do-not-induct t
                        :in-theory (e/d* (extract-async-adder-result-status
@@ -1340,7 +1268,34 @@
 
            (local
             (defthm ,lemma-name-2
-              (b* ,st
+              (b* ((?lcntl      (nth *async-adder$lcntl* st))
+                   (?cntl       (nth *async-adder$cntl* st))
+                   (?lnext-cntl (nth *async-adder$lnext-cntl* st))
+                   (?next-cntl  (nth *async-adder$next-cntl* st))
+                   (?ldone-     (nth *async-adder$ldone-* st))
+                   (?done-      (nth *async-adder$done-* st))
+                   (?lresult    (nth *async-adder$lresult* st))
+                   (?result     (nth *async-adder$result* st))
+                   (serial-add  (nth *async-adder$serial-add* st))
+       
+                   (?lreg0  (nth *serial-adder$lreg0* serial-add))
+                   (?reg0   (nth *serial-adder$reg0*  serial-add))
+                   (?lreg1  (nth *serial-adder$lreg1* serial-add))
+                   (?reg1   (nth *serial-adder$reg1*  serial-add))
+                   (?lreg2  (nth *serial-adder$lreg2* serial-add))
+                   (?reg2   (nth *serial-adder$reg2*  serial-add))
+                   (bit-add (nth *serial-adder$bit-add* serial-add))
+       
+                   (?la  (nth *1-bit-adder$la* bit-add))
+                   (?a   (nth *1-bit-adder$a* bit-add))
+                   (?lb  (nth *1-bit-adder$lb* bit-add))
+                   (?b   (nth *1-bit-adder$b* bit-add))
+                   (?lci (nth *1-bit-adder$lci* bit-add))
+                   (?ci  (nth *1-bit-adder$ci* bit-add))
+                   (?ls  (nth *1-bit-adder$ls* bit-add))
+                   (?s   (nth *1-bit-adder$s* bit-add))
+                   (?lco (nth *1-bit-adder$lco* bit-add))
+                   (?co  (nth *1-bit-adder$co* bit-add)))
                 (implies
                  (and ,@hyps
                       (,st-trans inputs-lst)
@@ -1379,68 +1334,68 @@
        (len *async-adder-interleavings*))))
 
 (defund last-round-st (st)
-  (b* ((l-cntl (nth 0 st))
-       (cntl (nth 1 st))
-       (l-next-cntl (nth 2 st))
-       (next-cntl (nth 3 st))
-       (l-done- (nth 4 st))
-       (done- (nth 5 st))
-       (l-result (nth 6 st))
-       (result (nth 7 st))
-       (serial-add-st (nth 8 st))
+  (b* ((lcntl      (nth *async-adder$lcntl* st))
+       (cntl       (nth *async-adder$cntl* st))
+       (lnext-cntl (nth *async-adder$lnext-cntl* st))
+       (next-cntl  (nth *async-adder$next-cntl* st))
+       (ldone-     (nth *async-adder$ldone-* st))
+       (done-      (nth *async-adder$done-* st))
+       (lresult    (nth *async-adder$lresult* st))
+       (result     (nth *async-adder$result* st))
+       (serial-add (nth *async-adder$serial-add* st))
        
-       (l-reg0 (nth 0 serial-add-st))
-       (reg0 (nth 1 serial-add-st))
-       (l-reg1 (nth 2 serial-add-st))
-       (reg1 (nth 3 serial-add-st))
-       (l-reg2 (nth 4 serial-add-st))
-       (reg2 (nth 5 serial-add-st))
-       (bit-add-st (nth 6 serial-add-st))
+       (lreg0   (nth *serial-adder$lreg0* serial-add))
+       (reg0    (nth *serial-adder$reg0*  serial-add))
+       (lreg1   (nth *serial-adder$lreg1* serial-add))
+       (reg1    (nth *serial-adder$reg1*  serial-add))
+       (lreg2   (nth *serial-adder$lreg2* serial-add))
+       (reg2    (nth *serial-adder$reg2*  serial-add))
+       (bit-add (nth *serial-adder$bit-add* serial-add))
        
-       (l-a (nth 0 bit-add-st))
-       (?a (nth 1 bit-add-st))
-       (l-b (nth 2 bit-add-st))
-       (?b (nth 3 bit-add-st))
-       (l-ci (nth 4 bit-add-st))
-       (?ci (nth 5 bit-add-st))
-       (l-s (nth 6 bit-add-st))
-       (?s (nth 7 bit-add-st))
-       (l-co (nth 8 bit-add-st))
-       (?co (nth 9 bit-add-st)))
+       (la  (nth *1-bit-adder$la* bit-add))
+       (?a  (nth *1-bit-adder$a* bit-add))
+       (lb  (nth *1-bit-adder$lb* bit-add))
+       (?b  (nth *1-bit-adder$b* bit-add))
+       (lci (nth *1-bit-adder$lci* bit-add))
+       (?ci (nth *1-bit-adder$ci* bit-add))
+       (ls  (nth *1-bit-adder$ls* bit-add))
+       (?s  (nth *1-bit-adder$s* bit-add))
+       (lco (nth *1-bit-adder$lco* bit-add))
+       (?co (nth *1-bit-adder$co* bit-add)))
     
-    (and (emptyp l-cntl)
+    (and (emptyp lcntl)
          (len-1-true-listp cntl)
-         (equal (len cntl) 5)
+         (equal (len cntl) *async-adder$cntl-st-len*)
          (bvp (strip-cars cntl))
           
-         (fullp l-next-cntl)
+         (fullp lnext-cntl)
          (len-1-true-listp next-cntl)
-         (equal (len next-cntl) 5)
+         (equal (len next-cntl) *async-adder$cntl-st-len*)
          (bvp (strip-cars next-cntl))
 
-         (fullp l-done-)
+         (fullp ldone-)
          (equal (car done-) nil) ;; Done
 
-         (emptyp l-result)
+         (emptyp lresult)
          (true-listp result)
-         (equal (len result) 33)
+         (equal (len result) (1+ *data-width*))
                   
-         (fullp l-reg0)
-         (equal (len (car reg0)) 32)
-         (fullp l-reg1)
-         (equal (len (car reg1)) 32)
-         (emptyp l-reg2)
+         (fullp lreg0)
+         (equal (len (car reg0)) *data-width*)
+         (fullp lreg1)
+         (equal (len (car reg1)) *data-width*)
+         (emptyp lreg2)
          (true-listp (car reg2))
-         (equal (len (car reg2)) 32)
+         (equal (len (car reg2)) *data-width*)
           
-         (emptyp l-a)
-         (emptyp l-b)
-         (fullp l-ci)
-         (emptyp l-s)
-         (emptyp l-co))))
+         (emptyp la)
+         (emptyp lb)
+         (fullp lci)
+         (emptyp ls)
+         (emptyp lco))))
 
 (defconst *async-adder-last-round-interleavings*
-  (prepend-rec (interleave '(async-adder$go-a) '(async-adder$go-b))
+  (prepend-rec (shuffle '(async-adder$go-a) '(async-adder$go-b))
                '(async-adder$go-add
                  async-adder$go-carry
                  async-adder$go-s
@@ -1465,26 +1420,20 @@
 
 (defun async-adder-last-round-gen (n)
   (declare (xargs :guard (natp n)))
-  (b* ((st '((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-             (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                bit-add-st))
-             (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                       l-result result
-                       serial-add-st))))
-       (hyps
+  (b* ((hyps
         '((last-round-st st)))
        (concl1
         '(async-adder$result-empty-n inputs-lst st n))
        (concl2
         '(equal
           (async-adder$state-fn-n inputs-lst st n)
-          (list '((nil))
+          (list '(nil)
                 cntl
-                '((t))
+                '(t)
                 next-cntl
-                '((nil))
+                '(nil)
                 '(nil) ;; Done
-                '((t))
+                '(t)
                 (pairlis$
                  (append (fv-shift-right (car reg2)
                                          (f-xor3 (car ci)
@@ -1496,30 +1445,30 @@
                                                    (car (car reg1)))
                                             (car ci)))))
                  nil)
-                (list '((nil))
+                (list '(nil)
                       (list (car reg0))
-                      '((nil))
+                      '(nil)
                       (list (car reg1))
-                      '((nil))
+                      '(nil)
                       (list (fv-shift-right (car reg2)
                                             (f-xor3 (car ci)
                                                     (car (car reg0))
                                                     (car (car reg1)))))
-                      (list '((nil))
+                      (list '(nil)
                             (list (f-buf (car (car reg0))))
-                            '((nil))
+                            '(nil)
                             (list (f-buf (car (car reg1))))
-                            '((nil))
+                            '(nil)
                             (list (f-or (f-and (car (car reg0))
                                                (car (car reg1)))
                                         (f-and (f-xor (car (car reg0))
                                                       (car (car reg1)))
                                                (car ci))))
-                            '((nil))
+                            '(nil)
                             (list (f-xor3 (car ci)
                                           (car (car reg0))
                                           (car (car reg1))))
-                            '((nil))
+                            '(nil)
                             (list (f-or (f-and (car (car reg0))
                                                (car (car reg1)))
                                         (f-and (f-xor (car (car reg0))
@@ -1528,14 +1477,13 @@
           )))
     (if (zp n)
         `((defthmd async-adder-last-round$invalid-result
-            (b* ,st
-              (implies
-               (and ,@hyps
-                    (async-adder-last-round$st-trans inputs-lst)
-                    (equal n (async-adder-last-round$st-trans->numsteps
-                              inputs-lst))
-                    (async-adder$input-format-n inputs-lst n))
-               ,concl1))
+            (implies
+             (and ,@hyps
+                  (async-adder-last-round$st-trans inputs-lst)
+                  (equal n (async-adder-last-round$st-trans->numsteps
+                            inputs-lst))
+                  (async-adder$input-format-n inputs-lst n))
+             ,concl1)
             :hints (("Goal"
                      :in-theory (e/d* (async-adder-last-round$st-trans
                                        async-adder-last-round$st-trans->numsteps)
@@ -1544,7 +1492,34 @@
                                        open-async-adder$input-format-n)))))
 
           (defthmd async-adder-last-round$sim
-            (b* ,st
+            (b* ((?lcntl      (nth *async-adder$lcntl* st))
+                 (?cntl       (nth *async-adder$cntl* st))
+                 (?lnext-cntl (nth *async-adder$lnext-cntl* st))
+                 (?next-cntl  (nth *async-adder$next-cntl* st))
+                 (?ldone-     (nth *async-adder$ldone-* st))
+                 (?done-      (nth *async-adder$done-* st))
+                 (?lresult    (nth *async-adder$lresult* st))
+                 (?result     (nth *async-adder$result* st))
+                 (serial-add  (nth *async-adder$serial-add* st))
+       
+                 (?lreg0  (nth *serial-adder$lreg0* serial-add))
+                 (?reg0   (nth *serial-adder$reg0*  serial-add))
+                 (?lreg1  (nth *serial-adder$lreg1* serial-add))
+                 (?reg1   (nth *serial-adder$reg1*  serial-add))
+                 (?lreg2  (nth *serial-adder$lreg2* serial-add))
+                 (?reg2   (nth *serial-adder$reg2*  serial-add))
+                 (bit-add (nth *serial-adder$bit-add* serial-add))
+       
+                 (?la  (nth *1-bit-adder$la* bit-add))
+                 (?a   (nth *1-bit-adder$a* bit-add))
+                 (?lb  (nth *1-bit-adder$lb* bit-add))
+                 (?b   (nth *1-bit-adder$b* bit-add))
+                 (?lci (nth *1-bit-adder$lci* bit-add))
+                 (?ci  (nth *1-bit-adder$ci* bit-add))
+                 (?ls  (nth *1-bit-adder$ls* bit-add))
+                 (?s   (nth *1-bit-adder$s* bit-add))
+                 (?lco (nth *1-bit-adder$lco* bit-add))
+                 (?co  (nth *1-bit-adder$co* bit-add)))
               (implies
                (and ,@hyps
                     (async-adder-last-round$st-trans inputs-lst)
@@ -1586,13 +1561,12 @@
         (append
          `((local
             (defthm ,lemma-name-1
-              (b* ,st
-                (implies
-                 (and ,@hyps
-                      (,st-trans inputs-lst)
-                      (equal n ,st-trans->numsteps)
-                      (async-adder$input-format-n inputs-lst n))
-                 ,concl1))
+              (implies
+               (and ,@hyps
+                    (,st-trans inputs-lst)
+                    (equal n ,st-trans->numsteps)
+                    (async-adder$input-format-n inputs-lst n))
+               ,concl1)
               :hints (("Goal"
                        :do-not-induct t
                        :in-theory (e/d* (extract-async-adder-result-status
@@ -1618,7 +1592,34 @@
 
            (local
             (defthm ,lemma-name-2
-              (b* ,st
+              (b* ((?lcntl      (nth *async-adder$lcntl* st))
+                   (?cntl       (nth *async-adder$cntl* st))
+                   (?lnext-cntl (nth *async-adder$lnext-cntl* st))
+                   (?next-cntl  (nth *async-adder$next-cntl* st))
+                   (?ldone-     (nth *async-adder$ldone-* st))
+                   (?done-      (nth *async-adder$done-* st))
+                   (?lresult    (nth *async-adder$lresult* st))
+                   (?result     (nth *async-adder$result* st))
+                   (serial-add  (nth *async-adder$serial-add* st))
+       
+                   (?lreg0  (nth *serial-adder$lreg0* serial-add))
+                   (?reg0   (nth *serial-adder$reg0*  serial-add))
+                   (?lreg1  (nth *serial-adder$lreg1* serial-add))
+                   (?reg1   (nth *serial-adder$reg1*  serial-add))
+                   (?lreg2  (nth *serial-adder$lreg2* serial-add))
+                   (?reg2   (nth *serial-adder$reg2*  serial-add))
+                   (bit-add (nth *serial-adder$bit-add* serial-add))
+       
+                   (?la  (nth *1-bit-adder$la* bit-add))
+                   (?a   (nth *1-bit-adder$a* bit-add))
+                   (?lb  (nth *1-bit-adder$lb* bit-add))
+                   (?b   (nth *1-bit-adder$b* bit-add))
+                   (?lci (nth *1-bit-adder$lci* bit-add))
+                   (?ci  (nth *1-bit-adder$ci* bit-add))
+                   (?ls  (nth *1-bit-adder$ls* bit-add))
+                   (?s   (nth *1-bit-adder$s* bit-add))
+                   (?lco (nth *1-bit-adder$lco* bit-add))
+                   (?co  (nth *1-bit-adder$co* bit-add)))
                 (implies
                  (and ,@hyps
                       (,st-trans inputs-lst)
@@ -1659,13 +1660,13 @@
 
 (local
  (defthmd async-adder$state-fixpoint-instance
-   (b* ((st (list '((nil))
+   (b* ((st (list '(nil)
                   cntl
-                  '((t))
+                  '(t)
                   next-cntl
-                  '((nil))
+                  '(nil)
                   '(nil) ;; Done
-                  '((t))
+                  '(t)
                   (pairlis$
                    (append (fv-shift-right (car reg2)
                                            (f-xor3 (car ci)
@@ -1677,30 +1678,30 @@
                                                      (car (car reg1)))
                                               (car ci)))))
                    nil)
-                  (list '((nil))
+                  (list '(nil)
                         (list (car reg0))
-                        '((nil))
+                        '(nil)
                         (list (car reg1))
-                        '((nil))
+                        '(nil)
                         (list (fv-shift-right (car reg2)
                                               (f-xor3 (car ci)
                                                       (car (car reg0))
                                                       (car (car reg1)))))
-                        (list '((nil))
+                        (list '(nil)
                               (list (f-buf (car (car reg0))))
-                              '((nil))
+                              '(nil)
                               (list (f-buf (car (car reg1))))
-                              '((nil))
+                              '(nil)
                               (list (f-or (f-and (car (car reg0))
                                                  (car (car reg1)))
                                           (f-and (f-xor (car (car reg0))
                                                         (car (car reg1)))
                                                  (car ci))))
-                              '((nil))
+                              '(nil)
                               (list (f-xor3 (car ci)
                                             (car (car reg0))
                                             (car (car reg1))))
-                              '((nil))
+                              '(nil)
                               (list (f-or (f-and (car (car reg0))
                                                  (car (car reg1)))
                                           (f-and (f-xor (car (car reg0))
@@ -1710,17 +1711,17 @@
       (and (async-adder$input-format inputs)
        
            (len-1-true-listp cntl)
-           (equal (len cntl) 5)
+           (equal (len cntl) *async-adder$cntl-st-len*)
            (bvp (strip-cars cntl))
            
            (len-1-true-listp next-cntl)
-           (equal (len next-cntl) 5)
+           (equal (len next-cntl) *async-adder$cntl-st-len*)
            (bvp (strip-cars next-cntl))
            
-           (equal (len (car reg0)) 32)
-           (equal (len (car reg1)) 32)
+           (equal (len (car reg0)) *data-width*)
+           (equal (len (car reg1)) *data-width*)
            (true-listp (car reg2))
-           (equal (len (car reg2)) 32))
+           (equal (len (car reg2)) *data-width*))
       (equal (async-adder$state-fn inputs st)
              st)))
    :hints (("Goal" :in-theory (e/d* (async-adder$input-format
@@ -1733,13 +1734,13 @@
                                     (append-v-threefix))))))
 
 (defthmd async-adder$state-fixpoint
-  (b* ((st (list '((nil))
+  (b* ((st (list '(nil)
                  cntl
-                 '((t))
+                 '(t)
                  next-cntl
-                 '((nil))
+                 '(nil)
                  '(nil) ;; Done
-                 '((t))
+                 '(t)
                  (pairlis$
                   (append (fv-shift-right (car reg2)
                                           (f-xor3 (car ci)
@@ -1751,30 +1752,30 @@
                                                     (car (car reg1)))
                                              (car ci)))))
                   nil)
-                 (list '((nil))
+                 (list '(nil)
                        (list (car reg0))
-                       '((nil))
+                       '(nil)
                        (list (car reg1))
-                       '((nil))
+                       '(nil)
                        (list (fv-shift-right (car reg2)
                                              (f-xor3 (car ci)
                                                      (car (car reg0))
                                                      (car (car reg1)))))
-                       (list '((nil))
+                       (list '(nil)
                              (list (f-buf (car (car reg0))))
-                             '((nil))
+                             '(nil)
                              (list (f-buf (car (car reg1))))
-                             '((nil))
+                             '(nil)
                              (list (f-or (f-and (car (car reg0))
                                                 (car (car reg1)))
                                          (f-and (f-xor (car (car reg0))
                                                        (car (car reg1)))
                                                 (car ci))))
-                             '((nil))
+                             '(nil)
                              (list (f-xor3 (car ci)
                                            (car (car reg0))
                                            (car (car reg1))))
-                             '((nil))
+                             '(nil)
                              (list (f-or (f-and (car (car reg0))
                                                 (car (car reg1)))
                                          (f-and (f-xor (car (car reg0))
@@ -1784,17 +1785,17 @@
      (and (async-adder$input-format-n inputs-lst n)
           
           (len-1-true-listp cntl)
-          (equal (len cntl) 5)
+          (equal (len cntl) *async-adder$cntl-st-len*)
           (bvp (strip-cars cntl))
           
           (len-1-true-listp next-cntl)
-          (equal (len next-cntl) 5)
+          (equal (len next-cntl) *async-adder$cntl-st-len*)
           (bvp (strip-cars next-cntl))
 
-          (equal (len (car reg0)) 32)
-          (equal (len (car reg1)) 32)
+          (equal (len (car reg0)) *data-width*)
+          (equal (len (car reg1)) *data-width*)
           (true-listp (car reg2))
-          (equal (len (car reg2)) 32))
+          (equal (len (car reg2)) *data-width*))
      (equal (async-adder$state-fn-n inputs-lst st n)
             st)))
   :hints (("Goal"
@@ -1804,12 +1805,34 @@
                            (car-cdr-elim)))))
 
 (defthmd async-adder$sim-last-round-to-fixpoint
-  (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-       (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                         bit-add-st))
-       (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                 l-result result
-                 serial-add-st)))
+  (b* ((?lcntl      (nth *async-adder$lcntl* st))
+       (?cntl       (nth *async-adder$cntl* st))
+       (?lnext-cntl (nth *async-adder$lnext-cntl* st))
+       (?next-cntl  (nth *async-adder$next-cntl* st))
+       (?ldone-     (nth *async-adder$ldone-* st))
+       (?done-      (nth *async-adder$done-* st))
+       (?lresult    (nth *async-adder$lresult* st))
+       (?result     (nth *async-adder$result* st))
+       (serial-add  (nth *async-adder$serial-add* st))
+       
+       (?lreg0  (nth *serial-adder$lreg0* serial-add))
+       (?reg0   (nth *serial-adder$reg0*  serial-add))
+       (?lreg1  (nth *serial-adder$lreg1* serial-add))
+       (?reg1   (nth *serial-adder$reg1*  serial-add))
+       (?lreg2  (nth *serial-adder$lreg2* serial-add))
+       (?reg2   (nth *serial-adder$reg2*  serial-add))
+       (bit-add (nth *serial-adder$bit-add* serial-add))
+       
+       (?la  (nth *1-bit-adder$la* bit-add))
+       (?a   (nth *1-bit-adder$a* bit-add))
+       (?lb  (nth *1-bit-adder$lb* bit-add))
+       (?b   (nth *1-bit-adder$b* bit-add))
+       (?lci (nth *1-bit-adder$lci* bit-add))
+       (?ci  (nth *1-bit-adder$ci* bit-add))
+       (?ls  (nth *1-bit-adder$ls* bit-add))
+       (?s   (nth *1-bit-adder$s* bit-add))
+       (?lco (nth *1-bit-adder$lco* bit-add))
+       (?co  (nth *1-bit-adder$co* bit-add)))
     (implies
      (and (async-adder-last-round$st-trans inputs-lst)
           (natp n)
@@ -1818,13 +1841,13 @@
           (async-adder$input-format-n inputs-lst n)
           (last-round-st st))
      (equal (async-adder$state-fn-n inputs-lst st n)
-            (list '((nil))
+            (list '(nil)
                   cntl
-                  '((t))
+                  '(t)
                   next-cntl
-                  '((nil))
+                  '(nil)
                   '(nil) ;; Done
-                  '((t))
+                  '(t)
                   (pairlis$
                    (append (fv-shift-right (car reg2)
                                            (f-xor3 (car ci)
@@ -1836,30 +1859,30 @@
                                                      (car (car reg1)))
                                               (car ci)))))
                    nil)
-                  (list '((nil))
+                  (list '(nil)
                         (list (car reg0))
-                        '((nil))
+                        '(nil)
                         (list (car reg1))
-                        '((nil))
+                        '(nil)
                         (list (fv-shift-right (car reg2)
                                               (f-xor3 (car ci)
                                                       (car (car reg0))
                                                       (car (car reg1)))))
-                        (list '((nil))
+                        (list '(nil)
                               (list (f-buf (car (car reg0))))
-                              '((nil))
+                              '(nil)
                               (list (f-buf (car (car reg1))))
-                              '((nil))
+                              '(nil)
                               (list (f-or (f-and (car (car reg0))
                                                  (car (car reg1)))
                                           (f-and (f-xor (car (car reg0))
                                                         (car (car reg1)))
                                                  (car ci))))
-                              '((nil))
+                              '(nil)
                               (list (f-xor3 (car ci)
                                             (car (car reg0))
                                             (car (car reg1))))
-                              '((nil))
+                              '(nil)
                               (list (f-or (f-and (car (car reg0))
                                                  (car (car reg1)))
                                           (f-and (f-xor (car (car reg0))
@@ -1871,17 +1894,14 @@
                   async-adder$input-format-m+n
                   (m (async-adder-last-round$st-trans->numsteps inputs-lst))
                   (n (- n
-                        (async-adder-last-round$st-trans->numsteps inputs-lst))))
+                        (async-adder-last-round$st-trans->numsteps
+                         inputs-lst))))
                  (:instance
                   async-adder$state-fn-m+n
                   (m (async-adder-last-round$st-trans->numsteps inputs-lst))
                   (n (- n
-                        (async-adder-last-round$st-trans->numsteps inputs-lst)))
-                  (st (list l-cntl cntl l-next-cntl next-cntl
-                            l-done- done- l-result result
-                            (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                  (list l-a a l-b b l-ci ci
-                                        l-s s l-co co))))))
+                        (async-adder-last-round$st-trans->numsteps
+                         inputs-lst)))))
            :in-theory (e/d (async-adder-last-round$sim
                             async-adder$state-fixpoint
                             last-round-st)
@@ -1905,15 +1925,16 @@
   (equal (len (fv-shift-right-nil-n a n))
          (len a)))
 
+(defthm open-fv-shift-right-nil-n-zp
+  (implies (zp n)
+           (equal (fv-shift-right-nil-n a n)
+                  a)))
+
 (defthm open-fv-shift-right-nil-n
-  (and
-   (implies (zp n)
-            (equal (fv-shift-right-nil-n a n)
-                   a))
-   (implies (not (zp n))
-            (equal (fv-shift-right-nil-n a n)
-                   (fv-shift-right-nil-n (fv-shift-right a nil)
-                                         (1- n))))))
+  (implies (not (zp n))
+           (equal (fv-shift-right-nil-n a n)
+                  (fv-shift-right-nil-n (fv-shift-right a nil)
+                                        (1- n)))))
 
 (in-theory (disable fv-shift-right-nil-n))
 
@@ -1931,22 +1952,23 @@
                      (1- n)
                      acc))))
 
+(defthm open-fv-serial-sum-zp
+  (implies (or (zp n) (atom a))
+           (equal (fv-serial-sum c a b n acc)
+                  acc)))
+
 (defthm open-fv-serial-sum
-  (and
-   (implies (or (zp n) (atom a))
-            (equal (fv-serial-sum c a b n acc)
-                   acc))
-   (implies (not (or (zp n) (atom a)))
-            (equal (fv-serial-sum c a b n acc)
-                   (b* ((acc (fv-shift-right acc
-                                             (f-xor3 c (car a) (car b)))))
-                     (fv-serial-sum (f-or (f-and (car a) (car b))
-                                          (f-and (f-xor (car a) (car b))
-                                                 c))
-                                    (fv-shift-right a nil)
-                                    (fv-shift-right b nil)
-                                    (1- n)
-                                    acc))))))
+  (implies (not (or (zp n) (atom a)))
+           (equal (fv-serial-sum c a b n acc)
+                  (b* ((acc (fv-shift-right acc
+                                            (f-xor3 c (car a) (car b)))))
+                    (fv-serial-sum (f-or (f-and (car a) (car b))
+                                         (f-and (f-xor (car a) (car b))
+                                                c))
+                                   (fv-shift-right a nil)
+                                   (fv-shift-right b nil)
+                                   (1- n)
+                                   acc)))))
 
 (in-theory (disable fv-serial-sum))
 
@@ -1962,19 +1984,20 @@
                      (fv-shift-right b nil)
                      (1- n))))
 
+(defthm open-fv-serial-carry-zp
+  (implies (or (zp n) (atom a))
+           (equal (fv-serial-carry c a b n)
+                  c)))
+
 (defthm open-fv-serial-carry
-  (and
-   (implies (or (zp n) (atom a))
-            (equal (fv-serial-carry c a b n)
-                   c))
-   (implies (not (or (zp n) (atom a)))
-            (equal (fv-serial-carry c a b n)
-                   (fv-serial-carry (f-or (f-and (car a) (car b))
-                                          (f-and (f-xor (car a) (car b))
-                                                 c))
-                                    (fv-shift-right a nil)
-                                    (fv-shift-right b nil)
-                                    (1- n))))))
+  (implies (not (or (zp n) (atom a)))
+           (equal (fv-serial-carry c a b n)
+                  (fv-serial-carry (f-or (f-and (car a) (car b))
+                                         (f-and (f-xor (car a) (car b))
+                                                c))
+                                   (fv-shift-right a nil)
+                                   (fv-shift-right b nil)
+                                   (1- n)))))
 
 (in-theory (disable fv-serial-carry))
 
@@ -1993,14 +2016,15 @@
     (next-cntl-state-n (next-cntl-state st)
                        (1- n))))
 
+(defthm open-next-cntl-state-n-zp
+  (implies (zp n)
+           (equal (next-cntl-state-n st n) st)))
+
 (defthm open-next-cntl-state-n
-  (and
-   (implies (zp n)
-            (equal (next-cntl-state-n st n) st))
-   (implies (not (zp n))
-            (equal (next-cntl-state-n st n)
-                   (next-cntl-state-n (next-cntl-state st)
-                                      (1- n))))))
+  (implies (not (zp n))
+           (equal (next-cntl-state-n st n)
+                  (next-cntl-state-n (next-cntl-state st)
+                                     (1- n)))))
 
 (in-theory (disable next-cntl-state-n))
 
@@ -2015,132 +2039,6 @@
                              (async-adder$st-trans->numsteps inputs-lst))
      (- n (async-adder$st-trans->numsteps inputs-lst))
      (1- count))))
-
-(defthmd async-adder$invalid-result-alt
-  (b* ((l-cntl (nth 0 st))
-       (cntl (nth 1 st))
-       (l-next-cntl (nth 2 st))
-       (next-cntl (nth 3 st))
-       (l-done- (nth 4 st))
-       (done- (nth 5 st))
-       (l-result (nth 6 st))
-       (result (nth 7 st))
-       (serial-add-st (nth 8 st))
-       
-       (l-reg0 (nth 0 serial-add-st))
-       (reg0 (nth 1 serial-add-st))
-       (l-reg1 (nth 2 serial-add-st))
-       (reg1 (nth 3 serial-add-st))
-       (l-reg2 (nth 4 serial-add-st))
-       (reg2 (nth 5 serial-add-st))
-       (bit-add-st (nth 6 serial-add-st))
-       
-       (l-a (nth 0 bit-add-st))
-       (a (nth 1 bit-add-st))
-       (l-b (nth 2 bit-add-st))
-       (b (nth 3 bit-add-st))
-       (l-ci (nth 4 bit-add-st))
-       (ci (nth 5 bit-add-st))
-       (l-s (nth 6 bit-add-st))
-       (s (nth 7 bit-add-st))
-       (l-co (nth 8 bit-add-st))
-       (co (nth 9 bit-add-st)))
-    (implies
-     (and (async-adder$st-trans inputs-lst)
-          (equal n (async-adder$st-trans->numsteps inputs-lst))
-          (async-adder$input-format-n inputs-lst n)
-          (equal st (list l-cntl cntl l-next-cntl
-                          next-cntl l-done- done- l-result result
-                          (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                (list l-a a l-b b l-ci ci l-s s l-co co))))
-          (async-adder$inv-st st))
-     (async-adder$result-empty-n inputs-lst st n)))
-  :hints (("Goal"
-           :in-theory (union-theories
-                       '(async-adder$invalid-result)
-                       (theory 'minimal-theory)))))
-
-(defthmd async-adder$state-invariant-alt
-  (b* ((l-cntl (nth 0 st))
-       (cntl (nth 1 st))
-       (l-next-cntl (nth 2 st))
-       (next-cntl (nth 3 st))
-       (l-done- (nth 4 st))
-       (done- (nth 5 st))
-       (l-result (nth 6 st))
-       (result (nth 7 st))
-       (serial-add-st (nth 8 st))
-       
-       (l-reg0 (nth 0 serial-add-st))
-       (reg0 (nth 1 serial-add-st))
-       (l-reg1 (nth 2 serial-add-st))
-       (reg1 (nth 3 serial-add-st))
-       (l-reg2 (nth 4 serial-add-st))
-       (reg2 (nth 5 serial-add-st))
-       (bit-add-st (nth 6 serial-add-st))
-       
-       (l-a (nth 0 bit-add-st))
-       (a (nth 1 bit-add-st))
-       (l-b (nth 2 bit-add-st))
-       (b (nth 3 bit-add-st))
-       (l-ci (nth 4 bit-add-st))
-       (ci (nth 5 bit-add-st))
-       (l-s (nth 6 bit-add-st))
-       (s (nth 7 bit-add-st))
-       (l-co (nth 8 bit-add-st))
-       (co (nth 9 bit-add-st)))
-    (implies
-     (and (async-adder$st-trans inputs-lst)
-          (equal n (async-adder$st-trans->numsteps inputs-lst))
-          (async-adder$input-format-n inputs-lst n)
-          (equal st (list l-cntl cntl l-next-cntl
-                          next-cntl l-done- done- l-result result
-                          (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                (list l-a a l-b b l-ci ci l-s s l-co co))))
-          (async-adder$inv-st st))
-     (equal (async-adder$state-fn-n inputs-lst st n)
-            (list
-             '((nil))
-             next-cntl '((t))
-             (pairlis$ (next-cntl-state (strip-cars next-cntl))
-                       nil)
-             '((t))
-             (list (compute-done- (strip-cars next-cntl)))
-             '((nil))
-             (pairlis$ (v-threefix (strip-cars result))
-                       nil)
-             (list '((t))
-                   (list (fv-shift-right (car reg0) nil))
-                   '((t))
-                   (list (fv-shift-right (car reg1) nil))
-                   '((nil))
-                   (list (fv-shift-right (car reg2)
-                                         (f-xor3 (car ci)
-                                                 (car (car reg0))
-                                                 (car (car reg1)))))
-                   (list '((nil))
-                         (list (f-buf (car (car reg0))))
-                         '((nil))
-                         (list (f-buf (car (car reg1))))
-                         '((t))
-                         (list (f-or (f-and (car (car reg0))
-                                            (car (car reg1)))
-                                     (f-and (f-xor (car (car reg0))
-                                                   (car (car reg1)))
-                                            (car ci))))
-                         '((nil))
-                         (list (f-xor3 (car ci)
-                                       (car (car reg0))
-                                       (car (car reg1))))
-                         '((nil))
-                         (list (f-or (f-and (car (car reg0))
-                                            (car (car reg1)))
-                                     (f-and (f-xor (car (car reg0))
-                                                   (car (car reg1)))
-                                            (car ci))))))))))
-  :hints (("Goal"
-           :in-theory (union-theories '(async-adder$state-invariant)
-                                      (theory 'minimal-theory)))))
 
 (local
  (defthmd pos-len=>consp
@@ -2187,59 +2085,27 @@
   ;; induction.
 
   (defthmd simulate-async-adder-loop-invalid-result
-    (b* ((l-cntl (nth 0 st))
-         (cntl (nth 1 st))
-         (l-next-cntl (nth 2 st))
-         (next-cntl (nth 3 st))
-         (l-done- (nth 4 st))
-         (done- (nth 5 st))
-         (l-result (nth 6 st))
-         (result (nth 7 st))
-         (serial-add-st (nth 8 st))
-      
-         (l-reg0 (nth 0 serial-add-st))
-         (reg0 (nth 1 serial-add-st))
-         (l-reg1 (nth 2 serial-add-st))
-         (reg1 (nth 3 serial-add-st))
-         (l-reg2 (nth 4 serial-add-st))
-         (reg2 (nth 5 serial-add-st))
-         (bit-add-st (nth 6 serial-add-st))
-      
-         (l-a (nth 0 bit-add-st))
-         (a (nth 1 bit-add-st))
-         (l-b (nth 2 bit-add-st))
-         (b (nth 3 bit-add-st))
-         (l-ci (nth 4 bit-add-st))
-         (ci (nth 5 bit-add-st))
-         (l-s (nth 6 bit-add-st))
-         (s (nth 7 bit-add-st))
-         (l-co (nth 8 bit-add-st))
-         (co (nth 9 bit-add-st)))
+    (b* ((next-cntl (nth *async-adder$next-cntl* st)))
       (implies
        (and (posp count)
             (< (+ (v-to-nat (strip-cars next-cntl))
                   count)
-               32)
+               *data-width*)
             (async-adder$st-trans-n inputs-lst count)
             (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
             (async-adder$input-format-n inputs-lst n)
-            (equal st (list l-cntl cntl l-next-cntl
-                            next-cntl l-done- done- l-result result
-                            (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                  (list l-a a l-b b l-ci ci l-s s l-co co))))
             (async-adder$inv-st st))
        (async-adder$result-empty-n inputs-lst st n)))
     :hints (("Goal"
              :induct
              (simulate-async-adder-loop-induct inputs-lst st n count)
-             :in-theory (e/d (async-adder$invalid-result-alt
-                              async-adder$state-invariant-alt
+             :in-theory (e/d (async-adder$invalid-result
+                              async-adder$state-invariant
                               async-adder$inv-st
                               async-adder$st-trans-n)
                              (open-async-adder$input-format-n
                               open-async-adder$result-empty-n
                               open-async-adder$state-fn-n
-                              open-async-adder$st-trans-n
                               open-v-threefix
                               fullp
                               emptyp
@@ -2255,94 +2121,92 @@
             ("Subgoal *1/2"
              :use (simulate-async-adder-loop-aux-2
                    (:instance simulate-async-adder-loop-aux-1
-                              (x (v-to-nat (strip-cars (nth 3 st))))
+                              (x (v-to-nat (strip-cars
+                                            (nth *async-adder$next-cntl*
+                                                 st))))
                               (y count)))
              )))
 
   ;; The loop state-invariant of the async serial adder. Prove by induction.
 
   (defthmd simulate-async-adder-loop
-    (b* ((l-cntl (nth 0 st))
-         (cntl (nth 1 st))
-         (l-next-cntl (nth 2 st))
-         (next-cntl (nth 3 st))
-         (l-done- (nth 4 st))
-         (done- (nth 5 st))
-         (l-result (nth 6 st))
-         (result (nth 7 st))
-         (serial-add-st (nth 8 st))
-      
-         (l-reg0 (nth 0 serial-add-st))
-         (reg0 (nth 1 serial-add-st))
-         (l-reg1 (nth 2 serial-add-st))
-         (reg1 (nth 3 serial-add-st))
-         (l-reg2 (nth 4 serial-add-st))
-         (reg2 (nth 5 serial-add-st))
-         (bit-add-st (nth 6 serial-add-st))
-      
-         (l-a (nth 0 bit-add-st))
-         (a (nth 1 bit-add-st))
-         (l-b (nth 2 bit-add-st))
-         (b (nth 3 bit-add-st))
-         (l-ci (nth 4 bit-add-st))
-         (ci (nth 5 bit-add-st))
-         (l-s (nth 6 bit-add-st))
-         (s (nth 7 bit-add-st))
-         (l-co (nth 8 bit-add-st))
-         (co (nth 9 bit-add-st)))
+    (b* ((?lcntl      (nth *async-adder$lcntl* st))
+         (?cntl       (nth *async-adder$cntl* st))
+         (?lnext-cntl (nth *async-adder$lnext-cntl* st))
+         (?next-cntl  (nth *async-adder$next-cntl* st))
+         (?ldone-     (nth *async-adder$ldone-* st))
+         (?done-      (nth *async-adder$done-* st))
+         (?lresult    (nth *async-adder$lresult* st))
+         (?result     (nth *async-adder$result* st))
+         (serial-add  (nth *async-adder$serial-add* st))
+       
+         (?lreg0  (nth *serial-adder$lreg0* serial-add))
+         (?reg0   (nth *serial-adder$reg0*  serial-add))
+         (?lreg1  (nth *serial-adder$lreg1* serial-add))
+         (?reg1   (nth *serial-adder$reg1*  serial-add))
+         (?lreg2  (nth *serial-adder$lreg2* serial-add))
+         (?reg2   (nth *serial-adder$reg2*  serial-add))
+         (bit-add (nth *serial-adder$bit-add* serial-add))
+       
+         (?la  (nth *1-bit-adder$la* bit-add))
+         (?a   (nth *1-bit-adder$a* bit-add))
+         (?lb  (nth *1-bit-adder$lb* bit-add))
+         (?b   (nth *1-bit-adder$b* bit-add))
+         (?lci (nth *1-bit-adder$lci* bit-add))
+         (?ci  (nth *1-bit-adder$ci* bit-add))
+         (?ls  (nth *1-bit-adder$ls* bit-add))
+         (?s   (nth *1-bit-adder$s* bit-add))
+         (?lco (nth *1-bit-adder$lco* bit-add))
+         (?co  (nth *1-bit-adder$co* bit-add)))
       (implies
        (and (posp count)
             (< (+ (v-to-nat (strip-cars next-cntl))
                   count)
-               32)
+               *data-width*)
             (async-adder$st-trans-n inputs-lst count)
             (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
             (async-adder$input-format-n inputs-lst n)
-            (equal st (list l-cntl cntl l-next-cntl
-                            next-cntl l-done- done- l-result result
-                            (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                  (list l-a a l-b b l-ci ci l-s s l-co co))))
             (async-adder$inv-st st))
        (equal
         (async-adder$state-fn-n inputs-lst st n)
         (list
-         '((nil))
+         '(nil)
          (pairlis$ (next-cntl-state-n (strip-cars next-cntl)
                                       (1- count))
                    nil)
-         '((t))
+         '(t)
          (pairlis$ (next-cntl-state-n (strip-cars next-cntl)
                                       count)
                    nil)
-         '((t))
+         '(t)
          (list (compute-done- (next-cntl-state-n (strip-cars next-cntl)
                                                  (1- count))))
-         '((nil))
+         '(nil)
          (pairlis$ (v-threefix (strip-cars result))
                    nil)
-         (list '((t))
+         (list '(t)
                (list (fv-shift-right-nil-n (car reg0) count))
-               '((t))
+               '(t)
                (list (fv-shift-right-nil-n (car reg1) count))
-               '((nil))
+               '(nil)
                (list
                 (fv-serial-sum (car ci) (car reg0) (car reg1)
                                count
                                (car reg2)))
-               (list '((nil))
+               (list '(nil)
                      (list (f-buf (car (fv-shift-right-nil-n
                                         (car reg0)
                                         (1- count)))))
-                     '((nil))
+                     '(nil)
                      (list (f-buf (car (fv-shift-right-nil-n
                                         (car reg1)
                                         (1- count)))))
-                     '((t))
+                     '(t)
                      (list (fv-serial-carry (car ci)
                                             (car reg0)
                                             (car reg1)
                                             count))
-                     '((nil))
+                     '(nil)
                      (list (f-xor3 (fv-serial-carry (car ci)
                                                     (car reg0)
                                                     (car reg1)
@@ -2353,7 +2217,7 @@
                                    (car (fv-shift-right-nil-n
                                          (car reg1)
                                          (1- count)))))
-                     '((nil))
+                     '(nil)
                      (list (fv-serial-carry (car ci)
                                             (car reg0)
                                             (car reg1)
@@ -2361,13 +2225,12 @@
     :hints (("Goal"
              :induct
              (simulate-async-adder-loop-induct inputs-lst st n count)
-             :in-theory (e/d (async-adder$state-invariant-alt
+             :in-theory (e/d (async-adder$state-invariant
                               async-adder$inv-st
                               pos-len=>consp
                               async-adder$st-trans-n
                               next-cntl-state-n)
                              (open-async-adder$input-format-n
-                              open-async-adder$st-trans-n
                               open-v-threefix
                               fullp
                               emptyp
@@ -2382,7 +2245,9 @@
                               strip-cars)))
             ("Subgoal *1/2"
              :use (:instance simulate-async-adder-loop-aux-1
-                             (x (v-to-nat (strip-cars (nth 3 st))))
+                             (x (v-to-nat
+                                 (strip-cars (nth *async-adder$next-cntl*
+                                                  st))))
                              (y count)))))
   )
 
@@ -2407,62 +2272,62 @@
                                        fv-shift-right)))))
 
 (defun async-adder$init-st (st)
-  (b* ((l-cntl (nth 0 st))
-       (cntl (nth 1 st))
-       (l-next-cntl (nth 2 st))
-       (next-cntl (nth 3 st))
-       (l-done- (nth 4 st))
-       (done- (nth 5 st))
-       (l-result (nth 6 st))
-       (result (nth 7 st))
-       (serial-add-st (nth 8 st))
-                           
-       (l-reg0 (nth 0 serial-add-st))
-       (reg0 (nth 1 serial-add-st))
-       (l-reg1 (nth 2 serial-add-st))
-       (reg1 (nth 3 serial-add-st))
-       (l-reg2 (nth 4 serial-add-st))
-       (reg2 (nth 5 serial-add-st))
-       (bit-add-st (nth 6 serial-add-st))
-                           
-       (l-a (nth 0 bit-add-st))
-       (?a (nth 1 bit-add-st))
-       (l-b (nth 2 bit-add-st))
-       (?b (nth 3 bit-add-st))
-       (l-ci (nth 4 bit-add-st))
-       (?ci (nth 5 bit-add-st))
-       (l-s (nth 6 bit-add-st))
-       (?s (nth 7 bit-add-st))
-       (l-co (nth 8 bit-add-st))
-       (?co (nth 9 bit-add-st)))
+  (b* ((lcntl      (nth *async-adder$lcntl* st))
+       (cntl       (nth *async-adder$cntl* st))
+       (lnext-cntl (nth *async-adder$lnext-cntl* st))
+       (next-cntl  (nth *async-adder$next-cntl* st))
+       (ldone-     (nth *async-adder$ldone-* st))
+       (done-      (nth *async-adder$done-* st))
+       (lresult    (nth *async-adder$lresult* st))
+       (result     (nth *async-adder$result* st))
+       (serial-add (nth *async-adder$serial-add* st))
+       
+       (lreg0   (nth *serial-adder$lreg0* serial-add))
+       (reg0    (nth *serial-adder$reg0*  serial-add))
+       (lreg1   (nth *serial-adder$lreg1* serial-add))
+       (reg1    (nth *serial-adder$reg1*  serial-add))
+       (lreg2   (nth *serial-adder$lreg2* serial-add))
+       (reg2    (nth *serial-adder$reg2*  serial-add))
+       (bit-add (nth *serial-adder$bit-add* serial-add))
+       
+       (la  (nth *1-bit-adder$la* bit-add))
+       (?a  (nth *1-bit-adder$a* bit-add))
+       (lb  (nth *1-bit-adder$lb* bit-add))
+       (?b  (nth *1-bit-adder$b* bit-add))
+       (lci (nth *1-bit-adder$lci* bit-add))
+       (?ci (nth *1-bit-adder$ci* bit-add))
+       (ls  (nth *1-bit-adder$ls* bit-add))
+       (?s  (nth *1-bit-adder$s* bit-add))
+       (lco (nth *1-bit-adder$lco* bit-add))
+       (?co (nth *1-bit-adder$co* bit-add)))
     
-    (and (emptyp l-cntl)
+    (and (emptyp lcntl)
          (len-1-true-listp cntl)
-         (equal (len cntl) 5)
+         (equal (len cntl) *async-adder$cntl-st-len*)
           
-         (fullp l-next-cntl)
+         (fullp lnext-cntl)
          (equal next-cntl '((nil) (nil) (nil) (nil) (nil)))
 
-         (fullp l-done-)
+         (fullp ldone-)
          (equal (car done-) t)
 
-         (emptyp l-result)
+         (emptyp lresult)
          (true-listp result)
-         (equal (len result) 33)
+         (equal (len result) (1+ *data-width*))
                   
-         (fullp l-reg0)
-         (equal (len (car reg0)) 32)
-         (fullp l-reg1)
-         (equal (len (car reg1)) 32)
-         (emptyp l-reg2)
+         (fullp lreg0)
+         (equal (len (car reg0)) *data-width*)
+         (fullp lreg1)
+         (equal (len (car reg1)) *data-width*)
+         (emptyp lreg2)
          (true-listp (car reg2))
-         (equal (len (car reg2)) 32)
+         (equal (len (car reg2)) *data-width*)
           
-         (emptyp l-a)
-         (emptyp l-b)
-         (fullp l-ci)
-         (emptyp l-s)
-         (emptyp l-co))))
+         (emptyp la)
+         (emptyp lb)
+         (fullp lci)
+         (emptyp ls)
+         (emptyp lco))))
 
 (defthmd async-adder$init-st=>inv-st
   (implies (async-adder$init-st st)
@@ -2471,67 +2336,23 @@
 
 (in-theory (disable async-adder$init-st))
 
-(local
- (defthmd open-nth-3-async-adder-st
-   (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-        (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                           bit-add-st))
-        (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                  l-result result
-                  serial-add-st)))
-     (equal (nth 3 st) next-cntl))))
-
 (defthmd simulate-async-adder-loop-invalid-result-instance
-  (b* ((l-cntl (nth 0 st))
-       (cntl (nth 1 st))
-       (l-next-cntl (nth 2 st))
-       (next-cntl (nth 3 st))
-       (l-done- (nth 4 st))
-       (done- (nth 5 st))
-       (l-result (nth 6 st))
-       (result (nth 7 st))
-       (serial-add-st (nth 8 st))
-      
-       (l-reg0 (nth 0 serial-add-st))
-       (reg0 (nth 1 serial-add-st))
-       (l-reg1 (nth 2 serial-add-st))
-       (reg1 (nth 3 serial-add-st))
-       (l-reg2 (nth 4 serial-add-st))
-       (reg2 (nth 5 serial-add-st))
-       (bit-add-st (nth 6 serial-add-st))
-      
-       (l-a (nth 0 bit-add-st))
-       (a (nth 1 bit-add-st))
-       (l-b (nth 2 bit-add-st))
-       (b (nth 3 bit-add-st))
-       (l-ci (nth 4 bit-add-st))
-       (ci (nth 5 bit-add-st))
-       (l-s (nth 6 bit-add-st))
-       (s (nth 7 bit-add-st))
-       (l-co (nth 8 bit-add-st))
-       (co (nth 9 bit-add-st)))
-    (implies
-     (and (equal count 31)
-          (async-adder$st-trans-n inputs-lst count)
-          (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
-          (async-adder$input-format-n inputs-lst n)
-          (equal st (list l-cntl cntl l-next-cntl
-                          next-cntl l-done- done- l-result result
-                          (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                (list l-a a l-b b l-ci ci l-s s l-co co))))
-          (async-adder$init-st st))
-     (async-adder$result-empty-n inputs-lst st n)))
+  (implies
+   (and (equal count (1- *data-width*))
+        (async-adder$st-trans-n inputs-lst count)
+        (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
+        (async-adder$input-format-n inputs-lst n)
+        (async-adder$init-st st))
+   (async-adder$result-empty-n inputs-lst st n))
   :hints (("Goal"
            :do-not-induct t
            :use simulate-async-adder-loop-invalid-result
            :in-theory (union-theories
                        '(async-adder$init-st
                          async-adder$init-st=>inv-st
-                         open-nth-3-async-adder-st
                          posp
                          v-to-nat
                          len-1-true-listp
-                         len-1-listp
                          len
                          bvp
                          true-list-listp
@@ -2540,78 +2361,74 @@
                        (theory 'minimal-theory)))))
 
 (defthmd simulate-async-adder-loop-instance
-  (b* ((l-cntl (nth 0 st))
-       (cntl (nth 1 st))
-       (l-next-cntl (nth 2 st))
-       (next-cntl (nth 3 st))
-       (l-done- (nth 4 st))
-       (done- (nth 5 st))
-       (l-result (nth 6 st))
-       (result (nth 7 st))
-       (serial-add-st (nth 8 st))
-      
-       (l-reg0 (nth 0 serial-add-st))
-       (reg0 (nth 1 serial-add-st))
-       (l-reg1 (nth 2 serial-add-st))
-       (reg1 (nth 3 serial-add-st))
-       (l-reg2 (nth 4 serial-add-st))
-       (reg2 (nth 5 serial-add-st))
-       (bit-add-st (nth 6 serial-add-st))
-      
-       (l-a (nth 0 bit-add-st))
-       (a (nth 1 bit-add-st))
-       (l-b (nth 2 bit-add-st))
-       (b (nth 3 bit-add-st))
-       (l-ci (nth 4 bit-add-st))
-       (ci (nth 5 bit-add-st))
-       (l-s (nth 6 bit-add-st))
-       (s (nth 7 bit-add-st))
-       (l-co (nth 8 bit-add-st))
-       (co (nth 9 bit-add-st)))
+  (b* ((?lcntl      (nth *async-adder$lcntl* st))
+       (?cntl       (nth *async-adder$cntl* st))
+       (?lnext-cntl (nth *async-adder$lnext-cntl* st))
+       (?next-cntl  (nth *async-adder$next-cntl* st))
+       (?ldone-     (nth *async-adder$ldone-* st))
+       (?done-      (nth *async-adder$done-* st))
+       (?lresult    (nth *async-adder$lresult* st))
+       (?result     (nth *async-adder$result* st))
+       (serial-add  (nth *async-adder$serial-add* st))
+       
+       (?lreg0  (nth *serial-adder$lreg0* serial-add))
+       (?reg0   (nth *serial-adder$reg0*  serial-add))
+       (?lreg1  (nth *serial-adder$lreg1* serial-add))
+       (?reg1   (nth *serial-adder$reg1*  serial-add))
+       (?lreg2  (nth *serial-adder$lreg2* serial-add))
+       (?reg2   (nth *serial-adder$reg2*  serial-add))
+       (bit-add (nth *serial-adder$bit-add* serial-add))
+       
+       (?la  (nth *1-bit-adder$la* bit-add))
+       (?a   (nth *1-bit-adder$a* bit-add))
+       (?lb  (nth *1-bit-adder$lb* bit-add))
+       (?b   (nth *1-bit-adder$b* bit-add))
+       (?lci (nth *1-bit-adder$lci* bit-add))
+       (?ci  (nth *1-bit-adder$ci* bit-add))
+       (?ls  (nth *1-bit-adder$ls* bit-add))
+       (?s   (nth *1-bit-adder$s* bit-add))
+       (?lco (nth *1-bit-adder$lco* bit-add))
+       (?co  (nth *1-bit-adder$co* bit-add)))
     (implies
-     (and (equal count 31)
+     (and (equal count (1- *data-width*))
           (async-adder$st-trans-n inputs-lst count)
           (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
           (async-adder$input-format-n inputs-lst n)
-          (equal st (list l-cntl cntl l-next-cntl
-                          next-cntl l-done- done- l-result result
-                          (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                (list l-a a l-b b l-ci ci l-s s l-co co))))
           (async-adder$init-st st))
      (equal (async-adder$state-fn-n inputs-lst st n)
             (list
-             '((nil))
+             '(nil)
              '((nil) (t) (t) (t) (t))
-             '((t))
+             '(t)
              '((nil) (nil) (nil) (nil) (nil))
-             '((t))
+             '(t)
              '(nil) ;; Done
-             '((nil))
+             '(nil)
              (pairlis$ (v-threefix (strip-cars result))
                        nil)
-             (list '((t))
+             (list '(t)
                    (list (fv-shift-right-nil-n (car reg0) count))
-                   '((t))
+                   '(t)
                    (list (fv-shift-right-nil-n (car reg1) count))
-                   '((nil))
+                   '(nil)
                    (list
                     (fv-serial-sum (car ci) (car reg0) (car reg1)
                                    count
                                    (car reg2)))
-                   (list '((nil))
+                   (list '(nil)
                          (list (car (fv-shift-right-nil-n
                                      (car reg0)
                                      (1- count))))
-                         '((nil))
+                         '(nil)
                          (list (car (fv-shift-right-nil-n
                                      (car reg1)
                                      (1- count))))
-                         '((t))
+                         '(t)
                          (list (fv-serial-carry (car ci)
                                                 (car reg0)
                                                 (car reg1)
                                                 count))
-                         '((nil))
+                         '(nil)
                          (list (f-xor3 (fv-serial-carry (car ci)
                                                         (car reg0)
                                                         (car reg1)
@@ -2622,7 +2439,7 @@
                                        (car (fv-shift-right-nil-n
                                              (car reg1)
                                              (1- count)))))
-                         '((nil))
+                         '(nil)
                          (list (fv-serial-carry (car ci)
                                                 (car reg0)
                                                 (car reg1)
@@ -2633,11 +2450,9 @@
            :in-theory (union-theories
                        '(async-adder$init-st
                          async-adder$init-st=>inv-st
-                         open-nth-3-async-adder-st
                          v-to-nat
                          compute-done-
                          len-1-true-listp
-                         len-1-listp
                          len
                          bvp
                          posp
@@ -2726,47 +2541,15 @@
        (async-adder-last-round$st-trans->numsteps remained-inputs-lst))))
 
 (defthmd simulate-async-adder-invalid-result
-  (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-       (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                          bit-add-st))
-       (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                 l-result result
-                 serial-add-st)))
-    (implies
-     (and (equal operand-size 32)
-          (async-adder-interleavings inputs-lst operand-size)
-          (equal n (async-adder-numsteps inputs-lst operand-size))
-          (async-adder$input-format-n inputs-lst n)
-          (async-adder$init-st st))
-     (async-adder$result-empty-n inputs-lst st n)))
+  (implies
+   (and (equal operand-size *data-width*)
+        (async-adder-interleavings inputs-lst operand-size)
+        (equal n (async-adder-numsteps inputs-lst operand-size))
+        (async-adder$input-format-n inputs-lst n)
+        (async-adder$init-st st))
+   (async-adder$result-empty-n inputs-lst st n))
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance
-                  async-adder$result-emptyp-m+n
-                  (m (async-adder$st-trans-n->numsteps
-                      inputs-lst
-                      (1- operand-size)))
-                  (n (- n (async-adder$st-trans-n->numsteps
-                           inputs-lst
-                           (1- operand-size))))
-                  (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                            l-result result
-                            (list l-reg0 reg0
-                                  l-reg1 reg1
-                                  l-reg2 reg2
-                                  (list l-a a
-                                        l-b b
-                                        l-ci ci
-                                        l-s s
-                                        l-co co)))))
-                 (:instance
-                  async-adder$input-format-m+n
-                  (m (async-adder$st-trans-n->numsteps
-                      inputs-lst
-                      (1- operand-size)))
-                  (n (- n (async-adder$st-trans-n->numsteps
-                           inputs-lst
-                           (1- operand-size))))))
            :in-theory (e/d (simulate-async-adder-loop-invalid-result-instance
                             simulate-async-adder-loop-instance
                             async-adder-last-round$invalid-result
@@ -2774,9 +2557,7 @@
                             async-adder-numsteps
                             async-adder$init-st
                             last-round-st)
-                           (async-adder$result-emptyp-m+n
-                            async-adder$input-format-m+n
-                            open-async-adder$result-empty-n
+                           (open-async-adder$result-empty-n
                             open-async-adder$input-format-n
                             open-async-adder$st-trans-n
                             open-async-adder$st-trans-n->numsteps
@@ -2789,14 +2570,36 @@
                             car-cdr-elim)))))
 
 (defthmd simulate-async-adder-to-fixpoint
-  (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-       (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                          bit-add-st))
-       (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                 l-result result
-                 serial-add-st)))
+  (b* ((?lcntl      (nth *async-adder$lcntl* st))
+       (?cntl       (nth *async-adder$cntl* st))
+       (?lnext-cntl (nth *async-adder$lnext-cntl* st))
+       (?next-cntl  (nth *async-adder$next-cntl* st))
+       (?ldone-     (nth *async-adder$ldone-* st))
+       (?done-      (nth *async-adder$done-* st))
+       (?lresult    (nth *async-adder$lresult* st))
+       (?result     (nth *async-adder$result* st))
+       (serial-add  (nth *async-adder$serial-add* st))
+       
+       (?lreg0  (nth *serial-adder$lreg0* serial-add))
+       (?reg0   (nth *serial-adder$reg0*  serial-add))
+       (?lreg1  (nth *serial-adder$lreg1* serial-add))
+       (?reg1   (nth *serial-adder$reg1*  serial-add))
+       (?lreg2  (nth *serial-adder$lreg2* serial-add))
+       (?reg2   (nth *serial-adder$reg2*  serial-add))
+       (bit-add (nth *serial-adder$bit-add* serial-add))
+       
+       (?la  (nth *1-bit-adder$la* bit-add))
+       (?a   (nth *1-bit-adder$a* bit-add))
+       (?lb  (nth *1-bit-adder$lb* bit-add))
+       (?b   (nth *1-bit-adder$b* bit-add))
+       (?lci (nth *1-bit-adder$lci* bit-add))
+       (?ci  (nth *1-bit-adder$ci* bit-add))
+       (?ls  (nth *1-bit-adder$ls* bit-add))
+       (?s   (nth *1-bit-adder$s* bit-add))
+       (?lco (nth *1-bit-adder$lco* bit-add))
+       (?co  (nth *1-bit-adder$co* bit-add)))
     (implies
-     (and (equal operand-size 32)
+     (and (equal operand-size *data-width*)
           (async-adder-interleavings inputs-lst operand-size)
           (natp n)
           (>= n (async-adder-numsteps inputs-lst operand-size))
@@ -2804,45 +2607,45 @@
           (async-adder$init-st st))
      (equal (async-adder$state-fn-n inputs-lst st n)
             (list
-             '((nil))
+             '(nil)
              '((nil) (t) (t) (t) (t))
-             '((t))
+             '(t)
              '((nil) (nil) (nil) (nil) (nil))
-             '((nil))
+             '(nil)
              '(nil) ;; Done
-             '((t))
+             '(t)
              ;; Final result
              (pairlis$
               (fv-serial-adder (car ci) (car reg0) (car reg1)
                                operand-size
                                (car reg2))
               nil)
-             (list '((nil))
+             (list '(nil)
                    (list (fv-shift-right-nil-n (car reg0)
                                                (1- operand-size)))
-                   '((nil))
+                   '(nil)
                    (list (fv-shift-right-nil-n (car reg1)
                                                (1- operand-size)))
-                   '((nil))
+                   '(nil)
                    (list
                     (fv-serial-sum (car ci) (car reg0) (car reg1)
                                    operand-size
                                    (car reg2)))
-                   (list '((nil))
+                   (list '(nil)
                          (list (car (fv-shift-right-nil-n
                                      (car reg0)
                                      (1- operand-size))))
-                         '((nil))
+                         '(nil)
                          (list (car (fv-shift-right-nil-n
                                      (car reg1)
                                      (1- operand-size))))
-                         '((nil))
+                         '(nil)
                          ;; Carry
                          (list (fv-serial-carry (car ci)
                                                 (car reg0)
                                                 (car reg1)
                                                 operand-size))
-                         '((nil))
+                         '(nil)
                          (list (f-xor3 (fv-serial-carry (car ci)
                                                         (car reg0)
                                                         (car reg1)
@@ -2853,7 +2656,7 @@
                                        (car (fv-shift-right-nil-n
                                              (car reg1)
                                              (1- operand-size)))))
-                         '((nil))
+                         '(nil)
                          (list (fv-serial-carry (car ci)
                                                 (car reg0)
                                                 (car reg1)
@@ -2867,17 +2670,7 @@
                       (1- operand-size)))
                   (n (- n (async-adder$st-trans-n->numsteps
                            inputs-lst
-                           (1- operand-size))))
-                  (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                            l-result result
-                            (list l-reg0 reg0
-                                  l-reg1 reg1
-                                  l-reg2 reg2
-                                  (list l-a a
-                                        l-b b
-                                        l-ci ci
-                                        l-s s
-                                        l-co co)))))
+                           (1- operand-size)))))
                  (:instance
                   async-adder$input-format-m+n
                   (m (async-adder$st-trans-n->numsteps
@@ -2989,55 +2782,46 @@
  :hints (("Goal" :in-theory (enable async-adder$input-format-n))))
 
 (defthmd async-adder$empty-result
- (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-      (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                           bit-add-st))
-      (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                l-result result
-                serial-add-st)))
-   (implies
-    (and (async-adder& netlist)
-         (equal operand-size 32)
-         (async-adder-interleavings inputs-lst operand-size)
-         (natp m)
-         (< m n)
-         (equal n (async-adder-numsteps inputs-lst operand-size))
-         (async-adder$input-format-n inputs-lst n)
-         (async-adder$init-st st))
-    (b* ((final-st (de-sim-n 'async-adder inputs-lst st netlist m)))
-      (emptyp (extract-async-adder-result-status final-st)))))
- :hints (("Goal"
-          :use (:instance
-                async-adder$result-empty-n-lemma
-                (st (list l-cntl cntl l-next-cntl
-                          next-cntl l-done- done- l-result result
-                          (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                                (list l-a a l-b b l-ci ci l-s s l-co co)))))
-          :in-theory (e/d (de-sim-n$async-adder
-                           async-adder$input-format-n-lemma
-                           async-adder$init-st
-                           simulate-async-adder-invalid-result)
-                          (async-adder$result-empty-n-lemma
-                           open-async-adder$result-empty-n
-                           fullp
-                           emptyp
-                           open-de-sim-n
-                           open-async-adder$state-fn-n
-                           open-async-adder$input-format-n
-                           car-cdr-elim)))))
+  (implies
+   (and (async-adder& netlist)
+        (equal operand-size *data-width*)
+        (async-adder-interleavings inputs-lst operand-size)
+        (natp m)
+        (< m n)
+        (equal n (async-adder-numsteps inputs-lst operand-size))
+        (async-adder$input-format-n inputs-lst n)
+        (async-adder$init-st st))
+   (b* ((final-st (de-sim-n 'async-adder inputs-lst st netlist m)))
+     (emptyp (extract-async-adder-result-status final-st))))
+  :hints (("Goal"
+           :use async-adder$result-empty-n-lemma
+           :in-theory (e/d (de-sim-n$async-adder
+                            async-adder$input-format-n-lemma
+                            async-adder$init-st
+                            simulate-async-adder-invalid-result)
+                           (async-adder$result-empty-n-lemma
+                            open-async-adder$result-empty-n
+                            fullp
+                            emptyp
+                            open-de-sim-n
+                            open-async-adder$state-fn-n
+                            open-async-adder$input-format-n
+                            car-cdr-elim)))))
 
 ;; Termination theorem
 
 (defthmd async-adder$termination
-  (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-       (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                            bit-add-st))
-       (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                 l-result result
-                 serial-add-st)))
+  (b* ((serial-add (nth *async-adder$serial-add* st))
+       
+       (reg0 (nth *serial-adder$reg0* serial-add))
+       (reg1 (nth *serial-adder$reg1* serial-add))
+       (reg2 (nth *serial-adder$reg2* serial-add))
+       (bit-add (nth *serial-adder$bit-add* serial-add))
+
+       (ci (nth *1-bit-adder$ci* bit-add)))
     (implies
      (and (async-adder& netlist)
-          (equal operand-size 32)
+          (equal operand-size *data-width*)
           (async-adder-interleavings inputs-lst operand-size)
           (natp n)
           (>= n (async-adder-numsteps inputs-lst operand-size))
@@ -3083,15 +2867,17 @@
   ;; Partial correctness theorem
 
   (defthmd async-adder$partial-correct
-    (b* ((bit-add-st (list l-a a l-b b l-ci ci l-s s l-co co))
-         (serial-add-st (list l-reg0 reg0 l-reg1 reg1 l-reg2 reg2
-                              bit-add-st))
-         (st (list l-cntl cntl l-next-cntl next-cntl l-done- done-
-                   l-result result
-                   serial-add-st)))
+    (b* ((serial-add (nth *async-adder$serial-add* st))
+       
+         (reg0 (nth *serial-adder$reg0* serial-add))
+         (reg1 (nth *serial-adder$reg1* serial-add))
+         (reg2 (nth *serial-adder$reg2* serial-add))
+         (bit-add (nth *serial-adder$bit-add* serial-add))
+
+         (ci (nth *1-bit-adder$ci* bit-add)))
       (implies
        (and (async-adder& netlist)
-            (equal operand-size 32)
+            (equal operand-size *data-width*)
             (async-adder-interleavings inputs-lst operand-size)
             (natp m)
             (equal n (async-adder-numsteps inputs-lst operand-size))

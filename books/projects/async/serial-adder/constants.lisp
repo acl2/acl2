@@ -1,9 +1,16 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2016
+;; December 2017
 
 (in-package "ADE")
 
 ;; ======================================================================
+
+(defconst *data-width* 32)
 
 (defconst *v1* (list t))
 (defconst *v000* (list nil nil nil))

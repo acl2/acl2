@@ -29,8 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "base")
-
-(defttag :quicklisp)
-; (depends-on "cffi-raw.lsp")
-(include-raw "cffi-raw.lsp" :host-readtable t)
+; cert_param: (reloc-stub)
+(include-book "quicklisp/cffi" :dir :system)

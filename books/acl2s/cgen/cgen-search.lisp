@@ -21,35 +21,35 @@
 
 ;NOTE: interesting - I cant use defmacro instead of defabbrev
 
-(defun get-s-hist-global (ctx state) 
-  (if (f-boundp-global 'cgen-state state)
-    (b* ((cgen-state (@ cgen-state))
-         ((unless (valid-cgen-state-p cgen-state))
-          (er hard? ctx "~|CEgen/Error: (get-s-hist) cgen-state is ill-formed~|"))
-         (s-hist (cdr (assoc-eq :s-hist cgen-state))))
-      (if (s-hist-p s-hist)
-          s-hist
-        (er hard? ctx "~|CEgen/Error: hist found in globals is of bad type~|")))
-    (er hard? ctx "~|CEgen/Error: cgen-state not found in globals ~|")))
+;; (defun get-s-hist-global (ctx state) 
+;;   (if (f-boundp-global 'cgen-state state)
+;;     (b* ((cgen-state (@ cgen-state))
+;;          ((unless (valid-cgen-state-p cgen-state))
+;;           (er hard? ctx "~|CEgen/Error: (get-s-hist) cgen-state is ill-formed~|"))
+;;          (s-hist (cdr (assoc-eq :s-hist cgen-state))))
+;;       (if (s-hist-p s-hist)
+;;           s-hist
+;;         (er hard? ctx "~|CEgen/Error: hist found in globals is of bad type~|")))
+;;     (er hard? ctx "~|CEgen/Error: cgen-state not found in globals ~|")))
 
 
-(defabbrev put-s-hist-global (s-hist) 
-  (if (f-boundp-global 'cgen-state state)
-      (if (s-hist-p s-hist)
-          (b* ((cgen-state (@ cgen-state))
-               ((unless (valid-cgen-statep cgen-state))
-                (prog2$ 
-                 (er hard? ctx "~|CEgen/Error: (put-s-hist) cgen-state is ill-formed~|")
-                 state))
-               (cgen-state (put-assoc-eq :s-hist s-hist cgen-state))
-               (- (assert$ (valid-cgen-state-p cgen-state) 'put-s-hist-global)))
-          (f-put-global 'cgen-state cgen-state state))
-        (progn$
-         (cw? (debug-flag vl) "~|BAD s-hist : ~x0~|" s-hist)
-         (er hard? ctx "~|CEgen/Error: hist being put in globals is of bad type~|")
-         state))
-    (prog2$ (er hard? ctx "~|CEgen/Error: cgen-state not found in globals ~|")
-            state)))
+;; (defabbrev put-s-hist-global (s-hist) 
+;;   (if (f-boundp-global 'cgen-state state)
+;;       (if (s-hist-p s-hist)
+;;           (b* ((cgen-state (@ cgen-state))
+;;                ((unless (valid-cgen-statep cgen-state))
+;;                 (prog2$ 
+;;                  (er hard? ctx "~|CEgen/Error: (put-s-hist) cgen-state is ill-formed~|")
+;;                  state))
+;;                (cgen-state (put-assoc-eq :s-hist s-hist cgen-state))
+;;                (- (assert$ (valid-cgen-state-p cgen-state) 'put-s-hist-global)))
+;;           (f-put-global 'cgen-state cgen-state state))
+;;         (progn$
+;;          (cw? (debug-flag vl) "~|BAD s-hist : ~x0~|" s-hist)
+;;          (er hard? ctx "~|CEgen/Error: hist being put in globals is of bad type~|")
+;;          state))
+;;     (prog2$ (er hard? ctx "~|CEgen/Error: cgen-state not found in globals ~|")
+;;             state)))
 
 
 (defconst *initial-test-outcomes%* 
@@ -199,7 +199,7 @@ Why is ACL2 not good at this?
                           test-outcomes% gcs% cgen-state
                           ctx state)
   (decl :sig ((string pseudo-term-list pseudo-term symbol-list
-                      symbol-alist symbol-alist
+                      alist symbol-alist
                       boolean 
                       test-outcomes%-p gcs%-p cgen-state-p
                       symbol state)
@@ -257,8 +257,9 @@ Why is ACL2 not good at this?
        ;;take care of var-var equalities [2016-10-29 Sat]
        (var-var-eq-hyps (var-var-eq-hyps H))
        ((mv elim-bindings H) (var-var-cc var-var-eq-hyps '() H))
-       (- (cw? (consp elim-bindings)
-               "DEBUG/cgen-search : elim-bindings:~x0  H:~x1~%" elim-bindings H))
+       (- (cw? (and (consp elim-bindings)
+                    (debug-flag vl))
+               "Cgen/Debug : cgen-search:: elim-bindings:~x0  H:~x1~%" elim-bindings H))
 
        (vars (vars-in-dependency-order H C vl (w state)))
        )
@@ -317,7 +318,7 @@ Why is ACL2 not good at this?
                           cgen-state
                           ctx state)
   (decl :sig ((string pseudo-term-list pseudo-term 
-                      symbol-alist symbol-alist symbol-alist
+                      alist symbol-alist symbol-alist
                       boolean 
                       cgen-state-p
                       symbol state)
@@ -333,7 +334,7 @@ Why is ACL2 not good at this?
   - name :: name of subgoal or \"top\" if run from test?
   - H :: hyps - the list of terms constraining the cts and wts search
   - C :: conclusion
-  - type-alist :: types inferred by caller (using ACL2 forward-chain)
+  - type-alist :: ACL2 type-alist (from call of forward-chain)
   - tau-interval-alist :: tau interval inferred by caller
   - elide-map :: elide-map[v] = term for each elided variable v
   - programp :: T when form has a program mode fun or we are in :program

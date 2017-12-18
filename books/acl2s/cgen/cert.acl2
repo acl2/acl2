@@ -1,5 +1,5 @@
-;; (ld "data-structures/define-u-package.lsp" :dir :system)
-;; (include-book "coi/symbol-fns/portcullis" :dir :system)
+(ld "data-structures/define-u-package.lsp" :dir :system)
+(include-book "coi/symbol-fns/portcullis" :dir :system)
 ;; (include-book "centaur/gl/portcullis" :dir :system)
 ;; (include-book "centaur/satlink/portcullis" :dir :system)
 (ld "../package.lsp")

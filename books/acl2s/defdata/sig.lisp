@@ -90,6 +90,17 @@ data last modified: [2014-08-07]
 (defloop polymorphic-inst-defdata-events0 (ps kwd-alist wrld)
   (for ((p in ps)) (append (polymorphic-inst-defdata-events1 p kwd-alist wrld))))
 
+#|
+
+Pete: I added the try-admitting-events-fun function so that when
+defdata tries to prove the automatically-generated theorems that
+provide polymorphic support, then if any such theorem fails,
+instead of stopping, we continue trying to prove the remaining
+theorems.  This is useful in cases where one of these theorems
+fails, but later theorems would have succeeded. In this way, we
+get as much automated polymorphic support as possible.
+
+|#
 (defun try-admitting-events-fun (events)
   (if (endp events)
       nil

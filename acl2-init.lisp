@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -244,7 +244,15 @@ implementations.")
 ; (not sure) when investigating an issue with safety 3, we could get stack
 ; overflows that aren't actually the problem.
 
- 400)
+; We choose 20000 somewhat arbitrarily.  The value of 400 (representing a 4x
+; addition, i.e., increasing the stack by a factor of 5) was insufficient for
+; community book books/centaur/aignet/rwlib.lisp (this, before unmemoizing
+; bad-lisp-consp): we had to increase the stack 50% seven times in order to
+; complete a LD of that book.  Since (* 5 (expt 1.5 7)) = 85, we needed to add
+; a total of something like 8400% to the default stack size.  So 10000 might be
+; safe, but 20000 seems safer.
+
+ 20000)
 
 ; We have observed a significant speedup with Allegro CL when turning off
 ; its cross-referencing capability.  Here are the times before and after
@@ -897,6 +905,7 @@ implementations.")
 ; Notes to developers (users should ignore this!):
 
 ;   (1) Replace the value below by "" when making a release.
+;       (Just query-replace control-j by control-j followed by `;'.)
 
 ;   (2) More generally, see UT file
 ;       /projects/acl2/devel-misc/release.cmds

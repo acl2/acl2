@@ -9,12 +9,8 @@
 (defxdoc orelse
   :parents (system-utilities)
   :short "Evaluate an event and, if it fails, then evaluate a second event"
-  :long "<p><b>WARNING</b>: This utility may change!  (If you see this warning
- after ACL2 Version 7.5 is released, please tell Make Kaufmann so that he can
- consider removing it.)</p>
-
- <p>NOTE: Also see @(see orelse*) for a similar utility that allows any number
- of @(see events).</p>
+  :long "<p>NOTE: Also see @(see orelse*) for a similar utility that allows any
+ number of @(see events).</p>
 
  @({
  General Form:
@@ -158,5 +154,3 @@
 
 (defmacro encapsulate-report-errors (signature &rest events)
   `(encapsulate-orelse report-event-when-error ,signature ,@events))
-
-

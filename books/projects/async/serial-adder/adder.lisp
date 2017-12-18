@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; December 2017
 
 (in-package "ADE")
 
@@ -31,7 +36,7 @@
            (equal (se 'half-adder (list a b) sts netlist)
                   (list (f-xor a b)
                         (f-and a b))))
-  :hints (("Goal" :in-theory (enable* se-rules half-adder&))))
+  :hints (("Goal" :in-theory (enable se-rules half-adder&))))
 
 ;; ======================================================================
 
@@ -40,7 +45,7 @@
 (defconst *full-adder*
   (cons 
    '(full-adder
-     (a b c)
+     (c a b)
      (sum carry)
      ()
      ((t0 (sum1 carry1) half-adder (a b))
@@ -60,15 +65,15 @@
 
 (defthmd full-adder$value
   (implies (full-adder& netlist)
-           (equal (se 'full-adder (list a b c) sts netlist)
+           (equal (se 'full-adder (list c a b) sts netlist)
                   (list (f-xor3 c a b)
                         (f-or (f-and a b)
                               (f-and (f-xor a b) c)))))
-  :hints (("Goal" :in-theory (enable* se-rules
-                                      full-adder&
-                                      half-adder$value
-                                      3vp
-                                      f-gates))))
+  :hints (("Goal" :in-theory (enable se-rules
+                                     full-adder&
+                                     half-adder$value
+                                     3vp
+                                     f-gates))))
 
 ;; ======================================================================
 
@@ -79,7 +84,7 @@
 (defun ripple-adder-body (m n)
   (declare (xargs :guard (and (natp m)
                               (natp n))))
-  ;; m is the ``current index,'' and n is the number of occurrences.
+  ;; m is the current index and n is the number of occurrences.
   (if (zp n)
       nil
     (cons
@@ -92,9 +97,9 @@
       ;; inferior module reference
       'full-adder
       ;; inputs
-      (list (si 'a m)
-            (si 'b m)
-            (si 'carry m)))
+      (list (si 'carry m)
+            (si 'a m)
+            (si 'b m)))
 
      (ripple-adder-body (1+ m) (1- n)))))
 
@@ -109,7 +114,7 @@
         (append (sis 'sum 0 n)        ; outputs are
                 (list (si 'carry n))) ; (sum_0 sum_1 ... sum_n-1 carry_n)
         nil                           ; no state
-        (ripple-adder-body 0 n)))     ; occurrences                
+        (ripple-adder-body 0 n)))     ; occurrences
 
 (defund ripple-adder& (netlist n)
   (declare (xargs :guard (and (alistp netlist)
@@ -135,9 +140,9 @@
          (occ-outs (list (si 'sum m)
                          (si 'carry (1+ m))))
          (occ-fn 'full-adder)
-         (occ-ins (list (si 'a m)
-                        (si 'b m)
-                        (si 'carry m)))
+         (occ-ins (list (si 'carry m)
+                        (si 'a m)
+                        (si 'b m)))
          (ins (assoc-eq-values occ-ins wire-alist))
          (sts (assoc-eq-value occ-name sts-alist))
          (new-vals (se occ-fn ins sts netlist))
@@ -163,6 +168,7 @@
   (implies (and (full-adder& netlist)
                 (natp m)
                 (natp n)
+                ;; We need the following hypothesis for the case of (zp n)
                 (3vp (assoc-eq-value (si 'carry m) wire-alist))
                 ;; (bvp (assoc-eq-values (sis 'a m n) wire-alist))
                 ;; (bvp (assoc-eq-values (sis 'b m n) wire-alist))
@@ -230,10 +236,6 @@
                              not-primp-ripple-adder)
                             (tv-disabled-rules)))))
 
-(defun-inline bool->bit (x)
-  (declare (xargs :guard t))
-  (if x 1 0))
-
 (defthm ripple-adder$value-correct
   (implies (and (ripple-adder& netlist n)
                 (natp n)
@@ -249,7 +251,8 @@
                        netlist))
                   (+ (bool->bit c)
                      (v-to-nat a)
-                     (v-to-nat b)))))
+                     (v-to-nat b))))
+  :hints (("Goal" :in-theory (enable bool->bit))))
 
 (in-theory (disable ripple-adder-body$value
                     ripple-adder-body$value-m=0

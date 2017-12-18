@@ -29,11 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "base")
-
-; cert_param: (non-allegro)
-; cert_param: (non-cmucl)
-
-(defttag :quicklisp.fastnumio)
-; (depends-on "fastnumio-raw.lsp")
-(include-raw "fastnumio-raw.lsp" :host-readtable t)
+; cert_param: (reloc-stub)
+(include-book "quicklisp/fastnumio" :dir :system)

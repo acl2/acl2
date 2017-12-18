@@ -158,6 +158,11 @@ cgen-state"
           (testing-enabled :testing-enabled)
           (cgen-local-timeout :cgen-local-timeout)
           (print-cgen-summary :print-cgen-summary)
+          (use-fixers :use-fixers)
+          (recursively-fix :recursively-fix)
+          (num-print-counterexamples :num-print-counterexamples)
+          (num-print-witnesses :num-print-witnesses)
+          
           ) v))
     (and (fixnump num-trials)
          (fixnump verbosity-level)
@@ -168,7 +173,13 @@ cgen-state"
          (member-eq search-strategy acl2s::*search-strategy-values*)
          (member-eq testing-enabled acl2s::*testing-enabled-values*)
          (rationalp cgen-local-timeout)
-         (booleanp print-cgen-summary))))
+         (booleanp print-cgen-summary)
+         (booleanp use-fixers)
+         (booleanp recursively-fix)
+         (fixnump num-print-counterexamples)
+         (fixnump num-print-witnesses)
+        
+         )))
          
 (defun cgen-params-p (v)
   (declare (xargs :guard t))
@@ -345,12 +356,21 @@ cgen-state"
 
 ; [2016-04-03 Sun] Added placeholder for fixer-arrangement which gives back a
 ; fixer/elim-binding as a b*-binding that can be used in simple-search
-(defstub fixer-arrangement (* * * * state) => (mv * * state))
+(defstub fixer-arrangement (* * * *  state) => (mv * * state))
 (defun fixer-arrangement/dummy (hyps concl vl ctx state)
   (declare (ignore hyps concl vl ctx))
   (declare (xargs :stobjs (state)))
   (mv nil (list nil nil) state))
 (defattach (fixer-arrangement fixer-arrangement/dummy))
+
+; [2017-08-17 Thu] This can be either attached to a gl backend or a greedy algo.
+(defstub fxri-let*-soln (* * * * * state) => (mv * * state))
+(defun fxri-let*-soln/dummy (flits term->f-lits-lst relevant-terms fxri{} vl state)
+  (declare (ignore flits term->f-lits-lst relevant-terms fxri{} vl))
+  (declare (xargs :stobjs (state)))
+  (mv nil (list nil nil) state))
+(defattach (fxri-let*-soln fxri-let*-soln/dummy))
+
 
 
 ; other basic functionality

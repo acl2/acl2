@@ -44,6 +44,12 @@
 (local (in-theory (disable unsigned-byte-p signed-byte-p nth update-nth)))
 (local (std::add-default-post-define-hook :fix))
 
+; Matt K. addition: Avoid stack overflow when writing the .cert file, which has
+; happened using Allegro CL (with ACL2(r) but probably would happen with ACL2
+; as well).
+(make-event
+ (pprogn (set-serialize-character-system nil state)
+         (value '(value-triple nil))))
 
 (local (in-theory (disable nth update-nth acl2::nth-when-zp
                            acl2::nth-when-too-large-cheap
@@ -316,7 +322,13 @@
 ;; (depends-on "abcdata.lsp")
 (make-event
  (b* (((mv err val state)
-       (acl2::read-file "abcdata.lsp" state))
+       (prog2$
+; Matt K. mod: avoid stack overflow in SBCL, maybe other host Lisps:
+; Warning: bad-lisp-consp will remain unmemoized after evaluating this form,
+; for example after LDing this file.  (However, (include-book "rwlib") will not
+; unmemoize bad-lisp-consp.)
+        (set-bad-lisp-consp-memoize nil)
+        (acl2::read-file "abcdata.lsp" state)))
       ((when err)
        (er hard? '*abcdata* "Couldn't read abcdata.lsp")
        (mv nil nil state))
@@ -356,6 +368,9 @@
 
 (defstobj-clone truth4arr truth::truth4arr :strsubst (("a" . "a")))
 
+; Matt K. mod: avoid Allegro CL stack overflow for a call of
+; abc-nodes-wellformed.
+(set-compile-fns t)
 
 (define abc-nodes-wellformed ((num-nodes natp)
                               (nodedata nat-listp))
@@ -824,7 +839,7 @@
              (local (defthm nthcdr-of-update-nth
                       (implies (< (nfix m) (nfix n))
                                (equal (nthcdr n (update-nth m val x))
-                                      (nthcdr n x))) 
+                                      (nthcdr n x)))
                       :hints(("Goal" :in-theory (enable update-nth))))))
   :guard (<= (+ idx (len lits)) (lits-length litarr))
   :returns (new-litarr)
@@ -944,13 +959,13 @@
   ;;   :hints (("goal" :use ((:instance member-of-reorder-lits-by-prios
   ;;                          (x (nth n new-lits))))
   ;;            :in-theory (disable reorder-lits-by-prios))))
-  
+
   (defret nth-of-reorder-lits-by-prios
     (implies (< (nfix n) (len prios))
              (equal (nth n new-lits)
                     (lit-fix (nth (nth n prios) (lit-list-fix lits)))))
     :hints(("Goal" :in-theory (enable nth-lit)))))
-  
+
 
 (define prios-are-permutation ((prios))
   :returns (permp)
@@ -973,7 +988,7 @@
     (implies (and permp (consp prios))
              (equal (nat-list-max prios) (+ -1 (len prios))))
     :hints(("Goal" :in-theory (disable acl2::numlist)))))
-                        
+
 
 
 
@@ -1081,7 +1096,7 @@
 
 
 
-       
+
 (defstobj-clone truth4arr2 truth::truth4arr :strsubst (("a" . "a")) :suffix "2")
 (defstobj-clone npn4arr truth::npn4arr :strsubst (("a" . "a")))
 

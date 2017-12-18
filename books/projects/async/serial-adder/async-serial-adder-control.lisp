@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2017
+;; December 2017
 
 (in-package "ADE")
 
@@ -384,15 +389,6 @@
  :hints (("Goal" :in-theory (enable v-to-nat bvp))))
 
 (in-theory (disable compute-done-))
-
-(local
- (defthm next-cntl-state$value-aux
-   (implies (and (true-listp inputs)
-                 (equal (len inputs) 5))
-            (equal (assoc-eq-values (sis 'state 1 4)
-                                    (pairlis$ (sis 'state 0 5) inputs))
-                   (cdr inputs)))
-   :hints (("Goal" :in-theory (enable list-rewrite-4)))))
 
 (defthmd next-cntl-state$value
   (implies (and (next-cntl-state& netlist)

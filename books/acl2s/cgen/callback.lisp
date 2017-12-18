@@ -120,22 +120,9 @@
    "helper function for test-checkpoint. It basically sets up 
    everything for the call to csearch."
   (declare (xargs :stobjs (state) :mode :program))
-  (b* (((mv erp type-alist &)
-       (acl2::forward-chain cl
-                            (acl2::enumerate-elements cl 0)
-                            nil ; do not force
-                            nil ; do-not-reconsiderp
-                            (w state)
-                            ens
-                            (acl2::match-free-override (w state))
-                            state))
-;Use forward-chain ACL2 system function to build the context
-;This context, gives us the type-alist ACL2 inferred from the
-;the current subgoal i.e. cl
+  (b* ((type-alist (get-acl2-type-alist-fn cl ens state))
        (vars (all-vars1-lst cl '()))
-       (vt-acl2-alst (if erp ;contradiction
-                         (make-dumb-type-alist vars)
-                       (decode-acl2-type-alist type-alist vars)))
+       
        ((mv hyps concl) (clause-mv-hyps-concl cl))
        ((mv hyps concl state) (if (and (consp cl) (null (cdr cl))
                                        (consp (car cl))
@@ -155,8 +142,9 @@
        (ord-elide-map (do-let*-ordering elided-var-map (system-debug-flag vl)))
        (tau-interval-alist (tau-interval-alist-clause cl vars ens))
        ((mv erp cgen-state state)  (cgen-search-fn name hyps concl 
-                                                   vt-acl2-alst tau-interval-alist ord-elide-map 
-                                                   NIL
+                                                   type-alist tau-interval-alist
+                                                   ord-elide-map 
+                                                   (eq (default-defun-mode (w state)) :program)
                                                    cgen-state
                                                    ctx state)))
     (mv erp cgen-state state)))
@@ -326,7 +314,7 @@ then it returns (value '(:do-not '(acl2::generalize)
        (- (cw? (debug-flag vl) "~| pspv-ust: ~x0 curr ust: ~x1 ctx:~x2 cgen-state.ctx:~x3~%" pspv-user-supplied-term (cget user-supplied-term) ctx (cget top-ctx)))
 
        ((unless (implies (and (not (eq (cget user-supplied-term) :undefined))
-                              (not (eq (cget top-ctx) :user-defined))) ;allow test?/prove
+                              (not (eq (car (cget top-ctx)) :user-defined))) ;allow test?/prove
                          (equal ctx (cget top-ctx))))
         (prog2$ ;Invariant 
          (cw? (verbose-flag vl)
@@ -402,7 +390,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
               ((mv H C) (cgen::clause-mv-hyps-concl gen-cl))
               (vars (vars-in-dependency-order H C vl wrld))
 
-              (vt-alist (make-dumb-type-alist vars))
+              (vt-alist (make-weakest-type-alist vars))
               ;; (term (if (null H)
               ;;           C
               ;;           `(implies (and ,@H) ,C)))

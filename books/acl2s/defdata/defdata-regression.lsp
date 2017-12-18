@@ -30,6 +30,53 @@
 (acl2::include-book "misc/eval" :dir :system)
 (in-package "ACL2S")
 
+        
+;; [2017-09-19 Tue]
+(acl2s-defaults :set search-strategy :simple)
+(acl2s-defaults :set sampling-method :uniform-random)
+(acl2s-defaults :set num-witnesses 0)
+
+(defdata loi10 (listof integer) :min-rec-depth 10)
+(defdata intlist (listof integer))
+(defdata intlst50 (listof integer)
+  :min-rec-depth 50
+  :max-rec-depth 100)
+
+(test? (implies (intlst50p x) (< (len x) 100)))
+
+;; (defdata loi_<50 (listof (elem . integer)) :satisfies (<= elem 50))
+;; (must-fail
+;;  (defdata loi_x (listof (x . integer)) :satisfies (<= x 50)))
+
+(defdata loi_x (listof integer)
+  :satisfies (and (< (len x) 100) (> (len x) 10))
+  :min-rec-depth 10)
+
+(defconst *SRL-DATA-MINIMUM* (- (expt 2 30)))
+(defconst *SRL-DATA-MAXIMUM* (expt 2 30))
+
+(defdata srl-int
+  (range integer (*SRL-DATA-MINIMUM* <= _ <= *SRL-DATA-MAXIMUM*)))
+
+#|
+(defun test-enum-dist (n state)
+  (declare (xargs :stobjs (state) :verify-guards nil))
+  (if (zp n)
+      (value (cw "~%"))
+  (b* (((mv x seed.) (NTH-SRL-INT/ACC 50 (defdata::getseed state)))
+       (state (defdata::putseed seed. state)))
+    (prog2$ (cw "~x0  " x)
+            (test-enum-dist (1- n) state)))))
+
+(defloop filter-1000 (xs)
+  (for ((x in xs)) (append (and (> x 1000)
+                                (< x 10000)
+                                (list x)))))
+|#
+
+;;BUG
+(defdata foo4 (oneof nil (cons (x2 . pos) foo4) (acons pos pos foo4)) :satisfies (> x2 5))
+
 
 ; 11 Feb 2016
 ; Test monomorphic sig
@@ -1040,44 +1087,3 @@
        (tree-count (node1-left tree))
        (tree-count (node1-right tree)))))
 
-(acl2s-defaults :set search-strategy :simple)
-(acl2s-defaults :set sampling-method :uniform-random)
-(acl2s-defaults :set num-witnesses 0)
-
-(defdata loi10 (listof integer) :min-rec-depth 10)
-(defdata intlist (listof integer))
-(defdata intlst50 (listof integer) :min-rec-depth 50
-                                   :max-rec-depth 100)
-
-(test? (implies (intlst50p x) (< (len x) 100)))
-
-(defdata loi_<50 (listof (elem . integer)) :satisfies (<= elem 50))
-(must-fail
- (defdata loi_x (listof (x . integer)) :satisfies (<= x 50)))
-(defdata loi_x (listof integer)
-  :satisfies (> (len x) 10) :min-rec-depth 10)
-
-(defconst *SRL-DATA-MINIMUM* (- (expt 2 30)))
-(defconst *SRL-DATA-MAXIMUM* (expt 2 30))
-
-(defdata srl-int
-  (range integer (*SRL-DATA-MINIMUM* <= _ <= *SRL-DATA-MAXIMUM*)))
-
-#|
-(defun test-enum-dist (n state)
-  (declare (xargs :stobjs (state) :verify-guards nil))
-  (if (zp n)
-      (value (cw "~%"))
-  (b* (((mv x seed.) (NTH-SRL-INT/ACC 50 (defdata::getseed state)))
-       (state (defdata::putseed seed. state)))
-    (prog2$ (cw "~x0  " x)
-            (test-enum-dist (1- n) state)))))
-
-(defloop filter-1000 (xs)
-  (for ((x in xs)) (append (and (> x 1000)
-                                (< x 10000)
-                                (list x)))))
-|#
-
-;;BUG
-(defdata foo4 (oneof nil (cons (x2 . pos) foo4) (acons pos pos foo4)) :satisfies (> x2 5))

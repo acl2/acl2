@@ -242,7 +242,9 @@ processed, the annotation of edges is also returned"
 
        
        ((or (atom hyp) ;variable symbols or atomic constants
-            (and (equal (len hyp) 2) (equal (len (get-free-vars1 (cadr hyp) nil)) 1))) ;monadic term
+            (quotep hyp)
+            (and (equal (len hyp) 2)
+                 (equal (len (get-free-vars1 (cadr hyp) nil)) 1))) ;monadic term
         (build-vdependency-graph (cdr hyp-lst) alst alst-C incoming)) ;dont do anything
        
        ((undirected-2-rel? hyp);(~ x  y)

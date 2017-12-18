@@ -125,7 +125,26 @@
   :inline t
   ///
 
-  (defrule x86-segment-base-and-bound-of-xw
+  (defthm-usb segment-base-is-n64p
+    :hyp (x86p x86)
+    :bound 64
+    :concl (mv-nth 0 (segment-base-and-bounds seg-reg x86))
+    :gen-type t
+    :gen-linear t)
+
+  (defthm-usb segment-lower-bound-is-n33p
+    :bound 33
+    :concl (mv-nth 1 (segment-base-and-bounds seg-reg x86))
+    :gen-type t
+    :gen-linear t)
+
+  (defthm-usb segment-upper-bound-is-n32p
+    :bound 32
+    :concl (mv-nth 2 (segment-base-and-bounds seg-reg x86))
+    :gen-type t
+    :gen-linear t)
+
+  (defrule segment-base-and-bound-of-xw
     (implies
      (and (not (equal fld :msr))
           (not (equal fld :seg-hidden)))
@@ -231,9 +250,15 @@
               0))
          (lin-addr (n32 (+ base eff-addr))))
       (mv nil lin-addr)))
-  :guard-hints (("Goal" :in-theory (enable segment-base-and-bounds)))
   :inline t
   ///
+
+  (defthm-sb ea-to-la-is-i64p
+    :hyp (i64p eff-addr)
+    :bound 64
+    :concl (mv-nth 1 (ea-to-la eff-addr seg-reg x86))
+    :gen-type t
+    :gen-linear t)
 
   (defrule ea-to-la-of-xw
     (implies

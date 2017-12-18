@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2017
+;; December 2017
 
 (in-package "ADE")
 
@@ -17,16 +22,6 @@
                 (equal (len x) 4))
            (equal (list (car x) (cadr x) (caddr x) (cadddr x))
                   x)))
-
-(defthmd list-rewrite-4-alt
-  (implies (and (true-listp x)
-                (equal (len x) 4))
-           (equal (list (nth 0 x)
-                        (nth 1 x)
-                        (nth 2 x)
-                        (nth 3 x))
-                  x))
-  :hints (("Goal" :in-theory (enable open-nth))))
 
 (defthmd list-rewrite-5
   (implies (and (true-listp x)

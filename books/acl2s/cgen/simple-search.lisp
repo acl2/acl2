@@ -352,13 +352,13 @@ eg:n/a")
   (b* ((sm (local-sampling-method sampling-method i N))
        ((mv A r. BE.) (next-sigma sm r. BE.))
        (- (cw? (system-debug-flag vl) 
-               "~|CEgen/Sysdebug/run-single: A: ~x0 seed: ~x1~%" A r.))
+               "~|Cgen/Sysdebug/run-single: A: ~x0 seed: ~x1~%" A r.))
        (|not vacuous ?|  (hypotheses-val A))
        (hyp-vals (and (verbose-stats-flag vl) (hyp-val-list A)))
 
        (- (cw? (and (system-debug-flag vl)
                     (not |not vacuous ?|)) 
-               "~|CEgen/Sysdebug/run-single: hyp-vals : ~x0~%" hyp-vals))
+               "~|Cgen/Sysdebug/run-single: hyp-vals : ~x0~%" hyp-vals))
        )
 ;  in
    (if |not vacuous ?|
@@ -403,7 +403,7 @@ eg:n/a")
 
 ; TODO: This function is in the inner loop. See if it can be furthur
 ; optimized.
-(def record-testrun. (test-result hyp-vals A num-cts num-wts vl test-outcomes% gcs%)
+(def record-testrun. (test-result hyp-vals A num-print-cts num-print-wts vl test-outcomes% gcs%)
   (decl :sig ((keyword true-listp symbol-doublet-listp fixnum fixnum fixnum test-outcomes%-p gcs%-p)
               ->
               (mv test-outcomes%-p gcs%-p))
@@ -421,7 +421,7 @@ eg:n/a")
                              (gcs% (gcs-1+ cts))
                              (m    (access test-outcomes% |#cts|))
                              (test-outcomes% ;TODO:per subgoal num-cts stored??
-                              (if (< m num-cts) ;dont store extra unless
+                              (if (< m num-print-cts) ;dont store extra unless
                                   (b* ((test-outcomes% (change test-outcomes% cts (cons A A-cts))))
                                     test-outcomes%)
                                 test-outcomes%))
@@ -441,7 +441,7 @@ eg:n/a")
                              (gcs% (gcs-1+ wts))
                              (m    (access test-outcomes% |#wts|))
                              (test-outcomes%   
-                              (if (< m num-wts)
+                              (if (< m num-print-wts)
                                   (b* ((test-outcomes% (change test-outcomes% wts (cons A A-wts))))
                                     test-outcomes%)
                                 test-outcomes%))
@@ -468,7 +468,7 @@ eg:n/a")
                              (gcs% (gcs-1+ vacs))
                              (m    (access test-outcomes% |#vacs|))
                              (test-outcomes%   
-                              (if (or (< m (acl2::+f num-wts num-cts))
+                              (if (or (< m (acl2::+f num-print-wts num-print-cts))
                                       (verbose-stats-flag vl)) ;[2015-04-07 Tue]
 
 ; TODO: [2014-04-26 Sat] To (post-) diagnose vacuous tests, we ought
@@ -525,12 +525,14 @@ where
 
        ((mv res hyp-vals A r. BE.) ; res = test value  A= value-bindings
         (run-single-test. vl (cget sampling-method) num-trials local-trial-num  r. BE.))
-
+       
+       (num-print-cts (cget num-print-counterexamples))
+       (num-print-wts (cget num-print-witnesses))
        ((mv test-outcomes% gcs%)
-        (record-testrun. res hyp-vals A num-cts num-wts vl test-outcomes% gcs%))
+        (record-testrun. res hyp-vals A num-print-cts num-print-wts vl test-outcomes% gcs%))
        
        (- (cw? (system-debug-flag vl) 
-               "~|CEgen/Sysdebug/run-n-tests: Finished run n: ~x0 -- got ~x1~|" n res)))
+               "~|Cgen/Sysdebug/run-n-tests: Finished run n: ~x0 -- got ~x1~|" n res)))
 ;  in   
     (run-n-tests. (acl2::|1-F| n) r. BE. test-outcomes% gcs% vl cgen-state)))
 
@@ -551,7 +553,7 @@ where
         (run-n-tests. (cget num-trials) rseed. BE. test-outcomes% gcs% vl cgen-state))
        
        (- (cw? (system-debug-flag vl) 
-               "~|CEgen/Sysdebug/run-tests.: test-outcomes%: ~x0 ~|gcs%: ~x1~%" test-outcomes% gcs%)))
+               "~|Cgen/Sysdebug/run-tests.: test-outcomes%: ~x0 ~|gcs%: ~x1~%" test-outcomes% gcs%)))
    ;;in
     (mv stop? rseed. test-outcomes% gcs%)))
 
@@ -576,13 +578,15 @@ where
                                       (list (car x))))))
 (include-book "select")
 (def make-next-sigma-defuns (hyps concl
-                                  partial-A elim-bindings
+                                  partial-A elim-bindings fixer-bindings
+                                  top-vt-alist
                                   type-alist tau-interval-alist
-                                  programp vl state)
+                                  programp use-fixers-p vl state)
   (decl :sig ((pseudo-term-list pseudo-term
-                                symbol-doublet-listp symbol-doublet-listp
-                                symbol-alist symbol-alist
-                                boolean fixnum plist-worldp) 
+                                symbol-doublet-listp symbol-doublet-listp symbol-doublet-listp
+                                symbol-doublet-listp
+                                alist symbol-alist
+                                boolean boolean fixnum plist-worldp) 
               -> (mv erp all symbol-alist))
         :doc "return the defun forms defining next-sigma function, given a
         list of hypotheses and conclusion (terms). Also return the enum-alist to be displayed")
@@ -603,13 +607,14 @@ where
                                                  (strip-cars v-cs%-alst)
                                                  'BE.)))
                              :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))))
-             ,(make-next-sigma_mv-let v-cs%-alst '() vl wrld
+             ,(make-next-sigma_mv-let v-cs%-alst '() use-fixers-p vl wrld
 ; sigma will be output as a let-bindings i.e symbol-doublet-listp
-                                      `(B* ,(append partial-A elim-bindings)
+                                      `(B* ,(append partial-A fixer-bindings elim-bindings)
                                           (mv ,(make-var-value-list-bindings
                                                 (remove-duplicates-eq
                                                  (union-eq (strip-cars v-cs%-alst)
                                                            (strip-cars partial-A)
+                                                           (strip-bound-vars fixer-bindings)
                                                            (strip-bound-vars elim-bindings))) '())
                                               seed. BE.))))
            (defun next-sigma-current-gv (sampling-method seed. BE.)
@@ -630,7 +635,9 @@ where
          (ord-vs (vars-in-dependency-order hyps concl vl wrld))
          ;(- (cw "ord-vs is ~x0 and the freshly computed ord-vs1 is ~x1~%" ord-vs ord-vs1))
          (v-cs%-alst (collect-constraints% (cons (cgen-dumb-negate-lit concl) hyps)
-                                           ord-vs type-alist tau-interval-alist vl wrld))
+                                           ord-vs
+                                           top-vt-alist
+                                           type-alist tau-interval-alist vl wrld))
 
 
         ;; ((mv erp var-enumcalls-alist) (make-enumerator-calls-alist v-cs%-alst vl wrld '()))
@@ -641,28 +648,6 @@ where
 
 
 
-(def clause-mv-hyps-concl (cl)
-  (decl :sig ((clause) 
-              -> (mv pseudo-term-list pseudo-term))
-        :doc "return (mv hyps concl) which are proper terms given a
-  clause cl. Adapted from prettyify-clause2 in other-processes.lisp")
-  (cond ((null cl) (mv '() ''NIL))
-        ((null (cdr cl)) (mv '() (car cl)))
-        ((null (cddr cl)) (mv (list (cgen-dumb-negate-lit (car cl)))
-                              (cadr cl)))
-        (t (mv (cgen-dumb-negate-lit-lst (butlast cl 1))
-               (car (last cl))))))
-
-(def clausify-hyps-concl (hyps concl)
-  (decl :sig ((pseudo-term-list pseudo-term)
-              -> clause)
-        :doc "given hyps concl which are proper terms return equivalent
-  clause cl. inverse of clause-mv-hyps-concl")
-  (cond ((and (endp hyps) (equal concl ''NIL)) 'NIL)
-        ((endp hyps) (list concl))
-        ((endp (cdr hyps)) (list (cgen-dumb-negate-lit (car hyps)) concl))
-        (t (append (cgen-dumb-negate-lit-lst hyps)
-                   (list concl)))))
 
 
 
@@ -683,9 +668,9 @@ where
        (found-cts (- new-num-cts old-num-cts))
        (n (- new-total old-total))
        (- (cw? t
-               "~|CEgen/Stats/simple-search: ~x0/~x1 cts/wts found in this run (~x2 tests)!~|" found-cts found-wts n))
+               "~|Cgen/Stats/simple-search: ~x0/~x1 cts/wts found in this run (~x2 tests)!~|" found-cts found-wts n))
        (- (cw? t
-               "~|CEgen/Stats/simple-search: *END* Stopping condition: ~x0~%~%" stop?)))
+               "~|Cgen/Stats/simple-search: *END* Stopping condition: ~x0~%~%" stop?)))
     nil))
        
 
@@ -697,7 +682,7 @@ where
    (b* (;((mv rseed. state) ) (acl2::random$ defdata::*M31* state) ;Lets try CL's builtin random number generator
         (rseed. (defdata::getseed state))
         (- (cw? (system-debug-flag vl)
-                "~|CEgen/Sysdebug/run-tests: starting SEED: ~x0 ~%" rseed.))
+                "~|Cgen/Sysdebug/run-tests: starting SEED: ~x0 ~%" rseed.))
         (BE.    (pairlis$ vars (make-list (len vars) :initial-element 0)))
         ((mv stop? rseed. test-outcomes% gcs%)
          (run-tests. rseed. BE. test-outcomes% gcs% vl cgen-state))
@@ -718,6 +703,12 @@ where
      (mv T nil state)))))
 
 
+(defloop filter-var-eq-hyps (hyps)
+  (for ((hyp in hyps))
+       (when (is-var-equality-hyp hyp)
+         (collect hyp))))
+
+
 
 ;; 1st April 2013 Fix
 ;; You cannot trust make-event to give the right result
@@ -729,13 +720,16 @@ where
 ;[2015-09-19 Sat] added support for refine/expand in assign-value of incremental-search
 ;[2016-04-03 Sun] elim-bindings will also suffice for incorporating fixers!!
                     elim-bindings 
-                    type-alist tau-interval-alist mv-sig-alist
+                    type-alist tau-interval-alist
+                    mv-sig-alist
                     test-outcomes% gcs%
                     vl cgen-state
                     programp incremental-flag?
                     ctx state)
-  (decl :sig ((string pseudo-term-list pseudo-term symbol-list symbol-doublet-listp symbol-doublet-listp
-                      variable-alist variable-alist variable-alist
+  (decl :sig ((string pseudo-term-list pseudo-term symbol-list symbol-doublet-listp
+                      symbol-doublet-listp
+                      alist variable-alist
+                      variable-alist
                       test-outcomes% gcs%
                       fixnum cgen-state
                       boolean boolean
@@ -749,10 +743,9 @@ Use :simple search strategy to find counterexamples and witnesses.
 * What it does
   1. if form has no free variables exit with appropriate return val o.w
   2. make hypotheses-val conclusion-val,  attach them
-  3. take intersection of acl2 type-alist with top-level one from gcs%.
-  4. make next-sigma defun and attach it
-  5. call run-tests!.
-  6. store/record information (test-outcomes%,gcs%) and 
+  3. make next-sigma defun and attach it
+  4. call run-tests!.
+  5. store/record information (test-outcomes%,gcs%) and 
      returns (list stop? test-outcomes% gcs%) where stop? is T when
      stopping condition is satisfied and there was no error in ld.
 ")
@@ -766,23 +759,23 @@ Use :simple search strategy to find counterexamples and witnesses.
              (record-testrun. (if c :witness :counterexample)
                               '()
                               partial-A
-                              (cget num-counterexamples) (cget num-witnesses)
+                              (cget num-print-counterexamples) (cget num-print-witnesses)
                               vl test-outcomes% gcs%)))
 
 ;       in
         (prog2$
          (if partial-A
              (cw? (verbose-flag vl)
-              "~%CEgen/Note: No point in searching ~x0; it evals to const ~x1 under ~x2~|" name c partial-A)
+              "~%Cgen/Note: No point in searching ~x0; it evals to const ~x1 under ~x2~|" name c partial-A)
              (cw? (verbose-flag vl)
-              "~%CEgen/Note: No point in searching ~x0; it evals to const ~x1~|" name c))
+              "~%Cgen/Note: No point in searching ~x0; it evals to const ~x1~|" name c))
          (mv erp (list NIL test-outcomes% gcs%) state)))
 
 ;ELSE atleast one variable
   (b* ((- (assert$ (consp vars) 'simple-search))
        (- (cw? (verbose-flag vl) "~%~%"))
        (- (cw? (verbose-stats-flag vl) 
-               "~|CEgen/Stats/simple-search:: *START*~|"))
+               "~|Cgen/Stats/simple-search:: *START*~|"))
 
        (hyp-val-defuns   (make-hypotheses-val-defuns hyps vars mv-sig-alist programp))
        (concl-val-defuns (make-conclusion-val-defuns concl vars mv-sig-alist programp))
@@ -790,59 +783,56 @@ Use :simple search strategy to find counterexamples and witnesses.
 ;       Order of hyps is important -- Values of each hyp is stored in seq
        (hyp-val-list-defuns (make-hyp-val-list-defuns hyps vars mv-sig-alist programp))
        
-       (wrld (w state))
-       ;; ((mv erp0 tr-res state) ;commented out after throwing graph-tc.lisp
-       ;;  (trans-eval `(mv-list 2 (meet-type-alist ',type-alist ',top-vt-alist ',vl ',wrld))
-       ;;              ctx state t))
-       
-       ((mv erp type-alist) (meet-type-alist type-alist (cget top-vt-alist) vl wrld))
-       ((when erp)
-        (prog2$
-         (cw? (normal-output-flag vl)
-              "~|CEgen/Error: Type intersection failed. Skip searching ~x0.~%" name)
-         (mv t (list NIL test-outcomes% gcs%) state)))
 
        ;;[2016-04-03 Sun] Added support for fixers
        ((mv erp fxr-res state)
         (if (cget use-fixers)
-            (fixer-arrangement hyps concl vl ctx state)
+            ;; reify all eq hyps that are true in the ACL2 context.
+            (b* ((eq-hyps (filter-var-eq-hyps (reify-type-alist-hyps type-alist))))
+              (fixer-arrangement (union-equal eq-hyps hyps) concl vl ctx state))
           (value (list nil nil))))
        ((list fixer-bindings additional-fxr-hyps) fxr-res)
        
        ((when erp)
         (prog2$ 
            (cw? (and (normal-output-flag vl) (cget use-fixers))
-                "~|CEgen/Error: Couldn't compute fixer bindings. Skip searching ~x0.~|" name)
+                "~|Cgen/Error: Couldn't compute fixer bindings. Skip searching ~x0.~|" name)
            (mv t (list nil test-outcomes% gcs%) state)))
        
-       (elim-bindings (append elim-bindings fixer-bindings))
 ;       (new-fxr-vars (set-difference-equal (acl2::all-vars1-lst additional-fxr-hyps '()) vars))
        (- (cw? (and (verbose-stats-flag vl) additional-fxr-hyps)
-               "~|CEgen/Note: Additional Hyps for fixers: ~x0~|" additional-fxr-hyps))
-       
+               "~|Cgen/Note: Additional Hyps for fixers: ~x0~|" additional-fxr-hyps))
+
+       (acl2-vt-dlist (var-types-alist-from-acl2-type-alist type-alist vars '()))
+       ((mv erp top+-vt-dlist) (meet-type-alist acl2-vt-dlist (cget top-vt-alist) vl (w state)))
+       (top+-vt-dlist (if erp (make-weakest-type-alist vars) top+-vt-dlist))
+
        ((mv erp next-sigma-defuns disp-enum-alist)
         (make-next-sigma-defuns (union-equal additional-fxr-hyps hyps) concl
 ;(append new-fxr-vars vars)  Compute it again afresh [2016-10-29 Sat]
-                                partial-A elim-bindings
+                                partial-A elim-bindings fixer-bindings
+                                top+-vt-dlist
                                 type-alist tau-interval-alist
                                 t ; programp ;;Aug 2014 -- New defdata has program-mode enumerators
+                                (cget use-fixers)
                                 vl state))
        ((when erp)
         (prog2$ 
            (cw? (normal-output-flag vl)
-                "~|CEgen/Error: Couldn't determine enumerators. Skip searching ~x0.~|" name)
+                "~|Cgen/Error: Couldn't determine enumerators. Skip searching ~x0.~|" name)
            (mv t (list nil test-outcomes% gcs%) state)))
 
        ;;[2016-04-25 Mon] record these for later printing in vacuous-stats
+       (fxr-elim-bindings (append fixer-bindings elim-bindings))
        (test-outcomes% (change test-outcomes% disp-enum-alist disp-enum-alist))
-       (test-outcomes% (change test-outcomes% elim-bindings elim-bindings))
+       (test-outcomes% (change test-outcomes% elim-bindings fxr-elim-bindings))
        
        (- (cw? (system-debug-flag vl) 
-               "~|CEgen/Sysdebug: next-sigma : ~| ~x0~|" next-sigma-defuns))
+               "~|Cgen/Sysdebug: next-sigma : ~| ~x0~|" next-sigma-defuns))
        (- (cw? (verbose-flag vl) 
-               "~|CEgen/Note: Enumerating ~x0 with ~x1~|" name disp-enum-alist))
+               "~|Cgen/Note: Enumerating ~x0 with ~%~x1~%" name disp-enum-alist))
        (- (cw? (and (verbose-flag vl) elim-bindings)
-               "~|CEgen/Note: Fixer/Elim bindings: ~x0~|" elim-bindings))
+               "~|Cgen/Note: Fixer/Elim bindings: ~%~x0~|" fxr-elim-bindings))
 
        
 ; print form if origin was :incremental

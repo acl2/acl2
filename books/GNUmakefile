@@ -508,7 +508,7 @@ else
   REALLY_USE_QUICKLISP := 0
 endif
 
-QUICKLISP_DIR := centaur/quicklisp
+QUICKLISP_DIR := quicklisp
 
 .PHONY: quicklisp
 
@@ -674,9 +674,14 @@ clean_books:
 	@echo "Using clean.pl to remove certificates, etc."
 	$(BUILD_DIR)/clean.pl
 
-# We test that directory centaur/quicklisp exists because it probably
+# We test that directory quicklisp exists because it probably
 # doesn't for nonstd/, and we include this makefile from that
 # directory.
+
+# 2017-12-16: Rager wonders if the above comment should be
+# removed, as there's no test of the quicklisp directory
+# immediately below.
+
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
@@ -1003,10 +1008,11 @@ BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2
 # that directory.
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard system/pcert/*.cert))
 
-# I've seen an error with the following that seemed difficult to
-# debug, but it doesn't seem important to figure that out, so let's
-# just skip it; could have something to do with the use of pcert on an
-# included book.
+# The use of provisional certification seems to cause regeneration of
+# the @expansion.lsp file, which can be a problem because, for
+# example, GCL seems to generate "LISP" as a package name, which
+# confuses the serialize reader.
+BOOKS_SKIP_COMP += make-event/local-elided.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += make-event/local-elided-include.$(ACL2_COMP_EXT)
 
 # The .acl2 files specify no compilation:
@@ -1055,6 +1061,18 @@ BOOKS_SKIP_COMP += demos/modeling/nested-stobj-toy-isa.$(ACL2_COMP_EXT)
 # This book has a make-event guarded by #+Clozure, which might explain
 # why compilation failed failed for Allegro CL.
 BOOKS_SKIP_COMP += tools/oracle-timelimit-tests.$(ACL2_COMP_EXT)
+
+# The following book cannot be included without what appears to be
+# some sort of infinite loop.  The ones below it depend on that book.
+BOOKS_SKIP_COMP += hacking/evalable-ld-printing.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += acl2s/mode-acl2s-dependencies.$(ACL2_COMP_EXT)
+
+# When certification with CCL generates file top@expansion.lsp, that
+# expansion file unconditionally loads the CCL-only file
+# bridge-raw.lsp.  We thus seem to need to disqualify both of the
+# following books.
+BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += doc/top.$(ACL2_COMP_EXT)
 
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 

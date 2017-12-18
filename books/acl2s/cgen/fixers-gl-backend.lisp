@@ -848,13 +848,15 @@ of the entries is same as the keys"
 
 
 
-;; [2016-04-02 Sat] term->lits-lst added.
-; term->lits-lst is an alist from each cterm to a list of lits this list
-; structure corresponds to DNF form, i.e., a sum of products i.e. at least one
-; lits_i should be sat, and in lits_i, every lit should be sat.
+;; [2016-04-02 Sat]
+;; [2017-08-18 Fri] Modified data structure from lits-lst to flits{} 
+;; term->flits{} added.
+; term->flits{} is an alist from each cterm to an alist {(fixername1 . flits_1) ..}
+; It corresponds to DNF form, i.e., a sum of products i.e. at least one
+; flits_i should be sat, and in flits_i, every lit should be sat.
 
 ; [2016-04-02 Sat] Create a pvar holding truth-value of each term
-; term->lits-lst := ((Rfxgxy . ((Rw1gxy w1=fx) (Rw1w2 w1=fx w2=gxy))) ...)
+; term->flits{} := ((Rfxgxy . ((Rw1gxy w1=fx) (Rw1w2 w1=fx w2=gxy))) ...)
 ; Rfxgxy.TRUE => (Rw1gxy.isSAT /\ w1=fx.isSAT) \/ (Rw1w2.isSAT /\ w1=fx.isSAT /\ w2=gxy.isSAT)
 
 (defloop C/sat-lits (lits fixers)
@@ -868,19 +870,19 @@ of the entries is same as the keys"
 
 
 
-(defloop sat-literals-lst (lits-lst)
-  (for ((lits in lits-lst))
-       (collect (b* ((cs (pvars/sat-lit lits))
+(defloop sat-literals-lst (flits{})
+  (for ((fname-lits in flits{}))
+       (collect (b* ((cs (pvars/sat-lit (cdr fname-lits)))
                      ((when (= 1 (len cs))) (car cs)))
                   `(AND . ,cs)))))
 
-(defloop C/sat-terms (term->lits-lst)
-  (for ((term--lits-list in term->lits-lst))
-       (collect (b* ((cs (sat-literals-lst (cdr term--lits-list))))
+(defloop C/sat-terms (term->flits{})
+  (for ((term--lits{} in term->flits{}))
+       (collect (b* ((cs (sat-literals-lst (cdr term--lits{}))))
                   (if (= 1 (len cs))
-                      `(IMPLIES ,(pvar/sat-term (car term--lits-list))
+                      `(IMPLIES ,(pvar/sat-term (car term--lits{}))
                                 ,(car cs))
-                    `(IMPLIES ,(pvar/sat-term (car term--lits-list))
+                    `(IMPLIES ,(pvar/sat-term (car term--lits{}))
                               (OR . ,cs)))))))
                           
 
@@ -1155,11 +1157,11 @@ of the entries is same as the keys"
     A))
 
   
-(defun make-GL-SAT-encoding (vars lits term->lits-lst fxri{})
+(defun make-GL-SAT-encoding (vars lits term->flits{} fxri{})
 ; return (mv bindings hyp concl-hyp)
 ;  (declare (xargs :mode :program :stobjs (state)))
   (b* ((fixers (strip-cdrs fxri{}))
-       (terms (strip-cars term->lits-lst))
+       (terms (strip-cars term->flits{}))
        (bindings (pvars-g-bindings vars fixers lits terms))
        (hyp `(AND . ,(pvars-type-constraints vars fixers lits terms)))
        (concl-hypothesis `(AND . ,(append 
@@ -1177,7 +1179,7 @@ of the entries is same as the keys"
                                    ;; [2016-09-07 Wed] added for optimization purposes
                                    (C/valid-fixes-at-least-one-lit fixers lits)
                                    (C/sat-lits lits fixers)
-                                   (C/sat-terms term->lits-lst)))
+                                   (C/sat-terms term->flits{})))
                                    ))
        
     (mv bindings hyp concl-hypothesis)))
@@ -1251,11 +1253,11 @@ bindings:
 
 
 ; fxri{} is the fixer instance metadata table 
-(defun fixers-maxsat-glcp-query (vars lits term->lits-lst relevant-hyps fxri{} mode vl state)
+(defun fixers-maxsat-glcp-query (vars lits term->flits{} relevant-hyps fxri{} mode vl state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* (((when (or (null vars)
                   (null lits)
-                  (null term->lits-lst)
+                  (null term->flits{})
                   (null relevant-hyps)
                   )) ;pathological cases
         (mv :null nil state)); abort, treat as error
@@ -1263,7 +1265,7 @@ bindings:
        ((mv start-code-gen state) (acl2::read-run-time state))
        
        ((mv bindings hyp concl-hyp)
-        (make-GL-SAT-encoding vars lits term->lits-lst fxri{}))
+        (make-GL-SAT-encoding vars lits term->flits{} fxri{}))
        ((mv end-code-gen state) (acl2::read-run-time state))
        (- (cw? (debug-flag vl) "~|concl-hyp is ~x0~%" concl-hyp))
        (- (cw? (verbose-stats-flag vl)
@@ -1290,7 +1292,7 @@ bindings:
                                        vl state))
         ((when erp) ;unsat or error, abort
          (mv erp nil state))
-        (terms (strip-cars term->lits-lst))
+        (terms (strip-cars term->flits{}))
         (fixers (strip-cdrs fxri{}))
         (all-basis-pvars (append (pvars/chosen-fixer lits fixers)
                                  (pvars/final vars fixers)
@@ -1305,7 +1307,46 @@ bindings:
         )
     (mv nil sat-A/true state)))
   
-  
+(defun fxri-let*-soln/gl (flits term->flits{} relevant-terms fxri{} vl state)
+  ;; return (mv erp (list let*-binding satisfied-terms) state)
+  (declare (xargs :stobjs (state)))
+  (b* ((flits-vars (acl2::all-vars1-lst flits '()))
+       (- (acl2::tshell-ensure))
+       ((mv erp sat-A state)
+        (fixers-maxsat-glcp-query flits-vars
+                                  flits
+                                  term->flits{}
+                                  relevant-terms
+                                  fxri{}
+                                  :maxsat ;maxsat loop
+                                  vl state))
+       
+       ((when (equal :null erp))
+        (value (list nil nil)))
+       
+       ((when (equal :unsat erp))
+        (progn$
+         (cw? (verbose-flag vl)
+              "~| Cgen/Note: GL query is UNSAT. No fixer arrangement found for~%")
+         (cw? (verbose-flag vl) "~| ~x0~%" relevant-terms)
+         (value (list nil nil))))
+
+       (rterms-pvars/sat (pvars/sat-term relevant-terms))
+       (rterms-pvars/true (filter-true-vars sat-A rterms-pvars/sat))
+       (rterms/true (strip-cdrs (cgen::assoc-lst rterms-pvars/true
+                                                (pairlis$ rterms-pvars/sat relevant-terms))))
+       
+        
+       (ssigma (soln-sigma-top sat-A flits-vars fxri{}))
+       (let*-soln0 (convert-to-let*-binding ssigma)))
+    (mv erp (list let*-soln0 rterms/true) state)))
+
+(include-book "cgen-state")
+(defttag t)
+(defattach (fxri-let*-soln fxri-let*-soln/gl) :skip-checks t)
+(defttag nil)
+
+
 (in-theory (disable Implies))
 
   ;; + Backend/GL engine interface -- We have as inputs, the literals (of

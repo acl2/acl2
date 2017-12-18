@@ -1,5 +1,10 @@
+;; Copyright (C) 2017, Regents of the University of Texas
+;; Written by Cuong Chau
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; December 2017
 
 (in-package "ADE")
 
@@ -36,9 +41,9 @@
            (equal (se 'b-buf-pwr (list in) sts netlist)
                   (list (f-buf in))))
   :hints (("Goal" :in-theory (enable se-rules
-                                      b-buf-pwr&
-                                      3vp
-                                      f-gates))))
+                                     b-buf-pwr&
+                                     3vp
+                                     f-gates))))
 
 ;; ;; DP-RAM-16x32
 

@@ -77,6 +77,52 @@
          <p>The current version of ACL2 is the value of the constant @('(@
             acl2-version)').</p>")
 
+(defxdoc note-8-1-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in <h3>..</h3>
+; tags (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  <h4>Your Library Title</h4>
+;  <p>Details go here.</p>
+
+; See also comments in (defxdoc note-8-0-books ...).
+
+  :parents (note-8-1 release-notes-books)
+  :short "Release notes for the ACL2 Community Books for ACL2 8.1"
+
+  :long "<p>The following is a brief summary of changes made to the @(see
+ community-books) between the releases of ACL2 8.0 and 8.1.</p>
+
+ <p>See also @(see note-8-1) for the changes made to ACL2 itself.  For
+ additional details, you may also see the raw <a
+ href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
+
+ <h3>New Libraries</h3>
+
+ <h3>Changes to Existing Libraries</h3>
+
+ <h4>Kestrel Utilities</h4>
+
+ <p>Added utility @(see include-book-paths) to list paths via @(tsee
+ include-book) down to a given book, which may be useful for reducing book
+ dependencies.</p>
+
+ <p>Added a <see topic='@(url fty)'>fixtype</see>
+ for <see topic='@(url set::std/osets)'>finite sets</see>.</p>
+
+ <h3>Licensing Changes</h3>
+
+ <h3>Build System Updates</h3>
+
+ <h3>Testing</h3>
+
+ <h3>Miscellaneous</h3>
+
+ ")
+
 (defxdoc note-8-0-books
 
 ; Note: To see all git log entries with a given author, for example Joe
@@ -231,10 +277,11 @@
  property needed of the returned @(see error-triple) is that its error
  component is not @('nil').</p>
 
- <p>New utility @(tsee manage-screen-output) is an improved version of @(tsee
- control-screen-output) (which may eventually be removed).  Added utilities
- @(tsee make-event-terse), @(tsee restore-output) and @(tsee restore-output?)
- to fine-tune screen output in event-generating macros.  Moved obsolete utility
+ <p>Added utility @(tsee manage-screen-output) which is an improved version of
+ @(tsee control-screen-output) (which may eventually be removed).  Added
+ utilities @(tsee make-event-terse), @(tsee restore-output), @(tsee
+ restore-output?), @(tsee fail-event), and @(tsee try-event) to fine-tune
+ screen output in event-generating macros.  Moved obsolete utility
  @('control-screen-output-and-maybe-replay') to Workshop supporting materials,
  where the only remaining use of this utility was.</p>
 

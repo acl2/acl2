@@ -170,7 +170,7 @@
     (append (rev1 (cdr x)) (list (car x)))))
 
 (must-fail
-(test? (equal (rev1 (rev1 x)) x))
+ (test? (equal (rev1 (rev1 x)) x))
 )
 
 
@@ -179,8 +179,8 @@
 ;(trace$ cgen::compute-event-ctx cgen::allowed-cgen-event-ctx-p cgen::init-cgen-state/event)
 ;(acl2s-defaults :set verbosity-level 5)
 (must-fail
-(thm (equal (rev1 (rev1 x)) x))
-)
+ (thm (equal (rev1 (rev1 x)) x))
+ )
 
 
 (acl2s-defaults :set testing-enabled :naive)
@@ -345,13 +345,13 @@
 
 ; Conjecture - version 2
 (must-fail
-(test?
- (implies (and (memoryp m)
-               (natp a1)
-               (natp a2))
-          (equal (update a1 v1 (update a2 v2 m))
-                 (update a2 v2 (update a1 v1 m)))))
-)
+ (test?
+  (implies (and (memoryp m)
+                (natp a1)
+                (natp a2))
+           (equal (update a1 v1 (update a2 v2 m))
+                  (update a2 v2 (update a1 v1 m)))))
+ )
 ; NOTE: BE gets no counterexamples in the above even for numtrials 100000!
 ; This is not good. This is probably due to the faulty DEFDATA::|next BE args|
 ; function which enumerates the variables in a naive way. See note after
@@ -361,15 +361,14 @@
 
 ;Conjecture - version#3
 ;TODO - I am not trying hard to refute conclusion in incremental
-(test?
- (implies (and (memoryp m)
-               (natp a1)
-               (natp a2)
-               ;(or (in-memory a1 m) (in-memory a2 m))
-               (not (equal a1 a2)))
-          (equal (update a1 v1 (update a2 v2 m))
-                 (update a2 v2 (update a1 v1 m)))))
-
+ (test?
+  (implies (and (memoryp m)
+                (natp a1)
+                (natp a2)
+;(or (in-memory a1 m) (in-memory a2 m))
+                (not (equal a1 a2)))
+           (equal (update a1 v1 (update a2 v2 m))
+                  (update a2 v2 (update a1 v1 m)))))
 ;Testing didnt come up with any counterexamples, lets try to prove it.
 (thm
  (implies (and (memoryp m)
@@ -651,7 +650,8 @@
 ; blindly throws away a simplification that is not smaller
 ; in term-order than the original hyp.
 ; 27th Aug '12, to get rid of the above error, one needs to
-; submit a compound recognizer rule as follows.
+; submit a compound recognizer rul(declare (xargs :guard (pseudo-termp term)
+                   :verify-guards nil))
 ; Additionally I also make sure that I dont break the invariant
 ; that after propagating a X=const assignment, X will not appear
 ; as a free variable in the resulting simplified hyp
@@ -885,30 +885,29 @@
 (acl2s-defaults :set verbosity-level 3)
 ;(acl2s-defaults :set search-strategy :incremental)
 
-:set-gag-mode nil
 (must-fail
-(test?
- (implies (and (maap w)
-               (equal (mget :pc w)
-                      (+ 1 (mget :pch (mget :ltch2 w))))
-               
-               ;(mget (mget :pch (mget :ltch2 w)) (mget :imem w)) ;added later
-               
-               (equal t (mget :validp (mget :ltch2 w)))
-               
-               (equal (mget (mget :rb (mget (mget :pch (mget :ltch2 w)) (mget :imem w)))
-                            (mget :regs w))
-                      (mget :rb-val (mget :ltch2 w)))
-               
-               (equal (mget :opcode (mget (mget :pch (mget :ltch2 w)) (mget :imem w)))
-                      'bez)
-               
-               (equal 0
-                      (mget (mget :ra (mget (mget :pch (mget :ltch2 w)) (mget :imem w)))
-                            (mget :regs w)))
-               (equal 0 (mget :ra-val (mget :ltch2 w))))
-          (not (equal (mget :op (mget :ltch2 w)) 'bez))))
-)
+ (test?
+  (implies (and (maap w)
+                (equal (mget :pc w)
+                       (+ 1 (mget :pch (mget :ltch2 w))))
+                
+;(mget (mget :pch (mget :ltch2 w)) (mget :imem w)) ;added later
+                
+                (equal t (mget :validp (mget :ltch2 w)))
+                
+                (equal (mget (mget :rb (mget (mget :pch (mget :ltch2 w)) (mget :imem w)))
+                             (mget :regs w))
+                       (mget :rb-val (mget :ltch2 w)))
+                
+                (equal (mget :opcode (mget (mget :pch (mget :ltch2 w)) (mget :imem w)))
+                       'bez)
+                
+                (equal 0
+                       (mget (mget :ra (mget (mget :pch (mget :ltch2 w)) (mget :imem w)))
+                             (mget :regs w)))
+                (equal 0 (mget :ra-val (mget :ltch2 w))))
+           (not (equal (mget :op (mget :ltch2 w)) 'bez))))
+ )
 
 
 ; for all the following simple works fine so lets try incremental too
@@ -1087,7 +1086,7 @@
   (and (ld2-auxp x)
        (<= (len x) 6)))
 
-Now, cgen fails to find a counterexample for this.
+;Now, cgen fails to find a counterexample for this.
 (acl2s-defaults :set verbosity-level 3)
 
 (test?

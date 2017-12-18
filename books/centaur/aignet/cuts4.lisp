@@ -98,7 +98,7 @@
   (defret cutsize-fix-when-cutsize-p
     (implies (cutsize-p x)
              (equal new-x x)))
-  
+
   (fty::deffixtype cutsize :pred cutsize-p :fix cutsize-fix :equiv cutsize-equiv
     :define t :forward t)
 
@@ -107,6 +107,10 @@
 (fty::fixtype-to-bitstruct truth::truth4 :width 16 :fullp t)
 
 (fty::defbitstruct cutscore 12)
+
+; Matt K. mod: Avoid ACL2(p) error from generated computed hint
+; (FTY::BITSTRUCT-LOGBITP-REASONING), which returns an error triple.
+(set-waterfall-parallelism nil)
 
 (fty::defbitstruct cutinfo
   ((truth truth::truth4-p)
@@ -434,7 +438,7 @@
     (implies (not (equal (nfix n) (nfix i)))
              (equal (nth n (nth *nodecut-indicesi1* (update-nodecut-indicesi i v cutsdb)))
                     (nth n (nth *nodecut-indicesi1* cutsdb)))))
-  
+
   ;; (defthmd nodecut-indices-of-update-nodecut-indicesi
   ;;   (equal (nth *nodecut-indicesi1* (update-nodecut-indicesi n v cutsdb))
   ;;          (update-nth n v (nth *nodecut-indicesi1* cutsdb))))
@@ -506,7 +510,7 @@
                     (nth n (nth *nodecut-indicesi1* old)))
              (equal (nodecut-indicesi1 n new)
                     (nodecut-indicesi1 n old))))
-  
+
   (defthm natp-of-nodecut-indicesi1
     (implies (and (acl2::u32-listp (nth *nodecut-indicesi1* cutsdb))
                   (< (nfix n) (nodecut-indices-length cutsdb)))
@@ -533,7 +537,7 @@
   :prepwork ((local (in-theory (enable acl2::nth-in-u32-listp-natp))))
   (lnfix (nodecut-indicesi1 n cutsdb))
   ///
-  
+
   (def-updater-independence-thm nodecut-indicesi-updater-independence
     (implies (nat-equiv (nth n (nth *nodecut-indicesi1* new))
                         (nth n (nth *nodecut-indicesi1* old)))
@@ -1106,7 +1110,7 @@
 
 
 
-       
+
 (define truth4-deps-bounded ((n natp) (truth truth4-p))
   :guard (<= n 4)
   :measure (nfix (- 4 (nfix n)))
@@ -1252,7 +1256,7 @@
              (truth::depends-on witness truth 4)))
 
   (local (in-theory (disable truth4-deps-bounded)))
-        
+
 
   (local (in-theory (enable logcount-loghead-+1)))
 
@@ -1277,7 +1281,7 @@
     (implies (and (truth4-deps-bounded k x)
                   (natp permute-mask)
                   ;; (<= (nfix k) (logcount (loghead 4 permute-mask)))
-                  
+
                   (<= (nfix k) (logcount (loghead n permute-mask))))
              (truth4-deps-bounded n (truth::permute-stretch 0 nil permute-mask x 4)))
     :hints ((acl2::use-termhint
@@ -1428,7 +1432,7 @@
                                    (nth *cut-leavesi1* old)))
              (equal (cut-leaves-bounded n bound new)
                     (cut-leaves-bounded n bound old))))
-  
+
   (defthmd cut-leaves-bounded-when-bounded-lesser
     (implies (and (cut-leaves-bounded n bound1 cutsdb)
                   (<= (nfix bound1) (nfix bound)))
@@ -1540,7 +1544,7 @@
   (defthm cutsdb-ok-implies-initial-nodecut-index
     (implies (cutsdb-ok cutsdb)
              (equal (nodecut-indicesi 0 cutsdb) 0)))
-  
+
 
   (defret cutsdb-ok-implies-nodecut-indices-monotonic
     (implies (and ok
@@ -1663,7 +1667,7 @@
                                              cutsdb)
                       (:free (n m bound) (cut-range-leaves-bounded n (+ 1 m) bound cutsdb))))))
 
-  
+
   (local (defthm nodecuts-leaves-bounded-implies-cuts-bounded
            (implies (and (nodecuts-leaves-bounded n cutsdb)
                          (equal (nodecut-indicesi 0 cutsdb) 0)
@@ -1854,8 +1858,8 @@
                  (cutsdb-lit-idsp orig cutsdb))
             (cutsdb-lit-idsp new cutsdb))))
 
-  
-    
+
+
 
 
 
@@ -1946,7 +1950,7 @@
   (defthm nth-cut-info-of-cutsdb-maybe-grow-cut-info
     (cutinfo-equiv (nth n (nth *cut-infoi1* (cutsdb-maybe-grow-cut-info size cutsdb)))
                    (nth n (nth *cut-infoi1* cutsdb))))
-  
+
   (defthm nth-cut-info-of-cutsdb-maybe-grow-cut-info-below-size
     (implies (< (nfix n) (cut-info-length cutsdb))
              (equal (nth n (nth *cut-infoi1* (cutsdb-maybe-grow-cut-info size cutsdb)))
@@ -1981,7 +1985,7 @@
        (cutsdb (update-cut-nnodes new-nnodes cutsdb))
        (cutsdb (cutsdb-maybe-grow-nodecut-indices new-nnodes cutsdb)))
     (update-nodecut-indicesi new-nnodes (nodecut-indicesi old-nnodes cutsdb) cutsdb))
-    
+
   ///
 
   (defret cutsdb-ok-of-cuts-add-node
@@ -2199,7 +2203,7 @@
                                    (nth *cut-leavesi1* old)))
              (equal (cut-value cut new bitarr)
                     (cut-value cut old bitarr)))))
-  
+
 
 
 (define copy-cut ((src natp)
@@ -2326,7 +2330,7 @@
                          :in-theory (e/d (cut-leaves-bounded-when-bounded-lesser)
                                          (cut-range-leaves-bounded-of-copy-cut
                                           copy-cut)))))))
-                         
+
 
   (defret cut-leaves-length-nondecr-of-copy-cut
     (<= (cut-leaves-length cutsdb) (cut-leaves-length new-cutsdb))
@@ -2392,7 +2396,7 @@
             :cases ((< (nfix src) (nfix dst))))))
 
   )
-       
+
 
 
 
@@ -2522,7 +2526,7 @@
                   ''(:expand ((:free (size cutsdb) (leaves-sorted idx0 size cutsdb))))))
               ''(:expand ((:free (size cutsdb) (leaves-sorted idx1 size cutsdb))))))))
 
-  
+
 
   (defret cut-leaves-length-of-leaves-merge
     (implies (and (<= (+ (nfix dest-idx)
@@ -2687,7 +2691,7 @@
                                     (leaves-subsetp
                                      leaves-subsetp-of-leaves-merge-second-lemma))
             :use leaves-subsetp-of-leaves-merge-second-lemma))))
-  
+
 
 
 (define merged-leaves-expandmask ((idx0 natp) (size0 natp)
@@ -2751,7 +2755,7 @@
                                               bitops::ihsext-inductions
                                               acl2::install-bit**)
                    :induct (logbitp n x)))))
-                                              
+
 
   ;; (local (defthm nth-set-bit-pos-of-logtail
   ;;          (implies (and (equal (loghead n x) 0)
@@ -2944,7 +2948,7 @@
                    :expand ((nth-set-bit-pos k x))
                    :induct (nth-set-bit-pos-bound-when-unsigned-byte-p-ind n k x)))
            :rule-classes :linear))
-                    
+
 
   (defret nth-set-bit-pos-bound-of-merged-leaves-expandmask
     (implies (and (< (nfix n) (nfix size0))
@@ -2978,7 +2982,7 @@
                                  acl2::loghead-identity)
              :do-not-induct t)))
   )
-           
+
 
 
 
@@ -2997,7 +3001,7 @@
 ;;     (update-nodecut-indicesi (cut-nnodes cutsdb) new-last-index))
 ;;   ///
 ;;   (defret cutsdb-ok-of-cuts-add-cut
-  
+
 
 
 (define update-nodecut-indicesi$ ((n natp) (v natp) (cutsdb))
@@ -3030,7 +3034,7 @@
 ;;           (collect-leaves (1+ (lnfix data)) (1- size) cutsdb))))
 
 ;; (include-book "std/strings/hexify" :dir :system)
-      
+
 
 ;; (define print-cut ((cut natp)
 ;;                    (cutsdb))
@@ -3068,8 +3072,8 @@
        )
     (or contained
         (cuts-check-any-contained (1+ start) end data size cutsdb))))
-       
-  
+
+
 
 
 (define cuts-invalidate-any-contained ((start natp)
@@ -3131,11 +3135,11 @@
             ;; gross, better way?
             (and stable-under-simplificationp
                  '(:in-theory (enable cut-infoi cut-infoi1))))))
-  
-       
 
 
-  
+
+
+
 
 (define cut-and ((val0 booleanp)
                  (neg0 bitp)
@@ -3298,7 +3302,7 @@
                                     (v ,(hq mismatch)))))))
                       nil)))
            :otf-flg t))
-                      
+
 
   (defret truth-value-of-cuts-merge-aux2
     (b* ((m (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
@@ -3353,7 +3357,7 @@
                                                   4)
                                neg1))))
     :hints(("Goal" :in-theory (enable cut-and))))
-  
+
   (local (defthm truth-eval-of-norm-minus1
            (implies (and (syntaxp (and (quotep x)
                                        (quotep numvars)
@@ -3409,7 +3413,7 @@
                     (equal m (nodecut-indicesi (cut-nnodes cutsdb1) cutsdb1))
                     (cutsdb-ok cutsdb)
                     (cut-leaves-bounded cut0 bound cutsdb)
-                    (cut-leaves-bounded cut1 bound cutsdb)                    
+                    (cut-leaves-bounded cut1 bound cutsdb)
                     (< (nfix cut0) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
                     (< (nfix cut1) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)))
                (cut-leaves-bounded (nodecut-indicesi (cut-nnodes cutsdb1) cutsdb1) bound new-cutsdb)))
@@ -3489,7 +3493,7 @@
                                         bitops::ihsext-recursive-redefs
                                         bitops::install-bit**)
                     :expand ((:free (x) (loghead n x)))))))
-                    
+
 
   (local (defthm loghead-of-install-bit
            (implies (< (nfix bit-idx) (nfix size))
@@ -3498,8 +3502,8 @@
            :hints (("goal" :use ((:instance loghead-of-install-bit-lemma
                                   (n (- (nfix size) (nfix bit-idx)))))
                     :in-theory (disable loghead-of-install-bit-lemma)))))
-                                              
-                  
+
+
 
   (local (defret loghead-of-truth-reducemask-lemma
            (equal (loghead (+ (nfix size) (nfix bit-idx)) bitmask) bitmask)))
@@ -3510,8 +3514,8 @@
     :hints (("goal" :use ((:instance loghead-of-truth-reducemask-lemma))
              :in-theory (disable loghead-of-truth-reducemask-lemma))))
 
-  
-  
+
+
 
   (local (defthm logcount-logtail-of-n+1
            (implies (and (natp n) (natp mask))
@@ -3558,7 +3562,7 @@
                          (mask ,(hq permute-mask))
                          (x ,(hq witness))
                          (numvars 4))
-                         
+
                         ;; (:instance index-permute-shrink-upper-bound
                         ;;  (mask permute-mask)
                         ;;  (k k)
@@ -3645,7 +3649,7 @@
   ;;          :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding
   ;;                                             update-cut-leavesi)))))
 
-  
+
 
   (local (Defthm logtail-not-0-when-logbitp
            (implies (logbitp n x)
@@ -3688,7 +3692,7 @@
   ;;                                             bitops::ihsext-recursive-redefs
   ;;                                             bitops::logcount**)))))
 
-  
+
   (local (defthm logcount-when-current-bit-tail
            (implies (and (logbitp bit-idx mask)
                          (natp mask))
@@ -3776,7 +3780,7 @@
            (equal (+ a (- a) x)
                   (fix x))))
 
-  
+
   (defthm nth-set-bit-pos-of-count
     (implies (and (logbitp bit-idx mask)
                   (natp mask))
@@ -3874,7 +3878,7 @@
     (implies (and (<= (* 4 (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)) (nfix write-loc))
                   (cutsdb-ok cutsdb))
              (cutsdb-ok new-cutsdb)))
-             
+
 
   (local (in-theory (disable (:d leaves-reduce))))
 
@@ -3895,7 +3899,7 @@
                     :in-theory (enable* acl2::arith-equiv-forwarding)))))
 
   (local (include-book "arithmetic/top-with-meta" :dir :system))
-  
+
 
   (local (defun nth-set-bit-pos-upper-bound-ind (k n x)
            (if (zp n)
@@ -3926,7 +3930,7 @@
                                     (loghead-of-logtail))))
            :rule-classes :linear))
 
- 
+
   (local (defret leaves-sorted-of-leaves-reduce-lemma
            (implies (and (leaves-sorted read-loc read-size cutsdb)
                          (<= (nfix write-loc) (nfix read-loc)))
@@ -4108,7 +4112,7 @@
   (verify-guards cut-score
     :hints (("goal" :in-theory (enable cut-leaves-bounded
                                        leaves-bounded-when-bounded-lesser))))
-  
+
   (defret cut-score-bound
     (<= score 1001)
     :rule-classes :linear)
@@ -4212,7 +4216,7 @@
   ;;                                             bitops::ihsext-recursive-redefs
   ;;                                             bitops::logcount**)))))
 
-  
+
 
   (local (include-book "arithmetic/top-with-meta" :dir :system))
 
@@ -4298,7 +4302,7 @@
   ;;        )
   ;;     (implies (and (equal m (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
   ;;                   (cutsdb-cut-bounded m bound cutsdb)
-  ;;                   (cutsdb-ok cutsdb) 
+  ;;                   (cutsdb-ok cutsdb)
   ;;                   ;; (<= old-size 4)
   ;;                   ;; (truth4-p old-truth)
   ;;                   ;; (truth4-deps-bounded old-size old-truth)
@@ -4335,7 +4339,7 @@
     (implies (< (nfix n) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
              (equal (nth n (nth *cut-infoi1* new-cutsdb))
                     (nth n (nth *cut-infoi1* cutsdb)))))
-  
+
   (defret cut-leaves-length-of-cut-reduce
     (implies (b* ((m (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)))
                (<= (+ 4 (* 4 m)) (cut-leaves-length cutsdb)))
@@ -4347,7 +4351,7 @@
                (< m (cut-info-length cutsdb)))
              (equal (cut-info-length new-cutsdb)
                     (cut-info-length cutsdb))))
-  
+
   (defret cut-leaves-length-nondecreasing-of-cut-reduce
     (<= (cut-leaves-length cutsdb) (cut-leaves-length new-cutsdb))
     :rule-classes :linear)
@@ -4384,7 +4388,7 @@
        (cutsdb (cut-reduce refcounts cutsdb)))
     (mv t cutsdb))
   ///
-  
+
 
   (defret nth-of-cuts-merge
     (implies (and (not (equal (nfix n) *cut-leavesi1*))
@@ -4801,7 +4805,7 @@
         (cuts-consistent-badguy (+ 1 (lnfix cut)) max value cutsdb bitarr)
       (lnfix cut)))
   ///
-  
+
   (def-updater-independence-thm cuts-consistent-badguy-updater-independence
     (implies (and (range-cutinfo-equiv-under-mask
                    cut (- (nfix max) (nfix cut))
@@ -4949,7 +4953,7 @@
        (cutsdb (copy-cut new-cut-idx worst-cut cutsdb)))
     (mv nil cutsdb))
   ///
-  
+
 
   (defret nth-of-node-locate-cut
     (implies (and (not (equal (nfix n) *cut-leavesi1*))
@@ -5121,7 +5125,7 @@
                     (cuts-consistent start1 end1 value cutsdb bitarr))
            :hints(("Goal" :in-theory (enable* cuts-consistent
                                               acl2::arith-equiv-forwarding)))))
-                   
+
 
   (defret cuts-consistent-of-node-locate-cut
     (implies (and (cuts-consistent (nodecut-indicesi
@@ -5167,7 +5171,7 @@
         (node-locate-cut config cutsdb)))
     (mv t constp cutsdb))
   ///
-  
+
   (defret cutsdb-ok-of-node-merge-cuts
     (implies (and (cutsdb-ok cutsdb)
                   (not (equal 0 (cut-nnodes cutsdb)))
@@ -5187,7 +5191,7 @@
   ;;    (implies (and updatedp
   ;;                  (<= (nfix m) (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
   ;;                  (cutsdb-ok cutsdb)
-  ;;                  (cutsdb-leaves-lit-idsp 
+  ;;                  (cutsdb-leaves-lit-idsp
   ;;                   (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)
   ;;                   aignet cutsdb)
   ;;                  (cut-leaves-lit-idsp cut0 aignet cutsdb)
@@ -5216,7 +5220,7 @@
   ;;                     (cutsdb-leaves-lit-idsp
   ;;                      (+ 1 n) aignet cutsdb))))))
 
-  
+
   (defret cutsdb-lit-idsp-of-node-merge-cuts
     (implies (and (cutsdb-lit-idsp aignet cutsdb)
                   (cutsdb-ok cutsdb)
@@ -5226,7 +5230,7 @@
              (cutsdb-lit-idsp aignet new-cutsdb))
     :hints(("Goal" :in-theory (e/d (cutsdb-lit-idsp-implies-cut-leaves-lit-idsp)))))
 
-  
+
   (defret nth-of-node-merge-cuts
     (implies (and (not (equal (nfix n) *cut-leavesi1*))
                   (not (equal (nfix n) *cut-infoi1*))
@@ -5363,7 +5367,7 @@
   ;;                  (b* ((cut0 (lnfix cut0))
   ;;                       (cut0-max (lnfix cut0-max))
   ;;                       (cut1 (lnfix cut1)))
-                     
+
   ;;                    `'(:use ((:instance cuts-consistent-updater-independence
   ;;                              (new ,(hq (mv-nth 1 (node-merge-cut-sets1 cut0 neg0 cut0-max cut1 neg1 node-cuts-start cutsdb count config))))
   ;;                              (old cutsdb)
@@ -5399,7 +5403,7 @@
   ;;                       (cut1-next (cut-next$ cut1 cutsdb))
   ;;                       (cut1 (lnfix cut1))
   ;;                       (cut1-max (lnfix cut1-max)))
-                     
+
   ;;                    `'(:use ((:instance cuts-consistent-updater-independence
   ;;                              (new ,(hq (mv-nth 1 (node-merge-cut-sets1 cut0 neg0 cut0-max cut1 neg1 node-cuts-start cutsdb count config))))
   ;;                              (old cutsdb)
@@ -5479,8 +5483,8 @@
 
 
 
-  
-  
+
+
 
   ;; (defret next-cut-of-node-merge-cut-sets-special
   ;;   (implies (equal (cut-nnodes cutsdb) (cut-nnodes cutsdb1))
@@ -5568,9 +5572,9 @@
        ((when constp) (mv valid-count t cutsdb)))
     (node-merge-cut-sets1 (1+ (lnfix cut0)) neg0 cut0-max cut1 neg1 valid-count config refcounts cutsdb))
   ///
-  
 
-  
+
+
   (defret nth-of-node-merge-cut-sets1
     (implies (and (not (equal (nfix n) *cut-infoi1*))
                   (not (equal (nfix n) *cut-leavesi1*))
@@ -5672,7 +5676,7 @@
                              acl2::nat-equiv
                              (:d node-merge-cut-sets1)
                              )))
-  
+
   (defret cuts-consistent-of-node-merge-cut-sets1
     (implies (and (cuts-consistent cut0 cut0-max value0 cutsdb bitarr)
                   (iff* value (cut-and value0 neg0
@@ -5692,7 +5696,7 @@
               node-cuts-start
               (nodecut-indicesi nnodes new-cutsdb)
               value new-cutsdb bitarr))
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct <call>
             :expand ((:free (value0) (cuts-consistent cut0 cut0-max value0 cutsdb bitarr))
                      <call>)
@@ -5738,9 +5742,9 @@
        ((when constp) (mv valid-count t cutsdb)))
     (node-merge-cut-sets cut0 neg0 cut0-max (1+ (lnfix cut1)) neg1 cut1-max valid-count config refcounts cutsdb))
   ///
-  
 
-  
+
+
   (defret nth-of-node-merge-cut-sets
     (implies (and (not (equal (nfix n) *cut-infoi1*))
                   (not (equal (nfix n) *cut-leavesi1*))
@@ -5831,7 +5835,7 @@
                              acl2::natp-when-gte-0
                              acl2::nat-equiv
                              (:d node-merge-cut-sets))))
-  
+
   (defret cuts-consistent-of-node-merge-cut-sets
     (implies (and (cuts-consistent cut0 cut0-max value0 cutsdb bitarr)
                   (cuts-consistent cut1 cut1-max value1 cutsdb bitarr)
@@ -5851,7 +5855,7 @@
               node-cuts-start
               (nodecut-indicesi nnodes new-cutsdb)
               value new-cutsdb bitarr))
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct <call>
             :expand ((:free (value0) (cuts-consistent cut1 cut1-max value1 cutsdb bitarr))
                      <call>)
@@ -5865,7 +5869,7 @@
 
 
 
-                  
+
 
 
 (define node-add-const0-cut ((cutsdb cutsdb-ok))
@@ -5922,7 +5926,7 @@
                       (:free (data bound) (leaves-bounded data 0 bound cutsdb)))
              :in-theory (enable cut-leaves-sorted
                                 cut-truth-bounded
-                                cut-leaves-bounded 
+                                cut-leaves-bounded
                                 ;; cut-leaves-bounded
                                 ;; cutsdb-cut-bounded
                                 truth4-deps-bounded))))
@@ -6064,7 +6068,7 @@
                                 ;; cutsdb-cut-bounded
                                 truth4-deps-bounded))))
 
-  
+
 
   (defret cutsdb-lit-idsp-of-node-add-trivial-cut
     (implies (and (cutsdb-lit-idsp aignet cutsdb)
@@ -6287,7 +6291,7 @@
 ;;         nil))
 ;;     (cw "~@0~%" (print-cut start cutsdb))
 ;;     (print-cuts (1+ (lnfix start)) end cutsdb)))
-       
+
 
 
 (define node-derive-cuts-aux ((child0 litp)
@@ -6319,9 +6323,9 @@
     ;;             cutsdb)
     (mv (+ 1 count) cutsdb))
   ///
-  
 
-  
+
+
   (defret nth-of-node-derive-cuts-aux
     (implies (and (not (equal (nfix n) *cut-infoi1*))
                   (not (equal (nfix n) *cut-leavesi1*))
@@ -6380,7 +6384,7 @@
   ;; (local (in-theory (disable ;;CUT-BASE-INDEX-UPDATER-INDEPENDENCE
   ;;                            ;; cutsdb-ok-of-node-merge-cut-sets
   ;;                            cuts-consistent-updater-independence
-  ;;                            nodecut-indicesi-updater-independence 
+  ;;                            nodecut-indicesi-updater-independence
   ;;                            ;; cut-base-index-lte-target-idx
   ;;                            )))
 
@@ -6475,7 +6479,7 @@
   (b* ((cutsdb (cuts-add-node cutsdb)))
     (node-derive-cuts-aux child0 child1 config refcounts cutsdb))
   ///
-  
+
   (defret cut-nnodes-of-node-derive-cuts
     (equal (cut-nnodes new-cutsdb)
            (+ 1 (cut-nnodes cutsdb))))
@@ -6648,7 +6652,7 @@
   (b* ((cutsdb (cuts-add-node cutsdb)))
     (node-add-const0-cut cutsdb))
   ///
-  
+
   (defret cut-nnodes-of-node-derive-cuts-const0
     (equal (cut-nnodes new-cutsdb)
            (+ 1 (cut-nnodes cutsdb))))
@@ -6715,7 +6719,7 @@
   (b* ((cutsdb (cuts-add-node cutsdb)))
     (node-add-trivial-cut refcounts cutsdb))
   ///
-  
+
   (defret cut-nnodes-of-node-derive-cuts-input
     (equal (cut-nnodes new-cutsdb)
            (+ 1 (cut-nnodes cutsdb))))
@@ -6827,7 +6831,7 @@
            (lit1 (snode->fanin slot1)))
         (node-derive-cuts lit0 lit1 config refcounts cutsdb))))
   ///
-  
+
   (defret cut-nnodes-of-aignet-derive-cuts-node
     (equal (cut-nnodes new-cutsdb)
            (+ 1 (cut-nnodes cutsdb))))

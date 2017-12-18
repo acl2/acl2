@@ -37,6 +37,7 @@ if [ ! -d HTML ] ; then
 
     cp ../new.html HTML/new.html
     mkdir HTML/installation
+    cp ../installation/ccl.html HTML/installation/
     cp ../installation/installation.html HTML/installation/
     cp ../installation/misc.html HTML/installation/
     cp ../installation/obtaining-and-installing.html HTML/installation/

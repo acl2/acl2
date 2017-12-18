@@ -9,6 +9,7 @@
 
 (include-book "basis")
 (include-book "../defdata/defdata-util")
+(include-book "utilities")
 
 ;;; For use by testing hints
 ;;; Get the type information from the ACL2 type alist
@@ -26,7 +27,7 @@
     ((eq ts-decoded '*TS-COMPLEX-RATIONAL*)      '(acl2s::complex-rational) );;; complex rationals
     ((eq ts-decoded '*TS-NIL*)                   '('nil) );;; {nil}
     ((eq ts-decoded '*TS-T*)                     '('t) );;; {t}
-    ((eq ts-decoded '*TS-NON-T-NON-NIL-SYMBOL*)  '(acl2s::symbol) );;; symbols other than nil, t
+    ((eq ts-decoded '*TS-NON-T-NON-NIL-SYMBOL*)  '(acl2s::proper-symbol) );;; symbols other than nil, t
     ((eq ts-decoded '*TS-PROPER-CONS*)           '(acl2s::proper-cons) );;; null-terminated non-empty lists
     ((eq ts-decoded '*TS-IMPROPER-CONS*)         '(acl2s::improper-cons) );;; conses that are not proper
     ((eq ts-decoded '*TS-STRING*)                '(acl2s::string) );;; strings
@@ -72,30 +73,73 @@
               ans))))
  )
 
+(set-verify-guards-eagerness 0)
+
+(verify-termination acl2::quote-listp)
+(verify-termination acl2::cons-term1)
+(verify-termination acl2::cons-term); ASK MATT to make these logic mode
+(set-verify-guards-eagerness 1)
+
+;; The following functions are copied from type-set-b.lisp for avoiding program mode.
+#!ACL2
+(defun decode-ts1 (ts alist)
+  (declare (xargs :verify-guards nil
+                  :guard (and (integerp ts) (alistp alist))))
+  (cond ((ts= ts *ts-empty*) nil)
+        ((endp alist) (list ts))
+        ((ts-subsetp (cdar alist) ts)
+         (cons (caar alist)
+               (decode-ts1 (ts-intersection ts
+                                            (ts-complement (cdar alist)))
+                                 (cdr alist))))
+        (t (decode-ts1 ts (cdr alist)))))
+
+#!ACL2
+(defun decode-ts (ts)
+  (declare (xargs :verify-guards nil
+                  :guard (integerp ts)))
+
+
+; This function converts a type-set into an untranslated term in the ACL2
+; coding world.  For example, 1536 is converted into *TS-CONS* (which is the
+; (TS-UNION *TS-PROPER-CONS* *TS-IMPROPER-CONS*)).  We do this only so that we
+; can look at computed type-sets symbolically.
+
+  (cond #+non-standard-analysis ; case added by Matt K. for termination in ACL2(r)
+        ((not (mbt (integerp ts))) *ts-unknown*)
+        ((ts= ts *ts-unknown*) '*ts-unknown*)
+        ((ts= ts *ts-empty*) '*ts-empty*)
+        ((ts-complementp ts)
+         (list 'ts-complement
+               (decode-ts (ts-complement ts))))
+        (t (let ((lst (decode-ts1
+                       ts
+                       *code-type-set-alist*)))
+             (cond ((null (cdr lst)) (car lst))
+                   (t (cons 'ts-union lst)))))))
 
 (defun get-type-list-from-type-set (ts)
-  (declare (xargs :mode :program
-                  :guard (integerp ts)))
-  (let ((typ (acl2::get-type-from-type-set-decoded (acl2::decode-type-set ts))))
+  (declare (xargs :verify-guards nil :guard (integerp ts)))
+  (let ((typ (acl2::get-type-from-type-set-decoded (acl2::decode-ts ts))))
     (if (proper-consp typ)
       typ
       (list typ))))
 
-(defun get-types-from-type-set-lst (ts-lst)
-  (declare (xargs :mode :program
-                  :guard (integer-listp ts-lst)))
-  (if (endp ts-lst)
-    nil
-    (append (get-type-list-from-type-set (car ts-lst))
-            (get-types-from-type-set-lst (cdr ts-lst)))))
+
+;; (defun get-types-from-type-set-lst (ts-lst)
+;;   (declare (xargs :guard (integer-listp ts-lst)))
+;;   (if (endp ts-lst)
+;;     nil
+;;     (append (get-type-list-from-type-set (car ts-lst))
+;;             (get-types-from-type-set-lst (cdr ts-lst)))))
 
 
 
 ; for each var in freevars, look into the type-alist
 ; and build a no-dup vt-al(var-types-alist)
 ; Note: we can get a list of types which means TS-UNION
-(defun get-var-types-from-type-alist (acl2-type-alist freevars ans)
-  (declare (xargs :mode :program
+(defun var-types-alist-from-acl2-type-alist (acl2-type-alist freevars ans)
+  (declare (xargs :verify-guards nil
                   :guard (and (alistp acl2-type-alist)
                               (symbol-listp freevars))))
   (if (endp freevars)
@@ -104,33 +148,20 @@
 ; CHECK: Can acl2-type-alist have duplicate keys?
          (ts-info (assoc-eq var acl2-type-alist))
          (ts (if (consp ts-info) (cadr ts-info) nil)))
-     (if ts
-         (let ((types (get-type-list-from-type-set ts)))
-          (get-var-types-from-type-alist acl2-type-alist
-                                          (cdr freevars)
-                                          (acons var types ans)))
-       (get-var-types-from-type-alist acl2-type-alist
-                                       (cdr freevars) ans)))))
-
-(defun decode-acl2-type-alist (acl2-type-alist freevars)
-  (declare (xargs :mode :program
-                  :guard (and (alistp acl2-type-alist)
-                              (symbol-listp freevars))))
-  (if (endp acl2-type-alist)
-      '()
-    (get-var-types-from-type-alist acl2-type-alist freevars '())))
+      (if ts
+          (let ((types (get-type-list-from-type-set ts)))
+            (var-types-alist-from-acl2-type-alist acl2-type-alist
+                                                   (cdr freevars)
+                                                   (acons var types ans)))
+        (var-types-alist-from-acl2-type-alist acl2-type-alist
+                                               (cdr freevars) ans)))))
 
 
 
-(set-verify-guards-eagerness 0)
-
-(verify-termination acl2::quote-listp)
-(verify-termination acl2::cons-term1)
-(verify-termination acl2::cons-term); ASK MATT to make these logic mode
-(set-verify-guards-eagerness 1)
 
 
-(defun make-dumb-type-alist (vars)
+
+(defun make-weakest-type-alist (vars)
   "the default dumb type-alist with all variables associated with TOP i.e acl2s::all"
   (declare (xargs :guard (symbol-listp vars))) ;use proper-symbol-listp
   (pairlis$ vars (make-list (len vars)
@@ -138,7 +169,7 @@
                             (list 'ACL2S::ALL))))
 
 
-(defun get-acl2-type-alist-fn (cl vars ens state)
+(defun get-acl2-type-alist-fn (cl ens state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* (((mv erp type-alist &)
        (acl2::forward-chain cl
@@ -148,25 +179,66 @@
                             (w state)
                             ens
                             (acl2::match-free-override (w state))
-                            state))
+                            state)))
 ;Use forward-chain ACL2 system function to build the context
 ;This context, gives us the type-alist ACL2 inferred from the
 ;the current subgoal i.e. cl
-       (vt-acl2-alst (if erp ;contradiction
-                         (make-dumb-type-alist vars)
-                       (decode-acl2-type-alist type-alist vars))))
-   vt-acl2-alst))
+    (if erp nil type-alist)))
 
 
-(defmacro get-acl2-type-alist (cl &optional vars ens)
+
+(defmacro get-acl2-type-alist (cl &optional ens)
   `(get-acl2-type-alist-fn ,cl
-                           ,(or vars `(acl2::all-vars1-lst ,cl '()))
+                           ;,(or vars `(acl2::all-vars1-lst ,cl '()))
                            ,(or ens '(acl2::ens state))
                            state))
 
+;; reify all terms that are true in the ACL2 type alist
+(defloop reify-type-alist-hyps (type-alist)
+  (for ((entry in type-alist))
+       (append (b* (((list* term ts &) entry))
+                 (and (consp term)
+                      (equal (acl2::decode-ts ts) 'ACL2::*TS-T*)
+                      (list term))))))
 
 
+(defloop kwote-numbers (lst)
+  (for ((x in lst))
+       (collect (if (acl2-numberp x) (kwote x) x))))
 
+(program)
+#!ACL2
+(defun reify-poly (poly var)
+  (let* ((pair (show-poly1
+                   (cond ((null (access poly poly :alist)) nil)
+                         (t (cons (cons (list (caar (access poly poly :alist)))
+                                        (cdar (access poly poly :alist)))
+                                  (cdr (access poly poly :alist)))))
+                   (cond ((= (access poly poly :constant) 0) nil)
+                         ((logical-< 0 (access poly poly :constant)) nil)
+                         (t (cons (- (access poly poly :constant)) nil)))
+                   (cond ((= (access poly poly :constant) 0) nil)
+                         ((logical-< 0 (access poly poly :constant))
+                          (cons (access poly poly :constant) nil))
+                         (t nil))))
+         (lhs (car pair))
+         (lhs (cgen::kwote-numbers lhs))
+         (rhs (cdr pair))
+         (rhs (cgen::kwote-numbers rhs)))
+    (cgen::subst-equal var (list var) ;;var is in extra parens in poly encoding.
+                       (cons (access poly poly :relation)
+                             (append (or lhs '('0)) (or rhs '('0)))))))
+
+(defloop reify-poly-lst-hyps (poly-lst var)
+  (for ((poly in poly-lst))
+       (collect (acl2::reify-poly poly var))))
+
+(defloop reify-pot-lst-hyps (pot-lst)
+  (for ((pot in pot-lst))
+       (append (reify-poly-lst-hyps (append (acl2::access acl2::linear-pot pot :negatives)
+                                            (acl2::access acl2::linear-pot pot :positives))
+                                    (acl2::access acl2::linear-pot pot :var)))))
+(logic)
 
 ; utility fn to print if verbose flag is true
 (defmacro cw? (verbose-flag &rest rst)
@@ -187,18 +259,19 @@
       (collect-tau-alist (cdr triples)
                          tau-alist type-alist pot-lst ens wrld))))
 
-(defun tau-alist-clause (clause sign ens wrld state)
+
+(defun tau-alist-clause (cl sign ens wrld state)
   (declare (xargs :mode :program :stobjs (state)))
-;duplicated from tau-clausep in prove.lisp.
-(b* (((mv ?contradictionp type-alist pot-lst)
-      (acl2::cheap-type-alist-and-pot-lst clause ens wrld state))
-     (triples (acl2::merge-sort-car-<
-                (acl2::annotate-clause-with-key-numbers clause
-                                                        (len clause)
-                                                        0 wrld)))
-     (tau-alist (collect-tau-alist triples sign type-alist pot-lst
-                                   ens wrld)))
-  tau-alist))
+  (b* (((mv & type-alist pot-lst) (acl2::cheap-type-alist-and-pot-lst cl ens wrld state))
+       (pot-hyps (reify-pot-lst-hyps pot-lst))
+       ((mv hyps concl) (clause-mv-hyps-concl cl))
+       (clause (cgen::clausify-hyps-concl (union-equal hyps pot-hyps) concl))
+       ;;(- (cw "hyps= ~x0 reified hyps = ~x1~%" hyps pot-hyps))
+       (triples (acl2::merge-sort-car-<
+                 (acl2::annotate-clause-with-key-numbers clause (len clause) 0 wrld)))
+       (tau-alist (collect-tau-alist triples sign type-alist pot-lst ens wrld)))
+    tau-alist))
+
 
 
 ;; (defun tau-alist-clauses (clauses sign ens wrld state ans)
@@ -348,7 +421,7 @@
 
 (def dumb-type-alist-infer-from-term (term vl wrld  ans.)
   (decl :sig ((pseudo-term-listp fixnum plist-worldp  symbol-alistp)
-              -> symbol-alistp)
+              -> symbol-doublet-listp)
         :doc "main aux function to infer type-alist from term")
   (declare (xargs :verify-guards nil))
 ; ans. is a type alist and has type
@@ -405,7 +478,7 @@
 
 (def dumb-type-alist-infer-from-terms (H vl wrld  ans.)
   (decl :sig ((pseudo-term-listp fixnum plist-worldp
-                                 symbol-alistp) -> symbol-alistp)
+                                 symbol-alistp) -> symbol-doublet-listp)
         :doc "aux function for dumb extraction of defdata types from terms in H")
   (declare (xargs :verify-guards nil))
   (if (endp H)
@@ -419,7 +492,7 @@
               -> symbol-alistp)
         :doc "dumb infer defdata types from terms in H")
   (declare (xargs :verify-guards nil))
-  (dumb-type-alist-infer-from-terms H vl wrld (make-dumb-type-alist vars)))
+  (dumb-type-alist-infer-from-terms H vl wrld (make-weakest-type-alist vars)))
 
 (defmacro   debug-flag  (vl)
   `(> ,vl 3))

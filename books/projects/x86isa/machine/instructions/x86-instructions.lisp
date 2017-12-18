@@ -74,11 +74,25 @@
   decoder function @(see x86-fetch-decode-execute).</li>
 
 <li> They contain or act as the functional specification of the
-instructions.  For e.g., the functional specification function of the
+instructions.  For example, the functional specification function of the
 ADD instruction returns two values: the appropriately truncated sum of
 the operands and the modified flags. We do not deal with the x86 state
 in these specifications.</li>
-</ol>"
+</ol>
+
+<p>
+Each semantic function takes, among other arguments,
+the value @('start-rip') of the instruction pointer
+at the beginning of the instruction,
+and the value @('temp-rip') of the instruction pointer
+after the decoding of the prefixes, REX byte, opcode, ModR/M byte, and SIB byte
+(some of these bytes may not be present).
+The semantic function may further increment the instruction pointer
+beyond @('temp-rip') to read the ending bytes of the instruction,
+e.g. to read a displacement or an immediate.
+The semantic function eventually writes
+the final value of the instruction pointer into RIP.
+</p>"
   )
 
 ;; Misc. instructions not categorized yet into the books included above or not

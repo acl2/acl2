@@ -274,7 +274,8 @@
        (hi-rel (acl2::access acl2::tau-interval interval :hi-rel))
        (P (defdata::predicate-name type (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld))))
     (case (acl2::access acl2::tau-interval interval :domain)
-      (acl2::integerp (or (and (defdata::subtype-p P 'ACL2::NATP wrld) ;use the fact that integers are squeezed (weak inequalities)
+      (acl2::integerp (or (and (defdata::subtype-p P 'ACL2::NATP wrld)
+;use the fact that integers are squeezed (weak inequalities)
                                (equal lo 0)
                                (null hi))
                           (and (defdata::subtype-p P 'ACL2::POSP wrld) 
@@ -318,8 +319,8 @@
               (not (acl2::singleton-tau-intervalp lo-rel lo hi-rel hi))))))
 
 
-(def assimilate-apriori-type-information (vs type-alist tau-interval-alist vl wrld ans.)
-  (decl :sig ((symbol-list symbol-alist symbol-alist fixnum plist-world symbol-cs%-alist) 
+(def assimilate-apriori-type-information (vs vt-dlist tau-interval-alist vl wrld ans.)
+  (decl :sig ((symbol-list symbol-doublet-list alist symbol-alist fixnum plist-world symbol-cs%-alist) 
               -> symbol-cs%-alist)
         :doc 
 "overwrite into v-cs%-alst. the type information in type-alist/tau-interval-alist.
@@ -334,26 +335,24 @@ into eq-constraint field and put interval into range constraint field")
   (if (endp vs)
       ans.
     (b* ((x (car vs))
-         (prior-t (assoc-eq x type-alist)) ;prior-t is consp assert!
-;type-alist of of form (listof (cons var (listof defdata-type)))
-;where defdata-type is possible-defdata-type-p. listof represents unions.
-         (- 
-; TODO: Union types are ignored. Implement them.
-; But note that since we always get this through a meet-type-alist, we
-; throw away the union type information there itself.
-           (cw? (and (verbose-stats-flag vl)
-                     (consp prior-t)
-                     (consp (cdr prior-t)) 
-                     (not (null (cddr prior-t))))
-"~|CEgen/Warning: Ignoring rest of union types ~x0 ~|" (cddr prior-t)))
-         (typ-given (if (and (consp prior-t) (consp (cdr prior-t)))
-                        (cadr prior-t)
+         (prior-types-entry (assoc-eq x vt-dlist)) 
+         ;; (ts-info (assoc-eq x type-alist))
+         ;; (ts (and ts-info (cadr ts-info))) ;;TODO: approximation. there might be multiple entries!
+         ;; (prior-types (and ts (get-type-list-from-type-set ts)))
+         ;; prior-types is a list of defdata typenames
+         (- (cw? (and (verbose-stats-flag vl)
+                      (consp prior-types-entry)
+                      (consp (cdr prior-types-entry)) 
+                      (not (null (cddr prior-types-entry))))
+                 "~|CEgen/Warning: Ignoring rest of union types ~x0 ~|" (cddr prior-types-entry)))
+         (typ-given (if (and (consp prior-types-entry) (consp (cdr prior-types-entry)))
+                        (cadr prior-types-entry)
                       'ACL2S::ALL))
          ((when (defdata::possible-constant-value-p typ-given))
 ; is a singleton, then treat it as a eq-constraint
 ; BOZO: meet-type-alist does it differently. (03/04/13)
           (assimilate-apriori-type-information 
-           (cdr vs) type-alist tau-interval-alist vl wrld  
+           (cdr vs) vt-dlist tau-interval-alist vl wrld  
            (put-eq-constraint. x typ-given vl ans.)))
 
          (int-entry (assoc-eq x tau-interval-alist))
@@ -361,7 +360,7 @@ into eq-constraint field and put interval into range constraint field")
          ((when (singleton-tau-intervalp int))
 ; is a singleton, then treat it as a eq-constraint
           (assimilate-apriori-type-information 
-           (cdr vs) type-alist tau-interval-alist vl wrld  
+           (cdr vs) vt-dlist tau-interval-alist vl wrld  
            (put-eq-constraint. x (kwote (acl2::access acl2::tau-interval int :lo)) vl ans.)))
 
          ((cons & cs%) (assoc-eq x ans.))
@@ -374,7 +373,7 @@ into eq-constraint field and put interval into range constraint field")
                    
 ; update the current defdata type with the new type information (type-alist)
      (assimilate-apriori-type-information 
-      (cdr vs) type-alist tau-interval-alist vl wrld
+      (cdr vs) vt-dlist tau-interval-alist vl wrld
       (put-defdata-type. x final-typ vl ans.)))))
 
 (defconst *empty-cs%*
@@ -386,8 +385,8 @@ into eq-constraint field and put interval into range constraint field")
         :member-constraint 'defdata::empty-mem-constraint
         :additional-constraints '()))
 
-(def collect-constraints% (hyps ordered-vars type-alist tau-interval-alist vl wrld)
-  (decl :sig ((pseudo-term-listp symbol-listp symbol-alistp symbol-alistp
+(def collect-constraints% (hyps ordered-vars top-vt-dlist type-alist tau-interval-alist vl wrld)
+  (decl :sig ((pseudo-term-listp symbol-listp symbol-doublet-listp alistp symbol-alistp
                                  fixnum plist-worldp) -> symbol-cs%-alist)
         :doc 
 " 
@@ -399,11 +398,9 @@ into eq-constraint field and put interval into range constraint field")
   hyps is a usually a list of hypotheses of the conjecture under query
   and is a term-listp. ordered-vars is the free variables of hyps, but in the
   variable dependency order as computed from the dependency graphs of hyps.
-  type-alist is the type information inferred from ACL2 usually (intersected
-  with the top-level dumb type inference), or it might be prior type knowledge
-  we dont want to lose i.e if the type inferred from hyps are weaker than in
-  type-alist we will keep the stronger type information. tau-interval-alist is
-  the range type information inferred by Tau.
+  type-alist is the ACL2 context. 
+  top-vt-dlist is meet of top-level dumb type inference and ACL2 type-alist info. 
+  tau-interval-alist is the range type information inferred by Tau.
   
 
 * Output
@@ -415,11 +412,14 @@ into eq-constraint field and put interval into range constraint field")
                                                               *empty-cs%*))))
       ;; initialize the alist
     (b* ((v-cs%-alst  (unconstrained-v-cs%-alst ordered-vars))
-         (v-cs%-alst  (assimilate-apriori-type-information
-                       ordered-vars type-alist tau-interval-alist
-                       vl wrld v-cs%-alst)))
+         (v-cs%-alst  (assimilate-apriori-type-information ordered-vars
+                                                           top-vt-dlist tau-interval-alist
+                                                           vl wrld v-cs%-alst))
+         ;; reify all hyps that are true in the ACL2 context.
+         (context-hyps (reify-type-alist-hyps type-alist))
+         (hyps+ (defdata::filter-terms-with-vars (union-equal context-hyps hyps) ordered-vars)))
        
-     (v-cs%-alist-from-terms. hyps vl wrld v-cs%-alst))))
+     (v-cs%-alist-from-terms. hyps+ vl wrld v-cs%-alst))))
 
 ; TODO: Right now we dont use ACL2's type-alist to full effect. For
 ; example, we might get that (len x) > 3 is non-nil in the type-alist

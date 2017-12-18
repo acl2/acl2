@@ -982,3 +982,41 @@
           (hi (and (rationalp hi) hi)))
        (acl2::make-tau-interval dom lo-rel lo hi-rel hi))))))
 
+(defloop flatten-ANDs (terms)
+  (declare (xargs :guard (pseudo-term-listp terms)))
+  (for ((term in terms)) (append (if (and (consp term) (eq (car term) 'ACL2::AND))
+                                     (cdr term)
+                                   (list term)))))
+
+      
+(mutual-recursion
+;; code taken from structures.lisp in data-structures book.
+ (defun get-vars1 (term ans)
+   (declare (xargs :verify-guards nil
+                   :guard (proper-symbol-listp ans)))
+    (cond ((atom term) (if (proper-symbolp term)
+                           (add-to-set-eq term ans)
+                         ans))
+          ((equal (car term) 'ACL2::QUOTE) ans)
+          (t (get-vars1-lst (cdr term) ans))))
+ 
+ (defun get-vars1-lst (terms ans)
+   (declare (xargs :verify-guards nil
+                   :guard (and (true-listp terms)
+                               (proper-symbol-listp ans))))
+   (if (endp terms)
+       ans
+     (get-vars1-lst (cdr terms) (get-vars1 (car terms) ans)))))
+(defun get-vars (term)
+  (declare (xargs :verify-guards nil))
+  (get-vars1 term '()))
+
+(defun filter-terms-with-vars (terms vars)
+  (declare (xargs :verify-guards nil
+                  :guard (and (pseudo-term-listp terms)
+                              (proper-symbol-listp vars))))
+  (if (endp terms)
+      '()
+    (if (subsetp-equal (get-vars (car terms)) vars)
+        (cons (car terms) (filter-terms-with-vars (cdr terms) vars))
+      (filter-terms-with-vars (cdr terms) vars))))
