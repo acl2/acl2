@@ -1,0 +1,91 @@
+Version 1.1.5
+2013-03-21
+Fixes to changed default for eof-error-p suggested by Edi Weitz
+
+Version 1.1.4
+2013-03-20
+Trivial documentation fix
+
+Version 1.1.3
+2013-03-20
+Change default eof-error-p in READ-CHAR* to T (reported by Xu Jingtao)
+
+Version 1.1.2
+2012-12-09
+Fix bug in READ-NAME-VALUE-PAIR for cookie reading in Drakma
+
+Version 1.1.1
+2010-05-19
+Read quoted cookie values (Red Daly)
+
+Version 1.1.0
+2009-12-01
+Exported TOKEN-CHAR-P
+Allowed START and END keyword arguments for TRIM-WHITESPACE
+Simplified cookie value parsing
+
+Version 1.0.0
+2009-02-19
+Switched to binary streams underneath and got rid of FLEXI-STREAMS dependency
+Added conditions
+Exported (an improved version of) AS-KEYWORD
+Added WITH-CHARACTER-STREAM-SEMANTICS
+
+Version 0.4.3
+2008-05-23
+Cleanup, reduce some consing
+
+Version 0.4.2
+2008-05-07
+Flush stream when switching chunking off (patch by Hans Hübner)
+
+Version 0.4.1
+2007-10-11
+Make Chunga work with AllegroCL's "modern" mode (patch by Ross Jekel)
+
+Version 0.4.0
+2007-09-18
+Added *TREAT-SEMICOLON-AS-CONTINUATION*
+
+Version 0.3.1
+2007-09-07
+Fixed bug in STREAM-LISTEN
+
+Version 0.3.0
+2007-05-08
+Added *ACCEPT-BOGUS-EOLS* (suggested by Sean Ross)
+
+Version 0.2.4
+2007-02-08
+Allow more characters in cookie names/values according to original Netscape spec
+Robustified READ-COOKIE-VALUE
+
+Version 0.2.3
+2007-01-17
+Guard against stray semicolons when reading name/value pairs (thanks to B?lent Murtezaoglu)
+
+Version 0.2.2
+2007-01-10
+Faster vesion of READ-LINE* (provided by Gabor Melis)
+
+Version 0.2.1
+2006-10-26
+Added explicit element types for CLISP to fix problems reported by Anton Vodonosov
+
+Version 0.2.0
+2006-10-06
+Only wrap inner stream with flexi stream if really needed
+
+Version 0.1.2
+2006-09-05
+Exported CHUNKED-STREAM-STREAM
+Mentioned Gentoo port in docs
+Added info about mailing lists
+
+Version 0.1.1
+2006-09-02
+Added missing CRLF for output chunking
+
+Version 0.1.0
+2006-09-01
+First public release

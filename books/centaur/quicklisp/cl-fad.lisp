@@ -29,8 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "base")
-
-(defttag :quicklisp)
-; (depends-on "cl-fad-raw.lsp")
-(include-raw "cl-fad-raw.lsp" :host-readtable t)
+; cert_param: (reloc-stub)
+(include-book "quicklisp/cl-fad" :dir :system)

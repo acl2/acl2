@@ -1,0 +1,132 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename osicat.info
+@settitle Osicat Manual
+
+@c @exampleindent 2
+@c @documentencoding utf-8
+
+@c %**end of header
+
+@c for install-info
+@c @dircategory %%INFO-CATEGORY%%
+@c @direntry
+@c * osicat:           %%PROJECT-DESCRIPTION%%
+@c @end direntry
+
+@include macros.texinfo
+
+@c Show types, functions, and concepts in the same index.
+@syncodeindex tp cp
+@syncodeindex fn cp
+
+@copying
+@c Copyright @copyright{} 2084 John Doe <john@doe.com>
+
+@include license.texinfo
+@end copying
+
+@titlepage
+@title Osicat Manual
+@subtitle draft version
+@c @author John Doe
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top osicat
+@insertcopying
+@end ifnottex
+
+@c Top Menu
+@menu
+* Osicat::                      
+* Comprehensive Index::         
+@end menu
+
+@node Osicat
+@chapter Osicat
+
+@include include/package-osicat.texinfo
+
+@menu
+* Conditions::                  
+* Environment::                 
+* Directories::                 
+* Files and Symbolic Links::    
+* Users::                       
+* Time::                        
+* Pathname Utilities::          
+@end menu
+
+@node Conditions
+@section Conditions
+
+@include include/condition-osicat-system-error.texinfo
+
+@node Environment
+@section Environment
+
+@include include/fun-osicat-environment-variable.texinfo
+@include include/fun-osicat-environment.texinfo
+@include include/fun-osicat-makunbound-environment-variable.texinfo
+
+@node Directories
+@section Directories
+
+@include include/fun-osicat-current-directory.texinfo
+@include include/fun-osicat-delete-directory-and-files.texinfo
+@include include/fun-osicat-delete-directory.texinfo
+@include include/fun-osicat-directory-exists-p.texinfo
+@include include/fun-osicat-list-directory.texinfo
+@include include/fun-osicat-mapdir.texinfo
+@include include/fun-osicat-walk-directory.texinfo
+@include include/macro-osicat-with-directory-iterator.texinfo
+
+@node Files and Symbolic Links
+@section Files and Symbolic Links
+
+@include include/fun-osicat-file-exists-p.texinfo
+@include include/fun-osicat-regular-file-exists-p.texinfo
+@include include/fun-osicat-file-kind.texinfo
+@include include/fun-osicat-file-permissions.texinfo
+@include include/fun-osicat-open-temporary-file.texinfo
+@include include/macro-osicat-with-temporary-file.texinfo
+@include include/fun-osicat-make-link.texinfo
+@include include/fun-osicat-read-link.texinfo
+
+@node Users
+@section Users
+
+@include include/fun-osicat-user-info.texinfo
+
+@node Time
+@section Time
+
+@include include/fun-osicat-get-monotonic-time.texinfo
+
+@node Pathname Utilities
+@section Pathname Utilities
+
+@include include/fun-osicat-absolute-pathname-p.texinfo
+@include include/fun-osicat-absolute-pathname.texinfo
+@include include/fun-osicat-directory-pathname-p.texinfo
+@include include/fun-osicat-pathname-as-directory.texinfo
+@include include/fun-osicat-pathname-as-file.texinfo
+@include include/fun-osicat-pathname-directory-pathname.texinfo
+@include include/fun-osicat-relative-pathname-p.texinfo
+@include include/fun-osicat-unmerge-pathnames.texinfo
+
+@c We call this node ``Comprehensive Index'' so that texinfo's HTML
+@c output doesn't generate an index.html that'd overwrite the manual's
+@c initial page.
+@node Comprehensive Index
+@unnumbered Index
+@printindex cp
+
+@bye

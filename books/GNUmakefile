@@ -508,7 +508,7 @@ else
   REALLY_USE_QUICKLISP := 0
 endif
 
-QUICKLISP_DIR := centaur/quicklisp
+QUICKLISP_DIR := quicklisp
 
 .PHONY: quicklisp
 
@@ -674,9 +674,14 @@ clean_books:
 	@echo "Using clean.pl to remove certificates, etc."
 	$(BUILD_DIR)/clean.pl
 
-# We test that directory centaur/quicklisp exists because it probably
+# We test that directory quicklisp exists because it probably
 # doesn't for nonstd/, and we include this makefile from that
 # directory.
+
+# 2017-12-16: Rager wonders if the above comment should be
+# removed, as there's no test of the quicklisp directory
+# immediately below.
+
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)

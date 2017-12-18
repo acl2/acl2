@@ -32,9 +32,11 @@ cd lisp-kernel/linuxx8664/
 make clean && make
 
 # Move back to ccl directory and fetch/unpack the heap image.
-# (Use curl instead appropriately if wget is not on your system.)
 cd ../../
+# If you don't have wget (e.g., on a Mac), skip this wget command and see just below).
 wget https://github.com/Clozure/ccl/releases/download/v1.12-dev.1/linuxx86.tar.gz
+# Or instead, if you don't have wget, e.g. on a Mac:
+# curl --location https://github.com/Clozure/ccl/releases/download/v1.12-dev.1/darwinx86.tar.gz > darwinx86.tar.gz
 tar xfz linuxx86.tar.gz
 
 # Rebuild the kernel:

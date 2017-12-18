@@ -1,0 +1,5 @@
+#+xcvb
+(module 
+ (:fullname "rfc2388"
+  :depends-on ("rfc2388" "packages")
+  :supersedes-asdf ("rfc2388")))

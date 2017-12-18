@@ -29,8 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "base")
-
-(defttag :quicklisp.osicat)
-; (depends-on "osicat-raw.lsp")
-(include-raw "osicat-raw.lsp" :host-readtable t)
+; cert_param: (reloc-stub)
+(include-book "quicklisp/osicat" :dir :system)

@@ -29,32 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "tools/include-raw" :dir :system)
-; cert_param: (uses-quicklisp)
-
-(make-event
- (let* ((dir (cbd)))
-   ;; Keep these in sync with install.lsp
-   (progn$
-    (setenv$ "XDG_CONFIG_HOME" (concatenate 'string dir "asdf-home/config"))
-    (setenv$ "XDG_DATA_HOME"   (concatenate 'string dir "asdf-home/data"))
-    (setenv$ "XDG_CACHE_HOME"  (concatenate 'string dir "asdf-home/cache"))
-    (value '(value-triple :invisible))))
- :check-expansion t)
-
-(defttag :quicklisp)
-
-;; We'll use timestamp.txt as a proxy for whether any Common Lisp libraries
-;; have been updated.
-; (depends-on "bundle/timestamp.txt")
-
-; (depends-on "bundle/bundle.lisp")
-(include-raw "bundle/bundle.lisp" :host-readtable t)
-
-; (depends-on "base-raw.lsp")
-(local (include-raw "base-raw.lsp"
-                    :host-readtable t
-                    :do-not-compile t))
-
-
-
+; cert_param: (reloc-stub)
+(include-book "quicklisp/base" :dir :system)

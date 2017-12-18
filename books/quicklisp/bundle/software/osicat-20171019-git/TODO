@@ -1,0 +1,33 @@
+-*- text -*-
+
+======
+Osicat
+
+* define an error hierarchy.
+
+=================================
+cl-posix/iolib-posix/osicat-posix
+
+* add missing Linux IOCTLs
+* add definitions of struct types used by Linux IOCTLs
+* add FreeBSD IOCTLs
+* add getgroups, alarm, utime, utimes, wait, waitpid, getpagesize,
+  things from termios.h
+
+* some ideas:
+
+  -> return T instead of 0 on success.
+
+  -> probably not worth the trouble: add finalizers to stuff such as
+     the return value of OPENDIR (perhaps wrap them in objects?)
+
+  -> SB-POSIX returns class objects instead of multiple values
+     for functions like GETPWUID.  Which approach is better?
+
+  -> simple documentation with the short docstrings plus links to
+     linux and BSD manpages.
+
+==============================
+osicat-windows and osicat-mach
+
+* handle errors
