@@ -431,20 +431,22 @@ sub read_costs {
 }
 
 sub find_most_expensive {
-    my ($files, $costs) = @_;
+    # horrible: updateds is either 1 or a reference to a hash holding the names of updated targets.
+    my ($files, $costs, $updateds) = @_;
 
     my $most_expensive_file_total = 0;
     my $most_expensive_file = 0;
 
     foreach my $file (@{$files}) {
 	if ($file =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
-
-	    my $file_costs = $costs->{$file};
-	    if ($file_costs) {
-		my $this_file_total = $file_costs->{"totaltime"};
-		if ($this_file_total > $most_expensive_file_total) {
-		    $most_expensive_file = $file;
-		    $most_expensive_file_total = $this_file_total;
+	    if (($updateds==1) || $updateds->{$file}) {
+		my $file_costs = $costs->{$file};
+		if ($file_costs) {
+		    my $this_file_total = $file_costs->{"totaltime"};
+		    if ($this_file_total > $most_expensive_file_total) {
+			$most_expensive_file = $file;
+			$most_expensive_file_total = $this_file_total;
+		    }
 		}
 	    }
 	}
@@ -454,7 +456,8 @@ sub find_most_expensive {
 }
 
 sub compute_cost_paths_aux {
-    my ($target,$deps,$basecosts,$costs,$warnings) = @_;
+    # horrible: updateds is either 1 or a reference to a hash holding the names of updated targets.
+    my ($target,$deps,$basecosts,$costs,$updateds,$warnings) = @_;
 
     if (exists $costs->{$target} || ! ($target =~ /\.(cert|acl2x|pcert0|pcert1)$/)) {
 	return $costs->{$target};
@@ -462,6 +465,7 @@ sub compute_cost_paths_aux {
 
     # put something in $costs->{$target} so that we don't loop
     $costs->{$target} = 0;
+    # print("DFS starting for $target\n");
 
     my $certtime = $basecosts->{$target};
     if (! defined $certtime) {
@@ -511,40 +515,54 @@ sub compute_cost_paths_aux {
 
     my $most_expensive_dep = 0;
     my $most_expensive_dep_total = 0;
-
+    my $updated = ($updateds==1) || $updateds->{$target} || 0;
 
 #    print "$target depends on @$targetdeps\n";
     if (@$targetdeps) {
 	foreach my $dep (@$targetdeps) {
 	    if ($dep =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
-		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $warnings);
-		if (! $this_dep_costs) {
-		    if ($dep eq $target) {
-			push(@{$warnings}, "Self-dependency in $dep");
-		    } else {
-			push(@{$warnings}, "Dependency loop involving $dep and $target");
+		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $updateds, $warnings);
+		if (($updateds == 1) || $updateds->{$dep}) {
+		    if (! $this_dep_costs) {
+			if ($dep eq $target) {
+			    push(@{$warnings}, "Self-dependency in $dep");
+			} else {
+			    push(@{$warnings}, "Dependency loop involving $dep and $target");
+			}
 		    }
+		    $updated = 1;
 		}
 	    }
 	}
-
-	($most_expensive_dep, $most_expensive_dep_total) = find_most_expensive($targetdeps, $costs);
     }
     # if (! defined $most_expensive_dep_total) {
     # 	carp("Most_expensive_dep undefined for $target\n");
     # } elsif (! defined $certtime) {
     # 	carp("Certtime undefined for $target\n");
     # }
-    my %entry = ( "totaltime" => $most_expensive_dep_total + $certtime, 
-		  "maxpath" => $most_expensive_dep );
-    $costs->{$target} = \%entry;
-    return $costs->{$target};
+    # print("DFS ending for $target -- updated $updated\n");
+
+    if ($updated) {
+	($most_expensive_dep, $most_expensive_dep_total) = find_most_expensive($targetdeps, $costs, $updateds);
+	my %entry = ( "totaltime" => $most_expensive_dep_total + $certtime, 
+		      "maxpath" => $most_expensive_dep);
+	$costs->{$target} = \%entry;
+	if ($updateds != 1) {
+	    $updateds->{$target} = 1;
+	}
+	return $costs->{$target};
+    }
 }
 
 sub compute_cost_paths {
-    my ($deps,$basecosts,$costs,$warnings) = @_;
+    my ($deps,$basecosts,$costs,$updateds,$warnings) = @_;
     foreach my $certfile (keys %{$deps->certdeps}) {
-	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $warnings);
+	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $updateds, $warnings);
+    }
+    foreach my $certfile (keys %{$costs}) {
+	if ($costs->{$certfile} == 0) {
+	    delete $costs->{$certfile};
+	}
     }
 }
 
@@ -1488,15 +1506,28 @@ sub propagate_reqparam {
 	return;
     }
     $visited->{$target} = 1;
+    my $param = cert_get_param($target, $depmap, $paramname);
+    if ($param) {
+	if ($param == 1) {
+	    # Indicates this is the book where the certparam was set.
+	    # Set it to the name of the book for debugging purposes.
+	    my $params = cert_get_params($target, $depmap);
+	    $params->{$paramname} = $target;
+	}
+	return;
+    }
+    
     my $certdeps = cert_deps($target, $depmap);
     my $set_param = 0;
     foreach my $dep (@$certdeps) {
 	propagate_reqparam($dep, $paramname, $visited, $depmap);
-	$set_param = $set_param || cert_get_param($dep, $depmap, $paramname);
-    }
-    if ($set_param && ! cert_get_param($target, $depmap, $paramname)) {
-	my $params = cert_get_params($target, $depmap);
-	$params->{$paramname} = $set_param;
+	my $dep_param = cert_get_param($dep, $depmap, $paramname);
+	if ($dep_param) {
+	    my $params = cert_get_params($target, $depmap);
+	    $params->{$paramname} = $dep_param;
+	    # print "Setting $paramname in $target due to ${dep_param} (via $dep)\n";
+	    return;
+	}
     }
 }
 
@@ -1926,9 +1957,9 @@ sub process_labels_and_targets {
 
 sub compute_savings
 {
-    my ($costs,$basecosts,$targets,$debug,$deps) = @_;
+    my ($costs,$basecosts,$targets,$updateds,$debug,$deps) = @_;
 
-    (my $topbook, my $topbook_cost) = find_most_expensive($targets, $costs);
+    (my $topbook, my $topbook_cost) = find_most_expensive($targets, $costs, $updateds);
 
     print "done topbook\n" if $debug;
 
@@ -1949,8 +1980,8 @@ sub compute_savings
 	my %tmpcosts = ();
 	my @tmpwarns = ();
 	$basecosts->{$critfile} = 0.0;
-	compute_cost_paths($deps, $basecosts, \%tmpcosts, \@tmpwarns);
-	(my $tmptop, my $tmptopcost) = find_most_expensive($targets, \%tmpcosts);
+	compute_cost_paths($deps, $basecosts, \%tmpcosts, $updateds, \@tmpwarns);
+	(my $tmptop, my $tmptopcost) = find_most_expensive($targets, \%tmpcosts, $updateds);
 	my $speedup_savings = $topbook_cost - $tmptopcost;
 	$speedup_savings = $speedup_savings || 0.000001;
 
@@ -1958,8 +1989,8 @@ sub compute_savings
 	# set the file total cost to 0 and recompute crit path.
 	%tmpcosts = ();
 	$tmpcosts{$critfile} = 0;
-	compute_cost_paths($deps, $basecosts, \%tmpcosts, \@tmpwarns);
-	($tmptop, $tmptopcost) = find_most_expensive($targets, \%tmpcosts);
+	compute_cost_paths($deps, $basecosts, \%tmpcosts, $updateds, \@tmpwarns);
+	($tmptop, $tmptopcost) = find_most_expensive($targets, \%tmpcosts, $updateds);
 	my $remove_savings = $topbook_cost - $tmptopcost;
 	$remove_savings = $remove_savings || 0.000001;
 
