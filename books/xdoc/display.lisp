@@ -218,6 +218,35 @@
                     (cdr x))
                    (t (skip-to-close tag (cdr x))))))))
 
+(defun translate-entities-to-plaintext-aux (x n xl acc)
+  "Returns (MV ERR ACC)"
+  (b* (((when (>= n xl))
+        (mv nil acc))
+       (char1 (char x n))
+       ((when (eql char1 #\&))
+        (b* (((mv err n tok)
+              (read-entity x n xl))
+             ((when err)
+              (mv err nil))
+             (plaintext (entitytok-as-plaintext tok))
+             (acc (str::revappend-chars plaintext acc)))
+          (translate-entities-to-plaintext-aux x n xl acc)))
+       (acc (cons char1 acc)))
+    (translate-entities-to-plaintext-aux x (+ 1 n) xl acc)))
+
+(defun translate-entities-to-plaintext (x)
+  "Returns (MV ERR PLAINTEXT-STR)"
+  (b* (((mv err acc)
+        (translate-entities-to-plaintext-aux x 0 (length x) nil)))
+    (mv err (str::rchars-to-string acc))))
+
+(defun translate-att-to-plaintext (ctx x)
+  (b* (((mv err text) (translate-entities-to-plaintext x))
+       ((when err)
+        (er hard? 'translate-att-to-plaintext "Error in ~s0: ~s1~%" ctx err)
+        ""))
+    text))
+
 (defun merge-text (x acc codes href topic-to-rendered-table
                      xdoc-tag-elide-alist)
   ;; CODES is number of open <code> tags -- we don't normalize whitespace
@@ -312,7 +341,10 @@
                         codes nil topic-to-rendered-table
                         xdoc-tag-elide-alist)))))
                 ((member-equal name '("a"))
-                 (let ((tok (list :TEXT (str::cat " | " (or href "") "}"))))
+                 (let* ((href-plain (if href
+                                        (translate-att-to-plaintext 'href href)
+                                      ""))
+                        (tok (list :TEXT (str::cat " | " href-plain "}"))))
                    (merge-text (cons tok rest) acc codes nil
                                topic-to-rendered-table
                                xdoc-tag-elide-alist)))
