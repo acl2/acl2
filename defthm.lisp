@@ -10373,9 +10373,7 @@
 (defun disabledp-fn-lst (runic-mapping-pairs ens)
   (declare (xargs :guard ; see guard on enabled-runep
                   (and (enabled-structure-p ens)
-                       (bounded-nat-alistp runic-mapping-pairs
-                                           (access enabled-structure ens
-                                                   :array-length)))))
+                       (nat-alistp runic-mapping-pairs))))
   (cond ((endp runic-mapping-pairs) nil)
         ((enabled-numep (caar runic-mapping-pairs) ens)
          (disabledp-fn-lst (cdr runic-mapping-pairs) ens))
@@ -10397,11 +10395,9 @@
                                   (cond ((and (not (eq name2 :here))
                                               name2
                                               (logical-namep name2 wrld))
-                                         (bounded-nat-alistp
+                                         (nat-alistp
                                           (getpropc name2 'runic-mapping-pairs
-                                                    nil wrld)
-                                          (access enabled-structure ens
-                                                  :array-length)))
+                                                    nil wrld)))
                                         (t t))))
                                (t (and (consp name)
                                        (consp (cdr name))
@@ -10409,13 +10405,11 @@
                                        (let ((rune (translate-abbrev-rune
                                                      name
                                                      (macro-aliases wrld))))
-                                         (bounded-nat-alistp
+                                         (nat-alistp
                                           (getpropc (base-symbol rune)
                                                     'runic-mapping-pairs
                                                     nil
-                                                    wrld)
-                                          (access enabled-structure ens
-                                                  :array-length)))))))))
+                                                    wrld)))))))))
   (cond ((symbolp name)
          (let ((name2 (deref-macro-name name (macro-aliases wrld))))
            (cond
