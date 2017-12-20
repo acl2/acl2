@@ -4909,6 +4909,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (<= 0 x)))
   :rule-classes :compound-recognizer)
 
+(defun nat-alistp (x) ; used in the guards of some system functions
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (natp (car (car x)))
+                (nat-alistp (cdr x))))))
+
+(defthm nat-alistp-forward-to-eqlable-alistp
+  (implies (nat-alistp x)
+           (eqlable-alistp x))
+  :rule-classes :forward-chaining)
+
 (defun standard-string-p1 (x n)
   (declare (xargs :guard (and (stringp x)
                               (natp n)
