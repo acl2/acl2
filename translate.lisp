@@ -949,10 +949,19 @@
                  ,wrld))
 
 (defun save-ev-fncall-guard-er (fn guard stobjs-in args)
+
+; Warning: If you change this definition, consider changing :doc
+; make-wormhole-status, which references this definition.
+
   (wormhole-eval 'ev-fncall-guard-er-wormhole
-                 '(lambda (whs)
+                 '(lambda ()
                     (make-wormhole-status
-                     whs
+
+; Here we pass nil for the old "status", so that we will update the status
+; unconditionally.  That can avoid an expensive equality test when a logical
+; world or other large structure belongs to args.
+
+                     nil
                      :ENTER
                      (list fn guard stobjs-in args)))
                  nil))

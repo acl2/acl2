@@ -265,6 +265,13 @@
 (deflock *wormhole-lock*)
 
 #-acl2-loop-only
+(defun put-assoc-equal-destructive (key val alist)
+  (let ((pair (assoc-equal key alist)))
+    (cond (pair (setf (cdr pair) val)
+                alist)
+          (t (acons key val alist)))))
+
+#-acl2-loop-only
 (defmacro wormhole-eval (qname qlambda free-vars)
   (declare (xargs :guard t))
 
@@ -291,31 +298,39 @@
 ; (ii) no arguments, appropriately, and stores the result as the most recent
 ; output, and then returns nil.
 
-  (let* ((whs (if (car (cadr (cadr qlambda)))
-                  (car (cadr (cadr qlambda))) ; Case (i)
-                (gensym)))                    ; Case (ii)
+; For efficiency we use put-assoc-equal-destructive below instead of put-assoc.
+; When considering a similar use of put-assoc-equal-destructive elsewhere --
+; specifically, in ev-rec and in a cleanup form in wormhole1 -- then we should
+; think about whether locks might be needed for ACL2(p).  We do have a lock
+; here, by default.
+
+  (let* ((whs (car (cadr (cadr qlambda)))) ; non-nil in Case (i) only
          (val (gensym))
          (form
-
-; The code we lay down is the same in both cases, because we use the variable whs to
-; store the old value of the status to see whether it has changed.  But we have
-; to generate a name if one isn't supplied.
-
           `(progn
              (cond (*wormholep*
                     (setq *wormhole-status-alist*
-                          (put-assoc-equal
+                          (put-assoc-equal-destructive
                            (f-get-global 'wormhole-name
                                          *the-live-state*)
                            (f-get-global 'wormhole-status
                                          *the-live-state*)
                            *wormhole-status-alist*))))
              (let* ((*wormholep* t)
-                    (,whs (cdr (assoc-equal ,qname *wormhole-status-alist*)))
+                    ,@(and whs ; Case (i)
+                           `((,whs
+                              (cdr (assoc-equal ,qname
+                                                *wormhole-status-alist*)))))
                     (,val ,(caddr (cadr qlambda))))
-               (or (equal ,whs ,val)
-                   (setq *wormhole-status-alist*
-                         (put-assoc-equal ,qname ,val *wormhole-status-alist*)))
+
+; At one time we skipped the following setq in the case that (equal ,whs ,val),
+; where ,whs was unconditionally bound above.  However, that equality test can
+; be expensive, so we avoid it.
+
+               (setq *wormhole-status-alist*
+                     (put-assoc-equal-destructive ,qname
+                                                  ,val
+                                                  *wormhole-status-alist*))
                nil))))
     (cond ((tree-occur-eq :no-wormhole-lock free-vars)
            form)

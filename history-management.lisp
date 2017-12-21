@@ -11856,14 +11856,13 @@
 ; it occurs in <body>.
 
 ; The raw lisp macroexpansion of the first wormhole-eval form above is (modulo
-; the name of var)
+; the name of var) essentially as follows.
 
 ; (let* ((<whs> (cdr (assoc-equal '<name> *wormhole-status-alist*)))
 ;        (val <body>))
-;   (or (equal <whs> val)
-;       (put-assoc-equal '<name> val *wormhole-status-alist*))
+;   (put-assoc-equal '<name> val *wormhole-status-alist*)
 ;   nil)
-;
+
 ; We wish to make sure this form is Common Lisp compliant.  We know that
 ; *wormhole-status-alist* is an alist satisfying the guard of assoc-equal and
 ; put-assoc-equal.  The raw lisp macroexpansion of the second form of
