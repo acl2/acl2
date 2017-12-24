@@ -1915,8 +1915,9 @@
            (forall (args)
              (and (equal (badge-userfn ',fn) ',bdg)
                   (equal (apply$-userfn ',fn args)
-                         (,fn ,@(successive-cadrs formals 'args))))))
-         (in-theory (disable ,name))
+                         (,fn ,@(successive-cadrs formals 'args)))))
+           :constrained t)
+         (in-theory (disable ,(definition-rule-name name)))
          (defthm ,rule-name
            (implies (force (,(warrant-name fn)))
                     (and (equal (badge ',fn) ',bdg)
@@ -1937,8 +1938,10 @@
                (implies ,hyp
                         (and (equal (badge-userfn ',fn) ',bdg)
                              (equal (apply$-userfn ',fn args)
-                                    (,fn ,@(successive-cadrs formals 'args)))))))
-           (in-theory (disable ,name))
+                                    (,fn ,@(successive-cadrs formals
+                                                             'args))))))
+             :constrained t)
+           (in-theory (disable ,(definition-rule-name name)))
            (defthm ,rule-name
              (and (implies (force (,(warrant-name fn)))
                            (equal (badge ',fn) ',bdg))

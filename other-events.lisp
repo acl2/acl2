@@ -17092,6 +17092,7 @@
 
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
+              :constrained
               #+:non-standard-analysis :classicalp))
 
 (defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
@@ -17189,8 +17190,12 @@
            body))
      (t nil))))
 
-(defmacro defun-sk (&whole form name args &rest rest)
+(defun definition-rule-name (name)
+  (declare (xargs :guard (symbolp name)))
+  (add-suffix name "-DEFINITION"))
 
+(defun defun-sk-fn (form name args rest)
+  (declare (xargs :mode :program))
   (mv-let
     (erp dcls-and-body keyword-alist)
     (partition-rest-and-keyword-args rest *defun-sk-keywords*)
@@ -17209,6 +17214,16 @@
       (let* ((quant-ok (cdr (assoc-eq :quant-ok keyword-alist)))
              (skolem-name (cdr (assoc-eq :skolem-name keyword-alist)))
              (thm-name (cdr (assoc-eq :thm-name keyword-alist)))
+             (constrained-pair (assoc-eq :constrained keyword-alist))
+             (constrained (cdr constrained-pair))
+             (def-name (cond ((eq constrained t)
+                              (definition-rule-name name))
+                             ((symbolp constrained)
+                              constrained)
+                             (t (er hard 'defun-sk
+                                    "The :constrained argument of DEFUN-SK ~
+                                     must be a symbol, but ~x0 is not."
+                                    constrained))))
              (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
              (strengthen (cdr (assoc-eq :strengthen keyword-alist)))
              #+:non-standard-analysis
@@ -17246,6 +17261,13 @@
                  (skolem-name
                   (or skolem-name
                       (add-suffix name "-WITNESS")))
+                 (defun-body
+                   (if (= (length bound-vars) 1)
+                       `(let ((,(car bound-vars) (,skolem-name ,@args)))
+                          ,body-guts)
+                     `(mv-let (,@bound-vars)
+                        (,skolem-name ,@args)
+                        ,body-guts)))
                  (thm-name
                   (or thm-name
                       (add-suffix name
@@ -17257,6 +17279,21 @@
                            (cons '(declare (xargs :verify-guards nil))
                                  dcls1)
                          dcls1))
+                 (defun-form
+                   `(,(if (member-equal '(declare (xargs :non-executable t)) dcls)
+                          'defun-nx
+                        'defun)
+                     ,name ,args
+                     ,@(remove1-equal
+                        '(declare (xargs :non-executable t))
+                        dcls)
+                     ,defun-body))
+                 (defun-constraint
+                   (and constrained ; optimization
+                        `(defthm ,def-name
+                           (equal (,name ,@args)
+                                  ,defun-body)
+                           :rule-classes :definition)))
                  (delayed-guard-hints
                   (and delayed-guard-p
                        (let ((hints-lst (fetch-dcl-field :guard-hints dcls1)))
@@ -17264,8 +17301,8 @@
                               (if (cdr hints-lst)
                                   (er hard 'defun-sk
                                       "The :guard-hints keyword may only be ~
-                                   supplied once in DEFUN-SK.  Thus, ~x0 is ~
-                                   ill-formed."
+                                       supplied once in DEFUN-SK.  Thus, ~x0 ~
+                                       is ill-formed."
                                       form)
                                 `(:hints ,(car hints-lst))))))))
             `(encapsulate
@@ -17280,7 +17317,12 @@
                                    (cons 'mv bound-vars))
                                 #+:non-standard-analysis
                                 ,@(and classicalp-p
-                                       `(:classicalp ,classicalp))))
+                                       `(:classicalp ,classicalp)))
+                  ,@(and constrained
+                         `((,name ,args t
+                                  #+:non-standard-analysis
+                                  ,@(and classicalp-p
+                                         `(:classicalp ,classicalp))))))
                  (local (in-theory '(implies)))
                  (local
                   (defchoose ,skolem-name ,bound-vars ,args
@@ -17295,18 +17337,13 @@
                                      :use ,skolem-name
                                      :in-theory (theory 'minimal-theory)))
                             :rule-classes nil)))
-                 (,(if (member-equal '(declare (xargs :non-executable t)) dcls)
-                       'defun-nx
-                     'defun)
-                  ,name ,args
-                  ,@(remove1-equal '(declare (xargs :non-executable t)) dcls)
-                  ,(if (= (length bound-vars) 1)
-                       `(let ((,(car bound-vars) (,skolem-name ,@args)))
-                          ,body-guts)
-                     `(mv-let (,@bound-vars)
-                        (,skolem-name ,@args)
-                        ,body-guts)))
-                 (in-theory (disable (,name)))
+                 ,@(cond (constrained
+                          `((local ,defun-form)
+                            ,defun-constraint
+                            (local (in-theory (disable (,name))))))
+                         (t
+                          `(,defun-form
+                             (in-theory (disable (,name))))))
                  (defthm ,thm-name
                    ,(cond (exists-p
                            `(implies ,body-guts
@@ -17320,11 +17357,14 @@
                           (t rewrite))
                    :hints (("Goal"
                             :use (,skolem-name ,name)
-                            :in-theory (theory 'minimal-theory))))
-                 (extend-pe-table ,name ,form))
+                            :in-theory (theory 'minimal-theory)))))
+               (extend-pe-table ,name ,form)
                ,@(and delayed-guard-p
                       `((verify-guards ,name
                           ,@delayed-guard-hints)))))))))))
+
+(defmacro defun-sk (&whole form name args &rest rest)
+  (defun-sk-fn form name args rest))
 
 ; Here is the defstobj event.  Note that many supporting functions have been
 ; moved from this file to basis-a.lisp, in support of ACL2 "toothbrush"
