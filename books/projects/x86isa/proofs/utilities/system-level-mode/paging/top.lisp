@@ -879,8 +879,7 @@
            :use ((:instance mv-nth-0-las-to-pas-subset-p-helper))
            :in-theory (e/d* (subset-p) ()))))
 
-(defthm program-at-nil-when-translation-error
-  ;; Stolen from non-marking-mode-top.lisp.
+(defthm program-at-implies-error-free-address-translation
   (implies (and (program-at prog-addr bytes x86)
                 (not (programmer-level-mode x86)))
            (equal (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86)) nil))
@@ -901,7 +900,7 @@
                 (program-at prog-addr bytes x86)
 
                 ;; We don't need the following hypothesis because we
-                ;; have program-at-nil-when-translation-error.
+                ;; have program-at-implies-error-free-address-translation.
                 ;; (not (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86)))
 
                 ;; <n,addr> is a subset of <(len bytes),prog-addr>.
@@ -911,14 +910,14 @@
                 (not (programmer-level-mode x86)))
            (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil))
   :hints (("Goal"
-           :use ((:instance program-at-nil-when-translation-error)
+           :use ((:instance program-at-implies-error-free-address-translation)
                  (:instance mv-nth-0-las-to-pas-subset-p
                             (n-1 (len bytes)) (addr-1 prog-addr)
                             (n-2 n) (addr-2 addr)
                             (r-w-x :x)))
            :in-theory (e/d* (program-at
                              signed-byte-p)
-                            (program-at-nil-when-translation-error)))))
+                            (program-at-implies-error-free-address-translation)))))
 
 (defthm mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
   ;; This rule is tailored to rewrite

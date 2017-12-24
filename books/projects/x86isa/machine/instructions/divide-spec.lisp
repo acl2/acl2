@@ -170,7 +170,7 @@
   ((local (in-theory (e/d () (unsigned-byte-p)))))
 
   :inline t
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
   :short "Specification for the @('DIV') (unsigned divide) instruction"
 
   (case size
@@ -311,7 +311,7 @@
   ((local (in-theory (e/d () (unsigned-byte-p)))))
 
   :inline t
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
   :short "Specification for the @('IDIV') (unsigned idivide) instruction"
 
   (case size

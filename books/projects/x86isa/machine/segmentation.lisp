@@ -10,7 +10,7 @@
 
 ;; ======================================================================
 
-(defxdoc x86-segmentation
+(defxdoc segmentation
   :parents (machine)
   :short "Specification of x86 segmentation."
   :long
@@ -19,7 +19,7 @@
    addresses.</p>")
 
 (defsection ia32e-segmentation
-  :parents (x86-segmentation)
+  :parents (segmentation)
   :short "Specification of Segmentation in the 64-bit Mode"
   )
 
@@ -32,7 +32,7 @@
   :returns (mv (base n64p :hyp (x86p x86))
                (lower-bound n33p)
                (upper-bound n32p))
-  :parents (x86-segmentation)
+  :parents (segmentation)
   :short "Return a segment's base linear address, lower bound, and upper bound."
   :long
   "<p>
@@ -157,7 +157,7 @@
                   x86)
   :returns (mv flg
                (lin-addr i64p :hyp (i64p eff-addr)))
-  :parents (x86-segmentation)
+  :parents (segmentation)
   :short "Translate an effective address to a linear address."
   :long
   "<p>
@@ -284,7 +284,7 @@
                     x86)
   :returns (mv flg
                (lin-addrs "A @('nil')-terminated list of @(tsee i64p)s."))
-  :parents (x86-segmentation)
+  :parents (segmentation)
   :short "Translate a sequence of contiguous effective addresses
           to linear addresses."
   :long

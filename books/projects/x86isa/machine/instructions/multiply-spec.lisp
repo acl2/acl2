@@ -91,7 +91,7 @@
 
   :inline t
 
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
   :short "Specification for the @('MUL') (unsigned multiply) instruction"
 
   (case size
@@ -244,7 +244,7 @@
 
   :inline t
 
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
   :short "Specification for the @('IMUL') (unsigned imultiply) instruction"
 
   (case size

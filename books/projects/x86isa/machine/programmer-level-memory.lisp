@@ -68,7 +68,7 @@ in @('x86') --- when @('programmer-level-mode') is set, @('mem')
 refers to the linear memory; otherwise, it refers to the physical
 memory.</p>" )
 
-(defsection x86-linear-memory
+(defsection linear-memory
 
   :parents (programmer-level-mode)
 
@@ -85,7 +85,7 @@ memory.</p>" )
 ;; ======================================================================
 
 (define canonical-address-p (lin-addr)
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :inline t
   :enabled t
   ;; In 64-bit mode, an address is considered to be in canonical form
@@ -115,7 +115,7 @@ memory.</p>" )
    (x86))
   :enabled t
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (mbe :logic (if (canonical-address-p addr)
                   (mv nil (memi (n48 addr) x86) x86)
@@ -157,7 +157,7 @@ memory.</p>" )
    (x86))
   :enabled t
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -228,7 +228,7 @@ memory.</p>" )
    (x86))
   :enabled t
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -318,7 +318,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (rml48-guard-proof-helper) ())))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -397,7 +397,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d () (rvm32))))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -478,7 +478,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d () (rvm32))))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -557,7 +557,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d () (rvm64))))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -642,7 +642,7 @@ memory.</p>" )
    (x86))
   :enabled t
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (mbe :logic (if (canonical-address-p addr)
                   (let ((x86 (!memi (n48 addr) (n08 val) x86)))
@@ -684,7 +684,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -745,7 +745,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -816,7 +816,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -878,7 +878,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -940,7 +940,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (if (mbt (canonical-address-p addr))
 
@@ -1002,7 +1002,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :prepwork ((local (in-theory (e/d () (wvm64)))))
   (if (mbt (canonical-address-p addr))
 

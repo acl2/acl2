@@ -12,7 +12,7 @@
 ;; For FreeBSD systems: See sys/kern/syscalls.master
 
 (defsection syscall-numbers
-  :parents (x86-syscalls)
+  :parents (syscalls)
   :short "OS-specific system call numbers"
 
   :long "<p>System call numbers differ among different operating

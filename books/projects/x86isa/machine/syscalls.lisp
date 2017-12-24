@@ -14,7 +14,7 @@
 
 ;; ======================================================================
 
-(defsection x86-syscalls
+(defsection syscalls
   :parents (machine)
   :short "Extending the x86 ISA with the system call model in the
   programmer-level mode"
@@ -252,8 +252,8 @@ really good thing to do to keep the model simple.</p>"
 
 ;; ======================================================================
 
-(defsection x86-syscalls-logic
-  :parents (x86-syscalls)
+(defsection syscalls-logic
+  :parents (syscalls)
   :short "Logical definitions for syscalls to be used in the
   programmer-level mode for reasoning"
 
@@ -263,7 +263,7 @@ really good thing to do to keep the model simple.</p>"
   as well as proof since they aren't the top-level interface
   functions (like @(see syscall-read)).</p>"
 
-  (local (xdoc::set-default-parents x86-syscalls-logic))
+  (local (xdoc::set-default-parents syscalls-logic))
 
   (define syscall-read-logic (fd *buf count x86)
 
@@ -1115,14 +1115,14 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
 ;; undefined, and hence, build-with-full-exec-support will always
 ;; return its third argument.
 
-(defsection x86-syscalls-exec
-  :parents (x86-syscalls)
+(defsection syscalls-exec
+  :parents (syscalls)
   :short "Syscall definitions to be used in the programmer-level mode
   for execution"
 
   :long "<p>The definitions of the following <em>(not inlined)</em>
   functions in ACL2 have been smashed in raw Lisp; see the book
-  @('x86-environment-and-syscalls-raw.lsp') for the raw Lisp
+  @('environment-and-syscalls-raw.lsp') for the raw Lisp
   definitions.  These raw Lisp definitions are used when doing
   execution, and the ACL2 definitions are used when reasoning.</p>
 
@@ -1187,14 +1187,14 @@ x86isa-build-instructions) for details.</p>
      (include-raw "environment-and-syscalls-raw.lsp"))
 
    (value-triple
-    (cw "~%~%X86ISA_EXEC Warning: x86-environment-and-syscalls-raw.lsp is not included.~%~%~%")))
+    (cw "~%~%X86ISA_EXEC Warning: environment-and-syscalls-raw.lsp is not included.~%~%~%")))
 
   )
 
 ;; ======================================================================
 
 (defsection x86-syscall-args-and-return-value-marshalling
-  :parents (x86-syscalls)
+  :parents (syscalls)
   :short "Collecting arguments to system calls from the x86 state and
   retrieving the return value"
 

@@ -69,7 +69,7 @@
 
 (defsection gpr-arith/logic-spec
 
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
   :short "Semantics of general-purpose arithmetic and logical instructions"
   :long "<p>These instructions are:</p>
 <ul>

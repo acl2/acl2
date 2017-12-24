@@ -9,7 +9,7 @@
 
 ;; ======================================================================
 
-(defsection x86-abstract-state
+(defsection abstract-state
   :parents (machine)
   :short "Definition of an abstract stobj @('x86') corresponding to
 @('x86$c')."
@@ -19,7 +19,7 @@
 
   )
 
-(local (xdoc::set-default-parents x86-abstract-state))
+(local (xdoc::set-default-parents abstract-state))
 
 ;; ======================================================================
 
@@ -95,7 +95,7 @@
 
 (defsection field-recognizers
 
-  :parents (x86-abstract-state)
+  :parents (abstract-state)
 
   :short "Definition of the <tt>:logic</tt> recognizers of the
   abstract stobj fields"
@@ -220,7 +220,7 @@
 
 (defsection abstract-stobj-recognizer
 
-  :parents (x86-abstract-state)
+  :parents (abstract-state)
 
   :short "Definition of @('x86$ap')"
 
@@ -296,7 +296,7 @@
 
 (defsection abstract-stobj-creator
 
-  :parents (x86-abstract-state)
+  :parents (abstract-state)
 
   :short "Definition of @('create-x86$a')"
 
@@ -346,7 +346,7 @@
 
 (defsection field-accessors-and-updaters
 
-  :parents (x86-abstract-state)
+  :parents (abstract-state)
 
   :short "Definitions of the <tt>:logic</tt> functions for abstract
   stobj field accessors and updaters"
@@ -520,7 +520,7 @@
 
 (defsection correspondence-predicate
 
-  :parents (x86-abstract-state)
+  :parents (abstract-state)
 
   :short "Definition of the correspondence predicate @('corr')"
 
@@ -680,7 +680,7 @@
 
 (defsection creating-x86-abstract-stobj
 
-  :parents (x86-abstract-state)
+  :parents (abstract-state)
 
   :short "Creation of the abstract stobj @('x86')."
 
@@ -4142,7 +4142,7 @@
 
 (defsection x86-state-accessor-and-updater
 
-  :parents (x86-abstract-state)
+  :parents (abstract-state)
 
   :short "Definitions of the top-level accessor and updater functions
   for the x86 state"

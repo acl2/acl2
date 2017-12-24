@@ -10,12 +10,12 @@
 
 ;; ======================================================================
 
-(defsection x86-top-level-memory
+(defsection top-level-memory
   :parents (machine)
   :short "Top-level Memory Accessor and Updater Functions"
   )
 
-(local (xdoc::set-default-parents x86-top-level-memory))
+(local (xdoc::set-default-parents top-level-memory))
 
 ;; ======================================================================
 
@@ -29,7 +29,7 @@
   :returns (mv flg
                (byte (unsigned-byte-p 8 byte) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read an unsigned (8-bit) byte from memory via an effective address."
   :long
   "<p>
@@ -147,7 +147,7 @@
   :returns (mv flg
                (byte (signed-byte-p 8 byte) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read a signed (8-bit) byte from memory via an effective address."
   :long
   "<p>
@@ -186,7 +186,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write an unsigned (8-bit) byte to memory via an effective address."
   :long
   "<p>
@@ -218,7 +218,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write a signed (8-bit) byte to memory via an effective address."
   :long
   "<p>
@@ -255,7 +255,7 @@
   :returns (mv flg
                (word (unsigned-byte-p 16 word) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read an unsigned (16-bit) word from memory via an effective address."
   :long
   "<p>
@@ -295,7 +295,7 @@
   :returns (mv flg
                (byte (signed-byte-p 16 byte) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read a signed (16-bit) word from memory via an effective address."
   :long
   "<p>
@@ -334,7 +334,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write an unsigned (16-bit) word to memory via an effective address."
   :long
   "<p>
@@ -366,7 +366,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write a signed (16-bit) word to memory via an effective address."
   :long
   "<p>
@@ -403,7 +403,7 @@
   :returns (mv flg
                (word (unsigned-byte-p 32 word) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read an unsigned (32-bit) long word from memory
           via an effective address."
   :long
@@ -444,7 +444,7 @@
   :returns (mv flg
                (byte (signed-byte-p 32 byte) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read a signed (32-bit) long word from memory
           via an effective address."
   :long
@@ -484,7 +484,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write an unsigned (32-bit) long word to memory
           via an effective address."
   :long
@@ -517,7 +517,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write a signed (32-bit) long word to memory
           via an effective address."
   :long
@@ -555,7 +555,7 @@
   :returns (mv flg
                (word (unsigned-byte-p 48 word) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read an unsigned 48-bit value from memory via an effective address."
   :long
   "<p>
@@ -594,7 +594,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write an unsigned 48-bit value to memory via an effective address."
   :long
   "<p>
@@ -631,7 +631,7 @@
   :returns (mv flg
                (word (unsigned-byte-p 64 word) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read an unsigned (64-bit) quad word from memory
           via an effective address."
   :long
@@ -672,7 +672,7 @@
   :returns (mv flg
                (byte (signed-byte-p 64 byte) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read a signed (64-bit) quad word from memory
           via an effective address."
   :long
@@ -712,7 +712,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write an unsigned (64-bit) quad word to memory
           via an effective address."
   :long
@@ -745,7 +745,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write a signed (64-bit) quad word to memory
           via an effective address."
   :long
@@ -783,7 +783,7 @@
   :returns (mv flg
                (word (unsigned-byte-p 80 word) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read an unsigned 80-bit value from memory via an effective address."
   :long
   "<p>
@@ -822,7 +822,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write an unsigned 80-bit value to memory via an effective address."
   :long
   "<p>
@@ -859,7 +859,7 @@
   :returns (mv flg
                (word (unsigned-byte-p 128 word) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read an unsigned 128-bit value from memory via an effective address."
   :long
   "<p>
@@ -898,7 +898,7 @@
    x86)
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write an unsigned 128-bit value to memory via an effective address."
   :long
   "<p>
@@ -936,7 +936,7 @@
   :returns (mv flg
                (value natp :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read an unsigned value with the specified number of bytes
           from memory via an effective address."
   :long
@@ -971,7 +971,7 @@
   :returns (mv flg
                (value integerp :hyp (and (x86p x86) (integerp nbytes)))
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Read a signed value with the specified number of bytes
           from memory via an effective address."
   :long
@@ -1013,7 +1013,7 @@
            (16 (n128p val)))
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write an unsigned value with the specified number of bytes
           to memory via an effective address."
   :long
@@ -1052,7 +1052,7 @@
            (8  (i64p val)))
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
-  :parents (x86-top-level-memory)
+  :parents (top-level-memory)
   :short "Write a signed value with the specified number of bytes
           to memory via an effective address."
   :long

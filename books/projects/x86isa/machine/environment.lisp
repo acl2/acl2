@@ -9,7 +9,7 @@
 
 ;; ======================================================================
 
-(defsection x86-environment
+(defsection environment
   :parents (machine)
   :short "Defining the environment field for reasoning about
   non-deterministic computations"
@@ -19,7 +19,7 @@
 
 (defsection converting-between-strings-and-bytes
 
-  :parents (x86-environment)
+  :parents (environment)
 
   (define bytes-to-charlist (bytes)
     :guard (byte-listp bytes)
@@ -107,7 +107,7 @@
 
 (defsection reading-memory-as-strings-or-bytes
 
-  :parents (x86-environment)
+  :parents (environment)
 
   (local (xdoc::set-default-parents reading-memory-as-strings-or-bytes))
 
@@ -257,9 +257,9 @@
 
 (defsection writing-strings-or-bytes-to-memory
 
-  :parents (x86-environment)
+  :parents (environment)
 
-  (local (xdoc::set-default-parents writing-strings-or-bytes-to-memory))  
+  (local (xdoc::set-default-parents writing-strings-or-bytes-to-memory))
 
   (local (in-theory (e/d () (str::coerce-to-list-removal))))
 
@@ -337,7 +337,7 @@
 
 (defsection components-of-the-environment-field
 
-  :parents (x86-environment)
+  :parents (environment)
 
   :long "<p>We don't check for ill-formed environment very rigorously.
   For example, one can have <tt>STANDARD-INPUT</tt>'s mode as
@@ -388,7 +388,7 @@
     :enabled t
     ;; Important for this function to not be inline because it's
     ;; definition will be smashed under the hood (see
-    ;; x86-syscalls-raw.lsp).
+    ;; environment-and-syscalls-raw.lsp).
     (env-read-logic x86)
     ///
     (defthm env-alistp-env-read

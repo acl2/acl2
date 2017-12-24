@@ -9,7 +9,7 @@
 
 ;; ======================================================================
 
-(defsection x86-concrete-memory
+(defsection concrete-memory
   :parents (machine)
   :short "Definitions of @('mem$ci') and @('!mem$ci'), and their
   read/write theorems."
@@ -343,7 +343,7 @@
 
 (defsection concrete-memory-byte-read-function
 
-  :parents (x86-concrete-memory)
+  :parents (concrete-memory)
 
   :short "Concrete memory byte read function @('mem$ci')"
 
@@ -478,7 +478,7 @@
 
 (defsection concrete-memory-byte-write-function
 
-  :parents (x86-concrete-memory)
+  :parents (concrete-memory)
 
   :short "Concrete memory byte write function @('!mem$ci')"
 
@@ -617,7 +617,7 @@
 
 (defsection concrete-memory-accessor-returns-n08p
 
-  :parents (x86-concrete-memory)
+  :parents (concrete-memory)
 
   :short "We prove that @('mem$ci') returns an @(see n08p)."
 
@@ -642,7 +642,7 @@
   ;; 2. mem-table-is-one-to-one
   ;; 3. read-write
 
-  :parents (x86-concrete-memory)
+  :parents (concrete-memory)
 
   :short "We prove @('x86$cp-!mem$ci') in this section."
 

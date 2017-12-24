@@ -37,7 +37,7 @@
    decoder function, etc., and proofs about the x86 ISA
    specification.")
 
-(defsection x86-concrete-state
+(defsection concrete-state
   :parents (machine)
   :short "Concrete stobj @(see defstobj) defining the state of an
   @('x86') processor")
@@ -48,7 +48,7 @@
 
 (defsection environment-field
 
-  :parents (x86-concrete-state)
+  :parents (concrete-state)
 
   :short "An environment field that includes a simple model of the
   file system and an oracle"
@@ -132,7 +132,7 @@
 
 (defsection x86-concrete-stobj
 
-  :parents (x86-concrete-state)
+  :parents (concrete-state)
 
   :short "The concrete stobj representing the ('x86') state"
 
@@ -423,7 +423,7 @@
 
 (defsection x86-concrete-stobj-recognizer
 
-  :parents (x86-concrete-state)
+  :parents (concrete-state)
 
   :short "Definition of @('x86$cp'), the real concrete @('x86') state
   recognizer"
@@ -996,7 +996,7 @@
 
 (defsection theorems-about-concrete-accessors-updaters-and-recognizers
 
-  :parents (x86-concrete-state)
+  :parents (concrete-state)
 
   :short "Some basic theorems about the type of the fields of the
   concrete @('x86') state and about the updater functions of these
@@ -1117,7 +1117,7 @@
 
 (defsection concrete-stobj-ruleset
 
-  :parents (x86-concrete-state)
+  :parents (concrete-state)
 
   :short "A ruleset containing definitions pertaining to @('x86$c')"
 

@@ -9,7 +9,7 @@
 
 ;; ======================================================================
 
-(defsection x86-register-readers-and-writers
+(defsection register-readers-and-writers
   :parents (machine)
   :short "Top-level utilities for reading and writing into various
   registers"
@@ -19,7 +19,7 @@
 
 (defsection GPR-indices
 
-  :parents (x86-register-readers-and-writers)
+  :parents (register-readers-and-writers)
 
   :short "Functions that enable the use of extended GPRs using the
   @('rex') byte"
@@ -98,7 +98,7 @@ prefix.</p>"
 
 (defsection GPRs-Reads-and-Writes
 
-  :parents (x86-register-readers-and-writers)
+  :parents (register-readers-and-writers)
 
   :short "Functions to read/write 8/16/32/64 bits into the registers"
 
@@ -500,7 +500,7 @@ by the following quote from the same page as above: </p>
 
 (defsection XMMs-Reads-and-Writes
 
-  :parents (x86-register-readers-and-writers)
+  :parents (register-readers-and-writers)
 
   :short "Functions to read/write 32/64/128 bits into the XMM registers"
 
@@ -744,7 +744,7 @@ are used to write natural numbers into the XMMs.</p>"
 
 (defsection MMX-Registers-Reads-and-Writes
 
-  :parents (x86-register-readers-and-writers)
+  :parents (register-readers-and-writers)
 
   :short "Functions to read/write into the MMX registers"
 
@@ -996,7 +996,7 @@ values.</p>"
 ;; ======================================================================
 
 (defsection rflags-Reads-and-Writes
-  :parents (rflag-specifications x86-register-readers-and-writers)
+  :parents (rflag-specifications register-readers-and-writers)
   :short "Reading from and writing to the @('rflags') register in the @('x86') state"
 
   :long "<p>We define @(see flgi) to read a flag's value, and @(see
@@ -1166,7 +1166,7 @@ values.</p>"
 
   :prepwork ((local (in-theory (e/d* () (undef-flg)))))
   :inline t
-  :parents (x86-register-readers-and-writers characterizing-undefined-behavior)
+  :parents (register-readers-and-writers characterizing-undefined-behavior)
 
   :short "Setting the rflag @('flg') in the x86 state to @('undefined')"
 
@@ -1219,7 +1219,7 @@ using the @(see undef-read) function.</p>"
    x86)
 
   :inline t
-  :parents (x86-register-readers-and-writers)
+  :parents (register-readers-and-writers)
 
   :short "Writing user rflags \(CF, PF, AF, ZF, SF, and OF\),
   including undefined ones, to the x86 state"

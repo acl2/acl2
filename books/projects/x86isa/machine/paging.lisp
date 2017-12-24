@@ -14,13 +14,13 @@
 
 ;; ======================================================================
 
-(defsection x86-paging
+(defsection paging
   :parents (machine)
   :short "Specification of x86 Paging"
   )
 
 (defsection ia32e-paging
-  :parents (x86-paging)
+  :parents (paging)
   :short "Specification of Paging in the 64-bit Mode"
   )
 
@@ -2610,7 +2610,7 @@ accesses.</p>
    ;; There are more general theorems called
    ;; negative-logand-to-positive-logand-with-natp-x and
    ;; negative-logand-to-positive-logand-with-integerp-x in
-   ;; x86-register-readers-and-writers.lisp.  Why don't they work
+   ;; register-readers-and-writers.lisp.  Why don't they work
    ;; here? Which rule is interfering?
    (implies (and (equal n 64)
                  (unsigned-byte-p n x)

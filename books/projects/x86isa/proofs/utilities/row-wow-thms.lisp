@@ -12,8 +12,8 @@
   :parents (proof-utilities)
 
   :short "Miscellaneous RoW and WoW theorems"
-  :long "<p>See @(see x86-state-field-theorems) for a detailed
-  description of RoW and WoW theorems.</p>"
+  :long "<p>See @(see state-field-theorems) for a detailed description
+  of RoW and WoW theorems.</p>"
 
   )
 

@@ -244,7 +244,7 @@
 
   :inline t
 
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
 
   :short "Specification for the @('SAL/SHL') instruction"
 
@@ -483,7 +483,7 @@ otherwise, it is set to 1.</p>"
 
   :inline t
 
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
 
   :short "Specification for the @('SHR') instruction"
 
@@ -725,7 +725,7 @@ set to the most-significant bit of the original operand.</p>"
 
   :inline t
 
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
 
   :short "Specification for the @('SAR') instruction"
 

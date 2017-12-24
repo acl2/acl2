@@ -159,7 +159,7 @@
 
   :inline t
 
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
   :short "Specification for the @('RCL') instruction"
   :long "<p>Source: Intel Manual, Volume 2B, Instruction Set
   Reference \(N-Z\).</p>
@@ -330,7 +330,7 @@ the most-significant bit of the result.</p>"
 	    (otherwise nil)))
 
   :inline t
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
   :short "Specification for the @('ROL') instruction"
 
   :long "<p>Source: Intel Manual, Volume 2B, Instruction Set
@@ -519,7 +519,7 @@ most-significant bit of the result.</p>"
 
   :inline t
 
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
   :short "Specification for the @('RCR') instruction"
 
   :long "<p>Source: Intel Manual, Volume 2B, Instruction Set
@@ -701,7 +701,7 @@ the result.</p>"
 
   :inline t
 
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
 
   :short "Specification for the @('ROR') instruction"
 

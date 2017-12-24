@@ -1710,7 +1710,7 @@
 (local
  (defthmd one-read-with-rb-from-program-at-in-marking-mode-helper
    ;; TODO: Ugh, I'm embarassed about putting this here when
-   ;; program-at-nil-when-translation-error should suffice.  Remove
+   ;; program-at-implies-error-free-address-translation should suffice.  Remove
    ;; soon...
    (implies
     (and (64-bit-modep x86) ; added
@@ -1723,8 +1723,8 @@
                                (+ 1 prog-addr)
                                :x x86))
            nil))
-   :hints (("Goal" :in-theory (e/d* () (program-at-nil-when-translation-error))
-            :use ((:instance program-at-nil-when-translation-error
+   :hints (("Goal" :in-theory (e/d* () (program-at-implies-error-free-address-translation))
+            :use ((:instance program-at-implies-error-free-address-translation
                              (prog-addr (+ 1 prog-addr))
                              (bytes (cdr bytes))
                              (x86 (mv-nth 2 (ia32e-la-to-pa prog-addr :x x86)))))))))

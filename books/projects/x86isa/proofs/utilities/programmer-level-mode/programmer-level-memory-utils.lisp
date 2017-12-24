@@ -547,7 +547,7 @@
    (implies (consp x)
             (equal (equal (len x) 0) nil))))
 
-(defthmd program-at-implies-canonical-addresses
+(defthmd program-at-implies-canonical-addresses-in-programmer-mode
   (implies (and (program-at prog-addr bytes x86)
                 (consp bytes)
                 (programmer-level-mode x86))
@@ -600,7 +600,7 @@
                             (j n) (addr-j addr) (r-x-j :x) (x86 x86)
                             (i (len bytes)) (addr-i prog-addr) (r-x-i :x)
                             (val (combine-n-bytes 0 (len bytes) bytes)))
-                 (:instance program-at-implies-canonical-addresses))
+                 (:instance program-at-implies-canonical-addresses-in-programmer-mode))
            :in-theory (e/d (relating-combine-bytes-and-part-select
                             program-at)
                            (acl2::commutativity-of-logior
@@ -648,7 +648,7 @@
                             (j 1) (addr-j addr) (r-x-j :x) (x86 x86)
                             (i (len bytes)) (addr-i prog-addr) (r-x-i :x)
                             (val (combine-bytes bytes)))
-                 (:instance program-at-implies-canonical-addresses))
+                 (:instance program-at-implies-canonical-addresses-in-programmer-mode))
            :in-theory (e/d (program-at)
                            (take rb rb-1 nth signed-byte-p)))))
 

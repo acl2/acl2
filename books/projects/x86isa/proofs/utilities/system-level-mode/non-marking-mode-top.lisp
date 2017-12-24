@@ -669,7 +669,7 @@
      :hints (("Goal" :in-theory (e/d* (loghead ash) ()))))))
 
 (local
- (defthmd rb-rb-same-start-address-different-op-sizes-helper
+ (defthmd rb-rb-same-start-address-different-op-sizes-non-marking-mode-helper
    (implies (and (equal (mv-nth 1 (rb i addr r-w-x x86)) val)
                  (canonical-address-p (+ -1 i addr))
                  (not (mv-nth 0 (las-to-pas i addr r-w-x x86)))
@@ -687,7 +687,7 @@
                               rb-rb-subset-helper-2)
                              (unsigned-byte-p))))))
 
-(defthmd rb-rb-same-start-address-different-op-sizes
+(defthmd rb-rb-same-start-address-different-op-sizes-non-marking-mode
   (implies (and (equal (mv-nth 1 (rb i addr r-w-x x86)) val)
                 (not (mv-nth 0 (las-to-pas i addr r-w-x x86)))
                 (posp j)
@@ -701,7 +701,7 @@
                   (loghead (ash j 3) val)))
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance rb-rb-same-start-address-different-op-sizes-helper)
+           :use ((:instance rb-rb-same-start-address-different-op-sizes-non-marking-mode-helper)
                  (:instance mv-nth-0-las-to-pas-subset-p-in-non-marking-mode
                             (n-1 i)
                             (addr-1 addr)
@@ -760,7 +760,7 @@
                             (unsigned-byte-p)))
           (if (equal (car id) '(0 1))
               '(:expand ((las-to-pas i addr-i r-w-x x86))
-                        :use ((:instance rb-rb-same-start-address-different-op-sizes
+                        :use ((:instance rb-rb-same-start-address-different-op-sizes-non-marking-mode
                                          (addr addr-i)))
                         :in-theory (e/d* (rb-rb-subset-helper-1
                                           rb-rb-subset-helper-2

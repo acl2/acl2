@@ -9,10 +9,10 @@
 ;; Misc. tools
 (include-book "tools/execution/top" :ttags :all)
 
-;; General-purpose code libraries: note that the proofs of correctness
-;; of various programs are excluded from the x86isa manual.
-(include-book "proofs/utilities/programmer-level-mode/top" :ttags :all)
-(include-book "proofs/utilities/system-level-mode/top" :ttags :all)
+;; General-purpose code libraries: note that we don't include
+;; proofs/top here --- the proofs of correctness of various programs
+;; are excluded from the x86isa manual.
+(include-book "proofs/utilities/top" :ttags :all)
 (include-book "std/strings/top" :dir :system)
 (include-book "defsort/defsort" :dir :system)
 
@@ -147,9 +147,9 @@ IA-32e mode.</p>
  of reasoning vs. execution efficiency that came up over the course of
  this project.  This x86 ISA model uses abstract stobjs to layer the
  state of the x86 machine such that the lower layer \(i.e., the
- concrete stobj\, see @(see x86-concrete-state)\) can be optimized for
+ concrete stobj\, see @(see concrete-state)\) can be optimized for
  execution efficiency and the upper layer \(i.e., the abstract stobj,
- see @(see x86-abstract-state)\) can be optimized for reasoning
+ see @(see abstract-state)\) can be optimized for reasoning
  efficiency, while a correspondence theorem is proved to hold between
  these two layers at all times.  Therefore, we get the benefit of both
  fast execution and effective reasoning.</p>
@@ -276,10 +276,10 @@ IA-32e mode.</p>
  since forgotten whether you built them with @('X86ISA_EXEC=t') or not.
  Here is a way of checking the certified books to see if you have full
  execution support. Look at the following file:
- @('machine/x86-syscalls.cert.out'). If this file contains the
+ @('machine/syscalls.cert.out'). If this file contains the
  following: </p>
 
- <code>X86ISA_EXEC Warning: x86-environment-and-syscalls-raw.lsp is not
+ <code>X86ISA_EXEC Warning: environment-and-syscalls-raw.lsp is not
  included.</code>
 
  <p>then you do <i>not</i> have @('SYSCALL') execution support.
@@ -336,7 +336,7 @@ IA-32e mode.</p>
   Provably Correct Systems (ProCoS), 2017</li>
 
  <li>Shilpi Goel. The @('x86isa') Books: Features, Usage, and Future
-  Plans}. In the Fourteenth International Workshop on the ACL2 Theorem
+  Plans. In the Fourteenth International Workshop on the ACL2 Theorem
   Prover and Its Applications (ACL2 Workshop), 2017</li>
 
  </ol>")
@@ -574,16 +574,16 @@ IA-32e mode.</p>
           "</ul>"))))
 
     `(defsection implemented-opcodes
-       :parents (x86-instructions)
+       :parents (instructions)
        :short "Opcodes supported by the x86 model"
        :long ,long-section)))
 
 (make-event (generate-implemented-opcodes-section state))
 
 (xdoc::order-subtopics
- x86-instructions
+ instructions
  (implemented-opcodes
-  x86-instruction-semantics
+  instruction-semantic-functions
   one-byte-opcodes
   two-byte-opcodes
   fp-opcodes
@@ -591,24 +591,24 @@ IA-32e mode.</p>
 
 (xdoc::order-subtopics
  machine
- (x86-concrete-state
-  x86-concrete-memory
-  x86-abstract-state
-  x86-state-field-theorems
+ (concrete-state
+  concrete-memory
+  abstract-state
+  state-field-theorems
   programmer-level-mode
   rflag-specifications
-  x86-register-readers-and-writers
-  Characterizing-undefined-behavior
-  x86-physical-memory
-  x86-linear-memory
-  x86-paging
-  x86-segmentation
-  x86-top-level-memory
-  x86-environment
-  x86-syscalls
+  register-readers-and-writers
+  characterizing-undefined-behavior
+  physical-memory
+  linear-memory
+  paging
+  segmentation
+  top-level-memory
+  environment
+  syscalls
   other-non-deterministic-computations
   decoding-and-spec-utils
-  x86-instructions
+  instructions
   x86-decoder))
 
 ;; ======================================================================

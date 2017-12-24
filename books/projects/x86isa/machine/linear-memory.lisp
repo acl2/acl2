@@ -18,7 +18,7 @@
 
 ;; ======================================================================
 
-(defsection x86-linear-memory
+(defsection linear-memory
   :parents (machine)
   :short "Linear Memory Accessor and Updater Functions"
   :long "<p>First, a quick note about virtual, linear, and physical
@@ -41,7 +41,7 @@ memory.</li>
 
 </ul>" )
 
-(local (xdoc::set-default-parents x86-linear-memory))
+(local (xdoc::set-default-parents linear-memory))
 
 ;; ======================================================================
 
@@ -423,7 +423,7 @@ memory.</li>
 ;; Events related to RB and WB:
 
 (defsection reasoning-about-memory-reads-and-writes
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :short "Definitions of @(see rb) and @(see wb)"
 
   :long "<p>The functions @('rb') (read bytes) and @('wb') (write
@@ -932,7 +932,7 @@ memory.</li>
 
   (define read-from-physical-memory ((p-addrs physical-address-listp)
                                      x86)
-    :parents (reasoning-about-memory-reads-and-writes x86-physical-memory)
+    :parents (reasoning-about-memory-reads-and-writes physical-memory)
     :enabled t
     :verify-guards nil
     :guard (not (programmer-level-mode x86))
@@ -1150,7 +1150,7 @@ memory.</li>
   (define write-to-physical-memory ((p-addrs physical-address-listp)
                                     (value natp)
                                     x86)
-    :parents (reasoning-about-memory-reads-and-writes x86-physical-memory)
+    :parents (reasoning-about-memory-reads-and-writes physical-memory)
     :enabled t
     :guard (not (programmer-level-mode x86))
     (if (endp p-addrs)
@@ -1717,7 +1717,7 @@ memory.</li>
                (r-x      :type (member  :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
                  :in-theory (e/d* (ifix rvm08) ())))
@@ -1846,7 +1846,7 @@ memory.</li>
                (r-x    :type (member  :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   (mv-let (flag val x86)
@@ -1872,7 +1872,7 @@ memory.</li>
                (val      :type (unsigned-byte 8))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal" :in-theory (e/d* (wvm08) ())))
 
@@ -1962,7 +1962,7 @@ memory.</li>
                (val      :type (signed-byte 8))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   (wml08 lin-addr (the (unsigned-byte 8) (n08 val)) x86)
@@ -1976,7 +1976,7 @@ memory.</li>
                (r-x      :type (member  :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm16 rml08)
                                         ())))
@@ -2059,7 +2059,7 @@ memory.</li>
                (r-x    :type (member  :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   (mv-let (flag val x86)
@@ -2086,7 +2086,7 @@ memory.</li>
    (val      :type (unsigned-byte 16))
    (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   :guard-hints (("Goal" :in-theory (e/d (wb-and-wvm16) ())))
@@ -2158,7 +2158,7 @@ memory.</li>
                (val      :type (signed-byte 16))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   (wml16 lin-addr (the (unsigned-byte 16) (n16 val)) x86)
@@ -2172,7 +2172,7 @@ memory.</li>
                (r-x    :type (member  :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm32 rml08)
                                         (rb-1
@@ -2283,7 +2283,7 @@ memory.</li>
                (r-x    :type (member  :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   (mv-let (flag val x86)
@@ -2309,7 +2309,7 @@ memory.</li>
                (val      :type (unsigned-byte 32))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   :guard-hints (("Goal" :in-theory (e/d (wb-and-wvm32)
@@ -2413,7 +2413,7 @@ memory.</li>
                (val      :type (signed-byte 32))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   (wml32 lin-addr (the (unsigned-byte 32) (n32 val)) x86)
@@ -2427,7 +2427,7 @@ memory.</li>
                (r-x      :type (member :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
                  :expand ((las-to-pas 6 lin-addr r-x x86)
@@ -2579,7 +2579,7 @@ memory.</li>
                (val      :type (unsigned-byte 48))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   :guard-hints (("Goal"
@@ -2710,7 +2710,7 @@ memory.</li>
                (r-x    :type (member  :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints
   (("Goal"
@@ -2911,7 +2911,7 @@ memory.</li>
                (r-x    :type (member  :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   (mv-let (flag val x86)
@@ -2937,7 +2937,7 @@ memory.</li>
                (val      :type (unsigned-byte 64))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   :guard-hints
@@ -3083,7 +3083,7 @@ memory.</li>
                (val      :type (signed-byte 64))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   (wml64 lin-addr (the (unsigned-byte 64) (n64 val)) x86)
@@ -3097,7 +3097,7 @@ memory.</li>
                (r-x      :type (member  :r :x))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints
   (("Goal"
@@ -3273,7 +3273,7 @@ memory.</li>
                (val      :type (unsigned-byte 80))
                (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints
   (("Goal"
@@ -3438,7 +3438,7 @@ memory.</li>
                 (r-x      :type (member :r :x))
                 (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
                  :in-theory (e/d (rb-and-rvm128
@@ -3680,7 +3680,7 @@ memory.</li>
                 (val      :type (unsigned-byte 128))
                 (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
 
   :guard-hints
@@ -3887,7 +3887,7 @@ memory.</li>
 
 (defsection Parametric-Memory-Reads-and-Writes
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   :short "Functions to read/write 8/16/32/64/128 bits into the memory:"
 
@@ -4205,7 +4205,7 @@ memory.</li>
    (x86))
 
   :inline t
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   :guard (and (canonical-address-p lin-addr)
               (canonical-address-p (+ 7 lin-addr))
@@ -4288,7 +4288,7 @@ memory.</li>
    (canonical-address :type (signed-byte #.*max-linear-address-size*))
    (x86))
 
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
   :guard-hints (("Goal" :in-theory (e/d (n16-to-i16)
                                         ())))
 
@@ -4337,12 +4337,12 @@ memory.</li>
 ;; ======================================================================
 
 (defsection program-location
-  :parents (x86-linear-memory)
+  :parents (linear-memory)
 
   (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
   (define byte-listp (x)
-    :parents (x86-linear-memory)
+    :parents (linear-memory)
     :short "Recognizer of a list of bytes"
     :enabled t
     (if (equal x nil)
@@ -4570,7 +4570,7 @@ memory.</li>
 
   (define program-at (prog-addr bytes x86)
 
-    :parents (x86-linear-memory)
+    :parents (linear-memory)
     :non-executable t
 
     :short "Predicate that makes a statement about a program's location

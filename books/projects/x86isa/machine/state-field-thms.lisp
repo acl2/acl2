@@ -7,7 +7,7 @@
 
 ;; ======================================================================
 
-(defsection x86-state-field-theorems
+(defsection state-field-theorems
 
   :parents (machine)
 
@@ -144,7 +144,7 @@ re-arrange these nests of updates.</p>
 
 (defsection x86-Preservation-Theorems
 
-  :parents (x86-state-field-theorems)
+  :parents (state-field-theorems)
 
   ;; Types of readers in terms of XR:
 
@@ -348,7 +348,7 @@ re-arrange these nests of updates.</p>
 
 (defsection x86-Writing-the-Read-Theorem
 
-  :parents (x86-state-field-theorems)
+  :parents (state-field-theorems)
 
   (defthmd xw-xr
     (implies (and (equal v (xr fld i x86))
@@ -357,7 +357,7 @@ re-arrange these nests of updates.</p>
 
 (defsection x86-RoW-Theorems
 
-  :parents (x86-state-field-theorems)
+  :parents (state-field-theorems)
 
   ;; [Shilpi]: Maybe I should write a single RoW theorem with meta
   ;; rules that weeds out all the independent writes.
@@ -381,7 +381,7 @@ re-arrange these nests of updates.</p>
 
 (defsection x86-WoW-Theorems
 
-  :parents (x86-state-field-theorems)
+  :parents (state-field-theorems)
 
   (defthm xw-xw-intra-array-field-shadow-writes
     (implies (member fld *x86-array-fields-as-keywords*)

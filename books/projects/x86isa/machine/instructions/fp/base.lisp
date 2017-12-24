@@ -18,7 +18,7 @@
 ;; ======================================================================
 
 (defsection floating-point-specifications
-  :parents (x86-instruction-semantics)
+  :parents (instruction-semantic-functions)
   :short "Misc. utilities for the specification of floating-point operations"
   )
 

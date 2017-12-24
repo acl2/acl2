@@ -8,7 +8,7 @@
 
 ;; ======================================================================
 
-(defsection x86-physical-memory
+(defsection physical-memory
 
   :parents (machine)
 
@@ -25,7 +25,7 @@ wm-low-32), are low-level read and write functions that access
 physical memory directly in the system-level mode.  We do not
 recommend using these functions at the top-level.</p>")
 
-(local (xdoc::set-default-parents x86-physical-memory))
+(local (xdoc::set-default-parents physical-memory))
 
 ;; ======================================================================
 
@@ -37,7 +37,7 @@ recommend using these functions at the top-level.</p>")
 ;; ======================================================================
 
 (define physical-address-p (phy-addr)
-  :parents (x86-physical-memory)
+  :parents (physical-memory)
   :inline t
   :enabled t
   (mbe :logic (unsigned-byte-p #.*physical-address-size* phy-addr)
@@ -46,7 +46,7 @@ recommend using these functions at the top-level.</p>")
                    (< phy-addr #.*mem-size-in-bytes*))))
 
 (define physical-address-listp (lst)
-  :parents (x86-physical-memory)
+  :parents (physical-memory)
   :short "Recognizer of a list of physical addresses"
   :enabled t
   (if (equal lst nil)
@@ -60,7 +60,7 @@ recommend using these functions at the top-level.</p>")
   :guard (and (natp count)
               (physical-address-p addr)
               (physical-address-p (+ addr count)))
-  :parents (x86-physical-memory)
+  :parents (physical-memory)
 
   :long "<p>Given a physical address @('addr'),
   @('create-physical-address-list') creates a list of physical
@@ -97,7 +97,7 @@ recommend using these functions at the top-level.</p>")
               (<= 0 addr)
               (< (+ 3 addr) *mem-size-in-bytes*))
   :inline t
-  :parents (x86-physical-memory)
+  :parents (physical-memory)
 
   (if (mbt (not (programmer-level-mode x86)))
 
@@ -154,7 +154,7 @@ recommend using these functions at the top-level.</p>")
               (<= 0 addr)
               (< (+ 7 addr) *mem-size-in-bytes*))
   :guard-hints (("Goal" :in-theory (e/d () (rm-low-32 force (force)))))
-  :parents (x86-physical-memory)
+  :parents (physical-memory)
 
   (if (mbt (not (programmer-level-mode x86)))
 
@@ -213,7 +213,7 @@ recommend using these functions at the top-level.</p>")
   :guard (and (not (programmer-level-mode x86))
               (< (+ 3 addr) *mem-size-in-bytes*))
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
-  :parents (x86-physical-memory)
+  :parents (physical-memory)
 
   (if (mbt (not (programmer-level-mode x86)))
 
@@ -268,7 +268,7 @@ recommend using these functions at the top-level.</p>")
   :guard (and (not (programmer-level-mode x86))
               (< (+ 7 addr) *mem-size-in-bytes*))
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
-  :parents (x86-physical-memory)
+  :parents (physical-memory)
 
   (if (mbt (not (programmer-level-mode x86)))
 
