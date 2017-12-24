@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "x86-row-wow-thms" :ttags :all :dir :proof-utils)
+(include-book "row-wow-thms" :ttags :all :dir :proof-utils)
 (include-book "general-memory-utils" :ttags :all :dir :proof-utils)
 
 (local (include-book "gl-lemmas"))

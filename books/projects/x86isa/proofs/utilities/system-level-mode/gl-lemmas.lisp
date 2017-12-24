@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "x86-paging" :dir :machine)
+(include-book "paging" :dir :machine)
 (local (include-book "centaur/gl/gl" :dir :system))
 
 ;; ======================================================================

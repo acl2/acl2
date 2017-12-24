@@ -18,16 +18,15 @@
 
 ;; ======================================================================
 
-;; Files will be copied from X86ISA/x86-images to res/x86-images of
-;; the x86 manual.
-(xdoc::add-resource-directory "x86-images" "x86-images")
+;; Files will be copied from X86ISA/images to res/images of the x86
+;; manual.
+(xdoc::add-resource-directory "images" "images")
 
 (defxdoc X86ISA
   :parents (acl2::software-verification acl2::projects)
   :short "x86 ISA model and machine-code analysis framework developed
   at UT Austin"
-  :long "<p><img src='res/x86-images/x86isa.png' /></p>"
-  )
+  :long "<p><img src='res/images/x86isa.png' /></p>")
 
 (xdoc::order-subtopics
  X86ISA
@@ -295,7 +294,7 @@ IA-32e mode.</p>
   :long "<p>Doc topic coming soon!  For now, here's an illustrative
   image.</p>
 
-<p><img src='res/x86-images/cosim.png' /></p>")
+<p><img src='res/images/cosim.png' /></p>")
 
 (defxdoc Publications
   :parents (x86isa)
@@ -608,7 +607,7 @@ IA-32e mode.</p>
   x86-environment
   x86-syscalls
   other-non-deterministic-computations
-  x86-decoding-and-spec-utils
+  decoding-and-spec-utils
   x86-instructions
   x86-decoder))
 
