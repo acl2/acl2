@@ -36,7 +36,7 @@
                   (revappend ac l)))
   :hints (("Goal" :induct (revappend l ac)) )
   :rule-classes ((:rewrite :corollary
-                           (implies (and (true-listp l) (equal i (len l)))
+                           (implies (and (equal i (len l)) (true-listp l))
                                     (equal (first-n-ac i l ac) (revappend ac l)))) ))
 
 (defthm assoc-after-delete-assoc
@@ -178,3 +178,33 @@
                   (if (< n (len x))
                       (nth (- (len x) (+ n 1)) x)
                       (nth (- n (len x)) y)))))
+
+(defthm true-listp-of-make-list-ac
+  (implies (true-listp ac)
+           (true-listp (make-list-ac n val ac))))
+
+(defthm len-of-make-list-ac
+  (implies (and (integerp n) (>= n 0))
+           (equal (len (make-list-ac n val ac))
+                  (+ n (len ac)))))
+
+(defthm boolean-listp-of-make-list-ac
+  (implies (booleanp val)
+           (equal (boolean-listp (make-list-ac n val ac))
+                  (boolean-listp ac))))
+
+(defthm booleanp-of-car-make-list
+  (implies (and (booleanp val)
+                (boolean-listp ac)
+                (> (+ n (len ac)) 0))
+           (booleanp (car (make-list-ac n val ac)))))
+
+(defthm car-of-make-list
+  (equal (car (make-list-ac n val ac))
+         (if (zp n) (car ac) val)))
+
+(defthm cdr-of-make-list
+  (equal (cdr (make-list-ac n val ac))
+         (if (zp n)
+             (cdr ac)
+             (make-list-ac (- n 1) val ac))))
