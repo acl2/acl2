@@ -41,7 +41,8 @@
    (indices-marked-p (binary-append x y) alv)
    (and (indices-marked-p x alv) (indices-marked-p y alv))))
 
-(defthm indices-marked-p-correctness-3
+(defthm
+  indices-marked-p-correctness-3
   (implies (and (nat-listp index-list1)
                 (nat-listp index-list2)
                 (boolean-listp alv)
@@ -49,17 +50,19 @@
                 (bounded-nat-listp index-list1 (len alv)))
            (indices-marked-p index-list1
                              (set-indices-in-alv alv index-list2 t)))
-  :hints (("Subgoal *1/5''"
-           :use ((:instance set-indices-in-alv-correctness-3
-                            (value t)
-                            (n (car index-list1))
-                            (index-list index-list2))
-                 (:instance set-indices-in-alv-correctness-4
-                            (value t)
-                            (n (car index-list1))
-                            (index-list index-list2)))
-           :cases (member-equal (car index-list1)
-                                                   index-list2)) ))
+  :hints
+  (("subgoal *1/5''" :in-theory (disable set-indices-in-alv-correctness-3
+                                         set-indices-in-alv-correctness-4)
+    :use ((:instance set-indices-in-alv-correctness-3
+                     (value t)
+                     (n (car index-list1))
+                     (index-list index-list2))
+          (:instance set-indices-in-alv-correctness-4
+                     (value t)
+                     (n (car index-list1))
+                     (index-list index-list2)))
+    :cases (member-equal (car index-list1)
+                         index-list2))))
 
 (encapsulate
   ()
@@ -109,8 +112,7 @@
   (l3-stat hns fs disk))
 
 (defun l4-rdchs (hns fs disk start n)
-  (declare (xargs :guard-debug t
-                  :guard (and (symbol-listp hns)
+  (declare (xargs :guard (and (symbol-listp hns)
                               (l4-fs-p fs)
                               (natp start)
                               (natp n)
@@ -124,8 +126,7 @@
                               (stringp text)
                               (block-listp disk)
                               (boolean-listp alv)
-                              (equal (len alv) (len disk)))
-                  :guard-debug t))
+                              (equal (len alv) (len disk)))))
   (if (atom hns)
       (mv fs disk alv) ;; error - showed up at fs with no name  - so leave fs unchanged
     (if (atom fs)
@@ -172,18 +173,18 @@
                     new-alv)))
             ))))))
 
-(defund l4-list-all-indices (fs)
+(defund
+  l4-list-all-indices (fs)
   (declare (xargs :guard (l4-fs-p fs)))
   (if (atom fs)
       nil
-    (binary-append
-     (let ((directory-or-file-entry (car fs)))
-       (let ((entry (cdr directory-or-file-entry)))
-         (if (l4-regular-file-entry-p entry)
-             (car entry)
-           (l4-list-all-indices entry))))
-         (l4-list-all-indices (cdr fs))))
-  )
+      (binary-append
+       (let ((directory-or-file-entry (car fs)))
+            (let ((entry (cdr directory-or-file-entry)))
+                 (if (l4-regular-file-entry-p entry)
+                     (car entry)
+                     (l4-list-all-indices entry))))
+       (l4-list-all-indices (cdr fs)))))
 
 (defthm l4-list-all-indices-correctness-1
   (implies (l4-fs-p fs)
@@ -191,7 +192,7 @@
   :hints (("Goal" :in-theory (enable l4-list-all-indices)) ))
 
 (defun l4-stricter-fs-p (fs alv)
-  (declare (xargs :guard t :guard-debug t))
+  (declare (xargs :guard t))
   (and (l4-fs-p fs)
        (boolean-listp alv)
        (let ( (all-indices (l4-list-all-indices fs)))
@@ -419,6 +420,39 @@
            (not-intersectp-list (find-n-free-blocks alv n)
                                 (l4-collect-all-index-lists fs))))
 
+(encapsulate ()
+  (local (include-book "std/basic/inductions" :dir :system))
+
+  (defcong list-equiv equal (indices-marked-p index-list alv) 1
+    :hints
+    (("goal"
+      :induct (cdr-cdr-induct index-list index-list-equiv))))
+
+  (defcong list-equiv equal (fetch-blocks-by-indices block-list index-list) 2
+    :hints
+    (("goal"
+      :induct (cdr-cdr-induct index-list index-list-equiv))))
+
+
+  (defcong list-equiv equal (l4-list-all-indices fs) 1
+    :hints (("Goal" :in-theory (enable l4-list-all-indices)
+             :induct (cdr-cdr-induct fs fs-equiv))
+            ("Subgoal *1/2''" :expand ((l4-list-all-indices fs)
+                                       (l4-list-all-indices fs-equiv)))))
+
+  (defcong list-equiv equal (l3-to-l2-fs fs disk) 1
+    :hints (("goal" :induct (cdr-cdr-induct fs fs-equiv))
+            ("Subgoal *1/2''" :expand ((l3-to-l2-fs fs disk)
+                                       (l3-to-l2-fs fs-equiv disk)))))
+
+  )
+
+(defcong list-equiv equal (indices-marked-p index-list alv) 2)
+
+(defcong list-equiv list-equiv
+  (set-indices-in-alv alv index-list value) 1
+  :hints (("goal" :in-theory (enable set-indices-in-alv))))
+
 (defthm l4-wrchs-returns-stricter-fs-lemma-17
   (implies (and (boolean-listp alv)
                 (nat-listp l)
@@ -466,6 +500,8 @@
                 (indices-marked-listp l alv))
            (not-intersectp-list (find-n-free-blocks alv n)
                                 l)))
+
+(defcong list-equiv equal (INDICES-MARKED-LISTP L ALV) 2)
 
 (defthm
   l4-wrchs-returns-stricter-fs-lemma-22
@@ -780,6 +816,8 @@
            (equal (l2-rdchs hns (l4-to-l2-fs fs disk) start n)
                   (l4-rdchs hns fs disk start n))))
 
+(defcong list-equiv equal (fetch-blocks-by-indices block-list index-list) 1)
+
 (defthm
   l4-wrchs-correctness-1-lemma-1
   (implies (and (natp key)
@@ -814,6 +852,8 @@
                               (l4-list-all-indices (cdr (car fs)))))
            (member-equal index (l4-list-all-indices fs)))
   :hints (("goal" :expand (l4-list-all-indices fs))))
+
+(defcong list-equiv equal (l3-to-l2-fs fs disk) 2)
 
 (defthm l4-wrchs-correctness-1-lemma-5
   (implies (and (l3-fs-p fs)

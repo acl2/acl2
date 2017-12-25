@@ -43,57 +43,62 @@
            (equal (len (set-indices v index-list value-list))
                   (len v))))
 
-(encapsulate
-  ( ((set-indices-in-alv * * *) => *) )
+(defthm set-indices-correctness-4
+  (implies (and (boolean-listp v)
+                (nat-listp index-list)
+                (boolean-listp value-list)
+                (equal (len index-list)
+                       (len value-list)))
+           (boolean-listp (set-indices v index-list value-list))))
 
-  (local (include-book "std/lists/repeat" :dir :system))
+(defund set-indices-in-alv (alv index-list value)
+  (declare (xargs :guard (and (boolean-listp alv)
+                              (nat-listp index-list)
+                              (booleanp value))))
+  (set-indices alv index-list (make-list (len index-list) :initial-element value)))
 
-  (local
-   (defun set-indices-in-alv (alv index-list value)
-     (declare (xargs :guard (and (boolean-listp alv)
-                                 (bounded-nat-listp index-list (len alv))
-                                 (booleanp value))))
-     (set-indices alv index-list (repeat (len index-list) value))))
+(defthm
+  set-indices-in-alv-correctness-1
+  (implies
+   (and (boolean-listp alv)
+        (booleanp value))
+   (boolean-listp (set-indices-in-alv alv index-list value)))
+  :rule-classes (:type-prescription :rewrite)
+  :hints (("Goal" :in-theory (enable set-indices-in-alv))))
 
-  (defthm
-    set-indices-in-alv-correctness-1
-    (implies
-     (and (boolean-listp alv)
-          (booleanp value))
-     (boolean-listp (set-indices-in-alv alv index-list value)))
-    :rule-classes (:type-prescription :rewrite))
+(defthm
+  set-indices-in-alv-correctness-2
+  (implies
+   (and (boolean-listp alv)
+        (booleanp value)
+        (bounded-nat-listp index-list (len alv)))
+   (equal (len (set-indices-in-alv alv index-list value))
+          (len alv)))
+  :hints (("Goal" :in-theory (enable set-indices-in-alv))))
 
-  (defthm
-    set-indices-in-alv-correctness-2
-    (implies
-     (and (boolean-listp alv)
-          (booleanp value)
-          (bounded-nat-listp index-list (len alv)))
-     (equal (len (set-indices-in-alv alv index-list value))
-            (len alv))))
+(defthm
+  set-indices-in-alv-correctness-3
+  (implies
+   (and (boolean-listp alv)
+        (nat-listp index-list)
+        (booleanp value)
+        (member-equal n index-list)
+        (< n (len alv)))
+   (equal (nth n
+               (set-indices-in-alv alv index-list value))
+          value))
+  :hints (("Goal" :in-theory (enable set-indices-in-alv))))
 
-  (defthm
-    set-indices-in-alv-correctness-3
-    (implies
-     (and (boolean-listp alv)
-          (nat-listp index-list)
-          (booleanp value)
-          (member-equal n index-list)
-          (< n (len alv)))
-     (equal (nth n
-                 (set-indices-in-alv alv index-list value))
-            value)))
-
-  (defthm
-    set-indices-in-alv-correctness-4
-    (implies
-     (and (boolean-listp alv)
-          (nat-listp index-list)
-          (booleanp value)
-          (natp n)
-          (not (member-equal n index-list))
-          (< n (len alv)))
-     (equal (nth n
-                 (set-indices-in-alv alv index-list value))
-            (nth n alv))))
-  )
+(defthm
+  set-indices-in-alv-correctness-4
+  (implies
+   (and (boolean-listp alv)
+        (nat-listp index-list)
+        (booleanp value)
+        (natp n)
+        (not (member-equal n index-list))
+        (< n (len alv)))
+   (equal (nth n
+               (set-indices-in-alv alv index-list value))
+          (nth n alv)))
+  :hints (("Goal" :in-theory (enable set-indices-in-alv))))
