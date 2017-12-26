@@ -524,12 +524,7 @@
        ((eq fn 'SUITABLY-TAMEP-LISTP) *generic-tame-badge-3*)
        ((eq fn 'APPLY$) *apply$-badge*)
        ((eq fn 'EV$) *ev$-badge*)
-       (t (cdr
-           (assoc-eq
-            fn
-            (cdr
-             (assoc-eq :badge-userfn-structure
-                       (table-alist 'badge-table wrld)))))))))
+       (t (get-badge fn wrld)))))
    (t nil)))
 
 ; Compare this to the TAMEP clique.
@@ -1790,19 +1785,6 @@
 ; apply$-userfn, not badge and apply$, as shown above; but the rewrite rule
 ; indeed deals with badge and apply$.  We deal with this later.)
 
-(defun warrant-name (fn)
-
-; From fn generate the name APPLY$-WARRANT-fn.
-
-  (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
-                  :guard (symbolp fn)))
-  (intern-in-package-of-symbol
-   (coerce
-    (append '(#\A #\P #\P #\L #\Y #\$ #\- #\W #\A #\R #\R #\A #\N #\T #\-)
-            (coerce (symbol-name fn) 'list))
-    'string)
-   fn))
-
 (defun warrant-fn (names)
 
 ; This is a helper function for the macro warrant.  Given (a b c) we return
@@ -1835,137 +1817,14 @@
 ;                                   (cadr args)))))))
 
 ; (BTW: The actual warrant is phrased in terms of badge-userfn and
-; apply$-userfn, not badge and apply$, as shown above; but the rewreite rule
+; apply$-userfn, not badge and apply$, as shown above; but the rewrite rule
 ; indeed deals with badge and apply$.  We deal with this later.)
 
-; Here are the relevant two functions.
-
-(defun tameness-conditions (ilks var)
-  (declare (xargs :mode :program))
-  (cond ((endp ilks) nil)
-        ((eq (car ilks) :FN)
-         (cons `(TAMEP-FUNCTIONP (CAR ,var))
-               (tameness-conditions (cdr ilks) (list 'CDR var))))
-        ((eq (car ilks) :EXPR)
-         (cons `(TAMEP (CAR ,var))
-               (tameness-conditions (cdr ilks) (list 'CDR var))))
-        (t (tameness-conditions (cdr ilks) (list 'CDR var)))))
-
-(defun successive-cadrs (formals var)
-  (declare (xargs :mode :program))
-  (cond ((endp formals) nil)
-        (t
-         (cons `(CAR ,var)
-               (successive-cadrs (cdr formals) (list 'CDR var))))))
-
-; Recall the ``BTW'' notes above.  We need to convert the lemma provided
-; by defun-sk into an effective rewrite rule.  To do that we need a hint
-; and this function creates that hint.
-
-(defun necc-name-ARGS-instance (ilks)
-
-; This odd little function is used to generate an :instance hint.  Search below
-; for :instance to see the application.  But imagine that you wanted a concrete
-; list, e.g., '(x y z), of actuals satisfying the given ilks, e.g., (NIL :FN
-; :EXPR).  Then, for this example, a suitable list would be '(NIL EQUAL T).
-; (Indeed, so would '(NIL ZP NIL), but we just need some suitable list.)  We
-; generate it here.  Note that the resulting list will be QUOTEd, so we return
-; evgs here.
-
-  (declare (xargs :guard (true-listp ilks) :mode :logic))
-  (cond ((endp ilks) nil)
-        ((eq (car ilks) :fn)
-         (cons 'EQUAL (necc-name-ARGS-instance (cdr ilks))))
-        ((eq (car ilks) :expr)
-         (cons T (necc-name-ARGS-instance (cdr ilks))))
-        (t (cons NIL (necc-name-ARGS-instance (cdr ilks))))))
-
-(defun def-warrant-event (fn formals bdg)
-
-; This function should not be called when (access apply$-badge bdg
-; :authorization-flg) is nil!
-
-; This function returns a list of events that add the appropriate defun-sk
-; event for fn and then proves the necessary rewrite rule.
-
-  (declare (xargs :mode :program))
-  (assert$
-   (access apply$-badge bdg :authorization-flg)
-   (let* ((name (warrant-name fn))
-          (rule-name (intern-in-package-of-symbol
-                      (coerce (append '(#\A #\P #\P #\L #\Y #\$ #\-)
-                                      (coerce (symbol-name fn) 'list))
-                              'string)
-                      fn))
-          (necc-name (intern-in-package-of-symbol
-                      (coerce
-                       (append (coerce (symbol-name name) 'list)
-                               '(#\- #\N #\E #\C #\C))
-                       'string)
-                      fn)))
-     (cond
-      ((null (access apply$-badge bdg :authorization-flg))
-       (er hard 'def-warrant-event
-           "We attempted to introduce a warrant for a function, ~x0, whose ~
-            badge has :authorization-flg = NIL!  This is an implementation ~
-            error."
-           fn))
-      ((eq (access apply$-badge bdg :ilks) t)
-       `((defun-sk ,name ()
-           (forall (args)
-             (and (equal (badge-userfn ',fn) ',bdg)
-                  (equal (apply$-userfn ',fn args)
-                         (,fn ,@(successive-cadrs formals 'args))))))
-         (in-theory (disable ,name))
-         (defthm ,rule-name
-           (implies (force (,(warrant-name fn)))
-                    (and (equal (badge ',fn) ',bdg)
-                         (equal (apply$ ',fn args)
-                                (,fn ,@(successive-cadrs formals 'args)))))
-           :hints (("Goal" :use ,necc-name
-                    :expand ((:free (x) (HIDE (badge x))))
-                    :in-theory (e/d (badge apply$)
-                                    (,necc-name)))))))
-      (t
-       (let* ((hyp-list (tameness-conditions (access apply$-badge bdg :ilks)
-                                             'ARGS))
-              (hyp (if (null (cdr hyp-list))
-                       (car hyp-list)
-                     `(AND ,@hyp-list))))
-         `((defun-sk ,name ()
-             (forall (args)
-               (implies ,hyp
-                        (and (equal (badge-userfn ',fn) ',bdg)
-                             (equal (apply$-userfn ',fn args)
-                                    (,fn ,@(successive-cadrs formals 'args)))))))
-           (in-theory (disable ,name))
-           (defthm ,rule-name
-             (and (implies (force (,(warrant-name fn)))
-                           (equal (badge ',fn) ',bdg))
-                  (implies (and (force (,(warrant-name fn)))
-                                ,hyp)
-                           (equal (apply$ ',fn args)
-                                  (,fn ,@(successive-cadrs formals 'args)))))
-
-; Notice that the necc-name theorem is of the form (forall (args) (and ...))
-; but the theorem above is essentially (and ... (forall (args) ...)) because
-; the first conjunct is free of ARGS.  We had to write necc-name that way
-; because of the requirements of defun-sk.  But now we have to extract the fact
-; that we know (APPLY$-WARRANT fn) --> (badge 'fn) = <whatever>, by instantiating
-; necc-name with a suitable ARGS that makes the right components suitably tame.
-
-; The first :instance below takes care of the badge conjunct and the second
-; takes care of the apply$ conjunct.
-
-             :hints
-             (("Goal"
-               :use ((:instance ,necc-name
-                                (ARGS ',(necc-name-ARGS-instance
-                                         (access apply$-badge bdg :ilks))))
-                     (:instance ,necc-name))
-               :expand ((:free (x) (HIDE (badge x))))
-               :in-theory (e/d (badge apply$)
-                               (,necc-name))))))))))))
+; We originally introduced def-warrant-event here, preceded by supporting
+; functions tameness-conditions, successive-cadrs, and necc-name-ARGS-instance.
+; However, we call def-warrant-event in the definition of warrantp, which in
+; turn is called in the implementation of defattach in file other-events.lisp.
+; So those definitions now appear in that file.
 
 (defun def-warrant-fn1 (fn state)
   (declare (xargs :mode :program))
@@ -2015,6 +1874,7 @@
                          (cdr (assoc :badge-userfn-structure
                                      (table-alist 'badge-table world))))
                    :put)
+            (defattach ,(warrant-name fn) true-apply$-warrant)
             ,@(if (eq (access apply$-badge bdg :ilks) t)
                   nil
                 (defcong-fn-equal-equal-events

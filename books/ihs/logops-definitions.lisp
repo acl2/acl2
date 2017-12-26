@@ -261,7 +261,7 @@
   <p>If you find yourself going down this road, you might see in particular Dave
   Greve's \"Parameterized Congruences\" paper from the 2006 workshop, which is
   implemented in the coi/nary/nary.lisp book.  You could also look at Sol
-  Swords' book to do something similar, see :doc contextual-rewriting.</p>")
+  Swords' book to do something similar, see @(see contextual-rewriting).</p>")
 
 
 (defsection signed-byte-p-basics

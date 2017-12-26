@@ -262,12 +262,7 @@
         nil))
    (t
     (let ((bdg ; the badge of nonprim fn, if any
-           (cdr
-            (assoc-eq
-             fn
-             (cdr
-              (assoc-eq :badge-userfn-structure
-                        (table-alist 'badge-table wrld)))))))
+           (get-badge fn wrld)))
       (cond
        ((null bdg) ; fn is a function symbol with no badge assigned
         (cond ((null msgp) (mv t nil))
