@@ -283,7 +283,9 @@
   ',(first-order-like-terms-and-out-arities (w state)))
 ))
 
-(defrec apply$-badge (authorization-flg arity . ilks) nil)
+; We originally defined the apply$-badge record here.  But it is needed in
+; warrantp, which is needed in defattach-constraint-rec.
+; (defrec apply$-badge (authorization-flg arity . ilks) nil)
 
 ; These constants are not actually used in this book but are used in several
 ; books that include apply-prim.lisp so we define them once, here.

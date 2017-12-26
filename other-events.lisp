@@ -26516,6 +26516,214 @@
       (prove-defattach-guards1 1 n attachment-alist attachment-alist
                                helpers-lst ctx ens wrld state nil)))))
 
+; We next introduce several events in support of the special treatment of
+; warrants given by defattach.
+
+(defun true-apply$-warrant ()
+  (declare (xargs :guard t :mode :logic))
+  t)
+
+(defun warrant-name (fn)
+
+; Warning: Keep this in sync with warrant-name-inverse.
+
+; From fn generate the name APPLY$-WARRANT-fn.
+
+  (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
+                  :guard (symbolp fn))) 
+  (intern-in-package-of-symbol
+   (concatenate 'string
+                "APPLY$-WARRANT-"
+                (symbol-name fn))
+   fn))
+
+(defun warrant-name-inverse (warrant-fn)
+
+; Warning: Keep this in sync with warrant-name.
+
+  (declare (xargs :guard (symbolp warrant-fn)))
+  (let ((warrant-fn-name (symbol-name warrant-fn)))
+    (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
+         (intern-in-package-of-symbol
+          (subseq warrant-fn-name
+                  15 ; (length "APPLY$-WARRANT-")
+                  (length warrant-fn-name))
+          warrant-fn))))
+
+(defmacro get-badge (fn wrld)
+  `(cdr (assoc-eq ,fn
+                  (cdr (assoc-eq :badge-userfn-structure
+                                 (table-alist 'badge-table ,wrld))))))
+
+(defrec apply$-badge (authorization-flg arity . ilks) nil)
+
+(defun tameness-conditions (ilks var)
+  (declare (xargs :mode :program))
+  (cond ((endp ilks) nil)
+        ((eq (car ilks) :FN)
+         (cons `(TAMEP-FUNCTIONP (CAR ,var))
+               (tameness-conditions (cdr ilks) (list 'CDR var))))
+        ((eq (car ilks) :EXPR)
+         (cons `(TAMEP (CAR ,var))
+               (tameness-conditions (cdr ilks) (list 'CDR var))))
+        (t (tameness-conditions (cdr ilks) (list 'CDR var)))))
+
+(defun successive-cadrs (formals var)
+  (declare (xargs :mode :program))
+  (cond ((endp formals) nil)
+        (t
+         (cons `(CAR ,var)
+               (successive-cadrs (cdr formals) (list 'CDR var))))))
+
+; As described in the ``BTW'' notes in the DEF-WARRANT section of apply.lisp,
+; we need to convert the lemma provided by defun-sk into an effective rewrite
+; rule.  To do that we need a hint and this function creates that hint.
+
+(defun necc-name-ARGS-instance (ilks)
+
+; This odd little function is used to generate an :instance hint.  Search below
+; for :instance to see the application.  But imagine that you wanted a concrete
+; list, e.g., '(x y z), of actuals satisfying the given ilks, e.g., (NIL :FN
+; :EXPR).  Then, for this example, a suitable list would be '(NIL EQUAL T).
+; (Indeed, so would '(NIL ZP NIL), but we just need some suitable list.)  We
+; generate it here.  Note that the resulting list will be QUOTEd, so we return
+; evgs here.
+
+  (declare (xargs :guard (true-listp ilks) :mode :logic))
+  (cond ((endp ilks) nil)
+        ((eq (car ilks) :fn)
+         (cons 'EQUAL (necc-name-ARGS-instance (cdr ilks))))
+        ((eq (car ilks) :expr)
+         (cons T (necc-name-ARGS-instance (cdr ilks))))
+        (t (cons NIL (necc-name-ARGS-instance (cdr ilks))))))
+
+(defun def-warrant-event (fn formals bdg)
+
+; This function should not be called when (access apply$-badge bdg
+; :authorization-flg) is nil!
+
+; This function returns a list of events that add the appropriate defun-sk
+; event for fn and then proves the necessary rewrite rule.
+
+  (declare (xargs :mode :program))
+  (assert$
+   (access apply$-badge bdg :authorization-flg)
+   (let* ((name (warrant-name fn))
+          (rule-name (intern-in-package-of-symbol
+                      (coerce (append '(#\A #\P #\P #\L #\Y #\$ #\-)
+                                      (coerce (symbol-name fn) 'list))
+                              'string)
+                      fn))
+          (necc-name (intern-in-package-of-symbol
+                      (coerce
+                       (append (coerce (symbol-name name) 'list)
+                               '(#\- #\N #\E #\C #\C))
+                       'string)
+                      fn)))
+     (cond
+      ((null (access apply$-badge bdg :authorization-flg))
+       (er hard 'def-warrant-event
+           "We attempted to introduce a warrant for a function, ~x0, whose ~
+            badge has :authorization-flg = NIL!  This is an implementation ~
+            error."
+           fn))
+      ((eq (access apply$-badge bdg :ilks) t)
+       `((defun-sk ,name ()
+           (forall (args)
+             (and (equal (badge-userfn ',fn) ',bdg)
+                  (equal (apply$-userfn ',fn args)
+                         (,fn ,@(successive-cadrs formals 'args)))))
+           :constrained t)
+         (in-theory (disable ,(definition-rule-name name)))
+         (defthm ,rule-name
+           (implies (force (,(warrant-name fn)))
+                    (and (equal (badge ',fn) ',bdg)
+                         (equal (apply$ ',fn args)
+                                (,fn ,@(successive-cadrs formals 'args)))))
+           :hints (("Goal" :use ,necc-name
+                    :expand ((:free (x) (HIDE (badge x))))
+                    :in-theory (e/d (badge apply$)
+                                    (,necc-name)))))))
+      (t
+       (let* ((hyp-list (tameness-conditions (access apply$-badge bdg :ilks)
+                                             'ARGS))
+              (hyp (if (null (cdr hyp-list))
+                       (car hyp-list)
+                     `(AND ,@hyp-list))))
+         `((defun-sk ,name ()
+             (forall (args)
+               (implies ,hyp
+                        (and (equal (badge-userfn ',fn) ',bdg)
+                             (equal (apply$-userfn ',fn args)
+                                    (,fn ,@(successive-cadrs formals
+                                                             'args))))))
+             :constrained t)
+           (in-theory (disable ,(definition-rule-name name)))
+           (defthm ,rule-name
+             (and (implies (force (,(warrant-name fn)))
+                           (equal (badge ',fn) ',bdg))
+                  (implies (and (force (,(warrant-name fn)))
+                                ,hyp)
+                           (equal (apply$ ',fn args)
+                                  (,fn ,@(successive-cadrs formals 'args)))))
+
+; Notice that the necc-name theorem is of the form (forall (args) (and ...))
+; but the theorem above is essentially (and ... (forall (args) ...)) because
+; the first conjunct is free of ARGS.  We had to write necc-name that way
+; because of the requirements of defun-sk.  But now we have to extract the fact
+; that we know (APPLY$-WARRANT fn) --> (badge 'fn) = <whatever>, by instantiating
+; necc-name with a suitable ARGS that makes the right components suitably tame.
+
+; The first :instance below takes care of the badge conjunct and the second
+; takes care of the apply$ conjunct.
+
+             :hints
+             (("Goal"
+               :use ((:instance ,necc-name
+                                (ARGS ',(necc-name-ARGS-instance
+                                         (access apply$-badge bdg :ilks))))
+                     (:instance ,necc-name))
+               :expand ((:free (x) (HIDE (badge x))))
+               :in-theory (e/d (badge apply$)
+                               (,necc-name))))))))))))
+
+(defun warrantp (warrant-fn wrld)
+
+; We check whether warrant-fn is the warrant of some function, fn.  A
+; sufficient condition is that both of the following hold.  (a) Warrant-fn was
+; introduced by an encapsulate event that agrees with what is expected: an
+; encapsulate generated by a defun-sk with :constrain t, which is generated by
+; (def-warrant fn).  (b) Fn is in the badge-table with a true
+; authorization-flg.
+
+  (let* ((fn (warrant-name-inverse warrant-fn))
+         (badge (and fn
+                     (eq warrant-fn (warrant-name fn))
+                     (get-badge fn wrld))))
+    (and badge
+         (access apply$-badge badge :authorization-flg)
+
+; If we get this far, then we have condition (b) above.  We now check (a).
+
+         (let ((encap-ev (get-event warrant-fn wrld))
+               (defun-sk-ev (car (def-warrant-event
+                                   fn
+                                   (formals fn wrld)
+                                   badge))))
+           (and encap-ev
+                (mv-let (erp ev1)
+                  (macroexpand1-cmp
+                   defun-sk-ev
+                   'warrantp
+                   wrld
+                   (default-state-vars nil))
+                  (and (null erp)
+                       (case-match ev1
+                         (('encapsulate 'nil . rest)
+                          (member-equal encap-ev rest))
+                         (& nil))
+                       t)))))))
+
 (defun defattach-constraint-rec (alist full-alist proved-fnl-insts-alist
                                        constraint event-names
                                        new-entries seen wrld)
@@ -26525,8 +26733,21 @@
 
 ; Alist is a tail of full-alist, an attachment-alist.
 
-  (cond ((null alist)
+  (cond ((endp alist)
          (mv constraint event-names new-entries))
+        ((and (eq (cdar alist)
+                  'true-apply$-warrant)
+
+; We are considering the case of a pair (f . g), where f is a warrant and g is
+; true-apply$-warrant, which is the always-true function we have chosen to
+; attach to warrants.  The argument supporting attachments of dopplegangers
+; also supports the attachment of each warrant to true-apply$-warrant, because
+; in the doppleganger model, every warrant is true.
+
+              (warrantp (caar alist) wrld))
+         (defattach-constraint-rec
+           (cdr alist) full-alist proved-fnl-insts-alist constraint
+           event-names new-entries seen wrld))
         (t
          (mv-let
           (name x)
@@ -27426,13 +27647,73 @@
   (cond
    ((endp attachments)
     (value records))
-   (t (let* ((pair (car attachments))
-             (f-canon (canonical-sibling (car pair) wrld))
-             (g-canon (canonical-sibling (cdr pair) wrld)))
-        (er-let*
-         ((records (update-attachment-records pair f-canon g-canon records wrld
-                                              ctx state)))
-         (attachment-records (cdr attachments) records wrld ctx state))))))
+   (t (let ((pair (car attachments)))
+        (cond
+         ((warrantp (car pair) wrld)
+
+; For the purpose of finding loops, we can ignore attachments to warrants.  The
+; reason is that we can view attachments as being done in two stages: first,
+; the user does some attachments, and we check here for cycles; then, the
+; resulting evaluation theory is extended to a bigger evaluation theory in
+; which functions are attached to their dopplegangers, and where the warrants
+; are all true.  That second step is justified in the paper, ``Limited Second
+; Order Functionality in a First Order Setting'', where we prove that for any
+; certified user book we could attach defined functions to badge-userfn and
+; apply$-userfn so that all the warrants are valid in the resulting evaluation
+; theory.
+
+; This little change can make a big difference.  We ran some tests, in each
+; case turning off output first with (set-inhibit-output-lst
+; *valid-output-names*).  First, we ran (tests 1000), which introduces 1000
+; definitions and then times 1000 corresponding defattach events.  That took
+; 0.15 seconds.  Then in a new session, we ran (tests+ 1000), which is similar
+; to (tests 1000) except that it first introduced 1000 defun$ events -- hence,
+; and more to the point, 1000 def-warrant events.  The time reported for the
+; 1000 defattach events went up from 0.15 seconds to more than 4.5 seconds.
+; With the change implemented here, the time for (tests+ 1000) went down to
+; 0.15 seconds, about the same as (tests 1000).
+
+;   (defun tests-fn (n)
+;     (declare (xargs :guard (natp n)))
+;     (cond ((zp n) nil)
+;           (t (list* `(defn ,(packn (list 'g n)) (x) (cons x x))
+;                     (tests-fn (1- n))))))
+;   
+;   (defun defattach-tests-fn (n)
+;     (declare (xargs :guard (natp n)))
+;     (cond ((zp n) nil)
+;           (t (cons `(defattach f ,(packn (list 'g n)))
+;                    (defattach-tests-fn (1- n))))))
+;   
+;   (defmacro tests (n)
+;     `(ld '((defstub f (x) t)
+;            ,@(tests-fn n)
+;            (time$ (progn ,@(defattach-tests-fn n))))))
+;   
+;   (defun defun$-tests-fn (n)
+;     (declare (xargs :guard (natp n)))
+;     (cond ((zp n) nil)
+;           (t (list* `(defun$ ,(packn (list 'f n)) (x)
+;                        (declare (xargs :guard t))
+;                        (cons x x))
+;                     (defun$-tests-fn (1- n))))))
+;   
+;   (defmacro tests+ (n)
+;     `(ld '((defstub f (x) t)
+;            ,@(defun$-tests-fn n)
+;            ,@(tests-fn n)
+;            (time$ (progn ,@(defattach-tests-fn n))))))
+
+          (assert$
+           (eq (cdr pair) 'true-apply$-warrant)
+           (attachment-records (cdr attachments) records wrld ctx state)))
+         (t (let ((f-canon (canonical-sibling (car pair) wrld))
+                  (g-canon (canonical-sibling (cdr pair) wrld)))
+              (er-let* ((records
+                         (update-attachment-records pair f-canon g-canon
+                                                    records wrld ctx state)))
+                (attachment-records (cdr attachments) records wrld ctx
+                                    state)))))))))
 
 (defun chk-defattach-loop (attachments erasures wrld ctx state)
 
@@ -27513,8 +27794,7 @@
         (caar (cadar (non-trivial-encapsulate-ee-entries
                       (global-val 'embedded-event-lst wrld))))))
    (t
-    (er-let*
-        ((tuple (process-defattach-args args ctx state)))
+    (er-let* ((tuple (process-defattach-args args ctx state)))
       (let* ((constraint-helper-alist (nth 0 tuple))
              (erasures                (nth 1 tuple))
              (explicit-erasures       (nth 2 tuple))
@@ -27550,13 +27830,14 @@
          (t
           (er-let*
               ((records (cond (skip-checks (value :skipped)) ; not used
-                              (t (chk-defattach-loop attachment-alist erasures wrld
-                                                     ctx state))))
+                              (t (chk-defattach-loop attachment-alist erasures
+                                                     wrld ctx state))))
                (goal/event-names/new-entries
                 (cond ((and (not skip-checks-t)
                             attachment-alist)
-                       (defattach-constraint attachment-alist proved-fnl-insts-alist
-                         wrld ctx state))
+                       (defattach-constraint
+                         attachment-alist proved-fnl-insts-alist wrld ctx
+                         state))
                       (t (value nil))))
                (goal (value (car goal/event-names/new-entries)))
                (event-names (value (cadr goal/event-names/new-entries)))
@@ -27574,9 +27855,10 @@
                  (cond ((and (not skip-checks-t)
                              (not ld-skip-proofsp)
                              attachment-alist)
-                        (prove-defattach-constraint goal event-names attachment-alist
-                                                    constraint-helper-alist ctx ens
-                                                    wrld state))
+                        (prove-defattach-constraint goal event-names
+                                                    attachment-alist
+                                                    constraint-helper-alist
+                                                    ctx ens wrld state))
                        (t (value nil))))))
             (er-progn
              (chk-assumption-free-ttree ttree2 ctx state)
