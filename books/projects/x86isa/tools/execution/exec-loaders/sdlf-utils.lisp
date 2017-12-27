@@ -6,7 +6,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../x86-init-page-tables" :ttags
+(include-book "../init-page-tables" :ttags
               (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "std/lists/nthcdr" :dir :system))

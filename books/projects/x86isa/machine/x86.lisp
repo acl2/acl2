@@ -5,7 +5,7 @@
 
 ;; ======================================================================
 
-(include-book "instructions/x86-instructions"
+(include-book "instructions/top"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "std/strings/hexify" :dir :system)
 
@@ -1505,9 +1505,6 @@
   :long "<p>Source: Intel Manual, Volume 2, Appendix A-2</p>"
 
   (b* ((ctx 'two-byte-opcode-decode-and-execute)
-       ;; (64-bit-mod (64-bit-modep x86))
-       ;; (machine 'x86)
-
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
         (rme08 temp-rip *cs* :x x86))
        ((when flg0)
@@ -4236,9 +4233,6 @@ semantic function.</p>"
   ((local (in-theory (e/d* () (unsigned-byte-p not)))))
 
   (b* ((ctx 'x86-fetch-decode-execute)
-       ;; (64-bit-mode (64-bit-modep x86))
-       ;; (machine 'x86)
-
        ;; We don't want our interpreter to take a step if the machine
        ;; is in a bad state.  Such checks are made in x86-run but I am
        ;; duplicating them here in case this function is being used at

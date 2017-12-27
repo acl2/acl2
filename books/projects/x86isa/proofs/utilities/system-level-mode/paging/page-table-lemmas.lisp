@@ -67,8 +67,8 @@
 
 (defthm mv-nth-0-paging-entry-no-page-fault-p-with-xlate-equiv-entries-cong
   ;; See mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries in
-  ;; machine/x86-paging.lisp: that lemma is essentially the same as
-  ;; this one, except that it is not in terms of xlate-equiv-entries.
+  ;; machine/paging.lisp: that lemma is essentially the same as this
+  ;; one, except that it is not in terms of xlate-equiv-entries.
   (implies (xlate-equiv-entries e-1 e-2)
            (equal (mv-nth
                    0

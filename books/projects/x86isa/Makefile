@@ -43,13 +43,13 @@ endif # ifeq ($(findstring DARWIN,$(PLATFORM)), DARWIN)
 # mode will not be simulated.)
 
 X86ISA_FULL_EXEC_SUPPORT_EXISTS := $(wildcard machine/x86isa_full_exec_support.lisp)
-X86_SYSCALLS_ACL2_EXISTS := $(wildcard machine/x86-syscalls.acl2)
+X86_SYSCALLS_ACL2_EXISTS := $(wildcard machine/syscalls.acl2)
 
 ifneq ($(X86ISA_EXEC_CERTS), )
 ifneq ($(X86ISA_FULL_EXEC_SUPPORT_EXISTS), machine/x86isa_full_exec_support.lisp)
-ifneq ($(X86_SYSCALLS_ACL2_EXISTS), machine/x86-syscalls.acl2)
+ifneq ($(X86_SYSCALLS_ACL2_EXISTS), machine/syscalls.acl2)
  X86ISA_EXEC_CERTS += write_exec_fn
-endif # ifneq ($(X86_SYSCALLS_ACL2_EXISTS), machine/x86-syscalls.acl2)
+endif # ifneq ($(X86_SYSCALLS_ACL2_EXISTS), machine/syscalls.acl2)
 endif # ifneq ($(X86ISA_FULL_EXEC_SUPPORT_EXISTS), machine/x86isa_full_exec_support.lisp)
 endif # ifneq ($(X86ISA_EXEC_CERTS), )
 endif # ifeq ($(X86ISA_EXEC), t)
@@ -75,10 +75,10 @@ write_exec_fn: # Here only when X86ISA_EXEC=t, X86ISA_EXEC_CERTS is not empty, a
 	@echo '(defun x86isa_syscall_exec_support () 42)' >> machine/x86isa_full_exec_support.lisp 
 	@${info machine/x86isa_full_exec_support.lisp created to support X86ISA_EXEC=$(X86ISA_EXEC).} 
 	@${info Do not add machine/x86isa_full_exec_support.lisp to the repository!} 
-	@cp machine/cert.acl2 machine/x86-syscalls.acl2
-	@echo '(ld "x86isa_full_exec_support.lisp" :ld-missing-input-ok t)' >> machine/x86-syscalls.acl2 
-	@${info machine/x86-syscalls.acl2 created to support X86ISA_EXEC=$(X86ISA_EXEC).} 
-	@${info Do not add machine/x86-syscalls.acl2 to the repository!} 
+	@cp machine/cert.acl2 machine/syscalls.acl2
+	@echo '(ld "x86isa_full_exec_support.lisp" :ld-missing-input-ok t)' >> machine/syscalls.acl2 
+	@${info machine/syscalls.acl2 created to support X86ISA_EXEC=$(X86ISA_EXEC).} 
+	@${info Do not add machine/syscalls.acl2 to the repository!} 
 	@${info Remember to do 'make execclean' if you wish to build with X86ISA_EXEC=nil.} 
 	@${info ----------------------------------------------------------------------} 
 
@@ -97,17 +97,17 @@ top: $(X86ISA_EXEC_CERTS)
 	$(BUILD_DIR)/cert.pl -j $(JOBS) top
 
 execclean:
-	rm -f machine/x86-syscalls.cert
+	rm -f machine/syscalls.cert
 	rm -f machine/x86-other-non-det.cert
 	rm -f machine/x86isa_full_exec_support.*
-	rm -f machine/x86-syscalls.acl2
+	rm -f machine/syscalls.acl2
 	rm -f $(SYSCALL_LIB)
 	rm -rf machine/shared/*.o
 
 clean:
 	$(BUILD_DIR)/clean.pl
 	rm -f machine/x86isa_full_exec_support.*
-	rm -f machine/x86-syscalls.acl2
+	rm -f machine/syscalls.acl2
 	rm -f $(SYSCALL_LIB)
 	rm -rf machine/shared/*.o
 

@@ -10,8 +10,6 @@
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
-;; (include-book "centaur/bitops/fast-logext" :dir :system)
-
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/logbitp-bounds" :dir :system))
 

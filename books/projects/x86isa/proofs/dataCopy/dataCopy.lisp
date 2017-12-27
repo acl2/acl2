@@ -4,8 +4,8 @@
 (in-package "X86ISA")
 
 (include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
-(include-book "dataCopy-loop-base" :ttags :all)
-(include-book "dataCopy-loop-recur" :ttags :all)
+(include-book "loop-base" :ttags :all)
+(include-book "loop-recur" :ttags :all)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))

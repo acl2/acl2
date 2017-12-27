@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "x86-paging" :dir :machine)
+(include-book "paging" :dir :machine)
 (local (include-book "centaur/gl/gl" :dir :system))
 
 ;; ======================================================================
@@ -99,7 +99,7 @@
                 (l (:g-number ,(gl-int 1 2 65))))
   :rule-classes :linear)
 
-;; For use in paging-basics.lisp and x86-isa32e-paging-alt.lisp:
+;; For use in paging-basics.lisp:
 
 (def-gl-export 4K-aligned-physical-address-helper
   :hyp (and (unsigned-byte-p 52 x)

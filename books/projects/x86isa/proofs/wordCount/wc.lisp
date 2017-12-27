@@ -766,7 +766,7 @@
 ;; our chosen model of the file system in the environment field; they
 ;; say something about the conditions that need to be true in order to
 ;; have the system calls return the correct answer (i.e., not -1).
-;; See machine/x86-syscalls.lisp for details.
+;; See machine/syscalls.lisp for details.
 
 ;; env-assumptions:
 
