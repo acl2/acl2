@@ -47,7 +47,8 @@
 ;; Lemma
 (defthm block-listp-correctness-1
   (implies (block-listp block-list)
-           (true-listp block-list)))
+           (true-listp block-list))
+  :rule-classes (:forward-chaining))
 
 ;; Lemma
 (defthm block-listp-correctness-2
@@ -195,10 +196,11 @@
 (defthm l3-regular-file-entry-p-correctness-2
   (implies (l3-regular-file-entry-p entry)
            (consp entry))
-  :hints (("Goal" :use l3-regular-file-entry-p-correctness-1) ))
+  :hints (("Goal" :use l3-regular-file-entry-p-correctness-1) )
+  :rule-classes (:forward-chaining))
 
 ; This function defines a valid filesystem. It's an alist where all the cars
-; are symbols and all the cdrs are either further filesystems or files,
+; are symbols and all the cdrs are either further filesystems or regular files,
 ; separated into text (represented by a nat-list of indices which we use to
 ; look up an external disk) and metadata (currently, only length).
 (defun l3-fs-p (fs)
@@ -260,7 +262,7 @@
   (implies (l3-bounded-fs-p fs disk-length)
            (l3-fs-p fs))
   :hints (("Goal" :in-theory (enable l3-bounded-fs-p l3-regular-file-entry-p)) )
-  :rule-classes (:forward-chaining :rewrite))
+  :rule-classes (:forward-chaining))
 
 (defthm l3-bounded-fs-p-correctness-2
   (implies (l3-regular-file-entry-p entry)
@@ -476,7 +478,7 @@
                       (delete-assoc (car hns) fs))))))))
     ))
 
-(defthm l3-unlink-returns-fs-lemma-1
+(defthmd l3-unlink-returns-fs-lemma-1
   (implies (and (consp (assoc-equal s fs))
                 (l3-fs-p fs))
            (and (equal (car (assoc-equal s fs)) s) (symbolp s))))
@@ -484,7 +486,8 @@
 ;; This theorem shows that the property l3-fs-p is preserved by unlink.
 (defthm l3-unlink-returns-fs
   (implies (and (l3-fs-p fs))
-           (l3-fs-p (l3-unlink hns fs))))
+           (l3-fs-p (l3-unlink hns fs)))
+  :hints (("Goal" :in-theory (enable l3-unlink-returns-fs-lemma-1)) ))
 
 (defthm l3-unlink-correctness-1-lemma-1
   (implies (and (l3-fs-p fs) (block-listp disk))
@@ -640,7 +643,8 @@
                 (stringp text))
            (mv-let (new-fs new-disk)
              (l3-wrchs hns fs disk start text)
-             (and (l3-fs-p new-fs) (block-listp new-disk)))))
+             (and (l3-fs-p new-fs) (block-listp new-disk))))
+  :hints (("Goal" :in-theory (enable l3-unlink-returns-fs-lemma-1)) ))
 
 (defthm
   l3-wrchs-correctness-1-lemma-1
@@ -922,7 +926,6 @@
   :hints (("Goal" :in-theory (disable
                               (:rewrite l2-read-after-create-1)
                               (:rewrite l3-to-l2-fs-correctness-1)
-                              (:rewrite l3-bounded-fs-p-correctness-1)
                               (:rewrite l3-create-correctness-1)
                               (:rewrite l3-stat-correctness-1)
                               (:rewrite l3-create-returns-fs))
@@ -963,7 +966,6 @@
                        (:rewrite l3-create-returns-fs)
                        (:rewrite l3-stat-correctness-1)
                        (:rewrite l3-create-correctness-1)
-                       (:rewrite l3-bounded-fs-p-correctness-1)
                        (:rewrite l3-rdchs-correctness-1))
            :use ((:instance l2-read-after-create-2
                             (fs (l3-to-l2-fs fs disk)))

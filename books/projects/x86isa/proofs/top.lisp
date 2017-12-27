@@ -3,24 +3,15 @@
 
 (in-package "X86ISA")
 
-;; There are a lot of name clashes here.  The empty encapsulates below
-;; avoid this name clash problem while ensuring that the books get
-;; built as a part of the regression.
+(include-book "utilities/top" :ttags :all)
 
 ;; ======================================================================
 
-;; Proof utilities
-(local
- (encapsulate
-   ()
-   (local (include-book "utilities/programmer-level-mode/top" :ttags :all))))
-(local
- (encapsulate
-   ()
-   (local (include-book "utilities/system-level-mode/top" :ttags :all))))
-
 ;; Proofs of correctness of various x86 programs: We exclude these
-;; from the x86isa documentation.
+;; from the x86isa documentation.  There are a lot of name clashes
+;; here.  The empty encapsulates below avoid this name clash problem
+;; while ensuring that the books get built as a part of the
+;; regression.
 
 ;; ----------------------------------------------------------------------
 ;; Application Programs:

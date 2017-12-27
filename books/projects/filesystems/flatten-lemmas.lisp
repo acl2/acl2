@@ -17,6 +17,8 @@
       (and (not (intersectp x (car l)))
            (not-intersectp-list x (cdr l)))))
 
+(defcong list-equiv equal (not-intersectp-list x l) 1)
+
 (defthm not-intersectp-list-correctness-1
   (equal (intersectp-equal x (flatten l))
          (not (not-intersectp-list x l))))
@@ -91,6 +93,14 @@
   (and (consp x)
        (or (not (not-intersectp-list (car x) y))
            (member-intersectp-equal (cdr x) y))))
+
+(encapsulate ()
+  (local (include-book "std/basic/inductions" :dir :system))
+
+  (defcong list-equiv equal (member-intersectp-equal x y) 1
+    :hints
+    (("goal"
+      :induct (cdr-cdr-induct x x-equiv)))))
 
 (defthm when-append-is-disjoint-list-listp
   (implies (true-listp x)

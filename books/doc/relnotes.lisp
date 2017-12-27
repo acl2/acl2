@@ -113,6 +113,12 @@
  <p>Added a <see topic='@(url fty)'>fixtype</see>
  for <see topic='@(url set::std/osets)'>finite sets</see>.</p>
 
+ <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
+
+ <p>Added a @(':print') option to control screen output.</p>
+
+ <p>Improved user input validation.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>

@@ -72,7 +72,7 @@
     <li>When monitoring other rules above indicates that an
     instruction is not being fetched successfully using @(see rb-alt):
     <br/>
-    Monitor @('rb-alt-in-terms-of-nth-and-pos-in-system-level-mode').
+    Monitor @('one-read-with-rb-alt-from-program-at-alt-in-marking-mode).
     </li>
 
     <li>When monitoring other rules above indicates that ACL2 can't
@@ -82,21 +82,20 @@
     <br/>
     An instance of where monitoring this rule might be helpful is when
     the @('program-at') hypothesis of
-    @('rb-alt-in-terms-of-nth-and-pos-in-system-level-mode') is not
+    @('one-read-with-rb-alt-from-program-at-alt-in-marking-mode) is not
     being relieved.
    </li>
 
    <li>When inferring the canonical nature of a linear address:<br/>
-    Monitor @('member-p-canonical-address-listp'). <br/>
-    <br/>
-    This is useful if you believe that the canonical nature of a
+    Monitor @('member-p-canonical-address-listp'). <br/> 
+
+    <br/> This is useful if you believe that the canonical nature of a
     linear address should be inferable from the canonical nature of a
     list of addresses, of which that address is a member.  An instance
-    of where monitoring this rule
-    might be helpful is when the @('member-p') hypothesis of
-    @('rb-alt-in-terms-of-nth-and-pos-in-system-level-mode') is not
-    being relieved.
-   </li>
+    of where monitoring this rule might be helpful is when the
+    @('member-p') hypothesis of
+    @('one-read-with-rb-alt-from-program-at-alt-in-marking-mode') is
+    not being relieved. </li>
 
    <li>When reasoning about disjointness/overlap of memory regions:<br/>
    Monitor one of these rules: <br/>
@@ -162,7 +161,7 @@
 
  <h3>Rules related to instruction fetches and program location</h3>
 
- @(def rb-alt-in-terms-of-nth-and-pos-in-system-level-mode)
+ @(def one-read-with-rb-alt-from-program-at-alt-in-marking-mode)
 
  @(def program-at-alt-wb-disjoint-in-system-level-mode)
 
@@ -735,8 +734,8 @@
                               rewrite-rb-to-rb-alt
                               mv-nth-1-las-to-pas-subset-p
                               combine-n-bytes
-                              program-at-nil-when-translation-error))
-             :use ((:instance program-at-nil-when-translation-error)
+                              program-at-implies-error-free-address-translation))
+             :use ((:instance program-at-implies-error-free-address-translation)
                    (:instance rewrite-rb-to-rb-alt (n 1) (addr lin-addr) (r-x :x))
                    (:instance program-at-alt-implies-program-addresses-properties)
                    (:instance establishing-some-more-canonical-address-properties
@@ -869,7 +868,7 @@
      (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil))
     :hints
     (("Goal" :do-not-induct t
-      :use ((:instance program-at-nil-when-translation-error)
+      :use ((:instance program-at-implies-error-free-address-translation)
             (:instance mv-nth-0-las-to-pas-subset-p
                        (n-1 (len bytes))
                        (addr-1 prog-addr)
@@ -880,7 +879,7 @@
       :in-theory
       (e/d* (signed-byte-p)
             (rewrite-program-at-to-program-at-alt
-             program-at-nil-when-translation-error)))))
+             program-at-implies-error-free-address-translation)))))
 
   (defthm disjointness-of-program-bytes-from-paging-structures
     (implies (and
@@ -900,7 +899,7 @@
              :do-not-induct t
              :cases ((= (+ n lin-addr) (+ (len bytes) prog-addr)))
              :use ((:instance program-at-alt-implies-program-addresses-properties)
-                   (:instance program-at-nil-when-translation-error)
+                   (:instance program-at-implies-error-free-address-translation)
                    (:instance disjoint-p-subset-p
                               (x (mv-nth 1 (las-to-pas (len bytes) prog-addr :x x86)))
                               (y
@@ -911,7 +910,7 @@
                                   (gather-all-paging-structure-qword-addresses x86)))))
              :in-theory (e/d* (disjoint-p$)
                               (disjoint-p-subset-p
-                               program-at-nil-when-translation-error
+                               program-at-implies-error-free-address-translation
                                force (force))))))
 
   (local

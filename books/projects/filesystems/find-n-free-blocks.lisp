@@ -144,10 +144,11 @@
 
   (defthm
     find-n-free-blocks-correctness-5
-    (implies (and (boolean-listp alv)
-                  (natp n)
-                  (member-equal m (find-n-free-blocks alv n)))
+    (implies (and (member-equal m (find-n-free-blocks alv n))
+                  (boolean-listp alv)
+                  (natp n))
              (not (nth m alv)))
+    :rule-classes (:forward-chaining)
     :hints
     (("Goal" :in-theory (disable find-n-free-blocks-helper-correctness-5)
       :use (:instance find-n-free-blocks-helper-correctness-5

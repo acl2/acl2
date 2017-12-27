@@ -215,11 +215,10 @@ Two ways of building the X86ISA books are:
 Suppose you had certified these books previously, but you have since
 forgotten whether you built them with X86ISA_EXEC=t or not. Here is a
 way of checking the certified books to see if you have full execution
-support. Look at the following file: machine/x86-syscalls.cert.out. If
+support. Look at the following file: machine/syscalls.cert.out. If
 this file contains the following:
 
-X86ISA_EXEC Warning: x86-environment-and-syscalls-raw.lsp is not
-included.
+X86ISA_EXEC Warning: environment-and-syscalls-raw.lsp is not included.
 
 then you do not have SYSCALL execution support. Otherwise, you do. If,
 in machine/x86-other-non-det.cert.out, you find the following string,
