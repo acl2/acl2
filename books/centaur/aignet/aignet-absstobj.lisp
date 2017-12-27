@@ -1067,7 +1067,7 @@
   node takes two 32-bit array slots, we resize the physical node array to @('2
   * max-nodes') elements, so that there are room for @('max-nodes') nodes.</p>
 
-  @(def aignet$a::aignet-init)")
+  @(def aignet$a::aignet-init^)")
 
 
 ;; Network construction
@@ -1076,13 +1076,13 @@
   :short "@(call aignet-add-in) adds a new primary input node to the aignet."
   :long "<p>Logically this is just @('(cons (pi-node) aignet)').</p>
   <p>In the execution we update the necessary arrays, counts, etc.</p>
-  @(def aignet$a::aignet-add-in)")
+  @(def aignet$a::aignet-add-in^)")
 
 (defxdoc aignet-add-reg
   :short "@(call aignet-add-reg) adds a new register node to the aignet."
   :long "<p>Logically this is just @('(cons (reg-node) aignet)').</p>
   <p>In the execution we update the necessary arrays, counts, etc.</p>
-  @(def aignet$a::aignet-add-reg)")
+  @(def aignet$a::aignet-add-reg^)")
 
 (defxdoc aignet-add-gate
   :short "@(call aignet-add-gate) adds an new AND gate node to the aignet with
@@ -1105,7 +1105,7 @@
 
   <p>In the execution we update the necessary arrays, counts, etc.</p>
 
-  @(def aignet$a::aignet-add-gate)")
+  @(def aignet$a::aignet-add-gate^)")
 
 (defxdoc aignet-add-out
   :short "@(call aignet-add-out) adds a primary output node to the aignet."
@@ -1122,7 +1122,7 @@
 
   <p>In the execution we update the necessary arrays, counts, etc.</p>
 
-  @(def aignet$a::aignet-add-out)")
+  @(def aignet$a::aignet-add-out^)")
 
 (defxdoc aignet-set-nxst
   :short "@(call aignet-set-nxst) adds a next-state node to the aignet."
@@ -1140,7 +1140,7 @@
 
   <p>In the execution we update the necessary arrays, counts, etc.</p>
 
-  @(def aignet$a::aignet-set-nxst)")
+  @(def aignet$a::aignet-set-nxst^)")
 
 (defxdoc aignet-rollback
   :short "@(call aignet-rollback) rewinds the aignet so that node @('n') is the
