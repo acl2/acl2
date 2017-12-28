@@ -132,6 +132,10 @@ ERC>
 
 {{Fix summary to record :use of :guard-theorem and (probably) :termination-theorem.}}
 
+**********
+**NOTE**: Matt K. is working on this item.
+**********
+
 After giving this hint
 
                     :use ((:guard-theorem verify-proof$-rec))
@@ -302,6 +306,10 @@ approach, though it's intriguing.
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
 {{Extend defstub to support :guard.}}
+
+**********
+**NOTE**: Alessandro Coglio is probably working on this item.
+**********
 
 Below is the relevant email thread.
 
