@@ -874,38 +874,100 @@
 
 (mutual-recursion
 
-(defun covered-geneqv-alist (term geneqv alist wrld)
+(defun covered-geneqv-alist (term geneqv pequiv-info alist ens wrld)
 
-; Extends alist, an accumulator, as follows.  The result associates, with each
-; variable bound in term, a geneqv representing the list of all equivalence
-; relations that are sufficient to preserve at one or more free occurrences of
-; that variable in term, in order to preserve the given geneqv at term.  This
-; function creates the initial bound-vars-alist for
-; double-rewrite-opportunities; see also the comment there.
+; Alist is an accumulator with entries of the form (v . geneqv-v), where v is a
+; variable and geneqv-v is a generated equivalence relation.  We return an
+; extension of alist by associating, with each variable bound in term, a list
+; of all equivalence relations that are sufficient to preserve at one or more
+; free occurrences of that variable in term, in order to preserve the given
+; geneqv at term.
 
-; Alist is an accumulator with entries of the form (variable . geneqv).
+; This function creates the initial var-geneqv-alist for
+; double-rewrite-opportunities; see also the comment there.  The idea is that
+; for any variable occurrence, if rewriting of the actual term at that position
+; took place under a given list of equivalence relations (a geneqv), then
+; additional rewriting is unlikely to simplify the term further when done under
+; any of those equivalence relations; but when we see that rewriting may be
+; done under some equivalence relation that isn't "covered by" that geneqv --
+; i.e., doesn't refine that geneqv (see also double-rewrite-opportunities) --
+; then a double-rewrite warning is called for.
 
   (cond ((variablep term)
          (extend-geneqv-alist term geneqv alist wrld))
         ((fquotep term)
          alist)
-        (t
-         (covered-geneqv-alist-lst (fargs term)
-                                   (geneqv-lst (ffn-symb term) geneqv nil wrld)
-                                   alist
-                                   wrld))))
+        ((flambda-applicationp term)
 
-(defun covered-geneqv-alist-lst (termlist geneqv-lst alist wrld)
-  (cond ((endp termlist)
+; With more effort maybe we could pay more attention to patterned congruences
+; in this case; but that seems like overkill for producing a warning.
+
+         (covered-geneqv-alist-lst (fargs term)
+                                   nil
+                                   1
+                                   (geneqv-lst (ffn-symb term) geneqv nil wrld)
+                                   (ffn-symb term) ; irrelevant?
+                                   geneqv
+                                   nil nil alist ens wrld))
+        (t
+         (mv-let
+           (deep-pequiv-lst shallow-pequiv-lst)
+           (pequivs-for-rewrite-args (ffn-symb term)
+                                     geneqv pequiv-info wrld ens)
+           (covered-geneqv-alist-lst (fargs term)
+                                     nil ; already-processed args
+                                     1   ; bkptr
+                                     (geneqv-lst (ffn-symb term)
+                                                 geneqv nil wrld)
+                                     (ffn-symb term) ; parent-fn
+                                     geneqv ; parent-geneqv
+                                     deep-pequiv-lst
+                                     shallow-pequiv-lst
+                                     alist ens wrld)))))
+
+(defun covered-geneqv-alist-lst (args args-rev bkptr geneqv-lst
+                                      parent-fn parent-geneqv
+                                      deep-pequiv-lst shallow-pequiv-lst
+                                      alist
+                                      ens wrld)
+  (cond ((endp args)
          alist)
-        (t (covered-geneqv-alist-lst (cdr termlist)
-                                     (cdr geneqv-lst)
-                                     (covered-geneqv-alist (car termlist) (car geneqv-lst)
-                                                           alist wrld)
-                                     wrld))))
+        (t (mv-let
+             (child-geneqv child-pequiv-info)
+             (geneqv-and-pequiv-info-for-rewrite
+              parent-fn bkptr args-rev args
+              nil ; alist
+              parent-geneqv
+              (car geneqv-lst) ; child-geneqv
+              deep-pequiv-lst
+              shallow-pequiv-lst
+              wrld)
+             (covered-geneqv-alist-lst
+              (cdr args)
+              (cons (car args) args-rev)
+              (1+ bkptr)
+              (cdr geneqv-lst)
+              parent-fn
+              parent-geneqv
+              deep-pequiv-lst shallow-pequiv-lst
+              (covered-geneqv-alist (car args)
+                                    child-geneqv
+                                    child-pequiv-info
+                                    alist ens wrld)
+              ens wrld)))))
 )
 
 (defun uncovered-equivs (geneqv covered-geneqv wrld)
+
+; Geneqv and covered-geneqv are generated equivalence relations, i.e., lists of
+; equivalence relations.  We return all equivalence relations E in geneqv that
+; are "uncovered" with respect to covered-geneqv, i.e., such that E does not
+; refine covered-geneqv.  See uncovered-equivs-alist for motivation; briefly
+; put, rewriting with respect to an uncovered equiv may be possible that was
+; not possible with respect to covered-geneqv, and we want to warn with a
+; suggestion to use double-rewrite to take advantage of that uncovered equiv
+; when rewriting.
+
   (cond ((endp geneqv) nil)
         (t (let ((equiv (access congruence-rule (car geneqv) :equiv))
                  (rst (uncovered-equivs (cdr geneqv) covered-geneqv wrld)))
@@ -915,10 +977,11 @@
 
 (mutual-recursion
 
-(defun uncovered-equivs-alist (term geneqv var-geneqv-alist var-geneqv-alist0
-                                    obj-not-? acc-equivs acc-counts wrld)
+(defun uncovered-equivs-alist (term geneqv pequiv-info
+                                    var-geneqv-alist var-geneqv-alist0
+                                    obj-not-? acc-equivs acc-counts ens wrld)
 
-; Accumulator acc-equiv is an alist that associates variables with lists of
+; Accumulator acc-equivs is an alist that associates variables with lists of
 ; equivalence relations, and accumulator acc-counts associates variables with
 ; natural numbers.  We are given a term whose value is to be maintained with
 ; respect to the given geneqv, along with var-geneqv-alist, which associates
@@ -927,21 +990,38 @@
 
 ; Consider a bound (by var-geneqv-alist) variable occurrence in term.  Its
 ; context is known to preserve certain equivalence relations; but some of these
-; may be "uncovered", i.e., not among the ones associated with this variable in
-; var-geneqv-alist.  If that is the case, then add those "uncovered"
-; equivalence relations to the list associated with this variable in
-; acc-equivs, and increment the value of this variable in acc-counts by 1.
+; may be "uncovered", i.e., it does not refine any of those associated with
+; this variable in var-geneqv-alist.  If that is the case, then we add those
+; "uncovered" equivalence relations to the list associated with this variable
+; in acc-equivs, and increment the value of this variable in acc-counts by 1.
 
 ; However, we skip the above analysis for the case that geneqv is *geneqv-iff*
-; and we are at the top level of the IF-structure of the top-level term (not
-; including the tests).  This function is used for creating warnings that
-; suggest the use of double-rewrite, which however is generally not necessary
-; in such situations; see rewrite-solidify-plus.
+; and the variable occurs as a branch of the IF-structure of a hypothesis.
+; This function is used for creating warnings that suggest the use of
+; double-rewrite, which however is generally not necessary in such situations;
+; see rewrite-solidify-plus.
 
 ; For a free variable occurrence in term, we leave acc-equivs and acc-counts
 ; unchanged, and instead extend var-geneqv-alist by associating this variable
 ; with the geneqv for its context.  Var-geneqv-alist0 is left unchanged by this
 ; process, for purposes of checking free-ness.
+
+; Here is a little test, showing that patterned congruences are used to uncover
+; double-rewrite opportunities in hypotheses.
+
+;   (defun foo (x y)
+;     (mv x y))
+
+;   (defthm my-cong
+;     (implies (iff y1 y2)
+;              (iff (mv-nth 1 (foo x y1))
+;                   (mv-nth 1 (foo x y2))))
+;     :rule-classes :congruence)
+
+;   ; We get a warning here for the occurrence of y in the hypothesis:
+;   (defthm bar
+;     (implies (mv-nth 1 (foo x y))
+;              (equal (car (cons x y)) x)))
 
   (cond
    ((variablep term)
@@ -976,62 +1056,86 @@
    ((or (fquotep term)
         (eq (ffn-symb term) 'double-rewrite))
     (mv acc-equivs acc-counts var-geneqv-alist))
-   ((and obj-not-?
-         (eq (ffn-symb term) 'if))
-    (mv-let (acc-equivs acc-counts var-geneqv-alist)
-            (uncovered-equivs-alist
-             (fargn term 3)
-             geneqv
-             var-geneqv-alist
-             var-geneqv-alist0
-             t
-             acc-equivs acc-counts
-             wrld)
-            (mv-let (acc-equivs acc-counts var-geneqv-alist)
-                    (uncovered-equivs-alist
-                     (fargn term 2)
-                     geneqv
-                     var-geneqv-alist
-                     var-geneqv-alist0
-                     t
-                     acc-equivs acc-counts
-                     wrld)
-                    (uncovered-equivs-alist
-                     (fargn term 1)
-                     *geneqv-iff*
-                     var-geneqv-alist
-                     var-geneqv-alist0
-                     nil
-                     acc-equivs acc-counts
-                     wrld))))
-   (t (uncovered-equivs-alist-lst
-       (fargs term)
-       (geneqv-lst (ffn-symb term) geneqv nil wrld)
-       var-geneqv-alist var-geneqv-alist0 acc-equivs acc-counts wrld))))
+   ((flambda-applicationp term)
 
-(defun uncovered-equivs-alist-lst (termlist geneqv-lst var-geneqv-alist
-                                            var-geneqv-alist0 acc-equivs
-                                            acc-counts wrld)
-  (cond ((endp termlist)
+; With more effort maybe we could pay more attention to patterned congruences
+; in this case; but that seems like overkill for producing a warning.
+
+    (uncovered-equivs-alist-lst
+     (fargs term)
+     nil
+     1 ; bkptr
+     (geneqv-lst (ffn-symb term) geneqv nil wrld)
+     (ffn-symb term) ; irrelevant?
+     geneqv nil nil
+     var-geneqv-alist var-geneqv-alist0
+     (if (and obj-not-?
+              (eq (ffn-symb term) 'if))
+         (list nil t t)
+       nil)
+     acc-equivs acc-counts ens wrld))
+   (t (mv-let
+        (deep-pequiv-lst shallow-pequiv-lst)
+        (pequivs-for-rewrite-args (ffn-symb term) geneqv pequiv-info wrld ens)
+        (uncovered-equivs-alist-lst
+         (fargs term)
+         nil
+         1 ; bkptr
+         (geneqv-lst (ffn-symb term) geneqv nil wrld)
+         (ffn-symb term) ; parent-fn
+         geneqv
+         deep-pequiv-lst shallow-pequiv-lst
+         var-geneqv-alist var-geneqv-alist0
+         (if (and obj-not-?
+                  (eq (ffn-symb term) 'if))
+             (list nil t t)
+           nil)
+         acc-equivs acc-counts ens wrld)))))
+
+(defun uncovered-equivs-alist-lst (args args-rev bkptr geneqv-lst
+                                        parent-fn parent-geneqv
+                                        deep-pequiv-lst shallow-pequiv-lst
+                                        var-geneqv-alist
+                                        var-geneqv-alist0
+                                        obj-not-?-lst
+                                        acc-equivs acc-counts ens wrld)
+  (cond ((endp args)
          (mv acc-equivs acc-counts var-geneqv-alist))
-        (t (mv-let (acc-equivs acc-counts var-geneqv-alist)
-             (uncovered-equivs-alist (car termlist)
-                                     (car geneqv-lst)
-                                     var-geneqv-alist
-                                     var-geneqv-alist0
-                                     nil
-                                     acc-equivs acc-counts
-                                     wrld)
-             (uncovered-equivs-alist-lst (cdr termlist) (cdr geneqv-lst)
-                                         var-geneqv-alist
-                                         var-geneqv-alist0
-                                         acc-equivs acc-counts
-                                         wrld)))))
+        (t (mv-let
+             (child-geneqv child-pequiv-info)
+             (geneqv-and-pequiv-info-for-rewrite
+              parent-fn bkptr args-rev args
+              nil ; alist
+              parent-geneqv
+              (car geneqv-lst) ; child-geneqv
+              deep-pequiv-lst
+              shallow-pequiv-lst
+              wrld)
+             (mv-let (acc-equivs acc-counts var-geneqv-alist)
+               (uncovered-equivs-alist (car args)
+                                       child-geneqv
+                                       child-pequiv-info
+                                       var-geneqv-alist
+                                       var-geneqv-alist0
+                                       (car obj-not-?-lst)
+                                       acc-equivs acc-counts
+                                       ens wrld)
+               (uncovered-equivs-alist-lst (cdr args)
+                                           (cons (car args) args-rev)
+                                           (1+ bkptr)
+                                           (cdr geneqv-lst)
+                                           parent-fn parent-geneqv
+                                           deep-pequiv-lst shallow-pequiv-lst
+                                           var-geneqv-alist
+                                           var-geneqv-alist0
+                                           (cdr obj-not-?-lst)
+                                           acc-equivs acc-counts
+                                           ens wrld))))))
 )
 
 (defun double-rewrite-opportunities (hyp-index hyps var-geneqv-alist
                                      final-term final-location final-geneqv
-                                     wrld)
+                                     ens wrld)
 
 ; We return an alist having entries (location var-equiv-alist
 ; . var-count-alist), where location is a string identifying a term (either the
@@ -1052,16 +1156,16 @@
 ; that variable in that hyp.
 
 ; We give similar treatment for the right-hand side of a rewrite rule and
-; conclusion of a linear rule, using the parameters final-xxx.
+; conclusion of a linear rule, using the formal parameters final-xxx.
 
 ; Var-geneqv-alist is an alist that binds variables to geneqvs.  Initially, the
 ; keys are exactly the bound variables of the unifying substitution.  Each key
 ; is associated with a geneqv that represents the equivalence relation
 ; generated by all equivalence relations known to be preserved for at least one
 ; variable occurrence in the pattern that was matched to give the unifying
-; substitution (the left left-hand side of a rewrite rule or max-term of a
-; linear rule).  As we move through hyps, we may encounter a hypothesis (equal
-; var term) or (equiv var (double-rewrite term)) that binds a variable, var, in
+; substitution (the left-hand side of a rewrite rule or max-term of a linear
+; rule).  As we move through hyps, we may encounter a hypothesis (equal var
+; term) or (equiv var (double-rewrite term)) that binds a variable, var, in
 ; which case we will extend var-geneqv-alist for var at that point.  Note that
 ; we do not extend var-geneqv-alist for other free variables in hypotheses,
 ; because we do not know the equivalence relations that were maintained when
@@ -1069,9 +1173,9 @@
 
   (cond ((endp hyps)
          (mv-let (var-equivs-alist var-counts var-geneqv-alist)
-                 (uncovered-equivs-alist final-term final-geneqv
+                 (uncovered-equivs-alist final-term final-geneqv nil
                                          var-geneqv-alist var-geneqv-alist
-                                         nil nil nil wrld)
+                                         nil nil nil ens wrld)
                  (declare (ignore var-geneqv-alist))
                  (if var-equivs-alist
                      (list (list* final-location var-equivs-alist var-counts))
@@ -1097,21 +1201,23 @@
                        (cdr hyps)
                        (covered-geneqv-alist term
                                              new-geneqv
+                                             nil
                                              (assert$ (variablep var)
                                                       (extend-geneqv-alist
                                                        var new-geneqv
                                                        var-geneqv-alist wrld))
-                                             wrld)
+                                             ens wrld)
                        final-term final-location final-geneqv
-                       wrld)))
+                       ens wrld)))
                    (t (mv-let (var-equivs-alist var-counts var-geneqv-alist)
                               (uncovered-equivs-alist (car hyps)
                                                       *geneqv-iff*
+                                                      nil
                                                       var-geneqv-alist
                                                       var-geneqv-alist
                                                       t
                                                       nil nil
-                                                      wrld)
+                                                      ens wrld)
                         (let ((cdr-result
                                (double-rewrite-opportunities (1+ hyp-index)
                                                              (cdr hyps)
@@ -1119,7 +1225,7 @@
                                                              final-term
                                                              final-location
                                                              final-geneqv
-                                                             wrld)))
+                                                             ens wrld)))
                           (if var-equivs-alist
                               (cons (list* (msg "the ~n0 hypothesis"
                                                 (list hyp-index))
@@ -1237,19 +1343,17 @@
                                                     wrld)
                                           rule ens wrld)))
          (equiv (access rewrite-rule rule :equiv))
+         (geneqv (cadr (geneqv-lst equiv nil nil wrld)))
          (double-rewrite-opportunities
           (and (not (warning-disabled-p "Double-rewrite"))
                (double-rewrite-opportunities
                 1
                 hyps
-                (covered-geneqv-alist
-                 lhs
-                 (cadr (geneqv-lst equiv nil nil wrld)) ; geneqv
-                 nil wrld)
+                (covered-geneqv-alist lhs geneqv nil nil ens wrld)
                 (access rewrite-rule rule :rhs)
                 "the right-hand side"
-                (cadr (geneqv-lst (access rewrite-rule rule :equiv) nil nil wrld))
-                wrld))))
+                geneqv
+                ens wrld))))
     (pprogn
      (cond (double-rewrite-opportunities
             (show-double-rewrite-opportunities double-rewrite-opportunities
@@ -1846,24 +1950,25 @@
         (bad-synp-hyp-msg-for-linear (cdr max-terms) hyps wrld)))))
 
 (defun show-double-rewrite-opportunities-linear (hyps max-terms final-term name
-                                                      ctx wrld state)
+                                                      ctx ens wrld state)
   (cond ((endp max-terms)
          state)
         (t (pprogn (show-double-rewrite-opportunities
                     (double-rewrite-opportunities
                      1
                      hyps
-                     (covered-geneqv-alist (car max-terms) nil nil wrld)
+                     (covered-geneqv-alist (car max-terms) nil nil nil ens
+                                           wrld)
                      final-term
                      "the conclusion"
                      *geneqv-iff* ; final-geneqv
-                     wrld)
+                     ens wrld)
                     :linear name
                     (msg " for trigger term ~x0"
                          (untranslate (car max-terms) nil wrld))
                     ctx state)
                    (show-double-rewrite-opportunities-linear
-                    hyps (cdr max-terms) final-term name ctx wrld
+                    hyps (cdr max-terms) final-term name ctx ens wrld
                     state)))))
 
 (defun chk-acceptable-linear-rule2
@@ -1963,7 +2068,7 @@
                       (if (warning-disabled-p "Double-rewrite")
                           state
                         (show-double-rewrite-opportunities-linear
-                         hyps max-terms concl name ctx wrld state))
+                         hyps max-terms concl name ctx ens wrld state))
                       (cond
                        ((equal max-terms bad-max-terms)
                         (warning$ ctx "Non-rec"
@@ -2002,9 +2107,10 @@
                         (pprogn
                          (warning$ ctx "Free"
                                    "A :LINEAR rule generated from ~x0 will be ~
-                                    triggered by the term~#1~[~/s~] ~&1.  ~*2This is ~
-                                    generally a severe restriction on the ~
-                                    applicability of the :LINEAR rule~@3."
+                                    triggered by the term~#1~[~/s~] ~&1.  ~
+                                    ~*2This is generally a severe restriction ~
+                                    on the applicability of the :LINEAR ~
+                                    rule~@3."
                                    name
                                    max-terms
                                    free-max-terms-msg
