@@ -104,6 +104,10 @@
 
  <h3>Changes to Existing Libraries</h3>
 
+ <p>A bug has been fixed in the expander (@('misc/expander.lisp')), which had
+ prevented @(see hints) from being passed to the forcing round (if any).  An
+ example may be found in the new book, @('misc/expander-tests.lisp').</p>
+
  <h4>Kestrel Utilities</h4>
 
  <p>Added utility @(see include-book-paths) to list paths via @(tsee

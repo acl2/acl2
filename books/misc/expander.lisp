@@ -582,67 +582,65 @@ directly with ACL2.</p>
                                 ;; subsequent iterations.
                                 must-rewrite-flg))))))
 
-(defun tool2-fn1
-  (term hyps g?equiv ctx ens wrld state thints prove-assumptions
-        inhibit-output translate-flg print-flg must-rewrite-flg)
+(defun tool2-fn1 (term hyps g?equiv ctx ens wrld state thints prove-assumptions
+                       inhibit-output translate-flg print-flg must-rewrite-flg)
 
 ; Returns error triple with value (list* runes rewritten-term assumptions).
 ; But assumptions is nil if prove-assumptions is nil (we don't collect them) or
 ; is t (we insist that all forced assumptions be proved).
 
   (let* ((saved-pspv (make-pspv ens wrld state
-                                :displayed-goal term ; from, e.g., thm-fn
+                                :displayed-goal term     ; from, e.g., thm-fn
                                 :user-supplied-term term ;from, e.g., prove
-                                :orig-hints thints))) ;from, e.g., prove
+                                :orig-hints thints)))    ;from, e.g., prove
     (er-let*
-     ((thyps (if translate-flg
-                 (translate-term-lst hyps t t t ctx wrld state)
-               (value hyps)))
-      (tterm (if translate-flg
-                 (translate term t t t ctx wrld state)
-               (value term))))
-     (mv-let                            ;from waterfall1
-      (erp pair state)
-      (find-applicable-hint-settings
-       *initial-clause-id*
-       (add-literal tterm (dumb-negate-lit-lst thyps) t)
-       nil saved-pspv ctx
-       thints wrld nil state)
-      (cond
-       (erp (silent-error state))
-       (t
-        (let ((hint-settings (car pair))
-              (thints (cdr pair)))
-          (mv-let
-           (hint-settings state)
-           (cond ((null hint-settings)
-                  (mv nil state))
-                 (t (thanks-for-the-hint nil hint-settings nil state))) ;BB
-           (er-let* ((pspv (load-hint-settings-into-pspv
-                            t hint-settings saved-pspv nil wrld ctx state)))
-                    (cond
-                     ((intersectp-eq
-                       '(:do-not-induct :do-not :induct :use :cases :by)
-                       (strip-cars hint-settings))
-                      (er soft ctx
-                          "It makes no sense for TOOL2 to be given hints for ~
-                           \"Goal\" that include any of :do-not-induct, ~
-                           :do-not,:induct, :use, :cases, or :by.  The hint ~
-                           ~p0 is therefore illegal."
-                          (cons "Goal" hint-settings)))
-                     (t
-                      (pprogn
-                       (initialize-proof-tree ;from waterfall
-                        *initial-clause-id*
-                        (list (list (implicate (conjoin thyps) tterm)))
-                        ctx
-                        state)
-                       (let*            ;from simplify-clause1
-                           ((current-clause (dumb-negate-lit-lst thyps))
-                            (rcnst
-                             (change rewrite-constant
-                                     (access prove-spec-var pspv
-                                             :rewrite-constant)
+        ((thyps (if translate-flg
+                    (translate-term-lst hyps t t t ctx wrld state)
+                  (value hyps)))
+         (tterm (if translate-flg
+                    (translate term t t t ctx wrld state)
+                  (value term))))
+      (mv-let ;from waterfall1
+        (erp pair state)
+        (find-applicable-hint-settings
+         *initial-clause-id*
+         (add-literal tterm (dumb-negate-lit-lst thyps) t)
+         nil saved-pspv ctx
+         thints wrld nil state)
+        (cond
+         (erp (silent-error state))
+         (t
+          (let ((hint-settings (car pair))
+                (thints (if pair (cdr pair) thints)))
+            (mv-let
+              (hint-settings state)
+              (cond ((null hint-settings)
+                     (mv nil state))
+                    (t (thanks-for-the-hint nil hint-settings nil state))) ;BB [Bishop Brock?]
+              (er-let* ((pspv (load-hint-settings-into-pspv
+                               t hint-settings saved-pspv nil wrld ctx state)))
+                (let ((bad-hints '(:do-not-induct :do-not :induct :use :cases :by)))
+                  (cond
+                   ((intersectp-eq bad-hints (strip-cars hint-settings))
+                    (er soft ctx
+                        "It makes no sense in this context for hints at ~
+                         \"Goal\" to include any of ~v0.  The hint ~p1 is ~
+                         therefore illegal."
+                        bad-hints
+                        (cons "Goal" hint-settings)))
+                   (t
+                    (pprogn
+                     (initialize-proof-tree ;from waterfall
+                      *initial-clause-id*
+                      (list (list (implicate (conjoin thyps) tterm)))
+                      ctx
+                      state)
+                     (let* ;from simplify-clause1
+                         ((current-clause (dumb-negate-lit-lst thyps))
+                          (rcnst
+                           (change rewrite-constant
+                                   (access prove-spec-var pspv
+                                           :rewrite-constant)
 
 ; For a long time, up to October 2016, we failed to set the :current-clause and
 ; :top-clause fields of this rcnst.  That had the unfortunate effect of making
@@ -665,49 +663,49 @@ directly with ACL2.</p>
 ; subterms of that defun body to suggest keeping that expansion, we we have
 ; decided to avoid extending current-clause using that body.
 
-                                     :current-clause current-clause
-                                     :force-info t))
-                            (pts
-                             ;; (current-clause-pts (enumerate-elements current-clause 0))
-                             nil))
-                         (mv-let        ;from simplify-clause1
-                          (contradictionp type-alist fc-pair-lst)
-                          (forward-chain current-clause
-                                         pts
-                                         (access rewrite-constant
-                                                 rcnst :force-info)
-                                         nil wrld
-                                         (access rewrite-constant rcnst
-                                                 :current-enabled-structure)
-                                         (access rewrite-constant rcnst
-                                                 :oncep-override)
-                                         state)
-                          (declare (ignore fc-pair-lst))
-                          (cond
-                           (contradictionp
-                            (er soft ctx
-                                "Contradiction found in hypotheses~%  ~
-                                      ~p0~%using type-set reasoning!"
-                                hyps))
-                           (t
-                            (sl-let     ;from simplify-clause1
-                             (contradictionp simplify-clause-pot-lst)
-                             (setup-simplify-clause-pot-lst current-clause
-                                                            (pts-to-ttree-lst
-                                                             pts)
-                                                            nil ; fc-pair-lst  ;; RBK:
-                                                            type-alist
-                                                            rcnst
-                                                            wrld state
-                                                            (initial-step-limit
-                                                             wrld state))
-                             (cond
-                              (contradictionp
-                               (er soft ctx
-                                   "Contradiction found in hypotheses~%  ~
-                                    ~p0~%using linear reasoning!"
-                                   hyps))
-                              (t
+                                   :current-clause current-clause
+                                   :force-info t))
+                          (pts
+                           ;; (current-clause-pts (enumerate-elements current-clause 0))
+                           nil))
+                       (mv-let ;from simplify-clause1
+                         (contradictionp type-alist fc-pair-lst)
+                         (forward-chain current-clause
+                                        pts
+                                        (access rewrite-constant
+                                                rcnst :force-info)
+                                        nil wrld
+                                        (access rewrite-constant rcnst
+                                                :current-enabled-structure)
+                                        (access rewrite-constant rcnst
+                                                :oncep-override)
+                                        state)
+                         (declare (ignore fc-pair-lst))
+                         (cond
+                          (contradictionp
+                           (er soft ctx
+                               "Contradiction found in hypotheses~%  ~
+                                ~p0~%using type-set reasoning!"
+                               hyps))
+                          (t
+                           (sl-let ;from simplify-clause1
+                            (contradictionp simplify-clause-pot-lst)
+                            (setup-simplify-clause-pot-lst current-clause
+                                                           (pts-to-ttree-lst
+                                                            pts)
+                                                           nil ; fc-pair-lst  ;; RBK:
+                                                           type-alist
+                                                           rcnst
+                                                           wrld state
+                                                           (initial-step-limit
+                                                            wrld state))
+                            (cond
+                             (contradictionp
+                              (er soft ctx
+                                  "Contradiction found in hypotheses~%  ~
+                                   ~p0~%using linear reasoning!"
+                                  hyps))
+                             (t
 
 ; We skip the call of process-equational-polys in simplify-clause1; I think
 ; that we can assume that by the time tool2 is called, that call wouldn't have
@@ -716,129 +714,129 @@ directly with ACL2.</p>
 
 ; Now we continue as in rewrite-clause.
 
-                               (let ((local-rcnst
-                                      (change rewrite-constant rcnst
-                                              :current-literal
-                                              (make current-literal
-                                                    :not-flg nil
-                                                    :atm tterm)))
-                                     (gstack (initial-gstack 'simplify-clause
-                                                             nil current-clause)))
-                                 (sl-let
-                                  (val ttree state)
-                                  (rewrite* tterm hyps ctx
-                                            (expander-repeat-limit state)
-                                            0
-                                            type-alist
-                                            (geneqv-from-g?equiv
-                                             g?equiv
-                                             wrld)
-                                            wrld state step-limit
-                                            simplify-clause-pot-lst rcnst gstack
-                                            nil
-                                            must-rewrite-flg)
-                                  (cond
-                                   ((equal val t)
-                                    (mv t nil state))
-                                   (t
-                                    (sl-let
-                                     (bad-ass ttree)
-                                     (resume-suspended-assumption-rewriting
-                                      ttree
-                                      nil
-                                      gstack
-                                      simplify-clause-pot-lst
-                                      local-rcnst
-                                      wrld
-                                      state
-                                      step-limit)
-                                     (cond
-                                      (bad-ass
-                                       (er soft ctx
-                                           "Generated false assumption, ~p0! ~
-                                             ~ So, rewriting is aborted, just ~
-                                             as it would be in the course of ~
-                                             a regular Acl2 proof."
-                                           bad-ass))
-                                      (t
-                                       (let ((rewritten-term val))
-                                         (cond
-                                          (prove-assumptions
-                                           (mv-let
-                                             (pairs pspv state)
-                                             (process-assumptions
-                                              0
-                                              (change prove-spec-var saved-pspv
-                                                      :tag-tree
-                                                      (set-cl-ids-of-assumptions
-                                                       ttree *initial-clause-id*))
-                                              wrld state)
-                                             (er-let*
-                                                 ((ttree
-                                                   (accumulate-ttree-and-step-limit-into-state
-                                                    (access prove-spec-var pspv :tag-tree)
-                                                    step-limit
-                                                    state))
-                                                  (thints
-                                                   (if (eq prove-assumptions t)
-                                                       (value thints)
-                                                     (translate-hints 'tool2
-                                                                      *bash-skip-forcing-round-hints*
-                                                                      ctx wrld state))))
-                                               (state-global-let*
-                                                ((inhibit-output-lst
-                                                  (if (or (eq prove-assumptions t)
-                                                          (eq inhibit-output t))
-                                                      (@ inhibit-output-lst)
-                                                    (if (eq inhibit-output
-                                                            :prove)
-                                                        (remove1-eq
-                                                         'prove
-                                                         (@ inhibit-output-lst))
-                                                      (@ inhibit-output-lst)))))
-                                                (er-let* ((new-ttree
-                                                           (prove-loop1
-                                                            1 nil pairs pspv
-                                                            thints
-                                                            ens
-                                                            wrld
-                                                            ctx state)))
-                                                  (let* ((runes
+                              (let ((local-rcnst
+                                     (change rewrite-constant rcnst
+                                             :current-literal
+                                             (make current-literal
+                                                   :not-flg nil
+                                                   :atm tterm)))
+                                    (gstack (initial-gstack 'simplify-clause
+                                                            nil current-clause)))
+                                (sl-let
+                                 (val ttree state)
+                                 (rewrite* tterm hyps ctx
+                                           (expander-repeat-limit state)
+                                           0
+                                           type-alist
+                                           (geneqv-from-g?equiv
+                                            g?equiv
+                                            wrld)
+                                           wrld state step-limit
+                                           simplify-clause-pot-lst rcnst gstack
+                                           nil
+                                           must-rewrite-flg)
+                                 (cond
+                                  ((equal val t)
+                                   (mv t nil state))
+                                  (t
+                                   (sl-let
+                                    (bad-ass ttree)
+                                    (resume-suspended-assumption-rewriting
+                                     ttree
+                                     nil
+                                     gstack
+                                     simplify-clause-pot-lst
+                                     local-rcnst
+                                     wrld
+                                     state
+                                     step-limit)
+                                    (cond
+                                     (bad-ass
+                                      (er soft ctx
+                                          "Generated false assumption, ~p0! ~ ~
+                                           So, rewriting is aborted, just as ~
+                                           it would be in the course of a ~
+                                           regular Acl2 proof."
+                                          bad-ass))
+                                     (t
+                                      (let ((rewritten-term val))
+                                        (cond
+                                         (prove-assumptions
+                                          (mv-let
+                                            (pairs pspv state)
+                                            (process-assumptions
+                                             0
+                                             (change prove-spec-var saved-pspv
+                                                     :tag-tree
+                                                     (set-cl-ids-of-assumptions
+                                                      ttree *initial-clause-id*))
+                                             wrld state)
+                                            (er-let*
+                                                ((ttree
+                                                  (accumulate-ttree-and-step-limit-into-state
+                                                   (access prove-spec-var pspv :tag-tree)
+                                                   step-limit
+                                                   state))
+                                                 (thints
+                                                  (if (eq prove-assumptions t)
+                                                      (value thints)
+                                                    (translate-hints 'tool2
+                                                                     *bash-skip-forcing-round-hints*
+                                                                     ctx wrld state))))
+                                              (state-global-let*
+                                               ((inhibit-output-lst
+                                                 (if (or (eq prove-assumptions t)
+                                                         (eq inhibit-output t))
+                                                     (@ inhibit-output-lst)
+                                                   (if (eq inhibit-output
+                                                           :prove)
+                                                       (remove1-eq
+                                                        'prove
+                                                        (@ inhibit-output-lst))
+                                                     (@ inhibit-output-lst)))))
+                                               (er-let* ((new-ttree
+                                                          (prove-loop1
+                                                           1 nil pairs pspv
+                                                           thints
+                                                           ens
+                                                           wrld
+                                                           ctx state)))
+                                                 (let* ((runes
+                                                         (all-runes-in-ttree
+                                                          new-ttree
                                                           (all-runes-in-ttree
-                                                           new-ttree
-                                                           (all-runes-in-ttree
-                                                            ttree nil)))
-                                                         (byes (get-assns
-                                                                new-ttree
-                                                                nil))
-                                                         (val (list* runes
-                                                                     rewritten-term
-                                                                     byes)))
-                                                    (pprogn (tool2-print print-flg runes
-                                                                         rewritten-term state)
-                                                            (f-put-global 'tool2-error
-                                                                          nil state)
-                                                            (f-put-global
-                                                             'tool2-result
-                                                             val
-                                                             state)
-                                                            (value val))))))))
-                                          (t (let* ((runes (all-runes-in-ttree
-                                                            ttree nil))
-                                                    (val (list* runes
-                                                                rewritten-term
-                                                                nil)))
-                                               (pprogn
-                                                (tool2-print print-flg runes
-                                                             rewritten-term
-                                                             state)
-                                                (f-put-global 'tool2-error
-                                                              nil state)
-                                                (f-put-global
-                                                 'tool2-result
-                                                 val
-                                                 state)
-                                                (value val))))))))))))))))))))))))))))))))
+                                                           ttree nil)))
+                                                        (byes (get-assns
+                                                               new-ttree
+                                                               nil))
+                                                        (val (list* runes
+                                                                    rewritten-term
+                                                                    byes)))
+                                                   (pprogn (tool2-print print-flg runes
+                                                                        rewritten-term state)
+                                                           (f-put-global 'tool2-error
+                                                                         nil state)
+                                                           (f-put-global
+                                                            'tool2-result
+                                                            val
+                                                            state)
+                                                           (value val))))))))
+                                         (t (let* ((runes (all-runes-in-ttree
+                                                           ttree nil))
+                                                   (val (list* runes
+                                                               rewritten-term
+                                                               nil)))
+                                              (pprogn
+                                               (tool2-print print-flg runes
+                                                            rewritten-term
+                                                            state)
+                                               (f-put-global 'tool2-error
+                                                             nil state)
+                                               (f-put-global
+                                                'tool2-result
+                                                val
+                                                state)
+                                               (value val)))))))))))))))))))))))))))))))))
 
 (defun tool2-fn0
   (term hyps g?equiv ctx ens wrld state hints prove-assumptions
