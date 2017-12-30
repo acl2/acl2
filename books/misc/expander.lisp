@@ -624,10 +624,10 @@ directly with ACL2.</p>
                    ((intersectp-eq bad-hints (strip-cars hint-settings))
                     (er soft ctx
                         "It makes no sense in this context for hints at ~
-                         \"Goal\" to include any of ~v0.  The hint ~p1 is ~
-                         therefore illegal."
-                        bad-hints
-                        (cons "Goal" hint-settings)))
+                         \"Goal\" to include any of ~v0.  Such hints, whether ~
+                         explicit or from default hints, are therefore ~
+                         illegal."
+                        bad-hints))
                    (t
                     (pprogn
                      (initialize-proof-tree ;from waterfall

@@ -104,7 +104,7 @@
 
  <h3>Changes to Existing Libraries</h3>
 
- <p>A bug has been fixed in the expander (@('misc/expander.lisp')), which had
+ <p>A bug has been fixed in the expander (see @(see defthm?)), which had
  prevented @(see hints) from being passed to the forcing round (if any).  An
  example may be found in the new book, @('misc/expander-tests.lisp').</p>
 
