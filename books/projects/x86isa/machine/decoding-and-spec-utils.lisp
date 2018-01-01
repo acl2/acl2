@@ -1199,3 +1199,96 @@ is 16 bits.</li>
                     (if (canonical-address-p (+ *ip delta))
                         (+ *ip delta)
                       0)))))
+
+(define write-*ip ((*ip i48p) x86)
+  :returns (x86-new x86p :hyp (and (i48p *ip) (x86p x86)))
+  :parents (instruction-pointer-operations)
+  :short "Write an instruction pointer into the register RIP, EIP, or IP."
+  :long
+  "<p>
+   In 64-bit mode, a 64-bit instruction pointer is written into the full RIP.
+   Since, in the model, this is a 48-bit signed integer,
+   this function consumes a 48-bit signed integer.
+   </p>
+   <p>
+   In 32-bit mode, the instruction pointer is 32 or 16 bits
+   based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
+   In these cases, the argument to this function should be
+   a 32-bit or 16-bit unsigned integer, which is also a 48-bit signed integer.
+   </p>
+   <p>
+   See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
+   AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
+   and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
+   </p>
+   <p>
+   According to Intel manual, Mar'17, Vol. 1, Table 3-1,
+   it seems that
+   when writing a 32-bit instruction pointer (EIP)
+   the high 32 bits of RIP should be set to 0,
+   and when writing a 16-bit instruction pointer (IP)
+   the high 48 bits of RIP should be left unmodified;
+   since in our model the RIP is 48 bits,
+   the above applies to the high 16 and 32 bits, respectively.
+   The pseudocode for the JMP instruction in Intel manual, Mar'17, Vol. 2
+   shows an assignment @('EIP <- tempEIP AND 0000FFFFh') for the 16-bit case,
+   which seems to imply that
+   the high 32 (or 16, in our model) bits are left unmodified
+   and the high 16 bits of EIP are set to 0,
+   which would contradict Table 3-1;
+   the pseudocode for some other instructions
+   that directly write the instruction pointer (e.g. RET and Jcc)
+   show similar assignments.
+   However, it is possible that this assignment has a typo and should be
+   @('IP <- tempEIP AND 0000FFFFh') instead,
+   which would be consistent with Table 3-1.
+   But we also note that the pseudocode for the JMP instruction
+   shows an assignment @('EIP <- tempEIP') for the 32-bit case,
+   which seems to imply that
+   the high 32 (or 16, in our model) bits are left unmodified,
+   which would contradict Table 3-1.
+   The AMD manuals do not show pseudocode for these instructions,
+   and AMD manual, Oct'13, Vol. 1, Fig. 2-10
+   (which is somewhat analogous to Intel's Table 3-1)
+   shows the high bits simply grayed out;
+   so the AMD manuals do not provide disambiguation help.
+   It is also possible that Table 3-1 has a typo and should say
+   that a 16-bit instruction pointer is zero-extended,
+   but that is not quite consistent with the pseudocode assignments to EIP,
+   which seem to imply that the high bits are untouched.
+   Table 3-1 is under a section titled
+   &lsquo;Address Calculation in 64-Bit Mode&rsquo;,
+   which may suggest that the table may not apply to 32-bit mode,
+   but then it is not clear how it would just apply to 64-bit mode.
+   For now, we decide to have this function follow Intel's Table 3-1,
+   but we may revise that if we manage to resolve these ambiguities.
+   </p>
+   <p>
+   This function should be always called
+   with an instruction pointer of the right type
+   (48-bit signed, 32-bit unsigned, or 16-bit unsigned)
+   based on the mode and code segment.
+   We may add a guard to ensure that in the future,
+   but for now in the code below
+   we coerce the instruction pointer to 32 and 16 bits as appropriate,
+   to verify guards;
+   these coercions are expected not to change the argument instruction pointer.
+   </p>"
+  (if (64-bit-modep x86)
+      (!rip *ip x86)
+    (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+         (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+         (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+      (if (= cs.d 1)
+          (!rip (n32 *ip) x86)
+        ;; converting RIP to unsigned (via N48) and then back to signed (via
+        ;; I48) lets the guard proofs go through easily, but at some point we
+        ;; might look into adding theorems about PART-INSTALL and SIGNED-BYTE-P
+        ;; to the BITOPS libraries to let the guard proofs here go through
+        ;; without the conversions:
+        (b* ((rip (rip x86))
+             (urip (n48 rip))
+             (urip-new (part-install (n16 *ip) urip :low 0 :width 16))
+             (rip-new (i48 urip-new)))
+          (!rip rip-new x86)))))
+  :inline t)
