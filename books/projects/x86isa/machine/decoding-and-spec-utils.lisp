@@ -1292,3 +1292,197 @@ is 16 bits.</li>
              (rip-new (i48 urip-new)))
           (!rip rip-new x86)))))
   :inline t)
+
+;; ======================================================================
+
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+(defsection stack-pointer-operations
+  :parents (decoding-and-spec-utils)
+  :short "Operations to manipulate stack pointers.")
+
+(define read-*sp (x86)
+  :returns (*sp i64p :hyp (x86p x86))
+  :parents (stack-pointer-operations)
+  :short "Read the stack pointer from the register RSP, ESP, or SP."
+  :long
+  "<p>
+   In 64-bit mode, a 64-bit stack pointer is read from the full RSP.
+   Since, in the model, this is a 64-bit signed integer,
+   this function returns a 64-bit signed integer.
+   </p>
+   <p>
+   In 32-bit mode, a 32-bit or 16-bit stack pointer is read from
+   ESP (i.e. the low 32 bits of RSP)
+   or SP (i.e. the low 16 bits of RSP),
+   based on the SS.B bit, i.e. the B bit of the current code segment register.
+   Either way, this function returns an unsigne 32-bit or 16-bit integer,
+   which is also a signed 64-bit integer.
+   </p>
+   <p>
+   See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
+   and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
+   The actual size of the value returned by this function is @('StackAddrSize'),
+   introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
+   </p>
+   <p>
+   In 32-bit mode, the address-size override prefix (if present)
+   does not affect the stack address size.
+   It would not make sense to change the stack address size
+   on a per-instruction basis.
+   </p>"
+  (b* ((*sp (rgfi *rsp* x86)))
+    (if (64-bit-modep x86)
+        *sp
+      (b* ((ss-hidden (xr :seg-hidden *ss* x86))
+           (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
+           (ss.b (data-segment-descriptor-attributes-layout-slice
+                  :d/b ss-attr)))
+        (if (= ss.b 1)
+            (n32 *sp)
+          (n16 *sp)))))
+  :inline t
+  ///
+
+  (defthm-sb read-*sp-is-i64p
+    :hyp (x86p x86)
+    :bound 64
+    :concl (read-*sp x86)
+    :gen-type t
+    :gen-linear t))
+
+(define add-to-*sp ((*sp i64p) (delta integerp) x86)
+  :returns (mv flg
+               (*sp+delta i64p))
+  :parents (stack-pointer-operations)
+  :short "Add a specified amount to a stack pointer."
+  :long
+  "<p>
+   The amount may be positive (increment) or negative (decrement).
+   This just calculates the new stack pointer value,
+   without storing it into the register RSP, ESP, or SP.
+   The starting value is the result of @(tsee read-*sp)
+   or a previous invocation of @('add-to-*sp').
+   </p>
+   <p>
+   In 64-bit mode, we check whether the result is a canonical address;
+   in 32-bit mode, we check whether the result is within the segment limit.
+   If these checks are not satisfied,
+   this function returns an error flag (and 0 as new pointer),
+   which causes the x86 model to stop execution with an error.
+   It is not clear whether these checks should be performed
+   when the stack pointer is updated,
+   or when the stack is eventually accessed through the updated pointer;
+   the Intel and AMD manuals seem unclear in this respect.
+   But since the failure of these checks stops execution with an error,
+   and it is in a way always \"safe\" to stop execution with an error
+   (in the sense that the model provides no guarantees when this happens),
+   for now we choose to perform these checks here.
+   </p>
+   <p>
+   Note that a stack segment may be expand-down or expand-up
+   (see Intel manual, Mar'17, Vol. 3, Sec. 3.4.5.1),
+   so the checks need to cover these two cases.
+   See @(tsee segment-base-and-bounds) and @(tsee ea-to-la).
+   </p>
+   <p>
+   With well-formed segments,
+   the segment limit checks should ensure that
+   the new stack pointer is a 32-bit or 16-bit (based on SS.B)
+   unsigned integer in 32-bit mode.
+   Thus, the conversions @(tsee n32) and @(tsee n16) below
+   are expected to leave their arguments unchanged.
+   </p>"
+  (b* ((*sp+delta (+ *sp delta)))
+    (if (64-bit-modep x86)
+        (if (mbe :logic (canonical-address-p *sp+delta)
+                 :exec (and (<= *-2^47* *sp+delta)
+                            (< *sp+delta #.*2^47*)))
+            (mv nil *sp+delta)
+          (mv (list :non-canonical-stack-address *sp+delta) 0))
+      (b* ((ss-hidden (xr :seg-hidden *ss* x86))
+           (ss.limit (hidden-seg-reg-layout-slice :limit ss-hidden))
+           (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
+           (ss.b (data-segment-descriptor-attributes-layout-slice :d/b ss-attr))
+           (ss.e (data-segment-descriptor-attributes-layout-slice :e ss-attr))
+           (ss-lower (if ss.e (1+ ss.limit) 0))
+           (ss-upper (if ss.e (if ss.b #xffffffff #xffff) ss.limit))
+           ((unless (and (<= ss-lower *sp+delta)
+                         (<= *sp+delta ss-upper)))
+            (mv (list :out-of-segment-stack-address *sp+delta ss-lower ss-upper)
+                0)))
+        (if (= ss.b 1)
+            (mv nil (n32 *sp+delta))
+          (mv nil (n16 *sp+delta))))))
+  :inline t
+  ///
+
+  (defthm-sb add-to-*ip-is-i64p
+    :bound 48
+    :concl (mv-nth 1 (add-to-*sp *sp delta x86))
+    :gen-type t
+    :gen-linear t))
+
+(define write-*sp ((*sp i64p) x86)
+  :returns (x86-new x86p :hyp (and (i64p *sp) (x86p x86)))
+  :parents (stack-pointer-operations)
+  :short "Write a stack pointer into the register RSP, ESP, or SP."
+  :long
+  "<p>
+   In 64-bit mode, a 64-bit stack pointer is written into the full RSP.
+   Since, in the model, this is a 64-bit signed integer,
+   this function consumes a 64-bit signed integer.
+   </p>
+   <p>
+   In 32-bit mode, the stack pointer is 32 or 16 bits based on the SS.B bit,
+   i.e. the B bit of the current stack segment descriptor.
+   In these cases, the argument to this function should be
+   a 32-bit or 16-bit unsigned integer, which is also a 64-bit signed integer.
+   </p>
+   <p>
+   See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
+   and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
+   The actual size of the value returned by this function is @('StackAddrSize'),
+   introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
+   </p>
+   <p>
+   The pseudocode of stack instructions like PUSH
+   in Intel manual, Mar'17, Vol. 2
+   show assignments of the form
+   @('RSP <- ...'), @('ESP <- ...'), and @('SP <- ...')
+   based on the stack address size.
+   This suggests that
+   when the stack address size is 32
+   the assignment to ESP leaves the high 32 bits of RSP unchanged,
+   and when the stack address size is 16
+   the assignment to SP leaves the high 48 bits of RSP unchanged.
+   </p>
+   <p>
+   This function should be always called
+   with a stack pointer of the right type
+   (64-bit signed, 32-bit unsigned, or 16-bit unsigned)
+   based on the stack address size.
+   We may add a guard to ensure that in the future,
+   but for now in the code below
+   we coerce the stack pointer to 32 and 16 bits as appropriate,
+   to verify guards;
+   these coercions are expected not to change the argument stack pointer.
+   </p>"
+  (if (64-bit-modep x86)
+      (!rgfi *rsp* *sp x86)
+    (b* ((ss-hidden (xr :seg-hidden *ss* x86))
+         (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
+         (ss.b (data-segment-descriptor-attributes-layout-slice :d/b ss-attr))
+         ;; converting RSP to unsigned (via N64) and then back to signed (via
+         ;; I64) lets the guard proofs go through easily, but at some point we
+         ;; might look into adding theorems about PART-INSTALL and
+         ;; SIGNED-BYTE-P to the BITOPS libraries to let the guard proofs here
+         ;; go through without the conversions:
+         (rsp (rgfi *rsp* x86))
+         (ursp (n64 rsp))
+         (ursp-new (if (= ss.b 1)
+                       (part-install (n32 *sp) ursp :low 0 :width 32)
+                     (part-install (n16 *sp) ursp :low 0 :width 16)))
+         (rsp-new (i64 ursp-new)))
+      (!rgfi *rsp* rsp-new x86)))
+  :inline t)
