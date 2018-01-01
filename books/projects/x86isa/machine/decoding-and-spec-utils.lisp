@@ -1053,11 +1053,12 @@ is 16 bits.</li>
 
 ;; ======================================================================
 
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+
 (defsection instruction-pointer-operations
   :parents (decoding-and-spec-utils)
   :short "Operations to manipulate instruction pointers.")
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define read-*ip (x86)
   :returns (*ip i48p :hyp (x86p x86))
   :parents (instruction-pointer-operations)
@@ -1105,7 +1106,6 @@ is 16 bits.</li>
              (equal (read-*ip x86)
                     (rip x86)))))
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define increment-*ip ((*ip i48p) (delta natp) x86)
   :returns (mv flg
                (*ip+delta i48p :hyp (and (i48p *ip) (natp delta))))
