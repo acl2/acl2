@@ -55,6 +55,14 @@
 
 (in-package "ACL2")
 
+; Note: This entire file is processed only in pass 2.  We might be able to
+; loosen that and process these events more generally.  But there is no point:
+; the functions introduced here, e.g., badge-userfn and apply$-userfn, are used
+; in the definitions of badge and apply$.  But those definitions use
+; apply$-primp and apply$-prim, from apply-prim.lisp, which are only defined in
+; pass 2.  So there's really no point in introducing badge-userfn and
+; apply$-userfn any earlier.
+
 (when-pass-2
 
 ; -----------------------------------------------------------------
@@ -110,8 +118,9 @@
 ; The constraint above says that badge-userfn either returns nil or a
 ; well-formed badge.  We have contemplated strengthening that constraint to add
 ; that on apply$ primitives and symbols listed in *apply$-boot-fns-badge-alist*
-; badge-userfn is nil.  That is, we don't have to entertain the possibility
-; that, e.g., (badge-userfn 'CONS) is non-nil.
+; badge-userfn is nil.  That is, the strengthened constraint would tell us we
+; don't have to entertain the possibility that, e.g., (badge-userfn 'CONS) is
+; non-nil.  The strengthened constraint would be:
 
 ;   (defthm badge-userfn-type
 ;     (and (or (null (badge-userfn fn))
@@ -134,22 +143,24 @@
 ; fn) then we'd know fn isn't among the ~800 primitives or the six boot
 ; functions.
 
-; This additional conjunct can probably be easily achieved, in particular by
-; moving up the definition below of *apply$-boot-fns-badge-alist* so we can use
-; it in the defthm above.
+; This additional conjunct can probably be easily added, though it would
+; require moving up the definition below of *apply$-boot-fns-badge-alist* so we
+; can use it in the new constraint.
 
 ; More problematically, we must make sure that concrete-badge-userfn satisfies
-; the strengthened constraint.  This is difficult because
-; concrete-badge-userfn is currently (partially) constrained in
-; other-events.lisp, which is processed before apply$-primp and
-; *apply$-boot-fns-badge-alist* are defined.  The only way we can think of to
-; fix this would be to move the introduction of concrete-badge-userfn into
-; this file and deal with any bootstrapping issues that come up!
+; the strengthened constraint.  This is difficult because concrete-badge-userfn
+; is currently (partially) constrained in other-events.lisp, which is processed
+; before apply$-primp and *apply$-boot-fns-badge-alist* are defined.  The only
+; way we can think of to fix this would be to move the introduction of
+; concrete-badge-userfn into this file and deal with any bootstrapping issues
+; that come up!  If this additional constraint is added, we would have to
+; change the raw Lisp definition of concrete-badge-userfn, q.v. in
+; apply-raw.lisp.
 
 ; (BTW: The ``doppelganger'' of badge-userfn (which must also satisfy this
-; constraint) in the foundational work of books/projects/apply-model/ex1/ and
-; ex2/ already satisfies this additional constraint because the final
-; otherwise clause in the doppelganger's definition is nil.)
+; constraint) in the Foundational work of books/projects/apply-model/ex1/ and
+; ex2/ already satisfies this additional constraint because the final otherwise
+; clause in the doppelganger's definition is nil.)
 
 ; On the other hand, so far, we haven't seen a proof where the stronger
 ; constraint is required.  It is just odd that, for all we know, (badge-userfn
@@ -222,7 +233,9 @@
 ; In our case, a warrant for function symbol fn is a 0-ary predicate named
 ; APPLY$-WARRANT-fn that specifies value of (badge 'fn) and the ``tameness''
 ; conditions under which (apply$ 'fn args) = (fn (car args) ... (cad...dr
-; args)).
+; args)).  (Technically, the warrant specifies the values of (badge-userfn 'fn)
+; and (apply$-userfn 'fn args), which allow the definitions of badge and apply$
+; to simplify appropriately.)
 
 ; Derivation History: This concept was originally called an ``applicability
 ; hypothesis'' and variations on that theme.  We decided to replace it with a

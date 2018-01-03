@@ -172,6 +172,7 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    DEF-WARRANT
     ))
 
 (defconst *special-ops*

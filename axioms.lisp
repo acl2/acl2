@@ -1553,10 +1553,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro defun-overrides (name formals &rest rest)
 
-; This defines the function symbol, name, in raw Lisp.  Name should have a
-; guard of t and should have *unknown-constraints*.  We push name onto
-; *defun-overrides* so that add-trip knows to leave the *1* definition in
-; place.
+; This defines the function symbol, name, in raw Lisp.  Name should include
+; STATE as a formal, have a guard of t and should have *unknown-constraints*.
+; We push name onto *defun-overrides* so that add-trip knows to leave the *1*
+; definition in place.
 
 ; Warning: The generated definitions will replace both the raw Lisp and *1*
 ; definitions of name.  We must ensure that these definitions can't be
@@ -1566,6 +1566,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; state is not a formal (or even if it is), this latter condition -- i.e.,
 ; being a function, must be true in order for the use of defun-overrides to be
 ; sound!
+
+; Note: In apply-raw.lisp we use a relaxed version of the expansion of
+; defun-overrides that ignores the requirement that STATE be a formal!  We use
+; that relaxed code to define See concrete-badge-userfn and
+; concrete-apply$-userfn.  The basic argument is that it is ok to secretely
+; look at the current world as long as we cause an error if the current world
+; does not specify a value for the notion being ``defined'' and that once the
+; world does specify a value that value never changes.  If more functions like
+; these two arise in the future we may wish to relax defun-overrides or at
+; least define a relaxed version of it.
 
   (assert (member 'state formals :test 'eq))
   `(progn (push ',name *defun-overrides*) ; see add-trip

@@ -33,8 +33,8 @@
 ;    function.''
 
 ; 2. Tameness
-;    Define tameness: tame lambdas, tame expressions, tame functions, lists of
-;    tame things.
+;    Partially define tameness: tame lambdas, tame expressions, tame functions,
+;    lists of tame things, in terms of BADGE.
 
 ; 3. Definition of APPLY$ and EV$
 ;    Partially define APPLY$ and EV$.
@@ -93,13 +93,13 @@
 ;     support top-level evaluation of ground apply$ expressions.  These magic
 ;     functions are defined in the source file apply-raw.lisp.
 
-; -----------------------------------------------------------------
-; 1. Badges
+; Note: This entire file is processed only in pass 2, fundamentally because
+; apply$-primp and apply$-prim are only defined in pass 2.
 
 (when-pass-2
 
-; Note for example that badge-userfn is only defined in pass 2.  Maybe we could
-; move some of these events out of when-pass-2.
+; -----------------------------------------------------------------
+; 1. Badges
 
 (defun badge (fn)
   (declare (xargs :guard t :mode :logic))
@@ -467,7 +467,7 @@
 ; and EV$ we apply$ the relevant function symbol rather than just calling it,
 ; e.g., we write (apply$ 'apply$ ...)  instead of (apply$ ...).  We do it this
 ; way so that we can more easily prove that in all cases, ev$ handles function
-; calls calling apply$ on the ev$-list of the arguments.  But note that we
+; calls by calling apply$ on the ev$-list of the arguments.  But note that we
 ; don't write it quite that way because we need to prove termination.  That is,
 ; instead of calling ev$-list we actually write an explicit list of the two
 ; arguments (list (cadr (cadr x)) (EV$ (caddr x) a)).  Note in particular that
@@ -631,11 +631,11 @@
 ;  mechanism uses two more pseudo-ilks, :unknown and :unknown*, which never get
 ;  out of that inference mechanism and should not be confused with ilks.
 
-; ilks: a true list of ilk symbols or T denoting a list of as many NILs
-;  as we'll need.  The ilks associated with a function symbol fn with
-;  formals v1, ..., vn, has length n, and successive formals have
-;  the corresponding ilk in ilks.  For example, if ilks is (NIL :FN :EXPR)
-;  and the formals are (X Y Z), then X is vanilla, Y is functional and Z is
+; ilks: a true list of ilk (or pseudo-ilk) symbols or T denoting a list of as
+;  many NILs as we'll need.  The ilks associated with a function symbol fn with
+;  formals v1, ..., vn, has length n, and successive formals have the
+;  corresponding ilk in ilks.  For example, if ilks is (NIL :FN :EXPR) and the
+;  formals are (X Y Z), then X is vanilla, Y is functional and Z is
 ;  expressional.
 
 ; badge: a defrec record structure object associated with a function symbol fn.
@@ -1247,12 +1247,11 @@
 
 (defun ancestrally-dependent-on-apply$p1 (flg x wrld acc)
 
-; This is just all-fnnames1 from the ACL2 sources except it recursively
-; explores the body of each fn it encounters and it short circuits if it sees
-; the fnnames APPLY$ or EV$.  Flg = t means x is a list of terms; else x is a
-; term.  Acc is just the fns we've seen so far and is returned, but it is
-; incomplete if its car is APPLY$, which is the signal that we found EITHER
-; APPLY$ or EV$!
+; This is just all-fnnames1 except it recursively explores the body of each fn
+; it encounters and it short circuits if it sees the fnnames APPLY$ or EV$.
+; Flg = t means x is a list of terms; else x is a term.  Acc is just the fns
+; we've seen so far and is returned, but it is incomplete if its car is APPLY$,
+; which is the signal that we found EITHER APPLY$ or EV$!
 
   (declare (xargs :mode :program))
   (cond
@@ -1327,11 +1326,11 @@
 ; (2) We could allow tame G2 functions in measures (of G1 and G2 functions) if
 ; we proved that every tame function is ``G1 defineable.''  We believe this but
 ; haven't written a proof.  The basic construction is: take a tame G2
-; expression, like (m lst) where (defun m (lst) (sumlist lst '(lambda (x) (+ 1
-; (nfix x))))).  Copy the definition of the G2 function (e.g., sumlist),
-; deleting the fn args and substituting the quoted tame functions for them,
-; beta reducing, and fold.  The result for this m would be (defun m (lst) (if
-; (endp lst) 0 (+ (+ 1 (nfix (car lst))) (m (cdr lst))))).  Of course, this
+; expression, like (m lst) where (defun m (lst) (sumlist lst '(lambda (x)
+; (binary-+ '1 (nfix x))))).  Copy the definition of the G2 function (e.g.,
+; sumlist), deleting the fn args and substituting the quoted tame functions for
+; them, beta reducing, and fold.  The result for this m would be (defun m (lst)
+; (if (endp lst) 0 (+ (+ 1 (nfix (car lst))) (m (cdr lst))))).  Of course, this
 ; process has to be done recursively innermost first to reach all the G2
 ; functions in m.  But if m is tame, we think you can always do this.  If
 ; someone complains that their G2 function is rejected because its measure
@@ -1382,8 +1381,8 @@
 ;     with the explanation that some other member is not badged yet.
 
 ; (b) A not-too-difficult improvement would be to include tame
-;     mutually-recursion.  For example, if my-even and my-odd are the obvious
-;     functions, we can't APPLY$ them, even though the are tame.  If we just
+;     mutual recursion.  For example, if my-even and my-odd are the obvious
+;     functions, we can't APPLY$ them, even though they are tame.  If we just
 ;     recognized that if every subroutine used in a clique is tame (except for
 ;     the clique members being defined, which will have no badges yet), then
 ;     they're all tame and could be so badged.  This doesn't complicate the
@@ -1761,29 +1760,30 @@
 ; -----------------------------------------------------------------
 ; 8. DEF-WARRANT
 
-; Suppose AP is defined (with the new defun$) to be a tame function of two
-; arguments.  Then the new defun$ will also do:
+; Suppose AP is defined (with defun$) to be a tame function of two arguments.
+; Then defun$ will also do something equivalent to the following (modulo
+; the note below):
 
 ; (defun-sk apply$-warrant-AP nil
-;   (forall (args) (and (equal (badge 'AP) t)
+;   (forall (args) (and (equal (badge 'AP) '(APPLY$-BADGE T 2 . T))
 ;                       (equal (apply$ 'AP args)
 ;                              (ap (car args) (cadr args))))))
 
 ; (defthm apply$-AP
 ;   (implies (force (apply$-warrant-AP))
-;            (and (equal (badge 'AP) t)
+;            (and (equal (badge 'AP) '(APPLY$-BADGE T 2 . T))
 ;                 (equal (apply$ 'AP args)
 ;                        (ap (car args) (cadr args))))))
 
 ; (in-theory (disable apply$-warrant-AP))
 
 ; which will mean that if we have the hypothesis (apply$-warrant-AP), we will
-; rewrite (badge 'AP) to T and rewrite (apply$ 'AP args) to the appropriate
-; call of ap.
+; rewrite (badge 'AP) to the given badge record and rewrite (apply$ 'AP args)
+; to the appropriate call of ap.
 
-; (BTW: The actual warrant is phrased in terms of badge-userfn and
+; Note: the actual warrant is phrased in terms of badge-userfn and
 ; apply$-userfn, not badge and apply$, as shown above; but the rewrite rule
-; indeed deals with badge and apply$.  We deal with this later.)
+; apply$-AP indeed deals with badge and apply$.  We deal with this later.
 
 (defun warrant-fn (names)
 
@@ -1814,9 +1814,10 @@
 ;          (implies (tamep-functionp (cadr args)) ; tameness-conditions
 ;                   (equal (apply$ 'COLLECT args)
 ;                          (collect (car args)     ; successive-cadrs
-;                                   (cadr args)))))))
+;                                   (cadr args))))))
+;   :constrained t)
 
-; (BTW: The actual warrant is phrased in terms of badge-userfn and
+; (BTW: The actual warrant is a defun-sk phrased in terms of badge-userfn and
 ; apply$-userfn, not badge and apply$, as shown above; but the rewrite rule
 ; indeed deals with badge and apply$.  We deal with this later.)
 
@@ -1829,12 +1830,33 @@
 (defun def-warrant-fn1 (fn state)
   (declare (xargs :mode :program))
   (let ((ens (ens state))
-        (wrld (w state)))
+        (wrld (w state))
+        (apply-lemmas-book
+         (extend-pathname :system "projects/apply/apply-lemmas.lisp" state)))
     (mv-let (msg bdg)
       (badger fn ens wrld)
       (cond
        (msg
         (er soft 'def-warrant "~@0" msg))
+       ((and (not (assoc-equal
+                   apply-lemmas-book
+                   (global-val 'include-book-alist (w state))))
+             (not (equal apply-lemmas-book
+                         (active-book-name (w state) state))))
+
+; In order to succeed, def-warrant needs apply-lemmas.lisp to have been
+; included.  That is because def-warrant tries to prove congruence rules and at
+; the very least needs the lemmas establishing that fn-equal is an equivalence
+; and a congruence for apply$.  So we tell the user to load apply-lemmas unless
+; it has already been loaded or we're currently including or certifying
+; apply-lemmas itself (which, naturally enough, explicitly proves all the
+; lemmas it needs to do the def-warrants it tries).
+
+        (er soft 'def-warrant
+            "Please execute~%~x0~|before the first defun$ or def-warrant.  ~
+             See :DOC def-warrant."
+            '(include-book
+              "projects/apply/apply-lemmas" :dir :system)))
        ((null (access apply$-badge bdg :authorization-flg))
         (value
          `(progn
@@ -2005,9 +2027,8 @@
 ; and just use equal.  And we'd have to have a way to signal an error from the
 ; middle of a value calculation for a TABLE event, which might have to be a
 ; hard error...  All this is speculative because efficiency is not a big
-; concern right now!  The truth is that if apply$ becomes a standard part of
-; ACL2 this will probably all be done as part of DEFUN processing where coding
-; it is less restrictive.
+; concern right now!  We will wait until users start using APPLY$ and complain
+; about performance!
 
 ; -----------------------------------------------------------------
 ; 9. DEFUN$

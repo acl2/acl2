@@ -30099,8 +30099,8 @@
 
 ; Below we define two ``acl2-magic-concrete...'' functions whose only uses are
 ; to allow us to introduce concrete-badge-userfn and concrete-apply$-userfn as
-; partially constrained functions.  See apply-raw.lisp for raw Lisp support and
-; relevant background.
+; partially constrained functions.  See the Essay on the APPLY$ Integration in
+; apply-prim.lisp for an overview.
 
 (defun acl2-magic-concrete-badge-userfn (x)
 
