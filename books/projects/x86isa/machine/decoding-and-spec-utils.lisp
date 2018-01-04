@@ -1291,7 +1291,13 @@ is 16 bits.</li>
              (urip-new (part-install (n16 *ip) urip :low 0 :width 16))
              (rip-new (i48 urip-new)))
           (!rip rip-new x86)))))
-  :inline t)
+  :inline t
+  ///
+
+  (defrule write-*ip-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (equal (write-*ip *ip x86)
+                    (!rip *ip x86)))))
 
 ;; ======================================================================
 
@@ -1349,7 +1355,12 @@ is 16 bits.</li>
     :bound 64
     :concl (read-*sp x86)
     :gen-type t
-    :gen-linear t))
+    :gen-linear t)
+
+  (defrule read-*sp-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (equal (read-*sp x86)
+                    (rgfi *rsp* x86)))))
 
 (define add-to-*sp ((*sp i64p) (delta integerp) x86)
   :returns (mv flg
@@ -1421,7 +1432,21 @@ is 16 bits.</li>
     :bound 48
     :concl (mv-nth 1 (add-to-*sp *sp delta x86))
     :gen-type t
-    :gen-linear t))
+    :gen-linear t)
+
+  (defrule mv-nth-0-of-add-to-*sp-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (equal (mv-nth 0 (add-to-*sp *sp delta x86))
+                    (if (canonical-address-p (+ *sp delta))
+                        nil
+                      (list :non-canonical-stack-address (+ *sp delta))))))
+
+  (defrule mv-nth-1-of-add-to-*sp-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (equal (mv-nth 1 (add-to-*sp *sp delta x86))
+                    (if (canonical-address-p (+ *sp delta))
+                        (+ *sp delta)
+                      0)))))
 
 (define write-*sp ((*sp i64p) x86)
   :returns (x86-new x86p :hyp (and (i64p *sp) (x86p x86)))
@@ -1485,4 +1510,10 @@ is 16 bits.</li>
                      (part-install (n16 *sp) ursp :low 0 :width 16)))
          (rsp-new (i64 ursp-new)))
       (!rgfi *rsp* rsp-new x86)))
-  :inline t)
+  :inline t
+  ///
+
+  (defrule write-*sp-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (equal (write-*sp *sp x86)
+                    (!rgfi *rsp* *sp x86)))))

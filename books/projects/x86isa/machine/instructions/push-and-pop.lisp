@@ -45,6 +45,12 @@
 ;
 ; Also based on some experiments, we choose the second intepretations above in
 ; our formal model.
+;
+; The documentation of PUSH in Intel manual, Mar'17, Vol. 2 includes a section
+; "IA-32 Architecture Compatibiity" describing a slightly different behavior of
+; PUSH ESP in 8086 processors. This is is currently not covered by our formal
+; model below. To cover this, we may need to extend the X86 state with
+; information about the kind of processor.
 
 ;; ======================================================================
 ;; INSTRUCTION: (one- and two- byte opcode maps)
@@ -55,16 +61,19 @@
   :parents (one-byte-opcodes)
 
   :short "PUSH: 50+rw/rd"
-  :long "<p>Op/En: O</p>
-   <p><tt>50+rw/rd r16/r64</tt>: \[PUSH E\]</p>
-   <p>Note that <tt>50+rd r32</tt> is N.E. in the 64-bit mode.</p>
 
-<p>PUSH doesn't have a separate instruction semantic function,
-unlike other opcodes like ADD, SUB, etc. I've just coupled the
-decoding with the execution in this case.</p>"
+  :long "<p>Op/En: O</p>
+   <p><tt>50+rw/rd r16/r32/r64</tt>: \[PUSH E\]</p>
+   <p>Note that <tt>50+rd r32</tt> is N.E. in 64-bit mode
+      and that <tt>50+rd r64</tt> is N.E. in 32-bit mode.</p>
+
+   <p>PUSH doesn't have a separate instruction semantic function, unlike other
+   opcodes like ADD, SUB, etc. The decoding is coupled with the execution in
+   this case.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
+
   :body
 
   (b* ((ctx 'x86-push-general-register)
@@ -75,15 +84,19 @@ decoding with the execution in this case.</p>"
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
        ((the (integer 1 8) operand-size)
-        (if p3?
-            2
-          ;; 4-byte operand size is N.E. in 64-bit mode
-          ;; See http://www.x86-64.org/documentation/assembly.html
-          8))
-       (rsp (rgfi *rsp* x86))
-       (new-rsp (- rsp operand-size))
-       ((when (not (canonical-address-p new-rsp)))
-        (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
+        (if (64-bit-modep x86)
+            (if p3? 2 8)
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+       (rsp (read-*sp x86))
+       ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand
@@ -120,8 +133,8 @@ decoding with the execution in this case.</p>"
        ((when flg) ;; Would also handle bad rsp values.
         (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
 
-       (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*sp new-rsp x86))
+       (x86 (write-*ip temp-rip x86)))
 
     x86)
 
