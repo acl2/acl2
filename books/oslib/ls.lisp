@@ -33,7 +33,7 @@
 (include-book "ls-logic")
 (include-book "dirname")
 (include-book "file-types")
-(include-book "centaur/quicklisp/osicat" :dir :system)
+(include-book "quicklisp/osicat" :dir :system)
 
 
 ; [Jared] hopefully temporary.  CMUCL path problems that are biting us

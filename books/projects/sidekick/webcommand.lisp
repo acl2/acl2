@@ -31,7 +31,7 @@
 ; Original author: Jared Davis <jared@kookamara.com>
 
 (in-package "SIDEKICK")
-(include-book "centaur/quicklisp/bordeaux" :dir :system)
+(include-book "quicklisp/bordeaux" :dir :system)
 (defttag :sidekick)
 
 ; web commands -- the browser portion polls for the current "web commands" and

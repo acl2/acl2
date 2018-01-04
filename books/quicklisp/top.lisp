@@ -58,7 +58,7 @@ href='http://www.ruby-lang.org/'>Ruby</a>.  It lets you to easily install and
 load the latest versions of Common Lisp libraries (and their dependencies).</p>
 
 <p>To make it easy to use Quicklisp from ACL2 we have developed some wrapper
-books in the @('books/centaur/quicklisp') directory.  These books serve as the
+books in the @('books/quicklisp') directory.  These books serve as the
 basis for other libraries such as @(see oslib) and the ACL2 @(see bridge).
 Naturally, all of these books require @(see trust-tag)s.</p>
 
@@ -82,7 +82,7 @@ up-to-date details about how to do this.</p>
 <h3>Using the Quicklisp Books</h3>
 
 <p>Most ACL2 users will have no reason to <i>directly</i> load the Quicklisp
-books in @('books/centaur/quicklisp').  Instead, you will want to load
+books in @('books/quicklisp').  Instead, you will want to load
 higher-level ACL2 libraries like @(see oslib) or the ACL2 @(see bridge).  This
 is because the Quicklisp books only deal with getting the appropriate Common
 Lisp libraries loaded&mdash;they do not, by themselves, introduce ACL2 wrapper
@@ -98,8 +98,8 @@ to load <a href='http://weitz.de/cl-fad/'>CL-FAD</a> and <a
 href='https://common-lisp.net/project/osicat/'>OSICAT</a> you could do:
 
 @({
-    (include-book \"centaur/quicklisp/cl-fad\" :dir :system)
-    (include-book \"centaur/quicklisp/osicat\" :dir :system)
+    (include-book \"quicklisp/cl-fad\" :dir :system)
+    (include-book \"quicklisp/osicat\" :dir :system)
 })</li>
 
 <li>Add your own @(see trust-tag)s, drop into raw Lisp with @(see include-raw),
@@ -129,7 +129,7 @@ documentation for all of the libraries in Quicklisp.</li>
 
 <h3>Adding Quicklisp Libraries</h3>
 
-<p>The books in @('centaur/quicklisp') only wrap up a few Common Lisp libraries
+<p>The books in @('quicklisp') only wrap up a few Common Lisp libraries
 that we have found to be useful.  But it should be very easy to experiment with
 any other Quicklisp libraries.</p>
 
@@ -137,25 +137,25 @@ any other Quicklisp libraries.</p>
 
 <ul>
 
-<li>Edit @('centaur/quicklisp/update-libs.lsp') and add the libraries you want
+<li>Edit @('quicklisp/update-libs.lsp') and add the libraries you want
 to the list.</li>
 
 <li>Run the @('update-libs.sh') script.  This should download the new libraries
-into your @('centaur/quicklisp/bundle') directory.</li>
+into your @('quicklisp/bundle') directory.</li>
 
-<li>Extend @('centaur/quicklisp/base-raw.lsp') to load the new library and
+<li>Extend @('quicklisp/base-raw.lsp') to load the new library and
 certify it.  This @('base') book really is just a way to get the bundle loaded
 into an ACL2 session so that the libraries can be found as needed.  It
 also (locally) loads the libraries that we expect to use, which ensures
 everything gets downloaded at the same time, and avoids potential problems with
 simultaneously compiling Common Lisp libraries during parallel builds.</li>
 
-<li>Add a new @('centaur/quicklisp/yourlib.lisp') book, styled after the other
+<li>Add a new @('quicklisp/yourlib.lisp') book, styled after the other
 books in the Quicklisp directory.  The book doesn't really need to live in the
 @('quicklisp') directory, but keeping them there makes it easy to see what we
 are depending on and, if necessary, to change the way the wrappers work.</li>
 
-<li>Include your new book in @('centaur/quicklisp/top.lisp'), just for
+<li>Include your new book in @('quicklisp/top.lisp'), just for
 completeness.  (Hrmn, actually this book probably isn't very useful for
 anything.)</li>
 
@@ -181,7 +181,7 @@ href='http://common-lisp.net/project/cl-json/'>CL-JSON</a> library.</p>
     (in-package \"MY-PKG\")
 
     ; ** Load the library (after adding it as described above)
-    (include-book \"centaur/quicklisp/cl-json\" :dir :system)
+    (include-book \"quicklisp/cl-json\" :dir :system)
 
     ; ** [OPTIONAL] develop a logical story so you can use the
     ; ** library from proper ACL2 functions...

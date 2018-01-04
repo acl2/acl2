@@ -24,7 +24,7 @@
 ; Original authors: Jared Davis <jared@kookamara.com>
 
 (in-package "ACL2")
-(include-book "centaur/quicklisp/bordeaux" :dir :system)
+(include-book "quicklisp/bordeaux" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (local (include-book "oslib/read-acl2-oracle" :dir :system))
 ; (depends-on "oracle-timelimit-raw.lsp")

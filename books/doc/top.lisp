@@ -113,7 +113,7 @@
 
 (include-book "centaur/depgraph/top" :dir :system)
 
-(include-book "centaur/quicklisp/top" :dir :system)
+(include-book "quicklisp/top" :dir :system)
 
 (include-book "centaur/misc/top" :dir :system)
 (include-book "centaur/misc/smm" :dir :system)

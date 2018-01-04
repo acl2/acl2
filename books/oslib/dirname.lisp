@@ -30,8 +30,8 @@
 
 (in-package "OSLIB")
 (include-book "dirname-logic")
-(include-book "centaur/quicklisp/cl-fad" :dir :system)
-(include-book "centaur/quicklisp/uiop" :dir :system)
+(include-book "quicklisp/cl-fad" :dir :system)
+(include-book "quicklisp/uiop" :dir :system)
 
 ; (depends-on "dirname-raw.lsp")
 
