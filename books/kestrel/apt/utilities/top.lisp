@@ -12,6 +12,8 @@
 
 (include-book "print-specifiers")
 (include-book "transformation-table")
+(include-book "pattern-matching")
+(include-book "pattern-matching-ext")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
