@@ -26530,7 +26530,7 @@
 ; From fn generate the name APPLY$-WARRANT-fn.
 
   (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
-                  :guard (symbolp fn))) 
+                  :guard (symbolp fn)))
   (intern-in-package-of-symbol
    (concatenate 'string
                 "APPLY$-WARRANT-"
@@ -27678,18 +27678,18 @@
 ;     (cond ((zp n) nil)
 ;           (t (list* `(defn ,(packn (list 'g n)) (x) (cons x x))
 ;                     (tests-fn (1- n))))))
-;   
+;
 ;   (defun defattach-tests-fn (n)
 ;     (declare (xargs :guard (natp n)))
 ;     (cond ((zp n) nil)
 ;           (t (cons `(defattach f ,(packn (list 'g n)))
 ;                    (defattach-tests-fn (1- n))))))
-;   
+;
 ;   (defmacro tests (n)
 ;     `(ld '((defstub f (x) t)
 ;            ,@(tests-fn n)
 ;            (time$ (progn ,@(defattach-tests-fn n))))))
-;   
+;
 ;   (defun defun$-tests-fn (n)
 ;     (declare (xargs :guard (natp n)))
 ;     (cond ((zp n) nil)
@@ -27697,7 +27697,7 @@
 ;                        (declare (xargs :guard t))
 ;                        (cons x x))
 ;                     (defun$-tests-fn (1- n))))))
-;   
+;
 ;   (defmacro tests+ (n)
 ;     `(ld '((defstub f (x) t)
 ;            ,@(defun$-tests-fn n)
@@ -29222,9 +29222,15 @@
 ; See the comment at the call of trans-eval-default-warning, below.
 
   (let ((original-wrld (w state)))
-    (protect-system-state-globals
-     (er-let*
-      ((result
+    (state-global-let*
+     ((in-local-flg
+
+; During make-event expansion, there is no reason to prohibit local events
+; (unless we move to inside an encapsulate or include-book, of course).
+
+       nil))
+     (protect-system-state-globals
+      (er-let* ((result
 
 ; We call trans-eval-default-warning here, so that if make-event modifies
 ; stobjs, we issue a warning if and only if the current setting of LD special
@@ -29242,46 +29248,46 @@
 ; safe-mode for make-event will require addition".  Those comments are
 ; associated with membership tests that, for now, we avoid for efficiency.
 
-        (trans-eval-default-warning form ctx state aok)))
-      (let* ((new-kpa (known-package-alist state))
-             (new-ttags-seen (global-val 'ttags-seen (w state)))
-             (stobjs-out (car result))
-             (vals (cdr result))
-             (safep (equal stobjs-out '(nil))))
-        (cond (safep (value (list* vals new-kpa new-ttags-seen)))
-              ((or (null (cdr stobjs-out))
-                   (not (eq (caddr stobjs-out) 'state))
-                   (member-eq nil (cdddr stobjs-out)))
-               (er soft ctx
-                   "The expansion of a make-event form must either return a ~
+                 (trans-eval-default-warning form ctx state aok)))
+        (let* ((new-kpa (known-package-alist state))
+               (new-ttags-seen (global-val 'ttags-seen (w state)))
+               (stobjs-out (car result))
+               (vals (cdr result))
+               (safep (equal stobjs-out '(nil))))
+          (cond (safep (value (list* vals new-kpa new-ttags-seen)))
+                ((or (null (cdr stobjs-out))
+                     (not (eq (caddr stobjs-out) 'state))
+                     (member-eq nil (cdddr stobjs-out)))
+                 (er soft ctx
+                     "The expansion of a make-event form must either return a ~
                     single ordinary value or else should return a tuple (mv ~
                     erp val state stobj1 stobj2 ... stobjk) for some k >= 0.  ~
                     But the shape of ~x0 is ~x1."
-                   form
-                   (prettyify-stobjs-out stobjs-out)))
-              ((car vals)
-               (cond
-                ((eq on-behalf-of :quiet!)
-                 (silent-error state))
-                ((stringp (car vals))
-                 (er soft ctx
-                     (car vals)))
-                ((tilde-@p (car vals)) ; a message
-                 (er soft ctx
-                     "~@0"
-                     (car vals)))
-                ((eq on-behalf-of :quiet)
-                 (silent-error state))
-                (t (er soft ctx
-                       "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
-                       (cond (on-behalf-of
-                              (msg "on behalf of~|  ~y0~|"
-                                   on-behalf-of))
-                             (t ""))
-                       form))))
-              (t (pprogn
-                  (set-w! original-wrld state)
-                  (value (list* (cadr vals) new-kpa new-ttags-seen))))))))))
+                     form
+                     (prettyify-stobjs-out stobjs-out)))
+                ((car vals)
+                 (cond
+                  ((eq on-behalf-of :quiet!)
+                   (silent-error state))
+                  ((stringp (car vals))
+                   (er soft ctx
+                       (car vals)))
+                  ((tilde-@p (car vals)) ; a message
+                   (er soft ctx
+                       "~@0"
+                       (car vals)))
+                  ((eq on-behalf-of :quiet)
+                   (silent-error state))
+                  (t (er soft ctx
+                         "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
+                         (cond (on-behalf-of
+                                (msg "on behalf of~|  ~y0~|"
+                                     on-behalf-of))
+                               (t ""))
+                         form))))
+                (t (pprogn
+                    (set-w! original-wrld state)
+                    (value (list* (cadr vals) new-kpa new-ttags-seen)))))))))))
 
 (defun make-event-debug-pre (form on-behalf-of state)
   (cond
