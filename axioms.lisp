@@ -44,7 +44,7 @@
 ; If a symbol described in CLTL is axiomatized here, then we give it
 ; exactly the same semantics as it has in CLTL, under restrictions for
 ; which we check.  (Actually, this is currently a lie about DEFUN,
-; DEFMACRO, and PROGN, but we will provide someday a check that that
+; DEFMACRO, and PROGN, but we will provide someday a check that
 ; those are only used in files in ways such that their ACL2 and Common
 ; Lisp meanings are perfectly consistent.)  Thus, when we talk about
 ; +, we really mean the Common Lisp +.  However, our + does not handle
