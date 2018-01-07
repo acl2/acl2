@@ -693,7 +693,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
          state))
               
        ((mv start state) (acl2::read-run-time state))
-       (cgen-state (init-cgen-state/event (acl2s::acl2s-defaults-alist) start :undefined))
+       (cgen-state (init-cgen-state/event (acl2s::acl2s-defaults-alist) start ctx))
        (- (cw? (debug-flag vl) "~|CEgen/Note: CGEN-STATE initialized for ~x0~%" ctx-form))
        (state (f-put-global 'cgen-state cgen-state state))
        (state (f-put-global 'event-ctx ctx-form state)))
