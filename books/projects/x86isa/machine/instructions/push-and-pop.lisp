@@ -63,7 +63,7 @@
   :short "PUSH: 50+rw/rd"
 
   :long "<p>Op/En: O</p>
-   <p><tt>50+rw/rd r16/r32/r64</tt>: \[PUSH E\]</p>
+   <p><tt>50+rw/rd r16/r32/r64</tt></p>
    <p>Note that <tt>50+rd r32</tt> is N.E. in 64-bit mode
       and that <tt>50+rd r64</tt> is N.E. in 32-bit mode.</p>
 
