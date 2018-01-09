@@ -108,7 +108,7 @@
  prevented @(see hints) from being passed to the forcing round (if any).  An
  example may be found in the new book, @('misc/expander-tests.lisp').</p>
 
- <h4>Kestrel Utilities</h4>
+ <h4><see topic='@(url kestrel-utilities)'>Kestrel Utilities</see></h4>
 
  <p>Added utility @(see include-book-paths) to list paths via @(tsee
  include-book) down to a given book, which may be useful for reducing book
@@ -122,6 +122,12 @@
  <p>Added a @(':print') option to control screen output.</p>
 
  <p>Improved user input validation.</p>
+
+ <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
+
+ <p>The model includes more support for 32-bit mode.  In particular, the
+ &lsquo;PUSH general-purpose register&rsquo; instruction now also works in
+ 32-bit mode.</p>
 
  <h3>Licensing Changes</h3>
 

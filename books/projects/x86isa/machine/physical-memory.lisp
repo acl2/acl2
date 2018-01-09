@@ -15,7 +15,7 @@
   :short "Physical memory read and write functions"
 
   :long "<p>Note that the top-level memory accessor function is @(see
-  rml08) and updater function is @(see wml08).  Their 16, 32, 64, and
+  rme08) and updater function is @(see wme08).  Their 16, 32, 64, and
   128 bit counterparts are also available.  These functions behave
   differently depending upon the value of
   @('programmer-level-mode').</p>

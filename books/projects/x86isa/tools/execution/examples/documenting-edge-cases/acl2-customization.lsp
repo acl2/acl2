@@ -5,3 +5,5 @@
 
 (ld "cert.acl2" :ld-missing-input-ok t)
 (in-package "X86ISA")
+
+(reset-prehistory)
