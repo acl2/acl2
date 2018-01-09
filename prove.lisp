@@ -2936,8 +2936,8 @@
 ; indicated by the hint, which CAN BE ...".
 
   (let* ((seeds (lmi-seed-lst lmi-lst))
-         (lemma-names (filter-atoms t seeds))
-         (thms (filter-atoms nil seeds))
+         (lemma-names (lmi-seeds-info 'hint-events seeds))
+         (thms (lmi-seeds-info nil seeds))
          (techs (lmi-techs-lst lmi-lst)))
     (cond ((null techs)
            (cond ((null thms)

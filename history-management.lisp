@@ -2526,25 +2526,26 @@
 
 (defun lmi-seed (lmi)
 
-; The "seed" of an lmi is either a symbolic name or else a term.  In
-; particular, the seed of a symbolp lmi is the lmi itself, the seed of
-; a rune is its base symbol, the seed of a :theorem is the term
-; indicated, and the seed of an :instance or :functional-instance is
-; obtained recursively from the inner lmi.
+; The "seed" of an lmi is either a symbolic name denoting an event, a doublet
+; whose cadr is such a name and whose car is :termination-theorem or
+; :guard-theorem, or else a term.  In particular, the seed of a symbolp lmi is
+; the lmi itself, the seed of a rune is its base symbol, the seed of a :theorem
+; is the term indicated, and the seed of an :instance or :functional-instance
+; is obtained recursively from the inner lmi.
 
-; Warning: If this is changed so that runes or other non-atoms are returned as
-; seeds, it will be necessary to change the use of filter-atoms below.
-
-  (cond ((atom lmi) lmi)
-        ((member-eq (car lmi) '(:theorem
-                                :termination-theorem
-                                :termination-theorem!
-                                :guard-theorem))
-         (cadr lmi))
-        ((or (eq (car lmi) :instance)
-             (eq (car lmi) :functional-instance))
-         (lmi-seed (cadr lmi)))
-        (t (base-symbol lmi))))
+  (cond ((atom lmi) ; Lmi is a symbolic name denoting an event.
+         lmi)
+        (t (case (car lmi)
+             ((:instance :functional-instance)
+              (lmi-seed (cadr lmi)))
+             (:theorem
+              (cadr lmi))
+             ((:termination-theorem :termination-theorem!)
+              (list :termination-theorem (cadr lmi)))
+             (:guard-theorem
+              (list :guard-theorem (cadr lmi)))
+             (otherwise
+              (base-symbol lmi))))))
 
 (defun lmi-techs (lmi)
   (cond
@@ -2570,15 +2571,48 @@
         (t (union-equal (lmi-techs (car lmi-lst))
                         (lmi-techs-lst (cdr lmi-lst))))))
 
-(defun filter-atoms (flg lst)
+(defun lmi-seeds-info (flg lst)
 
-; If flg=t we return all the atoms in lst.  If flg=nil we return all
-; the non-atoms in lst.
+; Lst is a list of objects each of which could be returned by lmi-seed, hence
+; categorized as follows:
 
-  (cond ((null lst) nil)
-        ((eq (atom (car lst)) flg)
-         (cons (car lst) (filter-atoms flg (cdr lst))))
-        (t (filter-atoms flg (cdr lst)))))
+; a symbolic name denoting an event;
+; a theorem; or
+; of the form (:kwd name), where :kwd is :termination-theorem or
+;    :guard-theorem, and name is a symbolic name denoting an event.
+
+; Depending on flg we return the following.
+
+; If flg = t, then return all such symbolic names, including each name for
+; which (:kwd name) is in lst.
+
+; If flg = nil, then return only the theorems among lst.
+
+; Otherwise (in which case flg = 'hint-events), return all non-theorems among
+; list.  This is the same as the case flg = t except that (:kwd name) is not
+; replaced by name -- it is included in the result as (:kwd name).
+
+  (cond ((endp lst) nil)
+        (t (let ((lmi-type
+                  (cond ((mbe :logic (atom (car lst))
+                              :exec (symbolp (car lst)))
+                         'name)
+                        ((member-eq (car (car lst))
+                                    '(:termination-theorem :guard-theorem))
+                         'extended-name)
+                        (t 'theorem))))
+             (cond ((eq flg t)
+                    (case lmi-type
+                      (name
+                       (cons (car lst) (lmi-seeds-info flg (cdr lst))))
+                      (extended-name
+                       (cons (cadr (car lst)) (lmi-seeds-info flg (cdr lst))))
+                      (otherwise
+                       (lmi-seeds-info flg (cdr lst)))))
+                   ((iff flg (eq lmi-type 'theorem))
+                    (lmi-seeds-info flg (cdr lst)))
+                   (t
+                    (cons (car lst) (lmi-seeds-info flg (cdr lst)))))))))
 
 (defun print-runes-summary (ttree state)
   (let ((runes (merge-sort-runes (all-runes-in-ttree ttree nil))))
@@ -2593,19 +2627,21 @@
                      (declare (ignore col))
                      state))))))
 
-(defun use-names-in-ttree (ttree)
+(defun use-names-in-ttree (ttree names-only)
   (let* ((objs (tagged-objects :USE ttree))
          (lmi-lst (append-lst (strip-cars (strip-cars objs))))
-         (seeds (lmi-seed-lst lmi-lst))
-         (lemma-names (filter-atoms t seeds)))
-    (sort-symbol-listp lemma-names)))
+         (seeds (lmi-seed-lst lmi-lst)))
+    (if names-only
+        (sort-symbol-listp (lmi-seeds-info t seeds))
+      (merge-sort-lexorder (lmi-seeds-info 'hint-events seeds)))))
 
-(defun by-names-in-ttree (ttree)
+(defun by-names-in-ttree (ttree names-only)
   (let* ((objs (tagged-objects :BY ttree))
          (lmi-lst (append-lst (strip-cars objs)))
-         (seeds (lmi-seed-lst lmi-lst))
-         (lemma-names (filter-atoms t seeds)))
-    (sort-symbol-listp lemma-names)))
+         (seeds (lmi-seed-lst lmi-lst)))
+    (if names-only
+        (sort-symbol-listp (lmi-seeds-info t seeds))
+      (merge-sort-lexorder (lmi-seeds-info 'hint-events seeds)))))
 
 (defrec clause-processor-hint
   (term stobjs-out . verified-p)
@@ -2630,8 +2666,8 @@
                                    (pairlis$ (make-list (length lst)
                                                         :INITIAL-ELEMENT kwd)
                                              (pairlis$ lst nil)))))
-    (let* ((use-lst (use-names-in-ttree ttree))
-           (by-lst (by-names-in-ttree ttree))
+    (let* ((use-lst (use-names-in-ttree ttree nil))
+           (by-lst (by-names-in-ttree ttree nil))
            (cl-proc-lst (cl-proc-names-in-ttree ttree))
            (lst (append (make-rune-like-objs :BY by-lst)
                         (make-rune-like-objs :CLAUSE-PROCESSOR cl-proc-lst)
@@ -4568,8 +4604,8 @@
 ; :by, or :clause-processor.  However, if the list of events is empty, then we
 ; do not extend wrld.  See :DOC dead-events.
 
-  (let* ((use-lst (use-names-in-ttree ttree))
-         (by-lst (by-names-in-ttree ttree))
+  (let* ((use-lst (use-names-in-ttree ttree t))
+         (by-lst (by-names-in-ttree ttree t))
          (cl-proc-lst (cl-proc-names-in-ttree ttree))
          (runes (all-runes-in-ttree ttree nil))
          (names (append use-lst by-lst cl-proc-lst
