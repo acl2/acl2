@@ -7365,9 +7365,10 @@
              "It is illegal to use non-classical functions in a ~
               recursive definition.  However, there has been an ~
               attempt to recursively define ~*0 using the ~
-              non-classical function ~*1."
+              non-classical function~#1~[~/s~] ~*2"
              `("<MissingFunction>" "~x*," "~x* and " "~x*, " ,names)
-             `("<MissingFunction>" "~x*," "~x* and " "~x*, "
+             non-classical-fns
+             `("<MissingFunction>." "~x*." "~x* and " "~x*, "
                ,non-classical-fns)))
         ((not (and (classicalp mp wrld)
                    (classicalp rel wrld)))
