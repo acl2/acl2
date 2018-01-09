@@ -7336,8 +7336,9 @@
                "It is illegal to use non-classical measures to justify a ~
                 recursive definition.  However, there has been an ~
                 attempt to recursively define ~*0 using the ~
-                non-classical functions ~*1 in the measure."
+                non-classical function~#1~[~/s~] ~*2 in the measure."
                `("<MissingFunction>" "~x*," "~x* and " "~x*, " ,names)
+               non-classical-fns
                `("<MissingFunction>" "~x*," "~x* and " "~x*, "
                  ,non-classical-fns))))))
 
@@ -7377,7 +7378,7 @@
               well-ordering or well-ordered domain in a recursive ~
               definition.  However, there has been an ~
               attempt to recursively define ~*0 using the ~
-              well-ordering function ~x* and domain ~x*."
+              well-ordering function ~x1 and domain ~x2."
              `("<MissingFunction>" "~x*," "~x* and " "~x*, " ,names)
              mp
              rel))
