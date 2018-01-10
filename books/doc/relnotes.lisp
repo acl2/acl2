@@ -126,7 +126,7 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>The model includes more support for 32-bit mode.  In particular, the
- &lsquo;PUSH general-purpose register&rsquo; instruction now also works in
+ &lsquo;PUSH/POP general-purpose register&rsquo; instructions now also work in
  32-bit mode.</p>
 
  <h3>Licensing Changes</h3>
