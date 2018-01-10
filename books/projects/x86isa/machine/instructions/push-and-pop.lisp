@@ -67,7 +67,7 @@
    <p>Note that <tt>50+rd r32</tt> is N.E. in 64-bit mode
       and that <tt>50+rd r64</tt> is N.E. in 32-bit mode.</p>
 
-   <p>PUSH doesn't have a separate instruction semantic function, unlike other
+   <p>PUSH does not have a separate instruction semantic function, unlike other
    opcodes like ADD, SUB, etc. The decoding is coupled with the execution in
    this case.</p>"
 
@@ -456,12 +456,13 @@ the execution in this case.</p>"
 
   :short "POP: 58+rw/rd"
   :long "<p>Op/En: O</p>
-   <p><tt>58+rw/rd r16/r64</tt>: \[POP E\]</p>
-   <p>Note that <tt>58+rd r32</tt> is N.E. in the 64-bit mode.</p>
+   <p><tt>58+rw/rd r16/r32/r64</tt></p>
+   <p>Note that <tt>58+rd r32</tt> is N.E. in the 64-bit mode
+      and that <tt>58+rd r64</tt> is N.E. in 32-bit mode.</p>
 
-<p>POP doesn't have a separate instruction semantic function, unlike
-other opcodes like ADD, SUB, etc. I've just coupled the decoding with
-the execution in this case.</p>"
+   <p>POP does not have a separate instruction semantic function, unlike other
+   opcodes like ADD, SUB, etc. The decoding is coupled with the execution in
+   this case.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -475,29 +476,25 @@ the execution in this case.</p>"
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
        ((the (integer 1 8) operand-size)
-        (if p3?
-            2
-          ;; 4-byte operand size is N.E. in 64-bit mode
-          ;; See http://www.x86-64.org/documentation/assembly.html
-          8))
-       (rsp (rgfi *rsp* x86))
-       ((when (not (canonical-address-p rsp)))
-        (!!fault-fresh :ss 0 :rsp-not-canonical rsp)) ;; #SS(0)
+        (if (64-bit-modep x86)
+            (if p3? 2 8)
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+       (rsp (read-*sp x86))
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
-                   (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
+                   (not (equal (logand rsp (the (integer 0 15)
+                                                (- operand-size 1)))
                                0))))
         (!!fault-fresh :ac 0 :rsp-not-aligned rsp)) ;; #AC(0)
 
-       ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
-        (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
-       ((when (mbe :logic (not (canonical-address-p new-rsp))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               new-rsp))))
-        (!!fault-fresh :ss 0
-                       :ss-exception-new-rsp-not-canonical new-rsp)) ;; #SS(0)
+       ((mv flg new-rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
        ((mv flg0 val x86)
         (rme-size operand-size rsp *ss* :r x86))
@@ -517,12 +514,16 @@ the execution in this case.</p>"
         (!!ms-fresh :instruction-length addr-diff))
 
        ;; Update the x86 state:
-       (x86 (!rgfi *rsp* new-rsp x86))
+       ;; (Intel manual, Mar'17, Vol. 2 says, in the specification of POP,
+       ;; that a POP SP/ESP/RSP instruction increments the stack pointer
+       ;; before the popped data is written into the stack pointer,
+       ;; so the order of the following two bindings is important)
+       (x86 (write-*sp new-rsp x86))
        (x86
         ;; See Intel Table 3.1, p.3-3, Vol. 2-A
         (!rgfi-size operand-size (reg-index reg rex-byte #.*b*)
                     val rex-byte x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
 
     x86)
 
