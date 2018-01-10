@@ -5980,8 +5980,17 @@
       (msg "the proposed and existing definitions for ~x0 differ on the ~
                 values supplied by :normalize declarations."
            (car def1)))
-     ((not (equal (fetch-dcl-field :stobjs all-but-body1)
-                  (fetch-dcl-field :stobjs all-but-body2)))
+     ((not (let ((stobjs1 (fetch-dcl-field :stobjs all-but-body1))
+                 (stobjs2 (fetch-dcl-field :stobjs all-but-body2)))
+             (or (equal stobjs1 stobjs2) ; optimization
+
+; Quoting :doc xargs: "The only exception to this rule is state: whether you
+; include it or not, state is always treated as a single-threaded object."
+; If the two definitions are identical except for how state is declared as a
+; stobj, then since the old definition was acceptable, so is the new one.
+
+                 (equal (remove1-eq 'state stobjs1)
+                        (remove1-eq 'state stobjs2)))))
 
 ; We insist that the :STOBJS of the two definitions be identical.  Vernon
 ; Austel pointed out the following bug.
