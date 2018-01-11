@@ -175,7 +175,8 @@
        ,@(and (eq flagp nil)
               `(:hints
                 (("Goal"
-                  ,@(and singly-recursivep `(:induct ,fn-call)))
+                  ,@(and singly-recursivep `(:induct ,fn-call))
+                  :expand (,fn-call ,fn-copy-call))
                  ,@(and hyps-preserved-thm-names
                         `('(:use (,@hyps-preserved-thm-names)))))))
        ,@(and (eq flagp t)
