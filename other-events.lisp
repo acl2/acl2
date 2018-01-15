@@ -24335,6 +24335,9 @@
 ; only be done with a trust tag, and the documentation warns that doing this
 ; promotion could be unsound.  So we don't worry about that case here.
 
+; Note that here we are disallowing inline memoization of apply$-lambdas.
+; That's fine; we essentially do our own memoization via the cl-cache.
+
                   (if (eq key-class :program)
                       (member-eq key *primitive-program-fns-with-raw-code*)
                     (member-eq key *primitive-logic-fns-with-raw-code*)))

@@ -12737,6 +12737,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ld-fix-command
     update-enabled-structure-array
     update-enabled-structure
+    #+acl2-devel apply$-lambda
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -13441,7 +13442,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
-    (verify-termination-on-raw-program-okp . nil)
+    (verify-termination-on-raw-program-okp . '(apply$-lambda))
     (walkabout-alist . nil)
     (waterfall-parallelism . nil) ; for #+acl2-par
     (waterfall-parallelism-timing-threshold
