@@ -1306,6 +1306,34 @@
   :measure (nfix (- (num-nodes aignet) (nfix n)))
   :returns (new-strash)
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
+
+  :prepwork ((local (defthmd unsigned-byte-p-of-lit-when-lit->var
+                      (implies (and (unsigned-byte-p (+ -1 n) (lit->var lit))
+                                    (litp lit)
+                                    (posp n))
+                               (unsigned-byte-p n lit))
+                      :hints(("Goal" :in-theory (enable lit->var)))
+                      :rule-classes ((:rewrite :backchain-limit-lst (3 nil nil)))))
+
+             (local (defthm unsigned-byte-p-of-lit->var-when-aignet-litp
+                      (implies (and (aignet-litp lit aignet)
+                                    (< (node-count aignet) #x1fffffff))
+                               (unsigned-byte-p 29 (lit->var lit)))
+                      :hints(("Goal" :in-theory (enable aignet-litp unsigned-byte-p)))))
+             
+             (local (defthm unsigned-byte-p-when-aignet-litp
+                      (implies (and (aignet-litp lit aignet)
+                                    (litp lit)
+                                    (< (node-count aignet) #x1fffffff))
+                               (unsigned-byte-p 30 lit))
+                      :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var)))))
+
+             (local (defthm unsigned-byte-p-of-fanin
+                      (implies (< (node-count aignet) #x1fffffff)
+                               (unsigned-byte-p 30 (fanin type (lookup-id id aignet))))
+                      :hints(("Goal" :use ((:instance unsigned-byte-p-when-aignet-litp
+                                            (lit (fanin type (lookup-id id aignet)))))
+                              :in-theory (disable unsigned-byte-p-when-aignet-litp))))))
   (b* (((when (mbe :logic (zp (- (num-nodes aignet) (nfix n)))
                    :exec (eql (num-nodes aignet) n)))
         strash)
@@ -1375,7 +1403,7 @@
         (eval-cut-implementations cut 0 blocksize eba copy2 cutsdb
                                   rwlib strash2 aignet2 eba2 refcounts2 rewrite-stats config))
        (strash2 (strash-delete-nodes-above nnodes strash2 aignet2))
-       (aignet2 (aignet-rollback (1- nnodes) aignet2)))
+       (aignet2 (aignet-rollback nnodes aignet2)))
     (mv t impl cost eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats))
   ///
 

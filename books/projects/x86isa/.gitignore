@@ -1,5 +1,5 @@
 machine/x86isa_full_exec_support.lisp
-machine/x86-syscalls.acl2
+machine/syscalls.acl2
 workxxx*
 *@expansion.lsp
 *.out

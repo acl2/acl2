@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -991,13 +991,11 @@
 ; in the enabled structure ens.  We treat nil as though it were
 ; enabled.
 
-  (declare (type (or null
-                     (and (signed-byte 30)
-                          (integer 0 *)))
+  (declare (type (or null (integer 0 *))
                  nume)
            (xargs :guard (enabled-structure-p ens)))
   (cond ((null nume) t)
-        ((> (the-fixnum nume)
+        ((> nume
             (the-fixnum
              (access enabled-structure ens :index-of-last-enabling)))
          t)
@@ -1025,17 +1023,6 @@
                   (access enabled-structure ens :theory-array)
                   (the-fixnum nume)))))
 
-(defun bounded-nat-alistp (x n)
-
-; Check that x is a true-list of pairs (i . y) with i < n.
-
-  (declare (xargs :guard (natp n)))
-  (cond ((atom x) (null x))
-        (t (and (consp (car x))
-                (natp (caar x))
-                (< (caar x) n)
-                (bounded-nat-alistp (cdr x) n)))))
-
 (defun enabled-runep (rune ens wrld)
 
 ; This takes a rune and determines if it is enabled in the enabled structure
@@ -1048,12 +1035,9 @@
                        (consp (cdr rune))
                        (symbolp (base-symbol rune))
                        (enabled-structure-p ens)
-                       (bounded-nat-alistp
-                        (getpropc (base-symbol rune)
-                                  'runic-mapping-pairs nil
-                                  wrld)
-                        (access enabled-structure ens
-                                :array-length)))
+                       (nat-alistp (getpropc (base-symbol rune)
+                                             'runic-mapping-pairs nil
+                                             wrld)))
                   :guard-hints (("Goal" :do-not-induct t))))
   (enabled-numep (fnume rune wrld) ens))
 

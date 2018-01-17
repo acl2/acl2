@@ -29,8 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "base")
-
-(defttag :quicklisp.shellpool)
-; (depends-on "shellpool-raw.lsp")
-(include-raw "shellpool-raw.lsp" :host-readtable t)
+; cert_param: (reloc-stub)
+(include-book "quicklisp/shellpool" :dir :system)

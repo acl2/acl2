@@ -166,7 +166,7 @@
        (varmap (consecutive-vars-to-varmap 1 vars nil))
        (strash (strashtab-init 100 nil nil strash))
        ((mv lits strash aignet)
-        (aiglist-to-aignet-top aiglist varmap (mk-gatesimp 4 t)
+        (aiglist-to-aignet-top aiglist varmap (gatesimp t 4)
                                strash aignet))
        (aignet (aignet-add-out (car lits) aignet)))
     (fast-alist-free varmap)

@@ -11,6 +11,9 @@ akcl-acl2-trace.lisp
 allegro-acl2-trace.lisp
 all-files.txt
 # aux -- developer directory
+apply-constraints.lisp
+apply.lisp
+apply-prim.lisp
 apply-raw.lisp
 axioms.lisp
 basis-a.lisp
@@ -18,7 +21,8 @@ basis-b.lisp
 bdd.lisp
 # bin -- under source control but not distributed
 # books -- no longer distributed at UT
-boot-strap-pass-2.lisp
+boot-strap-pass-2-a.lisp
+boot-strap-pass-2-b.lisp
 build-allegro-exe.cl
 defpkgs.lisp
 defthm.lisp
@@ -113,6 +117,7 @@ installation
 
 # The following is distributed but is not under source control
 doc/HTML/installation:
+ccl.html
 installation.html
 installing-make.html
 misc.html
@@ -178,6 +183,7 @@ graphics:
 *.gif
 
 installation:
+ccl.html
 installation.html
 installing-make.html
 misc.html

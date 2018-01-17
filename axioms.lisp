@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -44,7 +44,7 @@
 ; If a symbol described in CLTL is axiomatized here, then we give it
 ; exactly the same semantics as it has in CLTL, under restrictions for
 ; which we check.  (Actually, this is currently a lie about DEFUN,
-; DEFMACRO, and PROGN, but we will provide someday a check that that
+; DEFMACRO, and PROGN, but we will provide someday a check that
 ; those are only used in files in ways such that their ACL2 and Common
 ; Lisp meanings are perfectly consistent.)  Thus, when we talk about
 ; +, we really mean the Common Lisp +.  However, our + does not handle
@@ -1553,10 +1553,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro defun-overrides (name formals &rest rest)
 
-; This defines the function symbol, name, in raw Lisp.  Name should have a
-; guard of t and should have *unknown-constraints*.  We push name onto
-; *defun-overrides* so that add-trip knows to leave the *1* definition in
-; place.
+; This defines the function symbol, name, in raw Lisp.  Name should include
+; STATE as a formal, have a guard of t and should have *unknown-constraints*.
+; We push name onto *defun-overrides* so that add-trip knows to leave the *1*
+; definition in place.
 
 ; Warning: The generated definitions will replace both the raw Lisp and *1*
 ; definitions of name.  We must ensure that these definitions can't be
@@ -1566,6 +1566,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; state is not a formal (or even if it is), this latter condition -- i.e.,
 ; being a function, must be true in order for the use of defun-overrides to be
 ; sound!
+
+; Note: In apply-raw.lisp we use a relaxed version of the expansion of
+; defun-overrides that ignores the requirement that STATE be a formal!  We use
+; that relaxed code to define See concrete-badge-userfn and
+; concrete-apply$-userfn.  The basic argument is that it is ok to secretely
+; look at the current world as long as we cause an error if the current world
+; does not specify a value for the notion being ``defined'' and that once the
+; world does specify a value that value never changes.  If more functions like
+; these two arise in the future we may wish to relax defun-overrides or at
+; least define a relaxed version of it.
 
   (assert (member 'state formals :test 'eq))
   `(progn (push ',name *defun-overrides*) ; see add-trip
@@ -4908,6 +4918,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (and (integerp x)
               (<= 0 x)))
   :rule-classes :compound-recognizer)
+
+(defun nat-alistp (x) ; used in the guards of some system functions
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (natp (car (car x)))
+                (nat-alistp (cdr x))))))
+
+(defthm nat-alistp-forward-to-eqlable-alistp
+  (implies (nat-alistp x)
+           (eqlable-alistp x))
+  :rule-classes :forward-chaining)
 
 (defun standard-string-p1 (x n)
   (declare (xargs :guard (and (stringp x)
@@ -12715,6 +12737,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ld-fix-command
     update-enabled-structure-array
     update-enabled-structure
+    #+acl2-devel apply$-lambda
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -13204,7 +13227,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 7.4
+; ACL2 Version 8.0
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed in .cert files.
@@ -13229,7 +13252,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 7.4"
+                                "ACL2 Version 8.0"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -13419,7 +13442,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
-    (verify-termination-on-raw-program-okp . nil)
+    (verify-termination-on-raw-program-okp . '(apply$-lambda))
     (walkabout-alist . nil)
     (waterfall-parallelism . nil) ; for #+acl2-par
     (waterfall-parallelism-timing-threshold
@@ -27480,3 +27503,4 @@ Lisp definition."
           (set-compile-fns t)
           ,@x
           (set-compile-fns nil))))
+

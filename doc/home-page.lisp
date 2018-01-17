@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -41,7 +41,7 @@
   "manual/")
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v7-4/combined-manual/")
+  "http://www.cs.utexas.edu/users/moore/acl2/v8-0/combined-manual/")
 
 (defconst *bleeding-edge-manual*
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/")
@@ -53,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-7-4                            ;;; g   ; current release notes
+    note-8-0                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -128,7 +128,7 @@ Software System Award</A>.<P>
 <A HREF=\"~sa\"><IMG SRC=\"HTML/door02.gif\" BORDER=0></A>
 </TD>
 <TD>
-Start Here: <A HREF=\"~sj\">Applications</A>, <A HREF=\"http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____TALKS\">Talks</A>, <A HREF=\"~sa\">Tours</A>, and <A HREF=\"~sb\">Tutorials/Demos</A>
+Start Here: <A HREF=\"~sj\">Applications</A>, <A HREF=\"~sv\">Talks</A>, <A HREF=\"~sa\">Tours</A>, and <A HREF=\"~sb\">Tutorials/Demos</A>
 </TD>
 
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -218,7 +218,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"HTML/note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 7.3</A><A HREF=\"~sq\"> <IMG
+<A HREF=\"~sg\">Differences from Version 7.4</A><A HREF=\"~sq\"> <IMG
 SRC=\"HTML/twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -345,12 +345,12 @@ HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <ul>
 
-<li><A HREF=\"~s2\">ACL2+Books Manual</A> (Version 7.4)</li>
+<li><A HREF=\"~s2\">ACL2+Books Manual</A> (Version 8.0)</li>
 
 <li><A HREF=\"~s3\">ACL2+Books Manual</A> (for
 \"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions)</li>
 
-<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A> (Version 7.4)</li>
+<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A> (Version 8.0)</li>
 
 </ul>
 

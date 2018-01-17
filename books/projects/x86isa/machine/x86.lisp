@@ -5,7 +5,7 @@
 
 ;; ======================================================================
 
-(include-book "instructions/x86-instructions"
+(include-book "instructions/top"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "std/strings/hexify" :dir :system)
 
@@ -35,151 +35,6 @@
   :returns (x86 x86p :hyp :guard)
   (b* ((ctx 'x86-step-unimplemented))
       (!!ms-fresh :message message)))
-
-;; ======================================================================
-
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-(define read-*ip (x86)
-  :returns (*ip i48p :hyp (x86p x86))
-  :parents (x86-decoder)
-  :short "Read the instruction pointer from the register RIP, EIP, or IP."
-  :long
-  "<p>
-   In 64-bit mode, a 64-bit instruction pointer is read from the full RIP.
-   Since, in the model, this is a (48-bit) signed integer,
-   this function returns a 48-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, a 32-bit or 16-bit instruction pointer is read from
-   EIP (i.e. the low 32 bits of RIP)
-   or IP (i.e. the low 16 bits of RIP),
-   based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
-   Either way, this function returns an unsigned 32-bit or 16-bit integer,
-   which is also a signed 48-bit integer.
-   </p>
-   <p>
-   See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
-   AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
-   and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
-   </p>"
-  (b* ((*ip (rip x86)))
-    (if (64-bit-modep x86)
-        *ip
-      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-           (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-           (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-        (if (= cs.d 1)
-            (n32 *ip)
-          (n16 *ip)))))
-  :inline t
-  ///
-
-  (defthm-sb read-*ip-is-i48p
-    :hyp (x86p x86)
-    :bound 48
-    :concl (read-*ip x86)
-    :gen-type t
-    :gen-linear t)
-
-  (defrule read-*ip-when-64-bit-modep
-    (implies (64-bit-modep x86)
-             (equal (read-*ip x86)
-                    (rip x86)))))
-
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-(define increment-*ip ((*ip i48p) (delta natp) x86)
-  :returns (mv flg
-               (*ip+delta i48p :hyp (and (i48p *ip) (natp delta))))
-  :parents (x86-decoder)
-  :short "Increment an instruction pointer by a specified amount."
-  :long
-  "<p>
-   This just calculates the incremented value,
-   without storing it into the register RIP, EIP, or IP.
-   The starting value is the result of @(tsee read-*ip)
-   or a previous invocation of @('increment-*ip').
-   </p>
-   <p>
-   In 64-bit mode, we check whether the result is a canonical address;
-   in 32-bit mode, we check whether the result is within the segment limit.
-   If these checks are not satisfied,
-   this function returns an error flag (and 0 as incremented address),
-   which causes the x86 model to stop execution with an error.
-   It is not clear whether these checks should be performed
-   when the instruction pointer is incremented
-   or when an instruction byte is eventually accessed;
-   the Intel and AMD manuals seem unclear in this respect.
-   But since the failure of these checks stops execution with an error,
-   and it is in a way always \"safe\" to stop execution with an error
-   (in the sense that the model provides no guarantees when this happens),
-   for now we choose to perform these checks here.
-   </p>
-   <p>
-   Note that a code segment is never expand-down,
-   so the valid effective addresses are always between 0 and the segment limit
-   (cf. @(tsee segment-base-and-bounds)).
-   </p>"
-  (b* ((*ip+delta (+ *ip delta)))
-    (if (64-bit-modep x86)
-        (if (mbe :logic (canonical-address-p *ip+delta)
-                 :exec (< *ip+delta #.*2^47*))
-            (mv nil *ip+delta)
-          (mv (list 'non-canonical-address *ip+delta) 0))
-      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-           (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
-        (if (<= *ip+delta cs.limit)
-            (mv nil *ip+delta)
-          (mv (list 'out-of-segment-limit cs.limit *ip+delta) 0)))))
-  :inline t
-  ///
-
-  (defthm-sb increment-*ip-is-i48p
-    :hyp (and (integerp *ip)
-              (<= -140737488355328 *ip)
-              (< *ip 140737488355328)
-              (natp delta))
-    :bound 48
-    :concl (mv-nth 1 (increment-*ip *ip delta x86))
-    :gen-type t
-    :gen-linear t)
-
-  ;; The following theorem is a rewrite rule version of the theorems generated
-  ;; by the DEFTHM-SB just above. This rewrite rule is somewhat inelegant, but
-  ;; without it some proofs fail. The proofs in question are the ones that
-  ;; enable this rule explicitly, for example the guard verification proof of
-  ;; TWO-BYTE-OPCODE-DECODE-AND-EXECUTE. The proof fail with subgoals about
-  ;; nested INCREMENT-*IPs being 48-bit signed integers. Perhaps the reason for
-  ;; the failures is that the type prescription and linear rules generated by
-  ;; the DEFTHM-SB above are not triggered on the outer INCREMENT-*IPs of the
-  ;; nests because no hypotheses about the inner INCREMENT-*IPs are available
-  ;; in the current proof context. With a rewrite rule, instead, the prover is
-  ;; able to backchain. We should see if we arrange things so that we can avoid
-  ;; this rewrite rule. We leave it disabled by default so it's more clear
-  ;; where it's needed.
-  (defruled increment-*ip-is-i48p-rewrite-rule
-    (implies
-     (and (integerp *ip)
-          (<= -140737488355328 *ip)
-          (< *ip 140737488355328)
-          (natp delta))
-     (and (integerp (mv-nth 1 (increment-*ip *ip delta x86)))
-          (rationalp (mv-nth 1 (increment-*ip *ip delta x86)))
-          (<= -140737488355328 (mv-nth 1 (increment-*ip *ip delta x86)))
-          (< (mv-nth 1 (increment-*ip *ip delta x86)) 140737488355328))))
-
-  (defrule mv-nth-0-of-increment-*ip-when-64-bit-modep
-    (implies (64-bit-modep x86)
-             (equal (mv-nth 0 (increment-*ip *ip delta x86))
-                    (if (canonical-address-p (+ *ip delta))
-                        nil
-                      (list 'non-canonical-address (+ *ip delta))))))
-
-  (defrule mv-nth-1-of-increment-*ip-when-64-bit-modep
-    (implies (64-bit-modep x86)
-             (equal (mv-nth 1 (increment-*ip *ip delta x86))
-                    (if (canonical-address-p (+ *ip delta))
-                        (+ *ip delta)
-                      0)))))
 
 ;; ======================================================================
 
@@ -1505,9 +1360,6 @@
   :long "<p>Source: Intel Manual, Volume 2, Appendix A-2</p>"
 
   (b* ((ctx 'two-byte-opcode-decode-and-execute)
-       ;; (64-bit-mod (64-bit-modep x86))
-       ;; (machine 'x86)
-
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
         (rme08 temp-rip *cs* :x x86))
        ((when flg0)
@@ -2290,195 +2142,83 @@
 
     (#x50
      "(PUSH rAX/r8)"
-     (if (64-bit-modep x86)
-         (x86-push-general-register start-rip temp-rip prefixes rex-byte
-                                    opcode modr/m
-                                    sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH rAX/r8) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x51
      "(Push rCX/r9)"
-     (if (64-bit-modep x86)
-         (x86-push-general-register start-rip temp-rip prefixes rex-byte
-                                    opcode modr/m
-                                    sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH rCX/r9) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x52
      "(PUSH rDX/r10)"
-     (if (64-bit-modep x86)
-         (x86-push-general-register start-rip temp-rip prefixes rex-byte
-                                    opcode modr/m
-                                    sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH rDX/r10) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x53
      "(PUSH rBX/r11)"
-     (if (64-bit-modep x86)
-         (x86-push-general-register start-rip temp-rip prefixes rex-byte
-                                    opcode modr/m
-                                    sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH rBX/r11) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x54
      "(PUSH rSP/r12)"
-     (if (64-bit-modep x86)
-         (x86-push-general-register start-rip temp-rip prefixes rex-byte
-                                    opcode modr/m
-                                    sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH rSP/r12) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x55
      "(PUSH rBP/r13)"
-     (if (64-bit-modep x86)
-         (x86-push-general-register start-rip temp-rip prefixes rex-byte
-                                    opcode modr/m
-                                    sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH rBP/r13) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x56
      "(PUSH rSI/r14)"
-     (if (64-bit-modep x86)
-         (x86-push-general-register start-rip temp-rip prefixes rex-byte
-                                    opcode modr/m
-                                    sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH rSI/r14) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x57
      "(PUSH rDI/r15)"
-     (if (64-bit-modep x86)
-         (x86-push-general-register start-rip temp-rip prefixes rex-byte
-                                    opcode modr/m
-                                    sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH rDI/r15) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x58
      "(POP rAX/r8)"
-     (if (64-bit-modep x86)
-         (x86-pop-general-register start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m
-                                   sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(POP rAX/r8) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-pop-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x59
      "(POP rCX/r9)"
-     (if (64-bit-modep x86)
-         (x86-pop-general-register start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m
-                                   sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(POP rCX/r9) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-pop-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x5A
      "(POP rDX/r10)"
-     (if (64-bit-modep x86)
-         (x86-pop-general-register start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m
-                                   sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(POP rDX/r10) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-pop-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x5B
      "(POP rBX/r11)"
-     (if (64-bit-modep x86)
-         (x86-pop-general-register start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m
-                                   sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(POP rBX/r11) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-pop-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x5C
      "(POP rSP/r12)"
-     (if (64-bit-modep x86)
-         (x86-pop-general-register start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m
-                                   sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(POP rSP/r12) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-pop-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x5D
      "(POP rBP/r13)"
-     (if (64-bit-modep x86)
-         (x86-pop-general-register start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m
-                                   sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(POP rBP/r13) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-pop-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x5E
      "(POP rSI/r14)"
-     (if (64-bit-modep x86)
-         (x86-pop-general-register start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m
-                                   sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(POP rSI/r14) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-pop-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x5F
      "(POP rDI/r15)"
-     (if (64-bit-modep x86)
-         (x86-pop-general-register start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m
-                                   sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(POP rDI/r15) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-pop-general-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x60
      "(PUSHA) or (PUSHAD)"
@@ -4236,9 +3976,6 @@ semantic function.</p>"
   ((local (in-theory (e/d* () (unsigned-byte-p not)))))
 
   (b* ((ctx 'x86-fetch-decode-execute)
-       ;; (64-bit-mode (64-bit-modep x86))
-       ;; (machine 'x86)
-
        ;; We don't want our interpreter to take a step if the machine
        ;; is in a bad state.  Such checks are made in x86-run but I am
        ;; duplicating them here in case this function is being used at

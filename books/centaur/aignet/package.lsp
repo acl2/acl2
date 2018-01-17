@@ -218,6 +218,13 @@
              snode->ionum
              snode->regid
              mk-snode
+             snode->type^
+             snode->phase^
+             snode->regp^
+             snode->fanin^
+             snode->ionum^
+             snode->regid^
+             mk-snode^
              ;; [Jared] added these for nicer aignet-base-api docs
              f f0 f1 n regid lit
              max-outs max-regs max-ins max-nodes
@@ -240,4 +247,5 @@
   (union-eq *acl2-exports*
             *common-lisp-symbols-from-main-lisp-package*
             *aignet-imports*
+            satlink::*satlink-exports*
             *aignet$c-imports*))

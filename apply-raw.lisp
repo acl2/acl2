@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -23,155 +23,27 @@
 
 (in-package "ACL2")
 
-; Support for top-level execution of apply$: raw Lisp code.  See
-; other-events.lisp for logic code support (visit the defuns and comments
-; dealing with acl2-magic-concrete-badge-userfn and
-; acl2-magic-concrete-apply$-userfn).  This file concludes with the FULL
-; VERSION of the proof (mentioned in the paper ``Limited Second Order
-; Functionality in a First Order Setting'') of termination for the clique
-; defining the dopplegangers of apply$ and all def-warranted functions.  See
-; Essay on Admitting a Model for Apply$ and the Functions that Use It.
+; See the Essay on the APPLY$ Integration in apply-prim.lisp for an overview.
+; This file supports top-level execution of apply$ by implementing the crucial
+; executable functions attached to badge-userfn and apply$-userfn.  We proceed
+; in four main steps:
 
-; In this file we include essays and code in support of an experiment in how we
-; might allow the evaluation of forms ancestrally dependent on apply$ (as
-; defined in the community book books/projects/apply/apply.lisp) at the
-; top-level of the ACL2 loop.  This support is not enabled in ACL2, but can be
-; activated (at the cost of invalidating our soundness assurances) as described
-; below.  This file is to be loaded in raw Lisp; for related code that can be
-; loaded in the ACL2 loop, see the end of other-events.lisp.
+; * define concrete-badge-userfn, which will be attached to badge-userfn
 
-; This section implements raw Lisp code for apply$-lambda as well as the raw
-; Lisp ``dopplegangers'' for apply$-userfn and badge-userfn.  For relevant
-; background not provided here, we refer you to the paper ``Limited Second
-; Order Functionality in a First Order Setting'', the ACL2 source files
-; apply-prim.lisp, apply-constraints.lisp, and apply.lisp, and the foundational
-; work illustrated in books/projects/apply-model/.  We assume you're familiar
-; with the terminology introduced by the above material!
+; * define concrete-apply$-userfn, which will be attached to apply$-userfn
 
-; A Little Background
+; * optimize apply$-lambda with compilation and caching
 
-; APPLY$ involves two critical constrained functions, BADGE-USERFN and
-; APPLY$-USERFN.  (It also involves two others, used to deliver ``undefined''
-; results, but these can remain undefined for our purposes.)  These two
-; critical constrained functions are used to provide the meaning of BADGE and
-; APPLY$ for those functions that the user introduces with defun$ (or
-; def-warrant).
+; * Essay on Admitting a Model for Apply$ and the Functions that Use It, the
+;   full version of the proof sketched in the paper ``Limited Second Order
+;   Functionality in a First Order Setting''
 
-; In the following we assume that sq and collect have been defined as follows:
-; (defun sq (x) (* x x))
-; (defun collect (lst fn)
-;   (if (endp lst)
-;       nil
-;       (cons (apply$ fn (list (car lst)))
-;             (collect (cdr lst) fn))))
-
-; Sq is an example of a ``tame function'' in the sense that we can arrange for
-; (apply$ 'sq (list x)) to be (sq x), unconditionally.  Collect is an ``almost
-; tame'' function, henceforth known as a ``mapping function,'' in the sense
-; that its definition (ancestrally) depends on apply$ but, additionally, the
-; results delivered when its second argument, fn, is a tame function could be
-; computed by a function not involving apply$, e.g.,
-
-; (defun collect-sq (lst)
-;   (if (endp lst)
-;       nil
-;       (cons (sq (car lst))
-;             (collect-sq (cdr lst))))).
-
-; The ``badge,'' if any, of a symbol tells us whether it is tame or a mapping
-; function and which formals are ``functional.''
-
-; Naively, the functions BADGE and APPLY$ ``grow'' as new tame functions and
-; new mapping functions are introduced.  This ``growth'' is actually handled by
-; defining BADGE and APPLY$ to be equal to the constrained functions
-; badge-userfn and apply$-userfn on symbols that are not built into their
-; definitions, and then providing hypotheses that stipulate the properties of
-; those constrained functions on the user-defined symbols in question.
-; These hypotheses are called ``warrants.''
-
-; Warrant (Merriam-Webster);
-; [noun] commission or document giving authority to do something
-
-; In our case, a warrant for function symbol fn is a 0-ary predicate named
-; APPLY$-WARRANT-fn that specifies values returned by badge-userfn and
-; apply$-userfn when they're given the symbol 'fn.  For example, the
-; warrant for collect, named APPLY$-WARRANT-COLLECT, tells us:
-
-;  (badge-userfn 'COLLECT) = '(apply$-badge t 2 NIL :FN)
-
-;  and
-
-;  (implies (tamep (cadr args))
-;           (equal (apply$-userfn 'COLLECT args)
-;                  (collect (car args) (cadr args))))
-
-; The hypothesis in the second conjunct above is called the ``tameness
-; condition'' for COLLECT.
-
-; Proofs about the behavior of APPLY$, when APPLY$ is supplied with symbols
-; that are not built in, require the relevant warrants as hypotheses.  This
-; solves the LOCAL problem, since the warrant for fn ancestrally depends on the
-; function fn.
-
-; The user can cause functions to acquire warrants by executing the def-warrant
-; event defined in apply.lisp.  E.g., a warrant for collect can be issued by
-; (def-warrant collect), after defining it as above.  The defun$ event of
-; apply.lisp is just an abbreviation for a defun followed by a def-warrant.
-
-; Since APPLY$ involves the two critical constrained functions, it simply can't
-; be executed without ``magical'' system-level support on most terms containing
-; functions that are not built into it.
-
-; But we would like to be able to execute it in contexts allowing attachments.
-; We would like be able to type (APPLY$ 'SQ '(3)) at the top-level of the ACL2
-; loop and and get 9.  We would like to be able to type (COLLECT '(1 2 3) 'SQ)
-; and get (1 4 9).  These answers are justified by the theorem at the end of
-; the following sequence of events.
-
-; (include-book "projects/apply/apply" :dir :system)
-; (defun$ sq (x) (* x x))
-; (defun$ collect (lst fn)
-;   (if (endp lst)
-;       nil
-;     (cons (apply$ fn (list (car lst)))
-;           (collect (cdr lst) fn))))
-; (thm (implies (apply$-warrant-SQ)
-;               (and (equal (apply$ 'SQ '(3)) 9)
-;                    (equal (collect '(1 2 3) 'SQ) '(1 4 9))))
-;      :hints (("Goal" :in-theory (disable (collect)))))
-
-; But true evaluation of (apply$ 'SQ '(3)) and (collect '(1 2 3) 'SQ) is only
-; possible if we IMPLICITLY assume we have the warrant for SQ.  And ACL2 does
-; not support the general idea of ``evaluation under random hypotheses!''
-
-; Of course, this theorem -- and all theorems burdened by these warrants -- may
-; be meaningless because there may be no way to make the warrants true.
-; However, in the paper cited above we show that for all the warranted
-; functions (approved by def-warrant) we can define two functions,
-; badge-userfn! and apply$-userfn! (note the exclamation point distinguishing
-; the symbols from the previously mentioned constrained functions), in such a
-; way that (a) we can do:
-
-; (defattach badge-userfn badge-userfn!)
-; (defattach apply$-userfn apply$-userfn!)
-
-; so that the expected evaluations are possible in the evaluation theory, and
-; (b) all the warrants issued by def-warrant are provably valid in the
-; evaluation theory.  These claims are illustrated by the constructions
-; shown for two ``typical'' user books in the ex1/ and ex2/ subdirectories
-; of the foundational work at books/projects/apply-model/ cited above.
-
-; This suggests the way forward: define raw code for ``badge-userfn!'' and
-; ``apply$-userfn!''  that acts just like the illustrated badge-userfn! and
-; apply$-userfn! for whatever finite set of functions def-warrant has approved
-; in the current session.
-
-; So the strategy we take in the code below (to support evaluation of apply$ in
-; the evaluation theory) is to define raw Lisp versions of the attachment
-; functions that secretly inspect the logical world to see whether the symbol
-; being considered has a warrant and if so then behave as the doppelganger of
-; badge-userfn or apply$-userfn would behave.  These raw Lisp versions of the
-; doppelgangers are named concrete-badge-userfn and concrete-apply$-userfn.
+; The two concrete- functions mentioned above are actually partially
+; constrained in other-events.lisp; the definitions here are their raw Lisp
+; implementations.  The model described in the paper (and justified in the
+; essay here) is relevant because, in addition to making the warrants valid, it
+; is executable and thus literally serves as our guide for implementing the
+; attachments to badge-userfn and apply$-userfn.
 
 ; Historical Note: Prior to Version_8.0, apply$ was introduced in a user book
 ; and had no built-in support.  Therefore, it was impossible to execute it in
@@ -181,26 +53,26 @@
 ; changed ``ACL2'' into the possibly unsound ``ACL2(a)''.  Here is the (now
 ; obsolete) comment introducing The Rubric:
 
-; The Rubric
+;  The Rubric
 
-; If you want to convert ACL2 into ACL2(a) evaluate each of the forms below
-; immediately after starting your ACL2 session.
+;  If you want to convert ACL2 into ACL2(a) evaluate each of the forms below
+;  immediately after starting your ACL2 session.
 
-;   (include-book "projects/apply/apply" :dir :system)
-;   (defattach
-;     (badge-userfn concrete-badge-userfn)
-;     (apply$-userfn concrete-apply$-userfn)
-;     :hints
-;     (("Goal" :use (concrete-badge-userfn-type
-;                    concrete-apply$-userfn-takes-arity-args))))
-;   (value :q)
-;   (defun apply$-lambda (fn args) (concrete-apply$-lambda fn args))
-;   (setq *allow-concrete-execution-of-apply-stubs* t)
-;   (lp)
-;   (quote (end of rubric))
+;    (include-book "projects/apply/apply" :dir :system)
+;    (defattach
+;      (badge-userfn concrete-badge-userfn)
+;      (apply$-userfn concrete-apply$-userfn)
+;      :hints
+;      (("Goal" :use (concrete-badge-userfn-type
+;                     concrete-apply$-userfn-takes-arity-args))))
+;    (value :q)
+;    (defun apply$-lambda (fn args) (concrete-apply$-lambda fn args))
+;    (setq *allow-concrete-execution-of-apply-stubs* t)
+;    (lp)
+;    (quote (end of rubric))
 
-; Because The Rubric requires you execute a form in raw Lisp, The Rubric
-; eliminates the soundness guarantees provided by the ACL2 implementors!
+;  Because The Rubric requires you execute a form in raw Lisp, The Rubric
+;  eliminates the soundness guarantees provided by the ACL2 implementors!
 
 ; End of Historical Note
 
@@ -241,11 +113,9 @@
 ; is, msgp = t means generate an explanatory message; msgp=nil means signal
 ; failure with first result T.
 
-; It is important that if this function returns (mv nil badge) for a world
-; then it returns that same answer for all extensions of the world!
-
-; We assume that the user does not mess with the badge-table!  This is a
-; ``bulletproofing issue.''
+; It is important that if this function returns (mv nil badge) for a world then
+; it returns that same answer for all extensions of the world!  The guard on
+; the badge table, badge-table-guard, guarantees this invariant.
 
   (cond
    ((not (symbolp fn))
@@ -262,12 +132,7 @@
         nil))
    (t
     (let ((bdg ; the badge of nonprim fn, if any
-           (cdr
-            (assoc-eq
-             fn
-             (cdr
-              (assoc-eq :badge-userfn-structure
-                        (table-alist 'badge-table wrld)))))))
+           (get-badge fn wrld)))
       (cond
        ((null bdg) ; fn is a function symbol with no badge assigned
         (cond ((null msgp) (mv t nil))
@@ -275,7 +140,7 @@
                      nil))))
        (t (mv nil bdg)))))))
 
-; The extensible dopplegangers of badge-userfn and apply$-userfn are
+; The (extensible) attachments for badge-userfn and apply$-userfn are
 ; concrete-badge-userfn and concrete-apply$-userfn.  They will be attached to
 ; badge-userfn and apply$-userfn to extend the evaluation theory appropriately.
 ; See the defattach event at the end of apply.lisp.  We define the two
@@ -297,11 +162,6 @@
 ; the same for all future extensions of the world.  Important to observation
 ; (b) is that we cannot apply$ functions to stobjs or state.
 
-; TODO: If we believe that defun-overrides is ok if the definition has the
-; kind of behavior described above, it might be good to add a comment to that
-; effect in defun-overrides or provide a disciplined version of
-; ``defun-overrides-for-fns-that-implicitly-use-the-world-consistently''.
-
 ; Here is the STATE-free expansion of
 ; (defun-overrides concrete-badge-userfn (fn) ...)
 ; ==>
@@ -317,8 +177,6 @@
 ; own testing that provokes these messages.)
 
 (defun concrete-badge-userfn (fn)
-;  (declare (ftype (function (t) (values t))  ; See next comment.
-;                  apply$-primp))
   (cond
    ((or (not *allow-concrete-execution-of-apply-stubs*)
         (not *aokp*))    ; See Note 1.
@@ -330,15 +188,11 @@
             (print-list-without-stobj-arrays
              (list fn)))))
 
-; If the constraint on badge-userfn includes the requirement that (badge-userfn
-; fn) = nil when fn is a primitive or a boot function, as discussed in the Note
-; on Strengthening the Constraint in badge-userfn-type found in
-; constraints.lisp, then we need a clause like that below together with the
-; declare ftype above.  But there is a problem: when we add
-; concrete-badge-userfn as a trusted clause processor, further below, we need
-; to specify a constraint for it that includes the requirement just stated, and
-; we do not have apply$-primp in the logic during the ACL2 build.  If someday
-; we make apply$ a primitive, we can include this constraint, but not yet.
+; Recall the Note on Strengthening the Constraint in badge-userfn-type found in
+; apply-constraints.lisp.  There we discussed a bootstrapping problem arising
+; from adding the additional constraint that badge-userfn returns nil on
+; primitives and boot functions.  That strengthened constraint would have to be
+; implemented here too, perhaps with code like the following.
 
 ;   ((or (apply$-primp fn)
 ;        (eq fn 'badge)
@@ -616,8 +470,9 @@
 )
 
 ; What we've described so far is adequate to run APPLY$ and EV$ forms in the
-; evaluation theory after attaching the doppelgangers of badge-userfn and
-; apply$-userfn for the current world to those critical functions.
+; evaluation theory after attaching the concrete- ``doppelgangers'' of
+; badge-userfn and apply$-userfn for the current world to those critical
+; functions.
 
 ; Now we turn to the optimization of APPLY$-LAMBDA.  The following is provable:
 
@@ -632,9 +487,9 @@
 ; theory.
 
 ; You can skip all this and just read how apply$-lambda works by looking at the
-; definition of apply$-lambda in apply.lisp.  There you will notice a read-time
-; directive for not acl2-loop-only code that sometimes short-cuts the logic
-; code above by invoking raw lisp code produced by
+; definition of apply$-lambda in this file.  There you will notice code that
+; sometimes short-cuts the logic code below it (and in the definition of
+; apply$-lambda in apply.lisp) by invoking raw lisp code produced by
 ; compile-tame-compliant-unrestricted-lambda.  That function is explained and
 ; then defined below.
 
@@ -645,11 +500,6 @@
 ; :guard T.  If it has these properties we compile it and apply that compiled
 ; function object with CLTL's apply instead of interpreting its body with *1*
 ; EV$.
-
-; TODO: Something to think about: Do attachments affect this?  I'm not sure
-; they do.  Attachments already, supposedly, are correct in the case of our
-; running compiled guard verified code.  And I believe that's really all that
-; is happening here.
 
 ; The problem we face below is that LAMBDA objects are just quoted constants.
 ; Their bodies are not inspected at translate time nor affected by
@@ -667,11 +517,13 @@
 
 ; Even if all those conditions are met, the compiled code can't be executed
 ; unless the LAMBDA is Common Lisp compliant -- a notion that is not currently
-; implemented for LAMBDA expressions in ACL2.  Finally, even Common Lisp
+; implemented for LAMBDA expressions in ACL2, which does not support the
+; specification of guards on lambda expressions.  Finally, even Common Lisp
 ; compliant LAMBDAs can't be executed in raw Lisp unless their guards are
-; satisfied by the actuals, but LAMBDAs don't carry guards in ACL2.  And we
-; envision LAMBDAs being applied iteratively over large domains.  We don't want
-; to check their guards on every element of the domain.
+; satisfied by the actuals, so we'd have to check guards on LAMBDAs on every
+; apply$-lambda done by a mapping function.  We envision LAMBDAs being applied
+; iteratively over large domains.  We don't want to check their guards on every
+; element of the domain.
 
 ; To finesse these guard issues we insist that the LAMBDA be Common Lisp
 ; compliant when the input guard is T, making the determination of compliance
@@ -705,8 +557,8 @@
 
 ; When the ``variety of important properties'' noted above are met, we will
 ; arrange for APPLY$-LAMBDA to compile the LAMBDA and use CLTL's apply function
-; to apply the resulting CLTL function object.  Our code has only been
-; benchmarked in CCL, prior to December 2017.
+; to apply the resulting CLTL function object.  Our Version_8.0 code has only
+; been benchmarked in CCL, prior to December 2017.
 
 ; Our decision to optimize only the application of unrestricted LAMBDAs, while
 ; somewhat dissatisfying, probably allows the user to efficiently use most
@@ -740,10 +592,10 @@
 
 ; Experiments with all four scenarios are detailed in a long comment below
 ; under the name Essay on the Performance of APPLY$.  An executive summary of
-; those experiments is: Our Fast-Alist cache performs about 50% slower than our
-; Home-Grown cache.  The Do Nothing and the Compile but Don't Cache approaches
-; are much worse.  But many things affect performance.  Choosing the best
-; implementation depends on the expected size of the LAMBDAs, whether
+; those experiments is: Our Fast-Alist cache has performed about 50% slower
+; than our Home-Grown cache.  The Do Nothing and the Compile but Don't Cache
+; approaches are much worse.  But many things affect performance.  Choosing the
+; best implementation depends on the expected size of the LAMBDAs, whether
 ; unrestricted LAMBDAs occur frequently enough to matter, frequency of
 ; application of a given LAMBDA, etc., how often the world changes
 ; (invalidating or at least complicating the cache), etc.
@@ -773,23 +625,29 @@
 ; provide robust and convenient iterative primitives for interactive use to the
 ; ACL2 user.
 
-; Two severe disadvantages of the current Home-Grown Cache are that it
-; maintains only 3 cache lines (i.e., is capable of remembering only three
-; compiled lambdas) and is cleared every time the world changes.  The choice of
-; a small, fixed number of cache lines makes the implementation faster because
-; each line is a separate raw Lisp variable, but at the expense of more
-; voluminous code as we check and fill or empty each line with code that looks
-; much like the code for the line before it.  But the small, fixed number of
-; lines was considered adequate for executing ``typical'' mapping expressions,
-; like (sum (collect ... '(lambda (x) ...))  '(lambda (y) ...)).  Both lambdas
-; would be compiled and cached for the duration of the evaluation.  We don't
-; anticipate many interactively submitted ground mapping expressions to involve
-; more than 3 lambdas.  An advantage of the Fast-Alist Cache is that it
-; maintains an arbitrary number of cache lines.  We are content at the moment
-; to recompile such expressions every time the world changes.
+; Two severe disadvantages of our original Home-Grown Cache are that it
+; maintained only 3 cache lines (i.e., was capable of remembering only three
+; compiled lambdas) and was cleared every time the world changes.
+; The following historical note explained our thinking at the time.
 
-; See the Essay on the Performance of APPLY$ for details of our experiments and
-; implementation of a quick-and-dirty Fast-Alist Cache.
+;   The choice of a small, fixed number of cache lines makes the implementation
+;   faster because each line is a separate raw Lisp variable, but at the
+;   expense of more voluminous code as we check and fill or empty each line
+;   with code that looks much like the code for the line before it.  But the
+;   small, fixed number of lines was considered adequate for executing
+;   ``typical'' mapping expressions, like (sum (collect ... '(lambda (x) ...))
+;   '(lambda (y) ...)).  Both lambdas would be compiled and cached for the
+;   duration of the evaluation.  We don't anticipate many interactively
+;   submitted ground mapping expressions to involve more than 3 lambdas.  An
+;   advantage of the Fast-Alist Cache is that it maintains an arbitrary number
+;   of cache lines.  We are content at the moment to recompile such expressions
+;   every time the world changes.
+
+; Now, we use a structure that contains 1000 cache lines by default, but can be
+; adjusted by the user to contain any number of cache lines that is at least 3.
+
+; See the Essay on the Performance of APPLY$ for details of our original
+; experiments and implementation of a quick-and-dirty Fast-Alist Cache.
 
 ; A Collection of TODOs related to Compilation and Caching
 
@@ -806,13 +664,13 @@
 ; TODO: Because of the uncertainty regarding how mapping functions will
 ; actually be used, it might be worthwhile to implement a user-settable flag
 ; that specifies whether and how APPLY$-LAMBDA is cached.  Scenarios (a), (c),
-; and (d) immediately come to mind as optimal depending on usage.
-; whether we (a) do nothing and just interpret LAMBDA
-; applications, (c) use fast-alists (but possibly take advantage of their
-; flexibility and simplicity to support multiple worlds or extensions of a
-; cached world, which we don't do in the experiments described below), and (d)
-; the limited but fast home-grown cache here, which is best for standing in one
-; world and executing mapping expressions over massive ranges.
+; and (d) immediately come to mind as optimal depending on usage.  whether we
+; (a) do nothing and just interpret LAMBDA applications, (c) use fast-alists
+; (but possibly take advantage of their flexibility and simplicity to support
+; multiple worlds or extensions of a cached world, which we don't do in the
+; experiments described below), and (d) fast home-grown cache here, which is
+; best for standing in one world and executing mapping expressions over massive
+; ranges.
 
 ; TODO: It should also be noted that if our goal is fast execution of iterative
 ; primitives, further work might be done along the lines of macro expanding
@@ -858,80 +716,80 @@
 
 (defun slow-apply$-warning (fn reason state)
 
+; Warning: We rely on the assumption that this function always returns nil.
+
 ; This function interprets the reasons (given by
 ; tame-compliant-unrestricted-lambdap, below) that fn is not suitable.  See the
 ; next function.  This message is controlled by a user-settable switch.
 
   (declare (xargs :mode :program))
-  (let ((action (f-get-global 'slow-apply$-action state)))
-    (if action
-        (let* ((unknown-reason "it failed some test whose internal code is ~
-                                ~x0.  Please report this code to the ~
-                                implementors.")
-               (msg (cond
-                     ((symbolp reason)
-                      (case reason
-                        (:non-compliant-symbol
-                         (msg "its guards have not been verified."))
-                        (:ill-formed-lambda
-                         (msg "it is an ill-formed LAMBDA expression.  A ~
-                               well-formed LAMBDA must look like this (LAMBDA ~
-                               (v1 ... vn) body) where the vi are distinct ~
-                               variable symbols and body is a fully ~
-                               translated term containing no free variables ~
-                               other than the vi."))
-                        (:non-term-lambda-body
-                         (msg "its body is not fully translated."))
-                        (:non-tamep-lambda-body
-                         (msg "its body is not tame."))
-                        (:free-vars-in-lambda-body
-                         (msg "its body contains free variables other than ~
-                               the LAMBDA formals."))
-                        (:still-bad-lambda
-                         (msg "it was previously rejected as bad."))
-                        (otherwise
-                         (msg unknown-reason reason))))
-                     ((consp reason)
-                      (cond
-                       ((eq (car reason) :restricted-compliant-symbol)
-                        (msg "it has a guard of ~X01 but only functions with ~
-                              :guard T can be given fast handling."
-                             (untranslate (cdr reason) t (w state))
-                             nil))
-                       ((eq (car reason) :non-compliant-lambda-subrs)
-                        (msg "it calls ~&0 whose guards have not been verified."
-                             (cdr reason)))
-                       ((eq (car reason) :unproved-lambda-body-guard-conjectures)
-                        (msg "we cannot trivially verify the guards of the ~
-                              body.  The unproved guard obligation is ~X01.  ~
-                              The ACL2 theorem prover may be able to prove ~
-                              this formula, but we do not try very hard to ~
-                              prove guards during the application of apply$.  ~
-                              The most direct way to get fast execution would ~
-                              be to introduce a new function symbol with ~
-                              :guard T whose body is the body of this LAMBDA ~
-                              and then use that new symbol instead of the ~
-                              LAMBDA expression.  Sorry."
-                             (prettyify-clause-set (cdr reason)
-                                                   nil
-                                                   (w state))
-                             nil))
-                       (t (msg unknown-reason reason))))
-                     (t (msg unknown-reason reason)))))
-          (pprogn
-           (fms "~%~%**********************************************************~%~
-                 Slow Apply$ of ~x0 because ~@1  To inhibit this warning ~x2.~%~
-                 **********************************************************~%~%"
-                     (list (cons #\0 fn)
-                           (cons #\1 msg)
-                           (cons #\2 '(assign slow-apply$-action nil)))
-                     (f-get-global 'proofs-co state)
-                     state
-                     nil)
-           (value nil)))
-        (value nil))))
+  (if (f-get-global 'slow-apply$-action state)
+      (let* ((unknown-reason "it failed some test whose internal code is ~x0. ~
+                              ~ Please report this code to the implementors.")
+             (msg (cond
+                   ((symbolp reason)
+                    (case reason
+                      (:non-compliant-symbol
+                       (msg "its guards have not been verified."))
+                      (:ill-formed-lambda
+                       (msg "it is an ill-formed LAMBDA expression.  A ~
+                             well-formed LAMBDA must look like this (LAMBDA ~
+                             (v1 ... vn) body) where the vi are distinct ~
+                             variable symbols and body is a fully translated ~
+                             term containing no free variables other than the ~
+                             vi."))
+                      (:non-term-lambda-body
+                       (msg "its body is not fully translated."))
+                      (:non-tamep-lambda-body
+                       (msg "its body is not tame."))
+                      (:free-vars-in-lambda-body
+                       (msg "its body contains free variables other than the ~
+                             LAMBDA formals."))
+                      (:still-bad-lambda
+                       (msg "it was previously rejected as bad."))
+                      (otherwise
+                       (msg unknown-reason reason))))
+                   ((consp reason)
+                    (cond
+                     ((eq (car reason) :restricted-compliant-symbol)
+                      (msg "it has a guard of ~X01 but only functions with ~
+                            :guard T can be given fast handling."
+                           (untranslate (cdr reason) t (w state))
+                           nil))
+                     ((eq (car reason) :non-compliant-lambda-subrs)
+                      (msg "it calls ~&0 whose guards have not been verified."
+                           (cdr reason)))
+                     ((eq (car reason) :unproved-lambda-body-guard-conjectures)
+                      (msg "we cannot trivially verify the guards of the ~
+                            body.  The unproved guard obligation is ~X01.  ~
+                            The ACL2 theorem prover may be able to prove this ~
+                            formula, but we do not try very hard to prove ~
+                            guards during the application of apply$.  The ~
+                            most direct way to get fast execution would be to ~
+                            introduce a new function symbol with :guard T ~
+                            whose body is the body of this LAMBDA and then ~
+                            use that new symbol instead of the LAMBDA ~
+                            expression.  Sorry."
+                           (prettyify-clause-set (cdr reason)
+                                                 nil
+                                                 (w state))
+                           nil))
+                     (t (msg unknown-reason reason))))
+                   (t (msg unknown-reason reason)))))
+        (cw "~%~%~
+             **********************************************************~%~
+             Slow Apply$ of ~x0 because ~@1  To inhibit this warning ~x2.~%~
+             **********************************************************~%~%"
+            fn
+            msg
+            '(assign slow-apply$-action nil)))
+    nil))
 
-(defun tame-compliant-unrestricted-lambdap (fn bad-lambdas ens wrld state)
+(defun tame-compliant-unrestricted-lambdap (fn bad-lambdas
+                                               &aux
+                                               (ens (ens *the-live-state*))
+                                               (wrld (w *the-live-state*))
+                                               (state *the-live-state*))
 
 ; Fn is expected to be a lambda expression (but we check in any case).  We
 ; check that fn is definitely tame, guard verified and that the guard is T.
@@ -952,39 +810,32 @@
 ; See The CL-Cache Implementation Details for a discussion of the uses of
 ; equal (member-equal) and eq (member-eq) here.
 
-    (er-progn (if (member-eq fn bad-lambdas)
-                  (value nil)
-                  (slow-apply$-warning fn :still-bad-lambda state))
-              (value nil)))
+    (if (member-eq fn bad-lambdas)
+        nil
+      (slow-apply$-warning fn :still-bad-lambda state)))
    ((not (and (consp fn)
               (eq (car fn) 'LAMBDA)
               (consp (cdr fn))
               (consp (cddr fn))
               (null (cdddr fn))
               (arglistp (lambda-formals fn))))
-    (er-progn (slow-apply$-warning fn :ill-formed-lambda state)
-              (value nil)))
+    (slow-apply$-warning fn :ill-formed-lambda state))
    ((not (termp (lambda-body fn) wrld))
-    (er-progn (slow-apply$-warning fn :non-term-lambda-body state)
-              (value nil)))
+    (slow-apply$-warning fn :non-term-lambda-body state))
    ((not (executable-tamep (lambda-body fn) wrld))
-    (er-progn (slow-apply$-warning fn :non-tamep-lambda-body state)
-              (value nil)))
+    (slow-apply$-warning fn :non-tamep-lambda-body state))
    ((not (subsetp-eq (all-vars (lambda-body fn)) (lambda-formals fn)))
-    (er-progn (slow-apply$-warning fn :free-vars-in-lambda-body state)
-              (value nil)))
+    (slow-apply$-warning fn :free-vars-in-lambda-body state))
    (t
     (let ((non-compliant-fns (collect-non-common-lisp-compliants
                               (all-fnnames-exec (lambda-body fn))
                               wrld)))
       (cond
        (non-compliant-fns
-        (er-progn
-         (slow-apply$-warning fn
-                              (cons :non-compliant-lambda-subrs
-                                    non-compliant-fns)
-                              state)
-         (value nil)))
+        (slow-apply$-warning fn
+                             (cons :non-compliant-lambda-subrs
+                                   non-compliant-fns)
+                             state))
        (t (mv-let (cl-set ttree)
             (guard-obligation-clauses (cons :term (lambda-body fn))
                                       nil ens wrld state)
@@ -992,28 +843,26 @@
               (tau-clausep-lst cl-set ens wrld nil ttree state nil)
               (declare (ignore ttree calist))
               (cond
-               (cl-set1
-                (er-progn
-                 (slow-apply$-warning
-                  fn
-                  (cons :unproved-lambda-body-guard-conjectures
-                        cl-set)
-                  state)
-                 (value nil)))
-               (t (value t)))))))))))
+               (cl-set1 (slow-apply$-warning
+                         fn
+                         (cons :unproved-lambda-body-guard-conjectures
+                               cl-set)
+                         state))
+               (t t))))))))))
 
 ; With this check in hand, we can now implement the cl-cache.
 
 ; The CL-Cache Implementation Details
 
-; The cl-cache stores the 3 most recent LAMBDA-expressions applied in the
-; current ACL2 world.  When the world changes the cache is effectively cleared
-; because we no longer know that the compiled definitions are current.  The
-; cache also stores -- in a separate list -- any LAMBDA-expression encountered
-; in the current world for which we have already detected non-compliance.  When
-; one of those is encountered we just silently EV$.
+; The cl-cache stores (by default) the 1000 most recent LAMBDA-expressions
+; applied in the current ACL2 world.  When the world changes the cache is
+; effectively cleared because we no longer know that the compiled definitions
+; are current.  The cache also stores -- in a separate list -- any
+; LAMBDA-expression encountered in the current world for which we have already
+; detected non-compliance.  When one of those is encountered we just silently
+; EV$.
 
-; Each of the 3 cache lines is a nil or cons consisting of an input and an
+; Each of the cache lines is a nil or cons consisting of an input and an
 ; output, where input is a lambda expression and output is the corresponding
 ; compiled code object wrt the current world.  The input of a non-nil cache
 ; line is always a tame compliant unrestricted ACL2 LAMBDA-expression and the
@@ -1032,207 +881,324 @@
 ; EQ to a bad LAMBDA we additionally know that it has already been reported
 ; verbosely and we can just report that it is slow (still) and not explain why.
 
-; Lines are kept in access order, most recent first, and stored in the special
-; variables *cl-cache-1*, *cl-cache-2*, and *cl-cache-3*.  The first line in
-; the sequence that is nil indicates that subsequent lines are irrelevant.
+; Lines are kept in access order, most recent first.  The first line in the
+; sequence that is nil indicates that subsequent lines are irrelevant.  We
+; actually arrange that all subsequent lines are also nil, but that is probably
+; not important.
 
-; The non-compliant LAMBDAs are stored in the list *cl-cache-bad-lambdas*.
-
-; The cache is protected by *cl-cache-world* which holds the world that was
-; current when the compiler was called.  Every time the world changes, the
-; cache is effectively cleared.
+; The non-compliant LAMBDAs are stored in a list.  The cache is protected by a
+; world holding the world that was current when the compiler was called.  Every
+; time the world changes, the cache is effectively cleared.
 
 ; We handle the possibility of interrupts rendering the cache inconsistent.
-; Here is how: Before we inspect or modify the cache we enter a
-; without-cache-interrupts environment.  This is actually a misnomer.
-; Interrupts can happen but they won't leave us exposed.  Instead, the
-; environment just renders the cache :invalid by setting the *cl-cache-world*
-; to :invalid.  We detect that condition the next time we access the cache and
-; wipe it out.
+; Here is how: Before we modify the cache we render the global cache invalid,
+; restoring the global cache only when modification is complete.  See the use
+; of prog1 in compile-tame-compliant-unrestricted-lambda.
 
 ; Specifically, imagine that a cache manipulation is interrupted and aborted by
-; ctrl-c or an error.  The cache is left invalid by means of the
-; *cl-cache-world* being :invalid.  The next time we attempt to manipulate the
-; cache we will first enter the without-cache-interrupts environment.  Upon
-; finding it already :invalid, we clear the lines and save the then-current
-; world into the temporary location used to restore the *cl-cache-world* upon
-; exit.  So if the coming cache manipulation is interrupted, none of its
-; results will be available.  If we exit the without-cache-interrupts normally,
-; the *cl-cache-world* is restored from that temporary location.
+; ctrl-c or an error.  The cache is left invalid.  The next time we attempt to
+; manipulate the cache we will find it :invalid, in which case we build a new
+; cache.
 
-; Note that this implementation does not allow nested without-cache-interrupts.
-; The second entry will set the saved world to :invalid and then we're hosed.
-; So this is fragile code and is meant to to protect the user against
-; interrupts but not protect the system implementors against fuzzy thinking!
+; For efficiency, we often destructively modify the cache.
 
-(defvar *cl-cache-world* nil)
-(defvar *cl-cache-saved-world* nil)
-(defvar *cl-cache-1* nil)
-(defvar *cl-cache-2* nil)
-(defvar *cl-cache-3* nil)
-(defvar *cl-cache-bad-lambdas* nil)
+; Here is our cache structure.  The value of our global cache variable
+; (*cl-cache*, introduced further below) is either such a structure or else is
+; an integer, at least 3, representing the intended size of such a structure.
 
-(defmacro without-cache-interrupts (&rest args)
+(defrec cl-cache
 
-; (without-cache-interrupts form1 form2 ... formk) evaluates all the forms and
-; returns the value of formk.  But it first resets the *cl-cache-world* to
-; :invalid and restores it before exiting.
+; Warning: Keep this in sync with functions update-cl-cache-xxx, which (as of
+; this writing) immediately follow this definition.
 
-  `(prog2
-       (cond
-        ((eq *cl-cache-world* :invalid)
-         (setq *cl-cache-1* nil)
-         (setq *cl-cache-2* nil)
-         (setq *cl-cache-3* nil)
-         (setq *cl-cache-bad-lambdas* nil)
-         (setq *cl-cache-saved-world* (w *the-live-state*)))
-        (t (setq *cl-cache-saved-world* *cl-cache-world*)
-           (setq *cl-cache-world* :invalid)))
-       (progn ,@args)
-       (setq *cl-cache-world* *cl-cache-saved-world*)))
+; Invariants on the fields include:
+
+; - :World is an ACL2 logical world (indeed, it is the current ACL2 world after
+;   this structure is read or written).
+
+; - :Size is a positive integer.
+
+; - :Alist is a circular list that repeats after :size elements; each of its
+;   elements is a cons or nil; and for 0 <= i < j < size, if (nth i alist) =
+;   nil then (nth j alist) = nil.
+
+; - :Last is (nthcdr (1- size) alist).
+
+; - :Bad-lambdas is a true-list.
+
+; Note that :size and :last are constant fields for a given cl-cache.  However,
+; the cdr of :last can change.
+
+  ((world . alist) (size . last) . bad-lambdas)
+  t)
+
+(defun update-cl-cache-alist (cl-cache x)
+  (setf (cdar cl-cache) x))
+
+(defun update-cl-cache-last (cl-cache x)
+  (setf (cdadr cl-cache) x))
+
+(defun update-cl-cache-bad-lambdas (cl-cache x)
+  (setf (cddr cl-cache) x))
+
+(defparameter *cl-cache-size-default*
+
+; We want to make this default large enough so that most users will never need
+; to think about it.  However, we also want to make it small enough so that
+; updates aren't slowed down too much when lookups need to walk linearly
+; through a full cache and fail.  That probably won't happen often, so it seems
+; like a minor consideration; hence we make the cache reasonably large by
+; default.
+
+; An experiment shows essentially the same timing results for
+; books/system/tests/apply-timings.lisp when this value is 5 as when it is
+; 1000.
+
+  1000)
+
+(defvar *cl-cache*
+
+; Normally *cl-cache* is a cl-cache record.  However, it can be the intended
+; :size of such a record, which indicates that *cl-cache* is uninitialized.
+
+  *cl-cache-size-default*)
+
+(defun cl-cache-init (size)
+
+; We insist on a size that is at least 3.  Sizes of 1 and 2 might work, but we
+; haven't carefully considered those cases.
+
+; We considered making this function available to the user.  However, it seemed
+; a bad idea to allow this to be run inside a book (via make-event) and thus
+; affect the rest of the session.  Of course, if one knows about this function
+; one can use a trust tag to invoke it in raw Lisp.
+
+  (declare (type (integer 3 *) size))
+  (progn$ (or 
+
+; The following check is important since the type declaration won't necessarily
+; be checked in safety 0.
+
+           (and (integerp size)
+                (<= 3 size))
+           (er hard! 'set-cl-cache
+               "Illegal argument (should be nil or integer not less than 3), ~
+                ~x0, for cl-cache-init."
+               size))
+          (setq *cl-cache* size)
+          t))
+
+(defun make-circular-list (n)
+
+; Return (mv L Last), L is a list, Last is (nthcdr (1- n) L), and (cdr Last) is
+; L.  Thus, L can be viewed as a list containing n slots, such that
+; conceptually, its last cons is L.
+
+  (let* ((lst (make-list n))
+         (last (last lst)))
+    (setf (cdr last) lst)
+    (mv lst last)))
+
+(defun make-cl-cache (size)
+  (mv-let (alist last)
+    (make-circular-list size)
+    (make cl-cache
+          :world (w *the-live-state*)
+          :alist alist
+          :size size
+          :last last
+          :bad-lambdas nil)))
+
+(defun cl-cache-size (cl-cache)
+
+; Cl-cache can be a cl-cache record or the most recent size of a *cl-cache*
+; record.
+
+  (cond
+   ((consp cl-cache)
+    (access cl-cache cl-cache :size))
+   (t (assert (natp cl-cache))
+      cl-cache)))
+
+(defun cl-cache-print ()
+
+; This is just a debugging utility.
+
+  (let ((cl-cache *cl-cache*))
+    (cond ((consp cl-cache)
+           (loop for i from 1 to (access cl-cache cl-cache :size)
+                 as pair in (access cl-cache cl-cache :alist)
+                 do (format t "~3d. ~s~&" i pair)))
+          (t (format t
+                     "Cl-cache is uninitialized with size ~s.~%"
+                     *cl-cache*))))
+  t)
+
+(defun cl-cache-add-entry (cl-cache pair tail previous-tail)
+
+; We assume that the :alist of cl-cache, truncated to its first :size elements
+; (to account for its being a circular list), is as follows, where note that
+; tail has at least two elements.
+
+;            ((f1 . c1) (f2 . c2) ... (fk . ck) xxx yyy ...).
+;                                     | previous-tail >>
+;                                               | tail >>
+
+; We want to add a new element (fn . c) to the front of the :alist and discard
+; xxx.
+
+;   ((fn . c) (f1 . c1) (f2 . c2) ... (fk . ck) yyy ...).
+
+; This function does exactly that.  It is evaluated purely for that destructive
+; update to cl-cache.
+
+; A naive version of this algorithm creates a new cons, pushing (fn . c) to the
+; front of the alist.  However, we reuse tail, which after all is a cons pair
+; that would otherwise be garbage; that pair thus serves as the new alist.
+
+  (let ((alist (access cl-cache cl-cache :alist)))
+    (setf (cdr previous-tail) (cdr tail))
+    (setf (car tail) pair)
+    (setf (cdr tail) alist)
+    (let ((new-alist tail)
+          (last (access cl-cache cl-cache :last)))
+      (update-cl-cache-alist cl-cache tail)
+      (setf (cdr last) new-alist))
+    t))
 
 (defun compile-tame-compliant-unrestricted-lambda (fn)
 
-; This function is used directly in the raw Lisp code for apply$-lambda, as
-; defined in apply.lisp.
+; This function is used directly in the raw Lisp code for apply$-lambda.
 
-  (without-cache-interrupts
+  (let* ((cl-cache *cl-cache*)
+         (state *the-live-state*)
+         (wrld (w state)))
+    (cond
+     ((and (consp cl-cache)
+           (eq (access cl-cache cl-cache :world)
+               wrld)) ; Cache is valid
+      (prog1
+          (let* ((cl-alist (access cl-cache cl-cache :alist))
+                 (bad-lambdas (access cl-cache cl-cache :bad-lambdas)))
 
-; Because we're in a without-cache-interrupts, we know the cache world is
-; literally :invalid right now.  But the saved cache world holds the world for
-; which the cache is valid.
+; We make *cl-cache* invalid here, to be restored if we don't interrupt.
 
-   (cond
-    ((eq *cl-cache-saved-world* (w *the-live-state*)) ; Cache is valid
-     (cond
-      ((null *cl-cache-1*)
-       (cond
-        ((null *cl-cache-bad-lambdas*)
-         (er hard 'compile-tame-compliant-unrestricted-lambda
-             "The cl-cache is in an inconsistent state:  the *cl-cache-world* ~
-              was the current world (before we saved it in ~
-              *cl-cache-saved-world* and invalidated *cl-cache-world* to ~
-              handle interruptions).  So the cache is supposedly valid, which ~
-              is supposed to imply that there is at least one *cl-cache-i* ~
-              entry or *cl-cache-bad-lambda* entry, but the first cache line ~
-              is empty and so is the bad lambdas list.  Please report this to ~
-              the implementors and if you can reproduce it with a simple ~
-              script we'd really appreciate it -- though we expect it's due ~
-              to some unfortunately timed interrupt."))
-        ((mv-let (erp val state)
-           (tame-compliant-unrestricted-lambdap
-            fn
-            *cl-cache-bad-lambdas*
-            (ens *the-live-state*)
-            (w *the-live-state*)
-            *the-live-state*)
-           (declare (ignore erp state))
-           val)
-         (setq *cl-cache-2* nil)
+            (setq *cl-cache* (access cl-cache cl-cache :size))
+            (assert (car cl-alist)) ; valid cl-cache has at least one entry
+            (cond
+             ((equal (caar cl-alist) fn)
 
-; Note: According to the CLTL HyperSpec, (compile nil fn) returns the
-; compiled-function corresponding to the function fn, which may be either a
-; function or a lambda expression.  We know fn is a well-formed LAMBDA when we
-; get here.  The nil in the call of compile below indicates that compile should
-; return the compiled object; (a non-nil first argument would indicate that
-; compile is to set that symbol's function cell to the compiled object and
-; return the symbol.)
+; The cl-cache is valid and its first entry is also valid.  Simply return the
+; compiled function.
 
-         (setq *cl-cache-1* (cons fn (compile nil fn)))
-         (cdr *cl-cache-1*))
-        (t (setq *cl-cache-bad-lambdas* (add-to-set-eq fn *cl-cache-bad-lambdas*))
-           nil)))
-      ((equal (car *cl-cache-1*) fn)
-       (cdr *cl-cache-1*))
-      ((null *cl-cache-2*)
-       (cond
-        ((mv-let (erp val state)
-           (tame-compliant-unrestricted-lambdap
-            fn
-            *cl-cache-bad-lambdas*
-            (ens *the-live-state*)
-            (w *the-live-state*)
-            *the-live-state*)
-           (declare (ignore erp state))
-           val)
-         (setq *cl-cache-3* nil)
-         (setq *cl-cache-2* *cl-cache-1*)
-         (setq *cl-cache-1* (cons fn (compile nil fn)))
-         (cdr *cl-cache-1*))
-        (t (setq *cl-cache-bad-lambdas* (add-to-set-eq fn *cl-cache-bad-lambdas*))
-           nil)))
-      ((equal (car *cl-cache-2*) fn)
+              (cdar cl-alist))
+             (t
 
-; Swap lines 1 and 2 because 2 is more recent.  Leave line 3 untouched.  It
-; doesn't matter if line 3 is filled or not.
+; We search the cl-cache starting with the second element.  The variable, tail,
+; is the tail of the :alist that starts with the ith element as we loop,
+; beginning with i=2 and stopping one short of the size.  If we find an entry
+; that is either nil or a hit, then we delete that entry destructively, and we
+; push a suitable pair onto the front of the cache, using cl-cache-add-entry.
+; If we don't get a hit, then with the "finally" clause we do something a bit
+; special.
 
-       (let ((temp *cl-cache-2*))
-         (setq *cl-cache-2* *cl-cache-1*)
-         (setq *cl-cache-1* temp))
-       (cdr *cl-cache-1*))
-      ((and *cl-cache-3*
-            (equal (car *cl-cache-3*) fn))
-       (let ((temp *cl-cache-3*))
-         (setq *cl-cache-3* *cl-cache-2*)
-         (setq *cl-cache-2* *cl-cache-1*)
-         (setq *cl-cache-1* temp))
-       (cdr *cl-cache-1*))
+              (loop for i from 1 to (- (access cl-cache cl-cache :size) 2)
+                    as tail on (cdr cl-alist)
+                    as previous-tail on cl-alist
 
-; The cache is full and fn is not in it.  If fn is suitably compliant, we put
-; it in at line 1, moving the other two down, and pushing line 3 out.  Note
-; that line 3 may be nil here, but that doesn't matter.
+; The following code doesn't seem (after limited testing) to speed things up in
+; general, so there doesn't seem to be much reason to add it.
 
-      ((mv-let (erp val state)
-         (tame-compliant-unrestricted-lambdap
-          fn
-          *cl-cache-bad-lambdas*
-          (ens *the-live-state*)
-          (w *the-live-state*)
-          *the-live-state*)
-         (declare (ignore erp state))
-         val)
-       (setq *cl-cache-3* *cl-cache-2*)
-       (setq *cl-cache-2* *cl-cache-1*)
-       (setq *cl-cache-1*
-             (cons fn (compile nil fn)))
-       (cdr *cl-cache-1*))
-      (t (setq *cl-cache-bad-lambdas* (add-to-set-eq fn *cl-cache-bad-lambdas*))
-         nil)))
-    (t
+;              when
+;              (cond ((= i 1)
+;                     (and (car tail) (equal (caar tail) fn)))
+;                    ((= i 2)
+;                     (and (cadr tail) (equal (cadar tail) fn))))
+; ; optimization: just swap
+;              do
+;              (let ((pair1 (car cl-alist))
+;                    (pair2 (nth i cl-alist)))
+;                (setf (car cl-alist) pair2
+;                      (nth i cl-alist) pair1)
+;                (return (cdr pair2)))
 
-; Since the cache is invalid for the current world, we ignore its contents.  We
-; fill line 1 if fn is suitably compliant.  We set line 2 to nil just to
-; ensure the invariant.  We reset the bad lambdas list because in this new
-; world they may be ok.  We reset the saved world to the current world so that
-; when we pop out of the without-cache-interrupts the cache world is the
-; current one.
+                    when (or (null (car tail)) ; fn not found
+                             (equal (caar tail) fn))
+                    do (let ((pair (if (null (car tail))
+                                       (and (tame-compliant-unrestricted-lambdap
+                                             fn bad-lambdas)
+                                            (cons fn (compile nil fn)))
+                                     (car tail))))
+                         (cond (pair (cl-cache-add-entry cl-cache
+                                                         pair
+                                                         tail
+                                                         previous-tail)
+                                     (return (cdr pair)))
+                               (t (update-cl-cache-bad-lambdas
+                                   cl-cache
+                                   (add-to-set-eq fn bad-lambdas))
+                                  (return nil))))
+                    finally
+                    (progn
 
-     (cond
-      ((mv-let (erp val state)
-         (tame-compliant-unrestricted-lambdap
-          fn
-          nil ; known bad lambdas in this new wrld
-          (ens *the-live-state*)
-          (w *the-live-state*)
-          *the-live-state*)
-         (declare (ignore erp state))
-         val)
-       (setq *cl-cache-saved-world* (w *the-live-state*))
-       (setq *cl-cache-bad-lambdas* nil)
-       (setq *cl-cache-2* nil)
-       (setq *cl-cache-1*
-             (cons fn (compile nil fn)))
-       (cdr *cl-cache-1*))
-      (t
+; First advance to the last tail.
 
-; Since this is a new world, we ignore the old value of *cl-cache-bad-lambdas*
-; and restart it with just this fn in it.
+                      (setq tail (cdr tail)
+                            previous-tail (cdr previous-tail))
+                      (assert (eq tail (access cl-cache cl-cache :last)))
+                      (let* ((found (equal (caar tail) fn))
+                             (pair (cond (found (car tail))
+                                         ((tame-compliant-unrestricted-lambdap
+                                           fn bad-lambdas)
+                                          (cons fn (compile nil fn))))))
+                        (cond (pair
+                               (when (not found)
+                                 (setf (car tail) pair))
+                               (update-cl-cache-alist cl-cache tail)
+                               (update-cl-cache-last cl-cache previous-tail)
+                               (return (cdr pair)))
+                              (t (update-cl-cache-bad-lambdas
+                                  cl-cache
+                                  (add-to-set-eq fn bad-lambdas))
+                                 (return nil)))))))))
+        (setq *cl-cache* cl-cache)))
+     (t (let* ((size (cl-cache-size cl-cache))
+               (cl-cache *cl-cache*))
 
-         (setq *cl-cache-saved-world* (w *the-live-state*))
-         (setq *cl-cache-bad-lambdas* (add-to-set-eq fn nil))
-         nil))))))
+; Next we make *cl-cache* invalid, to be restored if we don't interrupt.
+
+          (setq *cl-cache* size)
+          (setq cl-cache
+                (cond ((consp cl-cache)
+
+; We reuse the structure of cl-cache, updating its fields appropriately with
+; minimal consing.
+
+                       (loop for i from 1 to size
+                             as tail on (access cl-cache cl-cache :alist)
+                             do
+                             (setf (car tail) nil))
+                       (change cl-cache cl-cache
+                               :world wrld
+                               :bad-lambdas nil))
+                      (t (make-cl-cache size))))
+          (prog1
+              (cond
+               ((tame-compliant-unrestricted-lambdap fn nil)
+                (let ((c (compile nil fn))
+                      (cl-alist (access cl-cache cl-cache :alist)))
+                  (setf (car cl-alist)
+                        (cons fn c))
+                  c))
+               (t (update-cl-cache-bad-lambdas
+                   cl-cache
+                   (list fn))
+                  nil))
+            (setq *cl-cache* cl-cache)))))))
 
 ; Historical Essay on the Performance of APPLY$
+
+; Preamble to Essay
 
 ; This essay describes an experiment performed before apply$ was integrated
 ; into the sources.  It can no longer be performed as described!  We might do a
@@ -1240,6 +1206,41 @@
 ; approaches to caching compiled lambdas.  But for the moment, we'll leave this
 ; comment in place merely as a historical note to justify the initial support
 ; for speeding up apply$-lambda.
+
+; For this experiment we used a slightly different fast home-grown cache, which
+; was limited to three cache lines.  Our current cache is a bit faster.
+; Consider the following three tests defined in community book
+; books/system/tests/apply-timings.lisp, each running 10 million iterations
+; where in each iteration: the first applies a single lambda, the second
+; applies two lambdas, and the third applies three lambdas.
+
+;   (cw-apply-test *10M* 1)
+;   (cw-apply-test *10M* 2)
+;   (cw-apply-test *10M* 3)
+
+; The respective results using our 3-line cache (the one used below, and using
+; CCL) were measured at:
+
+; 0.91 seconds realtime, 0.91 seconds runtime
+; 2.99 seconds realtime, 3.00 seconds runtime
+; 5.73 seconds realtime, 5.73 seconds runtime
+
+; The respective results using our current cache (as of mid-January, 2018,
+; using CCL) were measured at:
+
+; 0.69 seconds realtime, 0.69 seconds runtime
+; 2.58 seconds realtime, 2.59 seconds runtime
+; 4.48 seconds realtime, 4.48 seconds runtime
+
+; The timings suggest that it was worthwhile moving to the variable-lines cache
+; from the three-line cache, but also that the historical results reported
+; below would not be dramatically different using the variable-lines cache in
+; place of the three-line cache that was used.
+
+; Note by the way that if we reduce 1000 cache lines to 5 cache lines, the
+; times are essentially unchanged.
+
+; The Essay Proper
 
 ; In this experiment we will time runs of variations of
 
@@ -1461,7 +1462,8 @@
 
 ; Note: The following screws up the 3-line cache invariants and implementation.
 ; So don't proceed unless you're finished experimenting with that
-; implementation!
+; implementation!  [Notes added January 2018: again, we no longer use a 3-line
+; cache; and tame-compliant-unrestricted-lambdap now takes only two arguments.]
 
 ;   (value :q)
 ;   (setq *cl-cache-world* nil)
@@ -1651,6 +1653,15 @@
 
 ; End of  Historical Essay on the Performance of APPLY$
 ; =================================================================
+
+; [The following essay is meant as supplementary material to the proof sketch
+; in the paper ``Limited Second Order Functionality in a First Order Setting''.
+; It does not necessarily describe the implemented version of apply$,
+; def-warrant, badger, etc., in ACL2 Version_8.0 or later.  However, as always,
+; we base our belief that ACL2 is sound on careful coding with attention to
+; proofs like this.  When new features are added, we work out extensions of
+; these proofs to explain those features, but we do not always re-write the
+; entire proof.]
 
 ; Essay on Admitting a Model for Apply$ and the Functions that Use It
 
@@ -3176,3 +3187,34 @@
 ; Q.E.D.
 ; -----------------------------------------------------------------
 ;
+
+(defun apply$-lambda (fn args)
+
+; Keep this in sync with the logical definition (as noted below), which is in
+; apply.lisp.  The present definition is the one that will be installed in
+; ACL2, because of the inclusion of apply$-lambda in
+; *boot-strap-pass-2-acl2-loop-only-fns*.
+
+  (declare (ftype (function (t t) (values t))
+                  ev$))
+  (let ((compiled-version ; see the Essay on the Compiled-LAMBDA Cache
+         (and *aokp*
+              *allow-concrete-execution-of-apply-stubs*
+              (compile-tame-compliant-unrestricted-lambda fn))))
+    (when compiled-version
+      (return-from apply$-lambda
+                   (let ((arity (length (cadr fn))))
+                     (apply compiled-version
+                            (if (= arity
+                                   (length args))
+                                args
+                              (take arity args)))))))
+
+; Warning: Keep the code below in sync with the logical definition of
+; apply$-lambda.
+
+  (ev$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
+       (ec-call
+        (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
+                  args))))
+

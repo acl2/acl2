@@ -34,7 +34,7 @@
 (include-book "ipasir-logic")
 (include-book "centaur/satlink/dimacs-lits" :dir :system)
 (include-book "tools/include-raw" :dir :system)
-(include-book "centaur/quicklisp/cffi" :dir :system)
+(include-book "quicklisp/cffi" :dir :system)
 ; cert_param: (uses-ipasir)
 
 ; (depends-on "ipasir-interface-raw.lsp")

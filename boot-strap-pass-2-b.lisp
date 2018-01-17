@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -196,7 +196,6 @@
      (ARITY)
      (ARITY-ALISTP ACL2-COUNT ALIST)
      (BACKCHAIN-LIMIT-LISTP ACL2-COUNT LST)
-     (BOUNDED-NAT-ALISTP ACL2-COUNT X)
      (CERT-ANNOTATIONSP)
      (CHK-LENGTH-AND-KEYS ACL2-COUNT ACTUALS)
      (CLEAN-BRR-STACK)

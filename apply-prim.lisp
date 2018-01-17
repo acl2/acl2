@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -38,8 +38,9 @@
 ; ``minor'' exception.  Indeed, that is how apply$ was developed (during the
 ; period 2015-2017 with ACL2 Versions 7.2 through 7.4).  Each of the three
 ; steps was carried out in its own certified book, appropriately named
-; apply-prim, apply-constraints (aka ``constraints''), and apply.  We preserve
-; that basic structure.
+; apply-prim, apply-constraints (aka ``constraints''), and apply.  We preserved
+; that file basic structure when we integrated apply$ into the ACL2 source
+; code.
 
 ; The ``minor'' exception noted above is that without native support it is
 ; impossible to execute apply$: apply$-userfn is constrained.  Only by
@@ -56,11 +57,11 @@
 ; built into ACL2's sources since they must ``magically'' determine whether the
 ; corresponding function symbols have warrants in the current world.
 
-; Below is a guide to the files primarily related to the integration of apply$.
-; Of course, the name ``APPLY$'' and related symbols are sprinkled throughout
-; the ACL2 source files now, e.g., in *primitive-logic-fns-with-raw-code* but
-; these are the main files and books and we list them in four groups explained
-; below.
+; Below is a guide to the files primarily related to the integration of apply$
+; into our source code.  Of course, the name ``APPLY$'' and related symbols are
+; sprinkled throughout the ACL2 source files now, e.g., in
+; *primitive-logic-fns-with-raw-code*, but these are the main files and books
+; and we list them in four groups explained below.
 
 ; Foundations:
 ;  books/projects/apply-model/
@@ -71,6 +72,7 @@
 ;    ex2/*
 
 ; Source Code:
+;  other-events.lisp
 ;  apply-prim.lisp
 ;  apply-constraints.lisp
 ;  apply.lisp
@@ -85,42 +87,59 @@
 ;  books/projects/apply/apply-lemmas.lisp
 ;  books/projects/apply/report.lisp
 
-; The Foundations group preserves the original construction of apply$ by
+; * The Foundations Group preserves the original construction of apply$ by
 ; defining it exactly as in the paper ``Limited Second Order Functionality in a
-; First Order Setting'' but in a different symbol package (since a functions of
+; First Order Setting'' but in a different symbol package (since functions of
 ; those names are now defined in ACL2).  The subdirectories ex1/ and ex2/
 ; illustrate the claim (proved in the paper) that for any set of functions
 ; accepted by def-warrant it is possible to define badge-userfn and
 ; apply$-userfn so that all warrants are valid.  We regard the Foundation books
 ; as a historic record and thus static; the books correspond to the paper.
 
-; The Source Code group contains the four files that introduce apply$, et al,
-; into the source code.  The first three, apply-prim, apply-constraints, and
-; apply, correspond to their Foundations counterparts except they only contain
-; the defuns and constraints but not the machinery needed to prove termination
-; and guards.  The fourth, apply-raw, defines the ``magic'' concrete functions
-; that will be attached to badge-userfn and apply$-userfn to enable top-level
-; execution of apply$.  At the time apply$ was integrated (Version_8.0) the
-; definitions in these files were the same (modulo some bootstrapping issues
+; * The Source Code Group contains the five files that introduce apply$, et al,
+; into the source code.  The first one listed above, other-events.lisp, just
+; introduces two partially constrained functions, concrete-badge-userfn and
+; concrete-apply$-userfn, that play a role in the implementation of the
+; evaluation theory for apply$.  We do not discuss that file further here since
+; it is overwhelmingly concerned with events not related to apply$, but we
+; discuss the concrete functions extensively in apply-raw.lisp.
+
+; The next three files, apply-prim, apply-constraints, and apply, correspond to
+; their Foundations counterparts except they only contain the defuns and
+; constraints but not the machinery needed to prove termination and guards.
+
+; The fourth, apply-raw, defines the ``magic'' concrete functions that will be
+; attached to badge-userfn and apply$-userfn to enable top-level execution of
+; apply$.  It also implements a fast version of apply$-lambda that involves
+; compilation and a cache.  And finally, perhaps incongruously, it includes, at
+; the very end, a 1500 line Essay on Admitting a Model for Apply$ and the
+; Functions that Use It.  That essay is mentioned in the above cited paper,
+; ``Limited Second Order Functionality in a First Order Setting,'' which
+; explains that we can can build a model of apply$ and all warranted functions
+; so that all warrants are valid, but the paper only sketches the proof that
+; the model can be admitted.  The essay contains the full proof.
+
+; At the time apply$ was integrated (Version_8.0) the relevant definitions in
+; the Source Code Group files were the same (modulo some bootstrapping issues
 ; noted below) as their counterparts in the Foundations files.  However, over
 ; time we imagine the support for apply$ in ACL2 will go beyond what is
 ; described in the paper, e.g., we might enlarge or shrink the set of
 ; primitives, extend the syntactic class of tame expressions, or make
 ; def-warrant able to handle mutual recursion.
 
-; The Boostrapping group contains the definitions of the Source Code group but
-; also contains the measures and other machinery needed to prove termination
-; and guards.  For example, the apply$ clique in the Foundations group is
-; justified by a well-founded lexicographic relation, but such relations are
-; not available in ACL2 until after the ordinals/ books have been certified.
-; So apply$ cannot be admitted in the Source Code group the way it was in the
-; Foundations group.  Similar problems are encountered several times during the
-; build of ACL2, specifically when the :acl2-devel feature is set.  For
-; documentation of the acl2-devel process, see :DOC
+; * The Bootstrapping Group contains the definitions of the Source Code group
+; but also contains the measures and other machinery needed to prove
+; termination and guards.  For example, the apply$ clique in the Foundations
+; group is justified by a well-founded lexicographic relation, but such
+; relations are not available in ACL2 until after the ordinals/ books have been
+; certified.  So apply$ cannot be admitted in the Source Code group the way it
+; was in the Foundations group.  Similar problems are encountered several times
+; during the build of ACL2, specifically when the :acl2-devel feature is set.
+; For documentation of the acl2-devel process, see :DOC
 ; verify-guards-for-system-functions, or see the comment in source constant
 ; *system-verify-guards-alist* in boot-strap-pass-2-b.lisp.
 
-; (The basic story is is that we first introduce such functions in :program
+; (The basic story is that we first introduce such functions in :program
 ; mode, build an ``:acl2-devel'' image of the system, redundantly define the
 ; functions we wish to upgrade in various systems/ books, certify all those
 ; systems/ books with the :acl2-devel image, check that the data in
@@ -131,6 +150,9 @@
 ; definitions in the Source Code group: changing one without the changing the
 ; other will probably result in the failure of the :acl2-devel certification of
 ; the system/ books.)
+
+; * The User Group contains lemmas and examples that will probably be of value
+; to ACL2 users wishing to prove things about functions that use apply$.
 
 ; End of Essay on the APPLY$ Integration
 
@@ -283,7 +305,9 @@
   ',(first-order-like-terms-and-out-arities (w state)))
 ))
 
-(defrec apply$-badge (authorization-flg arity . ilks) nil)
+; We originally defined the apply$-badge record here.  But it is needed in
+; warrantp, which is needed in defattach-constraint-rec.
+; (defrec apply$-badge (authorization-flg arity . ilks) nil)
 
 ; These constants are not actually used in this book but are used in several
 ; books that include apply-prim.lisp so we define them once, here.
@@ -362,6 +386,22 @@
 ; Falist = ((fn . badge) ...) and is a fast alist although we do not actually
 ; use it as an alist here; we just cdr down it.
 
+; We produce the guts of the body used in the defun of APPLY$-PRIM.  That
+; function will be defined as:
+
+; (defun apply$-prim (fn args)
+;   (declare (xargs :guard (true-listp args)))
+;   (case fn
+;    (ACL2-NUMBERP (ACL2-NUMBERP (CAR ARGS)))
+;    (BAD-ATOM<=   (EC-CALL (BAD-ATOM<= (CAR ARGS)
+;                                       (CAR (CDR ARGS)))))
+;    ...
+;    (otherwise nil))
+
+; and this function constructs the part in all-caps above.  The EC-CALLs
+; surround every call of each apply$ primitive except the ones where we know it
+; is not necessary.
+
   (declare (xargs :mode :program))
   (cond
    ((endp falist) (reverse acc)) ; reversing might be unnecessary
@@ -385,8 +425,9 @@
 ; It will be necessary to disable the executable-counterpart of break$ when
 ; verifying the guards for apply$-prim, as is done by "make proofs".  It seems
 ; reasonable actually to disable that rune globally, to avoid breaks during
-; proofs; so we do that.
-(in-theory (disable (:e break$)))
+; proofs; so we do that.  We also disable the executable-counterpart of
+; good-bye-fn; otherwise ACL2 can quit during a proof!
+(in-theory (disable (:e break$) (:e good-bye-fn)))
 
 #-acl2-loop-only
 (progn
@@ -402,7 +443,7 @@
 ; will actually be *apply$-prim-ht*.
 
 ; See make-apply$-prim-body-fn.  Note that we do not handle return-last
-; specially here.
+; specially here, unlike make-apply$-prim-body-fn.
 
   (cond
    ((endp falist) nil) ; reversing might be unnecessary
@@ -463,3 +504,4 @@
   (make-apply$-prim-body))
 
 )
+

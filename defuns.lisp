@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -5980,8 +5980,17 @@
       (msg "the proposed and existing definitions for ~x0 differ on the ~
                 values supplied by :normalize declarations."
            (car def1)))
-     ((not (equal (fetch-dcl-field :stobjs all-but-body1)
-                  (fetch-dcl-field :stobjs all-but-body2)))
+     ((not (let ((stobjs1 (fetch-dcl-field :stobjs all-but-body1))
+                 (stobjs2 (fetch-dcl-field :stobjs all-but-body2)))
+             (or (equal stobjs1 stobjs2) ; optimization
+
+; Quoting :doc xargs: "The only exception to this rule is state: whether you
+; include it or not, state is always treated as a single-threaded object."
+; If the two definitions are identical except for how state is declared as a
+; stobj, then since the old definition was acceptable, so is the new one.
+
+                 (equal (remove1-eq 'state stobjs1)
+                        (remove1-eq 'state stobjs2)))))
 
 ; We insist that the :STOBJS of the two definitions be identical.  Vernon
 ; Austel pointed out the following bug.
@@ -7336,8 +7345,9 @@
                "It is illegal to use non-classical measures to justify a ~
                 recursive definition.  However, there has been an ~
                 attempt to recursively define ~*0 using the ~
-                non-classical functions ~*1 in the measure."
+                non-classical function~#1~[~/s~] ~*2 in the measure."
                `("<MissingFunction>" "~x*," "~x* and " "~x*, " ,names)
+               non-classical-fns
                `("<MissingFunction>" "~x*," "~x* and " "~x*, "
                  ,non-classical-fns))))))
 
@@ -7365,9 +7375,10 @@
              "It is illegal to use non-classical functions in a ~
               recursive definition.  However, there has been an ~
               attempt to recursively define ~*0 using the ~
-              non-classical function ~*1."
+              non-classical function~#1~[~/s~] ~*2"
              `("<MissingFunction>" "~x*," "~x* and " "~x*, " ,names)
-             `("<MissingFunction>" "~x*," "~x* and " "~x*, "
+             non-classical-fns
+             `("<MissingFunction>." "~x*." "~x* and " "~x*, "
                ,non-classical-fns)))
         ((not (and (classicalp mp wrld)
                    (classicalp rel wrld)))
@@ -7376,7 +7387,7 @@
               well-ordering or well-ordered domain in a recursive ~
               definition.  However, there has been an ~
               attempt to recursively define ~*0 using the ~
-              well-ordering function ~x* and domain ~x*."
+              well-ordering function ~x1 and domain ~x2."
              `("<MissingFunction>" "~x*," "~x* and " "~x*, " ,names)
              mp
              rel))

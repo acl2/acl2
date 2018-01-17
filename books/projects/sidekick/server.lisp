@@ -31,7 +31,7 @@
 ; Original author: Jared Davis <jared@kookamara.com>
 
 (in-package "SIDEKICK")
-(include-book "centaur/quicklisp/hunchentoot" :dir :system)
+(include-book "quicklisp/hunchentoot" :dir :system)
 (include-book "io")
 (include-book "std/util/defconsts" :dir :system)
 (include-book "oslib/catpath" :dir :system)

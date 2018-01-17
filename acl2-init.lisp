@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -905,6 +905,7 @@ implementations.")
 ; Notes to developers (users should ignore this!):
 
 ;   (1) Replace the value below by "" when making a release.
+;       (Just query-replace control-j by control-j followed by `;'.)
 
 ;   (2) More generally, see UT file
 ;       /projects/acl2/devel-misc/release.cmds

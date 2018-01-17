@@ -141,6 +141,21 @@
 ; -----------------------------------------------------------------------------
 
 (defsection std/io/open-input-channel
+
+; Matt K. mod:
+; The documentation formerly said:
+
+;   BOZO it's too bad that the failure situations are handled so differently.
+;   It would probably be nicer to never cause a hard error, and instead return
+;   some explanation of why opening the file failed.
+
+; In fact open-input-channel should never cause a hard error; this is ensured
+; by the use of safe-open in its source code, which in turn invokes
+; ignore-errors.  Perhaps it's possible to add some explanation, but it's not
+; clear (to me, at this time) how to get that information from Lisp.  Even if
+; we had that information, it would be a major change to open-input-channel to
+; return a non-nil first value in the failure case.
+
   :parents (std/io open-input-channel)
   :short "Open an file for reading."
 
@@ -169,22 +184,9 @@ Under the hood, this symbol will be associated with a raw Lisp file stream.
 Note that to avoid resource leaks, you should eventually use @(see
 close-input-channel) to free this stream.</p>
 
-<p>There are various reasons and ways that @('open-input-channel') can fail.
-For instance:</p>
-
-<ul>
-
-<li>If you try to open a file that does not exist, @('channel') will be
-@('nil').</li>
-
-<li>If you try to open a file for which you do not have permission, say
-@('/etc/shadow'), a hard Lisp error can result.</li>
-
-</ul>
-
-<p>BOZO it's too bad that the failure situations are handled so differently.
-It would probably be nicer to never cause a hard error, and instead return some
-explanation of why opening the file failed.</p>"
+<p>On failure, @('channel') is @('nil').  There are various reasons that
+@('open-input-channel') can fail.  For example, this can happen if you try to
+open a file that does not exist or for which you do not have permission.</p>"
 
   (defthm state-p1-of-open-input-channel
     (implies (and (state-p1 state)
@@ -746,19 +748,11 @@ package.  Under the hood, this symbol will be associated with the Lisp stream.
 Note that to avoid resource leaks, you should eventually use @(see
 close-output-channel) to free this stream.</p>
 
-<p>There are various reasons and ways that @('open-output-channel') can fail,
-which can be platform dependent.  For instance:</p>
-
-<ul>
-
-<li>If you try to write to a file in a directory that does not exist, then on
-SBCL you will get a raw Lisp error but on CCL the directory will be
-created.</li>
-
-<li>If you try to open a file for which you do not have permission, say
-@('/etc/shadow'), a hard Lisp error can result.</li>
-
-</ul>"
+<p>On failure, @('channel') is @('nil').  There are various reasons that
+@('open-output-channel') can fail.  For example, this can happen if you try to
+write to a file in a directory that does not exist, and it may happen
+(depending on your host Lisp) if you try to open a file for which you do not
+have permission.</p>"
 
   (defthm state-p1-of-open-output-channel
     (implies (and (state-p1 state)

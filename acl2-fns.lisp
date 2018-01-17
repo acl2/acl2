@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2048,7 +2048,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   (when (and verbose
              *load-compiled-verbose*)
-    (eval `(cw "~%Note: loading file ~s0.~|" ',filename)))
+    (eval `(format t "~&Note: loading file ~s.~&" ',filename)))
   #+clisp
   (let ((*readtable* *acl2-readtable-clisp-fas*))
     (declare (special *acl2-readtable-clisp-fas*))

@@ -130,24 +130,6 @@ ERC>
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Fix summary to record :use of :guard-theorem and (probably) :termination-theorem.}}
-
-After giving this hint
-
-                    :use ((:guard-theorem verify-proof$-rec))
-
-then I got this in the summary:
-
-Hint-events: ((:USE VERIFY-PROOF$-REC))
-
-Maybe better would be:
-
-Hint-events: ((:USE (:GUARD-THEOREM VERIFY-PROOF$-REC)))
-
-Probably there is a similar issue for :termination-theorem.
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
 {{Fix profile book for sbcl.}}
 
 This could be a good one for Lisp hackers.
@@ -303,6 +285,10 @@ approach, though it's intriguing.
 
 {{Extend defstub to support :guard.}}
 
+**********
+**NOTE**: Alessandro Coglio is probably working on this item.
+**********
+
 Below is the relevant email thread.
 
 Harsh Raju Chamarthi <harshrc@gmail.com>	Mon, Jun 26, 2017 at 1:44 PM
@@ -345,7 +331,7 @@ that.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Fix handling of state result in old-style signatures without state argument.}}
+{{Fix handling of state result, in old-style signatures without state argument.}}
 
 Below is the relevant email thread (with a typo from Matt fixed by
 Matt).

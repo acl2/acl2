@@ -121,28 +121,14 @@
 
 (verify-termination enabled-numep) ; and guards
 
-(verify-termination bounded-nat-alistp) ; and guards
-
 ; Start guard proof for enabled-runep
-
-(defthm bounded-nat-alistp-forward-to-alisp
-  (implies (bounded-nat-alistp x n)
-           (alistp x))
-  :rule-classes :forward-chaining)
 
 (defthm enabled-runep-guard-helper-1
   (implies (and (assoc-equal-cdr r x)
-                (bounded-nat-alistp x n))
+                (nat-alistp x))
            (or (natp (car (assoc-equal-cdr r x)))
                (equal (car (assoc-equal-cdr r x)) nil)))
   :rule-classes :type-prescription)
-
-(defthm enabled-runep-guard-helper-2
-  (implies (and (bounded-nat-alistp x n)
-                (assoc-equal-cdr r x))
-           (< (car (assoc-equal-cdr r x))
-              n))
-  :rule-classes :linear)
 
 (verify-termination enabled-runep) ; and guards
 
@@ -155,11 +141,6 @@
                 (symbol-alistp macro-aliases)
                 (r-symbol-alistp macro-aliases))
            (symbolp (deref-macro-name name macro-aliases))))
-
-(defthm bounded-nat-alistp-forward-to-alistp
-  (implies (bounded-nat-alistp x n)
-           (alistp x))
-  :rule-classes :forward-chaining)
 
 (verify-termination ; and guards
   (disabledp-fn (declare (xargs :guard-hints

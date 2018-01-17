@@ -455,25 +455,50 @@
    ;;            (equal (equal n (+ -1 m))
    ;;                   (equal (+ 1 n) m))))
 
-   (local (defthm aignet-has-no-nxst-when-counts-equal
-            (implies (equal (stype-count :nxst aignet)
-                            (stype-count :nxst (lookup-id n aignet)))
-                     (not (and (< (nfix n) (nfix m))
-                               (<= (nfix m) (node-count aignet))
-                               (equal (stype (car (lookup-id m aignet))) :nxst))))
-            :hints (("goal" :induct (lookup-id n aignet)
-                     :in-theory (enable lookup-id)))
+
+
+   (local (defthm aignet-has-no-non-gate-when-counts-equal
+            (implies (and (equal (stype-count :nxst aignet)
+                                 (stype-count :nxst (lookup-id (1- n) aignet)))
+                          (equal (stype-count :pi aignet)
+                                 (stype-count :pi (lookup-id (1- n) aignet)))
+                          (equal (stype-count :po aignet)
+                                 (stype-count :po (lookup-id (1- n) aignet)))
+                          (equal (stype-count :reg aignet)
+                                 (stype-count :reg (lookup-id (1- n) aignet)))
+                          (proper-node-listp aignet)
+                          (posp n)
+                          (<= n (nfix m))
+                          (<= (nfix m) (node-count aignet)))
+                     (equal (stype (car (lookup-id m aignet))) :gate))
+            :hints (("goal" :induct (proper-node-listp aignet)
+                     :in-theory (e/d ((:i proper-node-listp))
+                                     (lookup-id-in-extension-inverse))
+                     :expand ((:free (x) (lookup-id x aignet))
+                              (node-count aignet)
+                              (proper-node-listp aignet)
+                              (:free (type) (stype-count type aignet)))))
             :rule-classes nil))
 
-   (local (defthm aignet-no-nxstsp-when-counts-equal
+   (local (defthm aignet-gates-onlyp-when-counts-equal
             (implies (and (nodes-correct aignet$c aignet)
+                          (aignet-count-equivs aignet$c aignet)
+                          (posp n)
                           (equal (stype-count :nxst aignet)
-                                 (stype-count :nxst (lookup-id n aignet))))
-                     (aignet$c::aignet-no-nxstsp n aignet$c))
-            :hints (("goal" :use ((:instance aignet$c::not-aignet-no-nxstsp-implies-witness
+                                 (stype-count :nxst (lookup-id (1- n) aignet)))
+                          (equal (stype-count :pi aignet)
+                                 (stype-count :pi (lookup-id (1- n) aignet)))
+                          (equal (stype-count :po aignet)
+                                 (stype-count :po (lookup-id (1- n) aignet)))
+                          (equal (stype-count :reg aignet)
+                                 (stype-count :reg (lookup-id (1- n) aignet)))
+                          (aignet-nodes-ok aignet)
+                          (node-listp aignet))
+                     (aignet$c::aignet-gates-onlyp n aignet$c))
+            :hints (("goal" :use ((:instance aignet$c::not-aignet-gates-onlyp-implies-witness
                                    (n n) (aignet aignet$c))
-                                  (:instance aignet-has-no-nxst-when-counts-equal
-                                   (m (aignet$c::aignet-nxstsp-witness n aignet$c))))))))
+                                  (:instance aignet-has-no-non-gate-when-counts-equal
+                                   (m (aignet$c::aignet-nongate-witness n aignet$c))))))))
 
 
    (local (defthmd max-fanin-when-nodes-correct-lemma
@@ -732,8 +757,11 @@
                            stype-const-when-not-others
                            acl2::cancel_plus-equal-correct
                            node-count-of-atom
-                           fanin-if-co-when-output)))
+                           fanin-if-co-when-output
+                           POSP-WHEN-CONSP-OF-LOOKUP-ID)))
 
+(local (in-theory (enable aignet$c::lit->phase
+                          aignet$c::aignet-init)))
 
 (acl2::defabsstobj-events aignet
   :concrete aignet$c::aignet
@@ -751,12 +779,12 @@
             (num-outs :logic aignet$a::num-outs
                       :exec aignet$c::num-outs)
             (num-nxsts :logic aignet$a::num-nxsts
-                        :exec aignet$c::num-nxsts)
+                       :exec aignet$c::num-nxsts)
             (max-fanin :logic aignet$a::max-fanin
                        :exec  aignet$c::max-fanin)
 
             (fanin-litp :logic aignet$a::fanin-litp
-                         :exec aignet$c::fanin-litp$inline)
+                        :exec aignet$c::fanin-litp$inline)
             (id-existsp :logic aignet$a::id-existsp
                         :exec aignet$c::id-existsp$inline)
 
@@ -779,42 +807,109 @@
             (gate-id->fanin1 :logic aignet$a::gate-id->fanin1
                              :exec aignet$c::id->fanin1$inline)
             (reg-id->nxst :logic aignet$a::reg-id->nxst
-                        :exec aignet$c::reg-id->nxst$inline)
+                          :exec aignet$c::reg-id->nxst$inline)
             (nxst-id->reg :logic aignet$a::nxst-id->reg
-                        :exec aignet$c::nxst-id->reg$inline)
+                          :exec aignet$c::nxst-id->reg$inline)
             (id->phase :logic aignet$a::id->phase
                        :exec aignet$c::id->phase$inline)
             (id->slot :logic aignet$a::id->slot
-                         :exec aignet$c::id->slot$inline)
-
-            (aignet-add-in :logic aignet$a::aignet-add-in
-                           :exec aignet$c::aignet-add-in
-                           :protect t)
-            (aignet-add-reg :logic aignet$a::aignet-add-reg
-                            :exec aignet$c::aignet-add-reg
+                      :exec aignet$c::id->slot$inline)
+            
+            (aignet-add-in^ :logic aignet$a::aignet-add-in^
+                            :exec aignet$c::aignet-add-in
                             :protect t)
-            (aignet-add-gate :logic aignet$a::aignet-add-gate
-                             :exec aignet$c::aignet-add-gate
+            (aignet-add-reg^ :logic aignet$a::aignet-add-reg^
+                             :exec aignet$c::aignet-add-reg
                              :protect t)
-            (aignet-add-out :logic aignet$a::aignet-add-out
-                            :exec aignet$c::aignet-add-out
-                            :protect t)
-            (aignet-set-nxst :logic aignet$a::aignet-set-nxst
+            (aignet-add-gate^ :logic aignet$a::aignet-add-gate^
+                              :exec aignet$c::aignet-add-gate
+                              :protect t)
+            (aignet-add-out^ :logic aignet$a::aignet-add-out^
+                             :exec aignet$c::aignet-add-out
+                             :protect t)
+            (aignet-set-nxst^ :logic aignet$a::aignet-set-nxst^
                               :exec aignet$c::aignet-set-nxst
                               :protect t)
             (aignet-rollback :logic aignet$a::aignet-rollback
                              :exec aignet$c::aignet-rollback
                              :protect t)
 
-            (aignet-init :logic aignet$a::aignet-init
-                         :exec aignet$c::aignet-init
-                         :protect t)
+            (aignet-init^ :logic aignet$a::aignet-init^
+                          :exec aignet$c::aignet-init
+                          :protect t)
             (aignet-clear :logic aignet$a::aignet-clear
-                         :exec aignet$c::aignet-clear
-                         :protect t)))
+                          :exec aignet$c::aignet-clear
+                          :protect t)))
 
 
 (fty::deffixtype aignet :pred node-listp :fix node-list-fix :equiv node-list-equiv)
+
+(define aignet-add-in (aignet)
+  :enabled t
+  (mbe :logic (non-exec (cons (pi-node) (node-list-fix aignet)))
+       :exec (if (< (the (unsigned-byte 29) (num-nodes aignet)) #x1fffffff)
+                 (aignet-add-in^ aignet)
+               (ec-call (aignet-add-in^ aignet)))))
+
+(define aignet-add-reg (aignet)
+  :enabled t
+  (mbe :logic (non-exec (cons (reg-node) (node-list-fix aignet)))
+       :exec (if (< (the (unsigned-byte 29) (num-nodes aignet)) #x1fffffff)
+                 (aignet-add-reg^ aignet)
+               (ec-call (aignet-add-reg^ aignet)))))
+
+(define aignet-add-gate ((f0 litp)
+                         (f1 litp)
+                         aignet)
+  :guard (and (fanin-litp f0 aignet)
+              (fanin-litp f1 aignet))
+  :enabled t
+  (mbe :logic (non-exec (cons (gate-node (aignet-lit-fix f0 aignet)
+                                         (aignet-lit-fix f1 aignet))
+                              (node-list-fix aignet)))
+       :exec (if (< (the (unsigned-byte 29) (num-nodes aignet)) #x1fffffff)
+                 (aignet-add-gate^ f0 f1 aignet)
+               (ec-call (aignet-add-gate^ f0 f1 aignet)))))
+
+(define aignet-add-out ((f litp)
+                         aignet)
+  :guard (fanin-litp f aignet)
+  :enabled t
+  (mbe :logic (non-exec (cons (po-node (aignet-lit-fix f aignet))
+                              (node-list-fix aignet)))
+       :exec (if (< (the (unsigned-byte 29) (num-nodes aignet)) #x1fffffff)
+                 (aignet-add-out^ f aignet)
+               (ec-call (aignet-add-out^ f aignet)))))
+
+(define aignet-set-nxst ((f litp)
+                         (regid natp)
+                         aignet)
+  :guard (and (fanin-litp f aignet)
+              (id-existsp regid aignet)
+              (eql (id->type regid aignet) (in-type))
+              (eql (io-id->regp regid aignet) 1))
+  :enabled t
+  (mbe :logic (non-exec (cons (nxst-node (aignet-lit-fix f aignet)
+                                         (aignet-id-fix regid aignet))
+                              (node-list-fix aignet)))
+       :exec (if (< (the (unsigned-byte 29) (num-nodes aignet)) #x1fffffff)
+                 (aignet-set-nxst^ f regid aignet)
+               (ec-call (aignet-set-nxst^ f regid aignet)))))
+
+(define aignet-init ((max-outs natp :type (integer 0 *))
+                     (max-regs natp :type (integer 0 *))
+                     (max-ins natp :type (integer 0 *))
+                     (max-nodes posp :type (integer 1 *))
+                     aignet)
+  :enabled t
+  (mbe :logic (non-exec nil)
+       :exec (if (and (< (the (integer 0 *) max-outs) #x20000000)
+                      (< (the (integer 0 *) max-regs) #x20000000)
+                      (< (the (integer 0 *) max-ins) #x20000000)
+                      (< (the (integer 0 *) max-nodes) #x20000000))
+                 (aignet-init^ max-outs max-regs max-ins max-nodes aignet)
+               (ec-call (aignet-init^ max-outs max-regs max-ins max-nodes aignet)))))
+
 
 (defmacro aignet-fix (aignet)
   `(mbe :logic (non-exec (node-list-fix ,aignet))
@@ -972,7 +1067,7 @@
   node takes two 32-bit array slots, we resize the physical node array to @('2
   * max-nodes') elements, so that there are room for @('max-nodes') nodes.</p>
 
-  @(def aignet$a::aignet-init)")
+  @(def aignet$a::aignet-init^)")
 
 
 ;; Network construction
@@ -981,13 +1076,13 @@
   :short "@(call aignet-add-in) adds a new primary input node to the aignet."
   :long "<p>Logically this is just @('(cons (pi-node) aignet)').</p>
   <p>In the execution we update the necessary arrays, counts, etc.</p>
-  @(def aignet$a::aignet-add-in)")
+  @(def aignet$a::aignet-add-in^)")
 
 (defxdoc aignet-add-reg
   :short "@(call aignet-add-reg) adds a new register node to the aignet."
   :long "<p>Logically this is just @('(cons (reg-node) aignet)').</p>
   <p>In the execution we update the necessary arrays, counts, etc.</p>
-  @(def aignet$a::aignet-add-reg)")
+  @(def aignet$a::aignet-add-reg^)")
 
 (defxdoc aignet-add-gate
   :short "@(call aignet-add-gate) adds an new AND gate node to the aignet with
@@ -1010,7 +1105,7 @@
 
   <p>In the execution we update the necessary arrays, counts, etc.</p>
 
-  @(def aignet$a::aignet-add-gate)")
+  @(def aignet$a::aignet-add-gate^)")
 
 (defxdoc aignet-add-out
   :short "@(call aignet-add-out) adds a primary output node to the aignet."
@@ -1027,7 +1122,7 @@
 
   <p>In the execution we update the necessary arrays, counts, etc.</p>
 
-  @(def aignet$a::aignet-add-out)")
+  @(def aignet$a::aignet-add-out^)")
 
 (defxdoc aignet-set-nxst
   :short "@(call aignet-set-nxst) adds a next-state node to the aignet."
@@ -1045,7 +1140,7 @@
 
   <p>In the execution we update the necessary arrays, counts, etc.</p>
 
-  @(def aignet$a::aignet-set-nxst)")
+  @(def aignet$a::aignet-set-nxst^)")
 
 (defxdoc aignet-rollback
   :short "@(call aignet-rollback) rewinds the aignet so that node @('n') is the

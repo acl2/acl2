@@ -33,7 +33,7 @@
 (include-book "tools/include-raw" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/strings/defs" :dir :system) ;; used in the raw code
-(include-book "centaur/quicklisp/shellpool" :dir :system)
+(include-book "quicklisp/shellpool" :dir :system)
 ;; (depends-on "tshell-raw.lsp")
 
 (defxdoc tshell

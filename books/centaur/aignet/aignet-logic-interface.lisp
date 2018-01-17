@@ -52,6 +52,7 @@
 (define aignet$a::aignet-well-formedp (aignet)
   :enabled t
   (and (node-listp aignet)
+       (< (node-count aignet) #x1fffffff)
        (aignet-nodes-ok aignet)))
 
 (local (fty::deffixtype aignet$a :pred aignet$a::aignet-well-formedp :fix node-list-fix :equiv node-list-equiv))
@@ -258,7 +259,8 @@
 
 
 
-(define aignet$a::aignet-add-in ((aignet aignet$a::aignet-well-formedp))
+(define aignet$a::aignet-add-in^ ((aignet aignet$a::aignet-well-formedp))
+  :guard (< (aignet$a::num-nodes aignet) #x1fffffff)
   (cons (pi-node) (node-list-fix aignet))
   :enabled t
   ///
@@ -267,7 +269,8 @@
              (aignet-nodes-ok (cons (list (pi-stype)) aignet)))
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
 
-(define aignet$a::aignet-add-reg ((aignet aignet$a::aignet-well-formedp))
+(define aignet$a::aignet-add-reg^ ((aignet aignet$a::aignet-well-formedp))
+  :guard (< (aignet$a::num-nodes aignet) #x1fffffff)
   (cons (reg-node) (node-list-fix aignet))
   :enabled t
   ///
@@ -276,11 +279,12 @@
              (aignet-nodes-ok (cons (list (reg-stype)) aignet)))
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
 
-(define aignet$a::aignet-add-gate ((f0 litp)
-                         (f1 litp)
-                         (aignet aignet$a::aignet-well-formedp))
+(define aignet$a::aignet-add-gate^ ((f0 litp)
+                                    (f1 litp)
+                                    (aignet aignet$a::aignet-well-formedp))
   :guard (and (aignet$a::fanin-litp f0 aignet)
-              (aignet$a::fanin-litp f1 aignet))
+              (aignet$a::fanin-litp f1 aignet)
+              (< (aignet$a::num-nodes aignet) #x1fffffff))
   (cons (gate-node (aignet-lit-fix f0 aignet)
                    (aignet-lit-fix f1 aignet))
         (node-list-fix aignet))
@@ -293,9 +297,10 @@
              (aignet-nodes-ok (cons (gate-node f0 f1) aignet)))
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
 
-(define aignet$a::aignet-add-out ((f litp)
+(define aignet$a::aignet-add-out^ ((f litp)
                         (aignet aignet$a::aignet-well-formedp))
-  :guard (aignet$a::fanin-litp f aignet)
+  :guard (and (aignet$a::fanin-litp f aignet)
+              (< (aignet$a::num-nodes aignet) #x1fffffff))
   (cons (po-node (aignet-lit-fix f aignet))
         (node-list-fix aignet))
   :enabled t
@@ -306,15 +311,16 @@
              (aignet-nodes-ok (cons (po-node f) aignet)))
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
 
-(define aignet$a::aignet-set-nxst ((f litp)
-                          (regid natp)
-                          (aignet aignet$a::aignet-well-formedp))
+(define aignet$a::aignet-set-nxst^ ((f litp)
+                                    (regid natp)
+                                    (aignet aignet$a::aignet-well-formedp))
   :guard (and (aignet$a::fanin-litp f aignet)
               (aignet$a::id-existsp regid aignet)
               (eql (aignet$a::id->type regid aignet) (in-type))
-              (eql (aignet$a::io-id->regp regid aignet) 1))
+              (eql (aignet$a::io-id->regp regid aignet) 1)
+              (< (aignet$a::num-nodes aignet) #x1fffffff))
   (cons (nxst-node (aignet-lit-fix f aignet)
-                 (aignet-id-fix regid aignet))
+                   (aignet-id-fix regid aignet))
         (node-list-fix aignet))
   :enabled t
   ///
@@ -323,7 +329,7 @@
                     (equal (equal (stype x) :reg)
                            (equal x '(:reg))))
            :hints(("Goal" :in-theory (enable node-p stype)))))
-                         
+  
   (defthm aignet-nodes-ok-of-aignet-set-nxst
     (implies (and (aignet-nodes-ok aignet)
                   (aignet$a::fanin-litp f aignet)
@@ -334,12 +340,18 @@
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
 
 
-(define aignet$a::aignet-rollback ((id natp "the id of the last node to be included")
+(define aignet$a::aignet-rollback ((id posp "the num-nodes of the resulting network")
                                    (aignet aignet$a::aignet-well-formedp))
-  :guard (and (aignet$a::id-existsp id aignet)
+  :guard (and (<= id (aignet$a::num-nodes aignet))
               (equal (aignet$a::num-nxsts aignet)
-                     (non-exec (aignet$a::num-nxsts (lookup-id id aignet)))))
-  (lookup-id id aignet))
+                     (non-exec (aignet$a::num-nxsts (lookup-id (1- id) aignet))))
+              (equal (aignet$a::num-ins aignet)
+                     (non-exec (aignet$a::num-ins (lookup-id (1- id) aignet))))
+              (equal (aignet$a::num-outs aignet)
+                     (non-exec (aignet$a::num-outs (lookup-id (1- id) aignet))))
+              (equal (aignet$a::num-regs aignet)
+                     (non-exec (aignet$a::num-regs (lookup-id (1- id) aignet)))))
+  (lookup-id (1- (lposfix id)) aignet))
 
 
 (define aignet$a::aignet-clear (aignet)
@@ -347,11 +359,11 @@
   (declare (ignore aignet))
   nil)
 
-(define aignet$a::aignet-init ((max-outs natp)
-                               (max-regs natp)
-                               (max-ins natp)
-                               (max-nodes posp)
-                               aignet)
+(define aignet$a::aignet-init^ ((max-outs :type (unsigned-byte 29))
+                                (max-regs :type (unsigned-byte 29))
+                                (max-ins :type (unsigned-byte 29))
+                                (max-nodes posp :type (unsigned-byte 29))
+                                aignet)
   :enabled t
   (declare (ignore max-outs max-regs max-ins max-nodes aignet))
   nil)

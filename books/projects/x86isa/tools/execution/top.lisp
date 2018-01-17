@@ -3,11 +3,11 @@
 
 (in-package "X86ISA")
 
-(include-book "x86-init-page-tables" :ttags :all)
-(include-book "../../proofs/utilities/x86-row-wow-thms" :ttags :all)
+(include-book "init-page-tables" :ttags :all)
+(include-book "../../proofs/utilities/row-wow-thms" :ttags :all)
 (include-book "exec-loaders/elf/elf-reader" :ttags :all)
 (include-book "exec-loaders/mach-o/mach-o-reader" :ttags :all)
-(include-book "instrument/x86-instrument" :ttags :all)
+(include-book "instrument/top" :ttags :all)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================

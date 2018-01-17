@@ -30,7 +30,7 @@
 
 (in-package "OSLIB")
 (include-book "file-types-logic")
-(include-book "centaur/quicklisp/osicat" :dir :system)
+(include-book "quicklisp/osicat" :dir :system)
 ; (depends-on "file-types-raw.lsp")
 
 ; Matt Kaufmann reports that some of the file-types tests fail on Allegro, so

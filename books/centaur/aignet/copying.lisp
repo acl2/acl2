@@ -192,10 +192,10 @@
                         (lit-neg lit-copy-lit))))
 
   (defiteration aignet-copy-comb (aignet copy gatesimp strash aignet2)
-    (declare (type (integer 0 *) gatesimp)
-             (xargs :stobjs (aignet copy strash aignet2)
+    (declare (xargs :stobjs (aignet copy strash aignet2)
                     :guard (and (<= (num-nodes aignet) (lits-length copy))
-                                (aignet-copies-in-bounds copy aignet2))
+                                (aignet-copies-in-bounds copy aignet2)
+                                (gatesimp-p gatesimp))
                     :guard-hints (("goal" :do-not-induct t
                                    :in-theory (enable aignet-idp)))))
     (b* ((n (lnfix n))
@@ -231,6 +231,9 @@
 
   (def-aignet-preservation-thms aignet-copy-comb-iter :stobjname aignet2)
   (def-aignet-preservation-thms aignet-copy-comb :stobjname aignet2)
+
+  (fty::deffixequiv aignet-copy-comb-iter :args ((gatesimp gatesimp-p)))
+  (fty::deffixequiv acl2::aignet-copy-comb$inline :args ((gatesimp gatesimp-p)))
 
   (defthm stype-counts-preserved-of-aignet-copy-comb-iter
     (implies (not (equal (stype-fix stype) (gate-stype)))
@@ -1588,7 +1591,7 @@
                   nil)
            :hints(("Goal" :in-theory (enable resize-list)))))
 
-  (define aignet-complete-copy-aux (aignet copy (gatesimp natp) strash aignet2)
+  (define aignet-complete-copy-aux (aignet copy (gatesimp gatesimp-p) strash aignet2)
     :returns (mv copy strash aignet2)
     :prepwork ((local (defthm strash-lemma
                         (implies (and (true-listp strash)
@@ -1602,7 +1605,6 @@
                    (num-ins aignet)
                    (num-nodes aignet)
                    aignet2))
-         (gatesimp (lnfix gatesimp))
          (copy (resize-lits 0 copy))
          (strash (mbe :logic (non-exec '(nil))
                       :exec (strashtab-init (num-gates aignet) nil nil strash)))
@@ -1716,7 +1718,7 @@
                   '(:in-theory (enable fanin-if-co))))))
 
   (define aignet-complete-copy (aignet &key
-                                       ((gatesimp natp) '9)
+                                       ((gatesimp gatesimp-p) '9)
                                        (aignet2 'aignet2))
     :returns aignet2
     :parents (aignet)
@@ -2112,7 +2114,7 @@ aignet when its initial value is the specified vector:</p>
                   nil)
            :hints(("Goal" :in-theory (enable resize-list)))))
 
-  (define aignet-copy-init-aux (aignet initsts copy (gatesimp natp) strash aignet2)
+  (define aignet-copy-init-aux (aignet initsts copy (gatesimp gatesimp-p) strash aignet2)
     :guard (<= (num-regs aignet) (bits-length initsts))
     :returns (mv copy strash aignet2)
     :hooks nil
@@ -2231,18 +2233,20 @@ aignet when its initial value is the specified vector:</p>
                         (b-xor (nth n initsts)
                                (lit-eval (fanin-if-co (lookup-regnum->nxst n aignet))
                                          invals
-                                         (b-xor-lst initsts regvals) aignet)))))))
+                                         (b-xor-lst initsts regvals) aignet))))))
+
+    (fty::deffixequiv aignet-copy-init-aux :args ((gatesimp gatesimp-p))))
 
   (define aignet-copy-init (aignet initsts &key
-                                       ((gatesimp natp) '9)
-                                       (aignet2 'aignet2))
+                                   ((gatesimp gatesimp-p) '9)
+                                   (aignet2 'aignet2))
     :parents nil
     :guard (<= (num-regs aignet) (bits-length initsts))
     :returns aignet2
     (b* (((local-stobjs copy strash)
           (mv copy strash aignet2)))
       (mbe :logic
-           (non-exec (aignet-copy-init-aux (node-list-fix aignet) initsts copy (nfix gatesimp) strash aignet2))
+           (non-exec (aignet-copy-init-aux (node-list-fix aignet) initsts copy gatesimp strash aignet2))
            :exec
            (aignet-copy-init-aux aignet initsts copy gatesimp strash aignet2)))
     ///
@@ -2595,7 +2599,7 @@ aignet when its initial value is the specified vector:</p>
                              mark
                              copy
                              strash
-                             (gatesimp natp)
+                             (gatesimp gatesimp-p)
                              aignet2)
   :split-types t
   :guard (and (id-existsp id aignet)
@@ -3084,10 +3088,9 @@ aignet when its initial value is the specified vector:</p>
                                  eba
                                  copy
                                  strash
-                                 gatesimp
+                                 (gatesimp gatesimp-p)
                                  aignet2)
   :guard (and (id-existsp id aignet)
-              (natp gatesimp)
               (< id (eba-length eba))
               (< id (lits-length copy))
               (ec-call (aignet-marked-copies-in-bounds copy eba aignet2))

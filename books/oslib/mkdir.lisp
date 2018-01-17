@@ -30,7 +30,7 @@
 
 (in-package "OSLIB")
 (include-book "mkdir-logic")
-(include-book "centaur/quicklisp/cl-fad" :dir :system)
+(include-book "quicklisp/cl-fad" :dir :system)
 
 (defttag oslib)
 (include-raw "mkdir-raw.lsp"

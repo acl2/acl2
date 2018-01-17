@@ -484,7 +484,8 @@
      (defun2 sofun (fvar1 ... fvarN) (var1 ... varM)
        doc-string
        declaration ... declaration
-       body)
+       body
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -560,14 +561,30 @@
    @('body')
    </p>
 
-    <blockquote>
+     <blockquote>
 
-    <p>
-    A defining body, as in @(tsee defun).
-    If @('sofun') is recursive, its well-founded relation must be @(tsee o<).
-    </p>
+     <p>
+     A defining body, as in @(tsee defun).
+     If @('sofun') is recursive, its well-founded relation must be @(tsee o<).
+     </p>
 
-    </blockquote>
+     </blockquote>
+
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':fn-output') (the default) to print only
+     the (possibly error) output from the generated @(tsee defun).
+     </p>
+
+     </blockquote>
 
    <h3>Generated Events</h3>
 
@@ -655,7 +672,8 @@
    @({
      (defchoose2 sofun (bvar1 ... bvarP) (fvar1 ... fvarN) (var1 ... varM)
        body
-       :strengthen ...)
+       :strengthen ...
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -735,6 +753,22 @@
 
      </blockquote>
 
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':fn-output') (the default) to print only
+     the (possibly error) output from the generated @(tsee defchoose).
+     </p>
+
+     </blockquote>
+
    <h3>Generated Events</h3>
 
    @({
@@ -786,7 +820,8 @@
        :skolem-name ...
        :thm-name ...
        :witness-dcls ...
-       :strengthen ...)
+       :strengthen ...
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -931,6 +966,22 @@
 
      </blockquote>
 
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':fn-output') (the default) to print only
+     the (possibly error) output from the generated @(tsee defun-sk).
+     </p>
+
+     </blockquote>
+
    <h3>Generated Events</h3>
 
    @({
@@ -984,7 +1035,8 @@
        :verify-guards ...
        :skolem-name ...
        :thm-name ...
-       :rewrite ...)
+       :rewrite ...
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -1143,6 +1195,22 @@
      the rewrite rule of @('fun') has the same form as in @('sofun');
      in particular, the function variables in the rewrite rule of @('sofun')
      are instantiated via the instantiation passed to @(tsee defun-inst).
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':result') (the default) to print only
+     the generated function form and any error output.
      </p>
 
      </blockquote>
@@ -1587,7 +1655,8 @@
    @({
      (defthm-inst thm
        (sothm (fvar1 . fun1) ... (fvarN . funN))
-       :rule-classes ...)
+       :rule-classes ...
+       :print ...)
    })
 
    <h3>Inputs</h3>
@@ -1643,6 +1712,22 @@
 
      <p>
      An option to specify the rule classes of @('thm').
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':print ...')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option to customize the screen output:
+     @(':all') to print all the output;
+     @('nil') to print only any error output;
+     @(':result') (the default) to print only
+     the generated theorem form and any error output.
      </p>
 
      </blockquote>

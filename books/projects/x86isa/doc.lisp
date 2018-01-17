@@ -9,25 +9,24 @@
 ;; Misc. tools
 (include-book "tools/execution/top" :ttags :all)
 
-;; General-purpose code libraries: note that the proofs of correctness
-;; of various programs are excluded from the x86isa manual.
-(include-book "proofs/utilities/programmer-level-mode/top" :ttags :all)
-(include-book "proofs/utilities/system-level-mode/top" :ttags :all)
+;; General-purpose code libraries: note that we don't include
+;; proofs/top here --- the proofs of correctness of various programs
+;; are excluded from the x86isa manual.
+(include-book "proofs/utilities/top" :ttags :all)
 (include-book "std/strings/top" :dir :system)
 (include-book "defsort/defsort" :dir :system)
 
 ;; ======================================================================
 
-;; Files will be copied from X86ISA/x86-images to res/x86-images of
-;; the x86 manual.
-(xdoc::add-resource-directory "x86-images" "x86-images")
+;; Files will be copied from X86ISA/images to res/images of the x86
+;; manual.
+(xdoc::add-resource-directory "images" "images")
 
 (defxdoc X86ISA
   :parents (acl2::software-verification acl2::projects)
   :short "x86 ISA model and machine-code analysis framework developed
   at UT Austin"
-  :long "<p><img src='res/x86-images/x86isa.png' /></p>"
-  )
+  :long "<p><img src='res/images/x86isa.png' /></p>")
 
 (xdoc::order-subtopics
  X86ISA
@@ -115,9 +114,8 @@
  modes, memory management via paging and segmentation, and the
  instruction fetch-decode-execute cycle.</p>
 
-<p>We are in the process of extending the model to support 32-bit mode, both as
-the legacy protected mode and as the compatibility sub-mode of the Intel's
-IA-32e mode.</p>
+ <p>The model is being extended to support 32-bit mode, both as the legacy
+ protected mode and as the compatibility sub-mode of Intel's IA-32e mode.</p>
 
  <p>To see a list of opcodes implemented in these books, see @(see
  implemented-opcodes).</p>
@@ -148,34 +146,32 @@ IA-32e mode.</p>
  of reasoning vs. execution efficiency that came up over the course of
  this project.  This x86 ISA model uses abstract stobjs to layer the
  state of the x86 machine such that the lower layer \(i.e., the
- concrete stobj\, see @(see x86-concrete-state)\) can be optimized for
+ concrete stobj\, see @(see concrete-state)\) can be optimized for
  execution efficiency and the upper layer \(i.e., the abstract stobj,
- see @(see x86-abstract-state)\) can be optimized for reasoning
+ see @(see abstract-state)\) can be optimized for reasoning
  efficiency, while a correspondence theorem is proved to hold between
  these two layers at all times.  Therefore, we get the benefit of both
  fast execution and effective reasoning.</p>
 
  <h3>Modes of Operation</h3>
 
- <p>The complexity of the x86 ISA model will increase as more features
- are added to it, and this added complexity will make reasoning
- inevitably more involved.  The issue of balancing <i>verification
- effort</i> and <i>verification utility</i> is a very pertinent one.
- For example, users might not want to reason about an application
- program at the level of physical memory, i.e., taking into account
- address translations and access rights management provided by the
- memory management data structures.  This is because it is customary
- for application programs not to have direct access to the system data
- structures.  The memory model seen by application programs is that of
- linear memory, which is an OS-constructed abstraction of the
- complicated underlying memory management mechanisms like paging and
- segmentation that are based on physical memory.  Therefore,
- verification of application programs can be performed at the level of
- linear memory, if the OS routines that manage the linear memory
- abstraction can be either trusted or proved correct.  However, the
- verification of system programs, like kernel routines, must
- necessarily be done at the level of physical memory since these
- programs can access/modify system data structures.</p>
+ <p>The complexity of the x86 ISA model will increase as more features are
+ added to it, and this added complexity will make reasoning inevitably more
+ involved.  The issue of balancing <i>verification effort</i> and
+ <i>verification utility</i> is a very pertinent one.  For example, users might
+ not want to reason about an application program at the level of physical
+ memory, i.e., taking into account address translations and access rights
+ management provided by the memory management data structures.  This is because
+ it is customary for application programs not to have direct access to the
+ system data structures.  The memory model seen by 64-bit application programs
+ is that of linear memory, which is an OS-constructed abstraction of the
+ complicated underlying memory management mechanisms like paging that are based
+ on physical memory.  Therefore, verification of application programs can be
+ performed at the level of linear memory, if the OS routines that manage the
+ linear memory abstraction can be either trusted or proved correct.  However,
+ the verification of system programs, like kernel routines, must necessarily be
+ done at the level of physical memory since these programs can access/modify
+ system data structures.</p>
 
  <p>In light of the above, the x86 ISA model provides the option to
  deactivate some features of the ISA, enabling the user to do two kinds
@@ -195,14 +191,14 @@ IA-32e mode.</p>
  @('read'), @('write'), @('open'), and @('close') is also included in
  the programmer-level mode.</p></li>
 
- <li><b>System-level Mode:</b> <p>This mode includes the specification
- for IA-32e paging and segmentation; in particular, ISA-prescribed data
- structures for memory management are available in this mode.  The
- memory model in this mode characterizes a 52-bit physical address
- space, which is the largest physical address space provided by modern
- x86 implementations.  This mode is intended to be used to simulate and
- verify software that has supervisor privileges and interacts with I/O
- devices.</p> </li>
+ <li><b>System-level Mode:</b> <p>This mode includes the specification for
+ IA-32e paging and segmentation; in particular, ISA-prescribed data structures
+ for memory management and (partial) specifications of system-mode instructions
+ like LLDT and LGDT are available in this mode.  The memory model in this mode
+ characterizes a 52-bit physical address space, which is the largest physical
+ address space provided by modern x86 implementations.  This mode is intended
+ to be used to simulate and verify software that has supervisor privileges and
+ interacts with I/O devices.</p> </li>
 
  </ol>
 
@@ -210,7 +206,7 @@ IA-32e mode.</p>
  increased execution speed of programs in the programmer-level mode;
  this is because executing these programs in this mode does not require
  simulating both the physical address space \(and hence,
- accesses/updates to the paging and segmentation data structures\) and
+ accesses/updates to the paging data structures\) and
  the linear address space.</p>
 
  <p>It would be beneficial, not to mention interesting, to verify
@@ -277,10 +273,10 @@ IA-32e mode.</p>
  since forgotten whether you built them with @('X86ISA_EXEC=t') or not.
  Here is a way of checking the certified books to see if you have full
  execution support. Look at the following file:
- @('machine/x86-syscalls.cert.out'). If this file contains the
+ @('machine/syscalls.cert.out'). If this file contains the
  following: </p>
 
- <code>X86ISA_EXEC Warning: x86-environment-and-syscalls-raw.lsp is not
+ <code>X86ISA_EXEC Warning: environment-and-syscalls-raw.lsp is not
  included.</code>
 
  <p>then you do <i>not</i> have @('SYSCALL') execution support.
@@ -295,7 +291,7 @@ IA-32e mode.</p>
   :long "<p>Doc topic coming soon!  For now, here's an illustrative
   image.</p>
 
-<p><img src='res/x86-images/cosim.png' /></p>")
+<p><img src='res/images/cosim.png' /></p>")
 
 (defxdoc Publications
   :parents (x86isa)
@@ -337,7 +333,7 @@ IA-32e mode.</p>
   Provably Correct Systems (ProCoS), 2017</li>
 
  <li>Shilpi Goel. The @('x86isa') Books: Features, Usage, and Future
-  Plans}. In the Fourteenth International Workshop on the ACL2 Theorem
+  Plans. In the Fourteenth International Workshop on the ACL2 Theorem
   Prover and Its Applications (ACL2 Workshop), 2017</li>
 
  </ol>")
@@ -575,16 +571,16 @@ IA-32e mode.</p>
           "</ul>"))))
 
     `(defsection implemented-opcodes
-       :parents (x86-instructions)
+       :parents (instructions)
        :short "Opcodes supported by the x86 model"
        :long ,long-section)))
 
 (make-event (generate-implemented-opcodes-section state))
 
 (xdoc::order-subtopics
- x86-instructions
+ instructions
  (implemented-opcodes
-  x86-instruction-semantics
+  instruction-semantic-functions
   one-byte-opcodes
   two-byte-opcodes
   fp-opcodes
@@ -592,24 +588,24 @@ IA-32e mode.</p>
 
 (xdoc::order-subtopics
  machine
- (x86-concrete-state
-  x86-concrete-memory
-  x86-abstract-state
-  x86-state-field-theorems
+ (concrete-state
+  concrete-memory
+  abstract-state
+  state-field-theorems
   programmer-level-mode
   rflag-specifications
-  x86-register-readers-and-writers
-  Characterizing-undefined-behavior
-  x86-physical-memory
-  x86-linear-memory
-  x86-paging
-  x86-segmentation
-  x86-top-level-memory
-  x86-environment
-  x86-syscalls
+  register-readers-and-writers
+  characterizing-undefined-behavior
+  physical-memory
+  linear-memory
+  paging
+  segmentation
+  top-level-memory
+  environment
+  syscalls
   other-non-deterministic-computations
-  x86-decoding-and-spec-utils
-  x86-instructions
+  decoding-and-spec-utils
+  instructions
   x86-decoder))
 
 ;; ======================================================================

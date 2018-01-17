@@ -1,4 +1,4 @@
-; ACL2 Version 7.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2017, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2936,8 +2936,8 @@
 ; indicated by the hint, which CAN BE ...".
 
   (let* ((seeds (lmi-seed-lst lmi-lst))
-         (lemma-names (filter-atoms t seeds))
-         (thms (filter-atoms nil seeds))
+         (lemma-names (lmi-seeds-info 'hint-events seeds))
+         (thms (lmi-seeds-info nil seeds))
          (techs (lmi-techs-lst lmi-lst)))
     (cond ((null techs)
            (cond ((null thms)

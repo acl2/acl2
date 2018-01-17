@@ -172,6 +172,7 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    BADGE DEF-WARRANT DEFUN$ FN-EQUAL WARRANT
     ))
 
 (defconst *special-ops*
