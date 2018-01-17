@@ -18,6 +18,7 @@
 
 (defconst *100k* (posps 100000 nil))
 (defconst *million* (posps 1000000 nil))
+(defconst *10M* (posps 10000000 nil))
 
 (defun cw-apply-test-args (n args)
   (declare (xargs :guard (and (natp n)
@@ -96,8 +97,32 @@
                    (fix (apply$ fn4 (list (car lst))))
                    acc)))))
 
+; Note: Each of the tests below shows approximately 16 bytes per iteration.
+; That is good: it shows that there is essentially no consing by the cl-cache
+; (compiled lambda cache), since each invocation of (list (car lst)) is create
+; 16 bytes:
+
+;   ? (time$ (loop for x in *million* always (list x)))
+;   ; (LOOP FOR ...) took 
+;   ; 0.01 seconds realtime, 0.01 seconds runtime
+;   ; (16,000,000 bytes allocated).
+;   T
+;   ? 
+
+; The "4" tests below run very slowly when only three cache lines are
+; available.
+
 (cw-apply-test *100k* 1)
 (cw-apply-test *100k* 2)
 (cw-apply-test *100k* 3)
-; Slow -- screams for allowing more than three cache lines.
 (cw-apply-test *100k* 4)
+
+(cw-apply-test *million* 1)
+(cw-apply-test *million* 2)
+(cw-apply-test *million* 3)
+(cw-apply-test *million* 4)
+
+(cw-apply-test *10M* 1)
+(cw-apply-test *10M* 2)
+(cw-apply-test *10M* 3)
+(cw-apply-test *10M* 4)

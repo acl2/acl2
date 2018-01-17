@@ -2048,7 +2048,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   (when (and verbose
              *load-compiled-verbose*)
-    (eval `(cw "~%Note: loading file ~s0.~|" ',filename)))
+    (eval `(format t "~&Note: loading file ~s.~&" ',filename)))
   #+clisp
   (let ((*readtable* *acl2-readtable-clisp-fas*))
     (declare (special *acl2-readtable-clisp-fas*))

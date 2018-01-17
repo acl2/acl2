@@ -27503,3 +27503,4 @@ Lisp definition."
           (set-compile-fns t)
           ,@x
           (set-compile-fns nil))))
+
