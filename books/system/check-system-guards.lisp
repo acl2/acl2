@@ -4,8 +4,8 @@
 
 ; This books runs (add-guards-as-assertions-all), which checks top-level calls
 ; of built-in functions that are in :logic mode, guard-verified.  That check is
-; done on (mini-proveall) after a more limiated check,
-; (add-guards-as-assertions-svga), check just those functions that are
+; done on (mini-proveall) after a more limited check,
+; (add-guards-as-assertions-svga), checks just those functions that are
 ; guard-verified outside the system, i.e., are in *system-verify-guards-alist*.
 
 ; Those checks can be done without this book, by just loading its workhorse,
