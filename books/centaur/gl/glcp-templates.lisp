@@ -1067,9 +1067,10 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               hypo alist . ,(subst t 'pathcond *glcp-common-inputs*)))
             ((when er)
              (mv hyp-bfr nil bvar-db1 . ,(remove 'pathcond *glcp-common-retvals*)))
-            (er (glcp-vacuity-check hyp-bfr config))
+            ((mv er unsat) (glcp-vacuity-check hyp-bfr config))
             ((when er)
              (mv hyp-bfr nil bvar-db1 . ,(remove 'pathcond *glcp-common-retvals*)))
+            (concl (if unsat ''t concl))
             ((mv concl-bfr .
                  ,(subst 'bvar-db1 'bvar-db
                          (remove 'pathcond *glcp-common-retvals*)))

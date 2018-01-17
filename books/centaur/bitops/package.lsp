@@ -86,7 +86,7 @@
 
     ;; new definitions we want to export
     nth-slice2 nth-slice4 nth-slice8 nth-slice16
-    nth-slice32 nth-slice64 nth-slice128 nth-slice256 nth-slice512 nth-slice
+    nth-slice32 nth-slice64 nth-slice128 nth-slice256 nth-slice512 nth-slice nth-slice$
     negate-slice8 negate-slice16
     negate-slice32 negate-slice64
     abs-diff
@@ -111,6 +111,7 @@
     merge-2-u128s merge-4-u128s
     merge-2-u256s
     parity fast-parity
+    logrepeat fast-logrepeat fast-logrepeat!
 
     ;; selected theorems, hints, etc
     right-shift-to-logtail

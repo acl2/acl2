@@ -1149,22 +1149,28 @@ The definition body, ~x1, is not a pseudo-term."
     :rule-classes :linear))
 
 
-(defund glcp-vacuity-check (hyp-bfr config)
-  (declare (xargs :guard (glcp-config-p config)))
-  (b* (((mv vac-check-sat vac-check-succeeded &)
-        (if (glcp-config->check-vacuous config)
-            (bfr-sat hyp-bfr)
-          (mv t t nil)))
+(define glcp-vacuity-check (hyp-bfr (config glcp-config-p))
+  :returns (mv (err)
+               (unsat-p))
+  (b* (((unless (glcp-config->check-vacuous config))
+        (mv nil nil)) ;; no error, not unsat
+       ((mv vac-check-sat vac-check-succeeded &)
+        (bfr-vacuity-check hyp-bfr))
        ((when (and (glcp-config->abort-vacuous config)
                    (or (not vac-check-sat)
                        (not vac-check-succeeded))))
-        (if vac-check-succeeded
-            "Hypothesis is not satisfiable"
-          "Error in vacuity check")))
-    (if vac-check-succeeded
-        (and (not vac-check-sat)
-             (cw "Note: hypothesis is not satisfiable~%"))
-      (cw "Note: vacuity check did not finish~%"))))
+        (mv (if vac-check-succeeded
+                "Hypothesis is not satisfiable"
+              "Error in vacuity check")
+            vac-check-succeeded)))
+    (mv nil
+        (and vac-check-succeeded
+             (not vac-check-sat))))
+  ///
+  (std::defretd glcp-vacuity-check-unsat-implies
+    (implies unsat-p
+             (not (bfr-eval hyp-bfr env)))
+    :hints(("Goal" :in-theory (enable bfr-vacuity-check-unsat)))))
 
 
 

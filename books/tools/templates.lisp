@@ -280,6 +280,7 @@ defthm would disappear.</p>
   (atoms          ;; replacements for atoms (alist of old . new)
    strs           ;; replacements for substrings of symbol names
                   ;; either ("old" . "new") or ("old" "new" . pkg-sym)
+   string-strs    ;; replacements for substrings of strings
    pkg-sym        ;; default package symbol for symbol substring replacements
 
    splices        ;; atoms -> lists, e.g., to replace (foo x) with (bar 'blah x),
@@ -301,6 +302,9 @@ defthm would disappear.</p>
         ((when (atom tree))
          (b* ((look (assoc-equal tree subst.atoms))
               ((when look) (mv t (cdr look)))
+              ((when (stringp tree))
+               (b* (((mv res ?pkg) (tmpl-str-sublis subst.string-strs tree)))
+                 (mv (not (equal res tree)) res)))
               ((unless (symbolp tree))
                (mv nil tree))
               (name (symbol-name tree))
@@ -370,12 +374,14 @@ defthm would disappear.</p>
                                 splice-alist
                                 atom-alist
                                 str-alist
+                                string-str-alist
                                 (pkg-sym ''acl2::foo))
   (template-subst-top tree
                       (make-tmplsubst :features features
                                       :splices splice-alist
                                       :atoms atom-alist
                                       :strs str-alist
+                                      :string-strs string-str-alist
                                       :subsubsts subsubsts
                                       :pkg-sym pkg-sym)))
 

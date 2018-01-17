@@ -4943,10 +4943,12 @@
           (glcp-generic-interp-hyp/concl
            hyp concl alist clk config interp-st next-bvar bvar-db bvar-db1 state)))
       (implies (not erp)
-               (Equal hyp-bfr
-                      (mv-nth 0 (glcp-generic-interp-top-level-term
-                                 hyp alist t clk (glcp-config-update-param t config)
-                                 interp-st (init-bvar-db next-bvar bvar-db1) state))))))
+               (Equal (bfr-eval hyp-bfr env)
+                      (bfr-eval (mv-nth 0 (glcp-generic-interp-top-level-term
+                                           hyp alist t clk (glcp-config-update-param t config)
+                                           interp-st (init-bvar-db next-bvar bvar-db1) state))
+                                env))))
+    :hints(("Goal" :in-theory (enable glcp-vacuity-check-unsat-implies))))
     
 
   (local (defthm bdd-mode-or-p-true-of-bfr-unparam-env-rev-special
@@ -4963,6 +4965,9 @@
            (implies (bdd-mode-or-p-true p env)
                     (bdd-mode-or-p-true p (bfr-unparam-env q env)))
            :hints(("Goal" :in-theory (enable bdd-mode-or-p-true bfr-unparam-env)))))
+
+
+  (local (defmacro hq (arg) `(acl2::hq ,arg)))
 
   (defthm glcp-generic-interp-hyp/concl-correct
     (b* (((mv ?hyp-bfr ?concl-bfr ?concl-bvar-db ?erp ?interp-st1 ?hyp-bvar-db ?state1)
@@ -5000,41 +5005,32 @@
                                alist (cons (bfr-unparam-env hyp-bfr (car env))
                                            (cdr env))))))))
     :hints(("Goal" :in-theory (e/d (genv-unparam))
-            :do-not-induct t
-            :use ((:instance bvar-db-env-ok-next-of-glcp-generic-interp-concl-forward
-                   (term CONCL) (alist ALIST)
-                   (pathcond
-                    (MV-NTH 0
-                            (GLCP-GENERIC-INTERP-TOP-LEVEL-TERM
-                             HYP ALIST T
-                             CLK (GLCP-CONFIG-UPDATE-PARAM T CONFIG)
-                             INTERP-ST (INIT-BVAR-DB$A NEXT-BVAR NIL)
-                             STATE)))
-                   (clk CLK)
-                   (config (GLCP-CONFIG-UPDATE-PARAM T CONFIG))
-                   (interp-st 
-                    (MV-NTH 2
-                            (GLCP-GENERIC-INTERP-TOP-LEVEL-TERM
-                             HYP ALIST T
-                             CLK (GLCP-CONFIG-UPDATE-PARAM T CONFIG)
-                             INTERP-ST (INIT-BVAR-DB$A NEXT-BVAR NIL)
-                             STATE)))
-                   (bvar-db1 
-                    (MV-NTH 3
-                            (GLCP-GENERIC-INTERP-TOP-LEVEL-TERM
-                             HYP ALIST T
-                             CLK (GLCP-CONFIG-UPDATE-PARAM T CONFIG)
-                             INTERP-ST (INIT-BVAR-DB$A NEXT-BVAR NIL)
-                             STATE)))
-                   (bvar-db 
-                    NIL)
-                   (state 
-                    (MV-NTH 4
-                            (GLCP-GENERIC-INTERP-TOP-LEVEL-TERM
-                             HYP ALIST T
-                             CLK (GLCP-CONFIG-UPDATE-PARAM T CONFIG)
-                             INTERP-ST (INIT-BVAR-DB$A NEXT-BVAR NIL)
-                             STATE))))))))
+            :do-not-induct t)
+           (acl2::use-termhint
+            ;; sync with definition of interp-hyp/concl in glcp-templates
+            (b* ((bvar-db (init-bvar-db next-bvar bvar-db))
+                 (bvar-db1 (init-bvar-db next-bvar bvar-db1))
+                 (config (glcp-config-update-param t config))
+                 ((mv hyp-bfr ?er interp-st bvar-db state)
+                  (glcp-generic-interp-top-level-term
+                   hyp alist t clk config interp-st bvar-db state))
+                 ((mv er unsat)
+                  (glcp-vacuity-check hyp-bfr config))
+                 (concl (if unsat ''t concl))
+                 (env (bfr-unparam-env hyp-bfr (car env))))
+              `'(:use ((:instance bvar-db-env-ok-next-of-glcp-generic-interp-concl-forward
+                        (term ,(hq CONCL)) (alist ,(hq ALIST))
+                        (pathcond ,(hq hyp-bfr))
+                        (clk ,(hq clk))
+                        (config ,(hq config))
+                        (interp-st ,(hq interp-st))
+                        (bvar-db1 ,(hq bvar-db))
+                        (bvar-db nil)
+                        (state ,(hq state)))
+                       (:instance glcp-vacuity-check-unsat-implies
+                        (hyp-bfr ,(hq hyp-bfr))
+                        (config ,(hq config))
+                        (env ,(hq env)))))))))
 
   (defthm w-state-preserved-of-glcp-generic-interp-hyp/concl
     (b* (((mv ?hyp-bfr ?concl-bfr ?concl-bvar-db ?erp ?interp-st1 ?hyp-bvar-db ?state1)
@@ -5303,4 +5299,26 @@
     :hints (("goal" :use ((:instance bfr-eval-consts)
                           (:instance bfr-eval-consts (env (car env))))
              :in-theory (disable bfr-eval-consts bfr-eval-booleanp)
-             :do-not-induct t))))
+             :do-not-induct t)
+            (acl2::use-termhint
+            ;; sync with definition of interp-hyp/concl in glcp-templates
+            (b* ((bvar-db (init-bvar-db next-bvar bvar-db))
+                 (bvar-db1 (init-bvar-db next-bvar bvar-db1))
+                 (config (glcp-config-update-param t config))
+                 ((mv hyp-bfr ?er interp-st bvar-db state)
+                  (glcp-generic-interp-top-level-term
+                   hyp alist t clk config interp-st bvar-db state))
+                 ((mv er unsat)
+                  (glcp-vacuity-check hyp-bfr config))
+                 (concl (if unsat ''t concl))
+                 ;; (fixed-env (glcp-generic-interp-hyp/concl-env
+                 ;;             env hyp concl alist clk config interp-st next-bvar state))
+                 ;; (?hyp-env (bfr-unparam-env hyp-bfr (car env)))
+                 (hyp-env (bvar-db-fix-env (next-bvar bvar-db)
+                                  next-bvar bvar-db t
+                                  (car env) (cdr env)))
+                 )
+              `'(:use ((:instance glcp-vacuity-check-unsat-implies
+                        (hyp-bfr ,(hq hyp-bfr))
+                        (config ,(hq config))
+                        (env ,(hq hyp-env))))))))))
