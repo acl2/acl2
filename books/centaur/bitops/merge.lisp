@@ -452,6 +452,8 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 (def-merge-n-unsigneds 4 64)
 (def-merge-n-unsigneds 4 128)
 
+(def-merge-n-unsigneds 8 2)
+(def-merge-n-unsigneds 8 4)
 (def-merge-n-unsigneds 8 8)
 (def-merge-n-unsigneds 8 16)
 (def-merge-n-unsigneds 8 32)
