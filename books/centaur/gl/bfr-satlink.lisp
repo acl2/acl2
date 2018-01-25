@@ -63,6 +63,19 @@
        (t ;; failed
         (mv nil nil nil))))))
 
+(defun bfr-satlink-nosimp (prop)
+  (declare (xargs :guard t))
+  (bfr-case
+   :bdd (mv nil nil nil) ;; fail
+   :aig
+   (b* (((mv status env)
+         (acl2::aig-sat prop :config (gl-satlink-config) :transform-config nil))) ;; why not?
+     (case status
+       (:sat (mv t t env))
+       (:unsat (mv nil t nil))
+       (t ;; failed
+        (mv nil nil nil))))))
+
 (defsection gl-satlink-mode
   :parents (modes reference)
   :short "GL: Use AIGs as the Boolean function representation and @(see
