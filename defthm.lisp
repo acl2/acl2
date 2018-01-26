@@ -10873,7 +10873,7 @@
        (t (runes-to-monitor1 (cdr runes) x wrld ctx state
                              only-simple only-simple-count
                              some-simple some-s-all some-s-bad
-                             acc)))))))
+                             (cons rune acc))))))))
 
 (defconst *monitorable-rune-types*
   '(:rewrite :definition :linear))
