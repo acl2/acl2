@@ -180,7 +180,7 @@
             (the (signed-byte #.*max-linear-address-size*) E-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size inst-ac?
+         #.*gpr-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -376,7 +376,7 @@
             (the (signed-byte #.*max-linear-address-size*) E-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size inst-ac?
+         #.*gpr-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -589,7 +589,7 @@
             (the (signed-byte #.*max-linear-address-size*) E-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* E-size inst-ac?
+         #.*gpr-access* E-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          imm-size ;; imm-size bytes of immediate data
@@ -881,7 +881,7 @@
        ((mv flg0 r/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* r/mem-size inst-ac?
+         #.*gpr-access* r/mem-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -984,7 +984,7 @@
        ((mv flg0 r/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* r/mem-size inst-ac?
+         #.*gpr-access* r/mem-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand

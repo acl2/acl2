@@ -349,6 +349,10 @@
 
  <h5>Contributors to the x86 ISA Model</h5>
 
+ <p>Thanks to Alessandro Coglio (Kestrel Institute) for adding growing
+ support for 32-bit mode and for improving the documentation of these
+ books.</p>
+
  <p>Thanks to Cuong Kim Chau for implementing the floating point
  instructions and for performing many experiments \(along with Keshav
  Kini\) to figure out an efficient configuration for the concrete
