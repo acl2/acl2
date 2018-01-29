@@ -30,7 +30,7 @@
     ((reg)
      (rex-byte :type (unsigned-byte 8)))
     :short "Valid GPR index recognizer"
-    :long "<p>General purpose register indices are 3 bits except in
+    :long "<p>General-purpose register indices are 3 bits except in
 64-bit mode, where they can have 4 bits depending on the @('rex')
 prefix.</p>"
     :enabled t
@@ -55,7 +55,7 @@ prefix.</p>"
      (rex-byte :type (unsigned-byte 8) "REX prefix")
      (index    :type (unsigned-byte 2) "One of the W, R, X, or B bits of the REX prefix"))
     :inline t
-    :short "Using the REX prefix to access general-purpose registers in 64-bit mode"
+    :short "Using the REX prefix to access general-purpose registers"
     :long "<p>In 64-bit mode, in addition to generating 64-bit operand sizes,
     the REX prefix is used to reference registers R8 to R15. Instructions that
     include REX prefixes can access these registers if the relevant W, R, X, or
@@ -64,7 +64,11 @@ prefix.</p>"
     @('reg') = 0 (which, in the non-REX world, would refer to rAX),
     @('reg-index') would give us the register index corresponding to the
     register r8. If R is not set, @('reg-index') will give us the index
-    corresponding to rAX.</p>"
+    corresponding to rAX.</p>
+
+    <p>In 32-bit mode, the REX prefix is absent.  This function can be used in
+    32-bit mode, by passing 0 as REX.</p>"
+
     (if (logbitp index rex-byte)
         (logior 8 (mbe :logic (n03 reg) :exec reg))
       (mbe :logic (n03 reg) :exec reg))
@@ -130,7 +134,7 @@ are used to write natural numbers into the GPRs.</p>"
      (x86))
     :inline t
     :guard (reg-indexp reg rex)
-    :short "Writing to byte general-purpose registers in the 64-bit mode"
+    :short "Read from byte general-purpose registers"
     :long "<p><i>Source: Intel Manuals, Vol. 1, Section
     3.4.1.1 (General-Purpose Registers in 64-bit Mode)</i></p>
 
@@ -139,7 +143,7 @@ are used to write natural numbers into the GPRs.</p>"
  BH, CH, DH) and one of the new byte registers at the same time (for example:
  the low byte of the RAX register). However, instructions may reference legacy
  low-bytes (for example: AL, BL, CL or DL) and new byte registers at the same
- time (for example: the low byte of the R8 register, or RBP). The architecture
+ time (for example: the low byte of the R8 register, or R8L). The architecture
  enforces this limitation by changing high-byte references (AH, BH, CH, DH) to
  low byte references (BPL, SPL, DIL, SIL: the low 8 bits for RBP, RSP, RDI and
  RSI) for instructions using a REX prefix.</blockquote>
@@ -147,7 +151,9 @@ are used to write natural numbers into the GPRs.</p>"
  <p>In other words, without the REX prefix, indices 0-7 refer to byte registers
  AL, CL, DL, BL, AH, CH, DH, and BH, whereas with the REX prefix, indices 0-15
  refer to AL, CL, DL, BL, SPL, BPL, SIL, DIL, R8L, R9L, R10L, R11L, R12L, R13L,
- R14L, R15L.</p>"
+ R14L, R15L. This applies to 64-bit mode.</p>
+
+ <p>In 32-bit mode, this function is called with 0 as REX.</p>"
 
     (cond ((or (not (eql rex 0))
                (< reg 4))
@@ -172,6 +178,7 @@ are used to write natural numbers into the GPRs.</p>"
     ((reg :type (unsigned-byte 4))
      (x86))
     :inline t
+    :short "Read from word general-purpose registers"
 
     (n16 (the (signed-byte 64) (rgfi reg x86)))
 
@@ -188,6 +195,7 @@ are used to write natural numbers into the GPRs.</p>"
     ((reg :type (unsigned-byte 4))
      (x86))
     :inline t
+    :short "Read from doubleword general-purpose registers"
 
     (n32 (the (signed-byte 64) (rgfi reg x86)))
 
@@ -204,6 +212,8 @@ are used to write natural numbers into the GPRs.</p>"
     ((reg :type (unsigned-byte 4))
      (x86))
     :inline t
+    :short "Read from quadword general-purpose registers"
+    :long "<p>This function is used only in 64-bit mode.</p>"
 
     (n64 (the (signed-byte 64) (rgfi reg x86)))
 
@@ -229,6 +239,31 @@ are used to write natural numbers into the GPRs.</p>"
                                           (bitops::logand-with-negated-bitmask
                                            bitops::logand-with-bitmask
                                            unsigned-byte-p))))
+    :short "Writing to byte general-purpose registers"
+    :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
+    p. 3-17, which says the following about 64-bit mode:</p>
+
+    <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.
+    The upper 56 or 48 bits (respectively) of the destination general-purpose
+    register are not modified by the operation.</em></p>
+
+    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
+    the following quote from the same page as above:</p>
+
+    <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
+    undefined in 32-bit modes, the upper 32 bits of any general-purpose
+    register are not preserved when switching from 64-bit mode to a 32-bit
+    mode (to protected mode or compatibility mode). Software must not depend on
+    these bits to maintain a value after a 64-bit to 32-bit mode
+    switch.</em></p>
+
+    <p>In 32-bit mode, this function is called with 0 as REX.  Since in 32-bit
+    mode the high 32 bits of general-purpose registers are not accessible, it
+    is fine for this function to leave those bits unchanged, as opposed to, for
+    example, setting them to undefined values as done by the semantic functions
+    of certain instructions for certain flags. The switching from 32-bit mode
+    to 64-bit mode (when modeled) will set the high 32 bits of general-purpose
+    registers to undefined values.</p>"
 
     (cond ((or (not (eql rex 0))
                (< reg 4))
@@ -316,6 +351,31 @@ are used to write natural numbers into the GPRs.</p>"
                                           (bitops::logand-with-negated-bitmask
                                            bitops::logand-with-bitmask
                                            unsigned-byte-p))))
+    :short "Write to word general-purpose registers"
+    :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
+    p. 3-17, which says the following about 64-bit mode:</p>
+
+    <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.
+    The upper 56 or 48 bits (respectively) of the destination general-purpose
+    register are not modified by the operation.</em></p>
+
+    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
+    the following quote from the same page as above:</p>
+
+    <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
+    undefined in 32-bit modes, the upper 32 bits of any general-purpose
+    register are not preserved when switching from 64-bit mode to a 32-bit
+    mode (to protected mode or compatibility mode). Software must not depend on
+    these bits to maintain a value after a 64-bit to 32-bit mode
+    switch.</em></p>
+
+    <p>This function is used both in 64-bit mode and in 32-bit mode. Since in
+    32-bit mode the high 32 bits of general-purpose registers are not
+    accessible, it is fine for this function to leave those bits unchanged, as
+    opposed to, for example, setting them to undefined values as done by the
+    semantic functions of certain instructions for certain flags. The switching
+    from 32-bit mode to 64-bit mode (when modeled) will set the high 32 bits of
+    general-purpose registers to undefined values.</p>"
 
     (let ((qword (the (signed-byte 64) (rgfi reg x86))))
       (!rgfi reg
@@ -369,22 +429,31 @@ are used to write natural numbers into the GPRs.</p>"
                                            bitops::logand-with-bitmask
                                            unsigned-byte-p))))
 
-    :long "<p>Write a dword to a register.  Note Intel Vol. 1 Sec. 3.4.1.1
+    :short "Write to doubleword general-purpose registers"
+    :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
     p. 3-17, which says the following about 64-bit mode:</p>
 
     <p><em>32-bit operands generate a 32-bit result, zero-extended to a
     64-bit result in the destination general-purpose
     register.</em></p>
 
-<p>Outside 64-bit mode, the upper 32 bits are undefined, as specified
-by the following quote from the same page as above: </p>
+    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by the
+    following quote from the same page as above:</p>
 
-<p><em>Because the upper 32 bits of 64-bit general-purpose registers
-  are undefined in 32-bit modes, the upper 32 bits of any
-  general-purpose register are not preserved when switching from
-  64-bit mode to a 32-bit mode (to protected mode or compatibility
-  mode). Software must not depend on these bits to maintain a value
-  after a 64-bit to 32-bit mode switch.</em></p>"
+    <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
+    undefined in 32-bit modes, the upper 32 bits of any general-purpose
+    register are not preserved when switching from 64-bit mode to a 32-bit
+    mode (to protected mode or compatibility mode). Software must not depend on
+    these bits to maintain a value after a 64-bit to 32-bit mode
+    switch.</em></p>
+
+    <p>This function is used both in 64-bit mode and in 32-bit mode. Since in
+    32-bit mode the high 32 bits of general-purpose registers are not
+    accessible, it is fine for this function to set those bits to 0, as opposed
+    to, for example, setting them to undefined values as done by the semantic
+    functions of certain instructions for certain flags. The switching from
+    32-bit mode to 64-bit mode (when modeled) will set the high 32 bits of
+    general-purpose registers to undefined values.</p>"
 
     (!rgfi reg (mbe :logic (n32 val) :exec val) x86)
 
@@ -425,6 +494,8 @@ by the following quote from the same page as above: </p>
                                            bitops::logand-with-bitmask
                                            unsigned-byte-p))))
     (!rgfi reg (n64-to-i64 val) x86)
+    :short "Write to quadword general-purpose registers"
+    :long "<p>This function is used only in 64-bit mode.</p>"
 
     ///
     (defthm x86p-wr64
@@ -460,6 +531,8 @@ by the following quote from the same page as above: </p>
                 (member nbytes '(1 2 4 8)))
     :inline t
     :returns (val natp :rule-classes :type-prescription)
+    :short "Read form byte, word, doubleword, or quadword
+            general-purpose register"
     (case nbytes
       (1 (rr08 index rex x86))
       (2 (rr16 index x86))
@@ -484,6 +557,8 @@ by the following quote from the same page as above: </p>
                 (unsigned-byte-p (ash nbytes 3) val))
     :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
     :inline t
+    :short "Write to byte, word, doubleword, or quadword
+            general-purpose register"
     (case nbytes
       (1 (wr08 index rex val x86))
       (2 (wr16 index val x86))
