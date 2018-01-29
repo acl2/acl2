@@ -214,7 +214,7 @@ extension (ModR/m.reg = 6).</p>"
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?E-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* operand-size
+         #.*gpr-access* operand-size
          ;; inst-ac? is nil here because we only need increment-RIP-by
          ;; from this function.
          nil
