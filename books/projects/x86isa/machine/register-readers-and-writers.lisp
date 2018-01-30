@@ -247,6 +247,9 @@ are used to write natural numbers into the GPRs.</p>"
     The upper 56 or 48 bits (respectively) of the destination general-purpose
     register are not modified by the operation.</em></p>
 
+    <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
+    &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
+
     <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
     the following quote from the same page as above:</p>
 
@@ -359,6 +362,9 @@ are used to write natural numbers into the GPRs.</p>"
     The upper 56 or 48 bits (respectively) of the destination general-purpose
     register are not modified by the operation.</em></p>
 
+    <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
+    &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
+
     <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
     the following quote from the same page as above:</p>
 
@@ -436,6 +442,9 @@ are used to write natural numbers into the GPRs.</p>"
     <p><em>32-bit operands generate a 32-bit result, zero-extended to a
     64-bit result in the destination general-purpose
     register.</em></p>
+
+    <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
+    &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
 
     <p>In 32-bit mode, the upper 32 bits are undefined, as specified by the
     following quote from the same page as above:</p>
