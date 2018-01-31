@@ -97,13 +97,24 @@
 
 (local (in-theory (disable id->phase-of-cons)))
 
-(local (defthm id-slots-of-cons-gate
+(local (defthm id-slots-of-cons-and
          (implies (equal (nfix n) (+ 1 (node-count aignet)))
-                  (equal (id-slots n (cons (gate-node f0 f1) aignet))
+                  (equal (id-slots n (cons (and-node f0 f1) aignet))
                          (let ((f0 (aignet-lit-fix f0 aignet))
                                (f1 (aignet-lit-fix f1 aignet)))
                          (mk-snode (gate-type) 0
                                    (b-and (aignet$a::lit->phase f0 aignet)
+                                          (aignet$a::lit->phase f1 aignet))
+                                   f0 f1))))
+         :hints(("Goal" :in-theory (enable id-slots aignet$a::id->phase)))))
+
+(local (defthm id-slots-of-cons-xor
+         (implies (equal (nfix n) (+ 1 (node-count aignet)))
+                  (equal (id-slots n (cons (xor-node f0 f1) aignet))
+                         (let ((f0 (aignet-lit-fix f0 aignet))
+                               (f1 (aignet-lit-fix f1 aignet)))
+                         (mk-snode (gate-type) 1
+                                   (b-xor (aignet$a::lit->phase f0 aignet)
                                           (aignet$a::lit->phase f1 aignet))
                                    f0 f1))))
          :hints(("Goal" :in-theory (enable id-slots aignet$a::id->phase)))))
@@ -273,7 +284,7 @@
                                 (aignet$a::co-id->fanin id aigneta)))
                 (implies (and (equal (aignet$a::id->type id aigneta)
                                      (in-type))
-                              (equal (aignet$a::io-id->regp id aigneta)
+                              (equal (aignet$a::id->regp id aigneta)
                                      1))
                          (equal (aignet$c::snode->regid slot0)
                                 (aignet$a::reg-id->nxst id aigneta)))
@@ -288,18 +299,18 @@
                              (equal (aignet$a::id->type id aigneta)
                                     (out-type)))
                          (equal (aignet$c::snode->regp slot1)
-                                (aignet$a::io-id->regp id aigneta)))
+                                (aignet$a::id->regp id aigneta)))
                 (implies (or (equal (aignet$a::id->type id aigneta)
                                     (in-type))
                              (and (equal (aignet$a::id->type id aigneta)
                                          (out-type))
-                                  (equal (aignet$a::io-id->regp id aigneta)
+                                  (equal (aignet$a::id->regp id aigneta)
                                          0)))
                          (equal (aignet$c::snode->ionum slot1)
                                 (aignet$a::io-id->ionum id aigneta)))
                 (implies (and (equal (aignet$a::id->type id aigneta)
                                      (out-type))
-                              (equal (aignet$a::io-id->regp id aigneta)
+                              (equal (aignet$a::id->regp id aigneta)
                                      1))
                          (equal (aignet$c::snode->regid slot1)
                                 (aignet$a::nxst-id->reg id aigneta)))
@@ -311,7 +322,7 @@
 
      (in-theory (disable nodes-correct)))
 
-   (local (in-theory (enable aignet$a::io-id->regp
+   (local (in-theory (enable aignet$a::id->regp
                              aignet$a::co-id->fanin
                              aignet$a::gate-id->fanin0
                              aignet$a::gate-id->fanin1
@@ -326,9 +337,9 @@
      (equal (aignet$a::id->phase x nil) 0)
      :hints(("Goal" :in-theory (enable aignet$a::id->phase))))
 
-   (defthm io-id->regp-of-empty
-     (equal (aignet$a::io-id->regp x nil) 0)
-     :hints(("Goal" :in-theory (enable aignet$a::io-id->regp))))
+   (defthm id->regp-of-empty
+     (equal (aignet$a::id->regp x nil) 0)
+     :hints(("Goal" :in-theory (enable aignet$a::id->regp))))
 
    ;; (defthm aignet-regs-in-bounds-impl-regs-in-bounds
    ;;   (implies (and (aignet$c::aignet-regs-in-bounds aignet)
@@ -470,7 +481,7 @@
                           (posp n)
                           (<= n (nfix m))
                           (<= (nfix m) (node-count aignet)))
-                     (equal (stype (car (lookup-id m aignet))) :gate))
+                     (equal (ctype (stype (car (lookup-id m aignet)))) :gate))
             :hints (("goal" :induct (proper-node-listp aignet)
                      :in-theory (e/d ((:i proper-node-listp))
                                      (lookup-id-in-extension-inverse))
@@ -696,7 +707,7 @@
 
 
    (local (defthm stype-const-when-not-others
-            (implies (and (not (equal (stype x) (gate-stype)))
+            (implies (and (not (equal (ctype (stype x)) (gate-ctype)))
                           (not (equal (ctype (stype x)) (in-ctype)))
                           (not (equal (ctype (stype x)) (out-ctype))))
                      (equal (stype x) (const-stype)))
@@ -713,14 +724,19 @@
             :hints(("Goal" :in-theory (enable aignet$a::id->phase)))))
 
    (local (defthm id->phase-when-gate
-            (implies (equal (stype (car (lookup-id id aignet))) (gate-stype))
+            (implies (equal (ctype (stype (car (lookup-id id aignet)))) (gate-ctype))
                      (equal (aignet$a::id->phase id aignet)
                             (b* ((f0 (fanin :gate0 (lookup-id id aignet)))
                                  (f1 (fanin :gate1 (lookup-id id aignet))))
-                              (b-and (b-xor (lit->neg f0)
-                                            (aignet$a::id->phase (lit->var f0) aignet))
-                                     (b-xor (lit->neg f1)
-                                            (aignet$a::id->phase (lit->var f1) aignet))))))
+                              (if (eql 1 (regp (stype (car (lookup-id id aignet)))))
+                                  (b-xor (b-xor (lit->neg f0)
+                                                (aignet$a::id->phase (lit->var f0) aignet))
+                                         (b-xor (lit->neg f1)
+                                                (aignet$a::id->phase (lit->var f1) aignet)))
+                                (b-and (b-xor (lit->neg f0)
+                                                (aignet$a::id->phase (lit->var f0) aignet))
+                                         (b-xor (lit->neg f1)
+                                                (aignet$a::id->phase (lit->var f1) aignet)))))))
             :hints(("Goal" :in-theory (enable aignet$a::id->phase)))))
 
    (local (defthm node-count-lookup-reg->nxst-out-of-bounds
@@ -796,7 +812,7 @@
                         :exec aignet$c::regnum->id$inline)
             (id->type :logic aignet$a::id->type
                       :exec aignet$c::id->type$inline)
-            (io-id->regp :logic aignet$a::io-id->regp
+            (id->regp :logic aignet$a::id->regp
                          :exec aignet$c::id->regp$inline)
             (io-id->ionum :logic aignet$a::io-id->ionum
                           :exec aignet$c::id->ionum$inline)
@@ -821,8 +837,11 @@
             (aignet-add-reg^ :logic aignet$a::aignet-add-reg^
                              :exec aignet$c::aignet-add-reg
                              :protect t)
-            (aignet-add-gate^ :logic aignet$a::aignet-add-gate^
-                              :exec aignet$c::aignet-add-gate
+            (aignet-add-and^ :logic aignet$a::aignet-add-and^
+                              :exec aignet$c::aignet-add-and
+                              :protect t)
+            (aignet-add-xor^ :logic aignet$a::aignet-add-xor^
+                              :exec aignet$c::aignet-add-xor
                               :protect t)
             (aignet-add-out^ :logic aignet$a::aignet-add-out^
                              :exec aignet$c::aignet-add-out
@@ -858,18 +877,31 @@
                  (aignet-add-reg^ aignet)
                (ec-call (aignet-add-reg^ aignet)))))
 
-(define aignet-add-gate ((f0 litp)
+(define aignet-add-and ((f0 litp)
                          (f1 litp)
                          aignet)
   :guard (and (fanin-litp f0 aignet)
               (fanin-litp f1 aignet))
   :enabled t
-  (mbe :logic (non-exec (cons (gate-node (aignet-lit-fix f0 aignet)
+  (mbe :logic (non-exec (cons (and-node (aignet-lit-fix f0 aignet)
                                          (aignet-lit-fix f1 aignet))
                               (node-list-fix aignet)))
        :exec (if (< (the (unsigned-byte 29) (num-nodes aignet)) #x1fffffff)
-                 (aignet-add-gate^ f0 f1 aignet)
-               (ec-call (aignet-add-gate^ f0 f1 aignet)))))
+                 (aignet-add-and^ f0 f1 aignet)
+               (ec-call (aignet-add-and^ f0 f1 aignet)))))
+
+(define aignet-add-xor ((f0 litp)
+                         (f1 litp)
+                         aignet)
+  :guard (and (fanin-litp f0 aignet)
+              (fanin-litp f1 aignet))
+  :enabled t
+  (mbe :logic (non-exec (cons (xor-node (aignet-lit-fix f0 aignet)
+                                         (aignet-lit-fix f1 aignet))
+                              (node-list-fix aignet)))
+       :exec (if (< (the (unsigned-byte 29) (num-nodes aignet)) #x1fffffff)
+                 (aignet-add-xor^ f0 f1 aignet)
+               (ec-call (aignet-add-xor^ f0 f1 aignet)))))
 
 (define aignet-add-out ((f litp)
                          aignet)
@@ -887,7 +919,7 @@
   :guard (and (fanin-litp f aignet)
               (id-existsp regid aignet)
               (eql (id->type regid aignet) (in-type))
-              (eql (io-id->regp regid aignet) 1))
+              (eql (id->regp regid aignet) 1))
   :enabled t
   (mbe :logic (non-exec (cons (nxst-node (aignet-lit-fix f aignet)
                                          (aignet-id-fix regid aignet))
@@ -923,7 +955,8 @@
   :prepwork ((local (set-default-hints nil))
              (local (defthm gate-stype-count
                       (implies (aignet-nodes-ok aignet)
-                               (equal (stype-count :gate aignet)
+                               (equal (+ (stype-count :and aignet)
+                                         (stype-count :xor aignet))
                                       (+ (node-count aignet)
                                          (- (stype-count :pi aignet))
                                          (- (stype-count :po aignet))
@@ -935,7 +968,8 @@
                                         (aignet-nodes-ok aignet)
                                         (:free (stype) (stype-count stype aignet))))))))
   :enabled t
-  (mbe :logic (non-exec (stype-count (gate-stype) aignet))
+  (mbe :logic (non-exec (+ (stype-count (and-stype) aignet)
+                           (stype-count (xor-stype) aignet)))
        :exec (+ (num-nodes aignet)
                 (- (+ 1  ;; constant
                       (num-ins aignet)
@@ -947,7 +981,7 @@
                           (aignet))
   :guard (and (id-existsp id aignet)
               (eql (id->type id aignet) (in-type))
-              (eql (io-id->regp id aignet) 1))
+              (eql (id->regp id aignet) 1))
   :returns (lit (and (litp lit)
                      (aignet-litp lit aignet))
                 :hints((and stable-under-simplificationp
@@ -1032,7 +1066,7 @@
 <h5>Misc</h5>
 
 <ul>
- <li>@(see io-id->regp) gets the register bit for a node id</li>
+ <li>@(see id->regp) gets the register bit for a node id</li>
 </ul>")
 
 (local (xdoc::set-default-parents base-api))
@@ -1374,12 +1408,12 @@ more complicated than other kinds.</p>")
 
 ;; Misc
 
-(defxdoc io-id->regp
-  :short "@(call io-id->regp) gets the register bit from the node with ID @('id')."
+(defxdoc id->regp
+  :short "@(call id->regp) gets the register bit from the node with ID @('id')."
   :long "<p>Logically this is @('(regp (stype (car (lookup-id id aignet))))').</p>
   <p>In the execution this is mostly a stobj array lookup in the node array.</p>
 
-  @(def aignet$a::io-id->regp)")
+  @(def aignet$a::id->regp)")
 
 
 

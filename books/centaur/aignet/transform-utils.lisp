@@ -58,7 +58,10 @@
   :guard (and (<= n (num-nodes aignet))
               (non-exec (equal aignet2 (lookup-id (+ -1 n) aignet))))
   ;; :measure (nfix (- (num-nodes aignet) (nfix n)))
-  :guard-hints (("goal" :in-theory (e/d (aignet-idp fanin co-node->fanin regp) (aignet-nodes-ok))
+  :guard-hints (("goal" :in-theory (e/d (aignet-idp fanin co-node->fanin regp
+                                                    gate-node->fanin0
+                                                    gate-node->fanin1)
+                                        (aignet-nodes-ok))
                  :expand ((:free (n aignet aignet2) (aignet-raw-copy-aux n aignet aignet2)))
                  :cases ((equal 0 n))
                  :use ((:instance aignet-nodes-ok (aignet (lookup-id n aignet))))))
@@ -105,10 +108,13 @@
             (slot1 (id->slot n 1 aignet))
             (type (snode->type slot0))
             (regp (snode->regp slot1))
-            (aignet2 (aignet-seq-case type regp
-                       :gate (aignet-add-gate (snode->fanin slot0)
-                                              (snode->fanin slot1)
-                                              aignet2)
+            (aignet2 (aignet-case type regp
+                       :xor (aignet-add-xor (snode->fanin slot0)
+                                            (snode->fanin slot1)
+                                            aignet2)
+                       :and (aignet-add-and (snode->fanin slot0)
+                                            (snode->fanin slot1)
+                                            aignet2)
                        :pi (aignet-add-in aignet2)
                        :reg (aignet-add-reg aignet2)
                        :po (aignet-add-out (snode->fanin slot0) aignet2)

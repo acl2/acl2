@@ -162,7 +162,8 @@
 
 
   (defret stypes-preserved-of-observability-fixed-inputs
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -289,7 +290,8 @@
                            (nth-lit (node-count (lookup-stype regnum :reg aignet)) copy)))))
 
   (defret stypes-preserved-of-observability-fixed-regs
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -411,7 +413,8 @@
     (aignet-extension-p new-aignet2 aignet2))
 
   (defret stypes-preserved-of-observability-fix-input-copies
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -540,7 +543,8 @@
     :hints ('(:expand (<call>))))
 
   (defret stype-counts-of-observability-fix-hyp/concl
-      (implies (not (equal (stype-fix stype) :gate))
+      (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
                (equal (stype-count stype new-aignet2)
                       (stype-count stype aignet2)))
       :hints ('(:expand (<call>))))
@@ -593,26 +597,6 @@
                          (id-eval (lit->var x) invals regvals aignet))
                   (lit-eval x invals regvals aignet))
            :hints(("Goal" :in-theory (enable lit-eval)))))
-
-  (local (defthm and-of-lit-evals-is-gate-eval
-           (implies (equal (stype (car (lookup-id n aignet))) :gate)
-                    (equal (b-and (lit-eval (fanin :gate0 (lookup-id n aignet))
-                                            invals regvals aignet)
-                                  (lit-eval (fanin :gate1 (lookup-id n aignet))
-                                            invals regvals aignet))
-                           (id-eval n invals regvals aignet)))
-           :hints(("Goal" :expand ((id-eval n invals regvals aignet))
-                   :in-theory (enable eval-and-of-lits)))))
-
-  (local (defthm lit-eval-of-gate-fanin-when-1
-           (implies (and (member f '(:gate0 :gate1))
-                         (equal (id-eval n invals regvals aignet) 1)
-                         (equal (stype (car (lookup-id n aignet))) :gate))
-                    (equal (lit-eval (fanin f (lookup-id n aignet))
-                                     invals regvals aignet)
-                           1))
-           :hints(("Goal" :expand ((id-eval n invals regvals aignet))
-                   :in-theory (enable eval-and-of-lits)))))
 
   (local (defun search-matching-lit (pat clause alist)
            (b* (((when (atom clause)) nil)
@@ -762,7 +746,8 @@
     :hints(("Goal" :in-theory (enable aignet-eval-conjunction))))
 
   (defret stype-counts-of-aignet-build-wide-and
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet)))))
 
@@ -897,7 +882,8 @@
          :hints (("goal" :induct (id-eval-ind id aignet)
                   :expand ((:free (ins) (id-eval id ins regs aignet))
                            (:free (lit ins) (lit-eval lit ins regs aignet))
-                           (:free (lit1 lit2 ins) (eval-and-of-lits lit1 lit2 ins regs aignet)))))))
+                           (:free (lit1 lit2 ins) (eval-and-of-lits lit1 lit2 ins regs aignet))
+                           (:free (lit1 lit2 ins) (eval-xor-of-lits lit1 lit2 ins regs aignet)))))))
 
 (local (defthm id-eval-of-bit-list-fix-regs
          (equal (id-eval id ins (bit-list-fix regs) aignet)
@@ -905,7 +891,8 @@
          :hints (("goal" :induct (id-eval-ind id aignet)
                   :expand ((:free (regs) (id-eval id ins regs aignet))
                            (:free (lit regs) (lit-eval lit ins regs aignet))
-                           (:free (lit1 lit2 regs) (eval-and-of-lits lit1 lit2 ins regs aignet)))))))
+                           (:free (lit1 lit2 regs) (eval-and-of-lits lit1 lit2 ins regs aignet))
+                           (:free (lit1 lit2 regs) (eval-xor-of-lits lit1 lit2 ins regs aignet)))))))
 
 (local (defthm b-xor-id-eval-equals-lit-eval
          (equal (b-xor (lit->neg x)
@@ -965,7 +952,8 @@
     (aignet-extension-p new-aignet aignet))
 
   (defret stype-counts-of-observability-fix-lit-1
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet))))
 
@@ -973,7 +961,8 @@
     (aignet-extension-p new-aignet2 aignet2))
 
   (defret stype-counts-of-observability-fix-lit-2
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -1045,13 +1034,15 @@
     (aignet-extension-p new-aignet aignet))
 
   (defret stype-counts-of-observability-fix-outs-2
-    (implies (and (not (equal (stype-fix stype) :gate))
+    (implies (and (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
                   (not (equal (stype-fix stype) :po)))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
   (defret stype-counts-of-observability-fix-outs-1
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet))))
 
@@ -1115,7 +1106,8 @@
     (aignet-extension-p new-aignet2 aignet2))
 
   (defret stype-counts-of-observability-fix-nxsts-2
-    (implies (and (not (equal (stype-fix stype) :gate))
+    (implies (and (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
                   (not (equal (stype-fix stype) :nxst)))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
@@ -1124,7 +1116,8 @@
     (aignet-extension-p new-aignet aignet))
 
   (defret stype-counts-of-observability-fix-nxsts-1
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet))))
 

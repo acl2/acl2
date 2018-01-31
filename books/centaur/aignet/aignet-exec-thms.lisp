@@ -1925,7 +1925,7 @@
   ;;          (and stable-under-simplificationp
   ;;               '(:in-theory (enable aignet-add-reg)))))
 
-  (define aignet-add-gate ((f0 litp :type (unsigned-byte 30))
+  (define aignet-add-and ((f0 litp :type (unsigned-byte 30))
                            (f1 litp :type (unsigned-byte 30))
                            aignet)
     :split-types t
@@ -1953,26 +1953,26 @@
          (aignet (update-node-slot$ nodes 1 slot1 aignet)))
       aignet)
     ///
-    (def-aignet-frame aignet-add-gate)
+    (def-aignet-frame aignet-add-and)
     (local (in-theory (enable* aignet-frame-thms)))
-    (defthm aignet-add-gate-preserves-sizes-ok
+    (defthm aignet-add-and-preserves-sizes-ok
       (implies (and (aignet-sizes-ok aignet)
                     (< (num-nodes aignet) #x1fffffff))
                (aignet-sizes-ok
-                (aignet-add-gate f0 f1 aignet)))
+                (aignet-add-and f0 f1 aignet)))
       :hints(("Goal" :in-theory (enable aignet-sizes-ok
                                         add-node))))
 
-    (defthm aignet-add-gate-preserves-counts-accurate
+    (defthm aignet-add-and-preserves-counts-accurate
       (implies (and (aignet-sizes-ok aignet)
                     (aignet-counts-accurate aignet))
-               (aignet-counts-accurate (aignet-add-gate f0 f1 aignet)))
+               (aignet-counts-accurate (aignet-add-and f0 f1 aignet)))
       :hints((and stable-under-simplificationp
                   `(:expand ,(car (last clause))))))
 
-    (defthm aignet-add-gate-preserves-aignet-nodes-nonconst
+    (defthm aignet-add-and-preserves-aignet-nodes-nonconst
       (implies (aignet-nodes-nonconst aignet)
-               (aignet-nodes-nonconst (aignet-add-gate f0 f1 aignet)))
+               (aignet-nodes-nonconst (aignet-add-and f0 f1 aignet)))
       :hints((and stable-under-simplificationp
                   (let ((lit (car (last clause))))
                     `(:expand (,lit)
@@ -1980,21 +1980,21 @@
                              (idx (aignet-nodes-nonconst-witness . ,(cdr lit)))))
                       :in-theory (disable aignet-nodes-nonconst-necc))))))
 
-    ;; (defthm aignet-add-gate-preserves-aignet-max-fanin-correct
+    ;; (defthm aignet-add-and-preserves-aignet-max-fanin-correct
     ;;   (implies (equal (nth *max-fanin* aignet) (aignet-find-max-fanin (+ -1 (nfix (num-nodes aignet))) aignet))
-    ;;            (let ((aignet (aignet-add-gate f0 f1 aignet)))
+    ;;            (let ((aignet (aignet-add-and f0 f1 aignet)))
     ;;              (equal (nth *max-fanin* aignet) (aignet-find-max-fanin (+ -1 (nfix (num-nodes aignet))) aignet))))
     ;;   :hints (("goal" :Expand ((:free (aignet1) (aignet-find-max-fanin (nfix (nth *num-nodes* aignet)) aignet1))))))
 
-    (defthm aignet-find-max-fanin-of-aignet-add-gate
+    (defthm aignet-find-max-fanin-of-aignet-add-and
       (implies (equal (nfix n) (nfix (num-nodes aignet$c)))
-               (equal (aignet-find-max-fanin n (aignet-add-gate f0 f1 aignet$c))
+               (equal (aignet-find-max-fanin n (aignet-add-and f0 f1 aignet$c))
                       (nfix (num-nodes aignet$c))))
       :hints (("goal" :Expand ((:free (aignet1) (aignet-find-max-fanin n aignet1))))))
 
-    ;; (defthm aignet-add-gate-preserves-aignet-max-fanin-correct
+    ;; (defthm aignet-add-and-preserves-aignet-max-fanin-correct
     ;;   (implies (aignet-max-fanin-correct aignet)
-    ;;            (aignet-max-fanin-correct (aignet-add-gate f0 f1 aignet)))
+    ;;            (aignet-max-fanin-correct (aignet-add-and f0 f1 aignet)))
     ;;   :hints(("goal" :in-theory (enable aignet-max-fanin-correct))
     ;;          (and stable-under-simplificationp
     ;;               (let ((lit (car (last clause))))
@@ -2003,10 +2003,10 @@
     ;;                        :use ((:instance aignet-max-fanin-sufficient-necc
     ;;                               (idx (aignet-max-fanin-sufficient-witness . ,(cdr lit)))))
     ;;                        :in-theory (disable aignet-max-fanin-sufficient-necc)))))))
-    ;; (defthm aignet-add-gate-preserves-regs-in-bounds
+    ;; (defthm aignet-add-and-preserves-regs-in-bounds
     ;;   (implies (regs-in-bounds n aignet)
     ;;            (regs-in-bounds n
-    ;;                            (aignet-add-gate f0 f1 aignet)))
+    ;;                            (aignet-add-and f0 f1 aignet)))
     ;;   :hints(("Goal" :in-theory (enable regs-in-bounds
     ;;                                     add-node)))
     ;;   ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
@@ -2014,26 +2014,26 @@
     ;;   ;;                                    acl2::len-update-nth1)))
     ;;   )
 
-    (defthm max-fanin-of-add-gate
-      (equal (nth *max-fanin* (aignet-add-gate f0 f1 aignet))
+    (defthm max-fanin-of-add-and
+      (equal (nth *max-fanin* (aignet-add-and f0 f1 aignet))
              (nfix (nth *num-nodes* aignet))))
 
-    (defthm num-nodes-of-add-gate
-      (equal (nth *num-nodes* (aignet-add-gate f0 f1 aignet))
+    (defthm num-nodes-of-add-and
+      (equal (nth *num-nodes* (aignet-add-and f0 f1 aignet))
              (+ 1 (nfix (nth *num-nodes* aignet))))
       :hints(("Goal" :in-theory (enable add-node))))
 
 
-    (defthm nth-node-of-add-gate
+    (defthm nth-node-of-add-and
       (implies (case-split (not (nat-equiv id (num-nodes aignet))))
-               (equal (id->slot id slot (aignet-add-gate f0 f1 aignet))
+               (equal (id->slot id slot (aignet-add-and f0 f1 aignet))
                       (id->slot id slot aignet))))
 
-    (defthm new-node-of-add-gate
+    (defthm new-node-of-add-and
       (implies (and (case-split (nat-equiv id (num-nodes aignet)))
                     (aignet-sizes-ok aignet))
-               (b* ((slot0 (id->slot id 0 (aignet-add-gate f0 f1 aignet)))
-                    (slot1 (id->slot id 1 (aignet-add-gate f0 f1 aignet)))
+               (b* ((slot0 (id->slot id 0 (aignet-add-and f0 f1 aignet)))
+                    (slot1 (id->slot id 1 (aignet-add-and f0 f1 aignet)))
                     ((mv s0 s1) (mk-snode (gate-type) 0
                                           (b-and (lit->phase f0 aignet)
                                                  (lit->phase f1 aignet))
@@ -2043,11 +2043,129 @@
                       (equal slot1 s1))))))
 
 
-  ;; (defthm aignet-add-gate-preserves-aignet-regs-in-bound
+  (define aignet-add-xor ((f0 litp :type (unsigned-byte 30))
+                           (f1 litp :type (unsigned-byte 30))
+                           aignet)
+    :split-types t
+    :guard (and (aignet-sizes-ok aignet)
+                (< (num-nodes aignet) #x1fffffff)
+                (< (lit-id f0)
+                   (num-nodes aignet))
+                (not (int= (id->type (lit-id f0) aignet)
+                           (out-type)))
+                (< (lit-id f1)
+                   (num-nodes aignet))
+                (not (int= (id->type (lit-id f1) aignet)
+                           (out-type))))
+    :guard-hints (("goal" :in-theory (e/d (add-node
+                                           unsigned-byte-30-of-lit)
+                                          (len-update-nth-linear))))
+    (b* ((nodes  (lnfix (num-nodes aignet)))
+         (phase (b-xor (lit->phase f0 aignet)
+                       (lit->phase f1 aignet)))
+         (aignet (add-node aignet))
+         (aignet (update-max-fanin nodes aignet))
+         ((mv slot0 slot1)
+          (mk-snode^ (gate-type) 1 phase (lit-fix f0) (lit-fix f1)))
+         (aignet (update-node-slot$ nodes 0 slot0 aignet))
+         (aignet (update-node-slot$ nodes 1 slot1 aignet)))
+      aignet)
+    ///
+    (def-aignet-frame aignet-add-xor)
+    (local (in-theory (enable* aignet-frame-thms)))
+    (defthm aignet-add-xor-preserves-sizes-ok
+      (implies (and (aignet-sizes-ok aignet)
+                    (< (num-nodes aignet) #x1fffffff))
+               (aignet-sizes-ok
+                (aignet-add-xor f0 f1 aignet)))
+      :hints(("Goal" :in-theory (enable aignet-sizes-ok
+                                        add-node))))
+
+    (defthm aignet-add-xor-preserves-counts-accurate
+      (implies (and (aignet-sizes-ok aignet)
+                    (aignet-counts-accurate aignet))
+               (aignet-counts-accurate (aignet-add-xor f0 f1 aignet)))
+      :hints((and stable-under-simplificationp
+                  `(:expand ,(car (last clause))))))
+
+    (defthm aignet-add-xor-preserves-aignet-nodes-nonconst
+      (implies (aignet-nodes-nonconst aignet)
+               (aignet-nodes-nonconst (aignet-add-xor f0 f1 aignet)))
+      :hints((and stable-under-simplificationp
+                  (let ((lit (car (last clause))))
+                    `(:expand (,lit)
+                      :use ((:instance aignet-nodes-nonconst-necc
+                             (idx (aignet-nodes-nonconst-witness . ,(cdr lit)))))
+                      :in-theory (disable aignet-nodes-nonconst-necc))))))
+
+    ;; (defthm aignet-add-xor-preserves-aignet-max-fanin-correct
+    ;;   (implies (equal (nth *max-fanin* aignet) (aignet-find-max-fanin (+ -1 (nfix (num-nodes aignet))) aignet))
+    ;;            (let ((aignet (aignet-add-xor f0 f1 aignet)))
+    ;;              (equal (nth *max-fanin* aignet) (aignet-find-max-fanin (+ -1 (nfix (num-nodes aignet))) aignet))))
+    ;;   :hints (("goal" :Expand ((:free (aignet1) (aignet-find-max-fanin (nfix (nth *num-nodes* aignet)) aignet1))))))
+
+    (defthm aignet-find-max-fanin-of-aignet-add-xor
+      (implies (equal (nfix n) (nfix (num-nodes aignet$c)))
+               (equal (aignet-find-max-fanin n (aignet-add-xor f0 f1 aignet$c))
+                      (nfix (num-nodes aignet$c))))
+      :hints (("goal" :Expand ((:free (aignet1) (aignet-find-max-fanin n aignet1))))))
+
+    ;; (defthm aignet-add-xor-preserves-aignet-max-fanin-correct
+    ;;   (implies (aignet-max-fanin-correct aignet)
+    ;;            (aignet-max-fanin-correct (aignet-add-xor f0 f1 aignet)))
+    ;;   :hints(("goal" :in-theory (enable aignet-max-fanin-correct))
+    ;;          (and stable-under-simplificationp
+    ;;               (let ((lit (car (last clause))))
+    ;;                 (and (eq (car lit) 'aignet-max-fanin-sufficient)
+    ;;                      `(:expand (,lit)
+    ;;                        :use ((:instance aignet-max-fanin-sufficient-necc
+    ;;                               (idx (aignet-max-fanin-sufficient-witness . ,(cdr lit)))))
+    ;;                        :in-theory (disable aignet-max-fanin-sufficient-necc)))))))
+    ;; (defthm aignet-add-xor-preserves-regs-in-bounds
+    ;;   (implies (regs-in-bounds n aignet)
+    ;;            (regs-in-bounds n
+    ;;                            (aignet-add-xor f0 f1 aignet)))
+    ;;   :hints(("Goal" :in-theory (enable regs-in-bounds
+    ;;                                     add-node)))
+    ;;   ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
+    ;;   ;;                                    len-update-nth
+    ;;   ;;                                    acl2::len-update-nth1)))
+    ;;   )
+
+    (defthm max-fanin-of-add-xor
+      (equal (nth *max-fanin* (aignet-add-xor f0 f1 aignet))
+             (nfix (nth *num-nodes* aignet))))
+
+    (defthm num-nodes-of-add-xor
+      (equal (nth *num-nodes* (aignet-add-xor f0 f1 aignet))
+             (+ 1 (nfix (nth *num-nodes* aignet))))
+      :hints(("Goal" :in-theory (enable add-node))))
+
+
+    (defthm nth-node-of-add-xor
+      (implies (case-split (not (nat-equiv id (num-nodes aignet))))
+               (equal (id->slot id slot (aignet-add-xor f0 f1 aignet))
+                      (id->slot id slot aignet))))
+
+    (defthm new-node-of-add-xor
+      (implies (and (case-split (nat-equiv id (num-nodes aignet)))
+                    (aignet-sizes-ok aignet))
+               (b* ((slot0 (id->slot id 0 (aignet-add-xor f0 f1 aignet)))
+                    (slot1 (id->slot id 1 (aignet-add-xor f0 f1 aignet)))
+                    ((mv s0 s1) (mk-snode (gate-type) 1
+                                          (b-xor (lit->phase f0 aignet)
+                                                 (lit->phase f1 aignet))
+                                          (lit-fix f0)
+                                          (lit-fix f1))))
+                 (and (equal slot0 s0)
+                      (equal slot1 s1))))))
+
+
+  ;; (defthm aignet-add-xor-preserves-aignet-regs-in-bound
   ;;   (implies (aignet-regs-in-bounds aignet)
-  ;;            (aignet-regs-in-bounds (aignet-add-gate f0 f1 aignet)))
+  ;;            (aignet-regs-in-bounds (aignet-add-xor f0 f1 aignet)))
   ;;   :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds)
-  ;;                                  (aignet-add-gate)))))
+  ;;                                  (aignet-add-xor)))))
 
   (define aignet-add-out ((f litp :type (unsigned-byte 30))
                           aignet)
