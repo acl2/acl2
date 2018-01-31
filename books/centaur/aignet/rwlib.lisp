@@ -1033,6 +1033,80 @@
              (equal (nat-list-max prios) (+ -1 (len prios))))
     :hints(("Goal" :in-theory (disable acl2::numlist)))))
 
+(define lits-max-id ((x lit-listp))
+  :returns (max natp :rule-classes :type-prescription)
+  (if (atom x)
+      0
+    (max (lit-id (car x))
+         (lits-max-id (cdr x))))
+  ///
+  (defret lit-id-lte-max-id
+    (implies (member (lit-fix lit) (lit-list-fix x))
+             (<= (lit-id lit) (lits-max-id x)))
+    :rule-classes (:rewrite (:linear :trigger-terms ((lits-max-id x))))))
+
+
+(define remove-duplicate-lits-aux ((bitarr)
+                                   (x lit-listp))
+  :guard (<= (+ 1 (lits-max-id x)) (bits-length bitarr))
+  :returns (mv new-bitarr (new-x lit-listp))
+  :guard-hints (("goal" :expand ((lits-max-id x))))
+  (b* (((when (atom x)) (mv bitarr nil))
+       ((when (eql 1 (get-bit (lit-id (car x)) bitarr)))
+        (remove-duplicate-lits-aux bitarr (cdr x)))
+       ((mv bitarr rest) (remove-duplicate-lits-aux bitarr (cdr x))))
+    (mv bitarr (cons (lit-fix (car x)) rest)))
+  ///
+  (defret member-of-remove-duplicate-lits-aux
+    (implies (not (member lit (lit-list-fix x)))
+             (not (member lit new-x)))))
+
+(define remove-duplicate-lits ((x lit-listp))
+  :returns (new-x lit-listp)
+  (b* (((acl2::local-stobjs bitarr)
+        (mv bitarr new-x))
+       (bitarr (resize-bits (+ 1 (lits-max-id x)) bitarr)))
+    (remove-duplicate-lits-aux bitarr x))
+  ///
+  (defret member-of-remove-duplicate-lits
+    (implies (not (member lit (lit-list-fix x)))
+             (not (member lit new-x)))))
+
+(local (include-book "std/lists/index-of" :dir :system))
+
+(local
+ (define remove-duplicate-lits-index ((k natp) (x lit-listp))
+   :returns (index)
+   :verify-guards nil
+   (b* ((new-x (remove-duplicate-lits x))
+        (elt (nth k new-x)))
+     (acl2::index-of elt (lit-list-fix x)))
+   ///
+   (defret nth-of-remove-duplicate-lits
+     (implies (< (nfix k) (len (remove-duplicate-lits x)))
+              (equal (nth k (remove-duplicate-lits x))
+                     (nth index (lit-list-fix x))))
+     :hints (("goal" :use ((:instance member-of-remove-duplicate-lits
+                            (lit (nth k (remove-duplicate-lits x)))))
+              :in-theory (disable member-of-remove-duplicate-lits))))
+
+   (defret remove-duplicate-lits-index-bound
+     (implies (< (nfix k) (len (remove-duplicate-lits x)))
+              (< index (len x)))
+     :hints (("goal" :use ((:instance member-of-remove-duplicate-lits
+                            (lit (nth k (remove-duplicate-lits x)))))
+              :in-theory (disable member-of-remove-duplicate-lits
+                                  nth-of-remove-duplicate-lits)))
+     :rule-classes (:rewrite :linear))
+
+   (defret remove-duplicate-lits-index-natp
+     (implies (< (nfix k) (len (remove-duplicate-lits x)))
+              (natp index))
+     :hints (("goal" :use ((:instance member-of-remove-duplicate-lits
+                            (lit (nth k (remove-duplicate-lits x)))))
+              :in-theory (disable member-of-remove-duplicate-lits
+                                  nth-of-remove-duplicate-lits)))
+     :rule-classes (:rewrite :type-prescription))))
 
 
 
@@ -1058,9 +1132,9 @@
         smm)
        (lits (cdr (hons-get (get-truth4 n truth4arr) (truthmap-fix truthmap))))
        (len (len lits))
-       (smm (acl2::smm-addblock len smm))
        ((when (eql len 0))
-        (truthmap-to-smm truthmap truth4arr priodata smm))
+        (b* ((smm (acl2::smm-addblock 0 smm)))
+          (truthmap-to-smm truthmap truth4arr priodata smm)))
        (prios (take len priodata))
        (prios-ok (prios-are-permutation prios))
        (- (and (not prios-ok)
@@ -1070,6 +1144,8 @@
                  ;; Lits are reversed when we collect them in the truthmap!!
                  (reorder-lits-by-prios prios (acl2::rev lits))
                lits))
+       (lits (remove-duplicate-lits lits))
+       (smm (acl2::smm-addblock (len lits) smm))
        (smm (smm-write-lits n 0 lits smm)))
     (truthmap-to-smm truthmap truth4arr (nthcdr len priodata) smm))
   ///

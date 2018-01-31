@@ -627,7 +627,12 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
        (b* (,@(apply-template-to-lits lits '(x (lit-fix x))))
          ,body)
        ///
-       
+       ;; Note: Some level-2 reductions can only result in 0 or NIL.  Type
+       ;; reasoning in these cases screws up our rewriting scheme; we don't
+       ;; really want to know that it must be 0 if it's nonnil, so we disable
+       ;; the type prescription rule.
+       ,@(and existing-only
+              `((in-theory (disable (:t ,name))))) 
        (,(if existing-only 'def-gatesimp-thms-existing 'def-gatesimp-thms)
         ,lits
         :eval-hints ,eval-hints
@@ -1246,20 +1251,20 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                                               'x1)
                                     t)) ;; swapped
                         :otherwise nil)
-                     (cons x nil)
-                     (axi-term-case x.right.abs
-                       :gate
-                       (axi-term-case x.left.abs
-                         :gate
-                         (and (not (and (eql x.right.negp x.left.negp)
-                                        (eql x.right.abs.op x.left.abs.op)))
-                              ;; note: if fully symmetrical we should only call once
-                              (list (cons (axi-gate x.op
-                                                    (axi-lit x.right.negp (axi-gate x.right.abs.op 'y0 'y1))
-                                                    (axi-lit x.left.negp (axi-gate x.left.abs.op 'y2 'y3)))
-                                          t)))
-                         :otherwise nil)
-                       :otherwise nil)))
+                      (list (cons x nil))
+                      (axi-term-case x.right.abs
+                        :gate
+                        (axi-term-case x.left.abs
+                          :gate
+                          (and (not (and (eql x.right.negp x.left.negp)
+                                         (eql x.right.abs.op x.left.abs.op)))
+                               ;; note: if fully symmetrical we should only call once
+                               (list (cons (axi-gate x.op
+                                                     (axi-lit x.right.negp (axi-gate x.right.abs.op 'y0 'y1))
+                                                     (axi-lit x.left.negp (axi-gate x.left.abs.op 'y2 'y3)))
+                                           t)))
+                          :otherwise nil)
+                        :otherwise nil)))
        (l2-calls (gate-reduce-collect alist 2))
        (l3-calls (gate-reduce-collect alist 3))
        (l4-calls (gate-reduce-collect alist 4))
@@ -1436,8 +1441,8 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
   :returns (mv (code maybe-simpcode-p)
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
-  (b* ((ans (gate-reduce (and x0 x1)))
-       ((when ans) (mv :existing ans 0))
+  (b* ((ans (gate-reduce (and x0 x1) :level 1))
+       ((when ans) (mv (simpcode! :existing) ans 0))
        ((when (<= (lnfix level) 1))
         (mv nil 0 0))
        (x0-type (id->type (lit-id x0) aignet))
@@ -1575,8 +1580,8 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
   :returns (mv (code maybe-simpcode-p)
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
-  (b* ((ans (gate-reduce (and x0 x1)))
-       ((when ans) (mv :existing ans 0))
+  (b* ((ans (gate-reduce (xor x0 x1) :level 1))
+       ((when ans) (mv (simpcode! :existing) ans 0))
        ((when (<= (lnfix level) 1))
         (mv nil 0 0))
        (x0-type (id->type (lit-id x0) aignet))
@@ -1764,6 +1769,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                              (=b (id->regp id aignet) (lbfix xorp))
                              (=30 (gate-id->fanin0 id aignet) (lit-fix lit1))
                              (=30 (gate-id->fanin1 id aignet) (lit-fix lit2))))
+                (break$)
                 (er hard? 'strash-lookup "Strash lookup found bogus value!")
                 (mv nil key 0)))
             (mv t key id))))
@@ -1873,7 +1879,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
   (b* (((simpcode code) (the (unsigned-byte 3) (simpcode-fix code-in)))
-       ((when (=b 1 code.identity))
+       ((when (=b code.identity 1))
         ;; BOZO if code-in is identity then there's no need to call this fn --
         ;; maybe just have an assumption that it's not?
         (mv code 0 (lit-fix x0) (lit-fix x1)))
@@ -1887,7 +1893,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
        ((mv found key id) (strash-lookup x0 x1 code.xor strash aignet))
        ((when found)
         (mv (simpcode! :existing) key (mk-lit id code.neg) 0)))
-    (mv code 0 (lit-fix x0) (lit-fix x1)))
+    (mv code key (lit-fix x0) (lit-fix x1)))
   ///
   (defret aignet-litp-of-<fn>
     (implies (and (aignet-litp x0 aignet)
@@ -2609,3 +2615,19 @@ find a node already representing the required logical expression."
     :hints(("Goal" :in-theory (enable lit-eval aignet-idp)
             :expand ((:free (aignet) (id-eval id in-vals reg-vals aignet))
                      (:free (aignet) (lit-eval (mk-lit id neg) in-vals reg-vals aignet)))))))
+
+
+
+#||
+
+(trace$ (aignet-strash-gate :entry (list 'aignet-strash-gate code-in x0 x1 hashp)))
+(trace$ (reduce-and-gate :entry (list 'reduce-and-gate x0 x1 level)) (reduce-xor-gate :entry (list 'reduce-xor-gate x0 x1 level)))
+(trace$ (aignet-install-gate :entry (list 'aignet-install-gate code-in key x0 x1 gatesimp) :exit (list 'aignet-install-gate (car values))))
+(trace$ (reduce-and-gate-rec :entry (list 'reduce-and-gate-rec x0 x1 level)) (reduce-xor-gate-rec :entry (list 'reduce-xor-gate-rec x0 x1 level)))
+(trace$ (aignet-and-gate-simp/strash :entry (list 'aignet-and-gate-simp/strash x0 x1 gatesimp)) (aignet-xor-gate-simp/strash :entry (list 'aignet-xor-gate-simp/strash x0 x1 gatesimp)))
+(trace$ (aignet-hash-and :entry (list 'aignet-hash-and lit1 lit2 gatesimp) :exit (list 'aignet-hash-and (car values))))
+(trace$ (aignet-hash-xor :entry (list 'aignet-hash-xor lit1 lit2 gatesimp) :exit (list 'aignet-hash-xor (car values))))
+
+
+
+||#

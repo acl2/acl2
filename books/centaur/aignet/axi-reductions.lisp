@@ -429,96 +429,94 @@
       (print-axi-map (cdr x)))))
 
 
-#||
+(defconst *axi-reduction-list*
+  '(
+    ;; Most of the entries from the following table can be obtained by:
+    ;; (print-axi-map *axi-reductions*)
 
-;; Most of the entries from the following table can be obtained by:
-(print-axi-map *axi-reductions*)
+    ;; The one-level reductions are entered by hand, as are the level numbers.
 
-;; The one-level reductions are entered by hand, as are the level numbers.
+    ;; LHS                                                 RHS                            Level
+    ;; --------------------------------------------------------------------------------------------
 
-;; LHS                                                 RHS                            Level
-;; --------------------------------------------------------------------------------------------
+    ;; Optimization level 1: one operation (note: hand coded)
+    (AND 0 NIL)                                            NIL                             1
+    (AND 0 (NOT NIL))                                      0                               1
+    (AND 0 0)                                              0                               1
+    (AND 0 (NOT 0))                                        NIL                             1
 
-;; Optimization level 1: one operation (note: hand coded)
-(AND 0 NIL)                                            NIL                             1
-(AND 0 (NOT NIL))                                      0                               1
-(AND 0 0)                                              0                               1
-(AND 0 (NOT 0))                                        NIL                             1
-
-(XOR 0 NIL)                                            0                               1
-(XOR 0 0)                                              NIL                             1
-
-
-;; Levels 2 through 4.
-
-;; (and (and 0 1) var)
-(AND (AND 0 1) 0)                                      (AND 0 1)                       2
-(AND (AND 0 1) (NOT 0))                                NIL                             2
-
-;; (and (not (and 0 1)) var)
-(AND (NOT (AND 0 1)) (NOT 0))                          (NOT 0)                         2
-(AND (NOT (AND 0 1)) 0)                                (AND 0 (NOT 1))                 3
-
-;; (and (xor 0 1) var)
-(AND (XOR 0 1) 0)                                      (AND 0 (NOT 1))                 3
-(AND (XOR 0 1) (NOT 0))                                (AND (NOT 0) 1)                 3
-(AND (NOT (XOR 0 1)) 0)                                (AND 0 1)                       3
-(AND (NOT (XOR 0 1)) (NOT 0))                          (AND (NOT 0) (NOT 1))           3
-
-;; (and (and 0 1) (and ...))
-(AND (AND 0 1) (AND (NOT 0) 2))                        NIL                             2
-;; (AND (AND 0 1) (AND (NOT 0) 1))                        NIL ;; subsumed by above
-;; (AND (AND 0 1) (AND (NOT 0) (NOT 1)))                  NIL
-(AND (AND 0 1) (AND 0 2))                              (AND 1 (AND 0 2))               4
-
-;; (and (not (and 0 1)) (and ...))
-(AND (NOT (AND 0 1)) (AND (NOT 0) 2))                  (AND (NOT 0) 2)                 2
-;; (AND (NOT (AND 0 1)) (AND (NOT 0) 1))                  (AND (NOT 0) 1) subsumed by above
-(AND (NOT (AND 0 1)) (AND (NOT 0) (NOT 1)))            (AND (NOT 0) (NOT 1))           2
-(AND (NOT (AND 0 1)) (AND 0 2))                        (AND (NOT 1) (AND 0 2))         3
-
-;; (and (not (and 0 1)) (not (and ...)))
-(AND (NOT (AND 0 1)) (NOT (AND (NOT 0) 1)))            (NOT 1)                         2
-(AND (NOT (AND 0 1)) (NOT (AND (NOT 0) (NOT 1))))      (XOR 0 1)                       3
+    (XOR 0 NIL)                                            0                               1
+    (XOR 0 0)                                              NIL                             1
 
 
-;; (and (xor 0 1) (and ...))
-(AND (XOR 0 1) (AND 0 1))                              NIL                             2
-(AND (XOR 0 1) (AND (NOT 0) (NOT 1)))                  NIL                             2
-(AND (NOT (XOR 0 1)) (AND (NOT 0) 1))                  NIL                             2
-(AND (NOT (XOR 0 1)) (AND 0 1))                        (AND 0 1)                       2
-(AND (XOR 0 1) (AND (NOT 0) 1))                        (AND (NOT 0) 1)                 2
-(AND (NOT (XOR 0 1)) (AND (NOT 0) (NOT 1)))            (AND (NOT 0) (NOT 1))           2
-(AND (XOR 0 1) (AND 0 2))                              (AND (NOT 1) (AND 0 2))         3
-(AND (XOR 0 1) (AND (NOT 0) 2))                        (AND 1 (AND (NOT 0) 2))         3
-(AND (NOT (XOR 0 1)) (AND 0 2))                        (AND 1 (AND 0 2))               3
-(AND (NOT (XOR 0 1)) (AND (NOT 0) 2))                  (AND (NOT 1) (AND (NOT 0) 2))   3
+    ;; Levels 2 through 4.
 
-;; (and (xor 0 1) (not (and ...)))
+    ;; (and (and 0 1) var)
+    (AND (AND 0 1) 0)                                      (AND 0 1)                       2
+    (AND (AND 0 1) (NOT 0))                                NIL                             2
 
-(AND (XOR 0 1) (NOT (AND 0 1)))                        (XOR 0 1)                       2
-(AND (XOR 0 1) (NOT (AND (NOT 0) (NOT 1))))            (XOR 0 1)                       2
-(AND (NOT (XOR 0 1)) (NOT (AND (NOT 0) 1)))            (NOT (XOR 0 1))                 2
-(AND (XOR 0 1) (NOT (AND (NOT 0) 1)))                  (AND 0 (NOT 1))                 3
-(AND (NOT (XOR 0 1)) (NOT (AND 0 1)))                  (AND (NOT 0) (NOT 1))           3
-(AND (NOT (XOR 0 1)) (NOT (AND (NOT 0) (NOT 1))))      (AND 0 1)                       3
+    ;; (and (not (and 0 1)) var)
+    (AND (NOT (AND 0 1)) (NOT 0))                          (NOT 0)                         2
+    (AND (NOT (AND 0 1)) 0)                                (AND 0 (NOT 1))                 3
 
-;; (xor (and 0 1) var)
-(XOR (AND 0 1) 0)                                      (AND 0 (NOT 1))                 3
+    ;; (and (xor 0 1) var)
+    (AND (XOR 0 1) 0)                                      (AND 0 (NOT 1))                 3
+    (AND (XOR 0 1) (NOT 0))                                (AND (NOT 0) 1)                 3
+    (AND (NOT (XOR 0 1)) 0)                                (AND 0 1)                       3
+    (AND (NOT (XOR 0 1)) (NOT 0))                          (AND (NOT 0) (NOT 1))           3
 
-;; (xor (xor 0 1) var)
-(XOR (XOR 0 1) 0)                                      1                               2
+    ;; (and (and 0 1) (and ...))
+    (AND (AND 0 1) (AND (NOT 0) 2))                        NIL                             2
+    ;; (AND (AND 0 1) (AND (NOT 0) 1))                        NIL ;; subsumed by above
+    ;; (AND (AND 0 1) (AND (NOT 0) (NOT 1)))                  NIL
+    (AND (AND 0 1) (AND 0 2))                              (AND 1 (AND 0 2))               4
 
-;; (xor (and 0 1) (and ...))
-(XOR (AND 0 1) (AND (NOT 0) 1))                        1                               2
-(XOR (AND 0 1) (AND (NOT 0) (NOT 1)))                  (NOT (XOR 0 1))                 3
+    ;; (and (not (and 0 1)) (and ...))
+    (AND (NOT (AND 0 1)) (AND (NOT 0) 2))                  (AND (NOT 0) 2)                 2
+    ;; (AND (NOT (AND 0 1)) (AND (NOT 0) 1))                  (AND (NOT 0) 1) subsumed by above
+    ;; (AND (NOT (AND 0 1)) (AND (NOT 0) (NOT 1)))            (AND (NOT 0) (NOT 1))      
+    (AND (NOT (AND 0 1)) (AND 0 2))                        (AND (NOT 1) (AND 0 2))         3
 
-;; (xor (xor 0 1) (and ...))
-(XOR (XOR 0 1) (AND 0 1))                              (NOT (AND (NOT 0) (NOT 1)))     3
-(XOR (XOR 0 1) (AND (NOT 0) 1))                        (AND 0 (NOT 1))                 3
-(XOR (XOR 0 1) (AND (NOT 0) (NOT 1)))                  (NOT (AND 0 1))                 3
+    ;; (and (not (and 0 1)) (not (and ...)))
+    (AND (NOT (AND 0 1)) (NOT (AND (NOT 0) 1)))            (NOT 1)                         2
+    (AND (NOT (AND 0 1)) (NOT (AND (NOT 0) (NOT 1))))      (XOR 0 1)                       3
 
-;; (xor (xor 0 1) (xor ...))
-(XOR (XOR 0 1) (XOR 0 2))                              (XOR 1 2)                       3
-    
-||#
+
+    ;; (and (xor 0 1) (and ...))
+    (AND (XOR 0 1) (AND 0 1))                              NIL                             2
+    (AND (XOR 0 1) (AND (NOT 0) (NOT 1)))                  NIL                             2
+    ;; (AND (NOT (XOR 0 1)) (AND (NOT 0) 1))                  NIL                             2
+    ;; (AND (NOT (XOR 0 1)) (AND 0 1))                        (AND 0 1)                       2
+    (AND (XOR 0 1) (AND (NOT 0) 1))                        (AND (NOT 0) 1)                 2
+    ;; (AND (NOT (XOR 0 1)) (AND (NOT 0) (NOT 1)))            (AND (NOT 0) (NOT 1))           2
+    (AND (XOR 0 1) (AND 0 2))                              (AND (NOT 1) (AND 0 2))         3
+    (AND (XOR 0 1) (AND (NOT 0) 2))                        (AND 1 (AND (NOT 0) 2))         3
+    ;; (AND (NOT (XOR 0 1)) (AND 0 2))                        (AND 1 (AND 0 2))               3
+    ;; (AND (NOT (XOR 0 1)) (AND (NOT 0) 2))                  (AND (NOT 1) (AND (NOT 0) 2))   3
+
+    ;; (and (xor 0 1) (not (and ...)))
+    (AND (XOR 0 1) (NOT (AND 0 1)))                        (XOR 0 1)                       2
+    (AND (XOR 0 1) (NOT (AND (NOT 0) (NOT 1))))            (XOR 0 1)                       2
+    ;; (AND (NOT (XOR 0 1)) (NOT (AND (NOT 0) 1)))            (NOT (XOR 0 1))                 2
+    (AND (XOR 0 1) (NOT (AND (NOT 0) 1)))                  (AND 0 (NOT 1))                 3
+    ;; (AND (NOT (XOR 0 1)) (NOT (AND 0 1)))                  (AND (NOT 0) (NOT 1))           3
+    ;; (AND (NOT (XOR 0 1)) (NOT (AND (NOT 0) (NOT 1))))      (AND 0 1)                       3
+
+    ;; (xor (and 0 1) var)
+    (XOR (AND 0 1) 0)                                      (AND 0 (NOT 1))                 3
+
+    ;; (xor (xor 0 1) var)
+    (XOR (XOR 0 1) 0)                                      1                               2
+
+    ;; (xor (and 0 1) (and ...))
+    (XOR (AND 0 1) (AND (NOT 0) 1))                        1                               2
+    (XOR (AND 0 1) (AND (NOT 0) (NOT 1)))                  (NOT (XOR 0 1))                 3
+
+    ;; (xor (xor 0 1) (and ...))
+    (XOR (XOR 0 1) (AND 0 1))                              (NOT (AND (NOT 0) (NOT 1)))     3
+    (XOR (XOR 0 1) (AND (NOT 0) 1))                        (AND 0 (NOT 1))                 3
+    (XOR (XOR 0 1) (AND (NOT 0) (NOT 1)))                  (NOT (AND 0 1))                 3
+
+    ;; (xor (xor 0 1) (xor ...))
+    (XOR (XOR 0 1) (XOR 0 2))                              (XOR 1 2)                       3
+    ))
