@@ -50,7 +50,8 @@
              ;; Keep all non-whitespace characters.
              ((not (member char-n whitespace))
               (cons char-n acc))
-             ;; Keep a whitespace character if:
+             ;; Keep a whitespace character (but convert it
+             ;; specifically to a #\Space character) if:
              ;; - There's no whitespace immediately after it; or
              ;; - There is whitespace after it but a sentence ended
              ;;   right before it.

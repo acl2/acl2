@@ -19,10 +19,11 @@
 @('*two-byte-opcode-map-lst*') contain information presented in the
 opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
 
-<p>An array @('*64-bit-mode-one-byte-has-modr/m-ar*') is created by
-  the function @(tsee 64-bit-compute-modr/m-map) for the efficient
-  lookup of modr/m-related information from
-  @('*one-byte-opcode-map-lst*').</p>
+<p>Arrays @('*64-bit-mode-one-byte-has-modr/m-ar*')
+and @('*64-bit-mode-two-byte-has-modr/m-ar*') are created by
+the function @(tsee 64-bit-compute-modr/m-map) for the efficient
+lookup of modr/m-related information from
+@('*one-byte-opcode-map-lst*') and @('*two-byte-opcode-map-lst*').</p>
 
 <p>@('*Z-addressing-method-info*'):</p>
   @(`(:code *Z-addressing-method-info*)`)
@@ -42,9 +43,10 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
 (defconst *Z-addressing-method-info*
 
   ;; See Intel Vol. 2, Appendix A.2.1
+  ;; Also see AMD Vol. 3, Appendix A
 
   ;; The information in this constant definition comes not only from the
-  ;; aforementioned Appendix, but also from an examination of the involved
+  ;; aforementioned Appendices, but also from an examination of the involved
   ;; instructions. However, the accuracy of this information has been so far
   ;; confirmed only for the instructions covered by the current formal model;
   ;; for unimplemented instructions, it is possible that the information may
@@ -193,6 +195,7 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
 #||
 
 See Intel Vol. 2, Appendix A.2.2
+Also see AMD Vol. 3, Appendix A
 
 A.2.2 Codes for Operand Type
 
@@ -1245,7 +1248,9 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   a @('ModR/M') byte"
   ;; Example inputs are OP_NUM = 2 and OP_LIST = '((E b) (G b)), extracted from
   ;; '("ADD" 2 (E b) (G b)) entry in the *ONE-BYTE-OPCODE-MAP-LST* table.
-  ;; Only called by COMPUTE-MODR/M-FOR-AN-OPCODE.
+  ;; Note that only the uppercase letters are used here (e.g. E and G in the
+  ;; example inputs just above), while the lowercase letters are ignored.
+  ;; This function is only called by COMPUTE-MODR/M-FOR-AN-OPCODE.
   (b* (((when (not (equal (len op_list) op_num)))
         (er hard? "Expected length of ~x0 was ~x1." op_list op_num)))
       (if (zp op_num)
