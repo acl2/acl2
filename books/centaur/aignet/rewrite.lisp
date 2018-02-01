@@ -1,3 +1,32 @@
+; AIGNET - And-Inverter Graph Networks
+; Copyright (C) 2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 
 (in-package "AIGNET")
@@ -637,7 +666,7 @@
              (lit (smm-read-lit npn.truth-idx impl-idx smm))
              (eba (eba-clear eba))
              ((mv eba copy2 strash2 aignet2)
-              (aignet-copy-dfs-eba-rec (lit-id lit) aignet-tmp eba copy2 strash2 9 aignet2))
+              (aignet-copy-dfs-eba-rec (lit-id lit) aignet-tmp eba copy2 strash2 (default-gatesimp) aignet2))
              (new-lit (lit-negate-cond (lit-copy lit copy2) npn.negate)))
           (mv new-lit copy2 eba strash2 aignet2))))
     (mv lit copy2 eba strash2 aignet2))
@@ -835,7 +864,7 @@
         (b* (((truth::npn4 npn) (truth::get-npn4 cutinf.truth truth::npn4arr))
              (lit (smm-read-lit npn.truth-idx impl-idx smm))
              ((mv eba copy2 strash2 aignet2)
-              (aignet-copy-dfs-eba-rec (lit-id lit) aignet-tmp eba copy2 strash2 9 aignet2))
+              (aignet-copy-dfs-eba-rec (lit-id lit) aignet-tmp eba copy2 strash2 (default-gatesimp) aignet2))
              (new-lit (lit-negate-cond (lit-copy lit copy2) npn.negate)))
           (mv new-lit copy2 eba strash2 aignet2))))
     (mv lit copy2 eba strash2 aignet2))
@@ -1953,7 +1982,7 @@
 
 (define aignet-and-gate-simp/strash-check ((x0 litp)
                                            (x1 litp)
-                                           (gatesimp gatesimp-p :type (unsigned-byte 4))
+                                           (gatesimp gatesimp-p :type (unsigned-byte 6))
                                            (strash)
                                            (aignet))
   :guard (and (fanin-litp x0 aignet)
@@ -1968,7 +1997,7 @@
 
 (define aignet-xor-gate-simp/strash-check ((x0 litp)
                                            (x1 litp)
-                                           (gatesimp gatesimp-p :type (unsigned-byte 4))
+                                           (gatesimp gatesimp-p :type (unsigned-byte 6))
                                            (strash)
                                            (aignet))
   :guard (and (fanin-litp x0 aignet)
@@ -2063,8 +2092,8 @@
         (mv eba eba2 copy2))
        ((mv code ?key lit1 ?lit2)
         (if xor
-            (aignet-xor-gate-simp/strash-check fanin-copy0 fanin-copy1 9 strash2 aignet2)
-          (aignet-and-gate-simp/strash-check fanin-copy0 fanin-copy1 9 strash2 aignet2)))
+            (aignet-xor-gate-simp/strash-check fanin-copy0 fanin-copy1 (default-gatesimp) strash2 aignet2)
+          (aignet-and-gate-simp/strash-check fanin-copy0 fanin-copy1 (default-gatesimp) strash2 aignet2)))
        ((unless (eql 1 (simpcode->identity code)))
         (mv eba eba2 copy2))
        (copy2 (set-lit id (lit-negate-cond lit1 (simpcode->neg code)) copy2))
@@ -3286,10 +3315,10 @@
        (flit1-copy (lit-copy lit1 copy))
        ((mv code key lit0-copy lit1-copy)
         (if (eql 1 (id->regp n aignet))
-            (aignet-xor-gate-simp/strash flit0-copy flit1-copy 9 strash2 aignet2)
-          (aignet-and-gate-simp/strash flit0-copy flit1-copy 9 strash2 aignet2)))
+            (aignet-xor-gate-simp/strash flit0-copy flit1-copy (default-gatesimp) strash2 aignet2)
+          (aignet-and-gate-simp/strash flit0-copy flit1-copy (default-gatesimp) strash2 aignet2)))
        ((mv lit strash2 aignet2)
-        (aignet-install-gate code key lit0-copy lit1-copy 9 strash2 aignet2))
+        (aignet-install-gate code key lit0-copy lit1-copy (default-gatesimp) strash2 aignet2))
        (refcounts2 (maybe-grow-refcounts (+ 1 (max-fanin aignet2)) refcounts2))
 
        ;; Note: It's a little weird to do this here, but it seems heuristically
@@ -3822,7 +3851,7 @@
                ;;    (flit0-copy (lit-copy lit0 copy))
                ;;    (flit1-copy (lit-copy lit1 copy))
                ;;    ((mv existing key lit0-copy lit1-copy)
-               ;;     (aignet-and-gate-simp/strash flit0-copy flit1-copy 9 strash2 aignet2))
+               ;;     (aignet-and-gate-simp/strash flit0-copy flit1-copy (default-gatesimp) strash2 aignet2))
                ;;    ((mv build-cost refcounts2)
                ;;     (rewrite-default-copy-deref-and-cost
                ;;      flit0-copy flit1-copy existing lit0-copy lit1-copy aignet2 refcounts2))
@@ -4155,7 +4184,7 @@
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet2 aignet-tmp))
        (aignet-tmp (rewrite-core aignet aignet-tmp config))
-       (aignet2 (aignet-prune-comb aignet-tmp aignet2 9)))
+       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (default-gatesimp))))
     (mv aignet2 aignet-tmp))
   ///
   (defret stype-counts-of-rewrite
@@ -4185,7 +4214,7 @@ is a @(see rewrite-config) object.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp))
        (aignet-tmp (rewrite-core aignet aignet-tmp config))
-       (aignet (aignet-prune-comb aignet-tmp aignet 9)))
+       (aignet (aignet-prune-comb aignet-tmp aignet (default-gatesimp))))
     (mv aignet aignet-tmp))
   ///
   (defret stype-counts-of-rewrite!

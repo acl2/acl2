@@ -438,7 +438,7 @@
        ;; (copy (maybe-grow-litarr (+ 1 (lnfix next-idx)) copy))
        (lit0 (lit-copy fanin0 copy))
        (lit1 (lit-copy fanin1 copy))
-       ((mv res strash aignet) (aignet-hash-and lit0 lit1 9 strash aignet))
+       ((mv res strash aignet) (aignet-hash-and lit0 lit1 (default-gatesimp) strash aignet))
        (copy (set-lit next-idx res copy)))
     (aignet-build-abc-nodes (+ 1 (lnfix next-idx)) (cddr nodes) copy strash aignet))
   ///
@@ -1046,66 +1046,66 @@
     :rule-classes (:rewrite (:linear :trigger-terms ((lits-max-id x))))))
 
 
-(define remove-duplicate-lits-aux ((bitarr)
+(define remove-lits-with-duplicate-ids-aux ((bitarr)
                                    (x lit-listp))
   :guard (<= (+ 1 (lits-max-id x)) (bits-length bitarr))
   :returns (mv new-bitarr (new-x lit-listp))
   :guard-hints (("goal" :expand ((lits-max-id x))))
   (b* (((when (atom x)) (mv bitarr nil))
        ((when (eql 1 (get-bit (lit-id (car x)) bitarr)))
-        (remove-duplicate-lits-aux bitarr (cdr x)))
-       ((mv bitarr rest) (remove-duplicate-lits-aux bitarr (cdr x))))
+        (remove-lits-with-duplicate-ids-aux bitarr (cdr x)))
+       ((mv bitarr rest) (remove-lits-with-duplicate-ids-aux bitarr (cdr x))))
     (mv bitarr (cons (lit-fix (car x)) rest)))
   ///
-  (defret member-of-remove-duplicate-lits-aux
+  (defret member-of-remove-lits-with-duplicate-ids-aux
     (implies (not (member lit (lit-list-fix x)))
              (not (member lit new-x)))))
 
-(define remove-duplicate-lits ((x lit-listp))
+(define remove-lits-with-duplicate-ids ((x lit-listp))
   :returns (new-x lit-listp)
   (b* (((acl2::local-stobjs bitarr)
         (mv bitarr new-x))
        (bitarr (resize-bits (+ 1 (lits-max-id x)) bitarr)))
-    (remove-duplicate-lits-aux bitarr x))
+    (remove-lits-with-duplicate-ids-aux bitarr x))
   ///
-  (defret member-of-remove-duplicate-lits
+  (defret member-of-remove-lits-with-duplicate-ids
     (implies (not (member lit (lit-list-fix x)))
              (not (member lit new-x)))))
 
 (local (include-book "std/lists/index-of" :dir :system))
 
 (local
- (define remove-duplicate-lits-index ((k natp) (x lit-listp))
+ (define remove-lits-with-duplicate-ids-index ((k natp) (x lit-listp))
    :returns (index)
    :verify-guards nil
-   (b* ((new-x (remove-duplicate-lits x))
+   (b* ((new-x (remove-lits-with-duplicate-ids x))
         (elt (nth k new-x)))
      (acl2::index-of elt (lit-list-fix x)))
    ///
-   (defret nth-of-remove-duplicate-lits
-     (implies (< (nfix k) (len (remove-duplicate-lits x)))
-              (equal (nth k (remove-duplicate-lits x))
+   (defret nth-of-remove-lits-with-duplicate-ids
+     (implies (< (nfix k) (len (remove-lits-with-duplicate-ids x)))
+              (equal (nth k (remove-lits-with-duplicate-ids x))
                      (nth index (lit-list-fix x))))
-     :hints (("goal" :use ((:instance member-of-remove-duplicate-lits
-                            (lit (nth k (remove-duplicate-lits x)))))
-              :in-theory (disable member-of-remove-duplicate-lits))))
+     :hints (("goal" :use ((:instance member-of-remove-lits-with-duplicate-ids
+                            (lit (nth k (remove-lits-with-duplicate-ids x)))))
+              :in-theory (disable member-of-remove-lits-with-duplicate-ids))))
 
-   (defret remove-duplicate-lits-index-bound
-     (implies (< (nfix k) (len (remove-duplicate-lits x)))
+   (defret remove-lits-with-duplicate-ids-index-bound
+     (implies (< (nfix k) (len (remove-lits-with-duplicate-ids x)))
               (< index (len x)))
-     :hints (("goal" :use ((:instance member-of-remove-duplicate-lits
-                            (lit (nth k (remove-duplicate-lits x)))))
-              :in-theory (disable member-of-remove-duplicate-lits
-                                  nth-of-remove-duplicate-lits)))
+     :hints (("goal" :use ((:instance member-of-remove-lits-with-duplicate-ids
+                            (lit (nth k (remove-lits-with-duplicate-ids x)))))
+              :in-theory (disable member-of-remove-lits-with-duplicate-ids
+                                  nth-of-remove-lits-with-duplicate-ids)))
      :rule-classes (:rewrite :linear))
 
-   (defret remove-duplicate-lits-index-natp
-     (implies (< (nfix k) (len (remove-duplicate-lits x)))
+   (defret remove-lits-with-duplicate-ids-index-natp
+     (implies (< (nfix k) (len (remove-lits-with-duplicate-ids x)))
               (natp index))
-     :hints (("goal" :use ((:instance member-of-remove-duplicate-lits
-                            (lit (nth k (remove-duplicate-lits x)))))
-              :in-theory (disable member-of-remove-duplicate-lits
-                                  nth-of-remove-duplicate-lits)))
+     :hints (("goal" :use ((:instance member-of-remove-lits-with-duplicate-ids
+                            (lit (nth k (remove-lits-with-duplicate-ids x)))))
+              :in-theory (disable member-of-remove-lits-with-duplicate-ids
+                                  nth-of-remove-lits-with-duplicate-ids)))
      :rule-classes (:rewrite :type-prescription))))
 
 
@@ -1144,7 +1144,7 @@
                  ;; Lits are reversed when we collect them in the truthmap!!
                  (reorder-lits-by-prios prios (acl2::rev lits))
                lits))
-       (lits (remove-duplicate-lits lits))
+       (lits (remove-lits-with-duplicate-ids lits))
        (smm (acl2::smm-addblock (len lits) smm))
        (smm (smm-write-lits n 0 lits smm)))
     (truthmap-to-smm truthmap truth4arr (nthcdr len priodata) smm))

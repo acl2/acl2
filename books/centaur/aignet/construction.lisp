@@ -156,13 +156,13 @@
   ;;            (b* (((cons node rest) (lookup-id id1 aignet))
   ;;                 (ch1 (aignet-lit-fix (gate-node->fanin0 node) rest))
   ;;                 (ch2 (aignet-lit-fix (gate-node->fanin1 node) rest)))
-  ;;              (and (o< (two-id-measure id2 (lit-id ch1))
+  ;;              (and (o< (two-id-measure id2 (lit->var^ ch1))
   ;;                       (two-id-measure id1 id2))
-  ;;                   (o< (two-id-measure id2 (lit-id ch2))
+  ;;                   (o< (two-id-measure id2 (lit->var^ ch2))
   ;;                       (two-id-measure id1 id2))
-  ;;                   (o< (two-id-measure id2 (lit-id ch1))
+  ;;                   (o< (two-id-measure id2 (lit->var^ ch1))
   ;;                       (two-id-measure id2 id1))
-  ;;                   (o< (two-id-measure id2 (lit-id ch2))
+  ;;                   (o< (two-id-measure id2 (lit->var^ ch2))
   ;;                       (two-id-measure id2 id1))))))
   
   (defthm two-id-measure-of-fanin
@@ -268,6 +268,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (define simpcode-negate ((x simpcode-p))
   :enabled t
+  :inline t
   :prepwork ((local (include-book "centaur/bitops/equal-by-logbitp" :dir :system)))
   :guard-hints (("goal" :in-theory (enable !simpcode->neg simpcode->neg))
                 (logbitp-reasoning)
@@ -278,6 +279,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (define simpcode-negate-cond ((x simpcode-p) (neg bitp))
   :enabled t
+  :inline t
   :prepwork ((local (include-book "centaur/bitops/equal-by-logbitp" :dir :system)))
   :guard-hints (("goal" :in-theory (enable !simpcode->neg simpcode->neg))
                 (logbitp-reasoning)
@@ -339,6 +341,119 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                              (simpcode-eval code x0 x1 invals regvals aignet))))))
 
 (fty::defoption maybe-simpcode simpcode)
+
+
+
+(defsection gatesimp
+
+  (define gatesimp-level-p (x)
+    (and (natp x) (<= x 4))
+    ///
+    (define gatesimp-level-fix ((x gatesimp-level-p))
+      :returns (new-x gatesimp-level-p)
+      (mbe :logic (if (gatesimp-level-p x) x 4)
+           :exec x)
+      ///
+      (defret gatesimp-level-fix-when-gatesimp-level-p
+        (implies (gatesimp-level-p x) (equal new-x x)))
+
+      (fty::deffixtype gatesimp-level :pred gatesimp-level-p :fix gatesimp-level-fix :equiv gatesimp-level-equiv
+        :define t))
+
+    (defthm gatesimp-level-p-compound-recognizer
+      (implies (gatesimp-level-p x)
+               (natp x))
+      :rule-classes :compound-recognizer))
+
+  (local (defthm unsigned-byte-p-when-gatesimp-level-p
+           (implies (gatesimp-level-p x)
+                    (unsigned-byte-p 3 x))
+           :hints(("Goal" :in-theory (enable gatesimp-level-p unsigned-byte-p)))))
+
+  (local (defthm bound-when-gatesimp-level-p
+           (implies (gatesimp-level-p x)
+                    (<= x 4))
+           :hints(("Goal" :in-theory (enable gatesimp-level-p unsigned-byte-p)))))
+
+  (define gatesimp-xor-mode-p (x)
+    (and (natp x) (<= x 2))
+    ///
+    (define gatesimp-xor-mode-fix ((x gatesimp-xor-mode-p))
+      :returns (new-x gatesimp-xor-mode-p)
+      (mbe :logic (if (gatesimp-xor-mode-p x) x 2)
+           :exec x)
+      ///
+      (defret gatesimp-xor-mode-fix-when-gatesimp-xor-mode-p
+        (implies (gatesimp-xor-mode-p x) (equal new-x x)))
+
+      (fty::deffixtype gatesimp-xor-mode :pred gatesimp-xor-mode-p :fix gatesimp-xor-mode-fix :equiv gatesimp-xor-mode-equiv
+        :define t))
+
+    (defthm gatesimp-xor-mode-p-compound-recognizer
+      (implies (gatesimp-xor-mode-p x)
+               (natp x))
+      :rule-classes :compound-recognizer))
+
+  (local (defthm unsigned-byte-p-when-gatesimp-xor-mode-p
+           (implies (gatesimp-xor-mode-p x)
+                    (unsigned-byte-p 2 x))
+           :hints(("Goal" :in-theory (enable gatesimp-xor-mode-p unsigned-byte-p)))))
+
+  (local (defthm bound-when-gatesimp-xor-mode-p
+           (implies (gatesimp-xor-mode-p x)
+                    (<= x 2))
+           :hints(("Goal" :in-theory (enable gatesimp-xor-mode-p unsigned-byte-p)))))
+
+  (fty::fixtype-to-bitstruct gatesimp-level :width 3)
+  (fty::fixtype-to-bitstruct gatesimp-xor-mode :width 2)
+
+  (fty::defbitstruct gatesimp
+  :parents (aignet-construction)
+  :short "Structure encoding AIGNET construction settings for how much to try to
+          simplify and whether to use hashing"
+  :long "<p>A simple bit-encoded triple of @('level'), @('hashp'), and @('xor-mode').</p>
+
+<p>The @('level') field is a value between 0 and 4 inclusive, determining how
+hard to work to simplify new nodes.  The numbers corresponding to the levels of
+simplification found in the paper:</p>
+<blockquote>
+R. Brummayer and A. Biere.  Local two-level And-Inverter Graph minimization
+without blowup.  Proc. MEMCIS 6 (2006): 32-38,
+</blockquote>
+
+<p>The @('xor-mode') field is a value between 0 and 2 inclusive, determining
+whether to use XOR nodes:</p>
+<ul>
+<li>If 2, XOR nodes can be created using @(see aignet-hash-xor) and
+additionally, if the @('level') is 3 or greater, derived when creating the AND
+of two nodes of the form @('(not (and a b))'), @('(not (and (not a) (not
+b)))').</li>
+<li>If 1, XOR nodes will be created when calling @(see aignet-hash-xor), but
+not derived from existing AND gates.</li>
+<li>If 0, no XOR nodes will be used even when calling @(see aignet-hash-xor),
+instead implementing the function using AND gates.</li>
+</ul>
+
+<p>The @('hashp') field is a Boolean and determines whether structural hashing
+is used.</p>
+
+<p>To construct a gatesimp object, use either the constructor function
+@('gatesimp') or the macro @('make-gatesimp'), with the usual conventions of
+product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
+
+    ((hashp booleanp :default t)
+     (level gatesimp-level :default 4)
+     (xor-mode gatesimp-xor-mode :default 2)))
+
+  (defthm gatesimp->level-bound
+    (<= (gatesimp->level x) 4)
+    :rule-classes (:rewrite :linear))
+
+  (defthm gatesimp->xor-mode-bound
+    (<= (gatesimp->xor-mode x) 2)
+    :rule-classes (:rewrite :linear))
+
+  (defmacro default-gatesimp () (make-gatesimp)))
   
 
 ;; Signature for the various simplifiers:
@@ -464,7 +579,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                          ;;           (equal y1 (fanin :gate1 (lookup-id (lit-id x0) aignet))))
                          ;;         `((equal (regp (stype (car (lookup-id (lit-id x0) aignet))))
                          ;;                  ,(if (eq x0.abs.op 'and) 0 1))
-                         ;;           (equal ,(if x0.negp 1 0) (lit-neg x0))))
+                         ;;           (equal ,(if x0.negp 1 0) (lit->neg^ x0))))
                    (b* ((spec `(,(if (eq x0.abs.op 'and) 'eval-and-of-lits 'eval-xor-of-lits)
                                 y0 y1 invals regvals aignet)))
                      `((equal (lit-eval x0 invals regvals aignet)
@@ -477,7 +592,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                          ;;           (equal y3 (fanin :gate1 (lookup-id (lit-id x1) aignet))))
                          ;;         `((equal (regp (stype (car (lookup-id (lit-id x1) aignet))))
                          ;;                  ,(if (eq x1.abs.op 'and) 0 1))
-                         ;;           (equal ,(if x1.negp 1 0) (lit-neg x1))))
+                         ;;           (equal ,(if x1.negp 1 0) (lit->neg^ x1))))
                    
                    (b* ((spec `(,(if (eq x1.abs.op 'and) 'eval-and-of-lits 'eval-xor-of-lits)
                                 y2 y3 invals regvals aignet)))
@@ -600,7 +715,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
        :hints ,eval-hints)))
 
 
-(define def-gate-reduce-fn (template body extra-lits prepwork eval-hints level)
+(define def-gate-reduce-fn (template body extra-lits extra-formals prepwork eval-hints level)
   :mode :program :hooks nil
   (b* ((err (gate-reduce-check-template template))
        ((when err) (raise "~s0: ~x1" err template))
@@ -614,7 +729,8 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                           :fmt-control-alist '((fmt-soft-right-margin . 2000)
                                                (fmt-hard-right-margin . 2000)))))
        (name (intern$ name-str "AIGNET"))
-       (formals (apply-template-to-lits lits '(x litp :type (unsigned-byte 30))))
+       (formals (append (apply-template-to-lits lits '(x litp :type (unsigned-byte 30)))
+                        extra-formals))
        (existing-only (<= level 2)))
     `(define ,name ,formals
        :prepwork ,prepwork
@@ -640,10 +756,10 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
         :eval-spec ,(axi-template-correctness-term template lits))
 
        (table gate-reduce-table '(,template ,level)
-              '(,name . ,lits)))))
+              '(,name ,@lits ,@(strip-cars extra-formals))))))
 
-(defmacro def-gate-reduce (template body &key extra-lits prepwork eval-hints level)
-  (def-gate-reduce-fn template body extra-lits prepwork eval-hints level))
+(defmacro def-gate-reduce (template body &key extra-lits extra-formals prepwork eval-hints level)
+  (def-gate-reduce-fn template body extra-lits extra-formals prepwork eval-hints level))
 
 
 
@@ -696,6 +812,22 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (local (defthm lit-eval-when-equal-lit-negate-0
          (implies (and (equal (lit-fix x) (lit-negate y))
+                       (equal 0 (lit-eval y invals regvals aignet)))
+                  (equal (lit-eval x invals regvals aignet)
+                         1))
+         :hints(("Goal" :expand ((:free (x) (lit-eval x invals regvals aignet)))
+                 :in-theory (enable b-xor)))))
+
+(local (defthm lit-eval-when-lit-negate-equal-1
+         (implies (and (equal (lit-fix y) (lit-negate x))
+                       (equal 1 (lit-eval y invals regvals aignet)))
+                  (equal (lit-eval x invals regvals aignet)
+                         0))
+         :hints(("Goal" :expand ((:free (x) (lit-eval x invals regvals aignet)))
+                 :in-theory (enable b-xor)))))
+
+(local (defthm lit-eval-when-lit-negate-equal-0
+         (implies (and (equal (lit-fix y) (lit-negate x))
                        (equal 0 (lit-eval y invals regvals aignet)))
                   (equal (lit-eval x invals regvals aignet)
                          1))
@@ -884,7 +1016,9 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (def-gate-reduce (and (not (and y0 y1)) (not (and y2 y3)))
 ;;     (AND (NOT (AND 0 1)) (NOT (AND (NOT 0) (NOT 1))))      (XOR 0 1)                       3
-  (b* ((ny0 (lit-negate^ y0))
+  (b* (((unless (< 1 (gatesimp->xor-mode gatesimp)))
+        (mv nil 0 0))
+       (ny0 (lit-negate^ y0))
        ;; NOTE: if we standardize ordering of literals one of these may be impossible
        ((when (=30 ny0 y2))
         (if (=30 (lit-negate^ y1) y3)
@@ -896,6 +1030,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
           (mv nil 0 0))))
     (mv nil 0 0))
   :level 3
+  :extra-formals ((gatesimp gatesimp-p :type (unsigned-byte 6)))
   :eval-hints ((and stable-under-simplificationp
                     '(:expand (;; (lit-eval x0 invals regvals aignet)
                                ;; (lit-eval x1 invals regvals aignet)
@@ -908,6 +1043,38 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                                (:free (x y) (eval-and-of-lits x y invals regvals aignet))
                                (:free (x y) (eval-xor-of-lits x y invals regvals aignet)))
                       :in-theory (enable b-xor b-and)))))
+
+
+;; (local (defthm b-and-equal-1
+;;          (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+;;                                 `(EQUAL (ACL2::B-AND$INLINE ,A ,B) '1) mfc state)
+;;                                (acl2::rewriting-negative-literal-fn
+;;                                 `(EQUAL '1 (ACL2::B-AND$INLINE ,A ,B)) mfc state)))
+;;                   (iff (equal (b-and a b) 1)
+;;                        (and (bit->bool a) (bit->bool b))))))
+
+;; (local (defthm b-xor-equal-1
+;;          (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+;;                                 `(EQUAL (ACL2::B-XOR$INLINE ,A ,B) '1) mfc state)
+;;                                (acl2::rewriting-negative-literal-fn
+;;                                 `(EQUAL '1 (ACL2::B-XOR$INLINE ,A ,B)) mfc state)))
+;;                   (iff (equal (b-xor a b) 1)
+;;                        (equal (bfix a) (b-not b))))
+;;          :hints(("Goal" :in-theory (enable bfix b-not)))))
+
+;; (local (defthm b-xor-equal-0
+;;          (implies (syntaxp (or (acl2::rewriting-negative-literal-fn
+;;                                 `(EQUAL (ACL2::B-XOR$INLINE ,A ,B) '1) mfc state)
+;;                                (acl2::rewriting-negative-literal-fn
+;;                                 `(EQUAL '1 (ACL2::B-XOR$INLINE ,A ,B)) mfc state)))
+;;                   (iff (equal (b-xor a b) 0)
+;;                        (equal (bfix a) (bfix b))))
+;;          :hints(("Goal" :in-theory (enable bfix)))))
+
+(local (defthm lit-negate-equal-x
+         (and (not (equal (lit-negate x) x))
+              (not (equal (lit-negate x) (lit-fix x))))))
+                  
 
 (def-gate-reduce (and (xor y0 y1) (and y2 y3))
   ;; BOZO might improve perf by changing ordering of checks here
@@ -926,8 +1093,9 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                         (=30 ny1 y3))
                    (and (=30 ny0 y3)
                         (=30 ny1 y2)))))
-        nil)
+        0)
        ;; NOTE: if we standardize ordering of literals two of these may be impossible
+       ;;     (AND (XOR 0 1) (AND (NOT 0) 1))                        (AND (NOT 0) 1)                 2
        ((when (or (and (=30 ny0 y2)
                        (=30 y1 y3))
                   (and (=30 ny0 y3)
@@ -941,17 +1109,22 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
     :extra-lits (x1)
     :level 2
     :eval-hints ((and stable-under-simplificationp
-                      '(:expand (;; (lit-eval x0 invals regvals aignet)
-                                 ;; (lit-eval x1 invals regvals aignet)
-                                 ;; (lit-eval y0 invals regvals aignet)
-                                 ;; (lit-eval y1 invals regvals aignet)
-                                 ;; (lit-eval y2 invals regvals aignet)
-                                 ;; (lit-eval y3 invals regvals aignet)
-                                 ;; (id-eval (lit->var x0) invals regvals aignet)
-                                 ;; (id-eval (lit->var x1) invals regvals aignet)
-                                 (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      '(:expand ((:free (x y) (eval-and-of-lits x y invals regvals aignet))
                                  (:free (x y) (eval-xor-of-lits x y invals regvals aignet)))
-                        :in-theory (enable b-xor b-and)))))
+                         :in-theory (enable b-xor b-and)
+                        ))
+                 ;; (and stable-under-simplificationp
+                 ;;      '(:in-theory (enable b-and b-xor)))
+                 ;; (and stable-under-simplificationp
+                 ;;      '(:in-theory (enable satlink::equal-of-lit-negate-component-rewrites)))
+                 )
+    :prepwork ((local (in-theory (disable ;; satlink::equal-of-lit-negate-backchain
+                                          ;; satlink::lit-negate-not-equal-when-vars-mismatch
+                                          ;; satlink::equal-of-lit-negate-cond-component-rewrites
+                                          satlink::equal-of-lit-negate-component-rewrites
+                                          ;; satlink::equal-of-lit-fix-backchain
+                                          ;; SATLINK::LIT-NEGATE-NOT-EQUAL-WHEN-NEG-MATCHES
+                                          )))))
 
 
 (def-gate-reduce (and (xor y0 y1) (and y2 y3))
@@ -1318,20 +1491,21 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (define reduce-and-gate-when-one-gate ((x0 litp :type (unsigned-byte 30))
                                        (x1 litp :type (unsigned-byte 30))
-                                       (level natp :type (unsigned-byte 3))
+                                       (gatesimp gatesimp-p :type (unsigned-byte 6))
                                        (aignet))
-  :guard (and (<= 2 level)
+  :guard (and (<= 2 (gatesimp->level gatesimp))
               (fanin-litp x0 aignet)
               (fanin-litp x1 aignet)
               (eql (id->type (lit-id x0) aignet) (gate-type)))
   :returns (mv (code maybe-simpcode-p)
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
-  (b* ((x0-id (lit-id x0))
-       (x0-neg (lit-neg x0))
+  (b* ((x0-id (lit->var^ x0))
+       (x0-neg (lit->neg^ x0))
        (x0-regp (id->regp x0-id aignet))
        (y0 (gate-id->fanin0 x0-id aignet))
-       (y1 (gate-id->fanin1 x0-id aignet)))
+       (y1 (gate-id->fanin1 x0-id aignet))
+       (level (gatesimp->level gatesimp)))
     (if (=b 0 x0-regp)
         (if (=b 0 x0-neg)
             (gate-reduce-2level (and (and y0 y1) x1))
@@ -1357,9 +1531,9 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (define reduce-and-gate-when-both-gates ((x0 litp :type (unsigned-byte 30))
                                          (x1 litp :type (unsigned-byte 30))
-                                         (level natp :type (unsigned-byte 3))
+                                         (gatesimp gatesimp-p :type (unsigned-byte 6))
                                          (aignet))
-  :guard (and (<= 2 level)
+  :guard (and (<= 2 (gatesimp->level gatesimp))
               (fanin-litp x0 aignet)
               (fanin-litp x1 aignet)
               (eql (id->type (lit-id x0) aignet) (gate-type))
@@ -1367,16 +1541,17 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
   :returns (mv (code maybe-simpcode-p)
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
-  (b* ((x0-id (lit-id x0))
-       (x0-neg (lit-neg x0))
+  (b* ((x0-id (lit->var^ x0))
+       (x0-neg (lit->neg^ x0))
        (x0-regp (id->regp x0-id aignet))
-       (x1-id (lit-id x1))
-       (x1-neg (lit-neg x1))
+       (x1-id (lit->var^ x1))
+       (x1-neg (lit->neg^ x1))
        (x1-regp (id->regp x1-id aignet))
        (y0 (gate-id->fanin0 x0-id aignet))
        (y1 (gate-id->fanin1 x0-id aignet))
        (y2 (gate-id->fanin0 x1-id aignet))
-       (y3 (gate-id->fanin1 x1-id aignet)))
+       (y3 (gate-id->fanin1 x1-id aignet))
+       (level (gatesimp->level gatesimp)))
     (if (=b 0 x0-regp)
         (if (=b 0 x0-neg)
             ;; (and (and ...) ?)
@@ -1434,7 +1609,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (define reduce-and-gate ((x0 litp :type (unsigned-byte 30))
                          (x1 litp :type (unsigned-byte 30))
-                         (level natp :type (unsigned-byte 3))
+                         (gatesimp gatesimp-p :type (unsigned-byte 6))
                          (aignet))
   :guard (and (fanin-litp x0 aignet)
               (fanin-litp x1 aignet))
@@ -1443,16 +1618,16 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                (new1 litp :rule-classes :type-prescription))
   (b* ((ans (gate-reduce (and x0 x1) :level 1))
        ((when ans) (mv (simpcode! :existing) ans 0))
-       ((when (<= (lnfix level) 1))
+       ((when (<= (gatesimp->level gatesimp) 1))
         (mv nil 0 0))
-       (x0-type (id->type (lit-id x0) aignet))
-       (x1-type (id->type (lit-id x1) aignet))
+       (x0-type (id->type (lit->var^ x0) aignet))
+       (x1-type (id->type (lit->var^ x1) aignet))
        ((when (=2 x0-type (gate-type)))
         (if (=2 x1-type (gate-type))
-            (reduce-and-gate-when-both-gates x0 x1 level aignet)
-          (reduce-and-gate-when-one-gate x0 x1 level aignet))))
+            (reduce-and-gate-when-both-gates x0 x1 gatesimp aignet)
+          (reduce-and-gate-when-one-gate x0 x1 gatesimp aignet))))
     (if (=2 x1-type (gate-type))
-        (reduce-and-gate-when-one-gate x1 x0 level aignet)
+        (reduce-and-gate-when-one-gate x1 x0 gatesimp aignet)
       (mv nil 0 0)))
   ///
   (def-gatesimp-thms (x0 x1)
@@ -1466,20 +1641,21 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (define reduce-xor-gate-when-one-gate ((x0 litp :type (unsigned-byte 30))
                                        (x1 litp :type (unsigned-byte 30))
-                                       (level natp :type (unsigned-byte 3))
+                                       (gatesimp gatesimp-p :type (unsigned-byte 6))
                                        (aignet))
-  :guard (and (<= 2 level)
+  :guard (and (<= 2 (gatesimp->level gatesimp))
               (fanin-litp x0 aignet)
               (fanin-litp x1 aignet)
               (eql (id->type (lit-id x0) aignet) (gate-type)))
   :returns (mv (code maybe-simpcode-p)
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
-  (b* ((x0-id (lit-id x0))
-       (x0-neg (lit-neg x0))
+  (b* ((x0-id (lit->var^ x0))
+       (x0-neg (lit->neg^ x0))
        (x0-regp (id->regp x0-id aignet))
        (y0 (gate-id->fanin0 x0-id aignet))
        (y1 (gate-id->fanin1 x0-id aignet))
+       (level (gatesimp->level gatesimp))
        ;; (?x0 (mk-lit x0-id 0))
        ((mv code new0 new1)
         (if (=b 0 x0-regp)
@@ -1507,9 +1683,9 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (define reduce-xor-gate-when-both-gates ((x0 litp :type (unsigned-byte 30))
                                          (x1 litp :type (unsigned-byte 30))
-                                         (level natp :type (unsigned-byte 3))
+                                         (gatesimp gatesimp-p :type (unsigned-byte 6))
                                          (aignet))
-  :guard (and (<= 2 level)
+  :guard (and (<= 2 (gatesimp->level gatesimp))
               (fanin-litp x0 aignet)
               (fanin-litp x1 aignet)
               (eql (id->type (lit-id x0) aignet) (gate-type))
@@ -1518,11 +1694,11 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
   :prepwork ((local (in-theory (enable unsigned-byte-p-of-lit-when-lit->var))))
-  (b* ((x0-id (lit-id x0))
-       (x0-neg (lit-neg x0))
+  (b* ((x0-id (lit->var^ x0))
+       (x0-neg (lit->neg^ x0))
        (x0-regp (id->regp x0-id aignet))
-       (x1-id (lit-id x1))
-       (x1-neg (lit-neg x1))
+       (x1-id (lit->var^ x1))
+       (x1-neg (lit->neg^ x1))
        (x1-regp (id->regp x1-id aignet))
        (y0 (gate-id->fanin0 x0-id aignet))
        (y1 (gate-id->fanin1 x0-id aignet))
@@ -1531,6 +1707,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
        (neg (b-xor x0-neg x1-neg))
        (x0 (mk-lit x0-id 0))
        (x1 (mk-lit x1-id 0))
+       (level (gatesimp->level gatesimp))
        ((mv code new0 new1)
         (if (=b 0 x0-regp)
             (if (=b 0 x1-regp)
@@ -1571,10 +1748,10 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                                  (:free (x y) (eval-xor-of-lits x y invals regvals aignet))))))
     :use-aignet t))
 
-(define reduce-xor-gate ((x0 litp :type (unsigned-byte 30))
-                         (x1 litp :type (unsigned-byte 30))
-                         (level natp :type (unsigned-byte 3))
-                         (aignet))
+(define reduce-xor-gate-normalized ((x0 litp :type (unsigned-byte 30))
+                                    (x1 litp :type (unsigned-byte 30))
+                                    (gatesimp gatesimp-p :type (unsigned-byte 6))
+                                    (aignet))
   :guard (and (fanin-litp x0 aignet)
               (fanin-litp x1 aignet))
   :returns (mv (code maybe-simpcode-p)
@@ -1582,16 +1759,16 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                (new1 litp :rule-classes :type-prescription))
   (b* ((ans (gate-reduce (xor x0 x1) :level 1))
        ((when ans) (mv (simpcode! :existing) ans 0))
-       ((when (<= (lnfix level) 1))
+       ((when (<= (gatesimp->level gatesimp) 1))
         (mv nil 0 0))
-       (x0-type (id->type (lit-id x0) aignet))
-       (x1-type (id->type (lit-id x1) aignet))
+       (x0-type (id->type (lit->var^ x0) aignet))
+       (x1-type (id->type (lit->var^ x1) aignet))
        ((when (=2 x0-type (gate-type)))
         (if (=2 x1-type (gate-type))
-            (reduce-xor-gate-when-both-gates x0 x1 level aignet)
-          (reduce-xor-gate-when-one-gate x0 x1 level aignet))))
+            (reduce-xor-gate-when-both-gates x0 x1 gatesimp aignet)
+          (reduce-xor-gate-when-one-gate x0 x1 gatesimp aignet))))
     (if (=2 x1-type (gate-type))
-        (reduce-xor-gate-when-one-gate x1 x0 level aignet)
+        (reduce-xor-gate-when-one-gate x1 x0 gatesimp aignet)
       (mv nil 0 0)))
   ///
   (def-gatesimp-thms (x0 x1)
@@ -1599,11 +1776,58 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                       (lit-eval x1 invals regvals aignet))
     :use-aignet t))
 
+(define reduce-xor-gate ((x0 litp :type (unsigned-byte 30))
+                         (x1 litp :type (unsigned-byte 30))
+                         (gatesimp gatesimp-p :type (unsigned-byte 6))
+                         (aignet))
+  :guard (and (fanin-litp x0 aignet)
+              (fanin-litp x1 aignet))
+  :returns (mv (code maybe-simpcode-p)
+               (new0 litp :rule-classes :type-prescription)
+               (new1 litp :rule-classes :type-prescription))
+  :prepwork ((local (in-theory (enable unsigned-byte-p-of-lit-when-lit->var))))
+  (b* (((mv code new0 new1) (reduce-xor-gate-normalized (lit-abs^ x0) (lit-abs^ x1) gatesimp aignet))
+       ((when code)
+        (mv (simpcode-negate-cond code (b-xor (lit->neg^ x0) (lit->neg^ x1))) new0 new1)))
+    (mv nil 0 0))
+  ///
+  (def-gatesimp-thms (x0 x1)
+    :eval-spec (b-xor (lit-eval x0 invals regvals aignet)
+                      (lit-eval x1 invals regvals aignet))
+    :use-aignet t))
+
+(define normalize-xor-gate ((code-in simpcode-p)
+                            (x0 litp :type (unsigned-byte 30))
+                            (x1 litp :type (unsigned-byte 30)))
+  :returns (mv (code simpcode-p)
+               (new0 litp :rule-classes :type-prescription)
+               (new1 litp :rule-classes :type-prescription))
+  :guard (=b 0 (simpcode->identity code-in))
+  :prepwork ((local (in-theory (enable unsigned-byte-p-of-lit-when-lit->var))))
+  (b* (((simpcode code-in)))
+    (if (=b 1 code-in.xor)
+        (mv (simpcode-negate-cond code-in (b-xor (lit->neg^ x0) (lit->neg^ x1)))
+            (lit-abs^ x0) (lit-abs^ x1))
+      (mv (simpcode-fix code-in) (lit-fix x0) (lit-fix x1))))
+  ///
+  (def-gatesimp-thms (x0 x1)
+    :eval-spec (simpcode-eval code-in x0 x1 invals regvals aignet)
+    :eval-hyp (equal 0 (simpcode->identity code-in))
+    :maybe-simpcode nil
+    :no-measure t
+    :eval-hints (("goal" :expand ((:free (x0 x1) (simpcode-eval code-in x0 x1 invals regvals aignet)))
+                  :in-theory (enable eval-xor-of-lits))))
+
+  (defret two-id-measure-of-<fn>
+    (equal (two-id-measure (lit-id new0) (lit-id new1))
+           (two-id-measure (lit-id x0) (lit-id x1)))
+    :hints(("Goal" :in-theory (enable two-id-measure)))))
+
 
 (define reduce-gate-rec ((code-in simpcode-p)
                          (x0 litp :type (unsigned-byte 30))
                          (x1 litp :type (unsigned-byte 30))
-                         (level natp :type (unsigned-byte 3))
+                         (gatesimp gatesimp-p :type (unsigned-byte 6))
                          (aignet))
   :guard (and (fanin-litp x0 aignet)
               (fanin-litp x1 aignet))
@@ -1621,12 +1845,12 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
         (mv code-in (lit-fix x0) (lit-fix x1)))
        ((mv new-code new-x0 new-x1)
         (if (=b 1 code-in.xor)
-            (reduce-xor-gate x0 x1 level aignet)
-          (reduce-and-gate x0 x1 level aignet)))
+            (reduce-xor-gate x0 x1 gatesimp aignet)
+          (reduce-and-gate x0 x1 gatesimp aignet)))
        ((unless new-code)
-        (mv code-in (lit-fix x0) (lit-fix x1)))
+        (normalize-xor-gate code-in x0 x1))
        (new-code (simpcode-negate-cond new-code code-in.neg)))
-    (reduce-gate-rec new-code new-x0 new-x1 level aignet))
+    (reduce-gate-rec new-code new-x0 new-x1 gatesimp aignet))
   ///
     
   (def-gatesimp-thms (x0 x1)
@@ -1653,29 +1877,35 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
 (define reduce-xor-gate-rec ((x0 litp :type (unsigned-byte 30))
                              (x1 litp :type (unsigned-byte 30))
-                             (level natp :type (unsigned-byte 3))
+                             (gatesimp gatesimp-p :type (unsigned-byte 6))
                              (aignet))
   :guard (and (fanin-litp x0 aignet)
               (fanin-litp x1 aignet))
-  :guard-hints (("goal" :expand ((reduce-gate-rec (simpcode! :xor) x0 x1 level aignet))))
+  :guard-hints (("goal" :expand ((reduce-gate-rec (simpcode! :xor) x0 x1 gatesimp aignet)))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable normalize-xor-gate))))
   :enabled t
-  (mbe :logic (reduce-gate-rec (simpcode! :xor) x0 x1 level aignet)
-       :exec (b* (((mv code new0 new1) (reduce-xor-gate x0 x1 level aignet))
-                  ((unless code) (mv (simpcode! :xor) (lit-fix x0) (lit-fix x1))))
-               (reduce-gate-rec code new0 new1 level aignet))))
+  (mbe :logic (reduce-gate-rec (simpcode! :xor) x0 x1 gatesimp aignet)
+       :exec (b* (((mv code new0 new1) (reduce-xor-gate x0 x1 gatesimp aignet))
+                  ((unless code)
+                   (mv (simpcode-negate-cond (simpcode! :xor) (b-xor (lit->neg^ x0) (lit->neg^ x1)))
+                       (lit-abs^ x0) (lit-abs^ x1))))
+               (reduce-gate-rec code new0 new1 gatesimp aignet))))
 
 (define reduce-and-gate-rec ((x0 litp :type (unsigned-byte 30))
                              (x1 litp :type (unsigned-byte 30))
-                             (level natp :type (unsigned-byte 3))
+                             (gatesimp gatesimp-p :type (unsigned-byte 6))
                              (aignet))
   :guard (and (fanin-litp x0 aignet)
               (fanin-litp x1 aignet))
-  :guard-hints (("goal" :expand ((reduce-gate-rec (simpcode! :and) x0 x1 level aignet))))
+  :guard-hints (("goal" :expand ((reduce-gate-rec (simpcode! :and) x0 x1 gatesimp aignet)))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable normalize-xor-gate))))
   :enabled t
-  (mbe :logic (reduce-gate-rec (simpcode! :and) x0 x1 level aignet)
-       :exec (b* (((mv code new0 new1) (reduce-and-gate x0 x1 level aignet))
+  (mbe :logic (reduce-gate-rec (simpcode! :and) x0 x1 gatesimp aignet)
+       :exec (b* (((mv code new0 new1) (reduce-and-gate x0 x1 gatesimp aignet))
                   ((unless code) (mv (simpcode! :and) (lit-fix x0) (lit-fix x1))))
-               (reduce-gate-rec code new0 new1 level aignet))))
+               (reduce-gate-rec code new0 new1 gatesimp aignet))))
 
 
 
@@ -1811,59 +2041,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 
     (defcong list-equiv equal (strash-lookup lit1 lit2 xorp strash aignet) 4)))
 
-(defsection gatesimp
-  :parents (aignet-construction)
-  :short "Structure encoding AIGNET construction settings for how much to try to
-          simplify and whether to use hashing"
-  :long "<p>A simple bit-encoded pair of @('level'), a natural number
-determining how hard to try to simplify new AND nodes, and @('hashp'), a
-Boolean value.  Created with @('(mk-gatesimp level hashp)'), field accessors
-are @('(gatesimp-level gatesimp)') and @('(gatesimp-hashp gatesimp)').</p>
 
-<p>The @('level') values correspond to the levels of simplification found in the paper:</p>
-<blockquote>
-R. Brummayer and A. Biere.  Local two-level And-Inverter Graph minimization
-without blowup.  Proc. MEMCIS 6 (2006): 32-38,
-</blockquote>
-<p>Values of @('level') greater than 4 are treated the same as level 4.</p>"
-
-  (define gatesimp-level-p (x)
-    (and (natp x) (<= x 4))
-    ///
-    (define gatesimp-level-fix ((x gatesimp-level-p))
-      :returns (new-x gatesimp-level-p)
-      (mbe :logic (if (gatesimp-level-p x) x 4)
-           :exec x)
-      ///
-      (defret gatesimp-level-fix-when-gatesimp-level-p
-        (implies (gatesimp-level-p x) (equal new-x x)))
-
-      (fty::deffixtype gatesimp-level :pred gatesimp-level-p :fix gatesimp-level-fix :equiv gatesimp-level-equiv
-        :define t))
-
-    (defthm gatesimp-level-p-compound-recognizer
-      (implies (gatesimp-level-p x)
-               (natp x))
-      :rule-classes :compound-recognizer))
-
-  (local (defthm unsigned-byte-p-when-gatesimp-level-p
-           (implies (gatesimp-level-p x)
-                    (unsigned-byte-p 3 x))
-           :hints(("Goal" :in-theory (enable gatesimp-level-p unsigned-byte-p)))))
-
-  (local (defthm bound-when-gatesimp-level-p
-           (implies (gatesimp-level-p x)
-                    (<= x 4))
-           :hints(("Goal" :in-theory (enable gatesimp-level-p unsigned-byte-p)))))
-
-  (fty::fixtype-to-bitstruct gatesimp-level :width 3)
-  (fty::defbitstruct gatesimp
-    ((hashp booleanp)
-     (level gatesimp-level)))
-
-  (defthm gatesimp->level-bound
-    (<= (gatesimp->level x) 4)
-    :rule-classes (:rewrite :linear)))
 
 
 (define aignet-strash-gate ((code-in simpcode-p)
@@ -1926,7 +2104,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
 
 (define aignet-xor-gate-simp/strash ((x0 litp :type (unsigned-byte 30))
                                      (x1 litp :type (unsigned-byte 30))
-                                     (gatesimp gatesimp-p :type (unsigned-byte 4))
+                                     (gatesimp gatesimp-p :type (unsigned-byte 6))
                                      (strash)
                                      (aignet))
   :guard (and (fanin-litp x0 aignet)
@@ -1936,7 +2114,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
   (b* (((gatesimp gatesimp))
-       ((mv code new0 new1) (reduce-xor-gate-rec x0 x1 gatesimp.level aignet)))
+       ((mv code new0 new1) (reduce-xor-gate-rec x0 x1 gatesimp aignet)))
     (aignet-strash-gate code new0 new1 gatesimp.hashp strash aignet))
   ///
   
@@ -1960,7 +2138,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
 
 (define aignet-and-gate-simp/strash ((x0 litp :type (unsigned-byte 30))
                                      (x1 litp :type (unsigned-byte 30))
-                                     (gatesimp gatesimp-p :type (unsigned-byte 4))
+                                     (gatesimp gatesimp-p :type (unsigned-byte 6))
                                      (strash)
                                      (aignet))
   :guard (and (fanin-litp x0 aignet)
@@ -1970,7 +2148,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
   (b* (((gatesimp gatesimp))
-       ((mv code new0 new1) (reduce-and-gate-rec x0 x1 gatesimp.level aignet)))
+       ((mv code new0 new1) (reduce-and-gate-rec x0 x1 gatesimp aignet)))
     (aignet-strash-gate code new0 new1 gatesimp.hashp strash aignet))
   ///
   
@@ -2005,7 +2183,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                              (key integerp)
                              (x0 litp :type (unsigned-byte 30))
                              (x1 litp :type (unsigned-byte 30))
-                             (gatesimp gatesimp-p :type (unsigned-byte 4))
+                             (gatesimp gatesimp-p :type (unsigned-byte 6))
                              (strash)
                              (aignet))
   :guard (and (fanin-litp x0 aignet)
@@ -2023,7 +2201,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                    (aignet-add-xor x0 x1 aignet)
                  (aignet-add-and x0 x1 aignet)))
        (lit (mk-lit id code.neg))
-       (strash (if (gatesimp->hashp (the (unsigned-byte 4) gatesimp))
+       (strash (if (gatesimp->hashp (the (unsigned-byte 6) gatesimp))
                    (strashtab-put (lifix key) id strash)
                  strash)))
     (mv lit strash aignet))
@@ -2062,12 +2240,17 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                   (unsigned-byte-p 30 x1)
                   (< (node-count aignet) #x1fffffff))
              (unsigned-byte-p 30 lit))
-    :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var)))))
+    :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var))))
 
+  (defret node-count-of-aignet-install-gate
+    (<= (node-count new-aignet) (+ 1 (node-count aignet)))
+    :rule-classes :linear))
+
+(local (in-theory (enable lit-eval-of-aignet-lit-fix)))
 
 (define aignet-hash-and ((lit1 litp :type (unsigned-byte 30) "Literal to AND with lit2")
                          (lit2 litp :type (unsigned-byte 30))
-                         (gatesimp gatesimp-p :type (unsigned-byte 4)
+                         (gatesimp gatesimp-p :type (unsigned-byte 6)
                                    "Configuration for how much simplification to try and whether to use hashing")
                          (strash "Stobj containing the aignet's structural hash table")
                          aignet)
@@ -2080,8 +2263,8 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
   :returns (mv (and-lit litp :rule-classes (:rewrite :type-prescription))
                (new-strash)
                (new-aignet))
-  (b* ((lit1 (lit-fix lit1))
-       (lit2 (lit-fix lit2))
+  (b* ((lit1 (mbe :logic (non-exec (aignet-lit-fix lit1 aignet)) :exec lit1))
+       (lit2 (mbe :logic (non-exec (aignet-lit-fix lit2 aignet)) :exec lit2))
        ((mv code key lit1 lit2)
         (aignet-and-gate-simp/strash lit1 lit2 gatesimp strash aignet)))
     (aignet-install-gate code key lit1 lit2 gatesimp strash aignet))
@@ -2095,9 +2278,7 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
   (def-aignet-preservation-thms aignet-hash-and)
 
   (defret aignet-litp-of-aignet-hash-and
-    (implies (and (aignet-litp lit1 aignet)
-                  (aignet-litp lit2 aignet))
-             (aignet-litp and-lit new-aignet)))
+    (aignet-litp and-lit new-aignet))
 
 
   (defret lit-eval-of-aignet-hash-and
@@ -2120,28 +2301,146 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                                   (lit (lit-fix lit))))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
-  (local (defret unsigned-byte-p-of-aignet-hash-and-1
-           (implies (and (< (node-count aignet) #x1fffffff)
-                         (aignet-litp lit1 aignet)
-                         (aignet-litp lit2 aignet))
-                    (unsigned-byte-p 30 and-lit))
-           :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
-                                  (lit and-lit) (aignet new-aignet)))
-                    :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+  (local (defthm unsigned-byte-p-when-aignet-litp-bind
+           (implies (and (bind-free '((aignet . aignet)))
+                         (aignet-litp lit aignet)
+                         (litp lit)
+                         (< (node-count aignet) #x1fffffff))
+                    (unsigned-byte-p 30 lit))))
 
+  (local (defret unsigned-byte-p-of-aignet-hash-and-1
+           (implies (and (< (node-count aignet) #x1fffffff))
+                    (unsigned-byte-p 30 and-lit))
+           ;; :hints ((and stable-under-simplificationp
+           ;;              '(:use ((:instance unsigned-byte-p-when-aignet-litp
+           ;;                       (lit and-lit) (aignet new-aignet)))
+           ;;                :in-theory (disable unsigned-byte-p-when-aignet-litp))))
+           ))
+         
   (defret unsigned-byte-p-of-aignet-hash-and
     (implies (and (< (node-count aignet) #x1fffffff)
-                  (aignet-litp lit1 aignet)
-                  (aignet-litp lit2 aignet)
                   (natp n) (<= 30 n))
              (unsigned-byte-p n and-lit))
     :hints (("goal" :use unsigned-byte-p-of-aignet-hash-and-1
-             :in-theory (disable unsigned-byte-p-of-aignet-hash-and-1)))))
+             :in-theory (disable unsigned-byte-p-of-aignet-hash-and-1))))
+
+  (defret node-count-of-aignet-hash-and
+    (<= (node-count new-aignet) (+ 1 (node-count aignet)))
+    :rule-classes :linear))
+
+
+(defines aignet-build-rec
+  :mode :program
+  (define aignet-build-rec (pattern next-var override-var rest-vars bindings-acc neg-fn)
+    :returns (mv retval new-bindings-acc new-next-var)
+    (b* (((when (atom pattern))
+          (b* ((- (and (not (or (acl2::legal-variable-or-constant-namep pattern)
+                                (integerp pattern) (booleanp pattern)))
+                       (raise "Bad atom: ~x0" pattern)))
+               (val (case pattern
+                      ((t) 1)
+                      ((nil) 0)
+                      (t pattern)))
+               ((unless override-var)
+                (mv val bindings-acc next-var)))
+            (mv override-var (cons (list override-var val) bindings-acc) next-var)))
+         ((cons sym args) pattern))
+      (case sym
+        (:= (case-match args
+              ((var expr)
+               (b* ((- (and (not (acl2::legal-variablep var))
+                            (raise "Bad variable binding: ~x0" var)))
+                    ((mv & bindings-acc next-var)
+                     (aignet-build-rec expr next-var var rest-vars bindings-acc neg-fn))
+                    ((unless override-var)
+                     (mv var bindings-acc next-var))
+                    (bindings-acc (cons (list override-var var) bindings-acc)))
+                 (mv override-var bindings-acc next-var)))
+              (& (prog2$ (raise "Bad := form: ~x0" pattern)
+                         (mv nil nil nil)))))
+        ((and or xor iff) ;; associative/commutative ops
+         (b* ((- (and (not (true-listp args))
+                      (raise "Bad form: ~x0" pattern)))
+              ((mv fn base-lit)
+               (case sym
+                 (and (mv 'aignet-hash-and 1))
+                 (xor (mv 'aignet-hash-xor 0))
+                 (or  (mv 'aignet-hash-or  0))
+                 (iff (mv 'aignet-hash-iff 1))
+                 (t   (mv nil nil))))
+              ((when (atom args))
+               (b* (((unless override-var)
+                     (mv base-lit bindings-acc next-var)))
+                 (mv override-var (cons (list override-var base-lit) bindings-acc) next-var))))
+           (aignet-build-a/c-rec fn args next-var override-var rest-vars bindings-acc neg-fn)))
+        ((if mux)
+         (case-match args
+           ((test then else)
+            (b* (((mv test-var bindings-acc next-var)
+                  (aignet-build-rec test next-var nil rest-vars bindings-acc neg-fn))
+                 ((mv then-var bindings-acc next-var)
+                  (aignet-build-rec then next-var nil rest-vars bindings-acc neg-fn))
+                 ((mv else-var bindings-acc next-var)
+                  (aignet-build-rec else next-var nil rest-vars bindings-acc neg-fn))
+                 (expr `(aignet-hash-mux ,test-var ,then-var ,else-var . ,rest-vars))
+                 ((mv var next-var)
+                  (if override-var
+                      (mv override-var next-var)
+                    (mv (intern$ (coerce (explode-atom next-var 10) 'string) "AIGNET-GENSYMS")
+                        (+ 1 next-var)))))
+              (mv var
+                  (cons `((mv ,var . ,(cdr rest-vars)) ,expr) bindings-acc)
+                  next-var)))
+           (& (prog2$ (raise "Bad form: ~x0" pattern)
+                      (mv nil nil nil)))))
+        (not
+         (case-match args
+           ((subexp) (b* (((mv sub-var bindings-acc next-var)
+                           (aignet-build-rec subexp next-var nil rest-vars bindings-acc neg-fn))
+                          ((unless override-var)
+                           (mv `(,neg-fn ,sub-var) bindings-acc next-var)))
+                       (mv override-var
+                           (cons `(,override-var (,neg-fn ,sub-var)) bindings-acc)
+                           next-var)))
+           (& (prog2$ (raise "Bad form: ~x0" pattern)
+                      (mv nil nil nil)))))
+        (otherwise
+         (prog2$ (raise "Bad form: ~x0" pattern)
+                 (mv nil nil nil))))))
+
+  (define aignet-build-a/c-rec (fn args next-var override-var rest-vars bindings-acc neg-fn)
+    :returns (mv retval new-bindings-acc new-next-var)
+    (b* (((when (atom (cdr args)))
+          (aignet-build-rec (car args) next-var override-var rest-vars bindings-acc neg-fn))
+         ((mv arg1-var bindings-acc next-var)
+          (aignet-build-rec (car args) next-var nil rest-vars bindings-acc neg-fn))
+         ((mv rest-var bindings-acc next-var)
+          (aignet-build-a/c-rec fn (cdr args) next-var nil rest-vars bindings-acc neg-fn))
+         (expr `(,fn ,arg1-var ,rest-var . ,rest-vars))
+         ((mv var next-var)
+          (if override-var
+              (mv override-var next-var)
+            (mv (intern$ (coerce (explode-atom next-var 10) 'string) "AIGNET-GENSYMS")
+                (+ 1 next-var)))))
+      (mv var (cons `((mv ,var . ,(cdr rest-vars)) ,expr) bindings-acc) next-var))))
+
+(defmacro aignet-build (pattern gatesimp strash aignet)
+  (b* (((mv retval bindings ?next-var) (aignet-build-rec pattern 0 nil (list gatesimp strash aignet) nil 'lit-negate)))
+    `(b* ,(reverse bindings)
+       (mv ,retval ,strash ,aignet))))
+
+(defmacro aignet-build^ (pattern gatesimp strash aignet)
+  (b* (((mv retval bindings ?next-var) (aignet-build-rec pattern 0 nil (list gatesimp strash aignet) nil 'lit-negate^)))
+    `(b* ,(reverse bindings)
+       (mv ,retval ,strash ,aignet))))
+
+
+
 
 
 (define aignet-hash-xor ((lit1 litp :type (unsigned-byte 30) "Literal to XOR with lit2")
                          (lit2 litp :type (unsigned-byte 30))
-                         (gatesimp gatesimp-p :type (unsigned-byte 4)
+                         (gatesimp gatesimp-p :type (unsigned-byte 6)
                                    "Configuration for how much simplification to try and whether to use hashing")
                          (strash "Stobj containing the aignet's structural hash table")
                          aignet)
@@ -2154,8 +2453,14 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
   :returns (mv (xor-lit litp :rule-classes (:rewrite :type-prescription))
                (new-strash)
                (new-aignet))
-  (b* ((lit1 (lit-fix lit1))
-       (lit2 (lit-fix lit2))
+  :prepwork ((local (in-theory (enable unsigned-byte-p-of-lit-when-lit->var))))
+  (b* ((lit1 (mbe :logic (non-exec (aignet-lit-fix lit1 aignet)) :exec lit1))
+       (lit2 (mbe :logic (non-exec (aignet-lit-fix lit2 aignet)) :exec lit2))
+       ((when (eql 0 (gatesimp->xor-mode gatesimp)))
+        ;; In this mode, don't build xor gates even explicitly.
+        ;; Need to fix these for non-atomic operations
+        (aignet-build (and (not (and lit1 lit2)) (not (and (not lit1) (not lit2))))
+                      gatesimp strash aignet))
        ((mv code key lit1 lit2)
         (aignet-xor-gate-simp/strash lit1 lit2 gatesimp strash aignet)))
     (aignet-install-gate code key lit1 lit2 gatesimp strash aignet))
@@ -2169,16 +2474,16 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
   (def-aignet-preservation-thms aignet-hash-xor)
 
   (defret aignet-litp-of-aignet-hash-xor
-    (implies (and (aignet-litp lit1 aignet)
-                  (aignet-litp lit2 aignet))
-             (aignet-litp xor-lit new-aignet)))
+    (aignet-litp xor-lit new-aignet))
 
 
   (defret lit-eval-of-aignet-hash-xor
     (equal (lit-eval xor-lit invals regvals new-aignet)
            (b-xor (lit-eval lit1 invals regvals aignet)
                   (lit-eval lit2 invals regvals aignet)))
-    :hints(("Goal" :in-theory (enable eval-xor-of-lits))))
+    :hints(("Goal" :in-theory (enable eval-xor-of-lits))
+           (and stable-under-simplificationp
+                '(:in-theory (enable b-xor b-not)))))
 
   (defret stype-counts-preserved-of-aignet-hash-xor
     (implies (and (not (equal (stype-fix stype) (and-stype)))
@@ -2195,22 +2500,18 @@ without blowup.  Proc. MEMCIS 6 (2006): 32-38,
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (local (defret unsigned-byte-p-of-aignet-hash-xor-1
-           (implies (and (< (node-count aignet) #x1fffffff)
-                         (aignet-litp lit1 aignet)
-                         (aignet-litp lit2 aignet))
+           (implies (and (< (node-count aignet) #x1ffffffd))
                     (unsigned-byte-p 30 xor-lit))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit xor-lit) (aignet new-aignet)))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (defret unsigned-byte-p-of-aignet-hash-xor
-    (implies (and (< (node-count aignet) #x1fffffff)
-                  (aignet-litp lit1 aignet)
-                  (aignet-litp lit2 aignet)
+    (implies (and (< (node-count aignet) #x1ffffffd)
                   (natp n) (<= 30 n))
              (unsigned-byte-p n xor-lit))
     :hints (("goal" :use unsigned-byte-p-of-aignet-hash-xor-1
-             :in-theory (disable unsigned-byte-p-of-aignet-hash-xor-1)))))
+             :in-theory (disable unsigned-byte-p-of-aignet-hash-xor-1 aignet-hash-xor)))))
 
 
 (define aignet-populate-strash ((n natp)
@@ -2259,6 +2560,8 @@ AND nodes, so as to avoid creating duplicate nodes with identical structure.
 To do this, you additionally need a @('STRASH') stobj, which again may either
 be the live one or one created locally.</p>
 
+<h3>Basic Low-level Construction Functions</h3>
+
 <p>To initialize a new network or clear an existing one, use:
 @({ (aignet-clear aignet) })
 or, to allocate a certain amount of space in order to avoid resizing arrays,
@@ -2269,7 +2572,7 @@ or, to allocate a certain amount of space in order to avoid resizing arrays,
 or to allocate a certain amount of space to avoid resizing the hash table,
 @({ (strashtab-init node-cap nil nil strash). })</p>
 
-<h1>Aigaignet-construction functions</h1>
+<h1>Aignet-construction functions</h1>
 <p>@('(aignet-add-in aignet)') adds a new primary input node to the network and
 returns <tt>(mv lit aignet)</tt>, where <tt>lit</tt> is the non-negated literal of
 the new node.</p>
@@ -2278,7 +2581,7 @@ the new node.</p>
 returns <tt>(mv lit aignet)</tt>, where <tt>lit</tt> is the non-negated literal of
 the new node.</p>
 
-<p>@('(aignet-add-gate lit1 lit2 aignet)') adds to the network a new AND node
+<p>@('(aignet-add-and lit1 lit2 aignet)') adds to the network a new AND node
 conjoining <tt>lit1</tt> and <tt>lit2</tt>, and returns <tt>(mv lit aignet)</tt>,
 where <tt>lit</tt> is the non-negated literal of the new node.  <tt>lit1</tt>
 and <tt>lit2</tt> must be literals of the network, satisfying
@@ -2286,33 +2589,40 @@ and <tt>lit2</tt> must be literals of the network, satisfying
 function, or its negation).  Note: this function does not do structural
 hashing -- for that, see below.</p>
 
+<p>@('(aignet-add-xor lit1 lit2 aignet)') is similar to @('aignet-add-and'),
+but makes an XOR node rather than an AND.  It also does not to structural
+hashing.</p>
+
 <p>@('(aignet-add-out lit aignet)') adds to the network a new primary output with
 fanin <tt>lit</tt>, and returns <tt>aignet</tt>.  (It does not return a literal
 because a combinational output node is not allowed to be the fanin to another
 node.)  <tt>lit</tt> must satisfy @('aignet-litp').</p>
 
-<p>@('(aignet-add-regin lit ro aignet)') adds to the network a new register input
+<p>@('(aignet-set-nxst lit ro aignet)') adds to the network a new register input
 with fanin <tt>lit</tt>, and connects it to a register output node whose ID is
 <tt>ro</tt>.  It returns <tt>aignet</tt>.  <tt>lit</tt> must satisfy @('aignet-litp')
 and <tt>ro</tt> must be the ID of a register output node that is not yet
 connected to a register input.</p>
+
+<h3>Hashing and Simplifying Constructor Functions</h3>
 
 <p>The following functions:
 @({
     (aignet-hash-and f1 f2 gatesimp strash aignet)
     (aignet-hash-or  f1 f2 gatesimp strash aignet)
     (aignet-hash-xor f1 f2 gatesimp strash aignet)
+    (aignet-hash-iff f1 f2 gatesimp strash aignet)
     (aignet-hash-mux c tb fb gatesimp strash aignet) })
 
 add nodes implementing the respective functions of input literals <tt>f1</tt>
 and <tt>f2</tt> (for and/or/xor) and <tt>c</tt>, <tt>tb</tt>, and <tt>fb</tt>
 for mux (signifying condition, true-branch, and false-branch), possibly with
-structural hashing and lightweight simplification.  All return
-<code>(mv lit strash aignet).</code>
-Gatesimp is an object that specifies both whether to
-structurally hash the nodes and what level of effort to use in Boolean
-simplification, between 0 and 4.  The levels of simplification correspond to
-the paper:
+structural hashing and lightweight simplification.  All return <code>(mv lit
+strash aignet).</code> Gatesimp is a @(see gatesimp) object that specifies
+whether to structurally hash the nodes, what level of effort to use in Boolean
+simplification (between 0 and 4), and whether to use XOR nodes at all and if so
+whether to derive them from AND nodes.  The levels of simplification correspond
+to the paper:
 
 <blockquote>
 R. Brummayer and A. Biere.  Local two-level And-Inverter Graph minimization
@@ -2328,124 +2638,314 @@ nodes.  Practically, we think for most applications building the AIGs is not a
 performance bottleneck and level 3 or 4 can be used with some potential benefit
 and no noticeable slowdown.</p>
 
-<p>To construct a gatesimp object, use @('(mk-gatesimp level hashp)'), where
-level is from 0-4 as above and hashp is Boolean and causes structural hashing
-to be done if non-<tt>NIL</tt>.</p>")
+<h3>@('aignet-build') macro</h3>
 
+<p>See also @(see aignet-build), a macro that lays out the calls necessary to build a nest of logic.  This uses the structural hashing constructor functions.</p>")
 
-
-
-(define aignet-hash-or ((f0 litp)
-                        (f1 litp)
-                        (gatesimp gatesimp-p)
-                        strash
-                        aignet)
+(acl2::def-b*-binder aignet-build
+  :body (b* (((when acl2::forms)
+              (er hard? 'aignet-build "Aignet-build B* binder must be of the form ~
+                      @('((aignet-build pattern gatesimp strash aignet))')."))
+             ((unless (and (true-listp args)
+                           (eql (len args) 4)
+                           (acl2::legal-variablep (second args))
+                           (acl2::legal-variablep (third args))
+                           (acl2::legal-variablep (fourth args))))
+              (er hard? 'aignet-build "Aignet-build B* binder must be of the form ~
+                      @('((aignet-build pattern gatesimp strash aignet))')."))
+             (rest-expr acl2::rest-expr)
+             ((mv & bindings &)
+              (aignet-build-rec (car args) 0 nil (cdr args) nil 'lit-negate)))
+          `(b* ,(reverse bindings) ,rest-expr))
   :parents (aignet-construction)
-  :short "Add a node to an AIGNET representing the OR of the given literals, or
-find a node already representing the required logical expression."
+  :short "B* binder to make a nest of logical functions in an @(see aignet)."
+  :long "<p>See @(see aignet-build) for the non-b*-binder version of this
+macro.  This version makes the bindings created by the macro, such as variables
+assigned using the @(':=') operator, available in the remainder of your @('b*')
+form.</p>")
+
+(defxdoc aignet-build
+  :parents (aignet-construction)
+  :short "Macro that constructs a nested logical expression in an aignet"
+  :long "<p>Usage:</p>
+@({
+  (aignet-build (and (not (:= foo (xor bar baz))) (or foo bar) baz) gatesimp strash aignet)
+ -->
+  (mv result-literal strash aignet)
+ })
+<p>The above invocation translates to something like:</p>
+@({
+ (b* (((mv foo strash aignet)
+       (aignet-hash-xor bar baz gatesimp strash aignet))
+      ((mv tmp0 strash aignet)
+       (aignet-hash-or foo bar gatesimp strash aignet))
+      ((mv tmp1 strash aignet)
+       (aignet-hash-and tmp0 baz gatesimp strash aignet))
+      ((mv tmp2 strash aignet)
+       (aignet-hash-and (lit-negate foo) tmp1 gatesimp strash aignet)))
+   (mv tmp2 strash aignet))
+ })
+
+<p>There is a @(see b*) binder of the same name that creates the above bindings
+within an existing @('b*') form; e.g.:</p>
+
+@({
+ (b* (((aignet-build
+        (:= ans (and (not (:= foo (xor bar baz))) (or foo bar) baz))
+        gatesimp strash aignet)))
+    (result-form))
+ })
+<p>expands to something like:</p>
+@({
+ (b* (((mv foo strash aignet)
+       (aignet-hash-xor bar baz gatesimp strash aignet))
+      ((mv tmp0 strash aignet)
+       (aignet-hash-or foo bar gatesimp strash aignet))
+      ((mv tmp1 strash aignet)
+       (aignet-hash-and tmp0 baz gatesimp strash aignet))
+      ((mv ans strash aignet)
+       (aignet-hash-and (lit-negate foo) tmp1 gatesimp strash aignet)))
+   (result-form))
+ })
+
+
+<h3>Supported Operators</h3>
+
+<ul>
+
+<li>The operators @('and'), @('or'), @('xor'), and @('iff') produce calls of
+@(see aignet-hash-and), @(see aignet-hash-or), @(see aignet-hash-xor), and
+@(see aignet-hash-iff), respectively.  Since these are all
+associative/commutative functions, they support variably many
+arguments (treated as right-associated).</li>
+
+<li>The operators @('if') and @('mux') are synonymous and both produce a call
+of @('aignet-hash-mux').</li>
+
+<li>The operator @('not') simply uses @('lit-negate') on the literal resulting from its argument.</li>
+
+<li>The operator @(':=') must have a variable as its first argument and an
+expression as its second, and binds the variable to the literal resulting from
+the expression.  That variable may be used subsequently within the operator
+expression, and when using the @('b*') binder form, remains bound in the rest
+of the @('b*').</li>
+</ul>")
+
+
+
+(define aignet-hash-or ((lit1 litp :type (unsigned-byte 30) "Literal to AND with lit2")
+                         (lit2 litp :type (unsigned-byte 30))
+                         (gatesimp gatesimp-p :type (unsigned-byte 6)
+                                   "Configuration for how much simplification to try and whether to use hashing")
+                         (strash "Stobj containing the aignet's structural hash table")
+                         aignet)
+  :split-types t
+  :parents (aignet-construction)
+  :short "Implement an OR of two literals node in an AIGNET, or find a node already
+          representing the required logical expression."
   :long "<p>See @(see aignet-construction).</p>"
-  :inline t
-  :guard (and (fanin-litp f0 aignet)
-              (fanin-litp f1 aignet))
+  :guard (and (fanin-litp lit1 aignet)
+              (fanin-litp lit2 aignet))
+  :returns (mv (result litp :rule-classes (:rewrite :type-prescription))
+               (new-strash)
+               (new-aignet))
   (b* (((mv lit strash aignet)
-        (aignet-hash-and (lit-negate^ f0) (lit-negate^ f1) gatesimp strash aignet)))
+        (aignet-hash-and (lit-negate^ lit1) (lit-negate^ lit2) gatesimp strash aignet)))
     (mv (lit-negate^ lit) strash aignet))
 
   ///
 
+  ;; (defcong lit-equiv equal (aignet-hash-or lit1 lit2 gatesimp strash aignet) 1)
+  ;; (defcong lit-equiv equal (aignet-hash-or lit1 lit2 gatesimp strash aignet) 2)
+  ;; (defcong nat-equiv equal (aignet-hash-or lit1 lit2 gatesimp strash aignet) 3)
+
   (def-aignet-preservation-thms aignet-hash-or)
 
-  (defthm litp-aignet-hash-or
-    (litp (mv-nth 0 (aignet-hash-or lit1 lit2 gatesimp strash aignet))))
-
-  (defthm aignet-litp-aignet-hash-or
+  (defret aignet-litp-of-<fn>
     (implies (and (aignet-litp lit1 aignet)
                   (aignet-litp lit2 aignet))
-             (b* (((mv lit & aignet)
-                   (aignet-hash-or lit1 lit2 gatesimp strash aignet)))
-               (aignet-litp lit aignet))))
+             (aignet-litp result new-aignet)))
 
-  (defthm lit-eval-of-aignet-hash-or
-    (b* (((mv lit & aignet1)
-          (aignet-hash-or lit1 lit2 gatesimp strash aignet)))
-      (equal (lit-eval lit aignet-invals aignet-regvals aignet1)
-             (b-ior (lit-eval lit1 aignet-invals aignet-regvals aignet)
-                    (lit-eval lit2 aignet-invals aignet-regvals aignet))))
-    :hints(("Goal" :in-theory (enable eval-and-of-lits
-                                      b-ior b-and
-                                      b-not))))
 
-  (defthm stype-counts-preserved-of-aignet-hash-or
+  (defret lit-eval-of-<fn>
+    (equal (lit-eval result invals regvals new-aignet)
+           (b-ior (lit-eval lit1 invals regvals aignet)
+                  (lit-eval lit2 invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable eval-and-of-lits b-ior))))
+
+  (defret stype-counts-preserved-of-<fn>
     (implies (and (not (equal (stype-fix stype) (and-stype)))
                   (not (equal (stype-fix stype) (xor-stype))))
-             (equal (stype-count stype (mv-nth 2 (aignet-hash-or
-                                                  f0 f1 gatesimp strash
-                                                  aignet)))
-                    (stype-count stype aignet)))))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet))))
 
-(define aignet-hash-mux ((c litp)
-                         (tb litp)
-                         (fb litp)
-                         (gatesimp gatesimp-p)
-                         strash
+  (local (defthm unsigned-byte-p-when-aignet-litp-of-lit-fix
+           (implies (and (aignet-litp lit aignet)
+                         (< (node-count aignet) #x1fffffff))
+                    (unsigned-byte-p 30 (lit-fix lit)))
+           :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
+                                  (lit (lit-fix lit))))
+                    :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+
+  (local (defret unsigned-byte-p-lemma-1
+           (implies (and (< (node-count aignet) #x1fffffff))
+                    (unsigned-byte-p 30 result))
+           :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
+                                  (lit result) (aignet new-aignet)))
+                    :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+
+  (defret unsigned-byte-p-of-<fn>
+    (implies (and (< (node-count aignet) #x1fffffff)
+                  (natp n) (<= 30 n))
+             (unsigned-byte-p n result))
+    :hints (("goal" :use unsigned-byte-p-lemma-1
+             :in-theory (disable unsigned-byte-p-lemma-1))))
+
+  (defret node-count-of-<fn>
+    (<= (node-count new-aignet) (+ 1 (node-count aignet)))
+    :rule-classes :linear))
+
+
+(define aignet-hash-iff ((lit1 litp :type (unsigned-byte 30) "Literal to AND with lit2")
+                         (lit2 litp :type (unsigned-byte 30))
+                         (gatesimp gatesimp-p :type (unsigned-byte 6)
+                                   "Configuration for how much simplification to try and whether to use hashing")
+                         (strash "Stobj containing the aignet's structural hash table")
                          aignet)
-  :inline t
+  :split-types t
+  :parents (aignet-construction)
+  :short "Implement an IFF of two literals node in an AIGNET, or find a node already
+          representing the required logical expression."
+  :long "<p>See @(see aignet-construction).</p>"
+  :guard (and (fanin-litp lit1 aignet)
+              (fanin-litp lit2 aignet))
+  :returns (mv (result litp :rule-classes (:rewrite :type-prescription))
+               (new-strash)
+               (new-aignet))
+  (b* (((mv lit strash aignet)
+        (aignet-hash-xor lit1 lit2 gatesimp strash aignet)))
+    (mv (lit-negate lit) strash aignet))
+
+  ///
+
+  ;; (defcong lit-equiv equal (aignet-hash-or lit1 lit2 gatesimp strash aignet) 1)
+  ;; (defcong lit-equiv equal (aignet-hash-or lit1 lit2 gatesimp strash aignet) 2)
+  ;; (defcong nat-equiv equal (aignet-hash-or lit1 lit2 gatesimp strash aignet) 3)
+
+  (def-aignet-preservation-thms aignet-hash-iff)
+
+  (defret aignet-litp-of-<fn>
+    (implies (and (aignet-litp lit1 aignet)
+                  (aignet-litp lit2 aignet))
+             (aignet-litp result new-aignet)))
+
+
+  (defret lit-eval-of-<fn>
+    (equal (lit-eval result invals regvals new-aignet)
+           (b-not (b-xor (lit-eval lit1 invals regvals aignet)
+                         (lit-eval lit2 invals regvals aignet))))
+    :hints(("Goal" :in-theory (enable eval-and-of-lits b-ior))))
+
+  (defret stype-counts-preserved-of-<fn>
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet))))
+
+  (local (defthm unsigned-byte-p-when-aignet-litp-of-lit-fix
+           (implies (and (aignet-litp lit aignet)
+                         (< (node-count aignet) #x1fffffff))
+                    (unsigned-byte-p 30 (lit-fix lit)))
+           :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
+                                  (lit (lit-fix lit))))
+                    :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+
+  (local (defret unsigned-byte-p-lemma-1
+           (implies (and (< (node-count aignet) #x1ffffffd))
+                    (unsigned-byte-p 30 result))
+           :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
+                                  (lit result) (aignet new-aignet)))
+                    :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+
+  (defret unsigned-byte-p-of-<fn>
+    (implies (and (< (node-count aignet) #x1ffffffd)
+                  (natp n) (<= 30 n))
+             (unsigned-byte-p n result))
+    :hints (("goal" :use unsigned-byte-p-lemma-1
+             :in-theory (disable unsigned-byte-p-lemma-1)))))
+
+(define aignet-hash-mux ((c litp :type (unsigned-byte 30) "Literal to AND with lit2")
+                         (tb litp :type (unsigned-byte 30))
+                         (fb litp :type (unsigned-byte 30))
+                         (gatesimp gatesimp-p :type (unsigned-byte 6)
+                                   "Configuration for how much simplification to try and whether to use hashing")
+                         (strash "Stobj containing the aignet's structural hash table")
+                         aignet)
+  :split-types t
+  :parents (aignet-construction)
+  :short "Implement an if-then-else of the given literals in an AIGNET, or find
+          a node already representing the required logical expression."
+  :long "<p>See @(see aignet-construction).</p>"
   :guard (and (fanin-litp c aignet)
               (fanin-litp tb aignet)
               (fanin-litp fb aignet))
+  :returns (mv (result litp :rule-classes (:rewrite :type-prescription))
+               (new-strash)
+               (new-aignet))
   (b* ((c (mbe :logic (non-exec (aignet-lit-fix c aignet))
                :exec c))
        (tb (mbe :logic (non-exec (aignet-lit-fix tb aignet))
                 :exec tb))
        (fb (mbe :logic (non-exec (aignet-lit-fix fb aignet))
-                :exec fb))
-       ((mv c-tb strash aignet)
-        (aignet-hash-and c tb gatesimp strash aignet))
-       ((mv nc-fb strash aignet)
-        (aignet-hash-and (lit-negate^ c) fb gatesimp strash aignet)))
-    (aignet-hash-or c-tb nc-fb gatesimp strash aignet))
+                :exec fb)))
+    (aignet-build (or (and c tb) (and (not c) fb)) gatesimp strash aignet))
 
   ///
 
+  ;; (defcong lit-equiv equal (aignet-hash-or lit1 lit2 gatesimp strash aignet) 1)
+  ;; (defcong lit-equiv equal (aignet-hash-or lit1 lit2 gatesimp strash aignet) 2)
+  ;; (defcong nat-equiv equal (aignet-hash-or lit1 lit2 gatesimp strash aignet) 3)
+
   (def-aignet-preservation-thms aignet-hash-mux)
 
-  (defthm litp-aignet-hash-mux
-    (litp (mv-nth 0 (aignet-hash-mux c tb fb gatesimp strash aignet))))
+  (defret aignet-litp-of-<fn>
+    (aignet-litp result new-aignet))
 
-  ;; (defcong lit-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 1)
-  ;; (defcong lit-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 2)
-  ;; (defcong lit-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 3)
-  ;; (defcong nat-equiv equal (aignet-hash-mux c tb fb gatesimp strash aignet) 4)
 
-  (defthm aignet-litp-aignet-hash-mux
-    (implies (and (aignet-litp c aignet)
-                  (aignet-litp tb aignet)
-                  (aignet-litp fb aignet))
-             (b* (((mv lit & aignet)
-                   (aignet-hash-mux c tb fb gatesimp strash aignet)))
-               (aignet-litp lit aignet))))
+  (defret lit-eval-of-<fn>
+    (equal (lit-eval result invals regvals new-aignet)
+           (b-ite (lit-eval c invals regvals aignet)
+                  (lit-eval tb invals regvals aignet)
+                  (lit-eval fb invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable b-ite))))
 
-  (defthm lit-eval-of-aignet-hash-mux
-    (b* (((mv lit & aignet1)
-          (aignet-hash-mux c tb fb gatesimp strash aignet)))
-      (equal (lit-eval lit aignet-invals aignet-regvals aignet1)
-             (b-ior (b-and
-                     (lit-eval c aignet-invals aignet-regvals aignet)
-                     (lit-eval tb aignet-invals aignet-regvals aignet))
-                    (b-and
-                     (b-not
-                      (lit-eval c aignet-invals aignet-regvals aignet))
-                     (lit-eval fb aignet-invals aignet-regvals aignet)))))
-    :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable lit-eval-of-aignet-lit-fix)))))
-
-  (defthm stype-counts-preserved-of-aignet-hash-mux
+  (defret stype-counts-preserved-of-<fn>
     (implies (and (not (equal (stype-fix stype) (and-stype)))
                   (not (equal (stype-fix stype) (xor-stype))))
-             (equal (stype-count stype (mv-nth 2 (aignet-hash-mux
-                                                  c tb fb gatesimp strash
-                                                  aignet)))
-                    (stype-count stype aignet)))))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet))))
+
+  (local (defthm unsigned-byte-p-when-aignet-litp-of-lit-fix
+           (implies (and (aignet-litp lit aignet)
+                         (< (node-count aignet) #x1fffffff))
+                    (unsigned-byte-p 30 (lit-fix lit)))
+           :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
+                                  (lit (lit-fix lit))))
+                    :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+
+  (local (defret unsigned-byte-p-lemma-1
+           (implies (and (< (node-count aignet) #x1ffffffd))
+                    (unsigned-byte-p 30 result))))
+
+  (defret unsigned-byte-p-of-<fn>
+    (implies (and (< (node-count aignet) #x1ffffffd)
+                  (natp n) (<= 30 n))
+             (unsigned-byte-p n result))
+    :hints (("goal" :use unsigned-byte-p-lemma-1
+             :in-theory (disable unsigned-byte-p-lemma-1)))))
+
+
+
 
 
 

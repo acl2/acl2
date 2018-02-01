@@ -391,9 +391,9 @@
         ;; BOZO for unsat, map to constants or something?
         (mv invals regvals inmasks regmasks status copy strash aignet2 state))
        ((mv copy strash aignet2)
-        (observability-fixed-inputs 0 invals inmasks lit aignet copy 9 strash aignet2))
+        (observability-fixed-inputs 0 invals inmasks lit aignet copy (default-gatesimp) strash aignet2))
        ((mv copy strash aignet2)
-        (observability-fixed-regs 0 regvals regmasks lit aignet copy 9 strash aignet2)))
+        (observability-fixed-regs 0 regvals regmasks lit aignet copy (default-gatesimp) strash aignet2)))
     (mv invals regvals inmasks regmasks status copy strash aignet2 state))
   ///
   
@@ -519,7 +519,7 @@
                (mark (resize-bits (+ 1 (lit-id hyp)) mark))
                ;; (litarr (resize-lits (+ 1 (lit-id hyp)) litarr))
                ((mv mark copy strash aignet2)
-                (aignet-copy-dfs-rec (lit-id hyp) aignet mark copy strash 9 aignet2)))
+                (aignet-copy-dfs-rec (lit-id hyp) aignet mark copy strash (default-gatesimp) aignet2)))
             (mv mark copy strash aignet2)))
          (hyp-copy (lit-copy hyp copy))
          ((mv ?status copy strash aignet2 state)
@@ -530,9 +530,9 @@
           (b* (((acl2::local-stobjs mark)
                 (mv mark copy strash aignet2))
                (mark (resize-bits (+ 1 (lit-id concl)) mark)))
-            (aignet-copy-dfs-rec (lit-id concl) aignet mark copy strash 9 aignet2)))
+            (aignet-copy-dfs-rec (lit-id concl) aignet mark copy strash (default-gatesimp) aignet2)))
          (concl-copy (lit-copy concl copy))
-         ((mv and-lit strash aignet2) (aignet-hash-and hyp-copy concl-copy 9 strash aignet2)))
+         ((mv and-lit strash aignet2) (aignet-hash-and hyp-copy concl-copy (default-gatesimp) strash aignet2)))
       (mv and-lit copy strash aignet2 state))
     ///
     
@@ -728,7 +728,7 @@
         (b* ((aignet (aignet-fix aignet)))
           (mv 1 strash aignet)))
        ((mv rest strash aignet) (aignet-build-wide-and (cdr lits) strash aignet)))
-    (aignet-hash-and (car lits) rest 9 strash aignet))
+    (aignet-hash-and (car lits) rest (default-gatesimp) strash aignet))
   ///
   (defret aignet-extension-p-of-aignet-build-wide-and
     (aignet-extension-p new-aignet aignet))
@@ -1306,7 +1306,7 @@ only changed in cases where @('A') des not hold:</p>
         (mv aignet2 aignet-tmp state))
        (aignet2 (aignet-raw-copy aignet aignet2))
        ((mv aignet-tmp aignet2 state) (observability-fix-core aignet2 aignet-tmp config state))
-       (aignet2 (aignet-prune-comb aignet-tmp aignet2 9)))
+       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (default-gatesimp))))
     (mv aignet2 aignet-tmp state))
   ///
   (defret num-ins-of-observability-fix
@@ -1340,7 +1340,7 @@ only changed in cases where @('A') des not hold:</p>
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp state))
        ((mv aignet-tmp aignet state) (observability-fix-core aignet aignet-tmp config state))
-       (aignet (aignet-prune-comb aignet-tmp aignet 9)))
+       (aignet (aignet-prune-comb aignet-tmp aignet (default-gatesimp))))
     (mv aignet aignet-tmp state))
   ///
   (defret num-ins-of-observability-fix!

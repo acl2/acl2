@@ -1992,8 +1992,8 @@
            ;; the candidate equivalent isn't equivalent
            ((mv and-lit strash aignet2)
             (if (eql 1 (snode->regp slot1))
-                (aignet-hash-xor lit0-copy lit1-copy 9 strash aignet2)
-              (aignet-hash-and lit0-copy lit1-copy 9 strash aignet2)))
+                (aignet-hash-xor lit0-copy lit1-copy (default-gatesimp) strash aignet2)
+              (aignet-hash-and lit0-copy lit1-copy (default-gatesimp) strash aignet2)))
            ;; update refcounts and copy for new node.
            ;; maybe-update-refs is sensitive to whether a new node was actually added or not.
            ;; copy needs to be updated again if we prove an equivalence.
@@ -2617,7 +2617,7 @@ is a @(see fraig-config) object.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet2 aignet-tmp state))
        ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))
-       (aignet2 (aignet-prune-comb aignet-tmp aignet2 9)))
+       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (default-gatesimp))))
     (mv aignet2 aignet-tmp state))
   ///
   (defret num-ins-of-fraig
@@ -2651,7 +2651,7 @@ is a @(see fraig-config) object.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp state))
        ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))
-       (aignet (aignet-prune-comb aignet-tmp aignet 9)))
+       (aignet (aignet-prune-comb aignet-tmp aignet (default-gatesimp))))
     (mv aignet aignet-tmp state))
   ///
   (defret num-ins-of-fraig!

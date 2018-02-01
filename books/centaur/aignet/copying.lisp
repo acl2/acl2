@@ -1722,7 +1722,7 @@
                   '(:in-theory (enable fanin-if-co))))))
 
   (define aignet-complete-copy (aignet &key
-                                       ((gatesimp gatesimp-p) '9)
+                                       ((gatesimp gatesimp-p) '(default-gatesimp))
                                        (aignet2 'aignet2))
     :returns aignet2
     :parents (aignet)
@@ -2242,7 +2242,7 @@ aignet when its initial value is the specified vector:</p>
     (fty::deffixequiv aignet-copy-init-aux :args ((gatesimp gatesimp-p))))
 
   (define aignet-copy-init (aignet initsts &key
-                                   ((gatesimp gatesimp-p) '9)
+                                   ((gatesimp gatesimp-p) '(default-gatesimp))
                                    (aignet2 'aignet2))
     :parents nil
     :guard (<= (num-regs aignet) (bits-length initsts))
@@ -2437,8 +2437,8 @@ aignet when its initial value is the specified vector:</p>
                                      ((mv-nth '2 ,witness) . inframes)))))))
             (and stable-under-simplificationp
                  '(:use ((:instance seq-equiv-necc
-                          (aignet (aignet-copy-init-fn aignet initsts 9 nil))
-                          (aignet2 (aignet-copy-init-fn aignet2 initsts2 9 nil))))
+                          (aignet (aignet-copy-init-fn aignet initsts (default-gatesimp) nil))
+                          (aignet2 (aignet-copy-init-fn aignet2 initsts2 (default-gatesimp) nil))))
                    :in-theory (e/d () (seq-equiv-necc)))))
     :otf-flg t))
 

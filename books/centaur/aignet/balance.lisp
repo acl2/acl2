@@ -327,8 +327,8 @@
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   :returns (new-levels)
   (b* ((id (lnfix id))
-       (levels (if (<= (u32-length levels) id)
-                   (resize-u32 (max 16 (* 2 id)) levels)
+       (levels (if (<= (u32-length levels) (max-fanin aignet))
+                   (resize-u32 (max 16 (* 2 (max-fanin aignet))) levels)
                  levels))
        ((unless (eql (id->type id aignet) (gate-type)))
         (set-u32 id 0 levels))
@@ -341,7 +341,7 @@
     :rule-classes :linear)
 
   (defret aignet-update-node-level-length-lower-bound
-    (< (nfix id) (len new-levels))
+    (< (node-count (find-max-fanin aignet)) (len new-levels))
     :rule-classes :linear))
 
 
@@ -388,10 +388,10 @@
        ((when (eql (lit-id candidate) (lit-id first)))
         (mv candidate (cdr rest)))
        ((mv existing & & &)
-        (mbe :logic (aignet-and-gate-simp/strash first candidate 9 strash aignet2)
+        (mbe :logic (aignet-and-gate-simp/strash first candidate (default-gatesimp) strash aignet2)
              :exec (if (<= (car rest) #x1fffffff) ;; bozo
-                       (aignet-and-gate-simp/strash first candidate 9 strash aignet2)
-                     (ec-call (aignet-and-gate-simp/strash first candidate 9 strash aignet2)))))
+                       (aignet-and-gate-simp/strash first candidate (default-gatesimp) strash aignet2)
+                     (ec-call (aignet-and-gate-simp/strash first candidate (default-gatesimp) strash aignet2)))))
        ((when existing)
         (mv candidate (cdr rest)))
        ((mv pairing remaining)
@@ -578,21 +578,19 @@
              (<= (lit-id lit) (node-count (find-max-fanin new-aignet)))))
   :rule-classes :linear)
 
-(local (defret max-fanin-of-aignet-hash-xor-casesplit
-         (implies (and (aignet-litp lit1 aignet)
-                       (aignet-litp lit2 aignet))
-                  (equal (node-count (find-max-fanin new-aignet))
-                         (if (> (lit-id xor-lit) (node-count (find-max-fanin aignet)))
-                             (lit-id xor-lit)
-                           (node-count (find-max-fanin aignet)))))
-         :fn aignet-hash-xor
-         :hints(("Goal" :in-theory (e/d (aignet-hash-xor max-fanin-of-aignet-install-gate))))))
+;; (local (defret max-fanin-of-aignet-hash-xor-casesplit
+;;          (equal (node-count (find-max-fanin new-aignet))
+;;                 (if (> (lit-id xor-lit) (node-count (find-max-fanin aignet)))
+;;                     (lit-id xor-lit)
+;;                   (node-count (find-max-fanin aignet))))
+;;          :fn aignet-hash-xor
+;;          :hints(("Goal" :in-theory (e/d (aignet-hash-xor max-fanin-of-aignet-install-gate))))))
 
 (defthm aignet-hash-xor-id-less-than-max-fanin
-  (implies (and (aignet-litp lit1 aignet)
-                (aignet-litp lit2 aignet))
-           (b* (((mv lit ?strash new-aignet) (aignet-hash-xor lit1 lit2 gatesimp strash aignet)))
-             (<= (lit-id lit) (node-count (find-max-fanin new-aignet)))))
+  (b* (((mv lit ?strash new-aignet) (aignet-hash-xor lit1 lit2 gatesimp strash aignet)))
+    (<= (lit-id lit) (node-count (find-max-fanin new-aignet))))
+  :hints (("goal" :use ((:instance aignet-litp-of-aignet-hash-xor))
+           :in-theory (disable aignet-litp-of-aignet-hash-xor)))
   :rule-classes :linear)
 
 
@@ -626,7 +624,7 @@
         (mv (lit-fix (car lits)) levels aignet2 strash))
        ((mv lit1 lit2 rest)
         (aignet-balance-find-pairing lits config levels aignet2 strash))
-       ((mv new-lit strash aignet2) (aignet-hash-and lit1 lit2 9 strash aignet2))
+       ((mv new-lit strash aignet2) (aignet-hash-and lit1 lit2 (default-gatesimp) strash aignet2))
        ((when (eql (lit-id new-lit) 0))
         ;; this way we don't insert constant nodes into the list
         (if (eql (lit->neg new-lit) 0)
@@ -664,7 +662,7 @@
             (and stable-under-simplificationp
                  '(:use ((:instance aignet-eval-conjunction-of-hash-and
                           (aignet aignet2)
-                          (gatesimp 9)
+                          (gatesimp (default-gatesimp))
                           (lit1 (mv-nth 0 (aignet-balance-find-pairing
                                            lits config levels aignet2 strash)))
                           (lit2 (mv-nth 1 (aignet-balance-find-pairing
@@ -852,10 +850,10 @@
        ((when (eql (lit-id candidate) (lit-id first)))
         (mv candidate (cdr rest)))
        ((mv existing & & &)
-        (mbe :logic (aignet-xor-gate-simp/strash first candidate 9 strash aignet2)
+        (mbe :logic (aignet-xor-gate-simp/strash first candidate (default-gatesimp) strash aignet2)
              :exec (if (<= (car rest) #x1fffffff) ;; bozo
-                       (aignet-xor-gate-simp/strash first candidate 9 strash aignet2)
-                     (ec-call (aignet-xor-gate-simp/strash first candidate 9 strash aignet2)))))
+                       (aignet-xor-gate-simp/strash first candidate (default-gatesimp) strash aignet2)
+                     (ec-call (aignet-xor-gate-simp/strash first candidate (default-gatesimp) strash aignet2)))))
        ((when existing)
         (mv candidate (cdr rest)))
        ((mv pairing remaining)
@@ -1029,7 +1027,8 @@
         (mv (lit-negate-cond (car lits) neg) levels aignet2 strash))
        ((mv lit1 lit2 rest)
         (aignet-balance-find-xor-pairing lits config levels aignet2 strash))
-       ((mv new-lit strash aignet2) (aignet-hash-xor lit1 lit2 9 strash aignet2))
+       ((mv new-lit strash aignet2) (aignet-hash-xor lit1 lit2 (default-gatesimp) strash aignet2))
+       (levels (aignet-update-node-level (lit-id new-lit) levels aignet2))
        ((when (eql (lit-id new-lit) 0))
         ;; this way we don't insert constant nodes into the list
         (if (consp rest)
@@ -1037,7 +1036,6 @@
           (mv (mbe :logic (mk-lit 0 (b-xor (lit-neg new-lit) neg))
                    :exec (b-xor (lit-neg new-lit) neg))
               levels aignet2 strash)))
-       (levels (aignet-update-node-level (lit-id new-lit) levels aignet2))
        (rest (levels-sort-insert new-lit rest levels)))
     (aignet-balance-build-superxor-rec neg rest config levels aignet2 strash))
   ///
@@ -1072,7 +1070,7 @@
             (and stable-under-simplificationp
                  '(:use ((:instance aignet-eval-parity-of-hash-xor
                           (aignet aignet2)
-                          (gatesimp 9)
+                          (gatesimp (default-gatesimp))
                           (lit1 (mv-nth 0 (aignet-balance-find-xor-pairing
                                            lits config levels aignet2 strash)))
                           (lit2 (mv-nth 1 (aignet-balance-find-xor-pairing
@@ -2166,7 +2164,7 @@ is a @(see balance-config) object.</p>"
         (mv aignet2 aignet-tmp))
        (- (cw "Balance input: ") (print-aignet-levels aignet))
        (aignet-tmp (balance-core aignet aignet-tmp config))
-       (aignet2 (aignet-prune-comb aignet-tmp aignet2 9))
+       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (default-gatesimp)))
        (- (cw "Balance output: ") (print-aignet-levels aignet)))
     (mv aignet2 aignet-tmp))
   ///
@@ -2200,7 +2198,7 @@ is a @(see balance-config) object.</p>"
         (mv aignet aignet-tmp))
        (- (cw "Balance input: ") (print-aignet-levels aignet))
        (aignet-tmp (balance-core aignet aignet-tmp config))
-       (aignet (aignet-prune-comb aignet-tmp aignet 9))
+       (aignet (aignet-prune-comb aignet-tmp aignet (default-gatesimp)))
        (- (cw "Balance output: ") (print-aignet-levels aignet)))
     (mv aignet aignet-tmp))
   ///
