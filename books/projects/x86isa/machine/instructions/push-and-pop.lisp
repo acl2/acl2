@@ -161,19 +161,28 @@
   :parents (one-byte-opcodes)
 
   :short "PUSH: FF/6 r/m"
+
   :long "<p>Op/En: M</p>
-   <p><tt>FF/6 r/m</tt></p>
-   <p>Note that <tt>FF/6 r/m32</tt> is N.E. in the 64-bit mode.</p>
+   <p><tt>FF/6 r/m16/32/64</tt></p>
+   <p>Note that <tt>FF/6 r/m32</tt> is N.E. in 64-bit mode
+      and that <tt>FF/6 r/m64</tt> is N.E. in 32-bit mode.</p>
 
-<p>PUSH doesn't have a separate instruction semantic function,
-unlike other opcodes like ADD, SUB, etc. I've just coupled the
-decoding with the execution in this case.</p>
+   <p>PUSH does not have a separate instruction semantic function, unlike other
+   opcodes like ADD, SUB, etc. The decoding is coupled with the execution in
+   this case.</p>
 
-<p>This opcode belongs to Group 5, and it has an opcode
-extension (ModR/m.reg = 6).</p>"
+   <p>This opcode belongs to Group 5, and it has an opcode
+   extension (ModR/m.reg = 6).</p>"
+
+  ;; This instruction has been extended to 32-bit mode except for the call to
+  ;; X86-OPERAND-FROM-MODR/M-AND-SIB-BYTES, which still needs to be extended to
+  ;; 32-bit mode. The top-level dispatch is still calling this function only in
+  ;; 64-bit mode (i.e. this instruction is still considered unimplemented in
+  ;; 32-bit mode).
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
+
   :implemented
   (progn (add-to-implemented-opcodes-table 'PUSH #xFF '(:reg 6) 'x86-push-Ev))
 
@@ -193,15 +202,20 @@ extension (ModR/m.reg = 6).</p>"
        (mod (mrm-mod modr/m))
 
        ((the (integer 1 8) operand-size)
-        (if p3?
-            2
-          ;; 4-byte operand size is N.E. in 64-bit mode
-          ;; See http://www.x86-64.org/documentation/assembly.html
-          8))
-       (rsp (rgfi *rsp* x86))
-       (new-rsp (- rsp operand-size))
-       ((when (not (canonical-address-p new-rsp)))
-        (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
+        (if (64-bit-modep x86)
+            (if p3? 2 8)
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+
+       (rsp (read-*sp x86))
+       ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand
@@ -225,15 +239,9 @@ extension (ModR/m.reg = 6).</p>"
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ increment-RIP-by temp-rip))
+       ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!fault-fresh :gp 0 :temp-rip-not-canonical temp-rip)) ;; #GP(0)
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
          (the (signed-byte #.*max-linear-address-size*)
@@ -254,8 +262,8 @@ extension (ModR/m.reg = 6).</p>"
        ((when flg) ;; Would also handle bad rsp values.
         (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
 
-       (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*sp new-rsp x86))
+       (x86 (write-*ip temp-rip x86)))
 
     x86))
 
