@@ -66,7 +66,10 @@
    (ctrex-queue-limit acl2::maybe-natp "Limit to number of counterexamples that may be queued before resimulation" :default 16)
    (ctrex-force-resim booleanp "Force resimulation of a counterexample before checking another node in the same equivalence class" :default t)
    (random-seed-name symbolp "Name to use for seed-random, or NIL to not reseed the random number generator")
-   (outs-only booleanp "Only check the combinational outputs of the network" :default nil))
+   (outs-only booleanp "Only check the combinational outputs of the network" :default nil)
+   (gatesimp gatesimp-p :default (default-gatesimp)
+             "Gate simplification parameters.  Warning: This transform will do
+              nothing good if hashing is turned off."))
   :parents (fraig comb-transform)
   :short "Configuration object for the @(see fraig) aignet transform."
   :tag :fraig-config)
@@ -1988,12 +1991,13 @@
            (lit0-copy (lit-copy lit0 copy))
            (lit1-copy (lit-copy lit1 copy))
            (prev-count (num-nodes aignet2))
+           ((fraig-config config))
            ;; make AND/XOR of the two corresponding lits; this is the new node if
            ;; the candidate equivalent isn't equivalent
            ((mv and-lit strash aignet2)
             (if (eql 1 (snode->regp slot1))
-                (aignet-hash-xor lit0-copy lit1-copy (default-gatesimp) strash aignet2)
-              (aignet-hash-and lit0-copy lit1-copy (default-gatesimp) strash aignet2)))
+                (aignet-hash-xor lit0-copy lit1-copy config.gatesimp strash aignet2)
+              (aignet-hash-and lit0-copy lit1-copy config.gatesimp strash aignet2)))
            ;; update refcounts and copy for new node.
            ;; maybe-update-refs is sensitive to whether a new node was actually added or not.
            ;; copy needs to be updated again if we prove an equivalence.
@@ -2617,7 +2621,7 @@ is a @(see fraig-config) object.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet2 aignet-tmp state))
        ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))
-       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (default-gatesimp))))
+       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (fraig-config->gatesimp config))))
     (mv aignet2 aignet-tmp state))
   ///
   (defret num-ins-of-fraig
@@ -2651,7 +2655,7 @@ is a @(see fraig-config) object.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp state))
        ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))
-       (aignet (aignet-prune-comb aignet-tmp aignet (default-gatesimp))))
+       (aignet (aignet-prune-comb aignet-tmp aignet (fraig-config->gatesimp config))))
     (mv aignet aignet-tmp state))
   ///
   (defret num-ins-of-fraig!

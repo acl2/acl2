@@ -453,7 +453,11 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
     (<= (gatesimp->xor-mode x) 2)
     :rule-classes (:rewrite :linear))
 
-  (defmacro default-gatesimp () (make-gatesimp)))
+  (make-event
+   `(define default-gatesimp ()
+      :enabled t
+      ;; not inlined, so it can be redefined
+      ',(make-gatesimp))))
   
 
 ;; Signature for the various simplifiers:
@@ -2109,6 +2113,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                                      (aignet))
   :guard (and (fanin-litp x0 aignet)
               (fanin-litp x1 aignet))
+  :split-types t
   :returns (mv (code simpcode-p)
                (key integerp :rule-classes :type-prescription)
                (new0 litp :rule-classes :type-prescription)
@@ -2143,6 +2148,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                                      (aignet))
   :guard (and (fanin-litp x0 aignet)
               (fanin-litp x1 aignet))
+  :split-types t
   :returns (mv (code simpcode-p)
                (key integerp :rule-classes :type-prescription)
                (new0 litp :rule-classes :type-prescription)

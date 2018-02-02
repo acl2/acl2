@@ -50,13 +50,24 @@
 
 (defattach gl-satlink-config gl-default-satlink-config)
 
+(encapsulate
+  (((gl-satlink-gatesimp) => *))
+  (local (defun gl-satlink-gatesimp () (aignet::default-gatesimp)))
+  (defthm gl-satlink-gatesimp-constraint
+    (aignet::gatesimp-p (gl-satlink-gatesimp))))
+
+
+(defattach gl-satlink-gatesimp aignet::default-gatesimp)
+
 (defun bfr-satlink (prop)
   (declare (xargs :guard t))
   (bfr-case
    :bdd (mv nil nil nil) ;; fail
    :aig
    (b* (((mv status env)
-         (acl2::aig-sat prop :config (gl-satlink-config) :transform-config t))) ;; why not?
+         (acl2::aig-sat prop :config (gl-satlink-config)
+                        :transform-config t ;; why not?
+                        :gatesimp (gl-satlink-gatesimp))))
      (case status
        (:sat (mv t t env))
        (:unsat (mv nil t nil))

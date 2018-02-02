@@ -154,7 +154,7 @@
                       (not y)))
              :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
-(define aig->aignet (aig aignet)
+(define aig->aignet (aig aignet &key ((gatesimp gatesimp-p) '(default-gatesimp)))
   :returns (mv (vars "variables from the hons aig, as ordered in the aignet")
                new-aignet)
   (b* (((local-stobjs strash)
@@ -166,15 +166,15 @@
        (varmap (consecutive-vars-to-varmap 1 vars nil))
        (strash (strashtab-init 100 nil nil strash))
        ((mv lits strash aignet)
-        (aiglist-to-aignet-top aiglist varmap (default-gatesimp) strash aignet))
+        (aiglist-to-aignet-top aiglist varmap gatesimp strash aignet))
        (aignet (aignet-add-out (car lits) aignet)))
     (fast-alist-free varmap)
     (mv vars aignet strash))
   ///
   (defthm normalize-aig->aignet
     (implies (syntaxp (not (equal aignet ''nil)))
-             (equal (aig->aignet aig aignet)
-                    (aig->aignet aig nil))))
+             (equal (aig->aignet aig aignet :gatesimp gatesimp)
+                    (aig->aignet aig nil :gatesimp gatesimp))))
 
   (defret num-outs-of-aig->aignet
     (equal (stype-count :po new-aignet) 1))
@@ -285,14 +285,14 @@
     (equal (stype-count :reg new-aignet)
            (stype-count :reg aignet))))
 
-(define aig->cnf (aig sat-lits aignet &key (transform-config 'nil))
+(define aig->cnf (aig sat-lits aignet &key (transform-config 'nil) ((gatesimp gatesimp-p) '(default-gatesimp)))
   :returns (mv (cnf satlink::lit-list-listp)
                (lit litp)
                (vars "variables from the hons aig, as ordered in the aignet")
-               sat-lits
+               new-sat-lits
                new-aignet)
   :guard-hints (("goal" :in-theory (enable lookup-stype-in-bounds)))
-  (b* (((mv vars aignet) (aig->aignet aig aignet))
+  (b* (((mv vars aignet) (aig->aignet aig aignet :gatesimp gatesimp))
        (aignet (aig->cnf-aignet-transform-wrapper aignet transform-config))
        (aignet-lit (co-id->fanin (outnum->id 0 aignet) aignet))
        ((mv cnf sat-lits)
@@ -301,29 +301,26 @@
 
   ///
 
-  (defthm aignet-litp-of-aig->cnf
-    (b* (((mv & lit & & aignet)
-          (aig->cnf aig sat-lits aignet :transform-config transform-config)))
-      (aignet-litp lit aignet))
+  (defret aignet-litp-of-aig->cnf
+    (aignet-litp lit new-aignet)
     :hints(("Goal" :in-theory (enable lookup-stype-in-bounds))))
 
   (defthm normalize-aig->cnf-aignet
     (implies (syntaxp (not (equal aignet ''nil)))
-             (equal (aig->cnf aig sat-lits aignet :transform-config transform-config)
-                    (aig->cnf aig sat-lits nil :transform-config transform-config))))
+             (equal (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp)
+                    (aig->cnf aig sat-lits nil :transform-config transform-config :gatesimp gatesimp))))
 
   (defthm normalize-aig->cnf-sat-lits
     (implies (syntaxp (not (equal sat-lits ''nil)))
-             (equal (aig->cnf aig sat-lits aignet :transform-config transform-config)
-                    (aig->cnf aig nil aignet :transform-config transform-config))))
+             (equal (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp)
+                    (aig->cnf aig nil aignet :transform-config transform-config :gatesimp gatesimp))))
 
   ;; (defthm aignet-nodes-ok-aig->cnf
   ;;   (aignet-nodes-ok (mv-nth 4 (aig->cnf aig sat-lits aignet :transform-config transform-config)))
   ;;   :hints(("Goal" :in-theory (enable aig->cnf))))
 
-  (defthm sat-lits-wfp-of-aig->cnf
-    (sat-lits-wfp (mv-nth 3 (aig->cnf aig sat-lits aignet :transform-config transform-config))
-                  (mv-nth 4 (aig->cnf aig sat-lits aignet :transform-config transform-config)))
+  (defret sat-lits-wfp-of-aig->cnf
+    (sat-lits-wfp new-sat-lits new-aignet)
     :hints(("Goal" :in-theory (enable aig->cnf))))
 
   (defret eval-lit-of-aig->aignet
@@ -682,21 +679,21 @@
                   (aig-eval x env))))
 
 (defthm aig-satisfying-assign-induces-aig->cnf-satisfying-assign
-  (b* (((mv cnf ?lit vars sat-lits aignet) (aig->cnf aig sat-lits aignet :transform-config transform-config))
+  (b* (((mv cnf ?lit vars sat-lits aignet) (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp))
        (cnf-vals (satisfying-assign-for-env env vars sat-lits aignet cnf-vals)))
     (equal (satlink::eval-formula cnf cnf-vals)
            (if (aig-eval aig env) 1 0)))
   :hints (("goal" :use ((:instance
                          aignet-satisfying-assign-induces-cnf-satisfying-assign
-                         (aignet (mv-nth 4 (aig->cnf aig sat-lits aignet :transform-config transform-config)))
-                         (lit (mv-nth 1 (aig->cnf aig sat-lits aignet :transform-config transform-config)))
+                         (aignet (mv-nth 4 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp)))
+                         (lit (mv-nth 1 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp)))
                          (invals
                           (env-to-bitarr
-                           (mv-nth 2 (aig->cnf aig sat-lits aignet :transform-config transform-config))
+                           (mv-nth 2 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp))
                            env))
                          (regvals nil)
                          (cnf-vals (resize-bits (sat-next-var
-                                                 (mv-nth 3 (aig->cnf aig sat-lits aignet :transform-config transform-config)))
+                                                 (mv-nth 3 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp)))
                                                 nil))))
            :in-theory (e/d* (aignet-regvals->vals
                              aignet-regvals->vals-iter
@@ -854,7 +851,7 @@
 
 (defthm cnf-satisfying-assign-induces-aig-satisfying-assign
   (b* (((mv cnf ?lit vars sat-lits aignet)
-        (aig->cnf aig sat-lits aignet :transform-config transform-config))
+        (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp))
        (env (aig-cnf-vals->env cnf-vals vars sat-lits aignet)))
     (implies (equal (satlink::eval-formula cnf cnf-vals) 1)
              (aig-eval aig env)))
@@ -863,16 +860,16 @@
                                   b-and b-ior b-xor b-not))
           :use ((:instance
                  cnf-satisfying-assign-induces-aignet-satisfying-assign
-                 (lit (mv-nth 1 (aig->cnf aig sat-lits aignet :transform-config transform-config)))
-                 (aignet (mv-nth 4 (aig->cnf aig sat-lits aignet :transform-config transform-config)))
-                 (invals (acl2::repeat (len (mv-nth 2 (aig->cnf aig sat-lits aignet :transform-config transform-config))) 0))))
+                 (lit (mv-nth 1 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp)))
+                 (aignet (mv-nth 4 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp)))
+                 (invals (acl2::repeat (len (mv-nth 2 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp))) 0))))
           :do-not-induct t)
            (and stable-under-simplificationp
                 '(:in-theory (enable aig->cnf)))))
 
 (defthm len-vars-of-aig->cnf
-  (equal (len (mv-nth 2 (aig->cnf aig sat-lits aignet :transform-config transform-config)))
-         (stype-count (pi-stype) (mv-nth 4 (aig->cnf aig sat-lits aignet :transform-config transform-config))))
+  (equal (len (mv-nth 2 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp)))
+         (stype-count (pi-stype) (mv-nth 4 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp))))
   :hints(("Goal" :in-theory (enable* aig->cnf))))
 
 (in-theory (disable aig->cnf

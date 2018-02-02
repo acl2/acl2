@@ -71,7 +71,10 @@
                        literal.  Tends to find more reductions but reduce the network
                        depth less and take somewhat longer.")
    (search-limit natp :default 1000
-                 "Search at most this many literals for a match."))
+                 "Search at most this many literals for a match.")
+   (gatesimp gatesimp-p :default (default-gatesimp)
+             "Gate simplification parameters.  Warning: This transform will do
+              nothing good if hashing is turned off."))
   :tag :balance-config)
 
 
@@ -369,7 +372,9 @@
                                          (limit natp)
                                          (level-ref litp)
                                          (rest lit-listp)
-                                         levels aignet2 strash)
+                                         levels
+                                         (gatesimp gatesimp-p)
+                                         aignet2 strash)
   :guard (and (fanin-litp first aignet2)
               (fanin-litp level-ref aignet2)
               (aignet-lit-listp rest aignet2)
@@ -388,14 +393,14 @@
        ((when (eql (lit-id candidate) (lit-id first)))
         (mv candidate (cdr rest)))
        ((mv existing & & &)
-        (mbe :logic (aignet-and-gate-simp/strash first candidate (default-gatesimp) strash aignet2)
+        (mbe :logic (aignet-and-gate-simp/strash first candidate gatesimp strash aignet2)
              :exec (if (<= (car rest) #x1fffffff) ;; bozo
-                       (aignet-and-gate-simp/strash first candidate (default-gatesimp) strash aignet2)
-                     (ec-call (aignet-and-gate-simp/strash first candidate (default-gatesimp) strash aignet2)))))
+                       (aignet-and-gate-simp/strash first candidate gatesimp strash aignet2)
+                     (ec-call (aignet-and-gate-simp/strash first candidate gatesimp strash aignet2)))))
        ((when existing)
         (mv candidate (cdr rest)))
        ((mv pairing remaining)
-        (aignet-balance-find-pairing-rec first (1- limit) level-ref (cdr rest) levels aignet2 strash))
+        (aignet-balance-find-pairing-rec first (1- limit) level-ref (cdr rest) levels gatesimp aignet2 strash))
        ((when pairing)
         (mv pairing (cons candidate remaining))))
     (mv nil rest))
@@ -468,10 +473,10 @@
        ((mv pairing rest)
         ;; second passed in is just used for level comparison, so we do want rest, not rest-rest
         (mbe :logic
-             (aignet-balance-find-pairing-rec first config.search-limit level-ref1 (cdr lits) levels aignet2 strash)
+             (aignet-balance-find-pairing-rec first config.search-limit level-ref1 (cdr lits) levels config.gatesimp aignet2 strash)
              :exec (if (<= first #x1fffffff) ;; bozo
-                       (aignet-balance-find-pairing-rec first config.search-limit level-ref1 (cdr lits) levels aignet2 strash)
-                     (ec-call (aignet-balance-find-pairing-rec first config.search-limit level-ref1 (cdr lits) levels aignet2 strash)))))
+                       (aignet-balance-find-pairing-rec first config.search-limit level-ref1 (cdr lits) levels config.gatesimp aignet2 strash)
+                     (ec-call (aignet-balance-find-pairing-rec first config.search-limit level-ref1 (cdr lits) levels config.gatesimp aignet2 strash)))))
        ((when pairing) (mv first pairing rest))
        ((when (or (not config.search-second-lit)
                   (atom (cddr lits))))
@@ -479,10 +484,10 @@
        (level-ref2 (if config.search-higher-levels 0 (caddr lits))) 
        ((mv pairing rest)
         (mbe :logic
-             (aignet-balance-find-pairing-rec second config.search-limit level-ref2 (cddr lits) levels aignet2 strash)
+             (aignet-balance-find-pairing-rec second config.search-limit level-ref2 (cddr lits) levels config.gatesimp aignet2 strash)
              :exec (if (<= second #x1fffffff) ;; bozo
-                       (aignet-balance-find-pairing-rec second config.search-limit level-ref2 (cddr lits) levels aignet2 strash)
-                     (ec-call (aignet-balance-find-pairing-rec second config.search-limit level-ref2 (cddr lits) levels aignet2 strash)))))
+                       (aignet-balance-find-pairing-rec second config.search-limit level-ref2 (cddr lits) levels config.gatesimp aignet2 strash)
+                     (ec-call (aignet-balance-find-pairing-rec second config.search-limit level-ref2 (cddr lits) levels config.gatesimp aignet2 strash)))))
        ((when pairing)
         (mv second pairing (cons first rest))))
     (mv first second (lit-list-fix (cddr lits))))
@@ -624,7 +629,8 @@
         (mv (lit-fix (car lits)) levels aignet2 strash))
        ((mv lit1 lit2 rest)
         (aignet-balance-find-pairing lits config levels aignet2 strash))
-       ((mv new-lit strash aignet2) (aignet-hash-and lit1 lit2 (default-gatesimp) strash aignet2))
+       ((balance-config config))
+       ((mv new-lit strash aignet2) (aignet-hash-and lit1 lit2 config.gatesimp strash aignet2))
        ((when (eql (lit-id new-lit) 0))
         ;; this way we don't insert constant nodes into the list
         (if (eql (lit->neg new-lit) 0)
@@ -662,7 +668,7 @@
             (and stable-under-simplificationp
                  '(:use ((:instance aignet-eval-conjunction-of-hash-and
                           (aignet aignet2)
-                          (gatesimp (default-gatesimp))
+                          (gatesimp (balance-config->gatesimp config))
                           (lit1 (mv-nth 0 (aignet-balance-find-pairing
                                            lits config levels aignet2 strash)))
                           (lit2 (mv-nth 1 (aignet-balance-find-pairing
@@ -831,7 +837,8 @@
                                          (limit natp)
                                          (level-ref litp)
                                          (rest lit-listp)
-                                         levels aignet2 strash)
+                                         levels
+                                         (gatesimp gatesimp-p) aignet2 strash)
   :guard (and (fanin-litp first aignet2)
               (fanin-litp level-ref aignet2)
               (aignet-lit-listp rest aignet2)
@@ -850,14 +857,14 @@
        ((when (eql (lit-id candidate) (lit-id first)))
         (mv candidate (cdr rest)))
        ((mv existing & & &)
-        (mbe :logic (aignet-xor-gate-simp/strash first candidate (default-gatesimp) strash aignet2)
+        (mbe :logic (aignet-xor-gate-simp/strash first candidate gatesimp strash aignet2)
              :exec (if (<= (car rest) #x1fffffff) ;; bozo
-                       (aignet-xor-gate-simp/strash first candidate (default-gatesimp) strash aignet2)
-                     (ec-call (aignet-xor-gate-simp/strash first candidate (default-gatesimp) strash aignet2)))))
+                       (aignet-xor-gate-simp/strash first candidate gatesimp strash aignet2)
+                     (ec-call (aignet-xor-gate-simp/strash first candidate gatesimp strash aignet2)))))
        ((when existing)
         (mv candidate (cdr rest)))
        ((mv pairing remaining)
-        (aignet-balance-find-xor-pairing-rec first (1- limit) level-ref (cdr rest) levels aignet2 strash))
+        (aignet-balance-find-xor-pairing-rec first (1- limit) level-ref (cdr rest) levels gatesimp aignet2 strash))
        ((when pairing)
         (mv pairing (cons candidate remaining))))
     (mv nil rest))
@@ -937,10 +944,10 @@
        ((mv pairing rest)
         ;; second passed in is just used for level comparison, so we do want rest, not rest-rest
         (mbe :logic
-             (aignet-balance-find-xor-pairing-rec first config.search-limit level-ref1 (cdr lits) levels aignet2 strash)
+             (aignet-balance-find-xor-pairing-rec first config.search-limit level-ref1 (cdr lits) levels config.gatesimp aignet2 strash)
              :exec (if (<= first #x1fffffff) ;; bozo
-                       (aignet-balance-find-xor-pairing-rec first config.search-limit level-ref1 (cdr lits) levels aignet2 strash)
-                     (ec-call (aignet-balance-find-xor-pairing-rec first config.search-limit level-ref1 (cdr lits) levels aignet2 strash)))))
+                       (aignet-balance-find-xor-pairing-rec first config.search-limit level-ref1 (cdr lits) levels config.gatesimp aignet2 strash)
+                     (ec-call (aignet-balance-find-xor-pairing-rec first config.search-limit level-ref1 (cdr lits) levels config.gatesimp aignet2 strash)))))
        ((when pairing) (mv first pairing rest))
        ((when (or (not config.search-second-lit)
                   (atom (cddr lits))))
@@ -948,10 +955,10 @@
        (level-ref2 (if config.search-higher-levels 0 (caddr lits))) 
        ((mv pairing rest)
         (mbe :logic
-             (aignet-balance-find-xor-pairing-rec second config.search-limit level-ref2 (cddr lits) levels aignet2 strash)
+             (aignet-balance-find-xor-pairing-rec second config.search-limit level-ref2 (cddr lits) levels config.gatesimp aignet2 strash)
              :exec (if (<= second #x1fffffff) ;; bozo
-                       (aignet-balance-find-xor-pairing-rec second config.search-limit level-ref2 (cddr lits) levels aignet2 strash)
-                     (ec-call (aignet-balance-find-xor-pairing-rec second config.search-limit level-ref2 (cddr lits) levels aignet2 strash)))))
+                       (aignet-balance-find-xor-pairing-rec second config.search-limit level-ref2 (cddr lits) levels config.gatesimp aignet2 strash)
+                     (ec-call (aignet-balance-find-xor-pairing-rec second config.search-limit level-ref2 (cddr lits) levels config.gatesimp aignet2 strash)))))
        ((when pairing)
         (mv second pairing (cons first rest))))
     (mv first second (lit-list-fix (cddr lits))))
@@ -1027,7 +1034,8 @@
         (mv (lit-negate-cond (car lits) neg) levels aignet2 strash))
        ((mv lit1 lit2 rest)
         (aignet-balance-find-xor-pairing lits config levels aignet2 strash))
-       ((mv new-lit strash aignet2) (aignet-hash-xor lit1 lit2 (default-gatesimp) strash aignet2))
+       ((balance-config config))
+       ((mv new-lit strash aignet2) (aignet-hash-xor lit1 lit2 config.gatesimp strash aignet2))
        (levels (aignet-update-node-level (lit-id new-lit) levels aignet2))
        ((when (eql (lit-id new-lit) 0))
         ;; this way we don't insert constant nodes into the list
@@ -1070,7 +1078,7 @@
             (and stable-under-simplificationp
                  '(:use ((:instance aignet-eval-parity-of-hash-xor
                           (aignet aignet2)
-                          (gatesimp (default-gatesimp))
+                          (gatesimp (balance-config->gatesimp config))
                           (lit1 (mv-nth 0 (aignet-balance-find-xor-pairing
                                            lits config levels aignet2 strash)))
                           (lit2 (mv-nth 1 (aignet-balance-find-xor-pairing
@@ -2164,7 +2172,7 @@ is a @(see balance-config) object.</p>"
         (mv aignet2 aignet-tmp))
        (- (cw "Balance input: ") (print-aignet-levels aignet))
        (aignet-tmp (balance-core aignet aignet-tmp config))
-       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (default-gatesimp)))
+       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (balance-config->gatesimp config)))
        (- (cw "Balance output: ") (print-aignet-levels aignet)))
     (mv aignet2 aignet-tmp))
   ///
@@ -2198,7 +2206,7 @@ is a @(see balance-config) object.</p>"
         (mv aignet aignet-tmp))
        (- (cw "Balance input: ") (print-aignet-levels aignet))
        (aignet-tmp (balance-core aignet aignet-tmp config))
-       (aignet (aignet-prune-comb aignet-tmp aignet (default-gatesimp)))
+       (aignet (aignet-prune-comb aignet-tmp aignet (balance-config->gatesimp config)))
        (- (cw "Balance output: ") (print-aignet-levels aignet)))
     (mv aignet aignet-tmp))
   ///
