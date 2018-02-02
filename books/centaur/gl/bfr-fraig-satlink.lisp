@@ -117,6 +117,8 @@ chosen by attaching to @('gl-transforms-config').</p>"
        (defattach bfr-counterex-mode bfr-counterex-alist)
        (defattach (bfr-sat bfr-satlink)
          :hints(("Goal" :in-theory (enable bfr-eval))))
+       (defattach (bfr-vacuity-check bfr-satlink-nosimp)
+         :hints(("Goal" :in-theory (enable bfr-eval))))
        (defattach aignet::aig->cnf-aignet-transform simplify-satlink-transform))))
 
 (local (gl-simplify-satlink-mode))
