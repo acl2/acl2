@@ -1,0 +1,26 @@
+Books supporting ACL2 2017 workshop paper:
+
+Rob Sumners,
+Proof Reduction of Fair Stuttering Refinement of Asynchronous Systems
+and Applications.
+
+Brief description of the certifiable books in this directory:
+
+sets.lisp -- some set theory using hypothesis-free rules and normalized set
+             representation
+
+bounded-ords.lisp -- a book of operations on so-called bounded ordinals which
+                     are really bounded nat. lists and lists of bounded nat lists
+                     and mappings of these things to ordinals with various properties.
+
+general-theory.lisp -- system-level theory to prove reduction for fair
+                       stuttering refinement to single step properties
+
+trans-theory.lisp -- transaction or task-level theory to prove reductions from
+                     system-level properties to properties relating tasks
+
+bakery.lisp -- example of (prove-tr-refinement) macro generating proofs. in
+               this case for a version of the bakery algorithm against a
+               specification system.
+
+cert.pl bakery will build everything..
