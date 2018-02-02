@@ -67,6 +67,77 @@ an aiger file is also supported.</p>")
   :layout :tree
   :tag :snapshot-config)
 
+(fty::defprod prune-config
+  :parents (comb-transform)
+  :short "Aignet transform that prunes out unused logic in the network."
+  ((gatesimp gatesimp-p))
+  :layout :tree
+  :tag :prune-config)
+
+(define prune ((aignet  "Input aignet")
+               (aignet2 "New aignet -- will be emptied")
+               (config prune-config-p
+                       "Settings for the transform"))
+  :parents (aignet-comb-transforms)
+  :returns new-aignet2
+  :short "Apply combinational pruning to remove unused nodes in the input network."
+  :long "<p>Pruning simply marks the nodes that are in the fanin cones of the
+combinational outputs and selectively copies only those nodes (but including
+all combinational inputs).  This transform is usually redundant because most
+transforms result in pruned networks.  One use is to restore xor nodes after
+applying the @(see abc-comb-simplify) transform, since the aiger format used
+for translating between ABC and aignet does not support xors.</p>"
+  (aignet-prune-comb aignet aignet2 (prune-config->gatesimp config))
+  ///
+  (defret num-ins-of-prune
+    (equal (stype-count :pi new-aignet2)
+           (stype-count :pi aignet)))
+
+  (defret num-regs-of-prune
+    (equal (stype-count :reg new-aignet2)
+           (stype-count :reg aignet)))
+
+  (defret num-outs-of-prune
+    (equal (stype-count :po new-aignet2)
+           (stype-count :po aignet)))
+
+  (defret prune-comb-equivalent
+    (comb-equiv new-aignet2 aignet))
+
+  (defthm normalize-input-of-prune
+    (implies (syntaxp (not (equal aignet2 ''nil)))
+             (equal (prune aignet aignet2 config)
+                    (prune aignet nil config)))))
+
+
+(define prune! ((aignet  "Input aignet -- will be replaced with transformation result")
+                (config prune-config-p))
+  :guard-debug t
+  :returns new-aignet
+  :parents (prune)
+  :short "Like @(see prune), but overwrites the original network instead of returning a new one."
+  (b* (((acl2::local-stobjs aignet-tmp)
+        (mv aignet aignet-tmp))
+       (aignet-tmp (aignet-raw-copy aignet aignet-tmp))
+       (aignet (aignet-prune-comb aignet-tmp aignet (prune-config->gatesimp config))))
+    (mv aignet aignet-tmp))
+  ///
+  (defret num-ins-of-prune!
+    (equal (stype-count :pi new-aignet)
+           (stype-count :pi aignet)))
+
+  (defret num-regs-of-prune!
+    (equal (stype-count :reg new-aignet)
+           (stype-count :reg aignet)))
+
+  (defret num-outs-of-prune!
+    (equal (stype-count :po new-aignet)
+           (stype-count :po aignet)))
+
+  (defret prune!-comb-equivalent
+    (comb-equiv new-aignet aignet)))
+
+
 (fty::deftranssum comb-transform
   :short "Configuration object for any combinational transform supported by @(see apply-comb-transforms)."
   (balance-config
@@ -74,7 +145,8 @@ an aiger file is also supported.</p>")
    rewrite-config
    abc-comb-simp-config
    observability-config
-   snapshot-config))
+   snapshot-config
+   prune-config))
 
 (define comb-transform->name ((x comb-transform-p))
   :returns (name stringp :rule-classes :type-prescription)
@@ -84,6 +156,7 @@ an aiger file is also supported.</p>")
     (:rewrite-config "Rewrite")
     (:observability-config "Observability")
     (:snapshot-config "Snapshot")
+    (:prune-config "Prune")
     (t "Abc simplify")))
 
 
@@ -107,6 +180,8 @@ an aiger file is also supported.</p>")
                                                                aignet state))
                                     (aignet2 (aignet-raw-copy aignet aignet2)))
                                  (mv aignet2 state)))
+             (:prune-config (b* ((aignet2 (prune aignet aignet2 transform)))
+                              (mv aignet2 state)))
              (otherwise (abc-comb-simplify aignet aignet2 transform state))))
           (- (print-aignet-stats name aignet2)))
        (mv aignet2 state))
@@ -150,6 +225,8 @@ an aiger file is also supported.</p>")
              (:snapshot-config (b* ((state (aignet-write-aiger (snapshot-config->filename transform)
                                                                aignet state)))
                                  (mv aignet state)))
+             (:prune-config (b* ((aignet (prune! aignet transform)))
+                              (mv aignet state)))
              (otherwise (abc-comb-simplify! aignet transform state))))
           (- (print-aignet-stats name aignet)))
        (mv aignet state))

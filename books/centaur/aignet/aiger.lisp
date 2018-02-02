@@ -71,7 +71,6 @@
          (aigernums (set-u32 n val aigernums)))
       (mv aigernums nextgate))
     :returns (mv aigernums nextgate)
-    :top-returns aigernums
     :index n
     :init-vals ((nextgate (+ 1 (num-ins aignet) (num-regs aignet))))
     :iter-decls ((type (integer 0 *) nextgate))
@@ -86,6 +85,10 @@
              (natp (mv-nth 1 (aignet-aiger-number-nodes-iter n nextgate aignet aigernums))))
     :hints((acl2::just-induct-and-expand
             (aignet-aiger-number-nodes-iter n nextgate aignet aigernums)))
+    :rule-classes :type-prescription)
+
+  (defthm natp-of-aignet-aiger-number-nodes-nextgate
+    (natp (mv-nth 1 (aignet-aiger-number-nodes aignet aigernums)))
     :rule-classes :type-prescription)
 
   ;; (defun aignet-aiger-number-nodes-iter (n regoffset nextgate aignet aigernums)
@@ -144,7 +147,7 @@
 
   (defthm aigernums-size-of-aignet-aiger-number-nodes
     (implies (< (node-count (find-max-fanin aignet)) (len aigernums))
-             (< (node-count (find-max-fanin aignet)) (len (aignet-aiger-number-nodes aignet aigernums))))
+             (< (node-count (find-max-fanin aignet)) (len (mv-nth 0 (aignet-aiger-number-nodes aignet aigernums)))))
     :rule-classes :linear)
 
   (defthm aignet-number-nodes-iter-nextgate-incr
@@ -155,6 +158,11 @@
     :hints((acl2::just-induct-and-expand
             (aignet-aiger-number-nodes-iter
                             n nextgate aignet aigernums)))
+    :rule-classes :linear)
+
+  (defthm aignet-number-nodes-nextgate-incr
+    (<= (+ 1 (num-ins aignet) (num-regs aignet))
+        (mv-nth 1 (aignet-aiger-number-nodes aignet aigernums)))
     :rule-classes :linear))
 
 
@@ -316,7 +324,7 @@
 (defthm aiger-fanins-precede-gate-of-aignet-aiger-number-nodes
   (aiger-fanins-precede-gates
    (+ 1 (node-count (find-max-fanin aignet))) aignet
-   (aignet-aiger-number-nodes aignet aigernums))
+   (mv-nth 0 (aignet-aiger-number-nodes aignet aigernums)))
   :hints(("Goal" :in-theory (enable aignet-aiger-number-nodes))))
 
 
@@ -630,11 +638,12 @@
        (nlatches (num-regs aignet))
        (nouts    (num-outs aignet))
        (nins     (num-ins aignet))
-       (ngates   (num-gates aignet))
-       (aigernums (aignet-aiger-number-nodes aignet aigernums))
+       ;; (ngates   (num-gates aignet))
+       ((mv aigernums next-gate) (aignet-aiger-number-nodes aignet aigernums))
+       (num-gates (- next-gate (+ 1 nins nlatches)))
        (state (acl2::aiger-write-header
-               (+ (num-ins aignet) (num-regs aignet) (num-gates aignet))
-               nins nlatches nouts ngates 0 0 channel state))
+               (+ (num-ins aignet) (num-regs aignet) num-gates)
+               nins nlatches nouts num-gates 0 0 channel state))
        (state (aignet-nxsts-write-aiger-lits aignet aigernums channel state))
        (state (aignet-outs-write-aiger-lits aignet aigernums channel state))
        (state (aignet-write-aiger-gates aignet aigernums channel state)))

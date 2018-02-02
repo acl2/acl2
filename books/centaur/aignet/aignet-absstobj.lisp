@@ -1022,9 +1022,10 @@
 <ul>
   <li>@(see aignet-add-in) adds a primary input</li>
   <li>@(see aignet-add-out) adds a primary output</li>
-  <li>@(see aignet-add-gate) adds an and gate</li>
-  <li>@(see aignet-add-reg) adds a new register node; its next-state
-      should later be configured with @(see aignet-set-nxst)</li>
+  <li>@(see aignet-add-and) adds an and gate</li>
+  <li>@(see aignet-add-xor) adds an xor gate</li>
+  <li>@(see aignet-add-reg) adds a register</li>
+  <li>@(see aignet-set-nxst) sets the next-state formula for a register.</li>
 </ul>
 
 <h5>Network size</h5>
@@ -1032,7 +1033,7 @@
   <li>@(see num-nodes) returns the number of nodes in the network</li>
   <li>@(see num-ins) returns the number of primary inputs</li>
   <li>@(see num-outs) returns the number of primary outputs</li>
-  <li>@(see num-gates) returns the number of and gates</li>
+  <li>@(see num-gates) returns the number of gates</li>
   <li>@(see num-regs) returns the number of register nodes</li>
   <li>@(see num-nxsts) returns the number of next-state nodes</li>
   <li>@(see max-fanin) returns the index of the last fanin (non-output) node</li>
@@ -1041,9 +1042,14 @@
 <h5>General node queries</h5>
 <ul>
  <li>@(see id-existsp) checks whether an ID is in bounds</li>
- <li>@(see id->type) looks up the type of some node</li>
+ <li>@(see id->type) looks up the type of some node -- constant (0), gate (1),
+ input (2), or output (3)</li>
+ <li>@(see id->regp) gets the register/xor bit for a node id, which
+ distinguishes between types of gate (1 for XORs, 0 for ANDs), combinational
+ input (1 for registers, 0 for primary inputs), and combinational output (1 for
+ next-state, 0 for primary output).</li>
  <li>@(see id->phase) gets the value of this node in the all-0 evaluation.</li>
- <li>@(see fanin-litp) checks whether an ID can be used as a fanin.</li>
+ <li>@(see fanin-litp) checks whether a literal can be used as a fanin.</li>
 </ul>
 
 <h5>Name mappings</h5>
@@ -1058,15 +1064,14 @@
 
 <h5>Fanin lookup</h5>
 <ul>
- <li>@(see gate-id->fanin0) gets the 0th fanin @(see literal) from an AND gate</li>
- <li>@(see gate-id->fanin1) gets the 1st fanin literal from an AND gate</li>
+ <li>@(see gate-id->fanin0) gets the 0th fanin @(see literal) from an AND or XOR gate</li>
+ <li>@(see gate-id->fanin1) gets the 1st fanin literal from an AND or XOR gate</li>
  <li>@(see co-id->fanin) gets the fanin literal from a next-state or primary output node</li>
 </ul>
 
 <h5>Misc</h5>
 
 <ul>
- <li>@(see id->regp) gets the register bit for a node id</li>
 </ul>")
 
 (local (xdoc::set-default-parents base-api))
@@ -1118,8 +1123,8 @@
   <p>In the execution we update the necessary arrays, counts, etc.</p>
   @(def aignet$a::aignet-add-reg^)")
 
-(defxdoc aignet-add-gate
-  :short "@(call aignet-add-gate) adds an new AND gate node to the aignet with
+(defxdoc aignet-add-and
+  :short "@(call aignet-add-and) adds an new AND gate node to the aignet with
   the given fanin @(see literal)s."
 
   :long "<p><b>Note</b>: this is a very low level function.  It is often better
@@ -1139,7 +1144,30 @@
 
   <p>In the execution we update the necessary arrays, counts, etc.</p>
 
-  @(def aignet$a::aignet-add-gate^)")
+  @(def aignet$a::aignet-add-and^)")
+
+(defxdoc aignet-add-xor
+  :short "@(call aignet-add-xor) adds an new XOR gate node to the aignet with
+  the given fanin @(see literal)s."
+
+  :long "<p><b>Note</b>: this is a very low level function.  It is often better
+  to use routines like @(see aignet-hash-and), @(see aignet-hash-or), etc.,
+  which can do some simplifications to produce smaller aig networks.</p>
+
+  <p>Logically this is just:</p>
+
+  @({
+      (cons (gate-node (aignet-lit-fix f0 aignet)
+                       (aignet-lit-fix f1 aignet))
+            aignet)
+  })
+
+  <p>The @(see aignet-lit-fix)es ensure that well-formedness of the network is
+  preserved unconditionally.</p>
+
+  <p>In the execution we update the necessary arrays, counts, etc.</p>
+
+  @(def aignet$a::aignet-add-xor^)")
 
 (defxdoc aignet-add-out
   :short "@(call aignet-add-out) adds a primary output node to the aignet."
