@@ -9,4 +9,7 @@
 ;; excluded from the x86isa manual.
 (include-book "proofs/top" :ttags :all)
 
+;; Experimental or WIP books:
+(include-book "machine/new-decode" :ttags :all)
+
 ;; ======================================================================

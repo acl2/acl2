@@ -88,7 +88,7 @@ Form:
 
 The general form of defpun-exec is as follows:
 
-(defpun-exec foo params lbody :ebody lbody :guard guard)
+(defpun-exec foo params lbody :ebody ebody :guard guard)
 
 This provides a function named foo with parameters params, and (logically
 speaking) a defining equation saying that foo is exactly equal to the
@@ -104,7 +104,7 @@ Spec:
 
 Define a macro defpun-exec with the following properties:
 
-(1) It takes as argument fname, params, lbody, ebody, and guards, say
+(1) It takes as argument fname, params, lbody, ebody, and guard, say
 
 (defpun-exec foo (x) (lbody x) :ebody (ebody x) :guard (guard x))
 
@@ -113,13 +113,13 @@ The guard argument is optional.
 (2) If guards are not provided, a :guard of nil is assumed.  Thus calls of
     foo will never be evaluated.
 
-(3) If the guards are verified, (foo x) can be evaluated for constant x, anf
+(3) If the guards are verified, (foo x) can be evaluated for constant x, and
 the value is (ebody x)
 
 (4) If possible do it without changing the defpun macro provided by Manolios
 and Moore.
 
-(5) If guards are provided but the verification fails, I dont want anything to
+(5) If guards are provided but the verification fails, I don't want anything to
 be in the ACL2 universe.
 
 (6) If :ebody is not provided, then a :ebody of (lbody x) is assumed. Hence
@@ -175,7 +175,7 @@ described below to make :expand hints natural.
 
 #| Now we get into the actual macro defpun-exec |#
 
-;; We comment on the macro below assuming that you have given us an defpun-exec
+;; We comment on the macro below assuming that you have given us a defpun-exec
 ;; of the form:
 
 ;; (defpun-exec foo (x) (lbody x) :ebody (ebody x) :guard (guard x))
@@ -237,7 +237,7 @@ described below to make :expand hints natural.
 
       ;; When I first did this, I was dissatisfied by the following:
       ;;
-      ;; Once the definition rule is present you would think that you dont want
+      ;; Once the definition rule is present you would think that you don't want
       ;; anything to do with foo-logic. So I would not like to have the logical
       ;; body of foo enabled, but rather I would simply have the definition
       ;; rule foo-def above to do what we want with foo. Unfortunately, if the
@@ -272,7 +272,7 @@ described below to make :expand hints natural.
       (in-theory (disable ,fname (:definition ,(packn (list lfname '-def)))))
 
       ;; I think some form of theory invariants should be present here, since I
-      ;; dont quite like the body of foo and definition foo-def to be both
+      ;; don't quite like the body of foo and definition foo-def to be both
       ;; enabled, because then foo-def ought never to be used. (foo is
       ;; non-recursive.) Of course it is not a big point to have a theory
       ;; invariant, but here is what I am thinking. A user can either use
@@ -319,7 +319,7 @@ described below to make :expand hints natural.
 Testing
 =======
 
-(1) I dont verify the guard below. So it will produce the logic definition and
+(1) I don't verify the guard below. So it will produce the logic definition and
 the definition rule, but will produce a guard of nil, and hence in effect
 disable the executable counterpart. This has the precise effect of simply
 providing a defpun.

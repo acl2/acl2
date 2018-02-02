@@ -10873,7 +10873,7 @@
        (t (runes-to-monitor1 (cdr runes) x wrld ctx state
                              only-simple only-simple-count
                              some-simple some-s-all some-s-bad
-                             acc)))))))
+                             (cons rune acc))))))))
 
 (defconst *monitorable-rune-types*
   '(:rewrite :definition :linear))
@@ -11769,8 +11769,7 @@
                     instructions
                     hints
                     otf-flg
-                    event-name
-                    doc)
+                    event-name)
   `(defthm ,(or event-name
                 (intern-in-package-of-symbol
                  (coerce (packn1 (list equiv "-IS-AN-EQUIVALENCE")) 'string)
@@ -11780,8 +11779,7 @@
      ,(extend-rule-classes :equivalence rule-classes)
      ,@(if instructions (list :instructions instructions) nil)
      ,@(if hints (list :hints hints) nil)
-     ,@(if otf-flg (list :otf-flg otf-flg) nil)
-     ,@(if doc (list :doc doc) nil)))
+     ,@(if otf-flg (list :otf-flg otf-flg) nil)))
 
 (defmacro defrefinement (equiv1 equiv2
                                 &key (rule-classes '(:REFINEMENT))

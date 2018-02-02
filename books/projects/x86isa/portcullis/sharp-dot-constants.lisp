@@ -287,9 +287,9 @@
         *mxcsr-reserved*))
 
 
-;; Access RGF or XMM
+;; Access GPR or XMM:
 
-(defconst *rgf-access* 0)
+(defconst *gpr-access* 0)
 (defconst *xmm-access* 1)
 
 ;; Rounding Control bit definitions (Intel manual, Mar'17, Vol. 1, Table 4-8):
