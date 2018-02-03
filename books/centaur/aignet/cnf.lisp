@@ -165,10 +165,15 @@ correctness criterion we've described.</p>
         (mv nil 0 0 0))
        (f0 (gate-id->fanin0 id aignet))
        (f1 (gate-id->fanin1 id aignet))
+       ((when (int= (id->regp id aignet) 1))
+        ;; XOR gate can be viewed as a type of mux -- (if f0 (not f1) f1)
+        (mv t f0 (lit-negate f1) f1))
        ((unless (and (int= (lit-neg f0) 1)
                      (int= (lit-neg f1) 1)
                      (int= (id->type (lit-id f0) aignet) (gate-type))
-                     (int= (id->type (lit-id f1) aignet) (gate-type))))
+                     (int= (id->regp (lit-id f0) aignet) 0)
+                     (int= (id->type (lit-id f1) aignet) (gate-type))
+                     (int= (id->regp (lit-id f1) aignet) 0)))
         (mv nil 0 0 0))
        (f00 (gate-id->fanin0 (lit-id f0) aignet))
        (f10 (gate-id->fanin1 (lit-id f0) aignet))
@@ -239,12 +244,14 @@ correctness criterion we've described.</p>
     :hints (("goal" :in-theory (e/d ;; (lit-eval-of-mk-lit-split-rw
                                     ;;  equal-1-by-bitp
                                     ;;  eval-and-of-lits)
-                                (id-eval eval-and-of-lits
+                                (id-eval eval-and-of-lits eval-xor-of-lits
                                          lit-eval-of-mk-lit-split-rw)
                                 ( acl2::b-xor acl2::b-and
                                               acl2::b-ior acl2::b-not))
              :expand ((:free (ftype) (lit-eval (fanin ftype (lookup-id id aignet))
-                                               in-vals reg-vals aignet)))))))
+                                               in-vals reg-vals aignet))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable b-ior b-and b-xor))))))
 
 
 
@@ -369,6 +376,7 @@ correctness criterion we've described.</p>
          (supergate (lit-list-fix supergate))
          ((when (or (int= (lit-neg lit) 1)
                     (not (int= (id->type (lit-id lit) aignet) (gate-type)))
+                    (int= (id->regp (lit-id lit) aignet) 1) ;; xor
                     (and (not top) (< 1 (get-u32 (lit-id lit) aignet-refcounts)))
                     (and use-muxes
                          (b* (((mv muxp & & &) (id-is-mux (lit-id lit) aignet)))
@@ -2388,8 +2396,8 @@ correctness criterion we've described.</p>
 
   (defthm id-type-when-is-mux
     (implies (mv-nth 0 (id-is-mux id aignet))
-             (equal (stype (car (lookup-id id aignet)))
-                    (gate-stype)))
+             (equal (ctype (stype (car (lookup-id id aignet))))
+                    (gate-ctype)))
     :hints(("Goal" :in-theory (enable id-is-mux))))
 
 
@@ -2571,7 +2579,8 @@ correctness criterion we've described.</p>
   ;; measure decreases on children of a supergate
   (defthm supergate-decr-top
     (implies (and (int= (id->type id aignet) (gate-type))
-                  (not (and use-muxes
+                  (not (and (or use-muxes
+                                (eql (id->regp id aignet) 1))
                             (mv-nth 0 (id-is-mux id aignet)))))
              (< (lits-max-id-val (lit-collect-supergate
                                   (mk-lit id 0)
@@ -2591,7 +2600,9 @@ correctness criterion we've described.</p>
                     (supergate (lit-collect-supergate
                                 (gate-id->fanin0 id aignet)
                                 nil use-muxes nil aignet-refcounts aignet))))
-             :in-theory (e/d () (lits-max-id-val-of-supergate))))
+             :in-theory (e/d () (lits-max-id-val-of-supergate)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable id-is-mux))))
     :rule-classes (:rewrite :linear))
 
   (defthm lits-max-id-val-of-cdr
@@ -2663,7 +2674,8 @@ correctness criterion we've described.</p>
                (sat-lit (aignet-id->sat-lit id sat-lits)))
             (mv sat-lits (cons (list (satlink::lit-negate sat-lit)) cnf))))
          ;; now we have a gate node -- check first for a mux if we're doing that
-         ((mv muxp c tb fb) (if use-muxes
+         ;; if it's an xor, we say it's a mux regardless
+         ((mv muxp c tb fb) (if (or use-muxes (eql 1 (id->regp id aignet)))
                                 (id-is-mux id aignet)
                               (mv nil nil nil nil)))
          ((when muxp)

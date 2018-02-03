@@ -205,12 +205,14 @@
       (aignet-case
        type
        :gate (b* ((lit0 (snode->fanin slot0))
-                  (lit1 (gate-id->fanin1 nid aignet))
+                  (slot1 (id->slot nid 1 aignet))
+                  (lit1 (snode->fanin slot1))
+                  (c0 (lit-copy lit0 copy))
+                  (c1 (lit-copy lit1 copy))
                   ((mv lit strash aignet2)
-                   (aignet-hash-and
-                    (lit-copy lit0 copy)
-                    (lit-copy lit1 copy)
-                    gatesimp strash aignet2))
+                   (if (eql 1 (snode->regp slot1))
+                       (aignet-hash-xor c0 c1 gatesimp strash aignet2)
+                     (aignet-hash-and c0 c1 gatesimp strash aignet2)))
                   (copy (set-lit nid lit copy)))
                (mv copy strash aignet2))
        :in ;; assume already set up
@@ -236,7 +238,8 @@
   (fty::deffixequiv acl2::aignet-copy-comb$inline :args ((gatesimp gatesimp-p)))
 
   (defthm stype-counts-preserved-of-aignet-copy-comb-iter
-    (implies (not (equal (stype-fix stype) (gate-stype)))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype (mv-nth 2 (aignet-copy-comb-iter
                                                   n aignet copy gatesimp strash
                                                   aignet2)))
@@ -246,7 +249,8 @@
                                     aignet2))))
 
   (defthm stype-counts-preserved-of-aignet-copy-comb
-    (implies (not (equal (stype-fix stype) (gate-stype)))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype (mv-nth 2 (aignet-copy-comb
                                                   aignet copy gatesimp strash
                                                   aignet2)))
@@ -499,7 +503,7 @@
                     `(:clause-processor
                       (acl2::simple-generalize-cp
                        clause '((,witness . witness)))
-                      :in-theory (enable eval-and-of-lits))))
+                      :in-theory (enable eval-and-of-lits eval-xor-of-lits))))
              (and stable-under-simplificationp
                   '(:cases ((< (nfix witness) (nfix (+ -1 n))))))
              (and stable-under-simplificationp
@@ -642,7 +646,7 @@
                    (aignet-copy-ins-iter n aignet copy aignet2)))
                (equal (nth-lit id aignet-copy-new)
                       (if (or (not (equal (id->type id aignet) (in-type)))
-                              (equal (io-id->regp id aignet) 1)
+                              (equal (id->regp id aignet) 1)
                               (<= (nfix n) (io-id->ionum id aignet)))
                           (get-lit id copy)
                         (mk-lit
@@ -695,7 +699,7 @@
           (aignet-copy-ins aignet copy aignet2)))
       (equal (nth-lit id aignet-copy-new)
              (if (or (not (equal (id->type id aignet) (in-type)))
-                     (equal (io-id->regp id aignet) 1))
+                     (equal (id->regp id aignet) 1))
                  (get-lit id copy)
                (mk-lit
                 (node-count (lookup-stype (+ (nfix (io-id->ionum id aignet))
@@ -835,7 +839,7 @@
                    (aignet-copy-regs-iter n aignet copy aignet2)))
                (equal (nth-lit id aignet-copy-new)
                       (if (or (not (equal (id->type id aignet) (in-type)))
-                              (not (equal (io-id->regp id aignet) 1))
+                              (not (equal (id->regp id aignet) 1))
                               (<= (nfix n) (io-id->ionum id aignet)))
                           (get-lit id copy)
                         (mk-lit
@@ -888,7 +892,7 @@
           (aignet-copy-regs aignet copy aignet2)))
       (equal (nth-lit id aignet-copy-new)
              (if (or (not (equal (id->type id aignet) (in-type)))
-                     (not (equal (io-id->regp id aignet) 1)))
+                     (not (equal (id->regp id aignet) 1)))
                  (get-lit id copy)
                (mk-lit
                 (regnum->id (+ (nfix (io-id->ionum id aignet))
@@ -1645,7 +1649,7 @@
       :hints (("goal" :induct (id-eval-ind id aignet)
                :expand ((:free (invals regvals)
                          (id-eval id invals regvals aignet)))
-               :in-theory (enable lit-eval eval-and-of-lits))))
+               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
 
     (defthm id-eval-of-take-num-regs
       (equal (id-eval id invals
@@ -1655,7 +1659,7 @@
       :hints (("goal" :induct (id-eval-ind id aignet)
                :expand ((:free (invals regvals)
                          (id-eval id invals regvals aignet)))
-               :in-theory (enable lit-eval eval-and-of-lits))))
+               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
 
     (defthm lit-eval-of-take-num-ins
       (equal (lit-eval lit (take (stype-count :pi aignet) invals)
@@ -1718,7 +1722,7 @@
                   '(:in-theory (enable fanin-if-co))))))
 
   (define aignet-complete-copy (aignet &key
-                                       ((gatesimp gatesimp-p) '9)
+                                       ((gatesimp gatesimp-p) '(default-gatesimp))
                                        (aignet2 'aignet2))
     :returns aignet2
     :parents (aignet)
@@ -1852,7 +1856,7 @@ nodes.</p>"
                    (aignet-copy-regs-init-iter n aignet initsts copy aignet2)))
                (equal (nth-lit id aignet-copy-new)
                       (if (or (not (equal (id->type id aignet) (in-type)))
-                              (not (equal (io-id->regp id aignet) 1))
+                              (not (equal (id->regp id aignet) 1))
                               (<= (nfix n) (io-id->ionum id aignet)))
                           (get-lit id copy)
                         (mk-lit
@@ -1900,7 +1904,7 @@ nodes.</p>"
           (aignet-copy-regs-init aignet initsts copy aignet2)))
       (equal (nth-lit id aignet-copy-new)
              (if (or (not (equal (id->type id aignet) (in-type)))
-                     (not (equal (io-id->regp id aignet) 1)))
+                     (not (equal (id->regp id aignet) 1)))
                  (get-lit id copy)
                (mk-lit
                 (regnum->id (+ (nfix (io-id->ionum id aignet))
@@ -2184,7 +2188,7 @@ aignet when its initial value is the specified vector:</p>
       :hints (("goal" :induct (id-eval-ind id aignet)
                :expand ((:free (invals regvals)
                          (id-eval id invals regvals aignet)))
-               :in-theory (enable lit-eval eval-and-of-lits))))
+               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
 
     (defthm id-eval-of-take-num-regs
       (equal (id-eval id invals
@@ -2194,7 +2198,7 @@ aignet when its initial value is the specified vector:</p>
       :hints (("goal" :induct (id-eval-ind id aignet)
                :expand ((:free (invals regvals)
                          (id-eval id invals regvals aignet)))
-               :in-theory (enable lit-eval eval-and-of-lits))))
+               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
 
     (defthm lit-eval-of-take-num-ins
       (equal (lit-eval lit (take (stype-count :pi aignet) invals)
@@ -2238,7 +2242,7 @@ aignet when its initial value is the specified vector:</p>
     (fty::deffixequiv aignet-copy-init-aux :args ((gatesimp gatesimp-p))))
 
   (define aignet-copy-init (aignet initsts &key
-                                   ((gatesimp gatesimp-p) '9)
+                                   ((gatesimp gatesimp-p) '(default-gatesimp))
                                    (aignet2 'aignet2))
     :parents nil
     :guard (<= (num-regs aignet) (bits-length initsts))
@@ -2433,8 +2437,8 @@ aignet when its initial value is the specified vector:</p>
                                      ((mv-nth '2 ,witness) . inframes)))))))
             (and stable-under-simplificationp
                  '(:use ((:instance seq-equiv-necc
-                          (aignet (aignet-copy-init-fn aignet initsts 9 nil))
-                          (aignet2 (aignet-copy-init-fn aignet2 initsts2 9 nil))))
+                          (aignet (aignet-copy-init-fn aignet initsts (default-gatesimp) nil))
+                          (aignet2 (aignet-copy-init-fn aignet2 initsts2 (default-gatesimp) nil))))
                    :in-theory (e/d () (seq-equiv-necc)))))
     :otf-flg t))
 
@@ -2645,13 +2649,15 @@ aignet when its initial value is the specified vector:</p>
           (mv mark copy strash aignet2)))
 
        ;; gate: recur on each fanin, then hash an AND of the two copies
-       (f0 (gate-id->fanin0 id aignet))
-       (f1 (gate-id->fanin1 id aignet))
+       (f0 (snode->fanin slot0))
+       (slot1 (id->slot id 1 aignet))
+       (f1 (snode->fanin slot1))
        ((mv mark copy strash aignet2)
         (aignet-copy-dfs-rec
          (lit-id f0) aignet mark copy strash gatesimp aignet2))
        (f0-copy (lit-copy f0 copy))
-       ((when (int= f0-copy 0))
+       (xor (snode->regp slot1))
+       ((when (and (int= f0-copy 0) (eql xor 0)))
         ;; first branch was 0 so exit early
         (b* ((copy (set-lit id 0 copy))
              (mark (set-bit id 1 mark)))
@@ -2661,7 +2667,9 @@ aignet when its initial value is the specified vector:</p>
          (lit-id f1) aignet mark copy strash gatesimp aignet2))
        (f1-copy (lit-copy f1 copy))
        ((mv id-copy strash aignet2)
-        (aignet-hash-and f0-copy f1-copy gatesimp strash aignet2))
+        (if (eql xor 1)
+            (aignet-hash-xor f0-copy f1-copy gatesimp strash aignet2)
+          (aignet-hash-and f0-copy f1-copy gatesimp strash aignet2)))
        (copy (set-lit id id-copy copy))
        (mark (set-bit id 1 mark)))
     (mv mark copy strash aignet2))
@@ -2780,7 +2788,8 @@ aignet when its initial value is the specified vector:</p>
     :hints(("Goal" :in-theory (enable aignet-idp))))
 
   (defret stype-counts-preserved-of-aignet-copy-dfs-rec
-    (implies (not (equal (stype-fix stype) (gate-stype)))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2)))
     :hints ((acl2::just-induct-and-expand <call>))))
@@ -3035,14 +3044,14 @@ aignet when its initial value is the specified vector:</p>
             ;;                   ((mv-nth '1 ,witness) . invals)
             ;;                   ((mv-nth '2 ,witness) . regvals))))))
             (and stable-under-simplificationp
-                 '(:in-theory (enable eval-and-of-lits
+                 '(:in-theory (enable eval-and-of-lits eval-xor-of-lits
                                       lit-negate-cond)
                    :expand ((:free (in-vals reg-vals)
                              (id-eval id in-vals reg-vals aignet)))))
             (and stable-under-simplificationp
                  '(:in-theory (enable lit-eval)))
             (and stable-under-simplificationp
-                 (member-equal '(NOT (EQUAL (stype$inline (car (lookup-id id aignet))) ':gate))
+                 (member-equal '(NOT (EQUAL (stype$inline (car (lookup-id id aignet))) ':and))
                                clause)
                  (let ((term '(b* ((fanin (gate-id->fanin0 id aignet)))
                                 (aignet-copy-dfs-rec
@@ -3130,13 +3139,15 @@ aignet when its initial value is the specified vector:</p>
           (mv eba copy strash aignet2)))
 
        ;; gate: recur on each fanin, then hash an AND of the two copies
-       (f0 (gate-id->fanin0 id aignet))
-       (f1 (gate-id->fanin1 id aignet))
+       (f0 (snode->fanin slot0))
+       (slot1 (id->slot id 1 aignet))
+       (f1 (snode->fanin slot1))
        ((mv eba copy strash aignet2)
         (aignet-copy-dfs-eba-rec
          (lit-id f0) aignet eba copy strash gatesimp aignet2))
        (f0-copy (lit-copy f0 copy))
-       ((when (int= f0-copy 0))
+       (xor (snode->regp slot1))
+       ((when (and (int= f0-copy 0) (eql xor 0)))
         ;; first branch was 0 so exit early
         (b* ((copy (set-lit id 0 copy))
              (eba (eba-set-bit id eba)))
@@ -3146,7 +3157,9 @@ aignet when its initial value is the specified vector:</p>
          (lit-id f1) aignet eba copy strash gatesimp aignet2))
        (f1-copy (lit-copy f1 copy))
        ((mv id-copy strash aignet2)
-        (aignet-hash-and f0-copy f1-copy gatesimp strash aignet2))
+        (if (eql xor 1)
+            (aignet-hash-xor f0-copy f1-copy gatesimp strash aignet2)
+          (aignet-hash-and f0-copy f1-copy gatesimp strash aignet2)))
        (copy (set-lit id id-copy copy))
        (eba (eba-set-bit id eba)))
     (mv eba copy strash aignet2))

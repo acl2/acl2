@@ -143,10 +143,14 @@ and the inputs from the appropriate frame.</p>
       (aignet-case
        type
        :gate  (b* ((f0 (snode->fanin slot0))
-                   (f1 (gate-id->fanin1 nid aignet))
+                   (slot1 (id->slot nid 1 aignet))
+                   (f1 (snode->fanin slot1))
+                   (xor (snode->regp slot1))
                    (v0 (aignet-eval-lit f0 vals))
                    (v1 (aignet-eval-lit f1 vals))
-                   (val (b-and v0 v1)))
+                   (val (if (eql xor 1)
+                            (b-xor v0 v1)
+                          (b-and v0 v1))))
                 (set-bit nid val vals))
        :out   (b* ((f0 (snode->fanin slot0))
                    (val (aignet-eval-lit f0 vals)))
@@ -296,7 +300,7 @@ and the inputs from the appropriate frame.</p>
               (nth n (aignet-invals->vals-iter m invals vals aignet))
               (if (and (< (nfix n) (num-nodes aignet))
                        (equal (id->type n aignet) (in-type))
-                       (equal (io-id->regp n aignet) 0)
+                       (equal (id->regp n aignet) 0)
                        (< (io-id->ionum n aignet) (nfix m)))
                   (nth (io-id->ionum n aignet) invals)
                 (nth n vals))))
@@ -310,7 +314,7 @@ and the inputs from the appropriate frame.</p>
      (nth n (aignet-invals->vals invals vals aignet))
      (if (and (< (nfix n) (num-nodes aignet))
               (equal (id->type n aignet) (in-type))
-              (equal (io-id->regp n aignet) 0)
+              (equal (id->regp n aignet) 0)
               (< (io-id->ionum n aignet) (num-ins aignet)))
          (nth (io-id->ionum n aignet) invals)
        (nth n vals))))
@@ -421,7 +425,7 @@ and the inputs from the appropriate frame.</p>
               (nth n (aignet-regvals->vals-iter m regvals vals aignet))
               (if (and (< (nfix n) (num-nodes aignet))
                        (equal (id->type n aignet) (in-type))
-                       (equal (io-id->regp n aignet) 1)
+                       (equal (id->regp n aignet) 1)
                        (< (io-id->ionum n aignet) (nfix m)))
                   (nth (io-id->ionum n aignet) regvals)
                 (nth n vals))))
@@ -435,7 +439,7 @@ and the inputs from the appropriate frame.</p>
      (nth n (aignet-regvals->vals regvals vals aignet))
      (if (and (< (nfix n) (num-nodes aignet))
               (equal (id->type n aignet) (in-type))
-              (equal (io-id->regp n aignet) 1)
+              (equal (id->regp n aignet) 1)
               (< (io-id->ionum n aignet) (num-regs aignet)))
          (nth (io-id->ionum n aignet) regvals)
        (nth n vals))))
@@ -614,7 +618,7 @@ and the inputs from the appropriate frame.</p>
              ((id-eval id (aignet-vals->invals invals vals aignet)
                        (aignet-vals->regvals regvals vals aignet)
                        aignet)))
-            '(:in-theory (enable* lit-eval eval-and-of-lits
+            '(:in-theory (enable* lit-eval eval-and-of-lits eval-xor-of-lits
                                   nth-in-aignet-eval-iter-preserved
                                  aignet-idp aignet-litp)
               :expand ((aignet-eval-iter
@@ -645,7 +649,7 @@ and the inputs from the appropriate frame.</p>
                                  nil vals aignet)
                              regvals aignet)))
     :hints (("goal" :induct (id-eval-ind id aignet)
-             :in-theory (enable lit-eval eval-and-of-lits)
+             :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits)
              :expand ((:free (invals regvals)
                        (id-eval id invals regvals aignet))))))
 
@@ -662,7 +666,7 @@ and the inputs from the appropriate frame.</p>
                               nil vals aignet)
                              aignet)))
     :hints (("goal" :induct (id-eval-ind id aignet)
-             :in-theory (enable lit-eval eval-and-of-lits)
+             :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits)
              :expand ((:free (invals regvals)
                        (id-eval id invals regvals aignet))))))
 
@@ -721,7 +725,7 @@ and the inputs from the appropriate frame.</p>
                              regvals
                              orig)))
     :hints (("goal" :induct (id-eval-ind id orig)
-             :in-theory (enable lit-eval eval-and-of-lits)
+             :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits)
              :expand ((:free (invals regvals)
                        (id-eval id invals regvals orig))))))
 
@@ -739,7 +743,7 @@ and the inputs from the appropriate frame.</p>
                               regvals vals orig)
                              orig)))
     :hints (("goal" :induct (id-eval-ind id orig)
-             :in-theory (enable lit-eval eval-and-of-lits)
+             :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits)
              :expand ((:free (invals regvals)
                        (id-eval id invals regvals orig))))))
 
@@ -817,7 +821,7 @@ and the inputs from the appropriate frame.</p>
                     regvals aignet)
            (id-eval id invals regvals aignet))
     :hints(("Goal" :induct (id-eval-ind id aignet)
-            :in-theory (enable id-eval lit-eval eval-and-of-lits))))
+            :in-theory (enable id-eval lit-eval eval-and-of-lits eval-xor-of-lits))))
 
   (defthm id-eval-of-set-prefix-regvals
     (equal (id-eval id invals
@@ -825,7 +829,7 @@ and the inputs from the appropriate frame.</p>
                     aignet)
            (id-eval id invals regvals aignet))
     :hints(("Goal" :induct (id-eval-ind id aignet)
-            :in-theory (enable id-eval lit-eval eval-and-of-lits))))
+            :in-theory (enable id-eval lit-eval eval-and-of-lits eval-xor-of-lits))))
 
   (defthm lit-eval-of-set-prefix-regvals
     (equal (lit-eval lit invals
@@ -917,15 +921,19 @@ and the inputs from the appropriate frame.</p>
     (b* ((n (lnfix n))
          (nid n)
          (slot0 (id->slot nid 0 aignet))
-         (type (snode->type slot0)))
-      (aignet-seq-case
-       type
-       (io-id->regp nid aignet)
+         (slot1 (id->slot nid 1 aignet))
+         (type (snode->type slot0))
+         (regp (snode->regp slot1)))
+      (aignet-case
+       type regp
        :gate  (b* ((f0 (snode->fanin slot0))
-                   (f1 (gate-id->fanin1 nid aignet))
+                   (f1 (snode->fanin slot1))
+                   (xor (snode->regp slot1))
                    (v0 (aignet-eval-lit f0 vals))
                    (v1 (aignet-eval-lit f1 vals))
-                   (val (b-and v0 v1)))
+                   (val (if (eql xor 1)
+                            (b-xor v0 v1)
+                          (b-and v0 v1))))
                 (set-bit nid val vals))
        :co    (b* ((f0 (snode->fanin slot0))
                    (val (aignet-eval-lit f0 vals)))
@@ -1092,7 +1100,7 @@ and the inputs from the appropriate frame.</p>
               (nth n (aignet-frame->vals-iter m k frames vals aignet))
               (if (and (< (nfix n) (num-nodes aignet))
                        (equal (id->type n aignet) (in-type))
-                       (equal (io-id->regp n aignet) 0)
+                       (equal (id->regp n aignet) 0)
                        (< (io-id->ionum n aignet) (nfix m)))
                   (nth (io-id->ionum n aignet)
                        (nth k (stobjs::2darr->rows frames)))
@@ -1107,7 +1115,7 @@ and the inputs from the appropriate frame.</p>
      (nth n (aignet-frame->vals k frames vals aignet))
      (if (and (< (nfix n) (num-nodes aignet))
               (equal (id->type n aignet) (in-type))
-              (equal (io-id->regp n aignet) 0)
+              (equal (id->regp n aignet) 0)
               (< (io-id->ionum n aignet) (num-ins aignet)))
          (nth (io-id->ionum n aignet)
               (nth k (stobjs::2darr->rows frames)))

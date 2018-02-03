@@ -571,20 +571,20 @@
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   (b* ((type (id->type id aignet))
        ((when (eql type (in-type)))
-        (and (eql 1 (io-id->regp id aignet))
+        (and (eql 1 (id->regp id aignet))
              (eql (reg-id->nxst id aignet) (lnfix id))))
        ((unless (and (eql type (out-type))
-                     (eql 1 (io-id->regp id aignet))))
+                     (eql 1 (id->regp id aignet))))
         nil)
        (reg (nxst-id->reg id aignet)))
     (and (eql (id->type reg aignet) (in-type))
-         (eql (io-id->regp reg aignet) 1)
+         (eql (id->regp reg aignet) 1)
          (eql (reg-id->nxst reg aignet) (lnfix id)))))
 
 (define co-validp ((id natp) aignet)
   :guard (id-existsp id aignet)
   (or (and (eql (id->type id aignet) (out-type))
-           (eql (io-id->regp id aignet) 0))
+           (eql (id->regp id aignet) 0))
       (nxst-validp id aignet)))
               
 
@@ -833,7 +833,9 @@
 (defstobj-clone regvals bitarr :strsubst (("BIT" . "AIGNET-REGVAL")))
 
 (defines id-eval
-  :prepwork ((local (in-theory (enable aignet-lit-fix-id-val-linear))))
+  :prepwork ((local (in-theory (enable aignet-lit-fix-id-val-linear)))
+             (local (in-theory (disable lookup-id-in-bounds-when-positive
+                                        lookup-id-out-of-bounds))))
   (define lit-eval ((lit litp) invals regvals aignet)
     :guard (and (fanin-litp lit aignet)
                 (<= (num-ins aignet) (bits-length invals))
@@ -858,6 +860,21 @@
     (b-and (lit-eval lit1 invals regvals aignet)
            (lit-eval lit2 invals regvals aignet)))
 
+  (define eval-xor-of-lits ((lit1 litp)
+                            (lit2 litp)
+                            invals regvals aignet)
+    :guard (and (fanin-litp lit1 aignet)
+                (fanin-litp lit2 aignet)
+                (<= (num-ins aignet) (bits-length invals))
+                (<= (num-regs aignet) (bits-length
+                                       regvals)))
+    :measure (acl2::two-nats-measure
+              (max (lit-id lit1)
+                   (lit-id lit2))
+              2)
+    (b-xor (lit-eval lit1 invals regvals aignet)
+           (lit-eval lit2 invals regvals aignet)))
+
   (define id-eval ((id natp) invals regvals aignet)
     :guard (and (id-existsp id aignet)
                 (<= (num-ins aignet) (bits-length invals))
@@ -872,16 +889,12 @@
         type
         :gate (b* ((f0 (gate-id->fanin0 id aignet))
                    (f1 (gate-id->fanin1 id aignet)))
-                (mbe :logic (eval-and-of-lits
-                             f0 f1 invals regvals aignet)
-                     :exec (b-and (b-xor (id-eval (lit-id f0)
-                                                  invals regvals aignet)
-                                         (lit-neg f0))
-                                  (b-xor (id-eval (lit-id f1)
-                                                  invals regvals
-                                                  aignet)
-                                         (lit-neg f1)))))
-        :in    (if (int= (io-id->regp id aignet) 1)
+                (if (int= (id->regp id aignet) 1)
+                    (eval-xor-of-lits
+                     f0 f1 invals regvals aignet)
+                  (eval-and-of-lits
+                   f0 f1 invals regvals aignet)))
+        :in    (if (int= (id->regp id aignet) 1)
                    (get-bit (io-id->ionum id aignet) regvals)
                  (get-bit (io-id->ionum id aignet) invals))
         :out (b* ((f (co-id->fanin id aignet)))
@@ -889,8 +902,8 @@
         :const 0)))
   ///
 
-  (in-theory (disable id-eval lit-eval eval-and-of-lits))
-  (local (in-theory (enable id-eval lit-eval eval-and-of-lits)))
+  (in-theory (disable id-eval lit-eval eval-and-of-lits eval-xor-of-lits))
+  (local (in-theory (enable id-eval lit-eval eval-and-of-lits eval-xor-of-lits)))
 
   (defun-nx id-eval-ind (id aignet)
     (declare (xargs :measure (nfix id)
@@ -986,10 +999,47 @@
                                          aignet))))))
 
 
+    (defcong bits-equiv equal
+    (eval-xor-of-lits lit1 lit2 invals regvals aignet) 3
+    :hints (("goal"
+             :expand ((:free (invals regvals)
+                       (eval-xor-of-lits lit1 lit2 invals regvals
+                                         aignet))))))
+
+  (defcong bits-equiv equal
+    (eval-xor-of-lits lit1 lit2 invals regvals aignet) 4
+    :hints (("goal"
+             :expand ((:free (invals regvals)
+                       (eval-xor-of-lits lit1 lit2 invals regvals
+                                         aignet))))))
+
+  (defcong lit-equiv equal
+    (eval-xor-of-lits lit1 lit2 invals regvals aignet) 1
+    :hints (("goal"
+             :expand ((:free (lit1)
+                       (eval-xor-of-lits lit1 lit2 invals regvals
+                                         aignet))))))
+
+  (defcong lit-equiv equal
+    (eval-xor-of-lits lit1 lit2 invals regvals aignet) 2
+    :hints (("goal"
+             :expand ((:free (lit2)
+                       (eval-xor-of-lits lit1 lit2 invals regvals
+                                         aignet))))))
+
+  (defcong list-equiv equal
+    (eval-xor-of-lits lit1 lit2 invals regvals aignet) 5
+    :hints (("goal"
+             :expand ((:free (aignet)
+                       (eval-xor-of-lits lit1 lit2 invals regvals
+                                         aignet))))))
+
+
   (flag::make-flag lit/id-eval-flag lit-eval
                    :flag-mapping ((lit-eval . lit)
                                   (id-eval . id)
-                                  (eval-and-of-lits . and))
+                                  (eval-and-of-lits . and)
+                                  (eval-xor-of-lits . xor))
                    :hints(("Goal" :in-theory (enable aignet-idp))))
 
   (defthm bitp-of-lit-eval
@@ -1003,6 +1053,11 @@
   (defthm bitp-of-eval-and
     (bitp (eval-and-of-lits lit1 lit2 invals regvals aignet))
     :hints (("goal" :expand (eval-and-of-lits lit1 lit2 invals
+                                              regvals aignet))))
+
+  (defthm bitp-of-eval-xor
+    (bitp (eval-xor-of-lits lit1 lit2 invals regvals aignet))
+    :hints (("goal" :expand (eval-xor-of-lits lit1 lit2 invals
                                               regvals aignet))))
 
 
@@ -1027,7 +1082,15 @@
                     (aignet-idp (lit-id lit2) aignet))
                (equal (eval-and-of-lits lit1 lit2 invals regvals new)
                       (eval-and-of-lits lit1 lit2 invals regvals aignet)))
-      :flag and))
+      :flag and)
+    
+    (defthm eval-xor-preserved-by-extension
+      (implies (and (aignet-extension-binding :orig aignet)
+                    (aignet-idp (lit-id lit1) aignet)
+                    (aignet-idp (lit-id lit2) aignet))
+               (equal (eval-xor-of-lits lit1 lit2 invals regvals new)
+                      (eval-xor-of-lits lit1 lit2 invals regvals aignet)))
+      :flag xor))
 
   (defthm id-eval-preserved-by-extension-inverse
     (implies (and (aignet-extension-bind-inverse :orig aignet)
@@ -1048,6 +1111,13 @@
                   (aignet-idp (lit-id lit2) orig))
              (equal (eval-and-of-lits lit1 lit2 invals regvals orig)
                     (eval-and-of-lits lit1 lit2 invals regvals new))))
+
+  (defthm eval-xor-preserved-by-extension-inverse
+    (implies (and (aignet-extension-bind-inverse)
+                  (aignet-idp (lit-id lit1) orig)
+                  (aignet-idp (lit-id lit2) orig))
+             (equal (eval-xor-of-lits lit1 lit2 invals regvals orig)
+                    (eval-xor-of-lits lit1 lit2 invals regvals new))))
 
 
   (defthm aignet-idp-of-co-node->fanin-when-aignet-nodes-ok
@@ -1135,13 +1205,40 @@
              (equal (eval-and-of-lits y (aignet-lit-fix x aignet) invals regvals aignet2)
                     (eval-and-of-lits y x invals regvals aignet))))
 
+  
+  (defthm eval-xor-of-lits-of-aignet-lit-fix-1
+    (equal (eval-xor-of-lits (aignet-lit-fix x aignet) y invals regvals aignet)
+           (eval-xor-of-lits x y invals regvals aignet))
+    :hints(("Goal" :in-theory (disable lit-eval))))
+
+  (defthm eval-xor-of-lits-of-aignet-lit-fix-1-extension
+    (implies (and (aignet-extension-p aignet2 aignet)
+                  (aignet-idp (lit-id y) aignet))
+             (equal (eval-xor-of-lits (aignet-lit-fix x aignet) y invals regvals aignet2)
+                    (eval-xor-of-lits x y invals regvals aignet))))
+
+  (defthm eval-xor-of-lits-of-aignet-lit-fix-2
+    (equal (eval-xor-of-lits y (aignet-lit-fix x aignet) invals regvals aignet)
+           (eval-xor-of-lits y x invals regvals aignet))
+    :hints(("Goal" :in-theory (disable lit-eval))))
+
+  (defthm eval-xor-of-lits-of-aignet-lit-fix-2-extension
+    (implies (and (aignet-extension-p aignet2 aignet)
+                  (aignet-idp (lit-id y) aignet))
+             (equal (eval-xor-of-lits y (aignet-lit-fix x aignet) invals regvals aignet2)
+                    (eval-xor-of-lits y x invals regvals aignet))))
+
   (in-theory (disable id-eval-of-aignet-lit-fix
                       lit-eval-of-aignet-lit-fix
                       lit-eval-of-aignet-lit-fix-extension
                       eval-and-of-lits-of-aignet-lit-fix-1
                       eval-and-of-lits-of-aignet-lit-fix-1-extension
                       eval-and-of-lits-of-aignet-lit-fix-2
-                      eval-and-of-lits-of-aignet-lit-fix-2-extension))
+                      eval-and-of-lits-of-aignet-lit-fix-2-extension
+                      eval-xor-of-lits-of-aignet-lit-fix-1
+                      eval-xor-of-lits-of-aignet-lit-fix-1-extension
+                      eval-xor-of-lits-of-aignet-lit-fix-2
+                      eval-xor-of-lits-of-aignet-lit-fix-2-extension))
 
 
   (verify-guards lit-eval)
@@ -1170,9 +1267,9 @@
                     (lit-eval-list lits invals regvals new))))
 
 
-  (defthm id-eval-of-aignet-add-gate-new
+  (defthm id-eval-of-aignet-add-and-new
     (b* ((new-id (+ 1 (node-count aignet)))
-         (aignet1 (cons (gate-node f0 f1) aignet)))
+         (aignet1 (cons (and-node f0 f1) aignet)))
       (equal (id-eval new-id invals regvals aignet1)
              (eval-and-of-lits f0 f1 invals regvals aignet)))
     :hints(("Goal" :expand ((:free (id aignet1)
@@ -1182,6 +1279,19 @@
                              eval-and-of-lits-of-aignet-lit-fix-1
                              eval-and-of-lits-of-aignet-lit-fix-2-extension)
                             (eval-and-of-lits)))))
+
+  (defthm id-eval-of-aignet-add-xor-new
+    (b* ((new-id (+ 1 (node-count aignet)))
+         (aignet1 (cons (xor-node f0 f1) aignet)))
+      (equal (id-eval new-id invals regvals aignet1)
+             (eval-xor-of-lits f0 f1 invals regvals aignet)))
+    :hints(("Goal" :expand ((:free (id aignet1)
+                             (id-eval id invals regvals aignet1)))
+            :do-not-induct t
+            :in-theory (e/d (aignet-idp
+                             eval-xor-of-lits-of-aignet-lit-fix-1
+                             eval-xor-of-lits-of-aignet-lit-fix-2-extension)
+                            (eval-xor-of-lits)))))
 
   (defthm id-eval-of-0
     (equal (id-eval 0 invals regvals aignet) 0))
@@ -1347,6 +1457,21 @@
       (b-and (lit-eval-seq k lit1 frames initsts aignet)
              (lit-eval-seq k lit2 frames initsts aignet)))
 
+    (define eval-xor-of-lits-seq ((k natp) (lit1 litp) (lit2 litp) frames initsts aignet)
+      :guard (and (fanin-litp lit1 aignet)
+                  (fanin-litp lit2 aignet)
+                  (< k (frames-nrows frames))
+                  (<= (num-ins aignet) (frames-ncols frames))
+                  (<= (num-regs aignet) (bits-length initsts)))
+      :measure (acl2::nat-list-measure
+                (list k
+                      (max (lit-id lit1)
+                           (lit-id lit2))
+                      2))
+      :verify-guards nil
+      (b-xor (lit-eval-seq k lit1 frames initsts aignet)
+             (lit-eval-seq k lit2 frames initsts aignet)))
+
     (define id-eval-seq ((k natp) (id natp) frames initsts aignet)
       :guard (and (id-existsp id aignet)
                   (< k (frames-nrows frames))
@@ -1362,18 +1487,13 @@
           type
           :gate (b* ((f0 (gate-id->fanin0 id aignet))
                      (f1 (gate-id->fanin1 id aignet)))
-                  (mbe :logic (eval-and-of-lits-seq
-                               k f0 f1 frames initsts aignet)
-                       :exec (b-and (b-xor (id-eval-seq k (lit-id f0)
-                                                        frames
-                                                        initsts aignet)
-                                           (lit-neg f0))
-                                    (b-xor (id-eval-seq k (lit-id f1)
-                                                        frames
-                                                        initsts aignet)
-                                           (lit-neg f1)))))
+                  (if (eql 1 (id->regp id aignet))
+                      (eval-xor-of-lits-seq
+                       k f0 f1 frames initsts aignet)
+                    (eval-and-of-lits-seq
+                     k f0 f1 frames initsts aignet)))
           :in    (let ((ionum (io-id->ionum id aignet)))
-                   (if (int= (io-id->regp id aignet) 1)
+                   (if (int= (id->regp id aignet) 1)
                        (if (zp k)
                            (get-bit ionum initsts)
                          (id-eval-seq (1- k)
@@ -1386,8 +1506,8 @@
           :const 0)))
     ///
 
-    (in-theory (disable id-eval-seq lit-eval-seq eval-and-of-lits-seq))
-    (local (in-theory (enable id-eval-seq lit-eval-seq eval-and-of-lits-seq)))
+    (in-theory (disable id-eval-seq lit-eval-seq eval-and-of-lits-seq eval-xor-of-lits-seq))
+    (local (in-theory (enable id-eval-seq lit-eval-seq eval-and-of-lits-seq eval-xor-of-lits-seq)))
 
 
     (defun-nx id-eval-seq-ind (k id aignet)
@@ -1405,7 +1525,7 @@
                     k (lit-id f0) aignet)
                    (id-eval-seq-ind
                     k (lit-id f1) aignet)))
-          :in     (if (int= (io-id->regp id aignet) 1)
+          :in     (if (int= (id->regp id aignet) 1)
                       (if (zp k)
                           0
                         (id-eval-seq-ind
@@ -1463,6 +1583,18 @@
       :hints (("goal" :expand ((:free (aignet)
                                 (eval-and-of-lits-seq k lit1 lit2 frames initvals aignet))))))
 
+    (defcong nat-equiv equal (eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet) 1
+      :hints (("goal" :expand ((eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet)))))
+    (defcong bits-equiv equal (eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet) 5
+      :hints (("goal" :expand ((eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet)))))
+    (defcong lit-equiv equal (eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet) 2
+      :hints (("goal" :expand ((eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet)))))
+    (defcong lit-equiv equal (eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet) 3
+      :hints (("goal" :expand ((eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet)))))
+    (defcong list-equiv equal (eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet) 6
+      :hints (("goal" :expand ((:free (aignet)
+                                (eval-xor-of-lits-seq k lit1 lit2 frames initvals aignet))))))
+
 
     (defthm bitp-of-lit-eval-seq
       (bitp (lit-eval-seq k lit frames initsts aignet))
@@ -1471,6 +1603,10 @@
     (defthm bitp-of-eval-and-of-lits-seq
       (bitp (eval-and-of-lits-seq k lit1 lit2 frames initsts aignet))
       :hints (("goal" :expand (eval-and-of-lits-seq k lit1 lit2 frames initsts aignet))))
+
+    (defthm bitp-of-eval-xor-of-lits-seq
+      (bitp (eval-xor-of-lits-seq k lit1 lit2 frames initsts aignet))
+      :hints (("goal" :expand (eval-xor-of-lits-seq k lit1 lit2 frames initsts aignet))))
 
     (defthm bitp-of-id-eval-seq
       (bitp (id-eval-seq k id frames initsts aignet))
@@ -1531,6 +1667,8 @@
                  frames initsts aignet)))
 
 (defsection frame-regvals
+  (local (in-theory (disable lookup-id-in-bounds-when-positive
+                             lookup-reg->nxst-out-of-bounds)))
 
   (def-list-constructor frame-regvals (k frames initsts aignet)
     (declare (xargs :stobjs (frames initsts aignet)
@@ -1556,8 +1694,11 @@
                       (:free (k lit)
                              (lit-eval-seq k lit frames initsts aignet))
                       (:free (k lit1 lit2)
-                       (eval-and-of-lits-seq k lit1 lit2 frames initsts aignet)))
+                       (eval-and-of-lits-seq k lit1 lit2 frames initsts aignet))
+                      (:free (k lit1 lit2)
+                       (eval-xor-of-lits-seq k lit1 lit2 frames initsts aignet)))
              :in-theory (e/d (lit-eval
+                              eval-xor-of-lits
                               eval-and-of-lits
                               reg-eval-seq)
                              (id-eval-seq
@@ -1608,7 +1749,7 @@
                       (id-eval-seq k id frames initvals orig)
                       (id-eval-seq 0 id frames initvals new)
                       (id-eval-seq 0 id frames initvals orig))
-             :in-theory (enable lit-eval-seq eval-and-of-lits-seq))))
+             :in-theory (enable lit-eval-seq eval-and-of-lits-seq eval-xor-of-lits-seq))))
 
   (defthm lit-eval-seq-of-non-reg/nxst-extension
     (implies (and (aignet-extension-binding)
@@ -2062,9 +2203,9 @@ with the all-0 initial state using @(see aignet-copy-init).</p>
     :hints (("goal" :induct (id-eval-ind id aignet)
              :expand ((:free (invals regvals)
                        (id-eval id invals regvals aignet)))
-             :in-theory (enable lit-eval eval-and-of-lits))
+             :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))
             (and stable-under-simplificationp
-                 '(:in-theory (enable acl2::nth-with-large-index)))))
+                 '(:in-theory (enable acl2::nth-when-too-large)))))
 
   (defthm lit-eval-of-take-num-regs
     (equal (lit-eval id invals
@@ -2186,7 +2327,7 @@ same outputs when run starting at that initial state.</p>"
       (acl2::msg "~s0~s1~x2"
                  (if (int= (lit-neg lit) 1) "~" "")
                  (if (int= type (in-type))
-                     (if (int= (io-id->regp id aignet) 1) "r" "i")
+                     (if (int= (id->regp id aignet) 1) "r" "i")
                    "g")
                  (if (int= type (in-type))
                      (io-id->ionum id aignet)
@@ -2199,9 +2340,10 @@ same outputs when run starting at that initial state.</p>"
                                 (int= (id->type n aignet) (gate-type)))))
     (b* ((f0 (gate-id->fanin0 n aignet))
          (f1 (gate-id->fanin1 n aignet)))
-      (acl2::msg "g~x0 = ~@1 & ~@2"
+      (acl2::msg "g~x0 = ~@1 ~s2 ~@3"
                  n
                  (aignet-print-lit f0 aignet)
+                 (if (eql 1 (id->regp n aignet)) "XOR" "AND")
                  (aignet-print-lit f1 aignet))))
 
 

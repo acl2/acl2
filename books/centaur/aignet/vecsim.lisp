@@ -321,6 +321,107 @@
                        (vecsim-to-eval-iter n slot bit s32v vals
                                             aignet)))))))
 
+
+
+(local (defthm b-xor-associative
+         (equal (b-xor (b-xor x y) z)
+                (b-xor x (b-xor y z)))
+         :hints(("Goal" :in-theory (enable b-xor)))))
+(local (defthm b-xor-commutative2
+         (equal (b-xor y (b-xor x z))
+                (b-xor x (b-xor y z)))
+         :hints(("Goal" :in-theory (enable b-xor)))))
+
+(defsection s32v-xor-lits
+  (defiteration s32v-xor-lits (lit1 lit2 out-id s32v)
+    (declare (xargs :stobjs s32v
+                    :guard (and (litp lit1)
+                                (litp lit2)
+                                (natp out-id)
+                                (< out-id (s32v-nrows s32v))
+                                (< (lit-id lit1) (s32v-nrows s32v))
+                                (< (lit-id lit2) (s32v-nrows s32v)))))
+    (s32v-set2 out-id n
+               (logxor (bit-extend (b-xor (lit-neg lit1) (lit-neg lit2)))
+                 (logxor (s32v-get2 (lit-id lit1) n s32v)
+                         (s32v-get2 (lit-id lit2) n s32v)))
+               s32v)
+    :returns s32v
+    :index n
+    :last (s32v-ncols s32v))
+
+  (local (in-theory (enable s32v-xor-lits-iter)))
+
+  (defthm memo-tablep-s32v-xor-lits-iter
+    (implies (< (node-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (node-count aignet) (len (stobjs::2darr->rows (s32v-xor-lits-iter n lit1 lit2 out-id s32v)))))
+    :rule-classes :linear)
+
+  (defthm max-fanin-memo-tablep-s32v-xor-lits-iter
+    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s32v)))
+             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (s32v-xor-lits-iter n lit1 lit2 out-id s32v)))))
+    :rule-classes :linear)
+
+  (defthm ncols-s32v-xor-lits-iter
+    (equal (stobjs::2darr->ncols (s32v-xor-lits-iter n lit1 lit2 out-id s32v))
+           (stobjs::2darr->ncols s32v)))
+
+  (defthm len-cdr-s32v-xor-lits-iter
+    (implies (< (nfix out-id) (len (stobjs::2darr->rows s32v)))
+             (equal (len (stobjs::2darr->rows (s32v-xor-lits-iter n lit1 lit2 out-id s32v)))
+                    (len (stobjs::2darr->rows s32v)))))
+
+  (defthm lookup-prev-in-s32v-xor-lits-iter
+    (implies (<= (nfix m) (nfix slot))
+             (equal (nth slot (nth n (stobjs::2darr->rows (s32v-xor-lits-iter m lit1 lit2 id
+                                                              s32v))))
+                    (nth slot (nth n (stobjs::2darr->rows s32v))))))
+
+  (local (defthm bit-extend-of-b-xor
+           (equal (bit-extend (b-xor a b))
+                  (logxor (bit-extend a) (bit-extend b)))
+           :hints(("Goal" :in-theory (enable b-xor bit-extend)))))
+
+
+  (defthm lookup-in-s32v-xor-lits-iter
+    (equal (nth slot (nth n (stobjs::2darr->rows (s32v-xor-lits-iter m lit1 lit2 id s32v))))
+           (if (and (equal (nfix n) (nfix id))
+                    (< (nfix slot) (nfix m)))
+               (logxor (logxor (bit-extend (lit-neg lit1))
+                               (s32-fix (nth slot (nth (lit-id lit1) (stobjs::2darr->rows
+                                                                      s32v)))))
+                       (logxor (bit-extend (lit-neg lit2))
+                               (s32-fix (nth slot (nth (lit-id lit2) (stobjs::2darr->rows s32v))))))
+             (nth slot (nth n (stobjs::2darr->rows s32v)))))
+    :hints ((acl2::just-induct-and-expand
+             (s32v-xor-lits-iter m lit1 lit2 id s32v))))
+
+
+  (defthm vecsim-to-eval-of-s32v-xor-lits-iter
+    (equal (vecsim-to-eval-iter n slot bit (s32v-xor-lits-iter slot1 lit1 lit2 m s32v) vals aignet)
+           (let ((vals (vecsim-to-eval-iter n slot bit s32v vals aignet)))
+             (if (and (< (nfix m) (nfix n))
+                      (< (nfix slot) (nfix slot1)))
+                 (update-nth m
+                             (b-xor
+                              (b-xor (lit-neg lit1)
+                                     (acl2::logbit
+                                      bit
+                                      (s32-fix (nth slot (nth (lit-id lit1)
+                                                              (stobjs::2darr->rows s32v))))))
+                              (b-xor (lit-neg lit2)
+                                     (acl2::logbit
+                                      bit
+                                      (s32-fix (nth slot (nth (lit-id lit2)
+                                                              (stobjs::2darr->rows s32v)))))))
+                             vals)
+               vals)))
+    :hints (("goal" :induct (vecsim-to-eval-iter n slot bit s32v vals aignet)
+             :in-theory (enable (:induction vecsim-to-eval-iter))
+             :expand ((:free (s32v)
+                       (vecsim-to-eval-iter n slot bit s32v vals
+                                            aignet)))))))
+
 (defsection s32v-zero
   (defiteration s32v-zero (out-id s32v)
     (declare (xargs :stobjs s32v
@@ -446,8 +547,11 @@
       (aignet-case
        type
        :gate  (b* ((f0 (snode->fanin slot0))
-                   (f1 (gate-id->fanin1 nid aignet)))
-                (s32v-and-lits f0 f1 nid s32v))
+                   (slot1 (id->slot nid 1 aignet))
+                   (f1 (snode->fanin slot1)))
+                (if (eql 1 (snode->regp slot1))
+                    (s32v-xor-lits f0 f1 nid s32v)
+                  (s32v-and-lits f0 f1 nid s32v)))
        :out   (b* ((f0 (snode->fanin slot0)))
                 (s32v-copy-lit f0 nid s32v))
        :const (s32v-zero nid s32v)
@@ -471,11 +575,14 @@
          (nid n)
          (slot0 (id->slot nid 0 aignet))
          (type (snode->type slot0)))
-      (aignet-seq-case
-       type (io-id->regp nid aignet)
+      (aignet-case
+       type (id->regp nid aignet)
        :gate  (b* ((f0 (snode->fanin slot0))
-                   (f1 (gate-id->fanin1 nid aignet)))
-                (s32v-and-lits f0 f1 nid s32v))
+                   (slot1 (id->slot nid 1 aignet))
+                   (f1 (snode->fanin slot1)))
+                (if (eql 1 (snode->regp slot1))
+                    (s32v-xor-lits f0 f1 nid s32v)
+                  (s32v-and-lits f0 f1 nid s32v)))
        :pi    s32v
        :reg   (b* ((ri (reg-id->nxst (regnum->id (io-id->ionum nid aignet)
                                                  aignet)
@@ -556,7 +663,7 @@
                                                           aignet))
                             (reg-vals (aignet-vals->regvals nil vals aignet)))
                        (id-eval id in-vals reg-vals aignet))))
-           :hints(("Goal" :in-theory (e/d (lit-eval eval-and-of-lits)
+           :hints(("Goal" :in-theory (e/d (lit-eval eval-and-of-lits eval-xor-of-lits)
                                           (id-eval
                                            aignet-vecsim-iter))
                    :induct (id-eval-ind id aignet)
@@ -648,11 +755,17 @@
       (aignet-case
         type
         :gate  (b* ((f0 (snode->fanin slot0))
-                    (f1 (gate-id->fanin1 nid aignet)))
-                 (s32v-set n (logand (logxor (bit-extend (lit->neg f0))
+                    (slot1 (id->slot nid 1 aignet))
+                    (f1 (snode->fanin slot1)))
+                 (s32v-set n
+                           (if (eql 1 (snode->regp slot1))
+                               (logxor (bit-extend (b-xor (lit->neg f0) (lit->neg f1)))
+                                       (s32v-get (lit->var f0) s32v)
+                                       (s32v-get (lit->var f1) s32v))
+                             (logand (logxor (bit-extend (lit->neg f0))
                                              (s32v-get (lit->var f0) s32v))
                                      (logxor (bit-extend (lit->neg f1))
-                                             (s32v-get (lit->var f1) s32v)))
+                                             (s32v-get (lit->var f1) s32v))))
                            s32v))
         :out   (b* ((f0 (snode->fanin slot0)))
                  (s32v-set n (logxor (bit-extend (lit->neg f0))
@@ -678,6 +791,11 @@
            (equal (stobjs::2darr-index-inverse idx nrows 1)
                   (mv (nfix idx) 0))
            :hints(("Goal" :in-theory (enable stobjs::2darr-index-inverse mod)))))
+  
+  (local (defthm bit-extend-of-b-xor
+           (equal (bit-extend (b-xor a b))
+                  (logxor (bit-extend a) (bit-extend b)))
+           :hints(("Goal" :in-theory (enable b-xor bit-extend)))))
 
   (defthm aignet-vecsim1-iter-is-aignet-vecsim-iter
     (implies (equal (s32v-ncols s32v) 1)
@@ -686,6 +804,8 @@
     :hints(("Goal" :induct t
             :expand ((:free (lit0 lit1 n s32v) (s32v-and-lits-iter 1 lit0 lit1 n s32v))
                      (:free (lit0 lit1 n s32v) (s32v-and-lits-iter 0 lit0 lit1 n s32v))
+                     (:free (lit0 lit1 n s32v) (s32v-xor-lits-iter 1 lit0 lit1 n s32v))
+                     (:free (lit0 lit1 n s32v) (s32v-xor-lits-iter 0 lit0 lit1 n s32v))
                      (:free (lit0 n s32v) (s32v-copy-lit-iter 1 lit0 n s32v))
                      (:free (lit0 n s32v) (s32v-copy-lit-iter 0 lit0 n s32v))
                      (:free (n s32v) (s32v-zero-iter 1 n s32v))
@@ -725,8 +845,11 @@
       (aignet-case
        type
        :gate  (b* ((f0 (snode->fanin slot0))
-                   (f1 (gate-id->fanin1 nid aignet)))
-                (s32v-and-lits f0 f1 nid s32v))
+                   (slot1 (id->slot nid 1 aignet))
+                   (f1 (snode->fanin slot1)))
+                (if (eql 1 (snode->regp slot1))
+                    (s32v-xor-lits f0 f1 nid s32v)
+                  (s32v-and-lits f0 f1 nid s32v)))
        :out   s32v
        :const (s32v-zero nid s32v)
        :in    s32v))
@@ -810,7 +933,7 @@
                                                           aignet))
                             (reg-vals (aignet-vals->regvals nil vals aignet)))
                        (id-eval id in-vals reg-vals aignet))))
-           :hints(("Goal" :in-theory (e/d (lit-eval eval-and-of-lits)
+           :hints(("Goal" :in-theory (e/d (lit-eval eval-and-of-lits eval-xor-of-lits)
                                           (id-eval
                                            aignet-vecsim*-iter))
                    :induct (id-eval-ind id aignet)
@@ -905,11 +1028,17 @@
       (aignet-case
         type
         :gate  (b* ((f0 (snode->fanin slot0))
-                    (f1 (gate-id->fanin1 nid aignet)))
-                 (s32v-set n (logand (logxor (bit-extend (lit->neg f0))
+                    (slot1 (id->slot nid 1 aignet))
+                    (f1 (snode->fanin slot1)))
+                 (s32v-set n
+                           (if (eql 1 (snode->regp slot1))
+                               (logxor (bit-extend (b-xor (lit->neg f0) (lit->neg f1)))
+                                       (s32v-get (lit->var f0) s32v)
+                                       (s32v-get (lit->var f1) s32v))
+                             (logand (logxor (bit-extend (lit->neg f0))
                                              (s32v-get (lit->var f0) s32v))
                                      (logxor (bit-extend (lit->neg f1))
-                                             (s32v-get (lit->var f1) s32v)))
+                                             (s32v-get (lit->var f1) s32v))))
                            s32v))
         :out   s32v
         :const (s32v-set n 0 s32v)
@@ -932,6 +1061,11 @@
            (equal (stobjs::2darr-index-inverse idx nrows 1)
                   (mv (nfix idx) 0))
            :hints(("Goal" :in-theory (enable stobjs::2darr-index-inverse mod)))))
+  
+  (local (defthm bit-extend-of-b-xor
+           (equal (bit-extend (b-xor a b))
+                  (logxor (bit-extend a) (bit-extend b)))
+           :hints(("Goal" :in-theory (enable b-xor bit-extend)))))
 
   (defthm aignet-vecsim*1-iter-is-aignet-vecsim*-iter
     (implies (equal (s32v-ncols s32v) 1)
@@ -940,6 +1074,8 @@
     :hints(("Goal" :induct t
             :expand ((:free (lit0 lit1 n s32v) (s32v-and-lits-iter 1 lit0 lit1 n s32v))
                      (:free (lit0 lit1 n s32v) (s32v-and-lits-iter 0 lit0 lit1 n s32v))
+                     (:free (lit0 lit1 n s32v) (s32v-xor-lits-iter 1 lit0 lit1 n s32v))
+                     (:free (lit0 lit1 n s32v) (s32v-xor-lits-iter 0 lit0 lit1 n s32v))
                      (:free (lit0 n s32v) (s32v-copy-lit-iter 1 lit0 n s32v))
                      (:free (lit0 n s32v) (s32v-copy-lit-iter 0 lit0 n s32v))
                      (:free (n s32v) (s32v-zero-iter 1 n s32v))

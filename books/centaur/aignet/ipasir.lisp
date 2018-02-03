@@ -120,7 +120,8 @@
                (ipasir (ipasir::ipasir-add-unary ipasir (satlink::lit-negate sat-lit))))
             (mv sat-lits ipasir)))
          ;; now we have a gate node -- check first for a mux if we're doing that
-         ((mv muxp c tb fb) (if use-muxes
+         ;; if it's an xor, we say it's a mux regardless
+         ((mv muxp c tb fb) (if (or use-muxes (eql 1 (id->regp id aignet)))
                                 (id-is-mux id aignet)
                               (mv nil nil nil nil)))
          ((when muxp)
@@ -639,7 +640,7 @@
         (mv inmasks regmasks mark state))
        (mark (set-bit id 1 mark)))
     (aignet-case (id->type id aignet)
-      :in (if (eql 1 (io-id->regp id aignet))
+      :in (if (eql 1 (id->regp id aignet))
               (b* ((regmasks (set-bit (io-id->ionum id aignet) 1 regmasks)))
                 (mv inmasks regmasks mark state))
             (b* ((inmasks (set-bit (io-id->ionum id aignet) 1 inmasks)))
@@ -647,37 +648,38 @@
       :out (mv inmasks regmasks mark state)
       :const (mv inmasks regmasks mark state)
       :gate (b* ((val (mbe :logic (id-eval id invals regvals aignet)
-                                 :exec (get-bit id vals)))
-                       (f0 (gate-id->fanin0 id aignet))
-                       (f1 (gate-id->fanin1 id aignet))
-                       ((when (eql val 1))
-                        ;; both needed
-                        (b* (((mv inmasks regmasks mark state)
-                              (aignet-vals-sat-care-masks-rec
-                               (lit-id f0) inmasks regmasks invals regvals vals mark aignet state)))
-                          (aignet-vals-sat-care-masks-rec
-                           (lit-id f1) inmasks regmasks invals regvals vals mark aignet state)))
-                       ((when (eql (mbe :logic (lit-eval f0 invals regvals aignet)
-                                        :exec (aignet-eval-lit f0 vals)) 1))
-                        ;; f1 only needed
+                           :exec (get-bit id vals)))
+                 (f0 (gate-id->fanin0 id aignet))
+                 (f1 (gate-id->fanin1 id aignet))
+                 ((when (or (eql val 1)
+                            (eql (id->regp id aignet) 1)))
+                  ;; both needed
+                  (b* (((mv inmasks regmasks mark state)
                         (aignet-vals-sat-care-masks-rec
-                         (lit-id f1) inmasks regmasks invals regvals vals mark aignet state))
-                       ((when (eql (mbe :logic (lit-eval f1 invals regvals aignet)
-                                        :exec (aignet-eval-lit f1 vals))
-                                   1))
-                        ;; f0 only needed
-                        (aignet-vals-sat-care-masks-rec
-                         (lit-id f0) inmasks regmasks invals regvals vals mark aignet state))
-                       ;; either one will do, check if one is already marked
-                       ((when (or (eql 1 (get-bit (lit-id f0) mark))
-                                  (eql 1 (get-bit (lit-id f1) mark))))
-                        (mv inmasks regmasks mark state))
-                       ((mv coinflip state) (random$ 2 state)))
-                    (if (eql 1 coinflip)
-                        (aignet-vals-sat-care-masks-rec
-                         (lit-id f1) inmasks regmasks invals regvals vals mark aignet state)
-                      (aignet-vals-sat-care-masks-rec
-                       (lit-id f0) inmasks regmasks invals regvals vals mark aignet state)))))
+                         (lit-id f0) inmasks regmasks invals regvals vals mark aignet state)))
+                    (aignet-vals-sat-care-masks-rec
+                     (lit-id f1) inmasks regmasks invals regvals vals mark aignet state)))
+                 ((when (eql (mbe :logic (lit-eval f0 invals regvals aignet)
+                                  :exec (aignet-eval-lit f0 vals)) 1))
+                  ;; f1 only needed
+                  (aignet-vals-sat-care-masks-rec
+                   (lit-id f1) inmasks regmasks invals regvals vals mark aignet state))
+                 ((when (eql (mbe :logic (lit-eval f1 invals regvals aignet)
+                                  :exec (aignet-eval-lit f1 vals))
+                             1))
+                  ;; f0 only needed
+                  (aignet-vals-sat-care-masks-rec
+                   (lit-id f0) inmasks regmasks invals regvals vals mark aignet state))
+                 ;; either one will do, check if one is already marked
+                 ((when (or (eql 1 (get-bit (lit-id f0) mark))
+                            (eql 1 (get-bit (lit-id f1) mark))))
+                  (mv inmasks regmasks mark state))
+                 ((mv coinflip state) (random$ 2 state)))
+              (if (eql 1 coinflip)
+                  (aignet-vals-sat-care-masks-rec
+                   (lit-id f1) inmasks regmasks invals regvals vals mark aignet state)
+                (aignet-vals-sat-care-masks-rec
+                 (lit-id f0) inmasks regmasks invals regvals vals mark aignet state)))))
   ///
   (local (in-theory (disable (:d aignet-vals-sat-care-masks-rec))))
 
@@ -735,19 +737,22 @@
     :hints(("Goal" :in-theory (enable lit-eval))))
 
   (defun-nx aignet-vals-sat-care-masks-mark-ok (node mark invals regvals aignet)
-    (implies (and (equal (nth node mark) 1)
-                  (equal (stype (car (lookup-id node aignet))) :gate))
-             (and (implies (equal (id-eval node invals regvals aignet) 1)
+    (implies (equal (nth node mark) 1)
+             (and (implies (equal (stype (car (lookup-id node aignet))) (and-stype))
+                           (and (implies (equal (id-eval node invals regvals aignet) 1)
+                                         (and (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)
+                                              (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
+                                (implies (and (equal (id-eval node invals regvals aignet) 0)
+                                              (not (and (equal (lit-eval (fanin :gate0 (lookup-id node aignet))
+                                                                         invals regvals aignet)
+                                                               0)
+                                                        (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1))))
+                                         (and (equal (lit-eval (fanin :gate1 (lookup-id node aignet))
+                                                               invals regvals aignet)
+                                                     0)
+                                              (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))))
+                  (implies (equal (stype (car (lookup-id node aignet))) (xor-stype))
                            (and (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)
-                                (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
-                  (implies (and (equal (id-eval node invals regvals aignet) 0)
-                                (not (and (equal (lit-eval (fanin :gate0 (lookup-id node aignet))
-                                                           invals regvals aignet)
-                                                 0)
-                                          (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1))))
-                           (and (equal (lit-eval (fanin :gate1 (lookup-id node aignet))
-                                                 invals regvals aignet)
-                                       0)
                                 (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1))))))
 
   (defun-sk aignet-vals-sat-care-masks-mark-invar (id mark invals regvals aignet)
@@ -761,42 +766,45 @@
   (defthmd aignet-vals-sat-care-masks-mark-invar-rw
     (implies (and (aignet-vals-sat-care-masks-mark-invar id mark invals regvals aignet)
                   (<= (nfix node) (nfix id))
-                  (equal (nth node mark) 1)
-                  (equal (stype (car (lookup-id node aignet))) :gate))
-             (and (implies (equal (id-eval node invals regvals aignet) 1)
-                           (and (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)
-                                (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
-                  (implies (and (equal (id-eval node invals regvals aignet) 0)
-                                (equal (lit-eval (fanin :gate0 (lookup-id node aignet))
-                                                 invals regvals aignet)
-                                       1))
-                           (and (equal (lit-eval (fanin :gate1 (lookup-id node aignet))
-                                                 invals regvals aignet)
-                                       0)
-                                (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
-                  
-                  (implies (and (equal (id-eval node invals regvals aignet) 0)
-                                (not (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)))
-                           (and (equal (lit-eval (fanin :gate1 (lookup-id node aignet))
-                                                 invals regvals aignet)
-                                       0)
-                                (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
+                  (equal (nth node mark) 1))
+             (and (implies (equal (stype (car (lookup-id node aignet))) (and-stype))
+                           (and (implies (equal (id-eval node invals regvals aignet) 1)
+                                         (and (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)
+                                              (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
+                                (implies (and (equal (id-eval node invals regvals aignet) 0)
+                                              (equal (lit-eval (fanin :gate0 (lookup-id node aignet))
+                                                               invals regvals aignet)
+                                                     1))
+                                         (and (equal (lit-eval (fanin :gate1 (lookup-id node aignet))
+                                                               invals regvals aignet)
+                                                     0)
+                                              (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
+                                
+                                (implies (and (equal (id-eval node invals regvals aignet) 0)
+                                              (not (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)))
+                                         (and (equal (lit-eval (fanin :gate1 (lookup-id node aignet))
+                                                               invals regvals aignet)
+                                                     0)
+                                              (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
 
-                  (implies (and (equal (id-eval node invals regvals aignet) 0)
-                                (equal (lit-eval (fanin :gate1 (lookup-id node aignet))
-                                                 invals regvals aignet)
-                                       1))
-                           (and (equal (lit-eval (fanin :gate0 (lookup-id node aignet))
-                                                 invals regvals aignet)
-                                       0)
-                                (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)))
-                  
-                  (implies (and (equal (id-eval node invals regvals aignet) 0)
-                                (not (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
-                           (and (equal (lit-eval (fanin :gate0 (lookup-id node aignet))
-                                                 invals regvals aignet)
-                                       0)
-                                (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)))))
+                                (implies (and (equal (id-eval node invals regvals aignet) 0)
+                                              (equal (lit-eval (fanin :gate1 (lookup-id node aignet))
+                                                               invals regvals aignet)
+                                                     1))
+                                         (and (equal (lit-eval (fanin :gate0 (lookup-id node aignet))
+                                                               invals regvals aignet)
+                                                     0)
+                                              (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)))
+                                
+                                (implies (and (equal (id-eval node invals regvals aignet) 0)
+                                              (not (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))
+                                         (and (equal (lit-eval (fanin :gate0 (lookup-id node aignet))
+                                                               invals regvals aignet)
+                                                     0)
+                                              (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)))))
+                  (implies (equal (stype (car (lookup-id node aignet))) (xor-stype))
+                           (and (equal (nth (lit-id (fanin :gate0 (lookup-id node aignet))) mark) 1)
+                                (equal (nth (lit-id (fanin :gate1 (lookup-id node aignet))) mark) 1)))))
     :hints (("goal" :use aignet-vals-sat-care-masks-mark-invar-necc
              :in-theory (disable aignet-vals-sat-care-masks-mark-invar-necc))))
              
@@ -841,7 +849,7 @@
 
   (local (defthm id-eval-of-gate-fanins-when-false
            (implies (And (equal (id-eval id invals regvals aignet) 0)
-                         (equal (stype (car (lookup-id id aignet))) :gate))
+                         (equal (stype (car (lookup-id id aignet))) (and-stype)))
                     (and (implies (equal (lit-eval (fanin :gate0 (lookup-id id aignet))
                                                    invals regvals aignet)
                                          1)
@@ -859,7 +867,7 @@
 
   (local (defthm id-eval-of-gate-fanins-when-true
            (implies (and (equal (id-eval id invals regvals aignet) 1)
-                         (equal (stype (car (lookup-id id aignet))) :gate))
+                         (equal (stype (car (lookup-id id aignet))) (and-stype)))
                     (and (equal (lit-eval (fanin :gate0 (lookup-id id aignet))
                                           invals regvals aignet)
                                 1)
@@ -1023,10 +1031,11 @@
             (and stable-under-simplificationp
                  '(:use ((:instance aignet-vals-sat-care-masks-mark-invar-rw
                           (id max-id) (node id)))
-                   :in-theory (disable aignet-vals-sat-care-masks-mark-invar-rw)
+                   :in-theory (e/d (ctype) (aignet-vals-sat-care-masks-mark-invar-rw))
                    :expand ((:free (invals regvals)
                              (id-eval id invals regvals aignet))
                             (:free (lit0 lit1 invals regvals ) (eval-and-of-lits lit0 lit1 invals regvals aignet))
+                            (:free (lit0 lit1 invals regvals ) (eval-xor-of-lits lit0 lit1 invals regvals aignet))
                             (:free (lit invals regvals) (lit-eval lit invals regvals aignet)))))))
 
   (defretd aignet-vals-sat-care-masks-rec-counterexample-under-masks
