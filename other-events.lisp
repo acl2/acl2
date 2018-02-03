@@ -1440,12 +1440,15 @@
 (defconst *unattachable-primitives*
 
 ; This constant contains the names of function symbols for which we must
-; disallow attachments for execution.  Our approach is to disallow all
-; attachments to these functions, all of which are constrained since defined
-; functions cannot receive attachments for execution.  So we search the code
-; for encapsulated functions that we do not want executed.
+; disallow attachments, for example to prevent execution.  So we search the
+; code for encapsulated functions that we do not want executed.
 
   '(big-n decrement-big-n zp-big-n
+
+; We disallow attachments for the following system functions that support
+; apply$.
+
+          badge-userfn apply$-userfn
 
 ; At one time we also included canonical-pathname and various mfc-xx functions.
 ; But these are all handled now by dependent clause-processors, which gives
