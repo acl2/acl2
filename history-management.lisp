@@ -2797,6 +2797,86 @@
 
      (f-put-global 'accumulated-ttree nil state))))
 
+(defun modified-system-attachment (pair recs)
+  (cond ((endp recs) (cons (car pair) nil))
+        (t (let ((tmp (assoc-eq (car pair)
+                                (access attachment (car recs) :pairs))))
+             (cond (tmp (and (not (eq (cdr tmp) (cdr pair)))
+                             tmp))
+                   (t (modified-system-attachment pair (cdr recs))))))))
+
+(defun modified-system-attachments-1 (pairs recs acc)
+  (cond ((endp pairs) acc)
+        (t (modified-system-attachments-1
+            (cdr pairs)
+            recs
+            (let ((x (modified-system-attachment (car pairs) recs)))
+              (if x
+                  (cons x acc)
+                acc))))))
+
+(defun modified-system-attachments (state)
+  (let* ((wrld (w state))
+         (lst (global-val 'attachment-records wrld))
+         (cache (f-get-global 'system-attachments-cache state)))
+
+; It would be nice to use EQ instead of EQUAL in the test just below.  However,
+; that would not really be legal ACL2; besides, EQUAL is probably sufficiently
+; efficient, since we can expect it to devolve to a successful EQ most of the
+; time and perhaps produce a quick failure otherwise.
+
+    (cond ((equal lst (car cache))
+           (value (cdr cache)))
+          (t (let ((mods (modified-system-attachments-1
+                          (global-val 'attachments-at-ground-zero wrld)
+                          lst
+                          nil)))
+               (pprogn (f-put-global 'system-attachments-cache
+                                     (cons lst mods)
+                                     state)
+                       (value mods)))))))
+
+(defun alist-to-doublets (alist)
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        (t (cons (list (caar alist) (cdar alist))
+                 (alist-to-doublets (cdr alist))))))
+
+(defun print-system-attachments-summary (state)
+  (cond
+   ((f-get-global 'boot-strap-flg state)
+
+; Then world global attachments-at-ground-zero is not yet set for use in
+; modified-system-attachments.
+
+    state)
+   (t
+    (mv-let (erp pairs state)
+      (modified-system-attachments state)
+      (assert$
+       (null erp)
+       (pprogn
+        (put-event-data 'system-attachments pairs state)
+        (io? summary nil state
+             (pairs)
+             (cond ((member-eq 'system-attachments
+                               (f-get-global 'inhibited-summary-types state))
+                    state)
+                   ((null pairs)
+                    state)
+                   (t
+                    (let ((channel (proofs-co state)))
+                      (mv-let
+                        (col state)
+
+; Let's line up the attachment list with "Rules: ".
+
+                        (fmt1 "Modified system attachments:~|       ~y0"
+                              (list (cons #\0 (alist-to-doublets pairs)))
+                              0 channel state nil)
+                        (declare (ignore col))
+                        state)))))))))))
+
 (defun print-summary (erp noop-flg event-type ctx state)
 
 ; This function prints the Summary paragraph.  Part of that paragraph includes
@@ -2932,6 +3012,7 @@
           (print-rules-and-hint-events-summary
            (f-get-global 'accumulated-ttree state)
            state)
+          (print-system-attachments-summary state)
           (print-warnings-summary state)
           (print-time-summary state)
           (print-steps-summary steps state)

@@ -9171,7 +9171,8 @@
      (io? summary nil state (chan acc-ttree)
           (pprogn
            (newline chan state)
-           (print-rules-and-hint-events-summary acc-ttree state)))
+           (print-rules-and-hint-events-summary acc-ttree state)
+           (print-system-attachments-summary state)))
      (cond
       #+acl2-par
       ((and (f-get-global 'waterfall-parallelism state)

@@ -6061,12 +6061,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (equal x nil)))
 
 (defconst *summary-types*
-  '(header form rules hint-events warnings time steps value splitter-rules
 
-; Errors are normally not part of the summary.  However, for encapsulate and
-; progn (and progn!), they are.
+; Warning: Keep this list in sync with :doc summary.
 
-           errors))
+  '(errors form header hint-events rules splitter-rules
+           steps ; shown as "Prover steps counted"
+           system-attachments time value warnings))
 
 (defmacro with-evisc-tuple (form &key ; from *evisc-tuple-sites*
                                  (term 'nil termp)
@@ -13420,6 +13420,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
+    (system-attachments-cache . nil) ; see modified-system-attachments
     (system-books-dir . nil) ; set in enter-boot-strap-mode and perhaps lp
     (temp-touchable-fns . nil)
     (temp-touchable-vars . nil)
@@ -20541,6 +20542,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     cert-data
     verify-termination-on-raw-program-okp
     prompt-memo
+    system-attachments-cache
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,

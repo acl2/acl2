@@ -1418,6 +1418,7 @@
                     (untouchable-vars nil)
                     (defined-hereditarily-constrained-fns nil)
                     (attachment-records nil)
+                    (attachments-at-ground-zero nil)
                     (proof-supporters-alist nil))))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
@@ -3012,7 +3013,9 @@
                        (list 'skip-proofs-seen nil)
                        (list 'redef-seen nil)
                        (list 'cert-replay nil)
-                       (list 'proof-supporters-alist nil))
+                       (list 'proof-supporters-alist nil)
+                       (list 'attachments-at-ground-zero
+                             (all-attachments wrld)))
                  (putprop
                   'acl2-defaults-table
                   'table-alist
@@ -24493,12 +24496,6 @@
          (remove-stobjs-in-by-position (cdr lst) (cdr stobjs-in)))
         (t (cons (car lst)
                  (remove-stobjs-in-by-position (cdr lst) (cdr stobjs-in))))))
-
-(defun alist-to-doublets (alist)
-  (declare (xargs :guard (alistp alist)))
-  (cond ((endp alist) nil)
-        (t (cons (list (caar alist) (cdar alist))
-                 (alist-to-doublets (cdr alist))))))
 
 (defun add-suffix-to-fn (sym suffix)
 
