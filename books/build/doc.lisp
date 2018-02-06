@@ -215,7 +215,7 @@ print a usage message, e.g.,:</p>
 })
 
 
-<h3>Helping @('cert.pl') find ACL2</h3>
+<h3>Helping @('cert.pl') find ACL2 and the community books</h3>
 
 <p>It is convenient for @('cert.pl') to \"just know\" where your copy of ACL2
 is located.</p>
@@ -223,7 +223,7 @@ is located.</p>
 <ul>
 
 <li>We recommend that you configure your @('$PATH') so that running @('acl2')
-will invoke @('acl2').  You could do this by adding a symlink to your
+will invoke ACL2.  You could do this by adding a symlink to your
 @('saved_acl2') script, named @('acl2'), to a directory like @('~/bin').</li>
 
 <li>Alternately, you may set the environment variable @('$ACL2') to point to
@@ -232,9 +232,22 @@ to your @('.bashrc') or similar:
 
 @({
       export ACL2=/path/to/acl2/saved_acl2
-})</li>
+})
+
+This takes precedence over an executable named @('acl2') in your @('$PATH'), if
+one exists.</li>
 
 </ul>
+
+<p>A third option is to tell @('cert.pl') explicitly which ACL2 you would like
+it to use, by using the @('--acl2') or @('-a') flag:</p>
+
+@({
+      $ cert.pl -a /path/to/acl2/saved_acl2 [...]
+})
+
+<p>This takes precedence over both the environment variable and any @('acl2')
+in your @('$PATH').</p>
 
 <p>To ensure that @('cert.pl') is properly detecting your copy of ACL2, you can
 run @('cert.pl') with no arguments.  The output should look something like
@@ -256,8 +269,25 @@ e.g.,</p>
     export ACL2_SYSTEM_BOOKS=/home/jared/acl2/books
 })
 
+<p>Alternatively, you can tell @('cert.pl') explicitly which books directory
+you would like it to use, by using the @('--acl2-books') or @('-b') flag:</p>
+
+@({
+      $ cert.pl -b /home/jared/acl2/books [...]
+})
+
+<p>This takes precedence over the environment variable.</p>
+
 <p>At this point, @('cert.pl') should be configured properly and ready to
-use.</p>")
+use.</p>
+
+<p>Incidentally, if @('cert.pl') cannot determine the location of the books
+directory from one of the above two directives, it will first try to find a
+@('books') directory alongside the ACL2 executable.  If this fails, it will run
+the ACL2 executable and ask it for the value of the global variable
+@('system-books-dir').  If the response it receives does not point to a
+directory that exists on the filesystem, @('cert.pl') finally chooses the
+parent directory of its own location.</p>")
 
 
 
