@@ -1151,7 +1151,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               ;; Number of operands <= addressing info. of all operands
               ;; (for now the <= check allows certain ill-formed rows,
               ;; but we may strengthen to a = check eventually):
-              (<= (nth 1 one-opcode-lst) (len (nthcdr 1 one-opcode-lst))))
+              (<= (nth 1 one-opcode-lst) (len (nthcdr 2 one-opcode-lst))))
 
          ;; Just the keyword without any other information.
          ;; The following keywords are supported:
