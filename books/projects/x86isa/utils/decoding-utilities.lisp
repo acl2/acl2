@@ -1661,19 +1661,19 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 
   (local (xdoc::set-default-parents ModRM-and-SIB-decoding))
 
-  (define x86-one-byte-opcode-ModR/M-p
+  (define 64-bit-mode-one-byte-opcode-ModR/M-p
     ((opcode :type (unsigned-byte 8)))
     :inline t
-    :short "Returns a boolean saying whether the given opcode in the
-    one-byte opcode map expects a ModR/M byte."
+    :short "Returns a boolean saying whether, in 64-bit mode,
+            the given opcode in the one-byte opcode map expects a ModR/M byte."
     :returns (bool booleanp :hyp (n08p opcode))
     (aref1 '64-bit-mode-one-byte-has-modr/m
            *64-bit-mode-one-byte-has-modr/m-ar* opcode))
 
-  (define x86-two-byte-opcode-ModR/M-p
+  (define 64-bit-mode-two-byte-opcode-ModR/M-p
     ((opcode :type (unsigned-byte 8) "Second byte of the two-byte opcode"))
-    :short "Returns a boolean saying whether the two-byte opcode
-    expects a ModR/M byte."
+    :short "Returns a boolean saying whether, in 64-bit mode,
+            the given opcode in the two-byte opcode map expects a ModR/M byte."
     :returns (bool booleanp :hyp (n08p opcode))
     (aref1 '64-bit-mode-two-byte-has-modr/m
            *64-bit-mode-two-byte-has-modr/m-ar* opcode))

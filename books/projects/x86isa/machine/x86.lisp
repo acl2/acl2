@@ -1368,7 +1368,7 @@
        ((mv flg temp-rip) (increment-*ip temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
-       (modr/m? (x86-two-byte-opcode-ModR/M-p opcode))
+       (modr/m? (64-bit-mode-two-byte-opcode-ModR/M-p opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
             (rme08 temp-rip *cs* :x x86)
@@ -4067,7 +4067,7 @@ semantic function.</p>"
        ;; encoding syntax is clearer to understand; this is a nice way of
        ;; seeing how one opcode map escapes into the other.
 
-       (modr/m? (x86-one-byte-opcode-ModR/M-p opcode/escape-byte))
+       (modr/m? (64-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte))
        ((mv flg3 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
             (rme08 temp-rip *cs* :x x86)
@@ -4132,7 +4132,7 @@ semantic function.</p>"
       (equal temp-rip1 (if (equal rex-byte 0)
                            temp-rip0
                          (mv-nth 1 (increment-*ip temp-rip0 1 x86))))
-      (equal modr/m? (x86-one-byte-opcode-modr/m-p opcode/escape-byte))
+      (equal modr/m? (64-bit-mode-one-byte-opcode-modr/m-p opcode/escape-byte))
       (equal modr/m (if modr/m?
                         (mv-nth 1 (rme08 temp-rip1 *cs* :x x86))
                       0))
