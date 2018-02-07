@@ -141,8 +141,8 @@
  })
 
  <p>With the events above (not necessarily including the definition of
- @('fact'), we can prove that @('fact') terminates on natural number inputs.  A
- second macro, @('defthm-domain'), automates much of that task:</p>
+ @('fact')), we can prove that @('fact') terminates on natural number inputs.
+ A second macro, @('defthm-domain'), automates much of that task:</p>
 
  @({
  (defthm-domain fact-terminates-holds-on-natp
@@ -263,10 +263,9 @@
 
  <p>The implementation of @('defpm') (i.e., @('def-partial-measure') has been
  designed to make proofs efficient.  It should be completely unnecessary to
- know anything about the implementation in order to use @('defpm')
- effectively.  If however you are interested, you can execute @(':')@(tsee
- trans1) on your @('defpm') call to see what the @(see events) it
- generates.</p>
+ know anything about the implementation in order to use @('defpm') effectively.
+ If however you are interested, you can execute @(':')@(tsee trans1) on your
+ @('defpm') call to see the @(see events) that it generates.</p>
 
  <h3>More Information</h3>
 

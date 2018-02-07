@@ -86,7 +86,7 @@
   :short "Define a tail-recursive function symbol"
   :long "<p>@('Defpun') is a macro developed by Pete Manolios and J Moore that
  allows tail-recursive definitions, as well as some other ``partial''
- definitions.</p>
+ definitions.  Related utilities are discussed at the end of this topic.</p>
 
  @({
  General Form:
@@ -188,9 +188,11 @@
  href='http://www.cs.utexas.edu/users/moore/publications/defpun/index.html'>Partial
  Functions in ACL2</a>.</p>
 
- <p>A variant, @('defp'), has been developed by Matt Kaufmann to allow more
- general forms of tail recursion.  If @('defpun') doesn't work for you, try
- @('defp') by first executing the following event.</p>
+ <h3>Variants of @('defpun')</h3>
+
+ <p>A variant, @('defp'), allows more general forms of tail recursion.  If
+ @('defpun') doesn't work for you, try @('defp') by first executing the
+ following event.</p>
 
  @({
   (include-book \"misc/defp\" :dir :system)
@@ -206,7 +208,10 @@
 
  <p>He has also contributed community book
  @('books/misc/misc2/defpun-exec-domain-example.lisp'), for functions that are
- uniquely defined in a particular domain.</p>")
+ uniquely defined in a particular domain.</p>
+
+ <p>Finally, it is possible to avoid termination proofs even for functions that
+ are not tail-recursive.  See @(see def-partial-measure).</p>")
 
 (defmacro defun-nonexec (name args &rest rst)
   `(defun-nx ,name ,args ,@rst))
