@@ -16,19 +16,7 @@ See Makefile file for the detail.
 Book Organization
 ----------------------------------------------------------------------
 
-gcd.lisp: a circuit, gcd, computing the Greatest Common Divisor (GCD)
-of two natural numbers.
+The modeling and verification of the 32-bit self-timed serial adder
+are implemented in async-serial-adder.lisp.
 
-gcd-alg.lisp: the correctness proof of the GCD algorithm.
-
-comp-gcd-cond.lisp: a circuit, C, performing the GCD condition. It
-contains Q2 and Q3 as submodules.
-
-comp-gcd.lisp: a GCD circuit, c-gcd, that contains C as a submodule.
-
-queue3-gcd.lisp: a GCD circuit, q3-gcd, that concatenates Q3 with gcd
-through a link.
-
-queue3-comp-gcd.lisp: a GCD circuit, q3-c-gcd, that concatenates Q3
-with c-gcd through a link.
 

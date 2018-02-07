@@ -4,13 +4,13 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; February 2018
 
 (in-package "ADE")
 
 (include-book "gcd-cond")
-(include-book "queue2")
-(include-book "queue3")
+(include-book "../fifo/queue2")
+(include-book "../fifo/queue3")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -972,7 +972,7 @@
          (append (comp-gcd-cond$op-seq x)
                  (comp-gcd-cond$op-seq y))))
 
-;; The extraction function for COMP-GCD-COND that computes the future output
+;; The extraction function for COMP-GCD-COND that extracts the future output
 ;; sequence from the current state.
 
 (defund comp-gcd-cond$extract-state (st)
@@ -994,6 +994,21 @@
                       (queue3$extract-state q3)
                       (extract-state (list lb1 b1)))))
     (comp-gcd-cond$op-seq (pairlis$ a-seq b-seq))))
+
+(defthm comp-gcd-cond$extract-state-not-empty
+  (implies (and (comp-gcd-cond$out-act0 inputs st data-width)
+                (comp-gcd-cond$valid-st st data-width))
+           (< 0 (len (comp-gcd-cond$extract-state st))))
+  :hints (("Goal"
+           :in-theory (e/d (branch$act0
+                            gcd-cond$br-inputs
+                            gcd-cond$act0
+                            comp-gcd-cond$br-inputs
+                            comp-gcd-cond$out-act0
+                            comp-gcd-cond$valid-st
+                            comp-gcd-cond$extract-state)
+                           (nfix))))
+  :rule-classes :linear)
 
 ;; Specifying and proving a state invariant
 
@@ -1017,30 +1032,6 @@
                         (queue3$extract-state q3)
                         (extract-state (list lb1 b1)))))
       (equal (len a-seq) (len b-seq))))
-
-  (local
-   (defthm queue2$extract-state-not-empty
-     (implies (and (queue2$out-act inputs st data-width)
-                   (queue2$input-format inputs data-width)
-                   (queue2$valid-st st data-width))
-              (< 0 (len (queue2$extract-state st))))
-     :hints (("Goal"
-              :in-theory (enable queue2$valid-st
-                                 queue2$extract-state
-                                 queue2$out-act)))
-     :rule-classes :linear))
-
-  (local
-   (defthm queue3$extract-state-not-empty
-     (implies (and (queue3$out-act inputs st data-width)
-                   (queue3$input-format inputs data-width)
-                   (queue3$valid-st st data-width))
-              (< 0 (len (queue3$extract-state st))))
-     :hints (("Goal"
-              :in-theory (enable queue3$valid-st
-                                 queue3$extract-state
-                                 queue3$out-act)))
-     :rule-classes :linear))
 
   (defthm comp-gcd-cond$inv-preserved
     (implies (and (comp-gcd-cond$input-format inputs data-width)

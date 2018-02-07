@@ -4,15 +4,15 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; February 2018
 
 (in-package "ADE")
 
-(include-book "add-sub")
 (include-book "gcd-cond")
-(include-book "merge")
-(include-book "store-n")
-(include-book "v-less")
+(include-book "../merge")
+(include-book "../store-n")
+(include-book "../adders/add-sub")
+(include-book "../comparators/v-less")
 
 (local (include-book "gcd-alg"))
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -1207,7 +1207,7 @@
   (equal (gcd$op-seq (append x y))
          (append (gcd$op-seq x) (gcd$op-seq y))))
 
-;; The extraction function for GCD that computes the future output sequence
+;; The extraction function for GCD that extracts the future output sequence
 ;; from the current state.
 
 (defund gcd$extract-state (st)
@@ -1219,6 +1219,21 @@
        (d2 (get-field *gcd$d2* st)))
     (gcd$op-seq
      (extract-state (list l1 d1 l2 d2 l0 d0)))))
+
+(defthm gcd$extract-state-not-empty
+  (implies (and (gcd$out-act inputs st data-width)
+                (gcd$valid-st st data-width))
+           (< 0 (len (gcd$extract-state st))))
+  :hints (("Goal"
+           :in-theory (e/d (branch$act0
+                            gcd-cond$br-inputs
+                            gcd-cond$act0
+                            gcd$valid-st
+                            gcd$extract-state
+                            gcd$br-inputs
+                            gcd$out-act)
+                           (nfix))))
+  :rule-classes :linear)
 
 ;; Specifying and proving a state invariant
 
