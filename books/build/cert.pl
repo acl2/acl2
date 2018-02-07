@@ -38,11 +38,26 @@
 # dependencies of all files needed.  When it is finished, it writes
 # out a file Makefile-tmp which can be used to make all the targets.
 
-# This script assumes that the ACL2 system books directory is where it
-# itself is located.  Therefore, if you call this script from a
-# different directory, it should still be able to resolve ":dir
-# :system" include-books.  It also scans the relevant .acl2 files for
-# each book for add-include-book-dir commands.
+# This script chooses which ACL2 to use by the following methods, in
+# decreasing order of priority:
+#   - use the ACL2 specified by the -a or --acl2 command line argument
+#   - use the ACL2 specified by the environment variable $ACL2
+#   - use whatever "acl2" exists in the $PATH
+
+# This script chooses which community books directory to use by the
+# following methods, in decreasing order of priority:
+#   - use the directory specified by the -b or --acl2-books command line argument
+#   - use the directory specified by the environment variable $ACL2_SYSTEM_BOOKS
+#   - look for a "books" directory where the ACL2 we're using is located
+#   - run ACL2 and check if (@ system-books-dir) evaluates to a directory that exists
+#   - use the parent of the directory containing this script
+
+# This script also scans the relevant .acl2 files for each book, looking for
+# (add-include-book-dir ...) commands, and scans the relevant .image files to
+# determine alternative ACL2 executables to use for certain books.  These
+# alternative ACL2 executables will be searched for in the directory specified
+# by the --bin command line argument, if any, or in the $PATH if --bin is not
+# provided.
 
 
 
@@ -259,15 +274,19 @@ COMMAND LINE OPTIONS
 
    --acl2 <cmd>
    -a <cmd>
-           Use <cmd> as the ACL2 executable, overriding the ACL2
-           environment variable and the location of an executable
-           named "acl2" in the PATH.
+           Use <cmd> as the ACL2 executable.  This overrides the ACL2
+           environment variable, if that variable is set.  If neither
+           is set, the location of the ACL2 executable is guessed by
+           searching the PATH for an executable named "acl2".
 
    --acl2-books <dir>
    -b <dir>
-           Use <dir> as the ACL2 system books directory, overriding
-           the ACL2_SYSTEM_BOOKS environment variable, the location of
-           acl2 in the PATH, and the location of this script.
+           Use <dir> as the ACL2 system books directory.  This
+           overrides the ACL2_SYSTEM_BOOKS environment variable, if
+           that variable is set.  If neither is set, a directory is
+           guessed based on the location of the ACL2 executable, or
+           the value of (@ system-books-dir) as reported by the ACL2
+           executable, or the location of this script, in that order.
 
    --clean-certs
    --cc
@@ -633,11 +652,12 @@ flag or ACL2 environment variable.\n";
     }
 }
 
-# If $acl2_books is still not set, then try the following in order
-# until one succeeds:
-#   - set it based on the location of acl2 in the path
-#   - set it by running acl2 and dumping (@ system-books-dir)
-#   - set it to the parent of the directory containing this script.
+# At this point, $acl2 is set, so we know which ACL2 we're using.  To
+# choose a value for $acl2_books if it is not yet set, we try the
+# following in order until one succeeds:
+#   - look for a "books" directory where the ACL2 we're using is located
+#   - run ACL2 and check if (@ system-books-dir) evaluates to a directory that exists
+#   - use the parent of the directory containing this script
 
 if (! $acl2_books && $acl2 ) {
     # was:
