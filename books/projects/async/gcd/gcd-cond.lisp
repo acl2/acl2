@@ -4,14 +4,14 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; February 2018
 
 (in-package "ADE")
 
-(include-book "branch")
-(include-book "fast-zero")
-(include-book "tv-if")
-(include-book "v-equal")
+(include-book "../branch")
+(include-book "../tv-if")
+(include-book "../comparators/fast-zero")
+(include-book "../comparators/v-equal")
 
 ;; ======================================================================
 

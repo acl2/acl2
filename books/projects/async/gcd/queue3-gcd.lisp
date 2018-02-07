@@ -4,12 +4,12 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; February 2018
 
 (in-package "ADE")
 
 (include-book "gcd")
-(include-book "queue3")
+(include-book "../fifo/queue3")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -626,7 +626,7 @@
   (equal (queue3-gcd$op-seq (append x y))
          (append (queue3-gcd$op-seq x) (queue3-gcd$op-seq y))))
 
-;; The extraction function for QUEUE3-GCD that computes the future output
+;; The extraction function for QUEUE3-GCD that extracts the future output
 ;; sequence from the current state.
 
 (defund queue3-gcd$extract-state (st)
@@ -639,6 +639,17 @@
       (append (queue3$extract-state q3)
               (extract-state (list l d))))
      (gcd$extract-state gcd))))
+
+(defthm queue3-gcd$extract-state-not-empty
+  (implies (and (queue3-gcd$out-act inputs st data-width)
+                (queue3-gcd$valid-st st data-width))
+           (< 0 (len (queue3-gcd$extract-state st))))
+  :hints (("Goal"
+           :in-theory (e/d (queue3-gcd$valid-st
+                            queue3-gcd$extract-state
+                            queue3-gcd$out-act)
+                           (nfix))))
+  :rule-classes :linear)
 
 ;; Specifying and proving a state invariant
 
@@ -744,22 +755,6 @@
          ((equal (queue3-gcd$in-act inputs st data-width) t)
           (cons data extracted-st))
          (t extracted-st))))))
-
-(local
- (defthm gcd$extract-state-not-empty
-   (implies (and (gcd$out-act inputs st data-width)
-                 (gcd$valid-st st data-width))
-            (< 0 (len (gcd$extract-state st))))
-   :hints (("Goal"
-            :in-theory (e/d (branch$act0
-                             gcd-cond$br-inputs
-                             gcd-cond$act0
-                             gcd$valid-st
-                             gcd$extract-state
-                             gcd$br-inputs
-                             gcd$out-act)
-                            (nfix))))
-   :rule-classes :linear))
 
 ;; The single-step-update property
 

@@ -4,14 +4,14 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; February 2018
 
 (in-package "ADE")
 
-(include-book "add-sub")
 (include-book "comp-gcd-cond")
-(include-book "merge")
-(include-book "v-less")
+(include-book "../merge")
+(include-book "../adders/add-sub")
+(include-book "../comparators/v-less")
 
 (local (include-book "gcd-alg"))
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -1419,7 +1419,7 @@
   (equal (comp-gcd$op-seq (append x y))
          (append (comp-gcd$op-seq x) (comp-gcd$op-seq y))))
 
-;; The extraction function for COMP-GCD that computes the future output
+;; The extraction function for COMP-GCD that extracts the future output
 ;; sequence from the current state.
 
 (defund comp-gcd$extract-state (st)
@@ -1433,6 +1433,17 @@
     (comp-gcd$op-seq
      (append (extract-state (list l1 d1 l2 d2 l0 d0))
              (comp-gcd-cond$extract-state br)))))
+
+(defthm comp-gcd$extract-state-not-empty
+  (implies (and (comp-gcd$out-act inputs st data-width)
+                (comp-gcd$valid-st st data-width))
+           (< 0 (len (comp-gcd$extract-state st))))
+  :hints (("Goal"
+           :in-theory (e/d (comp-gcd$valid-st
+                            comp-gcd$extract-state
+                            comp-gcd$out-act)
+                           (nfix))))
+  :rule-classes :linear)
 
 ;; Specifying and proving a state invariant
 
