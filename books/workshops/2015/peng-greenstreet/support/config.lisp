@@ -22,7 +22,7 @@
                        :dir-files nil
                        :SMT-module "ACL2_to_Z3"
                        :SMT-class "ACL22SMT"
-                       :smt-cmd "/usr/local/bin/python"
+                       :smt-cmd "/usr/bin/env python"
                        :dir-expanded nil))
 
 (encapsulate
