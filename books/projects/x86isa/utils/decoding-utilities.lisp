@@ -1151,8 +1151,8 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
          (and (stringp (nth 0 one-opcode-lst)) ;; Opcode
               (natp (nth 1 one-opcode-lst))    ;; Number of Operands
               ;; Number of operands <= addressing info. of all operands
-              ;; (for now the <= check allows certain ill-formed rows,
-              ;; but we may strengthen to a = check eventually):
+              ;; (this cannot be strengthen to = because, for example,
+              ;; opcode FFh in the one-byte opcode map has :1A after (E v)):
               (<= (nth 1 one-opcode-lst) (len (nthcdr 2 one-opcode-lst))))
 
          ;; Just the keyword without any other information.
