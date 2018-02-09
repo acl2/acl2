@@ -1,0 +1,22 @@
+----------------------------------------------------------------------
+Book Certification
+----------------------------------------------------------------------
+
+To certify books, execute the following:
+
+make ACL2=<Path of the ACL2 image>
+
+To remove certificate files, etc., execute the following:
+
+make clean ACL2=<Path of the ACL2 image>
+
+See Makefile file for the detail.
+
+----------------------------------------------------------------------
+Book Organization
+----------------------------------------------------------------------
+
+The modeling and verification of the 32-bit self-timed serial adder
+are implemented in async-serial-adder.lisp.
+
+

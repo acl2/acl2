@@ -4,11 +4,11 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; February 2018
 
 ;; ======================================================================
 
-(include-book "portcullis")
+(include-book "../portcullis")
 ;; cert-flags: ? t :ttags :all
 
 ;; ======================================================================

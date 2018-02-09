@@ -87,7 +87,7 @@
    </li>
 
    <li>When inferring the canonical nature of a linear address:<br/>
-    Monitor @('member-p-canonical-address-listp'). <br/> 
+    Monitor @('member-p-canonical-address-listp'). <br/>
 
     <br/> This is useful if you believe that the canonical nature of a
     linear address should be inferable from the canonical nature of a
@@ -2491,7 +2491,7 @@
             (equal x86-2 (mv-nth 2 three-vals-of-opcode/escape-byte))
 
             (equal temp-rip1 (if (equal rex-byte 0) temp-rip0 (1+ temp-rip0)))
-            (equal modr/m? (x86-one-byte-opcode-modr/m-p opcode/escape-byte))
+            (equal modr/m? (64-bit-mode-one-byte-opcode-modr/m-p opcode/escape-byte))
 
             ;; modr/m byte:
             (equal three-vals-of-modr/m

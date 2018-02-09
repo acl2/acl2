@@ -7,7 +7,7 @@
 ;; December 2017
 
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-(ld "package.lsp")
+(ld "cert.acl2" :ld-missing-input-ok t)
 (in-package "ADE")
 
 (defmacro b16 ()

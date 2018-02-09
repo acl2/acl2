@@ -5501,142 +5501,88 @@
 ; Like all individual rule checkers, we either cause an error or
 ; return a ttree that records our dependencies on lemmas.
 
+  (declare (ignore backchain-limit-lst))
   (mv-let
    (erp hyps concl ts vars ttree)
    (destructure-type-prescription name typed-term term ens wrld)
-   (declare (ignore ts))
+   (declare (ignore ts concl vars))
    (cond
     (erp (er soft ctx "~@0" erp))
-    (t (let* ((weakp
-
-; We avoid calling weak-type-prescription-rulep if we are going to ignore the
-; warning anyhow.  Otherwise, we construct a temporary world.
-
-; We check (null vars) because otherwise, the warning can be needlessly harsh.
-; For example, try submitting these events in a fresh ACL2 session after
-; removing the (null vars) check from this function.
-
-; (defstub foo (x) x)
-; (defaxiom foo-type-prescription
-;           (or (integerp (foo y))
-;               (equal (foo y) y))
-;           :rule-classes :type-prescription)
-
-; Then the warning will be printed without the (null vars) check, even though
-; the rule above is a perfectly good one.
-
-               (and (null vars)
-                    (not (warning-disabled-p "Type prescription"))
-                    (let* ((nume (get-next-nume wrld))
-                           (rune (list :type-prescription name))
-                           (wrld2 (add-type-prescription-rule
-                                   rune nume typed-term term
-                                   backchain-limit-lst
-                                   ens wrld nil)))
-                      (mv-let
-                       (ts ttree)
-                       (type-set (remove-guard-holders term)
-                                 nil t nil ens wrld2 nil nil nil)
-                       (or (not (assumption-free-ttreep ttree))
-                           (ts-intersectp ts *ts-nil*)))))))
+    (t (let* ((warned-non-rec-fns
+               (and (not (warning-disabled-p "Non-rec"))
+                    (warned-non-rec-fns-tp-hyps hyps ens wrld)))
+              (warned-free-vars
+               (and (not (warning-disabled-p "Free"))
+                    (free-vars-in-hyps hyps
+                                       (all-vars typed-term)
+                                       wrld)))
+              (inst-hyps (and warned-free-vars ; optimization
+                              (hyps-that-instantiate-free-vars
+                               warned-free-vars hyps))))
          (pprogn
           (cond
-           (weakp
-            (warning$ ctx ("Type prescription")
-                      "The :type-prescription rule generated for ~x0 may be ~
-                       weaker than you expect.  Note that the conclusion of a ~
-                       :type-prescription rule is stored as a numeric type ~
-                       rather than a term.  It so happens that~|  ~p1~|is not ~
-                       provable using type-set reasoning in the extension of ~
-                       the current world by that rule.  Because information ~
-                       has been lost, this rule probably does not have the ~
-                       strength that it appears to have.~@2"
-                      name
-                      (untranslate term t wrld)
-                      (if (ffnnamep '< concl)
-                          "  The conclusion of this rule contains a call of ~
-                           function symbol < (or a macro <=, >, or >=), so it ~
-                           may be worth considering making a :linear rule; ~
-                           see :DOC linear."
-                        "")))
+           (warned-non-rec-fns
+            (warning$ ctx ("Non-rec")
+                      `("The hypothesis of the :type-prescription rule ~
+                         generated from ~x0 contains the non-recursive ~
+                         function symbol~#1~[~/s~] ~&1.  Since the hypotheses ~
+                         of :type-prescription rules are relieved by type ~
+                         reasoning alone (and not rewriting) ~#1~[this ~
+                         function is~/these functions are~] liable to make ~
+                         the rule inapplicable.  See :DOC type-prescription."
+                        (:doc type-prescription)
+                        (:name ,name)
+                        (:non-recursive-fns
+                         ,(hide-lambdas warned-non-rec-fns))
+                        (:rule-class :type-prescription))
+                      name (hide-lambdas warned-non-rec-fns)))
            (t state))
-          (let* ((warned-non-rec-fns
-                  (and (not (warning-disabled-p "Non-rec"))
-                       (warned-non-rec-fns-tp-hyps hyps ens wrld)))
-                 (warned-free-vars
-                  (and (not (warning-disabled-p "Free"))
-                       (free-vars-in-hyps hyps
-                                          (all-vars typed-term)
-                                          wrld)))
-                 (inst-hyps (and warned-free-vars ; optimization
-                                 (hyps-that-instantiate-free-vars
-                                  warned-free-vars hyps))))
-            (pprogn
-             (cond
-              (warned-non-rec-fns
-               (warning$ ctx ("Non-rec")
-                         `("The hypothesis of the :type-prescription rule ~
-                            generated from ~x0 contains the non-recursive ~
-                            function symbol~#1~[~/s~] ~&1.  Since the ~
-                            hypotheses of :type-prescription rules are ~
-                            relieved by type reasoning alone (and not ~
-                            rewriting) ~#1~[this function is~/these functions ~
-                            are~] liable to make the rule inapplicable.  See ~
-                            :DOC type-prescription."
-                           (:doc type-prescription)
-                           (:name ,name)
-                           (:non-recursive-fns
-                            ,(hide-lambdas warned-non-rec-fns))
-                           (:rule-class :type-prescription))
-                         name (hide-lambdas warned-non-rec-fns)))
-              (t state))
-             (cond
-              (warned-free-vars
-               (warning$ ctx ("Free")
-                         `("The :type-prescription rule generated from ~x0 ~
-                            contains the free variable~#1~[ ~&1.  This ~
-                            variable~/s ~&1.  These variables~] will be ~
-                            chosen by searching for instances of ~&2 among ~
-                            the hypotheses of conjectures being rewritten.  ~
-                            This is generally a severe restriction on the ~
-                            applicability of the :type-prescription rule."
-                           (:free-variables ,warned-free-vars)
-                           (:instantiated-hyps ,inst-hyps)
-                           (:name ,name)
-                           (:rule-class :type-prescription))
-                         name warned-free-vars inst-hyps))
-              (t state))
-             (cond
-              ((and warned-free-vars
-                    (forced-hyps inst-hyps))
-               (warning$ ctx ("Free")
-                         "For the forced ~#0~[hypothesis~/hypotheses~], ~&1, ~
-                          used to instantiate free variables we will search ~
-                          for ~#0~[an instance of the argument~/instances of ~
-                          the arguments~] rather than ~#0~[an ~
-                          instance~/instances~] of the FORCE or CASE-SPLIT ~
-                          ~#0~[term itself~/terms themselves~].  If a search ~
-                          fails for such a hypothesis, we will cause a case ~
-                          split on the partially instantiated hypothesis.  ~
-                          Note that this case split will introduce a ``free ~
-                          variable'' into the conjecture.  While sound, this ~
-                          will establish a goal almost certain to fail since ~
-                          the restriction described by this apparently ~
-                          necessary hypothesis constrains a variable not ~
-                          involved in the problem.  To highlight this oddity, ~
-                          we will rename the free variables in such forced ~
-                          hypotheses by prefixing them with ~
-                          ``UNBOUND-FREE-''.  This is not guaranteed to ~
-                          generate a new variable but at least it generates ~
-                          an unusual one.  If you see such a variable in a ~
-                          subsequent proof (and did not introduce them ~
-                          yourself) you should consider the possibility that ~
-                          the free variables of this type-prescription rule ~
-                          were forced into the conjecture."
-                         (if (null (cdr (forced-hyps inst-hyps))) 0 1)
-                         (forced-hyps inst-hyps)))
-              (t state))
-             (value ttree)))))))))
+          (cond
+           (warned-free-vars
+            (warning$ ctx ("Free")
+                      `("The :type-prescription rule generated from ~x0 ~
+                         contains the free variable~#1~[ ~&1.  This ~
+                         variable~/s ~&1.  These variables~] will be chosen ~
+                         by searching for instances of ~&2 among the ~
+                         hypotheses of conjectures being rewritten.  This is ~
+                         generally a severe restriction on the applicability ~
+                         of the :type-prescription rule."
+                        (:free-variables ,warned-free-vars)
+                        (:instantiated-hyps ,inst-hyps)
+                        (:name ,name)
+                        (:rule-class :type-prescription))
+                      name warned-free-vars inst-hyps))
+           (t state))
+          (cond
+           ((and warned-free-vars
+                 (forced-hyps inst-hyps))
+            (warning$ ctx ("Free")
+                      "For the forced ~#0~[hypothesis~/hypotheses~], ~&1, ~
+                       used to instantiate free variables we will search for ~
+                       ~#0~[an instance of the argument~/instances of the ~
+                       arguments~] rather than ~#0~[an instance~/instances~] ~
+                       of the FORCE or CASE-SPLIT ~#0~[term itself~/terms ~
+                       themselves~].  If a search fails for such a ~
+                       hypothesis, we will cause a case split on the ~
+                       partially instantiated hypothesis.  Note that this ~
+                       case split will introduce a ``free variable'' into the ~
+                       conjecture.  While sound, this will establish a goal ~
+                       almost certain to fail since the restriction described ~
+                       by this apparently necessary hypothesis constrains a ~
+                       variable not involved in the problem.  To highlight ~
+                       this oddity, we will rename the free variables in such ~
+                       forced hypotheses by prefixing them with ~
+                       ``UNBOUND-FREE-''.  This is not guaranteed to generate ~
+                       a new variable but at least it generates an unusual ~
+                       one.  If you see such a variable in a subsequent proof ~
+                       (and did not introduce them yourself) you should ~
+                       consider the possibility that the free variables of ~
+                       this type-prescription rule were forced into the ~
+                       conjecture."
+                      (if (null (cdr (forced-hyps inst-hyps))) 0 1)
+                      (forced-hyps inst-hyps)))
+           (t state))
+          (value ttree)))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :EQUIVALENCE Rules

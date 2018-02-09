@@ -4,12 +4,12 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; February 2018
 
 (in-package "ADE")
 
 (include-book "comp-gcd")
-(include-book "queue3")
+(include-book "../fifo/queue3")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -637,7 +637,7 @@
   (equal (queue3-comp-gcd$op-seq (append x y))
          (append (queue3-comp-gcd$op-seq x) (queue3-comp-gcd$op-seq y))))
 
-;; The extraction function for QUEUE3-COMP-GCD that computes the future output
+;; The extraction function for QUEUE3-COMP-GCD that extracts the future output
 ;; sequence from the current state.
 
 (defund queue3-comp-gcd$extract-state (st)
@@ -650,6 +650,17 @@
       (append (queue3$extract-state q3)
               (extract-state (list l d))))
      (comp-gcd$extract-state comp-gcd))))
+
+(defthm queue3-comp-gcd$extract-state-not-empty
+  (implies (and (queue3-comp-gcd$out-act inputs st data-width)
+                (queue3-comp-gcd$valid-st st data-width))
+           (< 0 (len (queue3-comp-gcd$extract-state st))))
+  :hints (("Goal"
+           :in-theory (e/d (queue3-comp-gcd$valid-st
+                            queue3-comp-gcd$extract-state
+                            queue3-comp-gcd$out-act)
+                           (nfix))))
+  :rule-classes :linear)
 
 ;; Specifying and proving a state invariant
 
@@ -762,34 +773,6 @@
          ((equal (queue3-comp-gcd$in-act inputs st data-width) t)
           (cons data extracted-st))
          (t extracted-st))))))
-
-(local
- (defthm comp-gcd-cond$extract-state-not-empty
-   (implies (and (comp-gcd-cond$out-act0 inputs st data-width)
-                 (comp-gcd-cond$valid-st st data-width))
-            (< 0 (len (comp-gcd-cond$extract-state st))))
-   :hints (("Goal"
-            :in-theory (e/d (branch$act0
-                             gcd-cond$br-inputs
-                             gcd-cond$act0
-                             comp-gcd-cond$br-inputs
-                             comp-gcd-cond$out-act0
-                             comp-gcd-cond$valid-st
-                             comp-gcd-cond$extract-state)
-                            (nfix))))
-   :rule-classes :linear))
-
-(local
- (defthm comp-gcd$extract-state-not-empty
-   (implies (and (comp-gcd$out-act inputs st data-width)
-                 (comp-gcd$valid-st st data-width))
-            (< 0 (len (comp-gcd$extract-state st))))
-   :hints (("Goal"
-            :in-theory (e/d (comp-gcd$valid-st
-                             comp-gcd$extract-state
-                             comp-gcd$out-act)
-                            (nfix))))
-   :rule-classes :linear))
 
 ;; The single-step-update property
 

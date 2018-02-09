@@ -16,16 +16,10 @@ See Makefile file for the detail.
 Book Organization
 ----------------------------------------------------------------------
 
-The DE simulator is implemented in de.lisp.
-
 gcd.lisp: a circuit, gcd, computing the Greatest Common Divisor (GCD)
 of two natural numbers.
 
 gcd-alg.lisp: the correctness proof of the GCD algorithm.
-
-queue2.lisp: a queue, Q2, of 2 links.
-
-queue3.lisp: a queue, Q3, of 3 links.
 
 comp-gcd-cond.lisp: a circuit, C, performing the GCD condition. It
 contains Q2 and Q3 as submodules.
