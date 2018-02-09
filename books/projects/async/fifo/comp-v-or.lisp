@@ -196,6 +196,34 @@
 
 ;; Constraints on the state of COMP-V-OR
 
+(defund comp-v-or$st-format (st data-width)
+  (b* ((a0 (get-field *comp-v-or$a0* st))
+       (b0 (get-field *comp-v-or$b0* st))
+       (a1 (get-field *comp-v-or$a1* st))
+       (b1 (get-field *comp-v-or$b1* st))
+       (q2 (get-field *comp-v-or$q2* st))
+       (q3 (get-field *comp-v-or$q3* st)))
+    (and (len-1-true-listp a0)
+         (equal (len a0) data-width)
+
+         (len-1-true-listp b0)
+         (equal (len b0) data-width)
+
+         (len-1-true-listp a1)
+         (equal (len a1) data-width)
+
+         (len-1-true-listp b1)
+         (equal (len b1) data-width)
+
+         (queue2$st-format q2 data-width)
+         (queue3$st-format q3 data-width))))
+
+(defthmd comp-v-or$st-format=>natp-data-width
+  (implies (comp-v-or$st-format st data-width)
+           (natp data-width))
+  :hints (("Goal" :in-theory (enable comp-v-or$st-format)))
+  :rule-classes :forward-chaining)
+
 (defund comp-v-or$valid-st (st data-width)
   (b* ((la0 (get-field *comp-v-or$la0* st))
        (a0  (get-field *comp-v-or$a0* st))
@@ -207,27 +235,21 @@
        (b1  (get-field *comp-v-or$b1* st))
        (q2  (get-field *comp-v-or$q2* st))
        (q3  (get-field *comp-v-or$q3* st)))
-    (and (validp la0)
-         (len-1-true-listp a0)
-         (equal (len a0) data-width)
+    (and (comp-v-or$st-format st data-width)
+
+         (validp la0)
          (or (emptyp la0)
              (bvp (strip-cars a0)))
 
          (validp lb0)
-         (len-1-true-listp b0)
-         (equal (len b0) data-width)
          (or (emptyp lb0)
              (bvp (strip-cars b0)))
 
          (validp la1)
-         (len-1-true-listp a1)
-         (equal (len a1) data-width)
          (or (emptyp la1)
              (bvp (strip-cars a1)))
 
          (validp lb1)
-         (len-1-true-listp b1)
-         (equal (len b1) data-width)
          (or (emptyp lb1)
              (bvp (strip-cars b1)))
 
@@ -237,7 +259,8 @@
 (defthmd comp-v-or$valid-st=>natp-data-width
   (implies (comp-v-or$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable comp-v-or$valid-st)))
+  :hints (("Goal" :in-theory (enable comp-v-or$st-format=>natp-data-width
+                                     comp-v-or$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; COMP-V-OR simulator
@@ -400,18 +423,25 @@
   (fv-or (strip-cars (get-field *comp-v-or$a1* st))
          (strip-cars (get-field *comp-v-or$b1* st))))
 
-(defthm len-comp-v-or$data-out
+(defthm len-comp-v-or$data-out-1
+  (implies (comp-v-or$st-format st data-width)
+           (equal (len (comp-v-or$data-out st))
+                  data-width))
+  :hints (("Goal" :in-theory (enable comp-v-or$st-format
+                                     comp-v-or$data-out))))
+
+(defthm len-comp-v-or$data-out-2
   (implies (comp-v-or$valid-st st data-width)
            (equal (len (comp-v-or$data-out st))
                   data-width))
-  :hints (("Goal" :in-theory (enable comp-v-or$valid-st
-                                     comp-v-or$data-out))))
+  :hints (("Goal" :in-theory (enable comp-v-or$valid-st))))
 
 (defthm bvp-comp-v-or$data-out
   (implies (and (comp-v-or$valid-st st data-width)
                 (comp-v-or$out-act inputs st data-width))
            (bvp (comp-v-or$data-out st)))
   :hints (("Goal" :in-theory (enable comp-v-or$valid-st
+                                     comp-v-or$st-format
                                      comp-v-or$out-act
                                      comp-v-or$data-out))))
 
@@ -426,7 +456,7 @@
                   (equal (len b) data-width)
                   (true-listp go-signals)
                   (equal (len go-signals) *comp-v-or$go-num*)
-                  (comp-v-or$valid-st st data-width))
+                  (comp-v-or$st-format st data-width))
              (equal (se (si 'comp-v-or data-width) inputs st netlist)
                     (list* (comp-v-or$in-act inputs st data-width)
                            (comp-v-or$out-act inputs st data-width)
@@ -451,7 +481,7 @@
                             latch-n$value
                             v-buf$value
                             v-or$value
-                            comp-v-or$valid-st
+                            comp-v-or$st-format
                             comp-v-or$in-act
                             comp-v-or$out-act
                             comp-v-or$data-out)
@@ -538,7 +568,7 @@
                   (equal (len b) data-width)
                   (true-listp go-signals)
                   (equal (len go-signals) *comp-v-or$go-num*)
-                  (comp-v-or$valid-st st data-width))
+                  (comp-v-or$st-format st data-width))
              (equal (de (si 'comp-v-or data-width) inputs st netlist)
                     (comp-v-or$state-fn inputs st data-width))))
   :hints (("Goal"
@@ -555,7 +585,7 @@
                             not-primp-comp-v-or
                             comp-v-or&
                             comp-v-or*$destructure
-                            comp-v-or$valid-st
+                            comp-v-or$st-format
                             comp-v-or$a
                             comp-v-or$b
                             comp-v-or$in-act
@@ -605,42 +635,161 @@
      (equal inputs
             (list* full-in empty-out- (append a b go-signals))))))
 
-;; Proving that comp-v-or$valid-st is an invariant.
+(local
+ (defthm comp-v-or$input-format=>q2$input-format
+   (implies (and (comp-v-or$input-format inputs data-width)
+                 (comp-v-or$valid-st st data-width))
+            (queue2$input-format
+             (comp-v-or$q2-inputs inputs st data-width)
+             data-width))
+   :hints (("Goal"
+            :in-theory (e/d (comp-v-or$input-format
+                             queue2$input-format
+                             queue2$data-in
+                             comp-v-or$valid-st
+                             comp-v-or$st-format
+                             comp-v-or$q2-inputs)
+                            (nthcdr
+                             len
+                             take-of-too-many))))))
+
+(local
+ (defthm comp-v-or$input-format=>q3$input-format
+   (implies (and (comp-v-or$input-format inputs data-width)
+                 (comp-v-or$valid-st st data-width))
+            (queue3$input-format
+             (comp-v-or$q3-inputs inputs st data-width)
+             data-width))
+   :hints (("Goal"
+            :in-theory (e/d (comp-v-or$input-format
+                             queue3$input-format
+                             queue3$data-in
+                             comp-v-or$valid-st
+                             comp-v-or$st-format
+                             comp-v-or$q3-inputs)
+                            (nthcdr
+                             len
+                             take-of-too-many))))))
+
+;; Proving that comp-v-or$st-format is an invariant.
+
+(defthm comp-v-or$st-format-preserved
+  (implies (comp-v-or$st-format st data-width)
+           (comp-v-or$st-format (comp-v-or$state-fn inputs st data-width)
+                                data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            comp-v-or$st-format
+                            comp-v-or$state-fn)
+                           ()))))
+
+(defthmd comp-v-or$state-alt
+  (implies (and (comp-v-or& netlist data-width)
+                (comp-v-or$input-format inputs data-width)
+                (comp-v-or$st-format st data-width))
+           (equal (de (si 'comp-v-or data-width) inputs st netlist)
+                  (comp-v-or$state-fn inputs st data-width)))
+  :hints (("Goal"
+           :in-theory (enable comp-v-or$st-format=>natp-data-width
+                              comp-v-or$input-format)
+           :use (:instance
+                 comp-v-or$state
+                 (full-in    (nth 0 inputs))
+                 (empty-out- (nth 1 inputs))
+                 (a (comp-v-or$a inputs data-width))
+                 (b (comp-v-or$b inputs data-width))
+                 (go-signals (nthcdr (comp-v-or$data-ins-len data-width)
+                                     inputs))))))
+
+(state-fn-n-gen comp-v-or data-width)
+(input-format-n-gen comp-v-or data-width)
+
+(defthmd de-sim-n$comp-v-or
+  (implies (and (comp-v-or& netlist data-width)
+                (comp-v-or$input-format-n inputs-lst data-width n)
+                (comp-v-or$st-format st data-width))
+           (equal (de-sim-n (si 'comp-v-or data-width)
+                            inputs-lst st netlist
+                            n)
+                  (comp-v-or$state-fn-n inputs-lst st data-width n)))
+  :hints (("Goal" :in-theory (enable comp-v-or$state-alt))))
+
+;; ======================================================================
+
+;; 3. Single-Step-Update Property
+
+;; Specifying the functionality of COMP-V-OR over an accepted input sequence
+
+(defun comp-v-or$op-seq (in-seq)
+  (if (atom in-seq)
+      nil
+    (cons (v-or (caar in-seq) (cdar in-seq))
+          (comp-v-or$op-seq (cdr in-seq)))))
+
+(defthm len-of-comp-v-or$op-seq
+  (equal (len (comp-v-or$op-seq x))
+         (len x)))
+
+(defthm comp-v-or$op-seq-of-append
+  (equal (comp-v-or$op-seq (append x y))
+         (append (comp-v-or$op-seq x) (comp-v-or$op-seq y))))
+
+;; The extraction function for COMP-V-OR that extracts the future output
+;; sequence from the current state.
+
+(defund comp-v-or$extract-state (st)
+  (b* ((la0 (get-field *comp-v-or$la0* st))
+       (a0  (get-field *comp-v-or$a0* st))
+       (lb0 (get-field *comp-v-or$lb0* st))
+       (b0  (get-field *comp-v-or$b0* st))
+       (la1 (get-field *comp-v-or$la1* st))
+       (a1  (get-field *comp-v-or$a1* st))
+       (lb1 (get-field *comp-v-or$lb1* st))
+       (b1  (get-field *comp-v-or$b1* st))
+       (q2  (get-field *comp-v-or$q2* st))
+       (q3  (get-field *comp-v-or$q3* st))
+
+       (a-seq (append (extract-state (list la0 a0))
+                      (queue2$extract-state q2)
+                      (extract-state (list la1 a1))))
+       (b-seq (append (extract-state (list lb0 b0))
+                      (queue3$extract-state q3)
+                      (extract-state (list lb1 b1)))))
+    (comp-v-or$op-seq (pairlis$ a-seq b-seq))))
+
+(defthm comp-v-or$extract-state-not-empty
+  (implies (and (comp-v-or$out-act inputs st data-width)
+                (comp-v-or$valid-st st data-width))
+           (< 0 (len (comp-v-or$extract-state st))))
+  :hints (("Goal"
+           :in-theory (e/d (comp-v-or$valid-st
+                            comp-v-or$extract-state
+                            comp-v-or$out-act)
+                           (nfix))))
+  :rule-classes :linear)
+
+;; Specifying and proving a state invariant
 
 (progn
-  (local
-   (defthm comp-v-or$input-format=>q2$input-format
-     (implies (and (comp-v-or$input-format inputs data-width)
-                   (comp-v-or$valid-st st data-width))
-              (queue2$input-format
-               (comp-v-or$q2-inputs inputs st data-width)
-               data-width))
-     :hints (("Goal"
-              :in-theory (e/d (comp-v-or$input-format
-                               queue2$input-format
-                               queue2$data-in
-                               comp-v-or$valid-st
-                               comp-v-or$q2-inputs)
-                              (nthcdr
-                               len
-                               take-of-too-many))))))
+  (defund comp-v-or$inv (st)
+    (b* ((la0 (get-field *comp-v-or$la0* st))
+         (a0  (get-field *comp-v-or$a0* st))
+         (lb0 (get-field *comp-v-or$lb0* st))
+         (b0  (get-field *comp-v-or$b0* st))
+         (la1 (get-field *comp-v-or$la1* st))
+         (a1  (get-field *comp-v-or$a1* st))
+         (lb1 (get-field *comp-v-or$lb1* st))
+         (b1  (get-field *comp-v-or$b1* st))
+         (q2  (get-field *comp-v-or$q2* st))
+         (q3  (get-field *comp-v-or$q3* st))
 
-  (local
-   (defthm comp-v-or$input-format=>q3$input-format
-     (implies (and (comp-v-or$input-format inputs data-width)
-                   (comp-v-or$valid-st st data-width))
-              (queue3$input-format
-               (comp-v-or$q3-inputs inputs st data-width)
-               data-width))
-     :hints (("Goal"
-              :in-theory (e/d (comp-v-or$input-format
-                               queue3$input-format
-                               queue3$data-in
-                               comp-v-or$valid-st
-                               comp-v-or$q3-inputs)
-                              (nthcdr
-                               len
-                               take-of-too-many))))))
+         (a-seq (append (extract-state (list la0 a0))
+                        (queue2$extract-state q2)
+                        (extract-state (list la1 a1))))
+         (b-seq (append (extract-state (list lb0 b0))
+                        (queue3$extract-state q3)
+                        (extract-state (list lb1 b1)))))
+      (equal (len a-seq) (len b-seq))))
 
   (local
    (defthm booleanp-comp-v-or$q2-in-act
@@ -749,143 +898,6 @@
               :in-theory (enable get-field
                                  comp-v-or$q3-inputs
                                  queue3$out-act)))))
-
-  (defthm comp-v-or$valid-st-preserved
-    (implies (and (comp-v-or$input-format inputs data-width)
-                  (comp-v-or$valid-st st data-width))
-             (comp-v-or$valid-st (comp-v-or$state-fn inputs st data-width)
-                                 data-width))
-    :hints (("Goal"
-             :use ((:instance
-                    queue2$valid-st-preserved
-                    (inputs (comp-v-or$q2-inputs inputs st data-width))
-                    (st (get-field *comp-v-or$q2* st)))
-                   (:instance
-                    queue3$valid-st-preserved
-                    (inputs (comp-v-or$q3-inputs inputs st data-width))
-                    (st (get-field *comp-v-or$q3* st))))
-             :in-theory (e/d (get-field
-                              comp-v-or$input-format
-                              comp-v-or$valid-st
-                              comp-v-or$state-fn
-                              comp-v-or$in-act
-                              comp-v-or$out-act
-                              f-sr)
-                             (queue2$valid-st-preserved
-                              queue3$valid-st-preserved
-                              if*
-                              nthcdr
-                              take-of-too-many
-                              open-v-threefix)))))
-  )
-
-(defthmd comp-v-or$state-alt
-  (implies (and (comp-v-or& netlist data-width)
-                (comp-v-or$input-format inputs data-width)
-                (comp-v-or$valid-st st data-width))
-           (equal (de (si 'comp-v-or data-width) inputs st netlist)
-                  (comp-v-or$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable comp-v-or$valid-st=>natp-data-width
-                              comp-v-or$input-format)
-           :use (:instance
-                 comp-v-or$state
-                 (full-in    (nth 0 inputs))
-                 (empty-out- (nth 1 inputs))
-                 (a (comp-v-or$a inputs data-width))
-                 (b (comp-v-or$b inputs data-width))
-                 (go-signals (nthcdr (comp-v-or$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen comp-v-or data-width)
-(input-format-n-gen comp-v-or data-width)
-
-(defthmd de-sim-n$comp-v-or
-  (implies (and (comp-v-or& netlist data-width)
-                (comp-v-or$input-format-n inputs-lst data-width n)
-                (comp-v-or$valid-st st data-width))
-           (equal (de-sim-n (si 'comp-v-or data-width)
-                            inputs-lst st netlist
-                            n)
-                  (comp-v-or$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable comp-v-or$state-alt))))
-
-;; ======================================================================
-
-;; 3. Single-Step-Update Property
-
-;; Specifying the functionality of COMP-V-OR over an accepted input sequence
-
-(defun comp-v-or$op-seq (in-seq)
-  (if (atom in-seq)
-      nil
-    (cons (v-or (caar in-seq) (cdar in-seq))
-          (comp-v-or$op-seq (cdr in-seq)))))
-
-(defthm len-of-comp-v-or$op-seq
-  (equal (len (comp-v-or$op-seq x))
-         (len x)))
-
-(defthm comp-v-or$op-seq-of-append
-  (equal (comp-v-or$op-seq (append x y))
-         (append (comp-v-or$op-seq x) (comp-v-or$op-seq y))))
-
-;; The extraction function for COMP-V-OR that extracts the future output
-;; sequence from the current state.
-
-(defund comp-v-or$extract-state (st)
-  (b* ((la0 (get-field *comp-v-or$la0* st))
-       (a0  (get-field *comp-v-or$a0* st))
-       (lb0 (get-field *comp-v-or$lb0* st))
-       (b0  (get-field *comp-v-or$b0* st))
-       (la1 (get-field *comp-v-or$la1* st))
-       (a1  (get-field *comp-v-or$a1* st))
-       (lb1 (get-field *comp-v-or$lb1* st))
-       (b1  (get-field *comp-v-or$b1* st))
-       (q2  (get-field *comp-v-or$q2* st))
-       (q3  (get-field *comp-v-or$q3* st))
-
-       (a-seq (append (extract-state (list la0 a0))
-                      (queue2$extract-state q2)
-                      (extract-state (list la1 a1))))
-       (b-seq (append (extract-state (list lb0 b0))
-                      (queue3$extract-state q3)
-                      (extract-state (list lb1 b1)))))
-    (comp-v-or$op-seq (pairlis$ a-seq b-seq))))
-
-(defthm comp-v-or$extract-state-not-empty
-  (implies (and (comp-v-or$out-act inputs st data-width)
-                (comp-v-or$valid-st st data-width))
-           (< 0 (len (comp-v-or$extract-state st))))
-  :hints (("Goal"
-           :in-theory (e/d (comp-v-or$valid-st
-                            comp-v-or$extract-state
-                            comp-v-or$out-act)
-                           (nfix))))
-  :rule-classes :linear)
-
-;; Specifying and proving a state invariant
-
-(progn
-  (defund comp-v-or$inv (st)
-    (b* ((la0 (get-field *comp-v-or$la0* st))
-         (a0  (get-field *comp-v-or$a0* st))
-         (lb0 (get-field *comp-v-or$lb0* st))
-         (b0  (get-field *comp-v-or$b0* st))
-         (la1 (get-field *comp-v-or$la1* st))
-         (a1  (get-field *comp-v-or$a1* st))
-         (lb1 (get-field *comp-v-or$lb1* st))
-         (b1  (get-field *comp-v-or$b1* st))
-         (q2  (get-field *comp-v-or$q2* st))
-         (q3  (get-field *comp-v-or$q3* st))
-
-         (a-seq (append (extract-state (list la0 a0))
-                        (queue2$extract-state q2)
-                        (extract-state (list la1 a1))))
-         (b-seq (append (extract-state (list lb0 b0))
-                        (queue3$extract-state q3)
-                        (extract-state (list lb1 b1)))))
-      (equal (len a-seq) (len b-seq))))
 
   (defthm comp-v-or$inv-preserved
     (implies (and (comp-v-or$input-format inputs data-width)
@@ -1104,6 +1116,7 @@
                               comp-v-or$step-spec
                               comp-v-or$input-format
                               comp-v-or$valid-st
+                              comp-v-or$st-format
                               comp-v-or$inv
                               comp-v-or$state-fn
                               comp-v-or$in-act
@@ -1122,6 +1135,38 @@
 ;; ======================================================================
 
 ;; 4. Relationship Between the Input and Output Sequences
+
+;; Proving that comp-v-or$valid-st is an invariant.
+
+(defthm comp-v-or$valid-st-preserved
+  (implies (and (comp-v-or$input-format inputs data-width)
+                (comp-v-or$valid-st st data-width))
+           (comp-v-or$valid-st (comp-v-or$state-fn inputs st data-width)
+                               data-width))
+  :hints (("Goal"
+           :use ((:instance
+                  queue2$valid-st-preserved
+                  (inputs (comp-v-or$q2-inputs inputs st data-width))
+                  (st (get-field *comp-v-or$q2* st)))
+                 (:instance
+                  queue3$valid-st-preserved
+                  (inputs (comp-v-or$q3-inputs inputs st data-width))
+                  (st (get-field *comp-v-or$q3* st))))
+           :in-theory (e/d (get-field
+                            comp-v-or$input-format
+                            comp-v-or$valid-st
+                            comp-v-or$st-format
+                            comp-v-or$state-fn
+                            comp-v-or$in-act
+                            comp-v-or$out-act
+                            f-sr)
+                           (queue2$valid-st-preserved
+                            queue3$valid-st-preserved
+                            if*
+                            nfix
+                            nthcdr
+                            take-of-too-many
+                            open-v-threefix)))))
 
 (encapsulate
   ()
@@ -1180,6 +1225,7 @@
                     (comp-v-or$extract-state st)))
     :hints (("Goal"
              :in-theory (e/d (comp-v-or$valid-st
+                              comp-v-or$st-format
                               comp-v-or$inv
                               comp-v-or$extract-state
                               comp-v-or$out-act

@@ -275,8 +275,7 @@
                   (true-listp data-in1)
                   (equal (len data-in1) data-width)
                   (true-listp go-signals)
-                  (equal (len go-signals) *alt-merge$go-num*)
-                  (alt-merge$valid-st st))
+                  (equal (len go-signals) *alt-merge$go-num*))
              (equal (se (si 'alt-merge data-width) inputs st netlist)
                     (list* (alt-merge$act inputs st data-width)
                            (alt-merge$act0 inputs st data-width)
@@ -297,7 +296,6 @@
                             alt-merge*$destructure
                             joint-cntl$value
                             tv-if$value
-                            alt-merge$valid-st
                             alt-merge$act
                             alt-merge$act0
                             alt-merge$act1)
@@ -343,8 +341,7 @@
                   (equal (len data-in0) data-width)
                   (equal (len data-in1) data-width)
                   (true-listp go-signals)
-                  (equal (len go-signals) *alt-merge$go-num*)
-                  (alt-merge$valid-st st))
+                  (equal (len go-signals) *alt-merge$go-num*))
              (equal (de (si 'alt-merge data-width) inputs st netlist)
                     (alt-merge$state-fn inputs st data-width))))
   :hints (("Goal"
@@ -360,7 +357,6 @@
                             not-primp-alt-merge
                             alt-merge&
                             alt-merge*$destructure
-                            alt-merge$valid-st
                             alt-merge$act
                             alt-merge$act0
                             alt-merge$act1
@@ -385,7 +381,7 @@
                               (natp data-width))))
   (b* ((full-in0   (nth 0 inputs))
        (full-in1   (nth 1 inputs))
-       (empty-out-  (nth 2 inputs))
+       (empty-out- (nth 2 inputs))
        (data-in0   (alt-merge$data-in0 inputs data-width))
        (data-in1   (alt-merge$data-in1 inputs data-width))
        (go-signals (nthcdr (alt-merge$data-ins-len data-width) inputs)))

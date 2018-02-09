@@ -132,6 +132,19 @@
 
 ;; Constraints on the state of Q10'
 
+(defund queue10$st-format (st data-width)
+  (b* ((q5-0 (get-field *queue10$q5-0* st))
+       (q5-1 (get-field *queue10$q5-1* st)))
+    (and (queue5$st-format q5-0 data-width)
+         (queue5$st-format q5-1 data-width))))
+
+(defthmd queue10$st-format=>natp-data-width
+  (implies (queue10$st-format st data-width)
+           (natp data-width))
+  :hints (("Goal" :in-theory (enable queue10$st-format
+                                     queue5$st-format=>natp-data-width)))
+  :rule-classes :forward-chaining)
+
 (defund queue10$valid-st (st data-width)
   (b* ((q5-0 (get-field *queue10$q5-0* st))
        (q5-1 (get-field *queue10$q5-1* st)))
@@ -295,13 +308,19 @@
   (b* ((q5-1 (get-field *queue10$q5-1* st)))
     (queue5$data-out q5-1)))
 
-(defthm len-queue10$data-out
+(defthm len-queue10$data-out-1
+  (implies (queue10$st-format st data-width)
+           (equal (len (queue10$data-out st))
+                  data-width))
+  :hints (("Goal" :in-theory (enable queue10$st-format
+                                     queue10$data-out))))
+
+(defthm len-queue10$data-out-2
   (implies (queue10$valid-st st data-width)
            (equal (len (queue10$data-out st))
                   data-width))
   :hints (("Goal" :in-theory (enable queue10$valid-st
-                                     queue10$data-out
-                                     queue5$valid-st=>natp-data-width))))
+                                     queue10$data-out))))
 
 (defthm bvp-queue10$data-out
   (implies (and (queue10$valid-st st data-width)
@@ -318,7 +337,7 @@
 (defthmd queue10$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue10& netlist data-width)
-                  (queue10$valid-st st data-width))
+                  (queue10$st-format st data-width))
              (equal (se (si 'queue10 data-width) inputs st netlist)
                     (list* (queue10$ready-in- st)
                            (queue10$ready-out st)
@@ -334,13 +353,13 @@
                             get-field
                             len-1-true-listp=>true-listp
                             not-primp-queue10
-                            queue5$valid-st=>natp-data-width
+                            queue5$st-format=>natp-data-width
                             queue10&
                             queue10*$destructure
                             joint-cntl$value
                             v-buf$value
                             queue5$value
-                            queue10$valid-st
+                            queue10$st-format
                             queue10$ready-in-
                             queue10$ready-out
                             queue10$data-out)
@@ -381,7 +400,7 @@
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
                   (equal (len go-signals) *queue10$go-num*)
-                  (queue10$valid-st st data-width))
+                  (queue10$st-format st data-width))
              (equal (de (si 'queue10 data-width) inputs st netlist)
                     (queue10$state-fn inputs st data-width))))
   :hints (("Goal"
@@ -397,7 +416,7 @@
                             not-primp-queue10
                             queue10&
                             queue10*$destructure
-                            queue10$valid-st
+                            queue10$st-format
                             queue10$in-act
                             queue10$out-act
                             queue10$data-in
@@ -441,74 +460,71 @@
      (equal inputs
             (list* in-act out-act (append data-in go-signals))))))
 
-;; Proving that queue10$valid-st is an invariant.
+(local
+ (defthm queue10$input-format=>q5-0$input-format
+   (implies (and (queue10$input-format inputs st data-width)
+                 (queue10$valid-st st data-width))
+            (queue5$input-format
+             (queue10$q5-0-inputs inputs st data-width)
+             (nth *queue10$q5-0* st)
+             data-width))
+   :hints (("Goal"
+            :in-theory (e/d (get-field
+                             queue5$valid-st=>natp-data-width
+                             queue5$input-format
+                             queue5$in-act
+                             queue5$out-act
+                             queue5$data-in
+                             queue10$input-format
+                             queue10$valid-st
+                             queue10$ready-in-
+                             queue10$q5-0-inputs)
+                            (nthcdr
+                             take-of-too-many))))))
 
-(progn
-  (local
-   (defthm queue10$input-format=>q5-0$input-format
-     (implies (and (queue10$input-format inputs st data-width)
-                   (queue10$valid-st st data-width))
-              (queue5$input-format
-               (queue10$q5-0-inputs inputs st data-width)
-               (nth *queue10$q5-0* st)
-               data-width))
-     :hints (("Goal"
-              :in-theory (e/d (get-field
-                               queue5$valid-st=>natp-data-width
-                               queue5$input-format
-                               queue5$in-act
-                               queue5$out-act
-                               queue5$data-in
-                               queue10$input-format
-                               queue10$valid-st
-                               queue10$ready-in-
-                               queue10$q5-0-inputs)
-                              (nthcdr
-                               take-of-too-many))))))
+(local
+ (defthm queue10$input-format=>q5-1$input-format
+   (implies (and (queue10$input-format inputs st data-width)
+                 (queue10$valid-st st data-width))
+            (queue5$input-format
+             (queue10$q5-1-inputs inputs st data-width)
+             (nth *queue10$q5-1* st)
+             data-width))
+   :hints (("Goal"
+            :in-theory (e/d (get-field
+                             joint-act
+                             queue5$valid-st=>natp-data-width
+                             queue5$input-format
+                             queue5$in-act
+                             queue5$out-act
+                             queue5$data-in
+                             queue10$input-format
+                             queue10$valid-st
+                             queue10$ready-out
+                             queue10$q5-1-inputs)
+                            (nthcdr
+                             take-of-too-many))))))
 
-  (local
-   (defthm queue10$input-format=>q5-1$input-format
-     (implies (and (queue10$input-format inputs st data-width)
-                   (queue10$valid-st st data-width))
-              (queue5$input-format
-               (queue10$q5-1-inputs inputs st data-width)
-               (nth *queue10$q5-1* st)
-               data-width))
-     :hints (("Goal"
-              :in-theory (e/d (get-field
-                               joint-act
-                               queue5$valid-st=>natp-data-width
-                               queue5$input-format
-                               queue5$in-act
-                               queue5$out-act
-                               queue5$data-in
-                               queue10$input-format
-                               queue10$valid-st
-                               queue10$ready-out
-                               queue10$q5-1-inputs)
-                              (nthcdr
-                               take-of-too-many))))))
+;; Proving that queue10$st-format is an invariant.
 
-  (defthm queue10$valid-st-preserved
-    (implies (and (queue10$input-format inputs st data-width)
-                  (queue10$valid-st st data-width))
-             (queue10$valid-st (queue10$state-fn inputs st data-width)
-                               data-width))
-    :hints (("Goal"
-             :in-theory (e/d (get-field
-                              queue10$valid-st
-                              queue10$state-fn)
-                             ()))))
-  )
+(defthm queue10$st-format-preserved
+  (implies (queue10$st-format st data-width)
+           (queue10$st-format (queue10$state-fn inputs st data-width)
+                             data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            queue10$st-format
+                            queue10$state-fn)
+                           ()))))
 
 (defthmd queue10$state-alt
   (implies (and (queue10& netlist data-width)
                 (queue10$input-format inputs st data-width)
-                (queue10$valid-st st data-width))
+                (queue10$st-format st data-width))
            (equal (de (si 'queue10 data-width) inputs st netlist)
                   (queue10$state-fn inputs st data-width)))
   :hints (("Goal"
-           :in-theory (enable queue10$valid-st=>natp-data-width
+           :in-theory (enable queue10$st-format=>natp-data-width
                               queue10$input-format)
            :use (:instance
                  queue10$state
@@ -524,7 +540,7 @@
 (defthmd de-sim-n$queue10
   (implies (and (queue10& netlist data-width)
                 (queue10$input-format-n inputs-lst st data-width n)
-                (queue10$valid-st st data-width))
+                (queue10$st-format st data-width))
            (equal (de-sim-n (si 'queue10 data-width)
                             inputs-lst st netlist
                             n)
@@ -690,6 +706,7 @@
      :hints (("Goal"
               :in-theory (enable get-field
                                  queue5$valid-st
+                                 queue5$st-format
                                  queue5$data-in
                                  queue5$data-out
                                  queue10$q5-1-inputs)))))
@@ -762,6 +779,19 @@
 ;; ======================================================================
 
 ;; 4. Relationship Between the Input and Output Sequences
+
+;; Proving that queue10$valid-st is an invariant.
+
+(defthm queue10$valid-st-preserved
+  (implies (and (queue10$input-format inputs st data-width)
+                (queue10$valid-st st data-width))
+           (queue10$valid-st (queue10$state-fn inputs st data-width)
+                             data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            queue10$valid-st
+                            queue10$state-fn)
+                           ()))))
 
 (encapsulate
   ()

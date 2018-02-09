@@ -132,6 +132,19 @@
 
 ;; Constraints on the state of Q8'
 
+(defund queue8$st-format (st data-width)
+  (b* ((q4-0 (get-field *queue8$q4-0* st))
+       (q4-1 (get-field *queue8$q4-1* st)))
+    (and (queue4$st-format q4-0 data-width)
+         (queue4$st-format q4-1 data-width))))
+
+(defthmd queue8$st-format=>natp-data-width
+  (implies (queue8$st-format st data-width)
+           (natp data-width))
+  :hints (("Goal" :in-theory (enable queue8$st-format
+                                     queue4$st-format=>natp-data-width)))
+  :rule-classes :forward-chaining)
+
 (defund queue8$valid-st (st data-width)
   (b* ((q4-0 (get-field *queue8$q4-0* st))
        (q4-1 (get-field *queue8$q4-1* st)))
@@ -293,13 +306,19 @@
   (b* ((q4-1 (get-field *queue8$q4-1* st)))
     (queue4$data-out q4-1)))
 
-(defthm len-queue8$data-out
+(defthm len-queue8$data-out-1
+  (implies (queue8$st-format st data-width)
+           (equal (len (queue8$data-out st))
+                  data-width))
+  :hints (("Goal" :in-theory (enable queue8$st-format
+                                     queue8$data-out))))
+
+(defthm len-queue8$data-out-2
   (implies (queue8$valid-st st data-width)
            (equal (len (queue8$data-out st))
                   data-width))
   :hints (("Goal" :in-theory (enable queue8$valid-st
-                                     queue8$data-out
-                                     queue4$valid-st=>natp-data-width))))
+                                     queue8$data-out))))
 
 (defthm bvp-queue8$data-out
   (implies (and (queue8$valid-st st data-width)
@@ -316,7 +335,7 @@
 (defthmd queue8$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue8& netlist data-width)
-                  (queue8$valid-st st data-width))
+                  (queue8$st-format st data-width))
              (equal (se (si 'queue8 data-width) inputs st netlist)
                     (list* (queue8$ready-in- st)
                            (queue8$ready-out st)
@@ -332,13 +351,13 @@
                             get-field
                             len-1-true-listp=>true-listp
                             not-primp-queue8
-                            queue4$valid-st=>natp-data-width
+                            queue4$st-format=>natp-data-width
                             queue8&
                             queue8*$destructure
                             joint-cntl$value
                             v-buf$value
                             queue4$value
-                            queue8$valid-st
+                            queue8$st-format
                             queue8$ready-in-
                             queue8$ready-out
                             queue8$data-out)
@@ -381,7 +400,7 @@
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
                   (equal (len go-signals) *queue8$go-num*)
-                  (queue8$valid-st st data-width))
+                  (queue8$st-format st data-width))
              (equal (de (si 'queue8 data-width) inputs st netlist)
                     (queue8$state-fn inputs st data-width))))
   :hints (("Goal"
@@ -397,7 +416,7 @@
                             not-primp-queue8
                             queue8&
                             queue8*$destructure
-                            queue8$valid-st
+                            queue8$st-format
                             queue8$in-act
                             queue8$out-act
                             queue8$data-in
@@ -441,74 +460,71 @@
      (equal inputs
             (list* in-act out-act (append data-in go-signals))))))
 
-;; Proving that queue8$valid-st is an invariant.
+(local
+ (defthm queue8$input-format=>q4-0$input-format
+   (implies (and (queue8$input-format inputs st data-width)
+                 (queue8$valid-st st data-width))
+            (queue4$input-format
+             (queue8$q4-0-inputs inputs st data-width)
+             (nth *queue8$q4-0* st)
+             data-width))
+   :hints (("Goal"
+            :in-theory (e/d (get-field
+                             queue4$valid-st=>natp-data-width
+                             queue4$input-format
+                             queue4$in-act
+                             queue4$out-act
+                             queue4$data-in
+                             queue8$input-format
+                             queue8$valid-st
+                             queue8$ready-in-
+                             queue8$q4-0-inputs)
+                            (nthcdr
+                             take-of-too-many))))))
 
-(progn
-  (local
-   (defthm queue8$input-format=>q4-0$input-format
-     (implies (and (queue8$input-format inputs st data-width)
-                   (queue8$valid-st st data-width))
-              (queue4$input-format
-               (queue8$q4-0-inputs inputs st data-width)
-               (nth *queue8$q4-0* st)
-               data-width))
-     :hints (("Goal"
-              :in-theory (e/d (get-field
-                               queue4$valid-st=>natp-data-width
-                               queue4$input-format
-                               queue4$in-act
-                               queue4$out-act
-                               queue4$data-in
-                               queue8$input-format
-                               queue8$valid-st
-                               queue8$ready-in-
-                               queue8$q4-0-inputs)
-                              (nthcdr
-                               take-of-too-many))))))
+(local
+ (defthm queue8$input-format=>q4-1$input-format
+   (implies (and (queue8$input-format inputs st data-width)
+                 (queue8$valid-st st data-width))
+            (queue4$input-format
+             (queue8$q4-1-inputs inputs st data-width)
+             (nth *queue8$q4-1* st)
+             data-width))
+   :hints (("Goal"
+            :in-theory (e/d (get-field
+                             joint-act
+                             queue4$valid-st=>natp-data-width
+                             queue4$input-format
+                             queue4$in-act
+                             queue4$out-act
+                             queue4$data-in
+                             queue8$input-format
+                             queue8$valid-st
+                             queue8$ready-out
+                             queue8$q4-1-inputs)
+                            (nthcdr
+                             take-of-too-many))))))
 
-  (local
-   (defthm queue8$input-format=>q4-1$input-format
-     (implies (and (queue8$input-format inputs st data-width)
-                   (queue8$valid-st st data-width))
-              (queue4$input-format
-               (queue8$q4-1-inputs inputs st data-width)
-               (nth *queue8$q4-1* st)
-               data-width))
-     :hints (("Goal"
-              :in-theory (e/d (get-field
-                               joint-act
-                               queue4$valid-st=>natp-data-width
-                               queue4$input-format
-                               queue4$in-act
-                               queue4$out-act
-                               queue4$data-in
-                               queue8$input-format
-                               queue8$valid-st
-                               queue8$ready-out
-                               queue8$q4-1-inputs)
-                              (nthcdr
-                               take-of-too-many))))))
+;; Proving that queue8$st-format is an invariant.
 
-  (defthm queue8$valid-st-preserved
-    (implies (and (queue8$input-format inputs st data-width)
-                  (queue8$valid-st st data-width))
-             (queue8$valid-st (queue8$state-fn inputs st data-width)
-                              data-width))
-    :hints (("Goal"
-             :in-theory (e/d (get-field
-                              queue8$valid-st
-                              queue8$state-fn)
-                             ()))))
-  )
+(defthm queue8$st-format-preserved
+  (implies (queue8$st-format st data-width)
+           (queue8$st-format (queue8$state-fn inputs st data-width)
+                             data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            queue8$st-format
+                            queue8$state-fn)
+                           ()))))
 
 (defthmd queue8$state-alt
   (implies (and (queue8& netlist data-width)
                 (queue8$input-format inputs st data-width)
-                (queue8$valid-st st data-width))
+                (queue8$st-format st data-width))
            (equal (de (si 'queue8 data-width) inputs st netlist)
                   (queue8$state-fn inputs st data-width)))
   :hints (("Goal"
-           :in-theory (enable queue8$valid-st=>natp-data-width
+           :in-theory (enable queue8$st-format=>natp-data-width
                               queue8$input-format)
            :use (:instance
                  queue8$state
@@ -524,7 +540,7 @@
 (defthmd de-sim-n$queue8
   (implies (and (queue8& netlist data-width)
                 (queue8$input-format-n inputs-lst st data-width n)
-                (queue8$valid-st st data-width))
+                (queue8$st-format st data-width))
            (equal (de-sim-n (si 'queue8 data-width)
                             inputs-lst st netlist
                             n)
@@ -688,6 +704,7 @@
      :hints (("Goal"
               :in-theory (enable get-field
                                  queue4$valid-st
+                                 queue4$st-format
                                  queue4$data-in
                                  queue4$data-out
                                  queue8$q4-1-inputs)))))
@@ -760,6 +777,19 @@
 ;; ======================================================================
 
 ;; 4. Relationship Between the Input and Output Sequences
+
+;; Proving that queue8$valid-st is an invariant.
+
+(defthm queue8$valid-st-preserved
+  (implies (and (queue8$input-format inputs st data-width)
+                (queue8$valid-st st data-width))
+           (queue8$valid-st (queue8$state-fn inputs st data-width)
+                            data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            queue8$valid-st
+                            queue8$state-fn)
+                           ()))))
 
 (encapsulate
   ()
