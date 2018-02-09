@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; February 2018
 
 (in-package "ADE")
 
@@ -109,10 +109,10 @@
 ;; Extracting the "act0" signal
 
 (defund branch$act0 (inputs data-width)
-  (b* ((full-in    (nth 0 inputs))
+  (b* ((full-in     (nth 0 inputs))
        (empty-out0- (nth 1 inputs))
-       (select     (nth 3 inputs))
-       (go-signals (nthcdr (branch$data-ins-len data-width) inputs))
+       (select      (nth 3 inputs))
+       (go-signals  (nthcdr (branch$data-ins-len data-width) inputs))
 
        (go-branch (nth 0 go-signals))
 
@@ -123,10 +123,10 @@
 ;; Extracting the "act1" signal
 
 (defund branch$act1 (inputs data-width)
-  (b* ((full-in    (nth 0 inputs))
+  (b* ((full-in     (nth 0 inputs))
        (empty-out1- (nth 2 inputs))
-       (select     (nth 3 inputs))
-       (go-signals (nthcdr (branch$data-ins-len data-width) inputs))
+       (select      (nth 3 inputs))
+       (go-signals  (nthcdr (branch$data-ins-len data-width) inputs))
 
        (go-branch (nth 0 go-signals))
 

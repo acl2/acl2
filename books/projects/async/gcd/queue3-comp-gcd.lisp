@@ -124,21 +124,40 @@
 (defthm check-queue3-comp-gcd$netlist-64
   (queue3-comp-gcd& (queue3-comp-gcd$netlist 64) 64))
 
-(defconst *queue3-comp-gcd$l*   0)
-(defconst *queue3-comp-gcd$d*   1)
-(defconst *queue3-comp-gcd$q3*  2)
+(defconst *queue3-comp-gcd$l*        0)
+(defconst *queue3-comp-gcd$d*        1)
+(defconst *queue3-comp-gcd$q3*       2)
 (defconst *queue3-comp-gcd$comp-gcd* 3)
 
 ;; Constraints on the state of QUEUE3-COMP-GCD
 
-(defund queue3-comp-gcd$valid-st (st data-width)
-  (b* ((l   (get-field *queue3-comp-gcd$l* st))
-       (d   (get-field *queue3-comp-gcd$d* st))
-       (q3  (get-field *queue3-comp-gcd$q3* st))
+(defund queue3-comp-gcd$st-format (st data-width)
+  (b* ((d        (get-field *queue3-comp-gcd$d* st))
+       (q3       (get-field *queue3-comp-gcd$q3* st))
        (comp-gcd (get-field *queue3-comp-gcd$comp-gcd* st)))
-    (and (validp l)
-         (len-1-true-listp d)
+    (and (len-1-true-listp d)
          (equal (len d) (* 2 data-width))
+
+         (queue3$st-format q3 (* 2 data-width))
+         (comp-gcd$st-format comp-gcd data-width))))
+
+(defthmd queue3-comp-gcd$st-format=>data-width-constraint
+  (implies (queue3-comp-gcd$st-format st data-width)
+           (and (natp data-width)
+                (<= 3 data-width)))
+  :hints (("Goal"
+           :in-theory (enable comp-gcd$st-format=>data-width-constraint
+                              queue3-comp-gcd$st-format)))
+  :rule-classes :forward-chaining)
+
+(defund queue3-comp-gcd$valid-st (st data-width)
+  (b* ((l        (get-field *queue3-comp-gcd$l* st))
+       (d        (get-field *queue3-comp-gcd$d* st))
+       (q3       (get-field *queue3-comp-gcd$q3* st))
+       (comp-gcd (get-field *queue3-comp-gcd$comp-gcd* st)))
+    (and (queue3-comp-gcd$st-format st data-width)
+
+         (validp l)
          (or (emptyp l)
              (bvp (strip-cars d)))
 
@@ -150,10 +169,9 @@
            (and (natp data-width)
                 (<= 3 data-width)))
   :hints (("Goal"
-           :use (:instance
-                 comp-gcd$valid-st=>data-width-constraint
-                 (st (get-field *queue3-comp-gcd$comp-gcd* st)))
-           :in-theory (enable queue3-comp-gcd$valid-st)))
+           :in-theory (enable
+                       queue3-comp-gcd$st-format=>data-width-constraint
+                       queue3-comp-gcd$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; QUEUE3-COMP-GCD simulator
@@ -232,7 +250,7 @@
 
        (l (get-field *queue3-comp-gcd$l* st)))
 
-    (list* full-in (car l)
+    (list* full-in (f-buf (car l))
            (append data-in q3-go-signals))))
 
 ;; Extracting the inputs for the COMP-GCD joint
@@ -248,7 +266,7 @@
        (l (get-field *queue3-comp-gcd$l* st))
        (d (get-field *queue3-comp-gcd$d* st)))
 
-    (list* (car l) empty-out-
+    (list* (f-buf (car l)) empty-out-
            (append (v-threefix (strip-cars d))
                    comp-gcd-go-signals))))
 
@@ -273,12 +291,18 @@
                      (get-field *queue3-comp-gcd$comp-gcd* st)
                      data-width))
 
-(defthm len-queue3-comp-gcd$data-out
+(defthm len-queue3-comp-gcd$data-out-1
+  (implies (queue3-comp-gcd$st-format st data-width)
+           (equal (len (queue3-comp-gcd$data-out inputs st data-width))
+                  data-width))
+  :hints (("Goal" :in-theory (enable queue3-comp-gcd$st-format
+                                     queue3-comp-gcd$data-out))))
+
+(defthm len-queue3-comp-gcd$data-out-2
   (implies (queue3-comp-gcd$valid-st st data-width)
            (equal (len (queue3-comp-gcd$data-out inputs st data-width))
                   data-width))
-  :hints (("Goal" :in-theory (enable queue3-comp-gcd$valid-st
-                                     queue3-comp-gcd$data-out))))
+  :hints (("Goal" :in-theory (enable queue3-comp-gcd$valid-st))))
 
 (defthm bvp-queue3-comp-gcd$data-out
   (implies (and (queue3-comp-gcd$valid-st st data-width)
@@ -290,154 +314,144 @@
 
 (not-primp-lemma queue3-comp-gcd)
 
-(encapsulate
-  ()
+;; The value lemma for QUEUE3-COMP-GCD
 
-  (local
-   (defthm validp=>f-buf-canceled
-     (implies (validp x)
-              (equal (f-buf (car x))
-                     (car x)))))
+(defthmd queue3-comp-gcd$value
+  (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
+    (implies
+     (and (queue3-comp-gcd& netlist data-width)
+          (true-listp data-in)
+          (equal (len data-in) (* 2 data-width))
+          (true-listp go-signals)
+          (equal (len go-signals) *queue3-comp-gcd$go-num*)
+          (queue3-comp-gcd$st-format st data-width))
+     (equal (se (si 'queue3-comp-gcd data-width) inputs st netlist)
+            (list* (queue3-comp-gcd$in-act inputs st data-width)
+                   (queue3-comp-gcd$out-act inputs st data-width)
+                   (queue3-comp-gcd$data-out inputs st data-width)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :do-not '(preprocess)
+           :expand (se (si 'queue3-comp-gcd data-width)
+                       (list* full-in empty-out-
+                              (append data-in go-signals))
+                       st
+                       netlist)
+           :in-theory (e/d (de-rules
+                            get-field
+                            comp-gcd$st-format=>data-width-constraint
+                            len-1-true-listp=>true-listp
+                            not-primp-queue3-comp-gcd
+                            queue3-comp-gcd&
+                            queue3-comp-gcd*$destructure
+                            latch-n$value
+                            queue3$value
+                            comp-gcd$value
+                            queue3-comp-gcd$data-in
+                            queue3-comp-gcd$st-format
+                            queue3-comp-gcd$in-act
+                            queue3-comp-gcd$out-act
+                            queue3-comp-gcd$data-out
+                            queue3-comp-gcd$q3-inputs
+                            queue3-comp-gcd$comp-gcd-inputs)
+                           ((queue3-comp-gcd*)
+                            nfix
+                            acl2::take-of-append
+                            if*
+                            b-not
+                            cons-equal
+                            validp
+                            fullp
+                            emptyp
+                            de-module-disabled-rules)))))
 
-  ;; The value lemma for QUEUE3-COMP-GCD
+;; This function specifies the next state of QUEUE3-COMP-GCD.
 
-  (defthmd queue3-comp-gcd$value
-    (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-      (implies
-       (and (queue3-comp-gcd& netlist data-width)
-            (true-listp data-in)
-            (equal (len data-in) (* 2 data-width))
-            (true-listp go-signals)
-            (equal (len go-signals) *queue3-comp-gcd$go-num*)
-            (queue3-comp-gcd$valid-st st data-width))
-       (equal (se (si 'queue3-comp-gcd data-width) inputs st netlist)
-              (list* (queue3-comp-gcd$in-act inputs st data-width)
-                     (queue3-comp-gcd$out-act inputs st data-width)
-                     (queue3-comp-gcd$data-out inputs st data-width)))))
-    :hints (("Goal"
-             :do-not-induct t
-             :do-not '(preprocess)
-             :expand (se (si 'queue3-comp-gcd data-width)
-                         (list* full-in empty-out-
-                                (append data-in go-signals))
-                         st
-                         netlist)
-             :in-theory (e/d (de-rules
-                              get-field
-                              comp-gcd$valid-st=>data-width-constraint
-                              len-1-true-listp=>true-listp
-                              not-primp-queue3-comp-gcd
-                              queue3-comp-gcd&
-                              queue3-comp-gcd*$destructure
-                              latch-n$value
-                              queue3$value
-                              comp-gcd$value
-                              queue3-comp-gcd$data-in
-                              queue3-comp-gcd$valid-st
-                              queue3-comp-gcd$in-act
-                              queue3-comp-gcd$out-act
-                              queue3-comp-gcd$data-out
-                              queue3-comp-gcd$q3-inputs
-                              queue3-comp-gcd$comp-gcd-inputs)
-                             ((queue3-comp-gcd*)
-                              nfix
-                              acl2::take-of-append
-                              if*
-                              b-not
-                              cons-equal
-                              validp
-                              fullp
-                              emptyp
-                              de-module-disabled-rules)))))
+(defun queue3-comp-gcd$state-fn (inputs st data-width)
+  (b* ((l   (get-field *queue3-comp-gcd$l* st))
+       (d   (get-field *queue3-comp-gcd$d* st))
+       (q3  (get-field *queue3-comp-gcd$q3* st))
+       (comp-gcd (get-field *queue3-comp-gcd$comp-gcd* st))
 
-  ;; This function specifies the next state of QUEUE3-COMP-GCD.
+       (q3-inputs (queue3-comp-gcd$q3-inputs inputs st data-width))
+       (comp-gcd-inputs (queue3-comp-gcd$comp-gcd-inputs
+                         inputs st data-width))
 
-  (defun queue3-comp-gcd$state-fn (inputs st data-width)
-    (b* ((l   (get-field *queue3-comp-gcd$l* st))
-         (d   (get-field *queue3-comp-gcd$d* st))
-         (q3  (get-field *queue3-comp-gcd$q3* st))
-         (comp-gcd (get-field *queue3-comp-gcd$comp-gcd* st))
+       (d-in (queue3$data-out q3))
 
-         (q3-inputs (queue3-comp-gcd$q3-inputs inputs st data-width))
-         (comp-gcd-inputs (queue3-comp-gcd$comp-gcd-inputs
-                           inputs st data-width))
+       (q3-out-act (queue3$out-act q3-inputs q3 (* 2 data-width)))
+       (comp-gcd-in-act (comp-gcd$in-act comp-gcd-inputs
+                                         comp-gcd data-width)))
+    (list
+     ;; L
+     (list (f-sr q3-out-act comp-gcd-in-act (car l)))
+     (pairlis$ (fv-if q3-out-act d-in (strip-cars d))
+               nil)
 
-         (d-in (queue3$data-out q3))
+     ;; Joint Q3
+     (queue3$state-fn q3-inputs q3 (* 2 data-width))
+     ;; Joint COMP-GCD
+     (comp-gcd$state-fn comp-gcd-inputs comp-gcd data-width))))
 
-         (q3-out-act (queue3$out-act q3-inputs q3 (* 2 data-width)))
-         (comp-gcd-in-act (comp-gcd$in-act comp-gcd-inputs
-                                           comp-gcd data-width)))
-      (list
-       ;; L
-       (list (f-sr q3-out-act comp-gcd-in-act (car l)))
-       (pairlis$ (fv-if q3-out-act d-in (strip-cars d))
-                 nil)
+(defthm len-of-queue3-comp-gcd$state-fn
+  (equal (len (queue3-comp-gcd$state-fn inputs st data-width))
+         *queue3-comp-gcd$st-len*))
 
-       ;; Joint Q3
-       (queue3$state-fn q3-inputs q3 (* 2 data-width))
-       ;; Joint COMP-GCD
-       (comp-gcd$state-fn comp-gcd-inputs comp-gcd data-width))))
+;; The state lemma for QUEUE3-COMP-GCD
 
-  (defthm len-of-queue3-comp-gcd$state-fn
-    (equal (len (queue3-comp-gcd$state-fn inputs st data-width))
-           *queue3-comp-gcd$st-len*))
+(defthmd queue3-comp-gcd$state
+  (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
+    (implies
+     (and (queue3-comp-gcd& netlist data-width)
+          (true-listp data-in)
+          (equal (len data-in) (* 2 data-width))
+          (true-listp go-signals)
+          (equal (len go-signals) *queue3-comp-gcd$go-num*)
+          (queue3-comp-gcd$st-format st data-width))
+     (equal (de (si 'queue3-comp-gcd data-width) inputs st netlist)
+            (queue3-comp-gcd$state-fn inputs st data-width))))
+  :hints (("Goal"
+           :do-not-induct t
+           :do-not '(preprocess)
+           :expand (de (si 'queue3-comp-gcd data-width)
+                       (list* full-in empty-out-
+                              (append data-in go-signals))
+                       st
+                       netlist)
+           :in-theory (e/d (de-rules
+                            get-field
+                            comp-gcd$st-format=>data-width-constraint
+                            len-1-true-listp=>true-listp
+                            not-primp-queue3-comp-gcd
+                            queue3-comp-gcd&
+                            queue3-comp-gcd*$destructure
+                            queue3-comp-gcd$st-format
+                            queue3-comp-gcd$data-in
+                            queue3-comp-gcd$data-out
+                            queue3-comp-gcd$q3-inputs
+                            queue3-comp-gcd$comp-gcd-inputs
+                            queue3$value queue3$state
+                            comp-gcd$value comp-gcd$state
+                            latch-n$value latch-n$state)
+                           ((queue3-comp-gcd*)
+                            nfix
+                            if*
+                            b-not
+                            append-take-nthcdr
+                            acl2::take-of-append
+                            acl2::prefer-positive-addends-equal
+                            acl2::simplify-sums-equal
+                            acl2::simplify-products-gather-exponents-equal
+                            acl2::|(equal (- x) (- y))|
+                            append
+                            cons-equal
+                            true-listp
+                            validp
+                            fullp
+                            emptyp
+                            de-module-disabled-rules)))))
 
-  ;; The state lemma for QUEUE3-COMP-GCD
-
-  (defthmd queue3-comp-gcd$state
-    (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-      (implies
-       (and (queue3-comp-gcd& netlist data-width)
-            (true-listp data-in)
-            (equal (len data-in) (* 2 data-width))
-            (true-listp go-signals)
-            (equal (len go-signals) *queue3-comp-gcd$go-num*)
-            (queue3-comp-gcd$valid-st st data-width))
-       (equal (de (si 'queue3-comp-gcd data-width) inputs st netlist)
-              (queue3-comp-gcd$state-fn inputs st data-width))))
-    :hints (("Goal"
-             :do-not-induct t
-             :do-not '(preprocess)
-             :expand (de (si 'queue3-comp-gcd data-width)
-                         (list* full-in empty-out-
-                                (append data-in go-signals))
-                         st
-                         netlist)
-             :in-theory (e/d (de-rules
-                              get-field
-                              comp-gcd$valid-st=>data-width-constraint
-                              len-1-true-listp=>true-listp
-                              not-primp-queue3-comp-gcd
-                              queue3-comp-gcd&
-                              queue3-comp-gcd*$destructure
-                              queue3-comp-gcd$valid-st
-                              queue3-comp-gcd$data-in
-                              queue3-comp-gcd$data-out
-                              queue3-comp-gcd$q3-inputs
-                              queue3-comp-gcd$comp-gcd-inputs
-                              queue3$value queue3$state
-                              comp-gcd$value comp-gcd$state
-                              latch-n$value latch-n$state)
-                             ((queue3-comp-gcd*)
-                              nfix
-                              if*
-                              b-not
-                              append-take-nthcdr
-                              acl2::take-of-append
-                              acl2::prefer-positive-addends-equal
-                              acl2::simplify-sums-equal
-                              acl2::simplify-products-gather-exponents-equal
-                              acl2::|(equal (- x) (- y))|
-                              append
-                              cons-equal
-                              true-listp
-                              validp
-                              fullp
-                              emptyp
-                              de-module-disabled-rules)))))
-
-  (in-theory (disable queue3-comp-gcd$state-fn))
-  )
+(in-theory (disable queue3-comp-gcd$state-fn))
 
 ;; ======================================================================
 
@@ -462,139 +476,66 @@
      (equal inputs
             (list* full-in empty-out- (append data-in go-signals))))))
 
-;; Proving that queue3-comp-gcd$valid-st is an invariant.
+(local
+ (defthm queue3-comp-gcd$input-format=>q3$input-format
+   (implies (and (queue3-comp-gcd$input-format inputs data-width)
+                 (queue3-comp-gcd$valid-st st data-width))
+            (queue3$input-format
+             (queue3-comp-gcd$q3-inputs inputs st data-width)
+             (* 2 data-width)))
+   :hints (("Goal"
+            :in-theory (e/d (queue3-comp-gcd$input-format
+                             comp-gcd$valid-st=>data-width-constraint
+                             queue3$input-format
+                             queue3$data-in
+                             queue3-comp-gcd$valid-st
+                             queue3-comp-gcd$q3-inputs)
+                            (nthcdr
+                             nfix
+                             len
+                             take-of-too-many))))))
 
-(progn
-  (local
-   (defthm queue3-comp-gcd$input-format=>q3$input-format
-     (implies (and (queue3-comp-gcd$input-format inputs data-width)
-                   (queue3-comp-gcd$valid-st st data-width))
-              (queue3$input-format
-               (queue3-comp-gcd$q3-inputs inputs st data-width)
-               (* 2 data-width)))
-     :hints (("Goal"
-              :in-theory (e/d (queue3-comp-gcd$input-format
-                               comp-gcd$valid-st=>data-width-constraint
-                               queue3$input-format
-                               queue3$data-in
-                               queue3-comp-gcd$valid-st
-                               queue3-comp-gcd$q3-inputs)
-                              (nthcdr
-                               nfix
-                               len
-                               take-of-too-many))))))
+(local
+ (defthm queue3-comp-gcd$input-format=>comp-gcd$input-format
+   (implies (and (queue3-comp-gcd$input-format inputs data-width)
+                 (queue3-comp-gcd$valid-st st data-width))
+            (comp-gcd$input-format
+             (queue3-comp-gcd$comp-gcd-inputs inputs st data-width)
+             data-width))
+   :hints (("Goal"
+            :in-theory (e/d (queue3-comp-gcd$input-format
+                             comp-gcd$valid-st=>data-width-constraint
+                             comp-gcd$input-format
+                             comp-gcd$data-in
+                             queue3-comp-gcd$valid-st
+                             queue3-comp-gcd$st-format
+                             queue3-comp-gcd$comp-gcd-inputs)
+                            (nthcdr
+                             nfix
+                             len
+                             take-of-too-many))))))
 
-  (local
-   (defthm queue3-comp-gcd$input-format=>comp-gcd$input-format
-     (implies (and (queue3-comp-gcd$input-format inputs data-width)
-                   (queue3-comp-gcd$valid-st st data-width))
-              (comp-gcd$input-format
-               (queue3-comp-gcd$comp-gcd-inputs inputs st data-width)
-               data-width))
-     :hints (("Goal"
-              :in-theory (e/d (queue3-comp-gcd$input-format
-                               comp-gcd$valid-st=>data-width-constraint
-                               comp-gcd$input-format
-                               comp-gcd$data-in
-                               queue3-comp-gcd$valid-st
-                               queue3-comp-gcd$comp-gcd-inputs)
-                              (nthcdr
-                               nfix
-                               len
-                               take-of-too-many))))))
+;; Proving that queue3-comp-gcd$st-format is an invariant.
 
-  (local
-   (defthm booleanp-queue3-comp-gcd$q3-out-act
-     (implies (and (or (equal (nth *queue3-comp-gcd$l* st) '(t))
-                       (equal (nth *queue3-comp-gcd$l* st) '(nil)))
-                   (queue3$valid-st (nth *queue3-comp-gcd$q3* st)
-                                    (* 2 data-width)))
-              (booleanp
-               (queue3$out-act (queue3-comp-gcd$q3-inputs
-                                inputs st data-width)
-                               (nth *queue3-comp-gcd$q3* st)
-                               (* 2 data-width))))
-     :hints (("Goal"
-              :in-theory (e/d (get-field
-                               queue3-comp-gcd$q3-inputs
-                               queue3$valid-st
-                               queue3$out-act)
-                              (nfix))))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm queue3-comp-gcd$q3-out-act-nil
-     (implies (equal (nth *queue3-comp-gcd$l* st) '(t))
-              (not (queue3$out-act (queue3-comp-gcd$q3-inputs inputs st data-width)
-                                   (nth *queue3-comp-gcd$q3* st)
-                                   (* 2 data-width))))
-     :hints (("Goal"
-              :in-theory (e/d (get-field
-                               queue3-comp-gcd$q3-inputs
-                               queue3$out-act)
-                              (nfix))))))
-
-  (local
-   (defthm booleanp-queue3-comp-gcd$comp-gcd-in-act
-     (implies (and (or (equal (nth *queue3-comp-gcd$l* st) '(t))
-                       (equal (nth *queue3-comp-gcd$l* st) '(nil)))
-                   (comp-gcd$valid-st (nth *queue3-comp-gcd$comp-gcd* st)
-                                      data-width))
-              (booleanp
-               (comp-gcd$in-act (queue3-comp-gcd$comp-gcd-inputs inputs st data-width)
-                                (nth *queue3-comp-gcd$comp-gcd* st)
-                                data-width)))
-     :hints (("Goal"
-              :in-theory (e/d (get-field
-                               queue3-comp-gcd$comp-gcd-inputs
-                               merge$act0
-                               comp-gcd$valid-st
-                               comp-gcd$me-inputs
-                               comp-gcd$in-act)
-                              (nfix))))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm queue3-comp-gcd$comp-gcd-in-act-nil
-     (implies (equal (nth *queue3-comp-gcd$l* st) '(nil))
-              (not (comp-gcd$in-act (queue3-comp-gcd$comp-gcd-inputs inputs st data-width)
-                                    (nth *queue3-comp-gcd$comp-gcd* st)
-                                    data-width)))
-     :hints (("Goal"
-              :in-theory (e/d (get-field
-                               queue3-comp-gcd$comp-gcd-inputs
-                               merge$act0
-                               comp-gcd$me-inputs
-                               comp-gcd$in-act)
-                              (nfix))))))
-
-  (defthm queue3-comp-gcd$valid-st-preserved
-    (implies (and (queue3-comp-gcd$input-format inputs data-width)
-                  (queue3-comp-gcd$valid-st st data-width))
-             (queue3-comp-gcd$valid-st
-              (queue3-comp-gcd$state-fn inputs st data-width)
-              data-width))
-    :hints (("Goal"
-             :in-theory (e/d (get-field
-                              queue3-comp-gcd$input-format
-                              queue3-comp-gcd$valid-st
-                              queue3-comp-gcd$state-fn
-                              f-sr)
-                             (if*
-                              nfix
-                              nthcdr
-                              b-if
-                              acl2::true-listp-append)))))
-  )
+(defthm queue3-comp-gcd$st-format-preserved
+  (implies (queue3-comp-gcd$st-format st data-width)
+           (queue3-comp-gcd$st-format
+            (queue3-comp-gcd$state-fn inputs st data-width)
+            data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            queue3-comp-gcd$st-format
+                            queue3-comp-gcd$state-fn)
+                           ()))))
 
 (defthmd queue3-comp-gcd$state-alt
   (implies (and (queue3-comp-gcd& netlist data-width)
                 (queue3-comp-gcd$input-format inputs data-width)
-                (queue3-comp-gcd$valid-st st data-width))
+                (queue3-comp-gcd$st-format st data-width))
            (equal (de (si 'queue3-comp-gcd data-width) inputs st netlist)
                   (queue3-comp-gcd$state-fn inputs st data-width)))
   :hints (("Goal"
-           :in-theory (enable queue3-comp-gcd$valid-st=>data-width-constraint
+           :in-theory (enable queue3-comp-gcd$st-format=>data-width-constraint
                               queue3-comp-gcd$input-format)
            :use (:instance
                  queue3-comp-gcd$state
@@ -610,7 +551,7 @@
 (defthmd de-sim-n$queue3-comp-gcd
   (implies (and (queue3-comp-gcd& netlist data-width)
                 (queue3-comp-gcd$input-format-n inputs-lst data-width n)
-                (queue3-comp-gcd$valid-st st data-width))
+                (queue3-comp-gcd$st-format st data-width))
            (equal (de-sim-n (si 'queue3-comp-gcd data-width)
                             inputs-lst st netlist
                             n)
@@ -776,8 +717,74 @@
 
 ;; The single-step-update property
 
-(encapsulate
-  ()
+(progn
+  (local
+   (defthm booleanp-queue3-comp-gcd$q3-out-act
+     (implies (and (or (equal (nth *queue3-comp-gcd$l* st) '(t))
+                       (equal (nth *queue3-comp-gcd$l* st) '(nil)))
+                   (queue3$valid-st (nth *queue3-comp-gcd$q3* st)
+                                    (* 2 data-width)))
+              (booleanp
+               (queue3$out-act (queue3-comp-gcd$q3-inputs
+                                inputs st data-width)
+                               (nth *queue3-comp-gcd$q3* st)
+                               (* 2 data-width))))
+     :hints (("Goal"
+              :in-theory (e/d (get-field
+                               queue3-comp-gcd$q3-inputs
+                               queue3$valid-st
+                               queue3$out-act)
+                              (nfix))))
+     :rule-classes :type-prescription))
+
+  (local
+   (defthm queue3-comp-gcd$q3-out-act-nil
+     (implies (equal (nth *queue3-comp-gcd$l* st) '(t))
+              (not (queue3$out-act
+                    (queue3-comp-gcd$q3-inputs inputs st data-width)
+                    (nth *queue3-comp-gcd$q3* st)
+                    (* 2 data-width))))
+     :hints (("Goal"
+              :in-theory (e/d (get-field
+                               queue3-comp-gcd$q3-inputs
+                               queue3$out-act)
+                              (nfix))))))
+
+  (local
+   (defthm booleanp-queue3-comp-gcd$comp-gcd-in-act
+     (implies (and (or (equal (nth *queue3-comp-gcd$l* st) '(t))
+                       (equal (nth *queue3-comp-gcd$l* st) '(nil)))
+                   (comp-gcd$valid-st (nth *queue3-comp-gcd$comp-gcd* st)
+                                      data-width))
+              (booleanp
+               (comp-gcd$in-act
+                (queue3-comp-gcd$comp-gcd-inputs inputs st data-width)
+                (nth *queue3-comp-gcd$comp-gcd* st)
+                data-width)))
+     :hints (("Goal"
+              :in-theory (e/d (get-field
+                               queue3-comp-gcd$comp-gcd-inputs
+                               merge$act0
+                               comp-gcd$valid-st
+                               comp-gcd$me-inputs
+                               comp-gcd$in-act)
+                              (nfix))))
+     :rule-classes :type-prescription))
+
+  (local
+   (defthm queue3-comp-gcd$comp-gcd-in-act-nil
+     (implies (equal (nth *queue3-comp-gcd$l* st) '(nil))
+              (not (comp-gcd$in-act
+                    (queue3-comp-gcd$comp-gcd-inputs inputs st data-width)
+                    (nth *queue3-comp-gcd$comp-gcd* st)
+                    data-width)))
+     :hints (("Goal"
+              :in-theory (e/d (get-field
+                               queue3-comp-gcd$comp-gcd-inputs
+                               merge$act0
+                               comp-gcd$me-inputs
+                               comp-gcd$in-act)
+                              (nfix))))))
 
   (local
    (defthm queue3-comp-gcd$step-spec-correct-aux-1
@@ -825,6 +832,7 @@
                               queue3-comp-gcd$step-spec
                               queue3-comp-gcd$input-format
                               queue3-comp-gcd$valid-st
+                              queue3-comp-gcd$st-format
                               queue3-comp-gcd$inv
                               queue3-comp-gcd$state-fn
                               queue3-comp-gcd$data-in
@@ -842,6 +850,27 @@
 ;; ======================================================================
 
 ;; 4. Relationship Between the Input and Output Sequences
+
+;; Proving that queue3-comp-gcd$valid-st is an invariant.
+
+(defthm queue3-comp-gcd$valid-st-preserved
+  (implies (and (queue3-comp-gcd$input-format inputs data-width)
+                (queue3-comp-gcd$valid-st st data-width))
+           (queue3-comp-gcd$valid-st
+            (queue3-comp-gcd$state-fn inputs st data-width)
+            data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            queue3-comp-gcd$input-format
+                            queue3-comp-gcd$valid-st
+                            queue3-comp-gcd$st-format
+                            queue3-comp-gcd$state-fn
+                            f-sr)
+                           (if*
+                            nfix
+                            nthcdr
+                            b-if
+                            acl2::true-listp-append)))))
 
 (defthm queue3-comp-gcd$extract-state-lemma
   (implies (and (queue3-comp-gcd$valid-st st data-width)
