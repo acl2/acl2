@@ -141,6 +141,21 @@
 
 ;; Constraints on the state of WW
 
+(defund wig-wag$st-format (st data-width)
+  (b* ((d0 (get-field *wig-wag$d0* st))
+       (d1 (get-field *wig-wag$d1* st)))
+    (and (len-1-true-listp d0)
+         (equal (len d0) data-width)
+
+         (len-1-true-listp d1)
+         (equal (len d1) data-width))))
+
+(defthmd wig-wag$st-format=>natp-data-width
+  (implies (wig-wag$st-format st data-width)
+           (natp data-width))
+  :hints (("Goal" :in-theory (enable wig-wag$st-format)))
+  :rule-classes :forward-chaining)
+
 (defund wig-wag$valid-st (st data-width)
   (b* ((l0 (get-field *wig-wag$l0* st))
        (d0 (get-field *wig-wag$d0* st))
@@ -148,15 +163,13 @@
        (d1 (get-field *wig-wag$d1* st))
        (br (get-field *wig-wag$br* st))
        (me (get-field *wig-wag$me* st)))
-    (and (validp l0)
-         (len-1-true-listp d0)
-         (equal (len d0) data-width)
+    (and (wig-wag$st-format st data-width)
+
+         (validp l0)
          (or (emptyp l0)
              (bvp (strip-cars d0)))
 
          (validp l1)
-         (len-1-true-listp d1)
-         (equal (len d1) data-width)
          (or (emptyp l1)
              (bvp (strip-cars d1)))
 
@@ -166,7 +179,8 @@
 (defthmd wig-wag$valid-st=>natp-data-width
   (implies (wig-wag$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable wig-wag$valid-st)))
+  :hints (("Goal" :in-theory (enable wig-wag$st-format=>natp-data-width
+                                     wig-wag$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; WW simulator
@@ -294,13 +308,18 @@
            (strip-cars d1)
            (strip-cars d0))))
 
-(defthm len-wig-wag$data-out
+(defthm len-wig-wag$data-out-1
+  (implies (wig-wag$st-format st data-width)
+           (equal (len (wig-wag$data-out st))
+                  data-width))
+  :hints (("Goal" :in-theory (enable wig-wag$st-format
+                                     wig-wag$data-out))))
+
+(defthm len-wig-wag$data-out-2
   (implies (wig-wag$valid-st st data-width)
            (equal (len (wig-wag$data-out st))
                   data-width))
-  :hints (("Goal" :in-theory (enable wig-wag$valid-st
-                                     wig-wag$data-out
-                                     alt-merge$valid-st))))
+  :hints (("Goal" :in-theory (enable wig-wag$valid-st))))
 
 (defthm bvp-wig-wag$data-out
   (implies (and (wig-wag$valid-st st data-width)
@@ -310,6 +329,7 @@
                                      f-and
                                      joint-act
                                      wig-wag$valid-st
+                                     wig-wag$st-format
                                      wig-wag$out-act
                                      wig-wag$data-out
                                      wig-wag$me-inputs
@@ -330,7 +350,7 @@
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
                   (equal (len go-signals) *wig-wag$go-num*)
-                  (wig-wag$valid-st st data-width))
+                  (wig-wag$st-format st data-width))
              (equal (se (si 'wig-wag data-width) inputs st netlist)
                     (list* (wig-wag$in-act inputs st data-width)
                            (wig-wag$out-act inputs st data-width)
@@ -353,7 +373,7 @@
                             alt-branch$value
                             alt-merge$value
                             latch-n$value
-                            wig-wag$valid-st
+                            wig-wag$st-format
                             wig-wag$in-act
                             wig-wag$out-act
                             wig-wag$data-out
@@ -414,7 +434,7 @@
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
                   (equal (len go-signals) *wig-wag$go-num*)
-                  (wig-wag$valid-st st data-width))
+                  (wig-wag$st-format st data-width))
              (equal (de (si 'wig-wag data-width) inputs st netlist)
                     (wig-wag$state-fn inputs st data-width))))
   :hints (("Goal"
@@ -431,7 +451,7 @@
                             not-primp-wig-wag
                             wig-wag&
                             wig-wag*$destructure
-                            wig-wag$valid-st
+                            wig-wag$st-format
                             wig-wag$data-in
                             wig-wag$br-inputs
                             wig-wag$me-inputs
@@ -456,7 +476,7 @@
   (declare (xargs :guard (and (true-listp inputs)
                               (natp data-width))))
   (b* ((full-in    (nth 0 inputs))
-       (empty-out-  (nth 1 inputs))
+       (empty-out- (nth 1 inputs))
        (data-in    (wig-wag$data-in inputs data-width))
        (go-signals (nthcdr (wig-wag$data-ins-len data-width) inputs)))
     (and
@@ -473,42 +493,335 @@
            (equal (len inputs) (wig-wag$ins-len data-width)))
   :hints (("Goal" :in-theory (enable wig-wag$input-format))))
 
-;; Proving that wig-wag$valid-st is an invariant.
+(local
+ (defthm wig-wag$input-format=>br$input-format
+   (implies (and (wig-wag$input-format inputs data-width)
+                 (wig-wag$valid-st st data-width))
+            (alt-branch$input-format
+             (wig-wag$br-inputs inputs st data-width)
+             data-width))
+   :hints (("Goal"
+            :in-theory (e/d (wig-wag$input-format
+                             alt-branch$input-format
+                             alt-branch$data-in
+                             wig-wag$valid-st
+                             wig-wag$st-format
+                             wig-wag$br-inputs)
+                            (nthcdr
+                             take-of-too-many))))))
+
+(local
+ (defthm wig-wag$input-format=>me$input-format
+   (implies (and (wig-wag$input-format inputs data-width)
+                 (wig-wag$valid-st st data-width))
+            (alt-merge$input-format
+             (wig-wag$me-inputs inputs st data-width)
+             data-width))
+   :hints (("Goal"
+            :use len-of-wig-wag$inputs
+            :in-theory (e/d (wig-wag$input-format
+                             alt-merge$input-format
+                             alt-merge$data-in0
+                             alt-merge$data-in1
+                             wig-wag$valid-st
+                             wig-wag$st-format
+                             wig-wag$me-inputs)
+                            (nthcdr
+                             take-of-too-many))))))
+
+;; Proving that wig-wag$st-format is an invariant.
+
+(defthm wig-wag$st-format-preserved
+  (implies (wig-wag$st-format st data-width)
+           (wig-wag$st-format (wig-wag$state-fn inputs st data-width)
+                             data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            wig-wag$st-format
+                            wig-wag$state-fn)
+                           ()))))
+
+(defthmd wig-wag$state-alt
+  (implies (and (posp data-width)
+                (wig-wag& netlist data-width)
+                (wig-wag$input-format inputs data-width)
+                (wig-wag$st-format st data-width))
+           (equal (de (si 'wig-wag data-width) inputs st netlist)
+                  (wig-wag$state-fn inputs st data-width)))
+  :hints (("Goal"
+           :in-theory (enable wig-wag$input-format)
+           :use (:instance
+                 wig-wag$state
+                 (full-in    (nth 0 inputs))
+                 (empty-out- (nth 1 inputs))
+                 (data-in    (wig-wag$data-in inputs data-width))
+                 (go-signals (nthcdr (wig-wag$data-ins-len data-width)
+                                     inputs))))))
+
+(state-fn-n-gen wig-wag data-width)
+(input-format-n-gen wig-wag data-width)
+
+(defthmd de-sim-n$wig-wag
+  (implies (and (posp data-width)
+                (wig-wag& netlist data-width)
+                (wig-wag$input-format-n inputs-lst data-width n)
+                (wig-wag$st-format st data-width))
+           (equal (de-sim-n (si 'wig-wag data-width)
+                            inputs-lst st netlist
+                            n)
+                  (wig-wag$state-fn-n inputs-lst st data-width n)))
+  :hints (("Goal" :in-theory (enable wig-wag$state-alt))))
+
+;; ======================================================================
+
+;; 3. Single-Step-Update Property
+
+;; The extraction function for WW that extracts the future output sequence from
+;; the current state.
+
+(defund wig-wag$extract-state (st)
+  (b* ((l0 (get-field *wig-wag$l0* st))
+       (d0 (get-field *wig-wag$d0* st))
+       (l1 (get-field *wig-wag$l1* st))
+       (d1 (get-field *wig-wag$d1* st))
+       (me (get-field *wig-wag$me* st))
+
+       (me-lselect    (get-field *alt-merge$lselect* me))
+       (me-select     (get-field *alt-merge$select* me))
+       (me-select-buf (get-field *alt-merge$select-buf* me))
+       (valid-me-select (if (fullp me-lselect)
+                            (car me-select)
+                          (car me-select-buf))))
+
+    (if valid-me-select
+        (extract-state (list l0 d0 l1 d1))
+      (extract-state (list l1 d1 l0 d0)))))
+
+(defthm wig-wag$extract-state-not-empty
+  (implies (and (wig-wag$out-act inputs st data-width)
+                (wig-wag$valid-st st data-width))
+           (< 0 (len (wig-wag$extract-state st))))
+  :hints (("Goal"
+           :in-theory (e/d (f-and3
+                            alt-merge$act
+                            alt-merge$act0
+                            alt-merge$act1
+                            wig-wag$me-inputs
+                            wig-wag$valid-st
+                            wig-wag$extract-state
+                            wig-wag$out-act)
+                           (nfix))))
+  :rule-classes :linear)
+
+;; Specifying and proving a state invariant
 
 (progn
-  (local
-   (defthm wig-wag$input-format=>br$input-format
-     (implies (and (wig-wag$input-format inputs data-width)
-                   (wig-wag$valid-st st data-width))
-              (alt-branch$input-format
-               (wig-wag$br-inputs inputs st data-width)
-               data-width))
-     :hints (("Goal"
-              :in-theory (e/d (wig-wag$input-format
-                               alt-branch$input-format
-                               alt-branch$data-in
-                               wig-wag$valid-st
-                               wig-wag$br-inputs)
-                              (nthcdr
-                               take-of-too-many))))))
+  (defund wig-wag$inv (st)
+    (b* ((l0 (get-field *wig-wag$l0* st))
+         (l1 (get-field *wig-wag$l1* st))
+         (br (get-field *wig-wag$br* st))
+         (me (get-field *wig-wag$me* st))
 
-  (local
-   (defthm wig-wag$input-format=>me$input-format
-     (implies (and (wig-wag$input-format inputs data-width)
-                   (wig-wag$valid-st st data-width))
-              (alt-merge$input-format
-               (wig-wag$me-inputs inputs st data-width)
-               data-width))
-     :hints (("Goal"
-              :use len-of-wig-wag$inputs
-              :in-theory (e/d (wig-wag$input-format
-                               alt-merge$input-format
-                               alt-merge$data-in0
-                               alt-merge$data-in1
-                               wig-wag$valid-st
-                               wig-wag$me-inputs)
-                              (nthcdr
-                               take-of-too-many))))))
+         (br-lselect    (get-field *alt-branch$lselect* br))
+         (br-select     (get-field *alt-branch$select* br))
+         (br-select-buf (get-field *alt-branch$select-buf* br))
+         (valid-br-select (if (fullp br-lselect)
+                              (car br-select)
+                            (car br-select-buf)))
+
+         (me-lselect    (get-field *alt-merge$lselect* me))
+         (me-select     (get-field *alt-merge$select* me))
+         (me-select-buf (get-field *alt-merge$select-buf* me))
+         (valid-me-select (if (fullp me-lselect)
+                              (car me-select)
+                            (car me-select-buf))))
+
+      (and (alt-branch$inv br)
+           (alt-merge$inv me)
+           (or (and (equal l0 l1)
+                    (equal valid-br-select valid-me-select))
+               (and (fullp l0)
+                    (emptyp l1)
+                    valid-br-select
+                    (not valid-me-select))
+               (and (emptyp l0)
+                    (fullp l1)
+                    (not valid-br-select)
+                    valid-me-select)))))
+
+  (defthm wig-wag$inv-preserved
+    (implies (and (wig-wag$input-format inputs data-width)
+                  (wig-wag$valid-st st data-width)
+                  (wig-wag$inv st))
+             (wig-wag$inv (wig-wag$state-fn inputs st data-width)))
+    :hints (("Goal"
+             :in-theory (e/d (get-field
+                              wig-wag$input-format
+                              wig-wag$valid-st
+                              wig-wag$st-format
+                              wig-wag$inv
+                              wig-wag$state-fn
+                              wig-wag$in-act
+                              wig-wag$out-act
+                              wig-wag$br-inputs
+                              wig-wag$me-inputs
+                              alt-branch$valid-st
+                              alt-branch$inv
+                              alt-branch$state-fn
+                              alt-branch$act
+                              alt-branch$act0
+                              alt-branch$act1
+                              alt-merge$valid-st
+                              alt-merge$inv
+                              alt-merge$state-fn
+                              alt-merge$act
+                              alt-merge$act0
+                              alt-merge$act1
+                              f-sr)
+                             (nfix
+                              nthcdr
+                              len
+                              true-listp
+                              take-of-too-many
+                              open-v-threefix)))))
+  )
+
+;; Extracting the accepted input sequence
+
+(defun wig-wag$in-seq (inputs-lst st data-width n)
+  (declare (xargs :measure (acl2-count n)))
+  (if (zp n)
+      nil
+    (b* ((inputs (car inputs-lst)))
+      (if (equal (wig-wag$in-act inputs st data-width) t)
+          (append (wig-wag$in-seq (cdr inputs-lst)
+                                 (wig-wag$state-fn inputs st data-width)
+                                 data-width
+                                 (1- n))
+                  (list (wig-wag$data-in inputs data-width)))
+        (wig-wag$in-seq (cdr inputs-lst)
+                       (wig-wag$state-fn inputs st data-width)
+                       data-width
+                       (1- n))))))
+
+;; Extracting the valid output sequence
+
+(defun wig-wag$out-seq (inputs-lst st data-width n)
+  (declare (xargs :measure (acl2-count n)))
+  (if (zp n)
+      nil
+    (b* ((inputs (car inputs-lst)))
+      (if (equal (wig-wag$out-act inputs st data-width) t)
+          (append (wig-wag$out-seq (cdr inputs-lst)
+                                  (wig-wag$state-fn inputs st data-width)
+                                  data-width
+                                  (1- n))
+                  (list (wig-wag$data-out st)))
+        (wig-wag$out-seq (cdr inputs-lst)
+                        (wig-wag$state-fn inputs st data-width)
+                        data-width
+                        (1- n))))))
+
+;; Input-output sequence simulator
+
+(defund wig-wag$in-out-seq-sim (data-width n state)
+  (declare (xargs :guard (and (natp data-width)
+                              (natp n))
+                  :verify-guards nil
+                  :stobjs state))
+  (b* ((num-signals (wig-wag$ins-len data-width))
+       ((mv inputs-lst state)
+        (signal-vals-gen num-signals n state nil))
+       (full '(t))
+       (empty '(nil))
+       (invalid-data (make-list data-width :initial-element '(x)))
+       (br (list full '(nil)
+                 empty '(x)))
+       (me (list full '(nil)
+                 empty '(x)))
+       (st (list empty invalid-data
+                 empty invalid-data
+                 br me)))
+    (mv
+     (append
+      (list (cons 'in-seq
+                  (v-to-nat-lst
+                   (wig-wag$in-seq inputs-lst st data-width n))))
+      (list (cons 'out-seq
+                  (v-to-nat-lst
+                   (wig-wag$out-seq inputs-lst st data-width n)))))
+     state)))
+
+;; The extracted next-state function for WW
+
+(defund wig-wag$step-spec (inputs st data-width)
+  (b* ((data-in (wig-wag$data-in inputs data-width))
+       (extracted-st (wig-wag$extract-state st))
+       (n (1- (len extracted-st))))
+    (cond
+     ((equal (wig-wag$out-act inputs st data-width) t)
+      (cond
+       ((equal (wig-wag$in-act inputs st data-width) t)
+        (cons data-in (take n extracted-st)))
+       (t (take n extracted-st))))
+     (t (cond
+         ((equal (wig-wag$in-act inputs st data-width) t)
+          (cons data-in extracted-st))
+         (t extracted-st))))))
+
+;; The single-step-update property
+
+(defthm wig-wag$step-spec-correct
+  (b* ((next-st (wig-wag$state-fn inputs st data-width)))
+    (implies (and (wig-wag$input-format inputs data-width)
+                  (wig-wag$valid-st st data-width)
+                  (wig-wag$inv st))
+             (equal (wig-wag$extract-state next-st)
+                    (wig-wag$step-spec inputs st data-width))))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            f-if
+                            wig-wag$step-spec
+                            wig-wag$input-format
+                            wig-wag$valid-st
+                            wig-wag$st-format
+                            wig-wag$inv
+                            wig-wag$state-fn
+                            wig-wag$in-act
+                            wig-wag$out-act
+                            wig-wag$extract-state
+                            wig-wag$br-inputs
+                            wig-wag$me-inputs
+                            alt-branch$valid-st
+                            alt-branch$inv
+                            alt-branch$act
+                            alt-branch$act0
+                            alt-branch$act1
+                            alt-merge$valid-st
+                            alt-merge$inv
+                            alt-merge$state-fn
+                            alt-merge$act
+                            alt-merge$act0
+                            alt-merge$act1)
+                           (nthcdr
+                            len-nthcdr
+                            3v-fix
+                            true-listp
+                            pairlis$
+                            strip-cars
+                            default-car
+                            default-cdr
+                            default-+-1
+                            default-+-2)))))
+
+;; ======================================================================
+
+;; 4. Relationship Between the Input and Output Sequences
+
+;; Proving that wig-wag$valid-st is an invariant.
+
+(encapsulate
+  ()
 
   (local
    (defthm booleanp-wig-wag$br-act0
@@ -669,11 +982,12 @@
     (implies (and (wig-wag$input-format inputs data-width)
                   (wig-wag$valid-st st data-width))
              (wig-wag$valid-st (wig-wag$state-fn inputs st data-width)
-                              data-width))
+                               data-width))
     :hints (("Goal"
              :in-theory (e/d (get-field
                               wig-wag$input-format
                               wig-wag$valid-st
+                              wig-wag$st-format
                               wig-wag$state-fn
                               wig-wag$in-act
                               wig-wag$out-act
@@ -683,279 +997,6 @@
                               nthcdr
                               acl2::true-listp-append)))))
   )
-
-(defthmd wig-wag$state-alt
-  (implies (and (posp data-width)
-                (wig-wag& netlist data-width)
-                (wig-wag$input-format inputs data-width)
-                (wig-wag$valid-st st data-width))
-           (equal (de (si 'wig-wag data-width) inputs st netlist)
-                  (wig-wag$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable wig-wag$input-format)
-           :use (:instance
-                 wig-wag$state
-                 (full-in    (nth 0 inputs))
-                 (empty-out- (nth 1 inputs))
-                 (data-in    (wig-wag$data-in inputs data-width))
-                 (go-signals (nthcdr (wig-wag$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen wig-wag data-width)
-(input-format-n-gen wig-wag data-width)
-
-(defthmd de-sim-n$wig-wag
-  (implies (and (posp data-width)
-                (wig-wag& netlist data-width)
-                (wig-wag$input-format-n inputs-lst data-width n)
-                (wig-wag$valid-st st data-width))
-           (equal (de-sim-n (si 'wig-wag data-width)
-                            inputs-lst st netlist
-                            n)
-                  (wig-wag$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable wig-wag$state-alt))))
-
-;; ======================================================================
-
-;; 3. Single-Step-Update Property
-
-;; The extraction function for WW that extracts the future output sequence from
-;; the current state.
-
-(defund wig-wag$extract-state (st)
-  (b* ((l0 (get-field *wig-wag$l0* st))
-       (d0 (get-field *wig-wag$d0* st))
-       (l1 (get-field *wig-wag$l1* st))
-       (d1 (get-field *wig-wag$d1* st))
-       (me (get-field *wig-wag$me* st))
-
-       (me-lselect    (get-field *alt-merge$lselect* me))
-       (me-select     (get-field *alt-merge$select* me))
-       (me-select-buf (get-field *alt-merge$select-buf* me))
-       (valid-me-select (if (fullp me-lselect)
-                            (car me-select)
-                          (car me-select-buf))))
-
-    (if valid-me-select
-        (extract-state (list l0 d0 l1 d1))
-      (extract-state (list l1 d1 l0 d0)))))
-
-(defthm wig-wag$extract-state-not-empty
-  (implies (and (wig-wag$out-act inputs st data-width)
-                (wig-wag$valid-st st data-width))
-           (< 0 (len (wig-wag$extract-state st))))
-  :hints (("Goal"
-           :in-theory (e/d (f-and3
-                            alt-merge$act
-                            alt-merge$act0
-                            alt-merge$act1
-                            wig-wag$me-inputs
-                            wig-wag$valid-st
-                            wig-wag$extract-state
-                            wig-wag$out-act)
-                           (nfix))))
-  :rule-classes :linear)
-
-;; Specifying and proving a state invariant
-
-(progn
-  (defund wig-wag$inv (st)
-    (b* ((l0 (get-field *wig-wag$l0* st))
-         (l1 (get-field *wig-wag$l1* st))
-         (br (get-field *wig-wag$br* st))
-         (me (get-field *wig-wag$me* st))
-
-         (br-lselect    (get-field *alt-branch$lselect* br))
-         (br-select     (get-field *alt-branch$select* br))
-         (br-select-buf (get-field *alt-branch$select-buf* br))
-         (valid-br-select (if (fullp br-lselect)
-                              (car br-select)
-                            (car br-select-buf)))
-
-         (me-lselect    (get-field *alt-merge$lselect* me))
-         (me-select     (get-field *alt-merge$select* me))
-         (me-select-buf (get-field *alt-merge$select-buf* me))
-         (valid-me-select (if (fullp me-lselect)
-                              (car me-select)
-                            (car me-select-buf))))
-
-      (and (alt-branch$inv br)
-           (alt-merge$inv me)
-           (or (and (equal l0 l1)
-                    (equal valid-br-select valid-me-select))
-               (and (fullp l0)
-                    (emptyp l1)
-                    valid-br-select
-                    (not valid-me-select))
-               (and (emptyp l0)
-                    (fullp l1)
-                    (not valid-br-select)
-                    valid-me-select)))))
-
-  (defthm wig-wag$inv-preserved
-    (implies (and (wig-wag$input-format inputs data-width)
-                  (wig-wag$valid-st st data-width)
-                  (wig-wag$inv st))
-             (wig-wag$inv (wig-wag$state-fn inputs st data-width)))
-    :hints (("Goal"
-             :in-theory (e/d (get-field
-                              wig-wag$input-format
-                              wig-wag$valid-st
-                              wig-wag$inv
-                              wig-wag$state-fn
-                              wig-wag$in-act
-                              wig-wag$out-act
-                              wig-wag$br-inputs
-                              wig-wag$me-inputs
-                              alt-branch$valid-st
-                              alt-branch$inv
-                              alt-branch$state-fn
-                              alt-branch$act
-                              alt-branch$act0
-                              alt-branch$act1
-                              alt-merge$valid-st
-                              alt-merge$inv
-                              alt-merge$state-fn
-                              alt-merge$act
-                              alt-merge$act0
-                              alt-merge$act1
-                              f-sr)
-                             (nthcdr
-                              len
-                              true-listp
-                              take-of-too-many
-                              open-v-threefix)))))
-  )
-
-;; Extracting the accepted input sequence
-
-(defun wig-wag$in-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (wig-wag$in-act inputs st data-width) t)
-          (append (wig-wag$in-seq (cdr inputs-lst)
-                                 (wig-wag$state-fn inputs st data-width)
-                                 data-width
-                                 (1- n))
-                  (list (wig-wag$data-in inputs data-width)))
-        (wig-wag$in-seq (cdr inputs-lst)
-                       (wig-wag$state-fn inputs st data-width)
-                       data-width
-                       (1- n))))))
-
-;; Extracting the valid output sequence
-
-(defun wig-wag$out-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (wig-wag$out-act inputs st data-width) t)
-          (append (wig-wag$out-seq (cdr inputs-lst)
-                                  (wig-wag$state-fn inputs st data-width)
-                                  data-width
-                                  (1- n))
-                  (list (wig-wag$data-out st)))
-        (wig-wag$out-seq (cdr inputs-lst)
-                        (wig-wag$state-fn inputs st data-width)
-                        data-width
-                        (1- n))))))
-
-;; Input-output sequence simulator
-
-(defund wig-wag$in-out-seq-sim (data-width n state)
-  (declare (xargs :guard (and (natp data-width)
-                              (natp n))
-                  :verify-guards nil
-                  :stobjs state))
-  (b* ((num-signals (wig-wag$ins-len data-width))
-       ((mv inputs-lst state)
-        (signal-vals-gen num-signals n state nil))
-       (full '(t))
-       (empty '(nil))
-       (invalid-data (make-list data-width :initial-element '(x)))
-       (br (list full '(nil)
-                 empty '(x)))
-       (me (list full '(nil)
-                 empty '(x)))
-       (st (list empty invalid-data
-                 empty invalid-data
-                 br me)))
-    (mv
-     (append
-      (list (cons 'in-seq
-                  (v-to-nat-lst
-                   (wig-wag$in-seq inputs-lst st data-width n))))
-      (list (cons 'out-seq
-                  (v-to-nat-lst
-                   (wig-wag$out-seq inputs-lst st data-width n)))))
-     state)))
-
-;; The extracted next-state function for WW
-
-(defund wig-wag$step-spec (inputs st data-width)
-  (b* ((data-in (wig-wag$data-in inputs data-width))
-       (extracted-st (wig-wag$extract-state st))
-       (n (1- (len extracted-st))))
-    (cond
-     ((equal (wig-wag$out-act inputs st data-width) t)
-      (cond
-       ((equal (wig-wag$in-act inputs st data-width) t)
-        (cons data-in (take n extracted-st)))
-       (t (take n extracted-st))))
-     (t (cond
-         ((equal (wig-wag$in-act inputs st data-width) t)
-          (cons data-in extracted-st))
-         (t extracted-st))))))
-
-;; The single-step-update property
-
-(defthm wig-wag$step-spec-correct
-  (b* ((next-st (wig-wag$state-fn inputs st data-width)))
-    (implies (and (wig-wag$input-format inputs data-width)
-                  (wig-wag$valid-st st data-width)
-                  (wig-wag$inv st))
-             (equal (wig-wag$extract-state next-st)
-                    (wig-wag$step-spec inputs st data-width))))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-if
-                            wig-wag$step-spec
-                            wig-wag$input-format
-                            wig-wag$valid-st
-                            wig-wag$inv
-                            wig-wag$state-fn
-                            wig-wag$in-act
-                            wig-wag$out-act
-                            wig-wag$extract-state
-                            wig-wag$br-inputs
-                            wig-wag$me-inputs
-                            alt-branch$valid-st
-                            alt-branch$inv
-                            alt-branch$act
-                            alt-branch$act0
-                            alt-branch$act1
-                            alt-merge$valid-st
-                            alt-merge$inv
-                            alt-merge$state-fn
-                            alt-merge$act
-                            alt-merge$act0
-                            alt-merge$act1)
-                           (nthcdr
-                            len-nthcdr
-                            true-listp
-                            pairlis$
-                            strip-cars
-                            default-car
-                            default-cdr
-                            default-+-1
-                            default-+-2)))))
-
-;; ======================================================================
-
-;; 4. Relationship Between the Input and Output Sequences
 
 (defthm wig-wag$extract-state-lemma
   (implies (and (wig-wag$valid-st st data-width)
@@ -971,6 +1012,7 @@
                               f-and
                               joint-act
                               wig-wag$valid-st
+                              wig-wag$st-format
                               wig-wag$extract-state
                               wig-wag$out-act
                               wig-wag$data-out

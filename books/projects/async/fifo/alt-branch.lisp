@@ -252,8 +252,7 @@
                   (true-listp data-in)
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
-                  (equal (len go-signals) *alt-branch$go-num*)
-                  (alt-branch$valid-st st))
+                  (equal (len go-signals) *alt-branch$go-num*))
              (equal (se (si 'alt-branch data-width) inputs st netlist)
                     (list* (alt-branch$act inputs st data-width)
                            (alt-branch$act0 inputs st data-width)
@@ -274,7 +273,6 @@
                             alt-branch*$destructure
                             joint-cntl$value
                             v-buf$value
-                            alt-branch$valid-st
                             alt-branch$act
                             alt-branch$act0
                             alt-branch$act1)
@@ -319,8 +317,7 @@
     (implies (and (alt-branch& netlist data-width)
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
-                  (equal (len go-signals) *alt-branch$go-num*)
-                  (alt-branch$valid-st st))
+                  (equal (len go-signals) *alt-branch$go-num*))
              (equal (de (si 'alt-branch data-width) inputs st netlist)
                     (alt-branch$state-fn inputs st data-width))))
   :hints (("Goal"
@@ -336,7 +333,6 @@
                             not-primp-alt-branch
                             alt-branch&
                             alt-branch*$destructure
-                            alt-branch$valid-st
                             alt-branch$act
                             alt-branch$act0
                             alt-branch$act1

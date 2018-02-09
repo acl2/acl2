@@ -144,27 +144,41 @@
 
 ;; Constraints on the state of Q2
 
+(defund queue2$st-format (st data-width)
+  (b* ((d0 (get-field *queue2$d0* st))
+       (d1 (get-field *queue2$d1* st)))
+    (and (len-1-true-listp d0)
+         (equal (len d0) data-width)
+
+         (len-1-true-listp d1)
+         (equal (len d1) data-width))))
+
+(defthmd queue2$st-format=>natp-data-width
+  (implies (queue2$st-format st data-width)
+           (natp data-width))
+  :hints (("Goal" :in-theory (enable queue2$st-format)))
+  :rule-classes :forward-chaining)
+
 (defund queue2$valid-st (st data-width)
   (b* ((l0 (get-field *queue2$l0* st))
        (d0 (get-field *queue2$d0* st))
        (l1 (get-field *queue2$l1* st))
        (d1 (get-field *queue2$d1* st)))
-    (and (validp l0)
-         (len-1-true-listp d0)
-         (equal (len d0) data-width)
+    (and (queue2$st-format st data-width)
+
+         (validp l0)
          (or (emptyp l0)
              (bvp (strip-cars d0)))
 
          (validp l1)
-         (len-1-true-listp d1)
-         (equal (len d1) data-width)
          (or (emptyp l1)
              (bvp (strip-cars d1))))))
 
 (defthmd queue2$valid-st=>natp-data-width
   (implies (queue2$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue2$valid-st)))
+  :hints (("Goal" :in-theory (enable queue2$st-format=>natp-data-width
+                                     queue2$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; Q2 simulator
@@ -248,12 +262,18 @@
 (defund queue2$data-out (st)
   (v-threefix (strip-cars (get-field *queue2$d1* st))))
 
-(defthm len-queue2$data-out
+(defthm len-queue2$data-out-1
+  (implies (queue2$st-format st data-width)
+           (equal (len (queue2$data-out st))
+                  data-width))
+  :hints (("Goal" :in-theory (enable queue2$st-format
+                                     queue2$data-out))))
+
+(defthm len-queue2$data-out-2
   (implies (queue2$valid-st st data-width)
            (equal (len (queue2$data-out st))
                   data-width))
-  :hints (("Goal" :in-theory (enable queue2$valid-st
-                                     queue2$data-out))))
+  :hints (("Goal" :in-theory (enable queue2$valid-st))))
 
 (defthm bvp-queue2$data-out
   (implies (and (queue2$valid-st st data-width)
@@ -273,7 +293,7 @@
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
                   (equal (len go-signals) *queue2$go-num*)
-                  (queue2$valid-st st data-width))
+                  (queue2$st-format st data-width))
              (equal (se (si 'queue2 data-width) inputs st netlist)
                     (list* (queue2$in-act inputs st data-width)
                            (queue2$out-act inputs st data-width)
@@ -295,7 +315,7 @@
                             joint-cntl$value
                             latch-n$value
                             v-buf$value
-                            queue2$valid-st
+                            queue2$st-format
                             queue2$in-act
                             queue2$out-act
                             queue2$data-out)
@@ -346,7 +366,7 @@
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
                   (equal (len go-signals) *queue2$go-num*)
-                  (queue2$valid-st st data-width))
+                  (queue2$st-format st data-width))
              (equal (de (si 'queue2 data-width) inputs st netlist)
                     (queue2$state-fn inputs st data-width))))
   :hints (("Goal"
@@ -363,7 +383,7 @@
                             not-primp-queue2
                             queue2&
                             queue2*$destructure
-                            queue2$valid-st
+                            queue2$st-format
                             queue2$data-in
                             queue2$in-act
                             queue2$out-act
@@ -371,6 +391,7 @@
                             latch-n$value latch-n$state
                             v-buf$value)
                            ((queue2*)
+                            or-macro
                             validp
                             fullp
                             emptyp
@@ -388,7 +409,7 @@
   (declare (xargs :guard (and (true-listp inputs)
                               (natp data-width))))
   (b* ((full-in    (nth 0 inputs))
-       (empty-out-  (nth 1 inputs))
+       (empty-out- (nth 1 inputs))
        (data-in    (queue2$data-in inputs data-width))
        (go-signals (nthcdr (queue2$data-ins-len data-width) inputs)))
     (and
@@ -400,33 +421,26 @@
      (equal inputs
             (list* full-in empty-out- (append data-in go-signals))))))
 
-;; Proving that queue2$valid-st is an invariant.
+;; Proving that queue2$st-format is an invariant.
 
-(defthm queue2$valid-st-preserved
-  (implies (and (queue2$input-format inputs data-width)
-                (queue2$valid-st st data-width))
-           (queue2$valid-st (queue2$state-fn inputs st data-width)
-                            data-width))
+(defthm queue2$st-format-preserved
+  (implies (queue2$st-format st data-width)
+           (queue2$st-format (queue2$state-fn inputs st data-width)
+                             data-width))
   :hints (("Goal"
            :in-theory (e/d (get-field
-                            queue2$input-format
-                            queue2$valid-st
-                            queue2$state-fn
-                            queue2$in-act
-                            queue2$out-act
-                            f-sr)
-                           (if*
-                            nthcdr
-                            acl2::true-listp-append)))))
+                            queue2$st-format
+                            queue2$state-fn)
+                           ()))))
 
 (defthmd queue2$state-alt
   (implies (and (queue2& netlist data-width)
                 (queue2$input-format inputs data-width)
-                (queue2$valid-st st data-width))
+                (queue2$st-format st data-width))
            (equal (de (si 'queue2 data-width) inputs st netlist)
                   (queue2$state-fn inputs st data-width)))
   :hints (("Goal"
-           :in-theory (enable queue2$valid-st=>natp-data-width
+           :in-theory (enable queue2$st-format=>natp-data-width
                               queue2$input-format)
            :use (:instance
                  queue2$state
@@ -442,7 +456,7 @@
 (defthmd de-sim-n$queue2
   (implies (and (queue2& netlist data-width)
                 (queue2$input-format-n inputs-lst data-width n)
-                (queue2$valid-st st data-width))
+                (queue2$st-format st data-width))
            (equal (de-sim-n (si 'queue2 data-width)
                             inputs-lst st netlist
                             n)
@@ -565,6 +579,7 @@
                               queue2$step-spec
                               queue2$input-format
                               queue2$valid-st
+                              queue2$st-format
                               queue2$state-fn
                               queue2$in-act
                               queue2$out-act
@@ -573,6 +588,26 @@
 ;; ======================================================================
 
 ;; 4. Relationship Between the Input and Output Sequences
+
+;; Proving that queue2$valid-st is an invariant.
+
+(defthm queue2$valid-st-preserved
+  (implies (and (queue2$input-format inputs data-width)
+                (queue2$valid-st st data-width))
+           (queue2$valid-st (queue2$state-fn inputs st data-width)
+                            data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            queue2$input-format
+                            queue2$valid-st
+                            queue2$st-format
+                            queue2$state-fn
+                            queue2$in-act
+                            queue2$out-act
+                            f-sr)
+                           (if*
+                            nthcdr
+                            acl2::true-listp-append)))))
 
 (defthm queue2$extract-state-lemma
   (implies (and (queue2$valid-st st data-width)
@@ -584,6 +619,7 @@
                   (queue2$extract-state st)))
   :hints (("Goal"
            :in-theory (enable queue2$valid-st
+                              queue2$st-format
                               queue2$extract-state
                               queue2$out-act
                               queue2$data-out))))
