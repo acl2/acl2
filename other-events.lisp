@@ -17098,7 +17098,7 @@
 
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
-              :constrained
+              :constrain
               #+:non-standard-analysis :classicalp))
 
 (defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
@@ -17220,14 +17220,14 @@
       (let* ((quant-ok (cdr (assoc-eq :quant-ok keyword-alist)))
              (skolem-name (cdr (assoc-eq :skolem-name keyword-alist)))
              (thm-name (cdr (assoc-eq :thm-name keyword-alist)))
-             (constrained-pair (assoc-eq :constrained keyword-alist))
+             (constrained-pair (assoc-eq :constrain keyword-alist))
              (constrained (cdr constrained-pair))
              (def-name (cond ((eq constrained t)
                               (definition-rule-name name))
                              ((symbolp constrained)
                               constrained)
                              (t (er hard 'defun-sk
-                                    "The :constrained argument of DEFUN-SK ~
+                                    "The :constrain argument of DEFUN-SK ~
                                      must be a symbol, but ~x0 is not."
                                     constrained))))
              (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
@@ -26636,7 +26636,7 @@
              (and (equal (badge-userfn ',fn) ',bdg)
                   (equal (apply$-userfn ',fn args)
                          (,fn ,@(successive-cadrs formals 'args)))))
-           :constrained t)
+           :constrain t)
          (in-theory (disable ,(definition-rule-name name)))
          (defthm ,rule-name
            (implies (force (,(warrant-name fn)))
@@ -26660,7 +26660,7 @@
                              (equal (apply$-userfn ',fn args)
                                     (,fn ,@(successive-cadrs formals
                                                              'args))))))
-             :constrained t)
+             :constrain t)
            (in-theory (disable ,(definition-rule-name name)))
            (defthm ,rule-name
              (and (implies (force (,(warrant-name fn)))

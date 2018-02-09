@@ -273,7 +273,7 @@
 
 ; This is the logical definition of apply$-lambda, which is evaluated under the
 ; superior call of when-pass-2.  Keep this in sync with the raw Lisp
-; definition, which is in apply-raw.lisp.  
+; definition, which is in apply-raw.lisp.
 
   (declare (xargs :guard (and (consp fn) (true-listp args))
                   :guard-hints (("Goal" :do-not-induct t))))
@@ -1801,7 +1801,7 @@
 ;                   (equal (apply$ 'COLLECT args)
 ;                          (collect (car args)     ; successive-cadrs
 ;                                   (cadr args))))))
-;   :constrained t)
+;   :constrain t)
 
 ; (BTW: The actual warrant is a defun-sk phrased in terms of badge-userfn and
 ; apply$-userfn, not badge and apply$, as shown above; but the rewrite rule

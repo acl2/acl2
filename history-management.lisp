@@ -7008,8 +7008,8 @@
       (cond ((and (let ((okp (f-get-global
                               'verify-termination-on-raw-program-okp
                               state)))
-                    (or (eq okp t)
-                        (member-eq name okp)))
+                    (not (or (eq okp t)
+                             (member-eq name okp))))
                   (member-eq name
                              (f-get-global 'program-fns-with-raw-code state)))
              (er soft ctx
