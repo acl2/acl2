@@ -337,6 +337,15 @@ for particular modules, or all warnings of particular types, etc.  See @(see
                 "Disable typo detection (it is sometimes slow)."
                 :rule-classes :type-prescription)
 
+   (no-sv-use-set booleanp
+                  "Disable sv-use-set check."
+                  :rule-classes :type-prescription
+                  ;; [Jared] defaulting this to true, for now, because this
+                  ;; check seems to go out to lunch on wide wires, as in the
+                  ;; linttest/trunc example.  FIXME eventually fix that and
+                  ;; change this to NIL.
+                  :default t)
+
    (edition     vl-edition-p
                 :argname "EDITION"
                 "Which edition of the Verilog standard to implement?
@@ -841,7 +850,9 @@ shown.</p>"
        ((mv reportcard modalist) (xf-cwtime (vl-design->svex-modalist
                                               design :config simpconfig)))
        (design (xf-cwtime (vl-apply-reportcard design reportcard)))
-       (design (xf-cwtime (vl-design-sv-use-set design modalist)))
+       (design (if (not config.no-sv-use-set)
+                   (xf-cwtime (vl-design-sv-use-set design modalist))
+                 design))
 
        (design (xf-cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 

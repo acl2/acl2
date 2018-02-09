@@ -32,13 +32,13 @@ require_relative '../utils'
 match_warning(:m0, "VL-PARSE-ERROR", "")
 
 # Make sure that we still process m1 even though it comes after a module with a parse error
-match_warning(:m1, "VL-LUCID-SPURIOUS", "some_spurious_wire")
+match_warning_ss(:m1, "VL-LUCID-SPURIOUS", "some_spurious_wire")
 
 # Make sure we get a parse error reported for m2
 # This was previously failing because elaboration would end up throwing away module m2.
 match_warning(:m2, "VL-PARSE-ERROR", "")
 
 # Make sure we still process m3 even though it comes after and instantiates a module with a parse error
-match_warning(:m3, "VL-LUCID-SPURIOUS", "another_spurious_wire")
+match_warning_ss(:m3, "VL-LUCID-SPURIOUS", "another_spurious_wire")
 
 test_passed()

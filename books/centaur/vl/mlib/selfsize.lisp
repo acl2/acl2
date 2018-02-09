@@ -375,6 +375,80 @@ references to untyped parameters.</p>"
                     (signed-byte-p size (car consts)))))
          (ints-probably-fit-p size (cdr consts)))))
 
+
+(define logrepeat ((times natp)
+                   (width natp)
+                   (data integerp))
+  ;; BOZO move to bitops/ihs?
+  :returns (ans integerp :rule-classes :type-prescription)
+  (if (zp times)
+      0
+    (acl2::logapp width data
+                  (logrepeat (1- times) width data)))
+  ///
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+  (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+  (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+  (defthm natp-of-logrepeat
+    (implies (natp data)
+             (natp (logrepeat times width data)))
+    :rule-classes :type-prescription)
+  (defthm unsigned-byte-p-of-logrepeat
+    (implies (and (natp times)
+                  (natp width)
+                  (natp data))
+             (unsigned-byte-p (* times width) (logrepeat times width data)))
+    :hints(("Goal"
+            :in-theory (disable unsigned-byte-p)
+            :induct (logrepeat times width data)))))
+
+
+(define vl-tweak-fussy-warning-type-preclean ((x vl-expr-p))
+  :parents (vl-tweak-fussy-warning-type)
+  :short "Preliminary, minor heuristic cleanups for the arguments to a fussy size warning."
+  :returns (new-x vl-expr-p)
+  (let ((x (vl-expr-fix x)))
+    (vl-expr-case x
+      :vl-concat
+      ;; This is meant to clean up things like ``foo ? {bar} : baz`` to just
+      ;; ``foo ? bar : baz``.  This isn't sound in general because it would
+      ;; affect signedness, but should be fine for fussy size warnings where
+      ;; we're only concerned about the width.
+      (if (equal (len x.parts) 1)
+          (first x.parts)
+        x)
+      :vl-multiconcat
+      ;; Simplify things like {4{1'b1}} into 4'b1111.  This style is sometimes
+      ;; used in parameterized code.
+      (b* (((unless (and (vl-expr-resolved-p x.reps)
+                         (posp (vl-resolved->val x.reps))
+                         (equal (len x.parts) 1)))
+            x)
+           (reps  (vl-resolved->val x.reps))
+           (inner (first x.parts))
+           ((unless (vl-expr-case inner :vl-literal))
+            x)
+           (value (vl-literal->val inner)))
+        (vl-value-case value
+          :vl-constint
+          (b* ((new-value (change-vl-constint value
+                                              :origwidth (* value.origwidth reps)
+                                              :value (logrepeat reps value.origwidth value.value))))
+            (make-vl-literal :val new-value))
+          :otherwise
+          ;; Something weird, don't simplify it
+          x))
+      :otherwise
+      x)))
+
+(define vl-tweak-fussy-warning-type-arithop ((x vl-binaryop-p))
+  :parents (vl-tweak-fussy-warning-type)
+  (or (vl-binaryop-equiv x :vl-binary-plus)
+      (vl-binaryop-equiv x :vl-binary-minus)
+      (vl-binaryop-equiv x :vl-binary-times)
+      (vl-binaryop-equiv x :vl-binary-shl)
+      (vl-binaryop-equiv x :vl-binary-ashl)))
+
 (define vl-tweak-fussy-warning-type
   :parents (vl-expr-selfsize)
   :short "Heuristically categorize fussy warnings according to severity."
@@ -414,8 +488,8 @@ details.</p>"
        (op    (acl2::symbol-fix op))
        (asize (lnfix asize))
        (bsize (lnfix bsize))
-       (a     (vl-expr-fix a))
-       (b     (vl-expr-fix b))
+       (a     (vl-tweak-fussy-warning-type-preclean a))
+       (b     (vl-tweak-fussy-warning-type-preclean b))
 
        (a-zerop (and (vl-expr-resolved-p a)
                      (eql (vl-resolved->val a) 0)))
@@ -450,16 +524,16 @@ details.</p>"
         ;; fits into the width of foo, so this isn't really wrong.
         nil)
 
-       ;; If the lesser-sized argument is a +, it's probably intended that the
-       ;; size of that plus be increased to accomodate carry-outs.  We could
-       ;; refine this by checking whether the maximum possible value of the sum
-       ;; requires the greater number of bits, but for now we'll make it a
-       ;; minor warning anyway.
-       (a-plusp (vl-expr-case a 
-                  :vl-binary (vl-binaryop-equiv a.op :vl-binary-plus)
+       ;; If the lesser-sized argument is an arithmetic operator like +, -, or
+       ;; *, it's probably intended that the size of that plus be increased to
+       ;; accomodate carry-outs.  We could refine this by checking whether the
+       ;; maximum possible value of the sum requires the greater number of
+       ;; bits, but for now we'll make it a minor warning anyway.
+       (a-plusp (vl-expr-case a
+                  :vl-binary (vl-tweak-fussy-warning-type-arithop a.op)
                   :otherwise nil))
        (b-plusp (vl-expr-case b
-                  :vl-binary (vl-binaryop-equiv b.op :vl-binary-plus)
+                  :vl-binary (vl-tweak-fussy-warning-type-arithop b.op)
                   :otherwise nil))
        ;; Change the type to return if unmodified by the tests below.
        (ret-type (if (if (< asize bsize) a-plusp b-plusp)

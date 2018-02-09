@@ -247,6 +247,7 @@ the number of descriptions in the list.</p>"
        ;; basically the same reason as forward typedefs.  We want to find the
        ;; actual definition, not the fact that it's exported.
        nil)
+      (:vl-bind nil)
       (otherwise     (impossible)))))
 
 

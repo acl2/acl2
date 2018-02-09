@@ -121,3 +121,17 @@ module m3;
    assign bar = foo ;
 
 endmodule
+
+
+module a0 ;
+
+   wire [3:0] w;
+
+   wire       mod1 = w % 2;  // no warning, compatible with wire range
+   wire [1:0] mod2 = w % 3;  // no warning, compatible with wire range
+   wire [1:0] mod3 = w % 4;  // no warning, compatible with wire range
+
+   wire       mod4 = w % 3;  // warn because it's bigger than the wire range
+   wire       mod5 = w % 4;  // warn because it's bigger than the wire range
+
+endmodule
