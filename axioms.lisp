@@ -12738,6 +12738,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     update-enabled-structure-array
     update-enabled-structure
     #+acl2-devel apply$-lambda
+    fchecksum-obj2
+    check-sum-obj
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
