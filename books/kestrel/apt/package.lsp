@@ -40,16 +40,15 @@
                          cw-event
                          def-error-checker
                          definedp
-                         defun-sk-check
-                         defun-sk-info->bound-vars
-                         defun-sk-info->matrix
-                         defun-sk-info->non-executable
-                         defun-sk-info->quantifier
-                         defun-sk-info->rewrite-kind
-                         defun-sk-info->rewrite-name
-                         defun-sk-info->strengthen
-                         defun-sk-info->untrans-matrix
-                         defun-sk-info->witness
+                         defun-sk-p
+                         defun-sk-bound-vars
+                         defun-sk-imatrix
+                         defun-sk-matrix
+                         defun-sk-quantifier
+                         defun-sk-rewrite-kind
+                         defun-sk-rewrite-name
+                         defun-sk-strengthen
+                         defun-sk-witness
                          defun-sk2
                          directed-untranslate
                          directed-untranslate-no-lets
