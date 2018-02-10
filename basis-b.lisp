@@ -1935,37 +1935,90 @@
                        x)
                    0)))))
 
+(defconst *fchecksum-obj-stack-bound-init*
+
+; This is a stack size bound used by fchecksum-obj and fchecksum-obj2.  It is
+; somewhat arbitrary; feel free to change it.
+
+  10000)
+
+#-acl2-loop-only
+(defvar *fchecksum-obj-stack-bound*
+  *fchecksum-obj-stack-bound-init*)
+
+(mutual-recursion
+
+(defun fchecksum-obj2 (x)
+
+; Warning: Keep this in sync with fchecksum-obj.
+
+  (declare (xargs :guard t))
+  (the (signed-byte 32)
+       #+acl2-loop-only
+       (fchecksum-obj x)
+       #-acl2-loop-only
+       (cond
+        ((atom x)
+         (fchecksum-atom x))
+        ((zerop *fchecksum-obj-stack-bound*)
+         (let* ((car-code (fchecksum-obj2 (car x)))
+                (cdr-code (fchecksum-obj2 (cdr x)))
+                (car-scramble
+                 (times-mod-m31 car-code 627718124))
+                (cdr-scramble
+                 (times-mod-m31 cdr-code 278917287)))
+           (declare (type (signed-byte 32)
+                          car-code cdr-code car-scramble cdr-scramble))
+           (logxor car-scramble cdr-scramble)))
+        (t (let ((*fchecksum-obj-stack-bound*
+                  (1- *fchecksum-obj-stack-bound*)))
+             (fchecksum-obj x))))))
+
 (defun fchecksum-obj (x)
+
+; Warning: Keep this in sync with fchecksum-obj2 (see comment below).
 
 ; Finally, we just use the same idea to scramble cars and cdrs on conses.  To
 ; make this efficient on structure-shared objects, it ought to be memoized.  We
 ; do this explicitly in memoize-raw.lisp (for ACL2h).
 
-; Note that we could make this partially tail-recursive by accumulating from
-; the cdr, but this would ruin memoization.  If we find performance problems
-; with non-hons versions, we could consider having two versions of
-; fchecksum-obj, and passing state into check-sum-obj to decide which one to
-; call depending on whether or not fchecksum-obj is memoized.
+; However, Keshav Kini has pointed out that community book
+; books/centaur/aignet/rwlib.lisp fails to certify using checksums, because of
+; a stack overflow.  We address this problem by introducing function
+; fchecksum-obj2, which is essentially the same function but won't be memoized.
+; Fchecksum-obj2 uses a special variable, *fchecksum-obj-stack-bound*, to
+; determine whether to hop back to the memoized function (fchecksum-obj) or
+; stay in the unmemoized function (fchecksum-obj2).
+
+; We have considered making this partially tail-recursive, but this would ruin
+; memoization.  If we find performance problems we could consider having such a
+; version of fchecksum-obj, perhaps passing state into check-sum-obj to decide
+; when to call it.
 
   (declare (xargs :guard t))
   (the (signed-byte 32)
-    (if (atom x)
-        (fchecksum-atom x)
-      (let* ((car-code (fchecksum-obj (car x)))
-             (cdr-code (fchecksum-obj (cdr x)))
-             (car-scramble
-              (times-mod-m31 car-code 627718124))
-             (cdr-scramble
-              (times-mod-m31 cdr-code 278917287)))
-        (declare (type (signed-byte 32)
-                       car-code cdr-code car-scramble cdr-scramble))
-        (logxor car-scramble cdr-scramble)))))
+       (cond
+        ((atom x)
+         (fchecksum-atom x))
+        (t
+         (let* ((car-code (fchecksum-obj2 (car x)))
+                (cdr-code (fchecksum-obj2 (cdr x)))
+                (car-scramble
+                 (times-mod-m31 car-code 627718124))
+                (cdr-scramble
+                 (times-mod-m31 cdr-code 278917287)))
+           (declare (type (signed-byte 32)
+                          car-code cdr-code car-scramble cdr-scramble))
+           (logxor car-scramble cdr-scramble))))))
+)
 
 #-acl2-loop-only
 (declaim (notinline check-sum-obj)) ; see comment below for old code
 
 (defun check-sum-obj (obj)
   (declare (xargs :guard t))
+  #-acl2-loop-only
+  (setq *fchecksum-obj-stack-bound* *fchecksum-obj-stack-bound-init*)
   (fchecksum-obj obj))
 
 ; ; To use old check-sum-obj code, but then add check-sum-obj to
@@ -1981,7 +2034,9 @@
 ;   (declare (ignore obj))
 ;   (er hard 'check-sum-obj "ran *1* code for check-sum-obj"))
 
-; Here are some examples.
+; Here are some examples.  Warning: in raw Lisp, set
+; *fchecksum-obj-stack-bound* to a very large value (say, 10000000) before
+; running these examples.
 ;
 ;  (fchecksum-obj 0)
 ;  (fchecksum-obj 19)
