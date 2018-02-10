@@ -45,7 +45,7 @@
 (program)
 
 (def-primitive-aggregate bitstruct-field
-  (name 
+  (name
    width lsb
    accessor
    updater
@@ -74,7 +74,7 @@
    update-to-ctor-ruleset
    extra-binder-names
    equiv-under-mask))
-   
+
 (defconst *defbitstruct-keywords*
   '(:pred :fix :equiv :xvar :signedp :fullp
     :parents :short :long))
@@ -216,8 +216,8 @@
   (if (natp x)
       (mv nil x t)
     (parse-bitstruct-fields-aux x lsb structname bitstruct-table)))
-      
-    
+
+
 
 
 (define bitstruct-primary-fields->names (x)
@@ -315,8 +315,8 @@
        (rest (bitstruct-field-preds (cdr fields) xvar))
        ((when field.fullp) rest))
     (cons `(,field.pred ,(bitstruct-accessor-term-logic-form field xvar)) rest)))
-         
-  
+
+
 
 
 (define bitstruct-pred (x)
@@ -383,7 +383,7 @@
     `(logapp ,field.width
              ,fix
              ,(bitstruct-fields-fix (cdr fields) xvar))))
-       
+
 
 (define bitstruct-fix (x)
   (b* (((bitstruct x))
@@ -548,7 +548,7 @@
                                                            . ,subfield-accs)))))
                ((not field.fullp)
                 `(:guard-hints (("goal" :in-theory (enable ,x.pred))))))
-       
+
        (mbe :logic (let ((,x.xvar (,x.fix ,x.xvar)))
                      ,logic-form)
             :exec ,exec-form)
@@ -595,7 +595,7 @@
                       (and stable-under-simplificationp
                            '(:in-theory (enable bool->bit))))
               :rule-classes nil))
-               
+
 
             ;; ,@(and (not field.fullp)
             ;;        `((local
@@ -666,10 +666,10 @@
        (next-var (bitstruct-field->name (cadr hier)))
        (next-term `(,field.updater ,field-var ,next-var)))
     (bitstruct-subfield-updater-form-aux (cdr hier) next-term xvar)))
-    
-    
-    
-  
+
+
+
+
 
 ;; (define bitstruct-subfield-updater-form (hier ;; outermost first
 ;;                                          valname xvar)
@@ -680,7 +680,7 @@
 ;;   ;;      (c1 (!c->d d1 c))
 ;;   ;;      (b1 (!b->c c1 b)))
 ;;   ;;   (!a->b b1 a))
-  
+
 ;;   ;; but properly nested like:
 ;;   ;; (b* ((b (a->b a))
 ;;   ;;      (b1 (b* ((c (b->c b))
@@ -728,7 +728,7 @@
        ;;                        ,(cond ((eq field.signedp x.signedp) field.name)
        ;;                               (x.signedp `(acl2::logext ,field.width ,field.name))
        ;;                               (t         `(acl2::loghead ,field.width ,field.name)))))
-       ;;        (t 
+       ;;        (t
        ;;         `(acl2::logapp ,field.lsb ,x.xvar
        ;;                        (acl2::logapp ,field.width ,field.name
        ;;                                      (acl2::logtail ,(+ field.width field.lsb) ,x.xvar))))))
@@ -758,7 +758,7 @@
 
        (subfield-fns (append (bitstruct-subfield-accessor-fns field.subfield-hierarchy)
                              (bitstruct-subfield-updater-fns field.subfield-hierarchy)))
-       
+
 
        (new-x (intern-in-package-of-symbol (cat "NEW-" (symbol-name x.xvar)) x.name)))
     `(define ,field.updater ((,field.name ,field.pred)
@@ -781,7 +781,7 @@
        ///
        (acl2::add-to-ruleset ,x.defs-ruleset ,field.updater)
        (fty::deffixequiv ,field.updater)
-       
+
        ,@(and
           (not field.subfield-hierarchy)
           `((defthmd ,(intern-in-package-of-symbol
@@ -865,7 +865,6 @@
 
 (define bitstruct-field-xdoc (field acc state)
   (b* (((bitstruct-field field))
-       ((bitstruct x))
        (acc (revappend-chars "<dt>" acc))
        ((mv name-str state) (xdoc::fmt-to-str-orig field.name field.name state))
        (acc (html-encode-str name-str acc))
@@ -931,7 +930,7 @@
                              (bitstruct-fields->accessors x.fields)))
        (binder-alist (append field-accs
                              (extra-binder-names->acc-alist (cdr (assoc :extra-binder-names x.kwd-alist)) x.name))))
-       
+
     (value
      `(defsection ,x.name
         :parents ,(or (cdr (assoc :parents x.kwd-alist))
@@ -976,7 +975,7 @@
                                        acl2::args acl2::forms acl2::rest-expr))
                  ,(bitstruct-debugger x)))
         (table bitstruct-table ',x.name ',x)))))
-       
+
 (define defbitstruct-fn (args state)
   (b* ((bitstruct-table (table-alist 'bitstruct-table (w state)))
        (x (parse-defbitstruct args bitstruct-table)))
@@ -1394,5 +1393,3 @@ accessors, in addition to the direct accessors @('toplevel->ss') and
    (f s2)))
 
 ||#
-
-
