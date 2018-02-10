@@ -22,14 +22,13 @@
                          defchoose-bound-vars
                          defchoose-strengthen
                          defpun
-                         defun-sk-check
-                         defun-sk-info->bound-vars
-                         defun-sk-info->matrix
-                         defun-sk-info->quantifier
-                         defun-sk-info->rewrite-kind
-                         defun-sk-info->rewrite-name
-                         defun-sk-info->strengthen
-                         defun-sk-info->witness
+                         defun-sk-bound-vars
+                         defun-sk-matrix
+                         defun-sk-quantifier
+                         defun-sk-rewrite-kind
+                         defun-sk-rewrite-name
+                         defun-sk-strengthen
+                         defun-sk-witness
                          defun-sk-quantifier-p
                          er-soft+
                          fail-event

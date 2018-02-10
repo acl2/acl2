@@ -515,7 +515,7 @@
    This check is relevant when the rewrite rule is a custom one.
    Otherwise, it is a redundant check.
    </p>"
-  (let* ((rule-name (defun-sk-info->rewrite-name (defun-sk-check fun wrld)))
+  (let* ((rule-name (defun-sk-rewrite-name fun wrld))
          (rule-body (formula rule-name nil wrld))
          (fun-body (ubody fun wrld)))
     (if (set-equiv (funvars-of-term rule-body wrld)
@@ -1265,8 +1265,8 @@
            (1st (car pair))
            (2nd (cdr pair)))
       (if (quant-sofunp 1st wrld)
-          (let ((1st-wit (defun-sk-info->witness (defun-sk-check 1st wrld)))
-                (2nd-wit (defun-sk-info->witness (defun-sk-check 2nd wrld))))
+          (let ((1st-wit (defun-sk-witness 1st wrld))
+                (2nd-wit (defun-sk-witness 2nd wrld)))
             (cons (list 1st 2nd)
                   (cons (list 1st-wit 2nd-wit)
                         (sothm-inst-pairs (cdr fsbs) wrld))))
@@ -1359,7 +1359,7 @@
                  (choice-sofunp 1st wrld))
              (cons 2nd (sothm-inst-facts (cdr fsbs) wrld)))
             ((quant-sofunp 1st wrld)
-             (cons (defun-sk-info->rewrite-name (defun-sk-check 2nd wrld))
+             (cons (defun-sk-rewrite-name 2nd wrld)
                    (sothm-inst-facts (cdr fsbs) wrld)))
             (t (sothm-inst-facts (cdr fsbs) wrld))))))
 
@@ -1736,23 +1736,22 @@
                    :SKOLEM-NAME, :THM-NAME, :REWRITE, and :PRINT are allowed, ~
                    because ~x0 is a quantifier second-order function."
                   sofun))
-       (sofun-info (defun-sk-check sofun wrld))
-       (bound-vars (defun-sk-info->bound-vars sofun-info))
-       (quant (defun-sk-info->quantifier sofun-info))
-       (sofun-matrix (defun-sk-info->matrix sofun-info))
+       (bound-vars (defun-sk-bound-vars sofun wrld))
+       (quant (defun-sk-quantifier sofun wrld))
+       (sofun-matrix (defun-sk-matrix sofun wrld))
        (fun-matrix (fun-subst-term inst sofun-matrix wrld))
        (fun-matrix (untranslate fun-matrix nil wrld))
        (rewrite-option (assoc-keyword :rewrite options))
        (rewrite
         (if rewrite-option
             (cadr rewrite-option)
-          (let ((qrkind (defun-sk-info->rewrite-kind sofun-info)))
+          (let ((qrkind (defun-sk-rewrite-kind sofun wrld)))
             (case qrkind
               (:default :default)
               (:direct :direct)
               (:custom
                (let* ((fsbs (acons sofun fun inst))
-                      (rule-name (defun-sk-info->rewrite-name sofun-info))
+                      (rule-name (defun-sk-rewrite-name sofun wrld))
                       (term (formula rule-name nil wrld)))
                  (fun-subst-term fsbs term wrld)))))))
        (skolem-name (let ((skolem-name-option
@@ -1771,7 +1770,7 @@
        (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
        (info (list 'quant fparams))
        (formals (formals sofun wrld))
-       (strengthen (defun-sk-info->strengthen sofun-info))
+       (strengthen (defun-sk-strengthen sofun wrld))
        (body (list quant bound-vars fun-matrix))
        (rest `(:strengthen ,strengthen
                :quant-ok t
