@@ -234,7 +234,7 @@
               (vl-stmt-type-disambiguate-aux x ss))
              ;; Move arg1 over to become the typearg.
              ((wmv warnings id) (vl-scopeexpr-type-disambiguate x.id ss))
-             ((wmv warnings other-args) (vl-exprlist-type-disambiguate (cdr x.args) ss))
+             ((wmv warnings other-args) (vl-maybe-exprlist-type-disambiguate (cdr x.args) ss))
              (new-x (change-vl-callstmt x
                                         :id id
                                         :typearg type

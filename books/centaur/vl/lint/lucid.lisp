@@ -1198,6 +1198,15 @@ created when we process their packages, etc.</p>"
       (vl-rhsexpr-lucidcheck x ss st ctx)
     (vl-lucidstate-fix st)))
 
+(define vl-maybe-rhsexprlist-lucidcheck ((x   vl-maybe-exprlist-p)
+                                         (ss  vl-scopestack-p)
+                                         (st  vl-lucidstate-p)
+                                         (ctx vl-lucidctx-p))
+  :returns (new-st vl-lucidstate-p)
+  (b* (((when (atom x))
+        (vl-lucidstate-fix st))
+       (st (vl-maybe-rhsexpr-lucidcheck (car x) ss st ctx)))
+    (vl-maybe-rhsexprlist-lucidcheck (cdr x) ss st ctx)))
 
 (defines vl-lhsexpr-lucidcheck
 
@@ -1594,7 +1603,7 @@ created when we process their packages, etc.</p>"
              (st (if x.typearg
                      (vl-datatype-lucidcheck x.typearg ss st ctx)
                    st))
-             (st (vl-rhsexprlist-lucidcheck x.args ss st ctx)))
+             (st (vl-maybe-rhsexprlist-lucidcheck x.args ss st ctx)))
           st)
 
         :vl-disablestmt

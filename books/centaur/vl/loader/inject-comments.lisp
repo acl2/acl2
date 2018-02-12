@@ -310,6 +310,8 @@ and max, gathering their comments.</p>"
       (:vl-dpiimport  (vl-dpiimport->loc x))
       (:vl-dpiexport  (vl-dpiexport->loc x))
       (:vl-bind       (vl-bind->loc x))
+      (:vl-property   (vl-property->loc x))
+      (:vl-sequence   (vl-sequence->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->maxloc ((x vl-description-p))
@@ -335,6 +337,8 @@ and max, gathering their comments.</p>"
       (:vl-dpiimport  (vl-dpiimport->loc x))
       (:vl-dpiexport  (vl-dpiexport->loc x))
       (:vl-bind       (vl-bind->loc x))
+      (:vl-property   (vl-property->loc x))
+      (:vl-sequence   (vl-sequence->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->comments ((x vl-description-p))

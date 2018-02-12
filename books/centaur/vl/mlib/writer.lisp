@@ -3229,7 +3229,7 @@ expression into a string."
                                     (vl-println? ", ")
                                   ps))
                    ps)
-                 (vl-pp-exprlist x.args)
+                 (vl-pp-maybe-exprlist x.args)
                  (vl-println ");"))
 
       :vl-disablestmt

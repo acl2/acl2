@@ -196,6 +196,8 @@
       (:vl-dpiimport  (vl-pp-dpiimport  x))
       (:vl-dpiexport  (vl-pp-dpiexport  x))
       (:vl-bind       (vl-pp-bind       x ss))
+      (:vl-property   (vl-pp-property   x))
+      (:vl-sequence   (vl-pp-sequence   x))
       (otherwise      (vl-pp-typedef    x)))))
 
 (define vl-description-summary ((x vl-description-p))
@@ -391,6 +393,8 @@ declaration, ...)."
       (:vl-dpiimport  nil)
       (:vl-dpiexport  nil)
       (:vl-bind       nil)
+      (:vl-property   nil)
+      (:vl-sequence   nil)
       (otherwise      (impossible)))))
 
 (define vls-data-origname-reportcard ((data vls-data-p))

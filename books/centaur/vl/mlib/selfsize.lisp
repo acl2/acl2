@@ -449,6 +449,19 @@ references to untyped parameters.</p>"
       (vl-binaryop-equiv x :vl-binary-shl)
       (vl-binaryop-equiv x :vl-binary-ashl)))
 
+(define vl-fussy-may-as-well-be-extint-p ((x vl-expr-p))
+  ;; Is X something like '0, '1, {'0,...}, etc.
+  :measure (vl-expr-count x)
+  (or (vl-expr-extint-p x)
+      (vl-expr-case x
+        :vl-concat
+        (and (consp x.parts)
+             (vl-fussy-may-as-well-be-extint-p (car x.parts)))
+        :vl-qmark
+        (and (vl-fussy-may-as-well-be-extint-p x.then)
+             (vl-fussy-may-as-well-be-extint-p x.else))
+        :otherwise nil)))
+
 (define vl-tweak-fussy-warning-type
   :parents (vl-expr-selfsize)
   :short "Heuristically categorize fussy warnings according to severity."
@@ -501,8 +514,8 @@ details.</p>"
         ;; bitwisey contexts, suppress any warnings about zeroes.
         nil)
 
-       ((when (or (vl-expr-extint-p a)
-                  (vl-expr-extint-p b)))
+       ((when (or (vl-fussy-may-as-well-be-extint-p a)
+                  (vl-fussy-may-as-well-be-extint-p b)))
         ;; Suppress warnings because '0, '1, etc., are supposed to grow to the
         ;; size of whatever is around them.
         nil)

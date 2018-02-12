@@ -226,6 +226,11 @@
                                       :atts atts))))
 
 
+(local (defthm vl-maybe-exprlist-p-when-vl-exprlist-p
+         (implies (vl-exprlist-p x)
+                  (vl-maybe-exprlist-p x))
+         :hints(("Goal" :induct (len x)))))
+
 (defparser vl-parse-task-enable (atts)
   :short "Parse a @('task_enable').  Verilog-2005 Only."
   :long "<p>Verilog-2005 Syntax:</p>
@@ -318,7 +323,7 @@
          ;; Bugfix 2016-02-18: the first expression is also optional, so if
          ;; we see (), that's fine; don't parse any arguments.
          (unless (vl-is-token? :vl-rparen)
-           (args := (vl-parse-1+-expressions-separated-by-commas)))
+           (args := (vl-parse-possibly-blank-expressions-separated-by-commas)))
          (:= (vl-match-token :vl-rparen)))
        (:= (vl-match-token :vl-semi))
        (return
@@ -487,7 +492,6 @@
       (implies (not err)
                (equal (vl-stmt-kind stmt) :vl-callstmt)))))
 
-
 (defparser vl-parse-system-tf-call ()
   :short "Parse a @('system_tf_call').  SystemVerilog-2012 only."
   :long "<p>Original grammar rules:</p>
@@ -520,7 +524,10 @@
              (typearg := (vl-parse-simple-type)))
            (when (vl-is-token? :vl-comma)
              (:= (vl-match))
-             (args := (vl-parse-1+-expressions-separated-by-commas))))
+             ;; The grammar suggests that we need to have real expressions here.
+             ;; However, commercial tools seem to support blank arguments to
+             ;; functions like $display.
+             (args := (vl-parse-possibly-blank-expressions-separated-by-commas))))
          (:= (vl-match-token :vl-rparen)))
        (return
         (let* ((fname (vl-sysidtoken->name fn))

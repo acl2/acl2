@@ -751,7 +751,7 @@
       :vl-callstmt (list* :call
                           (vl-pretty-scopeexpr x.id)
                           (append (and x.typearg (list (vl-pretty-datatype x.typearg)))
-                                  (vl-pretty-exprlist x.args)
+                                  (vl-pretty-maybe-exprlist x.args)
                                   (and x.systemp (list :system))
                                   (and x.voidp (list :void))
                                   (and x.atts (list :atts (vl-pretty-atts x.atts)))))

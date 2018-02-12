@@ -2729,8 +2729,9 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :base-name vl-callstmt
      :layout :tree
      ((id      vl-scopeexpr-p "The function being called.")
-      (args    vl-exprlist-p
-               "The (non-datatype) arguments to the function, in order.")
+      (args    vl-maybe-exprlist-p
+               "The (non-datatype) arguments to the function, in order.  We use
+                NIL here to represent any 'blank' arguments.")
       (loc     vl-location-p
                "Location of this statement in the source code.")
       (atts    vl-atts-p
@@ -5412,6 +5413,8 @@ resulting from parsing some Verilog source code."
    (fwdtypes   vl-fwdtypedeflist-p "Forward (incomplete) typedefs.")
    (typedefs   vl-typedeflist-p    "Regular (non-forward, complete) typedefs.")
    (binds      vl-bindlist-p       "Top-level bind directives.")
+   (properties vl-propertylist-p   "Top-level property declarations.")
+   (sequences  vl-sequencelist-p   "Top-level sequence declarations.")
    ;; BOZO lots of things still missing
    (warnings   vl-warninglist-p    "So-called \"floating\" warnings.")
    (comments   vl-commentmap-p     "So-called \"floating\" comments.")

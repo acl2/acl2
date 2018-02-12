@@ -135,3 +135,4 @@ module a0 ;
    wire       mod5 = w % 4;  // warn because it's bigger than the wire range
 
 endmodule
+

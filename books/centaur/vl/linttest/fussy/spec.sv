@@ -150,3 +150,17 @@ module top ;
 
 
 endmodule
+
+
+module a0;
+
+   // [Jared] this file isn't the right place to test this, but previously we
+   // failed to parse these expressions, so I'd like to keep them somewhere to
+   // make sure the fix works.
+
+   wire rand1 = $random % 2;
+   wire rand2 = $urandom % 2;
+   wire rand3 = $random() % 2;
+   wire rand4 = $urandom() % 2;
+
+endmodule

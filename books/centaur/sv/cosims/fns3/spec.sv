@@ -34,11 +34,16 @@ module spec (input logic [127:0] in,
       return (a + b) ^ c;
    endfunction
 
-   wire [3:0] a0, a1;
+   wire [3:0] a0, a1, a2;
    assign a0 = f1(i0, i1, i2);
    assign a1 = f1(i0, i1);
+   assign a2 = f1(i0, i1, ); // <-- extra comma, previously caused parse issues
 
-   assign out = { a1, a0 };
+   assign out = { a2, a1, a0 };
+
+   initial begin
+      $display("some more spurious commas", );
+   end
 
 endmodule
 

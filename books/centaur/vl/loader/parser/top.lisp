@@ -193,6 +193,16 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
           (package := (vl-parse-package-declaration atts))
           (return (list package)))
 
+        (when (vl-is-token? :vl-kwd-property)
+          ;; BOZO are these supposed to have atts?
+          (property := (vl-parse-property-declaration))
+          (return (list property)))
+
+        (when (vl-is-token? :vl-kwd-sequence)
+          ;; BOZO are these supposed to have atts?
+          (sequence := (vl-parse-sequence-declaration))
+          (return (list sequence)))
+
         ;; If we get here, then we must be dealing with a package item.
         ;; There are tons of package items and we don't support them
         ;; all yet.

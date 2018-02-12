@@ -997,6 +997,27 @@ values.</p>"
             (rest := (vl-parse-1+-expressions-separated-by-commas)))
           (return (cons first rest))))
 
+  (defparser vl-parse-possibly-blank-expressions-separated-by-commas ()
+    ;; Actually it turns out that system function calls can have blanks instead
+    ;; of expressions, e.g., commercial tools tolerate syntax like
+    ;;
+    ;;    $display("foo",);
+    :measure (two-nats-measure (vl-tokstream-measure) 310)
+    (seq tokstream
+         (when (vl-is-token? :vl-rparen)
+           (return nil))
+
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match))
+           (rest := (vl-parse-possibly-blank-expressions-separated-by-commas))
+           (return (cons nil rest)))
+
+         (first :s= (vl-parse-expression))
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match))
+           (rest := (vl-parse-possibly-blank-expressions-separated-by-commas)))
+         (return (cons first rest))))
+
   (defparser vl-parse-patternkey ()
     :measure (two-nats-measure (vl-tokstream-measure) 380)
     ;; Very tricky and subtle and ambiguous.  See the documentation for
@@ -1048,11 +1069,12 @@ values.</p>"
          (when (vl-is-token? :vl-lparen)
            (:= (vl-match))
            (arg1 :w= (vl-parse-expression-without-failure))
-           (when (not arg1)
+           (when (and (not arg1)
+                      (not (vl-is-token? :vl-rparen)))
              (typearg :w= (vl-parse-simple-type)))
            (when (vl-is-token? :vl-comma)
               (:= (vl-match))
-              (args := (vl-parse-1+-expressions-separated-by-commas)))
+              (args := (vl-parse-possibly-blank-expressions-separated-by-commas)))
            (:= (vl-match-token :vl-rparen)))
          (return
           (let ((fname (vl-sysidtoken->name fn)))
@@ -1682,6 +1704,12 @@ identifier, so we convert it into a hidpiece.</p>"
          (unless (vl-is-token? :vl-comma)
            (return nil))
          (:= (vl-match)) ;; comma
+         (when (vl-is-token? :vl-rparen)
+           ;; Verilog tools seem to allow syntax like:
+           ;;    myfun(a,b,); <-- note the additional , here.
+           ;; This seems to get interpreted as a "blank" argument for the purposes of arity checking,
+           ;; so go ahead and return a unary list here instead of just nil.
+           (return (list nil)))
          (when (vl-is-token? :vl-dot)
            ;; go to namedargs
            (return nil))
@@ -2824,6 +2852,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-val-when-error-claim vl-parse-0+-attribute-instances-aux)
         ,(vl-val-when-error-claim vl-parse-0+-attribute-instances)
         ,(vl-val-when-error-claim vl-parse-1+-expressions-separated-by-commas)
+        ,(vl-val-when-error-claim vl-parse-possibly-blank-expressions-separated-by-commas)
         ,(vl-val-when-error-claim vl-parse-system-function-call)
         ,(vl-val-when-error-claim vl-parse-mintypmax-expression)
         ,(vl-val-when-error-claim vl-parse-range-expression)
@@ -2920,6 +2949,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-warning-claim vl-parse-0+-attribute-instances-aux)
         ,(vl-warning-claim vl-parse-0+-attribute-instances)
         ,(vl-warning-claim vl-parse-1+-expressions-separated-by-commas)
+        ,(vl-warning-claim vl-parse-possibly-blank-expressions-separated-by-commas)
         ,(vl-warning-claim vl-parse-call-namedarg-pair)
         ,(vl-warning-claim vl-parse-call-namedargs-aux)
         ,(vl-warning-claim vl-parse-call-namedargs)
@@ -3172,6 +3202,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-progress-claim vl-parse-0+-attribute-instances-aux :strongp nil)
       ,(vl-progress-claim vl-parse-0+-attribute-instances :strongp nil)
       ,(vl-progress-claim vl-parse-1+-expressions-separated-by-commas)
+      ,(vl-progress-claim vl-parse-possibly-blank-expressions-separated-by-commas :strongp nil)
       ,(vl-progress-claim vl-parse-system-function-call)
       ,(vl-progress-claim vl-parse-mintypmax-expression)
       ,(vl-progress-claim vl-parse-range-expression)
@@ -3283,6 +3314,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-0+-attribute-instances-aux nil)
         ,(vl-eof-claim vl-parse-0+-attribute-instances nil)
         ,(vl-eof-claim vl-parse-1+-expressions-separated-by-commas :error)
+        ,(vl-eof-claim vl-parse-possibly-blank-expressions-separated-by-commas :error)
         ,(vl-eof-claim vl-parse-system-function-call :error)
         ,(vl-eof-claim vl-parse-mintypmax-expression :error)
         ,(vl-eof-claim vl-parse-range-expression :error)
@@ -3409,6 +3441,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-expression-claim vl-parse-0+-attribute-instances-aux :atts)
       ,(vl-expression-claim vl-parse-0+-attribute-instances :atts)
       ,(vl-expression-claim vl-parse-1+-expressions-separated-by-commas :exprlist)
+      ,(vl-expression-claim vl-parse-possibly-blank-expressions-separated-by-commas :maybe-exprlist)
       ,(vl-expression-claim vl-parse-system-function-call :expr)
       ,(vl-expression-claim vl-parse-mintypmax-expression :expr)
       ,(vl-expression-claim vl-parse-range-expression :erange)
