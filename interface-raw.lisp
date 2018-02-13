@@ -8574,6 +8574,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
               nil (standard-co *the-live-state*) *the-live-state* nil))
        (return-from lp nil))
       ((not *lp-ever-entered-p*)
+       (f-put-global 'saved-output-reversed nil state)
+       (push-current-acl2-world 'saved-output-reversed *the-live-state*)
        (set-initial-cbd)
        (eval `(in-package ,*startup-package-name*)) ;only changes raw Lisp pkg
 

@@ -3805,8 +3805,13 @@
      (print-radix nil set-print-radix)
      (proof-tree-ctx nil)
      (saved-output-p
-      (not (member-eq 'PROVE
-                      (f-get-global 'inhibit-output-lst state)))))
+
+; We set saved-output-p in prove, which allows io-record structures to start
+; accumulating into state global 'saved-output-reversed; see
+; saved-output-token-p and its use in guarding saved-output-token-p in the
+; definition of io?.  See also analogous treatment in pc-prove.
+
+      nil))
     (with-prover-step-limit! :START ,form)))
 
 (defun attachment-alist (fn wrld)
@@ -4289,14 +4294,13 @@
                           ctx)
                          (mv erp val state)))))
 
-; In the case of a compound event such as encapsulate, we do not want to save
-; io? forms for proof replay that were generated after a failed proof attempt.
-; Otherwise, if we do not set the value of 'saved-output-p below to nil, then
-; replay from an encapsulate with a failed defthm will pop warnings more often
-; than pushing them (resulting in an error from pop-warning-frame).  This
-; failure (without setting 'saved-output-p below) happens because the pushes
-; are only from io? forms saved inside the defthm, yet we were saving the
-; pops from the enclosing encapsulate.
+; In the case of a compound event such as encapsulate, we avoid saving io?
+; forms for proof replay that were generated after a failed proof attempt,
+; since the user probably won't want to see them.  If we make a change here,
+; consider carefully whether replay from an encapsulate with a failed defthm
+; will pop warnings more often than pushing them (resulting in an error from
+; pop-warning-frame); could the pushes be only from io? forms saved inside the
+; defthm, even though pops are saved from the enclosing encapsulate?
 
               (pprogn (f-put-global 'saved-output-p nil state)
                       (mv erp val state))))))
