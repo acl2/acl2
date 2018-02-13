@@ -12,7 +12,7 @@
 #      ACL2=<Path of the ACL2 image>
 
 # To remove certificate files, etc., execute the following:
-# 
+#
 # make clean ACL2=<Path of the ACL2 image>
 
 #======================================================================
@@ -29,7 +29,7 @@ JOBS ?= 4
 #======================================================================
 
 all:
-	$(BUILD_DIR)/cert.pl -j $(JOBS) -a $(ACL2) *.lisp fifo/*.lisp gcd/*.lisp adders/*.lisp
+	$(BUILD_DIR)/cert.pl -j $(JOBS) -a $(ACL2) *.lisp fifo/*.lisp gcd/*.lisp serial-adder/*.lisp
 
 clean:
 	$(BUILD_DIR)/clean.pl

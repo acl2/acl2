@@ -8,11 +8,11 @@
 
 (in-package "ADE")
 
-(include-book "adder")
 (include-book "async-serial-adder-control")
 (include-book "../link-joint")
 (include-book "../store-n")
 (include-book "../vector-module")
+(include-book "../adders/adder")
 
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "centaur/gl/gl" :dir :system))
