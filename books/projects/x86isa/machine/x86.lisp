@@ -4129,7 +4129,7 @@ semantic function.</p>"
       (equal rex-byte (if (and (64-bit-modep x86)
                                (equal (ash opcode/rex/escape-byte -4) 4))
                           opcode/rex/escape-byte
-                        0))
+                        0)) ; rex-byte is 0 in 32-bit mode
       (equal opcode/escape-byte (if (equal rex-byte 0)
                                     opcode/rex/escape-byte
                                   (mv-nth 1 (rme08 temp-rip0 *cs* :x x86))))
