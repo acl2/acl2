@@ -14,7 +14,7 @@
 
 (defsection decoding-and-spec-utils
   :parents (machine)
-  :short "Misc. utilities for instruction decoding. and for writing
+  :short "Miscellaneous utilities for instruction decoding and for writing
   instruction specification functions" )
 
 ;; ======================================================================
@@ -99,7 +99,22 @@ the @('fault') field instead.</li>
      x86)
 
     :short "Calculates effective address when SIB is present."
-    :long "<p>Source: Intel Vol. 2A, Table 2-3.</p>"
+    :long "<p>Source: Intel Vol. 2A, Table 2-3.</p>
+           <p>Also see Intel Vol. 2A, Table 2-2 and Figure 2-6.</p>
+           <p>In 64-bit mode,
+           we use @('rgfi') to read bases as signed linear addresses,
+           which encode canonical linear addresses,
+           which are also effective addresses in 64-bit mode.
+           In 32-bit mode,
+           we use @('rr32') to read bases as unsigned effective addresses.</p>
+           <p>In 64-bit mode,
+           we use @('rgfi') to read indices as signed 64-bit values.
+           In 32-bit mode,
+           we limit them to signed 32-bit values.</p>
+           <p>Note that, in 32-bit mode,
+           we call this function only when the address size is 32 bits.
+           When the address size is 16 bits, there is no SIB byte:
+           See Intel Vol. 2 Table 2-1.</p>"
 
     :returns (mv flg
                  (non-truncated-memory-address
@@ -110,7 +125,7 @@ the @('fault') field instead.</li>
                  (increment-RIP-by natp :rule-classes :type-prescription)
                  (x86 x86p :hyp (force (x86p x86))))
 
-    :prepwork ((local (in-theory (e/d (riml-size) ()))))
+    :prepwork ((local (in-theory (e/d (rime-size riml-size) ()))))
 
     (b* ((b (sib-base sib))
          ((mv flg base displacement nrip-bytes x86)
@@ -119,35 +134,53 @@ the @('fault') field instead.</li>
 
             (0 (if (equal b 5)
                    (b* (((mv ?flg0 dword x86)
-                         (riml-size 4 temp-RIP :x x86)) ;; sign-extended
+                         (rime-size 4 temp-RIP *cs* :x x86)) ;; sign-extended
                         ((when flg0)
-                         (mv (cons flg0 'riml-size-error) 0 0 0 x86)))
+                         (mv (cons flg0 'rime-size-error) 0 0 0 x86)))
                        (mv nil 0 dword 4 x86))
-                 (mv nil (rgfi (reg-index b rex-byte #.*b*) x86) 0 0 x86)))
+                 (mv nil
+                     (if (64-bit-modep x86)
+                         (rgfi (reg-index b rex-byte #.*b*) x86)
+                       (rr32 b x86)) ; rex-byte is 0 in 32-bit mode
+                     0
+                     0
+                     x86)))
 
             (1 (b* (((mv ?flg1 byte x86)
-                     (riml-size 1 temp-RIP :x x86)) ;; sign-extended
+                     (rime-size 1 temp-RIP *cs* :x x86)) ;; sign-extended
                     ((when flg1)
-                     (mv (cons flg1 'riml-size-error) 0 0 0 x86)))
-                   (mv nil (rgfi (reg-index b rex-byte #.*b*) x86)
-                       byte 1 x86)))
+                     (mv (cons flg1 'rime-size-error) 0 0 0 x86)))
+                 (mv nil
+                     (if (64-bit-modep x86)
+                         (rgfi (reg-index b rex-byte #.*b*) x86)
+                       (rr32 b x86)) ; rex-byte is 0 in 32-bit mode
+                     byte
+                     1
+                     x86)))
 
             (2 (b* (((mv ?flg2 dword x86)
-                     (riml-size 4 temp-RIP :x x86)) ;; sign-extended
+                     (rime-size 4 temp-RIP *cs* :x x86)) ;; sign-extended
                     ((when flg2)
-                     (mv (cons flg2 'riml-size-error) 0 0 0 x86)))
-                   (mv nil (rgfi (reg-index b rex-byte #.*b*) x86)
-                       dword 4 x86)))
+                     (mv (cons flg2 'rime-size-error) 0 0 0 x86)))
+                 (mv nil
+                     (if (64-bit-modep x86)
+                         (rgfi (reg-index b rex-byte #.*b*) x86)
+                       (rr32 b x86)) ; rex-byte is 0 in 32-bit mode
+                     dword
+                     4
+                     x86)))
 
             (otherwise ;; can't happen: (< mod 3)
              (mv 'mod-can-not-be-anything-other-than-0-1-or-2 0 0 0 x86))))
 
-         (ix ;; use REX-BYTE prefix (cf. Intel Table 2-5 p. 2-13)
+         (ix ;; use REX-BYTE prefix (cf. Intel Vol. 2, Table 2-4)
           (reg-index (sib-index sib) rex-byte #.*x*))
 
-         (index (case ix ; Fig. 2-6, p. 2-12
+         (index (case ix ; Intel Vol. 2, Figure 2-6
                   (4 0) ; no index register; "none" in Intel Table 2-3
-                  (otherwise (rgfi ix x86))))
+                  (otherwise (if (64-bit-modep x86)
+                                 (rgfi ix x86)
+                               (i32 (rgfi ix x86)))))) ; 32-bit signed index
 
          (scale (the (unsigned-byte 2) (sib-scale sib)))
          (scaled-index (ash index scale))
@@ -162,13 +195,13 @@ the @('fault') field instead.</li>
       (equal (mv-nth 2 (x86-effective-addr-from-sib
                         temp-RIP rex-byte mod sib x86))
              0)
-      :hints (("Goal" :in-theory (e/d (riml-size) ()))))
+      :hints (("Goal" :in-theory (e/d (rime-size riml-size) ()))))
 
     (defthm x86-effective-addr-from-sib-returns-<=-increment-rip-bytes
       (<= (mv-nth 3 (x86-effective-addr-from-sib temp-RIP rex-byte mod
                                                  sib x86))
           4)
-      :hints (("Goal" :in-theory (e/d (riml-size) ())))
+      :hints (("Goal" :in-theory (e/d (rime-size riml-size) ())))
       :rule-classes :linear))
 
   (encapsulate
