@@ -176,7 +176,7 @@ formerly the \"location directive\" and printed a location.</p>")
     (case (tag x)
       ((:vl-special :vl-literal :vl-index :vl-unary :vl-binary
         :vl-qmark :vl-mintypmax :vl-concat :vl-multiconcat :vl-stream
-        :vl-call :vl-cast :vl-inside :vl-tagged :vl-pattern)
+        :vl-call :vl-cast :vl-inside :vl-tagged :vl-pattern :vl-eventexpr)
        (vl-fmt-tilde-a-case vl-expr-p vl-pp-origexpr))
       ((:vl-hidindex)
        (vl-fmt-tilde-a-case vl-hidindex-p vl-pp-hidindex))

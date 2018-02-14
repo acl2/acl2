@@ -638,6 +638,18 @@ and generally makes it easier to write safe expression-processing code.</p>")
           @(':right') for @('>>').")
 
 
+(defenum vl-evatomtype-p
+  (:vl-noedge
+   :vl-edge
+   :vl-posedge
+   :vl-negedge)
+  :parents (vl-evatom-p)
+  :short "Type of an item in an event control list."
+  :long "<p>Any particular atom in the event control list might have a
+@('posedge'), @('negedge'), @('edge'), or have no edge specifier at all, e.g.,
+for plain atoms like @('a') and @('b') in @('always @(a or b)').</p>")
+
+
 (local (std::set-returnspec-mrec-default-hints nil))
 
 (local (in-theory (disable (:t acl2::nil-fn)
@@ -940,7 +952,19 @@ unnamed (plain) arguments followed by some named arguments.</p>"
              these attributes are not accessible in the Verilog or
              SystemVerilog grammars.  However, it is generally convenient to be
              able to associate attributes with any expression, so we include an
-             attributes field in our internal representation."))))
+             attributes field in our internal representation.")))
+
+    (:vl-eventexpr
+     :base-name vl-eventexpr
+     :short "Representation of an event expression, e.g., @('@(posedge foo)')."
+     :long "<p>This is useful for, e.g., @('$past') calls like:</p>
+            @({
+                  $past(a,,,@(posedge clock))
+            })"
+     ((atoms vl-evatomlist)
+      (atts  vl-atts-p)))
+
+    )
 
   (fty::deflist vl-exprlist
     :measure (two-nats-measure (acl2-count x) 10)
@@ -1579,7 +1603,6 @@ unnamed (plain) arguments followed by some named arguments.</p>"
                 should not be used; see below for details.")
       (pdims    vl-packeddimensionlist-p
                 "Packed dimensions for the structure.")
-      
       (udims    vl-packeddimensionlist-p
                 "Unpacked dimensions for the structure.")
       (signedp booleanp :rule-classes :type-prescription
@@ -1929,6 +1952,37 @@ unnamed (plain) arguments followed by some named arguments.</p>"
     :parents (vl-enum))
 
 
+; -----------------------------------------------------------------------------
+;
+;                          ** Event Expressions **
+;
+; -----------------------------------------------------------------------------
+
+  (defprod vl-evatom
+    :short "A single item in an event control list."
+    :tag :vl-evatom
+    :layout :tree
+    :measure (two-nats-measure (acl2-count x) 60)
+
+    ((type vl-evatomtype-p
+           "Kind of atom, e.g., posedge, negedge, edge, or plain.")
+
+     (expr vl-expr-p
+           "Associated expression, e.g., @('foo') for @('posedge foo')."))
+
+    :long "<p>Event expressions and controls are described in Section 9.7.</p>
+
+           <p>We represent the expressions for an event control (see @(see
+           vl-eventcontrol-p)) as a list of @('vl-evatom-p') structures.  Each
+           individual evatom is either a plain Verilog expression, or is
+           @('posedge') or @('negedge') applied to a Verilog expression.</p>")
+
+  (fty::deflist vl-evatomlist
+    :elt-type vl-evatom-p
+    :measure (two-nats-measure (acl2-count x) 75)
+    :true-listp nil
+    :elementp-of-nil nil)
+
   ) ;; End of the huge mutual recursion.
 
 
@@ -2222,7 +2276,8 @@ unnamed (plain) arguments followed by some named arguments.</p>"
     :vl-cast x.atts
     :vl-inside x.atts
     :vl-tagged x.atts
-    :vl-pattern x.atts)
+    :vl-pattern x.atts
+    :vl-eventexpr x.atts)
   ///
   (deffixequiv vl-expr->atts)
 
@@ -2397,6 +2452,17 @@ unnamed (plain) arguments followed by some named arguments.</p>"
                            (equal (vl-pattern->atts x)
                                   (vl-expr->atts x))))))
 
+  (defthm vl-expr-atts-when-vl-eventexpr
+    (implies (vl-expr-case x :vl-eventexpr)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-eventexpr)))
+                           (equal (vl-expr->atts x)
+                                  (vl-eventexpr->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-eventexpr))))
+                           (equal (vl-eventexpr->atts x)
+                                  (vl-expr->atts x))))))
+
   "<p>For recurring into the atts we may need to know this.</p>"
 
   (defthm vl-atts-count-of-vl-expr->atts
@@ -2428,7 +2494,8 @@ unnamed (plain) arguments followed by some named arguments.</p>"
     :vl-cast (change-vl-cast x :atts atts)
     :vl-inside (change-vl-inside x :atts atts)
     :vl-tagged (change-vl-tagged x :atts atts)
-    :vl-pattern (change-vl-pattern x :atts atts))
+    :vl-pattern (change-vl-pattern x :atts atts)
+    :vl-eventexpr (change-vl-eventexpr x :atts atts))
   ///
   (defret vl-expr->atts-of-vl-expr-update-atts
     (equal (vl-expr->atts new-x)

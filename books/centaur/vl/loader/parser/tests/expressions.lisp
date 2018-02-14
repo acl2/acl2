@@ -348,6 +348,18 @@
                   :expect '(id "a")
                   :remainder "[ -> ]")
 
+
+   (make-exprtest :input "$rose(foo, @(posedge clock))"
+                  :expect '(:vl-syscall nil "$rose"
+                            (id "foo")
+                            (:event nil (:vl-posedge (id "clock")))))
+
+   (make-exprtest :input "$rose(foo, @(posedge clock or negedge top.reset))"
+                  :expect '(:vl-syscall nil "$rose"
+                            (id "foo")
+                            (:event nil
+                             (:vl-posedge (id "clock"))
+                             (:vl-negedge (:index nil (:dot "top" "reset") nil nil)))))
    ))
 
 (defconst *basic-precedence-tests*
@@ -1408,6 +1420,7 @@
                  :config (make-vl-loadconfig :edition :verilog-2005
                                              :strictp t))
   '(value-triple :success))))
+
 
 
 

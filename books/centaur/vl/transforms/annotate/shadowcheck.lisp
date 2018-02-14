@@ -1115,7 +1115,8 @@ explicit declarations.</p>")
     :vl-inside nil
     :vl-tagged nil
     :vl-pattern x.pattype
-    :vl-special nil)
+    :vl-special nil
+    :vl-eventexpr nil)
   ///
   (defret vl-maybe-datatype-count-of-vl-expr->maybe-subtype
     (< (vl-maybe-datatype-count subtype)

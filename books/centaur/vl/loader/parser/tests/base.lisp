@@ -308,7 +308,10 @@
         :vl-pattern (list* :pattern
                            (vl-pretty-atts atts)
                            (vl-pretty-maybe-datatype x.pattype)
-                           (vl-pretty-assignpat x.pat)))))
+                           (vl-pretty-assignpat x.pat))
+        :vl-eventexpr (list* :event
+                             (vl-pretty-atts x.atts)
+                             (vl-pretty-evatomlist x.atoms)))))
 
   (define vl-pretty-atts ((x vl-atts-p))
     :measure (vl-atts-count x)
@@ -464,7 +467,20 @@
     :measure (vl-maybe-datatype-count x)
     (if x
         (vl-pretty-datatype x)
-      nil)))
+      nil))
+
+  (define vl-pretty-evatom ((x vl-evatom-p))
+    :measure (vl-evatom-count x)
+    (b* (((vl-evatom x)))
+      (list x.type (vl-pretty-expr x.expr))))
+
+  (define vl-pretty-evatomlist ((x vl-evatomlist-p))
+    :measure (vl-evatomlist-count x)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-evatom (car x))
+            (vl-pretty-evatomlist (cdr x))))))
+
 
 (define vl-pretty-range-list ((x vl-rangelist-p))
   (if (atom x)
@@ -521,16 +537,6 @@
       (vl-pretty-fwdtypedef x)
     (vl-pretty-typedef x)))
 
-
-(define vl-pretty-evatom ((x vl-evatom-p))
-  (b* (((vl-evatom x)))
-    (list x.type (vl-pretty-expr x.expr))))
-
-(define vl-pretty-evatomlist ((x vl-evatomlist-p))
-  (if (atom x)
-      nil
-    (cons (vl-pretty-evatom (car x))
-          (vl-pretty-evatomlist (cdr x)))))
 
 (define vl-pretty-eventcontrol ((x vl-eventcontrol-p))
   (b* (((vl-eventcontrol x)))

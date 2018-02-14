@@ -194,41 +194,6 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
     :forward t))
 
 
-(defenum vl-evatomtype-p
-  (:vl-noedge
-   :vl-edge
-   :vl-posedge
-   :vl-negedge)
-  :parents (vl-evatom-p)
-  :short "Type of an item in an event control list."
-  :long "<p>Any particular atom in the event control list might have a
-@('posedge'), @('negedge'), @('edge'), or have no edge specifier at all, e.g.,
-for plain atoms like @('a') and @('b') in @('always @(a or b)').</p>")
-
-(defprod vl-evatom
-  :short "A single item in an event control list."
-  :tag :vl-evatom
-  :layout :tree
-
-  ((type vl-evatomtype-p
-         "Kind of atom, e.g., posedge, negedge, edge, or plain.")
-
-   (expr vl-expr-p
-         "Associated expression, e.g., @('foo') for @('posedge foo')."))
-
-  :long "<p>Event expressions and controls are described in Section 9.7.</p>
-
-<p>We represent the expressions for an event control (see @(see
-vl-eventcontrol-p)) as a list of @('vl-evatom-p') structures.  Each individual
-evatom is either a plain Verilog expression, or is @('posedge') or @('negedge')
-applied to a Verilog expression.</p>")
-
-(fty::deflist vl-evatomlist
-              :elt-type vl-evatom-p
-              :true-listp nil
-              :elementp-of-nil nil)
-
-
 (defprod vl-eventcontrol
   :short "Representation of an event controller like @('@(posedge clk)') or
 @('@(a or b)')."

@@ -862,7 +862,9 @@ displays.  The module browser's web pages are responsible for defining the
 
       :vl-pattern   (if (assoc-equal "VL_LINESTART" x.atts)
                         (change-vl-pattern x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                      x)))
+                      x)
+      :vl-eventexpr x ;; BOZO?
+      ))
   ///
   (verify-guards vl-maybe-strip-outer-linestart)
   (defret vl-expr-count-of-vl-maybe-strip-outer-linestart
@@ -1265,7 +1267,13 @@ displays.  The module browser's web pages are responsible for defining the
                      ;; Do we ever need parens around the type?
                      (vl-mimic-linestart atts)
                      (if x.pattype (vl-pp-datatype x.pattype) ps)
-                     (vl-pp-assignpat x.pat)))))
+                     (vl-pp-assignpat x.pat))
+
+        :vl-eventexpr (vl-ps-seq
+                       ;; BOZO atts?
+                       (vl-print "@(")
+                       (vl-pp-evatomlist x.atoms)
+                       (vl-print ")")))))
 
   (define vl-pp-exprlist ((x vl-exprlist-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-exprlist-count x) 10)
@@ -1490,6 +1498,41 @@ displays.  The module browser's web pages are responsible for defining the
         ps
       (vl-ps-seq (vl-pp-enumitem (car x))
                  (vl-pp-enumitemlist (cdr x)))))
+
+
+  (define vl-pp-evatom ((x vl-evatom-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-evatom-count x) 10)
+    (b* (((vl-evatom x)))
+      (case x.type
+        (:vl-noedge  (vl-pp-expr x.expr))
+        (:vl-posedge (vl-ps-seq (vl-ps-span "vl_key" (vl-print "posedge "))
+                                (vl-pp-expr x.expr)))
+        (:vl-negedge (vl-ps-seq (vl-ps-span "vl_key" (vl-print "negedge "))
+                                (vl-pp-expr x.expr)))
+        (:vl-edge    (vl-ps-seq (vl-ps-span "vl_key" (vl-print "edge "))
+                                (vl-pp-expr x.expr)))
+        (otherwise   (progn$ (impossible)
+                             ps))))
+    :prepwork
+    ((local (defthm vl-evatom->type-forward
+              (or (equal (vl-evatom->type x) :vl-noedge)
+                  (equal (vl-evatom->type x) :vl-posedge)
+                  (equal (vl-evatom->type x) :vl-negedge)
+                  (equal (vl-evatom->type x) :vl-edge))
+              :rule-classes ((:forward-chaining :trigger-terms ((vl-evatom->type x))))
+              :hints(("Goal" :cases ((vl-evatomtype-p (vl-evatom->type x)))))))))
+
+  (define vl-pp-evatomlist ((x vl-evatomlist-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-evatomlist-count x) 10)
+    (cond ((atom x)
+           ps)
+          ((atom (cdr x))
+           (vl-pp-evatom (car x)))
+          (t
+           (vl-ps-seq (vl-pp-evatom (car x))
+                      (vl-ps-span "vl_key" (vl-print " or "))
+                      (vl-pp-evatomlist (cdr x))))))
+
   ///
   (deffixequiv-mutual vl-pp-expr))
 
@@ -2551,37 +2594,6 @@ expression into a string."
        (vl-print "#(")
        (vl-pp-expr value)
        (vl-println? ")")))))
-
-(define vl-pp-evatom ((x vl-evatom-p) &key (ps 'ps))
-  (b* (((vl-evatom x)))
-    (case x.type
-      (:vl-noedge  (vl-pp-expr x.expr))
-      (:vl-posedge (vl-ps-seq (vl-ps-span "vl_key" (vl-print "posedge "))
-                              (vl-pp-expr x.expr)))
-      (:vl-negedge (vl-ps-seq (vl-ps-span "vl_key" (vl-print "negedge "))
-                              (vl-pp-expr x.expr)))
-      (:vl-edge    (vl-ps-seq (vl-ps-span "vl_key" (vl-print "edge "))
-                              (vl-pp-expr x.expr)))
-      (otherwise   (progn$ (impossible)
-                           ps))))
-  :prepwork
-  ((local (defthm vl-evatom->type-forward
-            (or (equal (vl-evatom->type x) :vl-noedge)
-                (equal (vl-evatom->type x) :vl-posedge)
-                (equal (vl-evatom->type x) :vl-negedge)
-                (equal (vl-evatom->type x) :vl-edge))
-            :rule-classes ((:forward-chaining :trigger-terms ((vl-evatom->type x))))
-            :hints(("Goal" :cases ((vl-evatomtype-p (vl-evatom->type x)))))))))
-
-(define vl-pp-evatomlist ((x vl-evatomlist-p) &key (ps 'ps))
-  (cond ((atom x)
-         ps)
-        ((atom (cdr x))
-         (vl-pp-evatom (car x)))
-        (t
-         (vl-ps-seq (vl-pp-evatom (car x))
-                    (vl-ps-span "vl_key" (vl-print " or "))
-                    (vl-pp-evatomlist (cdr x))))))
 
 (define vl-pp-eventcontrol ((x vl-eventcontrol-p) &key (ps 'ps))
   (let ((starp (vl-eventcontrol->starp x))

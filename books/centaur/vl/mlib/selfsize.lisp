@@ -203,7 +203,8 @@ only meant as a heuristic for generating more useful warnings.</p>"
       :vl-inside    nil
       :vl-tagged    nil ;; bozo?
       :vl-pattern   nil
-      :vl-special   nil))
+      :vl-special   nil
+      :vl-eventexpr nil))
 
   (define vl-exprlist-interesting-size-atoms ((x vl-exprlist-p))
     :measure (vl-exprlist-count x)
@@ -1257,7 +1258,10 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
                            nil))
                          ((unless (vl-datatype-packedp pattype))
                           (mv (ok) nil)))
-                      (mv (ok) size)))))
+                      (mv (ok) size))
+
+        ;; I don't think these should get a size.
+        :vl-eventexpr (mv (ok) nil))))
 
   (define vl-exprlist-selfsize
     ((x vl-exprlist-p)
@@ -1397,6 +1401,7 @@ sign-extend it and don't change any of its operands.</p>"
     :vl-special :special
     :vl-stream :special
     :vl-tagged :special
+    :vl-eventexpr :special
 
     ))
 

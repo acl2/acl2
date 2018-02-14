@@ -323,7 +323,7 @@
          ;; Bugfix 2016-02-18: the first expression is also optional, so if
          ;; we see (), that's fine; don't parse any arguments.
          (unless (vl-is-token? :vl-rparen)
-           (args := (vl-parse-possibly-blank-expressions-separated-by-commas)))
+           (args := (vl-parse-sysfuncall-args)))
          (:= (vl-match-token :vl-rparen)))
        (:= (vl-match-token :vl-semi))
        (return
@@ -527,7 +527,7 @@
              ;; The grammar suggests that we need to have real expressions here.
              ;; However, commercial tools seem to support blank arguments to
              ;; functions like $display.
-             (args := (vl-parse-possibly-blank-expressions-separated-by-commas))))
+             (args := (vl-parse-sysfuncall-args))))
          (:= (vl-match-token :vl-rparen)))
        (return
         (let* ((fname (vl-sysidtoken->name fn))
