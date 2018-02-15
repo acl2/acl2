@@ -1376,7 +1376,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 
 ; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
 (define 64/32-bit-mode-compute-modr/m-for-an-opcode
-  ((opcode-info alistp) (64-bit-mode-p booleanp))
+  ((opcode-info alistp) (64-bit-modep booleanp))
   ;; Example invocations:
   ;; (64/32-bit-mode-compute-modr/m-for-an-opcode
   ;;   '((:o64 . ("MOVSXD" 2 (G v) (E v))) (:i64 . ("ARPL"   2 (E w) (G w))))
@@ -1416,7 +1416,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
           ;; in 64-bit mode we ignore the opcode information that is invalid in
           ;; 64-bit mode, while in 32-bit mode we ignore the opcode information
           ;; that is valid only in 64-bit mode:
-          (if 64-bit-mode-p
+          (if 64-bit-modep
               (delete-assoc :i64 opcode-info)
             (delete-assoc :o64 opcode-info)))
          ;; (- (cw "~%64/32-bit-mode-modr/m?:~%"))
@@ -1439,7 +1439,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 
 ; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
 (define 64/32-bit-mode-compute-modr/m-for-opcode-row
-  ((row-info true-list-listp) (row-modr/m true-listp) (64-bit-mode-p booleanp))
+  ((row-info true-list-listp) (row-modr/m true-listp) (64-bit-modep booleanp))
   :short "Returns a list of 1s and 0s corresponding to the presence or
   absence of ModR/M byte for each opcode in an opcode row in the Intel
   opcode maps, in the mode indicated by the third argument
@@ -1461,20 +1461,20 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               (64/32-bit-mode-compute-modr/m-for-opcode-row
                (cdr row-info)
                (cons (64/32-bit-mode-compute-modr/m-for-an-opcode opcode-info
-                                                                  64-bit-mode-p)
+                                                                  64-bit-modep)
                      row-modr/m)
-               64-bit-mode-p)
+               64-bit-modep)
 
             (64/32-bit-mode-compute-modr/m-for-opcode-row
              (cdr row-info)
              (cons (compute-modr/m-for-an-opcode opcode-info)
                    row-modr/m)
-             64-bit-mode-p))))
+             64-bit-modep))))
     nil))
 
 ; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
 (define 64/32-bit-mode-compute-modr/m-map-1
-  ((row-number natp) (opcode-map-lst true-listp) (64-bit-mode-p booleanp))
+  ((row-number natp) (opcode-map-lst true-listp) (64-bit-modep booleanp))
   :short "Returns a list of 1s and 0s corresponding to the
   presence or absence of ModR/M byte for each opcode in the Intel
   opcode maps, in the mode indicated by the third argument
@@ -1496,16 +1496,16 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
              (row-column-info
               (64/32-bit-mode-compute-modr/m-for-opcode-row row-info
                                                             nil
-                                                            64-bit-mode-p)))
+                                                            64-bit-modep)))
           (append
            row-column-info
            (64/32-bit-mode-compute-modr/m-map-1
-            (1- row-number) opcode-map-lst 64-bit-mode-p))))
+            (1- row-number) opcode-map-lst 64-bit-modep))))
     nil))
 
 ; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
 (define 64/32-bit-mode-compute-modr/m-map
-  ((opcode-map-lst true-listp) (64-bit-mode-p booleanp))
+  ((opcode-map-lst true-listp) (64-bit-modep booleanp))
   :short "Returns a list of 1s and 0s corresponding to the
   presence or absence of ModR/M byte for each opcode in the Intel
   opcode maps, in the mode indicated by the third argument
@@ -1519,7 +1519,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   (reverse (64/32-bit-mode-compute-modr/m-map-1
             (len opcode-map-lst)
             opcode-map-lst
-            64-bit-mode-p)))
+            64-bit-modep)))
 
 (defconst *64-bit-mode-one-byte-has-modr/m-ar*
   (list-to-array '64-bit-mode-one-byte-has-modr/m
