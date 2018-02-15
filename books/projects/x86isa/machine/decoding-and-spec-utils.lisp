@@ -746,7 +746,14 @@ the @('fault') field instead.</li>
     <p>In 64-bit mode, instructions such as LEA use this function to
     compute the effective address.  LEA, at least, does not check
     whether the generated address is canonical or not, which is why we
-    don't make the canonical-address-p check in this function.</p>"
+    don't make the canonical-address-p check in this function.</p>
+
+    <p>In 64-bit mode,
+    we use @('rgfi-size') to read bases as signed linear addresses,
+    which encode canonical linear addresses,
+    which are also effective addresses in 64-bit mode.
+    In 32-bit mode,
+    we use @('rr32') to read bases as unsigned effective addresses.</p>"
 
     (b* (((mv flg addr displacement increment-RIP-by x86)
 
@@ -777,7 +784,12 @@ the @('fault') field instead.</li>
                   (mv 'non-64-bit-modes-unimplemented 0 0 0 x86)))
 
                (otherwise
-                (mv nil (rgfi (reg-index r/m rex-byte #.*b*) x86) 0 0
+                (mv nil
+                    (if (64-bit-modep x86)
+                        (rgfi (reg-index r/m rex-byte #.*b*) x86)
+                      (rr32 r/m x86)) ; rex-byte is 0 in 32-bit mode
+                    0
+                    0
                     x86))))
 
             (1
@@ -791,7 +803,9 @@ the @('fault') field instead.</li>
                (otherwise
                 (b* (((mv ?flg2 byte2 x86)
                       (rime-size 1 temp-RIP *cs* :x x86)) ; sign-extended
-                     (reg (rgfi (reg-index r/m rex-byte #.*b*) x86)))
+                     (reg (if (64-bit-modep x86)
+                              (rgfi (reg-index r/m rex-byte #.*b*) x86)
+                            (rr32 r/m x86)))) ; rex-byte is 0 in 32-bit mode
                     (mv flg2 reg byte2 1 x86)))))
 
             (2
@@ -805,7 +819,9 @@ the @('fault') field instead.</li>
                (otherwise
                 (b* (((mv ?flg1 dword x86)
                       (rime-size 4 temp-RIP *cs* :x x86)) ; sign-extended
-                     (reg (rgfi (reg-index r/m rex-byte #.*b*) x86)))
+                     (reg (if (64-bit-modep x86)
+                              (rgfi (reg-index r/m rex-byte #.*b*) x86)
+                            (rr32 r/m x86)))) ; rex-byte is 0 in 32-bit mode
                     (mv flg1 reg dword 4 x86)))))
 
             (otherwise ; shouldn't happen
