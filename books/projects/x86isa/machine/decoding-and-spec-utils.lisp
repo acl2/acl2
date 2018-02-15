@@ -769,7 +769,10 @@ the @('fault') field instead.</li>
                          ;; temp-RIP + 4 bytes of the displacement
                          ;; mentioned above + bytes of rest of the
                          ;; instruction (immediate bytes)
-                         (next-rip (+ temp-RIP 4 num-imm-bytes)))
+                         ((mv flg next-rip) (increment-*ip temp-RIP
+                                                           (+ 4 num-imm-bytes)
+                                                           x86))
+                         ((when flg) (mv flg 0 0 0 x86)))
                         (mv flg0 next-rip dword 4 x86))
                   (mv 'non-64-bit-modes-unimplemented 0 0 0 x86)))
 
