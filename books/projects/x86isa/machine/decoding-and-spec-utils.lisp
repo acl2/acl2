@@ -230,7 +230,7 @@ the @('fault') field instead.</li>
                      "Number of immediate bytes (0, 1, 2, or 4) that follow the sib (or displacement bytes, if any).")
      x86)
 
-    :guard-hints (("Goal" :in-theory (e/d (n64-to-i64) ())))
+    :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 rime-size) ())))
 
     ;; Returns the flag, the effective address (taking the SIB and
     ;; ModR/M bytes into account) and the number of bytes to increment
@@ -258,7 +258,7 @@ the @('fault') field instead.</li>
        mode in 64-bit mode.</em></p>
 
       <p>Quoting Intel Vol. 1 Sec. 3.3.7 (Address Calculations in
-      64-Bit Mode) pp. 3-12 to 3-13:</p>
+      64-Bit Mode):</p>
 
         <p><em>All 16-bit and 32-bit address calculations are
         zero-extended in IA-32e mode to form 64-bit addresses. Address
@@ -272,7 +272,7 @@ the @('fault') field instead.</li>
         64-bit mode can access only the low 4 GBytes of the 64-bit
         mode effective addresses.</em></p>
 
-    <p>Also: Intel Vol 1. p3.12, Section 3.3.7 says that we need
+    <p>Also: Intel Vol 1, Section 3.3.7 says that we need
     sign-extended displacements in effective address calculations. In
     Lisp, sign-extension is implicit.</p>
 
@@ -297,7 +297,7 @@ the @('fault') field instead.</li>
                     (b* (((mv ?flg0 dword x86)
                           ;; dword1 is the sign-extended displacement
                           ;; present in the instruction.
-                          (riml-size 4 temp-RIP :x x86))
+                          (rime-size 4 temp-RIP *cs* :x x86))
                          ;; next-rip is the rip of the next instruction.
                          ;; temp-RIP + 4 bytes of the displacement
                          ;; mentioned above + bytes of rest of the
@@ -320,7 +320,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg2 byte2 x86)
-                      (riml-size 1 temp-RIP :x x86)) ; sign-extended
+                      (rime-size 1 temp-RIP *cs* :x x86)) ; sign-extended
                      (reg (rgfi (reg-index r/m rex-byte #.*b*) x86)))
                     (mv flg2 reg byte2 1 x86)))))
 
@@ -334,7 +334,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg1 dword x86)
-                      (riml-size 4 temp-RIP :x x86)) ; sign-extended
+                      (rime-size 4 temp-RIP *cs* :x x86)) ; sign-extended
                      (reg (rgfi (reg-index r/m rex-byte #.*b*) x86)))
                     (mv flg1 reg dword 4 x86)))))
 
