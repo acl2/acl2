@@ -45,8 +45,8 @@
   (+ (queue3-gcd$data-ins-len data-width)
      *queue3-gcd$go-num*))
 
-;; DE module generator of QUEUE3-GCD. It reports the "in-act" signal at its input port,
-;; and the "out-act" signal and output data at its output port.
+;; DE module generator of QUEUE3-GCD. It reports the "in-act" signal at its
+;; input port, and the "out-act" signal and output data at its output port.
 
 (module-generator
  queue3-gcd* (data-width)
@@ -88,7 +88,12 @@
 
  :guard (natp data-width))
 
-;; DE netlist generator. A generated netlist will contain an instance of QUEUE3-GCD.
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'queue3-gcd '(l d q3 gcd) 0)))
+
+;; DE netlist generator. A generated netlist will contain an instance of
+;; QUEUE3-GCD.
 
 (defun queue3-gcd$netlist (data-width)
   (declare (xargs :guard (and (natp data-width)
@@ -97,12 +102,6 @@
         (union$ (queue3$netlist (* 2 data-width))
                 (gcd$netlist data-width)
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd queue3-gcd$netlist-64-okp
-  (and (net-syntax-okp (queue3-gcd$netlist 64))
-       (net-arity-okp (queue3-gcd$netlist 64))))
 
 ;; Recognizer for QUEUE3-GCD
 
@@ -119,13 +118,11 @@
 
 ;; Sanity check
 
-(defthm check-queue3-gcd$netlist-64
-  (queue3-gcd& (queue3-gcd$netlist 64) 64))
-
-(defconst *queue3-gcd$l*   0)
-(defconst *queue3-gcd$d*   1)
-(defconst *queue3-gcd$q3*  2)
-(defconst *queue3-gcd$gcd* 3)
+(local
+ (defthmd check-queue3-gcd$netlist-64
+   (and (net-syntax-okp (queue3-gcd$netlist 64))
+        (net-arity-okp (queue3-gcd$netlist 64))
+        (queue3-gcd& (queue3-gcd$netlist 64) 64))))
 
 ;; Constraints on the state of QUEUE3-GCD
 
@@ -139,13 +136,12 @@
          (queue3$st-format q3 (* 2 data-width))
          (gcd$st-format gcd data-width))))
 
-(defthmd queue3-gcd$st-format=>data-width-constraint
+(defthm queue3-gcd$st-format=>data-width-constraint
   (implies (queue3-gcd$st-format st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
   :hints (("Goal"
-           :in-theory (enable gcd$st-format=>data-width-constraint
-                              queue3-gcd$st-format)))
+           :in-theory (enable queue3-gcd$st-format)))
   :rule-classes :forward-chaining)
 
 (defund queue3-gcd$valid-st (st data-width)
@@ -167,8 +163,7 @@
            (and (natp data-width)
                 (<= 3 data-width)))
   :hints (("Goal"
-           :in-theory (enable queue3-gcd$st-format=>data-width-constraint
-                              queue3-gcd$valid-st)))
+           :in-theory (enable queue3-gcd$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; QUEUE3-GCD simulator
@@ -333,7 +328,6 @@
                        netlist)
            :in-theory (e/d (de-rules
                             get-field
-                            gcd$st-format=>data-width-constraint
                             len-1-true-listp=>true-listp
                             not-primp-queue3-gcd
                             queue3-gcd&
@@ -350,13 +344,7 @@
                             queue3-gcd$gcd-inputs)
                            ((queue3-gcd*)
                             nfix
-                            acl2::take-of-append
-                            if*
-                            b-not
-                            cons-equal
-                            validp
-                            fullp
-                            emptyp
+                            append
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of QUEUE3-GCD.
@@ -411,7 +399,6 @@
                        netlist)
            :in-theory (e/d (de-rules
                             get-field
-                            gcd$st-format=>data-width-constraint
                             len-1-true-listp=>true-listp
                             not-primp-queue3-gcd
                             queue3-gcd&
@@ -426,20 +413,7 @@
                             latch-n$value latch-n$state)
                            ((queue3-gcd*)
                             nfix
-                            if*
-                            b-not
-                            append-take-nthcdr
-                            acl2::take-of-append
-                            acl2::prefer-positive-addends-equal
-                            acl2::simplify-sums-equal
-                            acl2::simplify-products-gather-exponents-equal
-                            acl2::|(equal (- x) (- y))|
                             append
-                            cons-equal
-                            true-listp
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable queue3-gcd$state-fn))
@@ -505,47 +479,7 @@
                              len
                              take-of-too-many))))))
 
-;; Proving that queue3-gcd$st-format is an invariant.
-
-(defthm queue3-gcd$st-format-preserved
-  (implies (queue3-gcd$st-format st data-width)
-           (queue3-gcd$st-format (queue3-gcd$state-fn inputs st data-width)
-                                 data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue3-gcd$st-format
-                            queue3-gcd$state-fn)
-                           ()))))
-
-(defthmd queue3-gcd$state-alt
-  (implies (and (queue3-gcd& netlist data-width)
-                (queue3-gcd$input-format inputs data-width)
-                (queue3-gcd$st-format st data-width))
-           (equal (de (si 'queue3-gcd data-width) inputs st netlist)
-                  (queue3-gcd$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable queue3-gcd$st-format=>data-width-constraint
-                              queue3-gcd$input-format)
-           :use (:instance
-                 queue3-gcd$state
-                 (full-in    (nth 0 inputs))
-                 (empty-out- (nth 1 inputs))
-                 (data-in    (queue3-gcd$data-in inputs data-width))
-                 (go-signals (nthcdr (queue3-gcd$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen queue3-gcd data-width)
-(input-format-n-gen queue3-gcd data-width)
-
-(defthmd de-sim-n$queue3-gcd
-  (implies (and (queue3-gcd& netlist data-width)
-                (queue3-gcd$input-format-n inputs-lst data-width n)
-                (queue3-gcd$st-format st data-width))
-           (equal (de-sim-n (si 'queue3-gcd data-width)
-                            inputs-lst st netlist
-                            n)
-                  (queue3-gcd$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable queue3-gcd$state-alt))))
+(simulate-lemma queue3-gcd)
 
 ;; ======================================================================
 
@@ -865,32 +799,5 @@
                             queue3-gcd$data-out)
                            ()))))
 
-(encapsulate
-  ()
-
-  (local
-   (defthm queue3-gcd$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (queue3-gcd$op-seq in-seq) y2))
-              (equal (append x1 y1 z)
-                     (append (queue3-gcd$op-seq in-seq) y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd queue3-gcd$dataflow-correct
-    (b* ((extracted-st (queue3-gcd$extract-state st))
-         (final-st (queue3-gcd$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st (queue3-gcd$extract-state final-st)))
-      (implies (and (queue3-gcd$input-format-n inputs-lst data-width n)
-                    (queue3-gcd$valid-st st data-width)
-                    (queue3-gcd$inv st))
-               (equal (append final-extracted-st
-                              (queue3-gcd$out-seq inputs-lst st data-width n))
-                      (append (queue3-gcd$op-seq
-                               (queue3-gcd$in-seq inputs-lst st data-width n))
-                              extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (queue3-gcd$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma queue3-gcd :op t :inv t)
 

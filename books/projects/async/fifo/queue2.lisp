@@ -104,6 +104,10 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'queue2 '(l0 d0 l1 d1) 0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of Q2.
 
 (defun queue2$netlist (data-width)
@@ -113,12 +117,6 @@
                 (v-buf$netlist data-width)
                 *joint-cntl*
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd queue2$netlist-64-okp
-  (and (net-syntax-okp (queue2$netlist 64))
-       (net-arity-okp (queue2$netlist 64))))
 
 ;; Recognizer for Q2
 
@@ -134,13 +132,11 @@
 
 ;; Sanity check
 
-(defthm check-queue2$netlist-64
-  (queue2& (queue2$netlist 64) 64))
-
-(defconst *queue2$l0* 0)
-(defconst *queue2$d0* 1)
-(defconst *queue2$l1* 2)
-(defconst *queue2$d1* 3)
+(local
+ (defthmd check-queue2$netlist-64
+   (and (net-syntax-okp (queue2$netlist 64))
+        (net-arity-okp (queue2$netlist 64))
+        (queue2& (queue2$netlist 64) 64))))
 
 ;; Constraints on the state of Q2
 
@@ -153,7 +149,7 @@
          (len-1-true-listp d1)
          (equal (len d1) data-width))))
 
-(defthmd queue2$st-format=>natp-data-width
+(defthm queue2$st-format=>natp-data-width
   (implies (queue2$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue2$st-format)))
@@ -177,8 +173,7 @@
 (defthmd queue2$valid-st=>natp-data-width
   (implies (queue2$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue2$st-format=>natp-data-width
-                                     queue2$valid-st)))
+  :hints (("Goal" :in-theory (enable queue2$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; Q2 simulator
@@ -320,9 +315,6 @@
                             queue2$out-act
                             queue2$data-out)
                            ((queue2*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of Q2, namely, the next states of two
@@ -391,10 +383,6 @@
                             latch-n$value latch-n$state
                             v-buf$value)
                            ((queue2*)
-                            or-macro
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable queue2$state-fn))
@@ -421,47 +409,7 @@
      (equal inputs
             (list* full-in empty-out- (append data-in go-signals))))))
 
-;; Proving that queue2$st-format is an invariant.
-
-(defthm queue2$st-format-preserved
-  (implies (queue2$st-format st data-width)
-           (queue2$st-format (queue2$state-fn inputs st data-width)
-                             data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue2$st-format
-                            queue2$state-fn)
-                           ()))))
-
-(defthmd queue2$state-alt
-  (implies (and (queue2& netlist data-width)
-                (queue2$input-format inputs data-width)
-                (queue2$st-format st data-width))
-           (equal (de (si 'queue2 data-width) inputs st netlist)
-                  (queue2$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable queue2$st-format=>natp-data-width
-                              queue2$input-format)
-           :use (:instance
-                 queue2$state
-                 (full-in    (nth 0 inputs))
-                 (empty-out- (nth 1 inputs))
-                 (data-in    (queue2$data-in inputs data-width))
-                 (go-signals (nthcdr (queue2$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen queue2 data-width)
-(input-format-n-gen queue2 data-width)
-
-(defthmd de-sim-n$queue2
-  (implies (and (queue2& netlist data-width)
-                (queue2$input-format-n inputs-lst data-width n)
-                (queue2$st-format st data-width))
-           (equal (de-sim-n (si 'queue2 data-width)
-                            inputs-lst st netlist
-                            n)
-                  (queue2$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable queue2$state-alt))))
+(simulate-lemma queue2)
 
 ;; ======================================================================
 
@@ -624,32 +572,5 @@
                               queue2$out-act
                               queue2$data-out))))
 
-(encapsulate
-  ()
-
-  (local
-   (defthm queue2$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (queue2$in-seq inputs-lst st data-width n)
-                             y2))
-              (equal (append x1 y1 z)
-                     (append (queue2$in-seq inputs-lst st data-width n)
-                             y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd queue2$dataflow-correct
-    (b* ((extracted-st (queue2$extract-state st))
-         (final-st (queue2$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st (queue2$extract-state final-st)))
-      (implies (and (queue2$input-format-n inputs-lst data-width n)
-                    (queue2$valid-st st data-width))
-               (equal (append final-extracted-st
-                              (queue2$out-seq inputs-lst st data-width n))
-                      (append (queue2$in-seq inputs-lst st data-width n)
-                              extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (queue2$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma queue2)
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; Janurary 2018
+;; February 2018
 
 (in-package "ADE")
 
@@ -160,13 +160,15 @@
       (g1 (b-go) b-bool (go))
       (jact (act) b-and (ready b-go))))))
 
-(defthmd joint-cntl-okp
-  (and (net-syntax-okp *joint-cntl*)
-       (net-arity-okp *joint-cntl*)))
-
 (defund joint-cntl& (netlist)
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist joint-cntl))
+
+(local
+ (defthmd check-joint-cntl
+   (and (net-syntax-okp *joint-cntl*)
+        (net-arity-okp *joint-cntl*)
+        (joint-cntl& *joint-cntl*))))
 
 (defun joint-act (fin fout go)
   (declare (xargs :guard t))
@@ -222,13 +224,15 @@
       (g1 (r) b-not (req))
       (g2 (a) b-not (ack))))))
 
-(defthmd click-link-st-okp
-  (and (net-syntax-okp *click-link-st*)
-       (net-arity-okp *click-link-st*)))
-
 (defund click-link-st& (netlist)
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist click-link-st))
+
+(local
+ (defthmd check-click-link-st
+   (and (net-syntax-okp *click-link-st*)
+        (net-arity-okp *click-link-st*)
+        (click-link-st& *click-link-st*))))
 
 (defthmd click-link-st$value
   (implies (click-link-st& netlist)

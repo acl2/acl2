@@ -121,6 +121,10 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'round-robin3 '(q8 q10 br me) 0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of RR3.
 
 (defun round-robin3$netlist (data-width)
@@ -131,12 +135,6 @@
                 (alt-branch$netlist data-width)
                 (alt-merge$netlist data-width)
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd round-robin3$netlist-64-okp
-  (and (net-syntax-okp (round-robin3$netlist 64))
-       (net-arity-okp (round-robin3$netlist 64))))
 
 ;; Recognizer for RR3
 
@@ -153,27 +151,25 @@
 
 ;; Sanity check
 
-(defthm check-round-robin3$netlist-64
-  (round-robin3& (round-robin3$netlist 64) 64))
-
-(defconst *round-robin3$q8*  0)
-(defconst *round-robin3$q10* 1)
-(defconst *round-robin3$br*  2)
-(defconst *round-robin3$me*  3)
+(local
+ (defthmd check-round-robin3$netlist-64
+   (and (net-syntax-okp (round-robin3$netlist 64))
+        (net-arity-okp (round-robin3$netlist 64))
+        (round-robin3& (round-robin3$netlist 64) 64))))
 
 ;; Constraints on the state of RR3
 
 (defund round-robin3$st-format (st data-width)
   (b* ((q8 (get-field *round-robin3$q8* st))
        (q10 (get-field *round-robin3$q10* st)))
-    (and (queue8$st-format q8 data-width)
+    (and (< 0 data-width)
+         (queue8$st-format q8 data-width)
          (queue10$st-format q10 data-width))))
 
-(defthmd round-robin3$st-format=>natp-data-width
+(defthm round-robin3$st-format=>posp-data-width
   (implies (round-robin3$st-format st data-width)
-           (natp data-width))
-  :hints (("Goal" :in-theory (enable round-robin3$st-format
-                                     queue8$st-format=>natp-data-width)))
+           (posp data-width))
+  :hints (("Goal" :in-theory (enable round-robin3$st-format)))
   :rule-classes :forward-chaining)
 
 (defund round-robin3$valid-st (st data-width)
@@ -429,8 +425,7 @@
 
 (defthmd round-robin3$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-    (implies (and (posp data-width)
-                  (round-robin3& netlist data-width)
+    (implies (and (round-robin3& netlist data-width)
                   (true-listp data-in)
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
@@ -466,9 +461,6 @@
                             round-robin3$br-inputs
                             round-robin3$me-inputs)
                            ((round-robin3*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of RR3.
@@ -502,8 +494,7 @@
 
 (defthmd round-robin3$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-    (implies (and (posp data-width)
-                  (round-robin3& netlist data-width)
+    (implies (and (round-robin3& netlist data-width)
                   (true-listp data-in)
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
@@ -536,9 +527,6 @@
                             alt-branch$value alt-branch$state
                             alt-merge$value alt-merge$state)
                            ((round-robin3*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable round-robin3$state-fn))
@@ -671,49 +659,7 @@
                             (nthcdr
                              take-of-too-many))))))
 
-;; Proving that round-robin3$st-format is an invariant.
-
-(defthm round-robin3$st-format-preserved
-  (implies (round-robin3$st-format st data-width)
-           (round-robin3$st-format
-            (round-robin3$state-fn inputs st data-width)
-            data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            round-robin3$st-format
-                            round-robin3$state-fn)
-                           ()))))
-
-(defthmd round-robin3$state-alt
-  (implies (and (posp data-width)
-                (round-robin3& netlist data-width)
-                (round-robin3$input-format inputs data-width)
-                (round-robin3$st-format st data-width))
-           (equal (de (si 'round-robin3 data-width) inputs st netlist)
-                  (round-robin3$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable round-robin3$input-format)
-           :use (:instance
-                 round-robin3$state
-                 (full-in    (nth 0 inputs))
-                 (empty-out- (nth 1 inputs))
-                 (data-in    (round-robin3$data-in inputs data-width))
-                 (go-signals (nthcdr (round-robin3$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen round-robin3 data-width)
-(input-format-n-gen round-robin3 data-width)
-
-(defthmd de-sim-n$round-robin3
-  (implies (and (posp data-width)
-                (round-robin3& netlist data-width)
-                (round-robin3$input-format-n inputs-lst data-width n)
-                (round-robin3$st-format st data-width))
-           (equal (de-sim-n (si 'round-robin3 data-width)
-                            inputs-lst st netlist
-                            n)
-                  (round-robin3$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable round-robin3$state-alt))))
+(simulate-lemma round-robin3)
 
 ;; ======================================================================
 
@@ -1829,34 +1775,5 @@
                               default-+-2)))))
   )
 
-(encapsulate
-  ()
-
-  (local
-   (defthm round-robin3$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (round-robin3$in-seq inputs-lst st data-width n)
-                             y2))
-              (equal (append x1 y1 z)
-                     (append (round-robin3$in-seq inputs-lst st data-width n)
-                             y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd round-robin3$dataflow-correct
-    (b* ((extracted-st (round-robin3$extract-state st))
-         (final-st (round-robin3$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st (round-robin3$extract-state final-st)))
-      (implies
-       (and (round-robin3$input-format-n inputs-lst data-width n)
-            (round-robin3$valid-st st data-width)
-            (round-robin3$inv st))
-       (equal (append final-extracted-st
-                      (round-robin3$out-seq inputs-lst st data-width n))
-              (append (round-robin3$in-seq inputs-lst st data-width n)
-                      extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (round-robin3$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma round-robin3 :inv t)
 

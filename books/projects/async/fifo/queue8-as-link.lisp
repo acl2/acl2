@@ -96,6 +96,10 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'queue8 '(q4-0 q4-1) 0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of Q8'.
 
 (defun queue8$netlist (data-width)
@@ -103,12 +107,6 @@
   (cons (queue8* data-width)
         (union$ (queue4$netlist data-width)
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd queue8$netlist-64-okp
-  (and (net-syntax-okp (queue8$netlist 64))
-       (net-arity-okp (queue8$netlist 64))))
 
 ;; Recognizer for Q8'
 
@@ -124,11 +122,11 @@
 
 ;; Sanity check
 
-(defthm check-queue8$netlist-64
-  (queue8& (queue8$netlist 64) 64))
-
-(defconst *queue8$q4-0* 0)
-(defconst *queue8$q4-1* 1)
+(local
+ (defthmd check-queue8$netlist-64
+   (and (net-syntax-okp (queue8$netlist 64))
+        (net-arity-okp (queue8$netlist 64))
+        (queue8& (queue8$netlist 64) 64))))
 
 ;; Constraints on the state of Q8'
 
@@ -138,11 +136,10 @@
     (and (queue4$st-format q4-0 data-width)
          (queue4$st-format q4-1 data-width))))
 
-(defthmd queue8$st-format=>natp-data-width
+(defthm queue8$st-format=>natp-data-width
   (implies (queue8$st-format st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue8$st-format
-                                     queue4$st-format=>natp-data-width)))
+  :hints (("Goal" :in-theory (enable queue8$st-format)))
   :rule-classes :forward-chaining)
 
 (defund queue8$valid-st (st data-width)
@@ -362,9 +359,6 @@
                             queue8$ready-out
                             queue8$data-out)
                            ((queue8*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of Q8'.
@@ -426,9 +420,6 @@
                             v-buf$value
                             queue4$value queue4$state)
                            ((queue8*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable queue8$state-fn))
@@ -505,47 +496,7 @@
                             (nthcdr
                              take-of-too-many))))))
 
-;; Proving that queue8$st-format is an invariant.
-
-(defthm queue8$st-format-preserved
-  (implies (queue8$st-format st data-width)
-           (queue8$st-format (queue8$state-fn inputs st data-width)
-                             data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue8$st-format
-                            queue8$state-fn)
-                           ()))))
-
-(defthmd queue8$state-alt
-  (implies (and (queue8& netlist data-width)
-                (queue8$input-format inputs st data-width)
-                (queue8$st-format st data-width))
-           (equal (de (si 'queue8 data-width) inputs st netlist)
-                  (queue8$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable queue8$st-format=>natp-data-width
-                              queue8$input-format)
-           :use (:instance
-                 queue8$state
-                 (in-act     (queue8$in-act inputs))
-                 (out-act    (queue8$out-act inputs))
-                 (data-in    (queue8$data-in inputs data-width))
-                 (go-signals (nthcdr (queue8$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen queue8 data-width)
-(input-format-n-with-state-gen queue8 data-width)
-
-(defthmd de-sim-n$queue8
-  (implies (and (queue8& netlist data-width)
-                (queue8$input-format-n inputs-lst st data-width n)
-                (queue8$st-format st data-width))
-           (equal (de-sim-n (si 'queue8 data-width)
-                            inputs-lst st netlist
-                            n)
-                  (queue8$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable queue8$state-alt))))
+(simulate-lemma queue8 :complex-link t)
 
 ;; ======================================================================
 
@@ -825,32 +776,5 @@
                              (queue8$input-format=>q4-1$input-format)))))
   )
 
-(encapsulate
-  ()
-
-  (local
-   (defthm queue8$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (queue8$in-seq inputs-lst st data-width n)
-                             y2))
-              (equal (append x1 y1 z)
-                     (append (queue8$in-seq inputs-lst st data-width n)
-                             y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd queue8$dataflow-correct
-    (b* ((extracted-st (queue8$extract-state st))
-         (final-st (queue8$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st (queue8$extract-state final-st)))
-      (implies (and (queue8$input-format-n inputs-lst st data-width n)
-                    (queue8$valid-st st data-width))
-               (equal (append final-extracted-st
-                              (queue8$out-seq inputs-lst st data-width n))
-                      (append (queue8$in-seq inputs-lst st data-width n)
-                              extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (queue8$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma queue8 :complex-link t)
 

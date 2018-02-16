@@ -89,15 +89,17 @@
 
  :guard t)
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen '1-bit-adder
+                           '(la a lb b lci ci ls s lco co)
+                           0)))
+
 (defun 1-bit-adder$netlist ()
   (declare (xargs :guard t))
   (cons (1-bit-adder*)
         (union$ *joint-cntl* *full-adder*
                 :test 'equal)))
-
-(defthmd 1-bit-adder$netlist-okp
-  (and (net-syntax-okp (1-bit-adder$netlist))
-       (net-arity-okp (1-bit-adder$netlist))))
 
 (defund 1-bit-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
@@ -107,19 +109,11 @@
          (and (joint-cntl& netlist)
               (full-adder& netlist)))))
 
-(defthm check-1-bit-adder$netlist
-  (1-bit-adder& (1-bit-adder$netlist)))
-
-(defconst *1-bit-adder$la*  0)
-(defconst *1-bit-adder$a*   1)
-(defconst *1-bit-adder$lb*  2)
-(defconst *1-bit-adder$b*   3)
-(defconst *1-bit-adder$lci* 4)
-(defconst *1-bit-adder$ci*  5)
-(defconst *1-bit-adder$ls*  6)
-(defconst *1-bit-adder$s*   7)
-(defconst *1-bit-adder$lco* 8)
-(defconst *1-bit-adder$co*  9)
+(local
+ (defthmd check-1-bit-adder$netlist
+   (and (net-syntax-okp (1-bit-adder$netlist))
+        (net-arity-okp (1-bit-adder$netlist))
+        (1-bit-adder& (1-bit-adder$netlist)))))
 
 (defund 1-bit-adder$empty-a- (st)
   (b* ((la  (nth *1-bit-adder$la* st))
@@ -339,14 +333,16 @@
 
  :guard t)
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'serial-adder
+                           '(lreg0 reg0 lreg1 reg1 lreg2 reg2 bit-add)
+                           0)))
+
 (defun serial-adder$netlist ()
   (declare (xargs :guard t))
   (cons (serial-adder*)
         (1-bit-adder$netlist)))
-
-(defthmd serial-adder$netlist-okp
-  (and (net-syntax-okp (serial-adder$netlist))
-       (net-arity-okp (serial-adder$netlist))))
 
 (defund serial-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
@@ -356,16 +352,11 @@
          (and (joint-cntl& netlist)
               (1-bit-adder& netlist)))))
 
-(defthm check-serial-adder$netlist
-  (serial-adder& (serial-adder$netlist)))
-
-(defconst *serial-adder$lreg0*   0)
-(defconst *serial-adder$reg0*    1)
-(defconst *serial-adder$lreg1*   2)
-(defconst *serial-adder$reg1*    3)
-(defconst *serial-adder$lreg2*   4)
-(defconst *serial-adder$reg2*    5)
-(defconst *serial-adder$bit-add* 6)
+(local
+ (defthmd check-serial-adder$netlist
+   (and (net-syntax-okp (serial-adder$netlist))
+        (net-arity-okp (serial-adder$netlist))
+        (serial-adder& (serial-adder$netlist)))))
 
 (defund serial-adder$ready-in- (st)
   (b* ((lreg0 (nth *serial-adder$lreg0* st))
@@ -590,6 +581,14 @@
 
  :guard t)
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen
+       'async-adder
+       '(lcntl cntl lnext-cntl next-cntl ldone- done- lresult result
+               serial-add)
+       0)))
+
 (defun async-adder$netlist ()
   (declare (xargs :guard t))
   (cons (async-adder*)
@@ -599,10 +598,6 @@
                 (serial-adder$netlist)
                 (next-cntl-state$netlist)
                 :test 'equal)))
-
-(defthmd async-adder$netlist-okp
-  (and (net-syntax-okp (async-adder$netlist))
-       (net-arity-okp (async-adder$netlist))))
 
 (defund async-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
@@ -616,18 +611,11 @@
               (serial-adder& netlist)
               (next-cntl-state& netlist)))))
 
-(defthm check-async-adder$netlist
-  (async-adder& (async-adder$netlist)))
-
-(defconst *async-adder$lcntl*      0)
-(defconst *async-adder$cntl*       1)
-(defconst *async-adder$lnext-cntl* 2)
-(defconst *async-adder$next-cntl*  3)
-(defconst *async-adder$ldone-*     4)
-(defconst *async-adder$done-*      5)
-(defconst *async-adder$lresult*    6)
-(defconst *async-adder$result*     7)
-(defconst *async-adder$serial-add* 8)
+(local
+ (defthmd check-async-adder$netlist
+   (and (net-syntax-okp (async-adder$netlist))
+        (net-arity-okp (async-adder$netlist))
+        (async-adder& (async-adder$netlist)))))
 
 (defund async-adder$ready-in- (st)
   (b* ((lnext-cntl (nth *async-adder$lnext-cntl* st))

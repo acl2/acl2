@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; February 2018
 
 (in-package "ADE")
 
@@ -84,9 +84,11 @@
   (cons (ripple-add/sub* n)
         *full-adder*))
 
-(defthmd ripple-add/sub$netlist-64-okp
-  (and (net-syntax-okp (ripple-add/sub$netlist 64))
-       (net-arity-okp (ripple-add/sub$netlist 64))))
+(local
+ (defthmd check-ripple-add/sub$netlist-64
+   (and (net-syntax-okp (ripple-add/sub$netlist 64))
+        (net-arity-okp (ripple-add/sub$netlist 64))
+        (ripple-add/sub& (ripple-add/sub$netlist 64) 64))))
 
 (local
  (defun ripple-add/sub-body-induct (m n wire-alist sts-alist netlist)

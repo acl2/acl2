@@ -151,6 +151,12 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'comp-gcd-cond
+                           '(la0 a0 lb0 b0 la1 a1 lb1 b1 q2 q3)
+                           0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of
 ;; COMP-GCD-COND.
 
@@ -162,12 +168,6 @@
                 (queue3$netlist data-width)
                 (gcd-cond$netlist data-width)
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd comp-gcd-cond$netlist-64-okp
-  (and (net-syntax-okp (comp-gcd-cond$netlist 64))
-       (net-arity-okp (comp-gcd-cond$netlist 64))))
 
 ;; Recognizer for COMP-GCD-COND
 
@@ -187,19 +187,11 @@
 
 ;; Sanity check
 
-(defthm check-comp-gcd-cond$netlist-64
-  (comp-gcd-cond& (comp-gcd-cond$netlist 64) 64))
-
-(defconst *comp-gcd-cond$la0* 0)
-(defconst *comp-gcd-cond$a0*  1)
-(defconst *comp-gcd-cond$lb0* 2)
-(defconst *comp-gcd-cond$b0*  3)
-(defconst *comp-gcd-cond$la1* 4)
-(defconst *comp-gcd-cond$a1*  5)
-(defconst *comp-gcd-cond$lb1* 6)
-(defconst *comp-gcd-cond$b1*  7)
-(defconst *comp-gcd-cond$q2*  8)
-(defconst *comp-gcd-cond$q3*  9)
+(local
+ (defthmd check-comp-gcd-cond$netlist-64
+   (and (net-syntax-okp (comp-gcd-cond$netlist 64))
+        (net-arity-okp (comp-gcd-cond$netlist 64))
+        (comp-gcd-cond& (comp-gcd-cond$netlist 64) 64))))
 
 ;; Constraints on the state of COMP-GCD-COND
 
@@ -228,7 +220,7 @@
          (queue2$st-format q2 data-width)
          (queue3$st-format q3 data-width))))
 
-(defthmd comp-gcd-cond$st-format=>data-width-constraint
+(defthm comp-gcd-cond$st-format=>data-width-constraint
   (implies (comp-gcd-cond$st-format st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
@@ -272,8 +264,7 @@
            (and (natp data-width)
                 (<= 3 data-width)))
   :hints (("Goal"
-           :in-theory (enable comp-gcd-cond$st-format=>data-width-constraint
-                              comp-gcd-cond$valid-st)))
+           :in-theory (enable comp-gcd-cond$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; COMP-GCD-COND simulator
@@ -607,15 +598,8 @@
                               comp-gcd-cond$data-out1)
                              ((comp-gcd-cond*)
                               nfix
-                              validp
-                              fullp
-                              emptyp
                               append
                               append-v-threefix
-                              acl2::prefer-positive-addends-equal
-                              acl2::simplify-sums-equal
-                              acl2::simplify-products-gather-exponents-equal
-                              acl2::|(equal (- x) (- y))|
                               de-module-disabled-rules)))))
 
   ;; This function specifies the next state of COMP-GCD-COND.
@@ -722,15 +706,8 @@
                               v-buf$value)
                              ((comp-gcd-cond*)
                               nfix
-                              validp
-                              fullp
-                              emptyp
                               append
                               append-v-threefix
-                              acl2::prefer-positive-addends-equal
-                              acl2::simplify-sums-equal
-                              acl2::simplify-products-gather-exponents-equal
-                              acl2::|(equal (- x) (- y))|
                               de-module-disabled-rules)))))
 
   (in-theory (disable comp-gcd-cond$state-fn))
@@ -798,49 +775,7 @@
                              len
                              take-of-too-many))))))
 
-;; Proving that comp-gcd-cond$st-format is an invariant.
-
-(defthm comp-gcd-cond$st-format-preserved
-  (implies (comp-gcd-cond$st-format st data-width)
-           (comp-gcd-cond$st-format
-            (comp-gcd-cond$state-fn inputs st data-width)
-            data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            comp-gcd-cond$st-format
-                            comp-gcd-cond$state-fn)
-                           ()))))
-
-(defthmd comp-gcd-cond$state-alt
-  (implies (and (comp-gcd-cond& netlist data-width)
-                (comp-gcd-cond$input-format inputs data-width)
-                (comp-gcd-cond$st-format st data-width))
-           (equal (de (si 'comp-gcd-cond data-width) inputs st netlist)
-                  (comp-gcd-cond$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable comp-gcd-cond$st-format=>data-width-constraint
-                              comp-gcd-cond$input-format)
-           :use (:instance
-                 comp-gcd-cond$state
-                 (full-in     (nth 0 inputs))
-                 (empty-out0- (nth 1 inputs))
-                 (empty-out1- (nth 2 inputs))
-                 (data-in (comp-gcd-cond$data-in inputs data-width))
-                 (go-signals (nthcdr (comp-gcd-cond$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen comp-gcd-cond data-width)
-(input-format-n-gen comp-gcd-cond data-width)
-
-(defthmd de-sim-n$comp-gcd-cond
-  (implies (and (comp-gcd-cond& netlist data-width)
-                (comp-gcd-cond$input-format-n inputs-lst data-width n)
-                (comp-gcd-cond$st-format st data-width))
-           (equal (de-sim-n (si 'comp-gcd-cond data-width)
-                            inputs-lst st netlist
-                            n)
-                  (comp-gcd-cond$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable comp-gcd-cond$state-alt))))
+(simulate-lemma comp-gcd-cond)
 
 ;; ======================================================================
 
@@ -1458,34 +1393,5 @@
                               acl2::len-of-append)))))
   )
 
-(encapsulate
-  ()
-
-  (local
-   (defthm comp-gcd-cond$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (comp-gcd-cond$op-seq in-seq) y2))
-              (equal (append x1 y1 z)
-                     (append (comp-gcd-cond$op-seq in-seq) y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd comp-gcd-cond$dataflow-correct
-    (b* ((extracted-st (comp-gcd-cond$extract-state st))
-         (final-st (comp-gcd-cond$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st
-          (comp-gcd-cond$extract-state final-st)))
-      (implies
-       (and (comp-gcd-cond$input-format-n inputs-lst data-width n)
-            (comp-gcd-cond$valid-st st data-width)
-            (comp-gcd-cond$inv st))
-       (equal (append final-extracted-st
-                      (comp-gcd-cond$out-seq inputs-lst st data-width n))
-              (append (comp-gcd-cond$op-seq
-                       (comp-gcd-cond$in-seq inputs-lst st data-width n))
-                      extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (comp-gcd-cond$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma comp-gcd-cond :op t :inv t)
 

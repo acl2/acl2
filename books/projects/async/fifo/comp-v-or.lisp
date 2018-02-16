@@ -146,6 +146,12 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'comp-v-or
+                           '(la0 a0 lb0 b0 la1 a1 lb1 b1 q2 q3)
+                           0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of
 ;; COMP-V-OR.
 
@@ -156,12 +162,6 @@
                 (queue3$netlist data-width)
                 (v-or$netlist data-width)
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd comp-v-or$netlist-64-okp
-  (and (net-syntax-okp (comp-v-or$netlist 64))
-       (net-arity-okp (comp-v-or$netlist 64))))
 
 ;; Recognizer for COMP-V-OR
 
@@ -180,19 +180,11 @@
 
 ;; Sanity check
 
-(defthm check-comp-v-or$netlist-64
-  (comp-v-or& (comp-v-or$netlist 64) 64))
-
-(defconst *comp-v-or$la0* 0)
-(defconst *comp-v-or$a0*  1)
-(defconst *comp-v-or$lb0* 2)
-(defconst *comp-v-or$b0*  3)
-(defconst *comp-v-or$la1* 4)
-(defconst *comp-v-or$a1*  5)
-(defconst *comp-v-or$lb1* 6)
-(defconst *comp-v-or$b1*  7)
-(defconst *comp-v-or$q2*  8)
-(defconst *comp-v-or$q3*  9)
+(local
+ (defthmd check-comp-v-or$netlist-64
+   (and (net-syntax-okp (comp-v-or$netlist 64))
+        (net-arity-okp (comp-v-or$netlist 64))
+        (comp-v-or& (comp-v-or$netlist 64) 64))))
 
 ;; Constraints on the state of COMP-V-OR
 
@@ -218,7 +210,7 @@
          (queue2$st-format q2 data-width)
          (queue3$st-format q3 data-width))))
 
-(defthmd comp-v-or$st-format=>natp-data-width
+(defthm comp-v-or$st-format=>natp-data-width
   (implies (comp-v-or$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable comp-v-or$st-format)))
@@ -259,8 +251,7 @@
 (defthmd comp-v-or$valid-st=>natp-data-width
   (implies (comp-v-or$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable comp-v-or$st-format=>natp-data-width
-                                     comp-v-or$valid-st)))
+  :hints (("Goal" :in-theory (enable comp-v-or$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; COMP-V-OR simulator
@@ -486,15 +477,8 @@
                             comp-v-or$out-act
                             comp-v-or$data-out)
                            ((comp-v-or*)
-                            append-v-threefix
-                            validp
-                            fullp
-                            emptyp
                             append
-                            acl2::prefer-positive-addends-equal
-                            acl2::simplify-sums-equal
-                            acl2::simplify-products-gather-exponents-equal
-                            acl2::|(equal (- x) (- y))|
+                            append-v-threefix
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-V-OR.
@@ -599,14 +583,7 @@
                             v-buf$value
                             v-or$value)
                            ((comp-v-or*)
-                            validp
-                            fullp
-                            emptyp
                             append
-                            acl2::prefer-positive-addends-equal
-                            acl2::simplify-sums-equal
-                            acl2::simplify-products-gather-exponents-equal
-                            acl2::|(equal (- x) (- y))|
                             de-module-disabled-rules)))))
 
 (in-theory (disable comp-v-or$state-fn))
@@ -671,48 +648,7 @@
                              len
                              take-of-too-many))))))
 
-;; Proving that comp-v-or$st-format is an invariant.
-
-(defthm comp-v-or$st-format-preserved
-  (implies (comp-v-or$st-format st data-width)
-           (comp-v-or$st-format (comp-v-or$state-fn inputs st data-width)
-                                data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            comp-v-or$st-format
-                            comp-v-or$state-fn)
-                           ()))))
-
-(defthmd comp-v-or$state-alt
-  (implies (and (comp-v-or& netlist data-width)
-                (comp-v-or$input-format inputs data-width)
-                (comp-v-or$st-format st data-width))
-           (equal (de (si 'comp-v-or data-width) inputs st netlist)
-                  (comp-v-or$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable comp-v-or$st-format=>natp-data-width
-                              comp-v-or$input-format)
-           :use (:instance
-                 comp-v-or$state
-                 (full-in    (nth 0 inputs))
-                 (empty-out- (nth 1 inputs))
-                 (a (comp-v-or$a inputs data-width))
-                 (b (comp-v-or$b inputs data-width))
-                 (go-signals (nthcdr (comp-v-or$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen comp-v-or data-width)
-(input-format-n-gen comp-v-or data-width)
-
-(defthmd de-sim-n$comp-v-or
-  (implies (and (comp-v-or& netlist data-width)
-                (comp-v-or$input-format-n inputs-lst data-width n)
-                (comp-v-or$st-format st data-width))
-           (equal (de-sim-n (si 'comp-v-or data-width)
-                            inputs-lst st netlist
-                            n)
-                  (comp-v-or$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable comp-v-or$state-alt))))
+(simulate-lemma comp-v-or)
 
 ;; ======================================================================
 
@@ -1238,34 +1174,5 @@
                               acl2::len-of-append)))))
   )
 
-(encapsulate
-  ()
-
-  (local
-   (defthm comp-v-or$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (comp-v-or$op-seq in-seq) y2))
-              (equal (append x1 y1 z)
-                     (append (comp-v-or$op-seq in-seq) y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd comp-v-or$dataflow-correct
-    (b* ((extracted-st (comp-v-or$extract-state st))
-         (final-st (comp-v-or$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st
-          (comp-v-or$extract-state final-st)))
-      (implies
-       (and (comp-v-or$input-format-n inputs-lst data-width n)
-            (comp-v-or$valid-st st data-width)
-            (comp-v-or$inv st))
-       (equal (append final-extracted-st
-                      (comp-v-or$out-seq inputs-lst st data-width n))
-              (append (comp-v-or$op-seq
-                       (comp-v-or$in-seq inputs-lst st data-width n))
-                      extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (comp-v-or$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma comp-v-or :op t :inv t)
 

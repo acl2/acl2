@@ -31,17 +31,16 @@
   (declare (xargs :guard t))
   (list (1-bit->*)))
 
-(defthmd 1-bit->$netlist-okp
-  (and (net-syntax-okp (1-bit->$netlist))
-       (net-arity-okp (1-bit->$netlist))))
-
 (defund 1-bit->& (netlist)
   (declare (xargs :guard (alistp netlist)))
   (equal (assoc '1-bit-> netlist)
          (1-bit->*)))
 
-(defthm check-1-bit->$netlist
-  (1-bit->& (1-bit->$netlist)))
+(local
+ (defthmd check-1-bit->$netlist
+   (and (net-syntax-okp (1-bit->$netlist))
+        (net-arity-okp (1-bit->$netlist))
+        (1-bit->& (1-bit->$netlist)))))
 
 (defthmd 1-bit->$value
   (implies (1-bit->& netlist)
@@ -204,9 +203,11 @@
   (cons (v->* n)
         (1-bit->$netlist)))
 
-(defthmd v->$netlist-64-okp
-  (and (net-syntax-okp (v->$netlist 64))
-       (net-arity-okp (v->$netlist 64))))
+(local
+ (defthmd check-v->$netlist-64
+   (and (net-syntax-okp (v->$netlist 64))
+        (net-arity-okp (v->$netlist 64))
+        (v->& (v->$netlist 64) 64))))
 
 (local
  (defun v->-body-induct (m n wire-alist sts-alist netlist)

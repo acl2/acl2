@@ -121,6 +121,10 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'queue3 '(l0 d0 l1 d1 l2 d2) 0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of Q3.
 
 (defun queue3$netlist (data-width)
@@ -130,12 +134,6 @@
                 (v-buf$netlist data-width)
                 *joint-cntl*
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd queue3$netlist-64-okp
-  (and (net-syntax-okp (queue3$netlist 64))
-       (net-arity-okp (queue3$netlist 64))))
 
 ;; Recognizer for Q3
 
@@ -151,15 +149,11 @@
 
 ;; Sanity check
 
-(defthm check-queue3$netlist-64
-  (queue3& (queue3$netlist 64) 64))
-
-(defconst *queue3$l0* 0)
-(defconst *queue3$d0* 1)
-(defconst *queue3$l1* 2)
-(defconst *queue3$d1* 3)
-(defconst *queue3$l2* 4)
-(defconst *queue3$d2* 5)
+(local
+ (defthmd check-queue3$netlist-64
+   (and (net-syntax-okp (queue3$netlist 64))
+        (net-arity-okp (queue3$netlist 64))
+        (queue3& (queue3$netlist 64) 64))))
 
 ;; Constraints on the state of Q3
 
@@ -176,7 +170,7 @@
          (len-1-true-listp d2)
          (equal (len d2) data-width))))
 
-(defthmd queue3$st-format=>natp-data-width
+(defthm queue3$st-format=>natp-data-width
   (implies (queue3$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue3$st-format)))
@@ -206,8 +200,7 @@
 (defthmd queue3$valid-st=>natp-data-width
   (implies (queue3$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue3$st-format=>natp-data-width
-                                     queue3$valid-st)))
+  :hints (("Goal" :in-theory (enable queue3$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; Q3 simulator
@@ -353,9 +346,6 @@
                             queue3$out-act
                             queue3$data-out)
                            ((queue3*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of Q3, namely, the next states of three
@@ -433,9 +423,6 @@
                             latch-n$value latch-n$state
                             v-buf$value)
                            ((queue3*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable queue3$state-fn))
@@ -462,47 +449,7 @@
      (equal inputs
             (list* full-in empty-out- (append data-in go-signals))))))
 
-;; Proving that queue3$st-format is an invariant.
-
-(defthm queue3$st-format-preserved
-  (implies (queue3$st-format st data-width)
-           (queue3$st-format (queue3$state-fn inputs st data-width)
-                             data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue3$st-format
-                            queue3$state-fn)
-                           ()))))
-
-(defthmd queue3$state-alt
-  (implies (and (queue3& netlist data-width)
-                (queue3$input-format inputs data-width)
-                (queue3$st-format st data-width))
-           (equal (de (si 'queue3 data-width) inputs st netlist)
-                  (queue3$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable queue3$st-format=>natp-data-width
-                              queue3$input-format)
-           :use (:instance
-                 queue3$state
-                 (full-in    (nth 0 inputs))
-                 (empty-out- (nth 1 inputs))
-                 (data-in    (queue3$data-in inputs data-width))
-                 (go-signals (nthcdr (queue3$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen queue3 data-width)
-(input-format-n-gen queue3 data-width)
-
-(defthmd de-sim-n$queue3
-  (implies (and (queue3& netlist data-width)
-                (queue3$input-format-n inputs-lst data-width n)
-                (queue3$st-format st data-width))
-           (equal (de-sim-n (si 'queue3 data-width)
-                            inputs-lst st netlist
-                            n)
-                  (queue3$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable queue3$state-alt))))
+(simulate-lemma queue3)
 
 ;; ======================================================================
 
@@ -668,32 +615,5 @@
                               queue3$out-act
                               queue3$data-out))))
 
-(encapsulate
-  ()
-
-  (local
-   (defthm queue3$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (queue3$in-seq inputs-lst st data-width n)
-                             y2))
-              (equal (append x1 y1 z)
-                     (append (queue3$in-seq inputs-lst st data-width n)
-                             y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd queue3$dataflow-correct
-    (b* ((extracted-st (queue3$extract-state st))
-         (final-st (queue3$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st (queue3$extract-state final-st)))
-      (implies (and (queue3$input-format-n inputs-lst data-width n)
-                    (queue3$valid-st st data-width))
-               (equal (append final-extracted-st
-                              (queue3$out-seq inputs-lst st data-width n))
-                      (append (queue3$in-seq inputs-lst st data-width n)
-                              extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (queue3$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma queue3)
 

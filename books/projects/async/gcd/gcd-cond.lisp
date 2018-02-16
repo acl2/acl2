@@ -83,12 +83,6 @@
                 (tv-if$netlist (make-tree data-width))
                 :test 'equal)))
 
-;; Sanity syntactic check
-
-(defthmd gcd-cond$netlist-64-okp
-  (and (net-syntax-okp (gcd-cond$netlist 64))
-       (net-arity-okp (gcd-cond$netlist 64))))
-
 ;; Recognizer for GCD-COND
 
 (defund gcd-cond& (netlist data-width)
@@ -105,8 +99,11 @@
 
 ;; Sanity check
 
-(defthm check-gcd-cond$netlist-64
-  (gcd-cond& (gcd-cond$netlist 64) 64))
+(local
+ (defthmd check-gcd-cond$netlist-64
+   (and (net-syntax-okp (gcd-cond$netlist 64))
+        (net-arity-okp (gcd-cond$netlist 64))
+        (gcd-cond& (gcd-cond$netlist 64) 64))))
 
 ;; Extracting the input data
 
@@ -260,8 +257,5 @@
                               tv-if$value)
                              ((gcd-cond*)
                               append-take-nthcdr
-                              validp
-                              fullp
-                              emptyp
                               de-module-disabled-rules)))))
   )

@@ -74,12 +74,6 @@
                 *joint-cntl*
                 :test 'equal)))
 
-;; Sanity syntactic check
-
-(defthmd merge$netlist-64-okp
-  (and (net-syntax-okp (merge$netlist 64))
-       (net-arity-okp (merge$netlist 64))))
-
 ;; Recognizer for merge
 
 (defund merge& (netlist data-width)
@@ -93,8 +87,11 @@
 
 ;; Sanity check
 
-(defthm check-merge$netlist-64
-  (merge& (merge$netlist 64) 64))
+(local
+ (defthmd check-merge$netlist-64
+   (and (net-syntax-okp (merge$netlist 64))
+        (net-arity-okp (merge$netlist 64))
+        (merge& (merge$netlist 64) 64))))
 
 ;; Extracting the 1st input data item
 
@@ -202,7 +199,6 @@
                            ((merge*)
                             (si)
                             (sis)
-                            validp
                             open-v-threefix
                             de-module-disabled-rules)))))
 
