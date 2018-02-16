@@ -31,8 +31,9 @@
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-(local (include-book "std/strings/explode-atom" :dir :system))
-(local (include-book "../typed-lists/symbol-listp"))
+;; removed these because it made for a long critial path (~30 sec) for a very basic book.  Now ~3 sec.
+;; (local (include-book "std/strings/explode-atom" :dir :system))
+;; (local (include-book "../typed-lists/symbol-listp"))
 
 (defxdoc defconsts
   :parents (std/util defconst)
@@ -175,6 +176,11 @@ this large list in the certificate.</li>
 
 (defsection defconsts-make-n-fresh-symbols
 
+  (local (defthm character-listp-of-explode-nonneg
+           (implies (character-listp acc)
+                    (character-listp (explode-nonnegative-integer x base acc)))
+           :hints(("Goal" :in-theory (enable explode-nonnegative-integer)))))
+
   (defund defconsts-make-n-fresh-symbols (n)
     (declare (xargs :guard (natp n)))
     (if (zp n)
@@ -246,6 +252,27 @@ this large list in the certificate.</li>
         ((acl2::stobjp (car stobjs) t wrld)
          (check-stobjs (cdr stobjs) wrld acc))
         (t (check-stobjs (cdr stobjs) wrld (cons (car stobjs) acc)))))
+
+(local (defthm symbolp-car-when-symbol-listp
+         (implies (symbol-listp x)
+                  (symbolp (car x)))))
+
+(local (defthm symbol-listp-of-set-diff
+         (implies (symbol-listp x)
+                  (symbol-listp (set-difference-eq x y)))))
+
+(local (defthm symbol-listp-of-remove
+         (implies (symbol-listp x)
+                  (symbol-listp (remove-eq y x)))))
+
+(local (defthm len-revappend
+         (Equal (len (revappend x y))
+                (+ (len x) (len y)))))
+
+(local (defthm symbol-listp-revappend
+         (implies (and (symbol-listp x)
+                       (symbol-listp y))
+                  (symbol-listp (revappend x y)))))
 
 (defund defconsts-fn (consts body)
   (declare (xargs :guard t))
