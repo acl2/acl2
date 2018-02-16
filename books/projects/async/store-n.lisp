@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; February 2018
 
 (in-package "ADE")
 
@@ -47,22 +47,25 @@
   (declare (xargs :guard (natp n)))
   (list (latch-n* n)))
 
-(defthmd latch-n$netlist-64-okp
-  (and (net-syntax-okp (latch-n$netlist 64))
-       (net-arity-okp (latch-n$netlist 64))))
+(local
+ (defthmd check-latch-n$netlist-64
+   (and (net-syntax-okp (latch-n$netlist 64))
+        (net-arity-okp (latch-n$netlist 64))
+        (latch-n& (latch-n$netlist 64) 64))))
 
 ;; LATCH-N value
 
-(defun latch-n-body-induct (m n wire-alist sts-alist netlist)
-  (if (zp n)
-      wire-alist
-    (latch-n-body-induct
-     (1+ m)
-     (1- n)
-     (se-occ-bindings 1 (latch-n-body m n)
-                      wire-alist sts-alist netlist)
-     sts-alist
-     netlist)))
+(local
+ (defun latch-n-body-induct (m n wire-alist sts-alist netlist)
+   (if (zp n)
+       wire-alist
+     (latch-n-body-induct
+      (1+ m)
+      (1- n)
+      (se-occ-bindings 1 (latch-n-body m n)
+                       wire-alist sts-alist netlist)
+      sts-alist
+      netlist))))
 
 (local
  (defthm latch-n$unbound-in-body
@@ -80,25 +83,26 @@
    (all-unbound-in-body (sis 'D x y) (latch-n-body m n))
    :hints (("Goal" :in-theory (enable latch-n-body occ-outs)))))
 
-(defthmd latch-n-body$value
-  (implies (natp m)
-           (equal (assoc-eq-values
-                   (sis 'Q m n)
-                   (se-occ (latch-n-body m n)
-                           wire-alist sts-alist netlist))
-                  (fv-if (assoc-eq-value 'clk wire-alist)
-                         (assoc-eq-values (sis 'D m n) wire-alist)
-                         (strip-cars
-                          (assoc-eq-values (sis 'G m n) sts-alist)))))
-  :hints (("Goal"
-           :induct (latch-n-body-induct m n wire-alist sts-alist netlist)
-           :in-theory (enable de-rules
-                              latch-n-body
-                              fv-if-rewrite
-                              f-gates
-                              repeat
-                              3vp
-                              sis))))
+(local
+ (defthmd latch-n-body$value
+   (implies (natp m)
+            (equal (assoc-eq-values
+                    (sis 'Q m n)
+                    (se-occ (latch-n-body m n)
+                            wire-alist sts-alist netlist))
+                   (fv-if (assoc-eq-value 'clk wire-alist)
+                          (assoc-eq-values (sis 'D m n) wire-alist)
+                          (strip-cars
+                           (assoc-eq-values (sis 'G m n) sts-alist)))))
+   :hints (("Goal"
+            :induct (latch-n-body-induct m n wire-alist sts-alist netlist)
+            :in-theory (enable de-rules
+                               latch-n-body
+                               fv-if-rewrite
+                               f-gates
+                               repeat
+                               3vp
+                               sis)))))
 
 (not-primp-lemma latch-n)
 
@@ -122,16 +126,17 @@
 
 ;; LATCH-N state
 
-(defun latch-n-body-state-induct (m n wire-alist sts-alist netlist)
-  (if (zp n)
-      sts-alist
-    (latch-n-body-state-induct
-     (1+ m)
-     (1- n)
-     wire-alist
-     (de-occ-bindings 1 (latch-n-body m n)
-                      wire-alist sts-alist netlist)
-     netlist)))
+(local
+ (defun latch-n-body-state-induct (m n wire-alist sts-alist netlist)
+   (if (zp n)
+       sts-alist
+     (latch-n-body-state-induct
+      (1+ m)
+      (1- n)
+      wire-alist
+      (de-occ-bindings 1 (latch-n-body m n)
+                       wire-alist sts-alist netlist)
+      netlist))))
 
 (local
  (defthm latch-n-body$state-aux-1
@@ -150,32 +155,33 @@
    :hints (("Goal"
             :in-theory (enable latch-n-body)))))
 
-(defthm latch-n-body$state
-  (implies (and (natp m)
-                (subsetp (sis 'G m n) (strip-cars sts-alist)))
-           (equal (assoc-eq-values
-                   (sis 'G m n)
-                   (de-occ (latch-n-body m n) wire-alist sts-alist netlist))
-                  (pairlis$
-                   (fv-if (assoc-eq-value 'clk wire-alist)
-                          (assoc-eq-values (sis 'D m n) wire-alist)
-                          (strip-cars
-                           (assoc-eq-values (sis 'G m n) sts-alist)))
-                   nil)))
-  :hints (("Goal"
-           :induct (latch-n-body-state-induct
-                    m n wire-alist sts-alist netlist)
-           :in-theory (enable de-rules
-                              latch-n-body
-                              fv-if-rewrite
-                              f-gates
-                              repeat
-                              sis))
-          ("Subgoal *1/2"
-           :use (:instance si-of-diff-symbols-2
-                           (s1 nil)
-                           (s2 'g)
-                           (n m)))))
+(local
+ (defthmd latch-n-body$state
+   (implies (and (natp m)
+                 (subsetp (sis 'G m n) (strip-cars sts-alist)))
+            (equal (assoc-eq-values
+                    (sis 'G m n)
+                    (de-occ (latch-n-body m n) wire-alist sts-alist netlist))
+                   (pairlis$
+                    (fv-if (assoc-eq-value 'clk wire-alist)
+                           (assoc-eq-values (sis 'D m n) wire-alist)
+                           (strip-cars
+                            (assoc-eq-values (sis 'G m n) sts-alist)))
+                    nil)))
+   :hints (("Goal"
+            :induct (latch-n-body-state-induct
+                     m n wire-alist sts-alist netlist)
+            :in-theory (enable de-rules
+                               latch-n-body
+                               fv-if-rewrite
+                               f-gates
+                               repeat
+                               sis))
+           ("Subgoal *1/2"
+            :use (:instance si-of-diff-symbols-2
+                            (s1 nil)
+                            (s2 'g)
+                            (n m))))))
 
 (defthmd latch-n$state
   (implies (and (latch-n& netlist n)
@@ -192,7 +198,8 @@
            :in-theory (e/d* (de-rules
                              latch-n&
                              latch-n*$destructure
-                             not-primp-latch-n)
+                             not-primp-latch-n
+                             latch-n-body$state)
                             (de-module-disabled-rules)))))
 
 ;; ======================================================================
@@ -231,22 +238,25 @@
   (declare (xargs :guard (natp n)))
   (list (ff-n* n)))
 
-(defthmd ff-n$netlist-64-okp
-  (and (net-syntax-okp (ff-n$netlist 64))
-       (net-arity-okp (ff-n$netlist 64))))
+(local
+ (defthmd check-ff-n$netlist-64
+   (and (net-syntax-okp (ff-n$netlist 64))
+        (net-arity-okp (ff-n$netlist 64))
+        (ff-n& (ff-n$netlist 64) 64))))
 
 ;; FF-N value
 
-(defun ff-n-body-induct (m n wire-alist sts-alist netlist)
-  (if (zp n)
-      wire-alist
-    (ff-n-body-induct
-     (1+ m)
-     (1- n)
-     (se-occ-bindings 1 (ff-n-body m n)
-                      wire-alist sts-alist netlist)
-     sts-alist
-     netlist)))
+(local
+ (defun ff-n-body-induct (m n wire-alist sts-alist netlist)
+   (if (zp n)
+       wire-alist
+     (ff-n-body-induct
+      (1+ m)
+      (1- n)
+      (se-occ-bindings 1 (ff-n-body m n)
+                       wire-alist sts-alist netlist)
+      sts-alist
+      netlist))))
 
 (local
  (defthm ff-n$unbound-in-body
@@ -264,20 +274,21 @@
    (all-unbound-in-body (sis 'D x y) (ff-n-body m n))
    :hints (("Goal" :in-theory (enable ff-n-body occ-outs)))))
 
-(defthmd ff-n-body$value
-  (implies (natp m)
-           (equal (assoc-eq-values
-                   (sis 'Q m n)
-                   (se-occ (ff-n-body m n)
-                           wire-alist sts-alist netlist))
-                  (v-threefix (strip-cars
-                               (assoc-eq-values (sis 'G m n)
-                                                sts-alist)))))
-  :hints (("Goal"
-           :induct (ff-n-body-induct m n wire-alist sts-alist netlist)
-           :in-theory (enable de-rules
-                              ff-n-body
-                              sis))))
+(local
+ (defthmd ff-n-body$value
+   (implies (natp m)
+            (equal (assoc-eq-values
+                    (sis 'Q m n)
+                    (se-occ (ff-n-body m n)
+                            wire-alist sts-alist netlist))
+                   (v-threefix (strip-cars
+                                (assoc-eq-values (sis 'G m n)
+                                                 sts-alist)))))
+   :hints (("Goal"
+            :induct (ff-n-body-induct m n wire-alist sts-alist netlist)
+            :in-theory (enable de-rules
+                               ff-n-body
+                               sis)))))
 
 (not-primp-lemma ff-n)
 
@@ -299,16 +310,17 @@
 
 ;; FF-N state
 
-(defun ff-n-body-state-induct (m n wire-alist sts-alist netlist)
-  (if (zp n)
-      sts-alist
-    (ff-n-body-state-induct
-     (1+ m)
-     (1- n)
-     wire-alist
-     (de-occ-bindings 1 (ff-n-body m n)
-                      wire-alist sts-alist netlist)
-     netlist)))
+(local
+ (defun ff-n-body-state-induct (m n wire-alist sts-alist netlist)
+   (if (zp n)
+       sts-alist
+     (ff-n-body-state-induct
+      (1+ m)
+      (1- n)
+      wire-alist
+      (de-occ-bindings 1 (ff-n-body m n)
+                       wire-alist sts-alist netlist)
+      netlist))))
 
 (local
  (defthm ff-n-body$state-aux-1
@@ -327,32 +339,33 @@
    :hints (("Goal"
             :in-theory (enable ff-n-body)))))
 
-(defthm ff-n-body$state
-  (implies (and (natp m)
-                (subsetp (sis 'G m n) (strip-cars sts-alist)))
-           (equal (assoc-eq-values
-                   (sis 'G m n)
-                   (de-occ (ff-n-body m n) wire-alist sts-alist netlist))
-                  (pairlis$
-                   (fv-if (assoc-eq-value 'clk wire-alist)
-                          (assoc-eq-values (sis 'D m n) wire-alist)
-                          (strip-cars
-                           (assoc-eq-values (sis 'G m n) sts-alist)))
-                   nil)))
-  :hints (("Goal"
-           :induct (ff-n-body-state-induct
-                    m n wire-alist sts-alist netlist)
-           :in-theory (enable de-rules
-                              ff-n-body
-                              fv-if-rewrite
-                              f-gates
-                              repeat
-                              sis))
-          ("Subgoal *1/2"
-           :use (:instance si-of-diff-symbols-2
-                           (s1 nil)
-                           (s2 'g)
-                           (n m)))))
+(local
+ (defthmd ff-n-body$state
+   (implies (and (natp m)
+                 (subsetp (sis 'G m n) (strip-cars sts-alist)))
+            (equal (assoc-eq-values
+                    (sis 'G m n)
+                    (de-occ (ff-n-body m n) wire-alist sts-alist netlist))
+                   (pairlis$
+                    (fv-if (assoc-eq-value 'clk wire-alist)
+                           (assoc-eq-values (sis 'D m n) wire-alist)
+                           (strip-cars
+                            (assoc-eq-values (sis 'G m n) sts-alist)))
+                    nil)))
+   :hints (("Goal"
+            :induct (ff-n-body-state-induct
+                     m n wire-alist sts-alist netlist)
+            :in-theory (enable de-rules
+                               ff-n-body
+                               fv-if-rewrite
+                               f-gates
+                               repeat
+                               sis))
+           ("Subgoal *1/2"
+            :use (:instance si-of-diff-symbols-2
+                            (s1 nil)
+                            (s2 'g)
+                            (n m))))))
 
 (defthmd ff-n$state
   (implies (and (ff-n& netlist n)
@@ -369,5 +382,6 @@
            :in-theory (e/d* (de-rules
                              ff-n&
                              ff-n*$destructure
-                             not-primp-ff-n)
+                             not-primp-ff-n
+                             ff-n-body$state)
                             (de-module-disabled-rules)))))

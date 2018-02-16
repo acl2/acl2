@@ -60,7 +60,8 @@
 
  :guard (natp data-width))
 
-;; DE netlist generator. A generated netlist will contain an instance of branch.
+;; DE netlist generator. A generated netlist will contain an instance of
+;; branch.
 
 (defun branch$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -68,12 +69,6 @@
         (union$ (v-buf$netlist data-width)
                 *joint-cntl*
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd branch$netlist-64-okp
-  (and (net-syntax-okp (branch$netlist 64))
-       (net-arity-okp (branch$netlist 64))))
 
 ;; Recognizer for branch
 
@@ -88,8 +83,11 @@
 
 ;; Sanity check
 
-(defthm check-branch$netlist-64
-  (branch& (branch$netlist 64) 64))
+(local
+ (defthmd check-branch$netlist-64
+   (and (net-syntax-okp (branch$netlist 64))
+        (net-arity-okp (branch$netlist 64))
+        (branch& (branch$netlist 64) 64))))
 
 ;; Extracting the input data
 
@@ -178,7 +176,6 @@
                            ((branch*)
                             (si)
                             (sis)
-                            validp
                             open-v-threefix
                             de-module-disabled-rules)))))
 

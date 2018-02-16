@@ -95,7 +95,14 @@
 
  :guard (natp data-width))
 
-;; DE netlist generator. A generated netlist will contain an instance of alt-merge.
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'alt-merge
+                           '(lselect select lselect-buf select-buf)
+                           0)))
+
+;; DE netlist generator. A generated netlist will contain an instance of
+;; alt-merge.
 
 (defun alt-merge$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -103,12 +110,6 @@
         (union$ (tv-if$netlist (make-tree data-width))
                 *joint-cntl*
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd alt-merge$netlist-64-okp
-  (and (net-syntax-okp (alt-merge$netlist 64))
-       (net-arity-okp (alt-merge$netlist 64))))
 
 ;; Recognizer for alt-merge
 
@@ -123,13 +124,11 @@
 
 ;; Sanity check
 
-(defthm check-alt-merge$netlist-64
-  (alt-merge& (alt-merge$netlist 64) 64))
-
-(defconst *alt-merge$lselect*     0)
-(defconst *alt-merge$select*      1)
-(defconst *alt-merge$lselect-buf* 2)
-(defconst *alt-merge$select-buf*  3)
+(local
+ (defthmd check-alt-merge$netlist-64
+   (and (net-syntax-okp (alt-merge$netlist 64))
+        (net-arity-okp (alt-merge$netlist 64))
+        (alt-merge& (alt-merge$netlist 64) 64))))
 
 ;; Constraints on the state of alt-merge
 
@@ -300,9 +299,6 @@
                             alt-merge$act0
                             alt-merge$act1)
                            ((alt-merge*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of alt-merge.
@@ -363,9 +359,6 @@
                             joint-cntl$value
                             tv-if$value)
                            ((alt-merge*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable alt-merge$state-fn))

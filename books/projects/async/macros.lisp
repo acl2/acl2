@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; Janurary 2018
+;; February 2018
 
 (in-package "ADE")
 
@@ -21,6 +21,23 @@
   (declare (xargs :guard (symbolp x)))
   (intern$ (concatenate 'string "*" (symbol-name x) "*")
            "ADE"))
+
+(defun state-accessors-gen (module sts idx)
+  (declare (xargs :guard (and (symbolp module)
+                              (symbol-listp sts)
+                              (natp idx))))
+  (if (atom sts)
+      nil
+    (b* ((st (car sts))
+         (name (intern$ (concatenate 'string
+                                     "*"
+                                     (symbol-name module)
+                                     "$"
+                                     (symbol-name st)
+                                     "*")
+                        "ADE")))
+      (cons `(defconst ,name ,idx)
+            (state-accessors-gen module (cdr sts) (1+ idx))))))
 
 (defmacro netlist-hyps (netlist &rest modules)
   (if (atom modules)
@@ -1138,6 +1155,145 @@
            :hints (("Goal"
                     :induct (,input-format-n ,inputs-lst st m)))))
       )))
+
+;; Proving the correspondence between simulating a DE module and its
+;; "hardware" run function.
+
+(defmacro simulate-lemma (name &key (complex-link 'nil))
+  (declare (xargs :guard (and (symbolp name)
+                              (booleanp complex-link))))
+  (b* ((recognizer (unstring (symbol-name name)
+                             "&"))
+       (state-fn (unstring (symbol-name name)
+                           "$STATE-FN"))
+       (state-fn-n (unstring (symbol-name name)
+                             "$STATE-FN-N"))
+       (state-lemma (unstring (symbol-name name)
+                              "$STATE"))
+       (input-format (unstring (symbol-name name)
+                               "$INPUT-FORMAT"))
+       (input-format-n (unstring (symbol-name name)
+                                 "$INPUT-FORMAT-N"))
+       (st-format (unstring (symbol-name name)
+                            "$ST-FORMAT"))
+       (st-format-preserved (unstring (symbol-name name)
+                                      "$ST-FORMAT-PRESERVED"))
+       (state-alt (unstring (symbol-name name)
+                            "$STATE-ALT"))
+       (simulate (unstring (symbol-name name)
+                           "$DE-SIM-N")))
+    `(progn
+       (defthm ,st-format-preserved
+         (implies (,st-format st data-width)
+                  (,st-format (,state-fn inputs st data-width)
+                              data-width))
+         :hints (("Goal"
+                  :in-theory (enable get-field
+                                     ,state-fn
+                                     ,st-format))))
+
+       (defthmd ,state-alt
+         (implies (and (,recognizer netlist data-width)
+                       ,(if complex-link
+                            `(,input-format inputs st data-width)
+                          `(,input-format inputs data-width))
+                       (,st-format st data-width))
+                  (equal (de (si ',name data-width) inputs st netlist)
+                         (,state-fn inputs st data-width)))
+         :hints (("Goal"
+                  :in-theory (enable ,input-format
+                                     ,state-lemma))))
+
+       (state-fn-n-gen ,name data-width)
+       ,(if complex-link
+           `(input-format-n-with-state-gen ,name data-width)
+         `(input-format-n-gen ,name data-width))
+
+       (defthmd ,simulate
+         (implies (and (,recognizer netlist data-width)
+                       ,(if complex-link
+                            `(,input-format-n inputs-lst st data-width n)
+                          `(,input-format-n inputs-lst data-width n))
+                       (,st-format st data-width))
+                  (equal (de-sim-n (si ',name data-width)
+                                   inputs-lst st netlist
+                                   n)
+                         (,state-fn-n inputs-lst st data-width n)))
+         :hints (("Goal" :in-theory (enable ,state-alt)))))))
+
+;; Formalizing the relationship between input and output sequences
+
+(defmacro in-out-stream-lemma (name &key
+                                    (op 'nil)
+                                    (inv 'nil)
+                                    (complex-link 'nil))
+  (declare (xargs :guard (and (symbolp name)
+                              (booleanp op)
+                              (booleanp inv)
+                              (booleanp complex-link))))
+  (b* ((extract-state (unstring (symbol-name name)
+                                "$EXTRACT-STATE"))
+       (step-spec (unstring (symbol-name name)
+                            "$STEP-SPEC"))
+       (state-fn-n (unstring (symbol-name name)
+                             "$STATE-FN-N"))
+       (input-format-n (unstring (symbol-name name)
+                                 "$INPUT-FORMAT-N"))
+       (valid-st (unstring (symbol-name name)
+                           "$VALID-ST"))
+       (st-inv (unstring (symbol-name name)
+                         "$INV"))
+       (in-seq (unstring (symbol-name name)
+                         "$IN-SEQ"))
+       (out-seq (unstring (symbol-name name)
+                          "$OUT-SEQ"))
+       (op-seq (unstring (symbol-name name)
+                         "$OP-SEQ"))
+       (seq (if op
+                `(,op-seq seq)
+              `(,in-seq inputs-lst st data-width n)))
+       (hyps (if inv
+                 `(and ,(if complex-link
+                            `(,input-format-n inputs-lst st data-width n)
+                          `(,input-format-n inputs-lst data-width n))
+                       (,valid-st st data-width)
+                       (,st-inv st))
+               `(and ,(if complex-link
+                          `(,input-format-n inputs-lst st data-width n)
+                        `(,input-format-n inputs-lst data-width n))
+                     (,valid-st st data-width))))
+       (concl (if op
+                  `(equal (append final-extracted-st
+                                  (,out-seq inputs-lst st data-width n))
+                          (append (,op-seq
+                                   (,in-seq inputs-lst st data-width n))
+                                  extracted-st))
+                `(equal (append final-extracted-st
+                                (,out-seq inputs-lst st data-width n))
+                        (append (,in-seq inputs-lst st data-width n)
+                                extracted-st))))
+       (dataflow-correct-aux (unstring (symbol-name name)
+                                       "$DATAFLOW-CORRECT-AUX"))
+       (dataflow-correct (unstring (symbol-name name)
+                                   "$DATAFLOW-CORRECT")))
+    `(encapsulate
+       ()
+
+       (local
+        (defthm ,dataflow-correct-aux
+          (implies (equal (append x y1)
+                          (append ,seq y2))
+                   (equal (append x y1 z)
+                          (append ,seq y2 z)))
+          :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
+                                          (acl2::associativity-of-append))))))
+
+       (defthmd ,dataflow-correct
+         (b* ((extracted-st (,extract-state st))
+              (final-st (,state-fn-n inputs-lst st data-width n))
+              (final-extracted-st (,extract-state final-st)))
+           (implies ,hyps ,concl))
+         :hints (("Goal" :in-theory (enable ,step-spec)))))))
 
 ;; ST-TRANS-FN generates (1) condition functions on GO signals' values based on
 ;; their interleavings, and (2) functions that counts the number of DE steps to

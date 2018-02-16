@@ -139,6 +139,10 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'queue5 '(l0 d0 l1 d1 l2 d2 l3 d3 l4 d4) 0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of Q5'.
 
 (defun queue5$netlist (data-width)
@@ -148,12 +152,6 @@
                 (v-buf$netlist data-width)
                 *joint-cntl*
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd queue5$netlist-64-okp
-  (and (net-syntax-okp (queue5$netlist 64))
-       (net-arity-okp (queue5$netlist 64))))
 
 ;; Recognizer for Q5'
 
@@ -169,19 +167,11 @@
 
 ;; Sanity check
 
-(defthm check-queue5$netlist-64
-  (queue5& (queue5$netlist 64) 64))
-
-(defconst *queue5$l0* 0)
-(defconst *queue5$d0* 1)
-(defconst *queue5$l1* 2)
-(defconst *queue5$d1* 3)
-(defconst *queue5$l2* 4)
-(defconst *queue5$d2* 5)
-(defconst *queue5$l3* 6)
-(defconst *queue5$d3* 7)
-(defconst *queue5$l4* 8)
-(defconst *queue5$d4* 9)
+(local
+ (defthmd check-queue5$netlist-64
+   (and (net-syntax-okp (queue5$netlist 64))
+        (net-arity-okp (queue5$netlist 64))
+        (queue5& (queue5$netlist 64) 64))))
 
 ;; Constraints on the state of Q5'
 
@@ -206,7 +196,7 @@
          (len-1-true-listp d4)
          (equal (len d4) data-width))))
 
-(defthmd queue5$st-format=>natp-data-width
+(defthm queue5$st-format=>natp-data-width
   (implies (queue5$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue5$st-format)))
@@ -248,8 +238,7 @@
 (defthmd queue5$valid-st=>natp-data-width
   (implies (queue5$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue5$st-format=>natp-data-width
-                                     queue5$valid-st)))
+  :hints (("Goal" :in-theory (enable queue5$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; Q5' simulator
@@ -415,9 +404,6 @@
                             queue5$ready-out
                             queue5$data-out)
                            ((queue5*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of Q5'.
@@ -513,9 +499,6 @@
                             latch-n$value latch-n$state
                             v-buf$value)
                            ((queue5*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable queue5$state-fn))
@@ -547,47 +530,7 @@
      (equal inputs
             (list* in-act out-act (append data-in go-signals))))))
 
-;; Proving that queue5$st-format is an invariant.
-
-(defthm queue5$st-format-preserved
-  (implies (queue5$st-format st data-width)
-           (queue5$st-format (queue5$state-fn inputs st data-width)
-                             data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue5$st-format
-                            queue5$state-fn)
-                           ()))))
-
-(defthmd queue5$state-alt
-  (implies (and (queue5& netlist data-width)
-                (queue5$input-format inputs st data-width)
-                (queue5$st-format st data-width))
-           (equal (de (si 'queue5 data-width) inputs st netlist)
-                  (queue5$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable queue5$st-format=>natp-data-width
-                              queue5$input-format)
-           :use (:instance
-                 queue5$state
-                 (in-act     (queue5$in-act inputs))
-                 (out-act    (queue5$out-act inputs))
-                 (data-in    (queue5$data-in inputs data-width))
-                 (go-signals (nthcdr (queue5$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen queue5 data-width)
-(input-format-n-with-state-gen queue5 data-width)
-
-(defthmd de-sim-n$queue5
-  (implies (and (queue5& netlist data-width)
-                (queue5$input-format-n inputs-lst st data-width n)
-                (queue5$st-format st data-width))
-           (equal (de-sim-n (si 'queue5 data-width)
-                            inputs-lst st netlist
-                            n)
-                  (queue5$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable queue5$state-alt))))
+(simulate-lemma queue5 :complex-link t)
 
 ;; ======================================================================
 
@@ -774,32 +717,5 @@
                               queue5$ready-out
                               queue5$data-out))))
 
-(encapsulate
-  ()
-
-  (local
-   (defthm queue5$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (queue5$in-seq inputs-lst st data-width n)
-                             y2))
-              (equal (append x1 y1 z)
-                     (append (queue5$in-seq inputs-lst st data-width n)
-                             y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd queue5$dataflow-correct
-    (b* ((extracted-st (queue5$extract-state st))
-         (final-st (queue5$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st (queue5$extract-state final-st)))
-      (implies (and (queue5$input-format-n inputs-lst st data-width n)
-                    (queue5$valid-st st data-width))
-               (equal (append final-extracted-st
-                              (queue5$out-seq inputs-lst st data-width n))
-                      (append (queue5$in-seq inputs-lst st data-width n)
-                              extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (queue5$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma queue5 :complex-link t)
 

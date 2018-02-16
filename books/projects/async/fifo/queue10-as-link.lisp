@@ -96,6 +96,10 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'queue10 '(q5-0 q5-1) 0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of Q10'.
 
 (defun queue10$netlist (data-width)
@@ -103,12 +107,6 @@
   (cons (queue10* data-width)
         (union$ (queue5$netlist data-width)
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd queue10$netlist-64-okp
-  (and (net-syntax-okp (queue10$netlist 64))
-       (net-arity-okp (queue10$netlist 64))))
 
 ;; Recognizer for Q10'
 
@@ -124,11 +122,11 @@
 
 ;; Sanity check
 
-(defthm check-queue10$netlist-64
-  (queue10& (queue10$netlist 64) 64))
-
-(defconst *queue10$q5-0* 0)
-(defconst *queue10$q5-1* 1)
+(local
+ (defthmd check-queue10$netlist-64
+   (and (net-syntax-okp (queue10$netlist 64))
+        (net-arity-okp (queue10$netlist 64))
+        (queue10& (queue10$netlist 64) 64))))
 
 ;; Constraints on the state of Q10'
 
@@ -138,11 +136,10 @@
     (and (queue5$st-format q5-0 data-width)
          (queue5$st-format q5-1 data-width))))
 
-(defthmd queue10$st-format=>natp-data-width
+(defthm queue10$st-format=>natp-data-width
   (implies (queue10$st-format st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue10$st-format
-                                     queue5$st-format=>natp-data-width)))
+  :hints (("Goal" :in-theory (enable queue10$st-format)))
   :rule-classes :forward-chaining)
 
 (defund queue10$valid-st (st data-width)
@@ -364,9 +361,6 @@
                             queue10$ready-out
                             queue10$data-out)
                            ((queue10*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of Q10'.
@@ -426,9 +420,6 @@
                             v-buf$value
                             queue5$value queue5$state)
                            ((queue10*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable queue10$state-fn))
@@ -505,47 +496,7 @@
                             (nthcdr
                              take-of-too-many))))))
 
-;; Proving that queue10$st-format is an invariant.
-
-(defthm queue10$st-format-preserved
-  (implies (queue10$st-format st data-width)
-           (queue10$st-format (queue10$state-fn inputs st data-width)
-                             data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue10$st-format
-                            queue10$state-fn)
-                           ()))))
-
-(defthmd queue10$state-alt
-  (implies (and (queue10& netlist data-width)
-                (queue10$input-format inputs st data-width)
-                (queue10$st-format st data-width))
-           (equal (de (si 'queue10 data-width) inputs st netlist)
-                  (queue10$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable queue10$st-format=>natp-data-width
-                              queue10$input-format)
-           :use (:instance
-                 queue10$state
-                 (in-act     (queue10$in-act inputs))
-                 (out-act    (queue10$out-act inputs))
-                 (data-in    (queue10$data-in inputs data-width))
-                 (go-signals (nthcdr (queue10$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen queue10 data-width)
-(input-format-n-with-state-gen queue10 data-width)
-
-(defthmd de-sim-n$queue10
-  (implies (and (queue10& netlist data-width)
-                (queue10$input-format-n inputs-lst st data-width n)
-                (queue10$st-format st data-width))
-           (equal (de-sim-n (si 'queue10 data-width)
-                            inputs-lst st netlist
-                            n)
-                  (queue10$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable queue10$state-alt))))
+(simulate-lemma queue10 :complex-link t)
 
 ;; ======================================================================
 
@@ -827,32 +778,5 @@
                              (queue10$input-format=>q5-1$input-format)))))
   )
 
-(encapsulate
-  ()
-
-  (local
-   (defthm queue10$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (queue10$in-seq inputs-lst st data-width n)
-                             y2))
-              (equal (append x1 y1 z)
-                     (append (queue10$in-seq inputs-lst st data-width n)
-                             y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd queue10$dataflow-correct
-    (b* ((extracted-st (queue10$extract-state st))
-         (final-st (queue10$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st (queue10$extract-state final-st)))
-      (implies (and (queue10$input-format-n inputs-lst st data-width n)
-                    (queue10$valid-st st data-width))
-               (equal (append final-extracted-st
-                              (queue10$out-seq inputs-lst st data-width n))
-                      (append (queue10$in-seq inputs-lst st data-width n)
-                              extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (queue10$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma queue10 :complex-link t)
 

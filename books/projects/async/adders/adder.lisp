@@ -22,13 +22,15 @@
      ((g0 (sum)   b-xor (a b))
       (g1 (carry) b-and (a b))))))
 
-(defthmd half-adder-okp
-  (and (net-syntax-okp *half-adder*)
-       (net-arity-okp *half-adder*)))
-
 (defund half-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist half-adder))
+
+(local
+ (defthmd check-half-adder
+   (and (net-syntax-okp *half-adder*)
+        (net-arity-okp *half-adder*)
+        (half-adder& *half-adder*))))
 
 (defthmd half-adder$value
   (implies (half-adder& netlist)
@@ -55,14 +57,16 @@
 
    *half-adder*))
 
-(defthmd full-adder-okp
-  (and (net-syntax-okp *full-adder*)
-       (net-arity-okp *full-adder*)))
-
 (defund full-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
   (and (netlist-hyps netlist full-adder)
        (half-adder& (delete-to-eq 'full-adder netlist))))
+
+(local
+ (defthmd check-full-adder
+   (and (net-syntax-okp *full-adder*)
+        (net-arity-okp *full-adder*)
+        (full-adder& *full-adder*))))
 
 (defthmd full-adder$value
   (implies (full-adder& netlist)
@@ -132,9 +136,11 @@
   (cons (ripple-adder* n)
         *full-adder*))
 
-(defthmd ripple-adder$netlist-64-okp
-  (and (net-syntax-okp (ripple-adder$netlist 64))
-       (net-arity-okp (ripple-adder$netlist 64))))
+(local
+ (defthmd check-ripple-adder$netlist-64
+   (and (net-syntax-okp (ripple-adder$netlist 64))
+        (net-arity-okp (ripple-adder$netlist 64))
+        (ripple-adder& (ripple-adder$netlist 64) 64))))
 
 (local
  (defun ripple-adder-body-induct (m n wire-alist sts-alist netlist)

@@ -99,6 +99,10 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'wig-wag '(l0 d0 l1 d1 br me) 0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of WW.
 
 (defun wig-wag$netlist (data-width)
@@ -108,12 +112,6 @@
                 (alt-merge$netlist data-width)
                 (latch-n$netlist data-width)
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd wig-wag$netlist-64-okp
-  (and (net-syntax-okp (wig-wag$netlist 64))
-       (net-arity-okp (wig-wag$netlist 64))))
 
 ;; Recognizer for WW
 
@@ -129,30 +127,28 @@
 
 ;; Sanity check
 
-(defthm check-wig-wag$netlist-64
-  (wig-wag& (wig-wag$netlist 64) 64))
-
-(defconst *wig-wag$l0* 0)
-(defconst *wig-wag$d0* 1)
-(defconst *wig-wag$l1* 2)
-(defconst *wig-wag$d1* 3)
-(defconst *wig-wag$br* 4)
-(defconst *wig-wag$me* 5)
+(local
+ (defthm check-wig-wag$netlist-64
+   (and (net-syntax-okp (wig-wag$netlist 64))
+        (net-arity-okp (wig-wag$netlist 64))
+        (wig-wag& (wig-wag$netlist 64) 64))))
 
 ;; Constraints on the state of WW
 
 (defund wig-wag$st-format (st data-width)
   (b* ((d0 (get-field *wig-wag$d0* st))
        (d1 (get-field *wig-wag$d1* st)))
-    (and (len-1-true-listp d0)
+    (and (< 0 data-width)
+
+         (len-1-true-listp d0)
          (equal (len d0) data-width)
 
          (len-1-true-listp d1)
          (equal (len d1) data-width))))
 
-(defthmd wig-wag$st-format=>natp-data-width
+(defthm wig-wag$st-format=>posp-data-width
   (implies (wig-wag$st-format st data-width)
-           (natp data-width))
+           (posp data-width))
   :hints (("Goal" :in-theory (enable wig-wag$st-format)))
   :rule-classes :forward-chaining)
 
@@ -176,11 +172,10 @@
          (alt-branch$valid-st br)
          (alt-merge$valid-st me))))
 
-(defthmd wig-wag$valid-st=>natp-data-width
+(defthmd wig-wag$valid-st=>posp-data-width
   (implies (wig-wag$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable wig-wag$st-format=>natp-data-width
-                                     wig-wag$valid-st)))
+  :hints (("Goal" :in-theory (enable wig-wag$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; WW simulator
@@ -344,8 +339,7 @@
 
 (defthmd wig-wag$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-    (implies (and (posp data-width)
-                  (wig-wag& netlist data-width)
+    (implies (and (wig-wag& netlist data-width)
                   (true-listp data-in)
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
@@ -380,9 +374,6 @@
                             wig-wag$br-inputs
                             wig-wag$me-inputs)
                            ((wig-wag*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of WW.
@@ -428,8 +419,7 @@
 
 (defthmd wig-wag$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-    (implies (and (posp data-width)
-                  (wig-wag& netlist data-width)
+    (implies (and (wig-wag& netlist data-width)
                   (true-listp data-in)
                   (equal (len data-in) data-width)
                   (true-listp go-signals)
@@ -459,9 +449,6 @@
                             alt-merge$value alt-merge$state
                             latch-n$value latch-n$state)
                            ((wig-wag*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable wig-wag$state-fn))
@@ -529,48 +516,7 @@
                             (nthcdr
                              take-of-too-many))))))
 
-;; Proving that wig-wag$st-format is an invariant.
-
-(defthm wig-wag$st-format-preserved
-  (implies (wig-wag$st-format st data-width)
-           (wig-wag$st-format (wig-wag$state-fn inputs st data-width)
-                             data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            wig-wag$st-format
-                            wig-wag$state-fn)
-                           ()))))
-
-(defthmd wig-wag$state-alt
-  (implies (and (posp data-width)
-                (wig-wag& netlist data-width)
-                (wig-wag$input-format inputs data-width)
-                (wig-wag$st-format st data-width))
-           (equal (de (si 'wig-wag data-width) inputs st netlist)
-                  (wig-wag$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable wig-wag$input-format)
-           :use (:instance
-                 wig-wag$state
-                 (full-in    (nth 0 inputs))
-                 (empty-out- (nth 1 inputs))
-                 (data-in    (wig-wag$data-in inputs data-width))
-                 (go-signals (nthcdr (wig-wag$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen wig-wag data-width)
-(input-format-n-gen wig-wag data-width)
-
-(defthmd de-sim-n$wig-wag
-  (implies (and (posp data-width)
-                (wig-wag& netlist data-width)
-                (wig-wag$input-format-n inputs-lst data-width n)
-                (wig-wag$st-format st data-width))
-           (equal (de-sim-n (si 'wig-wag data-width)
-                            inputs-lst st netlist
-                            n)
-                  (wig-wag$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable wig-wag$state-alt))))
+(simulate-lemma wig-wag)
 
 ;; ======================================================================
 
@@ -1022,33 +968,5 @@
                               alt-merge$act0
                               alt-merge$act1))))
 
-(encapsulate
-  ()
-
-  (local
-   (defthm wig-wag$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (wig-wag$in-seq inputs-lst st data-width n)
-                             y2))
-              (equal (append x1 y1 z)
-                     (append (wig-wag$in-seq inputs-lst st data-width n)
-                             y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd wig-wag$dataflow-correct
-    (b* ((extracted-st (wig-wag$extract-state st))
-         (final-st (wig-wag$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st (wig-wag$extract-state final-st)))
-      (implies (and (wig-wag$input-format-n inputs-lst data-width n)
-                    (wig-wag$valid-st st data-width)
-                    (wig-wag$inv st))
-               (equal (append final-extracted-st
-                              (wig-wag$out-seq inputs-lst st data-width n))
-                      (append (wig-wag$in-seq inputs-lst st data-width n)
-                              extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (wig-wag$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma wig-wag :inv t)
 

@@ -107,12 +107,6 @@
                 (ripple-add/sub$netlist data-width)
                 :test 'equal)))
 
-;; Sanity syntactic check
-
-(defthmd gcd-op$netlist-64-okp
-  (and (net-syntax-okp (gcd-op$netlist 64))
-       (net-arity-okp (gcd-op$netlist 64))))
-
 ;; Recognizer for GCD-OP
 
 (defund gcd-op& (netlist data-width)
@@ -128,8 +122,11 @@
 
 ;; Sanity check
 
-(defthm check-gcd-op$netlist-64
-  (gcd-op& (gcd-op$netlist 64) 64))
+(local
+ (defthmd check-gcd-op$netlist-64
+   (and (net-syntax-okp (gcd-op$netlist 64))
+        (net-arity-okp (gcd-op$netlist 64))
+        (gcd-op& (gcd-op$netlist 64) 64))))
 
 ;; Extracting the input data
 
@@ -303,9 +300,6 @@
                               ripple-add/sub$value-2)
                              ((gcd-op*)
                               append-take-nthcdr
-                              validp
-                              fullp
-                              emptyp
                               de-module-disabled-rules)))))
   )
 
@@ -314,9 +308,10 @@
 ;; 2. DE Module Generator of COMP-GCD
 ;;
 ;; Constructing a DE module generator that computes the Greatest Common Divisor
-;; (COMP-GCD) of two natural numbers. Proving the value and state lemmas for this
-;; module generator. We follow the link-joint model in building this generator;
-;; and a generated module contains a feedback loop in its data flows.
+;; (COMP-GCD) of two natural numbers. Proving the value and state lemmas for
+;; this module generator. We follow the link-joint model in building this
+;; generator; and a generated module contains a feedback loop in its data
+;; flows.
 
 (defconst *comp-gcd$go-num* (+ *merge$go-num*
                                *comp-gcd-cond$go-num*
@@ -333,8 +328,8 @@
   (+ (comp-gcd$data-ins-len data-width)
      *comp-gcd$go-num*))
 
-;; DE module generator of COMP-GCD. It reports the "in-act" signal at its input port,
-;; and the "out-act" signal and output data at its output port.
+;; DE module generator of COMP-GCD. It reports the "in-act" signal at its input
+;; port, and the "out-act" signal and output data at its output port.
 
 (module-generator
  comp-gcd* (data-width)
@@ -412,6 +407,10 @@
 
  :guard (natp data-width))
 
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'comp-gcd '(ls s l0 d0 l1 d1 l2 d2 br) 0)))
+
 ;; DE netlist generator. A generated netlist will contain an instance of COMP-GCD.
 
 (defun comp-gcd$netlist (data-width)
@@ -422,12 +421,6 @@
                 (gcd-op$netlist data-width)
                 (latch-n$netlist (* 2 data-width))
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd comp-gcd$netlist-64-okp
-  (and (net-syntax-okp (comp-gcd$netlist 64))
-       (net-arity-okp (comp-gcd$netlist 64))))
 
 ;; Recognizer for COMP-GCD
 
@@ -445,18 +438,11 @@
 
 ;; Sanity check
 
-(defthm check-comp-gcd$netlist-64
-  (comp-gcd& (comp-gcd$netlist 64) 64))
-
-(defconst *comp-gcd$ls* 0)
-(defconst *comp-gcd$s*  1)
-(defconst *comp-gcd$l0* 2)
-(defconst *comp-gcd$d0* 3)
-(defconst *comp-gcd$l1* 4)
-(defconst *comp-gcd$d1* 5)
-(defconst *comp-gcd$l2* 6)
-(defconst *comp-gcd$d2* 7)
-(defconst *comp-gcd$br* 8)
+(local
+ (defthmd check-comp-gcd$netlist-64
+   (and (net-syntax-okp (comp-gcd$netlist 64))
+        (net-arity-okp (comp-gcd$netlist 64))
+        (comp-gcd& (comp-gcd$netlist 64) 64))))
 
 ;; Constraints on the state of COMP-GCD
 
@@ -476,13 +462,12 @@
 
          (comp-gcd-cond$st-format br data-width))))
 
-(defthmd comp-gcd$st-format=>data-width-constraint
+(defthm comp-gcd$st-format=>data-width-constraint
   (implies (comp-gcd$st-format st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
   :hints (("Goal"
-           :in-theory (enable comp-gcd-cond$st-format=>data-width-constraint
-                              comp-gcd$st-format)))
+           :in-theory (enable comp-gcd$st-format)))
   :rule-classes :forward-chaining)
 
 (defund comp-gcd$valid-st (st data-width)
@@ -520,8 +505,7 @@
            (and (natp data-width)
                 (<= 3 data-width)))
   :hints (("Goal"
-           :in-theory (enable comp-gcd$st-format=>data-width-constraint
-                              comp-gcd$valid-st)))
+           :in-theory (enable comp-gcd$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; COMP-GCD simulator
@@ -756,13 +740,7 @@
                             comp-gcd$me-inputs)
                            ((comp-gcd*)
                             nfix
-                            acl2::take-of-append
-                            if*
-                            b-not
-                            cons-equal
-                            validp
-                            fullp
-                            emptyp
+                            append
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-GCD.
@@ -865,20 +843,7 @@
                             latch-n$value latch-n$state)
                            ((comp-gcd*)
                             nfix
-                            if*
-                            b-not
-                            append-take-nthcdr
-                            acl2::take-of-append
-                            acl2::prefer-positive-addends-equal
-                            acl2::simplify-sums-equal
-                            acl2::simplify-products-gather-exponents-equal
-                            acl2::|(equal (- x) (- y))|
                             append
-                            cons-equal
-                            true-listp
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable comp-gcd$state-fn))
@@ -924,48 +889,7 @@
                              len
                              take-of-too-many))))))
 
-;; Proving that comp-gcd$st-format is an invariant.
-
-(defthm comp-gcd$st-format-preserved
-  (implies (comp-gcd$st-format st data-width)
-           (comp-gcd$st-format (comp-gcd$state-fn inputs st data-width)
-                               data-width))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            comp-gcd-cond$st-format=>data-width-constraint
-                            comp-gcd$st-format
-                            comp-gcd$state-fn)
-                           ()))))
-
-(defthmd comp-gcd$state-alt
-  (implies (and (comp-gcd& netlist data-width)
-                (comp-gcd$input-format inputs data-width)
-                (comp-gcd$st-format st data-width))
-           (equal (de (si 'comp-gcd data-width) inputs st netlist)
-                  (comp-gcd$state-fn inputs st data-width)))
-  :hints (("Goal"
-           :in-theory (enable comp-gcd$st-format=>data-width-constraint
-                              comp-gcd$input-format)
-           :use (:instance
-                 comp-gcd$state
-                 (full-in    (nth 0 inputs))
-                 (empty-out- (nth 1 inputs))
-                 (data-in    (comp-gcd$data-in inputs data-width))
-                 (go-signals (nthcdr (comp-gcd$data-ins-len data-width)
-                                     inputs))))))
-
-(state-fn-n-gen comp-gcd data-width)
-(input-format-n-gen comp-gcd data-width)
-
-(defthmd de-sim-n$comp-gcd
-  (implies (and (comp-gcd& netlist data-width)
-                (comp-gcd$input-format-n inputs-lst data-width n)
-                (comp-gcd$st-format st data-width))
-           (equal (de-sim-n (si 'comp-gcd data-width)
-                            inputs-lst st netlist
-                            n)
-                  (comp-gcd$state-fn-n inputs-lst st data-width n)))
-  :hints (("Goal" :in-theory (enable comp-gcd$state-alt))))
+(simulate-lemma comp-gcd)
 
 ;; ======================================================================
 
@@ -1874,32 +1798,5 @@
                              (v-if-works)))))
   )
 
-(encapsulate
-  ()
-
-  (local
-   (defthm comp-gcd$dataflow-correct-aux
-     (implies (equal (append x1 y1)
-                     (append (comp-gcd$op-seq in-seq) y2))
-              (equal (append x1 y1 z)
-                     (append (comp-gcd$op-seq in-seq) y2 z)))
-     :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
-
-  (defthmd comp-gcd$dataflow-correct
-    (b* ((extracted-st (comp-gcd$extract-state st))
-         (final-st (comp-gcd$state-fn-n inputs-lst st data-width n))
-         (final-extracted-st (comp-gcd$extract-state final-st)))
-      (implies (and (comp-gcd$input-format-n inputs-lst data-width n)
-                    (comp-gcd$valid-st st data-width)
-                    (comp-gcd$inv st))
-               (equal (append final-extracted-st
-                              (comp-gcd$out-seq inputs-lst st data-width n))
-                      (append (comp-gcd$op-seq
-                               (comp-gcd$in-seq inputs-lst st data-width n))
-                              extracted-st))))
-    :hints (("Goal"
-             :in-theory (e/d (comp-gcd$step-spec)
-                             ()))))
-  )
+(in-out-stream-lemma comp-gcd :op t :inv t)
 

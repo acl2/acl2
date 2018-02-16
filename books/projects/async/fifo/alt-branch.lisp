@@ -90,7 +90,14 @@
 
  :guard (natp data-width))
 
-;; DE netlist generator. A generated netlist will contain an instance of alt-branch.
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'alt-branch
+                           '(lselect select lselect-buf select-buf)
+                           0)))
+
+;; DE netlist generator. A generated netlist will contain an instance of
+;; alt-branch.
 
 (defun alt-branch$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -98,12 +105,6 @@
         (union$ (v-buf$netlist data-width)
                 *joint-cntl*
                 :test 'equal)))
-
-;; Sanity syntactic check
-
-(defthmd alt-branch$netlist-64-okp
-  (and (net-syntax-okp (alt-branch$netlist 64))
-       (net-arity-okp (alt-branch$netlist 64))))
 
 ;; Recognizer for alt-branch
 
@@ -118,13 +119,11 @@
 
 ;; Sanity check
 
-(defthm check-alt-branch$netlist-64
-  (alt-branch& (alt-branch$netlist 64) 64))
-
-(defconst *alt-branch$lselect*     0)
-(defconst *alt-branch$select*      1)
-(defconst *alt-branch$lselect-buf* 2)
-(defconst *alt-branch$select-buf*  3)
+(local
+ (defthmd check-alt-branch$netlist-64
+   (and (net-syntax-okp (alt-branch$netlist 64))
+        (net-arity-okp (alt-branch$netlist 64))
+        (alt-branch& (alt-branch$netlist 64) 64))))
 
 ;; Constraints on the state of alt-branch
 
@@ -277,9 +276,6 @@
                             alt-branch$act0
                             alt-branch$act1)
                            ((alt-branch*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of alt-branch.
@@ -339,9 +335,6 @@
                             joint-cntl$value
                             v-buf$value)
                            ((alt-branch*)
-                            validp
-                            fullp
-                            emptyp
                             de-module-disabled-rules)))))
 
 (in-theory (disable alt-branch$state-fn))

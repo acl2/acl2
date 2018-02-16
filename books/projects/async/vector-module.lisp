@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; February 2018
 
 ;; Automatic definition and proofs for simple linear vector modules of
 ;; primitives or other modules.  VECTOR-MODULE is defined in
@@ -20,16 +20,17 @@
 ;; VECTOR-MODULE-INDUCTION
 ;; The induction scheme for vector modules.
 
-(defun vector-module-induction (body m n bindings state-bindings netlist)
-  (if (zp n)
-      (list body m bindings state-bindings netlist)
-    (vector-module-induction
-     (cdr body)
-     (1+ m)
-     (1- n)
-     (se-occ-bindings 1 body bindings state-bindings netlist)
-     state-bindings
-     netlist)))
+(local
+ (defun vector-module-induction (body m n bindings state-bindings netlist)
+   (if (zp n)
+       (list body m bindings state-bindings netlist)
+     (vector-module-induction
+      (cdr body)
+      (1+ m)
+      (1- n)
+      (se-occ-bindings 1 body bindings state-bindings netlist)
+      state-bindings
+      netlist))))
 
 ;; V-BUF
 ;; V-AND
