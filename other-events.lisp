@@ -2232,7 +2232,7 @@
                    non-empty list of rules.  ~@1See :DOC theories."
                   bad
                   (cond ((or macros theorems)
-                         (msg "Note that ~@0~@1@2.  "
+                         (msg "Note that ~@0~@1~@2.  "
                               (cond
                                (macros
                                 (msg "~&0 ~#0~[is a macro~/are macros~]; see ~

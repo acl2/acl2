@@ -28,18 +28,30 @@
 ; Neumann-esque''.  For example, we implement the array, property
 ; list, and io primitives with non-applicative techniques.
 
-; This file is read by Common Lisp in two ways.  First, we bring ACL2
-; into its initial state with the function boot-strap, which loads
-; this file.  Second, this file is read and compiled in the
-; implementation of ACL2 itself.  To support these two readings, we
-; use the #+ and #- read macro feature of Common Lisp.  While we are
-; loading this file in boot-strap, we arrange for *features* to
-; contain the symbol :acl2-loop-only; otherwise, *features* does not
-; contain :acl2-loop-only.  Thus, during boot-strap, forms immediately
-; preceded by #+acl2-loop-only are ``seen'', whereas those
-; immediately preceded by #-acl2-loop-only are invisible.  The
-; converse is true when we are compiling and loading the code for
-; ACL2.
+; This file, as with other ACL2 source files, is read in two ways: first by
+; Common Lisp, and second by the ACL2 read-eval-print loop.  The process is
+; roughly as follows ("roughly", because for example we never compile
+; acl2.lisp).
+
+;   (1) If the Lisp compiles on-the-fly (currently SBCL or CCL), then this step
+;       is skipped.  Otherwise we compile the ACL2 source files.
+
+;   (2) In a fresh Lisp session, we load the source files if the Lisp compiles
+;       on-the-fly (currently SBCL or CCL), and otherwise, the compiled files.
+
+;   (3) In the same session as (2), we add :acl2-loop-only to *features* and
+;       then we LD each source file.
+
+; Suppose for example a source file has the following code.
+
+;   (defun foo (x)
+;     #-acl2-loop-only
+;     <expression_1>
+;     #+acl2-loop-only
+;     <expression_2>)
+
+; Then in steps (1) and (2) the body of this definition is <expression_1>, but
+; in step (3) it is <expression_2>.
 
 ; If a symbol described in CLTL is axiomatized here, then we give it
 ; exactly the same semantics as it has in CLTL, under restrictions for
@@ -74,9 +86,9 @@
 ; Note that however we handle this constant, it is crucial that its value be
 ; independent of the implementation, lest we can prove something about its
 ; length (say) in one Lisp that is false in another.  Our requirement on this
-; list is that it allow the compiler to deal correctly with Common Lisp functions
-; such as CAR that we are bringing into the ACL2 environment, and the dpANS list
-; certainly satisfies that requirement.
+; list is that it allow the compiler to deal correctly with Common Lisp
+; functions such as CAR that we are bringing into the ACL2 environment, and the
+; dpANS list certainly satisfies that requirement.
 
 (acl2::defconst acl2::*common-lisp-symbols-from-main-lisp-package*
 
@@ -8713,22 +8725,122 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         #+:non-standard-analysis ; std-p
         nil))
 
+(defmacro er (severity context str &rest str-args)
+
+; Keep in sync with er@par.
+
+  (declare (xargs :guard (and (true-listp str-args)
+                              (member-symbol-name (symbol-name severity)
+                                                  '(hard hard? hard! hard?!
+                                                         soft very-soft))
+                              (<= (length str-args) 10))))
+
+; Note: We used to require (stringp str) but then we started writing such forms
+; as (er soft ctx msg x y z), where msg was bound to the error message str
+; (because the same string was used many times).
+
+; The special form (er hard "..." &...) expands into a call of illegal on "..."
+; and an alist built from &....  Since illegal has a guard of nil, the attempt
+; to prove the correctness of a fn producing a hard error will require proving
+; that the error can never occur.  At runtime, illegal causes a CLTL error.
+
+; The form (er soft ctx "..." &...) expands into a call of error1 on ctx, "..."
+; and an alist built from &....  At runtime error1 builds an error object and
+; returns it.  Thus, soft errors are not errors at all in the CLTL sense and
+; any function calling one which might cause an error ought to handle it.
+
+; Just to make it easier to debug our code, we have arranged for the er macro
+; to actually produce a prog2 form in which the second arg is as described
+; above but the preceding one is an fmt statement which will actually print the
+; error str and alist.  Thus, we can see when soft errors occur, whether or not
+; the calling program handles them appropriately.
+
+; We do not advertise the hard! or very-soft severities, at least not yet.  The
+; implementation uses the former to force a hard error even in contexts where
+; we would normally return nil.
+
+  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
+                                    #\5 #\6 #\7 #\8 #\9)
+                                  str-args))
+        (severity-name (symbol-name severity)))
+    (cond ((equal severity-name "SOFT")
+           (list 'error1 context str alist 'state))
+          ((equal severity-name "VERY-SOFT")
+           (list 'error1-safe context str alist 'state))
+          ((equal severity-name "HARD?")
+           (list 'hard-error context str alist))
+          ((equal severity-name "HARD")
+           (list 'illegal context str alist))
+          ((equal severity-name "HARD!")
+           #+acl2-loop-only (list 'illegal context str alist)
+           #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
+                              (illegal ,context ,str ,alist)))
+          ((equal severity-name "HARD?!")
+           #+acl2-loop-only (list 'hard-error context str alist)
+           #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
+                              (hard-error ,context ,str ,alist)))
+          (t
+
+; The final case should never happen.
+
+           (illegal 'top-level
+                    "Illegal severity, ~x0; macroexpansion of ER failed!"
+                    (list (cons #\0 severity)))))))
+
+#+acl2-par
+(defmacro er@par (severity context str &rest str-args)
+
+; Keep in sync with er.
+
+  (declare (xargs :guard (and (true-listp str-args)
+                              (member-symbol-name (symbol-name severity)
+                                                  '(hard hard? hard! hard?!
+                                                         soft very-soft))
+                              (<= (length str-args) 10))))
+  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
+                                    #\5 #\6 #\7 #\8 #\9)
+                                  str-args))
+        (severity-name (symbol-name severity)))
+    (cond ((equal severity-name "SOFT")
+           (list 'error1@par context str alist 'state))
+          (t
+
+; The final case should never happen.
+
+           (illegal 'top-level
+                    "Illegal severity, ~x0; macroexpansion of ER@PAR failed!"
+                    (list (cons #\0 severity)))))))
+
 #+acl2-loop-only
 (defmacro defthmd (&whole event-form
                           name term
                           &rest rst)
-  (declare (xargs :guard t) (ignore term rst))
-  (list 'with-output
-        :stack :push :off :all
-        (list 'progn
-              (list 'with-output
-                    :stack :pop
-                    (cons 'defthm (cdr event-form)))
-              (list 'in-theory
-                    (list 'disable name))
-              (list 'value-triple
-                    (list 'quote (xd-name 'defthmd name))
-                    :on-skip-proofs t))))
+  (declare (xargs :guard t) (ignore term))
+  (let ((tmp (member :rule-classes rst)))
+    (cond
+     ((and tmp
+           (cdr tmp)
+           (eq (cadr tmp) nil))
+      (er hard (cons 'defthmd name)
+          "It is illegal to specify :rule-classes nil with ~x0, since there ~
+           is no rule to disable."
+          'defthmd))
+     (t (list 'with-output
+              :stack :push
+              :off :all
+
+; The following allows reporting of macroexpansion errors.
+
+              :on 'error
+              (list 'progn
+                    (list 'with-output
+                          :stack :pop
+                          (cons 'defthm (cdr event-form)))
+                    (list 'in-theory
+                          (list 'disable name))
+                    (list 'value-triple
+                          (list 'quote (xd-name 'defthmd name))
+                          :on-skip-proofs t)))))))
 
 #+(and acl2-loop-only :non-standard-analysis)
 (defmacro defthm-std (&whole event-form
@@ -16381,92 +16493,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (defvar *print-circle-stream* nil)
-
-(defmacro er (severity context str &rest str-args)
-
-; Keep in sync with er@par.
-
-  (declare (xargs :guard (and (true-listp str-args)
-                              (member-symbol-name (symbol-name severity)
-                                                  '(hard hard? hard! hard?!
-                                                         soft very-soft))
-                              (<= (length str-args) 10))))
-
-; Note: We used to require (stringp str) but then we started writing such forms
-; as (er soft ctx msg x y z), where msg was bound to the error message str
-; (because the same string was used many times).
-
-; The special form (er hard "..." &...) expands into a call of illegal on "..."
-; and an alist built from &....  Since illegal has a guard of nil, the attempt
-; to prove the correctness of a fn producing a hard error will require proving
-; that the error can never occur.  At runtime, illegal causes a CLTL error.
-
-; The form (er soft ctx "..." &...) expands into a call of error1 on ctx, "..."
-; and an alist built from &....  At runtime error1 builds an error object and
-; returns it.  Thus, soft errors are not errors at all in the CLTL sense and
-; any function calling one which might cause an error ought to handle it.
-
-; Just to make it easier to debug our code, we have arranged for the er macro
-; to actually produce a prog2 form in which the second arg is as described
-; above but the preceding one is an fmt statement which will actually print the
-; error str and alist.  Thus, we can see when soft errors occur, whether or not
-; the calling program handles them appropriately.
-
-; We do not advertise the hard! or very-soft severities, at least not yet.  The
-; implementation uses the former to force a hard error even in contexts where
-; we would normally return nil.
-
-  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                    #\5 #\6 #\7 #\8 #\9)
-                                  str-args))
-        (severity-name (symbol-name severity)))
-    (cond ((equal severity-name "SOFT")
-           (list 'error1 context str alist 'state))
-          ((equal severity-name "VERY-SOFT")
-           (list 'error1-safe context str alist 'state))
-          ((equal severity-name "HARD?")
-           (list 'hard-error context str alist))
-          ((equal severity-name "HARD")
-           (list 'illegal context str alist))
-          ((equal severity-name "HARD!")
-           #+acl2-loop-only (list 'illegal context str alist)
-           #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
-                              (illegal ,context ,str ,alist)))
-          ((equal severity-name "HARD?!")
-           #+acl2-loop-only (list 'hard-error context str alist)
-           #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
-                              (hard-error ,context ,str ,alist)))
-          (t
-
-; The final case should never happen.
-
-           (illegal 'top-level
-                    "Illegal severity, ~x0; macroexpansion of ER failed!"
-                    (list (cons #\0 severity)))))))
-
-#+acl2-par
-(defmacro er@par (severity context str &rest str-args)
-
-; Keep in sync with er.
-
-  (declare (xargs :guard (and (true-listp str-args)
-                              (member-symbol-name (symbol-name severity)
-                                                  '(hard hard? hard! hard?!
-                                                         soft very-soft))
-                              (<= (length str-args) 10))))
-  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                    #\5 #\6 #\7 #\8 #\9)
-                                  str-args))
-        (severity-name (symbol-name severity)))
-    (cond ((equal severity-name "SOFT")
-           (list 'error1@par context str alist 'state))
-          (t
-
-; The final case should never happen.
-
-           (illegal 'top-level
-                    "Illegal severity, ~x0; macroexpansion of ER@PAR failed!"
-                    (list (cons #\0 severity)))))))
 
 (defun get-serialize-character (state)
   (declare (xargs :guard (and (state-p state)
