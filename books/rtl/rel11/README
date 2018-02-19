@@ -39,13 +39,9 @@ the following:
                     |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 
-The library files contain virtually no documentation.  A detailed companion
-document is available online as follows, and can also be accessed through
-the documentation topic RTL in the acl2+books combined manual.
-
-    D.M. Russinoff, A formal theory of register-transfer logic and computer
-    arithmetic, 2006.
-    http://www.russinoff.com/libman/
+The library files contain virtually no documentation.  A detailed
+companion document was formerly available online.  An updated version
+is to appear in a book to be published by Springer in late 2018.
 
 Many of the interesting events are formal versions of definitions and lemmas
 that are stated and proved in papers that document various applications of 

@@ -121,6 +121,9 @@
  @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
  recursive case, as is sometimes necessary.</p>
 
+ <p>Updated the ACL2+books manual to accommodate the replacement of David
+ Russinoff's online rtl manual by his upcoming Springer book.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
