@@ -18,13 +18,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defun-sk-queries
-
   :parents (kestrel-utilities system-utilities defun-sk)
-
   :short "Utilities to query @(tsee defun-sk) functions."
-
   :long
-
   "<p>
    @(tsee defun-sk) mimics functions with (top-level) quantifiers
    in the quantifier-free logic of ACL2,
@@ -37,7 +33,6 @@
    It also generates a rewrite rule to support reasoning
    about the function with the quantifier.
    </p>
-
    <p>
    These @(tsee defun-sk) query utilities provide facilities
    to check whether a function has been introduced via @(tsee defun-sk),
