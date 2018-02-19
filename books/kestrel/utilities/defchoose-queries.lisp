@@ -1,6 +1,6 @@
 ; DEFCHOOSE Queries
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -45,8 +45,22 @@
   (getpropc fn 'defchoose-axiom nil wrld)
   :guard-hints (("Goal" :in-theory (enable function-namep))))
 
-(define defchoose-bound-vars ((fn (and (function-namep fn wrld)
-                                       (defchoosep fn wrld)))
+(define defchoose-namep (x (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :verify-guards nil
+  :short "Recognize symbols
+          that name functions introduced via @(tsee defchoose)."
+  :long
+  "<p>
+   This function is enabled because it is meant as an abbreviation.
+   Thus, theorems triggered by this function should be avoided.
+   </p>"
+  (and (function-namep x wrld)
+       (defchoosep x wrld)
+       t)
+  :enabled t)
+
+(define defchoose-bound-vars ((fn (defchoose-namep fn wrld))
                               (wrld plist-worldp))
   :returns (bound-vars "A @(tsee symbol-listp).")
   :mode :program
@@ -63,8 +77,7 @@
         (list bound-var/bound-vars)
       bound-var/bound-vars)))
 
-(define defchoose-strengthen ((fn (and (function-namep fn wrld)
-                                       (defchoosep fn wrld)))
+(define defchoose-strengthen ((fn (defchoose-namep fn wrld))
                               (wrld plist-worldp))
   :returns (t/nil "A @(tsee booleanp).")
   :mode :program
@@ -84,8 +97,7 @@
         nil
       (car (last event)))))
 
-(define defchoose-untrans-body ((fn (and (function-namep fn wrld)
-                                         (defchoosep fn wrld)))
+(define defchoose-untrans-body ((fn (defchoose-namep fn wrld))
                                 (wrld plist-worldp))
   :mode :program
   :short "<see topic='@(url term)'>Untranslated</see> body
@@ -97,8 +109,7 @@
    </p>"
   (fifth (get-event fn wrld)))
 
-(define defchoose-body ((fn (and (function-namep fn wrld)
-                                 (defchoosep fn wrld)))
+(define defchoose-body ((fn (defchoose-namep fn wrld))
                         (wrld plist-worldp))
   :returns (body "A @(tsee pseudo-termp).")
   :mode :program
