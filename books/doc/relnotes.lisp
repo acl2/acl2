@@ -121,6 +121,17 @@
  @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
  recursive case, as is sometimes necessary.</p>
 
+ <p>Extended and simplified the <see topic='@(url
+ defun-sk-queries)'>@('defun-sk') query utilities</see>.  The utilities now
+ handle the recently introduced @(':constrain') option.  The utilities no
+ longer build a record with all the information about the @(tsee defun-sk)
+ function (whose fields can then be accessed); instead, now the utilities
+ retrieve the various pieces of information directly.</p>
+
+ <p>Extended the <see topic='@(url defchoose-queries)'>@('defchoose') query
+ utilities</see> with a recognizer for symbols that name @(tsee defchoose)
+ functions.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
@@ -130,8 +141,11 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>The model includes more support for 32-bit mode.  In particular, the
- &lsquo;PUSH/POP general-purpose register&rsquo; instructions now also work in
- 32-bit mode.</p>
+ `PUSH/POP general-purpose register' instructions now also work in 32-bit
+ mode.</p>
+
+ <p>Some of the XDOC documentation and some of the comments have been slightly
+ expanded.</p>
 
  <h3>Licensing Changes</h3>
 
