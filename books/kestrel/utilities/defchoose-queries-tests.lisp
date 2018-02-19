@@ -55,6 +55,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert! (not (defchoose-namep 678 (w state))))
+
+(assert! (not (defchoose-namep "name" (w state))))
+
+(assert! (not (defchoose-namep 'symb (w state))))
+
+(assert! (not (defchoose-namep 'cons (w state))))
+
+(assert! (not (defchoose-namep 'not (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert! (not (defchoose-namep 'f (w state)))))
+
+(must-succeed*
+ (encapsulate
+   (((f *) => *))
+   (local (defun f (x) x))
+   (defthm f-id
+     (equal (f x) x)))
+ (assert! (not (defchoose-namep 'f (w state)))))
+
+(must-succeed*
+ (defchoose f x (a b c)
+   (equal x (list a b c)))
+ (assert! (defchoose-namep 'f (w state))))
+
+(must-succeed*
+ (defchoose f (x y) (a b c)
+   (equal (cons x y) (list a b c)))
+ (assert! (defchoose-namep 'f (w state))))
+
+(must-succeed*
+ (defchoose f x (a b c)
+   (equal x (list a b c))
+   :strengthen t)
+ (assert! (defchoose-namep 'f (w state))))
+
+(must-succeed*
+ (defchoose f (x y) (a b c)
+   (equal (cons x y) (list a b c))
+   :strengthen t)
+ (assert! (defchoose-namep 'f (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (must-succeed*
  (defchoose f x (a b c)
    (equal x (list a b c)))
