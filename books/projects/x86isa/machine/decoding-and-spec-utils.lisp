@@ -769,7 +769,7 @@ the @('fault') field instead.</li>
                (5 ;; RIP-relative addressing
                 (if (64-bit-modep x86)
                     (b* (((mv ?flg0 dword x86)
-                          ;; dword1 is the sign-extended displacement
+                          ;; dword is the sign-extended displacement
                           ;; present in the instruction.
                           (rime-size 4 temp-RIP *cs* :x x86))
                          ;; next-rip is the rip of the next instruction.
