@@ -48,6 +48,186 @@
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable take (tau-system))))
 
+(defxdoc acre
+  :parents (projects)
+  :short "ACL2 Centaur Regular Expressions"
+  :long "<p>ACRE is a regular expression package with features somewhat similar
+to Perl's regular expressions.</p>
+
+<p>Important note for writing regular expressions: the Common Lisp string
+reader treats backslashes as escape characters, so all backslashes in the parse
+tree below need to be escaped.  I.e., you need to enter the following regular
+expression at the REPL to match a whitespace character, a backslash, and a
+double quote, and removing any backslash from it will change its meaning:</p>
+@({
+ \"\\\\s\\\\\\\\\\\"\"
+ })
+<p>If you print this out as follows, you'll see what the string's actual contents are:</p>
+@({
+ (cw \"'~s0'~%\" \"\\\\s\\\\\\\\\\\"\") --> '\\s\\\\\"')
+ })
+<p>So please keep in mind that any backslash in the following grammar must
+really be written as two backslashes.  It is best to debug your regular
+expressions by printing them out as above to avoid this sort of confusion.</p>
+
+<p>Here is the syntax for parsing regular expressions, and following it are descriptions of their semantics.</p>
+
+@({
+ regex = concat
+         concat \"|\" regex              (Disjunction -- match either one)
+
+ concat = \"\"                           (Empty string -- always matches)
+          repeat concat
+
+ repeat = atom
+          atom repeatop
+
+ atom = group
+        primitive
+
+ group = \"(\" regex \")\"                 (positional capture)
+         \"(?:\" regex \")\"               (noncapturing)
+         \"(?i:\" regex \")\"              (noncapturing, case insensitive)
+         \"(?^i:\" regex \")\"             (noncapturing, case sensitive)
+         \"(?<\" name \">\" regex \")\"      (named capture)
+         \"(?=\" regex \")\"               (zero-length lookahead)
+         \"(?!\" regex \")\"               (zero-length lookahead, negated)
+         \"(?<=\" regex \")\"              (zero-length lookbehind, constant width)
+         \"(?<!\" regex \")\"              (zero-length lookbehind, constant width, negated)
+
+ primitive = non_meta_character        (matches the given character)
+             \".\"                       (matches any character)
+             \"[\" characterset \"]\"      (matches any character in the class)
+             \"[^\" characterset \"]\"     (matches any character not in the class)
+             \"^\"                       (matches beginning of string)
+             \"$\"                       (matches end of string)
+             backref
+             \"\\\" metacharacter         (escape)
+             \"\\\" charsetchar           (character set abbreviations)
+
+ backref = \"\\\" digit                   (matches nth capture group)
+           \"\\g\" digit
+           \"\\g{\" number \"}\"            (matches nth capture group -- may be greater than 9)
+           \"\\g{\" name \"}\"              (matches named capture group)
+           \"\\k{\" name \"}\"
+           \"\\k<\" name \">\"
+           \"\\k'\" name \"'\"
+
+ repeatop = repeatbase 
+            repeatbase repeatmod
+
+ repeatbase = \"*\"                      (0 or more times)
+              \"+\"                      (1 or more times)
+              \"?\"                      (0 or 1 times)
+              \"{\" n \"}\"                (exactly n times)
+              \"{\" n \",}\"               (n or more times)
+              \"{\" n \",\" m \"}\"          (minimum n and maximum m times)
+
+ repeatmod = \"?\"                       (nongreedy)
+             \"+\"                       (nonbacktracking)
+
+ characterset = \"\"
+                cset_elem characterset
+
+ cset_elem = cset_set
+             cset_atom \"-\" cset_atom   (range -- second must have higher char code)
+             cset_atom
+
+ cset_set = \"\\w\"                       (word character -- alphanumeric or _)
+            \"\\d\"                       (decimal digit)
+            \"\\s\"                       (whitespace character)
+            \"\\h\"                       (horizontal whitespace character)
+            \"\\v\"                       (vertical whitespace character)
+
+ cset_atom =  non_cset_metacharacter
+              \"\\\\\"                     (backslash)
+              \"\\n\"                     (newline)
+              \"\\t\"                     (tab)
+              \"\\r\"                     (carriage return)
+              \"\\f\"                     (form feed)
+              \"\\]\"                     (close bracket)
+              \"\\-\"                     (dash)
+ })
+
+<h3>API</h3>
+<p>The following types and functions make up the high-level regular expression API.</p>
+
+<h4>Types</h4>
+<ul>
+<li>@('regex-p') -- internal representation of regular expression patterns</li>
+<li>@('matchresult-p') -- result of matching against a string</li>
+</ul>
+
+<h4>Functions</h4>
+<ul>
+
+<li>@('(parse pattern :legible t) --> (mv err regex)') -- Pattern is a string;
+returns either an error or a regex.  If legible is nonnil (the default), then
+the pattern string is preprocessed before parsing in a way that allows patterns
+to be written more legibly: the preprocessing step removes non-escaped
+whitespace and removes comments consisting of the rest of the line after (and
+including) any non-escaped @('#') character.</li>
+
+<li>@('(match-regex regex str :case-insens nil) --> matchresult') -- Matches
+the given regex against str, using case insensitive matching if case-insens is
+set to nonnil.</li>
+
+<li>@('(parse-and-match-regex pattern str :case-insens nil :legible t) --> (mv
+err matchresult)') -- Combines @('parse') and @('match-regex').</li>
+
+<li>@('(match pattern str :case-insens nil :legible t) --> matchresult') --
+Macro which parses the given pattern into a regex at macroexpansion time,
+expanding to a call of @('match-regex') on the resulting regular expression.
+Any parse error becomes an error at macroexpansion time.</li>
+
+<li>@('(matchresult->matchedp matchresult) --> boolean') -- returns T if the
+regular expression matched the string and NIL otherwise.</li>
+
+<li>@('(matchresult->matched-substr matchresult) --> substr-if-matched') --
+returns the matched substring of the input string if there was a match, else
+NIL.</li>
+
+<li>@('(matchresult->captured-substr name matchresult) --> substr-if-matched')
+-- returns the substring that was captured by the given capture group, or NIL
+if the regex didn't match or the capture group was in part of the regex that
+didn't match. (As an example of the latter, consider matching the pattern
+\"(aa)|bb\" against the string \"bb\".)  @('Name') may be a positive number,
+which accesses capture groups by position, or a string, which accesses named
+capture groups (names are case sensitive).</li>
+
+<li>@('(matchresult->captured-substr! name matchresult) --> substr') -- Same as
+the above, but simply returns the empty string if the above would return
+NIL.</li>
+</ul>
+
+<h4>@('B*') binders for capture groups</h4>
+
+<ul>
+
+<li>@('((captures binding1 binding2 ...) matchresult)') binds variables to
+captured substrings from the given matchresult.  A binding may be simply a
+variable, in which case a positional capture group is accessed, or @('(var
+name)'), in which case @('var') will be bound to the result of looking up the
+named capture group @('name').  If a capture group doesn't exist, the variable
+is bound to NIL.  The @('captures!')  binding does the same thing but instead
+binds the variable to the empty string if the capture group doesn't exist.</li>
+
+<li>@('((named-captures binding1 binding2 ...) matchresult)') is similar to
+@('captures'), differing only when the binding is simply a variable.  Instead
+of getting a capture group by position, this looks up the downcase of the name
+of the variable.  @('Named-captures!') behaves analogously to
+@('captures!').</li>
+
+</ul>
+")
+
+(defxdoc acre-internals
+  :parents (acre)
+  :short "Umbrella topic for implementation-level documentation of @(see acre).")
+
+
+
+
 (defmacro lstrfix (x)
   `(mbe :logic (acl2::str-fix ,x) :exec ,x))
 
@@ -230,6 +410,8 @@
 
 (deftypes regex
   (deftagsum regex
+    :parents (acre-internals)
+    :short "Regular expression object"
     (:exact ((str stringp :rule-classes :type-prescription)))
     (:repeat
      ((pat regex)
@@ -256,24 +438,82 @@
      ;; Checks that the pattern matches (or does not match, if negp)
      ;; but doesn't change the point in the string where we're matching.
      ((pat regex)
+      (lookback natp :rule-classes :type-prescription :default 0)
       (negp booleanp :rule-classes :type-prescription)))
     :layout :list
     :measure (acl2-count x))
 
   (deflist regexlist :elt-type regex :true-listp t
     :measure (acl2-count x)))
+
+(defines regex-constant-width
+  (define regex-constant-width ((x regex-p))
+    :returns (width maybe-natp :rule-classes :type-prescription)
+    :measure (regex-count x)
+    (regex-case x
+      :exact (strlen x.str)
+      :repeat (b* ((pat-width (regex-constant-width x.pat))
+                   ((when (eql pat-width 0)) 0)
+                   ((unless pat-width) nil)
+                   ((unless (eql x.min x.max)) nil))
+                (* pat-width x.min))
+      :concat (concat-constant-width x.lst)
+      :disjunct (if (consp x.lst)
+                    (disjunct-constant-width x.lst)
+                  ;; can't match anything, so any constant will work here :)
+                  0)
+      :charset 1
+      :start 0
+      :end 0
+      :group (regex-constant-width x.pat)
+      :backref nil
+      :reverse-pref (regex-constant-width x.pat)
+      :no-backtrack (regex-constant-width x.pat)
+      :case-sens (regex-constant-width x.pat)
+      :zerolength 0))
+
+  (define concat-constant-width ((x regexlist-p))
+    :returns (width maybe-natp :rule-classes :type-prescription)
+    :measure (regexlist-count x)
+    (b* (((when (atom x)) 0)
+         (width1 (regex-constant-width (car x)))
+         ((unless width1) nil)
+         (width2 (concat-constant-width (cdr x)))
+         ((unless width2) nil))
+      (+ width1 width2)))
+
+  (define disjunct-constant-width ((x regexlist-p))
+    :guard (consp x)
+    :returns (width maybe-natp :rule-classes :type-prescription)
+    :measure (if (consp x)
+                 (regexlist-count x)
+               (+ 1 (regex-count nil)))
+    (b* ((width1 (regex-constant-width (car x)))
+         ((unless width1) nil)
+         ((when (atom (cdr x))) width1)
+         (width2 (disjunct-constant-width (cdr x))))
+      (and (eql width1 width2)
+           width2)))
+  ///
+  ;; To do: prove this is correct, i.e. if x has constant width and
+  ;; match-regex-rec matches on str at position idx, then all states returned
+  ;; have new index idx+width.
+  (fty::deffixequiv-mutual regex-constant-width))
+      
     
 (defprod backref
   ((loc natp :rule-classes :type-prescription)
    (len natp :rule-classes :type-prescription))
-  :layout :tree)
+  :layout :tree
+  :hons t)
 
 (defmap backref-alist :val-type backref :true-listp t)
 
 (defprod matchstate
   ((index natp :rule-classes :type-prescription)
    (backrefs backref-alist))
-  :layout :tree)
+  :layout :tree
+  :hons t)
 
 (deflist matchstatelist :elt-type matchstate :true-listp t)
 
@@ -742,13 +982,119 @@
 
 
 
+(define backref-in-bounds ((x backref-p) (str stringp))
+  (b* (((backref x)))
+    (<= (+ x.loc x.len) (strlen str)))
+  ///
+  (defthm backref-in-bounds-of-make-backref
+    (equal (backref-in-bounds (backref loc len) str)
+           (<= (+ (nfix loc) (nfix len)) (strlen str)))))
+
+(define backref-alist-in-bounds ((x backref-alist-p) (str stringp))
+  (if (atom x)
+      t
+    (and (or (not (mbt (consp (car x))))
+             (backref-in-bounds (cdar x) str))
+         (backref-alist-in-bounds (cdr x) str)))
+  ///
+  (fty::deffixequiv backref-alist-in-bounds
+    :hints(("Goal" :in-theory (enable backref-alist-fix))))
+
+  (defthm backref-alist-in-bounds-of-cons
+    (equal (backref-alist-in-bounds (cons (cons key backref) rest) str)
+           (and (backref-in-bounds backref str)
+                (backref-alist-in-bounds rest str))))
+
+  (defthm backref-alist-in-bounds-of-nil
+    (backref-alist-in-bounds nil str))
+
+  (defthm backref-in-bounds-of-lookup
+    (implies (and (backref-alist-in-bounds x str)
+                  (cdr (assoc name x)))
+             (backref-in-bounds (cdr (assoc name x)) str))))
+                  
+(define matchstate-in-bounds ((st matchstate-p) (str stringp))
+  (b* (((matchstate st)))
+    (and (<= (matchstate->index st) (strlen str))
+         (backref-alist-in-bounds st.backrefs str)))
+  ///
+  (defthm matchstate-in-bounds-of-make-matchstate
+    (equal (matchstate-in-bounds (make-matchstate :index index :backrefs backrefs) str)
+           (and (<= (nfix index) (strlen str))
+                (backref-alist-in-bounds backrefs str))))
+
+  (defthm matchstate-in-bounds-implies-backref-alist-in-bounds
+    (implies (matchstate-in-bounds st str)
+             (backref-alist-in-bounds (matchstate->backrefs st) str)))
+
+  (defthm matchstate-in-bounds-implies-index-in-bounds
+    (implies (matchstate-in-bounds st str)
+             (<= (matchstate->index st) (len (acl2::explode str))))
+    :rule-classes ((:linear :trigger-terms ((matchstate->index st))))))
+
+(define matchstatelist-in-bounds ((sts matchstatelist-p) (str stringp))
+  (if (atom sts)
+      t
+    (and (matchstate-in-bounds (car sts) str)
+         (matchstatelist-in-bounds (cdr sts) str)))
+  ///
+  (defthm matchstatelist-in-bounds-of-cons
+    (equal (matchstatelist-in-bounds (cons st rest) str)
+           (and (matchstate-in-bounds st str)
+                (matchstatelist-in-bounds rest str))))
+
+  (defthm matchstatelist-in-bounds-of-nil
+    (matchstatelist-in-bounds nil str))
+
+  (defthm matchstatelist-in-bounds-of-remove
+    (implies (matchstatelist-in-bounds sts x)
+             (matchstatelist-in-bounds (remove st sts) x)))
+
+  (defthm matchstatelist-in-bounds-of-set-diff
+    (implies (matchstatelist-in-bounds sts x)
+             (matchstatelist-in-bounds (set-difference$ sts sts2) x)))
+
+  (defthm matchstatelist-in-bounds-of-undup
+    (implies (matchstatelist-in-bounds sts x)
+             (matchstatelist-in-bounds (undup sts) x))
+    :hints(("Goal" :in-theory (enable undup))))
+
+  (defthm matchstatelist-in-bounds-of-append
+    (implies (and (matchstatelist-in-bounds a x)
+                  (matchstatelist-in-bounds b x))
+             (matchstatelist-in-bounds (append a b) x)))
+
+  (defthm matchstatelist-in-bounds-of-rev
+    (implies (matchstatelist-in-bounds sts x)
+             (matchstatelist-in-bounds (rev sts) x)))
+
+  (defthm matchstatelist-in-bounds-of-matches-add-backref
+    (implies (and (matchstatelist-in-bounds sts str)
+                  (matchstatelist-indices-gte index sts))
+             (matchstatelist-in-bounds
+              (matches-add-backref name index sts)
+              str))
+    :hints(("Goal" :in-theory (enable matches-add-backref matchstatelist-indices-gte
+                                      matchstate-in-bounds
+                                      match-add-backref))))
+
+  (defthm matchstatelist-in-bounds-of-remove-zero-length
+    (implies (matchstatelist-in-bounds sts str)
+             (matchstatelist-in-bounds (matches-remove-zero-length index sts) str))
+    :hints(("Goal" :in-theory (enable matches-remove-zero-length))))
+
+  (defthm matchstate-in-bounds-of-car-of-matchstatelist
+    (implies (and (matchstatelist-in-bounds sts str)
+                  (consp sts))
+             (matchstate-in-bounds (car sts) str))))
+
 
 (defines match-regex-rec
   (define match-regex-rec ((pat regex-p)
                            (x stringp)
                            (st matchstate-p)
                            (mode matchmode-p))
-    :guard (<= (matchstate->index st) (strlen x))
+    :guard (matchstate-in-bounds st x)
     :measure (list (regex-count pat) 0 (matchstate-measure x st) 0)
     :well-founded-relation acl2::nat-list-<
     :verify-guards nil
@@ -770,7 +1116,7 @@
 
         :concat (match-concat-rec pat.lst x st mode)
 
-        :disjunct (undup-exec (match-disjunct-rec pat.lst x st mode) nil)
+        :disjunct (undup (match-disjunct-rec pat.lst x st mode))
 
         :charset (b* (;; charset has to match something, so we can't be past the end
                       ((unless (< st.index (strlen x))) nil))
@@ -808,7 +1154,10 @@
         :case-sens (b* ((mode (change-matchmode mode :case-insens pat.case-insens)))
                      (match-regex-rec pat.pat x st mode))
 
-        :zerolength (b* ((rec-matches (match-regex-rec pat.pat x st mode)))
+        :zerolength (b* ((back-index (- st.index pat.lookback))
+                         ((when (< back-index 0)) nil)
+                         (back-st (change-matchstate st :index back-index))
+                         (rec-matches (match-regex-rec pat.pat x back-st mode)))
                       (and (xor (consp rec-matches) pat.negp)
                            (list st))))))
 
@@ -817,19 +1166,19 @@
                             (st matchstate-p)
                             (mode matchmode-p))
     :returns (matches matchstatelist-p)
-    :guard (<= (matchstate->index st) (strlen x))
+    :guard (matchstate-in-bounds st x)
     :measure (list (regexlist-count pat) 0 (matchstate-measure x st) 0)
     (b* ((st (matchstate-fix st))
          ((when (atom pat))
           (list st))
          (matches (match-regex-rec (car pat) x st mode)))
-      (undup-exec (match-concat-sts-rec (cdr pat) x matches mode) nil)))
+      (undup (match-concat-sts-rec (cdr pat) x matches mode))))
 
   (define match-concat-sts-rec ((pat regexlist-p)
                                 (x stringp)
                                 (sts matchstatelist-p)
                                 (mode matchmode-p))
-    :guard (matchstatelist-indices-lte (strlen x) sts)
+    :guard (matchstatelist-in-bounds sts x)
     :returns (matches matchstatelist-p)
     :measure (list (regexlist-count pat) 0 (matchstatelist-measure x sts) (len sts))
     (if (atom sts)
@@ -841,7 +1190,7 @@
                               (x stringp)
                               (st matchstate-p)
                               (mode matchmode-p))
-    :guard (<= (matchstate->index st) (strlen x))
+    :guard (matchstate-in-bounds st x)
     :returns (matches matchstatelist-p)
     :measure (list (regexlist-count pat) 0 (matchstate-measure x st) 0)
     (b* (((when (atom pat))
@@ -854,7 +1203,7 @@
                                        (x stringp)
                                        (sts matchstatelist-p)
                                        (mode matchmode-p))
-    :guard (matchstatelist-indices-lte (strlen x) sts)
+    :guard (matchstatelist-in-bounds sts x)
     :returns (matches matchstatelist-p)
     :measure (list (regex-count pat) 0 (matchstatelist-measure x sts) (len sts))
     (if (atom sts)
@@ -869,7 +1218,7 @@
                                (x stringp)
                                (sts matchstatelist-p)
                                (mode matchmode-p))
-    :guard (matchstatelist-indices-lte (strlen x) sts)
+    :guard (matchstatelist-in-bounds sts x)
     :returns (matches matchstatelist-p)
     :measure (list (regex-count pat) 0 (matchstatelist-measure x sts) (len sts))
     (if (atom sts)
@@ -883,7 +1232,7 @@
                                         (x stringp)
                                         (sts matchstatelist-p)
                                         (mode matchmode-p))
-    :guard (matchstatelist-indices-lte (strlen x) sts)
+    :guard (matchstatelist-in-bounds sts x)
     :returns (matches matchstatelist-p)
     :measure (list (regex-count pat) 1 (matchstatelist-measure x sts) min)
     (b* ((min (lnfix min))
@@ -902,7 +1251,7 @@
                                 (x stringp)
                                 (sts matchstatelist-p)
                                 (mode matchmode-p))
-    :guard (matchstatelist-indices-lte (strlen x) sts)
+    :guard (matchstatelist-in-bounds sts x)
     :returns (matches matchstatelist-p)
     :measure (list (regex-count pat) 1 (matchstatelist-measure x sts) max)
     (b* ((max (maybe-natp-fix max))
@@ -931,7 +1280,7 @@
                                      (mode matchmode-p)
                                      (acc matchstatelist-p))
     :enabled t
-    :guard (matchstatelist-indices-lte (strlen x) sts)
+    :guard (matchstatelist-in-bounds sts x)
     :measure (list (regex-count pat) 2 (matchstatelist-measure x sts) max)
     (mbe :logic (append (match-repeat-sts-rec max pat x sts mode)
                         (matchstatelist-fix acc))
@@ -961,7 +1310,7 @@
                             (x stringp)
                             (st matchstate-p)
                             (mode matchmode-p))
-    :guard (<= (matchstate->index st) (strlen x))
+    :guard (matchstate-in-bounds st x)
     :returns (matches matchstatelist-p)
     :measure (list (regex-count pat) 3 (matchstate-measure x st) 0)
     (b* ((min-matches (match-repeat-sts-minimum-rec min pat x (list st) mode))
@@ -994,15 +1343,43 @@
 
   ///
 
-  (local (in-theory (disable match-regex-rec
-                             match-concat-rec
-                             match-concat-sts-rec
-                             match-disjunct-rec
-                             match-regex-sts-nonzero-rec
-                             match-repeat-sts-minimum-rec
-                             match-repeat-sts-rec
-                             ;; match-repeat-sts-rec-exec
-                             match-repeat-rec)))
+  (local (defconsts *match-regex-fns*
+           (remove 'match-repeat-sts-rec-exec
+                   (acl2::getpropc 'match-regex-rec 'acl2::recursivep nil (w state)))))
+  
+  (local (make-event `(in-theory (disable . ,*match-regex-fns*))))
+
+  (local (defun match-regex-mr-fns (name body-when-takes-st body-when-takes-sts hints rule-classes fns wrld)
+           (if (atom fns)
+               nil
+             (cons `(defret ,name
+                      ,(if (member 'st (acl2::formals (car fns) wrld))
+                           body-when-takes-st
+                         body-when-takes-sts)
+                      :hints ,hints :rule-classes ,rule-classes :fn ,(car fns))
+                   (match-regex-mr-fns name body-when-takes-st body-when-takes-sts hints rule-classes (cdr fns) wrld)))))
+
+  (local (defun match-regex-mutual-recursion (name body-when-takes-st body-when-takes-sts hints rule-classes omit wrld)
+           `(defret-mutual ,name
+              ,@(match-regex-mr-fns name body-when-takes-st body-when-takes-sts hints rule-classes
+                                    (set-difference-eq *match-regex-fns* omit)
+                                    wrld)
+              :skip-others t)))
+
+  (defmacro def-match-regex-thm (name body-when-takes-st body-when-takes-sts &key hints (rule-classes ':rewrite) omit)
+    `(make-event (match-regex-mutual-recursion ',name ',body-when-takes-st ',body-when-takes-sts ',hints ',rule-classes ',omit (w state))))
+
+
+
+  ;; (local (in-theory (disable match-regex-rec
+  ;;                            match-concat-rec
+  ;;                            match-concat-sts-rec
+  ;;                            match-disjunct-rec
+  ;;                            match-regex-sts-nonzero-rec
+  ;;                            match-repeat-sts-minimum-rec
+  ;;                            match-repeat-sts-rec
+  ;;                            ;; match-repeat-sts-rec-exec
+  ;;                            match-repeat-rec)))
 
   (local (in-theory (enable matchstatelist-min-index-of-append)))
 
@@ -1016,132 +1393,108 @@
              (not (consp (match-concat-sts-rec pat x sts mode))))
     :hints (("goal" :expand ((match-concat-sts-rec pat x sts mode)))))
 
-  (defret-mutual matchstatelist-indices-gte-of-match-regex-rec
-    (defret matchstatelist-indices-gte-of-<fn>
-      (implies (<= (nfix n) (matchstate->index st))
+  (def-match-regex-thm matchstatelist-indices-gte-of-<fn>
+    (implies (<= (nfix n) (matchstate->index st))
+             (matchstatelist-indices-gte n matches))
+    (implies (matchstatelist-indices-gte n sts)
                (matchstatelist-indices-gte n matches))
-      :hints ('(:expand (<call>
-                         (:free (st) (matchstatelist-indices-gte n (list st)))))
-              (and stable-under-simplificationp
-                   '(:in-theory (enable matchstatelist-indices-gte
-                                        matchstate-measure))))
-      :fn match-regex-rec)
+    :hints ('(:expand (<call>
+                       (:free (st) (matchstatelist-indices-gte n (list st)))
+                       (matchstatelist-indices-gte n sts)
+                       (match-repeat-sts-rec nil pat x sts mode)
+                       (match-repeat-rec nil min pat x st mode)))))
 
-    (defret matchstatelist-indices-gte-of-<fn>
-      (implies (<= (nfix n) (matchstate->index st))
-               (matchstatelist-indices-gte n matches))
-      :hints ('(:expand (<call>
-                         (matchstatelist-indices-gte n (list st)))))
-      :fn match-concat-rec)
+  (def-match-regex-thm matchstatelist-in-bounds-of-<fn>
+    (implies (matchstate-in-bounds st x)
+             (matchstatelist-in-bounds matches x))
+    (implies (matchstatelist-in-bounds sts x)
+             (matchstatelist-in-bounds matches x))
+    :hints ('(:expand (<call>
+                       (match-repeat-sts-rec nil pat x sts mode)
+                       (match-repeat-rec nil min pat x st mode)))))
 
-    (defret matchstatelist-indices-gte-of-<fn>
-      (implies (<= (nfix n) (matchstate->index st)) (matchstatelist-indices-gte n matches))
-      :hints ('(:expand (<call>)))
-      :fn match-disjunct-rec)
-
-    (defret matchstatelist-indices-gte-of-<fn>
-      (implies (matchstatelist-indices-gte n sts)
-               (matchstatelist-indices-gte n matches))
-      :hints ('(:expand (<call>
-                         (matchstatelist-indices-gte n sts))))
-      :fn match-concat-sts-rec)
-
-    (defret matchstatelist-indices-gte-of-<fn>
-      (implies (matchstatelist-indices-gte n sts) (matchstatelist-indices-gte n matches))
-      :hints ('(:expand (<call>
-                         (matchstatelist-indices-gte n sts))))
-      :fn match-regex-sts-nonzero-rec)
-
-    (defret matchstatelist-indices-gte-of-<fn>
-      (implies (matchstatelist-indices-gte n sts) (matchstatelist-indices-gte n matches))
-      :hints ('(:expand (<call>
-                         (matchstatelist-indices-gte n sts))))
-      :fn match-regex-sts-rec)
-
-    (defret matchstatelist-indices-gte-of-<fn>
-      (implies (matchstatelist-indices-gte n sts)
-               (matchstatelist-indices-gte n matches))
-      :hints ('(:expand ((:free (max) <call>))))
-      :fn match-repeat-sts-rec)
-
-    (defret matchstatelist-indices-gte-of-<fn>
-      (implies (matchstatelist-indices-gte n sts)
-               (matchstatelist-indices-gte n matches))
-      :hints ('(:expand (<call>)))
-      :fn match-repeat-sts-minimum-rec)
-
-    (defret matchstatelist-indices-gte-of-<fn>
-      (implies (<= (nfix n) (matchstate->index st))
-               (matchstatelist-indices-gte n matches))
-      :hints ('(:expand ((:free (max min) <call>)
-                         (:free (x) (matchstatelist-indices-gte n (list st))))))
-      :fn match-repeat-rec)
-    :hints (("goal" :do-not-induct t))
-    :skip-others t)
-
-  (defret-mutual matchstatelist-indices-lte-of-match-regex-rec
-    (defret matchstatelist-indices-lte-of-<fn>
-      (implies (<= (matchstate->index st) (len (acl2::explode x)))
+  (def-match-regex-thm matchstatelist-indices-lte-of-<fn>
+    (implies (<= (matchstate->index st) (len (acl2::explode x)))
+             (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+    (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts)
                (matchstatelist-indices-lte (len (acl2::explode x)) matches))
-      :hints ('(:expand (<call>
-                         (:free (x st) (matchstatelist-indices-lte x (list st)))))
-              (and stable-under-simplificationp
-                   '(:in-theory (enable matchstatelist-indices-lte
-                                        matchstate-measure))))
-      :fn match-regex-rec)
+    :hints ('(:expand (<call>
+                       (:free (n st) (matchstatelist-indices-lte n (list st)))
+                       (:free (n) (matchstatelist-indices-lte n sts))
+                       (match-repeat-sts-rec nil pat x sts mode)
+                       (match-repeat-rec nil min pat x st mode)))))
 
-    (defret matchstatelist-indices-lte-of-<fn>
-      (implies (<= (matchstate->index st) (len (acl2::explode x)))
-               (matchstatelist-indices-lte (len (acl2::explode x)) matches))
-      :hints ('(:expand (<call>
-                         (:free (x) (matchstatelist-indices-lte x (list st))))))
-      :fn match-concat-rec)
+  (local (defthm matchstatelist-in-bounds-implies-indices-lte
+           (implies (matchstatelist-in-bounds sts x)
+                    (matchstatelist-indices-lte (len (acl2::explode x)) sts))
+           :hints(("Goal" :in-theory (enable matchstatelist-in-bounds
+                                             matchstatelist-indices-lte
+                                             matchstate-in-bounds)))))
 
-    (defret matchstatelist-indices-lte-of-<fn>
-      (implies (<= (matchstate->index st) (len (acl2::explode x))) (matchstatelist-indices-lte (len (acl2::explode x)) matches))
-      :hints ('(:expand (<call>)))
-      :fn match-disjunct-rec)
 
-    (defret matchstatelist-indices-lte-of-<fn>
-      (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts)
-               (matchstatelist-indices-lte (len (acl2::explode x)) matches))
-      :hints ('(:expand (<call>
-                         (:free (x) (matchstatelist-indices-lte x sts)))))
-      :fn match-concat-sts-rec)
+  ;; (defret-mutual matchstatelist-indices-lte-of-match-regex-rec
+  ;;   (defret matchstatelist-indices-lte-of-<fn>
+  ;;     (implies (<= (matchstate->index st) (len (acl2::explode x)))
+  ;;              (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+  ;;     :hints ('(:expand (<call>
+  ;;                        (:free (x st) (matchstatelist-indices-lte x (list st)))))
+  ;;             (and stable-under-simplificationp
+  ;;                  '(:in-theory (enable matchstatelist-indices-lte
+  ;;                                       matchstate-measure))))
+  ;;     :fn match-regex-rec)
 
-    (defret matchstatelist-indices-lte-of-<fn>
-      (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts) (matchstatelist-indices-lte (len (acl2::explode x)) matches))
-      :hints ('(:expand (<call>
-                         (:free (x) (matchstatelist-indices-lte x sts)))))
-      :fn match-regex-sts-nonzero-rec)
+  ;;   (defret matchstatelist-indices-lte-of-<fn>
+  ;;     (implies (<= (matchstate->index st) (len (acl2::explode x)))
+  ;;              (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+  ;;     :hints ('(:expand (<call>
+  ;;                        (:free (x) (matchstatelist-indices-lte x (list st))))))
+  ;;     :fn match-concat-rec)
 
-    (defret matchstatelist-indices-lte-of-<fn>
-      (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts)
-               (matchstatelist-indices-lte (len (acl2::explode x)) matches))
-      :hints ('(:expand (<call>
-                         (:free (x) (matchstatelist-indices-lte x sts)))))
-      :fn match-regex-sts-rec)
+  ;;   (defret matchstatelist-indices-lte-of-<fn>
+  ;;     (implies (<= (matchstate->index st) (len (acl2::explode x))) (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+  ;;     :hints ('(:expand (<call>)))
+  ;;     :fn match-disjunct-rec)
 
-    (defret matchstatelist-indices-lte-of-<fn>
-      (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts)
-               (matchstatelist-indices-lte (len (acl2::explode x)) matches))
-      :hints ('(:expand ((:free (max) <call>))))
-      :fn match-repeat-sts-rec)
+  ;;   (defret matchstatelist-indices-lte-of-<fn>
+  ;;     (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts)
+  ;;              (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+  ;;     :hints ('(:expand (<call>
+  ;;                        (:free (x) (matchstatelist-indices-lte x sts)))))
+  ;;     :fn match-concat-sts-rec)
 
-    (defret matchstatelist-indices-lte-of-<fn>
-      (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts)
-               (matchstatelist-indices-lte (len (acl2::explode x)) matches))
-      :hints ('(:expand (<call>)))
-      :fn match-repeat-sts-minimum-rec)
+  ;;   (defret matchstatelist-indices-lte-of-<fn>
+  ;;     (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts) (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+  ;;     :hints ('(:expand (<call>
+  ;;                        (:free (x) (matchstatelist-indices-lte x sts)))))
+  ;;     :fn match-regex-sts-nonzero-rec)
 
-    (defret matchstatelist-indices-lte-of-<fn>
-      (implies (<= (matchstate->index st) (len (acl2::explode x)))
-               (matchstatelist-indices-lte (len (acl2::explode x)) matches))
-      :hints ('(:expand ((:free (max min) <call>)
-                         (:free (x) (matchstatelist-indices-lte x (list st))))))
-      :fn match-repeat-rec)
-    :hints (("goal" :do-not-induct t))
-    :skip-others t)
+  ;;   (defret matchstatelist-indices-lte-of-<fn>
+  ;;     (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts)
+  ;;              (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+  ;;     :hints ('(:expand (<call>
+  ;;                        (:free (x) (matchstatelist-indices-lte x sts)))))
+  ;;     :fn match-regex-sts-rec)
+
+  ;;   (defret matchstatelist-indices-lte-of-<fn>
+  ;;     (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts)
+  ;;              (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+  ;;     :hints ('(:expand ((:free (max) <call>))))
+  ;;     :fn match-repeat-sts-rec)
+
+  ;;   (defret matchstatelist-indices-lte-of-<fn>
+  ;;     (implies (matchstatelist-indices-lte (len (acl2::explode x)) sts)
+  ;;              (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+  ;;     :hints ('(:expand (<call>)))
+  ;;     :fn match-repeat-sts-minimum-rec)
+
+  ;;   (defret matchstatelist-indices-lte-of-<fn>
+  ;;     (implies (<= (matchstate->index st) (len (acl2::explode x)))
+  ;;              (matchstatelist-indices-lte (len (acl2::explode x)) matches))
+  ;;     :hints ('(:expand ((:free (max min) <call>)
+  ;;                        (:free (x) (matchstatelist-indices-lte x (list st))))))
+  ;;     :fn match-repeat-rec)
+  ;;   :hints (("goal" :do-not-induct t))
+  ;;   :skip-others t)
 
 
   (defret-mutual matchstatelist-measure-of-match-regex-rec
@@ -1469,6 +1822,126 @@
                            (sts sts-equiv)))
              :in-theory (disable match-repeat-sts-minimum-rec-of-undup)))))
 
+(defprod matchresult
+  :parents (acre-internals)
+  :short "Result of matching a regular expression"
+  ((loc maybe-natp :rule-classes :type-prescription)
+   (len natp :rule-classes :type-prescription)
+   (str stringp :rule-classes :type-prescription)
+   (backrefs backref-alist-p))
+  :layout :list
+  :extra-binder-names (matchedp matched-substr))
+
+(define matchresult-in-bounds ((x matchresult-p))
+  (b* (((matchresult x)))
+    (and (mbe :logic (<= (+ x.loc x.len) (strlen x.str))
+              :exec (if x.loc
+                        (<= (+ x.loc x.len) (strlen x.str))
+                      (<= x.len (strlen x.str))))
+         (backref-alist-in-bounds x.backrefs x.str))))
+
+
+(define backref-extract-substr ((x backref-p) (str stringp))
+  :guard (backref-in-bounds x str)
+  :guard-hints (("goal" :in-theory (enable backref-in-bounds)))
+  :returns (substr stringp :rule-classes :type-prescription)
+  (b* (((backref x)))
+    (subseq (lstrfix str) x.loc (+ x.loc x.len))))
+
+(fty::defoption maybe-backref backref)
+
+(define backref-extract-substr ((x backref-p) (str stringp))
+  :guard (backref-in-bounds x str)
+  :guard-hints (("goal" :in-theory (enable backref-in-bounds)))
+  :returns (substr stringp :rule-classes :type-prescription)
+  (b* (((backref x)))
+    (subseq (lstrfix str) x.loc (+ x.loc x.len))))
+  
+(define maybe-backref-in-bounds ((x maybe-backref-p) (str stringp))
+  (or (not x) (backref-in-bounds x str))
+  ///
+  (defthm backref-in-bounds-when-maybe-backref-in-bounds
+    (implies x
+             (iff (maybe-backref-in-bounds x str)
+                  (backref-in-bounds x str)))))
+
+(define maybe-backref-extract-substr ((x maybe-backref-p) (str stringp))
+  :guard (maybe-backref-in-bounds x str)
+  :returns (substr acl2::maybe-stringp :rule-classes :type-prescription)
+  (and x (backref-extract-substr x str))
+  ///
+  (defret maybe-backref-extract-substr-exists
+    (iff substr x))
+
+  (defret maybe-backref-extract-substr-is-string
+    (iff (stringp substr) x)))
+
+(defthm maybe-backref-p-of-lookup-in-backref-alist
+  (implies (backref-alist-p x)
+           (maybe-backref-p (cdr (assoc name x)))))
+
+(defthm maybe-backref-in-bounds-of-lookup-in-backref-alist
+  (implies (backref-alist-in-bounds x str)
+           (maybe-backref-in-bounds (cdr (assoc name x)) str))
+  :hints(("Goal" :in-theory (enable backref-alist-in-bounds
+                                    maybe-backref-in-bounds))))
+
+
+(define match-regex-locs ((pat regex-p)
+                          (x stringp)
+                          (index natp)
+                          (mode matchmode-p))
+  :guard (<= index (strlen x))
+  :measure (nfix (- (strlen x) (nfix index)))
+  :returns (match (matchresult-p match))
+  :prepwork ((local (defret matchstate->index-of-first-match-lower-bound
+                      (implies matches
+                               (<= (matchstate->index st) (matchstate->index (car matches))))
+                      :hints (("goal" :use ((:instance matchstatelist-indices-gte-of-match-regex-rec
+                                             (n (matchstate->index st))))
+                               :in-theory (disable matchstatelist-indices-gte-of-match-regex-rec
+                                                   matchstatelist-indices-gte-of-match-regex-rec-rw)))
+                      :fn match-regex-rec
+                      :rule-classes :linear))
+             (local (defret matchstate->index-of-first-match-upper-bound
+                      (implies (and matches
+                                    (matchstate-in-bounds st x))
+                               (<= (matchstate->index (car matches)) (strlen x)))
+                      :hints (("goal" :use ((:instance matchstatelist-in-bounds-of-match-regex-rec))
+                               :in-theory (e/d ()
+                                               (matchstatelist-in-bounds-of-match-regex-rec))
+                               :expand ((matchstatelist-in-bounds matches x))))
+                      :fn match-regex-rec
+                      :rule-classes :linear)))
+  ;; :guard-hints (("goal" :use ((:instance matchstatelist-indices-gte-of-match-regex-rec
+  ;;                              (st (make-matchstate :index index))
+  ;;                              (n index)))
+  ;;                :expand ((matchstatelist-indices-gte
+  ;;                          index
+  ;;                          (match-regex-rec pat x (make-matchstate :index index) mode)))
+  ;;                :in-theory (e/d ()
+  ;;                                (matchstatelist-indices-gte-of-match-regex-rec))))
+  (b* ((matches1 (match-regex-rec pat x (make-matchstate :index index) mode))
+       ((when matches1)
+        (b* (((matchstate m1) (car matches1)))
+          (make-matchresult :loc (lnfix index) :len (- m1.index (lnfix index)) :str x :backrefs m1.backrefs)))
+       ((when (mbe :logic (zp (- (strlen x) (nfix index)))
+                   :exec (eql (strlen x) (lnfix index))))
+        (make-matchresult :loc nil :len 0 :str x :backrefs nil)))
+    (match-regex-locs pat x (+ 1 (lnfix index)) mode))
+  ///
+
+  (defret matchresult-in-bounds-of-match-regex-locs
+    (implies (<= (nfix index) (strlen x))
+             (matchresult-in-bounds match))
+    :hints(("Goal" :in-theory (enable matchresult-in-bounds))))
+
+  (defret matchresult->str-of-match-regex-locs
+    (equal (matchresult->str match) (lstrfix x))))
+
+
+
+
 (define charset-range ((x characterp)
                              (y characterp))
   :guard (<= (char-code x) (char-code y))
@@ -1488,42 +1961,176 @@
        (next (code-char (+ 1 (char-code x)))))
     (cons x (charset-range next y))))
 
+
+
+
+(define parse-charset-atom ((x stringp) (index natp))
+  :guard (<= index (strlen x))
+  ;; charset_atom =  non_backslash_non_closebracket_char
+  ;;                 \\
+  ;;                 \n
+  ;;                 \t
+  ;;                 \r
+  ;;                 \f
+  ;;                 \]
+  ;;                 \-
+  :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription)
+               (char characterp)
+               (new-index natp :rule-classes :type-prescription))
+  (b* ((x (lstrfix x))
+       (index (lnfix index))
+       ((unless (< index (strlen x)))
+        (mv "String ended inside charset" (code-char 0) index))
+       (char1 (char x index))
+       (index (+ 1 index))
+       ((when (eql char1 #\]))
+        (mv "End of charset" (code-char 0) index))
+       ((unless (eql char1 #\\))
+        (mv nil char1 index))
+       ((unless (< index (strlen x)))
+        (mv "String ended inside charset" (code-char 0) index))
+       (char2 (char x index))
+       (index (+ 1 index)))
+    (case char2
+      ((#\\ #\] #\-) (mv nil char2 index))
+      (#\n (mv nil #\Newline index))
+      (#\t (mv nil #\Tab index))
+      (#\r (mv nil #\Return index))
+      (#\f (mv nil #\Page index))
+      (t (mv (str::cat "Unrecognized escape sequence in charset: " (coerce (list char1 char2) 'string))
+             (code-char 0) index))))
+  ///
+  (defret new-index-of-<fn>
+    (<= (nfix index) new-index)
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-strong
+    (implies (not err)
+             (< (nfix index) new-index))
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-less-than-length
+    (implies (<= (nfix index) (len (acl2::explode x)))
+             (<= new-index (len (acl2::explode x))))
+    :rule-classes :linear))
+
+
+(define parse-charset-set ((x stringp) (index natp))
+  :guard (<= index (strlen x))
+  ;; charset_set =  \w | \d | \s | \h | \v
+  :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription)
+               (char character-listp)
+               (new-index natp :rule-classes :type-prescription))
+  (b* ((x (lstrfix x))
+       (index (lnfix index))
+       ((unless (< index (strlen x)))
+        (mv "String ended inside charset" nil index))
+       (char1 (char x index))
+       ((unless (eql char1 #\\))
+        (mv "No match" nil index))
+       (index (+ 1 index))
+       ((unless (< index (strlen x)))
+        (mv "String ended inside charset" nil index))
+       (char2 (char x index))
+       (index (+ 1 index)))
+    (case char2
+      (#\w (mv nil (cons #\_
+                         (append (charset-range #\a #\z)
+                                 (charset-range #\A #\Z)
+                                 (charset-range #\0 #\9)))
+               index))
+      (#\d (mv nil (charset-range #\0 #\9) index))
+      (#\s (mv nil '(#\Space #\Tab #\Newline #\Page #\Return) index))
+      (#\h (mv nil '(#\Space #\Tab) index))
+      (#\v (mv nil '(#\Newline #\Page #\Return) index))
+      (t (mv (str::cat "Unrecognized escape sequence in charset: " (coerce (list char1 char2) 'string))
+             nil index))))
+  ///
+  (defret new-index-of-<fn>
+    (<= (nfix index) new-index)
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-strong
+    (implies (not err)
+             (< (nfix index) new-index))
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-less-than-length
+    (implies (<= (nfix index) (len (acl2::explode x)))
+             (<= new-index (len (acl2::explode x))))
+    :rule-classes :linear))
+
+
+(define parse-charset-elem ((x stringp) (index natp))
+  ;; charset_elem = charset_set
+  ;;                charset_atom - charset_atom
+  ;;                charset_atom
+  :guard (<= index (strlen x))
+  :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription)
+               (chars character-listp)
+               (new-index natp :rule-classes :type-prescription))
+  (b* (((mv err set new-index) (parse-charset-set x index))
+       ((unless err) (mv nil set new-index))
+       ((mv err char1 index) (parse-charset-atom x index))
+       ((when err) (mv err nil index))
+       ((unless (< index (strlen x)))
+        (mv "String ended inside charset" nil index))
+       (dash (char x index))
+       ((unless (eql dash #\-))
+        (mv nil (list char1) index))
+       ((mv err char2 index) (parse-charset-atom x (+ 1 index)))
+       ((when err) (mv err nil index))
+       ((when (< (char-code char2) (char-code char1)))
+        (mv "Invalid range" nil index)))
+    (mv nil (charset-range char1 char2) index))
+  ///
+  (defret new-index-of-<fn>
+    (<= (nfix index) new-index)
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-strong
+    (implies (not err)
+             (< (nfix index) new-index))
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-less-than-length
+    (implies (<= (nfix index) (len (acl2::explode x)))
+             (<= new-index (len (acl2::explode x))))
+    :rule-classes :linear))
+
 (define parse-charset-aux ((x stringp) (index natp))
   :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription)
                (chars character-listp)
                (new-index natp :rule-classes :type-prescription))
   :guard (<= index (strlen x))
   :measure (nfix (- (strlen x) (nfix index)))
-  :prepwork ()
+  :prepwork ((local (defthm true-listp-when-character-listp
+                      (implies (character-listp x)
+                               (true-listp x)))))
+ ;; cset_elems = ""
+ ;;              cset_elem cset_elems
+
   (b* (((when (mbe :logic (zp (- (strlen x) (nfix index)))
                    :exec (eql (strlen x) index)))
         (mv "String ended inside charset" nil (lnfix index)))
        (x (lstrfix x))
        (index (lnfix index))
        (char1 (char x index))
-       (index (+ 1 index))
        ((when (eql char1 #\]))
-        (mv nil nil index))
-       ((unless (< index (strlen x)))
-        (mv "String ended inside charset" nil index))
-       (char2 (char x index))
-       ((when (eql char2 #\]))
-        (mv nil (list char1) (+ 1 index)))
-       ((unless (eql char2 #\-))
-        (b* (((mv err chars index) (parse-charset-aux x index)))
-          (mv err (cons char1 chars) index)))
-       (index (+ 1 index))
-       ((unless (< index (strlen x)))
-        (mv "String ended inside charset" nil index))
-       (char3 (char x index))
-       ((when (< (char-code char3) (char-code char1)))
-        (mv "Invalid range" nil index))
-       (range (charset-range char1 char3))
-       ((mv err chars index) (parse-charset-aux x (+ 1 index))))
-    (mv err (append range chars) index))
+        (mv nil nil (+ 1 index)))
+       ((mv err chars index) (parse-charset-elem x index))
+       ((when err) (mv err nil index))
+       ((mv err rest index) (parse-charset-aux x index))
+       ((when err) (mv err nil index)))
+    (mv nil (append chars rest) index))
   ///
   (defret new-index-of-<fn>
     (<= (nfix index) new-index)
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-strong
+    (implies (not err)
+             (< (nfix index) new-index))
     :rule-classes :linear)
 
   (defret new-index-of-<fn>-less-than-length
@@ -1546,16 +2153,9 @@
           (mv nil index)))
        ((when (<= (strlen x) index))
         (mv "String ended inside charset" nil index))
-       ((mv has-closebracket index)
-        (if (eql (char x index) #\])
-            (mv t (+ 1 index))
-          (mv nil index)))
-       ((when (<= (strlen x) index))
-        (mv "String ended inside charset" nil index))
        ((mv err chars last-index) ;; last-index is past close bracket if no error
         (parse-charset-aux x index))
-       ((when err) (mv err nil last-index))
-       (chars (if has-closebracket (cons #\] chars) chars)))
+       ((when err) (mv err nil last-index)))
     (mv nil (regex-charset (coerce chars 'string) negp) last-index))
   ///
   (defret new-index-of-<fn>
@@ -1835,6 +2435,7 @@
       :exact (if (equal y.str "")
                  (regex-fix x)
                (regex-concat (list x y)))
+      :concat (regex-concat (cons x y.lst))
       :otherwise (regex-concat (list x y))))
   ///
   (local (include-book "clause-processors/use-by-hint" :dir :system))
@@ -1875,6 +2476,16 @@
                     (equal (match-regex-sts-rec x str sts mode)
                            (matchstatelist-fix sts)))
            :hints(("Goal" :in-theory (enable match-regex-sts-rec
+                                             matchstatelist-indices-lte)
+                   :induct (len sts)))))
+
+  (local (defthm match-regex-sts-rec-of-concat
+           (implies (and (Equal (regex-kind x) :concat)
+                         (matchstatelist-indices-lte (strlen str) sts))
+                    (equal (match-regex-sts-rec x str sts mode)
+                           (match-concat-sts-rec (regex-concat->lst x) str sts mode)))
+           :hints(("Goal" :in-theory (enable match-regex-sts-rec
+                                             match-concat-sts-rec
                                              matchstatelist-indices-lte)
                    :induct (len sts)))))
 
@@ -2174,16 +2785,16 @@
 (defmacro defcharset (letter str)
   `(table charset-table ,letter (get-charset ,str)))
 
-(defcharset #\w "a-zA-Z0-9_")
-(defcharset #\W "^a-zA-Z0-9_")
-(defcharset #\d "0-9")
-(defcharset #\D "^0-9")
-(defcharset #\s (coerce '(#\Space #\Tab #\Newline #\Page #\Return) 'string))
-(defcharset #\S (coerce '(#\^ #\Space #\Tab #\Newline #\Page #\Return) 'string))
-(defcharset #\h (coerce '(#\Space #\Tab) 'string))
-(defcharset #\H (coerce '(#\^ #\Space #\Tab) 'string))
-(defcharset #\v (coerce '(#\Newline #\Page #\Return) 'string))
-(defcharset #\V (coerce '(#\^ #\Newline #\Page #\Return) 'string))
+(defcharset #\w "\\w")
+(defcharset #\W "^\\w")
+(defcharset #\d "\\d")
+(defcharset #\D "^\\d")
+(defcharset #\s "\\s")
+(defcharset #\S "^\\s")
+(defcharset #\h "\\h")
+(defcharset #\H "^\\h")
+(defcharset #\v "\\v")
+(defcharset #\V "^\\v")
 
 (acl2::defconsts *charset-table* (table-alist 'charset-table (w state)))
 
@@ -2377,6 +2988,10 @@
                (mv nil (regex-backref val) index)))
             (index (+ 1 index)))
          (case char
+           (#\n (mv nil (regex-exact (coerce '(#\Newline) 'string)) index))
+           (#\t (mv nil (regex-exact (coerce '(#\Tab) 'string)) index))
+           (#\r (mv nil (regex-exact (coerce '(#\Return) 'string)) index))
+           (#\f (mv nil (regex-exact (coerce '(#\Page) 'string)) index))
            ((#\\ #\^ #\. #\$ #\| #\( #\) #\[ #\] #\* #\+ #\? #\{ #\})
             (mv nil (regex-exact (coerce (list char) 'string)) index))
            (#\g ;; various forms of backref
@@ -2423,14 +3038,11 @@
     (implies (<= (nfix index) (len (acl2::explode x)))
              (<= new-index (len (acl2::explode x))))
     :rule-classes :linear))
-            
-             
-         
-       
 
 
 
 (defines parse-regex-rec
+  :prepwork ((local (in-theory (disable not acl2::nfix-when-not-natp))))
   (define parse-regex-rec ((x stringp)
                            (index natp)
                            (br-index natp))
@@ -2534,6 +3146,8 @@
 ;;         (?<name> regex )
 ;;         (?= regex )           (zero-length lookahead)
 ;;         (?! regex )           (zero-length lookahead, negated)
+;;         (?<= regex )          (zero-length lookbehind, regex must be constant width)
+;;         (?<! regex )          (zero-length lookbehind, regex must be constant width, negated)
     ;; Open paren has already been read.
     (b* ((br-index (lnfix br-index))
          ((when-match-string "?:" x index)
@@ -2567,7 +3181,7 @@
                ((when err) (mv err nil index br-index))
                ((unless-match-string ")" x index)
                 (mv "Expected close paren to finish group" nil index br-index)))
-            (mv nil (regex-zerolength pat nil) index br-index)))
+            (mv nil (regex-zerolength pat 0 nil) index br-index)))
          ((when-match-string "?!" x index)
           ;; Zero-length lookahead, negated
           (b* (((mv err pat index br-index)
@@ -2575,7 +3189,29 @@
                ((when err) (mv err nil index br-index))
                ((unless-match-string ")" x index)
                 (mv "Expected close paren to finish group" nil index br-index)))
-            (mv nil (regex-zerolength pat t) index br-index)))
+            (mv nil (regex-zerolength pat 0 t) index br-index)))
+         ((when-match-string "?<=" x index)
+          ;; Zero-length lookbehind
+          (b* (((mv err pat index br-index)
+                (parse-regex-rec x index br-index))
+               ((when err) (mv err nil index br-index))
+               ((unless-match-string ")" x index)
+                (mv "Expected close paren to finish group" nil index br-index))
+               (width (regex-constant-width pat))
+               ((unless width)
+                (mv "Lookbehind regex must have constant width" nil index br-index)))
+            (mv nil (regex-zerolength pat width nil) index br-index)))
+         ((when-match-string "?<!" x index)
+          ;; Zero-length lookbehind, negated
+          (b* (((mv err pat index br-index)
+                (parse-regex-rec x index br-index))
+               ((when err) (mv err nil index br-index))
+               ((unless-match-string ")" x index)
+                (mv "Expected close paren to finish group" nil index br-index))
+               (width (regex-constant-width pat))
+               ((unless width)
+                (mv "Lookbehind regex must have constant width" nil index br-index)))
+            (mv nil (regex-zerolength pat width t) index br-index)))
          ((when-match-string "?<" x index)
           (b* ((idx (find-substr ">" x index))
                ((unless idx)
@@ -2648,7 +3284,273 @@
            :rule-classes :forward-chaining
            :fn parse-repeat-rec))
 
-  (verify-guards parse-regex-rec))
+  (verify-guards parse-regex-rec)
+
+  (fty::deffixequiv-mutual parse-regex-rec))
 
 
-         
+(define parse-regex ((x stringp))
+  :returns (mv (err acl2::maybe-stringp)
+               (pat (implies (not err) (regex-p pat))))
+  (b* (((mv err regex index ?br-index) (parse-regex-rec x 0 1))
+       ((when err) (mv err nil))
+       ((when (< index (strlen x)))
+        (mv (str::cat "Regex parsing didn't consume the whole string: Remaining: "
+                      (subseq x index nil))
+            nil)))
+    (mv nil regex)))
+
+(define preproc-legible-aux ((x stringp) (index natp) (acc character-listp))
+  :guard (<= index (strlen x))
+  :measure (nfix (- (strlen x) (nfix index)))
+  :prepwork ((local (in-theory (disable member acl2::member-of-cons reverse str::consp-of-explode nth))))
+  :returns (new-x stringp :rule-classes :type-prescription
+                  :hints(("Goal" :in-theory (enable reverse))))
+  (b* (((when (mbe :logic (zp (- (strlen x) (nfix index)))
+                   :exec (eql index (strlen x))))
+        (mbe :logic (reverse (coerce (make-character-list acc) 'string))
+             :exec (reverse (coerce acc 'string))))
+       (x (lstrfix x))
+       (index (lnfix index))
+       (char (char x index))
+       ((when (member char '(#\Newline #\Space #\Tab #\Return #\Page)))
+        (preproc-legible-aux x (+ 1 index) acc))
+       ((when (eql char #\#))
+        ;; skip until newline
+        (b* ((index (find-substr (coerce '(#\Newline) 'string) x index))
+             ((unless index) ;; done
+              (reverse (coerce acc 'string))))
+          (preproc-legible-aux x (+ 1 index) acc)))
+       ((unless (and (eql char #\\)
+                     (< (+ 1 index) (strlen x))))
+        (preproc-legible-aux x (+ 1 index) (cons char acc)))
+       (char2 (char x (+ 1 index)))
+       ((when (member (char x (+ 1 index)) '(#\Newline #\Space #\Tab #\Return #\Page #\#)))
+        (preproc-legible-aux x (+ 2 index) (cons char2 acc))))
+    (preproc-legible-aux x (+ 2 index) (cons char2 (cons char acc))))
+  ///
+  (fty::deffixequiv preproc-legible-aux
+    :hints (("goal" :induct t :expand ((:free (acc) (preproc-legible-aux x index acc))
+                                       (:free (acc) (preproc-legible-aux (acl2::str-fix x) index acc))
+                                       (:free (acc) (preproc-legible-aux x (nfix index) acc)))))))
+
+(define preproc-legible ((x stringp))
+  :returns (new-x stringp :rule-classes :type-prescription)
+  (preproc-legible-aux x 0 nil))
+
+(define parse ((pat stringp "The string to parse as a regular expression.")
+               &key
+               ((legible booleanp "Option to preprocess away non-escaped whitespace
+                                   and Perl-style @('#') comments")
+                't))
+  :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription
+                    "Parse error message")
+               (regex (implies (not err) (regex-p regex))
+                      "Regular expression object, if no error."))
+  :parents (acre)
+  :short "Parse a pattern string into a regular expression object."
+  (b* ((preproc-pat (if legible (preproc-legible pat) (lstrfix pat))))
+    (parse-regex preproc-pat)))
+
+
+(define match-regex ((regex regex-p "Regular expression to match")
+                     (x stringp "String to match against")
+                     &key
+                     ((case-insens booleanp "Match case-insensitively") 'nil))
+  :parents (acre)
+  :short "Perform regular expression matching on a string."
+  :returns (match matchresult-p "Result of matching, including whether it matched,
+                                 which part matched, and capture group matches")
+  (b* ((ans (match-regex-locs regex x 0 (make-matchmode :case-insens case-insens))))
+    ;; (clear-memoize-table 'match-regex-rec)
+    ans)
+  ///
+  (defret matchresult-in-bounds-of-<fn>
+    (matchresult-in-bounds match))
+
+  (defret matchresult->str-of-<fn>
+    (equal (matchresult->str match) (lstrfix x))))
+
+(define parse-and-match-regex ((pat stringp "String to parse as a regular expression")
+                               (x stringp "String to match against")
+                               &key
+                               ((case-insens booleanp "Match case-insensitively") 'nil)
+                               ((legible booleanp "Option to preprocess
+                                                   away non-escaped whitespace
+                                                   and Perl-style @('#')
+                                                   comments") 't))
+  :parents (acre)
+  :short "Parse a regular expression from a pattern string and match it against a string @('x')."
+  :long "<p>Same as @(see parse) followed by @(see match-regex).</p>"
+  :returns (mv (parse-err acl2::maybe-stringp :rule-classes :type-prescription
+                          "Parse error message")
+               (match matchresult-p
+                      "Result of matching, including whether it matched,
+                                 which part matched, and capture group matches")) 
+  (b* (((mv err regex) (parse pat :legible legible))
+       ((when err) (mv err (make-matchresult :loc nil :len 0 :str x :backrefs nil))))
+    (mv nil (match-regex regex x :case-insens case-insens)))
+  ///
+  (defret matchresult-in-bounds-of-<fn>
+    (matchresult-in-bounds match)
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable matchresult-in-bounds)))))
+
+  (defret matchresult->str-of-<fn>
+    (equal (matchresult->str match) (lstrfix x))))
+
+
+(defmacro match (pat x &key (case-insens 'nil) (legible 't))
+  (b* (((unless (stringp pat))
+        (er hard? 'match "Expected pattern to be a string"))
+       ((unless (booleanp legible))
+        (er hard? 'match "Expected legible to be a Boolean"))
+       ((mv err regex) (parse pat :legible legible))
+       ((when err) (er hard? 'match "Parse error: ~s0" err)))
+    `(match-regex ',regex ,x :case-insens ,case-insens)))
+
+(defxdoc match
+  :parents (acre)
+  :short "Match a string against a regular expression, which is parsed at macroexpansion time."
+  :long "<p>Signature:</p>
+@({
+ (match pattern str :case-insens nil :legible t)
+ --> match-result
+ })
+
+<p>This macro runs @(see parse) at macroexpansion time to create a regular
+expression object that is \"compiled in\" to the function, so that parsing
+doesn't need to be done every time.  This means that the input pattern must be
+a string literal and legible must be a Boolean literal.  If the regular
+expression is malformed, it will result in an error at macroexpansion
+time.</p>")
+
+
+(define matchresult->matchedp ((x matchresult-p))
+  :returns (matchedp booleanp :rule-classes :type-prescription)
+  :parents (acre matchresult)
+  :short "Boolean flag indicating whether the regular expression matched the string"
+  (and (matchresult->loc x) t)
+  ///
+  (fty::deffixequiv matchresult->matchedp)
+  (defthm natp-of-matchresult->loc
+    (iff (natp (matchresult->loc x))
+         (matchresult->matchedp x))
+    :rule-classes (:rewrite
+                   (:type-prescription :corollary
+                    (implies (matchresult->matchedp x)
+                             (natp (matchresult->loc x))))))
+
+  (defthm matchresult->loc-under-iff
+    (iff (matchresult->loc x) (matchresult->matchedp x))))
+
+(define matchresult->matched-substr ((x matchresult-p))
+  :guard (matchresult-in-bounds x)
+  :prepwork ((local (in-theory (enable matchresult-in-bounds))))
+  :returns (substr acl2::maybe-stringp :rule-classes :type-prescription)
+  :short "When the regular expression matched the string, returns the substring that it matched"
+  (b* (((matchresult x))
+       ((unless x.loc) nil))
+    (subseq x.str x.loc (+ x.loc x.len)))
+  ///
+  (defret matchresult->matched-substr-under-iff
+    (iff substr (matchresult->matchedp x))))
+
+(define matchresult->captured-substr ((index) (x matchresult-p))
+  :guard (matchresult-in-bounds x)
+  :prepwork ((local (in-theory (enable matchresult-in-bounds)))
+             (local (defthm alistp-when-backref-alist-p-rw
+                      (implies (backref-alist-p x)
+                               (alistp x))))
+             (local (defthm consp-of-assoc-equal
+                      (implies (alistp x)
+                               (iff (consp (assoc-equal k x))
+                                    (assoc-equal k x))))))
+  :returns (substr acl2::maybe-stringp :rule-classes :type-prescription)
+  :short "Returns the substring matched by the capture group with the given name
+          or index, or NIL if the capture group was not matched"
+  (b* (((matchresult x)))
+    (maybe-backref-extract-substr (cdr (assoc-equal index x.backrefs)) x.str)))
+
+(define matchresult->captured-substr! ((index) (x matchresult-p))
+  :guard (matchresult-in-bounds x)
+  :prepwork ((local (in-theory (enable matchresult-in-bounds)))
+             (local (defthm alistp-when-backref-alist-p-rw
+                      (implies (backref-alist-p x)
+                               (alistp x))))
+             (local (defthm consp-of-assoc-equal
+                      (implies (alistp x)
+                               (iff (consp (assoc-equal k x))
+                                    (assoc-equal k x))))))
+  :returns (substr stringp :rule-classes :type-prescription)
+  :short "Returns the substring matched by the capture group with the given name
+          or index, or the empty string if the capture group was not matched"
+  (b* (((matchresult x)))
+    (or (maybe-backref-extract-substr (cdr (assoc-equal index x.backrefs)) x.str) "")))
+
+
+(define captures-bindings (args index matchresult !)
+  :mode :program
+  (b* (((when (atom args)) nil)
+       (arg (car args))
+       (fn (if ! 'matchresult->captured-substr! 'matchresult->captured-substr))
+       ((when (symbolp arg))
+        (cons `(,arg (,fn ,index ,matchresult))
+              (captures-bindings (cdr args) (+ 1 index) matchresult !))))
+    (case-match arg
+      ((var name)
+       (cons `(,var (,fn ,name ,matchresult))
+              (captures-bindings (cdr args) (+ 1 index) matchresult !)))
+      (& (er hard? 'captures-bindings "Bad capture element: ~x0" arg)))))
+                  
+(acl2::def-b*-binder captures
+  :body
+  (b* ((args acl2::args)
+       (forms acl2::forms)
+       ((unless (atom (cdr forms)))
+        (er hard? 'captures "Too many forms: ~x0" forms))
+       (bindings (captures-bindings args 1 (car forms) nil)))
+    `(b* ,bindings ,acl2::rest-expr)))
+
+(acl2::def-b*-binder captures!
+  :body
+  (b* ((args acl2::args)
+       (forms acl2::forms)
+       ((unless (atom (cdr forms)))
+        (er hard? 'captures "Too many forms: ~x0" forms))
+       (bindings (captures-bindings args 1 (car forms) t)))
+    `(b* ,bindings ,acl2::rest-expr)))
+
+(define named-captures-bindings (args matchresult !)
+  :mode :program
+  (b* (((when (atom args)) nil)
+       (arg (car args))
+       (fn (if ! 'matchresult->captured-substr! 'matchresult->captured-substr))
+       ((when (symbolp arg))
+        (cons `(,arg (,fn ,(str::downcase-string (symbol-name arg)) ,matchresult))
+              (named-captures-bindings (cdr args) matchresult !))))
+    (case-match arg
+      ((var name)
+       (cons `(,var (,fn ,name ,matchresult))
+              (named-captures-bindings (cdr args) matchresult !)))
+      (& (er hard? 'named-captures-bindings "Bad capture element: ~x0" arg)))))
+                  
+    
+
+(acl2::def-b*-binder named-captures
+  :body
+  (b* ((args acl2::args)
+       (forms acl2::forms)
+       ((unless (atom (cdr forms)))
+        (er hard? 'named-captures "Too many forms: ~x0" forms))
+       (bindings (named-captures-bindings args (car forms) nil)))
+    `(b* ,bindings ,acl2::rest-expr)))
+
+(acl2::def-b*-binder named-captures!
+  :body
+  (b* ((args acl2::args)
+       (forms acl2::forms)
+       ((unless (atom (cdr forms)))
+        (er hard? 'named-captures "Too many forms: ~x0" forms))
+       (bindings (named-captures-bindings args (car forms) t)))
+    `(b* ,bindings ,acl2::rest-expr)))
