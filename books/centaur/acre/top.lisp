@@ -56,19 +56,26 @@ to Perl's regular expressions.</p>
 
 <p>Important note for writing regular expressions: the Common Lisp string
 reader treats backslashes as escape characters, so all backslashes in the parse
-tree below need to be escaped.  I.e., you need to enter the following regular
-expression at the REPL to match a whitespace character, a backslash, and a
-double quote, and removing any backslash from it will change its meaning:</p>
+tree below need to be escaped.  A good way to work around this is to use the
+@(see acl2::fancy-string-reader) instead of regular double-quoted strings.  For
+example, to match a whitespace character followed by a backslash followed by a
+double quote, you'd need to enter the following double-quoted string:</p>
 @({
  \"\\\\s\\\\\\\\\\\"\"
  })
-<p>If you print this out as follows, you'll see what the string's actual contents are:</p>
-@({
- (cw \"'~s0'~%\" \"\\\\s\\\\\\\\\\\"\") --> '\\s\\\\\"')
- })
-<p>So please keep in mind that any backslash in the following grammar must
-really be written as two backslashes.  It is best to debug your regular
-expressions by printing them out as above to avoid this sort of confusion.</p>
+<p>or the following \"fancy string\":</p>
+<code>
+ #{\"\"\"\\s\\\\\"\"\"\"}
+</code>
+<p>If you print either of these out as follows, you'll see what the string's actual contents are:</p>
+<code>
+ (cw \"'~s0'~%\" \"\\\\s\\\\\\\\\\\"\")       (prints '\\s\\\\\"')
+ (cw \"'~s0'~%\" #{\"\"\"\\s\\\\\"\"\"\"})    (prints '\\s\\\\\"')
+</code>
+<p>So please either use fancy-strings or else keep in mind that, in regular
+double-quoted strings, any backslash in the following grammar must really be
+written as two backslashes.  It is best to debug your regular expressions by
+printing them out as above to avoid this sort of confusion.</p>
 
 <p>Here is the syntax for parsing regular expressions, and following it are descriptions of their semantics.</p>
 
