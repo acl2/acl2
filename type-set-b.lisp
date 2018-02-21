@@ -5018,16 +5018,20 @@
 
 (defrec ancestor
 
-; Note: if lit is :binding-hyp, then lit-atm is hyp, fn-count is unify-subst
-; and tokens is nil (see relevant comment in earlier-ancestor-biggerp).  See
+; Note: if lit is :binding-hyp, then atm is hyp, fn-count is unify-subst and
+; tokens is nil (see relevant comment in earlier-ancestor-biggerp).  See
 ; make-ancestor-binding-hyp, ancestor-binding-hyp-p, ancestor-binding-hyp/hyp,
 ; and ancestor-binding-hyp/unify-subst.
+
+; Bkptr is the one-based number of the hypothesis that generated this ancestor,
+; in the case that the hypothesis is not a binding hypothesis.  Otherwise bkptr
+; is nil.
 
 ; To obtain the literals from a list of ancestors, call
 ; strip-ancestor-literals.  (Strip-cars will still work at this time, but we do
 ; not guarantee that in the future.)
 
-  (lit atm var-cnt fn-cnt p-fn-cnt tokens)
+  (lit atm var-cnt fn-cnt p-fn-cnt tokens . bkptr)
   t)
 
 (defmacro make-ancestor-binding-hyp (hyp unify-subst)
@@ -5035,7 +5039,8 @@
          :lit :binding-hyp
          :atm ,hyp
          :var-cnt ,unify-subst
-         :tokens nil))
+         :tokens nil
+         :bkptr nil))
 
 (defmacro ancestor-binding-hyp-p (anc)
   `(eq (access ancestor ,anc :lit)
@@ -5049,18 +5054,20 @@
 
 ; Here is how we add a frame to the ancestors stack.
 
-(defun push-ancestor (lit tokens ancestors)
+(defun push-ancestor (lit tokens ancestors bkptr)
 
-; This function is used to push a new pair onto ancestors.  Lit is a
-; term to be assumed true.  Tokens is a list of arbitrary objects.
-; Generally, tokens is a singleton list containing the rune of a rule
-; through which we are backchaining.  But when we rewrite forced
-; assumptions we use the ``runes'' from the assumnotes (see defrec
-; assumnote) as the tokens.  These ``runes'' are not always runes but
-; may be symbols.
+; This function is used to push a new pair onto ancestors.  Lit is a term to be
+; assumed true.  Tokens is a list of arbitrary objects.  Generally, tokens is a
+; singleton list containing the rune of a rule through which we are
+; backchaining.  But when we rewrite forced assumptions we use the ``runes''
+; from the assumnotes (see defrec assumnote) as the tokens.  These ``runes''
+; are not always runes but may be symbols.
 
-; Note:  It is important that the literal, lit, be in the car of the
-; frame constructed below.
+; Bkptr is nil unless we are relieving a hypothesis other than a binding
+; hypothesis, in which case it is the one-based index of that hypothesis.
+
+; Note: It is important that the literal, lit, be in the car of the frame
+; constructed below.
 
   (let* ((alit lit)
          (alit-atm (mv-let (not-flg atm)
@@ -5076,7 +5083,8 @@
                  :var-cnt var-cnt-alit-atm   ; the var-count of that atom
                  :fn-cnt fn-cnt-alit-atm     ; the fn-count of that atom
                  :p-fn-cnt p-fn-cnt-alit-atm ; the pseudo-fn-count of that atom
-                 :tokens tokens) ; the runes involved in this backchain
+                 :tokens tokens ; the runes involved in this backchain
+                 :bkptr bkptr) ; for the hypothesis (see comment above)
            ancestors))))
 
 (defun ancestor-listp (x)
@@ -8282,7 +8290,8 @@
                                atm1
                              (mcons-term* 'not atm1))
                            (list rune)
-                           ancestors)
+                           ancestors
+                           nil)
                           ens wrld ttree
                           pot-lst pt
                           (new-backchain-limit
@@ -8554,7 +8563,8 @@
                                             atm1
                                           (mcons-term* 'not atm1))
                                         (list rune)
-                                        ancestors)
+                                        ancestors
+                                        nil)
                                        ens wrld ttree
                                        pot-lst pt
                                        (new-backchain-limit

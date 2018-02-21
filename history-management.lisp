@@ -1188,16 +1188,7 @@
 
 ; Scanning to find Landmarks
 
-(defun scan-to-event (wrld)
-
-; We roll back wrld to the first (list order traversal) event landmark
-; on it.
-
-  (cond ((null wrld) wrld)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value))
-         wrld)
-        (t (scan-to-event (cdr wrld)))))
+; Scan-to-event has been moved to rewrite.lisp.
 
 (defun scan-to-command (wrld)
 
@@ -1502,114 +1493,8 @@
                        wrld2)))
     wrld3))
 
-; Decoding Logical Names
-
-(defun scan-to-defpkg (name wrld)
-
-; We wish to give meaning to stringp logical names such as "MY-PKG".  We do it
-; in an inefficient way: we scan the whole world looking for an event tuple of
-; type DEFPKG and namex name.  We know that name is a known package and that it
-; is not one in *initial-known-package-alist*.
-
-  (cond ((null wrld) nil)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value)
-              (eq (access-event-tuple-type (cddar wrld)) 'DEFPKG)
-              (equal name (access-event-tuple-namex (cddar wrld))))
-         wrld)
-        (t (scan-to-defpkg name (cdr wrld)))))
-
-(defun scan-to-include-book (full-book-name wrld)
-
-; We wish to give meaning to stringp logical names such as "arith".  We
-; do it in an inefficient way: we scan the whole world looking for an event
-; tuple of type INCLUDE-BOOK and namex full-book-name.
-
-  (cond ((null wrld) nil)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value)
-              (eq (access-event-tuple-type (cddar wrld)) 'include-book)
-              (equal full-book-name (access-event-tuple-namex (cddar wrld))))
-         wrld)
-        (t (scan-to-include-book full-book-name (cdr wrld)))))
-
-(defun assoc-equal-cadr (x alist)
-  (cond ((null alist) nil)
-        ((equal x (cadr (car alist))) (car alist))
-        (t (assoc-equal-cadr x (cdr alist)))))
-
-(defun multiple-assoc-terminal-substringp1 (x i alist)
-  (cond ((null alist) nil)
-        ((terminal-substringp x (caar alist) i (1- (length (caar alist))))
-         (cons (car alist) (multiple-assoc-terminal-substringp1 x i (cdr alist))))
-        (t (multiple-assoc-terminal-substringp1 x i (cdr alist)))))
-
-(defun multiple-assoc-terminal-substringp (x alist)
-
-; X and the keys of the alist are presumed to be strings.  This function
-; compares x to the successive keys in the alist, succeeding on any key that
-; contains x as a terminal substring.  Unlike assoc, we return the list of all
-; pairs in the alist with matching keys.
-
-  (multiple-assoc-terminal-substringp1 x (1- (length x)) alist))
-
-(defun possibly-add-lisp-extension (str)
-
-; String is a string.  If str ends in .lisp, return it.  Otherwise, tack .lisp
-; onto the end and return that.
-
-  (let ((len (length str)))
-    (cond
-     ((and (> len 5)
-           (eql (char str (- len 5)) #\.)
-           (eql (char str (- len 4)) #\l)
-           (eql (char str (- len 3)) #\i)
-           (eql (char str (- len 2)) #\s)
-           (eql (char str (- len 1)) #\p))
-      str)
-     (t (string-append str ".lisp")))))
-
-(defun decode-logical-name (name wrld)
-
-; Given a logical name, i.e., a symbol with an 'absolute-event-number property
-; or a string naming a defpkg or include-book, we return the tail of wrld
-; starting with the introductory event.  We return nil if name is illegal.
-
-  (cond
-   ((symbolp name)
-    (cond ((eq name :here)
-           (scan-to-event wrld))
-          (t
-           (let ((n (getpropc name 'absolute-event-number nil wrld)))
-             (cond ((null n) nil)
-                   (t (lookup-world-index 'event n wrld)))))))
-   ((stringp name)
-
-; Name may be a package name or a book name.
-
-    (cond
-     ((find-non-hidden-package-entry name
-                                     (global-val 'known-package-alist wrld))
-      (cond ((find-package-entry name *initial-known-package-alist*)
-
-; These names are not DEFPKGd and so won't be found in a scan.  They
-; are introduced by absolute event number 0.
-
-             (lookup-world-index 'event 0 wrld))
-            (t (scan-to-defpkg name wrld))))
-     (t (let ((hits (multiple-assoc-terminal-substringp
-                     (possibly-add-lisp-extension name)
-                     (global-val 'include-book-alist wrld))))
-
-; Hits is a subset of the include-book-alist.  The form of each
-; element is (full-book-name user-book-name familiar-name
-; cert-annotations . book-hash).
-
-          (cond
-           ((and hits (null (cdr hits)))
-            (scan-to-include-book (car (car hits)) wrld))
-           (t nil))))))
-   (t nil)))
+; Decoding Logical Names was handled here through Version_8.0, but some
+; definitions have been moved to rewrite.lisp to support find-rules-of-rune.
 
 (defun er-decode-logical-name (name wrld ctx state)
 

@@ -401,7 +401,9 @@
          (t nil))))
      (t nil))))
 
-(defrec induction-rule (nume (pattern . condition) scheme . rune) nil)
+; The following is now defined in rewrite.lisp.
+
+; (defrec induction-rule (nume (pattern . condition) scheme . rune) nil)
 
 (mutual-recursion
 
