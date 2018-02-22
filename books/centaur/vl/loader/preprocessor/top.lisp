@@ -2574,7 +2574,9 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                         include-line)
                     defines filemap acc echars istack activep state))
 
-               ((mv filename & &) (vl-read-include (rev include-line-post-acc) config))
+               
+
+               ((mv filename & rest-of-line) (vl-read-include (rev include-line-post-acc) config))
                ((unless filename)
                 ;; Already warned.
                 (mv nil defines filemap acc echars istack activep state))
@@ -2594,7 +2596,9 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                  realfile (vl-echar->loc echar1) rest-of-file defines filemap istack activep acc n config state))
                ((unless okp)
                 ;; already printed a msg
-                (mv nil defines filemap acc remainder istack activep state)))
+                (mv nil defines filemap acc remainder istack activep state))
+               ;; Add the rest of the line after the include file but before the rest of the current file.
+               (acc (revappend rest-of-line acc)))
 
             (vl-preprocess-loop
              ;; We could perhaps avoid this append with two recursive calls,

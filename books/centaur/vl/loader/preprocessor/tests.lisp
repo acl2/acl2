@@ -627,7 +627,7 @@ hello
 
 // this is used in preprocessor-tests.lisp
 // do not delete it
-
+ 
 hello
 """}
  :defines (simple-test-defines nil))
