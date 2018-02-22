@@ -35,7 +35,10 @@
   (list 1 2 #{"""This is a test."""} 3
         #{"""This is a test
 with some newlines, a "quoted" substring, and
-some \LaTeX-like \backslash looking things."""}
+some \LaTeX-like \backslash looking things."""\}
+It may look like it should have ended there,
+but it didn't because that was a """\\}
+not a """\}. But now it's going to actually end:"""}
    4))
 
 (assert! (equal (first *foo*) 1))
@@ -44,6 +47,9 @@ some \LaTeX-like \backslash looking things."""}
 (assert! (equal (fourth *foo*) 3))
 (assert! (equal (fifth *foo*) "This is a test
 with some newlines, a \"quoted\" substring, and
-some \\LaTeX-like \\backslash looking things."))
+some \\LaTeX-like \\backslash looking things.\"\"\"}
+It may look like it should have ended there,
+but it didn't because that was a \"\"\"\\}
+not a \"\"\"}. But now it's going to actually end:"))
 (assert! (equal (sixth *foo*) 4))
 

@@ -79,6 +79,8 @@
 (include-book "centaur/bitops/congruences" :dir :system)
 (include-book "centaur/bitops/defaults" :dir :system)
 
+(include-book "centaur/acre/top" :dir :system)
+
 (include-book "centaur/bridge/top" :dir :system)
 
 (include-book "centaur/clex/example" :dir :system)

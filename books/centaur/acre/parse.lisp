@@ -33,6 +33,8 @@
 (include-book "types")
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
+(include-book "std/strings/hex" :dir :system)
+(include-book "std/strings/octal" :dir :system)
 (include-book "std/util/defenum" :dir :system)
 (include-book "std/strings/strprefixp" :dir :system)
 (include-book "std/strings/strpos" :dir :system)
@@ -78,7 +80,69 @@
        (next (code-char (+ 1 (char-code x)))))
     (cons x (charset-range next y))))
 
+(define parse-hex-charcode ((x stringp) (index natp))
+  :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription)
+               (char characterp)
+               (new-index natp :rule-classes :type-prescription))
+  :guard-hints (("goal" :in-theory (enable str::hex-digit-list-value)))
+  (b* ((index (lnfix index))
+       ((unless (< (+ 1 index) (strlen x)))
+        (mv "String ended within hex charcode" (code-char 0) index))
+       (hex0 (char x index))
+       (hex1 (char x (+ 1 index)))
+       ((unless (and (str::hex-digitp hex0)
+                     (str::hex-digitp hex1)))
+        (mv "Malformed hex charcode" (code-char 0) index))
+       (val (str::hex-digit-list-value (list hex0 hex1))))
+    (mv nil (code-char val) (+ 2 index)))
+  ///
+  (defret new-index-of-<fn>
+    (<= (nfix index) new-index)
+    :rule-classes :linear)
 
+  (defret new-index-of-<fn>-strong
+    (implies (not err)
+             (< (nfix index) new-index))
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-less-than-length
+    (implies (<= (nfix index) (len (acl2::explode x)))
+             (<= new-index (len (acl2::explode x))))
+    :rule-classes :linear))
+
+(define parse-octal-charcode ((x stringp) (index natp))
+  :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription)
+               (char characterp)
+               (new-index natp :rule-classes :type-prescription))
+  :guard-hints (("goal" :in-theory (enable str::octal-digit-list-value)))
+  (b* ((index (lnfix index))
+       ((unless (< (+ 2 index) (strlen x)))
+        (mv "String ended within octal charcode" (code-char 0) index))
+       (octal0 (char x index))
+       (octal1 (char x (+ 1 index)))
+       (octal2 (char x (+ 2 index)))
+       ((unless (and (str::octal-digitp octal0)
+                     (str::octal-digitp octal1)
+                     (str::octal-digitp octal2)))
+        (mv "Malformed octal charcode" (code-char 0) index))
+       (val (str::octal-digit-list-value (list octal0 octal1 octal2)))
+       ((when (<= 256 val))
+        (mv "Octal charcodes greater than 256 not supported" (code-char 0) index)))
+    (mv nil (code-char val) (+ 3 index)))
+  ///
+  (defret new-index-of-<fn>
+    (<= (nfix index) new-index)
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-strong
+    (implies (not err)
+             (< (nfix index) new-index))
+    :rule-classes :linear)
+
+  (defret new-index-of-<fn>-less-than-length
+    (implies (<= (nfix index) (len (acl2::explode x)))
+             (<= new-index (len (acl2::explode x))))
+    :rule-classes :linear))
 
 
 (define parse-charset-atom ((x stringp) (index natp))
@@ -114,6 +178,8 @@
       (#\t (mv nil #\Tab index))
       (#\r (mv nil #\Return index))
       (#\f (mv nil #\Page index))
+      (#\o (parse-octal-charcode x index))
+      (#\x (parse-hex-charcode x index))
       (t (mv (str::cat "Unrecognized escape sequence in charset: " (coerce (list char1 char2) 'string))
              (code-char 0) index))))
   ///
@@ -784,6 +850,12 @@
            (#\t (mv nil (regex-exact (coerce '(#\Tab) 'string)) index))
            (#\r (mv nil (regex-exact (coerce '(#\Return) 'string)) index))
            (#\f (mv nil (regex-exact (coerce '(#\Page) 'string)) index))
+           (#\o (b* (((mv err char index) (parse-octal-charcode x index))
+                     ((when err) (mv err nil index)))
+                  (mv nil (regex-exact (coerce (list char) 'string)) index)))
+           (#\x (b* (((mv err char index) (parse-hex-charcode x index))
+                     ((when err) (mv err nil index)))
+                  (mv nil (regex-exact (coerce (list char) 'string)) index)))
            ((#\\ #\^ #\. #\$ #\| #\( #\) #\[ #\] #\* #\+ #\? #\{ #\})
             (mv nil (regex-exact (coerce (list char) 'string)) index))
            (#\g ;; various forms of backref
@@ -957,7 +1029,7 @@
                ((when err) (mv err nil index br-index))
                ((unless-match-string ")" x index)
                 (mv "Expected close paren to finish group" nil index br-index)))
-            (mv nil (regex-case-sens pat nil) index br-index)))
+            (mv nil (regex-case-sens pat t) index br-index)))
          ((when-match-string "?^i:" x index)
           ;; Noncapturing, case-sensitive
           (b* (((mv err pat index br-index)
@@ -965,7 +1037,7 @@
                ((when err) (mv err nil index br-index))
                ((unless-match-string ")" x index)
                 (mv "Expected close paren to finish group" nil index br-index)))
-            (mv nil (regex-case-sens pat t) index br-index)))
+            (mv nil (regex-case-sens pat nil) index br-index)))
          ((when-match-string "?=" x index)
           ;; Zero-length lookahead
           (b* (((mv err pat index br-index)

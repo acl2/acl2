@@ -38,7 +38,6 @@
   :parents (projects)
   :short "ACL2 Centaur Regular Expressions"
   :long
-  (str::cat
    #{"""<p>ACRE is a regular expression package with features somewhat similar
 to Perl's regular expressions.</p>
 
@@ -46,21 +45,20 @@ to Perl's regular expressions.</p>
 reader treats backslashes as escape characters, so all backslashes in the parse
 tree below need to be escaped.  A good way to work around this is to use the
 @(see acl2::fancy-string-reader) instead of regular double-quoted strings.  For
-example, to match a whitespace character followed by a backslash followed by a
-double quote, you'd need to enter the following double-quoted string:</p>
+example, to match a whitespace character (\s in regex syntax) followed by a
+backslash (\\ in regex syntax) followed by a double quote, you'd need to enter
+the following double-quoted string:</p>
 @({
  "\\s\\\\\""
  })
 <p>or the following \"fancy string\":</p>
-<code>"""}
- "#{\"\"\"\\s\\\\\"\"\"\"}"
-#{"""</code>
+<code>
+ #{"""\s\\""""\}
+</code>
 <p>If you print either of these out as follows, you'll see what the string's actual contents are:</p>
 <code>
  (cw "'~s0'~%" "\\s\\\\\"")       (prints '\s\\"')
- (cw "'~s0'~%" """}
- "#{\"\"\"\\s\\\\\"\"\"\"}"
- #{""")    (prints '\s\\"')
+ (cw "'~s0'~%" #{"""\s\\""""\})    (prints '\s\\"')
 </code>
 <p>So please either use fancy-strings or else keep in mind that, in regular
 double-quoted strings, any backslash in the following grammar must really be
@@ -101,6 +99,12 @@ printing them out as above to avoid this sort of confusion.</p>
              backref
              "\" metacharacter         (escape)
              "\" charsetchar           (character set abbreviations)
+             "\n"                      (newline)
+             "\t"                      (tab)
+             "\r"                      (carriage return)
+             "\f"                      (form feed)
+             "\o" NNN                  (octal character code)
+             "\x" NN                   (hexadecimal character code)
 
  backref = "\" digit                   (matches nth capture group)
            "\g" digit
@@ -138,12 +142,14 @@ printing them out as above to avoid this sort of confusion.</p>
 
  cset_atom =  non_cset_metacharacter
               "\\"                     (backslash)
+              "\]"                     (close bracket)
+              "\-"                     (dash)
               "\n"                     (newline)
               "\t"                     (tab)
               "\r"                     (carriage return)
               "\f"                     (form feed)
-              "\]"                     (close bracket)
-              "\-"                     (dash)
+              "\o" NNN                 (octal character code)
+              "\x" NN                  (hexadecimal character code)
  })
 
 <h3>API</h3>
@@ -216,7 +222,7 @@ of the variable.  @('Named-captures!') behaves analogously to
 @('captures!').</li>
 
 </ul>
-"""}))
+"""})
 
 (defxdoc acre-internals
   :parents (acre)
