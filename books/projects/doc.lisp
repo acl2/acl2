@@ -16,6 +16,7 @@
 (include-book "sat/proof-checker-itp13/top")
 (include-book "sat/proof-checker-array/top")
 (include-book "sat/dimacs-reader/reader")
+(include-book "smtlink/doc")
 
 (defxdoc projects
   :parents (top)
