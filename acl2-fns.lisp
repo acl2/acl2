@@ -1435,6 +1435,19 @@ notation causes an error and (b) the use of ,. is not permitted."
 ;                            SUPPORT FOR #{"""
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun fancy-string-reader-escape-check (acc)
+
+; Checks whether acc consists of any number of backslashes followed by three
+; doublequotes.
+
+  (if (atom acc)
+      nil
+    (if (eql (car acc) #\\)
+        (fancy-string-reader-escape-check (cdr acc))
+      (and (eql (first acc) #\")
+           (eql (second acc) #\")
+           (eql (third acc) #\")))))
+
 (defun fancy-string-reader-macro-aux (stream acc)
 
 ; See fancy-string-reader-macro.
@@ -1442,15 +1455,22 @@ notation causes an error and (b) the use of ,. is not permitted."
   (let ((char ; error on EOF is appropriate here
          (read-char stream)))
     (if (and (eql char #\})
-             (eql (first acc) #\")
-             (eql (second acc) #\")
-             (eql (third acc) #\"))
+             (fancy-string-reader-escape-check acc))
+        (if (eql (car acc) #\\)
 
-; Just saw """} -- we're at the end of the fancy string.  We haven't
-; accumulated the } yet, but throw away the """ since those end the string and
-; aren't part of its content.
+; We have three doublequotes followed by 1 or more backslashes and followed by
+; a close brace.  Just remove one of the backslashes and continue.
 
-        (cdddr acc)
+            (fancy-string-reader-macro-aux stream (cons #\} (cdr acc)))
+
+; No backslashes, so we have """} -- we're at the end of the fancy string.  We
+; haven't accumulated the } yet, but throw away the """ since those end the
+; string and aren't part of its content.
+
+          (cdddr acc))
+
+; Otherwise just accumulate the char.
+
       (fancy-string-reader-macro-aux stream (cons char acc)))))
 
 (defun fancy-string-reader-macro (stream subchar arg)
