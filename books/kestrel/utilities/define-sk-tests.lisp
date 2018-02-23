@@ -11,6 +11,7 @@
 (in-package "ACL2")
 (include-book "define-sk")
 (include-book "misc/assert" :dir :system)
+(include-book "misc/eval" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/util/tests/utils" :dir :system)
 

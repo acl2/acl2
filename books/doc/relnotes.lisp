@@ -111,6 +111,10 @@
  <p>Updated the ACL2+books manual to accommodate the replacement of David
  Russinoff's online rtl manual by his upcoming Springer book.</p>
 
+ <p>The @('misc/assert.lisp') book no longer includes @('misc/eval.lisp'),
+ since tests about the @('misc/assert.lisp') utilities are now in a separate
+ book @('misc/assert-tests.lisp').</p>
+
  <h4><see topic='@(url kestrel-utilities)'>Kestrel Utilities</see></h4>
 
  <p>Added utility @(see include-book-paths) to list paths via @(tsee
