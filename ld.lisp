@@ -4543,15 +4543,16 @@
                        (f-put-global 'gag-state
                                      (f-get-global 'gag-state-saved state)
                                      state))
-                     (state-global-let*
-                      ((saved-output-p nil)
-                       (acl2-world-alist (f-get-global 'acl2-world-alist
-                                                       state)))
-                      (pprogn
-                       (pop-current-acl2-world 'saved-output-reversed state)
-                       (print-saved-output-lst saved-output io-markers
-                                               stop-markers ctx
-                                               state))))))))))))
+                     (revert-world
+                      (state-global-let*
+                       ((saved-output-p nil)
+                        (acl2-world-alist (f-get-global 'acl2-world-alist
+                                                        state)))
+                       (pprogn
+                        (pop-current-acl2-world 'saved-output-reversed state)
+                        (print-saved-output-lst saved-output io-markers
+                                                stop-markers ctx
+                                                state)))))))))))))
 
 (defun convert-io-markers-lst (io-markers acc)
   (cond ((endp io-markers) acc)

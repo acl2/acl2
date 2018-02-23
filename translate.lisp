@@ -3550,12 +3550,23 @@
                                 key
                                 (let ((tmp (return-last-lookup key
                                                                wrld)))
-                                  (if (consp tmp) (car tmp) tmp)))))
+                                  (if (consp tmp) (car tmp) tmp))))
+                       (args (and fn
+                                  (untranslate1-lst (cdr (fargs term)) nil
+                                                    untrans-tbl preprocess-fn
+                                                    wrld))))
                   (and fn
-                       (cons fn
-                             (untranslate1-lst (cdr (fargs term)) nil
-                                               untrans-tbl preprocess-fn
-                                               wrld))))))
+                       (case fn
+                         (mbe1 (let ((exec (car args))
+                                     (logic (cadr args)))
+                                 (cond
+                                  ((eq exec t) `(mbt ,logic))
+                                  (t `(mbe :logic ,logic :exec ,exec)))))
+                         (ec-call1
+                          (cond ((eq (car args) nil)
+                                 `(ec-call ,(cadr args)))
+                                (t (cons fn args))))
+                         (otherwise (cons fn args)))))))
           (t (let* ((pair (cdr (assoc-eq (ffn-symb term)
                                          untrans-tbl)))
                     (op (car pair))
@@ -6993,7 +7004,7 @@
     (with-stolen-alist-raw . with-stolen-alist)
     (fast-alist-free-on-exit-raw . fast-alist-free-on-exit)
 
-; Keep the following comment in sync with *initial-return-last-table* and with
+; Keep the following comment in sync with return-last-table and with
 ; chk-return-last-entry.
 
 ; The following could be omitted since return-last gives them each special

@@ -139,6 +139,9 @@
  utilities</see> with a recognizer for symbols that name @(tsee defchoose)
  functions.</p>
 
+ <p>Added utility @(see apply-fn-if-known) to apply a function that might not
+ exist; even the package for the function symbol might not exist.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
