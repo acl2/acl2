@@ -273,9 +273,9 @@
  and @('defthm-domain') to define ``partial'' functions.  Search for calls of
  @('my-test') in that book to see examples.</p>
 
- <p>Related work of Dave Greve, in particular his utility @('def::un'), may be
- found in community books directory @('books/coi/termination/assuming/').  Our
- utilities @('def-partial-measure') and @(tsee defthm-domain) were developed
+ <p>Related work of Dave Greve, in particular his utility @('def::ung'), may be
+ found in community books directory @('books/coi/defung/').  Our utilities
+ @('def-partial-measure') and @(tsee defthm-domain) were developed
  independently using an approach that seems considerably simpler than Greve's
  development; but for example, his utility handles reflexive functions &mdash;
  definitions with recursive calls like @('(mc91 (mc91 (+ n 11)))') &mdash;
