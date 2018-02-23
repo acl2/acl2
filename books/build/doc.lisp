@@ -69,6 +69,9 @@ build time for multi-core environments.</li>
 <li>Dependency scanning is cached for better performance on NFS file
 systems.</li>
 
+<li>Ifdef/ifndef constructs are supported for conditional build features -- see
+@(see acl2::ifdef) and @(see acl2::ifndef).</li>
+
 </ul>
 
 <p>@('cert.pl') was originally developed in 2008 by Sol Swords at <a
@@ -591,8 +594,8 @@ above in far greater detail.</p>
 these extra @('defpkg') commands that can't go directly into the book.</p>
 
 <p>If you are using only packages from existing libraries, these should be
-dealt with automatically by the build system, which loads the portcullus
-(@('.port') file) of each included book before certifying a book.  (To defeat
+dealt with automatically by the build system, which loads the portcullis
+ (@('.port') file) of each included book before certifying a book.  (To defeat
 this mechanism, add a comment containing \"no_port\" at the end of the line of
 each include-book whose portculli you don't want.) However, if you are defining
 a new package, you need to know how to put it in your book's portcullis.</p>
@@ -1172,7 +1175,7 @@ to the head node before returning control to the Makefile.</p>")
                  custom-certify-book-commands optimizing-build-time
                  raw-lisp-and-other-dependencies static-makefiles
                  using-extended-acl2-images ; rename to remove "using"
-                 distributed-builds cert_param))
+                 distributed-builds cert_param acl2::ifdef acl2::ifndef))
 
 
 ; added by Matt K., 8/14/2014
@@ -1246,3 +1249,45 @@ certification using @('make')"
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
  </ul>"))
+
+
+(defxdoc acl2::ifdef
+  :parents (cert.pl)
+  :short "Run some events only if an environment variable is defined and nonempty,
+          with build system support."
+  :long "<p>Ifdef and @(see ifndef), defined in \"books/build/ifdef.lisp\",
+support conditionally running some events depending on the build environment.
+This works as follows:</p>
+
+#({
+ (ifdef \"MY_ENV_VAR\"
+    (defun foo (x) x)
+    (include-book \"bar\")
+    :endif)
+ })
+<p>produces the given defun and include-book events only if \"MY_ENV_VAR\" is
+defined in the environment and is not the empty string.  @(see Ifndef) has the
+opposite behavior.</p>
+
+<p>There is special support in the @(see build::cert.pl) build system for these
+constructs, so that if the environment in which the cert.pl scan is run matches
+the environment in which the ACL2 job is run, the build system will know the
+true dependencies of the file, taking ifdefs into account.</p>
+
+<p>For this to work correctly, it is important to write the ifdef forms in a
+standard manner, as shown above: the @('(ifdef \"VARNAME\"') must be on a
+single line with nothing preceding it, and the @(':endif)') should be on a line
+without any other dependency-relevant items.  E.g., the following will not work
+as expected:</p>
+@({
+ (ifdef \"USE_FOO\" (include-book \"foo\") :endif)
+ })
+"
+  :pkg "ACL2")
+
+(defxdoc acl2::ifndef
+  :parents (cert.pl)
+  :short "Run some events only if an environment variable is undefined or empty,
+          with build system support."
+  :long "<p>See @(see ifdef).</p>"
+  :pkg "ACL2")
