@@ -44,7 +44,7 @@
  error triple as described below.  Here is an example.</p>
 
  @({
- ACL2 !>(apply-pkg-fn \"ACL2\" \"NTH\" '(2 (a b c d)) state)
+ ACL2 !>(apply-fn-if-known \"ACL2\" \"NTH\" '(2 (a b c d)) state)
   C
  ACL2 !>
  })
