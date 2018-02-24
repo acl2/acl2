@@ -142,6 +142,13 @@
  <p>Added utility @(see apply-fn-if-known) to apply a function that might not
  exist; even the package for the function symbol might not exist.</p>
 
+ <p>Added utilities @(tsee fsublis-fn-rec), @(tsee fsublis-fn), and @(tsee
+ fsublis-fn-simple), which are variants of the built-in system utilities that
+ have the same names minus the initial @('f').  These variants do not perform
+ simplification.  The relationship between these variants and the corresponding
+ built-in system utilities is analogous to the relationship between @(tsee
+ fcons-term) and @(tsee cons-term).</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
