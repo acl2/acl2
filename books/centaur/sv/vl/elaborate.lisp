@@ -273,7 +273,8 @@ expression with @(see vl-expr-to-svex).</p>")
    :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
 
 (fty::defvisitor-multi vl-elaborate
-  :defines-args (:ruler-extenders :all ;; :measure-debug t
+  :defines-args (:ruler-extenders :all
+                 ;; :measure-debug t
                  ;; :guard-debug t
                  )
 
@@ -522,6 +523,41 @@ expression with @(see vl-expr-to-svex).</p>")
           x svex elabindex))
     ///
     (in-theory (disable vl-expr-resolve-to-constant)))
+
+  (define vl-rhs-resolve-to-constant ((x vl-rhs-p)
+                                      elabindex
+                                      &key
+                                      ((reclimit natp) 'reclimit)
+                                      ((config vl-simpconfig-p) 'config)
+                                      ((ctxsize maybe-natp) 'nil)
+                                      ((type vl-maybe-datatype-p) 'nil)
+                                      ((lhs vl-maybe-expr-p) 'nil))
+    :measure (acl2::nat-list-measure
+              (list reclimit 2 nil nil))
+    :returns (mv (ok)
+                 (warnings vl-warninglist-p)
+                 (new-x vl-rhs-p)
+                 (svex sv::svex-p)
+                 new-elabindex)
+    (b* ((x (vl-rhs-fix x))
+         (warnings nil))
+      (vl-rhs-case x
+        :vl-rhsexpr
+        (b* (((mv ok warnings new-guts svex elabindex)
+              (vl-expr-resolve-to-constant x.guts elabindex
+                                           :ctxsize ctxsize
+                                           :type type
+                                           :lhs lhs))
+             (new-x (change-vl-rhsexpr x :guts new-guts)))
+          (mv ok warnings new-x svex elabindex))
+        :vl-rhsnew
+        (mv nil
+            (fatal :type :vl-expr-consteval-fail
+                   :msg "Couldn't resolve rhs ~a0 to constant."
+                   :args (list (vl-rhs-fix x)))
+            x
+            (svex-x)
+            elabindex))))
 
   ;; (define vl-expr-resolve-to-constant-top ((x vl-expr-p)
   ;;                                          elabindex
@@ -895,6 +931,49 @@ expression with @(see vl-expr-to-svex).</p>")
     :order-base 100
     :measure (acl2::nat-list-measure (list reclimit :order :count 0)))
 
+  ;; Hrmn, turns out we don't actually need these...
+
+  ;; (define vl-rhs-elaborate ((x vl-rhs-p)
+  ;;                           (elabindex "in the scope where x is declared")
+  ;;                           &key
+  ;;                           ((reclimit natp) 'reclimit)
+  ;;                           ((config vl-simpconfig-p) 'config))
+  ;;   :measure (acl2::nat-list-measure (list reclimit 140 0 0))
+  ;;   :returns (mv (ok)
+  ;;                (warnings vl-warninglist-p)
+  ;;                (new-x vl-rhs-p)
+  ;;                new-elabindex)
+  ;;   (b* ((warnings nil))
+  ;;     (vl-rhs-case x
+  ;;       :vl-rhsexpr
+  ;;       (b* (((wmv ok warnings new-guts elabindex)
+  ;;             (vl-expr-elaborate x.guts elabindex))
+  ;;            (new-x (change-vl-rhsexpr x :guts new-guts)))
+  ;;         (mv ok warnings new-x elabindex))
+  ;;       :vl-rhsnew
+  ;;       (b* (((wmv ok1 warnings new-arrsize elabindex)
+  ;;             (vl-expr-elaborate x.arrsize elabindex))
+  ;;            ((wmv ok2 warnings new-args elabindex)
+  ;;             (vl-exprlist-elaborate x.args elabindex))
+  ;;            (new-x (change-vl-rhsnew x
+  ;;                                     :arrsize new-arrsize
+  ;;                                     :args new-args)))
+  ;;         (mv (and* ok1 ok2) warnings new-x elabindex)))))
+
+  ;; (define vl-maybe-rhs-elaborate ((x vl-maybe-rhs-p)
+  ;;                                 (elabindex "in the scope where x is declared")
+  ;;                                 &key
+  ;;                                 ((reclimit natp) 'reclimit)
+  ;;                                 ((config vl-simpconfig-p) 'config))
+  ;;   :measure (acl2::nat-list-measure (list reclimit 141 0 0))
+  ;;   :returns (mv (ok)
+  ;;                (warnings vl-warninglist-p)
+  ;;                (new-x vl-rhs-p)
+  ;;                new-elabindex)
+  ;;   (b* ((x (vl-maybe-rhs-fix x)))
+  ;;     (if x
+  ;;         (vl-rhs-elaborate x elabindex)
+  ;;       (mv t nil nil elabindex))))
 
   (define vl-vardecl-elaborate ((x vl-vardecl-p)
                                 (elabindex "in the scope where x is declared")
@@ -929,10 +1008,10 @@ expression with @(see vl-expr-to-svex).</p>")
             (mv ok warnings new-x elabindex)))
          ;; analogous to the explicitvalueparam case in paramdecl-elaborate
          ((wmv ok1 warnings ?new-expr svex elabindex :ctx x)
-          (vl-expr-resolve-to-constant
-           new-x.initval elabindex :reclimit reclimit
-           :type new-x.type
-           :lhs (vl-idexpr x.name)))
+          (vl-rhs-resolve-to-constant new-x.initval elabindex
+                                      :reclimit reclimit
+                                      :type new-x.type
+                                      :lhs (vl-idexpr x.name)))
 
          (val (sv::svex-constval svex))
          ((unless (and ok1 val))

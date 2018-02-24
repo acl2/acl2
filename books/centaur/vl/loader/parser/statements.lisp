@@ -169,12 +169,12 @@
        (type := (vl-match-some-token '(:vl-equalsign :vl-lte)))
        (when (vl-is-some-token? '(:vl-pound :vl-atsign :vl-kwd-repeat))
          (delay := (vl-parse-delay-or-event-control)))
-       (expr := (vl-parse-expression))
+       (rhs := (vl-parse-rhs))
        (return (make-vl-assignstmt :type (if (eq (vl-token->type type) :vl-equalsign)
                                              :vl-blocking
                                            :vl-nonblocking)
                                    :lvalue lvalue
-                                   :expr expr
+                                   :rhs rhs
                                    :ctrl delay
                                    :atts atts
                                    :loc loc))))
@@ -213,7 +213,7 @@
                                                 :vl-assign
                                               :vl-force)
                                       :lvalue lvalue
-                                      :expr expr
+                                      :rhs (make-vl-rhsexpr :guts expr)
                                       :ctrl nil
                                       :atts atts
                                       :loc (vl-token->loc type))))
@@ -808,7 +808,7 @@
   (seq tokstream
        (id := (vl-match-token :vl-idtoken))
        (:= (vl-match-token :vl-equalsign))
-       (initval := (vl-parse-expression))
+       (initval := (vl-parse-rhs))
        (return-raw
         (b* ((vardecl1 (make-vl-vardecl :name (vl-idtoken->name id)
                                         :type type
@@ -866,7 +866,7 @@
        (return (cons (make-vl-assignstmt
                       :type :vl-blocking
                       :lvalue lvalue
-                      :expr expr
+                      :rhs (make-vl-rhsexpr :guts expr)
                       :loc loc)
                      rest))))
 
@@ -912,7 +912,7 @@
        (return (cons (make-vl-assignstmt
                       :type :vl-blocking
                       :lvalue lvalue
-                      :expr expr
+                      :rhs (make-vl-rhsexpr :guts expr)
                       :loc loc)
                      rest))))
 
@@ -1661,7 +1661,7 @@
                    (:= (vl-match-token :vl-semi))
                    (return (make-vl-assignstmt :type :vl-blocking
                                                :lvalue lvalue
-                                               :expr expr
+                                               :rhs (make-vl-rhsexpr :guts expr)
                                                :loc loc))))
              ((unless erp)
               (mv erp val tokstream))
@@ -1841,7 +1841,7 @@
                    (return (make-vl-assignstmt
                             :type :vl-blocking
                             :lvalue lvalue
-                            :expr expr
+                            :rhs (make-vl-rhsexpr :guts expr)
                             :loc loc))))
              ((unless erp)
               (mv erp val tokstream))

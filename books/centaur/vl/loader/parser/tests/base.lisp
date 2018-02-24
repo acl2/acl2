@@ -740,6 +740,11 @@
     (:vl-forkjoinany  :fork-join-any)
     (:vl-forkjoinnone :fork-join-none)))
 
+(define vl-pretty-rhs ((x vl-rhs-p))
+  (vl-rhs-case x
+    (:vl-rhsexpr (vl-pretty-expr x.guts))
+    (:vl-rhsnew (list* :new x.arrsize (vl-pretty-exprlist x.args)))))
+
 (defines vl-pretty-stmt
 
   (define vl-pretty-stmt ((x vl-stmt-p))
@@ -748,7 +753,7 @@
       :vl-nullstmt :null
       :vl-assignstmt (list* (vl-pretty-expr x.lvalue)
                             (vl-pretty-assign-type x.type)
-                            (vl-pretty-expr x.expr)
+                            (vl-pretty-rhs x.rhs)
                             (append (and x.ctrl (list :ctrl (vl-pretty-delayoreventcontrol x.ctrl))
                                     (and x.atts (list :atts (vl-pretty-atts x.atts))))))
       :vl-deassignstmt (list* (vl-pretty-deassign-type x.type)

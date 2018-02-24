@@ -497,7 +497,7 @@ because... (BOZO)</p>
 
 
 (define vl-assignstmt->svstmts ((lhs vl-expr-p)
-                                (rhs vl-expr-p)
+                                (rhs vl-rhs-p)
                                 (blockingp booleanp)
                                 (ss vl-scopestack-p)
                                 (scopes vl-elabscopes-p))
@@ -506,8 +506,14 @@ because... (BOZO)</p>
                             (sv::svarlist-addr-p (sv::constraintlist-vars (vttree->constraints vttree)))))
                (res sv::svstmtlist-p))
   (b* ((vttree nil)
+       ((unless (vl-rhs-case rhs :vl-rhsexpr))
+        (mv nil
+            (vfatal :type :vl-assignstmt-fail
+                    :msg "Not yet supported: 'new' instances: ~a0"
+                    :args (list (vl-rhs-fix rhs)))
+            nil))
        (lhs (vl-expr-fix lhs))
-       (rhs (vl-expr-fix rhs)))
+       (rhs (vl-rhsexpr->guts rhs)))
     (vl-expr-case lhs
       :vl-index
       ;; If it's an index expression we can look up its type and just process a
@@ -973,7 +979,7 @@ because... (BOZO)</p>
                                  :args (list x))
                          (ok)))
              ((vwmv ok vttree res)
-              (vl-assignstmt->svstmts x.lvalue x.expr blockingp ss scopes))
+              (vl-assignstmt->svstmts x.lvalue x.rhs blockingp ss scopes))
              (constraints (vttree-constraints-to-svstmts vttree)))
           (mv ok warnings (append-without-guard constraints res)))
         :vl-ifstmt
@@ -1098,7 +1104,7 @@ because... (BOZO)</p>
                            :args (list x))))
              ((vwmv ok vttree assignstmts)
               (if x.val
-                  (vl-assignstmt->svstmts fnname x.val t ss scopes)
+                  (vl-assignstmt->svstmts fnname (make-vl-rhsexpr :guts x.val) t ss scopes)
                 (mv t nil nil)))
              (constraints (vttree-constraints-to-svstmts vttree)))
           (mv ok warnings

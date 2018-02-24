@@ -285,15 +285,6 @@ expressions.</p>"
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (enable vl-atomicstmt-p)))))
 
-(define vl-vardecllist->initvals ((x vl-vardecllist-p))
-  :returns (vals vl-exprlist-p)
-  (b* (((when (atom x)) nil)
-       (initval (vl-vardecl->initval (car x))))
-    (if initval
-        (cons initval (vl-vardecllist->initvals (cdr x)))
-      (vl-vardecllist->initvals (cdr x)))))
-
-
 
 (define vl-compoundstmt->exprs ((x vl-stmt-p))
   :prepwork ((local (defthm vl-exprlist-p-of-flatten-when-vl-exprlistlist-p

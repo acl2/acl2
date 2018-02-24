@@ -108,8 +108,8 @@ used in fast alists.</p>")
    (ss        vl-scopestack-p "Scopestack under which the element was found")
    (portname  maybe-stringp "If passed to an instance port argument, which port?"))
   :layout :tree)
-   
-   
+
+
 
 (deftagsum vl-lucidocc
   :short "Record of an occurrence of an identifier."
@@ -1345,6 +1345,18 @@ created when we process their packages, etc.</p>"
       (vl-range-lucidcheck x ss st ctx)
     st))
 
+
+(def-vl-lucidcheck rhs
+  :takes-ctx t
+  :body
+  (vl-rhs-case x
+    (:vl-rhsexpr
+     (vl-rhsexpr-lucidcheck x.guts ss st ctx))
+    (:vl-rhsnew
+     (b* ((st (vl-maybe-rhsexpr-lucidcheck x.arrsize ss st ctx))
+          (st (vl-rhsexprlist-lucidcheck x.args ss st ctx)))
+       st))))
+
 (def-vl-lucidcheck packeddimension
   :takes-ctx t
   :body
@@ -1538,6 +1550,7 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list paramdecllist :element paramdecl)
 
+
 (def-vl-lucidcheck vardecl
   :body
   (b* (((vl-vardecl x))
@@ -1547,7 +1560,7 @@ created when we process their packages, etc.</p>"
        (st (if x.initval
                ;; Initial value, so this variable is set and we also need to
                ;; mark all variables used in the rhs as being used.
-               (b* ((st (vl-rhsexpr-lucidcheck x.initval ss st ctx))
+               (b* ((st (vl-rhs-lucidcheck x.initval ss st ctx))
                     (st (vl-lucid-mark-simple :set x.name ss st ctx)))
                  st)
              st)))
@@ -1574,7 +1587,7 @@ created when we process their packages, etc.</p>"
 
         :vl-assignstmt
         (b* ((st (vl-lhsexpr-lucidcheck x.lvalue ss st ctx))
-             (st (vl-rhsexpr-lucidcheck x.expr ss st ctx))
+             (st (vl-rhs-lucidcheck x.rhs ss st ctx))
              (st (vl-maybe-delayoreventcontrol-lucidcheck x.ctrl ss st ctx)))
           st)
 
@@ -3848,7 +3861,7 @@ doesn't have to recreate the default heuristics.</p>"
   (memoize 'vl-scopestack->flat-transitive-names-slow))
 
 ;; (trace$ vl-possible-typo-warnings)
-;; (trace$ (vl-lucid-dissect-pair 
+;; (trace$ (vl-lucid-dissect-pair
 ;;          :entry (list 'vl-lucid-dissect-pair (with-local-ps (vl-pp-lucidkey key)))
 ;;          :exit (b* (((list reportcard typos) values))
 ;;                  (list 'vl-lucid-dissect-pair :typos (alist-vals typos)))))

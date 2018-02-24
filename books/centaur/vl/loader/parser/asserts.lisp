@@ -308,7 +308,7 @@
        ((vl-vardeclassign var1) (car vars)))
     (cons (make-vl-vardecl :name    var1.id
                            :type    (vl-datatype-update-udims var1.dims type)
-                           :initval var1.expr
+                           :initval var1.rhs
                            :loc     loc)
           (vl-make-assertion-vardecls type (cdr vars) loc))))
 

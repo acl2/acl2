@@ -2806,3 +2806,27 @@ unnamed (plain) arguments followed by some named arguments.</p>"
                                :pdims    nil ;; Not applicable to realtimes
                                )))
 
+
+(deftagsum vl-rhs
+  :short "A right-hand side for a variable initialization or procedural assignment."
+  :long "<p>This is meant to represent things that can come to the right of an
+equal sign in a variable declaration or procedural assignment.  This might be a
+simple expression, or a @('new') expression.</p>"
+
+    (:vl-rhsexpr
+     :short "A simple expression being used as a right-hand-side, e.g., the @('5')
+             in something like @('integer foo = 5')."
+     :base-name vl-rhsexpr
+     ((guts vl-expr-p)))
+
+    (:vl-rhsnew
+     :short "A 'new' invocation being used as a right-hand-side."
+     :base-name vl-rhsnew
+     ((arrsize vl-maybe-expr-p
+               "For @('new') arrays, this is the dimension of the array.  For instance,
+                in @('arr[0] = new [4]') this would be the @('4').  For
+                ordinary @('new') instances of classes, this is just @('nil').")
+      (args vl-exprlist-p
+            "Arguments to the new class or array."))))
+
+(defoption vl-maybe-rhs vl-rhs)

@@ -1444,7 +1444,7 @@ properly preserve them.</p>")
    (atts     vl-atts-p
              "Any attributes associated with this declaration.")
 
-   (initval  vl-maybe-expr-p
+   (initval  vl-maybe-rhs-p
              "(Variables only).  When present, indicates the initial value for
               the variable, e.g., for @('integer i = 3;') the @('initval') will
               be the @(see vl-expr-p) for @('3').  Note that when net
@@ -2609,7 +2609,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                concatenations of these things.  We do not enforce these
                restrictions in @('vl-assignstmt-p'), but only require that the
                lvalue is an expression.")
-      (expr   vl-expr-p
+      (rhs    vl-rhs-p
               "The right-hand side expression that should be assigned to the
                lvalue.")
       (loc    vl-location-p

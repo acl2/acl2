@@ -330,7 +330,8 @@ elements.")
           vl-maybe-delayoreventcontrol
           vl-exprdist
           vl-propexpr
-          vl-propspec))
+          vl-propspec
+          vl-maybe-rhs))
 
 (fty::defvisitor vl-stmt-immdeps
   :type statements
@@ -487,7 +488,7 @@ elements.")
   (b* (((vl-vardecl x))
        (ctx x)
        (ans (vl-datatype-immdeps x.type ans))
-       (ans (vl-maybe-expr-immdeps x.initval ans))
+       (ans (vl-maybe-rhs-immdeps x.initval ans))
        (ans (vl-maybe-gatedelay-immdeps x.delay ans)))
     ans))
 

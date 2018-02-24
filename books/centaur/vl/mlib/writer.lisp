@@ -2011,6 +2011,23 @@ expression into a string."
      (assoc-equal "VL_ANSI_PORT_VARDECL" x.atts)
      )))
 
+(define vl-pp-rhs ((x vl-rhs-p) &key (ps 'ps))
+  (vl-rhs-case x
+    :vl-rhsexpr (vl-pp-expr x.guts)
+    :vl-rhsnew
+    (vl-ps-seq
+     (vl-ps-span "vl_key" (vl-print-str "new "))
+     (if x.arrsize
+         (vl-ps-seq (vl-print "[")
+                    (vl-pp-expr x.arrsize)
+                    (vl-print "]"))
+       ps)
+     (if (consp x.args)
+         (vl-ps-seq (vl-print "(")
+                    (vl-pp-exprlist x.args)
+                    (vl-print ")"))
+       ps))))
+
 (define vl-pp-vardecl-aux ((x vl-vardecl-p) &key (ps 'ps))
   ;; This just prints a vardecl, but with no final semicolon and no final atts,
   ;; so we can use it in places where vardecls are separated by commas
@@ -2062,7 +2079,7 @@ expression into a string."
                     (vl-pp-packeddimensionlist udims))))
      (if x.initval
          (vl-ps-seq (vl-print " = ")
-                    (vl-pp-expr x.initval))
+                    (vl-pp-rhs x.initval))
        ps))))
 
 (define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
@@ -3170,7 +3187,7 @@ expression into a string."
              (:vl-assignstmt
               (vl-ps-seq (vl-pp-expr x1.lvalue)
                          (vl-println? " = ")
-                         (vl-pp-expr x1.expr)))
+                         (vl-pp-rhs x1.rhs)))
              ;; BOZO might need to handle enablestmt for function calls
              (:otherwise
               (prog2$ (raise "Bad type of statement for for loop initialization/step: ~x0~%"
@@ -3214,7 +3231,7 @@ expression into a string."
                      (vl-ps-seq (vl-pp-delayoreventcontrol x.ctrl)
                                 (vl-println? " "))
                    ps)
-                 (vl-pp-expr x.expr)
+                 (vl-pp-rhs x.rhs)
                  (vl-println " ;"))
 
       :vl-callstmt
