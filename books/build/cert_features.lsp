@@ -41,32 +41,46 @@
       (progn$
        (er hard? '|Makefile-features| "Error opening Makefile-features?")
        state)
-    (let* ((state (princ$ "ACL2_FEATURES_DETECTED := 1" channel state))
+    (let* ((state (princ$ "export ACL2_FEATURES_DETECTED := 1" channel state))
            (state (newline channel state))
-           (state (princ$ #+hons "ACL2_HAS_HONS := 1"
-                          #-hons "ACL2_HAS_HONS := "
+           (state (princ$ #+hons "export ACL2_HAS_HONS := 1"
+                          #-hons "export ACL2_HAS_HONS := "
                           channel state))
            (state (newline channel state))
-           (state (princ$ #-(and gcl (not ansi-cl)) "ACL2_HAS_ANSI := 1"
-                          #+(and gcl (not ansi-cl)) "ACL2_HAS_ANSI := "
+           (state (princ$ "EXPORTED_VARS += ACL2_HAS_HONS" channel state))
+           (state (newline channel state))
+           (state (princ$ #-(and gcl (not ansi-cl)) "export ACL2_HAS_ANSI := 1"
+                          #+(and gcl (not ansi-cl)) "export ACL2_HAS_ANSI := "
                           channel state))
            (state (newline channel state))
-           (state (princ$ #+acl2-par "ACL2_HAS_PARALLEL := 1"
-                          #-acl2-par "ACL2_HAS_PARALLEL := "
+           (state (princ$ "EXPORTED_VARS += ACL2_HAS_ANSI" channel state))
+           (state (newline channel state))
+           (state (princ$ #+acl2-par "export ACL2_HAS_PARALLEL := 1"
+                          #-acl2-par "export ACL2_HAS_PARALLEL := "
                           channel state))
            (state (newline channel state))
-           (state (princ$ #+non-standard-analysis "ACL2_HAS_REALS := 1"
-                          #-non-standard-analysis "ACL2_HAS_REALS := "
+           (state (princ$ "EXPORTED_VARS += ACL2_HAS_PARALLEL" channel state))
+           (state (newline channel state))
+           (state (princ$ #+non-standard-analysis "export ACL2_HAS_REALS := 1"
+                          #-non-standard-analysis "export ACL2_HAS_REALS := "
                           channel state))
            (state (newline channel state))
-           (state (princ$ "ACL2_COMP_EXT := " channel state))
+           (state (princ$ "EXPORTED_VARS += ACL2_HAS_REALS" channel state))
+           (state (newline channel state))
+           (state (princ$ "export ACL2_COMP_EXT := " channel state))
            (state (princ$ (@ compiled-file-extension) channel state))
            (state (newline channel state))
-           (state (princ$ "ACL2_HOST_LISP := " channel state))
+           (state (princ$ "EXPORTED_VARS += ACL2_COMP_EXT" channel state))
+           (state (newline channel state))
+           (state (princ$ "export ACL2_HOST_LISP := " channel state))
            (state (princ$ (symbol-name (@ host-lisp)) channel state))
            (state (newline channel state))
-           (state (princ$ "ACL2_THINKS_BOOK_DIR_IS := " channel state))
+           (state (princ$ "EXPORTED_VARS += ACL2_HOST_LISP" channel state))
+           (state (newline channel state))
+           (state (princ$ "export ACL2_THINKS_BOOK_DIR_IS := " channel state))
            (state (princ$ (f-get-global 'system-books-dir state) channel state))
+           (state (newline channel state))
+           (state (princ$ "EXPORTED_VARS += ACL2_THINKS_BOOK_DIR_IS" channel state))
            (state (newline channel state))
            (state (close-output-channel channel state)))
       state)))

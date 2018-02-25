@@ -102,6 +102,14 @@
 
  <h3>New Libraries</h3>
 
+ <p>A new regular expression library, @(see acre::acre), is available in
+ \"books/centaur/acre/\".  Compared to the implementation in \"projects/regex\",
+ this version's features are less similar to GNU grep and somewhat more similar
+ to Perl regular expressions.  However, it does not aim to be fully compatible,
+ but to have a well-defined set of features with clean code that can be easily
+ extended and behaves predictably (as much as possible, for regular
+ expressions).</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>A bug has been fixed in the expander (see @(see defthm?)), which had
@@ -110,6 +118,10 @@
 
  <p>Updated the ACL2+books manual to accommodate the replacement of David
  Russinoff's online rtl manual by his upcoming Springer book.</p>
+
+ <p>The @('misc/assert.lisp') book no longer includes @('misc/eval.lisp'),
+ since tests about the @('misc/assert.lisp') utilities are now in a separate
+ book @('misc/assert-tests.lisp').</p>
 
  <h4><see topic='@(url kestrel-utilities)'>Kestrel Utilities</see></h4>
 
@@ -135,6 +147,16 @@
  utilities</see> with a recognizer for symbols that name @(tsee defchoose)
  functions.</p>
 
+ <p>Added utility @(see apply-fn-if-known) to apply a function that might not
+ exist; even the package for the function symbol might not exist.</p>
+
+ <p>Added utilities @(tsee fsublis-fn-rec), @(tsee fsublis-fn), and @(tsee
+ fsublis-fn-simple), which are variants of the built-in system utilities that
+ have the same names minus the initial @('f').  These variants do not perform
+ simplification.  The relationship between these variants and the corresponding
+ built-in system utilities is analogous to the relationship between @(tsee
+ fcons-term) and @(tsee cons-term).</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
@@ -153,6 +175,12 @@
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
+
+ <p>The build system now has support for @(see ifdef) and @(see ifndef), which
+ are @(see make-event)-supported macros defined in \"books/build/ifdef.lisp\".
+ In particular, this allows the community books' makefile to support building
+ different versions of the manual depending what external tools are
+ installed.</p>
 
  <h3>Testing</h3>
 

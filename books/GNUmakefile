@@ -135,12 +135,21 @@
 ### Section: Preliminaries
 ##############################
 
+# GNU Make exports exported variables to the shell inside recipes, but
+# not inside $(shell ...).  To work around this, we'll add every
+# variable we export to a list and manually provide the environment we
+# want when we need it.
+EXPORTED_VARS :=
+
+
 # For cygwin, we need to do something special to get a Unix-like
 # pathname.
 ifneq (,$(findstring CYGWIN, $(shell uname)))
 export ACL2_SYSTEM_BOOKS := $(shell cygpath -m $(CURDIR))
+EXPORTED_VARS += ACL2_SYSTEM_BOOKS
 else
 export ACL2_SYSTEM_BOOKS := $(CURDIR)
+EXPORTED_VARS += ACL2_SYSTEM_BOOKS
 endif
 
 $(info ACL2_SYSTEM_BOOKS is $(ACL2_SYSTEM_BOOKS))
@@ -201,54 +210,6 @@ ACL2_CUSTOM_TARGETS :=
 ### invoked with INFO=warning; otherwise, same as $(info just a test).
 ## $(eval $$($(INFO) just a test))
 
-ifndef NO_RESCAN
-
-# We skip the scan for excluded prefixes.  This change was implemented
-# by Matt Kaufmann on 9/25/2013 as part of the process of fixing
-# ACL2(r) regressions.  (Note that nonstd/Makefile includes this
-# Makefile.)
-ifneq ($(EXCLUDED_PREFIXES), )
-space =  # just a space
-EGREP_EXTRA_EXCLUDE_STRING = |$(subst $(space) $(space),|,$(strip $(EXCLUDED_PREFIXES)))
-endif # ifneq ($(EXCLUDED_PREFIXES), )
-
-# We exclude some directories because there are subdirectories and it's just
-# easiest to stop at the root.
-
-# We also exclude centaur/satlink/solvers because it depends on all kinds of
-# extra SAT solvers.
-$(info Scanning for books...)
-REBUILD_MAKEFILE_BOOKS := $(shell \
-  rm -f $(BUILD_DIR)/Makefile-books; \
-  time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support$(EGREP_EXTRA_EXCLUDE_STRING))' \
-    | fgrep -v '.\#' \
-  > $(BUILD_DIR)/Makefile-books; \
-  ls -l $(BUILD_DIR)/Makefile-books)
-#$(info $(REBUILD_MAKEFILE_BOOKS))
-
-$(info Scanning for dependencies...)
-REBUILD_MAKEFILE_DEPS := $(shell \
-  rm -f $(BUILD_DIR)/Makefile-deps $(BUILD_DIR)/Makefile-deps.out; \
-  time ($(BUILD_DIR)/cert.pl \
-          --quiet \
-          --static-makefile $(BUILD_DIR)/Makefile-deps \
-          --cache $(BUILD_DIR)/Makefile-cache \
-          --acl2-books `pwd` \
-          --targets $(BUILD_DIR)/Makefile-books \
-          --write-sources $(BUILD_DIR)/Makefile-sources \
-          --write-certs $(BUILD_DIR)/Makefile-certs \
-          1>&2) ;\
-  echo 'MFDEPS_DEBUG := $$(shell echo Reading book deps ' \
-       'Makefile-deps created on' `date` '1>&2)' \
-    >> $(BUILD_DIR)/Makefile-deps; \
-  ls -l $(BUILD_DIR)/Makefile-deps)
-#$(info $(REBUILD_MAKEFILE_DEPS))
-$(info Done scanning.)
-
-endif # ifndef NO_RESCAN
-
-include $(BUILD_DIR)/Makefile-deps
 
 $(info Determining ACL2 features (for ACL2 = $(ACL2)))
 ACL2_FEATURES := $(shell \
@@ -264,14 +225,16 @@ $(info Determining whether Glucose is installed)
 # GLUCOSE_EXISTS
 GLUCOSE_EXISTS := $(shell glucose --help 2>/dev/null)
 ifdef GLUCOSE_EXISTS
-  OS_HAS_GLUCOSE ?= 1
+  export OS_HAS_GLUCOSE ?= 1
+  EXPORTED_VARS += OS_HAS_GLUCOSE
 endif # ifdef GLUCOSE_EXISTS
 
 $(info Determining whether an ipasir shared library is installed)
 ifdef IPASIR_SHARED_LIBRARY
   IPASIR_LIB_EXISTS := $(wildcard $(IPASIR_SHARED_LIBRARY))
   ifdef IPASIR_LIB_EXISTS
-    OS_HAS_IPASIR ?= 1
+    export OS_HAS_IPASIR ?= 1
+    EXPORTED_VARS += OS_HAS_IPASIR
     $(info Ipasir library supposedly exists)
   else # ifdef IPASIR_LIB_EXISTS
     $(info !!!WARNING: IPASIR_SHARED_LIBRARY was set to \
@@ -285,14 +248,16 @@ $(info Determining whether ABC is installed)
 # ABC_EXISTS
 ABC_EXISTS := $(shell abc -h 2>&1 | fgrep 'UC Berkeley, ABC' 2>/dev/null)
 ifdef ABC_EXISTS
-  OS_HAS_ABC ?= 1
+  export OS_HAS_ABC ?= 1
+  EXPORTED_VARS += OS_HAS_ABC
 endif # ifdef ABC_EXISTS
 
 
 $(info Determining whether Z3 is installed, for use by SMTLink)
 SMTLINK_EXISTS := $(shell z3 --version 2>/dev/null)
 ifdef SMTLINK_EXISTS
-  OS_HAS_SMTLINK ?= 1
+  export OS_HAS_SMTLINK ?= 1
+  EXPORTED_VARS += OS_HAS_SMTLINK
 endif # ifdef SMTLINK_EXISTS
 
 # The default for USE_QUICKLISP is now 1 for all ACL2 host Lisps
@@ -302,7 +267,8 @@ endif # ifdef SMTLINK_EXISTS
 # like :=.
 ifndef USE_QUICKLISP
   ifneq ($(ACL2_HOST_LISP), GCL)
-    USE_QUICKLISP := 1
+    export USE_QUICKLISP := 1
+    EXPORTED_VARS += USE_QUICKLISP
   endif
 endif
 
@@ -343,6 +309,60 @@ endif
 
 endif # ACL2_FEATURES_DETECTED
 
+# $(info EXPORTED_VARS = $(EXPORTED_VARS))
+EXPORT_SHELL_ENV := $(foreach v,$(EXPORTED_VARS),$(v)='$($(v))')
+
+# $(info EXPORT_SHELL_ENV = $(EXPORT_SHELL_ENV))
+
+ifndef NO_RESCAN
+
+# We skip the scan for excluded prefixes.  This change was implemented
+# by Matt Kaufmann on 9/25/2013 as part of the process of fixing
+# ACL2(r) regressions.  (Note that nonstd/Makefile includes this
+# Makefile.)
+ifneq ($(EXCLUDED_PREFIXES), )
+space =  # just a space
+EGREP_EXTRA_EXCLUDE_STRING = |$(subst $(space) $(space),|,$(strip $(EXCLUDED_PREFIXES)))
+endif # ifneq ($(EXCLUDED_PREFIXES), )
+
+# We exclude some directories because there are subdirectories and it's just
+# easiest to stop at the root.
+
+# We also exclude centaur/satlink/solvers because it depends on all kinds of
+# extra SAT solvers.
+$(info Scanning for books...)
+REBUILD_MAKEFILE_BOOKS := $(shell \
+  rm -f $(BUILD_DIR)/Makefile-books; \
+  time find . -name "*.lisp" \
+    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | fgrep -v '.\#' \
+  > $(BUILD_DIR)/Makefile-books; \
+  ls -l $(BUILD_DIR)/Makefile-books)
+#$(info $(REBUILD_MAKEFILE_BOOKS))
+
+$(info Scanning for dependencies...)
+REBUILD_MAKEFILE_DEPS := $(shell \
+  rm -f $(BUILD_DIR)/Makefile-deps $(BUILD_DIR)/Makefile-deps.out; \
+    time ($(EXPORT_SHELL_ENV) \
+          $(BUILD_DIR)/cert.pl \
+          --quiet \
+          --static-makefile $(BUILD_DIR)/Makefile-deps \
+          --cache $(BUILD_DIR)/Makefile-cache \
+          --acl2-books `pwd` \
+          --targets $(BUILD_DIR)/Makefile-books \
+          --write-sources $(BUILD_DIR)/Makefile-sources \
+          --write-certs $(BUILD_DIR)/Makefile-certs \
+          1>&2) ;\
+  echo 'MFDEPS_DEBUG := $$(shell echo Reading book deps ' \
+       'Makefile-deps created on' `date` '1>&2)' \
+    >> $(BUILD_DIR)/Makefile-deps; \
+  ls -l $(BUILD_DIR)/Makefile-deps)
+#$(info $(REBUILD_MAKEFILE_DEPS))
+$(info Done scanning.)
+
+endif # ifndef NO_RESCAN
+
+include $(BUILD_DIR)/Makefile-deps
 
 
 # Cause error for illegal certification attempts:
