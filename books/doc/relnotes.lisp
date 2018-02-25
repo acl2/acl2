@@ -102,6 +102,14 @@
 
  <h3>New Libraries</h3>
 
+ <p>A new regular expression library, @(see acre::acre), is available in
+ \"books/centaur/acre/\".  Compared to the implementation in \"projects/regex\",
+ this version's features are less similar to GNU grep and somewhat more similar
+ to Perl regular expressions.  However, it does not aim to be fully compatible,
+ but to have a well-defined set of features with clean code that can be easily
+ extended and behaves predictably (as much as possible, for regular
+ expressions).</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>A bug has been fixed in the expander (see @(see defthm?)), which had
@@ -167,6 +175,12 @@
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
+
+ <p>The build system now has support for @(see ifdef) and @(see ifndef), which
+ are @(see make-event)-supported macros defined in \"books/build/ifdef.lisp\".
+ In particular, this allows the community books' makefile to support building
+ different versions of the manual depending what external tools are
+ installed.</p>
 
  <h3>Testing</h3>
 
