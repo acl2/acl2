@@ -1259,7 +1259,7 @@ certification using @('make')"
 support conditionally running some events depending on the build environment.
 This works as follows:</p>
 
-#({
+@({
  (ifdef \"MY_ENV_VAR\"
     (defun foo (x) x)
     (include-book \"bar\")
