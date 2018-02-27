@@ -415,4 +415,4 @@ result.</p>
 </ul>
 ")
 
-(xdoc::save "./manual" :redef-okp t)  ;; write the manual
+;; (xdoc::save "./manual" :redef-okp t)  ;; write the manual
