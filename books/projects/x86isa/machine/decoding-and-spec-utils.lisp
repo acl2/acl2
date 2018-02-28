@@ -1577,3 +1577,46 @@ made from privilege level 3.</sf>"
         ))))
 
 ;; ======================================================================
+
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+(define select-address-size ((prefixes :type (unsigned-byte 44)) (x86 x86p))
+  :returns (address-size (member-equal address-size '(2 4 8)))
+  :inline t
+  :parents (decoding-and-spec-utils)
+  :short "Address size of an instruction, in bytes."
+  :long
+  "<p>
+   This is base on AMD manual, Dec'17, Volume 3, Table 1-3,
+   and AMD manual, Dec'17, Volume 2, Sections 4.7 and 4.8.
+   </p>
+   <p>
+   In 64-bit mode, the address size is
+   64 bits if there is no address override prefix,
+   32 bits if there is an address override prefix.
+   In 32-bit mode, the address size is
+   32 bits if either
+   (i) the default address size is 32 bits
+   and there is no address override prefix, or
+   (ii) the default address size is 16 bits
+   and there is an eddress override prefix;
+   otherwise, the address size is 16 bits.
+   In 32-bit mode,
+   the default address size is determined by the CS.D bit of the code segment:
+   32 bits if CS.D is 1, 16 bits if CS.D is 0.
+   </p>"
+  (if (64-bit-modep x86)
+      (b* ((p4? (eql #.*addr-size-override*
+                     (prefixes-slice :group-4-prefix prefixes))))
+        (if p4? 4 8))
+    (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+         (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+         (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
+         (p4? (eql #.*addr-size-override*
+                   (prefixes-slice :group-4-prefix prefixes))))
+      (if cs.d (if p4? 2 4) (if p4? 4 2))))
+  ///
+
+  (defrule select-address-size-not-2-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (not (equal 2 (select-address-size prefixes x86))))))
