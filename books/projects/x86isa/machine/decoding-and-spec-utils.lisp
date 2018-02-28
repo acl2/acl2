@@ -581,7 +581,9 @@ the @('fault') field instead.</li>
            <p>Note that, in 32-bit mode,
            we call this function only when the address size is 32 bits.
            When the address size is 16 bits, there is no SIB byte:
-           See Intel Vol. 2 Table 2-1.</p>"
+           See Intel Vol. 2 Table 2-1.</p>
+           <p>The displacement is read as a signed values:
+           see AMD manual, Dec'17, Volume 3, Section 1.5.</p>"
 
     :returns (mv flg
                  (non-truncated-memory-address
@@ -652,16 +654,17 @@ the @('fault') field instead.</li>
          (scale (the (unsigned-byte 2) (sib-scale sib)))
          (scaled-index (ash index scale))
 
-         (effective-addr (+ base displacement scaled-index)))
+         (effective-addr (+ base scaled-index)))
 
-        (mv flg effective-addr 0 nrip-bytes x86))
+        (mv flg effective-addr displacement nrip-bytes x86))
 
     ///
 
-    (defthm x86-effective-addr-from-sib-returns-natp-displacement
-      (equal (mv-nth 2 (x86-effective-addr-from-sib
-                        temp-RIP rex-byte mod sib x86))
-             0)
+    (defthm x86-effective-addr-from-sib-returns-integerp-displacement
+      (implies (x86p x86)
+               (integerp (mv-nth 2 (x86-effective-addr-from-sib
+                                    temp-RIP rex-byte mod sib x86))))
+      :rule-classes (:rewrite :type-prescription)
       :hints (("Goal" :in-theory (e/d (rime-size riml-size) ()))))
 
     (defthm x86-effective-addr-from-sib-returns-<=-increment-rip-bytes
