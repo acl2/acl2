@@ -1382,8 +1382,7 @@
                             (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :increment-error flg))
 
-       (sib? (and modr/m?
-                  (x86-decode-SIB-p modr/m)))
+       (sib? (and modr/m? (x86-decode-SIB-p modr/m nil)))
        ((mv flg2 (the (unsigned-byte 8) sib) x86)
         (if sib?
             (rme08 temp-rip *cs* :x x86)
@@ -4085,7 +4084,7 @@ semantic function.</p>"
           (mv nil temp-rip)))
        ((when flg4) (!!ms-fresh :increment-error flg2))
 
-       (sib? (and modr/m? (x86-decode-SIB-p modr/m)))
+       (sib? (and modr/m? (x86-decode-SIB-p modr/m nil)))
 
        ((mv flg5 (the (unsigned-byte 8) sib) x86)
         (if sib?
@@ -4145,7 +4144,7 @@ semantic function.</p>"
       (equal temp-rip2 (if modr/m?
                            (mv-nth 1 (increment-*ip temp-rip1 1 x86))
                          temp-rip1))
-      (equal sib? (and modr/m? (x86-decode-sib-p modr/m)))
+      (equal sib? (and modr/m? (x86-decode-sib-p modr/m nil)))
       (equal sib (if sib? (mv-nth 1 (rme08 temp-rip2 *cs* :x x86)) 0))
 
       (equal temp-rip3 (if sib?
