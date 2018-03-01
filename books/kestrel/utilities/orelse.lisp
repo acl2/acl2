@@ -5,6 +5,8 @@
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
+(include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
 (defxdoc orelse
   :parents (system-utilities)
@@ -100,6 +102,61 @@
         (t (cons `(,fn ,(car lst))
                  (formal-map fn (cdr lst))))))
 
+(defmacro on-failure (event &optional (erp 't) val str &rest fmt-args)
+
+; This macro generates an event.  The effect of that event is to try event
+; first, stopping if that succeeds, but otherwise failing.  In the failure case
+; we return (mv erp val state) and print the input string, str, with fmt
+; arguments (cons event fmt-args).  Except, if str is omitted (or nil) then we
+; print a default message as shown below.
+
+; All optional arguments are evaluated.
+
+  (mv-let (str fmt-args)
+    (cond (str (mv str (cons event fmt-args)))
+          (t (mv "The following event failed:~%~X01"
+; The use of 12 below is quite arbitrary.  The goal is to print the entire
+; event unless it's truly huge.
+                 (list event (evisc-tuple 12 12 nil nil)))))
+    `(orelse ,event
+             (make-event
+              (er-soft+ "event processing"
+                ,erp   ; erp
+                ,val   ; val
+                ,str
+                ,@(kwote-lst fmt-args))
+              :on-behalf-of :quiet))))
+
+; Below is alternate code that takes advantage of the existing implementation
+; of try-event.  It seems to me that the code above is a bit simpler; plus, it
+; avoids some potential circularity in books, since as things are now, this
+; "orelse" book includes the "user-interface" book, which in turn might include
+; "orelse" some day since it defines try-event, which generates a call of
+; orelse.
+
+#||
+(include-book "kestrel/utilities/user-interface" :dir :system)
+
+(defmacro on-failure (event &optional (erp 't) val str &rest fmt-args)
+
+; Msg is a msgp with the first argument missing.  Thus, if msg is the tuple
+; ("..." arg1 arg2 ...) then what is actually passed to ~@0 will be ("..."
+; event arg1 arg2 ...).  On failure we return (mv erp val state).  All optional
+; arguments are evaluated.
+
+  (mv-let (str fmt-args)
+    (cond (str (mv str (cons event fmt-args)))
+          (t (mv "The following event failed:~%~X01"
+; The use of 12 below is quite arbitrary.  The goal is to print the entire
+; event unless it's truly huge.
+                 (list event (evisc-tuple 12 12 nil nil)))))
+    (try-event event "event processing" erp val
+; Roughly speaking, we open-code msg here:
+               (cons str (pairlis$
+                          '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                          fmt-args)))))
+||#
+
 (mutual-recursion
 
 (defun report-event-when-error-fn (event)
@@ -119,20 +176,13 @@
         ((eq (car event) 'progn)
          (cons 'progn
                (report-event-when-error-fn-lst (cdr event))))
+        ((eq (car event) 'on-failure)
+         event)
         ((eq (car event) 'encapsulate)
          (list* 'encapsulate
                 (cadr event)
                 (report-event-when-error-fn-lst (cddr event))))
-        (t `(orelse ,event
-                    (make-event
-                     (with-output
-                       (er soft "event processing"
-                           "The following event failed:~%~X01"
-                           ',event
-; The use of 12 below is quite arbitrary.  The goal is to print the entire
-; event unless it's truly huge.
-                           (evisc-tuple 12 12 nil nil)))
-                     :on-behalf-of :quiet)))))
+        (t `(on-failure ,event))))
 
 (defun report-event-when-error-fn-lst (lst)
   (cond ((atom lst) nil)
