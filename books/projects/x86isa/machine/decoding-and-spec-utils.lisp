@@ -769,8 +769,9 @@ the @('fault') field instead.</li>
                 ;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
                 (x86-effective-addr-from-sib temp-RIP rex-byte mod sib
                                              x86))
-               (5 ;; RIP-relative addressing
+               (5
                 (if (64-bit-modep x86)
+                    ;; RIP-relative addressing in 64-bit mode:
                     (b* (((mv ?flg0 dword x86)
                           ;; dword is the sign-extended displacement
                           ;; present in the instruction.
@@ -783,8 +784,14 @@ the @('fault') field instead.</li>
                                                            (+ 4 num-imm-bytes)
                                                            x86))
                          ((when flg) (mv flg 0 0 0 x86)))
-                        (mv flg0 next-rip dword 4 x86))
-                  (mv 'non-64-bit-modes-unimplemented 0 0 0 x86)))
+                      (mv flg0 next-rip dword 4 x86))
+                  ;; displacement only in 32-bit mode:
+                  (b* (((mv flg dword x86)
+                        ;; dword is the sign-extended displacement
+                        ;; present in the instruction.
+                        (rime-size 4 temp-RIP *cs* :x x86))
+                       ((when flg) (mv flg 0 0 0 x86)))
+                    (mv nil 0 dword 4 x86))))
 
                (otherwise
                 (mv nil
@@ -837,10 +844,15 @@ the @('fault') field instead.</li>
          ;; 64 bits.  Note that our current virtual memory functions can
          ;; cause an error if the address we are reading from/writing to
          ;; is >= 2^47-8.
-
-         (dst-base (if p4
-                       (n32 dst-base)
-                     (n64-to-i64 (n64 dst-base)))))
+         ;; In 32-bit mode,
+         ;; this function we are in is called when the address size is 32 bits
+         ;; (a different function is called when the address size is 16 bits),
+         ;; so the following code always returns a 32-bit address in 32-bit mode.
+         (dst-base (if (64-bit-modep x86)
+                       (if p4
+                           (n32 dst-base)
+                         (n64-to-i64 (n64 dst-base)))
+                     (n32 dst-base))))
 
         (mv flg dst-base increment-RIP-by x86))
 
