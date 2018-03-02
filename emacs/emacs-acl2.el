@@ -884,6 +884,8 @@ beginning of the string that was processed."
 (put 'with-open-file 'lisp-indent-function 'defun)
 (put 'WITH-OUTPUT 'lisp-indent-function 'defun)
 (put 'with-output 'lisp-indent-function 'defun)
+(put 'WITH-OUTPUT! 'lisp-indent-function 'defun)
+(put 'with-output! 'lisp-indent-function 'defun)
 (put 'WITH-OUTPUT-TO 'lisp-indent-function 'defun)
 (put 'with-output-to 'lisp-indent-function 'defun)
 (put 'WITH-STDOUT 'lisp-indent-function 'defun)
