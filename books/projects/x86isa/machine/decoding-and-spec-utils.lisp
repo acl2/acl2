@@ -697,7 +697,8 @@ the @('fault') field instead.</li>
      ;; instruction. For details, see *Z-addressing-method-info* in
      ;; x86isa/utils/decoding-utilities.lisp.
      (num-imm-bytes  :type (unsigned-byte 3)
-                     "Number of immediate bytes (0, 1, 2, or 4) that follow the sib (or displacement bytes, if any).")
+                     "Number of immediate bytes (0, 1, 2, or 4)
+                      that follow the sib (or displacement bytes, if any).")
      x86)
 
     :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 rime-size) ())))
@@ -712,12 +713,12 @@ the @('fault') field instead.</li>
               (x86 x86p :hyp (force (x86p x86))))
 
 
-    :long "<p> We do not add the FS and GS bases (if FS and GS
-    overrides are present) to the effective address computed in this
-    function.  We choose do so either directly in the instruction
-    semantic functions or in functions like @(see
-    x86-operand-from-modr/m-and-sib-bytes) and @(see
-    x86-operand-to-reg/mem).</p>
+    :long  "<p>Note that we do not add segment bases
+    (such as the FS and GS bases, if FS and GS overrides are present)
+    to the effective address computed in this function.
+    Addition of those segment base addresses is a part of the
+    segmentation process --- we handle that in the function @(see
+    ea-to-la) that performs the segment address translation.</p>
 
     <p>Quoting from Intel Vol 1, Sec 3.3.7:</p>
 
@@ -769,8 +770,9 @@ the @('fault') field instead.</li>
                 ;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
                 (x86-effective-addr-from-sib temp-RIP rex-byte mod sib
                                              x86))
-               (5 ;; RIP-relative addressing
+               (5
                 (if (64-bit-modep x86)
+                    ;; RIP-relative addressing in 64-bit mode:
                     (b* (((mv ?flg0 dword x86)
                           ;; dword is the sign-extended displacement
                           ;; present in the instruction.
@@ -783,8 +785,14 @@ the @('fault') field instead.</li>
                                                            (+ 4 num-imm-bytes)
                                                            x86))
                          ((when flg) (mv flg 0 0 0 x86)))
-                        (mv flg0 next-rip dword 4 x86))
-                  (mv 'non-64-bit-modes-unimplemented 0 0 0 x86)))
+                      (mv flg0 next-rip dword 4 x86))
+                  ;; displacement only in 32-bit mode:
+                  (b* (((mv flg dword x86)
+                        ;; dword is the sign-extended displacement
+                        ;; present in the instruction.
+                        (rime-size 4 temp-RIP *cs* :x x86))
+                       ((when flg) (mv flg 0 0 0 x86)))
+                    (mv nil 0 dword 4 x86))))
 
                (otherwise
                 (mv nil
@@ -837,10 +845,15 @@ the @('fault') field instead.</li>
          ;; 64 bits.  Note that our current virtual memory functions can
          ;; cause an error if the address we are reading from/writing to
          ;; is >= 2^47-8.
-
-         (dst-base (if p4
-                       (n32 dst-base)
-                     (n64-to-i64 (n64 dst-base)))))
+         ;; In 32-bit mode,
+         ;; this function we are in is called when the address size is 32 bits
+         ;; (a different function is called when the address size is 16 bits),
+         ;; so the following code always returns a 32-bit address in 32-bit mode.
+         (dst-base (if (64-bit-modep x86)
+                       (if p4
+                           (n32 dst-base)
+                         (n64-to-i64 (n64 dst-base)))
+                     (n32 dst-base))))
 
         (mv flg dst-base increment-RIP-by x86))
 
