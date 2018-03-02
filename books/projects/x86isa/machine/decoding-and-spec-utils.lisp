@@ -712,12 +712,12 @@ the @('fault') field instead.</li>
               (x86 x86p :hyp (force (x86p x86))))
 
 
-    :long "<p> We do not add the FS and GS bases (if FS and GS
-    overrides are present) to the effective address computed in this
-    function.  We choose do so either directly in the instruction
-    semantic functions or in functions like @(see
-    x86-operand-from-modr/m-and-sib-bytes) and @(see
-    x86-operand-to-reg/mem).</p>
+    :long  "<p>Note that we do not add segment bases
+    (such as the FS and GS bases, if FS and GS overrides are present)
+    to the effective address computed in this function.
+    Addition of those segment base addresses is a part of the
+    segmentation process --- we handle that in the function @(see
+    ea-to-la) that performs the segment address translation.</p>
 
     <p>Quoting from Intel Vol 1, Sec 3.3.7:</p>
 
