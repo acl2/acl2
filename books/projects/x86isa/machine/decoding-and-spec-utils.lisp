@@ -697,7 +697,8 @@ the @('fault') field instead.</li>
      ;; instruction. For details, see *Z-addressing-method-info* in
      ;; x86isa/utils/decoding-utilities.lisp.
      (num-imm-bytes  :type (unsigned-byte 3)
-                     "Number of immediate bytes (0, 1, 2, or 4) that follow the sib (or displacement bytes, if any).")
+                     "Number of immediate bytes (0, 1, 2, or 4)
+                      that follow the sib (or displacement bytes, if any).")
      x86)
 
     :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 rime-size) ())))
