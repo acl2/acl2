@@ -578,7 +578,8 @@
                              n64-to-i64
                              riml08
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              ;; Flags
                              write-user-rflags)
 
@@ -1155,7 +1156,8 @@
                              riml08
                              riml64
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              rr08
                              rr16
                              rr32
@@ -1426,7 +1428,8 @@
                              wml-size
                              wml32
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              x86-run-plus-1
                              effects-call-gc-ms-projection
                              effects-call-gc-fault-projection
@@ -2085,7 +2088,8 @@
                              wml-size
                              wml32
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              x86-run-plus-1
                              loop-preconditions
 
@@ -2459,7 +2463,8 @@
                              wml32
                              wml64
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
@@ -2894,7 +2899,8 @@
                              wml32
                              wml64
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
@@ -3310,7 +3316,8 @@
                              wml32
                              wml64
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
@@ -3839,7 +3846,8 @@
                              wml32
                              wml64
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
@@ -4606,7 +4614,8 @@
                              wml32
                              wml64
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x

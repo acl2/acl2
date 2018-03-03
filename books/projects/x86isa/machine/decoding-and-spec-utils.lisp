@@ -594,6 +594,8 @@ the @('fault') field instead.</li>
 
 ;; ======================================================================
 
+;; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
+
 (defsection effective-address-computations
 
   :parents (decoding-and-spec-utils)
@@ -782,7 +784,12 @@ the @('fault') field instead.</li>
      (disp integerp
            :hyp (x86p x86)
            :name integerp-of-x86-effective-addr-16-disp.disp
-           :rule-classes :type-prescription)))
+           :rule-classes :type-prescription))
+
+    (defthm mv-nth-2-x86-effective-addr-16-disp-<=-4
+      (<= (mv-nth 2 (x86-effective-addr-16-disp temp-RIP mod x86))
+          4)
+      :rule-classes :linear))
 
   ;; Added by Alessandro Coglio <coglio@kestrel.edu>
   (define x86-effective-addr-16
@@ -806,7 +813,7 @@ the @('fault') field instead.</li>
      This is in analogy to the use of @('n32')
      for effective address calculation in 64-bit mode
      when there is an address size override prefix:
-     see @(tsee x86-effective-addr).
+     see @(tsee x86-effective-addr-32/64).
      </p>"
     (case r/m
       (0 (b* ((bx (rr16 *rbx* x86))
@@ -858,9 +865,26 @@ the @('fault') field instead.</li>
               ((when flg) (mv flg 0 0 x86)))
            (mv nil (n16 (+ bx disp)) increment-rip-by x86)))
       (otherwise ; shouldn't happen
-       (mv :r/m-out-of-range 0 0 x86))))
+       (mv :r/m-out-of-range 0 0 x86)))
+    ///
 
-  (define x86-effective-addr
+    (defthm-sb i64p-mv-nth-1-x86-effective-addr-16
+      :hyp t
+      :bound 64
+      :concl (mv-nth 1 (x86-effective-addr-16 temp-RIP r/m mod x86))
+      :gen-linear t
+      :gen-type t)
+
+    (defthm natp-mv-nth-2-x86-effective-addr-16
+      (natp (mv-nth 2 (x86-effective-addr-16 temp-RIP r/m mod x86)))
+      :rule-classes :type-prescription)
+
+    (defthm mv-nth-2-x86-effective-addr-16-<=-4
+      (<= (mv-nth 2 (x86-effective-addr-16 temp-RIP r/m mod x86))
+          4)
+      :rule-classes :linear))
+
+  (define x86-effective-addr-32/64
     (p4
      (temp-RIP       :type (signed-byte   #.*max-linear-address-size*) )
      (rex-byte       :type (unsigned-byte 8) "Rex byte")
@@ -889,6 +913,7 @@ the @('fault') field instead.</li>
               increment-RIP-by
               (x86 x86p :hyp (force (x86p x86))))
 
+    :short "Effective address calculation with 32-bit and 64-bit addressing."
 
     :long  "<p>Note that we do not add segment bases
     (such as the FS and GS bases, if FS and GS overrides are present)
@@ -1024,8 +1049,9 @@ the @('fault') field instead.</li>
          ;; is >= 2^47-8.
          ;; In 32-bit mode,
          ;; this function we are in is called when the address size is 32 bits
-         ;; (a different function is called when the address size is 16 bits),
-         ;; so the following code always returns a 32-bit address in 32-bit mode.
+         ;; (X86-EFFECTIVE-ADDR-16 is called when the address size is 16 bits),
+         ;; so the following code always returns
+         ;; a 32-bit address in 32-bit mode.
          (dst-base (if (64-bit-modep x86)
                        (if p4
                            (n32 dst-base)
@@ -1038,6 +1064,72 @@ the @('fault') field instead.</li>
 
     (local (in-theory (e/d () (force (force)))))
 
+
+    (defthm-sb i64p-mv-nth-1-x86-effective-addr-32/64
+      :hyp t
+      :bound 64
+      :concl (mv-nth 1 (x86-effective-addr-32/64
+                        p4 temp-RIP rex-byte r/m mod sib
+                        num-imm-bytes x86))
+      :gen-linear t
+      :gen-type t)
+
+    (defthm natp-mv-nth-2-x86-effective-addr-32/64
+      (natp (mv-nth 2 (x86-effective-addr-32/64
+                       p4 temp-RIP rex-byte r/m mod sib
+                       num-imm-bytes x86)))
+      :rule-classes :type-prescription)
+
+    (defthm mv-nth-2-x86-effective-addr-32/64-<=-4
+      (<= (mv-nth 2 (x86-effective-addr-32/64
+                     p4 temp-RIP rex-byte r/m mod sib
+                     num-imm-bytes x86))
+          4)
+      :rule-classes :linear))
+
+  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
+  (define x86-effective-addr
+    (p4
+     (temp-RIP       :type (signed-byte   #.*max-linear-address-size*) )
+     (rex-byte       :type (unsigned-byte 8) "Rex byte")
+     (r/m            :type (unsigned-byte 3) "r/m field of ModR/M byte")
+     (mod            :type (unsigned-byte 2) "mod field of ModR/M byte")
+     (sib            :type (unsigned-byte 8) "Sib byte")
+     ;; num-imm-bytes is needed for computing the next RIP when
+     ;; RIP-relative addressing is done.  Note that this argument is
+     ;; only relevant when the operand addressing mode is I, i.e.,
+     ;; when the operand value is encoded in subsequent bytes of the
+     ;; instruction. For details, see *Z-addressing-method-info* in
+     ;; x86isa/utils/decoding-utilities.lisp.
+     (num-imm-bytes  :type (unsigned-byte 3)
+       "Number of immediate bytes (0, 1, 2, or 4)
+                      that follow the sib (or displacement bytes, if any).")
+     x86)
+
+    ;; Returns the flag, the effective address (taking the SIB and
+    ;; ModR/M bytes into account) and the number of bytes to increment
+    ;; the temp-RIP by.
+    :returns (mv
+              flg
+              i64p-memory-address
+              increment-RIP-by
+              (x86 x86p :hyp (force (x86p x86))))
+
+    :short "Effective address calculation."
+
+    :long
+    "<p>
+     This is a wrapper that calls
+     @(tsee x86-effective-addr-16) or @(tsee x86-effective-addr-32/64)
+     based on the address size.
+     </p>"
+
+    (if (eql 2 (select-address-size (if p4 t nil) x86))
+        (x86-effective-addr-16 temp-rip r/m mod x86)
+      (x86-effective-addr-32/64
+       p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+
+    ///
 
     (defthm-sb i64p-mv-nth-1-x86-effective-addr
       :hyp t
@@ -1059,7 +1151,14 @@ the @('fault') field instead.</li>
                      p4 temp-RIP rex-byte r/m mod sib
                      num-imm-bytes x86))
           4)
-      :rule-classes :linear)))
+      :rule-classes :linear)
+
+    (defruled x86-effective-addr-when-64-bit-modep
+      (implies (64-bit-modep x86)
+               (equal (x86-effective-addr
+                       p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86)
+                      (x86-effective-addr-32/64
+                       p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))))))
 
 ;; ======================================================================
 
