@@ -728,6 +728,138 @@ the @('fault') field instead.</li>
               (equal (logext n (loghead n x)) x))
      :hints (("Goal" :in-theory (e/d (logext loghead logapp logbitp) ())))))
 
+  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
+  (define x86-effective-addr-16-disp
+    ((temp-rip :type (signed-byte   #.*max-linear-address-size*) )
+     (mod      :type (unsigned-byte 2) "mod field of ModR/M byte")
+     x86)
+    :returns (mv flg
+                 (disp i16p
+                       :hyp (x86p x86)
+                       :hints (("Goal" :in-theory (enable rime-size))))
+                 (increment-rip-by natp)
+                 (x86 x86p :hyp (x86p x86)))
+    :short "Calculate the displacement for
+            16-bit effective address calculation."
+    :long
+    "<p>
+     This is according to Intel manual, Mar'17, Vol. 2, Table 2-1.
+     </p>
+     <p>
+     The displacement is absent (i.e. 0) when Mod is 00b.
+     An exception to this is when R/M is 110b,
+     in which case there is a 16-bit displacement that is added to the index.
+     This case is not handled by this function,
+     but is instead handled in
+     its caller function @(tsee x86-effective-addr-16).
+     </p>
+     <p>
+     The displacement is a signed 8-bit value when Mod is 01b.
+     The displacement is a signed 16-bit value when Mod is 10b.
+     This function is not called when Mod is 11b.
+     </p>
+     <p>
+     If an error occurs when trying to read the displacement,
+     0 is returned as displacement,
+     but the caller ignores the returned displacement given the error.
+     </p>
+     <p>
+     This function is called only when the address size is 16 bits.
+     </p>"
+    (case mod
+      (0 (mv nil 0 0 x86))
+      (1 (b* (((mv flg byte x86) (rime-size 1 temp-rip *cs* :x x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil byte 1 x86)))
+      (2 (b* (((mv flg word x86) (rime-size 2 temp-rip *cs* :x x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil word 2 x86)))
+      (otherwise ; shouldn't happen
+       (mv 'mod-value-wrong 0 0 x86)))
+    ///
+
+    (more-returns
+     (disp integerp
+           :hyp (x86p x86)
+           :name integerp-of-x86-effective-addr-16-disp.disp
+           :rule-classes :type-prescription)))
+
+  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
+  (define x86-effective-addr-16
+    ((temp-rip :type (signed-byte   #.*max-linear-address-size*) )
+     (r/m      :type (unsigned-byte 3) "r/m field of ModR/M byte")
+     (mod      :type (unsigned-byte 2) "mod field of ModR/M byte")
+     x86)
+    :returns (mv flg
+                 (address n16p)
+                 (increment-rip-by natp)
+                 (x86 x86p :hyp (x86p x86)))
+    :short "Effective address calculation with 16-bit addressing."
+    :long
+    "<p>
+     This is according to Intel manual, Mar'17, Vol. 2, Table 2-1.
+     </p>
+     <p>
+     We assume that the additions in the table are modular,
+     even though the documentation is not clear in that respect.
+     So we simply apply @('n16') to the exact integer result.
+     This is in analogy to the use of @('n32')
+     for effective address calculation in 64-bit mode
+     when there is an address size override prefix:
+     see @(tsee x86-effective-addr).
+     </p>"
+    (case r/m
+      (0 (b* ((bx (rr16 *rbx* x86))
+              (si (rr16 *rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx si disp)) increment-rip-by x86)))
+      (1 (b* ((bx (rr16 *rbx* x86))
+              (di (rr16 *rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx di disp)) increment-rip-by x86)))
+      (2 (b* ((bp (rr16 *rbp* x86))
+              (si (rr16 *rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bp si disp)) increment-rip-by x86)))
+      (3 (b* ((bp (rr16 *rbp* x86))
+              (di (rr16 *rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bp di disp)) increment-rip-by x86)))
+      (4 (b* ((si (rr16 *rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ si disp)) increment-rip-by x86)))
+      (5 (b* ((di (rr16 *rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ di disp)) increment-rip-by x86)))
+      (6 (case mod
+           (0 (b* (((mv flg disp x86) (rime-size 2 temp-rip *cs* :x x86))
+                   ((when flg) (mv flg 0 0 x86)))
+                (mv nil (n16 disp) 2 x86)))
+           (otherwise (b* ((bp (rr16 *rbp* x86))
+                           ((mv flg disp increment-rip-by x86)
+                            (x86-effective-addr-16-disp temp-rip mod x86))
+                           ((when flg) (mv flg 0 0 x86)))
+                        (mv nil (n16 (+ bp disp)) increment-rip-by x86)))))
+      (7 (b* ((bx (rr16 *rbx* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx disp)) increment-rip-by x86)))
+      (otherwise ; shouldn't happen
+       (mv :r/m-out-of-range 0 0 x86))))
+
   (define x86-effective-addr
     (p4
      (temp-RIP       :type (signed-byte   #.*max-linear-address-size*) )
