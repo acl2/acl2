@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Documentation
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -57,7 +57,7 @@
    <a href=\"http://eptcs.web.cse.unsw.edu.au/paper.cgi?ACL22015.3\"
    >ACL2-2015 Workshop paper on SOFT</a>
    provides
-   an overview of the macros and some simple examples of their use,
+   an overview of the SOFT macros and some simple examples of their use,
    a description of the use of SOFT in program refinement,
    and a discussion of related and future work.
    The presentation of the Workshop talk is available
@@ -71,9 +71,11 @@
    As SOFT is being extended and improved over time,
    some of the contents of the paper and presentation are becoming outdated.
    This manual provides up-to-date information about SOFT.
-   The differences between
-   the current version of SOFT and the Workshop version of SOFT
-   are described <see topic='@(url updates-since-workshop)'>here</see>.
+   The differences between the current version of SOFT
+   and the contents of the Workshop paper and presentation
+   are described <see topic='@(url updates-to-workshop-material)'>here</see>.
+   Also see <see topic='@(url soft-future-work)'>here</see>
+   for an up-to-date description of future work.
    </p>")
 
 (xdoc::order-subtopics soft nil t)
@@ -327,12 +329,12 @@
    where @('N') is a non-negative integer,
    @('fvar1'), ..., @('fvarN') are distinct
    <see topic='@(url function-variables)'>function variables</see>,
-   and @('fun1'), ..., @('funN') are functions
+   and @('fun1'), ..., @('funN') are named functions
    such that each @('funI') has the same arity as the corresponding @('fvarI').
    The @('funI') functions may be
    <see topic='@(url function-variables)'>function variables</see>,
    <see topic='@(url second-order-functions)'>second-order functions</see>,
-   or &ldquo;regular&rdquo; first-order functions.
+   or ``regular'' first-order functions.
    </p>
 
    <p>
@@ -821,6 +823,7 @@
        :thm-name ...
        :witness-dcls ...
        :strengthen ...
+       :constrain ...
        :print ...)
    })
 
@@ -954,13 +957,26 @@
      </blockquote>
 
    <p>
-    @(':strengthen ...')
+   @(':strengthen ...')
    </p>
 
      <blockquote>
 
      <p>
      An option to strengthen the axiom introduced by @(tsee defchoose),
+     as in @(tsee defun-sk).
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':constrain')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option for constraining, instead of defining, the function,
      as in @(tsee defun-sk).
      </p>
 
@@ -1036,6 +1052,7 @@
        :skolem-name ...
        :thm-name ...
        :rewrite ...
+       :constrain ...
        :print ...)
    })
 
@@ -1116,7 +1133,7 @@
      <blockquote>
 
      <p>
-     An optional flag to attempt or omit the guard verification of @('fun').
+     An option to attempt or omit the guard verification of @('fun').
      This may be present only if @('sofun') was introduced via @(tsee defun2).
      If this flag is absent,
      the guard verification of @('fun') is attempted
@@ -1192,9 +1209,27 @@
      If this option is absent,
      @('sofun') was introduced via @(tsee defun-sk2),
      and its quantifier is universal,
-     the rewrite rule of @('fun') has the same form as in @('sofun');
+     then the rewrite rule of @('fun') has the same form as in @('sofun');
      in particular, the function variables in the rewrite rule of @('sofun')
      are instantiated via the instantiation passed to @(tsee defun-inst).
+     </p>
+
+     </blockquote>
+
+   <p>
+   @(':constrain')
+   </p>
+
+     <blockquote>
+
+     <p>
+     An option for constraining, instead of defining, @('fun').
+     This may be present only if
+     @('sofun') was introduced via @(tsee defun-sk2).
+     If present, it is passed to the @(tsee defun-sk) generated for @('fun').
+     If this options is absent,
+     then @('fun') is constrained if @('sofun') is constrained,
+     and @('fun') is defined if @('sofun') is defined.
      </p>
 
      </blockquote>
@@ -1550,7 +1585,7 @@
      <blockquote>
 
      <p>
-     &lsquo;Onward Thru the Fog&rsquo; flag, as in @(tsee defthm).
+     `Onward Thru the Fog' flag, as in @(tsee defthm).
      </p>
 
      </blockquote>
@@ -1817,7 +1852,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc updates-since-workshop
+(defxdoc updates-to-workshop-material
 
   :parents (soft)
 
