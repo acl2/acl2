@@ -1753,7 +1753,7 @@
    @(':skolem-name'),
    @(':thm-name'),
    @(':rewrite'),
-   @(:constrain), and
+   @(':constrain'), and
    @(':print')
    options may be present.
    </p>
