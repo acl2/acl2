@@ -65,7 +65,7 @@
   :parents (stypep)
   :short "See @(see stypep)."
 
-  (std::defenum stypep (:pi :reg :po :nxst :gate :const)
+  (std::defenum stypep (:pi :reg :po :nxst :and :xor :const)
     :fix stype-fix
     :equiv stype-equiv
     :parents (representation)
@@ -79,7 +79,8 @@ valid sequential types are:</p>
 
 <ul>
   <li>@(':const') for the special constant node</li>
-  <li>@(':gate') for an AND gate nodes</li>
+  <li>@(':and') for an AND gate node</li>
+  <li>@(':xor') for an XOR gate node</li>
   <li>@(':pi') or @(':po') for primary input/output nodes</li>
   <li>@(':reg') for register nodes (register outputs)</li>
   <li>@(':nxst') for next state nodes (register inputs)</li>
@@ -92,7 +93,8 @@ sequential) view of AIG node types.</p>")
   (defmacro reg-stype () :reg)
   (defmacro po-stype () :po)
   (defmacro nxst-stype () :nxst)
-  (defmacro gate-stype () :gate)
+  (defmacro and-stype () :and)
+  (defmacro xor-stype () :xor)
   (defmacro const-stype () :const))
 
 (fty::defflexsum node
@@ -123,9 +125,9 @@ sequential) view of AIG node types.</p>")
    :shape (not (cdr x))
    :ctor-body '(:reg)
    :no-ctor-macros t)
-  (:gate :cond (eq (car x) :gate)
+  (:and :cond (eq (car x) :and)
    :short "An AND gate node."
-   :type-name gate-node
+   :type-name and-node
    :shape (and (true-listp x) (eql (len x) 3))
    :fields ((fanin0 :type litp :acc-body (cadr x)
                     :doc "First fanin @(see literal) of the AND gate"
@@ -133,7 +135,19 @@ sequential) view of AIG node types.</p>")
             (fanin1 :type litp :acc-body (caddr x)
                     :doc "Second fanin @(see literal) of the AND gate"
                     :rule-classes :type-prescription))
-   :ctor-body (list :gate fanin0 fanin1)
+   :ctor-body (list :and fanin0 fanin1)
+   :no-ctor-macros t)
+  (:xor :cond (eq (car x) :xor)
+   :short "An AND gate node."
+   :type-name xor-node
+   :shape (and (true-listp x) (eql (len x) 3))
+   :fields ((fanin0 :type litp :acc-body (cadr x)
+                    :doc "First fanin @(see literal) of the AND gate"
+                    :rule-classes :type-prescription)
+            (fanin1 :type litp :acc-body (caddr x)
+                    :doc "Second fanin @(see literal) of the AND gate"
+                    :rule-classes :type-prescription))
+   :ctor-body (list :xor fanin0 fanin1)
    :no-ctor-macros t)
   (:po :cond (eq (car x) :po)
    :short "A primary output node."
@@ -173,10 +187,9 @@ sequential) view of AIG node types.</p>")
 (define regp ((x stypep))
   :returns (regp bitp)
   :parents (sequential-type)
-  :short "Determine if a @(see sequential-type) code is a register, i.e., is it
-  a @(':reg') (register output) or @(':nxst') (register input) node.  Note: returns
-  a @(see bitp)."
-  (if (member (stype-fix x) (list (reg-stype) (nxst-stype)))
+  :short "Correlates the @(see sequential-type) of a node with the @('regp')/@('xorp') of its bit encoding.
+This bit is set for @(':reg'), @(':nxst'), and @('xor') nodes, so this returns 1 for those types and 0 for others."
+  (if (member (stype-fix x) '(:reg :nxst :xor))
       1
     0)
   ///
@@ -203,7 +216,7 @@ sequential) view of AIG node types.</p>")
 
   <ul>
   <li>@(':const') for the special constant node</li>
-  <li>@(':gate') for an AND gate node</li>
+  <li>@(':gate') for an AND or XOR gate node</li>
   <li>@(':input') for a combinational input (primary input or register <b>output</b>)</li>
   <li>@(':output') for a combinational output (primary input or register <b>input</b>)</li>
   </ul>"
@@ -260,7 +273,8 @@ sequential) view of AIG node types.</p>")
   :showdef nil
   :showval t
   `((,(const-stype) . ,(const-ctype))
-    (,(gate-stype) . ,(gate-ctype))
+    (,(and-stype) . ,(gate-ctype))
+    (,(xor-stype) . ,(gate-ctype))
     (,(nxst-stype) . ,(out-ctype))
     (,(reg-stype) . ,(in-ctype))
     (,(po-stype) . ,(out-ctype))
@@ -294,18 +308,20 @@ sequential) view of AIG node types.</p>")
   (defthm stype-by-ctype
     (and (equal (equal (ctype (stype x)) (const-ctype))
                 (equal (stype x) (const-stype)))
-         (equal (equal (ctype (stype x)) (gate-ctype))
-                (equal (stype x) (gate-stype)))
          (implies (equal (regp (stype x)) 1)
                   (and (equal (equal (ctype (stype x)) (in-ctype))
                               (equal (stype x) (reg-stype)))
                        (equal (equal (ctype (stype x)) (out-ctype))
-                              (equal (stype x) (nxst-stype)))))
+                              (equal (stype x) (nxst-stype)))
+                       (equal (equal (ctype (stype x)) (gate-ctype))
+                              (equal (stype x) (xor-stype)))))
          (implies (not (equal (regp (stype x)) 1))
                   (and (equal (equal (ctype (stype x)) (in-ctype))
                               (equal (stype x) (pi-stype)))
                        (equal (equal (ctype (stype x)) (out-ctype))
-                              (equal (stype x) (po-stype))))))
+                              (equal (stype x) (po-stype)))
+                       (equal (equal (ctype (stype x)) (gate-ctype))
+                              (equal (stype x) (and-stype))))))
     :hints(("goal" :in-theory (enable stype ctype regp))))
 
   (defthm stype-not-const-fwd
@@ -313,10 +329,11 @@ sequential) view of AIG node types.</p>")
              (not (equal (ctype (stype x)) (const-ctype))))
     :rule-classes ((:forward-chaining :trigger-terms ((stype x)))))
 
-  (defthm stype-not-gate-fwd
-    (implies (not (equal (stype x) (gate-stype)))
-             (not (equal (ctype (stype x)) (gate-ctype))))
-    :rule-classes ((:forward-chaining :trigger-terms ((stype x)))))
+  (defthm ctype-not-gate-fwd
+    (implies (not (equal (ctype (stype x)) (gate-ctype)))
+             (and (not (equal (stype x) (and-stype)))
+                  (not (equal (stype x) (xor-stype)))))
+    :rule-classes ((:forward-chaining :trigger-terms ((ctype (stype x))))))
 
   (defthm ctype-not-in-fwd
     (implies (not (equal (ctype (stype x)) (in-ctype)))
@@ -413,9 +430,10 @@ sequential) view of AIG node types.</p>")
   (typecode (ctype (stype node))))
 
 
-(define io-node->regp ((node node-p))
-  :short "Check whether a node is a @(':reg') (register output) or
-  @(':nxst') (register input) node.  Note: returns a @(see bitp)."
+(define node->regp ((node node-p))
+  :short "Get the @('regp')/@('xorp') bit of a node's encoding -- 1 if it is a
+          @(':reg'), @(':nxst'), or @(':xor') node.  Note: returns a @(see
+          bitp)."
   :returns (bit bitp)
   :enabled t
   :parents (node)
@@ -435,10 +453,10 @@ sequential) view of AIG node types.</p>")
           i.e., from a primary output or a next-state (register input) node."
   :parents (node)
   :prepwork ((local (in-theory (e/d (node->type
-                                     io-node->regp)
+                                     node->regp)
                                     ((force))))))
 
-  (lit-fix (if (equal (io-node->regp node) 1)
+  (lit-fix (if (equal (node->regp node) 1)
                (nxst-node->fanin node)
              (po-node->fanin node)))
   ///
@@ -449,43 +467,86 @@ sequential) view of AIG node types.</p>")
     (equal (co-node->fanin (nxst-node f n))
            (lit-fix f))))
 
+(define gate-node->fanin0 ((node node-p))
+  :guard (equal (node->type node) (gate-type))
+  :returns (lit litp :rule-classes :type-prescription)
+  :short "Access the fanin 0 @(see literal) from a gate node,
+          whether an AND or an XOR."
+  :parents (node)
+  :prepwork ((local (in-theory (e/d (node->type
+                                     node->regp)
+                                    ((force))))))
+
+  (lit-fix (if (equal (node->regp node) 1)
+               (xor-node->fanin0 node)
+             (and-node->fanin0 node)))
+  ///
+  (defthm gate-node->fanin0-of-and-node
+    (equal (gate-node->fanin0 (and-node f0 f1))
+           (lit-fix f0)))
+  (defthm gate-node->fanin0-of-xor-node
+    (equal (gate-node->fanin0 (xor-node f0 f1))
+           (lit-fix f0))))
+
+(define gate-node->fanin1 ((node node-p))
+  :guard (equal (node->type node) (gate-type))
+  :returns (lit litp :rule-classes :type-prescription)
+  :short "Access the fanin 1 @(see literal) from a gate node,
+          whether an AND or an XOR."
+  :parents (node)
+  :prepwork ((local (in-theory (e/d (node->type
+                                     node->regp)
+                                    ((force))))))
+
+  (lit-fix (if (equal (node->regp node) 1)
+               (xor-node->fanin1 node)
+             (and-node->fanin1 node)))
+  ///
+  (defthm gate-node->fanin1-of-and-node
+    (equal (gate-node->fanin1 (and-node f0 f1))
+           (lit-fix f1)))
+  (defthm gate-node->fanin1-of-xor-node
+    (equal (gate-node->fanin1 (xor-node f0 f1))
+           (lit-fix f1))))
+
+;; (defsection aignet-case
+;;   :parents (base-api)
+;;   :short "Macro for @(see combinational-type) case splits."
+;;   :long "<p>Syntax:</p>
+;;   @({
+;;       (aignet-case typecode
+;;         :const ...
+;;         :gate ...
+;;         :in ...
+;;         :out ...)
+;;   })
+
+;;   <p>Where @('typecode') is the @(see typecode) for this node, i.e., it is a
+;;   number, not a @(see combinational-type) keyword.</p>
+
+;;   <p>See also @(see aignet-seq-case) for a sequential version.</p>"
+
+;;   (defmacro aignet-case (type &key const gate in out)
+;;     ;; [Jared] added "the" forms only to try to ensure that type/regp are
+;;     ;; being used in a sensible way.
+;;     `(case (the (unsigned-byte 2) ,type)
+;;        (,(gate-type)      ,gate)
+;;        (,(in-type)        ,in)
+;;        (,(out-type)       ,out)
+;;        (otherwise         ,const))))
+
 (defsection aignet-case
   :parents (base-api)
-  :short "Macro for @(see combinational-type) case splits."
-  :long "<p>Syntax:</p>
-  @({
-      (aignet-case typecode
-        :const ...
-        :gate ...
-        :in ...
-        :out ...)
-  })
-
-  <p>Where @('typecode') is the @(see typecode) for this node, i.e., it is a
-  number, not a @(see combinational-type) keyword.</p>
-
-  <p>See also @(see aignet-seq-case) for a sequential version.</p>"
-
-  (defmacro aignet-case (type &key const gate in out)
-    ;; [Jared] added "the" forms only to try to ensure that type/regp are
-    ;; being used in a sensible way.
-    `(case (the (unsigned-byte 2) ,type)
-       (,(gate-type)      ,gate)
-       (,(in-type)        ,in)
-       (,(out-type)       ,out)
-       (otherwise         ,const))))
-
-(defsection aignet-seq-case
-  :parents (base-api)
-  :short "Macro for @(see sequential-type) case splits."
+  :short "Macro for node type case splits."
   :long "<p>Basic example:</p>
   @({
-      (aignet-seq-case typecode reg-bit
+      (aignet-case typecode reg-bit
         :pi ...
         :po ...
         :reg ...
         :nxst ...
-        :gate ...
+        :and ...
+        :xor ...
         :const ...)
   })
 
@@ -498,47 +559,100 @@ sequential) view of AIG node types.</p>")
   <ul>
 
   <li>The @(':pi') and @(':reg') (register output) cases into a
-  @(':ci') (combinational input) case.</li>
+  @(':ci') (combinational input) or @(':in') case.</li>
 
   <li>The @(':po') and @(':nxst') (register input) cases into a
-  @(':co') (combinational output) case.</li>
+  @(':co') (combinational output) or @(':out') case.</li>
+
+  <li>The @(':and') and @(':xor') cases into a @(':gate') case.</li>
 
   </ul>
+
+  <p>If none of @(':pi'), @(':reg'), @(':po'), @(':nxst'), @(':and'), or
+  @(':xor') are used, then the @('reg-bit') argument may be skipped.  If it is
+  provided anyway, it will be ignored in that case.</p>
 
   <p>That is, using this combined syntax you can write:</p>
 
   @({
-      (aignet-seq-case typecode reg-bit
+      (aignet-case typecode
         :ci ...
         :co ...
         :gate ...
         :const ...)
   })"
 
-  (defmacro aignet-seq-case (type regp &rest keys)
-    ;; we can't use keyword args because "pi" can't be used as a formal
-    (declare (xargs :guard (and (keyword-value-listp keys)
-                                (not (and (assoc-keyword :ci keys)
-                                          (or (assoc-keyword :pi keys)
-                                              (assoc-keyword :reg keys))))
-                                (not (and (assoc-keyword :co keys)
-                                          (or (assoc-keyword :po keys)
-                                              (assoc-keyword :nxst keys)))))))
+  (defun keyword-value-keys (x)
+    (declare (xargs :guard (keyword-value-listp x)))
+    (if (atom x)
+        nil
+      (cons (car x)
+            (keyword-value-keys (cddr x)))))
+
+  (defmacro aignet-case (type &rest args)
     ;; [Jared] added "the" forms only to try to ensure that type/regp are
     ;; being used in a sensible way.
+    (b* ((reg-bit-skippedp (keywordp (car args)))
+         (keyvals (if reg-bit-skippedp args (cdr args)))
+         ((unless (keyword-value-listp keyvals))
+          (er hard? 'aignet-case "Syntax error: arguments after typecode [ ~
+                                  reg-bit ] must be a keyword value list."))
+         (keys (keyword-value-keys keyvals))
+         (bad-keys (set-difference-eq keys '(:pi :reg :nxst :po :and :xor :in :ci :out :co :gate :const)))
+         ((when bad-keys)
+          (er hard? 'aignet-case "Unrecognized keys: ~x0" bad-keys))
+         ((when (and reg-bit-skippedp
+                     (or (member :pi keys)
+                         (member :reg keys)
+                         (member :nxst keys)
+                         (member :po keys)
+                         (member :and keys)
+                         (member :xor keys))))
+          (er hard? 'aignet-case "Syntax error: keys :pi, :reg, :po, :nxst, ~
+                                  :and, or :xor require the reg-bit argument ~
+                                  to be present."))
+         ((when (and (member :ci keys)
+                     (member :in keys)))
+          (er hard? 'aignet-case "Can't have both :ci and :in -- they are aliases"))
+         ((when (and (member :co keys)
+                     (member :out keys)))
+          (er hard? 'aignet-case "Can't have both :co and :out -- they are aliases"))
+         ((when (and (or (member :ci keys)
+                         (member :in keys))
+                     (or (member :pi keys)
+                         (member :reg keys))))
+          (er hard? 'aignet-case "Can't have both a :ci and a :pi or :reg entry."))
+         ((when (and (or (member :co keys)
+                         (member :out keys))
+                     (or (member :po keys)
+                         (member :nxst keys))))
+          (er hard? 'aignet-case "Cant have both a :co and a :po or :nxst entry."))
+         ((when (and (member :gate keys)
+                     (or (member :and keys)
+                         (member :xor keys))))
+          (er hard? 'aignet-case "Cant have both a :gate and an :and or :xor entry."))
+         (reg-bit (and (not reg-bit-skippedp) (car args))))
     `(case (the (unsigned-byte 2) ,type)
-       (,(gate-type) ,(cadr (assoc-keyword :gate keys)))
-       (,(in-type)   ,(if (assoc-keyword :ci keys)
-                          (cadr (assoc-keyword :ci keys))
-                        `(if (int= 1 (the bit ,regp))
-                             ,(cadr (assoc-keyword :reg keys))
-                           ,(cadr (assoc-keyword :pi keys)))))
-       (,(out-type)  ,(if (assoc-keyword :co keys)
-                          (cadr (assoc-keyword :co keys))
-                        `(if (int= 1 (the bit ,regp))
-                             ,(cadr (assoc-keyword :nxst keys))
-                           ,(cadr (assoc-keyword :po keys)))))
-       (otherwise    ,(cadr (assoc-keyword :const keys))))))
+       (,(gate-type) ,(if (member :gate keyvals)
+                          (cadr (assoc-keyword :gate keyvals))
+                        `(if (int= 1 (the bit ,reg-bit))
+                             ,(cadr (assoc-keyword :xor keyvals))
+                           ,(cadr (assoc-keyword :and keyvals)))))
+       (,(in-type)   ,(if (assoc-keyword :ci keyvals)
+                          (cadr (assoc-keyword :ci keyvals))
+                        (if (assoc-keyword :in keyvals)
+                            (cadr (assoc-keyword :in keyvals))
+                          `(if (int= 1 (the bit ,reg-bit))
+                               ,(cadr (assoc-keyword :reg keyvals))
+                             ,(cadr (assoc-keyword :pi keyvals))))))
+       (,(out-type)  ,(if (assoc-keyword :co keyvals)
+                          (cadr (assoc-keyword :co keyvals))
+                        (if (assoc-keyword :out keyvals)
+                            (cadr (assoc-keyword :out keyvals))
+                          `(if (int= 1 (the bit ,reg-bit))
+                             ,(cadr (assoc-keyword :nxst keyvals))
+                           ,(cadr (assoc-keyword :po keyvals))))))
+       (otherwise    ,(cadr (assoc-keyword :const keyvals)))))))
 
 
 (defsection network
@@ -1471,9 +1585,9 @@ suffix.</p>"
 
   (if (endp aignet)
       t
-    (and (aignet-seq-case
+    (and (aignet-case
            (node->type (car aignet))
-           (io-node->regp (car aignet))
+           (node->regp (car aignet))
            :ci   t
            :po   (aignet-litp (co-node->fanin (car aignet))
                               (cdr aignet))
@@ -1516,7 +1630,7 @@ suffix.</p>"
     (implies (and (aignet-nodes-ok aignet)
                   (equal (node->type (car (lookup-id id aignet)))
                          (out-type))
-                  (equal (io-node->regp (car (lookup-id id aignet)))
+                  (equal (node->regp (car (lookup-id id aignet)))
                          1))
              (< (nxst-node->reg (car (lookup-id id aignet)))
                 (nfix id)))
@@ -1531,7 +1645,7 @@ suffix.</p>"
     (implies (and (aignet-nodes-ok aignet)
                   (equal (node->type (car (lookup-id id aignet)))
                          (out-type))
-                  (equal (io-node->regp (car (lookup-id id aignet)))
+                  (equal (node->regp (car (lookup-id id aignet)))
                          1))
              (aignet-idp (nxst-node->reg (car (lookup-id id aignet)))
                          (cdr (lookup-id id aignet))))
@@ -1654,10 +1768,10 @@ suffix.</p>"
 ;;   (implies (and (aignet-extension-bind-inverse :orig x :new y)
 ;;                 (aignet-extension-p y x)
 ;;                 (equal (node->type (car x)) (in-type))
-;;                 (equal (io-node->regp (car x)) 1))
+;;                 (equal (node->regp (car x)) 1))
 ;;            (< (reg-count (cdr x)) (reg-count y)))
 ;;   :hints(("Goal" :in-theory (enable node->type
-;;                                     io-node->regp)))
+;;                                     node->regp)))
 ;;   :rule-classes ((:linear :trigger-terms
 ;;                   ((reg-count (cdr x))))))
 
@@ -1827,7 +1941,7 @@ suffix.</p>"
   :guard (and (consp aignet)
               (if (eq type :co)
                   (eq (ctype (stype (car aignet))) :output)
-                (eq (stype (car aignet)) :gate)))
+                (eq (ctype (stype (car aignet))) :gate)))
   :returns (lit litp :rule-classes :type-prescription)
   :short "@(call fanin) gets the specified kind of fanin from the first node of
           the input network and fixes it to be a valid fanin literal of the rest

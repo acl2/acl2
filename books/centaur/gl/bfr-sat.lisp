@@ -58,7 +58,7 @@
     (let ((sat? (acl2::eval-bdd prop (acl2::bdd-sat-dfs prop))))
       (mv sat? t prop))))
 
-(defthm bfr-sat-bdd-unsat
+(defthmd bfr-sat-bdd-unsat
   (mv-let (sat succeeded ctrex)
     (bfr-sat-bdd prop)
     (declare (ignore ctrex))
@@ -70,8 +70,10 @@
                            (x prop))))))
 
 
-(acl2::defattach (bfr-sat bfr-sat-bdd
-                          :hints (("goal" :in-theory '(bfr-sat-bdd-unsat)))))
+(acl2::defattach (bfr-sat bfr-sat-bdd)
+  :hints (("goal" :in-theory '(bfr-sat-bdd-unsat))
+          (and stable-under-simplificationp
+               '(:in-theory (enable bfr-sat-bdd)))))
 
 (in-theory (disable bfr-sat-bdd-unsat bfr-sat-unsat))
 
@@ -283,3 +285,33 @@
       (implies (not (pbfr-depends-on k p x))
                (not (pbfr-depends-on k p xx))))))
 
+
+
+
+;; Exactly the same constraint as bfr-sat, but can be attached to a different function if desired.
+(encapsulate
+  (((bfr-vacuity-check *) => (mv * * *)))
+
+  (local (defun bfr-vacuity-check (prop)
+           (declare (xargs :guard t))
+           (mv nil nil prop)))
+
+  (defthm bfr-vacuity-check-nvals
+    (equal (len (bfr-vacuity-check prop)) 3))
+
+  (defthm bfr-vacuity-check-true-listp
+    (true-listp (bfr-vacuity-check prop)))
+
+  (defthm bfr-vacuity-check-unsat
+    (mv-let (sat succeeded ctrex)
+      (bfr-vacuity-check prop)
+      (declare (ignore ctrex))
+      (implies (and succeeded (not sat))
+               (not (bfr-eval prop env))))))
+
+(defattach (bfr-vacuity-check
+            bfr-sat)
+  :hints (("goal" :use bfr-sat-unsat)))
+
+(in-theory (disable bfr-vacuity-check-unsat
+                    bfr-sat-unsat))

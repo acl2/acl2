@@ -1418,6 +1418,7 @@
                     (untouchable-vars nil)
                     (defined-hereditarily-constrained-fns nil)
                     (attachment-records nil)
+                    (attachments-at-ground-zero nil)
                     (proof-supporters-alist nil))))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
@@ -1440,12 +1441,15 @@
 (defconst *unattachable-primitives*
 
 ; This constant contains the names of function symbols for which we must
-; disallow attachments for execution.  Our approach is to disallow all
-; attachments to these functions, all of which are constrained since defined
-; functions cannot receive attachments for execution.  So we search the code
-; for encapsulated functions that we do not want executed.
+; disallow attachments, for example to prevent execution.  So we search the
+; code for encapsulated functions that we do not want executed.
 
   '(big-n decrement-big-n zp-big-n
+
+; We disallow attachments for the following system functions that support
+; apply$.
+
+          badge-userfn apply$-userfn
 
 ; At one time we also included canonical-pathname and various mfc-xx functions.
 ; But these are all handled now by dependent clause-processors, which gives
@@ -2228,7 +2232,7 @@
                    non-empty list of rules.  ~@1See :DOC theories."
                   bad
                   (cond ((or macros theorems)
-                         (msg "Note that ~@0~@1@2.  "
+                         (msg "Note that ~@0~@1~@2.  "
                               (cond
                                (macros
                                 (msg "~&0 ~#0~[is a macro~/are macros~]; see ~
@@ -3009,7 +3013,9 @@
                        (list 'skip-proofs-seen nil)
                        (list 'redef-seen nil)
                        (list 'cert-replay nil)
-                       (list 'proof-supporters-alist nil))
+                       (list 'proof-supporters-alist nil)
+                       (list 'attachments-at-ground-zero
+                             (all-attachments wrld)))
                  (putprop
                   'acl2-defaults-table
                   'table-alist
@@ -17092,7 +17098,7 @@
 
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
-              :constrained
+              :constrain
               #+:non-standard-analysis :classicalp))
 
 (defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
@@ -17214,14 +17220,14 @@
       (let* ((quant-ok (cdr (assoc-eq :quant-ok keyword-alist)))
              (skolem-name (cdr (assoc-eq :skolem-name keyword-alist)))
              (thm-name (cdr (assoc-eq :thm-name keyword-alist)))
-             (constrained-pair (assoc-eq :constrained keyword-alist))
+             (constrained-pair (assoc-eq :constrain keyword-alist))
              (constrained (cdr constrained-pair))
              (def-name (cond ((eq constrained t)
                               (definition-rule-name name))
                              ((symbolp constrained)
                               constrained)
                              (t (er hard 'defun-sk
-                                    "The :constrained argument of DEFUN-SK ~
+                                    "The :constrain argument of DEFUN-SK ~
                                      must be a symbol, but ~x0 is not."
                                     constrained))))
              (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
@@ -24335,6 +24341,9 @@
 ; only be done with a trust tag, and the documentation warns that doing this
 ; promotion could be unsound.  So we don't worry about that case here.
 
+; Note that here we are disallowing inline memoization of apply$-lambdas.
+; That's fine; we essentially do our own memoization via the cl-cache.
+
                   (if (eq key-class :program)
                       (member-eq key *primitive-program-fns-with-raw-code*)
                     (member-eq key *primitive-logic-fns-with-raw-code*)))
@@ -24487,12 +24496,6 @@
          (remove-stobjs-in-by-position (cdr lst) (cdr stobjs-in)))
         (t (cons (car lst)
                  (remove-stobjs-in-by-position (cdr lst) (cdr stobjs-in))))))
-
-(defun alist-to-doublets (alist)
-  (declare (xargs :guard (alistp alist)))
-  (cond ((endp alist) nil)
-        (t (cons (list (caar alist) (cdar alist))
-                 (alist-to-doublets (cdr alist))))))
 
 (defun add-suffix-to-fn (sym suffix)
 
@@ -26530,7 +26533,7 @@
 ; From fn generate the name APPLY$-WARRANT-fn.
 
   (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
-                  :guard (symbolp fn))) 
+                  :guard (symbolp fn)))
   (intern-in-package-of-symbol
    (concatenate 'string
                 "APPLY$-WARRANT-"
@@ -26633,7 +26636,7 @@
              (and (equal (badge-userfn ',fn) ',bdg)
                   (equal (apply$-userfn ',fn args)
                          (,fn ,@(successive-cadrs formals 'args)))))
-           :constrained t)
+           :constrain t)
          (in-theory (disable ,(definition-rule-name name)))
          (defthm ,rule-name
            (implies (force (,(warrant-name fn)))
@@ -26657,7 +26660,7 @@
                              (equal (apply$-userfn ',fn args)
                                     (,fn ,@(successive-cadrs formals
                                                              'args))))))
-             :constrained t)
+             :constrain t)
            (in-theory (disable ,(definition-rule-name name)))
            (defthm ,rule-name
              (and (implies (force (,(warrant-name fn)))
@@ -26740,9 +26743,9 @@
 
 ; We are considering the case of a pair (f . g), where f is a warrant and g is
 ; true-apply$-warrant, which is the always-true function we have chosen to
-; attach to warrants.  The argument supporting attachments of dopplegangers
+; attach to warrants.  The argument supporting attachments of doppelgangers
 ; also supports the attachment of each warrant to true-apply$-warrant, because
-; in the doppleganger model, every warrant is true.
+; in the doppelganger model, every warrant is true.
 
               (warrantp (caar alist) wrld))
          (defattach-constraint-rec
@@ -27655,7 +27658,7 @@
 ; reason is that we can view attachments as being done in two stages: first,
 ; the user does some attachments, and we check here for cycles; then, the
 ; resulting evaluation theory is extended to a bigger evaluation theory in
-; which functions are attached to their dopplegangers, and where the warrants
+; which functions are attached to their doppelgangers, and where the warrants
 ; are all true.  That second step is justified in the paper, ``Limited Second
 ; Order Functionality in a First Order Setting'', where we prove that for any
 ; certified user book we could attach defined functions to badge-userfn and
@@ -27678,18 +27681,18 @@
 ;     (cond ((zp n) nil)
 ;           (t (list* `(defn ,(packn (list 'g n)) (x) (cons x x))
 ;                     (tests-fn (1- n))))))
-;   
+;
 ;   (defun defattach-tests-fn (n)
 ;     (declare (xargs :guard (natp n)))
 ;     (cond ((zp n) nil)
 ;           (t (cons `(defattach f ,(packn (list 'g n)))
 ;                    (defattach-tests-fn (1- n))))))
-;   
+;
 ;   (defmacro tests (n)
 ;     `(ld '((defstub f (x) t)
 ;            ,@(tests-fn n)
 ;            (time$ (progn ,@(defattach-tests-fn n))))))
-;   
+;
 ;   (defun defun$-tests-fn (n)
 ;     (declare (xargs :guard (natp n)))
 ;     (cond ((zp n) nil)
@@ -27697,7 +27700,7 @@
 ;                        (declare (xargs :guard t))
 ;                        (cons x x))
 ;                     (defun$-tests-fn (1- n))))))
-;   
+;
 ;   (defmacro tests+ (n)
 ;     `(ld '((defstub f (x) t)
 ;            ,@(defun$-tests-fn n)
@@ -29222,9 +29225,15 @@
 ; See the comment at the call of trans-eval-default-warning, below.
 
   (let ((original-wrld (w state)))
-    (protect-system-state-globals
-     (er-let*
-      ((result
+    (state-global-let*
+     ((in-local-flg
+
+; During make-event expansion, there is no reason to prohibit local events
+; (unless we move to inside an encapsulate or include-book, of course).
+
+       nil))
+     (protect-system-state-globals
+      (er-let* ((result
 
 ; We call trans-eval-default-warning here, so that if make-event modifies
 ; stobjs, we issue a warning if and only if the current setting of LD special
@@ -29242,46 +29251,46 @@
 ; safe-mode for make-event will require addition".  Those comments are
 ; associated with membership tests that, for now, we avoid for efficiency.
 
-        (trans-eval-default-warning form ctx state aok)))
-      (let* ((new-kpa (known-package-alist state))
-             (new-ttags-seen (global-val 'ttags-seen (w state)))
-             (stobjs-out (car result))
-             (vals (cdr result))
-             (safep (equal stobjs-out '(nil))))
-        (cond (safep (value (list* vals new-kpa new-ttags-seen)))
-              ((or (null (cdr stobjs-out))
-                   (not (eq (caddr stobjs-out) 'state))
-                   (member-eq nil (cdddr stobjs-out)))
-               (er soft ctx
-                   "The expansion of a make-event form must either return a ~
+                 (trans-eval-default-warning form ctx state aok)))
+        (let* ((new-kpa (known-package-alist state))
+               (new-ttags-seen (global-val 'ttags-seen (w state)))
+               (stobjs-out (car result))
+               (vals (cdr result))
+               (safep (equal stobjs-out '(nil))))
+          (cond (safep (value (list* vals new-kpa new-ttags-seen)))
+                ((or (null (cdr stobjs-out))
+                     (not (eq (caddr stobjs-out) 'state))
+                     (member-eq nil (cdddr stobjs-out)))
+                 (er soft ctx
+                     "The expansion of a make-event form must either return a ~
                     single ordinary value or else should return a tuple (mv ~
                     erp val state stobj1 stobj2 ... stobjk) for some k >= 0.  ~
                     But the shape of ~x0 is ~x1."
-                   form
-                   (prettyify-stobjs-out stobjs-out)))
-              ((car vals)
-               (cond
-                ((eq on-behalf-of :quiet!)
-                 (silent-error state))
-                ((stringp (car vals))
-                 (er soft ctx
-                     (car vals)))
-                ((tilde-@p (car vals)) ; a message
-                 (er soft ctx
-                     "~@0"
-                     (car vals)))
-                ((eq on-behalf-of :quiet)
-                 (silent-error state))
-                (t (er soft ctx
-                       "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
-                       (cond (on-behalf-of
-                              (msg "on behalf of~|  ~y0~|"
-                                   on-behalf-of))
-                             (t ""))
-                       form))))
-              (t (pprogn
-                  (set-w! original-wrld state)
-                  (value (list* (cadr vals) new-kpa new-ttags-seen))))))))))
+                     form
+                     (prettyify-stobjs-out stobjs-out)))
+                ((car vals)
+                 (cond
+                  ((eq on-behalf-of :quiet!)
+                   (silent-error state))
+                  ((stringp (car vals))
+                   (er soft ctx
+                       (car vals)))
+                  ((tilde-@p (car vals)) ; a message
+                   (er soft ctx
+                       "~@0"
+                       (car vals)))
+                  ((eq on-behalf-of :quiet)
+                   (silent-error state))
+                  (t (er soft ctx
+                         "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
+                         (cond (on-behalf-of
+                                (msg "on behalf of~|  ~y0~|"
+                                     on-behalf-of))
+                               (t ""))
+                         form))))
+                (t (pprogn
+                    (set-w! original-wrld state)
+                    (value (list* (cadr vals) new-kpa new-ttags-seen)))))))))))
 
 (defun make-event-debug-pre (form on-behalf-of state)
   (cond

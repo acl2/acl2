@@ -73,9 +73,7 @@
   ;      "control-h f compare-windows", for more info).
   ; "control-t q" is like "control-t w" above, but ignores whitespace (and case
   ;      too, with a positive prefix argument).
-  ; Lisp mode comes up with auto-fill mode on, right margin set at column 79,
-  ;      and causes latin-1 (i.e., iso-8859-1) encoding (see :doc
-  ;      character-encoding) to be used when saving a buffer to a file.
+  ; Lisp mode comes up with auto-fill mode on, right margin set at column 79.
   ;      If X Windows is being run, then font-lock-mode is also turned on,
   ;      which causes Emacs to color text in .lisp files.  If you don't want
   ;      colors in .lisp files, put this in your .emacs file after the load of
@@ -717,7 +715,6 @@ then also ignore case if that argument is positive, else do not ignore case."
   (setq indent-tabs-mode nil)
   (setq comment-column 0)
   (turn-on-auto-fill)
-  (setq save-buffer-coding-system 'iso-8859-1)
   )
 
 (if (not (boundp 'lisp-mode-hook)) (setq lisp-mode-hook nil))
@@ -887,6 +884,8 @@ beginning of the string that was processed."
 (put 'with-open-file 'lisp-indent-function 'defun)
 (put 'WITH-OUTPUT 'lisp-indent-function 'defun)
 (put 'with-output 'lisp-indent-function 'defun)
+(put 'WITH-OUTPUT! 'lisp-indent-function 'defun)
+(put 'with-output! 'lisp-indent-function 'defun)
 (put 'WITH-OUTPUT-TO 'lisp-indent-function 'defun)
 (put 'with-output-to 'lisp-indent-function 'defun)
 (put 'WITH-STDOUT 'lisp-indent-function 'defun)

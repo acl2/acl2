@@ -5501,142 +5501,88 @@
 ; Like all individual rule checkers, we either cause an error or
 ; return a ttree that records our dependencies on lemmas.
 
+  (declare (ignore backchain-limit-lst))
   (mv-let
    (erp hyps concl ts vars ttree)
    (destructure-type-prescription name typed-term term ens wrld)
-   (declare (ignore ts))
+   (declare (ignore ts concl vars))
    (cond
     (erp (er soft ctx "~@0" erp))
-    (t (let* ((weakp
-
-; We avoid calling weak-type-prescription-rulep if we are going to ignore the
-; warning anyhow.  Otherwise, we construct a temporary world.
-
-; We check (null vars) because otherwise, the warning can be needlessly harsh.
-; For example, try submitting these events in a fresh ACL2 session after
-; removing the (null vars) check from this function.
-
-; (defstub foo (x) x)
-; (defaxiom foo-type-prescription
-;           (or (integerp (foo y))
-;               (equal (foo y) y))
-;           :rule-classes :type-prescription)
-
-; Then the warning will be printed without the (null vars) check, even though
-; the rule above is a perfectly good one.
-
-               (and (null vars)
-                    (not (warning-disabled-p "Type prescription"))
-                    (let* ((nume (get-next-nume wrld))
-                           (rune (list :type-prescription name))
-                           (wrld2 (add-type-prescription-rule
-                                   rune nume typed-term term
-                                   backchain-limit-lst
-                                   ens wrld nil)))
-                      (mv-let
-                       (ts ttree)
-                       (type-set (remove-guard-holders term)
-                                 nil t nil ens wrld2 nil nil nil)
-                       (or (not (assumption-free-ttreep ttree))
-                           (ts-intersectp ts *ts-nil*)))))))
+    (t (let* ((warned-non-rec-fns
+               (and (not (warning-disabled-p "Non-rec"))
+                    (warned-non-rec-fns-tp-hyps hyps ens wrld)))
+              (warned-free-vars
+               (and (not (warning-disabled-p "Free"))
+                    (free-vars-in-hyps hyps
+                                       (all-vars typed-term)
+                                       wrld)))
+              (inst-hyps (and warned-free-vars ; optimization
+                              (hyps-that-instantiate-free-vars
+                               warned-free-vars hyps))))
          (pprogn
           (cond
-           (weakp
-            (warning$ ctx ("Type prescription")
-                      "The :type-prescription rule generated for ~x0 may be ~
-                       weaker than you expect.  Note that the conclusion of a ~
-                       :type-prescription rule is stored as a numeric type ~
-                       rather than a term.  It so happens that~|  ~p1~|is not ~
-                       provable using type-set reasoning in the extension of ~
-                       the current world by that rule.  Because information ~
-                       has been lost, this rule probably does not have the ~
-                       strength that it appears to have.~@2"
-                      name
-                      (untranslate term t wrld)
-                      (if (ffnnamep '< concl)
-                          "  The conclusion of this rule contains a call of ~
-                           function symbol < (or a macro <=, >, or >=), so it ~
-                           may be worth considering making a :linear rule; ~
-                           see :DOC linear."
-                        "")))
+           (warned-non-rec-fns
+            (warning$ ctx ("Non-rec")
+                      `("The hypothesis of the :type-prescription rule ~
+                         generated from ~x0 contains the non-recursive ~
+                         function symbol~#1~[~/s~] ~&1.  Since the hypotheses ~
+                         of :type-prescription rules are relieved by type ~
+                         reasoning alone (and not rewriting) ~#1~[this ~
+                         function is~/these functions are~] liable to make ~
+                         the rule inapplicable.  See :DOC type-prescription."
+                        (:doc type-prescription)
+                        (:name ,name)
+                        (:non-recursive-fns
+                         ,(hide-lambdas warned-non-rec-fns))
+                        (:rule-class :type-prescription))
+                      name (hide-lambdas warned-non-rec-fns)))
            (t state))
-          (let* ((warned-non-rec-fns
-                  (and (not (warning-disabled-p "Non-rec"))
-                       (warned-non-rec-fns-tp-hyps hyps ens wrld)))
-                 (warned-free-vars
-                  (and (not (warning-disabled-p "Free"))
-                       (free-vars-in-hyps hyps
-                                          (all-vars typed-term)
-                                          wrld)))
-                 (inst-hyps (and warned-free-vars ; optimization
-                                 (hyps-that-instantiate-free-vars
-                                  warned-free-vars hyps))))
-            (pprogn
-             (cond
-              (warned-non-rec-fns
-               (warning$ ctx ("Non-rec")
-                         `("The hypothesis of the :type-prescription rule ~
-                            generated from ~x0 contains the non-recursive ~
-                            function symbol~#1~[~/s~] ~&1.  Since the ~
-                            hypotheses of :type-prescription rules are ~
-                            relieved by type reasoning alone (and not ~
-                            rewriting) ~#1~[this function is~/these functions ~
-                            are~] liable to make the rule inapplicable.  See ~
-                            :DOC type-prescription."
-                           (:doc type-prescription)
-                           (:name ,name)
-                           (:non-recursive-fns
-                            ,(hide-lambdas warned-non-rec-fns))
-                           (:rule-class :type-prescription))
-                         name (hide-lambdas warned-non-rec-fns)))
-              (t state))
-             (cond
-              (warned-free-vars
-               (warning$ ctx ("Free")
-                         `("The :type-prescription rule generated from ~x0 ~
-                            contains the free variable~#1~[ ~&1.  This ~
-                            variable~/s ~&1.  These variables~] will be ~
-                            chosen by searching for instances of ~&2 among ~
-                            the hypotheses of conjectures being rewritten.  ~
-                            This is generally a severe restriction on the ~
-                            applicability of the :type-prescription rule."
-                           (:free-variables ,warned-free-vars)
-                           (:instantiated-hyps ,inst-hyps)
-                           (:name ,name)
-                           (:rule-class :type-prescription))
-                         name warned-free-vars inst-hyps))
-              (t state))
-             (cond
-              ((and warned-free-vars
-                    (forced-hyps inst-hyps))
-               (warning$ ctx ("Free")
-                         "For the forced ~#0~[hypothesis~/hypotheses~], ~&1, ~
-                          used to instantiate free variables we will search ~
-                          for ~#0~[an instance of the argument~/instances of ~
-                          the arguments~] rather than ~#0~[an ~
-                          instance~/instances~] of the FORCE or CASE-SPLIT ~
-                          ~#0~[term itself~/terms themselves~].  If a search ~
-                          fails for such a hypothesis, we will cause a case ~
-                          split on the partially instantiated hypothesis.  ~
-                          Note that this case split will introduce a ``free ~
-                          variable'' into the conjecture.  While sound, this ~
-                          will establish a goal almost certain to fail since ~
-                          the restriction described by this apparently ~
-                          necessary hypothesis constrains a variable not ~
-                          involved in the problem.  To highlight this oddity, ~
-                          we will rename the free variables in such forced ~
-                          hypotheses by prefixing them with ~
-                          ``UNBOUND-FREE-''.  This is not guaranteed to ~
-                          generate a new variable but at least it generates ~
-                          an unusual one.  If you see such a variable in a ~
-                          subsequent proof (and did not introduce them ~
-                          yourself) you should consider the possibility that ~
-                          the free variables of this type-prescription rule ~
-                          were forced into the conjecture."
-                         (if (null (cdr (forced-hyps inst-hyps))) 0 1)
-                         (forced-hyps inst-hyps)))
-              (t state))
-             (value ttree)))))))))
+          (cond
+           (warned-free-vars
+            (warning$ ctx ("Free")
+                      `("The :type-prescription rule generated from ~x0 ~
+                         contains the free variable~#1~[ ~&1.  This ~
+                         variable~/s ~&1.  These variables~] will be chosen ~
+                         by searching for instances of ~&2 among the ~
+                         hypotheses of conjectures being rewritten.  This is ~
+                         generally a severe restriction on the applicability ~
+                         of the :type-prescription rule."
+                        (:free-variables ,warned-free-vars)
+                        (:instantiated-hyps ,inst-hyps)
+                        (:name ,name)
+                        (:rule-class :type-prescription))
+                      name warned-free-vars inst-hyps))
+           (t state))
+          (cond
+           ((and warned-free-vars
+                 (forced-hyps inst-hyps))
+            (warning$ ctx ("Free")
+                      "For the forced ~#0~[hypothesis~/hypotheses~], ~&1, ~
+                       used to instantiate free variables we will search for ~
+                       ~#0~[an instance of the argument~/instances of the ~
+                       arguments~] rather than ~#0~[an instance~/instances~] ~
+                       of the FORCE or CASE-SPLIT ~#0~[term itself~/terms ~
+                       themselves~].  If a search fails for such a ~
+                       hypothesis, we will cause a case split on the ~
+                       partially instantiated hypothesis.  Note that this ~
+                       case split will introduce a ``free variable'' into the ~
+                       conjecture.  While sound, this will establish a goal ~
+                       almost certain to fail since the restriction described ~
+                       by this apparently necessary hypothesis constrains a ~
+                       variable not involved in the problem.  To highlight ~
+                       this oddity, we will rename the free variables in such ~
+                       forced hypotheses by prefixing them with ~
+                       ``UNBOUND-FREE-''.  This is not guaranteed to generate ~
+                       a new variable but at least it generates an unusual ~
+                       one.  If you see such a variable in a subsequent proof ~
+                       (and did not introduce them yourself) you should ~
+                       consider the possibility that the free variables of ~
+                       this type-prescription rule were forced into the ~
+                       conjecture."
+                      (if (null (cdr (forced-hyps inst-hyps))) 0 1)
+                      (forced-hyps inst-hyps)))
+           (t state))
+          (value ttree)))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :EQUIVALENCE Rules
@@ -9980,14 +9926,6 @@
                 (info-for-lemmas (cdr lemmas) numes ens wrld))
         (info-for-lemmas (cdr lemmas) numes ens wrld)))))
 
-(defun world-to-next-event (wrld)
-  (cond ((null wrld) nil)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value))
-         nil)
-        (t (cons (car wrld)
-                 (world-to-next-event (cdr wrld))))))
-
 (defun assoc-eq-eq (x y alist)
 
 ; We look for a pair on alist of the form (x y . val) where we compare with x
@@ -9998,33 +9936,6 @@
               (eq (car (cdr (car alist))) y))
          (car alist))
         (t (assoc-eq-eq x y (cdr alist)))))
-
-(defun actual-props (props seen acc)
-
-; Props is a list whose elements have the form (sym key . val), where val could
-; be *acl2-property-unbound*.  Seen is the list containing some (sym key . &)
-; for each pair (sym key) that has already been seen.
-
-  (cond
-   ((null props)
-    (prog2$ (fast-alist-free seen)
-            (reverse acc)))
-   ((member-eq (cadar props) (cdr (hons-get (caar props) seen)))
-    (actual-props (cdr props) seen acc))
-   ((eq (cddr (car props)) *acl2-property-unbound*)
-    (actual-props (cdr props)
-                  (hons-acons (caar props)
-                              (cons (cadar props)
-                                    (cdr (hons-get (caar props) seen)))
-                              seen)
-                  acc))
-   (t
-    (actual-props (cdr props)
-                  (hons-acons (caar props)
-                              (cons (cadar props)
-                                    (cdr (hons-get (caar props) seen)))
-                              seen)
-                  (cons (car props) acc)))))
 
 (defun info-for-well-founded-relation-rules (rules)
 
@@ -10540,243 +10451,6 @@
 (defmacro disabledp (name)
   `(disabledp-fn ,name (ens-maybe-brr state) (w state)))
 
-(defun access-x-rule-rune (x rule)
-
-; Given a rule object, rule, of record type x, we return the :rune of rule.
-; This is thus typically ``(access x rule :rune).''
-
-; Note: We include with every case the rule-class tokens that create this rule
-; so that we can search for any such tokens and find this function when adding
-; a new, similar, rule-class.
-
-; There is no record object generated only by        ;;; :refinement
-;                                                    ;;; :tau-system
-  (case x
-        (recognizer-tuple                            ;;; :compound-recognizer
-         (access recognizer-tuple rule :rune))
-        (type-prescription                           ;;; :type-prescription
-         (access type-prescription rule :rune))
-        (congruence-rule                             ;;; :congruence
-                                                     ;;; :equivalence
-         (access congruence-rule rule :rune))
-        (pequiv                                      ;;; :congruence
-         (access congruence-rule
-                 (access pequiv rule :congruence-rule)
-                 :rune))
-        (rewrite-rule                                ;;; :rewrite
-                                                     ;;; :meta
-                                                     ;;; :definition
-         (access rewrite-rule rule :rune))
-        (well-founded-relation-rule                  ;;; :well-founded-relation
-; No such record type, but we pretend!
-         (cddr rule))
-        (linear-lemma                                ;;; :linear
-         (access linear-lemma rule :rune))
-        (forward-chaining-rule                       ;;; :forward-chaining
-         (access forward-chaining-rule rule :rune))
-        (built-in-clause                             ;;; :built-in-clause
-         (access built-in-clause rule :rune))
-        (elim-rule                                   ;;; :elim
-         (access elim-rule rule :rune))
-        (generalize-rule                             ;;; :generalize
-         (access generalize-rule rule :rune))
-        (induction-rule                              ;;; :induction
-         (access induction-rule rule :rune))
-        (type-set-inverter-rule                      ;;; :type-set-inverter
-         (access type-set-inverter-rule rule :rune))
-        (otherwise (er hard 'access-x-rule-rune
-                       "Unrecognized rule class, ~x0."
-                       x))))
-
-(defun collect-x-rules-of-rune (x rune lst ans)
-
-; Lst is a list of rules of type x.  We collect all those elements of lst
-; with :rune rune.
-
-  (cond ((null lst) ans)
-        ((equal rune (access-x-rule-rune x (car lst)))
-         (collect-x-rules-of-rune x rune (cdr lst)
-                                  (add-to-set-equal (car lst) ans)))
-        (t (collect-x-rules-of-rune x rune (cdr lst) ans))))
-
-(defun collect-congruence-rules-of-rune-in-geneqv-lst (geneqv-lst rune ans)
-
-; A geneqv is a list of congruence rules.  Geneqv-lst, above, is a list of
-; geneqvs.  We scan every congruence rule in geneqv-lst and collect those with
-; the :rune rune.
-
-  (cond
-   ((null geneqv-lst) ans)
-   (t (collect-congruence-rules-of-rune-in-geneqv-lst
-       (cdr geneqv-lst) rune
-       (collect-x-rules-of-rune 'congruence-rule rune (car geneqv-lst) ans)))))
-
-(defun collect-congruence-rules-of-rune (congruences rune ans)
-
-; The 'congruences property of an n-ary function symbol is a list of tuples,
-; each of which is of the form (equiv geneqv1 ... geneqvn), where each geneqvi
-; is a list of congruence rules.  Congruences is the 'congruences property of
-; some function.  We scan it and collect every congruence rule in it that has
-; :rune rune.
-
-  (cond
-   ((null congruences) ans)
-   (t (collect-congruence-rules-of-rune
-       (cdr congruences) rune
-       (collect-congruence-rules-of-rune-in-geneqv-lst (cdr (car congruences))
-                                                       rune ans)))))
-
-(defun collect-pequivs-of-rune (alist rune ans)
-
-; Alist has the form of the :deep or :shallow field of the 'pequivs property of
-; a function symbol.  Thus, each element of alist is of the form (equiv pequiv1
-; ... pequivn), where each pequivi is a pequiv record.  We scan this alist and
-; collect every pequiv record in it whose :rune is rune.
-
-  (cond
-   ((null alist) ans)
-   (t (collect-pequivs-of-rune
-       (cdr alist)
-       rune
-       (collect-x-rules-of-rune 'pequiv rune (cdr (car alist)) ans)))))
-
-(defun find-rules-of-rune2 (rune sym key val ans)
-
-; (sym key . val) is a member of wrld.  We collect all the rules in val with
-; :rune rune.  This function is patterned after info-for-x-rules.
-
-; Wart: If key is 'eliminate-destructors-rule, then val is a single rule, not a
-; list of rules.  We handle this case specially below.
-
-; Warning: Keep this function in sync with info-for-x-rules.  In that spirit,
-; note that tau rules never store runes and hence are completely ignored
-; here, as in info-for-x-rules.
-
-  (let ((token (car rune)))
-
-; As an efficiency, we do not look for rune in places where it cannot occur.
-; For example, if token is :elim then there is no point in searching through
-; the 'lemmas properties.  In general, each case below insists that token is of
-; the appropriate class.  Sometimes there are more than one.  For example, the
-; 'lemmas property may contain :rewrite, :definition, and :meta runes, all of
-; which are stored as REWRITE-RULEs.
-
-    (cond
-     ((eq key 'global-value)
-      (case sym
-            (well-founded-relation-alist
-             (if (eq token :well-founded-relation)
-                 (collect-x-rules-of-rune 'well-founded-relation-rule rune
-                                          val ans)
-                 ans))
-            (built-in-clauses
-             (if (eq token :built-in-clause)
-                 (collect-x-rules-of-rune 'built-in-clause rune val ans)
-                 ans))
-            (type-set-inverter-rules
-             (if (eq token :type-set-inverter)
-                 (collect-x-rules-of-rune 'type-set-inverter-rule rune
-                                          val ans)
-                 ans))
-            (recognizer-alist
-             (if (eq token :compound-recognizer)
-                 (collect-x-rules-of-rune 'recognizer-tuple rune val ans)
-                 ans))
-            (generalize-rules
-             (if (eq token :generalize)
-                 (collect-x-rules-of-rune 'generalize-rule rune val ans)
-                 ans))
-            (otherwise ans)))
-     (t
-      (case key
-            (lemmas
-             (if (member-eq token '(:rewrite :meta :definition))
-                 (collect-x-rules-of-rune 'rewrite-rule rune val ans)
-                 ans))
-            (linear-lemmas
-             (if (eq token :linear)
-                 (collect-x-rules-of-rune 'linear-lemma rune val ans)
-                 ans))
-            (eliminate-destructors-rule
-             (if (eq token :elim)
-                 (collect-x-rules-of-rune 'elim-rule rune (list val) ans)
-                 ans))
-            (congruences
-             (if (member-eq token '(:congruence :equivalence))
-                 (collect-congruence-rules-of-rune val rune ans)
-                 ans))
-            (pequivs
-             (if (eq token :congruence)
-                 (collect-pequivs-of-rune
-                  (access pequivs-property val :deep)
-                  rune
-                  (collect-pequivs-of-rune
-                   (access pequivs-property val :shallow)
-                   rune
-                   ans))
-               ans))
-            (coarsenings
-
-; :Refinement rules add to the 'coarsenings property.  If equiv1 is a
-; refinement of equiv2, then equiv2 is a coarsening of equiv1 and the lemma
-; establishing that fact adds equiv2 to the 'coarsenings property of equiv1.
-; There is no rule object corresponding to this fact.  Hence, even if rune is
-; the :refinement rune responsible for adding some equiv2 to this list, we
-; won't find a rule object here by the name rune.
-
-; Similar comments apply to :equivalence rules.  They add to the 'coarsenings
-; property but no rule object exists.  It should be noted that some congruence
-; rules are added by lemmas of class :equivalence and those rules are named by
-; :equivalence runes and are found among the 'congruences properties.
-
-             ans)
-            (forward-chaining-rules
-             (if (eq token :forward-chaining)
-                 (collect-x-rules-of-rune 'forward-chaining-rule rune val ans)
-                 ans))
-            (type-prescriptions
-             (if (eq token :type-prescription)
-                 (collect-x-rules-of-rune 'type-prescription rune val ans)
-                 ans))
-            (induction-rules
-             (if (eq token :induction)
-                 (collect-x-rules-of-rune 'induction-rule rune val ans)
-                 ans))
-            (otherwise ans))))))
-
-(defun find-rules-of-rune1 (rune props ans)
-
-; Props is a list of triples and can be considered a segment of some wrld.  (It
-; is not only because duplicates have been removed.)  We visit every property
-; and collect all the rules with :rune rune.
-
-  (cond ((null props) ans)
-        ((eq (cddar props) *acl2-property-unbound*)
-         (find-rules-of-rune1 rune (cdr props) ans))
-        (t (find-rules-of-rune1 rune (cdr props)
-                                (find-rules-of-rune2 rune
-                                                     (caar props)
-                                                     (cadar props)
-                                                     (cddar props)
-                                                     ans)))))
-
-(defun find-rules-of-rune (rune wrld)
-
-; Find all the rules in wrld with :rune rune.  We do this by first obtaining
-; that segment of wrld consisting of the properties stored by the event
-; named by the base symbol of rune.  Then we collect every rule mentioned
-; in the segment, provided the rule has :rune rune.
-
-  (declare (xargs :guard (and (plist-worldp wrld)
-                              (runep rune wrld))))
-  (let ((wrld-tail (decode-logical-name (base-symbol rune) wrld)))
-    (find-rules-of-rune1 rune
-                         (actual-props
-                          (world-to-next-event (cdr wrld-tail))
-                          'find-rules-of-rune1
-                          nil)
-                         nil)))
-
 (defun collect-abbreviation-subclass (rules)
 
 ; Rules is a list of REWRITE-RULEs.  We collect all those that are of :subclass
@@ -10873,7 +10547,7 @@
        (t (runes-to-monitor1 (cdr runes) x wrld ctx state
                              only-simple only-simple-count
                              some-simple some-s-all some-s-bad
-                             acc)))))))
+                             (cons rune acc))))))))
 
 (defconst *monitorable-rune-types*
   '(:rewrite :definition :linear))
@@ -11769,8 +11443,7 @@
                     instructions
                     hints
                     otf-flg
-                    event-name
-                    doc)
+                    event-name)
   `(defthm ,(or event-name
                 (intern-in-package-of-symbol
                  (coerce (packn1 (list equiv "-IS-AN-EQUIVALENCE")) 'string)
@@ -11780,8 +11453,7 @@
      ,(extend-rule-classes :equivalence rule-classes)
      ,@(if instructions (list :instructions instructions) nil)
      ,@(if hints (list :hints hints) nil)
-     ,@(if otf-flg (list :otf-flg otf-flg) nil)
-     ,@(if doc (list :doc doc) nil)))
+     ,@(if otf-flg (list :otf-flg otf-flg) nil)))
 
 (defmacro defrefinement (equiv1 equiv2
                                 &key (rule-classes '(:REFINEMENT))

@@ -602,6 +602,26 @@ we return @('lit') unchanged.</p>"
                   (logxor neg (the (unsigned-byte 32) lit)))))
 
 
+(define lit-abs ((lit litp :type (integer 0 *)))
+  :split-types t
+  :enabled t
+  :inline t
+  :guard-hints (("goal" :in-theory (enable make-lit lit->var)))
+  (mbe :logic (make-lit (lit->var lit) 0)
+       :exec (logand -2 (the (integer 0 *) lit))))
+
+
+(define lit-abs^ ((lit litp :type (unsigned-byte 32)))
+  :enabled t
+  :inline t
+  :guard-hints (("goal" :in-theory (enable make-lit lit->var)))
+  (mbe :logic (lit-abs lit)
+       :exec (logand -2 (the (unsigned-byte 32) lit))))
+
+
+
+
+
 
 
 (fty::deflist lit-list :pred lit-listp :elt-type litp :true-listp t

@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Tests
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -375,6 +375,14 @@
   (forall (z w) (equal (?f (?g x y)) (cons z w)))
   :strengthen nil)
 
+(defun-sk2 constrained (?f ?g) (x y)
+  (forall (z w) (equal (?f (?g x y)) (cons z w)))
+  :constrain t)
+
+(defun-sk2 not-constrained (?f ?g) (x y)
+  (forall (z w) (equal (?f (?g x y)) (cons z w)))
+  :constrain nil)
+
 ;; Example 1 in :DOC DEFUN-SK2:
 (defun-sk2 injective[?f] (?f) ()
   (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))
@@ -746,6 +754,22 @@
 (defun-inst strong-i (?p ?g) (strong (?f . ?p)))
 
 (defun-inst not-strong-i (not-strong (?f . atom) (?g . cons)))
+
+(defun-inst constrained-i (constrained (?f . atom) (?g . cons)))
+
+(defun-inst constrained-j (constrained (?f . atom) (?g . cons))
+  :constrain t)
+
+(defun-inst constrained-k (constrained (?f . atom) (?g . cons))
+  :constrain nil)
+
+(defun-inst not-constrained-i (constrained (?f . atom) (?g . cons)))
+
+(defun-inst not-constrained-j (constrained (?f . atom) (?g . cons))
+  :constrain t)
+
+(defun-inst not-constrained-k (constrained (?f . atom) (?g . cons))
+  :constrain nil)
 
 ;; Example 6 in :DOC DEFUN-INST:
 (defun-inst injective[quad[?f]] (?f)

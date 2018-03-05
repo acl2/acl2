@@ -563,7 +563,7 @@ corresponding bits of the two inputs as follows:</p>
 
   (deffixequiv 4vec-resor))
 
-(defmacro 4vec-bit-limit () (expt 2 24))
+(defmacro 4vec-bit-limit () (expt 2 28))
 
 (defmacro 4vec-very-large-integer-warning (n)
   `(prog2$ (cw "!!!!!!!! Danger -- if you continue, ~x0 will create a ~x1-bit ~

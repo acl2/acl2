@@ -110,6 +110,13 @@ my $HELP_MESSAGE = "
                     correctly if all targets/dependencies are the
                     same.
 
+       -f, --from-file <filename>
+                    This option may be given multiple times.  Instead
+                    of assuming that everything starts out
+                    uncertified, assume that the given file(s) are the
+                    only ones that have been updated, and compute
+                    paths relative to them.
+
    --pcert-all
           Compute dependencies assuming provisional certification is used
           for all books, not just the ones with the \'pcert\' cert_param.
@@ -142,6 +149,8 @@ my %OPTIONS = (
 my @user_targets = ();
 my @targets = ();
 my @deps_of = ();
+my @user_from_files = ();
+my %from_files = ();
 
 my $debug = 0;
 
@@ -180,6 +189,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
                              "pcert-all"    => \$certlib_opts{'pcert_all'},
                              "include-excludes"  => \$certlib_opts{'include_excludes'},
                              "target-ext|e=s"    => \$OPTIONS{'target_ext'},
+                             "from-file|f=s"     => \@user_from_files,
 			     );
 
 my $cache = {};
@@ -238,6 +248,17 @@ foreach my $target (@targets) {
     }
 }
 
+foreach my $from (@user_from_files) {
+    my $path = canonical_path(to_cert_name($from, $OPTIONS{'target_ext'}));
+    if ($path) {
+	$from_files{$path}=1;
+    } else {
+	print "Warning: bad from_file path $from\n";
+    }
+
+}
+
+
 if ($params_file && open (my $params, "<", $params_file)) {
     while (my $pline = <$params>) {
 	my @parts = $pline =~ m/([^:]*):(.*)/;
@@ -276,15 +297,16 @@ if ($OPTIONS{'write_costs'}) {
     nstore($basecosts, $OPTIONS{'write_costs'});
 }
 
+my $updateds = (@user_from_files) ? \%from_files : 1;
+compute_cost_paths($depdb, $basecosts, $costs, $updateds, $warnings);
 
-compute_cost_paths($depdb, $basecosts, $costs, $warnings);
 print "done compute_cost_paths\n" if $debug;
 
 print "costs: " .  $costs . "\n" if $debug;
 
-(my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs);
+(my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs, $updateds);
 
-my $savings = compute_savings($costs, $basecosts, \@targets, $debug, $depdb); 
+my $savings = compute_savings($costs, $basecosts, \@targets, $updateds, $debug, $depdb); 
 
 
 	# ($costs, $warnings) = make_costs_table($target, $depdb, $costs, $warnings, $OPTIONS{"short"});

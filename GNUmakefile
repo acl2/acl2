@@ -653,14 +653,13 @@ distclean: clean-all
 # We print the warning at the end, so that it will be more likely
 # to be seen.
 .PHONY: clean
-clean: clean-lite clean-is-deprecated
-
-.PHONY: clean-is-deprecated
-clean-is-deprecated:
-	@echo 'WARNING: The "clean" target is deprecated and will eventually'
-	@echo 'cause an error.  Target "clean-lite" has been invoked.'
-	@echo 'Use target "clean-all" (or equivalently, "distclean") if'
-	@echo 'you want a more thorough cleaning.'
+clean:
+	@echo 'ERROR: The "clean" target of "make" has been deprecated'
+	@echo '       since ACl2 Version 7.4 (released in March, 2017).'
+	@echo '       Its replacement is target "clean-lite"; or, use'
+	@echo '       target "clean-all" (or equivalently, "distclean")'
+	@echo '       if you want a more thorough cleaning.'
+	@exit 1
 
 # The .NOTPARALLEL target avoids our doing any build process in
 # parallel.  Uses of makefiles in other directories, even if invoked

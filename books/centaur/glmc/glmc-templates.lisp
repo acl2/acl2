@@ -49,7 +49,7 @@
            (mv nil
                (msg "Error interpreting ~s0 hyp: ~@1" hyp-name er)
                pathcond interp-st bvar-db state))
-          (er (glcp-vacuity-check hyp-bfr config))
+          ((mv er ?unsat) (glcp-vacuity-check hyp-bfr config))
           ((when er)
            (mv nil
                (msg "Vacuity check for ~s0 hyp failed: ~@1" hyp-name er)

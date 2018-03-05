@@ -72,7 +72,8 @@
    add-node add-in add-out add-reg
    aignet-add-in
    aignet-add-reg
-   aignet-add-gate
+   aignet-add-and
+   aignet-add-xor
    aignet-add-out
    aignet-set-nxst
    aignet-gates-onlyp

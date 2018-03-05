@@ -1090,6 +1090,11 @@
 (defun-*1* symbolp (x)
   (symbolp x))
 
+(defun-*1* apply$-lambda (fn args)
+  (if (and (consp fn) (true-listp args)) ; guard
+      (apply$-lambda fn args)
+    (gv apply$-lambda (fn args) (apply$-lambda fn (fix-true-list args)))))
+
 ;; Historical Comment from Ruben Gamboa:
 ;; I added *1*-defns for the non-standard predicates.  Note,
 ;; however, that the non-standard predicates do NOT have an executable
@@ -5763,7 +5768,10 @@
 ; (though other related such code may be found elsewhere).
 
 (defconst *boot-strap-pass-2-acl2-loop-only-fns*
-  '(apply$-prim))
+
+; Every function in this list must have a custom *1* function.
+
+  '(apply$-prim apply$-lambda))
 
 (defun-one-output add-trip (world-name world-key trip)
 
@@ -8566,6 +8574,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
               nil (standard-co *the-live-state*) *the-live-state* nil))
        (return-from lp nil))
       ((not *lp-ever-entered-p*)
+       (f-put-global 'saved-output-reversed nil state)
+       (push-current-acl2-world 'saved-output-reversed *the-live-state*)
        (set-initial-cbd)
        (eval `(in-package ,*startup-package-name*)) ;only changes raw Lisp pkg
 

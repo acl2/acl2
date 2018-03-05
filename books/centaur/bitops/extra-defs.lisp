@@ -143,6 +143,7 @@ instructions.</p>")
     :rule-classes :type-prescription))
 
 (def-ruleset nth-slices-normalize-to-nth-slice nil)
+(def-ruleset nth-slice-definitions nil)
 
 (defmacro def-nth-slice (width)
   (b* ((str-alist `(("<W>" . ,(coerce (explode-atom width 10) 'string))))
@@ -166,6 +167,7 @@ about it.</p>"
              (the (unsigned-byte <W>)
                   (logand (ash x (the (integer * 0) (* n <-W>))) <WMASK>)))
         ///
+        (add-to-ruleset nth-slice-definitions '((:d nth-slice<W>)))
         (defcong nat-equiv equal (nth-slice<W> n x) 1)
         (defcong int-equiv equal (nth-slice<W> n x) 2)
         (defthm unsigned-byte-p-<W>-of-nth-slice<W>
@@ -184,15 +186,28 @@ about it.</p>"
                    (<SHORTSTR> . ,shortstr))
      :pkg-sym nil)))
 
-(def-nth-slice 2)
-(def-nth-slice 4)
-(def-nth-slice 8)
-(def-nth-slice 16)
-(def-nth-slice 32)
-(def-nth-slice 64)
+(def-nth-slice 2  )
+(def-nth-slice 4  )
+(def-nth-slice 8  )
+(def-nth-slice 16 )
+(def-nth-slice 32 )
+(def-nth-slice 64 )
 (def-nth-slice 128)
 (def-nth-slice 256)
 (def-nth-slice 512)
+
+(defmacro nth-slice$ (size n x)
+  (case size
+    (2   `(nth-slice2   ,n ,x))
+    (4   `(nth-slice4   ,n ,x))
+    (8   `(nth-slice8   ,n ,x))
+    (16  `(nth-slice16  ,n ,x))
+    (32  `(nth-slice32  ,n ,x))
+    (64  `(nth-slice64  ,n ,x))
+    (128 `(nth-slice128 ,n ,x))
+    (256 `(nth-slice256 ,n ,x))
+    (512 `(nth-slice512 ,n ,x))
+    (t `(nth-slice ,size ,n ,x))))
 
 
 

@@ -4751,7 +4751,7 @@
 ; macro get-rule-field.
 
 ; The backchain-limit-lst must be nil, a natp, or a list of these of the same
-; length as hyps.  For subclass 'meta, only the first two of these is legal.
+; length as hyps.  For subclass 'meta, only the first two of these are legal.
 ; Otherwise, only the first and third of these are legal.
 
                            backchain-limit-lst
@@ -7379,193 +7379,101 @@
                 acc)))))
 )
 
-(mutual-recursion
+(defun ancestor-backchain-rune (ancestor)
+  (and (access ancestor ancestor :bkptr)
+       (let ((tokens (access ancestor ancestor :tokens)))
+         (assert$ (and tokens (null (cdr tokens)))
+                  (car tokens)))))
 
-(defun tilde-@-failure-reason-free-phrase (hyp-number alist level unify-subst
-                                                      evisc-tuple)
+; The function backchain-limit-enforcers calls find-rules-of-rune.  Several
+; record structures support the definition of find-rules-of-rune, because they
+; support access-x-rule-rune.  We define those structures here, even though
+; they might naturally be defined elsewhere (and remain as comments in their
+; locations as of Version_8.0).
 
-; Alist is a list of pairs (unify-subst . failure-reason).  Level is initially
-; 0 and increases as we dive into failure-reason.
+(defrec forward-chaining-rule
+  ((rune . nume) trigger hyps concls . match-free) nil)
 
-  (cond
-   ((null alist) "")
-   (t
-    (let ((new-unify-subst (caar alist))
-          (new-failure-reason (cdar alist)))
-      (msg "~t0[~x1]~*2~|~@3~@4~@5"
-           (if (< hyp-number 10) (* 4 level) (1- (* 4 level)))
-           hyp-number
-           (tilde-*-alist-phrase (alist-difference-eq new-unify-subst unify-subst)
-                                 evisc-tuple
-                                 (+ 4 (* 4 level)))
-           (if (let ((fr (if (and (consp new-failure-reason)
-                                  (eq (car new-failure-reason) 'cached))
-                             (cdr new-failure-reason)
-                           new-failure-reason)))
-                 (and (consp fr)
-                      (integerp (car fr))
-                      (or (not (and (consp (cdr fr))
-                                    (eq (cadr fr) 'free-vars)))
-                          (and (consp (cdr fr))
-                               (consp (cddr fr))
-                               (member-eq (caddr fr)
-                                          '(hyp-vars elided))))))
-               "Failed because "
-             "")
-           (tilde-@-failure-reason-phrase1 new-failure-reason (1+ level)
-                                           new-unify-subst evisc-tuple nil)
-           (tilde-@-failure-reason-free-phrase hyp-number
-                                               (cdr alist) level unify-subst
-                                               evisc-tuple))))))
+(defrec elim-rule
+  (((nume . crucial-position) . (destructor-term . destructor-terms))
+   (hyps . equiv)
+   (lhs . rhs)
+   . rune) nil)
 
-(defun tilde-@-failure-reason-phrase1 (failure-reason level unify-subst
-                                                      evisc-tuple
-                                                      free-vars-display-limit)
-  (cond ((eq failure-reason 'time-out)
-         "we ran out of time.")
-        ((eq failure-reason 'loop-stopper)
-         "it permutes a big term forward.")
-        ((eq failure-reason 'too-many-ifs-pre-rewrite)
-         "the unrewritten :RHS contains too many IFs for the given args.")
-        ((eq failure-reason 'too-many-ifs-post-rewrite)
-         "the rewritten :RHS contains too many IFs for the given args.")
-        ((eq failure-reason 'rewrite-fncallp)
-         "the :REWRITTEN-RHS is judged heuristically unattractive.")
-        ((member-eq failure-reason '(linearize-unrewritten-produced-disjunction
-                                     linearize-rewritten-produced-disjunction))
-         (msg "the ~@0 term generated a disjunction of two conjunctions of ~
-               polynomials."
-              (if (eq failure-reason 'linearize-rewritten-produced-disjunction)
-                  'rewritten
-                'unrewritten)))
-        ((eq failure-reason 'linear-possible-loop)
-         "the rewritten term was judged to have the potential to cause a loop ~
-          related to linear arithmetic.")
-        ((and (consp failure-reason)
-              (integerp (car failure-reason)))
-         (let ((n (car failure-reason)))
-           (case
-             (cdr failure-reason)
-             (time-out (msg "we ran out of time while processing :HYP ~x0."
-                            n))
-             (ancestors (msg ":HYP ~x0 is judged more complicated than its ~
-                                ancestors (type :ANCESTORS to see the ~
-                                ancestors and :PATH to see how we got to this ~
-                                point)."
-                             n))
-             (known-nil (msg ":HYP ~x0 is known nil by type-set."
-                             n))
-             (otherwise
-              (cond
-               ((eq (cadr failure-reason) 'free-vars)
-                (mv-let
-                 (failures-remaining failure-reason elided-p)
-                 (if free-vars-display-limit
-                     (limit-failure-reason free-vars-display-limit
-                                           failure-reason
-                                           nil)
-                   (mv nil failure-reason nil))
-                 (declare (ignore failures-remaining))
-                 (cond
-                  ((eq (caddr failure-reason) 'hyp-vars)
-                   (msg ":HYP ~x0 contains free variables ~&1, for which no ~
-                           suitable bindings were found."
-                        n
-                        (set-difference-equal (cdddr failure-reason)
-                                              (strip-cars unify-subst))))
-                  ((eq (caddr failure-reason) 'elided)
-                   (msg ":HYP ~x0 contains free variables (further reasons ~
-                           elided, as noted above)."
-                        n))
-                  (t
-                   (msg
-                    "~@0~@1"
-                    (if (eql level 1)
-                        (msg ":HYP ~x0 contains free variables. The ~
-                                following display summarizes the attempts to ~
-                                relieve hypotheses by binding free variables; ~
-                                see :DOC free-variables.~|~@1~%"
-                             n
-                             (if elided-p
-                                 (msg
-                                  "     Also, if you want to avoid ~
-                                     ``reasons elided'' notes below, then ~
-                                     evaluate (assign free-vars-display-limit ~
-                                     k) for larger k (currently ~x0, default ~
-                                     ~x1); then :failure-reason will show the ~
-                                     first k or so failure sub-reasons before ~
-                                     eliding.  Note that you may want to do ~
-                                     this evaluation outside break-rewrite, ~
-                                     so that it persists.~|"
-                                  free-vars-display-limit
-                                  *default-free-vars-display-limit*)
-                               ""))
-                      "")
-                    (tilde-@-failure-reason-free-phrase
-                     n
-                     (cddr failure-reason)
-                     level unify-subst evisc-tuple))))))
-               ((eq (cadr failure-reason) 'backchain-limit)
+(defrec generalize-rule (nume formula . rune) nil)
 
-; (cddr failure-reason) is the backchain-limit at the point of
-; failure.  But that number was calculated by successive additions of
-; backchain limits for individual rules and we have no record of which
-; rules were involved in this calculation.
+(defrec induction-rule (nume (pattern . condition) scheme . rune) nil)
 
-                (msg "a backchain limit was reached while processing :HYP ~x0 ~
-                      (but we cannot tell you which rule imposed the limit)"
-                     n))
-               ((eq (cadr failure-reason) 'rewrote-to)
-                (msg ":HYP ~x0 rewrote to ~X12."
-                     n
-                     (cddr failure-reason)
-                     evisc-tuple))
-               ((member-eq (cadr failure-reason) '(syntaxp
-                                                   syntaxp-extended
-                                                   bind-free
-                                                   bind-free-extended))
-                (let ((synp-fn (case (cadr failure-reason)
-                                 (syntaxp-extended 'syntaxp)
-                                 (bind-free-extended 'bind-free)
-                                 (otherwise (cadr failure-reason)))))
-                  (cond ((caddr failure-reason)
-                         (msg "the evaluation of the ~x0 test in :HYP ~x1 ~
-                               produced the error ``~@2''"
-                              synp-fn
-                              n
-                              (cadddr failure-reason)))
-                        (t (msg "the ~x0 test in :HYP ~x1 evaluated to NIL."
-                                synp-fn
-                                n)))))
-               (t (er hard 'tilde-@-failure-reason-phrase1
-                      "Unrecognized failure reason, ~x0."
-                      failure-reason)))))))
-        ((and (consp failure-reason)
-              (eq (car failure-reason) 'cached))
-         (msg "~@0~|*NOTE*: This failure was cached earlier.  Use the hint ~
-               :RW-CACHE-STATE ~x1 to disable failure caching."
-              (tilde-@-failure-reason-phrase1
-               (cdr failure-reason)
-               level unify-subst evisc-tuple free-vars-display-limit)
-              nil))
-        (t (er hard 'tilde-@-failure-reason-phrase1
-               "Unrecognized failure reason, ~x0."
-               failure-reason))))
-)
+(defrec built-in-clause ((nume . all-fnnames) clause . rune) t)
 
-(defun tilde-@-failure-reason-phrase (failure-reason level unify-subst
-                                                     evisc-tuple
-                                                     free-vars-display-limit)
+; Decoding Logical Names: decode-logical-name supports the definition of
+; find-rules-of-rune, which in turn supports the definition of
+; backchain-limit-enforcers; so we turn here to defining decode-logical-name.
 
-; In relieve-hyps1 we store a 'free-vars failure reason in which we formerly
-; reversed a "failure-reason-lst", which is really an alist mapping extended
-; unify-substs to failure reasons.  Now, we save consing by delaying such
-; reversal until the relatively rare times that we are ready to display the
-; failure reason.
+(defun scan-to-defpkg (name wrld)
 
-  (tilde-@-failure-reason-phrase1 (fix-free-failure-reason failure-reason)
-                                  level unify-subst evisc-tuple
-                                  free-vars-display-limit))
+; We wish to give meaning to stringp logical names such as "MY-PKG".  We do it
+; in an inefficient way: we scan the whole world looking for an event tuple of
+; type DEFPKG and namex name.  We know that name is a known package and that it
+; is not one in *initial-known-package-alist*.
+
+  (cond ((null wrld) nil)
+        ((and (eq (caar wrld) 'event-landmark)
+              (eq (cadar wrld) 'global-value)
+              (eq (access-event-tuple-type (cddar wrld)) 'DEFPKG)
+              (equal name (access-event-tuple-namex (cddar wrld))))
+         wrld)
+        (t (scan-to-defpkg name (cdr wrld)))))
+
+(defun scan-to-include-book (full-book-name wrld)
+
+; We wish to give meaning to stringp logical names such as "arith".  We
+; do it in an inefficient way: we scan the whole world looking for an event
+; tuple of type INCLUDE-BOOK and namex full-book-name.
+
+  (cond ((null wrld) nil)
+        ((and (eq (caar wrld) 'event-landmark)
+              (eq (cadar wrld) 'global-value)
+              (eq (access-event-tuple-type (cddar wrld)) 'include-book)
+              (equal full-book-name (access-event-tuple-namex (cddar wrld))))
+         wrld)
+        (t (scan-to-include-book full-book-name (cdr wrld)))))
+
+(defun assoc-equal-cadr (x alist)
+  (cond ((null alist) nil)
+        ((equal x (cadr (car alist))) (car alist))
+        (t (assoc-equal-cadr x (cdr alist)))))
+
+(defun multiple-assoc-terminal-substringp1 (x i alist)
+  (cond ((null alist) nil)
+        ((terminal-substringp x (caar alist) i (1- (length (caar alist))))
+         (cons (car alist) (multiple-assoc-terminal-substringp1 x i (cdr alist))))
+        (t (multiple-assoc-terminal-substringp1 x i (cdr alist)))))
+
+(defun multiple-assoc-terminal-substringp (x alist)
+
+; X and the keys of the alist are presumed to be strings.  This function
+; compares x to the successive keys in the alist, succeeding on any key that
+; contains x as a terminal substring.  Unlike assoc, we return the list of all
+; pairs in the alist with matching keys.
+
+  (multiple-assoc-terminal-substringp1 x (1- (length x)) alist))
+
+(defun possibly-add-lisp-extension (str)
+
+; String is a string.  If str ends in .lisp, return it.  Otherwise, tack .lisp
+; onto the end and return that.
+
+  (let ((len (length str)))
+    (cond
+     ((and (> len 5)
+           (eql (char str (- len 5)) #\.)
+           (eql (char str (- len 4)) #\l)
+           (eql (char str (- len 3)) #\i)
+           (eql (char str (- len 2)) #\s)
+           (eql (char str (- len 1)) #\p))
+      str)
+     (t (string-append str ".lisp")))))
 
 (defun stuff-standard-oi (cmds state)
 
@@ -7740,11 +7648,373 @@
 
 ; End of code for printing type-alists.
 
+; Start support for find-rules-of-rune, in support of
+; backchain-limit-enforcers.
+
+(defun scan-to-event (wrld)
+
+; We roll back wrld to the first (list order traversal) event landmark
+; on it.
+
+  (cond ((null wrld) wrld)
+        ((and (eq (caar wrld) 'event-landmark)
+              (eq (cadar wrld) 'global-value))
+         wrld)
+        (t (scan-to-event (cdr wrld)))))
+
+(defun decode-logical-name (name wrld)
+
+; Given a logical name, i.e., a symbol with an 'absolute-event-number property
+; or a string naming a defpkg or include-book, we return the tail of wrld
+; starting with the introductory event.  We return nil if name is illegal.
+
+  (cond
+   ((symbolp name)
+    (cond ((eq name :here)
+           (scan-to-event wrld))
+          (t
+           (let ((n (getpropc name 'absolute-event-number nil wrld)))
+             (cond ((null n) nil)
+                   (t (lookup-world-index 'event n wrld)))))))
+   ((stringp name)
+
+; Name may be a package name or a book name.
+
+    (cond
+     ((find-non-hidden-package-entry name
+                                     (global-val 'known-package-alist wrld))
+      (cond ((find-package-entry name *initial-known-package-alist*)
+
+; These names are not DEFPKGd and so won't be found in a scan.  They
+; are introduced by absolute event number 0.
+
+             (lookup-world-index 'event 0 wrld))
+            (t (scan-to-defpkg name wrld))))
+     (t (let ((hits (multiple-assoc-terminal-substringp
+                     (possibly-add-lisp-extension name)
+                     (global-val 'include-book-alist wrld))))
+
+; Hits is a subset of the include-book-alist.  The form of each
+; element is (full-book-name user-book-name familiar-name
+; cert-annotations . book-hash).
+
+          (cond
+           ((and hits (null (cdr hits)))
+            (scan-to-include-book (car (car hits)) wrld))
+           (t nil))))))
+   (t nil)))
+
+(defun access-x-rule-rune (x rule)
+
+; Given a rule object, rule, of record type x, we return the :rune of rule.
+; This is thus typically ``(access x rule :rune).''
+
+; Note: We include with every case the rule-class tokens that create this rule
+; so that we can search for any such tokens and find this function when adding
+; a new, similar, rule-class.
+
+; There is no record object generated only by        ;;; :refinement
+;                                                    ;;; :tau-system
+  (case x
+        (recognizer-tuple                            ;;; :compound-recognizer
+         (access recognizer-tuple rule :rune))
+        (type-prescription                           ;;; :type-prescription
+         (access type-prescription rule :rune))
+        (congruence-rule                             ;;; :congruence
+                                                     ;;; :equivalence
+         (access congruence-rule rule :rune))
+        (pequiv                                      ;;; :congruence
+         (access congruence-rule
+                 (access pequiv rule :congruence-rule)
+                 :rune))
+        (rewrite-rule                                ;;; :rewrite
+                                                     ;;; :meta
+                                                     ;;; :definition
+         (access rewrite-rule rule :rune))
+        (well-founded-relation-rule                  ;;; :well-founded-relation
+; No such record type, but we pretend!
+         (cddr rule))
+        (linear-lemma                                ;;; :linear
+         (access linear-lemma rule :rune))
+        (forward-chaining-rule                       ;;; :forward-chaining
+         (access forward-chaining-rule rule :rune))
+        (built-in-clause                             ;;; :built-in-clause
+         (access built-in-clause rule :rune))
+        (elim-rule                                   ;;; :elim
+         (access elim-rule rule :rune))
+        (generalize-rule                             ;;; :generalize
+         (access generalize-rule rule :rune))
+        (induction-rule                              ;;; :induction
+         (access induction-rule rule :rune))
+        (type-set-inverter-rule                      ;;; :type-set-inverter
+         (access type-set-inverter-rule rule :rune))
+        (otherwise (er hard 'access-x-rule-rune
+                       "Unrecognized rule class, ~x0."
+                       x))))
+
+(defun collect-x-rules-of-rune (x rune lst ans)
+
+; Lst is a list of rules of type x.  We collect all those elements of lst
+; with :rune rune.
+
+  (cond ((null lst) ans)
+        ((equal rune (access-x-rule-rune x (car lst)))
+         (collect-x-rules-of-rune x rune (cdr lst)
+                                  (add-to-set-equal (car lst) ans)))
+        (t (collect-x-rules-of-rune x rune (cdr lst) ans))))
+
+(defun collect-congruence-rules-of-rune-in-geneqv-lst (geneqv-lst rune ans)
+
+; A geneqv is a list of congruence rules.  Geneqv-lst, above, is a list of
+; geneqvs.  We scan every congruence rule in geneqv-lst and collect those with
+; the :rune rune.
+
+  (cond
+   ((null geneqv-lst) ans)
+   (t (collect-congruence-rules-of-rune-in-geneqv-lst
+       (cdr geneqv-lst) rune
+       (collect-x-rules-of-rune 'congruence-rule rune (car geneqv-lst) ans)))))
+
+(defun collect-congruence-rules-of-rune (congruences rune ans)
+
+; The 'congruences property of an n-ary function symbol is a list of tuples,
+; each of which is of the form (equiv geneqv1 ... geneqvn), where each geneqvi
+; is a list of congruence rules.  Congruences is the 'congruences property of
+; some function.  We scan it and collect every congruence rule in it that has
+; :rune rune.
+
+  (cond
+   ((null congruences) ans)
+   (t (collect-congruence-rules-of-rune
+       (cdr congruences) rune
+       (collect-congruence-rules-of-rune-in-geneqv-lst (cdr (car congruences))
+                                                       rune ans)))))
+
+(defun collect-pequivs-of-rune (alist rune ans)
+
+; Alist has the form of the :deep or :shallow field of the 'pequivs property of
+; a function symbol.  Thus, each element of alist is of the form (equiv pequiv1
+; ... pequivn), where each pequivi is a pequiv record.  We scan this alist and
+; collect every pequiv record in it whose :rune is rune.
+
+  (cond
+   ((null alist) ans)
+   (t (collect-pequivs-of-rune
+       (cdr alist)
+       rune
+       (collect-x-rules-of-rune 'pequiv rune (cdr (car alist)) ans)))))
+
+(defun find-rules-of-rune2 (rune sym key val ans)
+
+; (sym key . val) is a member of wrld.  We collect all the rules in val with
+; :rune rune.  This function is patterned after info-for-x-rules.
+
+; Wart: If key is 'eliminate-destructors-rule, then val is a single rule, not a
+; list of rules.  We handle this case specially below.
+
+; Warning: Keep this function in sync with info-for-x-rules.  In that spirit,
+; note that tau rules never store runes and hence are completely ignored
+; here, as in info-for-x-rules.
+
+  (let ((token (car rune)))
+
+; As an efficiency, we do not look for rune in places where it cannot occur.
+; For example, if token is :elim then there is no point in searching through
+; the 'lemmas properties.  In general, each case below insists that token is of
+; the appropriate class.  Sometimes there are more than one.  For example, the
+; 'lemmas property may contain :rewrite, :definition, and :meta runes, all of
+; which are stored as REWRITE-RULEs.
+
+    (cond
+     ((eq key 'global-value)
+      (case sym
+            (well-founded-relation-alist
+             (if (eq token :well-founded-relation)
+                 (collect-x-rules-of-rune 'well-founded-relation-rule rune
+                                          val ans)
+                 ans))
+            (built-in-clauses
+             (if (eq token :built-in-clause)
+                 (collect-x-rules-of-rune 'built-in-clause rune val ans)
+                 ans))
+            (type-set-inverter-rules
+             (if (eq token :type-set-inverter)
+                 (collect-x-rules-of-rune 'type-set-inverter-rule rune
+                                          val ans)
+                 ans))
+            (recognizer-alist
+             (if (eq token :compound-recognizer)
+                 (collect-x-rules-of-rune 'recognizer-tuple rune val ans)
+                 ans))
+            (generalize-rules
+             (if (eq token :generalize)
+                 (collect-x-rules-of-rune 'generalize-rule rune val ans)
+                 ans))
+            (otherwise ans)))
+     (t
+      (case key
+            (lemmas
+             (if (member-eq token '(:rewrite :meta :definition))
+                 (collect-x-rules-of-rune 'rewrite-rule rune val ans)
+                 ans))
+            (linear-lemmas
+             (if (eq token :linear)
+                 (collect-x-rules-of-rune 'linear-lemma rune val ans)
+                 ans))
+            (eliminate-destructors-rule
+             (if (eq token :elim)
+                 (collect-x-rules-of-rune 'elim-rule rune (list val) ans)
+                 ans))
+            (congruences
+             (if (member-eq token '(:congruence :equivalence))
+                 (collect-congruence-rules-of-rune val rune ans)
+                 ans))
+            (pequivs
+             (if (eq token :congruence)
+                 (collect-pequivs-of-rune
+                  (access pequivs-property val :deep)
+                  rune
+                  (collect-pequivs-of-rune
+                   (access pequivs-property val :shallow)
+                   rune
+                   ans))
+               ans))
+            (coarsenings
+
+; :Refinement rules add to the 'coarsenings property.  If equiv1 is a
+; refinement of equiv2, then equiv2 is a coarsening of equiv1 and the lemma
+; establishing that fact adds equiv2 to the 'coarsenings property of equiv1.
+; There is no rule object corresponding to this fact.  Hence, even if rune is
+; the :refinement rune responsible for adding some equiv2 to this list, we
+; won't find a rule object here by the name rune.
+
+; Similar comments apply to :equivalence rules.  They add to the 'coarsenings
+; property but no rule object exists.  It should be noted that some congruence
+; rules are added by lemmas of class :equivalence and those rules are named by
+; :equivalence runes and are found among the 'congruences properties.
+
+             ans)
+            (forward-chaining-rules
+             (if (eq token :forward-chaining)
+                 (collect-x-rules-of-rune 'forward-chaining-rule rune val ans)
+                 ans))
+            (type-prescriptions
+             (if (eq token :type-prescription)
+                 (collect-x-rules-of-rune 'type-prescription rune val ans)
+                 ans))
+            (induction-rules
+             (if (eq token :induction)
+                 (collect-x-rules-of-rune 'induction-rule rune val ans)
+                 ans))
+            (otherwise ans))))))
+
+(defun find-rules-of-rune1 (rune props ans)
+
+; Props is a list of triples and can be considered a segment of some wrld.  (It
+; is not only because duplicates have been removed.)  We visit every property
+; and collect all the rules with :rune rune.
+
+  (cond ((null props) ans)
+        ((eq (cddar props) *acl2-property-unbound*)
+         (find-rules-of-rune1 rune (cdr props) ans))
+        (t (find-rules-of-rune1 rune (cdr props)
+                                (find-rules-of-rune2 rune
+                                                     (caar props)
+                                                     (cadar props)
+                                                     (cddar props)
+                                                     ans)))))
+
+(defun world-to-next-event (wrld)
+  (cond ((null wrld) nil)
+        ((and (eq (caar wrld) 'event-landmark)
+              (eq (cadar wrld) 'global-value))
+         nil)
+        (t (cons (car wrld)
+                 (world-to-next-event (cdr wrld))))))
+
+(defun actual-props (props seen acc)
+
+; Props is a list whose elements have the form (sym key . val), where val could
+; be *acl2-property-unbound*.  Seen is the list containing some (sym key . &)
+; for each pair (sym key) that has already been seen.
+
+  (cond
+   ((null props)
+    (prog2$ (fast-alist-free seen)
+            (reverse acc)))
+   ((member-eq (cadar props) (cdr (hons-get (caar props) seen)))
+    (actual-props (cdr props) seen acc))
+   ((eq (cddr (car props)) *acl2-property-unbound*)
+    (actual-props (cdr props)
+                  (hons-acons (caar props)
+                              (cons (cadar props)
+                                    (cdr (hons-get (caar props) seen)))
+                              seen)
+                  acc))
+   (t
+    (actual-props (cdr props)
+                  (hons-acons (caar props)
+                              (cons (cadar props)
+                                    (cdr (hons-get (caar props) seen)))
+                              seen)
+                  (cons (car props) acc)))))
+
+(defun find-rules-of-rune (rune wrld)
+
+; Find all the rules in wrld with :rune rune.  We do this by first obtaining
+; that segment of wrld consisting of the properties stored by the event
+; named by the base symbol of rune.  Then we collect every rule mentioned
+; in the segment, provided the rule has :rune rune.
+
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (runep rune wrld))))
+  (let ((wrld-tail (decode-logical-name (base-symbol rune) wrld)))
+    (find-rules-of-rune1 rune
+                         (actual-props
+                          (world-to-next-event (cdr wrld-tail))
+                          'find-rules-of-rune1
+                          nil)
+                         nil)))
+
+(defun backchain-limit-enforcers (position ancestors wrld)
+
+; Backchaining has failed due to a backchain-limit.  Find indices of all
+; ancestors whose backchain-limit could be the culprit, as reported by the
+; :ANCESTORS break-rewrite command.  Position is the position in the top-level
+; ancestors, which is 0 at the top level; it is a bound on how many times we
+; are allowed to backchain in order to avoid the current failure.
+
+  (cond ((endp ancestors) nil)
+        (t (let* ((rune (ancestor-backchain-rune (car ancestors)))
+                  (rule (and rune
+                             (car (find-rules-of-rune rune wrld)))))
+             (cond (rule
+                    (let* ((backchain-limit-lst
+                            (access rewrite-rule rule :backchain-limit-lst))
+                           (bkptr (access ancestor (car ancestors) :bkptr))
+                           (hyp-backchain-limit
+                            (and backchain-limit-lst
+                                 (if (eq (access rewrite-rule rule :subclass)
+                                         'meta)
+                                     backchain-limit-lst ; a numeric limit
+                                   (nth (1- bkptr)
+                                        backchain-limit-lst)))))
+                      (cond ((and hyp-backchain-limit
+                                  (>= (1+ position) hyp-backchain-limit))
+                             (cons (cons position hyp-backchain-limit)
+                                   (backchain-limit-enforcers (1+ position)
+                                                              (cdr ancestors)
+                                                              wrld)))
+                            (t
+                             (backchain-limit-enforcers (1+ position)
+                                                        (cdr ancestors)
+                                                        wrld))))))))))
+
 (defun tilde-*-ancestors-stack-msg1 (i ancestors wrld evisc-tuple)
   (cond ((endp ancestors) nil)
         ((ancestor-binding-hyp-p (car ancestors))
          (cons (msg "~c0. Binding Hyp: ~Q12~|~
-                          Unify-subst:  ~Q32~%"
+                     ~ ~ ~ ~ ~ Unify-subst:  ~Q32~%"
                     (cons i 2)
                     (untranslate (dumb-negate-lit
                                   (ancestor-binding-hyp/hyp (car ancestors)))
@@ -7753,20 +8023,245 @@
                     (ancestor-binding-hyp/unify-subst (car ancestors)))
                (tilde-*-ancestors-stack-msg1 (+ 1 i) (cdr ancestors)
                                              wrld evisc-tuple)))
-        (t (cons (msg "~c0. Hyp: ~Q12~|~
-                            Runes:  ~x3~%"
-                      (cons i 2)
-                      (untranslate (dumb-negate-lit
-                                    (access ancestor (car ancestors) :lit))
-                                   t wrld)
-                      evisc-tuple
-                      (access ancestor (car ancestors) :tokens))
+        (t (cons (let ((tokens (access ancestor (car ancestors) :tokens)))
+                   (msg "~c0. Hyp: ~Q12~|~
+                         ~ ~ ~ ~ ~ Rune~#3~[:  ~x4~/s:  ~x3~]~%"
+                        (cons i 2)
+                        (untranslate (dumb-negate-lit
+                                      (access ancestor (car ancestors) :lit))
+                                     t wrld)
+                        evisc-tuple
+                        tokens
+                        (car tokens)))
                  (tilde-*-ancestors-stack-msg1 (+ 1 i) (cdr ancestors)
                                                wrld evisc-tuple)))))
 
 (defun tilde-*-ancestors-stack-msg (ancestors wrld evisc-tuple)
   (list "" "~@*" "~@*" "~@*"
          (tilde-*-ancestors-stack-msg1 0 ancestors wrld evisc-tuple)))
+
+(defun show-ancestors-stack-msg (state)
+  (msg "Ancestors stack (most recent entry on top):~%~*0~%Use ~x1 to see ~
+        actual ancestors stack.~%"
+       (tilde-*-ancestors-stack-msg
+        (get-brr-local 'ancestors state)
+        (w state)
+        (term-evisc-tuple t state))
+       '(get-brr-local 'ancestors state)))
+
+(defun tilde-@-failure-reason-phrase1-backchain-limit (hyp-number
+                                                       pairs
+                                                       state)
+  (msg "a backchain limit was reached while processing :HYP ~x0.  ~@1"
+       hyp-number
+       (cond ((null pairs)
+              (let ((str "  Note that the brr command, :ANCESTORS, will show ~
+                          you the ancestors stack."))
+                (cond ((backchain-limit (w state) :rewrite)
+                       (msg "This appears to be due to the global ~
+                             backchain-limit of ~x0.~@1"
+                            (backchain-limit (w state) :rewrite)
+                            str))
+                      (t
+                       (msg "It is not clear how this could have happened.  ~
+                             Consider emailing a reproducible example to the ~
+                             ACL2 implementors.~@0"
+                            str)))))
+             (t
+              (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] ~
+                    at index ~&0 ~#0~[shows~/each show~] a rune whose ~
+                    ~#0~[~/respective ~]backchain limit of ~v1 has been ~
+                    reached, for backchaining through its indicated ~
+                    hypothesis.~|~%~@2"
+                   (strip-cars pairs)
+                   (strip-cdrs pairs)
+                   (show-ancestors-stack-msg state))))))
+
+(mutual-recursion
+
+(defun tilde-@-failure-reason-free-phrase (hyp-number alist level unify-subst
+                                                      evisc-tuple state)
+
+; Alist is a list of pairs (unify-subst . failure-reason).  Level is initially
+; 0 and increases as we dive into failure-reason.
+
+  (cond
+   ((null alist) "")
+   (t
+    (let ((new-unify-subst (caar alist))
+          (new-failure-reason (cdar alist)))
+      (msg "~t0[~x1]~*2~|~@3~@4~@5"
+           (if (< hyp-number 10) (* 4 level) (1- (* 4 level)))
+           hyp-number
+           (tilde-*-alist-phrase (alist-difference-eq new-unify-subst unify-subst)
+                                 evisc-tuple
+                                 (+ 4 (* 4 level)))
+           (if (let ((fr (if (and (consp new-failure-reason)
+                                  (eq (car new-failure-reason) 'cached))
+                             (cdr new-failure-reason)
+                           new-failure-reason)))
+                 (and (consp fr)
+                      (integerp (car fr))
+                      (or (not (and (consp (cdr fr))
+                                    (eq (cadr fr) 'free-vars)))
+                          (and (consp (cdr fr))
+                               (consp (cddr fr))
+                               (member-eq (caddr fr)
+                                          '(hyp-vars elided))))))
+               "Failed because "
+             "")
+           (tilde-@-failure-reason-phrase1 new-failure-reason (1+ level)
+                                           new-unify-subst evisc-tuple nil
+                                           state)
+           (tilde-@-failure-reason-free-phrase hyp-number
+                                               (cdr alist) level unify-subst
+                                               evisc-tuple state))))))
+
+(defun tilde-@-failure-reason-phrase1 (failure-reason level unify-subst
+                                                      evisc-tuple
+                                                      free-vars-display-limit
+                                                      state)
+  (cond ((eq failure-reason 'time-out)
+         "we ran out of time.")
+        ((eq failure-reason 'loop-stopper)
+         "it permutes a big term forward.")
+        ((eq failure-reason 'too-many-ifs-pre-rewrite)
+         "the unrewritten :RHS contains too many IFs for the given args.")
+        ((eq failure-reason 'too-many-ifs-post-rewrite)
+         "the rewritten :RHS contains too many IFs for the given args.")
+        ((eq failure-reason 'rewrite-fncallp)
+         "the :REWRITTEN-RHS is judged heuristically unattractive.")
+        ((member-eq failure-reason '(linearize-unrewritten-produced-disjunction
+                                     linearize-rewritten-produced-disjunction))
+         (msg "the ~@0 term generated a disjunction of two conjunctions of ~
+               polynomials."
+              (if (eq failure-reason 'linearize-rewritten-produced-disjunction)
+                  'rewritten
+                'unrewritten)))
+        ((eq failure-reason 'linear-possible-loop)
+         "the rewritten term was judged to have the potential to cause a loop ~
+          related to linear arithmetic.")
+        ((and (consp failure-reason)
+              (integerp (car failure-reason)))
+         (let ((n (car failure-reason)))
+           (case
+             (cdr failure-reason)
+             (time-out (msg "we ran out of time while processing :HYP ~x0."
+                            n))
+             (ancestors (msg ":HYP ~x0 is judged more complicated than its ~
+                                ancestors (type :ANCESTORS to see the ~
+                                ancestors and :PATH to see how we got to this ~
+                                point)."
+                             n))
+             (known-nil (msg ":HYP ~x0 is known nil by type-set."
+                             n))
+             (otherwise
+              (cond
+               ((eq (cadr failure-reason) 'free-vars)
+                (mv-let
+                 (failures-remaining failure-reason elided-p)
+                 (if free-vars-display-limit
+                     (limit-failure-reason free-vars-display-limit
+                                           failure-reason
+                                           nil)
+                   (mv nil failure-reason nil))
+                 (declare (ignore failures-remaining))
+                 (cond
+                  ((eq (caddr failure-reason) 'hyp-vars)
+                   (msg ":HYP ~x0 contains free variables ~&1, for which no ~
+                           suitable bindings were found."
+                        n
+                        (set-difference-equal (cdddr failure-reason)
+                                              (strip-cars unify-subst))))
+                  ((eq (caddr failure-reason) 'elided)
+                   (msg ":HYP ~x0 contains free variables (further reasons ~
+                           elided, as noted above)."
+                        n))
+                  (t
+                   (msg
+                    "~@0~@1"
+                    (if (eql level 1)
+                        (msg ":HYP ~x0 contains free variables. The ~
+                                following display summarizes the attempts to ~
+                                relieve hypotheses by binding free variables; ~
+                                see :DOC free-variables.~|~@1~%"
+                             n
+                             (if elided-p
+                                 (msg
+                                  "     Also, if you want to avoid ~
+                                     ``reasons elided'' notes below, then ~
+                                     evaluate (assign free-vars-display-limit ~
+                                     k) for larger k (currently ~x0, default ~
+                                     ~x1); then :failure-reason will show the ~
+                                     first k or so failure sub-reasons before ~
+                                     eliding.  Note that you may want to do ~
+                                     this evaluation outside break-rewrite, ~
+                                     so that it persists.~|"
+                                  free-vars-display-limit
+                                  *default-free-vars-display-limit*)
+                               ""))
+                      "")
+                    (tilde-@-failure-reason-free-phrase
+                     n
+                     (cddr failure-reason)
+                     level unify-subst evisc-tuple state))))))
+               ((eq (cadr failure-reason) 'backchain-limit)
+                (tilde-@-failure-reason-phrase1-backchain-limit
+                 n
+                 (backchain-limit-enforcers 0 (cddr failure-reason) (w state))
+                 state))
+               ((eq (cadr failure-reason) 'rewrote-to)
+                (msg ":HYP ~x0 rewrote to ~X12."
+                     n
+                     (cddr failure-reason)
+                     evisc-tuple))
+               ((member-eq (cadr failure-reason) '(syntaxp
+                                                   syntaxp-extended
+                                                   bind-free
+                                                   bind-free-extended))
+                (let ((synp-fn (case (cadr failure-reason)
+                                 (syntaxp-extended 'syntaxp)
+                                 (bind-free-extended 'bind-free)
+                                 (otherwise (cadr failure-reason)))))
+                  (cond ((caddr failure-reason)
+                         (msg "the evaluation of the ~x0 test in :HYP ~x1 ~
+                               produced the error ``~@2''"
+                              synp-fn
+                              n
+                              (cadddr failure-reason)))
+                        (t (msg "the ~x0 test in :HYP ~x1 evaluated to NIL."
+                                synp-fn
+                                n)))))
+               (t (er hard 'tilde-@-failure-reason-phrase1
+                      "Unrecognized failure reason, ~x0."
+                      failure-reason)))))))
+        ((and (consp failure-reason)
+              (eq (car failure-reason) 'cached))
+         (msg "~@0~|*NOTE*: This failure was cached earlier.  Use the hint ~
+               :RW-CACHE-STATE ~x1 to disable failure caching."
+              (tilde-@-failure-reason-phrase1
+               (cdr failure-reason)
+               level unify-subst evisc-tuple free-vars-display-limit state)
+              nil))
+        (t (er hard 'tilde-@-failure-reason-phrase1
+               "Unrecognized failure reason, ~x0."
+               failure-reason))))
+)
+
+(defun tilde-@-failure-reason-phrase (failure-reason level unify-subst
+                                                     evisc-tuple
+                                                     free-vars-display-limit
+                                                     state)
+
+; In relieve-hyps1 we store a 'free-vars failure reason in which we formerly
+; reversed a "failure-reason-lst", which is really an alist mapping extended
+; unify-substs to failure reasons.  Now, we save consing by delaying such
+; reversal until the relatively rare times that we are ready to display the
+; failure reason.
+
+  (tilde-@-failure-reason-phrase1 (fix-free-failure-reason failure-reason)
+                                  level unify-subst evisc-tuple
+                                  free-vars-display-limit state))
 
 (defun brr-result (state)
   (let ((result (get-brr-local 'brr-result state)))
@@ -7957,13 +8452,7 @@
        (:ancestors
         0 (lambda nil
             (prog2$
-             (cw "Ancestors stack (from first backchain (0) to ~
-                  current):~%~*0~%Use ~x1 to see actual ancestors stack.~%"
-                 (tilde-*-ancestors-stack-msg
-                  (get-brr-local 'ancestors state)
-                  (w state)
-                  (term-evisc-tuple t state))
-                 '(get-brr-local 'ancestors state))
+             (cw "~@0" (show-ancestors-stack-msg state))
              (value :invisible))))
        (:initial-ttree
         0 (lambda nil
@@ -8102,7 +8591,8 @@
                         1
                         (get-brr-local 'unify-subst state)
                         (term-evisc-tuple t state)
-                        (free-vars-display-limit state))))
+                        (free-vars-display-limit state)
+                        state)))
                  (pprogn
                   (f-put-global 'brr-monitored-runes
                                 (get-brr-local 'saved-brr-monitored-runes state)
@@ -8137,7 +8627,8 @@
                             1
                             (get-brr-local 'unify-subst state)
                             (term-evisc-tuple t state)
-                            (free-vars-display-limit state))))
+                            (free-vars-display-limit state)
+                            state)))
                      (value t)))))))
      '(
 ; If you add commands, change the deflabel brr-commands.
@@ -8240,13 +8731,8 @@
        (:ancestors
         0 (lambda nil
             (prog2$
-             (cw "Ancestors stack (from first backchain (0) to ~
-                current):~%~*0~%Use ~x1 to see actual ancestors stack.~%"
-                 (tilde-*-ancestors-stack-msg
-                  (get-brr-local 'ancestors state)
-                  (w state)
-                  (term-evisc-tuple t state))
-                 '(get-brr-local 'ancestors state))
+             (cw "~@0"
+                 (show-ancestors-stack-msg state))
              (value :invisible))))
        (:initial-ttree
         0 (lambda nil
@@ -8314,7 +8800,8 @@
                     1
                     (get-brr-local 'unify-subst state)
                     (term-evisc-tuple t state)
-                    (free-vars-display-limit state))))
+                    (free-vars-display-limit state)
+                    state)))
              (value :invisible))))
        (:wonp
         0 (lambda nil
@@ -12636,7 +13123,7 @@
                                           (if on-ancestorsp
                                               'ancestors
                                             (cons 'backchain-limit
-                                                  backchain-limit))
+                                                  ancestors))
                                           unify-subst ttree)))))
                                   (t
                                    (mv-let
@@ -12655,7 +13142,8 @@
                                                      (dumb-negate-lit
                                                       inst-hyp)
                                                      (list rune)
-                                                     ancestors))
+                                                     ancestors
+                                                     bkptr))
                                      (cond
                                       (not-flg
                                        (if (equal rewritten-atm *nil*)

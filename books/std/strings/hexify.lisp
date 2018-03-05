@@ -107,6 +107,61 @@ makes it easier to read long values.</p>
            (prog2$ (er hard? 'hexify "Unexpected argument ~x0.~%" x)
                    "")))))
 
+
+(defsection hexify-width
+  :parents (hex)
+  :short "Convert numbers into readable hex strings, fixing the number of digits printed"
+
+  :long "<p>@(call hexify-width) produces output just like @(see hexify), but when printing an integer
+it always prints the given number of digits.  When the number to be printed is longer, it truncates the more significant digits, and when it is shorter, it pads with 0s.</p>
+
+@({
+    ACL2 !> (cw \"foo is ~s0~%\" (str::hexify-width (1- (expt 2 32)) 12))
+    foo is #ux0000_FFFF_FFFF
+    NIL
+    ACL2 !>
+})
+
+<p>The @('#ux') is for compatibility with the @(see acl2::sharp-u-reader).</p>"
+
+  (local (defthm character-listp-of-cons
+           (equal (character-listp (cons a b))
+                  (and (characterp a) (character-listp b)))))
+
+  (local (defthm character-listp-of-cdr
+           (implies (character-listp x)
+                    (character-listp (cdr x)))))
+
+  (local (defthm character-listp-of-nthcdr
+           (implies (character-listp x)
+                    (character-listp (nthcdr n x)))))
+
+  (defun hexify-width (x width)
+    (declare (xargs :guard (posp width)
+                    :guard-hints (("goal" :in-theory (disable character-listp)))))
+    (b* ((width (mbe :logic (if (posp width) width 1) :exec width)))
+      (cond ((integerp x)
+             (b* ((xsign (< x 0))
+                  (xabs (abs x))
+                  (chars (explode-atom xabs 16)) ;; looks like BEEF...
+                  (fixed-chars (cond ((<= width (len chars)) (nthcdr (- (len chars) width) chars))
+                                     (t (append (make-list (- width (len chars)) :initial-element #\0)
+                                                chars))))
+                  (nice-chars (list* #\# #\u #\x
+                                     (append (and xsign '(#\-))
+                                             (cons (first fixed-chars)
+                                                   (insert-underscores (nthcdr 1 fixed-chars)))))))
+               (implode nice-chars)))
+            ((symbolp x)
+             (symbol-name x))
+            ((stringp x)
+             x)
+            (t
+             (prog2$ (er hard? 'hexify-width "Unexpected argument ~x0.~%" x)
+                     ""))))))
+
+
+
 (defsection binify
   :parents (binary)
   :short "Convert numbers into readable binary strings."
@@ -131,3 +186,47 @@ produces binary output instead of hex output.</p>"
           (t
            (prog2$ (er hard? 'binify "Unexpected argument ~x0.~%" x)
                    "")))))
+
+
+(defsection binify-width
+  :parents (bin)
+  :short "Convert numbers into readable binary strings, fixing the number of digits printed"
+
+  :long "<p>@(call binify) is identical to @(see str::hexify-width) except that
+it produces binary output instead of hex output.</p>"
+
+  (local (defthm character-listp-of-cons
+           (equal (character-listp (cons a b))
+                  (and (characterp a) (character-listp b)))))
+
+  (local (defthm character-listp-of-cdr
+           (implies (character-listp x)
+                    (character-listp (cdr x)))))
+
+  (local (defthm character-listp-of-nthcdr
+           (implies (character-listp x)
+                    (character-listp (nthcdr n x)))))
+
+  (defun binify-width (x width)
+    (declare (xargs :guard (posp width)
+                    :guard-hints (("goal" :in-theory (disable character-listp)))))
+    (b* ((width (mbe :logic (if (posp width) width 1) :exec width)))
+      (cond ((integerp x)
+             (b* ((xsign (< x 0))
+                  (xabs (abs x))
+                  (chars (explode-atom xabs 2)) ;; looks like 10010010...
+                  (fixed-chars (cond ((<= width (len chars)) (nthcdr (- (len chars) width) chars))
+                                     (t (append (make-list (- width (len chars)) :initial-element #\0)
+                                                chars))))
+                  (nice-chars (list* #\# #\u #\b
+                                     (append (and xsign '(#\-))
+                                             (cons (first fixed-chars)
+                                                   (insert-underscores (nthcdr 1 fixed-chars)))))))
+               (implode nice-chars)))
+            ((symbolp x)
+             (symbol-name x))
+            ((stringp x)
+             x)
+            (t
+             (prog2$ (er hard? 'binify-width "Unexpected argument ~x0.~%" x)
+                     ""))))))

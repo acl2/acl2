@@ -270,27 +270,13 @@
    (t (apply$-userfn fn args))))
 
 (defun apply$-lambda (fn args)
+
+; This is the logical definition of apply$-lambda, which is evaluated under the
+; superior call of when-pass-2.  Keep this in sync with the raw Lisp
+; definition, which is in apply-raw.lisp.
+
   (declare (xargs :guard (and (consp fn) (true-listp args))
                   :guard-hints (("Goal" :do-not-induct t))))
-  #-(or acl2-loop-only
-
-; We avoid a "program-only" error (see :DOC
-; verify-termination-on-raw-program-okp) when building the acl2-devel version
-; (see :DOC verify-guards-for-system-functions).
-
-        acl2-devel)
-  (let ((compiled-version ; see the Essay on the Compiled-LAMBDA Cache
-         (and *aokp*
-              *allow-concrete-execution-of-apply-stubs*
-              (compile-tame-compliant-unrestricted-lambda fn))))
-    (when compiled-version
-      (return-from apply$-lambda
-                   (let ((arity (length (cadr fn))))
-                     (apply compiled-version
-                            (if (= arity
-                                   (length args))
-                                args
-                              (take arity args)))))))
   (ev$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
        (ec-call
         (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
@@ -1815,7 +1801,7 @@
 ;                   (equal (apply$ 'COLLECT args)
 ;                          (collect (car args)     ; successive-cadrs
 ;                                   (cadr args))))))
-;   :constrained t)
+;   :constrain t)
 
 ; (BTW: The actual warrant is a defun-sk phrased in terms of badge-userfn and
 ; apply$-userfn, not badge and apply$, as shown above; but the rewrite rule
@@ -2060,3 +2046,4 @@
                  concrete-apply$-userfn-takes-arity-args))))
 
 )
+

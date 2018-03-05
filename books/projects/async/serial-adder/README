@@ -16,9 +16,7 @@ See Makefile file for the detail.
 Book Organization
 ----------------------------------------------------------------------
 
-The DE simulator is implemented in de.lisp.
-
-The modeling and verification of the 32-bit asynchronous serial adder
+The modeling and verification of the 32-bit self-timed serial adder
 are implemented in async-serial-adder.lisp.
 
 

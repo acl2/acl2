@@ -1273,9 +1273,9 @@ Goal'
   (IF
    (LET
       ((ACL2::X (PC S)) (ACL2::L '(0 2 14)))
-      (ACL2::MBE1 (ACL2::MEMBER-EQL-EXEC ACL2::X ACL2::L)
-                  (PROG2$ (ACL2::MEMBER-EQL-EXEC$GUARD-CHECK ACL2::X ACL2::L)
-                          (MEMBER-EQUAL ACL2::X ACL2::L))))
+      (MBE :LOGIC (PROG2$ (ACL2::MEMBER-EQL-EXEC$GUARD-CHECK ACL2::X ACL2::L)
+                          (MEMBER-EQUAL ACL2::X ACL2::L))
+           :EXEC (ACL2::MEMBER-EQL-EXEC ACL2::X ACL2::L)))
    (AND (EQUAL (PROGRAM S)
                '((PUSH 1)
                  (STORE 1)
@@ -3505,9 +3505,9 @@ Goal'
   (IF
    (LET
       ((ACL2::X (PC S)) (ACL2::L '(0 11 14)))
-      (ACL2::MBE1 (ACL2::MEMBER-EQL-EXEC ACL2::X ACL2::L)
-                  (PROG2$ (ACL2::MEMBER-EQL-EXEC$GUARD-CHECK ACL2::X ACL2::L)
-                          (MEMBER-EQUAL ACL2::X ACL2::L))))
+      (MBE :LOGIC (PROG2$ (ACL2::MEMBER-EQL-EXEC$GUARD-CHECK ACL2::X ACL2::L)
+                          (MEMBER-EQUAL ACL2::X ACL2::L))
+           :EXEC (ACL2::MEMBER-EQL-EXEC ACL2::X ACL2::L)))
    (AND (EQUAL (PROGRAM S)
                '((PUSH 0)
                  (STORE 1)

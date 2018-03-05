@@ -66,7 +66,10 @@
    (ctrex-queue-limit acl2::maybe-natp "Limit to number of counterexamples that may be queued before resimulation" :default 16)
    (ctrex-force-resim booleanp "Force resimulation of a counterexample before checking another node in the same equivalence class" :default t)
    (random-seed-name symbolp "Name to use for seed-random, or NIL to not reseed the random number generator")
-   (outs-only booleanp "Only check the combinational outputs of the network" :default nil))
+   (outs-only booleanp "Only check the combinational outputs of the network" :default nil)
+   (gatesimp gatesimp-p :default (default-gatesimp)
+             "Gate simplification parameters.  Warning: This transform will do
+              nothing good if hashing is turned off."))
   :parents (fraig comb-transform)
   :short "Configuration object for the @(see fraig) aignet transform."
   :tag :fraig-config)
@@ -222,6 +225,18 @@
   :hints (("goal" :use ((:instance aignet-litp-implies-id-lte-max-fanin
                          (lit (mv-nth 0 (aignet-hash-and lit0 lit1 gatesimp strash aignet)))
                          (aignet (mv-nth 2 (aignet-hash-and lit0 lit1 gatesimp strash aignet)))))
+           :in-theory (disable aignet-litp-implies-id-lte-max-fanin)))
+  :rule-classes (:rewrite :linear))
+
+(defthm aignet-hash-xor-bound-by-max-fanin
+  (b* (((mv and-lit & new-aignet)
+        (aignet-hash-xor lit0 lit1 gatesimp strash aignet)))
+    (implies (and (aignet-litp lit0 aignet)
+                  (aignet-litp lit1 aignet))
+             (<= (lit-id and-lit) (node-count (find-max-fanin new-aignet)))))
+  :hints (("goal" :use ((:instance aignet-litp-implies-id-lte-max-fanin
+                         (lit (mv-nth 0 (aignet-hash-xor lit0 lit1 gatesimp strash aignet)))
+                         (aignet (mv-nth 2 (aignet-hash-xor lit0 lit1 gatesimp strash aignet)))))
            :in-theory (disable aignet-litp-implies-id-lte-max-fanin)))
   :rule-classes (:rewrite :linear))
 
@@ -581,7 +596,7 @@
                     ((unless has-sat-lit) nil)
                     (sat-lit (aignet-id->sat-lit id sat-lits)))
                  (ipasir::ipasir-val ipasir sat-lit))))
-    (aignet-seq-case type regp
+    (aignet-case type regp
       :pi
       (b* (((unless sat-val)
             (raise "Got to a primary input and had no assigned sat literal value.")
@@ -610,7 +625,9 @@
                                         mark aignet2 sat-lits ipasir ctrex-eval))
            (fanin0-val (aignet-eval-lit fanin0 ctrex-eval))
            (fanin1-val (aignet-eval-lit fanin1 ctrex-eval))
-           (computed-val (b-and fanin0-val fanin1-val))
+           (computed-val (if (eql 1 (snode->regp slot1))
+                             (b-xor fanin0-val fanin1-val)
+                           (b-and fanin0-val fanin1-val)))
            (ctrex-eval (set-bit id computed-val ctrex-eval))
            (mark (set-bit id 1 mark)))
         (mbe :logic (mv mark ctrex-eval)
@@ -756,8 +773,9 @@
        
        (fanin0 (snode->fanin slot0))
        (fanin1 (snode->fanin slot1))
-       ((when (eql 1 (get-bit id ctrex-eval)))
-        ;; Both branches are relevant because we need the AND to be 1.
+       ((when (or (eql 1 (snode->regp slot1))
+                  (eql 1 (get-bit id ctrex-eval))))
+        ;; Both branches are relevant because it's an XOR or because we need the AND to be 1.
         (b* (((mv ctrex-relevant state)
               (fraig-minimize-sat-ctrex-rec
                (lit-id fanin0) ctrex-relevant aignet2 ctrex-eval state)))
@@ -1973,10 +1991,13 @@
            (lit0-copy (lit-copy lit0 copy))
            (lit1-copy (lit-copy lit1 copy))
            (prev-count (num-nodes aignet2))
-           ;; make AND of the two corresponding lits; this is the new node if
+           ((fraig-config config))
+           ;; make AND/XOR of the two corresponding lits; this is the new node if
            ;; the candidate equivalent isn't equivalent
            ((mv and-lit strash aignet2)
-            (aignet-hash-and lit0-copy lit1-copy 9 strash aignet2))
+            (if (eql 1 (snode->regp slot1))
+                (aignet-hash-xor lit0-copy lit1-copy config.gatesimp strash aignet2)
+              (aignet-hash-and lit0-copy lit1-copy config.gatesimp strash aignet2)))
            ;; update refcounts and copy for new node.
            ;; maybe-update-refs is sensitive to whether a new node was actually added or not.
            ;; copy needs to be updated again if we prove an equivalence.
@@ -2015,11 +2036,19 @@
         (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))))
   ///
 
+  (local (in-theory (disable fraig-stats-implies-natp-of-nth
+                             lookup-id-out-of-bounds
+                             aignet-copy-is-comb-equivalent-for-non-gates-implies-lit-eval
+                             satlink::equal-of-lit-negate-component-rewrites
+                             satlink::equal-of-lit-negate-cond-component-rewrites)))
+
   (verify-guards fraig-sweep-node
-    :guard-debug t
+    ;; :guard-debug t
     :hints (("goal" :do-not-induct t)
             (and stable-under-simplificationp
-                 '(:in-theory (enable aignet-idp)))))
+                 '(:in-theory (enable aignet-idp
+                                      fraig-stats-implies-natp-of-nth))))
+    :otf-flg t)
 
 
   (def-aignet-preservation-thms fraig-sweep-node :stobjname aignet2)
@@ -2065,7 +2094,8 @@
 
 
   (defret stype-count-preserved-of-fraig-sweep-node
-    (implies (not (eq (stype-fix stype) :gate))
+    (implies (and (not (eq (stype-fix stype) (and-stype)))
+                  (not (eq (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -2097,12 +2127,12 @@
                   (<= (nfix node) (max-fanin aignet)))
              (aignet-copies-in-bounds new-copy new-aignet2)))
 
-  (local (defthm gate-stype-implies-less-than-max-fanin
-           (implies (and (equal (stype (car (lookup-id node aignet))) :gate)
-                         (natp node))
-                    (<= node (node-count (find-max-fanin aignet))))
-           :hints(("Goal" :in-theory (enable find-max-fanin lookup-id)))
-           :rule-classes :forward-chaining))
+  ;; (local (defthm gate-stype-implies-less-than-max-fanin
+  ;;          (implies (and (equal (ctype (stype (car (lookup-id node aignet)))) :gate)
+  ;;                        (natp node))
+  ;;                   (<= node (node-count (find-max-fanin aignet))))
+  ;;          :hints(("Goal" :in-theory (enable find-max-fanin lookup-id)))
+  ;;          :rule-classes :forward-chaining))
              
   (defret cnf-for-aignet-of-fraig-sweep-node
     (implies (and (cnf-for-aignet aignet2 (ipasir::ipasir$a->formula ipasir) sat-lits)
@@ -2122,9 +2152,7 @@
                     (equal (lit-eval lit invals regvals aignet)
                            (b-and (lit-eval lit1 invals regvals aignet)
                                   (lit-eval lit2 invals regvals aignet))))
-           :hints (("goal" :use ((:instance lit-eval-of-aignet-hash-and
-                                  (aignet-invals invals)
-                                  (aignet-regvals regvals)))
+           :hints (("goal" :use ((:instance lit-eval-of-aignet-hash-and))
                     :in-theory (disable lit-eval-of-aignet-hash-and)))))
 
   (local (defthm lit-eval-of-lit-negate-cond-equal-to-hash-and-preexisting
@@ -2134,6 +2162,27 @@
                     (equal (lit-eval lit invals regvals aignet)
                            (b-xor neg
                                   (b-and (lit-eval lit1 invals regvals aignet)
+                                         (lit-eval lit2 invals regvals aignet)))))
+           :hints (("goal" :use ((:instance lit-eval-of-lit-negate-cond))
+                    :in-theory (disable lit-eval-of-lit-negate-cond)))))
+
+  
+  (local (defthm lit-eval-of-equal-to-hash-xor-preexisting
+           (implies (and (aignet-litp lit aignet)
+                         (equal lit (mv-nth 0 (aignet-hash-xor lit1 lit2 gatesimp strash aignet))))
+                    (equal (lit-eval lit invals regvals aignet)
+                           (b-xor (lit-eval lit1 invals regvals aignet)
+                                  (lit-eval lit2 invals regvals aignet))))
+           :hints (("goal" :use ((:instance lit-eval-of-aignet-hash-xor))
+                    :in-theory (disable lit-eval-of-aignet-hash-xor)))))
+
+  (local (defthm lit-eval-of-lit-negate-cond-equal-to-hash-xor-preexisting
+           (implies (and (aignet-litp lit aignet)
+                         (equal (lit-negate-cond lit neg)
+                                (mv-nth 0 (aignet-hash-xor lit1 lit2 gatesimp strash aignet))))
+                    (equal (lit-eval lit invals regvals aignet)
+                           (b-xor neg
+                                  (b-xor (lit-eval lit1 invals regvals aignet)
                                          (lit-eval lit2 invals regvals aignet)))))
            :hints (("goal" :use ((:instance lit-eval-of-lit-negate-cond))
                     :in-theory (disable lit-eval-of-lit-negate-cond)))))
@@ -2175,7 +2224,9 @@
                              (:free (lit invals regvals)
                               (lit-eval lit invals regvals aignet))
                              (:free (lit1 lit2 invals regvals)
-                              (eval-and-of-lits lit1 lit2 invals regvals aignet))))))
+                              (eval-and-of-lits lit1 lit2 invals regvals aignet))
+                             (:free (lit1 lit2 invals regvals)
+                              (eval-xor-of-lits lit1 lit2 invals regvals aignet))))))
             ;; (and stable-under-simplificationp
             ;;      '(:cases ((equal 1 (B-XOR (AIGNET$A::ID->PHASE NODE AIGNET)
             ;;                                (AIGNET$A::ID->PHASE (NODE-HEAD NODE CLASSES)
@@ -2277,7 +2328,8 @@
              (fraig-ctrexes-ok new-fraig-ctrexes)))
 
   (defret stype-count-preserved-of-fraig-sweep-aux
-    (implies (not (eq (stype-fix stype) :gate))
+    (implies (and (not (eq (stype-fix stype) (and-stype)))
+                  (not (eq (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -2403,7 +2455,8 @@
            (classes-size classes)))
 
   (defret stype-count-preserved-of-fraig-sweep
-    (implies (not (eq (stype-fix stype) :gate))
+    (implies (and (not (eq (stype-fix stype) (and-stype)))
+                  (not (eq (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -2568,7 +2621,7 @@ is a @(see fraig-config) object.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet2 aignet-tmp state))
        ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))
-       (aignet2 (aignet-prune-comb aignet-tmp aignet2 9)))
+       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (fraig-config->gatesimp config))))
     (mv aignet2 aignet-tmp state))
   ///
   (defret num-ins-of-fraig
@@ -2602,7 +2655,7 @@ is a @(see fraig-config) object.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp state))
        ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))
-       (aignet (aignet-prune-comb aignet-tmp aignet 9)))
+       (aignet (aignet-prune-comb aignet-tmp aignet (fraig-config->gatesimp config))))
     (mv aignet aignet-tmp state))
   ///
   (defret num-ins-of-fraig!

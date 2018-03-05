@@ -1713,7 +1713,7 @@ names.)</p>
 <p>A @('defret') form like this:</p>
 
 @({
-  (defret a-theorem-about-my-function
+  (defret a-theorem-about-\<fn\>
      :hyp (something-about a b c)
      :pre-bind ((q (foo a b c)))
      (implies (not e)
@@ -1753,6 +1753,16 @@ the @(':pre-bind') argument accepts a list of @(see b*) bindings that occur
 before the binding of the return values.  You may also just want to not share
 names between your formals and returns.</p>")
 
+(defun dumb-strsubst (old new from str)
+  (b* (((when (>= from (length str))) "")
+       (next (search old str :start2 from))
+       ((unless next) (subseq str from nil)))
+    (concatenate 'string
+                 (subseq str from next)
+                 new
+                 (dumb-strsubst old new (+ (length old) next) str))))
+    
+
 (defun defret-core (name concl-term kwd-alist disablep guts world)
   (b* ((__function__ 'defret)
        ((defguts guts) guts)
@@ -1778,8 +1788,11 @@ names between your formals and returns.</p>")
        (concl `(b* (,@pre-bind ,@binding) ,concl-term))
        (thm (if hyp?
                 `(implies ,hyp ,concl)
-              concl)))
-    `(,(if disablep 'defthmd 'defthm) ,name
+              concl))
+       (thmname (intern-in-package-of-symbol
+                 (dumb-strsubst "<FN>" (symbol-name fn) 0 (symbol-name name))
+                 name)))
+    `(,(if disablep 'defthmd 'defthm) ,thmname
       ,(sublis body-subst thm)
       ,@(and hints?        `(:hints ,(sublis hint-subst (cdr hints?))))
       ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))

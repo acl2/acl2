@@ -4,14 +4,14 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; February 2018
 
 (in-package "ADE")
 
-(include-book "hard-spec")
+(include-book "../hard-spec")
 
 ;; ======================================================================
- 
+
 ;; This file defines a tree-based formalization of memory.  This tree-based
 ;; memory offers advantages over a linear-list formalization.  Specifically,
 ;; reading and writing the memory take O(log n) time and CONS operations
@@ -29,7 +29,7 @@
 ;; to be four-valued vectors, we assume throughout the specification of the
 ;; FM9001 (and enforce) the restriction that only bit-vectors are stored in
 ;; memory.
- 
+
 ;; The bit-vector that specifies the address is used in an obvious way to
 ;; search the memory tree for the addressed location.  Note, however, that the
 ;; address is reversed prior to the search.  This allows for more compact
@@ -206,7 +206,7 @@
            (memory-okp (1- n) width (car mem))
            (memory-okp (1- n) width (cdr mem))))))
 
-;; READ-MEM 
+;; READ-MEM
 
 (defun read-mem1 (v-addr mem)
   (declare (xargs :guard t))
@@ -226,7 +226,7 @@
   (declare (xargs :guard (true-listp v-addr)))
   (read-mem1 (reverse v-addr) mem))
 
-;; WRITE-MEM 
+;; WRITE-MEM
 
 (defun write-mem1 (v-addr mem value)
   (declare (xargs :guard t))

@@ -191,6 +191,12 @@
 ; In ACL2(r), we avoid non-classical functions, to avoid failure of the
 ; defevaluator event in the book version of apply-prim.lisp.
 
+; But there's a deeper reason to avoid non-classical functions.  The logical
+; story behind apply$ involves introducing a single mutual-recursion that
+; defines apply$ and all functions.  See for example
+; books/projects/apply-model/ex1/doppelgangers.lisp.  But ACL2(r) does not
+; permit recursive definitions of non-classical functions.
+
                #+:non-standard-analysis
                (classicalp fn wrld)
 
@@ -504,3 +510,4 @@
   (make-apply$-prim-body))
 
 )
+

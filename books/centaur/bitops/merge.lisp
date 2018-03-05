@@ -156,18 +156,8 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 
 (local
  (encapsulate nil
-   (local (defun logapp-right-ind (w1 w2 a)
-            (if (or (zp w1) (zp w2))
-                a
-              (logapp-right-ind (1- w1) (1- w2) (logcdr a)))))
-   (defthm logapp-right-assoc
-         (implies (and (natp w1) (natp w2))
-                  (equal (logapp w1 (logapp w2 a b) c)
-                         (logapp (min w1 w2)
-                                 a (if (<= w1 w2) c (logapp (- w1 w2) b c)))))
-         :hints(("Goal" :in-theory (e/d* (ihsext-inductions
-                                          ihsext-recursive-redefs))
-                 :induct (logapp-right-ind w1 w2 a))))
+   
+   (in-theory (enable bitops::logapp-right-assoc))
 
    (defthm logapp-of-loghead-same
      (equal (logapp w (loghead w x) y)
@@ -207,7 +197,14 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
   (defret width-of-merge-unsigneds-aux
     (unsigned-byte-p (+ (integer-length (nfix acc))
                         (* (nfix width) (len elts)))
-                     packed)))
+                     packed))
+
+  (defthm merge-unsigneds-aux-of-nil
+    (equal (merge-unsigneds-aux width nil acc) (nfix acc)))
+
+  (defthmd merge-unsigneds-aux-of-cons
+    (equal (merge-unsigneds-aux width (cons a b) acc)
+           (merge-unsigneds-aux width b (logapp width a (nfix acc))))))
 
 (define merge-unsigneds ((width natp)
                          (elts integer-listp))
@@ -268,6 +265,9 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 ;; Merging Bits ---------------------------------------------------------------
 
 (def-ruleset merges-are-merge-unsigneds nil)
+(def-ruleset merge-definitions '(merge-unsigneds-aux-of-cons
+                                 merge-unsigneds-aux-of-nil
+                                 merge-unsigneds))
 
 (defun def-merge-n-bits-fn (n)
   (declare (xargs :mode :program))
@@ -298,13 +298,16 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
                     (logior (the (unsigned-byte <n>) (ash a<n-1> <n-1>))
                             (the (unsigned-byte <n>) ans)))))
         ///
+        (acl2::add-to-ruleset merge-definitions '((:d merge-<n>-bits)))
+
         (defthm unsigned-byte-p-<n>-of-merge-<n>-bits
           (unsigned-byte-p <n> (merge-<n>-bits (:@proj countdown a<i>))))
 
         (defthmd merge-<n>-bits-is-merge-unsigneds
           (equal (merge-<n>-bits (:@proj countdown a<i>))
                  (merge-unsigneds 1 (list (:@proj countdown (bfix a<i>)))))
-          :hints(("Goal" :in-theory (enable merge-unsigneds-alt-def))))
+          :hints(("Goal" :in-theory (enable merge-unsigneds
+                                            merge-unsigneds-aux-of-cons))))
 
         (acl2::add-to-ruleset merges-are-merge-unsigneds merge-<n>-bits-is-merge-unsigneds)
 
@@ -355,9 +358,11 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
        ;; e.g. "eight" for 8 but ran into weird safe-mode problems       
        (str-alist `(("<N>" . ,ns)
                     ("<N-1>" . ,n-1s)
+                    ("<N/2>" . ,(coerce (explode-atom (/ n 2) 10) 'string))
                     ("<NSTR>" . ,ns)
                     ("<WIDTH>" . ,widthstr)
                     ("<PROD>" . ,prodstr)
+                    ("<PROD/2>" . ,(coerce (explode-atom (/ prod 2) 10) 'string))
                     ("<NUMTYPES>" . ,numtypes)))
        ((mv shortstr &) (acl2::tmpl-str-sublis
                          str-alist "Concatenate <NSTR> <NUMTYPES> together to form an <PROD>-bit result.")))
@@ -367,24 +372,39 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
         :returns (result natp :rule-classes :type-prescription)
         :short <shortstr>
         (:@ :inline :inline t)
+        (:@ (not :linear)
+         :guard-hints (("goal" :in-theory (enable merge-2-u<prod/2>s
+                                                  merge-<n/2>-u<width>s))))
         (mbe :logic (logapp* <width> (:@proj countup (nfix a<i>)) 0)
              :exec
-             (b* ((ans a0)
-                  (:@proj countup1-1 ;; missing both 0 and last
-                   (ans (the (unsigned-byte <prod>)
-                             (logior (the (unsigned-byte <prod>) (ash a<i> (* <i> <width>)))
-                                     (the (unsigned-byte <prod>) ans))))))
-               (the (unsigned-byte <prod>)
-                    (logior (the (unsigned-byte <prod>) (ash a<n-1> (* <n-1> <width>)))
-                            (the (unsigned-byte <prod>) ans)))))
+             (:@ :linear
+              (b* ((ans a0)
+                   (:@proj countup1-1 ;; missing both 0 and last
+                    (ans (the (unsigned-byte <prod>)
+                              (logior (the (unsigned-byte <prod>) (ash a<i> (* <i> <width>)))
+                                      (the (unsigned-byte <prod>) ans))))))
+                (the (unsigned-byte <prod>)
+                     (logior (the (unsigned-byte <prod>) (ash a<n-1> (* <n-1> <width>)))
+                             (the (unsigned-byte <prod>) ans)))))
+             (:@ (not :linear)
+              (merge-2-u<prod/2>s
+               (the (unsigned-byte <prod/2>)
+                    (merge-<n/2>-u<width>s
+                     (:@proj countdown-half2 a<i>)))
+               (the (unsigned-byte <prod/2>)
+                    (merge-<n/2>-u<width>s
+                     (:@proj countdown-half1 a<i>))))))
         ///
+        (acl2::add-to-ruleset merge-definitions '((:d merge-<n>-u<width>s)))
+
         (defthm unsigned-byte-p-<prod>-of-merge-<n>-u<width>s
           (unsigned-byte-p <prod> (merge-<n>-u<width>s (:@proj countdown a<i>))))
 
         (defthmd merge-<n>-u<width>s-is-merge-unsigneds
           (equal (merge-<n>-u<width>s (:@proj countdown a<i>))
                  (merge-unsigneds <width> (list (:@proj countdown (nfix a<i>)))))
-          :hints(("Goal" :in-theory (enable merge-unsigneds-alt-def))))
+          :hints(("Goal" :in-theory (enable merge-unsigneds
+                                            merge-unsigneds-aux-of-cons))))
 
         (acl2::add-to-ruleset merges-are-merge-unsigneds merge-<n>-u<width>s-is-merge-unsigneds)
 
@@ -392,50 +412,58 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
         (congruences-for-merge (merge-<n>-u<width>s (:@proj countdown a<i>)) <n>))
      :atom-alist `((<n> . ,n)
                    (<n-1> . ,(1- n))
+                   (<n/2> . ,(/ n 2))
                    (<width> . ,width)
                    (<prod> . ,prod)
+                   (<prod/2> . ,(/ prod 2))
                    (<shortstr> . ,shortstr))
      :str-alist str-alist
      :subsubsts `((countdown . ,(indexed-subst-templates '<i> (1- n) -1 n))
                   (countdown1 . ,(indexed-subst-templates '<i> (1- n) -1 (1- n)))
+                  (countdown-half1 . ,(indexed-subst-templates '<i> (1- (/ n 2)) -1 (/ n 2)))
+                  (countdown-half2 . ,(indexed-subst-templates '<i> (1- n) -1 (/ n 2)))
                   (countup1 . ,(indexed-subst-templates '<i> 1 1 (1- n)))
                   (countup1-1 . ,(indexed-subst-templates '<i> 1 1 (- n 2)))
                   (countup . ,(indexed-subst-templates '<i> 0 1 n)))
-     :features (and (<= prod 60) '(:inline))
+     :features (append (and (<= prod 60) '(:inline))
+                       (and (or (and (<= prod 64)
+                                     (<= n 4))
+                                (<= n 2))
+                            '(:linear)))
      :pkg-sym nil)))
 
 (defmacro def-merge-n-unsigneds (n width)
   (def-merge-n-unsigneds-fn n width))
 
 (def-merge-n-unsigneds 2 2)
-(def-merge-n-unsigneds 4 2)
-(def-merge-n-unsigneds 8 2)
-
 (def-merge-n-unsigneds 2 4)
-(def-merge-n-unsigneds 4 4)
-
 (def-merge-n-unsigneds 2 8)
-(def-merge-n-unsigneds 4 8)
-(def-merge-n-unsigneds 8 8)
-(def-merge-n-unsigneds 16 8)
-(def-merge-n-unsigneds 32 8)
-
 (def-merge-n-unsigneds 2 16)
-(def-merge-n-unsigneds 4 16)
-(def-merge-n-unsigneds 8 16)
-(def-merge-n-unsigneds 16 16)
-
 (def-merge-n-unsigneds 2 32)
-(def-merge-n-unsigneds 4 32)
-(def-merge-n-unsigneds 8 32)
-(def-merge-n-unsigneds 16 32)
-
 (def-merge-n-unsigneds 2 64)
-(def-merge-n-unsigneds 4 64)
-(def-merge-n-unsigneds 8 64)
-
 (def-merge-n-unsigneds 2 128)
-(def-merge-n-unsigneds 4 128)
-
 (def-merge-n-unsigneds 2 256)
 
+(def-merge-n-unsigneds 4 2)
+(def-merge-n-unsigneds 4 4)
+(def-merge-n-unsigneds 4 8)
+(def-merge-n-unsigneds 4 16)
+(def-merge-n-unsigneds 4 32)
+(def-merge-n-unsigneds 4 64)
+(def-merge-n-unsigneds 4 128)
+
+(def-merge-n-unsigneds 8 2)
+(def-merge-n-unsigneds 8 4)
+(def-merge-n-unsigneds 8 8)
+(def-merge-n-unsigneds 8 16)
+(def-merge-n-unsigneds 8 32)
+(def-merge-n-unsigneds 8 64)
+
+(def-merge-n-unsigneds 16 8)
+(def-merge-n-unsigneds 16 16)
+(def-merge-n-unsigneds 16 32)
+
+(def-merge-n-unsigneds 32 8)
+(def-merge-n-unsigneds 32 16)
+
+(def-merge-n-unsigneds 64 8)

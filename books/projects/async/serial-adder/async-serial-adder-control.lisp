@@ -4,52 +4,47 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; Janurary 2018
 
 (in-package "ADE")
 
 (include-book "control-modules")
 
-(local (in-theory (e/d (f-buf-delete-lemmas-1
-                        f-buf-delete-lemmas-2)
-                       (nth-of-bvp-is-booleanp
-                        bvp-cvzbv))))
-
 ;; ======================================================================
 
-;; Definitions of the control states for the control logic.
+;; Definitions of the control states for the control logic
 
 (defconst *control-states*
   '((v00000  . *v00000*)
     (v00001  . *v00001*)
     (v00010  . *v00010*)
     (v00011  . *v00011*)
-    
+
     (v00100  . *v00100*)
     (v00101  . *v00101*)
     (v00110  . *v00110*)
     (v00111  . *v00111*)
-    
+
     (v01000  . *v01000*)
     (v01001  . *v01001*)
     (v01010  . *v01010*)
     (v01011  . *v01011*)
-    
+
     (v01100  . *v01100*)
     (v01101  . *v01101*)
     (v01110  . *v01110*)
     (v01111  . *v01111*)
-    
+
     (v10000  . *v10000*)
     (v10001  . *v10001*)
     (v10010  . *v10010*)
     (v10011  . *v10011*)
- 
+
     (v10100  . *v10100*)
     (v10101  . *v10101*)
     (v10110  . *v10110*)
     (v10111  . *v10111*)
- 
+
     (v11000  . *v11000*)
     (v11001  . *v11001*)
     (v11010  . *v11010*)
@@ -63,7 +58,7 @@
 (defmacro define-control-states-events ()
   `(progn
      ,@(define-control-states *control-states*)
-         
+
      (deftheory vector-states
        ',(add-prefix-to-state-names "V_" *control-states*))
 
@@ -83,32 +78,32 @@
     (v00001 v00010)
     (v00010 v00011)
     (v00011 v00100)
-    
+
     (v00100 v00101)
     (v00101 v00110)
     (v00110 v00111)
     (v00111 v01000)
-    
+
     (v01000 v01001)
     (v01001 v01010)
     (v01010 v01011)
     (v01011 v01100)
-    
+
     (v01100 v01101)
     (v01101 v01110)
     (v01110 v01111)
     (v01111 v10000)
-    
+
     (v10000 v10001)
     (v10001 v10010)
     (v10010 v10011)
     (v10011 v10100)
- 
+
     (v10100 v10101)
     (v10101 v10110)
     (v10110 v10111)
     (v10111 v11000)
- 
+
     (v11000 v11001)
     (v11001 v11010)
     (v11010 v11011)
@@ -167,7 +162,7 @@
         (declare (xargs :guard (alistp netlist)))
         (equal (assoc 'next-state netlist)
                (next-state*)))
-      
+
       )))
 
 ;; The NEXT-STATE logic is synthesized from the *STATE-TABLE*.
@@ -202,13 +197,15 @@
                            netlist)
                        (f$next-state decoded-state)))
        :hints (("Goal"
-                :in-theory (e/d (se-rules
+                :expand (se 'next-state
+                            decoded-state
+                            st
+                            netlist)
+                :in-theory (e/d (de-rules
                                  next-state&
                                  f$next-state)
                                 ((next-state*)
-                                 (si)
-                                 (sis)
-                                 tv-disabled-rules)))))
+                                 de-module-disabled-rules)))))
      ))
 
 (define-next-state-events)
@@ -325,7 +322,6 @@
  (sis 'state 0 5)
  (list* 'false 'done- (sis 'next-state 0 5))
  ()
- 
  (list
   '(low (false) vss ())
   (list 'g0 '(done-) 'b-nand4 (sis 'state 1 4))
@@ -344,13 +340,15 @@
         (sis 'next-state 0 5)
         'encode-32
         (sis 'next-decoded-state 0 32)))
- 
+
  :guard t)
 
 (defun next-cntl-state$netlist ()
   (declare (xargs :guard t))
   (cons (next-cntl-state*)
-        (union$ *decode-5* (next-state$netlist) *encode-32*
+        (union$ *decode-5*
+                (next-state$netlist)
+                *encode-32*
                 :test 'equal)))
 
 (defthmd next-cntl-state$netlist-okp
@@ -399,7 +397,8 @@
                          (compute-done- inputs)
                          (f$next-cntl-state inputs))))
   :hints (("Goal"
-           :in-theory (e/d (se-rules
+           :expand (se 'next-cntl-state inputs st netlist)
+           :in-theory (e/d (de-rules
                             next-cntl-state&
                             next-cntl-state*$destructure
                             compute-done-
@@ -408,7 +407,5 @@
                             next-state$value
                             encode-32$value-on-a-vector)
                            ((next-cntl-state*)
-                            (si)
-                            (sis)
-                            tv-disabled-rules)))))
+                            de-module-disabled-rules)))))
 

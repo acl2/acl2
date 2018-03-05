@@ -1,3 +1,32 @@
+; AIGNET - And-Inverter Graph Networks
+; Copyright (C) 2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 
 (in-package "AIGNET")
@@ -35,7 +64,10 @@
   ((cuts4-config cuts4-config-p :default '(make-cuts4-config))
    (cut-tries-limit acl2::maybe-natp :rule-classes :type-prescription :default 5)
    (zero-cost-replace booleanp :rule-classes :type-prescription)
-   (evaluation-method rewrite-eval-method-p :default :nobuild))
+   (evaluation-method rewrite-eval-method-p :default :nobuild)
+   (gatesimp gatesimp-p :default (default-gatesimp)
+             "Gate simplification parameters.  Warning: This transform will do
+              nothing good if hashing is turned off."))
   :parents (rewrite comb-transform)
   :short "Configuration object for the @(see rewrite) aignet transform."
   :tag :rewrite-config)
@@ -609,6 +641,7 @@
                           (copy2 "mapping from dsd aig indices to aignet2 indices -- writing this here")
                           (cutsdb cutsdb-ok)
                           (rwlib rwlib-wfp)
+                          (gatesimp gatesimp-p)
                           (strash2)
                           (aignet2))
   :guard (and ;; (<= (cut-nnodes cutsdb) (lits-length copy))
@@ -637,7 +670,7 @@
              (lit (smm-read-lit npn.truth-idx impl-idx smm))
              (eba (eba-clear eba))
              ((mv eba copy2 strash2 aignet2)
-              (aignet-copy-dfs-eba-rec (lit-id lit) aignet-tmp eba copy2 strash2 9 aignet2))
+              (aignet-copy-dfs-eba-rec (lit-id lit) aignet-tmp eba copy2 strash2 gatesimp aignet2))
              (new-lit (lit-negate-cond (lit-copy lit copy2) npn.negate)))
           (mv new-lit copy2 eba strash2 aignet2))))
     (mv lit copy2 eba strash2 aignet2))
@@ -659,6 +692,11 @@
            (dfs-copy-onto-invar aignet (acl2::repeat n 0) copy aignet2)
            :hints(("Goal" :in-theory (enable dfs-copy-onto-invar
                                              nth-of-repeat-split)))))
+
+  (local (defthm b-xor-identity
+           (equal (b-xor a (b-xor a b))
+                  (bfix b))
+           :hints(("Goal" :in-theory (enable b-xor)))))
 
   (local
    (defret eval-of-aignet-build-cut-lemma
@@ -780,7 +818,8 @@
     :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
 
   (defret stype-counts-of-aignet-build-cut
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2)))))
 
@@ -801,6 +840,7 @@
                               (copy2 "mapping from dsd aig indices to aignet2 indices -- writing this here")
                               (cutsdb cutsdb-ok)
                               (rwlib rwlib-wfp)
+                              (gatesimp gatesimp-p)
                               (strash2)
                               (aignet2))
   :guard (and ;; (<= (cut-nnodes cutsdb) (lits-length copy))
@@ -829,7 +869,7 @@
         (b* (((truth::npn4 npn) (truth::get-npn4 cutinf.truth truth::npn4arr))
              (lit (smm-read-lit npn.truth-idx impl-idx smm))
              ((mv eba copy2 strash2 aignet2)
-              (aignet-copy-dfs-eba-rec (lit-id lit) aignet-tmp eba copy2 strash2 9 aignet2))
+              (aignet-copy-dfs-eba-rec (lit-id lit) aignet-tmp eba copy2 strash2 gatesimp aignet2))
              (new-lit (lit-negate-cond (lit-copy lit copy2) npn.negate)))
           (mv new-lit copy2 eba strash2 aignet2))))
     (mv lit copy2 eba strash2 aignet2))
@@ -920,7 +960,8 @@
     :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
 
   (defret stype-counts-of-aignet-build-cut-tmp
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2)))))
 
@@ -1035,6 +1076,7 @@
                                  (copy2 "mapping from dsd aig indices to aignet2 indices -- writing this here")
                                  (cutsdb cutsdb-ok)
                                  (rwlib rwlib-wfp)
+                                 (gatesimp gatesimp-p)
                                  (strash2)
                                  (aignet2)
                                  (eba2 "scratch for counting unreferenced nodes in aignet2")
@@ -1063,7 +1105,7 @@
                (new-aignet2))
   ;; :verify-guards nil
   (b* (((mv lit copy2 eba strash2 aignet2)
-        (aignet-build-cut-tmp cut impl-idx eba copy2 cutsdb rwlib strash2 aignet2))
+        (aignet-build-cut-tmp cut impl-idx eba copy2 cutsdb rwlib gatesimp strash2 aignet2))
        (refcounts2 (maybe-grow-refcounts (+ 1 (max-fanin aignet2)) refcounts2))
        (eba2 (maybe-grow-eba (+ 1 (max-fanin aignet2)) eba2))
        (eba2 (eba-clear eba2))
@@ -1144,7 +1186,8 @@
     :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
 
   (defret stype-counts-of-eval-cut-implementation
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -1210,10 +1253,11 @@
                        :exec blocksize))
        (impl-idx (lnfix impl-idx))
        (rewrite-stats (incr-rewrite-stats-tries rewrite-stats))
+       ((rewrite-config config))
        ((mv cost eba2 refcounts2 eba copy2 strash2 aignet2)
-        (eval-cut-implementation cut impl-idx eba copy2 cutsdb rwlib strash2 aignet2 eba2 refcounts2))
+        (eval-cut-implementation cut impl-idx eba copy2 cutsdb rwlib config.gatesimp strash2 aignet2 eba2 refcounts2))
        (next (1+ impl-idx))
-       ((when (or (eql next (rewrite-config->cut-tries-limit config))
+       ((when (or (eql next config.cut-tries-limit)
                   (mbe :logic (zp (- blocksize next))
                        :exec (eql next blocksize))))
         (mv impl-idx cost eba2 refcounts2 eba copy2 strash2 aignet2 rewrite-stats))
@@ -1277,7 +1321,8 @@
     :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
 
   (defret stype-counts-of-eval-cut-implementations
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -1942,6 +1987,36 @@
 
 
 
+;; (define aignet-and-gate-simp/strash-check ((x0 litp)
+;;                                            (x1 litp)
+;;                                            (gatesimp gatesimp-p :type (unsigned-byte 6))
+;;                                            (strash)
+;;                                            (aignet))
+;;   :guard (and (fanin-litp x0 aignet)
+;;               (fanin-litp x1 aignet))
+;;   :enabled t
+;;   :guard-hints (("goal" :in-theory (enable unsigned-byte-p)))
+;;   (mbe :logic (aignet-and-gate-simp/strash x0 x1 gatesimp strash aignet)
+;;        :exec (if (and (<= x0 #x3fffffff)
+;;                       (<= x1 #x3fffffff))
+;;                  (aignet-and-gate-simp/strash x0 x1 gatesimp strash aignet)
+;;                (ec-call (aignet-and-gate-simp/strash x0 x1 gatesimp strash aignet)))))
+
+;; (define aignet-xor-gate-simp/strash-check ((x0 litp)
+;;                                            (x1 litp)
+;;                                            (gatesimp gatesimp-p :type (unsigned-byte 6))
+;;                                            (strash)
+;;                                            (aignet))
+;;   :guard (and (fanin-litp x0 aignet)
+;;               (fanin-litp x1 aignet))
+;;   :enabled t
+;;   :guard-hints (("goal" :in-theory (enable unsigned-byte-p)))
+;;   (mbe :logic (aignet-xor-gate-simp/strash x0 x1 gatesimp strash aignet)
+;;        :exec (if (and (<= x0 #x3fffffff)
+;;                       (<= x1 #x3fffffff))
+;;                  (aignet-xor-gate-simp/strash x0 x1 gatesimp strash aignet)
+;;                (ec-call (aignet-xor-gate-simp/strash x0 x1 gatesimp strash aignet)))))
+
 
 
 
@@ -1956,7 +2031,12 @@
 ;; the nonexistent implementation nodes plus the existing but unreferenced ones.
 ;; ==========================================================================================
 
-
+;; (local (defthm unsigned-byte-of-lit-negate-cond
+;;          (implies (unsigned-byte-p 30 (lit-fix lit))
+;;                   (unsigned-byte-p 30 (lit-negate-cond lit neg)))
+;;          :hints(("Goal" :in-theory (enable lit-negate-cond make-lit lit->var lit->neg lit-fix))
+;;                 (and stable-under-simplificationp
+;;                      '(:in-theory (enable b-xor))))))
 
 
 
@@ -1965,6 +2045,7 @@
                                           (eba "mark nodes we've already attempted to copy")
                                           (eba2 "mark nodes with valid copies")
                                           (copy2 "mapping from aignet to aignet2")
+                                          (gatesimp gatesimp-p)
                                           (strash2 "strash for aignet2")
                                           (aignet2 "destination"))
   :guard (and (fanin-litp lit aignet)
@@ -1998,26 +2079,32 @@
                       copy2)))
           (mv eba eba2 copy2)))
        (fanin0 (snode->fanin slot0))
-       (fanin1 (gate-id->fanin1 id aignet))
+       (slot1 (id->slot id 1 aignet))
+       (fanin1 (snode->fanin slot1))
        ((mv eba eba2 copy2)
-        (eval-cut-implementation-copy-rec fanin0 aignet eba eba2 copy2 strash2 aignet2))
+        (eval-cut-implementation-copy-rec fanin0 aignet eba eba2 copy2 gatesimp strash2 aignet2))
        ((mv eba eba2 copy2)
-        (eval-cut-implementation-copy-rec fanin1 aignet eba eba2 copy2 strash2 aignet2))
+        (eval-cut-implementation-copy-rec fanin1 aignet eba eba2 copy2 gatesimp strash2 aignet2))
        (eba (eba-set-bit id eba))
        (fanin-copy0 (lit-copy fanin0 copy2))
        (fanin-copy1 (lit-copy fanin1 copy2))
-       ((when (or (and (eql fanin-copy0 0) (eql 1 (eba-get-bit (lit-id fanin0) eba2)))
-                  (and (eql fanin-copy1 0) (eql 1 (eba-get-bit (lit-id fanin1) eba2)))))
+       (xor (eql 1 (snode->regp slot1)))
+       ((when (and (not xor)
+                   (or (and (eql fanin-copy0 0) (eql 1 (eba-get-bit (lit-id fanin0) eba2)))
+                       (and (eql fanin-copy1 0) (eql 1 (eba-get-bit (lit-id fanin1) eba2))))))
         (b* ((copy2 (set-lit id 0 copy2))
              (eba2 (eba-set-bit id eba2)))
           (mv eba eba2 copy2)))
        ((unless (and (eql 1 (eba-get-bit (lit-id fanin0) eba2))
                      (eql 1 (eba-get-bit (lit-id fanin1) eba2))))
         (mv eba eba2 copy2))
-       ((mv existing ?key ?lit1 ?lit2) (aignet-and-gate-simp/strash fanin-copy0 fanin-copy1 9 strash2 aignet2))
-       ((unless existing)
+       ((mv code ?key lit1 ?lit2)
+        (if xor
+            (aignet-xor-gate-simp/strash fanin-copy0 fanin-copy1 gatesimp strash2 aignet2)
+          (aignet-and-gate-simp/strash fanin-copy0 fanin-copy1 gatesimp strash2 aignet2)))
+       ((unless (eql 1 (simpcode->identity code)))
         (mv eba eba2 copy2))
-       (copy2 (set-lit id existing copy2))
+       (copy2 (set-lit id (lit-negate-cond lit1 (simpcode->neg code)) copy2))
        (eba2 (eba-set-bit id eba2)))
     (mv eba eba2 copy2))
   ///
@@ -2171,8 +2258,9 @@
 
   (local (defthm input-ctype-when-not-gate-or-const
            (implies (and (aignet-litp lit aignet)
-                         (not (equal (stype (car (lookup-id (lit->var lit) aignet))) :gate))
-                         (not (equal (stype (car (lookup-id (lit->var lit) aignet))) :const)))
+                         (not (equal (stype (car (lookup-id (lit->var lit) aignet))) (and-stype)))
+                         (not (equal (stype (car (lookup-id (lit->var lit) aignet))) (xor-stype)))
+                         (not (equal (stype (car (lookup-id (lit->var lit) aignet))) (const-stype))))
                     (equal (ctype (stype (car (lookup-id (lit->var lit) aignet))))
                            :input))
            :hints(("Goal" :in-theory (enable ctype aignet-litp)))))
@@ -2215,6 +2303,7 @@
                                          (eba3 "scratch to mark aignet nodes whose cones have already been counted")
                                          (eba4 "scratch to mark aignet2 nodes whose cones have already been counted")
                                          (copy2 "mapping from aignet to aignet2")
+                                         (gatesimp gatesimp-p)
                                          (strash2 "strash for aignet2")
                                          (aignet2 "destination")
                                          (refcounts2 "refcounts for aignet2"))
@@ -2239,7 +2328,7 @@
                (new-eba3)
                (new-eba4))
   (b* (((mv eba eba2 copy2)
-        (eval-cut-implementation-copy-rec lit aignet eba eba2 copy2 strash2 aignet2))
+        (eval-cut-implementation-copy-rec lit aignet eba eba2 copy2 gatesimp strash2 aignet2))
        (eba3 (eba-clear eba3))
        (eba4 (eba-clear eba4))
        ((mv count eba3 eba4)
@@ -2341,10 +2430,10 @@
   :verify-guards nil
   (b* ((impl-lit (acl2::smm-read block n smm))
        (rewrite-stats (incr-rewrite-stats-tries rewrite-stats))
-       ((mv cost eba eba2 copy2 eba3 eba4)
-        (eval-cut-implementation-nobuild impl-lit aignet eba eba2 eba3 eba4 copy2 strash2 aignet2 refcounts2))
-       (next (+ 1 (lnfix n)))
        ((rewrite-config config))
+       ((mv cost eba eba2 copy2 eba3 eba4)
+        (eval-cut-implementation-nobuild impl-lit aignet eba eba2 eba3 eba4 copy2 config.gatesimp strash2 aignet2 refcounts2))
+       (next (+ 1 (lnfix n)))
        ((when (or ;; (and (not (eql (lnfix block) 1))
                (eql next config.cut-tries-limit)
                (mbe :logic (zp (- (acl2::smm-block-size block smm) next))
@@ -3125,7 +3214,7 @@
 
 (define rewrite-default-copy-deref-and-cost ((flit1 litp)
                                              (flit2 litp)
-                                             (existing (or (litp existing) (not existing)))
+                                             (code simpcode-p)
                                              (lit1 litp)
                                              (lit2 litp)
                                              (aignet2)
@@ -3136,18 +3225,17 @@
               (fanin-litp flit1 aignet2)
               (fanin-litp flit2 aignet2)
               (fanin-litp lit1 aignet2)
-              (fanin-litp lit2 aignet2)
-              (or (not existing)
-                  (fanin-litp existing aignet2)))
+              (fanin-litp lit2 aignet2))
   (b* (((mv cost0 refcounts2) (aignet-delete-mffc (lit-id flit1) aignet2 refcounts2))
        ((mv cost1 refcounts2) (aignet-delete-mffc (lit-id flit2) aignet2 refcounts2))
+       (existing (eql 1 (simpcode->identity code)))
        ((when (and (not existing)
                    (or (and (lit-equiv lit1 flit1) (lit-equiv lit2 flit2))
                        (and (lit-equiv lit1 flit2) (lit-equiv lit2 flit1)))))
         (mv (+ 1 cost0 cost1) refcounts2))
        ((when existing)
-        (b* (((mv cost refcounts2) (aignet-restore-mffc (lit-id existing) 1 aignet2 refcounts2))
-             ((mv & refcounts2) (aignet-delete-mffc (lit-id existing) aignet2 refcounts2)))
+        (b* (((mv cost refcounts2) (aignet-restore-mffc (lit-id lit1) 1 aignet2 refcounts2))
+             ((mv & refcounts2) (aignet-delete-mffc (lit-id lit1) aignet2 refcounts2)))
           (mv cost refcounts2)))
        ((mv cost1 refcounts2) (aignet-restore-mffc (lit-id lit2) 1 aignet2 refcounts2))
        ((mv cost0 refcounts2) (aignet-restore-mffc (lit-id lit1) 1 aignet2 refcounts2))
@@ -3170,7 +3258,29 @@
     :hints(("Goal" :in-theory (disable refcounts-length-of-aignet-delete-mffc
                                        refcounts-length-of-aignet-restore-mffc)))
     :rule-classes :linear))
+
+(local (defthmd unsigned-byte-p-of-lit-when-lit->var
+         (implies (and (unsigned-byte-p (+ -1 n) (lit->var lit))
+                       (litp lit)
+                       (posp n))
+                  (unsigned-byte-p n lit))
+         :hints(("Goal" :in-theory (enable lit->var)))
+         :rule-classes ((:rewrite :backchain-limit-lst (3 nil nil)))))
                   
+
+(local (defthm unsigned-byte-p-of-lit->var-when-aignet-litp
+         (implies (and (aignet-litp lit aignet)
+                       (< (node-count aignet) #x1fffffff))
+                  (unsigned-byte-p 29 (lit->var lit)))
+         :hints(("Goal" :in-theory (enable aignet-litp unsigned-byte-p)))))
+
+(local (defthm unsigned-byte-p-when-aignet-litp
+         (implies (and (aignet-litp lit aignet)
+                       (litp lit)
+                       (< (node-count aignet) #x1fffffff))
+                  (unsigned-byte-p 30 lit))
+         :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var)))))
+
 
 (define rewrite-copy-node ((n natp "index in original aig")
                            (aignet "original aig")
@@ -3189,7 +3299,7 @@
               (equal (num-ins aignet) (num-ins aignet2))
               (equal (num-regs aignet) (num-regs aignet2))
               (< (max-fanin aignet2) (u32-length refcounts2)))
-
+  
   :returns (mv (lit litp :rule-classes :type-prescription)
                (build-cost natp :rule-classes :type-prescription)
                new-cutsdb
@@ -3197,6 +3307,13 @@
                new-strash2
                new-refcounts2
                new-rewrite-stats)
+  :prepwork ((local (defthm unsigned-byte-p-when-aignet-litp-bind
+                      (implies (and (bind-free '((aignet . aignet2)) (aignet))
+                                    (aignet-litp lit aignet)
+                                    (litp lit)
+                                    (< (node-count aignet) #x1fffffff))
+                               (unsigned-byte-p 30 lit))
+                      :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var))))))
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
                                     
   (b* ((n (lnfix n))
@@ -3205,23 +3322,25 @@
        
        (flit0-copy (lit-copy lit0 copy))
        (flit1-copy (lit-copy lit1 copy))
-       ((mv existing key lit0-copy lit1-copy)
-        (aignet-and-gate-simp/strash flit0-copy flit1-copy 9 strash2 aignet2))
+       ((rewrite-config config))
+       ((mv code key lit0-copy lit1-copy)
+        (if (eql 1 (id->regp n aignet))
+            (aignet-xor-gate-simp/strash flit0-copy flit1-copy config.gatesimp strash2 aignet2)
+          (aignet-and-gate-simp/strash flit0-copy flit1-copy config.gatesimp strash2 aignet2)))
        ((mv lit strash2 aignet2)
-        (aignet-install-and existing key lit0-copy lit1-copy strash2 aignet2))
+        (aignet-install-gate code key lit0-copy lit1-copy config.gatesimp strash2 aignet2))
        (refcounts2 (maybe-grow-refcounts (+ 1 (max-fanin aignet2)) refcounts2))
 
        ;; Note: It's a little weird to do this here, but it seems heuristically
        ;; slightly better to evaluate cuts with the inputs to the new node
        ;; referenced, rather than after derefing them below.  That's the only
        ;; reason to derive cuts here rather than in reimplement-node or elsewhere.
-       ((rewrite-config config))
        ((mv cuts-checked cutsdb) (aignet-derive-cuts-aux aignet2 0 config.cuts4-config refcounts2 cutsdb))
        (rewrite-stats (incr-rewrite-stats-cuts-checked rewrite-stats cuts-checked))
 
        ((mv build-cost refcounts2)
         (rewrite-default-copy-deref-and-cost
-         flit0-copy flit1-copy existing lit0-copy lit1-copy aignet2 refcounts2)))
+         flit0-copy flit1-copy code lit0-copy lit1-copy aignet2 refcounts2)))
 
     (mv lit build-cost cutsdb aignet2 strash2 refcounts2 rewrite-stats))
 
@@ -3230,7 +3349,8 @@
   (def-aignet-preservation-thms rewrite-copy-node :stobjname aignet2)
 
   (defret stype-counts-of-rewrite-copy-node
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -3248,7 +3368,7 @@
              (equal (lit-eval lit invals regvals new-aignet2)
                     (id-eval n invals regvals aignet)))
     :hints (("goal" :expand ((id-eval n invals regvals aignet))
-             :in-theory (enable eval-and-of-lits lit-eval))))
+             :in-theory (enable eval-and-of-lits eval-xor-of-lits lit-eval))))
 
   
   (defret cutsdb-lit-idsp-of-rewrite-copy-node
@@ -3366,7 +3486,7 @@
              (rewrite-stats (incr-rewrite-stats-zero-cond (eql cut-cost build-cost) rewrite-stats))
              (rewrite-stats (incr-rewrite-stats-savings rewrite-stats (- build-cost cut-cost)))
              ((mv new-lit copy2 eba strash2 aignet2)
-              (aignet-build-cut cut-index impl-index eba copy2 cutsdb rwlib strash2 aignet2))
+              (aignet-build-cut cut-index impl-index eba copy2 cutsdb rwlib config.gatesimp strash2 aignet2))
 
              (refcounts2 (maybe-grow-refcounts (+ 1 (max-fanin aignet2)) refcounts2)))
           (mv (lit-negate-cond new-lit (lit-neg lit))
@@ -3395,7 +3515,8 @@
              (aignet-litp new-lit new-aignet2)))
 
   (defret stype-counts-of-rewrite-reimplement-node
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -3606,14 +3727,17 @@
     :hints (("goal" :do-not-induct t)))
 
   (defret stype-counts-of-rewrite-sweep-node
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
   (defret rewrite-sweep-node-preserves-non-gate-copies
-    (implies (not (equal (stype (car (lookup-id m aignet))) :gate))
+    (implies (and (not (equal (stype (car (lookup-id m aignet))) (xor-stype)))
+                  (not (equal (stype (car (lookup-id m aignet))) (and-stype))))
              (equal (nth-lit m new-copy)
-                    (nth-lit m copy)))) ;; for termhint below
+                    (nth-lit m copy))) ;; for termhint below
+    :hints(("Goal" :in-theory (enable ctype))))
 
   ;; (defret aignet-lits-comb-equivalent-of-extension
 
@@ -3736,7 +3860,7 @@
                ;;    (flit0-copy (lit-copy lit0 copy))
                ;;    (flit1-copy (lit-copy lit1 copy))
                ;;    ((mv existing key lit0-copy lit1-copy)
-               ;;     (aignet-and-gate-simp/strash flit0-copy flit1-copy 9 strash2 aignet2))
+               ;;     (aignet-and-gate-simp/strash flit0-copy flit1-copy (default-gatesimp) strash2 aignet2))
                ;;    ((mv build-cost refcounts2)
                ;;     (rewrite-default-copy-deref-and-cost
                ;;      flit0-copy flit1-copy existing lit0-copy lit1-copy aignet2 refcounts2))
@@ -3824,13 +3948,15 @@
              (and (aignet-copies-in-bounds new-copy new-aignet2))))
 
   (defret stype-counts-of-rewrite-sweep
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
 
   (defret rewrite-sweep-preserves-non-gate-copies
-    (implies (not (equal (stype (car (lookup-id m aignet))) :gate))
+    (implies (and (not (equal (stype (car (lookup-id m aignet))) (xor-stype)))
+                  (not (equal (stype (car (lookup-id m aignet))) (and-stype))))
              (equal (nth-lit m new-copy)
                     (nth-lit m copy))))
 
@@ -4067,7 +4193,7 @@
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet2 aignet-tmp))
        (aignet-tmp (rewrite-core aignet aignet-tmp config))
-       (aignet2 (aignet-prune-comb aignet-tmp aignet2 9)))
+       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (rewrite-config->gatesimp config))))
     (mv aignet2 aignet-tmp))
   ///
   (defret stype-counts-of-rewrite
@@ -4097,7 +4223,7 @@ is a @(see rewrite-config) object.</p>"
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp))
        (aignet-tmp (rewrite-core aignet aignet-tmp config))
-       (aignet (aignet-prune-comb aignet-tmp aignet 9)))
+       (aignet (aignet-prune-comb aignet-tmp aignet (rewrite-config->gatesimp config))))
     (mv aignet aignet-tmp))
   ///
   (defret stype-counts-of-rewrite!

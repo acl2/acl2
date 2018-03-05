@@ -16,10 +16,10 @@
   :short "Lemmas about @(see rational-listp) available in the
 @('arithmetic/rational-listp') book."
 
-  :long "<p>Note: this book is extremely minimal.  You should probably
-generally instead see @(see std/typed-lists/rational-listp).</p>
-
-<p>BOZO Should we get rid of this book?</p>"
+  :long "<p>Note: this book is extremely minimal.  You should generally instead
+see @(see std/typed-lists/rational-listp).  Note however that this book is part
+of a widely-used library of basic arithmetic facts: @('(include-book
+\"arithmetic/top\" :dir :system)').</p>"
 
   (defthm append-preserves-rational-listp
     (implies (true-listp x)

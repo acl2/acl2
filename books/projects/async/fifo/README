@@ -1,0 +1,49 @@
+----------------------------------------------------------------------
+Book Certification
+----------------------------------------------------------------------
+
+To certify books, execute the following:
+
+make ACL2=<Path of the ACL2 image>
+
+To remove certificate files, etc., execute the following:
+
+make clean ACL2=<Path of the ACL2 image>
+
+See Makefile file for the detail.
+
+----------------------------------------------------------------------
+Book Organization
+----------------------------------------------------------------------
+
+queue2.lisp: a queue, Q2, of 2 links.
+
+queue3.lisp:  a queue, Q3, of 3 links.
+
+queue4-as-link.lisp: a queue, Q4', of 4 links. It is designed as a
+complex link.
+
+queue5-as-link.lisp: a queue, Q5', of 5 links. It is designed as a
+complex link.
+
+queue8-as-link.lisp: a queue, Q8', of 8 links. It is designed as a
+complex link and is composed of two instances of Q4'.
+
+queue10-as-link.lisp: a queue, Q10', of 10 links. It is designed as a
+complex link and is composed of two instances of Q5'.
+
+comp-v-or.lisp: a circuit, C-V-OR, performing the bitwise OR
+operation. It contains Q2 and Q3 as submodules.
+
+wig-wag.lisp: a wig-wag circuit, WW.
+
+round-robin1.lisp: a round-robin circuit, RR1. It contains Q2 and Q3
+as submodules.
+
+round-robin2.lisp: a round-robin circuit, RR2. It contains Q4' and Q5'
+as submodules.
+
+round-robin3.lisp: a round-robin circuit, RR3. It contains Q8' and
+Q10' as submodules.
+
+

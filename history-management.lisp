@@ -1188,16 +1188,7 @@
 
 ; Scanning to find Landmarks
 
-(defun scan-to-event (wrld)
-
-; We roll back wrld to the first (list order traversal) event landmark
-; on it.
-
-  (cond ((null wrld) wrld)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value))
-         wrld)
-        (t (scan-to-event (cdr wrld)))))
+; Scan-to-event has been moved to rewrite.lisp.
 
 (defun scan-to-command (wrld)
 
@@ -1502,114 +1493,8 @@
                        wrld2)))
     wrld3))
 
-; Decoding Logical Names
-
-(defun scan-to-defpkg (name wrld)
-
-; We wish to give meaning to stringp logical names such as "MY-PKG".  We do it
-; in an inefficient way: we scan the whole world looking for an event tuple of
-; type DEFPKG and namex name.  We know that name is a known package and that it
-; is not one in *initial-known-package-alist*.
-
-  (cond ((null wrld) nil)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value)
-              (eq (access-event-tuple-type (cddar wrld)) 'DEFPKG)
-              (equal name (access-event-tuple-namex (cddar wrld))))
-         wrld)
-        (t (scan-to-defpkg name (cdr wrld)))))
-
-(defun scan-to-include-book (full-book-name wrld)
-
-; We wish to give meaning to stringp logical names such as "arith".  We
-; do it in an inefficient way: we scan the whole world looking for an event
-; tuple of type INCLUDE-BOOK and namex full-book-name.
-
-  (cond ((null wrld) nil)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value)
-              (eq (access-event-tuple-type (cddar wrld)) 'include-book)
-              (equal full-book-name (access-event-tuple-namex (cddar wrld))))
-         wrld)
-        (t (scan-to-include-book full-book-name (cdr wrld)))))
-
-(defun assoc-equal-cadr (x alist)
-  (cond ((null alist) nil)
-        ((equal x (cadr (car alist))) (car alist))
-        (t (assoc-equal-cadr x (cdr alist)))))
-
-(defun multiple-assoc-terminal-substringp1 (x i alist)
-  (cond ((null alist) nil)
-        ((terminal-substringp x (caar alist) i (1- (length (caar alist))))
-         (cons (car alist) (multiple-assoc-terminal-substringp1 x i (cdr alist))))
-        (t (multiple-assoc-terminal-substringp1 x i (cdr alist)))))
-
-(defun multiple-assoc-terminal-substringp (x alist)
-
-; X and the keys of the alist are presumed to be strings.  This function
-; compares x to the successive keys in the alist, succeeding on any key that
-; contains x as a terminal substring.  Unlike assoc, we return the list of all
-; pairs in the alist with matching keys.
-
-  (multiple-assoc-terminal-substringp1 x (1- (length x)) alist))
-
-(defun possibly-add-lisp-extension (str)
-
-; String is a string.  If str ends in .lisp, return it.  Otherwise, tack .lisp
-; onto the end and return that.
-
-  (let ((len (length str)))
-    (cond
-     ((and (> len 5)
-           (eql (char str (- len 5)) #\.)
-           (eql (char str (- len 4)) #\l)
-           (eql (char str (- len 3)) #\i)
-           (eql (char str (- len 2)) #\s)
-           (eql (char str (- len 1)) #\p))
-      str)
-     (t (string-append str ".lisp")))))
-
-(defun decode-logical-name (name wrld)
-
-; Given a logical name, i.e., a symbol with an 'absolute-event-number property
-; or a string naming a defpkg or include-book, we return the tail of wrld
-; starting with the introductory event.  We return nil if name is illegal.
-
-  (cond
-   ((symbolp name)
-    (cond ((eq name :here)
-           (scan-to-event wrld))
-          (t
-           (let ((n (getpropc name 'absolute-event-number nil wrld)))
-             (cond ((null n) nil)
-                   (t (lookup-world-index 'event n wrld)))))))
-   ((stringp name)
-
-; Name may be a package name or a book name.
-
-    (cond
-     ((find-non-hidden-package-entry name
-                                     (global-val 'known-package-alist wrld))
-      (cond ((find-package-entry name *initial-known-package-alist*)
-
-; These names are not DEFPKGd and so won't be found in a scan.  They
-; are introduced by absolute event number 0.
-
-             (lookup-world-index 'event 0 wrld))
-            (t (scan-to-defpkg name wrld))))
-     (t (let ((hits (multiple-assoc-terminal-substringp
-                     (possibly-add-lisp-extension name)
-                     (global-val 'include-book-alist wrld))))
-
-; Hits is a subset of the include-book-alist.  The form of each
-; element is (full-book-name user-book-name familiar-name
-; cert-annotations . book-hash).
-
-          (cond
-           ((and hits (null (cdr hits)))
-            (scan-to-include-book (car (car hits)) wrld))
-           (t nil))))))
-   (t nil)))
+; Decoding Logical Names was handled here through Version_8.0, but some
+; definitions have been moved to rewrite.lisp to support find-rules-of-rune.
 
 (defun er-decode-logical-name (name wrld ctx state)
 
@@ -2526,25 +2411,26 @@
 
 (defun lmi-seed (lmi)
 
-; The "seed" of an lmi is either a symbolic name or else a term.  In
-; particular, the seed of a symbolp lmi is the lmi itself, the seed of
-; a rune is its base symbol, the seed of a :theorem is the term
-; indicated, and the seed of an :instance or :functional-instance is
-; obtained recursively from the inner lmi.
+; The "seed" of an lmi is either a symbolic name denoting an event, a doublet
+; whose cadr is such a name and whose car is :termination-theorem or
+; :guard-theorem, or else a term.  In particular, the seed of a symbolp lmi is
+; the lmi itself, the seed of a rune is its base symbol, the seed of a :theorem
+; is the term indicated, and the seed of an :instance or :functional-instance
+; is obtained recursively from the inner lmi.
 
-; Warning: If this is changed so that runes or other non-atoms are returned as
-; seeds, it will be necessary to change the use of filter-atoms below.
-
-  (cond ((atom lmi) lmi)
-        ((member-eq (car lmi) '(:theorem
-                                :termination-theorem
-                                :termination-theorem!
-                                :guard-theorem))
-         (cadr lmi))
-        ((or (eq (car lmi) :instance)
-             (eq (car lmi) :functional-instance))
-         (lmi-seed (cadr lmi)))
-        (t (base-symbol lmi))))
+  (cond ((atom lmi) ; Lmi is a symbolic name denoting an event.
+         lmi)
+        (t (case (car lmi)
+             ((:instance :functional-instance)
+              (lmi-seed (cadr lmi)))
+             (:theorem
+              (cadr lmi))
+             ((:termination-theorem :termination-theorem!)
+              (list :termination-theorem (cadr lmi)))
+             (:guard-theorem
+              (list :guard-theorem (cadr lmi)))
+             (otherwise
+              (base-symbol lmi))))))
 
 (defun lmi-techs (lmi)
   (cond
@@ -2570,15 +2456,48 @@
         (t (union-equal (lmi-techs (car lmi-lst))
                         (lmi-techs-lst (cdr lmi-lst))))))
 
-(defun filter-atoms (flg lst)
+(defun lmi-seeds-info (flg lst)
 
-; If flg=t we return all the atoms in lst.  If flg=nil we return all
-; the non-atoms in lst.
+; Lst is a list of objects each of which could be returned by lmi-seed, hence
+; categorized as follows:
 
-  (cond ((null lst) nil)
-        ((eq (atom (car lst)) flg)
-         (cons (car lst) (filter-atoms flg (cdr lst))))
-        (t (filter-atoms flg (cdr lst)))))
+; a symbolic name denoting an event;
+; a theorem; or
+; of the form (:kwd name), where :kwd is :termination-theorem or
+;    :guard-theorem, and name is a symbolic name denoting an event.
+
+; Depending on flg we return the following.
+
+; If flg = t, then return all such symbolic names, including each name for
+; which (:kwd name) is in lst.
+
+; If flg = nil, then return only the theorems among lst.
+
+; Otherwise (in which case flg = 'hint-events), return all non-theorems among
+; list.  This is the same as the case flg = t except that (:kwd name) is not
+; replaced by name -- it is included in the result as (:kwd name).
+
+  (cond ((endp lst) nil)
+        (t (let ((lmi-type
+                  (cond ((mbe :logic (atom (car lst))
+                              :exec (symbolp (car lst)))
+                         'name)
+                        ((member-eq (car (car lst))
+                                    '(:termination-theorem :guard-theorem))
+                         'extended-name)
+                        (t 'theorem))))
+             (cond ((eq flg t)
+                    (case lmi-type
+                      (name
+                       (cons (car lst) (lmi-seeds-info flg (cdr lst))))
+                      (extended-name
+                       (cons (cadr (car lst)) (lmi-seeds-info flg (cdr lst))))
+                      (otherwise
+                       (lmi-seeds-info flg (cdr lst)))))
+                   ((iff flg (eq lmi-type 'theorem))
+                    (lmi-seeds-info flg (cdr lst)))
+                   (t
+                    (cons (car lst) (lmi-seeds-info flg (cdr lst)))))))))
 
 (defun print-runes-summary (ttree state)
   (let ((runes (merge-sort-runes (all-runes-in-ttree ttree nil))))
@@ -2593,19 +2512,21 @@
                      (declare (ignore col))
                      state))))))
 
-(defun use-names-in-ttree (ttree)
+(defun use-names-in-ttree (ttree names-only)
   (let* ((objs (tagged-objects :USE ttree))
          (lmi-lst (append-lst (strip-cars (strip-cars objs))))
-         (seeds (lmi-seed-lst lmi-lst))
-         (lemma-names (filter-atoms t seeds)))
-    (sort-symbol-listp lemma-names)))
+         (seeds (lmi-seed-lst lmi-lst)))
+    (if names-only
+        (sort-symbol-listp (lmi-seeds-info t seeds))
+      (merge-sort-lexorder (lmi-seeds-info 'hint-events seeds)))))
 
-(defun by-names-in-ttree (ttree)
+(defun by-names-in-ttree (ttree names-only)
   (let* ((objs (tagged-objects :BY ttree))
          (lmi-lst (append-lst (strip-cars objs)))
-         (seeds (lmi-seed-lst lmi-lst))
-         (lemma-names (filter-atoms t seeds)))
-    (sort-symbol-listp lemma-names)))
+         (seeds (lmi-seed-lst lmi-lst)))
+    (if names-only
+        (sort-symbol-listp (lmi-seeds-info t seeds))
+      (merge-sort-lexorder (lmi-seeds-info 'hint-events seeds)))))
 
 (defrec clause-processor-hint
   (term stobjs-out . verified-p)
@@ -2630,8 +2551,8 @@
                                    (pairlis$ (make-list (length lst)
                                                         :INITIAL-ELEMENT kwd)
                                              (pairlis$ lst nil)))))
-    (let* ((use-lst (use-names-in-ttree ttree))
-           (by-lst (by-names-in-ttree ttree))
+    (let* ((use-lst (use-names-in-ttree ttree nil))
+           (by-lst (by-names-in-ttree ttree nil))
            (cl-proc-lst (cl-proc-names-in-ttree ttree))
            (lst (append (make-rune-like-objs :BY by-lst)
                         (make-rune-like-objs :CLAUSE-PROCESSOR cl-proc-lst)
@@ -2760,6 +2681,86 @@
 ; stack of ttrees rather than a single accumulated-ttree.
 
      (f-put-global 'accumulated-ttree nil state))))
+
+(defun modified-system-attachment (pair recs)
+  (cond ((endp recs) (cons (car pair) nil))
+        (t (let ((tmp (assoc-eq (car pair)
+                                (access attachment (car recs) :pairs))))
+             (cond (tmp (and (not (eq (cdr tmp) (cdr pair)))
+                             tmp))
+                   (t (modified-system-attachment pair (cdr recs))))))))
+
+(defun modified-system-attachments-1 (pairs recs acc)
+  (cond ((endp pairs) acc)
+        (t (modified-system-attachments-1
+            (cdr pairs)
+            recs
+            (let ((x (modified-system-attachment (car pairs) recs)))
+              (if x
+                  (cons x acc)
+                acc))))))
+
+(defun modified-system-attachments (state)
+  (let* ((wrld (w state))
+         (lst (global-val 'attachment-records wrld))
+         (cache (f-get-global 'system-attachments-cache state)))
+
+; It would be nice to use EQ instead of EQUAL in the test just below.  However,
+; that would not really be legal ACL2; besides, EQUAL is probably sufficiently
+; efficient, since we can expect it to devolve to a successful EQ most of the
+; time and perhaps produce a quick failure otherwise.
+
+    (cond ((equal lst (car cache))
+           (value (cdr cache)))
+          (t (let ((mods (modified-system-attachments-1
+                          (global-val 'attachments-at-ground-zero wrld)
+                          lst
+                          nil)))
+               (pprogn (f-put-global 'system-attachments-cache
+                                     (cons lst mods)
+                                     state)
+                       (value mods)))))))
+
+(defun alist-to-doublets (alist)
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        (t (cons (list (caar alist) (cdar alist))
+                 (alist-to-doublets (cdr alist))))))
+
+(defun print-system-attachments-summary (state)
+  (cond
+   ((f-get-global 'boot-strap-flg state)
+
+; Then world global attachments-at-ground-zero is not yet set for use in
+; modified-system-attachments.
+
+    state)
+   (t
+    (mv-let (erp pairs state)
+      (modified-system-attachments state)
+      (assert$
+       (null erp)
+       (pprogn
+        (put-event-data 'system-attachments pairs state)
+        (io? summary nil state
+             (pairs)
+             (cond ((member-eq 'system-attachments
+                               (f-get-global 'inhibited-summary-types state))
+                    state)
+                   ((null pairs)
+                    state)
+                   (t
+                    (let ((channel (proofs-co state)))
+                      (mv-let
+                        (col state)
+
+; Let's line up the attachment list with "Rules: ".
+
+                        (fmt1 "Modified system attachments:~|       ~y0"
+                              (list (cons #\0 (alist-to-doublets pairs)))
+                              0 channel state nil)
+                        (declare (ignore col))
+                        state)))))))))))
 
 (defun print-summary (erp noop-flg event-type ctx state)
 
@@ -2896,6 +2897,7 @@
           (print-rules-and-hint-events-summary
            (f-get-global 'accumulated-ttree state)
            state)
+          (print-system-attachments-summary state)
           (print-warnings-summary state)
           (print-time-summary state)
           (print-steps-summary steps state)
@@ -3688,8 +3690,13 @@
      (print-radix nil set-print-radix)
      (proof-tree-ctx nil)
      (saved-output-p
-      (not (member-eq 'PROVE
-                      (f-get-global 'inhibit-output-lst state)))))
+
+; We set saved-output-p in prove, which allows io-record structures to start
+; accumulating into state global 'saved-output-reversed; see
+; saved-output-token-p and its use in guarding saved-output-token-p in the
+; definition of io?.  See also analogous treatment in pc-prove.
+
+      nil))
     (with-prover-step-limit! :START ,form)))
 
 (defun attachment-alist (fn wrld)
@@ -4172,14 +4179,13 @@
                           ctx)
                          (mv erp val state)))))
 
-; In the case of a compound event such as encapsulate, we do not want to save
-; io? forms for proof replay that were generated after a failed proof attempt.
-; Otherwise, if we do not set the value of 'saved-output-p below to nil, then
-; replay from an encapsulate with a failed defthm will pop warnings more often
-; than pushing them (resulting in an error from pop-warning-frame).  This
-; failure (without setting 'saved-output-p below) happens because the pushes
-; are only from io? forms saved inside the defthm, yet we were saving the
-; pops from the enclosing encapsulate.
+; In the case of a compound event such as encapsulate, we avoid saving io?
+; forms for proof replay that were generated after a failed proof attempt,
+; since the user probably won't want to see them.  If we make a change here,
+; consider carefully whether replay from an encapsulate with a failed defthm
+; will pop warnings more often than pushing them (resulting in an error from
+; pop-warning-frame); could the pushes be only from io? forms saved inside the
+; defthm, even though pops are saved from the enclosing encapsulate?
 
               (pprogn (f-put-global 'saved-output-p nil state)
                       (mv erp val state))))))
@@ -4568,8 +4574,8 @@
 ; :by, or :clause-processor.  However, if the list of events is empty, then we
 ; do not extend wrld.  See :DOC dead-events.
 
-  (let* ((use-lst (use-names-in-ttree ttree))
-         (by-lst (by-names-in-ttree ttree))
+  (let* ((use-lst (use-names-in-ttree ttree t))
+         (by-lst (by-names-in-ttree ttree t))
          (cl-proc-lst (cl-proc-names-in-ttree ttree))
          (runes (all-runes-in-ttree ttree nil))
          (names (append use-lst by-lst cl-proc-lst
@@ -6888,8 +6894,11 @@
     (cond
      ((and reclassifyingp
            (not (consp reclassifyingp)))
-      (cond ((and (not (f-get-global 'verify-termination-on-raw-program-okp
-                                     state))
+      (cond ((and (let ((okp (f-get-global
+                              'verify-termination-on-raw-program-okp
+                              state)))
+                    (not (or (eq okp t)
+                             (member-eq name okp))))
                   (member-eq name
                              (f-get-global 'program-fns-with-raw-code state)))
              (er soft ctx

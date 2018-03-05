@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; January 2018
 
 (in-package "ADE")
 
@@ -64,8 +64,10 @@
   (implies (unary-op-code-p& netlist)
            (equal (se 'unary-op-code-p op-code sts netlist)
                   (list (f$unary-op-code-p op-code))))
-  :hints (("Goal" :in-theory (enable se-rules
-                                      unary-op-code-p&))))
+  :hints (("Goal"
+           :expand (se 'unary-op-code-p op-code sts netlist)
+           :in-theory (enable de-rules
+                              unary-op-code-p&))))
 
 (in-theory (disable f$unary-op-code-p))
 
@@ -102,8 +104,10 @@
   (implies (decode-reg-mode& netlist)
            (equal (se 'decode-reg-mode mode sts netlist)
                   (f$decode-reg-mode mode)))
-  :hints (("Goal" :in-theory (enable se-rules
-                                      decode-reg-mode&))))
+  :hints (("Goal"
+           :expand (se 'decode-reg-mode mode sts netlist)
+           :in-theory (enable de-rules
+                              decode-reg-mode&))))
 
 (defthm f$decode-reg-mode-as-reg-mode
   (implies (and (bvp mode)
@@ -114,9 +118,9 @@
                         (or (pre-dec-p mode)
                             (post-inc-p mode)))))
   :hints (("Goal" :in-theory (enable bvp
-                                      reg-direct-p
-                                      pre-dec-p
-                                      post-inc-p))))
+                                     reg-direct-p
+                                     pre-dec-p
+                                     post-inc-p))))
 
 (in-theory (disable f$decode-reg-mode))
 
@@ -134,10 +138,6 @@
           (f-and select op1)
           (f-if select op2 dec)
           (f-and select op3))))
-
-;; (defthm true-listp-f$select-op-code
-;;   (true-listp (f$select-op-code select dec op))
-;;   :rule-classes :type-prescription)
 
 (defthm len-f$select-op-code
   (equal (len (f$select-op-code select dec op))
@@ -178,8 +178,10 @@
   (implies (select-op-code& netlist)
            (equal (se 'select-op-code (list* select dec op) sts netlist)
                   (f$select-op-code select dec op)))
-  :hints (("Goal" :in-theory (enable se-rules
-                                      select-op-code&))))
+  :hints (("Goal"
+           :expand (se 'select-op-code (list* select dec op) sts netlist)
+           :in-theory (enable de-rules
+                              select-op-code&))))
 
 (in-theory (disable f$select-op-code))
 
@@ -208,10 +210,6 @@
 (assert-event (net-syntax-okp *v-if-f-4*) :on-skip-proofs t)
 (assert-event (net-arity-okp *v-if-f-4*) :on-skip-proofs t)
 
-;; (defthm true-listp-f$v-if-f-4
-;;   (true-listp (f$v-if-f-4 c a))
-;;   :rule-classes :type-prescription)
-
 (defthm len-f$v-if-f-4
   (equal (len (f$v-if-f-4 c a))
          4))
@@ -219,7 +217,9 @@
 (defthmd v-if-f-4$value
   (equal (se 'v-if-f-4 (list* c a) sts *v-if-f-4*)
          (f$v-if-f-4 c a))
-  :hints (("Goal" :in-theory (enable se-rules))))
+  :hints (("Goal"
+           :expand (se 'v-if-f-4 (list* c a) sts *v-if-f-4*)
+           :in-theory (enable de-rules))))
 
 (defthm f$v-if-f-4=fv-if
   (implies (and (booleanp c)
@@ -236,8 +236,10 @@
   (implies (v-if-f-4& netlist)
            (equal (se 'v-if-f-4 (list* t a) sts netlist)
                   (make-list 4)))
-  :hints (("Goal" :in-theory (enable se-rules
-                                      v-if-f-4&))))
+  :hints (("Goal"
+           :expand (se 'v-if-f-4 (list* t a) sts netlist)
+           :in-theory (enable de-rules
+                              v-if-f-4&))))
 
 (in-theory (disable f$v-if-f-4))
 
@@ -269,7 +271,9 @@
   (implies (fanout-4& netlist)
            (equal (se 'fanout-4 (list a) sts netlist)
                   (make-list 4 :initial-element (3v-fix a))))
-  :hints (("Goal" :in-theory (enable se-rules fanout-4& 3vp))))
+  :hints (("Goal"
+           :expand (se 'fanout-4 (list a) sts netlist)
+           :in-theory (enable de-rules fanout-4& 3vp))))
 
 (defconst *fanout-5*
   '((fanout-5
@@ -294,10 +298,12 @@
   (implies (fanout-5& netlist)
            (equal (se 'fanout-5 (list a) sts netlist)
                   (make-list 5 :initial-element (3v-fix a))))
-  :hints (("Goal" :in-theory (enable se-rules fanout-5& 3vp))))
+  :hints (("Goal"
+           :expand (se 'fanout-5 (list a) sts netlist)
+           :in-theory (enable de-rules fanout-5& 3vp))))
 
 (defconst *fanout-32*
-  (cons 
+  (cons
   '(fanout-32
     (a)
     (s0 s1 s2 s3 s4 s5 s6 s7
@@ -306,37 +312,37 @@
         s24 s25 s26 s27 s28 s29 s30 s31)
     ()
     ((ga (aa) b-buf-pwr (a))
-     (g0 (s0) id (aa))  
-     (g1 (s1) id (aa))  
-     (g2 (s2) id (aa))  
-     (g3 (s3) id (aa))  
-     (g4 (s4) id (aa))  
-     (g5 (s5) id (aa))  
-     (g6 (s6) id (aa))  
-     (g7 (s7) id (aa))  
-     (g8 (s8) id (aa))  
-     (g9 (s9) id (aa))  
-     (g10 (s10) id (aa))  
-     (g11 (s11) id (aa))  
-     (g12 (s12) id (aa))  
-     (g13 (s13) id (aa))  
-     (g14 (s14) id (aa))  
-     (g15 (s15) id (aa))  
-     (g16 (s16) id (aa))  
-     (g17 (s17) id (aa))  
-     (g18 (s18) id (aa))  
-     (g19 (s19) id (aa))  
-     (g20 (s20) id (aa))  
-     (g21 (s21) id (aa))  
-     (g22 (s22) id (aa))  
-     (g23 (s23) id (aa))  
-     (g24 (s24) id (aa))  
-     (g25 (s25) id (aa))  
-     (g26 (s26) id (aa))  
-     (g27 (s27) id (aa))  
-     (g28 (s28) id (aa))  
-     (g29 (s29) id (aa))  
-     (g30 (s30) id (aa))  
+     (g0 (s0) id (aa))
+     (g1 (s1) id (aa))
+     (g2 (s2) id (aa))
+     (g3 (s3) id (aa))
+     (g4 (s4) id (aa))
+     (g5 (s5) id (aa))
+     (g6 (s6) id (aa))
+     (g7 (s7) id (aa))
+     (g8 (s8) id (aa))
+     (g9 (s9) id (aa))
+     (g10 (s10) id (aa))
+     (g11 (s11) id (aa))
+     (g12 (s12) id (aa))
+     (g13 (s13) id (aa))
+     (g14 (s14) id (aa))
+     (g15 (s15) id (aa))
+     (g16 (s16) id (aa))
+     (g17 (s17) id (aa))
+     (g18 (s18) id (aa))
+     (g19 (s19) id (aa))
+     (g20 (s20) id (aa))
+     (g21 (s21) id (aa))
+     (g22 (s22) id (aa))
+     (g23 (s23) id (aa))
+     (g24 (s24) id (aa))
+     (g25 (s25) id (aa))
+     (g26 (s26) id (aa))
+     (g27 (s27) id (aa))
+     (g28 (s28) id (aa))
+     (g29 (s29) id (aa))
+     (g30 (s30) id (aa))
      (g31 (s31) id (aa))))
 
   *b-buf-pwr*))
@@ -353,15 +359,17 @@
   (implies (fanout-32& netlist)
            (equal (se 'fanout-32 (list a) sts netlist)
                   (make-list 32 :initial-element (3v-fix a))))
-  :hints (("Goal" :in-theory (enable se-rules
-                                      fanout-32&
-                                      b-buf-pwr$value
-                                      3vp))))
+  :hints (("Goal"
+           :expand (se 'fanout-32 (list a) sts netlist)
+           :in-theory (enable de-rules
+                              fanout-32&
+                              b-buf-pwr$value
+                              3vp))))
 
 ;; ======================================================================
 
 ;; DECODE-5
-;; A 5-to-32, one-hot decoder.
+;; A 5-to-32, one-hot decoder
 
 (defun f$decode-5 (s)
   (declare (xargs :guard (true-listp s)))
@@ -392,45 +400,41 @@
               (h5 (f-nand3 s2 s3- s4))
               (h6 (f-nand3 s2- s3 s4))
               (h7 (f-nand3 s2 s3 s4)))
-          (let ((x00 (f-nor l0 h0)) 
-                (x10 (f-nor l1 h0)) 
-                (x20 (f-nor l2 h0)) 
-                (x30 (f-nor l3 h0)) 
-                (x01 (f-nor l0 h1)) 
-                (x11 (f-nor l1 h1)) 
-                (x21 (f-nor l2 h1)) 
-                (x31 (f-nor l3 h1)) 
-                (x02 (f-nor l0 h2)) 
-                (x12 (f-nor l1 h2)) 
-                (x22 (f-nor l2 h2)) 
-                (x32 (f-nor l3 h2)) 
-                (x03 (f-nor l0 h3)) 
-                (x13 (f-nor l1 h3)) 
-                (x23 (f-nor l2 h3)) 
-                (x33 (f-nor l3 h3)) 
-                (x04 (f-nor l0 h4)) 
-                (x14 (f-nor l1 h4)) 
-                (x24 (f-nor l2 h4)) 
-                (x34 (f-nor l3 h4)) 
-                (x05 (f-nor l0 h5)) 
-                (x15 (f-nor l1 h5)) 
-                (x25 (f-nor l2 h5)) 
-                (x35 (f-nor l3 h5)) 
-                (x06 (f-nor l0 h6)) 
-                (x16 (f-nor l1 h6)) 
-                (x26 (f-nor l2 h6)) 
-                (x36 (f-nor l3 h6)) 
-                (x07 (f-nor l0 h7)) 
-                (x17 (f-nor l1 h7)) 
-                (x27 (f-nor l2 h7)) 
+          (let ((x00 (f-nor l0 h0))
+                (x10 (f-nor l1 h0))
+                (x20 (f-nor l2 h0))
+                (x30 (f-nor l3 h0))
+                (x01 (f-nor l0 h1))
+                (x11 (f-nor l1 h1))
+                (x21 (f-nor l2 h1))
+                (x31 (f-nor l3 h1))
+                (x02 (f-nor l0 h2))
+                (x12 (f-nor l1 h2))
+                (x22 (f-nor l2 h2))
+                (x32 (f-nor l3 h2))
+                (x03 (f-nor l0 h3))
+                (x13 (f-nor l1 h3))
+                (x23 (f-nor l2 h3))
+                (x33 (f-nor l3 h3))
+                (x04 (f-nor l0 h4))
+                (x14 (f-nor l1 h4))
+                (x24 (f-nor l2 h4))
+                (x34 (f-nor l3 h4))
+                (x05 (f-nor l0 h5))
+                (x15 (f-nor l1 h5))
+                (x25 (f-nor l2 h5))
+                (x35 (f-nor l3 h5))
+                (x06 (f-nor l0 h6))
+                (x16 (f-nor l1 h6))
+                (x26 (f-nor l2 h6))
+                (x36 (f-nor l3 h6))
+                (x07 (f-nor l0 h7))
+                (x17 (f-nor l1 h7))
+                (x27 (f-nor l2 h7))
                 (x37 (f-nor l3 h7)))
             (list x00 x10 x20 x30 x01 x11 x21 x31 x02 x12 x22 x32 x03 x13 x23
                   x33 x04 x14 x24 x34 x05 x15 x25 x35 x06 x16 x26 x36 x07 x17
                   x27 x37)))))))
-
-;; (defthm true-listp-f$decode-5
-;;   (true-listp (f$decode-5 s))
-;;   :rule-classes :type-prescription)
 
 (defthm len-f$decode-5
   (equal (len (f$decode-5 s)) 32))
@@ -464,37 +468,37 @@
               (h5 (b-nand3 s2 s3- s4))
               (h6 (b-nand3 s2- s3 s4))
               (h7 (b-nand3 s2 s3 s4)))
-          (let ((x00 (b-nor l0 h0)) 
-                (x10 (b-nor l1 h0)) 
-                (x20 (b-nor l2 h0)) 
-                (x30 (b-nor l3 h0)) 
-                (x01 (b-nor l0 h1)) 
-                (x11 (b-nor l1 h1)) 
-                (x21 (b-nor l2 h1)) 
-                (x31 (b-nor l3 h1)) 
-                (x02 (b-nor l0 h2)) 
-                (x12 (b-nor l1 h2)) 
-                (x22 (b-nor l2 h2)) 
-                (x32 (b-nor l3 h2)) 
-                (x03 (b-nor l0 h3)) 
-                (x13 (b-nor l1 h3)) 
-                (x23 (b-nor l2 h3)) 
-                (x33 (b-nor l3 h3)) 
-                (x04 (b-nor l0 h4)) 
-                (x14 (b-nor l1 h4)) 
-                (x24 (b-nor l2 h4)) 
-                (x34 (b-nor l3 h4)) 
-                (x05 (b-nor l0 h5)) 
-                (x15 (b-nor l1 h5)) 
-                (x25 (b-nor l2 h5)) 
-                (x35 (b-nor l3 h5)) 
-                (x06 (b-nor l0 h6)) 
-                (x16 (b-nor l1 h6)) 
-                (x26 (b-nor l2 h6)) 
-                (x36 (b-nor l3 h6)) 
-                (x07 (b-nor l0 h7)) 
-                (x17 (b-nor l1 h7)) 
-                (x27 (b-nor l2 h7)) 
+          (let ((x00 (b-nor l0 h0))
+                (x10 (b-nor l1 h0))
+                (x20 (b-nor l2 h0))
+                (x30 (b-nor l3 h0))
+                (x01 (b-nor l0 h1))
+                (x11 (b-nor l1 h1))
+                (x21 (b-nor l2 h1))
+                (x31 (b-nor l3 h1))
+                (x02 (b-nor l0 h2))
+                (x12 (b-nor l1 h2))
+                (x22 (b-nor l2 h2))
+                (x32 (b-nor l3 h2))
+                (x03 (b-nor l0 h3))
+                (x13 (b-nor l1 h3))
+                (x23 (b-nor l2 h3))
+                (x33 (b-nor l3 h3))
+                (x04 (b-nor l0 h4))
+                (x14 (b-nor l1 h4))
+                (x24 (b-nor l2 h4))
+                (x34 (b-nor l3 h4))
+                (x05 (b-nor l0 h5))
+                (x15 (b-nor l1 h5))
+                (x25 (b-nor l2 h5))
+                (x35 (b-nor l3 h5))
+                (x06 (b-nor l0 h6))
+                (x16 (b-nor l1 h6))
+                (x26 (b-nor l2 h6))
+                (x36 (b-nor l3 h6))
+                (x07 (b-nor l0 h7))
+                (x17 (b-nor l1 h7))
+                (x27 (b-nor l2 h7))
                 (x37 (b-nor l3 h7)))
             (list x00 x10 x20 x30 x01 x11 x21 x31 x02 x12 x22 x32 x03 x13 x23
                   x33 x04 x14 x24 x34 x05 x15 x25 x35 x06 x16 x26 x36 x07 x17
@@ -536,37 +540,37 @@
       (gh5  (h5)  b-nand3 (bs2 s3- bs4))
       (gh6  (h6)  b-nand3 (s2- bs3 bs4))
       (gh7  (h7)  b-nand3 (bs2 bs3 bs4))
-      (gx00 (x00) b-nor   (l0 h0)) 
-      (gx10 (x10) b-nor   (l1 h0)) 
-      (gx20 (x20) b-nor   (l2 h0)) 
-      (gx30 (x30) b-nor   (l3 h0)) 
-      (gx01 (x01) b-nor   (l0 h1)) 
-      (gx11 (x11) b-nor   (l1 h1)) 
-      (gx21 (x21) b-nor   (l2 h1)) 
-      (gx31 (x31) b-nor   (l3 h1)) 
-      (gx02 (x02) b-nor   (l0 h2)) 
-      (gx12 (x12) b-nor   (l1 h2)) 
-      (gx22 (x22) b-nor   (l2 h2)) 
-      (gx32 (x32) b-nor   (l3 h2)) 
-      (gx03 (x03) b-nor   (l0 h3)) 
-      (gx13 (x13) b-nor   (l1 h3)) 
-      (gx23 (x23) b-nor   (l2 h3)) 
-      (gx33 (x33) b-nor   (l3 h3)) 
-      (gx04 (x04) b-nor   (l0 h4)) 
-      (gx14 (x14) b-nor   (l1 h4)) 
-      (gx24 (x24) b-nor   (l2 h4)) 
-      (gx34 (x34) b-nor   (l3 h4)) 
-      (gx05 (x05) b-nor   (l0 h5)) 
-      (gx15 (x15) b-nor   (l1 h5)) 
-      (gx25 (x25) b-nor   (l2 h5)) 
-      (gx35 (x35) b-nor   (l3 h5)) 
-      (gx06 (x06) b-nor   (l0 h6)) 
-      (gx16 (x16) b-nor   (l1 h6)) 
-      (gx26 (x26) b-nor   (l2 h6)) 
-      (gx36 (x36) b-nor   (l3 h6)) 
-      (gx07 (x07) b-nor   (l0 h7)) 
-      (gx17 (x17) b-nor   (l1 h7)) 
-      (gx27 (x27) b-nor   (l2 h7)) 
+      (gx00 (x00) b-nor   (l0 h0))
+      (gx10 (x10) b-nor   (l1 h0))
+      (gx20 (x20) b-nor   (l2 h0))
+      (gx30 (x30) b-nor   (l3 h0))
+      (gx01 (x01) b-nor   (l0 h1))
+      (gx11 (x11) b-nor   (l1 h1))
+      (gx21 (x21) b-nor   (l2 h1))
+      (gx31 (x31) b-nor   (l3 h1))
+      (gx02 (x02) b-nor   (l0 h2))
+      (gx12 (x12) b-nor   (l1 h2))
+      (gx22 (x22) b-nor   (l2 h2))
+      (gx32 (x32) b-nor   (l3 h2))
+      (gx03 (x03) b-nor   (l0 h3))
+      (gx13 (x13) b-nor   (l1 h3))
+      (gx23 (x23) b-nor   (l2 h3))
+      (gx33 (x33) b-nor   (l3 h3))
+      (gx04 (x04) b-nor   (l0 h4))
+      (gx14 (x14) b-nor   (l1 h4))
+      (gx24 (x24) b-nor   (l2 h4))
+      (gx34 (x34) b-nor   (l3 h4))
+      (gx05 (x05) b-nor   (l0 h5))
+      (gx15 (x15) b-nor   (l1 h5))
+      (gx25 (x25) b-nor   (l2 h5))
+      (gx35 (x35) b-nor   (l3 h5))
+      (gx06 (x06) b-nor   (l0 h6))
+      (gx16 (x16) b-nor   (l1 h6))
+      (gx26 (x26) b-nor   (l2 h6))
+      (gx36 (x36) b-nor   (l3 h6))
+      (gx07 (x07) b-nor   (l0 h7))
+      (gx17 (x17) b-nor   (l1 h7))
+      (gx27 (x27) b-nor   (l2 h7))
       (gx37 (x37) b-nor   (l3 h7))))))
 
 (assert-event (net-syntax-okp *decode-5*) :on-skip-proofs t)
@@ -580,21 +584,23 @@
   (implies (decode-5& netlist)
            (equal (se 'decode-5 s sts netlist)
                   (f$decode-5 s)))
-  :hints (("Goal" :in-theory (enable se-rules decode-5&))))
+  :hints (("Goal"
+           :expand (se 'decode-5 s sts netlist)
+           :in-theory (enable de-rules decode-5&))))
 
 (defthm f$decode-5=decode-5
   (implies (bvp s)
            (equal (f$decode-5 s)
                   (decode-5 s)))
   :hints (("Goal" :in-theory (e/d (bvp)
-                                   (b-gates)))))
+                                  (b-gates)))))
 
 (in-theory (disable f$decode-5 decode-5))
 
 ;; ======================================================================
 
 ;; ENCODE-32
-;; A 32-to-5 encoder, assuming a one-hot input vector.
+;; A 32-to-5 encoder, assuming a one-hot input vector
 
 ;; This encoder is optimized to eliminate encoding of the unused states S26,
 ;; S27, and S31.
@@ -639,7 +645,7 @@
                   s16 s17 s18 s19 s20 s21 s22 s23
                   s24 s25 s26 s27 s28 s29 s30 s31))
   :hints (("Goal" :in-theory (e/d (bvp encode-32)
-                                   (b-gates))))
+                                  (b-gates))))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm len-encode-32
@@ -649,14 +655,7 @@
                          s24 s25 s26 s27 s28 s29 s30 s31))
          5)
   :hints (("Goal" :in-theory (e/d (encode-32)
-                                   (b-gates)))))
-
-;; (defthm true-listp-f$encode-32
-;;   (true-listp (f$encode-32 s0 s1 s2 s3 s4 s5 s6 s7
-;;                            s8 s9 s10 s11 s12 s13 s14 s15
-;;                            s16 s17 s18 s19 s20 s21 s22 s23
-;;                            s24 s25 s26 s27 s28 s29 s30 s31))
-;;   :rule-classes :type-prescription)
+                                  (b-gates)))))
 
 (defthm len-f$encode-32
   (equal (len (f$encode-32 s0 s1 s2 s3 s4 s5 s6 s7
@@ -665,44 +664,44 @@
                            s24 s25 s26 s27 s28 s29 s30 s31))
          5)
   :hints (("Goal" :in-theory (e/d (f$encode-32)
-                                   (b-gates)))))
+                                  (b-gates)))))
 
 (defthmd se-on-collected-nth-32
   (implies (and (equal (len ins) 32)
                 (true-listp ins))
            (equal (se name ins sts netlist)
                   (se name
-                      (list (nth 0 ins) 
-                            (nth 1 ins) 
-                            (nth 2 ins) 
-                            (nth 3 ins) 
-                            (nth 4 ins) 
-                            (nth 5 ins) 
-                            (nth 6 ins) 
-                            (nth 7 ins) 
-                            (nth 8 ins) 
-                            (nth 9 ins) 
-                            (nth 10 ins) 
-                            (nth 11 ins) 
-                            (nth 12 ins) 
-                            (nth 13 ins) 
-                            (nth 14 ins) 
-                            (nth 15 ins) 
-                            (nth 16 ins) 
-                            (nth 17 ins) 
-                            (nth 18 ins) 
-                            (nth 19 ins) 
-                            (nth 20 ins) 
-                            (nth 21 ins) 
-                            (nth 22 ins) 
-                            (nth 23 ins) 
-                            (nth 24 ins) 
-                            (nth 25 ins) 
-                            (nth 26 ins) 
-                            (nth 27 ins) 
-                            (nth 28 ins) 
-                            (nth 29 ins) 
-                            (nth 30 ins) 
+                      (list (nth 0 ins)
+                            (nth 1 ins)
+                            (nth 2 ins)
+                            (nth 3 ins)
+                            (nth 4 ins)
+                            (nth 5 ins)
+                            (nth 6 ins)
+                            (nth 7 ins)
+                            (nth 8 ins)
+                            (nth 9 ins)
+                            (nth 10 ins)
+                            (nth 11 ins)
+                            (nth 12 ins)
+                            (nth 13 ins)
+                            (nth 14 ins)
+                            (nth 15 ins)
+                            (nth 16 ins)
+                            (nth 17 ins)
+                            (nth 18 ins)
+                            (nth 19 ins)
+                            (nth 20 ins)
+                            (nth 21 ins)
+                            (nth 22 ins)
+                            (nth 23 ins)
+                            (nth 24 ins)
+                            (nth 25 ins)
+                            (nth 26 ins)
+                            (nth 27 ins)
+                            (nth 28 ins)
+                            (nth 29 ins)
+                            (nth 30 ins)
                             (nth 31 ins))
                       sts
                       netlist)))
@@ -717,37 +716,37 @@
                 (true-listp ins)
                 (equal (len ins) 32))
            (equal (se 'encode-32 ins sts netlist)
-                  (f$encode-32 (nth 0 ins) 
-                               (nth 1 ins) 
-                               (nth 2 ins) 
-                               (nth 3 ins) 
-                               (nth 4 ins) 
-                               (nth 5 ins) 
-                               (nth 6 ins) 
-                               (nth 7 ins) 
-                               (nth 8 ins) 
-                               (nth 9 ins) 
-                               (nth 10 ins) 
-                               (nth 11 ins) 
-                               (nth 12 ins) 
-                               (nth 13 ins) 
-                               (nth 14 ins) 
-                               (nth 15 ins) 
-                               (nth 16 ins) 
-                               (nth 17 ins) 
-                               (nth 18 ins) 
-                               (nth 19 ins) 
-                               (nth 20 ins) 
-                               (nth 21 ins) 
-                               (nth 22 ins) 
-                               (nth 23 ins) 
-                               (nth 24 ins) 
-                               (nth 25 ins) 
-                               (nth 26 ins) 
-                               (nth 27 ins) 
-                               (nth 28 ins) 
-                               (nth 29 ins) 
-                               (nth 30 ins) 
+                  (f$encode-32 (nth 0 ins)
+                               (nth 1 ins)
+                               (nth 2 ins)
+                               (nth 3 ins)
+                               (nth 4 ins)
+                               (nth 5 ins)
+                               (nth 6 ins)
+                               (nth 7 ins)
+                               (nth 8 ins)
+                               (nth 9 ins)
+                               (nth 10 ins)
+                               (nth 11 ins)
+                               (nth 12 ins)
+                               (nth 13 ins)
+                               (nth 14 ins)
+                               (nth 15 ins)
+                               (nth 16 ins)
+                               (nth 17 ins)
+                               (nth 18 ins)
+                               (nth 19 ins)
+                               (nth 20 ins)
+                               (nth 21 ins)
+                               (nth 22 ins)
+                               (nth 23 ins)
+                               (nth 24 ins)
+                               (nth 25 ins)
+                               (nth 26 ins)
+                               (nth 27 ins)
+                               (nth 28 ins)
+                               (nth 29 ins)
+                               (nth 30 ins)
                                (nth 31 ins))))
   :hints (("Goal"
            :use (:instance se-on-collected-nth-32

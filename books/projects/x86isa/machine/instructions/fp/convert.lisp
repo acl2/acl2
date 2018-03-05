@@ -203,7 +203,7 @@
         t)
        ((mv flg0 reg/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*rgf-access* reg/mem-size inst-ac?
+         #.*gpr-access* reg/mem-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand

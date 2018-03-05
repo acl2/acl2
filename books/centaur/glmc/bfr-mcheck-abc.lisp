@@ -187,11 +187,11 @@
         (mv aignet invars aignet2 initsts))
        ((mv aignet2 ?varmap invars regvars)
         (aignet::aig-fsm-to-aignet updates (list prop) 1000
-                                   (aignet::gatesimp t 4)
+                                   (aignet::make-gatesimp :hashp t :level 4)
                                    aignet2))
        (initsts (acl2::resize-bits (len regvars) initsts))
        (initsts (aig-env-to-bitarr 0 regvars init-st initsts))
-       (aignet (aignet::aignet-copy-init aignet2 initsts :gatesimp (aignet::gatesimp nil 0)
+       (aignet (aignet::aignet-copy-init aignet2 initsts :gatesimp (aignet::make-gatesimp :hashp nil :level 0)
                                          :aignet2 aignet)))
     ;; (aignet::aignet-print aignet)
     (mv aignet invars aignet2 initsts))
@@ -277,7 +277,7 @@
               (updates (fast-alist-clean (bfr-updates-fix updates)))
               ((mv aignet in-vars) (aig-mcheck-to-aignet (bfr-not prop) updates init-st aignet))
               (- (aignet::print-aignet-stats "Abc-mcheck-simple initial aignet" aignet))
-              (aignet2 (aignet::aignet-prune-seq aignet (aignet::gatesimp t 4) aignet2))
+              (aignet2 (aignet::aignet-prune-seq aignet (aignet::make-gatesimp :hashp t :level 4) aignet2))
               (- (aignet::print-aignet-stats "Abc-mcheck-simple pruned aignet" aignet2))
               ((mv status ?aignet frames)
                (aignet::aignet-abc aignet2 aignet frames
@@ -359,7 +359,7 @@
     :hints(("Goal" :use ((:instance aignet::aignet-abc-seq-prove-correct
                           (input-aignet (aignet::aignet-prune-seq
                                          (mv-nth 0 (aig-mcheck-to-aignet (bfr-not prop) (fast-alist-clean (bfr-updates-fix updates)) init-st nil))
-                                          (aignet::gatesimp t 4) aignet2))
+                                         (aignet::make-gatesimp :hashp t :level 4) aignet2))
                           (output-aignet nil)
                           (frames '(0))
                           (script (gl-abc-mcheck-script "gl-abc-input.aig" "gl-abc-ctrex"))

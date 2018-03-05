@@ -19,10 +19,13 @@
 @('*two-byte-opcode-map-lst*') contain information presented in the
 opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
 
-<p>An array @('*64-bit-mode-one-byte-has-modr/m-ar*') is created by
-  the function @(tsee 64-bit-compute-modr/m-map) for the efficient
-  lookup of modr/m-related information from
-  @('*one-byte-opcode-map-lst*').</p>
+<p>Arrays @('*64-bit-mode-one-byte-has-modr/m-ar*')
+and @('*64-bit-mode-two-byte-has-modr/m-ar*') (for 64-bit mode),
+as well as  @('*32-bit-mode-one-byte-has-modr/m-ar*')
+and @('*32-bit-mode-two-byte-has-modr/m-ar*') (for 32-bit mode),
+are created by the function @(tsee 64/32-bit-mode-compute-modr/m-map)
+for the efficient lookup of modr/m-related information from
+@('*one-byte-opcode-map-lst*') and @('*two-byte-opcode-map-lst*').</p>
 
 <p>@('*Z-addressing-method-info*'):</p>
   @(`(:code *Z-addressing-method-info*)`)
@@ -42,9 +45,10 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
 (defconst *Z-addressing-method-info*
 
   ;; See Intel Vol. 2, Appendix A.2.1
+  ;; Also see AMD Vol. 3, Appendix A
 
   ;; The information in this constant definition comes not only from the
-  ;; aforementioned Appendix, but also from an examination of the involved
+  ;; aforementioned Appendices, but also from an examination of the involved
   ;; instructions. However, the accuracy of this information has been so far
   ;; confirmed only for the instructions covered by the current formal model;
   ;; for unimplemented instructions, it is possible that the information may
@@ -193,6 +197,7 @@ opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
 #||
 
 See Intel Vol. 2, Appendix A.2.2
+Also see AMD Vol. 3, Appendix A
 
 A.2.2 Codes for Operand Type
 
@@ -1146,9 +1151,9 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
          (and (stringp (nth 0 one-opcode-lst)) ;; Opcode
               (natp (nth 1 one-opcode-lst))    ;; Number of Operands
               ;; Number of operands <= addressing info. of all operands
-              ;; (for now the <= check allows certain ill-formed rows,
-              ;; but we may strengthen to a = check eventually):
-              (<= (nth 1 one-opcode-lst) (len (nthcdr 1 one-opcode-lst))))
+              ;; (this cannot be strengthen to = because, for example,
+              ;; opcode FFh in the one-byte opcode map has :1A after (E v)):
+              (<= (nth 1 one-opcode-lst) (len (nthcdr 2 one-opcode-lst))))
 
          ;; Just the keyword without any other information.
          ;; The following keywords are supported:
@@ -1245,7 +1250,9 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   a @('ModR/M') byte"
   ;; Example inputs are OP_NUM = 2 and OP_LIST = '((E b) (G b)), extracted from
   ;; '("ADD" 2 (E b) (G b)) entry in the *ONE-BYTE-OPCODE-MAP-LST* table.
-  ;; Only called by COMPUTE-MODR/M-FOR-AN-OPCODE.
+  ;; Note that only the uppercase letters are used here (e.g. E and G in the
+  ;; example inputs just above), while the lowercase letters are ignored.
+  ;; This function is only called by COMPUTE-MODR/M-FOR-AN-OPCODE.
   (b* (((when (not (equal (len op_list) op_num)))
         (er hard? "Expected length of ~x0 was ~x1." op_list op_num)))
       (if (zp op_num)
@@ -1347,7 +1354,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   opcode maps.</p>"
   ;; the output list is reversed w.r.t. the input list,
   ;; but the result is only tested to contain 1
-  ;; (in 64-bit-compute-modr/m-for-an-opcode)
+  ;; (in 64/32-bit-mode-compute-modr/m-for-an-opcode)
   :parents (decoding-utilities)
   (if (mbt (and (true-list-listp row-info)
                 (true-listp row-modr/m)))
@@ -1364,14 +1371,19 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
  (defthm delete-assoc-equal-thm
    (implies (and (alistp column-info)
                  (consp column-info))
-            (alistp (delete-assoc-equal :i64 column-info)))
+            (alistp (delete-assoc-equal x column-info)))
    :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))))
 
-(define 64-bit-compute-modr/m-for-an-opcode
-  (opcode-info)
+; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
+(define 64/32-bit-mode-compute-modr/m-for-an-opcode
+  ((opcode-info alistp) (64-bit-modep booleanp))
   ;; Example invocations:
-  ;; (64-bit-compute-modr/m-for-an-opcode '((:o64 . ("MOVSXD" 2 (G v) (E v))) (:i64 . ("ARPL"   2 (E w) (G w)))))
-  ;; (64-bit-compute-modr/m-for-an-opcode '((:no-prefix "PADDD" 2 (P q) (Q q)) (:66 "VPADDD" 3 (V x) (H x) (W x))))
+  ;; (64/32-bit-mode-compute-modr/m-for-an-opcode
+  ;;   '((:o64 . ("MOVSXD" 2 (G v) (E v))) (:i64 . ("ARPL"   2 (E w) (G w))))
+  ;;   t) ; for 64-bit mode
+  ;; (64/32-bit-mode-compute-modr/m-for-an-opcode
+  ;;   '((:no-prefix "PADDD" 2 (P q) (Q q)) (:66 "VPADDD" 3 (V x) (H x) (W x)))
+  ;;   nil) ; for 32-bit mode
 
   ;; Note: this function is sort of shoddy for the mandatory prefix
   ;; cases. For example, if the opcode info is something like the
@@ -1385,12 +1397,12 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   ;; function should also take in the mandatory prefix of the opcode
   ;; under consideration to figure out the right answer. Anyway, for
   ;; now, this function works for the one- and two-byte opcode maps
-  ;; (which is all I've implemented so far) because every opcode that
+  ;; (which is all that is implemented so far) because every opcode that
   ;; has different addressing styles for different mandatory prefixes
   ;; uses a ModR/M byte to fetch one of its opcodes at least.
 
-  :guard (alistp opcode-info)
-  :short "Returns @('1') if an opcode requires a @('ModR/M') byte in the 64-bit mode"
+  :short "Returns @('1') if an opcode requires a @('ModR/M') byte,
+          in the mode indicated by the second argument (64-bit or 32-bit mode)."
   :parents (decoding-utilities)
   (if (or (not (alistp opcode-info))
           (not (subsetp (strip-cars opcode-info)
@@ -1400,15 +1412,21 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
       0
 
     (b* ( ;; (- (cw "~%Opcode info: ~x0~%~%" opcode-info))
-         (stripped-invalid-opcodes (delete-assoc :i64 opcode-info))
-         ;; (- (cw "~%64-bit-mode-modr/m?:~%"))
+         (stripped-invalid-opcodes
+          ;; in 64-bit mode we ignore the opcode information that is invalid in
+          ;; 64-bit mode, while in 32-bit mode we ignore the opcode information
+          ;; that is valid only in 64-bit mode:
+          (if 64-bit-modep
+              (delete-assoc :i64 opcode-info)
+            (delete-assoc :o64 opcode-info)))
+         ;; (- (cw "~%64/32-bit-mode-modr/m?:~%"))
          ;; Early exit when stripped-invalid-opcodes is nil.
          ((when (not (consp stripped-invalid-opcodes)))
           0)
          (mode-opcode-row (strip-cdrs stripped-invalid-opcodes))
          ;; (- (cw "~%Mode-opcode-row: ~x0 ~%" mode-opcode-row))
          ((when (not (true-list-listp mode-opcode-row)))
-          (er hard? '64-bit-compute-modr/m-for-an-opcode
+          (er hard? '64/32-bit-mode-compute-modr/m-for-an-opcode
               "True-list-listp expected: ~x0."
               mode-opcode-row))
          (modr/m-vals
@@ -1419,17 +1437,18 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
             1
           0))))
 
-(define 64-bit-compute-modr/m-for-opcode-row (row-info row-modr/m)
-  :guard (and (true-list-listp row-info)
-              (true-listp row-modr/m))
+; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
+(define 64/32-bit-mode-compute-modr/m-for-opcode-row
+  ((row-info true-list-listp) (row-modr/m true-listp) (64-bit-modep booleanp))
   :short "Returns a list of 1s and 0s corresponding to the presence or
   absence of ModR/M byte for each opcode in an opcode row in the Intel
-  opcode maps"
+  opcode maps, in the mode indicated by the third argument
+  (64-bit or 32-bit mode)."
   ;; the output list is reversed w.r.t. the input list,
   ;; but the results of all the rows are appended together
-  ;; (in 64-bit-compute-modr/m-map-1),
+  ;; (in 64/32-bit-mode-compute-modr/m-map-1),
   ;; and then reversed to be in the right order
-  ;; (in 64-bit-compute-modr/m-map)
+  ;; (in 64/32-bit-mode-compute-modr/m-map)
   :parents (decoding-utilities)
   (if (mbt (and (true-list-listp row-info)
                 (true-listp row-modr/m)))
@@ -1439,28 +1458,32 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
         (let ((opcode-info (car row-info)))
 
           (if (alistp opcode-info)
-              (64-bit-compute-modr/m-for-opcode-row
+              (64/32-bit-mode-compute-modr/m-for-opcode-row
                (cdr row-info)
-               (cons (64-bit-compute-modr/m-for-an-opcode opcode-info)
-                     row-modr/m))
+               (cons (64/32-bit-mode-compute-modr/m-for-an-opcode opcode-info
+                                                                  64-bit-modep)
+                     row-modr/m)
+               64-bit-modep)
 
-            (64-bit-compute-modr/m-for-opcode-row
+            (64/32-bit-mode-compute-modr/m-for-opcode-row
              (cdr row-info)
              (cons (compute-modr/m-for-an-opcode opcode-info)
-                   row-modr/m)))))
+                   row-modr/m)
+             64-bit-modep))))
     nil))
 
-(define 64-bit-compute-modr/m-map-1 (row-number opcode-map-lst)
-  :guard (and (natp row-number)
-              (true-listp opcode-map-lst))
+; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
+(define 64/32-bit-mode-compute-modr/m-map-1
+  ((row-number natp) (opcode-map-lst true-listp) (64-bit-modep booleanp))
   :short "Returns a list of 1s and 0s corresponding to the
   presence or absence of ModR/M byte for each opcode in the Intel
-  opcode maps"
+  opcode maps, in the mode indicated by the third argument
+  (64-bit or 32-bit mode)."
   :long "<p>This function is used by @(see
-  64-bit-compute-modr/m-map).</p>"
+  64/32-bit-mode-compute-modr/m-map).</p>"
   :parents (decoding-utilities)
   ;; Example invocation:
-  ;; (64-bit-compute-modr/m-map-1 16 *one-byte-opcode-map-lst*)
+  ;; (64/32-bit-mode-compute-modr/m-map-1 16 *one-byte-opcode-map-lst* t)
   (if (mbt (and (natp row-number)
                 (true-listp opcode-map-lst)))
 
@@ -1471,39 +1494,58 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
              ((when (not (true-list-listp row-info)))
               (er hard? "Expected: true-list-listp: ~x0" row-info))
              (row-column-info
-              (64-bit-compute-modr/m-for-opcode-row row-info nil)))
-            (append
-             row-column-info
-             (64-bit-compute-modr/m-map-1
-              (1- row-number) opcode-map-lst))))
+              (64/32-bit-mode-compute-modr/m-for-opcode-row row-info
+                                                            nil
+                                                            64-bit-modep)))
+          (append
+           row-column-info
+           (64/32-bit-mode-compute-modr/m-map-1
+            (1- row-number) opcode-map-lst 64-bit-modep))))
     nil))
 
-(define 64-bit-compute-modr/m-map (opcode-map-lst)
-  :guard (true-listp opcode-map-lst)
+; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
+(define 64/32-bit-mode-compute-modr/m-map
+  ((opcode-map-lst true-listp) (64-bit-modep booleanp))
   :short "Returns a list of 1s and 0s corresponding to the
   presence or absence of ModR/M byte for each opcode in the Intel
-  opcode maps"
+  opcode maps, in the mode indicated by the third argument
+  (64-bit or 32-bit mode)."
   :long "<p>An opcode @('x') requires a @('ModR/M') byte if there
   exists a 1 in the position @('x') of the list computed by this
   function.</p>"
   :parents (decoding-utilities)
   ;; Example invocation:
-  ;; (64-bit-compute-modr/m-map *one-byte-opcode-map-lst*)
-  (reverse (64-bit-compute-modr/m-map-1
+  ;; (64/32-bit-mode-compute-modr/m-map *one-byte-opcode-map-lst* t)
+  (reverse (64/32-bit-mode-compute-modr/m-map-1
             (len opcode-map-lst)
-            opcode-map-lst)))
+            opcode-map-lst
+            64-bit-modep)))
 
 (defconst *64-bit-mode-one-byte-has-modr/m-ar*
   (list-to-array '64-bit-mode-one-byte-has-modr/m
                  (ints-to-booleans
-                  (64-bit-compute-modr/m-map
-                   *one-byte-opcode-map-lst*))))
+                  (64/32-bit-mode-compute-modr/m-map
+                   *one-byte-opcode-map-lst* t))))
 
 (defconst *64-bit-mode-two-byte-has-modr/m-ar*
   (list-to-array '64-bit-mode-two-byte-has-modr/m
                  (ints-to-booleans
-                  (64-bit-compute-modr/m-map
-                   *two-byte-opcode-map-lst*))))
+                  (64/32-bit-mode-compute-modr/m-map
+                   *two-byte-opcode-map-lst* t))))
+
+; added by Alessandro Coglio (coglio@kestrel.edu):
+(defconst *32-bit-mode-one-byte-has-modr/m-ar*
+  (list-to-array '32-bit-mode-one-byte-has-modr/m
+                 (ints-to-booleans
+                  (64/32-bit-mode-compute-modr/m-map
+                   *one-byte-opcode-map-lst* nil))))
+
+; added by Alessandro Coglio (coglio@kestrel.edu):
+(defconst *32-bit-mode-two-byte-has-modr/m-ar*
+  (list-to-array '32-bit-mode-two-byte-has-modr/m
+                 (ints-to-booleans
+                  (64/32-bit-mode-compute-modr/m-map
+                   *two-byte-opcode-map-lst* nil))))
 
 
 ;; Prefix byte decoding:
@@ -1656,23 +1698,41 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 
   (local (xdoc::set-default-parents ModRM-and-SIB-decoding))
 
-  (define x86-one-byte-opcode-ModR/M-p
+  (define 64-bit-mode-one-byte-opcode-ModR/M-p
     ((opcode :type (unsigned-byte 8)))
     :inline t
-    :short "Returns a boolean saying whether the given opcode in the
-    one-byte opcode map expects a ModR/M byte."
+    :short "Returns a boolean saying whether, in 64-bit mode,
+            the given opcode in the one-byte opcode map expects a ModR/M byte."
     :returns (bool booleanp :hyp (n08p opcode))
     (aref1 '64-bit-mode-one-byte-has-modr/m
            *64-bit-mode-one-byte-has-modr/m-ar* opcode))
 
-  (define x86-two-byte-opcode-ModR/M-p
+  (define 64-bit-mode-two-byte-opcode-ModR/M-p
     ((opcode :type (unsigned-byte 8) "Second byte of the two-byte opcode"))
-    :short "Returns a boolean saying whether the two-byte opcode
-    expects a ModR/M byte."
+    :short "Returns a boolean saying whether, in 64-bit mode,
+            the given opcode in the two-byte opcode map expects a ModR/M byte."
     :returns (bool booleanp :hyp (n08p opcode))
     (aref1 '64-bit-mode-two-byte-has-modr/m
            *64-bit-mode-two-byte-has-modr/m-ar* opcode))
 
+  ;; added by Alessandro Coglio (coglio@kestrel.edu):
+  (define 32-bit-mode-one-byte-opcode-ModR/M-p
+    ((opcode :type (unsigned-byte 8)))
+    :inline t
+    :short "Returns a boolean saying whether, in 32-bit mode,
+            the given opcode in the one-byte opcode map expects a ModR/M byte."
+    :returns (bool booleanp :hyp (n08p opcode))
+    (aref1 '32-bit-mode-one-byte-has-modr/m
+           *32-bit-mode-one-byte-has-modr/m-ar* opcode))
+
+  ;; added by Alessandro Coglio (coglio@kestrel.edu):
+  (define 32-bit-mode-two-byte-opcode-ModR/M-p
+    ((opcode :type (unsigned-byte 8) "Second byte of the two-byte opcode"))
+    :short "Returns a boolean saying whether, in 32-bit mode,
+            the given opcode in the two-byte opcode map expects a ModR/M byte."
+    :returns (bool booleanp :hyp (n08p opcode))
+    (aref1 '32-bit-mode-two-byte-has-modr/m
+           *32-bit-mode-two-byte-has-modr/m-ar* opcode))
 
   ;; We assume ModR/M is an unsigned-byte 8.
   (defmacro mrm-r/m (ModR/M)
@@ -1686,15 +1746,34 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
     `(mbe :logic (part-select ,ModR/M :low 6 :width 2)
           :exec (ash ,ModR/M -6)))
 
+  ;; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
   (define x86-decode-SIB-p
-    ((ModR/M :type (unsigned-byte 8)))
-    :short "If ModR/M.mod is not #b11 and ModR/M.r/m is #b100, then SIB is expected."
+    ((ModR/M :type (unsigned-byte 8))
+     (16-bit-addressp booleanp))
     :returns (bool booleanp :hyp (n08p ModR/M))
-    (let* ((r/m (mrm-r/m ModR/M))
-           (mod (mrm-mod ModR/M)))
-      (declare (type (unsigned-byte 8) r/m mod))
-      (and (int= r/m 4)
-           (not (int= mod 3)))))
+    :short "Returns a boolean saying whether a SIB byte is expected."
+    :long
+    "<p>
+     This is based on Intel manual, Mar'17, Volume 2, Tables 2-1 and 2-2,
+     as well as AMD manual, Dec'17, Volume 3, Tables A-33 and A-35.
+     When the address size is 32 or 64 bits,
+     Intel Table 2-2 and AMD Table A-35 apply:
+     a SIB byte is expected exactly when
+     ModR/M.mod is not #b11 and ModR/M.r/m is #b100.
+     When the address size is 16 bits, no SIB byte is expected.
+     </p>
+     <p>
+     The second argument of this function says whether
+     the address size is 16 bits or not (i.e. 32 or 64 bits).
+     In 64-bit mode, this argument is always @('nil').
+     In 32-bit mode, this argument may be @('t') or @('nil').
+     </p>"
+    (and (not 16-bit-addressp)
+         (let* ((r/m (mrm-r/m ModR/M))
+                (mod (mrm-mod ModR/M)))
+           (declare (type (unsigned-byte 8) r/m mod))
+           (and (int= r/m 4)
+                (not (int= mod 3))))))
 
   ;; We assume sib is an unsigned-byte 8.
   (defmacro sib-base (sib)

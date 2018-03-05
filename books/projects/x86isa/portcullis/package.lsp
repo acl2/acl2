@@ -4,6 +4,7 @@
 (in-package "ACL2")
 
 (include-book "centaur/bitops/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 
 (defpkg "X86ISA"
   (union-eq
@@ -28,13 +29,7 @@
      def-gl-thm
      b*
      include-raw
-
-     ;; STD
-     define
-     defconsts
-     defrule
-     defruled
-
+     
      ;; XDOC
      defsection
      defxdoc
@@ -54,7 +49,8 @@
 
      )
    (union-eq *acl2-exports*
-             *bitops-exports*
+             acl2::*bitops-exports*
+             std::*std-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
 
 ;; ======================================================================

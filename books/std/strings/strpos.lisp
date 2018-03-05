@@ -84,7 +84,6 @@
     (implies (and (force (stringp x))
                   (force (stringp y))
                   (force (natp n))
-                  (force (<= n (length y)))
                   (force (equal xl (length x)))
                   (force (equal yl (length y))))
              (equal (strpos-fast x y n xl yl)

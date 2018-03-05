@@ -288,11 +288,13 @@
 ; crucial variable occurs and for these purposes we enumerate the args
 ; from 0 (as by nth) rather than from 1 (as by fargn).)
 
-(defrec elim-rule
-  (((nume . crucial-position) . (destructor-term . destructor-terms))
-   (hyps . equiv)
-   (lhs . rhs)
-   . rune) nil)
+; The following is now defined in rewrite.lisp.
+
+; (defrec elim-rule
+;   (((nume . crucial-position) . (destructor-term . destructor-terms))
+;    (hyps . equiv)
+;    (lhs . rhs)
+;    . rune) nil)
 
 (defun occurs-nowhere-else (var args c i)
 
@@ -757,7 +759,9 @@
 
 )
 
-(defrec generalize-rule (nume formula . rune) nil)
+; The following is now defined in rewrite.lisp.
+
+; (defrec generalize-rule (nume formula . rune) nil)
 
 (defun apply-generalize-rule (gen-rule term ens)
 

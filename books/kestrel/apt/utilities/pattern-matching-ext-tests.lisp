@@ -224,11 +224,43 @@ ACL2 !>
 (defstub k2 (x y) t)
 (defstub k3 (x y z) t)
 
+(defun remove-eq-duplicate-keys (alist)
+  (declare (xargs :guard (symbol-alistp alist) :verify-guards nil))
+  (cond ((endp alist) nil)
+        ((assoc-eq (caar alist) (cdr alist))
+         (cons (car alist)
+               (delete-assoc-eq (caar alist)
+                                (remove-eq-duplicate-keys (cdr alist)))))
+        (t (cons (car alist)
+                 (remove-eq-duplicate-keys (cdr alist))))))
+
+(defthm symbol-alistp-remove-eq-duplicate-keys
+  (implies (symbol-alistp alist)
+           (symbol-alistp (remove-eq-duplicate-keys alist))))
+
+(verify-guards remove-eq-duplicate-keys)
+
+(defun remove-dup-bindings (lst)
+  (cond ((endp lst) nil)
+        (t (cons (let* ((val (car lst))
+                        (addr (car val))
+                        (subterm (cadr val))
+                        (bindings (caddr val))
+                        (governors+ (cdddr val)))
+                   (list* addr
+                          subterm
+                          (remove-eq-duplicate-keys bindings)
+                          governors+))
+                 (remove-dup-bindings (cdr lst))))))
+
 (defmacro run-easgl (untrans-pat term)
   `(let ((untrans-pat ',untrans-pat)
          (term ',term)
          (ctx 'my-top))
-     (ext-address-subterm-governors-lst untrans-pat term ctx state)))
+     (mv-let (erp val)
+       (ext-address-subterm-governors-lst untrans-pat term ctx state)
+       (cond (erp (mv erp val))
+             (t (mv nil (remove-dup-bindings val)))))))
 
 (defmacro test-easgl (untrans-pat term expected)
   `(assert-event
@@ -251,6 +283,7 @@ ACL2 !>
             (f2 x (f1 x))
             (((2 1) ; address
               X     ; subterm matching (:@ ...)
+              ()    ; bindings
               ;; governors
               )))
 
@@ -262,9 +295,10 @@ ACL2 !>
               v0)
             (((2 1 1 1) ; address
               A0        ; subterm matching (:@ ...)
+              ()        ; bindings
               ;; governors
               (F1 X0))
-             ((2 1 3 2) (K X) (F1 X0) (NOT (H1 A0)))))
+             ((2 1 3 2) (K X) () (F1 X0) (NOT (H1 A0)))))
 
 ; Test as above, except fail because (:@ term) expects exact match of term.
 (fail-easgl (if (f1 _x)
@@ -282,10 +316,12 @@ ACL2 !>
                         v0)))
             (((1 2 2 1 1 1) ; address
               A0 ; subterm matching (:@ ...)
+              () ; bindings
               ;; governors
               (F1 X0))
              ((1 2 2 1 3 2) ; address
               (K X) ; subterm matching (:@ ...)
+              () ; bindings
               ;; governors
               (F1 X0)
               (NOT (H1 A0)))))
@@ -317,9 +353,10 @@ ACL2 !>
                  z v)
               '17)
             (((2 0 0 2) ; address
-              ((LAMBDA (X)
-                       ((LAMBDA (Y) Y) (G1 X)))
-               Z) ;; subterm matching (:@ ...)
+              Y ;; subterm matching (:@ ...)
+              ((Y . (G1 Z))
+               (V . V)
+               (X . Z)) ; bindings
               ;; governors
               (EQUAL V (F1 X)))))
 
@@ -374,40 +411,14 @@ ACL2 !>
                  X Z)
                 '18)
             (((2 0 0 2 0 0 2) ; address
-
-; subterm, which untranslates to:
-
-;   (let* ((v (cons w w))
-;          (v (cons v v))
-;          (x z)
-;          (y (g1 x)))
-;         (g3 x y v))
-
-              ((LAMBDA (V Z)
-                       ((LAMBDA (V Z)
-                                ((LAMBDA (X V)
-                                         ((LAMBDA (Y X V) (G3 X Y V))
-                                          (G1 X)
-                                          X V))
-                                 Z V))
-                        (CONS V V)
-                        Z))
-               (CONS W W)
-               Z)
-
-; Governors, where the second untranslates to:
-
-;   (let* ((v (cons w w))
-;          (v (cons v v)))
-;         (equal v (f1 x)))
-
+              (G3 X Y V)
+              ((Y . (G1 Z))
+               (X . Z)
+               (V . (CONS (CONS W W) (CONS W W)))
+               (Z . Z))
               (EQUAL (CAR V) Z)
-              ((LAMBDA (V X)
-                       ((LAMBDA (V X) (EQUAL V (F1 X)))
-                        (CONS V V)
-                        X))
-               (CONS W W)
-               X))))
+              (EQUAL (CONS (CONS W W) (CONS W W))
+                     (F1 X)))))
 
 ; Variation where we include a let-binding of more than one variable
 
@@ -456,34 +467,14 @@ ACL2 !>
                  Z X)
                 '18)
             (((2 0 2 0 0 2) ; address
-
-; subterm, which untranslates to:
-
-;   (let ((v (cons w w))
-;         (u (cons v v)))
-;     (let* ((x z)
-;            (y (g1 x)))
-;       (g3 u y v)))
-
-              ((LAMBDA (V U Z)
-                       ((LAMBDA (X V U)
-                                ((LAMBDA (Y U V) (G3 U Y V))
-                                 (G1 X)
-                                 U V))
-                        Z V U))
-               (CONS W W)
-               (CONS V V)
-               Z)
-
-; governors, where the second untranslates to:
-
-;   (let ((v (cons w w)))
-;     (equal v (f1 x)))
-
+              (G3 U Y V)
+              ((Y . (G1 Z))
+               (U . (CONS V V))
+               (V . (CONS W W))
+               (X . Z)
+               (Z . Z))
               (EQUAL (CAR V) Z)
-              ((LAMBDA (V X) (EQUAL V (F1 X)))
-               (CONS W W)
-               X))))
+              (EQUAL (CONS W W) (F1 X)))))
 
 ; A further variation, where we have two subterms and more governors under let
 ; bindings, and we also test that the pattern matches against the untranslated
@@ -545,63 +536,46 @@ ACL2 !>
 
 ; subterm:
 
-              ((LAMBDA (V) V)
-               (CONS W W))
+              V
+
+; bindings:
+
+              ((Y . (G1 Z))
+               (U . (CONS V V))
+               (V . (CONS W W))
+               (X . Z)
+               (Z . Z))
 
 ; governors
 
               (EQUAL (CAR V) Z)
-
-; The following governor untranslates to:
-
-;   (let ((v (cons w w)))
-;     (equal v (f1 x)))
-
-              ((LAMBDA (V X) (EQUAL V (F1 X)))
-               (CONS W W)
-               X)
-              ((LAMBDA (V) (CONSP V)) (CONS W W)))
+              (EQUAL (CONS W W) (F1 X))
+              (CONSP (CONS W W)))
 
 ; second address-subterm-governors triple:
 
              ((2 0 2 0 0 1 3) ; address
+              (G3 U Y V) ; subterm
 
-; subterm, which untranslates to:
+; bindings
 
-;   (let ((v (cons w w))
-;         (u (cons v v)))
-;     (let* ((x z)
-;            (y (g1 x)))
-;       (g3 u y v)))
-
-              ((LAMBDA (V U Z)
-                       ((LAMBDA (X V U)
-                                ((LAMBDA (Y U V) (G3 U Y V))
-                                 (G1 X)
-                                 U V))
-                        Z V U))
-               (CONS W W)
-               (CONS V V)
-               Z)
+              ((Y . (G1 Z))
+               (U . (CONS V V))
+               (V . (CONS W W))
+               (X . Z)
+               (Z . Z))
 
 ; governors
 
               (EQUAL (CAR V) Z)
+              (EQUAL (CONS W W) (F1 X))
+              (NOT (CONSP (CONS W W))))))
 
-; The following governor untranslates to:
-
-;   (let ((v (cons w w)))
-;     (equal v (f1 x)))
-
-              ((LAMBDA (V X) (EQUAL V (F1 X)))
-               (CONS W W)
-               X)
-              ((LAMBDA (V) (NOT (CONSP V)))
-               (CONS W W)))))
-            
-; Here we test handling of let bindings.
+; Here is a very simple test handling of let bindings.
 
 (test-easgl (let ((y @)) (car y))
             ((LAMBDA (Y) (CAR Y))
              (CDR (CONS X (CONS X X))))
-            (((1) (CDR (CONS X (CONS X X))))))
+            (((1)
+              (CDR (CONS X (CONS X X)))
+              ())))

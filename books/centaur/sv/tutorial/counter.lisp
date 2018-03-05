@@ -37,6 +37,7 @@
 (include-book "centaur/sv/svtv/fsm" :dir :system)
 (include-book "centaur/vl/loader/top" :dir :system)
 (include-book "centaur/sv/svex/gl-rules" :dir :system)
+(include-book "misc/eval" :dir :system)
 (local (in-theory (disable (tau-system))))
 ; (depends-on "counter.sv")
 ; cert_param: (hons-only)
@@ -108,7 +109,7 @@
 ;;  failing to solve the problem submitted by the vacuity check on the
 ;;  hypothesis.  To debug this, you can examine the output on that server
 ;;  from:
-;; 
+;;
 ;;     (include-book "centaur/satlink/top" :dir :system)
 ;;     (satlink::sat '((3) (3)) satlink::env$)
 ;;

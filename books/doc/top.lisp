@@ -30,6 +30,8 @@
 
 (in-package "ACL2")
 
+(include-book "build/ifdef" :dir :system)
+
 ; Note, 7/28/2014: if we include
 ; (include-book "std/system/top" :dir :system)
 ; instead of the following, we get a name conflict.
@@ -78,6 +80,8 @@
 (include-book "centaur/bitops/top" :dir :system)
 (include-book "centaur/bitops/congruences" :dir :system)
 (include-book "centaur/bitops/defaults" :dir :system)
+
+(include-book "centaur/acre/top" :dir :system)
 
 (include-book "centaur/bridge/top" :dir :system)
 
@@ -151,8 +155,38 @@
 (include-book "centaur/ubdds/param" :dir :system)
 
 (include-book "centaur/sv/top" :dir :system)
-(include-book "centaur/sv/tutorial/alu" :dir :system)
-(include-book "centaur/sv/tutorial/boothpipe" :dir :system)
+
+(ifdef "OS_HAS_GLUCOSE"
+       (include-book "centaur/sv/tutorial/alu" :dir :system)
+       (include-book "centaur/sv/tutorial/boothpipe" :dir :system)
+
+       (ifdef "OS_HAS_ABC"
+              (include-book "centaur/glmc/glmc-test" :dir :system)
+              (include-book "centaur/glmc/counter" :dir :system)
+              :endif)
+
+       (ifdef "OS_HAS_IPASIR"
+              (include-book "centaur/sv/tutorial/sums" :dir :system)
+              :endif)
+       :endif)
+
+(ifndef "OS_HAS_GLUCOSE"
+        ;; This is needed to avoid broken topic link errors
+        (defxdoc sv::sv-tutorial
+          :parents (sv::sv)
+          :short "Stub for missing topic"
+          :long "<p>This topic was omitted from the manual because it is in a
+book that depends on Glucose being installed.</p>")
+        (defxdoc sv::stvs-and-testing
+          :parents (sv::sv-tutorial)
+          :short "Stub for missing topic"
+          :long "<p>This topic was omitted from the manual because it is in a
+book that depends on Glucose being installed.</p>")
+        :endif)
+
+
+
+
 (include-book "centaur/esim/vcd/vcd" :dir :system)
 (include-book "centaur/esim/vcd/esim-snapshot" :dir :system)
 (include-book "centaur/esim/vcd/vcd-stub" :dir :system)

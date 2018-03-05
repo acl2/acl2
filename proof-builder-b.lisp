@@ -964,7 +964,10 @@
                      ((saved-output-p t)
                       (saved-output-token-lst :all))
                      (pprogn (f-put-global 'saved-output-reversed nil state)
-                             (prove-loop clauses pspv hints ens wrld ctx state)))
+                             (push-current-acl2-world 'saved-output-reversed
+                                                      state)
+                             (prove-loop clauses pspv hints ens wrld ctx
+                                         state)))
                   (prove-loop clauses pspv hints ens wrld ctx state)))))
             (er-progn
              (chk-assumption-free-ttree ttree ctx state)

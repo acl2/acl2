@@ -749,10 +749,10 @@
 ; you understand fc-derivations and what has actually happened in a proof
 ; attempt.
 
-; A forward chaining rule is
+; A forward chaining rule is (not defined in rewrite.lisp):
 
-(defrec forward-chaining-rule
-  ((rune . nume) trigger hyps concls . match-free) nil)
+; (defrec forward-chaining-rule
+;   ((rune . nume) trigger hyps concls . match-free) nil)
 
 ; One of the main inefficiencies in our earlier forward chaining schemes
 ; was that if a rule began to fire but misfired because some hyp could
@@ -6327,7 +6327,9 @@
 ; find the rest, it is faster to put the most unusual literal first in
 ; each built-in clause.
 
-(defrec built-in-clause ((nume . all-fnnames) clause . rune) t)
+; The following is now defined in rewrite.lisp.
+
+; (defrec built-in-clause ((nume . all-fnnames) clause . rune) t)
 
 ; Note:  The :all-fnnames field must be set as it would be by
 ; all-fnnames-subsumer.  This setting cannot be done automatically because we
@@ -6959,7 +6961,8 @@
                   (push-ancestor (dumb-negate-lit term)
                                  (assumnote-list-to-token-list
                                   (access assumption assn :assumnotes))
-                                 ancestors)))
+                                 ancestors
+                                 nil)))
              (mv-let
               (not-flg atm)
               (strip-not term)

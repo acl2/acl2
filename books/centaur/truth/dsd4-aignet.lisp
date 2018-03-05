@@ -511,7 +511,8 @@
     (let ((aignet::new-aignet new-aignet)
           (aignet::aignet aignet))
       #!aignet
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (stype-count stype new-aignet)
                       (stype-count stype aignet)))))
 
@@ -722,19 +723,22 @@
 
   (std::defret-mutual stype-counts-preserved-of-aignet-build-truth4-single
     (defret stype-counts-preserved-of-aignet-build-truth4-single-try
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (aignet::stype-count stype new-aignet)
                       (aignet::stype-count stype aignet)))
       :hints ('(:expand (<call>)))
       :fn aignet-build-truth4-decomp-single-try)
     (defret stype-counts-preserved-of-aignet-build-truth4-single-or-simple
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (aignet::stype-count stype new-aignet)
                       (aignet::stype-count stype aignet)))
       :hints ('(:expand (<call>)))
       :fn aignet-build-truth4-decomp-single-or-simple)
     (defret stype-counts-preserved-of-aignet-build-truth4-single
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (aignet::stype-count stype new-aignet)
                       (aignet::stype-count stype aignet)))
       :hints ('(:expand (<call>)))
@@ -1090,7 +1094,8 @@
     (let ((aignet::new-aignet new-aignet)
           (aignet::aignet aignet))
       #!aignet
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (stype-count stype new-aignet)
                       (stype-count stype aignet)))))
 
@@ -1337,7 +1342,8 @@
     (let ((aignet::new-aignet new-aignet)
           (aignet::aignet aignet))
       #!aignet
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (stype-count stype new-aignet)
                       (stype-count stype aignet)))))
 
@@ -1392,7 +1398,8 @@
     (let ((aignet::new-aignet new-aignet)
           (aignet::aignet aignet))
       #!aignet
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (stype-count stype new-aignet)
                       (stype-count stype aignet)))))
 
@@ -1493,7 +1500,8 @@
     (let ((aignet::new-aignet new-aignet)
           (aignet::aignet aignet))
       #!aignet
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (stype-count stype new-aignet)
                       (stype-count stype aignet)))))
 
@@ -1584,7 +1592,8 @@
     (let ((aignet::new-aignet new-aignet)
           (aignet::aignet aignet))
       #!aignet
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (stype-count stype new-aignet)
                       (stype-count stype aignet)))))
 
@@ -1995,7 +2004,8 @@
     (let ((aignet::new-aignet new-aignet)
           (aignet::aignet aignet))
       #!aignet
-      (implies (not (equal (aignet::stype-fix stype) (aignet::gate-stype)))
+      (implies (and (not (equal (aignet::stype-fix stype) (aignet::and-stype)))
+                    (not (equal (aignet::stype-fix stype) (aignet::xor-stype))))
                (equal (stype-count stype new-aignet)
                       (stype-count stype aignet)))))
 

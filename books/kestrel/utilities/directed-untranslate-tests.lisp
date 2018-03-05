@@ -20,6 +20,7 @@
 
 (logic)
 (local (include-book "misc/assert" :dir :system))
+(local (include-book "misc/eval" :dir :system))
 (defmacro local-test (&rest args)
   `(local (encapsulate () (local (progn ,@args)))))
 

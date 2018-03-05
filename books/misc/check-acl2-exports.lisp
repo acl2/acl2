@@ -173,6 +173,7 @@
 ; Symbols below should probably be added to *acl2-exports*.
 
     BADGE DEF-WARRANT DEFUN$ FN-EQUAL WARRANT
+    PARTITION-REST-AND-KEYWORD-ARGS
     ))
 
 (defconst *special-ops*

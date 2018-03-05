@@ -3341,6 +3341,20 @@ off looking at the source code.</p>")
     (equal (logapp n x (logtail n x))
            (ifix x)))
 
+  (local (defun logapp-right-ind (w1 w2 a)
+            (if (or (zp w1) (zp w2))
+                a
+              (logapp-right-ind (1- w1) (1- w2) (logcdr a)))))
+
+   (defthmd logapp-right-assoc
+     (equal (logapp w1 (logapp w2 a b) c)
+            (let ((w1 (nfix w1)) (w2 (nfix w2)))
+              (logapp (min w1 w2)
+                      a (if (<= w1 w2) c (logapp (- w1 w2) b c)))))
+     :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                      ihsext-recursive-redefs))
+             :induct (logapp-right-ind w1 w2 a))))
+
   (add-to-ruleset ihsext-basic-thms '(unsigned-byte-p-of-logapp
                                       signed-byte-p-of-logapp
                                       logapp-sign

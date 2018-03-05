@@ -479,6 +479,16 @@
                 (pseudo-attachment-recordsp (cdr x))))))
 
 ; -----------------------------------------------------------------
+; ATTACHMENTS-AT-GROUND-ZERO [GLOBAL-VALUE]
+
+(defun pseudo-attachments-at-ground-zerop (x)
+  (cond ((atom x) (null x))
+        (t (and (consp (car x))
+                (pseudo-function-symbolp (caar x) nil)
+                (pseudo-function-symbolp (cdar x) nil)
+                (pseudo-attachments-at-ground-zerop (cdr x))))))
+
+; -----------------------------------------------------------------
 ; HALF-LENGTH-BUILT-IN-CLAUSES [GLOBAL-VALUE]
 
 ; This is always a number set to (floor n 2), where n is the length of built-in-clauses.
@@ -1734,6 +1744,7 @@
     (RECOGNIZER-ALIST (pseudo-recognizer-alistp val))
     (BUILT-IN-CLAUSES (pseudo-built-in-clausesp val))
     (ATTACHMENT-RECORDS (pseudo-attachment-recordsp val))
+    (ATTACHMENTS-AT-GROUND-ZERO (pseudo-attachments-at-ground-zerop val))
     (HALF-LENGTH-BUILT-IN-CLAUSES (pseudo-half-length-built-in-clausesp val))
     (TYPE-SET-INVERTER-RULES (pseudo-type-set-inverter-rulesp val))
     (GLOBAL-ARITHMETIC-ENABLED-STRUCTURE (pseudo-global-arithmetic-enabled-structurep val))

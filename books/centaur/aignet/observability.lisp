@@ -162,7 +162,8 @@
 
 
   (defret stypes-preserved-of-observability-fixed-inputs
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -289,7 +290,8 @@
                            (nth-lit (node-count (lookup-stype regnum :reg aignet)) copy)))))
 
   (defret stypes-preserved-of-observability-fixed-regs
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -389,9 +391,9 @@
         ;; BOZO for unsat, map to constants or something?
         (mv invals regvals inmasks regmasks status copy strash aignet2 state))
        ((mv copy strash aignet2)
-        (observability-fixed-inputs 0 invals inmasks lit aignet copy 9 strash aignet2))
+        (observability-fixed-inputs 0 invals inmasks lit aignet copy (default-gatesimp) strash aignet2))
        ((mv copy strash aignet2)
-        (observability-fixed-regs 0 regvals regmasks lit aignet copy 9 strash aignet2)))
+        (observability-fixed-regs 0 regvals regmasks lit aignet copy (default-gatesimp) strash aignet2)))
     (mv invals regvals inmasks regmasks status copy strash aignet2 state))
   ///
   
@@ -411,7 +413,8 @@
     (aignet-extension-p new-aignet2 aignet2))
 
   (defret stypes-preserved-of-observability-fix-input-copies
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -478,7 +481,10 @@
                    :default 5000)
    (min-ratio rationalp :rule-classes :type-prescription
               "Minimum ratio of conclusion to hyp"
-              :default 10))
+              :default 10)
+   (gatesimp gatesimp-p :default (default-gatesimp)
+             "Gate simplification parameters.  Warning: This transform will do
+              nothing good if hashing is turned off."))
   :parents (observability-fix comb-transform)
   :short "Configuration object for the @(see observability-fix) aignet transform."
   :tag :observability-config)
@@ -498,6 +504,7 @@
                                      (concl litp)
                                      (aignet)
                                      (copy)
+                                     (gatesimp gatesimp-p)
                                      (strash)
                                      (aignet2)
                                      (state))
@@ -516,7 +523,7 @@
                (mark (resize-bits (+ 1 (lit-id hyp)) mark))
                ;; (litarr (resize-lits (+ 1 (lit-id hyp)) litarr))
                ((mv mark copy strash aignet2)
-                (aignet-copy-dfs-rec (lit-id hyp) aignet mark copy strash 9 aignet2)))
+                (aignet-copy-dfs-rec (lit-id hyp) aignet mark copy strash gatesimp aignet2)))
             (mv mark copy strash aignet2)))
          (hyp-copy (lit-copy hyp copy))
          ((mv ?status copy strash aignet2 state)
@@ -527,9 +534,9 @@
           (b* (((acl2::local-stobjs mark)
                 (mv mark copy strash aignet2))
                (mark (resize-bits (+ 1 (lit-id concl)) mark)))
-            (aignet-copy-dfs-rec (lit-id concl) aignet mark copy strash 9 aignet2)))
+            (aignet-copy-dfs-rec (lit-id concl) aignet mark copy strash gatesimp aignet2)))
          (concl-copy (lit-copy concl copy))
-         ((mv and-lit strash aignet2) (aignet-hash-and hyp-copy concl-copy 9 strash aignet2)))
+         ((mv and-lit strash aignet2) (aignet-hash-and hyp-copy concl-copy gatesimp strash aignet2)))
       (mv and-lit copy strash aignet2 state))
     ///
     
@@ -540,7 +547,8 @@
     :hints ('(:expand (<call>))))
 
   (defret stype-counts-of-observability-fix-hyp/concl
-      (implies (not (equal (stype-fix stype) :gate))
+      (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
                (equal (stype-count stype new-aignet2)
                       (stype-count stype aignet2)))
       :hints ('(:expand (<call>))))
@@ -593,26 +601,6 @@
                          (id-eval (lit->var x) invals regvals aignet))
                   (lit-eval x invals regvals aignet))
            :hints(("Goal" :in-theory (enable lit-eval)))))
-
-  (local (defthm and-of-lit-evals-is-gate-eval
-           (implies (equal (stype (car (lookup-id n aignet))) :gate)
-                    (equal (b-and (lit-eval (fanin :gate0 (lookup-id n aignet))
-                                            invals regvals aignet)
-                                  (lit-eval (fanin :gate1 (lookup-id n aignet))
-                                            invals regvals aignet))
-                           (id-eval n invals regvals aignet)))
-           :hints(("Goal" :expand ((id-eval n invals regvals aignet))
-                   :in-theory (enable eval-and-of-lits)))))
-
-  (local (defthm lit-eval-of-gate-fanin-when-1
-           (implies (and (member f '(:gate0 :gate1))
-                         (equal (id-eval n invals regvals aignet) 1)
-                         (equal (stype (car (lookup-id n aignet))) :gate))
-                    (equal (lit-eval (fanin f (lookup-id n aignet))
-                                     invals regvals aignet)
-                           1))
-           :hints(("Goal" :expand ((id-eval n invals regvals aignet))
-                   :in-theory (enable eval-and-of-lits)))))
 
   (local (defun search-matching-lit (pat clause alist)
            (b* (((when (atom clause)) nil)
@@ -735,16 +723,17 @@
 
 
 (define aignet-build-wide-and ((lits lit-listp)
-                          (strash)
-                          (aignet))
+                               (gatesimp gatesimp-p)
+                               (strash)
+                               (aignet))
   :guard (aignet-lit-listp lits aignet)
   :returns (mv (and-lit litp) new-strash new-aignet)
   :verify-guards nil
   (b* (((when (atom lits))
         (b* ((aignet (aignet-fix aignet)))
           (mv 1 strash aignet)))
-       ((mv rest strash aignet) (aignet-build-wide-and (cdr lits) strash aignet)))
-    (aignet-hash-and (car lits) rest 9 strash aignet))
+       ((mv rest strash aignet) (aignet-build-wide-and (cdr lits) gatesimp strash aignet)))
+    (aignet-hash-and (car lits) rest gatesimp strash aignet))
   ///
   (defret aignet-extension-p-of-aignet-build-wide-and
     (aignet-extension-p new-aignet aignet))
@@ -762,7 +751,8 @@
     :hints(("Goal" :in-theory (enable aignet-eval-conjunction))))
 
   (defret stype-counts-of-aignet-build-wide-and
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet)))))
 
@@ -897,7 +887,8 @@
          :hints (("goal" :induct (id-eval-ind id aignet)
                   :expand ((:free (ins) (id-eval id ins regs aignet))
                            (:free (lit ins) (lit-eval lit ins regs aignet))
-                           (:free (lit1 lit2 ins) (eval-and-of-lits lit1 lit2 ins regs aignet)))))))
+                           (:free (lit1 lit2 ins) (eval-and-of-lits lit1 lit2 ins regs aignet))
+                           (:free (lit1 lit2 ins) (eval-xor-of-lits lit1 lit2 ins regs aignet)))))))
 
 (local (defthm id-eval-of-bit-list-fix-regs
          (equal (id-eval id ins (bit-list-fix regs) aignet)
@@ -905,7 +896,8 @@
          :hints (("goal" :induct (id-eval-ind id aignet)
                   :expand ((:free (regs) (id-eval id ins regs aignet))
                            (:free (lit regs) (lit-eval lit ins regs aignet))
-                           (:free (lit1 lit2 regs) (eval-and-of-lits lit1 lit2 ins regs aignet)))))))
+                           (:free (lit1 lit2 regs) (eval-and-of-lits lit1 lit2 ins regs aignet))
+                           (:free (lit1 lit2 regs) (eval-xor-of-lits lit1 lit2 ins regs aignet)))))))
 
 (local (defthm b-xor-id-eval-equals-lit-eval
          (equal (b-xor (lit->neg x)
@@ -944,11 +936,12 @@
              (local (defthm node-count-<-plus-1
                       (< (node-count x) (+ 1 (node-count x))))))
   (b* (((mv hyps rest) (observability-split-supergate (lit-id lit) config aignet))
+       ((observability-config config))
        ((mv hyp concl aignet)
         (b* (((acl2::local-stobjs strash)
               (mv strash hyp concl aignet))
-             ((mv hyp strash aignet) (aignet-build-wide-and hyps strash aignet))
-             ((mv concl strash aignet) (aignet-build-wide-and rest strash aignet)))
+             ((mv hyp strash aignet) (aignet-build-wide-and hyps config.gatesimp strash aignet))
+             ((mv concl strash aignet) (aignet-build-wide-and rest config.gatesimp strash aignet)))
           (mv strash hyp concl aignet)))
        (- (cw "Observability input: hyp size ~x0, concl ~x1~%"
               (count-gates-mark (lit-id hyp) aignet)
@@ -957,7 +950,7 @@
        (copy (aignet-copy-set-ins 0 aignet copy aignet2))
        (copy (aignet-copy-set-regs 0 aignet copy aignet2))
        ((mv conjunction copy strash aignet2 state)
-        (observability-fix-hyp/concl hyp concl aignet copy strash aignet2 state)))
+        (observability-fix-hyp/concl hyp concl aignet copy config.gatesimp strash aignet2 state)))
     (mv (lit-negate-cond conjunction (lit-neg lit))
         copy strash aignet2 aignet state))
   ///
@@ -965,7 +958,8 @@
     (aignet-extension-p new-aignet aignet))
 
   (defret stype-counts-of-observability-fix-lit-1
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet))))
 
@@ -973,7 +967,8 @@
     (aignet-extension-p new-aignet2 aignet2))
 
   (defret stype-counts-of-observability-fix-lit-2
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
@@ -1045,13 +1040,15 @@
     (aignet-extension-p new-aignet aignet))
 
   (defret stype-counts-of-observability-fix-outs-2
-    (implies (and (not (equal (stype-fix stype) :gate))
+    (implies (and (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
                   (not (equal (stype-fix stype) :po)))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
 
   (defret stype-counts-of-observability-fix-outs-1
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet))))
 
@@ -1115,7 +1112,8 @@
     (aignet-extension-p new-aignet2 aignet2))
 
   (defret stype-counts-of-observability-fix-nxsts-2
-    (implies (and (not (equal (stype-fix stype) :gate))
+    (implies (and (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
                   (not (equal (stype-fix stype) :nxst)))
              (equal (stype-count stype new-aignet2)
                     (stype-count stype aignet2))))
@@ -1124,7 +1122,8 @@
     (aignet-extension-p new-aignet aignet))
 
   (defret stype-counts-of-observability-fix-nxsts-1
-    (implies (not (equal (stype-fix stype) :gate))
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet))))
 
@@ -1313,7 +1312,7 @@ only changed in cases where @('A') des not hold:</p>
         (mv aignet2 aignet-tmp state))
        (aignet2 (aignet-raw-copy aignet aignet2))
        ((mv aignet-tmp aignet2 state) (observability-fix-core aignet2 aignet-tmp config state))
-       (aignet2 (aignet-prune-comb aignet-tmp aignet2 9)))
+       (aignet2 (aignet-prune-comb aignet-tmp aignet2 (observability-config->gatesimp config))))
     (mv aignet2 aignet-tmp state))
   ///
   (defret num-ins-of-observability-fix
@@ -1347,7 +1346,7 @@ only changed in cases where @('A') des not hold:</p>
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp state))
        ((mv aignet-tmp aignet state) (observability-fix-core aignet aignet-tmp config state))
-       (aignet (aignet-prune-comb aignet-tmp aignet 9)))
+       (aignet (aignet-prune-comb aignet-tmp aignet (observability-config->gatesimp config))))
     (mv aignet aignet-tmp state))
   ///
   (defret num-ins-of-observability-fix!

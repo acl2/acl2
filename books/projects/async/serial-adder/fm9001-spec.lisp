@@ -41,7 +41,7 @@ Interpretation of the OP-CODE.
  0110  b <- b - a - c     Subtract with borrow
  0111  b <- b - a         Subtract
  1000  b <- a >> 1        Rotate right, shifted through carry
- 1001  b <- a >> 1        Arithmetic shift right, top bit copied 
+ 1001  b <- a >> 1        Arithmetic shift right, top bit copied
  1010  b <- a >> 1        Logical shift right, top bit zero
  1011  b <- b XOR a       Exclusive or
  1100  b <- b | a         Or
@@ -137,10 +137,6 @@ Register Numbers for "a" and "b".
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 0 9))
 
-;; (defthm true-listp-a-immediate
-;;   (true-listp (a-immediate i-reg))
-;;   :rule-classes :type-prescription)
-
 (defthm len-a-immediate
   (equal (len (a-immediate i-reg)) 9))
 
@@ -152,10 +148,6 @@ Register Numbers for "a" and "b".
 (defun rn-a (instruction)
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 0 4))
-
-;; (defthm true-listp-rn-a
-;;   (true-listp (rn-a i-reg))
-;;   :rule-classes :type-prescription)
 
 (defthm len-rn-a
   (equal (len (rn-a i-reg)) 4))
@@ -186,10 +178,6 @@ Register Numbers for "a" and "b".
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 10 14))
 
-;; (defthm true-listp-rn-b
-;;   (true-listp (rn-b i-reg))
-;;   :rule-classes :type-prescription)
-
 (defthm len-rn-b
   (equal (len (rn-b i-reg)) 4))
 
@@ -201,10 +189,6 @@ Register Numbers for "a" and "b".
 (defun mode-b (instruction)
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 14 16))
-
-;; (defthm true-listp-mode-b
-;;   (true-listp (mode-b i-reg))
-;;   :rule-classes :type-prescription)
 
 (defthm len-mode-b
   (equal (len (mode-b i-reg)) 2))
@@ -219,10 +203,6 @@ Register Numbers for "a" and "b".
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 16 20))
 
-;; (defthm true-listp-set-flags
-;;   (true-listp (set-flags i-reg))
-;;   :rule-classes :type-prescription)
-
 (defthm len-set-flags
   (equal (len (set-flags i-reg)) 4))
 
@@ -235,10 +215,6 @@ Register Numbers for "a" and "b".
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 20 24))
 
-;; (defthm true-listp-store-cc
-;;   (true-listp (store-cc i-reg))
-;;   :rule-classes :type-prescription)
-
 (defthm len-store-cc
   (equal (len (store-cc i-reg)) 4))
 
@@ -250,10 +226,6 @@ Register Numbers for "a" and "b".
 (defun op-code (instruction)
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 24 28))
-
-;; (defthm true-listp-op-code
-;;   (true-listp (op-code i-reg))
-;;   :rule-classes :type-prescription)
 
 (defthm len-op-code
   (equal (len (op-code i-reg)) 4))
@@ -480,7 +452,7 @@ Register Numbers for "a" and "b".
 
 ;; ======================================================================
 
-;; The FM9001 instruction interpreter.
+;; The FM9001 instruction interpreter
 
 ;; FM9001-ALU-OPERATION -- Computes, and conditionally stores the result.
 
@@ -511,7 +483,7 @@ Register Numbers for "a" and "b".
           (list (list new-regs new-flags) new-mem))))))
 
 ;; FM9001-OPERAND-B -- Readies the B operand, and side-effects the operand B
-;; register.  The B-ADDRESS is held for the final stage.
+;; register. The B-ADDRESS is held for the final stage.
 
 (defun fm9001-operand-b (regs flags mem ins operand-a)
   (let ((mode-b (mode-b ins))
@@ -530,12 +502,12 @@ Register Numbers for "a" and "b".
                             (if (post-inc-p mode-b)
                                 (write-mem rn-b regs reg+)
                               regs))))
-          
+
             (FM9001-alu-operation new-regs flags mem ins operand-a operand-b
                                   b-address)))))))
 
 ;; FM9001-OPERAND-A -- Readies the A operand, and side-effects the operand A
-;; register. 
+;; register.
 
 (defun fm9001-operand-a (regs flags mem ins)
   (let ((a-immediate-p (a-immediate-p ins))
@@ -586,9 +558,7 @@ Register Numbers for "a" and "b".
     (FM9001 (FM9001-step st (nat-to-v 15 (reg-size)))
             (1- n))))
 
-;;  FM9001-INTERPRETER
-
-;;  Simulates N instructions with a given PC.
+;; FM9001-INTERPRETER -- Simulates N instructions with a given PC.
 
 (defun FM9001-interpreter (st pc-reg n)
   (if (zp n)
@@ -613,7 +583,7 @@ Register Numbers for "a" and "b".
 (in-theory (disable FM9001-interpreter))
 
 ;; FM9001-INTR -- The PC-REG-INPUT is used to determine which register is the
-;; PC. 
+;; PC.
 
 (defund FM9001-intr (st pc-reg-input)
   (if (atom pc-reg-input)

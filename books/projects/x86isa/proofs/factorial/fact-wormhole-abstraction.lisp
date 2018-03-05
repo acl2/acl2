@@ -379,7 +379,8 @@
                              riml08
                              rml08
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
                              flgi
@@ -432,7 +433,8 @@
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
                              flgi
@@ -469,7 +471,8 @@
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
                              flgi
@@ -513,7 +516,8 @@
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
                              flgi
@@ -552,7 +556,8 @@
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
                              flgi
@@ -598,7 +603,8 @@
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
                              flgi

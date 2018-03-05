@@ -114,9 +114,8 @@
  modes, memory management via paging and segmentation, and the
  instruction fetch-decode-execute cycle.</p>
 
-<p>We are in the process of extending the model to support 32-bit mode, both as
-the legacy protected mode and as the compatibility sub-mode of the Intel's
-IA-32e mode.</p>
+ <p>The model is being extended to support 32-bit mode, both as the legacy
+ protected mode and as the compatibility sub-mode of Intel's IA-32e mode.</p>
 
  <p>To see a list of opcodes implemented in these books, see @(see
  implemented-opcodes).</p>
@@ -156,25 +155,23 @@ IA-32e mode.</p>
 
  <h3>Modes of Operation</h3>
 
- <p>The complexity of the x86 ISA model will increase as more features
- are added to it, and this added complexity will make reasoning
- inevitably more involved.  The issue of balancing <i>verification
- effort</i> and <i>verification utility</i> is a very pertinent one.
- For example, users might not want to reason about an application
- program at the level of physical memory, i.e., taking into account
- address translations and access rights management provided by the
- memory management data structures.  This is because it is customary
- for application programs not to have direct access to the system data
- structures.  The memory model seen by application programs is that of
- linear memory, which is an OS-constructed abstraction of the
- complicated underlying memory management mechanisms like paging and
- segmentation that are based on physical memory.  Therefore,
- verification of application programs can be performed at the level of
- linear memory, if the OS routines that manage the linear memory
- abstraction can be either trusted or proved correct.  However, the
- verification of system programs, like kernel routines, must
- necessarily be done at the level of physical memory since these
- programs can access/modify system data structures.</p>
+ <p>The complexity of the x86 ISA model will increase as more features are
+ added to it, and this added complexity will make reasoning inevitably more
+ involved.  The issue of balancing <i>verification effort</i> and
+ <i>verification utility</i> is a very pertinent one.  For example, users might
+ not want to reason about an application program at the level of physical
+ memory, i.e., taking into account address translations and access rights
+ management provided by the memory management data structures.  This is because
+ it is customary for application programs not to have direct access to the
+ system data structures.  The memory model seen by 64-bit application programs
+ is that of linear memory, which is an OS-constructed abstraction of the
+ complicated underlying memory management mechanisms like paging that are based
+ on physical memory.  Therefore, verification of application programs can be
+ performed at the level of linear memory, if the OS routines that manage the
+ linear memory abstraction can be either trusted or proved correct.  However,
+ the verification of system programs, like kernel routines, must necessarily be
+ done at the level of physical memory since these programs can access/modify
+ system data structures.</p>
 
  <p>In light of the above, the x86 ISA model provides the option to
  deactivate some features of the ISA, enabling the user to do two kinds
@@ -194,14 +191,14 @@ IA-32e mode.</p>
  @('read'), @('write'), @('open'), and @('close') is also included in
  the programmer-level mode.</p></li>
 
- <li><b>System-level Mode:</b> <p>This mode includes the specification
- for IA-32e paging and segmentation; in particular, ISA-prescribed data
- structures for memory management are available in this mode.  The
- memory model in this mode characterizes a 52-bit physical address
- space, which is the largest physical address space provided by modern
- x86 implementations.  This mode is intended to be used to simulate and
- verify software that has supervisor privileges and interacts with I/O
- devices.</p> </li>
+ <li><b>System-level Mode:</b> <p>This mode includes the specification for
+ IA-32e paging and segmentation; in particular, ISA-prescribed data structures
+ for memory management and (partial) specifications of system-mode instructions
+ like LLDT and LGDT are available in this mode.  The memory model in this mode
+ characterizes a 52-bit physical address space, which is the largest physical
+ address space provided by modern x86 implementations.  This mode is intended
+ to be used to simulate and verify software that has supervisor privileges and
+ interacts with I/O devices.</p> </li>
 
  </ol>
 
@@ -209,7 +206,7 @@ IA-32e mode.</p>
  increased execution speed of programs in the programmer-level mode;
  this is because executing these programs in this mode does not require
  simulating both the physical address space \(and hence,
- accesses/updates to the paging and segmentation data structures\) and
+ accesses/updates to the paging data structures\) and
  the linear address space.</p>
 
  <p>It would be beneficial, not to mention interesting, to verify
@@ -351,6 +348,10 @@ IA-32e mode.</p>
  <tt>shigoel@cs.utexas.edu</tt></p>
 
  <h5>Contributors to the x86 ISA Model</h5>
+
+ <p>Thanks to Alessandro Coglio (Kestrel Institute) for adding growing
+ support for 32-bit mode and for improving the documentation of these
+ books.</p>
 
  <p>Thanks to Cuong Kim Chau for implementing the floating point
  instructions and for performing many experiments \(along with Keshav

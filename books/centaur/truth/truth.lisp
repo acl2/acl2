@@ -34,6 +34,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 (include-book "centaur/bitops/extra-defs" :dir :system)
+(include-book "centaur/bitops/logrepeat" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)
 (include-book "centaur/bitops/trailing-0-count" :dir :system)
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -55,7 +56,7 @@
 (set-waterfall-parallelism nil)
 
 (defxdoc truth
-  :parents (acl2::bit-vectors)
+  :parents (acl2::boolean-reasoning)
   :short "Library for reasoning about and computing with integer-encoded truth tables."
   :long "<p>A Boolean function of @('n') variables can be represented using a
 bit vector of @('2^n') bits.  Operators such as AND/OR/XOR can then be computed
@@ -170,120 +171,6 @@ transformation.</p>")
                  :induct (logapp w a b)
                  :expand ((:free (a b) (logapp w a b)))))))
 
-
-;; BOZO consider moving this to shareable book
-(define logrepeat ((times natp) (width natp) (data integerp))
-  :returns (reps natp :rule-classes :type-prescription)
-  (if (zp times)
-      0
-    (logapp width data (logrepeat (1- times) width data)))
-  ///
-  (local (defret size-of-logrepeat-lemma
-           (unsigned-byte-p (* (nfix width) (nfix times)) reps)))
-
-  (defret size-of-logrepeat
-    (implies (and (<= (* (nfix width) (nfix times)) n)
-                  (natp n))
-             (unsigned-byte-p n reps)))
-
-  (local (defthm unsigned-byte-p-implies-natp-width
-           (implies (unsigned-byte-p m data)
-                    (natp m))
-           :hints(("Goal" :in-theory (enable unsigned-byte-p)))
-           :rule-classes :forward-chaining))
-
-  (local (defret size-of-logrepeat-by-data-size-lemma
-           (implies (and (unsigned-byte-p m (loghead width data))
-                         (<= m (nfix width))
-                         (posp times))
-                    (unsigned-byte-p (+ m (- (nfix width))
-                                        (* (nfix width) (nfix times)))
-                                     reps))
-           :hints (("goal" :induct <call>
-                    :expand ((:free (data) <call>))))))
-
-  (defret size-of-logrepeat-by-data-size
-    (implies (and (unsigned-byte-p m (loghead width data))
-                  (<= (+ m (- (nfix width))
-                         (* (nfix width) (nfix times))) n)
-                  (<= m (nfix width))
-                  (natp n))
-             (unsigned-byte-p n reps))
-    :hints (("goal" :use ((:instance size-of-logrepeat-by-data-size-lemma))
-             :in-theory (disable size-of-logrepeat-by-data-size-lemma))))
-
-  (local (defun logbitp-of-logrepeat-ind (n width times)
-           (if (zp times)
-               (list n width)
-             (logbitp-of-logrepeat-ind (- (nfix n) (nfix width)) width (1- (nfix times))))))
-
-  (defret logbitp-of-logrepeat
-    (equal (logbitp n reps)
-           (and (< (nfix n) (* (nfix width) (nfix times)))
-                (logbitp (mod (nfix n) (nfix width)) data)))
-    :hints(("Goal" :in-theory (enable bitops::logbitp-of-logapp-split)
-            :induct (logbitp-of-logrepeat-ind n width times))))
-
-  (defthm logrepeat-1
-    (equal (logrepeat 1 width data)
-           (loghead width data))
-    :hints (("goal" :expand ((logrepeat 1 width data)) )))
-
-
-  (local (defun mod-less-ind (n width)
-           (declare (Xargs :measure (nfix n)))
-           (if (zp n)
-               width
-             (mod-less-ind (- n (* 2 (acl2::pos-fix width))) width))))
-
-  (local (defthm plus-two-minuses
-           (equal (+ (- x) (- x))
-                  (- (* 2 x)))))
-
-  (local (defthm mod-when-less-than-half
-           (implies (and (natp n) (natp w)
-                         (< (mod n (* 2 w)) w))
-                    (equal (mod n (* 2 w))
-                           (mod n w)))
-           :hints (("goal"
-                   :induct (mod-less-ind n w))
-                   (and stable-under-simplificationp
-                        '(:cases ((posp w))))
-                   (and stable-under-simplificationp
-                        '(:cases ((< n (* 2 w))))))))
-
-  (local (defthm mod-when-greater-than-half
-           (implies (and (natp n) (natp w)
-                         (<= w (mod n (* 2 w))))
-                    (equal (mod n (* 2 w))
-                           (+ (mod n w) w)))
-           :hints (("goal"
-                   :induct (mod-less-ind n w))
-                   (and stable-under-simplificationp
-                        '(:cases ((posp w))))
-                   (and stable-under-simplificationp
-                        '(:cases ((< n (* 2 w))))))))
-
-  (defthm logrepeat-2x
-    (implies (natp width)
-             (equal (logrepeat times (* 2 width) (logapp width data data))
-                    (logrepeat (* 2 (nfix times)) width data)))
-    :hints (("goal" :in-theory (disable logrepeat)
-             :do-not-induct t)
-            (bitops::equal-by-logbitp-hammer)))
-
-  (defthm logapp-right-assoc
-    (implies (<= (nfix w2) (nfix w1))
-             (equal (logapp w1 (logapp w2 a b) c)
-                    (logapp w2 a
-                            (logapp (- (nfix w1) (nfix w2)) b c))))
-    :hints ((bitops::logbitp-reasoning)))
-
-  (defthm lognot-of-logrepeat
-    (equal (lognot (logrepeat times width data))
-           (logapp (* (nfix times) (nfix width))
-                   (logrepeat times width (lognot data))
-                   -1))))
 
 
 
@@ -663,7 +550,7 @@ transformation.</p>")
                   (natp numvars))
              (unsigned-byte-p (- (ash 1 numvars) (ash 1 (nfix n)))
                               (loghead (ash 1 numvars) (lognot var-enc))))
-    :hints (("Goal" :use ((:instance size-of-logrepeat-by-data-size
+    :hints (("Goal" :use ((:instance bitops::size-of-logrepeat-by-data-size
                            (n (+ (ash 1 numvars) (- (ash 1 (nfix n)))))
                            (m (ash 1 (nfix n)))
                            (times (ash 1 (+ -1 numvars (- (nfix n)))))
@@ -677,7 +564,7 @@ transformation.</p>")
                       (ash 1 numvars))
              :in-theory (e/d (logcons
                               ash-1-monotonic)
-                             (size-of-logrepeat-by-data-size
+                             (bitops::size-of-logrepeat-by-data-size
                               var-negated-masked-lemma))))
     ;; :hints (("Goal" :use ((:instance var-repetitions-negated-masked-size
     ;;                        (n (+ 1 (nfix n)))

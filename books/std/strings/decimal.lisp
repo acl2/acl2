@@ -526,6 +526,30 @@ consing together characters in reverse order.</p>"
   (defthm natstr-nonempty
     (not (equal (natstr n) ""))))
 
+(define natstr-width
+  :short "Convert a natural number into a string with the given width."
+  ((n natp)
+   (width posp))
+  :returns (str stringp :rule-classes :type-prescription)
+  :long "<p>Similar to @(see natstr) but produces a fixed number of decimal
+digits.  If the input number is smaller it is padded with 0s, and if larger its
+more-significant bits are truncated.</p>"
+  (b* ((width (mbe :logic (if (posp width) width 1) :exec width))
+       (chars (natchars n))
+       (width-chars (cond ((<= width (len chars)) (nthcdr (- (len chars) width) chars))
+                          (t (append (make-list (- width (len chars)) :initial-element #\0)
+                                     chars)))))
+    (implode width-chars))
+  :prepwork
+  ((local (defthm character-listp-of-nthcdr
+            (implies (character-listp x)
+                     (character-listp (nthcdr n x))))))
+  ///
+  (defthm digit-listp-of-natstr-width
+    (digit-listp (explode (natstr-width n width))))
+  (defthm natstr-width-nonempty
+    (not (equal (natstr-width n width) ""))))
+
 (define intstr
   :short "Convert an integer into a string with its digits."
   ((i integerp))
@@ -555,6 +579,32 @@ consing together characters in reverse order.</p>"
             :in-theory (enable natstr)
             :use ((:instance natstr-one-to-one (n 0) (m m))
                   (:instance natstr-one-to-one (n n) (m 0)))))))
+
+(define intstr-width
+  :short "Convert an integer into a string with a fixed number of digits."
+  ((i integerp)
+   (width posp))
+  :returns (str stringp :rule-classes :type-prescription)
+  (b* ((i (mbe :logic (ifix i) :exec i))
+       (width (mbe :logic (if (posp width) width 1) :exec width))
+       (chars (if (< i 0)
+                  (b* ((chars (natchars (- i))))
+                    (cons #\-
+                          (cond ((<= width (len chars)) (nthcdr (- (len chars) width) chars))
+                                (t (append (make-list (- width (len chars)) :initial-element #\0)
+                                           chars)))))
+                (b* ((chars (natchars i)))
+                  (cond ((<= width (len chars)) (nthcdr (- (len chars) width) chars))
+                        (t (append (make-list (- width (len chars)) :initial-element #\0)
+                                   chars)))))))
+    (implode chars))
+  :prepwork
+  ((local (defthm character-listp-of-nthcdr
+            (implies (character-listp x)
+                     (character-listp (nthcdr n x))))))
+  ///
+  (defthm intstr-width-nonempty
+    (not (equal (intstr-width i width) ""))))
 
 (define natstr-list
   :short "Convert a list of natural numbers into a list of strings."

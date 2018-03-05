@@ -88,7 +88,8 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable drop-formals reverse))))
 
-; Copied directly from axioms.lisp, 8/6/2017:
+; The following is adapted directly from axioms.lisp, 8/6/2017; see all-vars1
+; and all-vars1-lst in that file.
 (encapsulate
   ()
   (local
@@ -208,18 +209,18 @@
 (defun ext-restore-formals (old-formals new-formals bad-formals)
   (declare (xargs :mode :program))
   (cond ((endp old-formals) (mv nil nil))
-        (t (mv-let (formals1 alist-1-0)
+        (t (mv-let (formals1 alist-new-to-old)
              (ext-restore-formals (cdr old-formals)
                                   (cdr new-formals)
                                   bad-formals)
              (cond ((member-eq (car old-formals) bad-formals)
                     (mv (cons (car new-formals) formals1)
-                        alist-1-0))
+                        alist-new-to-old))
                    (t
                     (mv (cons (car old-formals) formals1)
                         (acons (car new-formals)
                                (car old-formals)
-                               alist-1-0))))))))
+                               alist-new-to-old))))))))
 
 (defun ext-rename-for-substitution (formals actuals subterm body)
 
@@ -255,7 +256,7 @@
 
 ;   (let ((u (f1 u v))
 ;         (v (f2 u v)))
-;     (f3 u (g v)))
+;     (f3 u (h v)))
 
 ; That is, we should get the following result.
 
@@ -264,14 +265,23 @@
 ;         (subterm '(h (f2 u v)))
 ;         (body '(f3 u (g v))))
 ;     (ext-rename-for-substitution formals actuals subterm body))
-;   =
-;   ((LAMBDA (U V) (F3 U (H V)))
-;    (F1 U V)
-;    (F2 U V))
+;   = {return new (formals subterm body)
+;   ((U V) (H V) (F3 U (G V)))
 
-; But how do we get there?  The ideas is to do so using alpha conversion.  For
-; readability we write untranslated terms below even though we actually operate
-; on translated terms.
+; On the other hand, if we aren't fortunate enough to be able to substitute
+; legally inside the bindings, then we rename formals.  Here is an example:
+
+;   (let ((formals '(u v))
+;         (actuals '((f1 u v) (f2 u v)))
+;         (subterm '(h u))
+;         (body '(f3 u (g v))))
+;     (ext-rename-for-substitution formals actuals subterm body))
+;   = {return new (formals subterm body)
+;   ((U{1} V) (H U) (F3 U{1} (G V)))
+
+; Let's look at how the first of these two examples is carried out by our
+; algorithm. For readability we write untranslated terms below even though we
+; actually operate on translated terms.
 
 ;;;;; Start example
 
@@ -296,8 +306,9 @@
 ;         (v1 (f2 u v)))
 ;     (f3 u1 (h v1)))
 
-; Since u and v don't occur in the resulting lambda-body, rename u1 and v1 back
-; to u and v, resp.
+; Note that u and v don't occur in the resulting lambda-body -- equivalently,
+; they don't occur in the generalized term, (h v1).  So we rename u1 and v1
+; back to u and v, resp.
 
 ;   (let ((u (f1 u v))
 ;         (v (f2 u v)))
@@ -309,24 +320,24 @@
 ; subterm.  In that case, the caller may need generate extra formals beyond
 ; formals1 when producing the final lambda.
 
-; The spec is simply that the lambdas agree, as follows.
-
-; Body1 is the result of substituting formals1 for formals in body, hence
-; ((lambda formals body) . actuals) is provably equal to
-; ((lambda formals1 body1) . actuals); and
-
-; ((lambda formals subterm) . actuals) is provably equal to
-; ((lambda formals1 subterm1) . actuals).
+; The spec is simply as follows, for returned (mv formals1 subterm1 body1).
+; First, (lambda formals1 body1) is an alpha-conversion of (lambda formals
+; body).  Second, subterm1 is the result of generalizing subterm by mapping
+; actuals to formals1.  And finally, ((lambda formals subterm) . actuals) is
+; provably equal to ((lambda formals1 subterm1) . actuals); informally, the
+; meaning of subterm when binding formals to actuals equals the meaning of
+; subterm1 when binding formals1 to actuals.  An informal requirement is that
+; formals1 only changes variables in formals when necessary.
 
   (declare (xargs :mode :program))
   (b* ((subterm-vars (all-vars subterm))
        (formals0 (ext-rename-formals formals subterm-vars))
        (new-subterm (sublis-expr (pairlis$ actuals formals0) subterm))
        (bad-formals (intersection-eq (all-vars new-subterm) formals))
-       ((mv formals1 alist-1-0)
+       ((mv formals1 alist-new-to-old)
         (ext-restore-formals formals formals0 bad-formals))
        (body1 (sublis-expr (pairlis$ formals formals1) body))
-       (subterm1 (sublis-expr alist-1-0 new-subterm)))
+       (subterm1 (sublis-expr alist-new-to-old new-subterm)))
     (mv formals1 subterm1 body1)))
 
 (mutual-recursion
@@ -850,112 +861,33 @@
 
 (verify-guards ext-one-way-unify1-simple)
 
-; Start guard proof for apply-bindings.
+(defun apply-subst-to-alist (s alist formals)
+  (declare (xargs :guard (and (symbol-alistp s)
+                              (pseudo-term-listp (strip-cdrs s))
+                              (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
+                              (symbol-listp formals))))
+  (cond ((endp alist) nil)
+        ((member-eq (caar alist) formals)
+         (apply-subst-to-alist s (cdr alist) formals))
+        (t (acons (caar alist)
+                  (sublis-var s (cdar alist))
+                  (apply-subst-to-alist s (cdr alist) formals)))))
 
-(defthm len-append
-  (equal (len (append x y))
-         (+ (len x) (len y))))
+(defun extend-bindings (formals actuals bindings)
 
-(defthm pseudo-term-listp-mv-nth-1-drop-formals
-  (implies (and (pseudo-term-listp actuals)
-                (pseudo-term-listp acc-a))
-           (pseudo-term-listp
-            (mv-nth 1 (drop-formals formals actuals vars acc-f acc-a))))
-  :hints (("Goal" :in-theory (enable drop-formals reverse))))
+; Bindings is a substitution.  We extend that substitution by binding formals
+; to actuals/bindings.
 
-(defthm pseudo-term-listp-append
-  (implies (pseudo-term-listp x)
-           (equal (pseudo-term-listp (append x y))
-                  (pseudo-term-listp y))))
-
-(defthm pseudo-term-listp-set-differenc-equal
-  (implies (pseudo-term-listp x)
-           (pseudo-term-listp (set-difference-equal x y))))
-
-(defthm symbol-listp-implies-pseudo-term-listp
-  (implies (symbol-listp x)
-           (pseudo-term-listp x)))
-
-(defthm symbol-listp-append
-  (implies (symbol-listp x)
-           (equal (symbol-listp (append x y))
-                  (symbol-listp y))))
-
-(defthm symbol-listp-set-differenc-equal
-  (implies (symbol-listp x)
-           (symbol-listp (set-difference-equal x y))))
-
-(defun lamsp (lams)
-  (declare (xargs :guard t))
-  (cond ((atom lams) (null lams))
-        (t (and (let ((lam (car lams)))
-                  (and (pseudo-termp lam)
-                       (nvariablep lam)
-                       (flambda-applicationp lam)))
-                (lamsp (cdr lams))))))
-
-(defund apply-bindings (lams term)
-
-; Lams is a list of lambda-applications, representing the binding environments
-; for term, tightest bindings at the front.  Consider for example the term
-
-;   (let ((y (f x)))
-;     (let ((z (g y)))
-;       (if (h y z) y z)))
-
-; which translates to:
-
-;   ((LAMBDA (Y)
-;            ((LAMBDA (Z Y) (IF (H Y Z) Y Z))
-;             (G Y)
-;             Y))
-;    (F X))
-
-; As we dive down to (h y z), we pick up bindings of y to (f x) and then z to
-; (g y).  We represent these bindings by the list of lambda-applications
-; encountered:
-
-;   (((LAMBDA (Y)
-;             ((LAMBDA (Z Y) (IF (H Y Z) Y Z))
-;              (G Y)
-;              Y))
-;     (F X))
-;    ((LAMBDA (Z Y) (iF (H Y Z) Y Z))
-;     (G Y)
-;     Y))
-
-; We recur on the cdr, applying each such "binding" in order inside-out,
-; ignoring the lambda-body as we go.  This first gives us
-
-;   ((lambda (z y) (h y z))
-;    (g y)
-;    y)
-
-; which untranslates to (let ((z (g y))) (h y z)), and then:
-
-;   ((lambda (y)
-;            ((lambda (z y) (h y z))
-;             (g y)
-;             y))
-;    (f x))
-
-; which untranslates to:
-
-;   (let* ((y (f x))
-;          (z (g y)))
-;     (h y z))
-
-; as one might expect.
-
-  (declare (xargs :guard (and (lamsp lams)
-                              (pseudo-termp term))
-                  :guard-hints (("Goal" :in-theory (enable ext-make-lambda-application)))))
-  (cond ((endp lams) term)
-        (t (let* ((lam (car lams))
-                  (formals (lambda-formals (ffn-symb lam)))
-                  (actuals (fargs lam))
-                  (term2 (ext-make-lambda-application formals term actuals)))
-             (apply-bindings (cdr lams) term2)))))
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (pseudo-term-listp actuals)
+                              (eql (len formals) (len actuals))
+                              (symbol-alistp bindings)
+                              (pseudo-term-listp (strip-cdrs bindings)))))
+  (cond ((endp formals) bindings)
+        (t (acons (car formals)
+                  (sublis-var bindings (car actuals))
+                  (extend-bindings (cdr formals) (cdr actuals) bindings)))))
 
 (mutual-recursion
 
@@ -964,7 +896,9 @@
 
 ; If term is an instance of pat/alist, viewing :@ as invisible, then return (mv
 ; t alist' lst) where alist' extends alist such that term = pat/alist', and lst
-; is a list of triples (list* A U G) for address A, subterm U of term at A, and
+; is a list of triples (list* A U B G) for address A, lexical subterm U of term
+; at A, binding alist B mapping variables to terms relative to the global
+; environment such that U/B is truly (semantically) the subterm at A, and
 ; corresponding governors G.  Note that A and govs are accumulated in reverse
 ; order into posn-lst and govs, respectively, but they are put in proper order
 ; as they are returned.  There is one triple for each position of an :@ call in
@@ -976,7 +910,8 @@
                               (pseudo-termp term)
                               (symbol-alistp alist)
                               (nat-listp posn-lst)
-                              (lamsp bindings)
+                              (symbol-alistp bindings)
+                              (pseudo-term-listp (strip-cdrs bindings))
                               (true-listp govs))
                   :verify-guards nil))
   (cond
@@ -991,7 +926,8 @@
       (ext-one-way-unify1-simple (fargn pat 1) term alist)
       (cond (flg (mv t
                      (list (list* (reverse posn-lst)
-                                  (apply-bindings bindings term)
+                                  term
+                                  bindings
                                   (reverse govs)))
                      unify-subst))
             (t (mv nil nil nil)))))
@@ -1008,7 +944,9 @@
            (lambda-body (ffn-symb term))
            alist
            (cons 0 posn-lst)
-           (cons term bindings)
+           (extend-bindings (lambda-formals (ffn-symb term))
+                            (fargs term)
+                            bindings)
            govs))
          ((when (not flg))
           (mv nil nil nil))
@@ -1036,7 +974,7 @@
                                               alist
                                               (cons 2 posn-lst)
                                               bindings
-                                              (cons (apply-bindings
+                                              (cons (sublis-var
                                                      bindings
                                                      (fargn term 1))
                                                     govs)))
@@ -1048,7 +986,7 @@
                                               alist
                                               (cons 3 posn-lst)
                                               bindings
-                                              (cons (apply-bindings
+                                              (cons (sublis-var
                                                      bindings
                                                      (dumb-negate-lit
                                                       (fargn term 1)))
@@ -1066,7 +1004,8 @@
                               (symbol-alistp alist)
                               (posp posn)
                               (nat-listp posn-lst)
-                              (lamsp bindings)
+                              (symbol-alistp bindings)
+                              (pseudo-term-listp (strip-cdrs bindings))
                               (true-listp govs))))
   (cond ((endp pat-lst) (mv t nil alist))
         (t (b* (((mv flg lst1 alist)
@@ -1112,7 +1051,11 @@
     :flag ext-one-way-unify1-simple-lst))
 
 (in-theory (disable ext-one-way-unify1-simple
-                    ext-one-way-unify1-simple-lst))
+                    ext-one-way-unify1-simple-lst
+                    sublis-var
+                    ; quotep cons-term
+                    ;dumb-negate-lit
+                    ))
 
 (defthm-flag-ext-address-subterm-governors-lst2
   (defthm true-listp-ext-address-subterm-governors-lst2
@@ -1155,6 +1098,33 @@
   (implies (pseudo-term-listp x)
            (pseudo-termp (car x))))
 
+; Start subproof of pseudo-term-listp-strip-cdrs-extend-bindings
+
+(local (include-book "system/sublis-var" :dir :system))
+
+(defthm pseudo-termp-sublis-var
+  (implies (and (pseudo-termp x)
+                (symbol-alistp bindings)
+                (pseudo-term-listp (strip-cdrs bindings)))
+           (pseudo-termp (sublis-var bindings x)))
+  :hints (("Goal" :in-theory (enable sublis-var))))
+
+(defthm pseudo-term-listp-strip-cdrs-extend-bindings
+  (implies (and (pseudo-term-listp actuals)
+                (symbol-alistp bindings)
+                (pseudo-term-listp (strip-cdrs bindings)))
+           (pseudo-term-listp (strip-cdrs (extend-bindings formals
+                                                           actuals
+                                                           bindings))))
+  :hints (("Goal" :in-theory (enable sublis-var))))
+
+(defthm symbol-alistp-extend-bindings
+  (implies (and (symbol-listp formals)
+                (symbol-alistp bindings))
+           (symbol-alistp (extend-bindings formals
+                                           actuals
+                                           bindings))))
+
 (verify-guards ext-address-subterm-governors-lst2)
 
 (mutual-recursion
@@ -1175,13 +1145,14 @@
                               (pseudo-termp term)
                               (symbol-alistp alist)
                               (nat-listp posn-lst)
-                              (lamsp bindings)
+                              (symbol-alistp bindings)
+                              (pseudo-term-listp (strip-cdrs bindings))
                               (true-listp govs))))
-  (mv-let (flg triples unify-subst)
+  (mv-let (flg tuples unify-subst)
     (ext-address-subterm-governors-lst2 pat term alist posn-lst bindings govs)
     (declare (ignore unify-subst))
     (cond
-     (flg triples)
+     (flg tuples)
      (t
       (and (nvariablep term)
            (not (fquotep term))
@@ -1198,7 +1169,7 @@
                                                      alist
                                                      (cons 2 posn-lst)
                                                      bindings
-                                                     (cons (apply-bindings
+                                                     (cons (sublis-var
                                                             bindings
                                                             (fargn term 1))
                                                            govs))
@@ -1207,7 +1178,7 @@
                                                      alist
                                                      (cons 3 posn-lst)
                                                      bindings
-                                                     (cons (apply-bindings
+                                                     (cons (sublis-var
                                                             bindings
                                                             (dumb-negate-lit
                                                              (fargn term 1)))
@@ -1224,7 +1195,9 @@
                (lambda-body (ffn-symb term))
                alist
                (cons 0 posn-lst)
-               (cons term bindings)
+               (extend-bindings (lambda-formals (ffn-symb term))
+                                (fargs term)
+                                bindings)
                govs)))
             (t (ext-address-subterm-governors-lst1-lst pat (fargs term) alist
                                                        1 posn-lst
@@ -1237,7 +1210,8 @@
                               (symbol-alistp alist)
                               (posp posn)
                               (nat-listp posn-lst)
-                              (lamsp bindings)
+                              (symbol-alistp bindings)
+                              (pseudo-term-listp (strip-cdrs bindings))
                               (true-listp govs))))
   (cond
    ((endp term-lst)

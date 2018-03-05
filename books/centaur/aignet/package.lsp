@@ -141,6 +141,8 @@
             *bitops-exports*
             *stobjs-exports*))
 
+(defpkg "AIGNET-GENSYMS" nil)
+
 ;; (defconst *aignet$a-exports*
 ;;   #!AIGNET
 ;;   '(const-type
