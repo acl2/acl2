@@ -16,6 +16,8 @@
     (posps (1- n)
            (cons n acc))))
 
+(comp t)
+
 (defconst *100k* (posps 100000 nil))
 (defconst *million* (posps 1000000 nil))
 (defconst *10M* (posps 10000000 nil))
@@ -96,6 +98,8 @@
                    (fix (apply$ fn3 (list (car lst))))
                    (fix (apply$ fn4 (list (car lst))))
                    acc)))))
+
+(comp t)
 
 ; Note: Each of the tests below shows approximately 16 bytes per iteration.
 ; That is good: it shows that there is essentially no consing by the cl-cache
