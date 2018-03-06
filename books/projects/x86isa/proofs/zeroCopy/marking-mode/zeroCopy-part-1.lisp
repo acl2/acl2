@@ -32,7 +32,8 @@
          top-level-opcode-execute
          two-byte-opcode-decode-and-execute
          x86-operand-from-modr/m-and-sib-bytes
-         x86-effective-addr
+         x86-effective-addr-when-64-bit-modep
+         x86-effective-addr-32/64
          x86-effective-addr-from-sib
          x86-operand-to-reg/mem
          rr08 rr32 rr64 wr08 wr32 wr64

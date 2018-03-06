@@ -17,7 +17,7 @@
 
 (defxdoc print-specifier
 
-  :parents (utilities)
+  :parents (common-options)
 
   :short "Specifies the kinds of output
           that an APT transformation must print on the screen."

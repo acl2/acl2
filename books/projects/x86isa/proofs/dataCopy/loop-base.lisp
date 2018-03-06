@@ -84,7 +84,8 @@
                              n64-to-i64
                              riml08
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              subset-p
                              signed-byte-p)
                             (mv-nth-1-wb-and-!flgi-commute

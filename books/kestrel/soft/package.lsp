@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Package
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,8 +21,10 @@
                          defchoose-body
                          defchoose-bound-vars
                          defchoose-strengthen
+                         definedp
                          defpun
                          defun-sk-bound-vars
+                         defun-sk-definition-name
                          defun-sk-matrix
                          defun-sk-quantifier
                          defun-sk-rewrite-kind
@@ -57,5 +59,6 @@
                          strip-keyword-list
                          symbol-symbol-alistp
                          ubody
+                         uguard
                          variablep
                          well-founded-relation)))

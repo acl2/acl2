@@ -26743,9 +26743,9 @@
 
 ; We are considering the case of a pair (f . g), where f is a warrant and g is
 ; true-apply$-warrant, which is the always-true function we have chosen to
-; attach to warrants.  The argument supporting attachments of dopplegangers
+; attach to warrants.  The argument supporting attachments of doppelgangers
 ; also supports the attachment of each warrant to true-apply$-warrant, because
-; in the doppleganger model, every warrant is true.
+; in the doppelganger model, every warrant is true.
 
               (warrantp (caar alist) wrld))
          (defattach-constraint-rec
@@ -27658,7 +27658,7 @@
 ; reason is that we can view attachments as being done in two stages: first,
 ; the user does some attachments, and we check here for cycles; then, the
 ; resulting evaluation theory is extended to a bigger evaluation theory in
-; which functions are attached to their dopplegangers, and where the warrants
+; which functions are attached to their doppelgangers, and where the warrants
 ; are all true.  That second step is justified in the paper, ``Limited Second
 ; Order Functionality in a First Order Setting'', where we prove that for any
 ; certified user book we could attach defined functions to badge-userfn and

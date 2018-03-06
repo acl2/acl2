@@ -549,6 +549,53 @@ the @('fault') field instead.</li>
 
 ;; ======================================================================
 
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+(define select-address-size ((p4? booleanp) (x86 x86p))
+  :returns (address-size (member-equal address-size '(2 4 8)))
+  :inline t
+  :parents (decoding-and-spec-utils)
+  :short "Address size of an instruction, in bytes."
+  :long
+  "<p>
+   This is based on AMD manual, Dec'17, Volume 3, Table 1-3,
+   and AMD manual, Dec'17, Volume 2, Sections 4.7 and 4.8.
+   </p>
+   <p>
+   In 64-bit mode, the address size is
+   64 bits if there is no address override prefix,
+   32 bits if there is an address override prefix.
+   In 32-bit mode, the address size is
+   32 bits if either
+   (i) the default address size is 32 bits
+   and there is no address override prefix, or
+   (ii) the default address size is 16 bits
+   and there is an eddress override prefix;
+   otherwise, the address size is 16 bits.
+   In 32-bit mode,
+   the default address size is determined by the CS.D bit of the code segment:
+   32 bits if CS.D is 1, 16 bits if CS.D is 0.
+   </p>
+   <p>
+   The boolean argument of this function
+   indicates whether there is an override prefix or not.
+   </p>"
+  (if (64-bit-modep x86)
+      (if p4? 4 8)
+    (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+         (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+         (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+      (if cs.d (if p4? 2 4) (if p4? 4 2))))
+  ///
+
+  (defrule select-address-size-not-2-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (not (equal 2 (select-address-size prefixes x86))))))
+
+;; ======================================================================
+
+;; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
+
 (defsection effective-address-computations
 
   :parents (decoding-and-spec-utils)
@@ -581,7 +628,9 @@ the @('fault') field instead.</li>
            <p>Note that, in 32-bit mode,
            we call this function only when the address size is 32 bits.
            When the address size is 16 bits, there is no SIB byte:
-           See Intel Vol. 2 Table 2-1.</p>"
+           See Intel Vol. 2 Table 2-1.</p>
+           <p>The displacement is read as a signed values:
+           see AMD manual, Dec'17, Volume 3, Section 1.5.</p>"
 
     :returns (mv flg
                  (non-truncated-memory-address
@@ -652,16 +701,17 @@ the @('fault') field instead.</li>
          (scale (the (unsigned-byte 2) (sib-scale sib)))
          (scaled-index (ash index scale))
 
-         (effective-addr (+ base displacement scaled-index)))
+         (effective-addr (+ base scaled-index)))
 
-        (mv flg effective-addr 0 nrip-bytes x86))
+        (mv flg effective-addr displacement nrip-bytes x86))
 
     ///
 
-    (defthm x86-effective-addr-from-sib-returns-natp-displacement
-      (equal (mv-nth 2 (x86-effective-addr-from-sib
-                        temp-RIP rex-byte mod sib x86))
-             0)
+    (defthm x86-effective-addr-from-sib-returns-integerp-displacement
+      (implies (x86p x86)
+               (integerp (mv-nth 2 (x86-effective-addr-from-sib
+                                    temp-RIP rex-byte mod sib x86))))
+      :rule-classes (:rewrite :type-prescription)
       :hints (("Goal" :in-theory (e/d (rime-size riml-size) ()))))
 
     (defthm x86-effective-addr-from-sib-returns-<=-increment-rip-bytes
@@ -680,7 +730,161 @@ the @('fault') field instead.</li>
               (equal (logext n (loghead n x)) x))
      :hints (("Goal" :in-theory (e/d (logext loghead logapp logbitp) ())))))
 
-  (define x86-effective-addr
+  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
+  (define x86-effective-addr-16-disp
+    ((temp-rip :type (signed-byte   #.*max-linear-address-size*) )
+     (mod      :type (unsigned-byte 2) "mod field of ModR/M byte")
+     x86)
+    :returns (mv flg
+                 (disp i16p
+                       :hyp (x86p x86)
+                       :hints (("Goal" :in-theory (enable rime-size))))
+                 (increment-rip-by natp)
+                 (x86 x86p :hyp (x86p x86)))
+    :short "Calculate the displacement for
+            16-bit effective address calculation."
+    :long
+    "<p>
+     This is according to Intel manual, Mar'17, Vol. 2, Table 2-1.
+     </p>
+     <p>
+     The displacement is absent (i.e. 0) when Mod is 00b.
+     An exception to this is when R/M is 110b,
+     in which case there is a 16-bit displacement that is added to the index.
+     This case is not handled by this function,
+     but is instead handled in
+     its caller function @(tsee x86-effective-addr-16).
+     </p>
+     <p>
+     The displacement is a signed 8-bit value when Mod is 01b.
+     The displacement is a signed 16-bit value when Mod is 10b.
+     This function is not called when Mod is 11b.
+     </p>
+     <p>
+     If an error occurs when trying to read the displacement,
+     0 is returned as displacement,
+     but the caller ignores the returned displacement given the error.
+     </p>
+     <p>
+     This function is called only when the address size is 16 bits.
+     </p>"
+    (case mod
+      (0 (mv nil 0 0 x86))
+      (1 (b* (((mv flg byte x86) (rime-size 1 temp-rip *cs* :x x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil byte 1 x86)))
+      (2 (b* (((mv flg word x86) (rime-size 2 temp-rip *cs* :x x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil word 2 x86)))
+      (otherwise ; shouldn't happen
+       (mv 'mod-value-wrong 0 0 x86)))
+    ///
+
+    (more-returns
+     (disp integerp
+           :hyp (x86p x86)
+           :name integerp-of-x86-effective-addr-16-disp.disp
+           :rule-classes :type-prescription))
+
+    (defthm mv-nth-2-x86-effective-addr-16-disp-<=-4
+      (<= (mv-nth 2 (x86-effective-addr-16-disp temp-RIP mod x86))
+          4)
+      :rule-classes :linear))
+
+  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
+  (define x86-effective-addr-16
+    ((temp-rip :type (signed-byte   #.*max-linear-address-size*) )
+     (r/m      :type (unsigned-byte 3) "r/m field of ModR/M byte")
+     (mod      :type (unsigned-byte 2) "mod field of ModR/M byte")
+     x86)
+    :returns (mv flg
+                 (address n16p)
+                 (increment-rip-by natp)
+                 (x86 x86p :hyp (x86p x86)))
+    :short "Effective address calculation with 16-bit addressing."
+    :long
+    "<p>
+     This is according to Intel manual, Mar'17, Vol. 2, Table 2-1.
+     </p>
+     <p>
+     We assume that the additions in the table are modular,
+     even though the documentation is not clear in that respect.
+     So we simply apply @('n16') to the exact integer result.
+     This is in analogy to the use of @('n32')
+     for effective address calculation in 64-bit mode
+     when there is an address size override prefix:
+     see @(tsee x86-effective-addr-32/64).
+     </p>"
+    (case r/m
+      (0 (b* ((bx (rr16 *rbx* x86))
+              (si (rr16 *rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx si disp)) increment-rip-by x86)))
+      (1 (b* ((bx (rr16 *rbx* x86))
+              (di (rr16 *rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx di disp)) increment-rip-by x86)))
+      (2 (b* ((bp (rr16 *rbp* x86))
+              (si (rr16 *rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bp si disp)) increment-rip-by x86)))
+      (3 (b* ((bp (rr16 *rbp* x86))
+              (di (rr16 *rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bp di disp)) increment-rip-by x86)))
+      (4 (b* ((si (rr16 *rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ si disp)) increment-rip-by x86)))
+      (5 (b* ((di (rr16 *rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ di disp)) increment-rip-by x86)))
+      (6 (case mod
+           (0 (b* (((mv flg disp x86) (rime-size 2 temp-rip *cs* :x x86))
+                   ((when flg) (mv flg 0 0 x86)))
+                (mv nil (n16 disp) 2 x86)))
+           (otherwise (b* ((bp (rr16 *rbp* x86))
+                           ((mv flg disp increment-rip-by x86)
+                            (x86-effective-addr-16-disp temp-rip mod x86))
+                           ((when flg) (mv flg 0 0 x86)))
+                        (mv nil (n16 (+ bp disp)) increment-rip-by x86)))))
+      (7 (b* ((bx (rr16 *rbx* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx disp)) increment-rip-by x86)))
+      (otherwise ; shouldn't happen
+       (mv :r/m-out-of-range 0 0 x86)))
+    ///
+
+    (defthm-sb i64p-mv-nth-1-x86-effective-addr-16
+      :hyp t
+      :bound 64
+      :concl (mv-nth 1 (x86-effective-addr-16 temp-RIP r/m mod x86))
+      :gen-linear t
+      :gen-type t)
+
+    (defthm natp-mv-nth-2-x86-effective-addr-16
+      (natp (mv-nth 2 (x86-effective-addr-16 temp-RIP r/m mod x86)))
+      :rule-classes :type-prescription)
+
+    (defthm mv-nth-2-x86-effective-addr-16-<=-4
+      (<= (mv-nth 2 (x86-effective-addr-16 temp-RIP r/m mod x86))
+          4)
+      :rule-classes :linear))
+
+  (define x86-effective-addr-32/64
     (p4
      (temp-RIP       :type (signed-byte   #.*max-linear-address-size*) )
      (rex-byte       :type (unsigned-byte 8) "Rex byte")
@@ -694,7 +898,8 @@ the @('fault') field instead.</li>
      ;; instruction. For details, see *Z-addressing-method-info* in
      ;; x86isa/utils/decoding-utilities.lisp.
      (num-imm-bytes  :type (unsigned-byte 3)
-                     "Number of immediate bytes (0, 1, 2, or 4) that follow the sib (or displacement bytes, if any).")
+                     "Number of immediate bytes (0, 1, 2, or 4)
+                      that follow the sib (or displacement bytes, if any).")
      x86)
 
     :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 rime-size) ())))
@@ -708,13 +913,14 @@ the @('fault') field instead.</li>
               increment-RIP-by
               (x86 x86p :hyp (force (x86p x86))))
 
+    :short "Effective address calculation with 32-bit and 64-bit addressing."
 
-    :long "<p> We do not add the FS and GS bases (if FS and GS
-    overrides are present) to the effective address computed in this
-    function.  We choose do so either directly in the instruction
-    semantic functions or in functions like @(see
-    x86-operand-from-modr/m-and-sib-bytes) and @(see
-    x86-operand-to-reg/mem).</p>
+    :long  "<p>Note that we do not add segment bases
+    (such as the FS and GS bases, if FS and GS overrides are present)
+    to the effective address computed in this function.
+    Addition of those segment base addresses is a part of the
+    segmentation process --- we handle that in the function @(see
+    ea-to-la) that performs the segment address translation.</p>
 
     <p>Quoting from Intel Vol 1, Sec 3.3.7:</p>
 
@@ -766,8 +972,9 @@ the @('fault') field instead.</li>
                 ;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
                 (x86-effective-addr-from-sib temp-RIP rex-byte mod sib
                                              x86))
-               (5 ;; RIP-relative addressing
+               (5
                 (if (64-bit-modep x86)
+                    ;; RIP-relative addressing in 64-bit mode:
                     (b* (((mv ?flg0 dword x86)
                           ;; dword is the sign-extended displacement
                           ;; present in the instruction.
@@ -780,8 +987,14 @@ the @('fault') field instead.</li>
                                                            (+ 4 num-imm-bytes)
                                                            x86))
                          ((when flg) (mv flg 0 0 0 x86)))
-                        (mv flg0 next-rip dword 4 x86))
-                  (mv 'non-64-bit-modes-unimplemented 0 0 0 x86)))
+                      (mv flg0 next-rip dword 4 x86))
+                  ;; displacement only in 32-bit mode:
+                  (b* (((mv flg dword x86)
+                        ;; dword is the sign-extended displacement
+                        ;; present in the instruction.
+                        (rime-size 4 temp-RIP *cs* :x x86))
+                       ((when flg) (mv flg 0 0 0 x86)))
+                    (mv nil 0 dword 4 x86))))
 
                (otherwise
                 (mv nil
@@ -834,10 +1047,16 @@ the @('fault') field instead.</li>
          ;; 64 bits.  Note that our current virtual memory functions can
          ;; cause an error if the address we are reading from/writing to
          ;; is >= 2^47-8.
-
-         (dst-base (if p4
-                       (n32 dst-base)
-                     (n64-to-i64 (n64 dst-base)))))
+         ;; In 32-bit mode,
+         ;; this function we are in is called when the address size is 32 bits
+         ;; (X86-EFFECTIVE-ADDR-16 is called when the address size is 16 bits),
+         ;; so the following code always returns
+         ;; a 32-bit address in 32-bit mode.
+         (dst-base (if (64-bit-modep x86)
+                       (if p4
+                           (n32 dst-base)
+                         (n64-to-i64 (n64 dst-base)))
+                     (n32 dst-base))))
 
         (mv flg dst-base increment-RIP-by x86))
 
@@ -845,6 +1064,72 @@ the @('fault') field instead.</li>
 
     (local (in-theory (e/d () (force (force)))))
 
+
+    (defthm-sb i64p-mv-nth-1-x86-effective-addr-32/64
+      :hyp t
+      :bound 64
+      :concl (mv-nth 1 (x86-effective-addr-32/64
+                        p4 temp-RIP rex-byte r/m mod sib
+                        num-imm-bytes x86))
+      :gen-linear t
+      :gen-type t)
+
+    (defthm natp-mv-nth-2-x86-effective-addr-32/64
+      (natp (mv-nth 2 (x86-effective-addr-32/64
+                       p4 temp-RIP rex-byte r/m mod sib
+                       num-imm-bytes x86)))
+      :rule-classes :type-prescription)
+
+    (defthm mv-nth-2-x86-effective-addr-32/64-<=-4
+      (<= (mv-nth 2 (x86-effective-addr-32/64
+                     p4 temp-RIP rex-byte r/m mod sib
+                     num-imm-bytes x86))
+          4)
+      :rule-classes :linear))
+
+  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
+  (define x86-effective-addr
+    (p4
+     (temp-RIP       :type (signed-byte   #.*max-linear-address-size*) )
+     (rex-byte       :type (unsigned-byte 8) "Rex byte")
+     (r/m            :type (unsigned-byte 3) "r/m field of ModR/M byte")
+     (mod            :type (unsigned-byte 2) "mod field of ModR/M byte")
+     (sib            :type (unsigned-byte 8) "Sib byte")
+     ;; num-imm-bytes is needed for computing the next RIP when
+     ;; RIP-relative addressing is done.  Note that this argument is
+     ;; only relevant when the operand addressing mode is I, i.e.,
+     ;; when the operand value is encoded in subsequent bytes of the
+     ;; instruction. For details, see *Z-addressing-method-info* in
+     ;; x86isa/utils/decoding-utilities.lisp.
+     (num-imm-bytes  :type (unsigned-byte 3)
+       "Number of immediate bytes (0, 1, 2, or 4)
+                      that follow the sib (or displacement bytes, if any).")
+     x86)
+
+    ;; Returns the flag, the effective address (taking the SIB and
+    ;; ModR/M bytes into account) and the number of bytes to increment
+    ;; the temp-RIP by.
+    :returns (mv
+              flg
+              i64p-memory-address
+              increment-RIP-by
+              (x86 x86p :hyp (force (x86p x86))))
+
+    :short "Effective address calculation."
+
+    :long
+    "<p>
+     This is a wrapper that calls
+     @(tsee x86-effective-addr-16) or @(tsee x86-effective-addr-32/64)
+     based on the address size.
+     </p>"
+
+    (if (eql 2 (select-address-size (if p4 t nil) x86))
+        (x86-effective-addr-16 temp-rip r/m mod x86)
+      (x86-effective-addr-32/64
+       p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+
+    ///
 
     (defthm-sb i64p-mv-nth-1-x86-effective-addr
       :hyp t
@@ -866,7 +1151,14 @@ the @('fault') field instead.</li>
                      p4 temp-RIP rex-byte r/m mod sib
                      num-imm-bytes x86))
           4)
-      :rule-classes :linear)))
+      :rule-classes :linear)
+
+    (defruled x86-effective-addr-when-64-bit-modep
+      (implies (64-bit-modep x86)
+               (equal (x86-effective-addr
+                       p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86)
+                      (x86-effective-addr-32/64
+                       p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))))))
 
 ;; ======================================================================
 
@@ -1575,48 +1867,3 @@ made from privilege level 3.</sf>"
           2 ;; 16-bit operand-size
         4   ;; Default 32-bit operand size (in 64-bit mode)
         ))))
-
-;; ======================================================================
-
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-
-(define select-address-size ((prefixes :type (unsigned-byte 44)) (x86 x86p))
-  :returns (address-size (member-equal address-size '(2 4 8)))
-  :inline t
-  :parents (decoding-and-spec-utils)
-  :short "Address size of an instruction, in bytes."
-  :long
-  "<p>
-   This is base on AMD manual, Dec'17, Volume 3, Table 1-3,
-   and AMD manual, Dec'17, Volume 2, Sections 4.7 and 4.8.
-   </p>
-   <p>
-   In 64-bit mode, the address size is
-   64 bits if there is no address override prefix,
-   32 bits if there is an address override prefix.
-   In 32-bit mode, the address size is
-   32 bits if either
-   (i) the default address size is 32 bits
-   and there is no address override prefix, or
-   (ii) the default address size is 16 bits
-   and there is an eddress override prefix;
-   otherwise, the address size is 16 bits.
-   In 32-bit mode,
-   the default address size is determined by the CS.D bit of the code segment:
-   32 bits if CS.D is 1, 16 bits if CS.D is 0.
-   </p>"
-  (if (64-bit-modep x86)
-      (b* ((p4? (eql #.*addr-size-override*
-                     (prefixes-slice :group-4-prefix prefixes))))
-        (if p4? 4 8))
-    (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-         (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-         (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
-         (p4? (eql #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes))))
-      (if cs.d (if p4? 2 4) (if p4? 4 2))))
-  ///
-
-  (defrule select-address-size-not-2-when-64-bit-modep
-    (implies (64-bit-modep x86)
-             (not (equal 2 (select-address-size prefixes x86))))))
