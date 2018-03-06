@@ -216,6 +216,26 @@ into a call of a specialized, inlined function.</p>
                                     (fast-logext-exec-is-logext))
                     :use ((:instance fast-logext-exec-is-logext (b 64)))))))))
 
+(define bignum-logext ((n posp)
+                       (x integerp))
+  ;; This version is useful when n may be very large, in which case if x is not
+  ;; very large then we'd like to avoid creating all the big masks that
+  ;; fast-logext does.
+  :inline t
+  :enabled t
+  (mbe :logic (logext n x)
+       :exec (if (< (integer-length x) n)
+                 x
+               (fast-logext n x)))
+  :prepwork
+  ((local (defthm logext-of-greater-than-length
+            (implies (< (integer-length x) (pos-fix n))
+                     (equal (logext n x) (ifix x)))
+            :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                               ihsext-recursive-redefs))
+                   (and stable-under-simplificationp
+                        '(:in-theory (enable pos-fix))))))))
+
 #||
 
 ;; Timing tests:

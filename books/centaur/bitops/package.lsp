@@ -141,7 +141,6 @@
 
     ))
 
-
 (defpkg "BITOPS"
   (union-eq *standard-acl2-imports*
             std::*std-exports*
@@ -211,3 +210,28 @@
               )))
 
 (assign acl2::verbose-theory-warning nil)
+
+#!bitops
+(defconst *sparseint-exports*
+  '(sparseint
+    sparseint-p
+    sparseint-fix
+    sparseint-equiv
+    int-to-sparseint
+    sparseint-val
+    sparseint-concatenate
+    sparseint-rightshift
+    sparseint-ash
+    sparseint-bit
+    sparseint-bitand
+    sparseint-bitor
+    sparseint-bitxor
+    sparseint-bitnot
+    sparseint-equal
+    sparseint-length
+    sparseint-plus
+    sparseint-unary-minus
+    sparseint-binary-minus
+    sparseint-compare
+    sparseint-<
+    sparseint-binary-bitop))

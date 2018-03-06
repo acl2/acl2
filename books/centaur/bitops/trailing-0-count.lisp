@@ -46,7 +46,9 @@
                            ; acl2::logior-natp-type
                            bitops::logxor-natp-type-2
                            bitops::logior-<-0-linear-2
-                           bitops::lognot-negp)))
+                           bitops::lognot-negp
+                           logmask
+                           unsigned-byte-p)))
 
 ;; (local (defthm logior-same-2
 ;;          (equal (logior x (logior x y))
@@ -155,11 +157,71 @@
                  :induct (logtail n x)))))
 
 
+
+(local (defthm integer-length-when-loghead/logtail-neg
+         (implies (and (not (equal -1 (logtail n x)))
+                       (equal (logmask m) (loghead m (logtail n x)))
+                       (posp m) (natp n))
+                  (<= (+ m n) (integer-length x)))
+         :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                          bitops::ihsext-recursive-redefs))
+                 :induct (logtail n x)))))
+
+(local (defthm logcar-logcdr-lemma
+         (implies (and (equal (logcar x) 1)
+                       (equal (logcdr x) -1))
+                  (equal (equal x -1) t))
+         :hints(("Goal" ;; :cases ((integerp x))
+                 :in-theory (disable logcar-logcdr-elim
+                                     logcons-destruct)
+                 :use ((:instance logcons-destruct))))))
+
+(local (defthm logtail-not-neg1-lemma1
+         (implies (and (not (equal (ifix x) -1))
+                       (equal (logmask m) (loghead m x)))
+                  (not (equal -1 (logtail m x))))
+         :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                          bitops::ihsext-recursive-redefs))
+                 :induct (logtail m x)))))
+         
+
+(local (defthm logtail-non-neg1-lemma
+         (implies (and (not (equal -1 (logtail n x)))
+                       (equal (logmask m) (loghead m (logtail n x)))
+                       (posp m) (natp n))
+                  (not (equal -1 (logtail (+ m n) x))))
+         :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                          bitops::ihsext-recursive-redefs))
+                 :induct (logtail n x)))))
+
+(local (defthm integer-length-when-bignum-extract-neg
+         (implies (and (not (equal -1 (logtail (* 32 (nfix idx)) x)))
+                       (equal #xffffffff (bitsets::bignum-extract x idx)))
+                  (<= (+ 32 (* 32 (nfix idx))) (integer-length x)))
+         :hints(("Goal" :in-theory (enable bitsets::bignum-extract)))
+         :rule-classes :linear))
+(local (defthm logtail-nonzero-bignum-extract-neg
+         (implies (and (not (equal -1 (logtail (* 32 idx) x)))
+                       (equal #xffffffff (bitsets::bignum-extract x idx))
+                       (natp idx))
+                  (not (equal -1 (logtail (+ 32 (* 32 idx)) x))))
+         :hints(("Goal" :in-theory (enable bitsets::bignum-extract)))))
+(local (defthm loghead-mask-compose
+         (implies (and (equal (logmask n) (loghead n x))
+                       (equal (logmask m) (loghead m (logtail n x)))
+                       (natp m) (natp n))
+                  (equal (loghead (+ m n) x) (logmask (+ m n))))
+         :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                          bitops::ihsext-recursive-redefs))
+                 :induct (logtail n x)))))
+
+
 (define trailing-0-count-32 ((x :type (unsigned-byte 32)))
   ;; :prepwork ((local (in-theory (disable unsigned-byte-p
   ;;                                       signed-byte-p)))
   ;;            (local (include-book "centaur/bitops/signed-byte-p" :dir :system)))
   ;; :guard (not (eql 0 x))
+  :prepwork ((local (in-theory (enable unsigned-byte-p))))
   (b* ((x (lnfix x))
        ((the (unsigned-byte 32) x)
         (the (unsigned-byte 32) (logand x (the (signed-byte 33) (- x))))))
@@ -167,7 +229,15 @@
   ///
   (fty::deffixequiv trailing-0-count-32 :args ((x natp))))
 
-
+(define trailing-1-count-32  ((x :type (unsigned-byte 32)))
+  :inline t
+  :prepwork ((local (in-theory (enable unsigned-byte-p))))
+  (trailing-0-count-32
+   (the (unsigned-byte 32)
+        (logand #xffffffff
+                (the (signed-byte 33) (lognot (the (unsigned-byte 32) (lnfix x)))))))
+  ///
+  (fty::deffixequiv trailing-0-count-32 :args ((x natp))))
 
 
 (fty::deffixequiv bitsets::bignum-extract :args ((x integerp) (bitsets::slice natp)))
@@ -186,28 +256,32 @@
        (slice-trailing-0-count (trailing-0-count-32 slice)))
     (+ slice-trailing-0-count (* 32 slice-idx))))
 
-;; (define trailing-0-count-rec ((x integerp)
-;;                               (slice-idx natp
-;;                                          :type (unsigned-byte 27)))
-;;   :guard (not (equal 0 (logtail (* 32 slice-idx) x)))
-;;   :measure (nfix (- (integer-length x) (* 32 (nfix slice-idx))))
-;;   :prepwork ()
-;;   (b* (((unless (mbt (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))))
-;;         0)
-;;        ((the (unsigned-byte 27) slice-idx) (lnfix slice-idx))
-;;        ((the (unsigned-byte 32) slice) (bitsets::bignum-extract x slice-idx))
-;;        ((when (eql 0 slice))
-;;         (mbe :logic (trailing-0-count-rec x (+ 1 slice-idx))
-;;              :exec (if (eql slice-idx #x7ffffff)
-;;                        (trailing-0-count-rec-slow x (+ 1 slice-idx))
-;;                      (trailing-0-count-rec x (+ 1 slice-idx)))))
-;;        (slice-trailing-0-count (trailing-0-count-32 slice)))
-;;     (+ slice-trailing-0-count (* 32 slice-idx))))
-
-
-
-
-
+(define trailing-1-count-rec ((x integerp)
+                              (slice-idx natp))
+  :guard (not (equal -1 (logtail (* 32 slice-idx) x)))
+  :measure (nfix (- (integer-length x) (* 32 (nfix slice-idx))))
+  :prepwork ()
+  (b* (((unless (mbt (not (equal -1 (logtail (* 32 (nfix slice-idx)) x)))))
+        0)
+       (slice-idx (lnfix slice-idx))
+       (slice (bitsets::bignum-extract x slice-idx))
+       ((when (eql #xffffffff slice))
+        (trailing-1-count-rec x (+ 1 slice-idx)))
+       (slice-trailing-1-count (trailing-1-count-32 slice)))
+    (+ slice-trailing-1-count (* 32 slice-idx)))
+  ///
+  (local (defthm loghead-of-lognot-equal-0
+           (equal (equal 0 (loghead n (lognot x)))
+                  (equal (logmask n) (loghead n x)))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+  
+  (defthm trailing-1-count-rec-is-trailing-0-count-rec-of-lognot
+    (equal (trailing-1-count-rec x slice-idx)
+           (trailing-0-count-rec (lognot x) slice-idx))
+    :hints(("Goal" :in-theory (enable trailing-0-count-rec
+                                      trailing-1-count-32
+                                      bitsets::bignum-extract)))))
 
 (define trailing-0-count ((x integerp))
   :parents (bitops)
@@ -257,7 +331,9 @@ bignums.</p>"
              (< (trailing-0-count x) (integer-length x)))
     :hints(("Goal" :induct (trailing-0-count x)
             :expand ((:with bitops::integer-length** (integer-length x)))))
-    :rule-classes ((:linear :trigger-terms ((trailing-0-count x))))))
+    :rule-classes ((:linear :trigger-terms ((trailing-0-count x)))))
+
+  (fty::deffixequiv trailing-0-count))
 
 (local (in-theory (enable trailing-0-count-properties)))
 
@@ -334,30 +410,175 @@ bignums.</p>"
   :hints(("Goal" :in-theory (enable trailing-0-count))))
 
 
+
+
+(define trailing-1-count ((x integerp))
+  :parents (bitops)
+  :short "Optimized trailing 0 count for integers."
+  :long "<p>To make this fast, be sure and include the
+\"std/bitsets/bignum-extract-opt\" book (reqires a ttag), which prevents
+this (at least on CCL64) from needing to create new bignums when run on
+bignums.</p>"
+  :verify-guards nil
+  :measure (integer-length x)
+  :hints(("Goal" :in-theory (enable integer-length**)))
+  (mbe :logic
+       (if (or (eql x -1)
+               (not (logbitp 0 x)))
+           0
+         (+ 1 (trailing-1-count (logcdr x))))
+       :exec (if (eql -1 x)
+                 0
+               (trailing-1-count-rec x 0)))
+  ///
+  (defthm trailing-1-count-is-trailing-0-count-of-lognot
+    (equal (trailing-1-count x)
+           (trailing-0-count (lognot x)))
+    :hints(("Goal" :in-theory (enable* trailing-0-count)
+            :induct t
+            :expand ((lognot x)))))
+
+  (verify-guards trailing-1-count
+    :hints(("Goal" :in-theory (enable trailing-0-count)))))
+
+(define trailing-0-count-from-exec ((x integerp)
+                                    (offset natp))
+  :inline t
+  :enabled t
+  :verify-guards nil
+  (b* ((offset (lnfix offset))
+       (slice1-idx (logtail 5 offset)) ;; (floor offset 32)
+       (slice1-offset (loghead 5 offset)) ;; (mod offset 32)
+       (slice1 (bitsets::bignum-extract x slice1-idx))
+       (slice1-tail (logtail slice1-offset slice1))
+       ((when (not (eql 0 slice1-tail)))
+        (trailing-0-count-32 slice1-tail))
+       ;; What we want now is the trailing-0-count of (logtail x (* 32 (+ 1 slice-idx))).
+       ;; This is just (trailing-0-count-rec x (+ 1 slice1-idx)),
+       ;; but we need to make sure that this tail of x isn't 0 for the guard.
+       ;; think of the case where offset = 0 and x = (ash -1 32) = ...FFFF0000000.
+       ;; This has integer-length 32 and trailing-0-count 32
+       (len (integer-length x))
+       ((when (and (<= len (* 32 (+ 1 slice1-idx)))
+                   (not (logbitp (* 32 (+ 1 slice1-idx)) x))))
+        0)
+       (count2 (trailing-0-count-rec x (+ 1 slice1-idx))))
+    (- count2 offset))
+  ///
+
+
+  (local (defthm logtail-nonzero-by-integer-length
+           (implies (and (< n (integer-length x))
+                         (posp n))
+                    (not (equal 0 (logtail n x))))
+           :hints (("goal" :in-theory (enable* ihsext-recursive-redefs
+                                               ihsext-inductions)))))
+
+  (local (defthm nfix-of-subtract-nats
+           (implies (and (natp x)
+                         (natp y))
+                    (<= (nfix (+ x (- y))) x))
+           :hints(("Goal" :in-theory (enable nfix)))))
+
+  (local (defthm logtail-not-zero-when-logbitp
+           (implies (and (logbitp m x)
+                         (<= (nfix n) (nfix m)))
+                    (not (equal 0 (logtail n x))))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+
+  (verify-guards trailing-0-count-from-exec$inline
+    :hints(("Goal" :in-theory (enable bitsets::bignum-extract)))))
+
+(define trailing-1-count-from-exec ((x integerp)
+                               (offset natp))
+  :verify-guards nil
+  :inline t
+  (b* ((offset (lnfix offset))
+       (slice1-idx (logtail 5 offset)) ;; (floor offset 32)
+       (slice1-offset (loghead 5 offset)) ;; (mod offset 32)
+       (slice1 (bitsets::bignum-extract x slice1-idx))
+       (slice1-tail (logtail slice1-offset slice1))
+       ((when (not (eql slice1-tail (logmask (- 32 slice1-offset)))))
+        (trailing-1-count-32 slice1-tail))
+       ;; What we want now is the trailing-1-count of (logtail x (* 32 (+ 1 slice-idx))).
+       ;; This is just (trailing-1-count-rec x (+ 1 slice1-idx)),
+       ;; but we need to make sure that this tail of x isn't -1 for the guard.
+       ;; think of the case where offset = 0 and x = (lognot (ash -1 32)) = ...0000FFFFFFFF.
+       ;; This has integer-length 32 and trailing-1-count 32
+       (len (integer-length x))
+       ((when (and (<= len (* 32 (+ 1 slice1-idx)))
+                   (logbitp (* 32 (+ 1 slice1-idx)) x)))
+        0)
+       (count2 (trailing-1-count-rec x (+ 1 slice1-idx))))
+    (- count2 offset))
+  ///
+  (local (defthm logtail-not-neg1-by-integer-length
+           (implies (and (< n (integer-length x))
+                         (posp n))
+                    (not (equal -1 (logtail n x))))
+           :hints (("goal" :in-theory (enable* ihsext-recursive-redefs
+                                               ihsext-inductions)))))
+
+  (local (defthm nfix-of-subtract-nats
+           (implies (and (natp x)
+                         (natp y))
+                    (<= (nfix (+ x (- y))) x))
+           :hints(("Goal" :in-theory (enable nfix)))))
+
+  (local (defthm logtail-not-neg1-when-logbitp
+           (implies (and (not (logbitp m x))
+                         (<= (nfix n) (nfix m)))
+                    (not (equal -1 (logtail n x))))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+
+  (local (defthm unsigned-byte-5-lte-32
+           (implies (unsigned-byte-p 5 x)
+                    (<= x 32))
+           :hints(("Goal" :in-theory (enable unsigned-byte-p)))))
+
+  (verify-guards trailing-1-count-from-exec$inline
+    :hints(("Goal" :in-theory (enable bitsets::bignum-extract))))
+
+  
+  (local (defthm loghead-of-lognot-equal-0
+           (equal (equal 0 (loghead n (lognot x)))
+                  (equal (logmask n) (loghead n x)))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+
+  (local (defthm loghead-equal-logmask-dumb
+           (implies (and (syntaxp (quotep mask))
+                         (equal mask (logmask (integer-length mask)))
+                         (<= (nfix n) (integer-length mask))
+                         (not (equal (loghead n x) (logmask n))))
+                    (not (equal (loghead n x) mask)))
+           :hints (("goal" :cases ((equal (nfix n) (integer-length mask)))))))
+
+  (local (defthm trailing-0-count-of-lognot-loghead
+           (implies (not (equal (logmask n) (loghead n x)))
+                    (equal (trailing-0-count (lognot (loghead n x)))
+                           (trailing-0-count (lognot x))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs
+                                              trailing-0-count)))))
+
+  (defthm trailing-1-count-from-exec-is-trailing-0-count-from-exec-of-lognot
+    (equal (trailing-1-count-from-exec x offset)
+           (trailing-0-count-from-exec (lognot x) offset))
+    :hints(("Goal" :in-theory (enable trailing-0-count-from-exec
+                                      bitsets::bignum-extract
+                                      trailing-1-count-32)))))
+
+
 (define trailing-0-count-from ((x integerp)
                                (offset natp))
   :verify-guards nil
   :enabled t
   (mbe :logic (trailing-0-count (logtail offset x))
        :exec
-       (b* ((offset (lnfix offset))
-            (slice1-idx (logtail 5 offset)) ;; (floor offset 32)
-            (slice1-offset (loghead 5 offset)) ;; (mod offset 32)
-            (slice1 (bitsets::bignum-extract x slice1-idx))
-            (slice1-tail (logtail slice1-offset slice1))
-            ((when (not (eql 0 slice1-tail)))
-             (trailing-0-count-32 slice1-tail))
-            ;; What we want now is the trailing-0-count of (logtail x (* 32 (+ 1 slice-idx))).
-            ;; This is just (trailing-0-count-rec x (+ 1 slice1-idx)),
-            ;; but we need to make sure that this tail of x isn't 0 for the guard.
-            ;; think of the case where offset = 0 and x = (ash -1 32) = ...FFFF0000000.
-            ;; This has integer-length 32 and trailing-0-count 32
-            (len (integer-length x))
-            ((when (and (<= len (* 32 (+ 1 slice1-idx)))
-                        (not (logbitp (* 32 (+ 1 slice1-idx)) x))))
-             0)
-            (count2 (trailing-0-count-rec x (+ 1 slice1-idx))))
-         (- count2 offset)))
+       (trailing-0-count-from-exec x offset))
   ///
 
   (local (in-theory (disable loghead-zero-compose)))
@@ -564,9 +785,11 @@ bignums.</p>"
                                         offset-components-2
                                         offset-components-plus-rest)))))
 
-  (verify-guards trailing-0-count-from
-    :hints((and stable-under-simplificationp
-                '(:in-theory (enable bitsets::bignum-extract)))
+  (defthm trailing-0-count-from-exec-is-trailing-0-count-from
+    (equal (trailing-0-count-from-exec x offset)
+           (trailing-0-count-from x offset))
+    :hints(("Goal" :in-theory (enable bitsets::bignum-extract
+                                      trailing-0-count-of-logtail-when-loghead-0))
            (and stable-under-simplificationp
                 '(:use ((:instance trailing-0-count-of-logtail-when-loghead-0
                          (n (+ 32 (- (loghead 5 offset))))
@@ -575,11 +798,20 @@ bignums.</p>"
            (and stable-under-simplificationp
                 '(:use ((:instance loghead-0-when-integer-length-less-2
                          (x (logtail offset x))
-                         (n (+ 32 (- (loghead 5 offset))))))))
-           )
-    :otf-flg t))
+                         (n (+ 32 (- (loghead 5 offset))))))
+                  :cases ((zip x))))))
+
+  (in-theory (disable trailing-0-count-from-exec))
+
+  (verify-guards trailing-0-count-from))
 
 
+(define trailing-1-count-from ((x integerp)
+                               (offset natp))
+  :enabled t
+  (mbe :logic (trailing-1-count (logtail offset x))
+       :exec
+       (trailing-1-count-from-exec x offset)))
 
 
 
@@ -597,34 +829,34 @@ bignums.</p>"
 (include-book
  "centaur/misc/memory-mgmt" :dir :system)
 
-(define gen-trailing-0-count-numbers ((n natp) (width posp) acc state)
+(define gen-trailing-1-count-numbers ((n natp) (width posp) acc state)
   :prepwork ((local (in-theory (enable random$))))
   (b* (((when (zp n)) (mv acc state))
        ((mv nzeros state) (random$ width state))
        (acc (cons (loghead width (ash -1 nzeros)) acc)))
-    (gen-trailing-0-count-numbers (1- n) width acc state)))
+    (gen-trailing-1-count-numbers (1- n) width acc state)))
 
-(defconsts (*tests* state) (gen-trailing-0-count-numbers 100000 3000 nil state))
+(defconsts (*tests* state) (gen-trailing-1-count-numbers 100000 3000 nil state))
 
-(define take-trailing-0-counts ((tests integer-listp) acc)
+(define take-trailing-1-counts ((tests integer-listp) acc)
   (if (atom tests)
       acc
-    (take-trailing-0-counts
+    (take-trailing-1-counts
      (cdr tests)
      (let ((x (car tests)))
-       (cons (if (eql x 0) 0 (trailing-0-count (car tests)))
+       (cons (if (eql x 0) 0 (trailing-1-count (car tests)))
              acc)))))
 
 (value-triple (acl2::set-max-mem
                (* 10 (Expt 2 30))))
 
 ;; without optimization: 1.1 sec
-(defconsts *res1* (take-trailing-0-counts *tests* nil))
+(defconsts *res1* (take-trailing-1-counts *tests* nil))
 
 (include-book
  "std/bitsets/bignum-extract-opt" :dir :system)
 
 ;; with optimization: 0.06 sec
-(defconsts *res2* (take-trailing-0-counts *tests* nil))
+(defconsts *res2* (take-trailing-1-counts *tests* nil))
 
 ||#
