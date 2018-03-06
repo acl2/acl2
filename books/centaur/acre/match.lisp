@@ -42,6 +42,7 @@
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable take (tau-system))))
 
+(local (xdoc::set-default-parents acre-internals))
 
 (local (Defthm explode-of-str-fix
          (equal (acl2::explode (acl2::str-fix x))
