@@ -176,6 +176,10 @@
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
 
+ <h4><see topic='@(url apt::apt)'>APT</see></h4>
+
+ <p>Improved documentation.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
