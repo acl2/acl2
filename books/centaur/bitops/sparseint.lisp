@@ -5386,8 +5386,7 @@ than the second, and 1 when the first is greater than the second.</li>
  @('(- xv)').</li>
 
 <li>@('(sparseint-binary-minus x y)') returns a new sparseint whose value is
-@('(- xv yv)').  It is somewhat more efficient than
-@('(sparseint-plus x (sparseint-unary-minus y))').</li>
+@('(- xv yv)').</li>
 
 </ul>")
 
