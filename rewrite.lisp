@@ -11335,6 +11335,8 @@
                     (erase-rw-cache ttree2)))))
 
 (defun alist-keys-subsetp (x keys)
+  (declare (xargs :guard (and (alistp x)
+                              (symbol-listp keys))))
   (cond ((endp x) t)
         ((member-eq (caar x) keys)
          (alist-keys-subsetp (cdr x) keys))
