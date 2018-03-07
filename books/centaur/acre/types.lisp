@@ -229,7 +229,7 @@ of the variable.  @('Named-captures!') behaves analogously to
   :short "Umbrella topic for implementation-level documentation of @(see acre).")
 
 
-
+(local (xdoc::set-default-parents acre-internals))
 
 (defmacro lstrfix (x)
   `(mbe :logic (acl2::str-fix ,x) :exec ,x))
