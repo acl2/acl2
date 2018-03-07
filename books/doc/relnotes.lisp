@@ -164,8 +164,8 @@
  <p>Improved user input validation.</p>
 
  <p>Added support for the new @(':constrain') option of @(tsee defun-sk).  This
- option is now supported by SOFT's @(tsee defun-sk2) and @(tsee
- defun-inst) macros.</p>
+ option is now supported by SOFT's @(tsee soft::defun-sk2) and @(tsee
+ soft::defun-inst) macros.</p>
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
