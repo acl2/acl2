@@ -174,3 +174,33 @@
      heuristic untranslation that may respect the structure of the old body to
      some reasonable extent, but may avoid some attempts to reconstruct
      @('let')/@('let*') structure, as discussed above."))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc hints-specifier
+
+  :parents (common-options)
+
+  :short "Specifies the form of hints for an APT transformation."
+
+  :long
+
+  (str::cat
+
+   (xdoc::p
+    "The @(':hints') keyword for an APT transformation is legal when there is
+     at least one applicability condition.  The value may be a legal @(see
+     acl2::hints) value, that is, a legal value for the theorem prover's
+     @(':hints') option, as provided for example in a @(tsee defthm) event.
+     Otherwise its value should be a keyword-value list (see @(see
+     keyword-value-listp))")
+
+   (xdoc::code
+    "(:KWD1 h1 :KWD2 h2 ...)")
+
+   (xdoc::p
+    "whose keywords @('KWDk') are unique and include only names of
+     applicability conditions, where each value @('hk') is a legal @(see
+     acl2::hints) value as discussed above.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
