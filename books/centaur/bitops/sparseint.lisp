@@ -42,6 +42,12 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
+(defxdoc sparseint-impl
+  :parents (sparseint)
+  :short "Umbrella topic for functions used in implementation of sparseint operations.")
+
+(local (xdoc::set-default-parents sparseint-impl))
+
 (local (in-theory (disable acl2::logext-identity
                            loghead-identity
                            logtail-identity)))
@@ -1312,10 +1318,14 @@ by redefining the constant.</p>")
 
 
 (define sparseint-p (x)
+  :parents (sparseint)
+  :short "Recognizer for well-formed sparseints"
   (and (sparseint$-p x)
        (sparseint$-height-correctp x)))
 
 (define sparseint-fix ((x sparseint-p))
+  :parents (sparseint)
+  :short "Fixing function for sparseints"
   :returns (new-x sparseint-p)
   :measure (sparseint$-count x)
   :hints (("goal" :expand ((sparseint$-height-correctp x))))
@@ -1354,12 +1364,16 @@ by redefining the constant.</p>")
          :hints(("Goal" :in-theory (enable sparseint-fix)))))
 
 (define sparseint-val ((x sparseint-p))
+  :parents (sparseint)
+  :short "Get the integer value of a sparseint"
   :returns (val integerp :rule-classes :type-prescription)
   (sparseint$-val (sparseint-fix x)))
 
 (define sparseint-concatenate ((width natp)
                                (lsbs sparseint-p)
                                (msbs sparseint-p))
+  :parents (sparseint)
+  :short "Form the concatenation (logapp) of two sparseints"
   :returns (concat sparseint-p)
   :prepwork ((local (in-theory (enable sparseint-p))))
   :inline t
@@ -1373,6 +1387,8 @@ by redefining the constant.</p>")
 
 (define sparseint-rightshift  ((shift natp)
                                (x sparseint-p))
+  :parents (sparseint)
+  :short "Right-shift a sparseint by some shift amount"
   :prepwork ((local (in-theory (enable sparseint-p))))
   :inline t
   :returns (rightshift sparseint-p)
@@ -1385,6 +1401,8 @@ by redefining the constant.</p>")
 
 (define sparseint-ash ((x sparseint-p)
                        (shift integerp))
+  :parents (sparseint)
+  :short "Shift a sparseint by some amount, positive or negative"
   :returns (ash sparseint-p)
   (b* ((shift (lifix shift)))
     (cond ((eql shift 0) (sparseint-fix x))
@@ -1397,6 +1415,8 @@ by redefining the constant.</p>")
 
 (define sparseint-bit ((n natp)
                        (x sparseint-p))
+  :parents (sparseint)
+  :short "Extract the bit at the given index from a sparseint"
   :returns (bit bitp :rule-classes :type-prescription)
   :inline t
   (sparseint$-bit n (sparseint-fix x))
@@ -1405,6 +1425,61 @@ by redefining the constant.</p>")
     (equal (sparseint-bit n x)
            (logbit n (sparseint-val x)))
     :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+(define sparseint$-sign-ext ((n posp)
+                             (x sparseint$-p)
+                             (x.height natp))
+  :guard (and (sparseint$-height-correctp x)
+              (equal x.height (sparseint$-height x)))
+  :guard-debug t
+  :returns (mv (ext sparseint$-p)
+               (height (equal height (sparseint$-height ext))))
+  (b* ((n (lposfix n))
+       (x.height (mbe :logic (sparseint$-height x) :exec x.height)))
+    (sparseint$-concatenate-rebalance
+     n x x.height (sparseint$-leaf (- (sparseint$-bit (1- n) x))) 0))
+  ///
+  (local (defthm logapp-when-zp
+           (implies (zp w)
+                    (equal (logapp w x y) (ifix y)))
+           :hints(("Goal" :in-theory (enable logapp**)))))
+  (local (defthm logbitp-when-zp
+           (implies (and (syntaxp (not (equal w ''0)))
+                         (zp w))
+                    (equal (logbitp w x) (logbitp 0 x)))
+           :hints(("Goal" :in-theory (enable logbitp**)))))
+
+  (local (defthm logext-in-terms-of-logapp
+           (equal (logext n x)
+                  (logapp (pos-fix n) x (- (logbit (1- (pos-fix n)) x))))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs
+                                              pos-fix)))))
+
+  (defret <fn>-height-correct
+    (implies (sparseint$-height-correctp x)
+             (sparseint$-height-correctp ext)))
+
+  (defret <fn>-correct
+    (equal (sparseint$-val ext)
+           (logext n (sparseint$-val x)))))
+
+(define sparseint-sign-ext ((n posp)
+                            (x sparseint-p))
+  :parents (sparseint)
+  :short "Sign-extend the given sparseint at the given (positive) position"
+  :returns (ext sparseint-p)
+  :prepwork ((local (in-theory (enable sparseint-p))))
+  (b* ((x (sparseint-fix x))
+       ((mv ans ?height) (sparseint$-sign-ext n x (sparseint$-height x))))
+    ans)
+  ///
+  (defret sparseint-sign-ext-correct
+    (equal (sparseint-val (sparseint-sign-ext n x))
+           (logext n (sparseint-val x)))
+    :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+
 
 
 
@@ -1559,1123 +1634,167 @@ by redefining the constant.</p>")
             (logtail n (loghead (+ (nfix w) (nfix n)) x)))
      :hints(("Goal" :in-theory (enable* ihsext-inductions ihsext-recursive-redefs))))))
 
-(define sparseint$-bitand-int-width ((width posp)
-                                   (offset natp)
-                                   (x sparseint$-p)
-                                   (x.height natp)
-                                   (y integerp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x)))
-  :returns (mv (bitand sparseint$-p)
-               (height (equal height (sparseint$-height bitand))))
-  :verify-guards nil
+
+(define sparseint$-equal-int-width ((width posp)
+                                    (offset natp)
+                                    (x sparseint$-p)
+                                    (y integerp))
+  :returns (equal booleanp :rule-classes :type-prescription)
   :measure (sparseint$-count x)
   (b* ((width (lposfix width))
        (offset (lnfix offset))
-       (y (lifix y))
-       (x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       ((when (eql y 0)) (mv (sparseint$-leaf 0) 0))
-       ;; BOZO add an optimized case for when y = -1
-       )
+       (y (lifix y)))
     (sparseint$-case x
-      :leaf (mv (sparseint$-leaf (bignum-logext width (logand (logtail offset x.val) y))) 0)
+      :leaf (equal (bignum-logext width (logtail offset x.val)) y)
       :concat
-      (b* ((x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                               :exec (- x.height (if x.lsbs-taller 2 1))))
-           ((when (<= x.width offset))
-            (sparseint$-bitand-int-width width (- offset x.width) x.msbs x.msbs.height y))
+      (b* (((when (<= x.width offset))
+            (sparseint$-equal-int-width width (- offset x.width) x.msbs y))
            (width1 (- x.width offset))
-           (x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                               :exec (- x.height (if x.msbs-taller 2 1))))
            ((when (<= width width1))
-            (sparseint$-bitand-int-width width offset x.lsbs x.lsbs.height y))
-           ((mv lsbs-and lsbs-and-height)
-            (sparseint$-bitand-int-width width1 offset x.lsbs x.lsbs.height
-                                       (bignum-logext width1 y)))
-           ((mv msbs-and msbs-and-height)
-            (sparseint$-bitand-int-width (- width width1) 0 x.msbs x.msbs.height (logtail width1 y))))
-        (sparseint$-concatenate-rebalance width1 lsbs-and lsbs-and-height msbs-and msbs-and-height))))
+            (sparseint$-equal-int-width width offset x.lsbs y)))
+        (and (sparseint$-equal-int-width
+              width1 offset x.lsbs (bignum-logext width1 y))
+             (sparseint$-equal-int-width
+              (- width width1) 0 x.msbs (logtail width1 y))))))
   ///
-  (local (in-theory (disable (:d sparseint$-bitand-int-width))))
+  (local (in-theory (disable (:d sparseint$-equal-int-width))))
 
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (sparseint$-height-correctp x)
-             (sparseint$-height-correctp bitand))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitand-int-width)
-
-  ;; (local (defthm logapp-when-loghead-equal
-  ;;          (implies (and (equal (loghead w x) z)
-  ;;                        (syntaxp (not (find-atom 'sparseint$-bitand-int-width z))))
-  ;;                   (equal (logapp w x y) (logapp w z y)))
-  ;;          :hints(("Goal" :in-theory (enable logapp)))))
-
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitand)
-           (logext (pos-fix width) (logand (logtail offset (sparseint$-val x)) y)))
+  (defret <fn>-correct
+    (equal equal
+           (equal (logext width (logtail offset (sparseint$-val x))) (ifix y)))
     :hints (("goal" :induct <call>
              :expand ((:free (y) <call>)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable logand-over-logapp)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logand
-                                    loghead-of-logand
-                                    loghead-of-logtail
-                                    equal-of-logapp-split)
-                                   (logand-of-logext logand-of-loghead
-                                                     logtail-of-loghead)))))))
+                 '(:in-theory (enable equal-of-logapp-split-logext))))))
 
-(define sparseint$-bitand-int ((offset natp)
+(define sparseint$-equal-int ((offset natp)
                                (x sparseint$-p)
-                               (x.height natp)
                                (y integerp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x)))
-  :returns (mv (bitand sparseint$-p)
-               (height (equal height (sparseint$-height bitand))))
-  :verify-guards nil
+  :returns (equal booleanp :rule-classes :type-prescription)
   :measure (sparseint$-count x)
   (b* ((y (lifix y))
-       (offset (lnfix offset))
-       (x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       ((when (eql y 0)) (mv (sparseint$-leaf 0) 0))
-       ;; ((when (eql y -1)) (mv (sparseint$-fix x) x.height))
-       )
+       (offset (lnfix offset)))
     (sparseint$-case x
-      :leaf (mv (sparseint$-leaf (logand (logtail offset x.val) y)) 0)
+      :leaf (equal (logtail offset x.val) y)
       :concat
-      (b* ((x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                               :exec (- x.height (if x.lsbs-taller 2 1))))
-           ((when (<= x.width offset))
-            (sparseint$-bitand-int (- offset x.width) x.msbs x.msbs.height y))
-           (width1 (- x.width offset))
-           (x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                               :exec (- x.height (if x.msbs-taller 2 1))))
-           ((mv lsbs-and lsbs-and-height)
-            (sparseint$-bitand-int-width width1 offset x.lsbs x.lsbs.height
-                                       (bignum-logext width1 y)))
-           (x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                               :exec (- x.height (if x.lsbs-taller 2 1))))
-           ((mv msbs-and msbs-and-height)
-            (sparseint$-bitand-int 0 x.msbs x.msbs.height (logtail width1 y))))
-        (sparseint$-concatenate-rebalance width1 lsbs-and lsbs-and-height msbs-and msbs-and-height))))
+      (b* (((when (<= x.width offset))
+            (sparseint$-equal-int (- offset x.width) x.msbs y))
+           (width1 (- x.width offset)))
+        (and (sparseint$-equal-int-width width1 offset x.lsbs
+                                       (bignum-logext width1 y))
+             (sparseint$-equal-int 0 x.msbs (logtail width1 y))))))
   ///
 
-  (local (in-theory (disable (:d sparseint$-bitand-int-width))))
-
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (sparseint$-height-correctp x)
-             (sparseint$-height-correctp bitand))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitand-int)
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitand)
-           (logand (logtail offset (sparseint$-val x)) y))
+  (defret <fn>-correct
+    (equal equal
+           (equal (logtail offset (sparseint$-val x)) (ifix y)))
     :hints (("goal" :induct <call>
              :expand ((:free (y) <call>)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable logand-over-logapp)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logand
-                                    loghead-of-logand
-                                    loghead-of-logtail
-                                    equal-of-logapp-split)
-                                   (logand-of-logext logand-of-loghead
-                                                     logtail-of-loghead)))))))
+                 '(:in-theory (enable equal-of-logapp-split-logext))))))
 
 
-
-(define sparseint$-bitand-width ((width posp)
+(define sparseint$-equal-width ((width posp)
                                (x sparseint$-p)
-                               (x.height natp)
                                (y-offset natp)
-                               (y sparseint$-p)
-                               (y.height natp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x))
-              (sparseint$-height-correctp y)
-              (equal y.height (sparseint$-height y)))
-  :returns (mv (bitand sparseint$-p)
-               (height (equal height (sparseint$-height bitand))))
-  :verify-guards nil
+                               (y sparseint$-p))
+  :returns (equal booleanp :rule-classes :type-prescription)
   :measure (+ (sparseint$-count x) (sparseint$-count y))
-  (b* ((x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       (y.height (mbe :logic (sparseint$-height y) :exec y.height))
-       (width (lposfix width))
-       (y-offset (lnfix y-offset)))
-    (sparseint$-case x
-      :leaf
-      (sparseint$-case y
-        :leaf (mv (sparseint$-leaf (logand (bignum-logext width x.val)
-                                           (bignum-logext width (logtail y-offset y.val))))
-                  0)
-        :concat (sparseint$-bitand-int-width width y-offset y y.height (bignum-logext width x.val)))
-      :concat
-      (sparseint$-case y
-        :leaf (sparseint$-bitand-int-width width 0 x x.height (bignum-logext width (logtail y-offset y.val)))
-        :concat
-        (b* ((x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                                 :exec (- x.height (if x.msbs-taller 2 1))))
-             ((when (<= width x.width))
-              (sparseint$-bitand-width width x.lsbs x.lsbs.height y-offset y y.height))
-             (y.msbs.height (mbe :logic (sparseint$-height y.msbs)
-                                 :exec (- y.height (if y.lsbs-taller 2 1))))
-             ((when (<= y.width y-offset))
-              (sparseint$-bitand-width width x x.height (- y-offset y.width) y.msbs y.msbs.height))
-             (y-width1 (- y.width y-offset))
-             (y.lsbs.height (mbe :logic (sparseint$-height y.lsbs)
-                                 :exec (- y.height (if y.msbs-taller 2 1))))
-             ((when (<= width y-width1))
-              (sparseint$-bitand-width width x x.height y-offset y.lsbs y.lsbs.height))
-
-             ((mv lsbs-and lsbs-and.height)
-              (sparseint$-bitand-width x.width x.lsbs x.lsbs.height
-                                     y-offset y y.height))
-
-             (x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                                 :exec (- x.height (if x.lsbs-taller 2 1))))
-             ((mv msbs-and msbs-and.height)
-              (sparseint$-bitand-width (- width x.width)
-                                     x.msbs x.msbs.height
-                                     (+ x.width y-offset)
-                                     y y.height)))
-          (sparseint$-concatenate-rebalance
-           x.width lsbs-and lsbs-and.height msbs-and msbs-and.height)))))
-  ///
-  (local (in-theory (disable (:d sparseint$-bitand-int-width))))
-
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (and (sparseint$-height-correctp x)
-                  (sparseint$-height-correctp y))
-             (sparseint$-height-correctp bitand))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitand-width)
-
-  ;; (local (defthm logapp-when-loghead-equal
-  ;;          (implies (and (equal (loghead w x) z)
-  ;;                        (syntaxp (not (find-atom 'sparseint$-bitand-int-width z))))
-  ;;                   (equal (logapp w x y) (logapp w z y)))
-  ;;          :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext
-           (implies (equal x (logext w z))
-                    (equal (logapp w x y)
-                           (logapp w z y)))
-           :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext-2
-           (implies (equal y (logext w2 z))
-                    (equal (logapp w x y)
-                           (logext (+ (pos-fix w2) (nfix w))(logapp w x z))))))
-
-  (local (in-theory (disable logext-of-logapp-split)))
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitand)
-           (logext (pos-fix width)
-                   (logand (sparseint$-val x) (logtail y-offset (sparseint$-val y)))))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logand-over-logapp
-                                    logext-of-logapp-split)
-                                   (logapp-of-equal-logext-2))))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logand
-                                    loghead-of-logand
-                                    loghead-of-logtail
-                                    equal-of-logapp-split
-                                    logext-of-logapp-split
-                                    )
-                                   (logand-of-logext logand-of-loghead
-                                                     logtail-of-loghead
-                                                     logapp-of-equal-logext-2)))))))
-
-
-
-(define sparseint$-bitand-offset ((x sparseint$-p)
-                                  (x.height natp)
-                                  (y-offset natp)
-                                  (y sparseint$-p)
-                                  (y.height natp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x))
-              (sparseint$-height-correctp y)
-              (equal y.height (sparseint$-height y)))
-  :returns (mv (bitand sparseint$-p)
-               (height (equal height (sparseint$-height bitand))))
-  :verify-guards nil
-  :measure (+ (sparseint$-count x) (sparseint$-count y))
-  (b* ((x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       (y.height (mbe :logic (sparseint$-height y) :exec y.height))
-       (y-offset (lnfix y-offset)))
-    (sparseint$-case x
-      :leaf
-      (sparseint$-case y
-        :leaf (mv (sparseint$-leaf (logand x.val (logtail y-offset y.val)))
-                  0)
-        :concat (sparseint$-bitand-int y-offset y y.height x.val))
-      :concat
-      (sparseint$-case y
-        :leaf (sparseint$-bitand-int 0 x x.height (logtail y-offset y.val))
-        :concat
-        (b* ((y.msbs.height (mbe :logic (sparseint$-height y.msbs)
-                                 :exec (- y.height (if y.lsbs-taller 2 1))))
-             ((when (<= y.width y-offset))
-              (sparseint$-bitand-offset x x.height (- y-offset y.width) y.msbs y.msbs.height))
-             (x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                                 :exec (- x.height (if x.msbs-taller 2 1))))
-
-             ((mv lsbs-and lsbs-and.height)
-              (sparseint$-bitand-width x.width x.lsbs x.lsbs.height
-                                       y-offset y y.height))
-
-             (x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                                 :exec (- x.height (if x.lsbs-taller 2 1))))
-             ((mv msbs-and msbs-and.height)
-              (sparseint$-bitand-offset x.msbs x.msbs.height
-                                        (+ x.width y-offset)
-                                        y y.height)))
-          (sparseint$-concatenate-rebalance
-           x.width lsbs-and lsbs-and.height msbs-and msbs-and.height)))))
-  ///
-  (local (in-theory (disable (:d sparseint$-bitand-int-width))))
-
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (and (sparseint$-height-correctp x)
-                  (sparseint$-height-correctp y))
-             (sparseint$-height-correctp bitand))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitand-offset)
-
-  ;; (local (defthm logapp-when-loghead-equal
-  ;;          (implies (and (equal (loghead w x) z)
-  ;;                        (syntaxp (not (find-atom 'sparseint$-bitand-int-width z))))
-  ;;                   (equal (logapp w x y) (logapp w z y)))
-  ;;          :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext
-           (implies (equal x (logext w z))
-                    (equal (logapp w x y)
-                           (logapp w z y)))
-           :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext-2
-           (implies (equal y (logext w2 z))
-                    (equal (logapp w x y)
-                           (logext (+ (pos-fix w2) (nfix w))(logapp w x z))))))
-
-  (local (in-theory (disable logext-of-logapp-split)))
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitand)
-           (logand (sparseint$-val x) (logtail y-offset (sparseint$-val y))))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logand-over-logapp
-                                    logext-of-logapp-split)
-                                   (logapp-of-equal-logext-2))))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logand
-                                    loghead-of-logand
-                                    loghead-of-logtail
-                                    equal-of-logapp-split
-                                    logext-of-logapp-split
-                                    )
-                                   (logand-of-logext logand-of-loghead
-                                                     logtail-of-loghead
-                                                     logapp-of-equal-logext-2)))))))
-
-
-(define sparseint$-bitand ((x sparseint$-p)
-                           (y sparseint$-p))
-  :guard (and (sparseint$-height-correctp x)
-              (sparseint$-height-correctp y))
-  :returns (bitand sparseint$-p)
-  :inline t
-  (b* (((mv bitand ?height)
-        (sparseint$-bitand-offset x (sparseint$-height x)
-                                  0
-                                  y (sparseint$-height y))))
-    bitand)
-  ///
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (and (sparseint$-height-correctp x)
-                  (sparseint$-height-correctp y))
-             (sparseint$-height-correctp bitand)))
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitand)
-           (logand (sparseint$-val x) (sparseint$-val y)))))
-
-(define sparseint-bitand ((x sparseint-p)
-                          (y sparseint-p))
-  :returns (bitand sparseint-p)
-  :prepwork ((local (in-theory (enable sparseint-p))))
-  :inline t
-  (sparseint$-bitand (sparseint-fix x) (sparseint-fix y))
-  ///
-  (defret sparseint-val-of-<fn>
-    (equal (sparseint-val bitand)
-           (logand (sparseint-val x) (sparseint-val y)))
-    :hints(("Goal" :in-theory (enable sparseint-val)))))
-                            
-
-
-
-
-
-(define sparseint$-bitor-int-width ((width posp)
-                                   (offset natp)
-                                   (x sparseint$-p)
-                                   (x.height natp)
-                                   (y integerp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x)))
-  :returns (mv (bitor sparseint$-p)
-               (height (equal height (sparseint$-height bitor))))
-  :verify-guards nil
-  :measure (sparseint$-count x)
   (b* ((width (lposfix width))
-       (offset (lnfix offset))
-       (y (lifix y))
-       (x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       ((when (eql y -1)) (mv (sparseint$-leaf -1) 0))
-       ;; BOZO add optimized case for y=0
-       )
-    (sparseint$-case x
-      :leaf (mv (sparseint$-leaf (bignum-logext width (logior (logtail offset x.val) y))) 0)
-      :concat
-      (b* ((x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                               :exec (- x.height (if x.lsbs-taller 2 1))))
-           ((when (<= x.width offset))
-            (sparseint$-bitor-int-width width (- offset x.width) x.msbs x.msbs.height y))
-           (width1 (- x.width offset))
-           (x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                               :exec (- x.height (if x.msbs-taller 2 1))))
-           ((when (<= width width1))
-            (sparseint$-bitor-int-width width offset x.lsbs x.lsbs.height y))
-           ((mv lsbs-and lsbs-and-height)
-            (sparseint$-bitor-int-width width1 offset x.lsbs x.lsbs.height
-                                       (bignum-logext width1 y)))
-           ((mv msbs-and msbs-and-height)
-            (sparseint$-bitor-int-width (- width width1) 0 x.msbs x.msbs.height (logtail width1 y))))
-        (sparseint$-concatenate-rebalance width1 lsbs-and lsbs-and-height msbs-and msbs-and-height))))
-  ///
-  (local (in-theory (disable (:d sparseint$-bitor-int-width))))
-
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (sparseint$-height-correctp x)
-             (sparseint$-height-correctp bitor))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitor-int-width)
-
-  ;; (local (defthm logapp-when-loghead-equal
-  ;;          (implies (and (equal (loghead w x) z)
-  ;;                        (syntaxp (not (find-atom 'sparseint$-bitor-int-width z))))
-  ;;                   (equal (logapp w x y) (logapp w z y)))
-  ;;          :hints(("Goal" :in-theory (enable logapp)))))
-
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitor)
-           (logext (pos-fix width) (logior (logtail offset (sparseint$-val x)) y)))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable logior-over-logapp)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logior
-                                    loghead-of-logior
-                                    loghead-of-logtail
-                                    equal-of-logapp-split)
-                                   (logior-of-logext logior-of-loghead
-                                                     logtail-of-loghead)))))))
-
-(define sparseint$-bitor-int ((offset natp)
-                               (x sparseint$-p)
-                               (x.height natp)
-                               (y integerp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x)))
-  :returns (mv (bitor sparseint$-p)
-               (height (equal height (sparseint$-height bitor))))
-  :verify-guards nil
-  :measure (sparseint$-count x)
-  (b* ((y (lifix y))
-       (offset (lnfix offset))
-       (x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       ((when (eql y -1)) (mv (sparseint$-leaf -1) 0)))
-    (sparseint$-case x
-      :leaf (mv (sparseint$-leaf (logior (logtail offset x.val) y)) 0)
-      :concat
-      (b* ((x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                               :exec (- x.height (if x.lsbs-taller 2 1))))
-           ((when (<= x.width offset))
-            (sparseint$-bitor-int (- offset x.width) x.msbs x.msbs.height y))
-           (width1 (- x.width offset))
-           (x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                               :exec (- x.height (if x.msbs-taller 2 1))))
-           ((mv lsbs-and lsbs-and-height)
-            (sparseint$-bitor-int-width width1 offset x.lsbs x.lsbs.height
-                                       (bignum-logext width1 y)))
-           (x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                               :exec (- x.height (if x.lsbs-taller 2 1))))
-           ((mv msbs-and msbs-and-height)
-            (sparseint$-bitor-int 0 x.msbs x.msbs.height (logtail width1 y))))
-        (sparseint$-concatenate-rebalance width1 lsbs-and lsbs-and-height msbs-and msbs-and-height))))
-  ///
-
-  (local (in-theory (disable (:d sparseint$-bitor-int-width))))
-
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (sparseint$-height-correctp x)
-             (sparseint$-height-correctp bitor))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitor-int)
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitor)
-           (logior (logtail offset (sparseint$-val x)) y))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable logior-over-logapp)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logior
-                                    loghead-of-logior
-                                    loghead-of-logtail
-                                    equal-of-logapp-split)
-                                   (logior-of-logext logior-of-loghead
-                                                     logtail-of-loghead)))))))
-
-
-
-(define sparseint$-bitor-width ((width posp)
-                               (x sparseint$-p)
-                               (x.height natp)
-                               (y-offset natp)
-                               (y sparseint$-p)
-                               (y.height natp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x))
-              (sparseint$-height-correctp y)
-              (equal y.height (sparseint$-height y)))
-  :returns (mv (bitor sparseint$-p)
-               (height (equal height (sparseint$-height bitor))))
-  :verify-guards nil
-  :measure (+ (sparseint$-count x) (sparseint$-count y))
-  (b* ((x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       (y.height (mbe :logic (sparseint$-height y) :exec y.height))
-       (width (lposfix width))
        (y-offset (lnfix y-offset)))
     (sparseint$-case x
       :leaf
       (sparseint$-case y
-        :leaf (mv (sparseint$-leaf (logior (bignum-logext width x.val)
-                                           (bignum-logext width (logtail y-offset y.val))))
-                  0)
-        :concat (sparseint$-bitor-int-width width y-offset y y.height (bignum-logext width x.val)))
+        :leaf (equal (bignum-logext width x.val)
+                     (bignum-logext width (logtail y-offset y.val)))
+        :concat (sparseint$-equal-int-width width y-offset y (bignum-logext width x.val)))
       :concat
       (sparseint$-case y
-        :leaf (sparseint$-bitor-int-width width 0 x x.height (bignum-logext width (logtail y-offset y.val)))
+        :leaf (sparseint$-equal-int-width width 0 x (bignum-logext width (logtail y-offset y.val)))
         :concat
-        (b* ((x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                                 :exec (- x.height (if x.msbs-taller 2 1))))
-             ((when (<= width x.width))
-              (sparseint$-bitor-width width x.lsbs x.lsbs.height y-offset y y.height))
-             (y.msbs.height (mbe :logic (sparseint$-height y.msbs)
-                                 :exec (- y.height (if y.lsbs-taller 2 1))))
+        (b* (((when (<= width x.width))
+              (sparseint$-equal-width width x.lsbs y-offset y))
              ((when (<= y.width y-offset))
-              (sparseint$-bitor-width width x x.height (- y-offset y.width) y.msbs y.msbs.height))
+              (sparseint$-equal-width width x (- y-offset y.width) y.msbs))
              (y-width1 (- y.width y-offset))
-             (y.lsbs.height (mbe :logic (sparseint$-height y.lsbs)
-                                 :exec (- y.height (if y.msbs-taller 2 1))))
              ((when (<= width y-width1))
-              (sparseint$-bitor-width width x x.height y-offset y.lsbs y.lsbs.height))
-
-             ((mv lsbs-and lsbs-and.height)
-              (sparseint$-bitor-width x.width x.lsbs x.lsbs.height
-                                     y-offset y y.height))
-
-             (x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                                 :exec (- x.height (if x.lsbs-taller 2 1))))
-             ((mv msbs-and msbs-and.height)
-              (sparseint$-bitor-width (- width x.width)
-                                     x.msbs x.msbs.height
-                                     (+ x.width y-offset)
-                                     y y.height)))
-          (sparseint$-concatenate-rebalance
-           x.width lsbs-and lsbs-and.height msbs-and msbs-and.height)))))
+              (sparseint$-equal-width width x y-offset y.lsbs)))
+          (and (sparseint$-equal-width x.width x.lsbs y-offset y)
+               (sparseint$-equal-width (- width x.width) x.msbs (+ x.width y-offset) y))))))
   ///
-  (local (in-theory (disable (:d sparseint$-bitor-int-width))))
+  
 
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (and (sparseint$-height-correctp x)
-                  (sparseint$-height-correctp y))
-             (sparseint$-height-correctp bitor))
+  (defret <fn>-correct
+    (equal equal
+           (equal (logext width (sparseint$-val x))
+                  (logext width (logtail y-offset (sparseint$-val y)))))
     :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
+             :do-not-induct t
+             :expand ((:free (y) <call>))
+             :in-theory (enable equal-of-logapp-split-logext
+                                logtail-of-logapp-split)))))
 
-  (verify-guards sparseint$-bitor-width)
-
-  ;; (local (defthm logapp-when-loghead-equal
-  ;;          (implies (and (equal (loghead w x) z)
-  ;;                        (syntaxp (not (find-atom 'sparseint$-bitor-int-width z))))
-  ;;                   (equal (logapp w x y) (logapp w z y)))
-  ;;          :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext
-           (implies (equal x (logext w z))
-                    (equal (logapp w x y)
-                           (logapp w z y)))
-           :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext-2
-           (implies (equal y (logext w2 z))
-                    (equal (logapp w x y)
-                           (logext (+ (pos-fix w2) (nfix w))(logapp w x z))))))
-
-  (local (in-theory (disable logext-of-logapp-split)))
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitor)
-           (logext (pos-fix width)
-                   (logior (sparseint$-val x) (logtail y-offset (sparseint$-val y)))))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logior-over-logapp
-                                    logext-of-logapp-split)
-                                   (logapp-of-equal-logext-2))))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logior
-                                    loghead-of-logior
-                                    loghead-of-logtail
-                                    equal-of-logapp-split
-                                    logext-of-logapp-split
-                                    )
-                                   (logior-of-logext logior-of-loghead
-                                                     logtail-of-loghead
-                                                     logapp-of-equal-logext-2)))))))
-
-
-
-(define sparseint$-bitor-offset ((x sparseint$-p)
-                                  (x.height natp)
-                                  (y-offset natp)
-                                  (y sparseint$-p)
-                                  (y.height natp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x))
-              (sparseint$-height-correctp y)
-              (equal y.height (sparseint$-height y)))
-  :returns (mv (bitor sparseint$-p)
-               (height (equal height (sparseint$-height bitor))))
-  :verify-guards nil
+(define sparseint$-equal-offset ((x sparseint$-p)
+                                 (y-offset natp)
+                                 (y sparseint$-p))
+  :returns (equal booleanp :rule-classes :type-prescription)
   :measure (+ (sparseint$-count x) (sparseint$-count y))
-  (b* ((x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       (y.height (mbe :logic (sparseint$-height y) :exec y.height))
-       (y-offset (lnfix y-offset)))
+  (b* ((y-offset (lnfix y-offset)))
     (sparseint$-case x
       :leaf
       (sparseint$-case y
-        :leaf (mv (sparseint$-leaf (logior x.val (logtail y-offset y.val)))
-                  0)
-        :concat (sparseint$-bitor-int y-offset y y.height x.val))
+        :leaf (equal x.val
+                     (logtail y-offset y.val))
+        :concat (sparseint$-equal-int y-offset y x.val))
       :concat
       (sparseint$-case y
-        :leaf (sparseint$-bitor-int 0 x x.height (logtail y-offset y.val))
+        :leaf (sparseint$-equal-int 0 x (logtail y-offset y.val))
         :concat
-        (b* ((y.msbs.height (mbe :logic (sparseint$-height y.msbs)
-                                 :exec (- y.height (if y.lsbs-taller 2 1))))
-             ((when (<= y.width y-offset))
-              (sparseint$-bitor-offset x x.height (- y-offset y.width) y.msbs y.msbs.height))
-             (x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                                 :exec (- x.height (if x.msbs-taller 2 1))))
-
-             ((mv lsbs-and lsbs-and.height)
-              (sparseint$-bitor-width x.width x.lsbs x.lsbs.height
-                                       y-offset y y.height))
-
-             (x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                                 :exec (- x.height (if x.lsbs-taller 2 1))))
-             ((mv msbs-and msbs-and.height)
-              (sparseint$-bitor-offset x.msbs x.msbs.height
-                                        (+ x.width y-offset)
-                                        y y.height)))
-          (sparseint$-concatenate-rebalance
-           x.width lsbs-and lsbs-and.height msbs-and msbs-and.height)))))
+        (b* (((when (<= y.width y-offset))
+              (sparseint$-equal-offset x (- y-offset y.width) y.msbs)))
+          (and (sparseint$-equal-width x.width x.lsbs y-offset y)
+               (sparseint$-equal-offset x.msbs (+ x.width y-offset) y))))))
   ///
-  (local (in-theory (disable (:d sparseint$-bitor-int-width))))
+  
 
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (and (sparseint$-height-correctp x)
-                  (sparseint$-height-correctp y))
-             (sparseint$-height-correctp bitor))
+  (defret <fn>-correct
+    (equal equal
+           (equal (sparseint$-val x)
+                  (logtail y-offset (sparseint$-val y))))
     :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitor-offset)
-
-  ;; (local (defthm logapp-when-loghead-equal
-  ;;          (implies (and (equal (loghead w x) z)
-  ;;                        (syntaxp (not (find-atom 'sparseint$-bitor-int-width z))))
-  ;;                   (equal (logapp w x y) (logapp w z y)))
-  ;;          :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext
-           (implies (equal x (logext w z))
-                    (equal (logapp w x y)
-                           (logapp w z y)))
-           :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext-2
-           (implies (equal y (logext w2 z))
-                    (equal (logapp w x y)
-                           (logext (+ (pos-fix w2) (nfix w))(logapp w x z))))))
-
-  (local (in-theory (disable logext-of-logapp-split)))
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitor)
-           (logior (sparseint$-val x) (logtail y-offset (sparseint$-val y))))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logior-over-logapp
-                                    logext-of-logapp-split)
-                                   (logapp-of-equal-logext-2))))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logior
-                                    loghead-of-logior
-                                    loghead-of-logtail
-                                    equal-of-logapp-split
-                                    logext-of-logapp-split
-                                    )
-                                   (logior-of-logext logior-of-loghead
-                                                     logtail-of-loghead
-                                                     logapp-of-equal-logext-2)))))))
+             :do-not-induct t
+             :expand ((:free (y) <call>))
+             :in-theory (enable equal-of-logapp-split-logext
+                                logtail-of-logapp-split)))))
 
 
-(define sparseint$-bitor ((x sparseint$-p)
-                           (y sparseint$-p))
-  :guard (and (sparseint$-height-correctp x)
-              (sparseint$-height-correctp y))
-  :returns (bitor sparseint$-p)
+
+(define sparseint$-equal ((x sparseint$-p)
+                          (y sparseint$-p))
+  :returns (equal booleanp :rule-classes :type-prescription)
   :inline t
-  (b* (((mv bitor ?height)
-        (sparseint$-bitor-offset x (sparseint$-height x)
-                                  0
-                                  y (sparseint$-height y))))
-    bitor)
+  (sparseint$-equal-offset x 0 y)
   ///
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (and (sparseint$-height-correctp x)
-                  (sparseint$-height-correctp y))
-             (sparseint$-height-correctp bitor)))
+  (defret <fn>-correct
+    (equal equal
+           (equal (sparseint$-val x)
+                  (sparseint$-val y)))))
 
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitor)
-           (logior (sparseint$-val x) (sparseint$-val y)))))
-
-(define sparseint-bitor ((x sparseint-p)
-                          (y sparseint-p))
-  :returns (bitor sparseint-p)
-  :prepwork ((local (in-theory (enable sparseint-p))))
+(define sparseint-equal ((x sparseint-p)
+                         (y sparseint-p))
+  :parents (sparseint)
+  :short "Check equality of the integer values of two sparseints"
+  :returns (equal booleanp :rule-classes :type-prescription)
   :inline t
-  (sparseint$-bitor (sparseint-fix x) (sparseint-fix y))
+  (sparseint$-equal (sparseint-fix x) (sparseint-fix y))
   ///
-  (defret sparseint-val-of-<fn>
-    (equal (sparseint-val bitor)
-           (logior (sparseint-val x) (sparseint-val y)))
-    :hints(("Goal" :in-theory (enable sparseint-val)))))
+  (defret <fn>-correct
+    (equal equal
+           (equal (sparseint-val x)
+                  (sparseint-val y)))
+    :hints(("Goal" :in-theory (enable sparseint-val))))
 
-
-
-
-(define sparseint$-bitxor-int-width ((width posp)
-                                   (offset natp)
-                                   (x sparseint$-p)
-                                   (x.height natp)
-                                   (y integerp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x)))
-  :returns (mv (bitxor sparseint$-p)
-               (height (equal height (sparseint$-height bitxor))))
-  :verify-guards nil
-  :measure (sparseint$-count x)
-  (b* ((width (lposfix width))
-       (offset (lnfix offset))
-       (y (lifix y))
-       (x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       ;; BOZO add optimized cases for y=0, y=1
-       )
-    (sparseint$-case x
-      :leaf (mv (sparseint$-leaf (bignum-logext width (logxor (logtail offset x.val) y))) 0)
-      :concat
-      (b* ((x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                               :exec (- x.height (if x.lsbs-taller 2 1))))
-           ((when (<= x.width offset))
-            (sparseint$-bitxor-int-width width (- offset x.width) x.msbs x.msbs.height y))
-           (width1 (- x.width offset))
-           (x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                               :exec (- x.height (if x.msbs-taller 2 1))))
-           ((when (<= width width1))
-            (sparseint$-bitxor-int-width width offset x.lsbs x.lsbs.height y))
-           ((mv lsbs-and lsbs-and-height)
-            (sparseint$-bitxor-int-width width1 offset x.lsbs x.lsbs.height
-                                       (bignum-logext width1 y)))
-           ((mv msbs-and msbs-and-height)
-            (sparseint$-bitxor-int-width (- width width1) 0 x.msbs x.msbs.height (logtail width1 y))))
-        (sparseint$-concatenate-rebalance width1 lsbs-and lsbs-and-height msbs-and msbs-and-height))))
-  ///
-  (local (in-theory (disable (:d sparseint$-bitxor-int-width))))
-
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (sparseint$-height-correctp x)
-             (sparseint$-height-correctp bitxor))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitxor-int-width)
-
-  ;; (local (defthm logapp-when-loghead-equal
-  ;;          (implies (and (equal (loghead w x) z)
-  ;;                        (syntaxp (not (find-atom 'sparseint$-bitxor-int-width z))))
-  ;;                   (equal (logapp w x y) (logapp w z y)))
-  ;;          :hints(("Goal" :in-theory (enable logapp)))))
-
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitxor)
-           (logext (pos-fix width) (logxor (logtail offset (sparseint$-val x)) y)))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable logxor-over-logapp)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logxor
-                                    loghead-of-logxor
-                                    loghead-of-logtail
-                                    equal-of-logapp-split)
-                                   (logxor-of-logext logxor-of-loghead
-                                                     logtail-of-loghead)))))))
-
-(define sparseint$-bitxor-int ((offset natp)
-                               (x sparseint$-p)
-                               (x.height natp)
-                               (y integerp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x)))
-  :returns (mv (bitxor sparseint$-p)
-               (height (equal height (sparseint$-height bitxor))))
-  :verify-guards nil
-  :measure (sparseint$-count x)
-  (b* ((y (lifix y))
-       (offset (lnfix offset))
-       (x.height (mbe :logic (sparseint$-height x) :exec x.height)))
-    (sparseint$-case x
-      :leaf (mv (sparseint$-leaf (logxor (logtail offset x.val) y)) 0)
-      :concat
-      (b* ((x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                               :exec (- x.height (if x.lsbs-taller 2 1))))
-           ((when (<= x.width offset))
-            (sparseint$-bitxor-int (- offset x.width) x.msbs x.msbs.height y))
-           (width1 (- x.width offset))
-           (x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                               :exec (- x.height (if x.msbs-taller 2 1))))
-           ((mv lsbs-and lsbs-and-height)
-            (sparseint$-bitxor-int-width width1 offset x.lsbs x.lsbs.height
-                                       (bignum-logext width1 y)))
-           (x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                               :exec (- x.height (if x.lsbs-taller 2 1))))
-           ((mv msbs-and msbs-and-height)
-            (sparseint$-bitxor-int 0 x.msbs x.msbs.height (logtail width1 y))))
-        (sparseint$-concatenate-rebalance width1 lsbs-and lsbs-and-height msbs-and msbs-and-height))))
-  ///
-
-  (local (in-theory (disable (:d sparseint$-bitxor-int-width))))
-
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (sparseint$-height-correctp x)
-             (sparseint$-height-correctp bitxor))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitxor-int)
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitxor)
-           (logxor (logtail offset (sparseint$-val x)) y))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable logxor-over-logapp)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logxor
-                                    loghead-of-logxor
-                                    loghead-of-logtail
-                                    equal-of-logapp-split)
-                                   (logxor-of-logext logxor-of-loghead
-                                                     logtail-of-loghead)))))))
-
-
-
-(define sparseint$-bitxor-width ((width posp)
-                               (x sparseint$-p)
-                               (x.height natp)
-                               (y-offset natp)
-                               (y sparseint$-p)
-                               (y.height natp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x))
-              (sparseint$-height-correctp y)
-              (equal y.height (sparseint$-height y)))
-  :returns (mv (bitxor sparseint$-p)
-               (height (equal height (sparseint$-height bitxor))))
-  :verify-guards nil
-  :measure (+ (sparseint$-count x) (sparseint$-count y))
-  (b* ((x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       (y.height (mbe :logic (sparseint$-height y) :exec y.height))
-       (width (lposfix width))
-       (y-offset (lnfix y-offset)))
-    (sparseint$-case x
-      :leaf
-      (sparseint$-case y
-        :leaf (mv (sparseint$-leaf (logxor (bignum-logext width x.val)
-                                           (bignum-logext width (logtail y-offset y.val))))
-                  0)
-        :concat (sparseint$-bitxor-int-width width y-offset y y.height (bignum-logext width x.val)))
-      :concat
-      (sparseint$-case y
-        :leaf (sparseint$-bitxor-int-width width 0 x x.height (bignum-logext width (logtail y-offset y.val)))
-        :concat
-        (b* ((x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                                 :exec (- x.height (if x.msbs-taller 2 1))))
-             ((when (<= width x.width))
-              (sparseint$-bitxor-width width x.lsbs x.lsbs.height y-offset y y.height))
-             (y.msbs.height (mbe :logic (sparseint$-height y.msbs)
-                                 :exec (- y.height (if y.lsbs-taller 2 1))))
-             ((when (<= y.width y-offset))
-              (sparseint$-bitxor-width width x x.height (- y-offset y.width) y.msbs y.msbs.height))
-             (y-width1 (- y.width y-offset))
-             (y.lsbs.height (mbe :logic (sparseint$-height y.lsbs)
-                                 :exec (- y.height (if y.msbs-taller 2 1))))
-             ((when (<= width y-width1))
-              (sparseint$-bitxor-width width x x.height y-offset y.lsbs y.lsbs.height))
-
-             ((mv lsbs-and lsbs-and.height)
-              (sparseint$-bitxor-width x.width x.lsbs x.lsbs.height
-                                     y-offset y y.height))
-
-             (x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                                 :exec (- x.height (if x.lsbs-taller 2 1))))
-             ((mv msbs-and msbs-and.height)
-              (sparseint$-bitxor-width (- width x.width)
-                                     x.msbs x.msbs.height
-                                     (+ x.width y-offset)
-                                     y y.height)))
-          (sparseint$-concatenate-rebalance
-           x.width lsbs-and lsbs-and.height msbs-and msbs-and.height)))))
-  ///
-  (local (in-theory (disable (:d sparseint$-bitxor-int-width))))
-
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (and (sparseint$-height-correctp x)
-                  (sparseint$-height-correctp y))
-             (sparseint$-height-correctp bitxor))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitxor-width)
-
-  ;; (local (defthm logapp-when-loghead-equal
-  ;;          (implies (and (equal (loghead w x) z)
-  ;;                        (syntaxp (not (find-atom 'sparseint$-bitxor-int-width z))))
-  ;;                   (equal (logapp w x y) (logapp w z y)))
-  ;;          :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext
-           (implies (equal x (logext w z))
-                    (equal (logapp w x y)
-                           (logapp w z y)))
-           :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext-2
-           (implies (equal y (logext w2 z))
-                    (equal (logapp w x y)
-                           (logext (+ (pos-fix w2) (nfix w))(logapp w x z))))))
-
-  (local (in-theory (disable logext-of-logapp-split)))
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitxor)
-           (logext (pos-fix width)
-                   (logxor (sparseint$-val x) (logtail y-offset (sparseint$-val y)))))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logxor-over-logapp
-                                    logext-of-logapp-split)
-                                   (logapp-of-equal-logext-2))))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logxor
-                                    loghead-of-logxor
-                                    loghead-of-logtail
-                                    equal-of-logapp-split
-                                    logext-of-logapp-split
-                                    )
-                                   (logxor-of-logext logxor-of-loghead
-                                                     logtail-of-loghead
-                                                     logapp-of-equal-logext-2)))))))
-
-
-
-(define sparseint$-bitxor-offset ((x sparseint$-p)
-                                  (x.height natp)
-                                  (y-offset natp)
-                                  (y sparseint$-p)
-                                  (y.height natp))
-  :guard (and (sparseint$-height-correctp x)
-              (equal x.height (sparseint$-height x))
-              (sparseint$-height-correctp y)
-              (equal y.height (sparseint$-height y)))
-  :returns (mv (bitxor sparseint$-p)
-               (height (equal height (sparseint$-height bitxor))))
-  :verify-guards nil
-  :measure (+ (sparseint$-count x) (sparseint$-count y))
-  (b* ((x.height (mbe :logic (sparseint$-height x) :exec x.height))
-       (y.height (mbe :logic (sparseint$-height y) :exec y.height))
-       (y-offset (lnfix y-offset)))
-    (sparseint$-case x
-      :leaf
-      (sparseint$-case y
-        :leaf (mv (sparseint$-leaf (logxor x.val (logtail y-offset y.val)))
-                  0)
-        :concat (sparseint$-bitxor-int y-offset y y.height x.val))
-      :concat
-      (sparseint$-case y
-        :leaf (sparseint$-bitxor-int 0 x x.height (logtail y-offset y.val))
-        :concat
-        (b* ((y.msbs.height (mbe :logic (sparseint$-height y.msbs)
-                                 :exec (- y.height (if y.lsbs-taller 2 1))))
-             ((when (<= y.width y-offset))
-              (sparseint$-bitxor-offset x x.height (- y-offset y.width) y.msbs y.msbs.height))
-             (x.lsbs.height (mbe :logic (sparseint$-height x.lsbs)
-                                 :exec (- x.height (if x.msbs-taller 2 1))))
-
-             ((mv lsbs-and lsbs-and.height)
-              (sparseint$-bitxor-width x.width x.lsbs x.lsbs.height
-                                       y-offset y y.height))
-
-             (x.msbs.height (mbe :logic (sparseint$-height x.msbs)
-                                 :exec (- x.height (if x.lsbs-taller 2 1))))
-             ((mv msbs-and msbs-and.height)
-              (sparseint$-bitxor-offset x.msbs x.msbs.height
-                                        (+ x.width y-offset)
-                                        y y.height)))
-          (sparseint$-concatenate-rebalance
-           x.width lsbs-and lsbs-and.height msbs-and msbs-and.height)))))
-  ///
-  (local (in-theory (disable (:d sparseint$-bitxor-int-width))))
-
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (and (sparseint$-height-correctp x)
-                  (sparseint$-height-correctp y))
-             (sparseint$-height-correctp bitxor))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))))
-
-  (verify-guards sparseint$-bitxor-offset)
-
-  ;; (local (defthm logapp-when-loghead-equal
-  ;;          (implies (and (equal (loghead w x) z)
-  ;;                        (syntaxp (not (find-atom 'sparseint$-bitxor-int-width z))))
-  ;;                   (equal (logapp w x y) (logapp w z y)))
-  ;;          :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext
-           (implies (equal x (logext w z))
-                    (equal (logapp w x y)
-                           (logapp w z y)))
-           :hints(("Goal" :in-theory (enable logapp)))))
-
-  (local (defthm logapp-of-equal-logext-2
-           (implies (equal y (logext w2 z))
-                    (equal (logapp w x y)
-                           (logext (+ (pos-fix w2) (nfix w))(logapp w x z))))))
-
-  (local (in-theory (disable logext-of-logapp-split)))
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitxor)
-           (logxor (sparseint$-val x) (logtail y-offset (sparseint$-val y))))
-    :hints (("goal" :induct <call>
-             :expand ((:free (y) <call>)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logxor-over-logapp
-                                    logext-of-logapp-split)
-                                   (logapp-of-equal-logext-2))))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (logext-of-logxor
-                                    loghead-of-logxor
-                                    loghead-of-logtail
-                                    equal-of-logapp-split
-                                    logext-of-logapp-split
-                                    )
-                                   (logxor-of-logext logxor-of-loghead
-                                                     logtail-of-loghead
-                                                     logapp-of-equal-logext-2)))))))
-
-
-(define sparseint$-bitxor ((x sparseint$-p)
-                           (y sparseint$-p))
-  :guard (and (sparseint$-height-correctp x)
-              (sparseint$-height-correctp y))
-  :returns (bitxor sparseint$-p)
-  :inline t
-  (b* (((mv bitxor ?height)
-        (sparseint$-bitxor-offset x (sparseint$-height x)
-                                  0
-                                  y (sparseint$-height y))))
-    bitxor)
-  ///
-  (defret sparseint$-height-correctp-of-<fn>
-    (implies (and (sparseint$-height-correctp x)
-                  (sparseint$-height-correctp y))
-             (sparseint$-height-correctp bitxor)))
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitxor)
-           (logxor (sparseint$-val x) (sparseint$-val y)))))
-
-(define sparseint-bitxor ((x sparseint-p)
-                          (y sparseint-p))
-  :returns (bitxor sparseint-p)
-  :prepwork ((local (in-theory (enable sparseint-p))))
-  :inline t
-  (sparseint$-bitxor (sparseint-fix x) (sparseint-fix y))
-  ///
-  (defret sparseint-val-of-<fn>
-    (equal (sparseint-val bitxor)
-           (logxor (sparseint-val x) (sparseint-val y)))
-    :hints(("Goal" :in-theory (enable sparseint-val)))))
+  (defequiv sparseint-equal))
 
 
 (define binary-bitop ((op integerp :type (unsigned-byte 4))
@@ -2752,6 +1871,255 @@ by redefining the constant.</p>")
                         (#b1110 (logior x y))
                         (t      -1)))))))
 
+(define sparseint$-bitnot ((x sparseint$-p))
+  :returns (bitnot sparseint$-p)
+  :measure (sparseint$-count x)
+  :verify-guards nil
+  (sparseint$-case x
+    :leaf (sparseint$-leaf (lognot x.val))
+    :concat (change-sparseint$-concat x
+                                      :lsbs (sparseint$-bitnot x.lsbs)
+                                      :msbs (sparseint$-bitnot x.msbs)))
+  ///
+  (verify-guards sparseint$-bitnot)
+
+  (defret sparseint$-height-of-<fn>
+    (equal (sparseint$-height bitnot)
+           (sparseint$-height x))
+    :hints(("Goal" :in-theory (enable sparseint$-height-when-concat))))
+
+  (defret sparseint$-height-correct-of-<fn>
+    (implies (sparseint$-height-correctp x)
+             (sparseint$-height-correctp bitnot))
+    :hints (("goal" :expand (<call>
+                             (sparseint$-height-correctp x)
+                             (:free (width lsbs lsbs-taller msbs msbs-taller)
+                              (sparseint$-height-correctp
+                               (sparseint$-concat width lsbs lsbs-taller msbs msbs-taller))))
+             
+             :induct <call>)))
+
+  (local (defthm lognot-of-logapp
+           (equal (lognot (logapp w a b))
+                  (logapp w (lognot a) (lognot b)))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)
+                   :induct (logapp w a b)))))
+
+  (defret sparseint$-val-of-<fn>
+    (equal (sparseint$-val bitnot)
+           (lognot (sparseint$-val x)))))
+
+(define sparseint-bitnot ((x sparseint-p))
+  :parents (sparseint)
+  :short "Bitwise negation of a sparseint"
+  :returns (bitnot sparseint-p)
+  :prepwork ((local (in-theory (enable sparseint-p))))
+  :inline t
+  (sparseint$-bitnot (sparseint-fix x))
+  ///
+  (defret sparseint-val-of-<fn>
+    (equal (sparseint-val bitnot)
+           (lognot (sparseint-val x)))
+    :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+
+
+(define unary-bitop ((op integerp :type (unsigned-byte 2))
+                     (x integerp))
+  :returns (unary integerp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (e/d (loghead-identity)
+                                    (unsigned-byte-p)))))
+  (b* ((op (mbe :logic (loghead 2 op) :exec op)))
+    (case op
+      (#b00 0)
+      (#b01 (lognot x))
+      (#b10 (lifix x))
+      (t    -1)))
+  ///
+  (defret unary-bitop-correct
+    (equal (logbitp n unary)
+           (logbitp (logbit n x) op))
+    :hints(("Goal" :expand ((:free (op) (loghead 2 op))
+                            (:free (op) (loghead 1 op))
+                            (:free (op) (loghead 0 op))
+                            (:free (op) (logbitp 1 op))
+                            (:free (op) (logbitp 0 op)))
+            :in-theory (enable bool->bit))))
+
+  (defret logext-of-<fn>
+    (equal (logext n unary)
+           (unary-bitop op (logext n x)))
+    :hints(("Goal" :in-theory (e/d (logext-of-logand logext-of-logior)
+                                   (logand-of-logext logior-of-logext)))))
+
+  (defret logtail-of-<fn>
+    (equal (logtail n unary)
+           (unary-bitop op (logtail n x)))
+    :hints(("Goal" :in-theory (e/d (logtail-of-logand logtail-of-logior)))))
+
+  (defret open-unary-bitop
+    (implies (syntaxp (quotep op))
+             (equal unary
+                    (b* ((op (mbe :logic (loghead 2 op) :exec op)))
+                      (case op
+                        (#b00 0)
+                        (#b01 (lognot x))
+                        (#b10 (lifix x))
+                        (t    -1)))))))
+
+(define binary-bitop-cofactor2 ((op integerp :type (unsigned-byte 4))
+                                (bit bitp)) ;; positive or negative cofactor by the second variable
+  :returns (unary-op integerp :rule-classes :type-prescription)
+  (loghead 2 (logtail (* 2 (lbfix bit)) op))
+  ///
+  (defret width-of-binary-bitop-cofactor2
+    (unsigned-byte-p 2 unary-op))
+
+  (defret <fn>-correct
+    (equal (unary-bitop unary-op x)
+           (binary-bitop op x (- (bfix bit))))
+    :hints(("Goal" :in-theory (enable unary-bitop binary-bitop bfix)
+            :expand ((:free (op) (loghead 4 op))
+                     (:free (op) (loghead 3 op))
+                     (:free (op) (loghead 2 op))
+                     (:free (op) (loghead 1 op))
+                     (:free (op) (loghead 0 op))
+                     (:free (op) (logbitp 3 op))
+                     (:free (op) (logbitp 2 op))
+                     (:free (op) (logbitp 1 op))
+                     (:free (op) (logbitp 0 op)))))))
+
+(define binary-bitop-cofactor1 ((op integerp :type (unsigned-byte 4))
+                                (bit bitp)) ;; positive or negative cofactor by the second variable
+  :returns (unary-op integerp :rule-classes :type-prescription)
+  (logior (logbit (lbfix bit) op)
+          (ash (logbit (+ 2 (lbfix bit)) op) 1))
+  ///
+  (defret width-of-binary-bitop-cofactor1
+    (unsigned-byte-p 2 unary-op))
+
+  (defret <fn>-correct
+    (equal (unary-bitop unary-op x)
+           (binary-bitop op (- (bfix bit)) x))
+    :hints(("Goal" :in-theory (enable unary-bitop binary-bitop bfix)
+            :expand ((:free (op) (loghead 4 op))
+                     (:free (op) (loghead 3 op))
+                     (:free (op) (loghead 2 op))
+                     (:free (op) (loghead 1 op))
+                     (:free (op) (loghead 0 op))
+                     (:free (op) (logbitp 3 op))
+                     (:free (op) (logbitp 2 op))
+                     (:free (op) (logbitp 1 op))
+                     (:free (op) (logbitp 0 op)))))))
+
+
+
+(define binary-bitop-swap ((op integerp :type (unsigned-byte 4)))
+  :returns (swap integerp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (e/d (loghead-identity)
+                                    (unsigned-byte-p)))))
+  (b* ((op (mbe :logic (loghead 4 op)
+                :exec op))
+       (same #b1001) ;; (logeqv #b1010 #b1100)
+       (x&~y #b0010)
+       (y&~x #b0100))
+    (logior (logand same op)
+            (ash (logand x&~y op) 1)
+            (ash (logand y&~x op) -1)))
+  ///
+  (defret unsigned-byte-p-of-binary-bitop-swap
+    (unsigned-byte-p 4 swap))
+  (defthm binary-bitop-swap-correct
+    (equal (binary-bitop (binary-bitop-swap op) x y)
+           (binary-bitop op y x))
+    :hints(("Goal" :expand ((:free (op) (loghead 4 op))
+                            (:free (op) (loghead 3 op))
+                            (:free (op) (loghead 2 op))
+                            (:free (op) (loghead 1 op))
+                            (:free (op) (loghead 0 op)))
+            :in-theory (enable binary-bitop)))))
+
+
+(define sparseint$-unary-bitop ((op integerp :type (unsigned-byte 2))
+                                (x sparseint$-p)
+                                (x.height natp))
+  :guard (and (sparseint$-height-correctp x)
+              (equal x.height (sparseint$-height x)))
+  :returns (mv (res sparseint$-p)
+               (height (equal height (sparseint$-height res))))
+  :guard-hints (("goal" :in-theory (enable loghead-identity)))
+
+  (b* ((x.height (mbe :logic (sparseint$-height x) :exec x.height))
+       (op (mbe :logic (loghead 2 op) :exec op)))
+    (case op
+      (#b00 (mv (sparseint$-leaf 0) 0))
+      (#b01 (mv (sparseint$-bitnot x) x.height))
+      (#b10 (mv (sparseint$-fix x) x.height))
+      (t (mv (sparseint$-leaf -1) 0))))
+  ///
+  (defret <fn>-height-correctp
+    (implies (sparseint$-height-correctp x)
+             (sparseint$-height-correctp res)))
+
+  (defret <fn>-correct
+    (equal (sparseint$-val res)
+           (unary-bitop op (sparseint$-val x)))
+    :hints(("Goal" :in-theory (enable unary-bitop)))))
+
+(define sparseint$-unary-bittest-offset ((op integerp :type (unsigned-byte 2))
+                                         (offset natp)
+                                         (x sparseint$-p))
+  :returns (test booleanp :rule-classes :type-prescription)
+  :guard-hints (("goal" :in-theory (enable loghead-identity)))
+
+  (b* ((op (mbe :logic (loghead 2 op) :exec op)))
+    (case op
+      (#b00 nil)
+      (#b01 (not (sparseint$-equal-int offset x -1)))
+      (#b10 (not (sparseint$-equal-int offset x -0)))
+      (t    t)))
+  ///
+
+  (defret <fn>-correct
+    (equal test
+           (not (equal (unary-bitop op (logtail offset (sparseint$-val x))) 0)))
+    :hints(("Goal" :in-theory (enable unary-bitop)))))
+
+(define sparseint$-unary-bittest-width ((op integerp :type (unsigned-byte 2))
+                                        (width posp)
+                                        (offset natp)
+                                        (x sparseint$-p))
+  :returns (test booleanp :rule-classes :type-prescription)
+  :guard-hints (("goal" :in-theory (enable loghead-identity)))
+
+  (b* ((op (mbe :logic (loghead 2 op) :exec op)))
+    (case op
+      (#b00 nil)
+      (#b01 (not (sparseint$-equal-int-width width offset x -1)))
+      (#b10 (not (sparseint$-equal-int-width width offset x -0)))
+      (t    t)))
+  ///
+
+  (defret <fn>-correct
+    (equal test
+           (not (equal (unary-bitop op (logext width (logtail offset (sparseint$-val x)))) 0)))
+    :hints(("Goal" :in-theory (enable unary-bitop)))))
+
+(define sparseint$-unary-bittest ((op integerp :type (unsigned-byte 2))
+                                  (x sparseint$-p))
+  :returns (test booleanp :rule-classes :type-prescription)
+  :guard-hints (("goal" :in-theory (enable loghead-identity)))
+  (sparseint$-unary-bittest-offset op 0 x)
+  ///
+
+  (defret <fn>-correct
+    (equal test
+           (not (equal (unary-bitop op (sparseint$-val x)) 0)))
+    :hints(("Goal" :in-theory (enable unary-bitop)))))
+
+
+
 (define sparseint$-binary-bitop-int-width ((op integerp :type (unsigned-byte 4))
                                            (width posp)
                                            (offset natp)
@@ -2767,7 +2135,18 @@ by redefining the constant.</p>")
   (b* ((width (lposfix width))
        (offset (lnfix offset))
        (y (lifix y))
-       (x.height (mbe :logic (sparseint$-height x) :exec x.height)))
+       (x.height (mbe :logic (sparseint$-height x) :exec x.height))
+       ((when (or (eql y 0) (eql y -1)))
+        (b* ((cofactor (binary-bitop-cofactor2 op (- y))))
+          (mbe :logic (b* (((mv shift shift-height) (sparseint$-rightshift-rec offset x x.height))
+                           ((mv ext ext-height) (sparseint$-sign-ext width shift shift-height)))
+                        (sparseint$-unary-bitop cofactor ext ext-height))
+               :exec (b* (((when (eql cofactor #b00)) (mv (sparseint$-leaf 0) 0))
+                          ((when (eql cofactor #b11)) (mv (sparseint$-leaf -1) 0))
+                          ((mv shift shift-height) (sparseint$-rightshift-rec offset x x.height))
+                          ((mv ext ext-height) (sparseint$-sign-ext width shift shift-height)))
+                        (sparseint$-unary-bitop cofactor ext ext-height))))))
+             
     (sparseint$-case x
       :leaf (mv (sparseint$-leaf (bignum-logext width (binary-bitop op (logtail offset x.val) y))) 0)
       :concat
@@ -2795,7 +2174,10 @@ by redefining the constant.</p>")
     :hints (("goal" :induct <call>
              :expand ((:free (y) <call>)))))
 
-  (verify-guards sparseint$-binary-bitop-int-width)
+  (verify-guards sparseint$-binary-bitop-int-width
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((:free (x xh) (sparseint$-unary-bitop #b00 x xh))
+                            (:free (x xh) (sparseint$-unary-bitop #b11 x xh)))))))
 
   (defret sparseint$-val-of-<fn>
     (equal (sparseint$-val binary-res)
@@ -2819,7 +2201,15 @@ by redefining the constant.</p>")
   :measure (sparseint$-count x)
   (b* ((y (lifix y))
        (offset (lnfix offset))
-       (x.height (mbe :logic (sparseint$-height x) :exec x.height)))
+       (x.height (mbe :logic (sparseint$-height x) :exec x.height))
+       ((when (or (eql y 0) (eql y -1)))
+        (b* ((cofactor (binary-bitop-cofactor2 op (- y))))
+          (mbe :logic (b* (((mv shift shift-height) (sparseint$-rightshift-rec offset x x.height)))
+                        (sparseint$-unary-bitop cofactor shift shift-height))
+               :exec (b* (((when (eql cofactor #b00)) (mv (sparseint$-leaf 0) 0))
+                          ((when (eql cofactor #b11)) (mv (sparseint$-leaf -1) 0))
+                          ((mv shift shift-height) (sparseint$-rightshift-rec offset x x.height)))
+                        (sparseint$-unary-bitop cofactor shift shift-height))))))
     (sparseint$-case x
       :leaf (mv (sparseint$-leaf (binary-bitop op (logtail offset x.val) y)) 0)
       :concat
@@ -2848,7 +2238,10 @@ by redefining the constant.</p>")
     :hints (("goal" :induct <call>
              :expand ((:free (y) <call>)))))
 
-  (verify-guards sparseint$-binary-bitop-int)
+  (verify-guards sparseint$-binary-bitop-int
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((:free (x xh) (sparseint$-unary-bitop #b00 x xh))
+                            (:free (x xh) (sparseint$-unary-bitop #b11 x xh)))))))
 
   (defret sparseint$-val-of-<fn>
     (equal (sparseint$-val binary-res)
@@ -2858,31 +2251,6 @@ by redefining the constant.</p>")
             (and stable-under-simplificationp
                  '(:in-theory (e/d (loghead-of-logtail
                                     equal-of-logapp-split-logext)))))))
-
-(define binary-bitop-swap ((op integerp :type (unsigned-byte 4)))
-  :returns (swap integerp :rule-classes :type-prescription)
-  :prepwork ((local (in-theory (e/d (loghead-identity)
-                                    (unsigned-byte-p)))))
-  (b* ((op (mbe :logic (loghead 4 op)
-                :exec op))
-       (same #b1001) ;; (logeqv #b1010 #b1100)
-       (x&~y #b0010)
-       (y&~x #b0100))
-    (logior (logand same op)
-            (ash (logand x&~y op) 1)
-            (ash (logand y&~x op) -1)))
-  ///
-  (defret unsigned-byte-p-of-binary-bitop-swap
-    (unsigned-byte-p 4 swap))
-  (defthm binary-bitop-swap-correct
-    (equal (binary-bitop (binary-bitop-swap op) x y)
-           (binary-bitop op y x))
-    :hints(("Goal" :expand ((:free (op) (loghead 4 op))
-                            (:free (op) (loghead 3 op))
-                            (:free (op) (loghead 2 op))
-                            (:free (op) (loghead 1 op))
-                            (:free (op) (loghead 0 op)))
-            :in-theory (enable binary-bitop)))))
 
 
 (define sparseint$-binary-bitop-width ((op integerp :type (unsigned-byte 4))
@@ -3121,6 +2489,8 @@ by redefining the constant.</p>")
 (define sparseint-binary-bitop ((op integerp :type (unsigned-byte 4))
                                 (x sparseint-p)
                                 (y sparseint-p))
+  :parents (sparseint)
+  :short "Apply a binary bitwise operation (represented as a 4-bit truth table) to two sparseints."
   :returns (binary-res sparseint-p)
   :prepwork ((local (in-theory (enable sparseint-p))))
   :inline t
@@ -3133,217 +2503,282 @@ by redefining the constant.</p>")
 
 
 
-                            
-
-(define sparseint$-bitnot ((x sparseint$-p))
-  :returns (bitnot sparseint$-p)
-  :measure (sparseint$-count x)
-  :verify-guards nil
-  (sparseint$-case x
-    :leaf (sparseint$-leaf (lognot x.val))
-    :concat (change-sparseint$-concat x
-                                      :lsbs (sparseint$-bitnot x.lsbs)
-                                      :msbs (sparseint$-bitnot x.msbs)))
-  ///
-  (verify-guards sparseint$-bitnot)
-
-  (defret sparseint$-height-of-<fn>
-    (equal (sparseint$-height bitnot)
-           (sparseint$-height x))
-    :hints(("Goal" :in-theory (enable sparseint$-height-when-concat))))
-
-  (defret sparseint$-height-correct-of-<fn>
-    (implies (sparseint$-height-correctp x)
-             (sparseint$-height-correctp bitnot))
-    :hints (("goal" :expand (<call>
-                             (sparseint$-height-correctp x)
-                             (:free (width lsbs lsbs-taller msbs msbs-taller)
-                              (sparseint$-height-correctp
-                               (sparseint$-concat width lsbs lsbs-taller msbs msbs-taller))))
-             
-             :induct <call>)))
-
-  (local (defthm lognot-of-logapp
-           (equal (lognot (logapp w a b))
-                  (logapp w (lognot a) (lognot b)))
-           :hints(("Goal" :in-theory (enable* ihsext-inductions
-                                              ihsext-recursive-redefs)
-                   :induct (logapp w a b)))))
-
-  (defret sparseint$-val-of-<fn>
-    (equal (sparseint$-val bitnot)
-           (lognot (sparseint$-val x)))))
-
-(define sparseint-bitnot ((x sparseint-p))
-  :returns (bitnot sparseint-p)
-  :prepwork ((local (in-theory (enable sparseint-p))))
-  :inline t
-  (sparseint$-bitnot (sparseint-fix x))
-  ///
-  (defret sparseint-val-of-<fn>
-    (equal (sparseint-val bitnot)
-           (lognot (sparseint-val x)))
-    :hints(("Goal" :in-theory (enable sparseint-val)))))
 
 
 
+(define binary-bittest ((op integerp :type (unsigned-byte 4))
+                        (x integerp)
+                        (y integerp))
+  :enabled t
+  (not (eql 0 (binary-bitop op x y))))
 
-(define sparseint$-equal-int-width ((width posp)
-                                    (offset natp)
-                                    (x sparseint$-p)
-                                    (y integerp))
-  :returns (equal booleanp :rule-classes :type-prescription)
+(local (include-book "equal-by-logbitp"))
+
+(local (defthm equal-0-of-binary-bitop-of-logapp-1
+         (equal (equal 0 (binary-bitop op (logapp width x y) z))
+                (and (or (zp width)
+                         (equal 0 (binary-bitop op (logext width x) (logext width z))))
+                     (equal 0 (binary-bitop op y (logtail width z)))))
+         :hints ((logbitp-reasoning))))
+
+(define sparseint$-binary-bittest-int-width ((op integerp :type (unsigned-byte 4))
+                                           (width posp)
+                                           (offset natp)
+                                           (x sparseint$-p)
+                                           (y integerp))
+  :returns (test booleanp :rule-classes :type-prescription)
+;;   :verify-guards nil
   :measure (sparseint$-count x)
   (b* ((width (lposfix width))
        (offset (lnfix offset))
-       (y (lifix y)))
+       (y (lifix y))
+       ((when (or (eql y 0) (eql y -1)))
+        (b* ((cofactor (binary-bitop-cofactor2 op (- y))))
+          (sparseint$-unary-bittest-width cofactor width offset x))))
+             
     (sparseint$-case x
-      :leaf (equal (bignum-logext width (logtail offset x.val)) y)
+      :leaf (binary-bittest op (bignum-logext width (logtail offset x.val))
+                            (bignum-logext width y))
       :concat
       (b* (((when (<= x.width offset))
-            (sparseint$-equal-int-width width (- offset x.width) x.msbs y))
+            (sparseint$-binary-bittest-int-width op width (- offset x.width) x.msbs y))
            (width1 (- x.width offset))
            ((when (<= width width1))
-            (sparseint$-equal-int-width width offset x.lsbs y)))
-        (and (sparseint$-equal-int-width
-              width1 offset x.lsbs (bignum-logext width1 y))
-             (sparseint$-equal-int-width
-              (- width width1) 0 x.msbs (logtail width1 y))))))
+            (sparseint$-binary-bittest-int-width op width offset x.lsbs y)))
+        (or (sparseint$-binary-bittest-int-width op width1 offset x.lsbs (bignum-logext width1 y))
+            (sparseint$-binary-bittest-int-width op (- width width1) 0 x.msbs (logtail width1 y))))))
   ///
-  (local (in-theory (disable (:d sparseint$-equal-int-width))))
+  (local (in-theory (disable (:d sparseint$-binary-bittest-int-width))))
 
-  (defret <fn>-correct
-    (equal equal
-           (equal (logext width (logtail offset (sparseint$-val x))) (ifix y)))
+  (defret sparseint$-val-of-<fn>
+    (equal test
+           (binary-bittest op (logext width (logtail offset (sparseint$-val x)))
+                           (logext width y)))
     :hints (("goal" :induct <call>
              :expand ((:free (y) <call>)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable equal-of-logapp-split-logext))))))
+                 '(:in-theory (e/d (loghead-of-logtail
+                                    equal-of-logapp-split-logext)))))))
 
-(define sparseint$-equal-int ((offset natp)
-                               (x sparseint$-p)
-                               (y integerp))
-  :returns (equal booleanp :rule-classes :type-prescription)
+(define sparseint$-binary-bittest-int ((op integerp :type (unsigned-byte 4))
+                                     (offset natp)
+                                     (x sparseint$-p)
+                                     (y integerp))
+  :returns (test booleanp :rule-classes :type-prescription)
+  ;; :verify-guards nil
   :measure (sparseint$-count x)
   (b* ((y (lifix y))
-       (offset (lnfix offset)))
+       (offset (lnfix offset))
+       ((when (or (eql y 0) (eql y -1)))
+        (b* ((cofactor (binary-bitop-cofactor2 op (- y))))
+          (sparseint$-unary-bittest-offset cofactor offset x))))
     (sparseint$-case x
-      :leaf (equal (logtail offset x.val) y)
+      :leaf (binary-bittest op (logtail offset x.val) y)
       :concat
       (b* (((when (<= x.width offset))
-            (sparseint$-equal-int (- offset x.width) x.msbs y))
+            (sparseint$-binary-bittest-int op (- offset x.width) x.msbs y))
            (width1 (- x.width offset)))
-        (and (sparseint$-equal-int-width width1 offset x.lsbs
-                                       (bignum-logext width1 y))
-             (sparseint$-equal-int 0 x.msbs (logtail width1 y))))))
+        (or (sparseint$-binary-bittest-int-width op width1 offset x.lsbs (bignum-logext width1 y))
+            (sparseint$-binary-bittest-int op 0 x.msbs (logtail width1 y))))))
   ///
 
-  (defret <fn>-correct
-    (equal equal
-           (equal (logtail offset (sparseint$-val x)) (ifix y)))
+  (local (in-theory (disable (:d sparseint$-binary-bittest-int-width))))
+
+  (defret sparseint$-val-of-<fn>
+    (equal test
+           (binary-bittest op (logtail offset (sparseint$-val x)) y))
     :hints (("goal" :induct <call>
              :expand ((:free (y) <call>)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable equal-of-logapp-split-logext))))))
+                 '(:in-theory (e/d (loghead-of-logtail
+                                    equal-of-logapp-split-logext)))))))
 
 
-(define sparseint$-equal-width ((width posp)
-                               (x sparseint$-p)
-                               (y-offset natp)
-                               (y sparseint$-p))
-  :returns (equal booleanp :rule-classes :type-prescription)
+(define sparseint$-binary-bittest-width ((op integerp :type (unsigned-byte 4))
+                                       (width posp)
+                                       (x sparseint$-p)
+                                       (y-offset natp)
+                                       (y sparseint$-p))
+  :returns (test booleanp :rule-classes :type-prescription)
+  ;; :verify-guards nil
   :measure (+ (sparseint$-count x) (sparseint$-count y))
   (b* ((width (lposfix width))
        (y-offset (lnfix y-offset)))
     (sparseint$-case x
       :leaf
       (sparseint$-case y
-        :leaf (equal (bignum-logext width x.val)
-                     (bignum-logext width (logtail y-offset y.val)))
-        :concat (sparseint$-equal-int-width width y-offset y (bignum-logext width x.val)))
+        :leaf (binary-bittest op (bignum-logext width x.val)
+                              (bignum-logext width (logtail y-offset y.val)))
+        :concat (sparseint$-binary-bittest-int-width
+                 (binary-bitop-swap op)
+                 width y-offset y (bignum-logext width x.val)))
       :concat
       (sparseint$-case y
-        :leaf (sparseint$-equal-int-width width 0 x (bignum-logext width (logtail y-offset y.val)))
+        :leaf (sparseint$-binary-bittest-int-width op width 0 x (bignum-logext width (logtail y-offset y.val)))
         :concat
         (b* (((when (<= width x.width))
-              (sparseint$-equal-width width x.lsbs y-offset y))
+              (sparseint$-binary-bittest-width op width x.lsbs y-offset y))
              ((when (<= y.width y-offset))
-              (sparseint$-equal-width width x (- y-offset y.width) y.msbs))
+              (sparseint$-binary-bittest-width op width x (- y-offset y.width) y.msbs))
              (y-width1 (- y.width y-offset))
              ((when (<= width y-width1))
-              (sparseint$-equal-width width x y-offset y.lsbs)))
-          (and (sparseint$-equal-width x.width x.lsbs y-offset y)
-               (sparseint$-equal-width (- width x.width) x.msbs (+ x.width y-offset) y))))))
+              (sparseint$-binary-bittest-width op width x y-offset y.lsbs)))
+          (or (sparseint$-binary-bittest-width op x.width x.lsbs y-offset y)
+              (sparseint$-binary-bittest-width op (- width x.width) x.msbs (+ x.width y-offset) y))))))
   ///
-  
+  (local (in-theory (disable (:d sparseint$-binary-bittest-int-width))))
 
-  (defret <fn>-correct
-    (equal equal
-           (equal (logext width (sparseint$-val x))
-                  (logext width (logtail y-offset (sparseint$-val y)))))
+  ;; (local (defthm logapp-when-loghead-equal
+  ;;          (implies (and (equal (loghead w x) z)
+  ;;                        (syntaxp (not (find-atom 'sparseint$-binary-bittest-int-width z))))
+  ;;                   (equal (logapp w x y) (logapp w z y)))
+  ;;          :hints(("Goal" :in-theory (enable logapp)))))
+
+  ;; (local (defthm logapp-of-equal-logext
+  ;;          (implies (equal x (logext w z))
+  ;;                   (equal (logapp w x y)
+  ;;                          (logapp w z y)))
+  ;;          :hints(("Goal" :in-theory (enable logapp)))))
+
+  ;; (local (defthm logapp-of-equal-logext-2
+  ;;          (implies (equal y (logext w2 z))
+  ;;                   (equal (logapp w x y)
+  ;;                          (logext (+ (pos-fix w2) (nfix w))(logapp w x z))))))
+
+  (local (in-theory (disable logext-of-logapp-split)))
+
+  ;; (local (defthmd logext-of-equal-to-binary-bittest
+  ;;          (implies (equal x (binary-bittest op a b))
+  ;;                   (equal (logext n x)
+  ;;                          (binary-bittest op (logext n a) (logext n b))))))
+
+  (defret sparseint$-val-of-<fn>
+    (equal test
+           (binary-bittest op (logext width (sparseint$-val x))
+                           (logext width (logtail y-offset (sparseint$-val y)))))
     :hints (("goal" :induct <call>
-             :do-not-induct t
-             :expand ((:free (y) <call>))
-             :in-theory (enable equal-of-logapp-split-logext
-                                logtail-of-logapp-split)))))
+             :expand ((:free (y) <call>)))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (logtail-of-logapp-split
+                                    logext-of-logapp-split)
+                                   (logtail-of-loghead
+                                    ;; logapp-of-equal-logext-2
+                                    )))))))
 
-(define sparseint$-equal-offset ((x sparseint$-p)
-                                 (y-offset natp)
-                                 (y sparseint$-p))
-  :returns (equal booleanp :rule-classes :type-prescription)
+
+
+(define sparseint$-binary-bittest-offset ((op integerp :type (unsigned-byte 4))
+                                          (x sparseint$-p)
+                                          (y-offset natp)
+                                          (y sparseint$-p))
+  :returns (test booleanp :rule-classes :type-prescription)
   :measure (+ (sparseint$-count x) (sparseint$-count y))
   (b* ((y-offset (lnfix y-offset)))
     (sparseint$-case x
       :leaf
       (sparseint$-case y
-        :leaf (equal x.val
-                     (logtail y-offset y.val))
-        :concat (sparseint$-equal-int y-offset y x.val))
+        :leaf (binary-bittest op x.val
+                              (logtail y-offset y.val))
+        :concat (sparseint$-binary-bittest-int (binary-bitop-swap op) y-offset y x.val))
       :concat
       (sparseint$-case y
-        :leaf (sparseint$-equal-int 0 x (logtail y-offset y.val))
+        :leaf (sparseint$-binary-bittest-int op 0 x (logtail y-offset y.val))
         :concat
         (b* (((when (<= y.width y-offset))
-              (sparseint$-equal-offset x (- y-offset y.width) y.msbs)))
-          (and (sparseint$-equal-width x.width x.lsbs y-offset y)
-               (sparseint$-equal-offset x.msbs (+ x.width y-offset) y))))))
+              (sparseint$-binary-bittest-offset op x (- y-offset y.width) y.msbs)))
+          (or (sparseint$-binary-bittest-width op x.width x.lsbs y-offset y)
+              (sparseint$-binary-bittest-offset op x.msbs (+ x.width y-offset) y))))))
   ///
-  
+  (local (in-theory (disable (:d sparseint$-binary-bittest-int-width))))
 
-  (defret <fn>-correct
-    (equal equal
-           (equal (sparseint$-val x)
-                  (logtail y-offset (sparseint$-val y))))
+  ;; (local (defthm logapp-when-loghead-equal
+  ;;          (implies (and (equal (loghead w x) z)
+  ;;                        (syntaxp (not (find-atom 'sparseint$-binary-bittest-int-width z))))
+  ;;                   (equal (logapp w x y) (logapp w z y)))
+  ;;          :hints(("Goal" :in-theory (enable logapp)))))
+
+
+  (local (in-theory (disable logext-of-logapp-split)))
+
+  (defret sparseint$-val-of-<fn>
+    (equal test
+           (binary-bittest op (sparseint$-val x) (logtail y-offset (sparseint$-val y))))
     :hints (("goal" :induct <call>
-             :do-not-induct t
-             :expand ((:free (y) <call>))
-             :in-theory (enable equal-of-logapp-split-logext
-                                logtail-of-logapp-split)))))
+             :expand ((:free (y) <call>)))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (logtail-of-logapp-split)
+                                   (logtail-of-loghead)))))))
 
 
-
-(define sparseint$-equal ((x sparseint$-p)
-                          (y sparseint$-p))
-  :returns (equal booleanp :rule-classes :type-prescription)
+(define sparseint$-binary-bittest ((op integerp :type (unsigned-byte 4))
+                                   (x sparseint$-p)
+                                   (y sparseint$-p))
+  :returns (test booleanp :rule-classes :type-prescription)
   :inline t
-  (sparseint$-equal-offset x 0 y)
+  (sparseint$-binary-bittest-offset op x 0 y)
   ///
-  (defret <fn>-correct
-    (equal equal
-           (equal (sparseint$-val x)
-                  (sparseint$-val y)))))
+  (defret sparseint$-val-of-<fn>
+    (equal test
+           (binary-bittest op (sparseint$-val x) (sparseint$-val y)))))
 
-(define sparseint-equal ((x sparseint-p)
-                         (y sparseint-p))
-  :returns (equal booleanp :rule-classes :type-prescription)
+(define sparseint-binary-bittest ((op integerp :type (unsigned-byte 4))
+                                  (x sparseint-p)
+                                  (y sparseint-p))
+  :parents (sparseint)
+  :short "Test whether a binary bitwise operation (represented as a 4-bit truth
+          table) on two sparseints yields a nonzero value."
+  :returns (test booleanp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (enable sparseint-p))))
   :inline t
-  (sparseint$-equal (sparseint-fix x) (sparseint-fix y))
+  (sparseint$-binary-bittest op (sparseint-fix x) (sparseint-fix y))
   ///
-  (defret <fn>-correct
-    (equal equal
-           (equal (sparseint-val x)
-                  (sparseint-val y)))
+  (defret sparseint-val-of-<fn>
+    (equal test
+           (binary-bittest op (sparseint-val x) (sparseint-val y)))
     :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+(defmacro def-sparseint-binary-bitop (name op spec)
+  (b* ((sparseint-{name} (intern$ (concatenate 'string "SPARSEINT-" (symbol-name name)) "BITOPS"))
+       (sparseint-test-{name} (intern$ (concatenate 'string "SPARSEINT-TEST-" (symbol-name name)) "BITOPS")))
+    `(progn
+       (define ,sparseint-{name} ((x sparseint-p)
+                                  (y sparseint-p))
+         :parents (sparseint)
+         :short ,(concatenate 'string
+                              "Compute the " (str::downcase-string (symbol-name spec))
+                              " of two sparseints.")
+         :returns (res sparseint-p :rule-classes :type-prescription)
+         :inline t
+         (sparseint-binary-bitop ,op x y)
+         ///
+         (defret <fn>-correct
+           (equal (sparseint-val res)
+                  (,spec (sparseint-val x) (sparseint-val y)))))
+
+       (define ,sparseint-test-{name} ((x sparseint-p)
+                                       (y sparseint-p))
+         :parents (sparseint)
+         :short ,(concatenate 'string
+                              "Check whether the " (str::downcase-string (symbol-name spec))
+                              " of two sparseints produces a nonzero value.")
+         :returns (test booleanp :rule-classes :type-prescription)
+         :inline t
+         (sparseint-binary-bittest ,op x y)
+         ///
+         (defret <fn>-correct
+           (equal test
+                  (not (equal 0 (,spec (sparseint-val x) (sparseint-val y))))))))))
+
+(def-sparseint-binary-bitop bitnor   #b0001 lognor)
+(def-sparseint-binary-bitop bitandc2 #b0010 logandc2)
+(def-sparseint-binary-bitop bitandc1 #b0100 logandc1)
+(def-sparseint-binary-bitop bitxor   #b0110 logxor)
+(def-sparseint-binary-bitop bitnand  #b0111 lognand)
+(def-sparseint-binary-bitop bitand   #b1000 logand)
+(def-sparseint-binary-bitop biteqv   #b1001 logeqv)
+(def-sparseint-binary-bitop bitorc2  #b1011 logorc2)
+(def-sparseint-binary-bitop bitorc1  #b1101 logorc1)
+(def-sparseint-binary-bitop bitor    #b1110 logior)
 
 
 (define compare ((x integerp) (y integerp))
@@ -3580,6 +3015,8 @@ by redefining the constant.</p>")
 
 (define sparseint-compare ((x sparseint-p)
                            (y sparseint-p))
+  :parents (sparseint)
+  :short "Compare the values of two sparseints and return -1, 0, or 1."
   :returns (sign integerp :rule-classes :type-prescription)
   :inline t
   (sparseint$-compare (sparseint-fix x) (sparseint-fix y))
@@ -3591,7 +3028,9 @@ by redefining the constant.</p>")
     :hints(("Goal" :in-theory (enable sparseint-val)))))
 
 (define sparseint-< ((x sparseint-p)
-                           (y sparseint-p))
+                     (y sparseint-p))
+  :parents (sparseint)
+  :short "Check whether the value of @('x') is less than the value of @('y')."
   :returns (less booleanp :rule-classes :type-prescription)
   :inline t
   (eql (sparseint-compare x y) -1)
@@ -3768,98 +3207,6 @@ by redefining the constant.</p>")
 
   (verify-guards int-to-sparseint$-rec))
 
-;; (define int-to-sparseint$-rec ((x integerp)
-;;                                (nbits natp)
-;;   :returns (mv (sint sparseint$-p)
-;;                (height (equal height (sparseint$-height sint))))
-;;   :measure (integer-length x)
-;;   :prepwork ((local (defthm integer-length-of-logext
-;;                       (< (integer-length (logext n x)) (pos-fix n))
-;;                       :hints(("Goal" :in-theory (enable* ihsext-inductions
-;;                                                          ihsext-recursive-redefs)))
-;;                       :rule-classes :linear))
-;;              (local (defthm posp-logcdr-of-greater-than-2
-;;                       (implies (<= 2 (ifix x))
-;;                                (<= 1 (logcdr x)))
-;;                       :rule-classes :linear))
-;;              (local (in-theory (e/d (logcdr-<-x-when-positive)
-;;                                     (trailing-0-count-bound
-;;                                      logbitp-when-bitmaskp)))))
-;;   :verify-guards nil
-;;   ;; :prepwork
-;;   ;; ((local (defthm logext-of-greater-than-length
-;;   ;;           (implies (< (integer-length x) (pos-fix n))
-;;   ;;                    (equal (logext n x) (ifix x)))
-;;   ;;           :hints(("Goal" :in-theory (enable* ihsext-inductions
-;;   ;;                                              ihsext-recursive-redefs))))))
-;;   (b* ((xlen (integer-length x))
-;;        ((when (< xlen (sparseint$-leaf-bitlimit)))
-;;         (mv (sparseint$-leaf x) 0))
-;;        (half (logcdr xlen))
-;;        ((mv lsbs lsbs-height)
-;;         (int-to-sparseint$-rec (bignum-logext half x)))
-;;        (bit (logbitp (1- half) x))
-;;        (offset (if bit
-;;                    (trailing-1-count-from x half)
-;;                  (trailing-0-count-from x half)))
-;;        (size (+ half offset))
-;;        ((mv msbs msbs-height)
-;;         (int-to-sparseint$-rec (logtail size x))))
-;;     (sparseint$-concatenate-rebalance size lsbs lsbs-height msbs msbs-height))
-;;   ///
-;;   (defret sparseint$-height-correctp-of-<fn>
-;;     (sparseint$-height-correctp sint))
-
-;;   (local (defthm logapp-logext-logtail
-;;            (equal (logapp n (logext n x) (logtail n x))
-;;                   (ifix x))
-;;            :hints(("Goal" :in-theory (enable* ihsext-inductions
-;;                                               ihsext-recursive-redefs
-;;                                               equal-logcons-strong)
-;;                    :induct (logtail n x)))))
-
-;;   (local (defthm logapp-by-trailing-0-count
-;;            (equal (logapp (trailing-0-count x) x y)
-;;                   (ash y (trailing-0-count x)))
-;;            :hints(("Goal" :in-theory (enable* ihsext-inductions
-;;                                               ihsext-recursive-redefs
-;;                                               trailing-0-count)))))
-
-;;   (local (defthm logapp-trailing-0-count-of-logext
-;;            (implies (and (posp n)
-;;                          (not (logbitp (+ -1 n) x)))
-;;                     (equal (logapp (+ n (trailing-0-count (logtail n x)))
-;;                                    (logext n x)
-;;                                    y)
-;;                            (logapp (+ n (trailing-0-count (logtail n x))) x y)))
-;;            :hints (("goal" :induct (logext n x)
-;;                     :in-theory (enable* ihsext-inductions
-;;                                         ihsext-recursive-redefs)))))
-
-;;   (local (defthm logapp-by-trailing-1-count
-;;            (equal (logapp (trailing-0-count (lognot x)) x y)
-;;                   (logapp (trailing-0-count (lognot x)) -1 y))
-;;            :hints(("Goal" :in-theory (enable* ihsext-inductions
-;;                                               ihsext-recursive-redefs
-;;                                               trailing-0-count)))))
-
-;;   (local (defthm logapp-trailing-1-count-of-logext
-;;            (implies (and (posp n)
-;;                          (logbitp (+ -1 n) x))
-;;                     (equal (logapp (+ n (trailing-0-count (lognot (logtail n x))))
-;;                                    (logext n x)
-;;                                    y)
-;;                            (logapp (+ n (trailing-0-count (lognot (logtail n x)))) x y)))
-;;            :hints (("goal" :induct (logext n x)
-;;                     :in-theory (enable* ihsext-inductions
-;;                                         ihsext-recursive-redefs)))))
-
-;;   (defret sparseint$-val-of-<fn>
-;;     (equal (sparseint$-val sint)
-;;            (ifix x)))
-
-;;   (verify-guards int-to-sparseint$-rec))
-
 (define int-to-sparseint$ ((x integerp))
   :returns (sint sparseint$-p)
   :inline t
@@ -3880,6 +3227,8 @@ by redefining the constant.</p>")
            (ifix x))))
 
 (define int-to-sparseint ((x integerp))
+  :parents (sparseint)
+  :short "Convert an integer into a sparseint."
   :returns (sint sparseint-p)
   :prepwork ((local (in-theory (enable sparseint-p))))
   :inline t
@@ -4008,7 +3357,9 @@ by redefining the constant.</p>")
 
        
 (define sparseint-length ((x sparseint-p))
-  :returns (length)
+  :parents (sparseint)
+  :short "Compute the integer-length of a sparseint.  Returns an integer, not a sparseint."
+  :returns (length natp :rule-classes :type-prescription)
   :inline t
   (sparseint$-length (sparseint-fix x))
   ///
@@ -4016,22 +3367,6 @@ by redefining the constant.</p>")
     (equal length (integer-length (sparseint-val x)))
     :hints(("Goal" :in-theory (enable sparseint-val)))))
 
-
-;; Using signed addition to implement unsigned addition is quite confusing.
-
-;; 1-bit addition:
-;; bits    cin | signed                 | unsigned
-;;  0 + 0 + 0  |  0 +  0 +  0 =  0 = 00 | 0 + 0 + 0 = 0 = 00
-;;  0 + 1 + 0  |  0 + -1 +  0 = -1 = 11 | 0 + 1 + 0 = 1 = 01
-;;  1 + 1 + 0  | -1 + -1 +  0 = -2 = 10 | 1 + 1 + 0 = 2 = 10
-;;  0 + 0 + 1  |  0 +  0 +  1 =  1 = 01 | 0 + 0 + 1 = 1 = 01
-;;  0 + 1 + 1  |  0 + -1 +  1 =  0 = 00 | 0 + 1 + 1 = 2 = 10
-;;  1 + 1 + 1  | -1 + -1 +  1 = -1 = 11 | 1 + 1 + 1 = 3 = 11
-
-;; Carry-out condition for unsigned addition in terms of signed sum is:
-;; maj ( in0-high, in1-high, not(sum-high) )
-;; I.e., this is the formula for the unsigned carry-out bit in terms of the
-;; inputs and signed sum.
 
 (local (defthm b-and-plus-b-xor
          (equal (+ (b-and x y) (b-xor x y))
@@ -4362,116 +3697,6 @@ by redefining the constant.</p>")
              :in-theory (enable equal-of-logapp-split)))
     :rule-classes nil))
 
-
-  ;; (defthm logext-of-plus-of-logext-1
-  ;;   (implies (and (integerp y)
-  ;;                 (<= (pos-fix width) (pos-fix width2)))
-  ;;            (equal (logext width (+ (logext width2 x) y))
-  ;;                   (logext width (+ (ifix x) y))))
-  ;;   :hints (("goal" :use ((:instance logext-of-plus-of-logext-lemma
-  ;;                          (cin 0) (x (logext width2 x)))
-  ;;                         (:instance logext-of-plus-of-logext-lemma
-  ;;                          (cin 0)))
-  ;;            :in-theory (disable logext-of-plus-of-logext-lemma))))
-
-  ;; (defthm logext-of-plus-of-logext-2
-  ;;   (implies (and (integerp y)
-  ;;                 (<= (pos-fix width) (pos-fix width2)))
-  ;;            (equal (logext width (+ y (logext width2 x)))
-  ;;                   (logext width (+ y (ifix x)))))
-  ;;   :hints (("goal" :use ((:instance logext-of-plus-of-logext-lemma
-  ;;                          (cin 0) (x (logext width2 x)))
-  ;;                         (:instance logext-of-plus-of-logext-lemma
-  ;;                          (cin 0)))
-  ;;            :in-theory (disable logext-of-plus-of-logext-lemma))))
-
-  ;; (defthm logext-of-plus-of-logext-3
-  ;;   (implies (and (integerp y)
-  ;;                 (integerp z)
-  ;;                 (<= (pos-fix width) (pos-fix width2)))
-  ;;            (equal (logext width (+ y (logext width2 x) z))
-  ;;                   (logext width (+ y (ifix x) z))))
-  ;;   :hints (("goal" :use ((:instance logext-of-plus-of-logext-lemma
-  ;;                          (cin 0) (x (logext width2 x)) (y (+ y z)))
-  ;;                         (:instance logext-of-plus-of-logext-lemma
-  ;;                          (cin 0) (y (+ y z))))
-  ;;            :in-theory (disable logext-of-plus-of-logext-lemma))))
-
-  ;; (defthm loghead-of-plus-of-logext-lemma
-  ;;   (implies (and (integerp y)
-  ;;                 (bitp cin))
-  ;;            (equal (loghead width (+ cin (logext width x) y))
-  ;;                   (loghead width (+ cin (ifix x) y))))
-  ;;   :hints (("goal" :induct (logext-sum-ind cin width x y)
-  ;;            :in-theory (enable equal-logcons-strong)
-  ;;            :expand ((:free (x) (logext width x))
-  ;;                     (:free (x) (loghead width x))))
-  ;;           (and stable-under-simplificationp
-  ;;                '(:in-theory (enable b-ite)))))
-
-  ;; (defthm loghead-of-plus-of-logext-1
-  ;;   (implies (and (integerp y)
-  ;;                 (<= (nfix width) (pos-fix width2)))
-  ;;            (equal (loghead width (+ (logext width2 x) y))
-  ;;                   (loghead width (+ (ifix x) y))))
-  ;;   :hints (("goal" :use ((:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0) (x (logext width2 x)))
-  ;;                         (:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0)))
-  ;;            :cases ((zp width))
-  ;;            :in-theory (disable loghead-of-plus-of-logext-lemma))))
-
-  ;; (defthm loghead-of-plus-of-logext-2
-  ;;   (implies (and (integerp y)
-  ;;                 (<= (nfix width) (pos-fix width2)))
-  ;;            (equal (loghead width (+ y (logext width2 x)))
-  ;;                   (loghead width (+ y (ifix x)))))
-  ;;   :hints (("goal" :use ((:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0) (x (logext width2 x)))
-  ;;                         (:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0)))
-  ;;            :cases ((zp width))
-  ;;            :in-theory (disable loghead-of-plus-of-logext-lemma))))
-
-  ;; (defthm loghead-of-plus-of-logext-3
-  ;;   (implies (and (integerp y)
-  ;;                 (integerp z)
-  ;;                 (<= (nfix width) (pos-fix width2)))
-  ;;            (equal (loghead width (+ y (logext width2 x) z))
-  ;;                   (loghead width (+ y (ifix x) z))))
-  ;;   :hints (("goal" :use ((:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0) (x (logext width2 x)) (y (+ y z)))
-  ;;                         (:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0) (y (+ y z))))
-  ;;            :cases ((zp width))
-  ;;            :in-theory (disable loghead-of-plus-of-logext-lemma))))
-
-  ;; (defthm loghead-of-plus-of-logext-4
-  ;;   (implies (and (integerp y)
-  ;;                 (integerp z)
-  ;;                 (<= (nfix width) (pos-fix width2)))
-  ;;            (equal (loghead width (+ y z (logext width2 x)))
-  ;;                   (loghead width (+ y z (ifix x)))))
-  ;;   :hints (("goal" :use ((:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0) (x (logext width2 x)) (y (+ y z)))
-  ;;                         (:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0) (y (+ y z))))
-  ;;            :cases ((zp width))
-  ;;            :in-theory (disable loghead-of-plus-of-logext-lemma))))
-
-  ;; (defthm loghead-of-plus-of-logapp-4
-  ;;   (implies (and (integerp y)
-  ;;                 (integerp z)
-  ;;                 (<= (nfix width) (nfix width2)))
-  ;;            (equal (loghead width (+ y z (logapp width2 x q)))
-  ;;                   (loghead width (+ y z (ifix x)))))
-  ;;   :hints (("goal" :use ((:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0) (x (logapp width2 x q)) (y (+ y z)))
-  ;;                         (:instance loghead-of-plus-of-logext-lemma
-  ;;                          (cin 0) (y (+ y z))))
-  ;;            :cases ((zp width))
-  ;;            :in-theory (disable loghead-of-plus-of-logext-lemma))))
-
 (define sum-with-cin ((cin bitp)
                       (x integerp)
                       (y integerp))
@@ -4769,12 +3994,7 @@ by redefining the constant.</p>")
                              `((xxx . ,xx))))))
                   (equal (loghead ww xxx) (loghead ww xx)))
              (equal (carry-out width cin y x)
-                    (carry-out width cin y xxx))))
-
-  ;; (defthm carry-out-symm
-  ;;   (equal (carry-out width y x cin)
-  ;;          (carry-out width x y cin)))
-  )
+                    (carry-out width cin y xxx)))))
 
 (local (defthm logext-of-pos-fix
          (equal (logext (pos-fix width) x)
@@ -5224,6 +4444,8 @@ by redefining the constant.</p>")
 
 (define sparseint-plus ((x sparseint-p)
                         (y sparseint-p))
+  :parents (sparseint)
+  :short "Add two sparseints."
   :returns (plus sparseint-p)
   :prepwork ((local (in-theory (enable sparseint-p))))
   :inline t
@@ -5255,6 +4477,8 @@ by redefining the constant.</p>")
 
 
 (define sparseint-unary-minus ((x sparseint-p))
+  :parents (sparseint)
+  :short "Negate a sparseint."
   :prepwork ((local (in-theory (enable sparseint-p))))
   :returns (minus sparseint-p)
   (sparseint$-unary-minus (sparseint-fix x))
@@ -5292,6 +4516,8 @@ by redefining the constant.</p>")
 
 (define sparseint-binary-minus ((x sparseint-p)
                                 (y sparseint-p))
+  :parents (sparseint)
+  :short "Subtract two sparseints."
   :prepwork ((local (in-theory (enable sparseint-p))))
   :returns (minus sparseint-p)
   (sparseint$-binary-minus (sparseint-fix x) (sparseint-fix y))
@@ -5355,19 +4581,35 @@ creates a new sparseint whose value is @('(ash xv (- shift))').</li>
 <li>@('(sparseint-ash x shift)'), where shift is an integer, creates a new
 sparseint whose value is @('(ash xv shift)').</li>
 
-<li>@('(sparseint-bit n x)'), where n is a natural number,
-returns the bit @('(logbit n xv)').</li>
+<li>@('(sparseint-sign-ext n x)'), where n is a positive number, creates a new sparseint whose value is @('(logext n xv)').</li>
 
-<li>@('(sparseint-bitand x y)'), @('(sparseint-bitor x y)'),
-@('(sparseint-bitxor x y)'), and @('(sparseint-bitnot x y)') compute sparseints
-whose values are (respectively) @('(logand xv yv)'), @('(logior xv yv)'),
-@('(logxor xv yv)'), and @('(lognot xv)').</li>
+<li>@('(sparseint-bit n x)'), where n is a natural number, returns the bit
+@('(logbit n xv)').</li>
 
-<li>@('(sparseint-binary-bitop op x y)'), where op is a 4-bit unsigned integer,
-computes a sparseint whose value is a binary bitwise operation on @('xv') and
-@('yv'), given by interpreting @('op') as a 2-variable truth-table.  That is,
-bit @('n') of the result will be
-  @('(logbit (+ (logbit n xv) (* 2 (logbit n yv))) op)').</li>
+<li>@('(sparseint-bitnot x)') creates a new sparseint whose value is @('(lognot
+xv)').</li>
+
+<li>Of each of the following pairs of functions, the first computes a new
+sparseint whose value is @('(bitop xv yv)'), and the second returns
+@('(not (equal 0 (bitop xv yv)))'):
+<ul>
+<li>@('(sparseint-bitand x y)'), @('(sparseint-test-bitand x y)')</li>
+<li>@('sparseint-bitor'), @('sparseint-test-bitor')</li>
+<li>@('sparseint-bitxor'), @('sparseint-test-bitxor')</li>
+<li>@('sparseint-biteqv'), @('sparseint-test-biteqv')</li>
+<li>@('sparseint-bitnand'), @('sparseint-test-bitnand')</li>
+<li>@('sparseint-bitnor'), @('sparseint-test-bitnor')</li>
+<li>@('sparseint-bitandc1'), @('sparseint-test-bitandc1')</li>
+<li>@('sparseint-bitandc2'), @('sparseint-test-bitandc2')</li>
+<li>@('sparseint-bitorc1'), @('sparseint-test-bitorc1')</li>
+<li>@('sparseint-bitorc2'), @('sparseint-test-bitorc2').</li>
+</ul>
+These are all implemented using a pair of generic functions
+@('(sparseint-binary-bitop op x y)') and @('(sparseint-binary-bittest op x
+y)'), where op is a 4-bit unsigned integer interpreted as a truth table
+describing the logical operation.  That is, bit @('n') of the result will be
+@('(logbit (+ (logbit n xv) (* 2 (logbit n yv))) op)'), so @('#b0100')
+signifies ANDc1, @('#b0110') signifies XOR, etc.</li>
 
 <li>@('(sparseint-equal x y)') returns @('(equal xv yv)').</li>
 

@@ -223,10 +223,27 @@
     sparseint-rightshift
     sparseint-ash
     sparseint-bit
+    sparseint-bitnot
     sparseint-bitand
     sparseint-bitor
     sparseint-bitxor
-    sparseint-bitnot
+    sparseint-biteqv
+    sparseint-bitandc1
+    sparseint-bitandc2
+    sparseint-bitnand
+    sparseint-bitorc1
+    sparseint-bitorc2
+    sparseint-bitnor
+    sparseint-test-bitand
+    sparseint-test-bitor
+    sparseint-test-bitxor
+    sparseint-test-biteqv
+    sparseint-test-bitandc1
+    sparseint-test-bitandc2
+    sparseint-test-bitnand
+    sparseint-test-bitorc1
+    sparseint-test-bitorc2
+    sparseint-test-bitnor
     sparseint-equal
     sparseint-length
     sparseint-plus

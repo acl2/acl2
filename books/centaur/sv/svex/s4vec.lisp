@@ -307,11 +307,10 @@
 (define s3vec-p ((x s4vec-p))
   :returns bool
   (mbe :logic (b* (((s4vec x)))
-                (sparseint-equal (sparseint-binary-bitop #b0010 x.lower x.upper) 0))
+                (not (sparseint-test-bitandc2 x.lower x.upper)))
        :exec (or (s2vec-p x)
                  (b* (((s4vec x)))
-                   ;; BOZO would be nice if we could avoid creating the intermediate andc2
-                   (sparseint-equal (sparseint-binary-bitop #b0010 x.lower x.upper) 0))))
+                   (not (sparseint-test-bitandc2 x.lower x.upper)))))
   ///
   (defret <fn>-correct
     (equal bool
@@ -321,13 +320,24 @@
 (define s3vec-fix ((x s4vec-p))
   :returns (fix s4vec-p)
   (b* (((s4vec x)))
-    (if (or (s2vec-p x)
-            (sparseint-equal x.upper x.lower))
+    (if (s3vec-p x)
         (s4vec-fix x)
       (s4vec (sparseint-bitor x.upper x.lower)
              (sparseint-bitand x.upper x.lower))))
   ///
-  (s4vec-correct))
+  (local (defthm equal-logand
+           (equal (equal x (logand x y))
+                  (and (integerp x)
+                       (equal (logand x (lognot y)) 0)))
+           :hints ((logbitp-reasoning))))
+
+  (local (defthm equal-logior
+           (equal (equal x (logior y x))
+                  (and (integerp x)
+                       (equal (logand y (lognot x)) 0)))
+           :hints ((logbitp-reasoning))))
+
+  (s4vec-correct :enable (3vec-p)))
 
 (define s3vec-bitnot ((x s4vec-p))
   :returns (res s4vec-p)
@@ -393,11 +403,10 @@
       (s2vec (sparseint-bitxor (s2vec->val x) (s2vec->val y)))
     (b* (((s4vec x))
          ((s4vec y))
-         (xmask (sparseint-bitor (sparseint-binary-bitop #b0010 x.upper x.lower) ;; andc2
-                                 (sparseint-binary-bitop #b0010 y.upper y.lower))))
+         (xmask (sparseint-bitor (sparseint-bitandc2 x.upper x.lower)
+                                 (sparseint-bitandc2 y.upper y.lower))))
       (s4vec (sparseint-bitor xmask (sparseint-bitxor x.upper y.upper))
-             (sparseint-binary-bitop #b0100 ;; andc1
-                                     xmask (sparseint-bitxor x.lower y.lower)))))
+             (sparseint-bitandc1 xmask (sparseint-bitxor x.lower y.lower)))))
   ///
   (s4vec-correct))
 
@@ -412,8 +421,7 @@
          (xmask (sparseint-bitor (sparseint-bitxor x.upper x.lower)
                                  (sparseint-bitxor y.upper y.lower))))
       (s4vec (sparseint-bitor xmask (sparseint-bitxor x.upper y.upper))
-             (sparseint-binary-bitop #b0100 ;; andc1
-                                     xmask (sparseint-bitxor x.lower y.lower)))))
+             (sparseint-bitandc1 xmask (sparseint-bitxor x.lower y.lower)))))
   ///
   (s4vec-correct))
 
@@ -784,18 +792,15 @@
   (b* (((s4vec test))
        ((s4vec then))
        ((s4vec else))
-       (test-x (sparseint-binary-bitop #b0010 ;; andc2
-                                       test.upper test.lower)))
-    (s4vec (sparseint-bitor (sparseint-binary-bitop #b0100 ;; andc1
-                                                    test.upper else.upper)
+       (test-x (sparseint-bitandc2 test.upper test.lower)))
+    (s4vec (sparseint-bitor (sparseint-bitandc1 test.upper else.upper)
                             (sparseint-bitor
                              (sparseint-bitand test.lower then.upper)
                              (sparseint-bitand test-x
                                                (sparseint-bitor
                                                 (sparseint-bitor then.upper then.lower)
                                                 (sparseint-bitor else.upper else.lower)))))
-           (sparseint-bitor (sparseint-binary-bitop #b0100 ;; andc1
-                                                    test.upper else.lower)
+           (sparseint-bitor (sparseint-bitandc1 test.upper else.lower)
                             (sparseint-bitor
                              (sparseint-bitand test.lower then.lower)
                              (sparseint-bitand test-x
@@ -825,8 +830,7 @@
        ((s4vec else)))
     (s4vec (sparseint-bitor (sparseint-bitor then.upper else.upper)
                             (sparseint-bitxor then.lower else.lower))
-           (sparseint-bitand (sparseint-binary-bitop #b1001 ;; eqv
-                                                     then.upper else.upper)
+           (sparseint-bitand (sparseint-biteqv then.upper else.upper)
                              (sparseint-bitand then.lower else.lower))))
   ///
   (s4vec-correct))
@@ -875,8 +879,7 @@
       (s2vec (sparseint-bitnot (s2vec->val x)))
     (b* (((s4vec x)))
       (s4vec (sparseint-bitnot x.lower)
-             (sparseint-binary-bitop #x0001 ;; nor
-                                     x.upper x.lower))))
+             (sparseint-bitnor x.upper x.lower))))
   ///
   (s4vec-correct))
 
@@ -930,8 +933,7 @@
   :returns (res s4vec-p)
   (b* ((eq (s3vec-bitnot (s4vec-bitxor a b)))
        ((s4vec b))
-       (zmask (sparseint-binary-bitop #b0100 ;; andc1
-                                      b.upper b.lower)))
+       (zmask (sparseint-bitandc1 b.upper b.lower)))
     (s3vec-reduction-and (s3vec-bitor eq (s2vec zmask))))
   ///
   (s4vec-correct :enable (2vec)))
@@ -953,10 +955,8 @@
   (b* ((eq (s3vec-bitnot (s4vec-bitxor a b)))
        ((s4vec b))
        ((s4vec a))
-       (zxmask (sparseint-bitor (sparseint-binary-bitop #b0100 ;; andc1
-                                                        b.upper b.lower)
-                                (sparseint-binary-bitop #b0100 ;; andc1
-                                                        a.upper a.lower))))
+       (zxmask (sparseint-bitor (sparseint-bitandc1 b.upper b.lower)
+                                (sparseint-bitandc1 a.upper a.lower))))
     (s3vec-reduction-and (s3vec-bitor eq (s2vec zxmask))))
   ///
   (s4vec-correct :enable (2vec)))
@@ -1050,13 +1050,18 @@
 (define s4vec-xfree-p ((x s4vec-p))
   :returns (res)
   (b* (((s4vec x)))
-    (sparseint-equal -1 (sparseint-binary-bitop #b1101 ;; orc1
-                                                x.upper x.lower)))
+    (not (sparseint-test-bitandc2 x.upper x.lower)))
   ///
+  (local (defthm equal-neg1-logior
+           (equal (equal -1 (logior a b))
+                  (equal 0 (logand (lognot a) (lognot b))))
+           :hints ((logbitp-reasoning))))
+
   (defret <fn>-correct
     (equal res
            (4vec-xfree-p (s4vec->4vec x)))
     :hints(("Goal" :in-theory (enable 4vec-xfree-p)))))
+
 
        
 

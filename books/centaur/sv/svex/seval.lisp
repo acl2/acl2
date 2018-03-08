@@ -1,4 +1,4 @@
->; SV - Symbolic Vector Hardware Analysis Framework
+; SV - Symbolic Vector Hardware Analysis Framework
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -291,17 +291,25 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
       (cons (svex-s4eval (car x) env)
             (svexlist-s4eval (cdr x) env))))
   ///
+  (local (include-book "std/lists/len" :dir :system))
+
+  (local (in-theory (disable default-car
+                             default-cdr
+                             4vec->lower-when-2vec-p
+                             acl2::len-when-atom
+                             svex-s4eval
+                             svexlist-s4eval)))
 
   (local (defthm consp-of-svexlist-eval
            (equal (consp (svexlist-eval x env))
                   (consp x))
            :hints (("goal" :expand ((svexlist-eval x env))))))
 
-  ;; (local (defthm upper-lower-of-s3vec-fix
-  ;;          (implies (and (3vec-p x)
-  ;;                        (not (equal (4vec->lower x) 0)))
-  ;;                   (not (equal (4vec->upper x) 0)))
-  ;;          :hints(("Goal" :in-theory (enable 3vec-p)))))
+  (local (defthm upper-lower-of-s3vec-fix
+           (implies (and (3vec-p x)
+                         (not (equal (4vec->lower x) 0)))
+                    (not (equal (4vec->upper x) 0)))
+           :hints(("Goal" :in-theory (enable 3vec-p)))))
 
   (local (defthm s4vec->accs-of-s3vec-fix
            (and (Equal (sparseint-val (s4vec->upper (s3vec-fix x)))
@@ -394,13 +402,10 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                     (equal (equal (+ n (len x)) m)
                            (equal (len x) (- m n))))))
 
-  (local (include-book "std/lists/len" :dir :system))
-
   (local (defthm s4veclist->4veclist-of-cons
            (equal (s4veclist->4veclist (cons a b))
                   (cons (s4vec->4vec a) (s4veclist->4veclist b)))
            :hints(("Goal" :in-theory (enable s4veclist->4veclist)))))
-                                       
 
   (std::defret-mutual svex-s4eval-correct
     (defret <fn>-correct
