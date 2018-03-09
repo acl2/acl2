@@ -1284,6 +1284,56 @@ made from privilege level 3.</sf>"
       (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (alignment-checking-enabled-p x86))))
 
+  ;; Factored out by Alessandro Coglio <coglio@kestrel.edu>
+  ;; Alignment check originally contributed by Dmitry Nadezhin
+  (define address-aligned-p
+    ((addr :type (signed-byte #.*max-linear-address-size*))
+     (operand-size :type (member 1 2 4 6 8 10 16))
+     (memory-ptr? booleanp))
+    :returns (yes/no booleanp)
+    :short "Check the alignment of a linear address."
+    :long
+    "<p>
+     Besides the address to check for alignment,
+     this function takes as argument the operand size
+     (from which the alignment to check is determined)
+     and a flag indicating whether the address to check for alignment
+     contains a memory operand of the form m16:16, m16:32, or m16:64
+     (see Intel manual, Mar'17, Volume 2, Section 3.1.1.3).
+     </p>
+     <p>
+     Words, doublewords, quadwords, and double quadwords
+     must be aligned at boundaries of 2, 4, 8, or 16 bytes.
+     Memory pointers of the form m16:xx must be aligned so that
+     their xx portion is aligned as a word, doubleword, or quadword;
+     this automatically guarantees that their m16 portion is aligned as a word.
+     See Intel manual, Mar'17, Volume 1, Section 4.1.1.
+     See AMD manual, Dec'17, Volume 2, Table 8-7
+     (note that the table does not mention explicitly
+     memory pointers of the form m16:64).
+     </p>
+     <p>
+     If the operand size is 6, the operand must be an m16:32 pointer.
+     If the operand size is 10, the operand must an m16:64 pointer.
+     If the operand size is 4, it may be either an m16:16 pointer or not;
+     in this case, the @('memory-ptr?') argument is used to
+     determined whether the address should be aligned
+     at a word or doubleword boundary.
+     If the operand size is 1, 2, 8, or 16,
+     it cannot be a memory pointer of the form m16:xx.
+     </p>"
+    (case operand-size
+      (6 (equal (logand addr #b11) 0)) ; m16:32
+      (10 (equal (logand addr #b111) 0)) ; m16:64
+      (otherwise
+       (if (and memory-ptr?
+                (eql operand-size 4))
+           (equal (logand addr #b1) 0) ; m16:16
+         (equal (logand addr
+                        (the (integer 0 15) (- operand-size 1)))
+                0))))
+    :inline t)
+
   (define x86-operand-from-modr/m-and-sib-bytes
     ((reg-type      :type (unsigned-byte  1)
                     "@('reg-type') is @('*gpr-access*') for GPRs, and
@@ -1390,49 +1440,10 @@ made from privilege level 3.</sf>"
           (mv 'x86-operand-from-modr/m-and-sib-bytes-Non-Canonical-Address-Encountered
               0 0 0 x86))
 
-         ((when
-              ;; Check alignment for memory accesses.
-              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
-              ;; Alignment of Words, Doublewords, and Double
-              ;; Quadwords:
-
-              ;; "The natural boundaries for words,
-              ;; double words, and quadwords are even-numbered
-              ;; addresses, addresses evenly divisible by four,
-              ;; and addresses evenly divisible by eight,
-              ;; respectively. A natural boundary for a double
-              ;; quadword is any address evenly divisible by 16."
-              (and (not (equal mod #b11))
-                   inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   ;; operand-size: (member 1 2 4 6 8 10 16)
-                   (case operand-size
-                     ;; A memory operand of the form m16:32 requires a
-                     ;; read of 6 bytes.  The natural boundary of the
-                     ;; 32-bit portion is an address divisible by 4,
-                     ;; which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (6   (not (equal (logand v-addr #b11) 0)))
-                     ;; A memory operand of the form m16:64 requires a
-                     ;; read of 10 bytes.  The natural boundary of the
-                     ;; 64-bit portion is an address divisible by 8,
-                     ;; which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (10  (not (equal (logand v-addr #b111) 0)))
-                     (otherwise
-                      (if (and memory-ptr?
-                               (eql operand-size 4))
-                          ;; If the 32-bit operand is of type m16:16,
-                          ;; instead of being aligned at an address
-                          ;; divisible by 4, it should be aligned at
-                          ;; an even address.
-                          (not (equal (logand v-addr #b1) 0))
-                        (not (equal (logand v-addr
-                                            (the (integer 0 15)
-                                              (- operand-size 1)))
-                                    0)))))))
+         ((when (and (not (equal mod #b11))
+                     inst-ac?
+                     (alignment-checking-enabled-p x86)
+                     (not (address-aligned-p v-addr operand-size memory-ptr?))))
           (mv 'x86-operand-from-modr/m-and-sib-bytes-memory-access-not-aligned
               0 0 0 x86))
 
@@ -1545,49 +1556,9 @@ made from privilege level 3.</sf>"
                                   operand rex-byte x86)))
             (mv nil x86)))
 
-         ;; [Alignment check contributed by Dmitry Nadezhin, thanks!]
-         ((when
-              ;; Check alignment for memory accesses.
-              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
-              ;; Alignment of Words, Doublewords, and Double
-              ;; Quadwords:
-
-              ;; "The natural boundaries for words,
-              ;; double words, and quadwords are even-numbered
-              ;; addresses, addresses evenly divisible by four,
-              ;; and addresses evenly divisible by eight,
-              ;; respectively. A natural boundary for a double
-              ;; quadword is any address evenly divisible by 16."
-              (and inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   ;; operand-size: (member 1 2 4 6 8 10 16)
-                   (case operand-size
-                     ;; A memory operand of the form m16:32 requires a
-                     ;; write of 6 bytes.  The natural boundary of the
-                     ;; 32-bit portion is an address divisible by 4,
-                     ;; which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (6   (not (equal (logand v-addr #b11) 0)))
-                     ;; A memory operand of the form m16:64 requires a
-                     ;; write of 10 bytes.  The natural boundary of
-                     ;; the 64-bit portion is an address divisible by
-                     ;; 8, which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (10  (not (equal (logand v-addr #b111) 0)))
-                     (otherwise
-                      (if (and memory-ptr?
-                               (eql operand-size 4))
-                          ;; If the 32-bit operand is of type m16:16,
-                          ;; instead of being aligned at an address
-                          ;; divisible by 4, it should be aligned at
-                          ;; an even address.
-                          (not (equal (logand v-addr #b1) 0))
-                        (not (equal (logand v-addr
-                                            (the (integer 0 15)
-                                              (- operand-size 1)))
-                                    0)))))))
+         ((when (and inst-ac?
+                     (alignment-checking-enabled-p x86)
+                     (not (address-aligned-p v-addr operand-size memory-ptr?))))
           (mv t x86))
 
          ((mv flg x86)
@@ -1631,27 +1602,10 @@ made from privilege level 3.</sf>"
                                   operand x86)))
             (mv nil x86)))
 
-         ;; [Alignment check contributed by Dmitry Nadezhin, thanks!]
-         ((when
-              ;; Check alignment for memory accesses.
-              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
-              ;; Alignment of Words, Doublewords, and Double
-              ;; Quadwords:
-
-              ;; "The natural boundaries for words,
-              ;; double words, and quadwords are even-numbered
-              ;; addresses, addresses evenly divisible by four,
-              ;; and addresses evenly divisible by eight,
-              ;; respectively. A natural boundary for a double
-              ;; quadword is any address evenly divisible by 16."
-              (and inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   ;; operand-size: (member 4 8 16)
-                   (not (equal (logand
-                                v-addr
-                                (the (integer 0 15)
-                                  (- operand-size 1)))
-                               0))))
+         ((when (and inst-ac?
+                     (alignment-checking-enabled-p x86)
+                     ;; operand is never an m16:16 memory pointer here
+                     (not (address-aligned-p v-addr operand-size nil))))
           (mv t x86))
 
          ((mv flg x86)
