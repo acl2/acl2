@@ -28,13 +28,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (keywords-of-keyword-value-list nil) nil)
+(assert-equal (make-keyword-value-list-from-keys-and-value nil 255) nil)
 
-(assert-equal (keywords-of-keyword-value-list '(:one 1 :two 2 :three 3))
-              '(:one :two :three))
+(assert-equal (make-keyword-value-list-from-keys-and-value '(:one) "aaa")
+              '(:one "aaa"))
 
-(assert-equal (keywords-of-keyword-value-list '(:one 1 :one 2 :three 3))
-              '(:one :one :three))
-
-(assert-equal (keywords-of-keyword-value-list '(:x :abc :y #\9))
-              '(:x :y))
+(assert-equal (make-keyword-value-list-from-keys-and-value '(:a :b) '(1 2 3))
+              '(:a (1 2 3) :b (1 2 3)))
