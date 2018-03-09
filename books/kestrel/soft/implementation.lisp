@@ -1477,7 +1477,7 @@
                    must be a keyword-value list, ~
                    but ~x0 is not."
                   options))
-       (keywords (keywords-of-keyword-value-list options))
+       (keywords (evens options))
        ((unless (no-duplicatesp keywords))
         (er-soft+ ctx t nil
                   "The inputs keywords must be unique."))
@@ -1610,7 +1610,7 @@
    to ensure that the recursive calls are properly transformed.
    </p>"
   (b* ((wrld (w state))
-       ((unless (subsetp (keywords-of-keyword-value-list options)
+       ((unless (subsetp (evens options)
                          '(:verify-guards :print)))
         (er-soft+ ctx t nil
                   "Only the input keywords ~
@@ -1695,7 +1695,7 @@
    iff it is second-order.
    </p>"
   (b* ((wrld (w state))
-       ((unless (subsetp (keywords-of-keyword-value-list options)
+       ((unless (subsetp (evens options)
                          '(:print)))
         (er-soft+ ctx t nil
                   "Only the input keyword :PRINT is allowed, ~
@@ -1762,7 +1762,7 @@
    iff it is second-order.
    </p>"
   (b* ((wrld (w state))
-       ((unless (subsetp (keywords-of-keyword-value-list options)
+       ((unless (subsetp (evens options)
                          '(:skolem-name :thm-name :rewrite :constrain :print)))
         (er-soft+ ctx t nil
                   "Only the input keywords ~
@@ -1924,7 +1924,7 @@
                    but ~x1 is not."
                   (if 2nd-order "third" "second")
                   options))
-       (keywords (keywords-of-keyword-value-list options))
+       (keywords (evens options))
        ((unless (no-duplicatesp keywords))
         (er-soft+ ctx t nil
                   "The input keywords must be unique."))
