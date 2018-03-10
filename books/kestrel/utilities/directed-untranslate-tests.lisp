@@ -1481,3 +1481,105 @@
 )
 
 ; ------------------------------
+
+; Example 8: Handling declare forms under LET, LET*, and MV-LET
+
+; Handling of LET with type declaration form.
+
+(local-test
+
+(assert!
+ (equal (let ((uterm '(let ((y (+ x x)))
+                        (declare (type integer y))
+                        (+ 0 y)))
+              (tterm '((lambda (y)
+                         (return-last 'progn
+                                      (check-dcl-guardian (integerp y)
+                                                          '(integerp y))
+                                      (binary-+ '0 y)))
+                       (binary-+ x x)))
+              (sterm '(binary-+ x x))
+              (iff-flg nil)
+              (stobjs-out '(nil))
+              (wrld (w state)))
+          (directed-untranslate
+           uterm tterm sterm iff-flg stobjs-out wrld))
+        '(let ((y (+ x x))) y)))
+
+; Handling of LET* with type declaration form.
+
+(assert!
+ (equal (let ((uterm '(let* ((y (* (first x) (first x)))
+                             (y2 (+ y y)))
+                        (declare (type integer y y2))
+                        (+ 0 y2)))
+              (tterm '((lambda
+                         (y)
+                         (return-last
+                          'progn
+                          (check-dcl-guardian (integerp y)
+                                              '(integerp y))
+                          ((lambda (y2)
+                             (return-last
+                              'progn
+                              (check-dcl-guardian (integerp y2)
+                                                  '(integerp y2))
+                              (binary-+ '0 y2)))
+                           (binary-+ y y))))
+                       (binary-* (car x) (car x))))
+              (sterm '(binary-+ (binary-* (car x) (car x))
+                                (binary-* (car x) (car x))))
+              (iff-flg nil)
+              (stobjs-out '(nil))
+              (wrld (w state)))
+          (directed-untranslate
+           uterm tterm sterm iff-flg stobjs-out wrld))
+        '(let* ((y (* (first x) (first x)))
+                (y2 (+ y y)))
+           y2)))
+
+; Handling of MV-LET with type declaration forms.
+
+(defund foo (x y) (mv x y))
+(defund foo2 (x y) (mv x y))
+(defund bar (x y) (mv x y))
+(defund bar2 (x y) (mv x y))
+
+(assert!
+ (equal (let ((uterm '(mv-let (x y)
+                        (foo x y)
+                        (declare (type integer x y))
+                        (bar x y)))
+              (tterm '((lambda
+                         (mv)
+                         ((lambda (x y)
+                            (return-last
+                             'progn
+                             (return-last
+                              'progn
+                              (check-dcl-guardian (integerp x)
+                                                  '(integerp x))
+                              (check-dcl-guardian (integerp y)
+                                                  '(integerp y)))
+                             (bar x y)))
+                          (mv-nth '0 mv)
+                          (mv-nth '1 mv)))
+                       (foo x y)))
+              (sterm '(bar2 (mv-nth 0 (foo2 x y))
+                            (mv-nth 1 (foo2 x y)))))
+          (directed-untranslate uterm tterm sterm nil nil (w state)))
+        '(mv-let (x y) (foo2 x y) (bar2 x y))))
+
+; Handling of LET with ignore declaration form.
+
+(assert!
+ (equal (let ((uterm '(let ((y (first x)) (z x))
+                        (declare (ignore z))
+                        (+ y y)))
+              (tterm '((lambda (y z) (binary-+ y y))
+                       (car x)
+                       (hide x)))
+              (sterm '(binary-+ (car x) (car x))))
+          (directed-untranslate uterm tterm sterm nil nil (w state)))
+        '(let ((y (first x))) (+ y y))))
+)

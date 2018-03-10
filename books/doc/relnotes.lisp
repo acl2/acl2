@@ -157,6 +157,10 @@
  built-in system utilities is analogous to the relationship between @(tsee
  fcons-term) and @(tsee cons-term).</p>
 
+ <p>Improved @(tsee directed-untranslate) to avoid assertion errors that could
+ occur when using @(tsee declare) forms with @(tsee let), @(tsee let*), or
+ @(tsee mv-let) expressions.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
