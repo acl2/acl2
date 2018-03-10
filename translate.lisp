@@ -6342,7 +6342,8 @@
 
 ; Cons x1 onto the front of each element of lst.
 
-  (cond ((null lst) nil)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
         (t (cons (cons x1 (car lst))
                  (pairlis-x1 x1 (cdr lst))))))
 
@@ -6350,7 +6351,8 @@
 
 ; Make an alist pairing each element of lst with x2.
 
-  (cond ((null lst) nil)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
         (t (cons (cons (car lst) x2)
                  (pairlis-x2 (cdr lst) x2)))))
 

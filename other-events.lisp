@@ -11142,11 +11142,12 @@
 
   (filename-to-sysfile-include-book-alist1 x local-markers-allowedp state nil))
 
-(defun all-keywords-p (keywords)
-  (if (consp keywords)
-      (and (keywordp (car keywords))
-           (all-keywords-p (cdr keywords)))
-    (null keywords)))
+(defun keyword-listp (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (keywordp (car x))
+           (keyword-listp (cdr x)))
+    (null x)))
 
 (defun read-file-into-template (template ch state acc)
 
@@ -11191,7 +11192,7 @@
       (cond
        (eofp
         (cond
-         ((all-keywords-p template)
+         ((keyword-listp template)
           (value (revappend acc (make-list (length template)))))
          (t (mv 'eof template state))))
        ((null (car template))
@@ -11246,7 +11247,7 @@
                    (make-list-ac posn-nil nil acc))))
            (t ; no template element available for this value
             (assert$
-             (all-keywords-p template)
+             (keyword-listp template)
              (mv 'stray-value2 (list val template) state)))))))))))
 
 (defun fast-cert-data (cert-data)
@@ -22156,7 +22157,7 @@
 
 (defun first-assoc-keyword (keys x)
   (declare (xargs :guard (and (keyword-value-listp x)
-                              (all-keywords-p keys))))
+                              (keyword-listp keys))))
   (cond ((endp keys)
          nil)
         (t (or (assoc-keyword (car keys) x)

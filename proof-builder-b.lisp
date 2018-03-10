@@ -909,7 +909,7 @@
             state))))))
 
 (defun pair-keywords (keywords lst)
-  (declare (xargs :guard (and (all-keywords-p keywords)
+  (declare (xargs :guard (and (keyword-listp keywords)
                               (keyword-value-listp lst))))
   ;; returns (mv alist rst)
   (if (consp keywords)

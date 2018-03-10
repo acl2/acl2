@@ -105,6 +105,11 @@
 ; miscellaneous
 
 (verify-termination-boot-strap guard-or-termination-theorem-msg) ; and guards
+(verify-termination-boot-strap alist-keys-subsetp) ; and guards
+(verify-termination-boot-strap keyword-listp) ; and guards
+(verify-termination-boot-strap pairlis-x1) ; and guards
+(verify-termination-boot-strap pairlis-x2) ; and guards
+(verify-termination-boot-strap first-keyword) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite

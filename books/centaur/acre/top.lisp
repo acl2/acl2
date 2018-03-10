@@ -32,7 +32,7 @@
 
 (include-book "parse")
 (include-book "match")
-
+(local (xdoc::set-default-parents acre-internals))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable take (tau-system))))
 

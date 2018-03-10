@@ -163,6 +163,10 @@
 
  <p>Improved user input validation.</p>
 
+ <p>Added support for the new @(':constrain') option of @(tsee defun-sk).  This
+ option is now supported by SOFT's @(tsee soft::defun-sk2) and @(tsee
+ soft::defun-inst) macros.</p>
+
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>The model includes more support for 32-bit mode.  In particular, the
@@ -171,6 +175,10 @@
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
+
+ <h4><see topic='@(url apt::apt)'>APT</see></h4>
+
+ <p>Improved documentation.</p>
 
  <h3>Licensing Changes</h3>
 

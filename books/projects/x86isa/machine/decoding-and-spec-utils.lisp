@@ -94,23 +94,24 @@ the @('fault') field instead.</li>
     :short "Read the instruction pointer from the register RIP, EIP, or IP."
     :long
     "<p>
-   In 64-bit mode, a 64-bit instruction pointer is read from the full RIP.
-   Since, in the model, this is a 48-bit signed integer,
-   this function returns a 48-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, a 32-bit or 16-bit instruction pointer is read from
-   EIP (i.e. the low 32 bits of RIP)
-   or IP (i.e. the low 16 bits of RIP),
-   based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
-   Either way, this function returns an unsigned 32-bit or 16-bit integer,
-   which is also a signed 48-bit integer.
-   </p>
-   <p>
-   See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
-   AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
-   and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
-   </p>"
+     In 64-bit mode, a 64-bit instruction pointer is read from the full RIP.
+     Since, in the model, this is a 48-bit signed integer,
+     this function returns a 48-bit signed integer.
+     </p>
+    <p>
+     In 32-bit mode, a 32-bit or 16-bit instruction pointer is read from
+     EIP (i.e. the low 32 bits of RIP)
+     or IP (i.e. the low 16 bits of RIP),
+     based on the CS.D bit,
+     i.e. the D bit of the current code segment descriptor.
+     Either way, this function returns an unsigned 32-bit or 16-bit integer,
+     which is also a signed 48-bit integer.
+     </p>
+     <p>
+     See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
+     AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
+     and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
+     </p>"
     (b* ((*ip (rip x86)))
       (if (64-bit-modep x86)
           *ip
@@ -142,31 +143,31 @@ the @('fault') field instead.</li>
     :short "Increment an instruction pointer by a specified amount."
     :long
     "<p>
-   This just calculates the incremented value,
-   without storing it into the register RIP, EIP, or IP.
-   The starting value is the result of @(tsee read-*ip)
-   or a previous invocation of @('increment-*ip').
-   </p>
-   <p>
-   In 64-bit mode, we check whether the result is a canonical address;
-   in 32-bit mode, we check whether the result is within the segment limit.
-   If these checks are not satisfied,
-   this function returns an error flag (and 0 as incremented address),
-   which causes the x86 model to stop execution with an error.
-   It is not clear whether these checks should be performed
-   when the instruction pointer is incremented
-   or when an instruction byte is eventually accessed;
-   the Intel and AMD manuals seem unclear in this respect.
-   But since the failure of these checks stops execution with an error,
-   and it is in a way always \"safe\" to stop execution with an error
-   (in the sense that the model provides no guarantees when this happens),
-   for now we choose to perform these checks here.
-   </p>
-   <p>
-   Note that a code segment is never expand-down,
-   so the valid effective addresses are always between 0 and the segment limit
-   (cf. @(tsee segment-base-and-bounds)).
-   </p>"
+     This just calculates the incremented value,
+     without storing it into the register RIP, EIP, or IP.
+     The starting value is the result of @(tsee read-*ip)
+     or a previous invocation of @('increment-*ip').
+     </p>
+     <p>
+     In 64-bit mode, we check whether the result is a canonical address;
+     in 32-bit mode, we check whether the result is within the segment limit.
+     If these checks are not satisfied,
+     this function returns an error flag (and 0 as incremented address),
+     which causes the x86 model to stop execution with an error.
+     It is not clear whether these checks should be performed
+     when the instruction pointer is incremented
+     or when an instruction byte is eventually accessed;
+     the Intel and AMD manuals seem unclear in this respect.
+     But since the failure of these checks stops execution with an error,
+     and it is in a way always \"safe\" to stop execution with an error
+     (in the sense that the model provides no guarantees when this happens),
+     for now we choose to perform these checks here.
+     </p>
+     <p>
+     Note that a code segment is never expand-down,
+     so the valid effective addresses are always between 0 and the segment limit
+     (cf. @(tsee segment-base-and-bounds)).
+     </p>"
     (b* ((*ip+delta (+ *ip delta)))
       (if (64-bit-modep x86)
           (if (mbe :logic (canonical-address-p *ip+delta)
@@ -235,74 +236,75 @@ the @('fault') field instead.</li>
     :short "Write an instruction pointer into the register RIP, EIP, or IP."
     :long
     "<p>
-   In 64-bit mode, a 64-bit instruction pointer is written into the full RIP.
-   Since, in the model, this is a 48-bit signed integer,
-   this function consumes a 48-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, the instruction pointer is 32 or 16 bits
-   based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
-   In these cases, the argument to this function should be
-   a 32-bit or 16-bit unsigned integer, which is also a 48-bit signed integer.
-   </p>
-   <p>
-   See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
-   AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
-   and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
-   </p>
-   <p>
-   According to Intel manual, Mar'17, Vol. 1, Table 3-1,
-   it seems that
-   when writing a 32-bit instruction pointer (EIP)
-   the high 32 bits of RIP should be set to 0,
-   and when writing a 16-bit instruction pointer (IP)
-   the high 48 bits of RIP should be left unmodified;
-   since in our model the RIP is 48 bits,
-   the above applies to the high 16 and 32 bits, respectively.
-   The pseudocode for the JMP instruction in Intel manual, Mar'17, Vol. 2
-   shows an assignment @('EIP <- tempEIP AND 0000FFFFh') for the 16-bit case,
-   which seems to imply that
-   the high 32 (or 16, in our model) bits are left unmodified
-   and the high 16 bits of EIP are set to 0,
-   which would contradict Table 3-1;
-   the pseudocode for some other instructions
-   that directly write the instruction pointer (e.g. RET and Jcc)
-   show similar assignments.
-   However, it is possible that this assignment has a typo and should be
-   @('IP <- tempEIP AND 0000FFFFh') instead,
-   which would be consistent with Table 3-1.
-   But we also note that the pseudocode for the JMP instruction
-   shows an assignment @('EIP <- tempEIP') for the 32-bit case,
-   which seems to imply that
-   the high 32 (or 16, in our model) bits are left unmodified,
-   which would contradict Table 3-1.
-   The AMD manuals do not show pseudocode for these instructions,
-   and AMD manual, Oct'13, Vol. 1, Fig. 2-10
-   (which is somewhat analogous to Intel's Table 3-1)
-   shows the high bits simply grayed out;
-   so the AMD manuals do not provide disambiguation help.
-   It is also possible that Table 3-1 has a typo and should say
-   that a 16-bit instruction pointer is zero-extended,
-   but that is not quite consistent with the pseudocode assignments to EIP,
-   which seem to imply that the high bits are untouched.
-   Table 3-1 is under a section titled
-   &lsquo;Address Calculation in 64-Bit Mode&rsquo;,
-   which may suggest that the table may not apply to 32-bit mode,
-   but then it is not clear how it would just apply to 64-bit mode.
-   For now, we decide to have this function follow Intel's Table 3-1,
-   but we may revise that if we manage to resolve these ambiguities.
-   </p>
-   <p>
-   This function should be always called
-   with an instruction pointer of the right type
-   (48-bit signed, 32-bit unsigned, or 16-bit unsigned)
-   based on the mode and code segment.
-   We may add a guard to ensure that in the future,
-   but for now in the code below
-   we coerce the instruction pointer to 32 and 16 bits as appropriate,
-   to verify guards;
-   these coercions are expected not to change the argument instruction pointer.
-   </p>"
+     In 64-bit mode, a 64-bit instruction pointer is written into the full RIP.
+     Since, in the model, this is a 48-bit signed integer,
+     this function consumes a 48-bit signed integer.
+     </p>
+     <p>
+     In 32-bit mode, the instruction pointer is 32 or 16 bits
+     based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
+     In these cases, the argument to this function should be
+     a 32-bit or 16-bit unsigned integer, which is also a 48-bit signed integer.
+     </p>
+     <p>
+     See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
+     AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
+     and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
+     </p>
+     <p>
+     According to Intel manual, Mar'17, Vol. 1, Table 3-1,
+     it seems that
+     when writing a 32-bit instruction pointer (EIP)
+     the high 32 bits of RIP should be set to 0,
+     and when writing a 16-bit instruction pointer (IP)
+     the high 48 bits of RIP should be left unmodified;
+     since in our model the RIP is 48 bits,
+     the above applies to the high 16 and 32 bits, respectively.
+     The pseudocode for the JMP instruction in Intel manual, Mar'17, Vol. 2
+     shows an assignment @('EIP <- tempEIP AND 0000FFFFh') for the 16-bit case,
+     which seems to imply that
+     the high 32 (or 16, in our model) bits are left unmodified
+     and the high 16 bits of EIP are set to 0,
+     which would contradict Table 3-1;
+     the pseudocode for some other instructions
+     that directly write the instruction pointer (e.g. RET and Jcc)
+     show similar assignments.
+     However, it is possible that this assignment has a typo and should be
+     @('IP <- tempEIP AND 0000FFFFh') instead,
+     which would be consistent with Table 3-1.
+     But we also note that the pseudocode for the JMP instruction
+     shows an assignment @('EIP <- tempEIP') for the 32-bit case,
+     which seems to imply that
+     the high 32 (or 16, in our model) bits are left unmodified,
+     which would contradict Table 3-1.
+     The AMD manuals do not show pseudocode for these instructions,
+     and AMD manual, Oct'13, Vol. 1, Fig. 2-10
+     (which is somewhat analogous to Intel's Table 3-1)
+     shows the high bits simply grayed out;
+     so the AMD manuals do not provide disambiguation help.
+     It is also possible that Table 3-1 has a typo and should say
+     that a 16-bit instruction pointer is zero-extended,
+     but that is not quite consistent with the pseudocode assignments to EIP,
+     which seem to imply that the high bits are untouched.
+     Table 3-1 is under a section titled
+     &lsquo;Address Calculation in 64-Bit Mode&rsquo;,
+     which may suggest that the table may not apply to 32-bit mode,
+     but then it is not clear how it would just apply to 64-bit mode.
+     For now, we decide to have this function follow Intel's Table 3-1,
+     but we may revise that if we manage to resolve these ambiguities.
+     </p>
+     <p>
+     This function should be always called
+     with an instruction pointer of the right type
+     (48-bit signed, 32-bit unsigned, or 16-bit unsigned)
+     based on the mode and code segment.
+     We may add a guard to ensure that in the future,
+     but for now in the code below
+     we coerce the instruction pointer to 32 and 16 bits as appropriate,
+     to verify guards;
+     these coercions are expected not to change
+     the argument instruction pointer.
+     </p>"
     (if (64-bit-modep x86)
         (!rip *ip x86)
       (b* ((cs-hidden (xr :seg-hidden *cs* x86))
@@ -342,30 +344,31 @@ the @('fault') field instead.</li>
     :short "Read the stack pointer from the register RSP, ESP, or SP."
     :long
     "<p>
-   In 64-bit mode, a 64-bit stack pointer is read from the full RSP.
-   Since, in the model, this is a 64-bit signed integer,
-   this function returns a 64-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, a 32-bit or 16-bit stack pointer is read from
-   ESP (i.e. the low 32 bits of RSP)
-   or SP (i.e. the low 16 bits of RSP),
-   based on the SS.B bit, i.e. the B bit of the current code segment register.
-   Either way, this function returns an unsigne 32-bit or 16-bit integer,
-   which is also a signed 64-bit integer.
-   </p>
-   <p>
-   See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
-   and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
-   The actual size of the value returned by this function is @('StackAddrSize'),
-   introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
-   </p>
-   <p>
-   In 32-bit mode, the address-size override prefix (if present)
-   does not affect the stack address size.
-   It would not make sense to change the stack address size
-   on a per-instruction basis.
-   </p>"
+     In 64-bit mode, a 64-bit stack pointer is read from the full RSP.
+     Since, in the model, this is a 64-bit signed integer,
+     this function returns a 64-bit signed integer.
+     </p>
+     <p>
+     In 32-bit mode, a 32-bit or 16-bit stack pointer is read from
+     ESP (i.e. the low 32 bits of RSP)
+     or SP (i.e. the low 16 bits of RSP),
+     based on the SS.B bit, i.e. the B bit of the current code segment register.
+     Either way, this function returns an unsigne 32-bit or 16-bit integer,
+     which is also a signed 64-bit integer.
+     </p>
+     <p>
+     See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
+     and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
+     The actual size of the value returned by this function
+     is @('StackAddrSize'),
+     introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
+     </p>
+     <p>
+     In 32-bit mode, the address-size override prefix (if present)
+     does not affect the stack address size.
+     It would not make sense to change the stack address size
+     on a per-instruction basis.
+     </p>"
     (b* ((*sp (rgfi *rsp* x86)))
       (if (64-bit-modep x86)
           *sp
@@ -398,41 +401,41 @@ the @('fault') field instead.</li>
     :short "Add a specified amount to a stack pointer."
     :long
     "<p>
-   The amount may be positive (increment) or negative (decrement).
-   This just calculates the new stack pointer value,
-   without storing it into the register RSP, ESP, or SP.
-   The starting value is the result of @(tsee read-*sp)
-   or a previous invocation of @('add-to-*sp').
-   </p>
-   <p>
-   In 64-bit mode, we check whether the result is a canonical address;
-   in 32-bit mode, we check whether the result is within the segment limit.
-   If these checks are not satisfied,
-   this function returns an error flag (and 0 as new pointer),
-   which causes the x86 model to stop execution with an error.
-   It is not clear whether these checks should be performed
-   when the stack pointer is updated,
-   or when the stack is eventually accessed through the updated pointer;
-   the Intel and AMD manuals seem unclear in this respect.
-   But since the failure of these checks stops execution with an error,
-   and it is in a way always \"safe\" to stop execution with an error
-   (in the sense that the model provides no guarantees when this happens),
-   for now we choose to perform these checks here.
-   </p>
-   <p>
-   Note that a stack segment may be expand-down or expand-up
-   (see Intel manual, Mar'17, Vol. 3, Sec. 3.4.5.1),
-   so the checks need to cover these two cases.
-   See @(tsee segment-base-and-bounds) and @(tsee ea-to-la).
-   </p>
-   <p>
-   With well-formed segments,
-   the segment limit checks should ensure that
-   the new stack pointer is a 32-bit or 16-bit (based on SS.B)
-   unsigned integer in 32-bit mode.
-   Thus, the conversions @(tsee n32) and @(tsee n16) below
-   are expected to leave their arguments unchanged.
-   </p>"
+     The amount may be positive (increment) or negative (decrement).
+     This just calculates the new stack pointer value,
+     without storing it into the register RSP, ESP, or SP.
+     The starting value is the result of @(tsee read-*sp)
+     or a previous invocation of @('add-to-*sp').
+     </p>
+     <p>
+     In 64-bit mode, we check whether the result is a canonical address;
+     in 32-bit mode, we check whether the result is within the segment limit.
+     If these checks are not satisfied,
+     this function returns an error flag (and 0 as new pointer),
+     which causes the x86 model to stop execution with an error.
+     It is not clear whether these checks should be performed
+     when the stack pointer is updated,
+     or when the stack is eventually accessed through the updated pointer;
+     the Intel and AMD manuals seem unclear in this respect.
+     But since the failure of these checks stops execution with an error,
+     and it is in a way always \"safe\" to stop execution with an error
+     (in the sense that the model provides no guarantees when this happens),
+     for now we choose to perform these checks here.
+     </p>
+     <p>
+     Note that a stack segment may be expand-down or expand-up
+     (see Intel manual, Mar'17, Vol. 3, Sec. 3.4.5.1),
+     so the checks need to cover these two cases.
+     See @(tsee segment-base-and-bounds) and @(tsee ea-to-la).
+     </p>
+     <p>
+     With well-formed segments,
+     the segment limit checks should ensure that
+     the new stack pointer is a 32-bit or 16-bit (based on SS.B)
+     unsigned integer in 32-bit mode.
+     Thus, the conversions @(tsee n32) and @(tsee n16) below
+     are expected to leave their arguments unchanged.
+     </p>"
     (b* ((*sp+delta (+ *sp delta)))
       (if (64-bit-modep x86)
           (if (mbe :logic (canonical-address-p *sp+delta)
@@ -445,8 +448,8 @@ the @('fault') field instead.</li>
              (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
              (ss.b (data-segment-descriptor-attributes-layout-slice :d/b ss-attr))
              (ss.e (data-segment-descriptor-attributes-layout-slice :e ss-attr))
-             (ss-lower (if ss.e (1+ ss.limit) 0))
-             (ss-upper (if ss.e (if ss.b #xffffffff #xffff) ss.limit))
+             (ss-lower (if (= ss.e 1) (1+ ss.limit) 0))
+             (ss-upper (if (= ss.e 1) (if (= ss.b 1) #xffffffff #xffff) ss.limit))
              ((unless (and (<= ss-lower *sp+delta)
                            (<= *sp+delta ss-upper)))
               (mv (list :out-of-segment-stack-address *sp+delta ss-lower ss-upper)
@@ -483,45 +486,46 @@ the @('fault') field instead.</li>
     :short "Write a stack pointer into the register RSP, ESP, or SP."
     :long
     "<p>
-   In 64-bit mode, a 64-bit stack pointer is written into the full RSP.
-   Since, in the model, this is a 64-bit signed integer,
-   this function consumes a 64-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, the stack pointer is 32 or 16 bits based on the SS.B bit,
-   i.e. the B bit of the current stack segment descriptor.
-   In these cases, the argument to this function should be
-   a 32-bit or 16-bit unsigned integer, which is also a 64-bit signed integer.
-   </p>
-   <p>
-   See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
-   and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
-   The actual size of the value returned by this function is @('StackAddrSize'),
-   introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
-   </p>
-   <p>
-   The pseudocode of stack instructions like PUSH
-   in Intel manual, Mar'17, Vol. 2
-   show assignments of the form
-   @('RSP <- ...'), @('ESP <- ...'), and @('SP <- ...')
-   based on the stack address size.
-   This suggests that
-   when the stack address size is 32
-   the assignment to ESP leaves the high 32 bits of RSP unchanged,
-   and when the stack address size is 16
-   the assignment to SP leaves the high 48 bits of RSP unchanged.
-   </p>
-   <p>
-   This function should be always called
-   with a stack pointer of the right type
-   (64-bit signed, 32-bit unsigned, or 16-bit unsigned)
-   based on the stack address size.
-   We may add a guard to ensure that in the future,
-   but for now in the code below
-   we coerce the stack pointer to 32 and 16 bits as appropriate,
-   to verify guards;
-   these coercions are expected not to change the argument stack pointer.
-   </p>"
+     In 64-bit mode, a 64-bit stack pointer is written into the full RSP.
+     Since, in the model, this is a 64-bit signed integer,
+     this function consumes a 64-bit signed integer.
+     </p>
+     <p>
+     In 32-bit mode, the stack pointer is 32 or 16 bits based on the SS.B bit,
+     i.e. the B bit of the current stack segment descriptor.
+     In these cases, the argument to this function should be
+     a 32-bit or 16-bit unsigned integer, which is also a 64-bit signed integer.
+     </p>
+     <p>
+     See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
+     and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
+     The actual size of the value returned by this function
+     is @('StackAddrSize'),
+     introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
+     </p>
+     <p>
+     The pseudocode of stack instructions like PUSH
+     in Intel manual, Mar'17, Vol. 2
+     show assignments of the form
+     @('RSP <- ...'), @('ESP <- ...'), and @('SP <- ...')
+     based on the stack address size.
+     This suggests that
+     when the stack address size is 32
+     the assignment to ESP leaves the high 32 bits of RSP unchanged,
+     and when the stack address size is 16
+     the assignment to SP leaves the high 48 bits of RSP unchanged.
+     </p>
+     <p>
+     This function should be always called
+     with a stack pointer of the right type
+     (64-bit signed, 32-bit unsigned, or 16-bit unsigned)
+     based on the stack address size.
+     We may add a guard to ensure that in the future,
+     but for now in the code below
+     we coerce the stack pointer to 32 and 16 bits as appropriate,
+     to verify guards;
+     these coercions are expected not to change the argument stack pointer.
+     </p>"
     (if (64-bit-modep x86)
         (!rgfi *rsp* *sp x86)
       (b* ((ss-hidden (xr :seg-hidden *ss* x86))
@@ -1284,6 +1288,56 @@ made from privilege level 3.</sf>"
       (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (alignment-checking-enabled-p x86))))
 
+  ;; Factored out by Alessandro Coglio <coglio@kestrel.edu>
+  ;; Alignment check originally contributed by Dmitry Nadezhin
+  (define address-aligned-p
+    ((addr :type (signed-byte #.*max-linear-address-size*))
+     (operand-size :type (member 1 2 4 6 8 10 16))
+     (memory-ptr? booleanp))
+    :returns (yes/no booleanp)
+    :short "Check the alignment of a linear address."
+    :long
+    "<p>
+     Besides the address to check for alignment,
+     this function takes as argument the operand size
+     (from which the alignment to check is determined)
+     and a flag indicating whether the address to check for alignment
+     contains a memory operand of the form m16:16, m16:32, or m16:64
+     (see Intel manual, Mar'17, Volume 2, Section 3.1.1.3).
+     </p>
+     <p>
+     Words, doublewords, quadwords, and double quadwords
+     must be aligned at boundaries of 2, 4, 8, or 16 bytes.
+     Memory pointers of the form m16:xx must be aligned so that
+     their xx portion is aligned as a word, doubleword, or quadword;
+     this automatically guarantees that their m16 portion is aligned as a word.
+     See Intel manual, Mar'17, Volume 1, Section 4.1.1.
+     See AMD manual, Dec'17, Volume 2, Table 8-7
+     (note that the table does not mention explicitly
+     memory pointers of the form m16:64).
+     </p>
+     <p>
+     If the operand size is 6, the operand must be an m16:32 pointer.
+     If the operand size is 10, the operand must an m16:64 pointer.
+     If the operand size is 4, it may be either an m16:16 pointer or not;
+     in this case, the @('memory-ptr?') argument is used to
+     determined whether the address should be aligned
+     at a word or doubleword boundary.
+     If the operand size is 1, 2, 8, or 16,
+     it cannot be a memory pointer of the form m16:xx.
+     </p>"
+    (case operand-size
+      (6 (equal (logand addr #b11) 0)) ; m16:32
+      (10 (equal (logand addr #b111) 0)) ; m16:64
+      (otherwise
+       (if (and memory-ptr?
+                (eql operand-size 4))
+           (equal (logand addr #b1) 0) ; m16:16
+         (equal (logand addr
+                        (the (integer 0 15) (- operand-size 1)))
+                0))))
+    :inline t)
+
   (define x86-operand-from-modr/m-and-sib-bytes
     ((reg-type      :type (unsigned-byte  1)
                     "@('reg-type') is @('*gpr-access*') for GPRs, and
@@ -1390,49 +1444,10 @@ made from privilege level 3.</sf>"
           (mv 'x86-operand-from-modr/m-and-sib-bytes-Non-Canonical-Address-Encountered
               0 0 0 x86))
 
-         ((when
-              ;; Check alignment for memory accesses.
-              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
-              ;; Alignment of Words, Doublewords, and Double
-              ;; Quadwords:
-
-              ;; "The natural boundaries for words,
-              ;; double words, and quadwords are even-numbered
-              ;; addresses, addresses evenly divisible by four,
-              ;; and addresses evenly divisible by eight,
-              ;; respectively. A natural boundary for a double
-              ;; quadword is any address evenly divisible by 16."
-              (and (not (equal mod #b11))
-                   inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   ;; operand-size: (member 1 2 4 6 8 10 16)
-                   (case operand-size
-                     ;; A memory operand of the form m16:32 requires a
-                     ;; read of 6 bytes.  The natural boundary of the
-                     ;; 32-bit portion is an address divisible by 4,
-                     ;; which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (6   (not (equal (logand v-addr #b11) 0)))
-                     ;; A memory operand of the form m16:64 requires a
-                     ;; read of 10 bytes.  The natural boundary of the
-                     ;; 64-bit portion is an address divisible by 8,
-                     ;; which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (10  (not (equal (logand v-addr #b111) 0)))
-                     (otherwise
-                      (if (and memory-ptr?
-                               (eql operand-size 4))
-                          ;; If the 32-bit operand is of type m16:16,
-                          ;; instead of being aligned at an address
-                          ;; divisible by 4, it should be aligned at
-                          ;; an even address.
-                          (not (equal (logand v-addr #b1) 0))
-                        (not (equal (logand v-addr
-                                            (the (integer 0 15)
-                                              (- operand-size 1)))
-                                    0)))))))
+         ((when (and (not (equal mod #b11))
+                     inst-ac?
+                     (alignment-checking-enabled-p x86)
+                     (not (address-aligned-p v-addr operand-size memory-ptr?))))
           (mv 'x86-operand-from-modr/m-and-sib-bytes-memory-access-not-aligned
               0 0 0 x86))
 
@@ -1545,49 +1560,9 @@ made from privilege level 3.</sf>"
                                   operand rex-byte x86)))
             (mv nil x86)))
 
-         ;; [Alignment check contributed by Dmitry Nadezhin, thanks!]
-         ((when
-              ;; Check alignment for memory accesses.
-              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
-              ;; Alignment of Words, Doublewords, and Double
-              ;; Quadwords:
-
-              ;; "The natural boundaries for words,
-              ;; double words, and quadwords are even-numbered
-              ;; addresses, addresses evenly divisible by four,
-              ;; and addresses evenly divisible by eight,
-              ;; respectively. A natural boundary for a double
-              ;; quadword is any address evenly divisible by 16."
-              (and inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   ;; operand-size: (member 1 2 4 6 8 10 16)
-                   (case operand-size
-                     ;; A memory operand of the form m16:32 requires a
-                     ;; write of 6 bytes.  The natural boundary of the
-                     ;; 32-bit portion is an address divisible by 4,
-                     ;; which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (6   (not (equal (logand v-addr #b11) 0)))
-                     ;; A memory operand of the form m16:64 requires a
-                     ;; write of 10 bytes.  The natural boundary of
-                     ;; the 64-bit portion is an address divisible by
-                     ;; 8, which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (10  (not (equal (logand v-addr #b111) 0)))
-                     (otherwise
-                      (if (and memory-ptr?
-                               (eql operand-size 4))
-                          ;; If the 32-bit operand is of type m16:16,
-                          ;; instead of being aligned at an address
-                          ;; divisible by 4, it should be aligned at
-                          ;; an even address.
-                          (not (equal (logand v-addr #b1) 0))
-                        (not (equal (logand v-addr
-                                            (the (integer 0 15)
-                                              (- operand-size 1)))
-                                    0)))))))
+         ((when (and inst-ac?
+                     (alignment-checking-enabled-p x86)
+                     (not (address-aligned-p v-addr operand-size memory-ptr?))))
           (mv t x86))
 
          ((mv flg x86)
@@ -1631,27 +1606,10 @@ made from privilege level 3.</sf>"
                                   operand x86)))
             (mv nil x86)))
 
-         ;; [Alignment check contributed by Dmitry Nadezhin, thanks!]
-         ((when
-              ;; Check alignment for memory accesses.
-              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
-              ;; Alignment of Words, Doublewords, and Double
-              ;; Quadwords:
-
-              ;; "The natural boundaries for words,
-              ;; double words, and quadwords are even-numbered
-              ;; addresses, addresses evenly divisible by four,
-              ;; and addresses evenly divisible by eight,
-              ;; respectively. A natural boundary for a double
-              ;; quadword is any address evenly divisible by 16."
-              (and inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   ;; operand-size: (member 4 8 16)
-                   (not (equal (logand
-                                v-addr
-                                (the (integer 0 15)
-                                  (- operand-size 1)))
-                               0))))
+         ((when (and inst-ac?
+                     (alignment-checking-enabled-p x86)
+                     ;; operand is never an m16:16 memory pointer here
+                     (not (address-aligned-p v-addr operand-size nil))))
           (mv t x86))
 
          ((mv flg x86)

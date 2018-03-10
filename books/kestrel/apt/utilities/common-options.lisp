@@ -1,4 +1,4 @@
-; APT Utilities -- Print Specifiers
+; APT Utilities -- Common Options
 ;
 ; Copyright (C) 2018, Regents of the University of Texas
 ; Written by Matt Kaufmann
@@ -20,5 +20,5 @@
 
   :parents (reference)
 
-  :short "Options that are common to different transformations."
+  :short "Options that are common to different APT transformations."
 )
