@@ -66,7 +66,7 @@
 
 (defun formula-p (fal)
 
-; We recognize null-terminated fast-alists (applicative hash tables), such that
+; We recognize nil-terminated fast-alists (applicative hash tables), such that
 ; that every index is bound to a clause or *deleted-clause*.
 
   (declare (xargs :guard t))

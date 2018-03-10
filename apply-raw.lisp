@@ -80,19 +80,13 @@
 
 ; In the days when The Rubric was necessary, the raw lisp variable
 ; *allow-concrete-execution-of-apply-stubs* told us whether it had been
-; executed.  We now just set that variable to t.  We could have eliminated it
-; entirely, but left references to that variable in our code to mark places
-; where we're providing explicit support for execution of apply$.
-
-(defvar *allow-concrete-execution-of-apply-stubs*
-  t)
+; executed.  Later, we just set that variable to t.  Since then (after
+; Version_8.0) we have eliminated that variable.
 
 (defun query-badge-userfn-structure (msgp fn wrld)
 
-; This function is only called in contexts in which
-; *allow-concrete-execution-of-apply-stubs* is true.  This function takes a
-; purported function symbol, fn, and determines if it has been assigned a badge
-; by def-warrant.  We return one of three answers:
+; This function takes a purported function symbol, fn, and determines if it has
+; been assigned a badge by def-warrant.  We return one of three answers:
 
 ; - (mv nil badge): fn was found in the badge-table and the badge is badge.
 ;      Note that fn may or may not have a warrant!  It does have a warrant if
@@ -178,8 +172,7 @@
 
 (defun concrete-badge-userfn (fn)
   (cond
-   ((or (not *allow-concrete-execution-of-apply-stubs*)
-        (not *aokp*))    ; See Note 1.
+   ((not *aokp*)    ; See Note 1.
     (throw-raw-ev-fncall ; See Note 2.
      (list* 'ev-fncall-null-body-er
             nil
@@ -355,8 +348,7 @@
 (defun concrete-apply$-userfn (fn args)
 ;           (progn (chk-live-state-p ',name state)
   (cond
-   ((or (not *allow-concrete-execution-of-apply-stubs*)
-        (not *aokp*))
+   ((not *aokp*)
     (throw-raw-ev-fncall
      (list* 'ev-fncall-null-body-er
             nil
@@ -974,7 +966,7 @@
 ; one can use a trust tag to invoke it in raw Lisp.
 
   (declare (type (integer 3 *) size))
-  (progn$ (or 
+  (progn$ (or
 
 ; The following check is important since the type declaration won't necessarily
 ; be checked in safety 0.
@@ -3199,7 +3191,6 @@
                   ev$))
   (let ((compiled-version ; see the Essay on the Compiled-LAMBDA Cache
          (and *aokp*
-              *allow-concrete-execution-of-apply-stubs*
               (compile-tame-compliant-unrestricted-lambda fn))))
     (when compiled-version
       (return-from apply$-lambda
