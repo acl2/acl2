@@ -1663,7 +1663,8 @@
 ; Goal:
 
 ; Our goal is to show that there is an evaluation theory that makes all
-; warrants valid.  That evaluation theory is created by
+; warrants valid.  That evaluation theory is created by admitting the following
+; events in an extension of the current chronology.
 
 ; (DEFATTACH BADGE-USERFN BADGE-USERFN!)
 ; (DEFATTACH APPLY$-USERFN APPLY$-USERFN!)
@@ -1677,7 +1678,51 @@
 
 ; To define APPLY$-USERFN! we will define a doppelganger for every function
 ; with a badge except for the user-defined functions that are not ancestrally
-; dependent on APPLY$.
+; dependent on APPLY$-USERFN!.
+
+; Remark on attachments.  Recall our logical foundation for attachments, which
+; shows that attachments preserve consistency by constructing an "evaluation
+; chronology" whose theory is the evaluation theory for the given chronology.
+; (For details, see the Essay on Defattach and, in particular, the theorem
+; labeled "Evaluation History".)  How can we combine that construction
+; appropriately with our doppelganger construction, to meet our goal to show
+; that there is an evaluation theory making all warrants valid?  Two
+; possibilities come to mind, and each incurs an obligation as shown below
+; based on the requirement that defattach events do not introduce cycles in the
+; extended ancestor relation.  (It is also required that no attached function
+; is ancestral in any defaxiom, but that requirement is automatically enforced
+; by explicit use of the two defattach displayed above.)
+
+; (a) First extend the current chronology with the doppelganger construction.
+;     Then admit the two defattach events above.
+
+; Obligation: There must be no cycles introduced into the extended ancestor
+; relation by those two defattach events.
+
+; (b) First extend the current chronology to an evaluation chronology.  Then
+;     perform the doppelganger construction.  Finally, admit the two defattach
+;     events above.
+
+; Obligation: As in (a), plus tameness must be preserved when moving to the
+; evaluation chronology so that we can do the doppelganger construction.
+
+; While the obligation for (b) seems plausible, the obligation for (a) seems
+; simpler since we needn't think about tameness.  So let's focus on (a).
+
+; Clearly (DEFATTACH BADGE-USERFN BADGE-USERFN!) does not introduce a cycle,
+; since badge-userfn! is defined -- or at least, could be defined -- entirely
+; using IF and CONS as the only function symbols.
+
+; Now consider (DEFATTACH APPLY$-USERFN APPLY$-USERFN!).  Looking at community
+; book books/projects/apply-model/ex1/doppelgangers.lisp for guidance, we see
+; that apply$-userfn! simply calls apply$-userfn1!, which in turn is defined in
+; the big doppelganger mutual-recursion.  Let f be a function symbol called in
+; the body of a function g! defined in that mutual-recursion, such that f is
+; not itself defined there.  Then f must be badged; otherwise g would not be
+; badged, hence g! would not be defined.  Since f is badged, and it is not
+; defined in that mutual-recursion, then f does not ancestrally depend on
+; apply$-userfn, which implies that there is no cycle containing the link from
+; apply$-userfn to apply$-userfn!.  End of Remark.
 
 ; =================================================================
 ; Review:
@@ -1724,8 +1769,8 @@
 ; (e.g., SQUARE and COLLECT).
 
 ; Non-primitive badged functions are partitioned into:
-; G1 -- ancestrally independent of APPLY$, and
-; G2 -- ancestrally dependent on APPLY$.
+; G1 -- ancestrally independent of APPLY$-USERFN, and
+; G2 -- ancestrally dependent on APPLY$-USERFN.
 ; Thus ``all non-primitive badged functions'' is the same set as ``all G1 and
 ; G2 functions.''
 
@@ -1758,12 +1803,12 @@
 ; (x1 ... xn), and body, b, include the following.  Note that the first three
 ; bullet points apply to both G1 and G2 functions but the final ones are
 ; relevant only to G2 functions (because no G1 function can call a function
-; with :FN/:EXPR ilks or else it would be dependent on APPLY$):
+; with :FN/:EXPR ilks or else it would be dependent on APPLY$-USERFN):
 
 ; - f's measure term is entirely in G1 functions.  In our model, this is
 ;   insured by the acceptable-warranted-justificationp called from badger in
 ;   apply.lisp: the measure is tame (all badged) and ancestrally independent of
-;   APPLY$, i.e., G1.
+;   APPLY$-USERFN, i.e., G1.
 
 ; - f's measure is natural number valued and its well-founded relation is O<
 ;   over O-P.  We assume without loss of generality that the measure takes all
@@ -1808,8 +1853,8 @@
 ; We could loosen some of the restrictions.  The insistence that the measure be
 ; a natp is only relevant for G2 functions and even then could be loosened to
 ; bounded ordinal.  We'd have to change the proof here.  We could eliminate the
-; restriction that measures be independent of APPLY$ if we were sure of the
-; claim that every tame expression is G1 definable.  See the discussion in
+; restriction that measures be independent of APPLY$-USERFN if we were sure of
+; the claim that every tame expression is G1 definable.  See the discussion in
 ; acceptable-warranted-justificationp.  We could allow mutual recursion if we
 ; generalized the badger to handle it; we'd have to allow it in our G2
 ; doppelganger construction.
@@ -1829,11 +1874,11 @@
 ; in this application.  We know that every G1 function is justified in terms of
 ; G1 functions (every justification of a badged function has well-founded
 ; relation O< on domain O-P with a tame measure that is ancestrally independent
-; of APPLY$ (and, coincidentally, natp valued, though while always enforced
-; that observation needn't be for G1 functions)).  That means that if we just
-; copy the user's unguarded G1 definitions down in the same order they will be
-; admissible for the same reasons as before.  None of them rely on G2 functions
-; for admission.
+; of APPLY$-USERFN (and, coincidentally, natp valued, though while always
+; enforced that observation needn't be for G1 functions)).  That means that if
+; we just copy the user's unguarded G1 definitions down in the same order they
+; will be admissible for the same reasons as before.  None of them rely on G2
+; functions for admission.
 
 ; So now we describe how to define the doppelgangers for G2 functions.
 

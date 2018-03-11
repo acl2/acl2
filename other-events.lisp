@@ -26372,10 +26372,11 @@
              constraint-kwd-alist))
         (t (let* ((wrld (w state))
                   (ld-skip-proofsp (ld-skip-proofsp state))
-                  (skip-checks
-                   (cadr (assoc-keyword :skip-checks constraint-kwd-alist)))
+                  (skip-checks-tail
+                   (assoc-keyword :skip-checks constraint-kwd-alist))
+                  (skip-checks (cadr skip-checks-tail))
                   (constraint-kwd-alist
-                   (if skip-checks
+                   (if skip-checks-tail
                        (remove-keyword :skip-checks constraint-kwd-alist)
                      constraint-kwd-alist)))
              (cond
