@@ -11544,11 +11544,13 @@
 
 (defun make-lambda-application (formals body actuals)
 
-; Warning: Perhaps make-lambda-term would be more appropriate.  The present
-; function requires that every free variable in body is a member of formals,
-; but make-lambda-term does not.  The present function will drop an unused
-; formal, but make-lambda-term does not (though its caller could choose to
-; "hide" such a formal; see translate11-let).
+; Warning: If you consider making a call of this function, ask yourself whether
+; make-lambda-term would be more appropriate; the answer depends on why you are
+; calling this function.  For example, the present function requires that every
+; free variable in body is a member of formals, but make-lambda-term does not.
+; The present function will drop an unused formal, but make-lambda-term does
+; not (though its caller could choose to "hide" such a formal; see
+; translate11-let).
 
 ; Example:
 ; (make-lambda-application '(x y z)

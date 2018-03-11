@@ -7076,11 +7076,13 @@
 
 (defun make-lambda-term (formals actuals body)
 
-; Warning: Perhaps make-lambda-application would be more appropriate.  That
-; function requires that every free variable in body is a member of formals,
-; but the present function does not.  That function will drop an unused formal,
-; but the present function does not (though its caller could choose to "hide"
-; such a formal; see translate11-let).
+; Warning: If you consider making a call of this function, ask yourself whether
+; make-lambda-application would be more appropriate; the answer depends on why
+; you are calling this function.  For example, make-lambda-application function
+; requires that every free variable in body is a member of formals, but the
+; present function does not.  Make-lambda-application will drop an unused
+; formal, but the present function does not (though its caller could choose to
+; "hide" such a formal; see translate11-let).
 
 ; Formals is a true list of distinct variables, actuals is a true list of terms
 ; of the same length as formals, and body is a term.  We want to create
