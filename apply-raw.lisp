@@ -799,8 +799,9 @@
   (cond
    ((member-equal fn bad-lambdas)
 
-; See The CL-Cache Implementation Details for a discussion of the uses of
-; equal (member-equal) and eq (member-eq) here.
+; See The CL-Cache Implementation Details for a discussion of the uses of equal
+; (member-equal) and eq (member-eq) here -- in particular, a discussion about
+; warning only in the EQUAL case, not the EQ case.
 
     (if (member-eq fn bad-lambdas)
         nil
@@ -1018,9 +1019,12 @@
 
   (let ((cl-cache *cl-cache*))
     (cond ((consp cl-cache)
+           (format t "========== Entries ==========~&")
            (loop for i from 1 to (access cl-cache cl-cache :size)
                  as pair in (access cl-cache cl-cache :alist)
-                 do (format t "~3d. ~s~&" i pair)))
+                 do (format t "~3d. ~s~&" i pair))
+           (format t "========== Bad lambdas ==========~&~s~&"
+                   (access cl-cache cl-cache :bad-lambdas)))
           (t (format t
                      "Cl-cache is uninitialized with size ~s.~%"
                      *cl-cache*))))
@@ -1060,30 +1064,35 @@
 
 (defun compile-tame-compliant-unrestricted-lambda (fn)
 
-; This function is used directly in the raw Lisp code for apply$-lambda.
+; This function is used directly in the raw Lisp code for apply$-lambda.  It
+; either returns nil or, only when appropriate (and ideally, always when
+; appropriate), it returns a compiled lambda corresponding to the input lambda,
+; fn.
 
   (let* ((cl-cache *cl-cache*)
          (state *the-live-state*)
-         (wrld (w state)))
+         (wrld (w state))
+         (valid-p ; cache is valid
+          (and (consp cl-cache)
+               (eq (access cl-cache cl-cache :world)
+                   wrld)))
+         (valid-cl-alist (and valid-p
+                              (access cl-cache cl-cache :alist))))
     (cond
-     ((and (consp cl-cache)
-           (eq (access cl-cache cl-cache :world)
-               wrld)) ; Cache is valid
+     ((car valid-cl-alist) ; hence valid-p
       (prog1
-          (let* ((cl-alist (access cl-cache cl-cache :alist))
-                 (bad-lambdas (access cl-cache cl-cache :bad-lambdas)))
+          (let ((bad-lambdas (access cl-cache cl-cache :bad-lambdas)))
 
 ; We make *cl-cache* invalid here, to be restored if we don't interrupt.
 
             (setq *cl-cache* (access cl-cache cl-cache :size))
-            (assert (car cl-alist)) ; valid cl-cache has at least one entry
             (cond
-             ((equal (caar cl-alist) fn)
+             ((equal (caar valid-cl-alist) fn)
 
 ; The cl-cache is valid and its first entry is also valid.  Simply return the
 ; compiled function.
 
-              (cdar cl-alist))
+              (cdar valid-cl-alist))
              (t
 
 ; We search the cl-cache starting with the second element.  The variable, tail,
@@ -1095,8 +1104,8 @@
 ; special.
 
               (loop for i from 1 to (- (access cl-cache cl-cache :size) 2)
-                    as tail on (cdr cl-alist)
-                    as previous-tail on cl-alist
+                    as tail on (cdr valid-cl-alist)
+                    as previous-tail on valid-cl-alist
 
 ; The following code doesn't seem (after limited testing) to speed things up in
 ; general, so there doesn't seem to be much reason to add it.
@@ -1108,10 +1117,10 @@
 ;                     (and (cadr tail) (equal (cadar tail) fn))))
 ; ; optimization: just swap
 ;              do
-;              (let ((pair1 (car cl-alist))
-;                    (pair2 (nth i cl-alist)))
-;                (setf (car cl-alist) pair2
-;                      (nth i cl-alist) pair1)
+;              (let ((pair1 (car valid-cl-alist))
+;                    (pair2 (nth i valid-cl-alist)))
+;                (setf (car valid-cl-alist) pair2
+;                      (nth i valid-cl-alist) pair1)
 ;                (return (cdr pair2)))
 
                     when (or (null (car tail)) ; fn not found
@@ -1154,26 +1163,28 @@
                                   (add-to-set-eq fn bad-lambdas))
                                  (return nil)))))))))
         (setq *cl-cache* cl-cache)))
-     (t (let* ((size (cl-cache-size cl-cache))
-               (cl-cache *cl-cache*))
+     (t (let ((size (cl-cache-size cl-cache))
+              (cl-cache *cl-cache*))
 
-; Next we make *cl-cache* invalid, to be restored if we don't interrupt.
+          (when (not valid-p) ; else leave cl-cache unchanged
 
-          (setq *cl-cache* size)
-          (setq cl-cache
-                (cond ((consp cl-cache)
+; First we make *cl-cache* invalid, to be restored if we don't interrupt.
+
+            (setq *cl-cache* size)
+            (setq cl-cache
+                  (cond ((consp cl-cache)
 
 ; We reuse the structure of cl-cache, updating its fields appropriately with
 ; minimal consing.
 
-                       (loop for i from 1 to size
-                             as tail on (access cl-cache cl-cache :alist)
-                             do
-                             (setf (car tail) nil))
-                       (change cl-cache cl-cache
-                               :world wrld
-                               :bad-lambdas nil))
-                      (t (make-cl-cache size))))
+                         (loop for i from 1 to size
+                               as tail on (access cl-cache cl-cache :alist)
+                               do
+                               (setf (car tail) nil))
+                         (change cl-cache cl-cache
+                                 :world wrld
+                                 :bad-lambdas nil))
+                        (t (make-cl-cache size)))))
           (prog1
               (cond
                ((tame-compliant-unrestricted-lambdap fn nil)
