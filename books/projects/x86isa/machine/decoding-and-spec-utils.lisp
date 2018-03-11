@@ -589,7 +589,7 @@ the @('fault') field instead.</li>
     (b* ((cs-hidden (xr :seg-hidden *cs* x86))
          (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
          (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-      (if cs.d (if p4? 2 4) (if p4? 4 2))))
+      (if (= cs.d 1) (if p4? 2 4) (if p4? 4 2))))
   ///
 
   (defrule select-address-size-not-2-when-64-bit-modep
