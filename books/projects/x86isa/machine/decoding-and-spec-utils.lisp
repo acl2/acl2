@@ -1629,6 +1629,326 @@ made from privilege level 3.</sf>"
 
 ;; ======================================================================
 
+; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+;; The following are tentative extensions of
+;; X86-OPERAND-FROM-MODR/M-AND-SIB-BYTES, X86-OPERAND-TO-REG/MEM, and
+;; X86-OPERAND-TO-XMM/MEM to 32-bit mode. They are named like the existing ones
+;; but with a $ at the end. The extension to 32-bit mode requires a change of
+;; interface, because the extended functions traffic in effective addresses
+;; rather than linear addresses. These new functions are currently not called
+;; by any other function, but callers to the old functions can be progressively
+;; "redirected" to call the new functions, eventually eliminating the old
+;; functions and removing the ending $ from the names of the new functions.
+
+(define x86-operand-from-modr/m-and-sib-bytes$
+  ((reg-type      :type (unsigned-byte  1)
+                  "@('reg-type') is @('*gpr-access*') for GPRs, and
+                   @('*xmm-access*') for XMMs.")
+   (operand-size  :type (member 1 2 4 6 8 10 16))
+   (inst-ac?      booleanp
+                  "@('t') if instruction does alignment checking,
+                   @('nil') otherwise.")
+   (memory-ptr?   booleanp
+                  "@('t') if the operand is a memory operand of the
+                   form m16:16, m16:32, or m16:64")
+   (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                  "Register of the segment to read the operand from
+                   (when reading the operand from memory).")
+   (p4?           :type (or t nil)
+                  "Address-Size Override Prefix Present?")
+   (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
+   (rex-byte      :type (unsigned-byte 8))
+   (r/m           :type (unsigned-byte 3))
+   (mod           :type (unsigned-byte 2))
+   (sib           :type (unsigned-byte 8))
+   (num-imm-bytes :type (unsigned-byte 3))
+   x86)
+
+  :guard (if (equal mod #b11)
+             (cond
+              ((equal reg-type #.*gpr-access*)
+               (member operand-size '(1 2 4 8)))
+              (t (member operand-size '(4 8 16))))
+           (member operand-size '(member 1 2 4 6 8 10 16)))
+  :guard-hints (("Goal" :in-theory (e/d* ()
+                                         (las-to-pas
+                                          unsigned-byte-p
+                                          signed-byte-p))))
+
+  :returns
+  (mv flg
+      operand
+      increment-RIP-by
+      addr
+      (x86 x86p :hyp (force (x86p x86))))
+
+  :short "Read an operand from memory or a register."
+
+  :long
+  "<p>
+   Based on the ModR/M byte,
+   the operand is read from either a register or memory.
+   In the latter case, we calculate the effective address
+   and the we read the operand from it.
+   Besides returning the operand,
+   we also return the calculated effective address.
+   This is useful for instructions that modify the operand after reading it
+   (e.g. the source/destination operand of ADD),
+   which pass the effective address calculated by this function
+   to @(tsee x86-operand-to-reg/mem$) (which writes the result to memory).
+   </p>"
+
+  (b* (((mv ?flg0
+            (the (signed-byte 64) addr)
+            (the (integer 0 4) increment-RIP-by)
+            x86)
+        (if (equal mod #b11)
+            (mv nil 0 0 x86)
+          (x86-effective-addr
+           p4? temp-rip rex-byte r/m mod sib num-imm-bytes x86)))
+       ((when flg0)
+        (mv (cons 'x86-effective-addr-error flg0) 0 0 0 x86))
+
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by RME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to RME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
+       ((when (and (not (equal mod #b11))
+                   (b* (((mv flg addr-linear) (ea-to-la addr seg-reg x86)))
+                     (and (not flg)
+                          (canonical-address-p addr-linear)
+                          inst-ac?
+                          (alignment-checking-enabled-p x86)
+                          (not (address-aligned-p
+                                addr-linear operand-size memory-ptr?))))))
+        (mv 'x86-operand-from-modr/m-and-sib-bytes-memory-access-not-aligned
+            0 0 0 x86))
+
+       ((mv ?flg2 operand x86)
+        (if (equal mod #b11)
+            (if (int= reg-type #.*gpr-access*)
+                (mv nil
+                    (rgfi-size operand-size
+                               (reg-index r/m rex-byte #.*b*)
+                               rex-byte
+                               x86)
+                    x86)
+              (mv nil
+                  (xmmi-size operand-size
+                             (reg-index r/m rex-byte #.*b*)
+                             x86)
+                  x86))
+          ;; The operand is being fetched from the memory, not the
+          ;; instruction stream. That's why we have :r instead of :x
+          ;; below.
+          (rme-size operand-size addr seg-reg :r x86)))
+       ((when flg2)
+        (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
+
+    (mv nil operand increment-RIP-by addr x86))
+
+  ///
+
+  (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand
+    :hyp (and (member operand-size '(1 2 4 8 16))
+              (equal bound (ash operand-size 3))
+              (x86p x86))
+    :bound bound
+    :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+                      reg-type operand-size inst-ac? memory-ptr? seg-reg p4?
+                      temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
+    :gen-linear t
+    :gen-type t
+    :hints (("Goal" :in-theory (enable rme-size))))
+
+  (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand-6-and-10-bytes-read
+    :hyp (and (member operand-size '(6 10))
+              (equal bound (ash operand-size 3))
+              (not (equal mod #b11))
+              (x86p x86))
+    :bound bound
+    :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+                      reg-type operand-size inst-ac? memory-ptr? seg-reg p4?
+                      temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
+    :gen-linear t
+    :gen-type t
+    :hints (("Goal" :in-theory (enable rme-size))))
+
+  (defthm integerp-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-type-prescription
+    (implies (force (x86p x86))
+             (natp (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes$
+                              reg-type operand-size inst-ac? memory-ptr? seg-reg p4
+                              temp-RIP rex-byte r/m mod sib num-imm-bytes x86))))
+    :hints (("Goal" :in-theory (e/d (rml-size) ())))
+    :rule-classes :type-prescription)
+
+  (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-linear<=4
+    (implies (x86p x86)
+             (<= (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes$
+                            reg-type operand-size inst-ac? memory-ptr? seg-reg p4
+                            temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
+                 4))
+    :hints (("Goal" :in-theory (e/d (rml-size) ())))
+    :rule-classes :linear)
+
+  (defthm-sb i64p-x86-operand-from-modr/m-and-sib-bytes$
+    :hyp (forced-and (x86p x86))
+    :bound 64
+    :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes$
+                      reg-type operand-size inst-ac? memory-ptr? seg-reg p4
+                      temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+    :gen-linear t
+    :gen-type t))
+
+(define x86-operand-to-reg/mem$
+  ((operand-size :type (member 1 2 4 6 8 10 16))
+   (inst-ac?      booleanp
+                  "@('t') if instruction does alignment checking, @('nil') otherwise")
+   (memory-ptr?   booleanp
+                  "@('t') if the operand is a memory operand
+                   of the form m16:16, m16:32, or m16:64")
+   (operand      :type (integer 0 *))
+   (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                  "Register of the segment to read the operand from
+                   (when reading the operand from memory).")
+   (addr         :type (signed-byte 64))
+   (rex-byte     :type (unsigned-byte 8))
+   (r/m          :type (unsigned-byte 3))
+   (mod          :type (unsigned-byte 2))
+   x86)
+
+  :short "Write an operand to memory or a general-purpose register."
+
+  :long
+  "<p>
+   Based on the ModR/M byte,
+   the operand is written to either a register or memory.
+   The address argument of this function is often
+   the effective address calculated and returned by
+   @(tsee x86-operand-from-modr/m-and-sib-bytes$).
+   </p>"
+
+  :guard (and (unsigned-byte-p (ash operand-size 3) operand)
+              (if (equal mod #b11)
+                  (member operand-size '(member 1 2 4 8))
+                (member operand-size '(member 1 2 4 6 8 10 16))))
+
+  (b* (((when (equal mod #b11))
+        (let* ((x86 (!rgfi-size operand-size (reg-index r/m rex-byte #.*b*)
+                                operand rex-byte x86)))
+          (mv nil x86)))
+
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by RME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to RME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
+       ((mv flg addr-linear) (ea-to-la addr seg-reg x86))
+       ((when (and (not flg)
+                   (canonical-address-p addr-linear)
+                   inst-ac?
+                   (alignment-checking-enabled-p x86)
+                   (not (address-aligned-p
+                         addr-linear operand-size memory-ptr?))))
+        (mv 'x86-operand-to-reg/mem-memory-access-not-aligned x86))
+
+       ((mv flg x86)
+        (wme-size operand-size addr seg-reg operand x86)))
+    (mv flg x86))
+
+  ///
+
+  (defthm x86p-x86-operand-to-reg/mem$
+    (implies (force (x86p x86))
+             (x86p
+              (mv-nth
+               1
+               (x86-operand-to-reg/mem$
+                operand-size inst-ac?
+                memory-ptr? operand addr seg-reg rex-byte r/m mod x86))))
+    :hints (("Goal" :in-theory (e/d () (force (force)))))))
+
+(define x86-operand-to-xmm/mem$
+  ((operand-size  :type (member 4 8 16))
+   (inst-ac?      booleanp
+                  "@('t') if instruction does alignment checking,
+                   @('nil') otherwise")
+   (operand       :type (integer 0 *))
+   (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                  "Register of the segment to read the operand from
+                   (when reading the operand from memory).")
+   (addr          :type (signed-byte 64))
+   (rex-byte      :type (unsigned-byte 8))
+   (r/m           :type (unsigned-byte 3))
+   (mod           :type (unsigned-byte 2))
+   x86)
+
+  :short "Write an operand to memory or an XMM register."
+
+  :long
+  "<p>
+   Based on the ModR/M byte,
+   the operand is written to either a register or memory.
+   The address argument of this function is often
+   the effective address calculated and returned by
+   @(tsee x86-operand-from-modr/m-and-sib-bytes$).
+   </p>"
+
+  :guard (unsigned-byte-p (ash operand-size 3) operand)
+
+  (b* (((when (equal mod #b11))
+        (let* ((x86 (!xmmi-size operand-size (reg-index r/m rex-byte #.*b*)
+                                operand x86)))
+          (mv nil x86)))
+
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by RME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to RME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
+       ((mv flg addr-linear) (ea-to-la addr seg-reg x86))
+       ((when (and (not flg)
+                   (canonical-address-p addr-linear)
+                   inst-ac?
+                   (alignment-checking-enabled-p x86)
+                   (not (address-aligned-p
+                         addr-linear operand-size nil))))
+        (mv 'x86-operand-to-xmm/mem-memory-access-not-aligned x86))
+
+       ((mv flg x86)
+        (wme-size operand-size addr seg-reg operand x86)))
+    (mv flg x86))
+
+  ///
+
+  (defthm x86p-x86-operand-to-xmm/mem$
+    (implies (force (x86p x86))
+             (x86p
+              (mv-nth
+               1
+               (x86-operand-to-xmm/mem$
+                operand-size inst-ac? operand seg-reg addr rex-byte r/m mod x86))))
+    :hints (("Goal" :in-theory (e/d () (force (force)))))))
+
+;; ======================================================================
+
 ;; Some misc. stuff to be used to define instruction semantic
 ;; functions:
 
