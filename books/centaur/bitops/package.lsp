@@ -251,4 +251,8 @@
     sparseint-binary-minus
     sparseint-compare
     sparseint-<
-    sparseint-binary-bitop))
+    sparseint-binary-bitop
+    sparseint-trailing-0-count
+    sparseint-trailing-0-count-from
+    sparseint-trailing-1-count
+    sparseint-trailing-1-count-from))

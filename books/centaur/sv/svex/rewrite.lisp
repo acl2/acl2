@@ -121,7 +121,7 @@
     :measure (list clk 0)
     (b* ((mask (mbe :logic (4vmask-fix mask) :exec mask))
          (out-multirefs (svex-key-alist-fix out-multirefs))
-         ((when (eql mask 0)) 0)
+         ((when (sparseint-equal mask 0)) 0)
          ((mv okp rhs sigma) (svex-rewrite-fncall-once mask fn args in-multirefp out-multirefs))
          ((unless okp) (svex-norm-call fn args)
           ;; (b* ((res (svex-norm-call fn args))
@@ -145,7 +145,7 @@
     :measure (list clk (svex-count x))
     (b* ((mask (mbe :logic (4vmask-fix mask) :exec mask))
          (out-multirefs (svex-key-alist-fix out-multirefs))
-         ((when (eql mask 0)) 0))
+         ((when (sparseint-equal mask 0)) 0))
       (svex-case x
         :var (mbe :logic (svex-fix (svex-lookup x.name sigma))
                       :exec (svex-lookup x.name sigma))
@@ -638,12 +638,41 @@ functions) and that it is being given the right number of arguments.</p>
              :in-theory (enable svex-argmasks-lookup
                                 4vmasklist-subsumes))))
 
+  (defcong sparseint-equal equal (sparseint-val x) 1)
+
+  (defun 4vmask-equal (x y)
+    (sparseint-equal (4vmask-fix x) (4vmask-fix y)))
+
+  (defequiv 4vmask-equal)
+
   (local (defthm 4vmask-union-all
+           (implies (sparseint-equal (4vmask-fix y) -1)
+                    (sparseint-equal (4vmask-union x y)
+                                     -1))
+           :hints (("goal" :expand ((4vmask-union x y))))))
+
+  (local (defthm 4vmask-union-neg1
            (equal (4vmask-union x -1)
                   -1)
-           :hints (("goal" :expand ((4vmask-union x -1))))))
+           :hints (("goal" :expand ((4vmask-union x -1)
+                                    (sparseint-bitor (4vmask-fix x) -1)
+                                    (:free (op) (sparseint-binary-bitop op (4vmask-fix x) -1))
+                                    (:free (op) (bitops::sparseint$-binary-bitop op (4vmask-fix x) -1))
+                                    (:free (op height) (bitops::sparseint$-binary-bitop-offset op (4vmask-fix x) height 0 -1 0))
+                                    (:free (op height) (bitops::sparseint$-binary-bitop-int op 0 (4vmask-fix x) height -1))
+                                    (:free (op x height) (bitops::sparseint$-unary-bitop op x height)))))))
+
+  (local (defcong 4vmask-equal 4vmask-equal (4vmask-union x y) 1
+           :hints(("Goal" :in-theory (enable 4vmask-union)))))
+  (local (defcong 4vmask-equal 4vmask-equal (4vmask-union x y) 2
+           :hints(("Goal" :in-theory (enable 4vmask-union)))))
 
   (defthm svex-args-apply-masks-lookup-when-all
+    (implies (sparseint-equal (svex-mask-lookup x mask-al) -1)
+             (sparseint-equal (svex-mask-lookup x (svex-args-apply-masks args masks mask-al))
+                              -1)))
+
+  (defthm svex-args-apply-masks-lookup-when-neg1
     (implies (equal (svex-mask-lookup x mask-al) -1)
              (equal (svex-mask-lookup x (svex-args-apply-masks args masks mask-al))
                     -1)))
@@ -775,7 +804,7 @@ functions) and that it is being given the right number of arguments.</p>
 
   (defthm svex-mask-alist-partly-complete-cdr-when-0-mask
     (implies (and (svex-mask-alist-partly-complete x mask-al)
-                  (equal (svex-mask-lookup (car x) mask-al) 0))
+                  (equal (sparseint-val (svex-mask-lookup (car x) mask-al)) 0))
              (svex-mask-alist-partly-complete (cdr x) mask-al))
     :hints (("goal" :expand ((svexlist-fix x))
              :in-theory (enable svex-argmasks-okp))
@@ -800,7 +829,7 @@ functions) and that it is being given the right number of arguments.</p>
        ((when (not (eq (svex-kind first) :call)))
         (svexlist-compute-masks (cdr x) mask-al))
        (mask (svex-mask-lookup first mask-al))
-       ((when (eql mask 0))
+       ((when (sparseint-equal mask 0))
         (svexlist-compute-masks (cdr x) mask-al))
        (args (svex-call->args first))
        (argmasks (svex-argmasks mask
@@ -814,6 +843,11 @@ functions) and that it is being given the right number of arguments.</p>
                      (svex-mask-lookup y mask-al)))
 
   (defthm svexlist-compute-masks-lookup-when-all
+    (implies (sparseint-equal (svex-mask-lookup y mask-al) -1)
+             (sparseint-equal (svex-mask-lookup y (svexlist-compute-masks x mask-al))
+                              -1)))
+
+  (defthm svexlist-compute-masks-lookup-when-neg1
     (implies (equal (svex-mask-lookup y mask-al) -1)
              (equal (svex-mask-lookup y (svexlist-compute-masks x mask-al))
                     -1)))

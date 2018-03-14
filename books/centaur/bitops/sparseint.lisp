@@ -2780,6 +2780,39 @@ by redefining the constant.</p>")
 (def-sparseint-binary-bitop bitorc1  #b1101 logorc1)
 (def-sparseint-binary-bitop bitor    #b1110 logior)
 
+(define sparseint-bitite ((test sparseint-p)
+                          (then sparseint-p)
+                          (else sparseint-p))
+  :parents (sparseint)
+  :returns (ite sparseint-p)
+  :short "Compute the bitwise if-then-else of the three sparseint inputs."
+  :guard-debug t
+  :prepwork ((local (in-theory (enable sparseint-p)))
+             (local (defthm sparseint$-height-correctp-of-sparseint-fix
+                      (sparseint$-height-correctp (sparseint-fix x))
+                      :hints(("Goal" :in-theory (enable sparseint-fix sparseint-p))))))
+  (b* ((test (sparseint-fix test))
+       (then (sparseint-fix then))
+       (else (sparseint-fix else))
+       (test.height (sparseint$-height test))
+       ((mv test&then test&then.height)
+        (sparseint$-binary-bitop-offset #b1000 test test.height
+                                        0 then (sparseint$-height then)))
+       ((mv ~test&else ~test&else.height)
+        (sparseint$-binary-bitop-offset #b0100 test test.height
+                                        0 else (sparseint$-height else)))
+       ((mv if ?if.height)
+        (sparseint$-binary-bitop-offset #b1110 test&then test&then.height
+                                        0 ~test&else ~test&else.height)))
+    if)
+  ///
+  (defret <fn>-correct
+    (equal (sparseint-val ite)
+           (logite (sparseint-val test)
+                   (sparseint-val then)
+                   (sparseint-val else)))
+    :hints(("Goal" :in-theory (enable sparseint-val logite)))))
+
 
 (define compare ((x integerp) (y integerp))
   (b* ((x (lifix x))
@@ -4492,6 +4525,8 @@ by redefining the constant.</p>")
 
 (define sparseint$-binary-minus ((x sparseint$-p)
                                  (y sparseint$-p))
+  :parents (sparseint)
+  :short "Subtract one sparseint from another."
   :guard (and (sparseint$-height-correctp x)
               (sparseint$-height-correctp y))
   :returns (minus sparseint$-p)
@@ -4527,6 +4562,431 @@ by redefining the constant.</p>")
     (equal (sparseint-val minus)
            (- (sparseint-val x) (sparseint-val y)))
     :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+
+(local
+ (defsection trailing-0-lemmas
+
+   (defthm trailing-0-count-of-logapp
+     (equal (trailing-0-count (logapp width x y))
+            (if (or (zp width) (equal (logext width x) 0))
+                (if (equal (ifix y) 0)
+                    0
+                  (+ (lnfix width) (trailing-0-count y)))
+              (trailing-0-count x)))
+     :hints(("Goal" :in-theory (e/d* (trailing-0-count
+                                      ihsext-inductions
+                                      ihsext-recursive-redefs)
+                                     (logapp-of-i-0
+                                      logapp-of-j-0))
+             :induct (logapp width x y))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (equal-of-logapp-split-logext)
+                                   (logapp-of-i-0
+                                    logapp-of-j-0))))))
+
+
+   (defthm lognot-of-logapp
+     (equal (lognot (logapp w a b))
+            (logapp w (lognot a) (lognot b)))
+     :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                      ihsext-recursive-redefs)
+                                     (logapp-of-j-0
+                                      logapp-of-i-0)))))
+
+   (in-theory (disable logapp-of-j-0
+                       logapp-of-i-0))
+
+   (defthmd lognot-of-logtail
+     (equal (lognot (logtail n x))
+            (logtail n (lognot x)))
+     :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                      ihsext-recursive-redefs)))))
+
+   (defthmd lognot-of-logext
+     (equal (lognot (logext n x))
+            (logext n (lognot x))))))
+
+(define sparseint$-trailing-0-count-width ((width posp)
+                                           (offset natp)
+                                           (negbit bitp)
+                                           (x sparseint$-p))
+  :measure (sparseint$-count x)
+  ;; note: nonnil if there was a 1-bit within width
+  :returns (count acl2::maybe-natp :rule-classes :type-prescription)
+  :prepwork ((local (defthmd logtail-0-by-integer-length
+                      (iff (equal (logtail n x) 0)
+                           (and (<= (integer-length x) (nfix n))
+                                (not (logbitp n x))))
+                      :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                                         ihsext-recursive-redefs)))))
+             (local (defthmd logtail-neg1-by-integer-length
+                      (iff (equal (logtail n x) -1)
+                           (and (<= (integer-length x) (nfix n))
+                                (logbitp n x)))
+                      :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                                         ihsext-recursive-redefs))))))
+  :verify-guards nil
+  (sparseint$-case x
+    :leaf (b* (((when (mbe :logic (equal (logtail offset x.val) (- (lbfix negbit)))
+                           :exec (and (<= (integer-length x.val) (lnfix offset))
+                                      (eql negbit (logbit offset x.val)))))
+                nil)
+               (count (if (eql 1 negbit)
+                          (trailing-1-count-from x.val offset)
+                        (trailing-0-count-from x.val offset))))
+            (and (< count (lposfix width)) count))
+    :concat (b* ((width (lposfix width))
+                 (offset (lnfix offset))
+                 ((when (<= x.width offset))
+                  (sparseint$-trailing-0-count-width
+                   width (- offset x.width) negbit x.msbs))
+                 (width1 (- x.width offset))
+                 ((when (<= width width1))
+                  (sparseint$-trailing-0-count-width width offset negbit x.lsbs))
+                 (lsb-count
+                  (sparseint$-trailing-0-count-width width1 offset negbit x.lsbs))
+                 ((when lsb-count) lsb-count)
+                 (msb-count
+                  (sparseint$-trailing-0-count-width (- width width1) 0 negbit x.msbs)))
+              (and msb-count (+ width1 msb-count))))
+  ///
+  
+  (verify-guards sparseint$-trailing-0-count-width
+    :hints (("goal" :in-theory (enable logtail-0-by-integer-length
+                                       logtail-neg1-by-integer-length
+                                       bool->bit bitp))))
+
+
+  ;; (local (in-theory (disable logtail-of-lognot
+  ;;                            logext-of-lognot)))
+
+  (local
+   (progn
+     (defthm logbitp-of-logext-mine
+       (equal (logbitp n (logext m x))
+              (if (< (nfix n) (pos-fix m))
+                  (logbitp n x)
+                (logbitp (+ -1 m) x)))
+       :hints(("Goal" :in-theory (enable pos-fix logbitp**))))
+
+     (defthm logext-when-larger-logext-is-0
+       (implies (and (equal (logext n x) 0)
+                     (<= (pos-fix m) (pos-fix n)))
+                (equal (logext m x) 0))
+       :hints ((logbitp-reasoning)))
+
+     (defthm logext-when-larger-logext-is-neg1
+       (implies (and (equal (logext n x) -1)
+                     (<= (pos-fix m) (pos-fix n)))
+                (equal (logext m x) -1))
+       :hints ((logbitp-reasoning)))
+     
+     (defthm logext-0-when-trailing-0-count-greater
+       ;; (implies (not (equal (ifix x) 0))
+       (iff (equal (logext n x) 0)
+            (or (equal (ifix x) 0)
+                (<= (pos-fix n) (trailing-0-count x))))
+       :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                          ihsext-recursive-redefs
+                                          trailing-0-count)
+               :induct (logext n x))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable pos-fix)
+                     :expand ((trailing-0-count x))))))
+
+     (defthm logext-neg1-when-trailing-0-count-greater
+       ;; (implies (not (equal (ifix x) 0))
+       (iff (equal (logext n x) -1)
+            (or (equal (ifix x) -1)
+                (<= (pos-fix n) (trailing-0-count (lognot x)))))
+       :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                          ihsext-recursive-redefs
+                                          trailing-0-count)
+               :induct (logext n x))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable pos-fix trailing-0-count)
+                     :expand ((lognot x))))))))
+
+  (defret <fn>-correct
+    (and (iff count
+              (not (equal (logext width (logtail offset (sparseint$-val x)))
+                          (- (bfix negbit)))))
+         (implies (not (equal (logext width (logtail offset (sparseint$-val x)))
+                              (- (bfix negbit))))
+                  (equal count (trailing-0-count (logxor (- (bfix negbit))
+                                                         (logtail offset (sparseint$-val x)))))))
+    :hints (("goal" :induct <call>
+             :expand (<call>))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (loghead-of-logapp-split
+                                      logtail-of-logapp-split
+                                      equal-of-logapp-split-logext))
+                   :cases ((eql (bfix negbit) 1))
+                   :do-not-induct t))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (lognot-of-logtail
+                                    logtail-of-logext
+                                    lognot-of-logext)
+                                   (logtail-of-lognot
+                                    logext-of-lognot
+                                    logext-of-logtail)))))))
+
+
+(define sparseint$-trailing-0-count-rec ((offset natp)
+                                         (negbit bitp)
+                                         (x sparseint$-p))
+  :measure (sparseint$-count x)
+  ;; note: nonnil if x was nonzero
+  :returns (count acl2::maybe-natp :rule-classes :type-prescription)
+
+  :prepwork ((local (defthmd logtail-0-by-integer-length
+                      (iff (equal (logtail n x) 0)
+                           (and (<= (integer-length x) (nfix n))
+                                (not (logbitp n x))))
+                      :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                                         ihsext-recursive-redefs)))))
+             (local (defthmd logtail-neg1-by-integer-length
+                      (iff (equal (logtail n x) -1)
+                           (and (<= (integer-length x) (nfix n))
+                                (logbitp n x)))
+                      :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                                         ihsext-recursive-redefs))))))
+  :verify-guards nil
+  (sparseint$-case x
+    :leaf (b* (((when (mbe :logic (equal (logtail offset x.val) (- (lbfix negbit)))
+                           :exec (and (<= (integer-length x.val) (lnfix offset))
+                                      (eql negbit (logbit offset x.val)))))
+                nil))
+            (if (eql negbit 1)
+                (trailing-1-count-from x.val offset)
+              (trailing-0-count-from x.val offset)))
+    :concat (b* ((offset (lnfix offset))
+                 ((when (<= x.width offset))
+                  (sparseint$-trailing-0-count-rec (- offset x.width) negbit x.msbs))
+                 (width1 (- x.width offset))
+                 (lsbs-count (sparseint$-trailing-0-count-width
+                              width1 offset negbit x.lsbs))
+                 ((when lsbs-count) lsbs-count)
+                 (msbs-count
+                  (sparseint$-trailing-0-count-rec 0 negbit x.msbs)))
+              (and msbs-count (+ width1 msbs-count))))
+  ///
+
+  (verify-guards sparseint$-trailing-0-count-rec
+    :hints (("goal" :in-theory (enable logtail-0-by-integer-length
+                                       logtail-neg1-by-integer-length
+                                       bool->bit bitp))))
+  
+
+  (defret <fn>-correct
+    (and (iff count
+              (not (equal (logtail offset (sparseint$-val x)) (- (bfix negbit)))))
+         (implies (not (equal (logtail offset (sparseint$-val x)) (- (bfix negbit))))
+                  (equal count (trailing-0-count (logtail offset (logxor (- (bfix negbit))
+                                                                         (sparseint$-val x)))))))
+    :hints (("goal" :induct <call>
+             :expand (<call>))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable equal-of-logapp-split-logext)
+                   :cases ((eql (bfix negbit) 1))
+                   :do-not-induct t)))))
+
+
+(define sparseint-trailing-0-count ((x sparseint-p))
+  :parents (sparseint)
+  :short "Count the trailing consecutive 0s of a sparseint."
+  :returns (count natp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (enable sparseint-p))))
+  (b* ((count (sparseint$-trailing-0-count-rec 0 0 (sparseint-fix x))))
+    (or count 0))
+  ///
+  (defret <fn>-correct
+    (equal count (trailing-0-count (sparseint-val x)))
+    :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+(define sparseint-trailing-0-count-from ((x sparseint-p)
+                                         (offset natp))
+  :parents (sparseint)
+  :short "Count the consecutive 0s of a sparseint starting at the given offset."
+  :returns (count natp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (enable sparseint-p))))
+  (b* ((count (sparseint$-trailing-0-count-rec offset 0 (sparseint-fix x))))
+    (or count 0))
+  ///
+  (defret <fn>-correct
+    (equal count (trailing-0-count-from (sparseint-val x) offset))
+    :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+
+(define sparseint-trailing-1-count ((x sparseint-p))
+  :parents (sparseint)
+  :short "Count the trailing consecutive 1s of a sparseint."
+  :returns (count natp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (enable sparseint-p))))
+  (b* ((count (sparseint$-trailing-0-count-rec 0 1 (sparseint-fix x))))
+    (or count 0))
+  ///
+  (defret <fn>-correct
+    (equal count (trailing-1-count (sparseint-val x)))
+    :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+(define sparseint-trailing-1-count-from ((x sparseint-p)
+                                         (offset natp))
+  :parents (sparseint)
+  :short "Count the consecutive 1s of a sparseint starting at the given offset."
+  :returns (count natp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (enable sparseint-p))))
+  (b* ((count (sparseint$-trailing-0-count-rec offset 1 (sparseint-fix x))))
+    (or count 0))
+  ///
+  (defret <fn>-correct
+    (equal count (trailing-1-count-from (sparseint-val x) offset))
+    :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+
+
+;; (local (defthm logapp-lt-0
+;;          (equal (< (logapp w x y) 0)
+;;                 (< (ifix y) 0))
+;;          :hints(("Goal" :in-theory (enable* ihsext-inductions
+;;                                             ihsext-recursive-redefs)))))
+(local (defthmd logcount***
+         (EQUAL (LOGCOUNT X)
+                (COND ((ZIP X) 0)
+                      ((= X -1) 0)
+                      (T (+ (IF (<= 0 X)
+                                (LOGCAR X)
+                                (B-NOT (LOGCAR X)))
+                            (LOGCOUNT (LOGCDR X))))))
+         :hints(("Goal" :in-theory (enable logcount**)))
+         :rule-classes ((:definition :clique (logcount)
+                         :controller-alist ((logcount t))))))
+
+(local (defthm logcount-of-logapp
+         (equal (logcount (logapp w x y))
+                (+ (if (< (ifix y) 0)
+                       (logcount (loghead w (lognot x)))
+                     (logcount (loghead w x)))
+                   (logcount y)))
+         :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                          ihsext-recursive-redefs
+                                          logcount***)
+                                         (logcount**))
+                 :induct (logapp w x y)))))
+                    
+
+(define sparseint$-bitcount-width ((width posp)
+                                   (offset natp)
+                                   (negbit bitp)
+                                   (x sparseint$-p))
+  :measure (sparseint$-count x)
+  ;; note: nonnil if there was a 1-bit within width
+  :returns (count natp :rule-classes :type-prescription)
+  :verify-guards nil
+  (sparseint$-case x
+    :leaf (logcount (loghead (lposfix width) (logtail offset (logxor (- (lbfix negbit)) x.val))))
+    :concat (b* ((width (lposfix width))
+                 (offset (lnfix offset))
+                 ((when (<= x.width offset))
+                  (sparseint$-bitcount-width
+                   width (- offset x.width) negbit x.msbs))
+                 (width1 (- x.width offset))
+                 ((when (<= width width1))
+                  (sparseint$-bitcount-width width offset negbit x.lsbs)))
+              (+ (sparseint$-bitcount-width width1 offset negbit x.lsbs)
+                 (sparseint$-bitcount-width (- width width1) 0 negbit x.msbs))))
+  ///
+  
+  (verify-guards sparseint$-bitcount-width)
+
+
+  (local (defthm logcount-loghead-logtail-split
+           (equal (logcount (loghead n (logtail m x)))
+                  (- (logcount (loghead (+ (nfix n) (nfix m)) x))
+                     (logcount (loghead m x))))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+
+
+  (defret <fn>-correct
+    (equal count (logcount (loghead (pos-fix width) (logtail offset (logxor (- (bfix negbit)) (sparseint$-val x))))))
+    :hints (("goal" :induct <call>
+             :expand (<call>))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (loghead-of-logapp-split
+                                    logtail-of-logapp-split
+                                    equal-of-logapp-split))
+                   :cases ((eql (bfix negbit) 1))
+                   :do-not-induct t)))))
+
+
+(define sparseint$-bitcount-rec ((offset natp)
+                                 (negbit)
+                                 (x sparseint$-p))
+  :guard (equal negbit (bool->bit (< (sparseint$-val x) 0)))
+  :measure (sparseint$-count x)
+  ;; note: nonnil if x was nonzero
+  :returns (count natp :rule-classes :type-prescription)
+  :verify-guards nil
+  (sparseint$-case x
+    :leaf (logcount (logtail offset x.val))
+    :concat (b* ((offset (lnfix offset))
+                 (negbit (mbe :logic (bool->bit (eql (sparseint$-compare x 0) -1)) :exec negbit))
+                 ((when (<= x.width offset))
+                  (sparseint$-bitcount-rec (- offset x.width) negbit x.msbs))
+                 (width1 (- x.width offset)))
+              (+ (sparseint$-bitcount-width
+                  width1 offset negbit x.lsbs)
+                 (sparseint$-bitcount-rec 0 negbit x.msbs))))
+  ///
+
+  (verify-guards sparseint$-bitcount-rec
+    :hints(("Goal" :in-theory (enable compare))))
+  
+
+  (defret <fn>-correct
+    (equal count (logcount (logtail offset (sparseint$-val x))))
+    :hints (("goal" :induct <call>
+             :expand (<call>)
+             :in-theory (enable compare))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (loghead-of-logtail)
+                                   (logtail-of-loghead))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable equal-of-logapp-split)
+                   :do-not-induct t)))))
+
+(define sparseint-bitcount ((x sparseint-p))
+  :parents (sparseint)
+  :short "Count the 1 bits in a sparseint if positive, 0 bits if negative."
+  :returns (count natp :rule-classes :type-prescription)
+  :guard-hints (("goal" :in-theory (enable sparseint-val)))
+  (sparseint$-bitcount-rec 0
+                           (bool->bit (sparseint-< x 0))
+                           (sparseint-fix x))
+  ///
+  (defret <fn>-correct
+    (equal count (logcount (sparseint-val x)))
+    :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+(define sparseint-bitcount-from ((offset natp)
+                                 (x sparseint-p))
+  :parents (sparseint)
+  :short "Count the 1 bits in a sparseint if positive, 0 bits if negative, starting from offset."
+  :returns (count natp :rule-classes :type-prescription)
+  :guard-hints (("goal" :in-theory (enable sparseint-val)))
+  (sparseint$-bitcount-rec offset
+                           (bool->bit (sparseint-< x 0))
+                           (sparseint-fix x))
+  ///
+  (defret <fn>-correct
+    (equal count (logcount (logtail offset (sparseint-val x))))
+    :hints(("Goal" :in-theory (enable sparseint-val)))))
+
+
+
+
 
 
     
@@ -4566,8 +5026,8 @@ this will just return @('x').  Every integer is a sparseint, but
 sure you have enough memory to hold the integer value that this produces!</p>
 
 <p>The rest of the operations on sparseints are listed here.  As a syntactic
-convention, let x and y be sparseints, and use @('xv') and @('yv') to signify
-@('(sparseint-val x)')and @('(sparseint-val y)').</p>
+convention, let x, y, and z be sparseints, and use @('xv'), @('yv'), and
+@('zv') to signify @('(sparseint-val x)'), etc.</p>
 
 <ul>
 
@@ -4611,6 +5071,9 @@ describing the logical operation.  That is, bit @('n') of the result will be
 @('(logbit (+ (logbit n xv) (* 2 (logbit n yv))) op)'), so @('#b0100')
 signifies ANDc1, @('#b0110') signifies XOR, etc.</li>
 
+<li>@('(sparseint-bitite x y z)') returns a sparseint whose value is the
+bitwise if-then-else of xv, yv, zv.</li>
+
 <li>@('(sparseint-equal x y)') returns @('(equal xv yv)').</li>
 
 <li>@('(sparseint-compare x y)') returns @('(compare xv yv)'), where
@@ -4629,6 +5092,14 @@ than the second, and 1 when the first is greater than the second.</li>
 
 <li>@('(sparseint-binary-minus x y)') returns a new sparseint whose value is
 @('(- xv yv)').</li>
+
+<li>@('(sparseint-trailing-0-count x)') returns @('(trailing-0-count xv)') and
+@('(sparseint-trailing-0-count-from x n)') returns @('(trailing-0-count-from xv
+n)'). Similarly for @('(sparseint-trailing-1-count x)') and
+@('(sparseint-trailing-1-count-from x n)').</li>
+
+<li>@('(sparseint-bitcount x)') returns @('(logcount xv)') and
+@('(sparseint-bitcount-from n x)') returns @('(logcount (logtail n xv))').</li>
 
 </ul>")
 
