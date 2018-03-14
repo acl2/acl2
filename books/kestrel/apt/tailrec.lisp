@@ -319,10 +319,10 @@
   ((combine pseudo-termp "Result of @(tsee tailrec-check-old).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
+   (variant tailrec-variantp "Input to the trasformation, after validation.")
    (verbose booleanp "Print informative messages or not.")
    (wrld plist-worldp))
-  ;; :returns (domain pseudo-termfnp
-  ;;                  :hints (("Goal" :in-theory (enable pseudo-termfnp))))
+  :returns (domain "A @(tsee pseudo-termfnp).")
   :verify-guards nil
   :short "Infer the domain over which some applicability conditions must hold."
   :long
@@ -331,22 +331,25 @@
    A domain is inferred as described in the documentation.
    </p>"
   (b* ((default '(lambda (x) 't))
-       (domain (case-match combine
-                 ((op . args)
-                  (b* (((unless (symbolp op)) default)
-                       ((unless (or (equal args (list q r))
-                                    (equal args (list r q))))
-                        default)
-                       ((list y1 y2) (formals op wrld))
-                       (guard (uguard op wrld)))
-                    (case-match guard
-                      (('if (dom must-be-y1) (dom must-be-y2) *nil*)
-                       (if (and (eq must-be-y1 y1)
-                                (eq must-be-y2 y2))
-                           dom
-                         default))
-                      (& default))))
-                 (& default)))
+       (domain
+        (if (member-eq variant '(:monoid :monoid-alt))
+            (case-match combine
+              ((op . args)
+               (b* (((unless (symbolp op)) default)
+                    ((unless (or (equal args (list q r))
+                                 (equal args (list r q))))
+                     default)
+                    ((list y1 y2) (formals op wrld))
+                    (guard (uguard op wrld)))
+                 (case-match guard
+                   (('if (dom must-be-y1) (dom must-be-y2) *nil*)
+                    (if (and (eq must-be-y1 y1)
+                             (eq must-be-y2 y2))
+                        dom
+                      default))
+                   (& default))))
+              (& default))
+          default))
        ((run-when verbose)
         (cw "~%")
         (cw "Inferred domain for the applicability conditions: ~x0.~%" domain)))
@@ -358,6 +361,7 @@
    (combine pseudo-termp "Result of @(tsee tailrec-check-old).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
+   (variant tailrec-variantp "Input to the trasformation, after validation.")
    (do-verify-guards booleanp
                      "Result of validating
                       the @(':verify-guards') input to the transformation
@@ -387,7 +391,7 @@
    </p>"
   (b* ((wrld (w state))
        ((when (eq domain :auto))
-        (value (tailrec-infer-domain combine q r verbose wrld)))
+        (value (tailrec-infer-domain combine q r variant verbose wrld)))
        (description "The :DOMAIN input")
        ((er (list fn/lambda stobjs-in stobjs-out description))
         (cond ((function-namep domain wrld)
@@ -737,7 +741,7 @@
                                (guard-verified-p old-fn-name (w state))
                                "The :VERIFY-GUARDS input" t nil))
        ((er domain$) (tailrec-check-domain
-                      domain old-fn-name combine q r do-verify-guards
+                      domain old-fn-name combine q r variant do-verify-guards
                       verbose ctx state))
        ((er new-fn-name) (tailrec-check-new-name
                           new-name old-fn-name ctx state))

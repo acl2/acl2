@@ -641,25 +641,51 @@
    </h4>
 
    <p>
-   Let @('combine<q,r>') be the term described above.
+   Consider the following conditions:
+   </p>
+
+   <ol>
+
+     <li>
+     The @(':variant') input of @('tailrec')
+     is @(':monoid') or @(':monoid-alt').
+     </li>
+
+     <li>
+     The term @('combine<q,r>') (described above)
+     has the form @('(op q r)') or @('(op r q)'),
+     where @('op') is a named function, with formals @('y1') and @('y2').
+     </li>
+
+     <li>
+     The guard term of @('op') has the form @('(and (dom y1) (dom y2))'),
+     where @('dom') is a named function.
+     </li>
+
+   </ol>
+
+   <p>
+   If all the above coditions hold, the inferred domain is @('dom').
+   Otherwise, the inferred domain is @('(lambda (x) t)'),
+   i.e. the domain consisting of all values.
    </p>
 
    <p>
-   If @('combine<q,r>') has the form @('(op q r)') or @('(op r q)'),
-   where @('op') is a named function with formals @('y1') and @('y2'),
-   and the guard term of @('op') has the form @('(and (dom y1) (dom y2))'),
-   where @('dom') is a named function,
-   then @('dom') is the inferred domain.
-   That is, if the combination operator is
-   ``well-defined'' (according to its guard) on a domain,
-   we use that as the domain over which
-   the combination operator must satisfy
-   some of the applicability conditions below.
-   </p>
-
-   <p>
-   Otherwise, the inferred domain is @('(lambda (x) t)').
-   That is, the domain consists of all values.
+   This domain inference is a heuristic.
+   It has no impact on soundness,
+   since the user could supply any domain anyhow.
+   Inferring a tigther domain than the one consisting of all values
+   may be helpful to prove left and right identity,
+   which may not hold over all values
+   (e.g. left and right identity of addition).
+   On the other hand, associativity may hold over all values
+   (e.g. associativity of addition),
+   particularly when the combination operator fixes its arguments.
+   Given that using a tighter domain than all values
+   involves additional applicability conditions below,
+   it seems most useful to attempt to infer a tighter domain
+   only for the monoidal and alternative monoidal variants,
+   and use the domain of all values for the associative variant.
    </p>
 
    <h3>
