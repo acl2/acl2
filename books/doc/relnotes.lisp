@@ -187,7 +187,7 @@
 
  <p>Improved documentation.</p>
 
- <p>Improved @(tsee tailrec) transformation with an option to attempt to
+ <p>Improved @(tsee apt::tailrec) transformation with an option to attempt to
  automatically infer the domain for some of the transformation's applicability
  conditions.</p>
 
