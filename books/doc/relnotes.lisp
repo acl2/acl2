@@ -161,6 +161,9 @@
  occur when using @(tsee declare) forms with @(tsee let), @(tsee let*), or
  @(tsee mv-let) expressions.</p>
 
+ <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
+ subsumed by the built-in @(tsee evens) utility.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
