@@ -184,6 +184,10 @@
 
  <p>Improved documentation.</p>
 
+ <p>Improved @(tsee tailrec) transformation with an option to attempt to
+ automatically infer the domain for some of the transformation's applicability
+ conditions.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>

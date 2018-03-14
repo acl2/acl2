@@ -1,6 +1,6 @@
 ; APT Tail Recursion Transformation -- Tests
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -268,7 +268,7 @@
   ;; target function:
   (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
-  ;; not a function, macro, or lambda:
+  ;; not :AUTO, a function, macro, or lambda:
   (must-fail (tailrec f :domain 44))
   (must-fail (tailrec f :domain car-cdr-elim))
   (must-fail (tailrec f :domain (natp x)))
@@ -319,6 +319,32 @@
   (defun fact (n)
     (declare (xargs :guard (natp n)))
     (if (zp n) 1 (* n (fact (1- n)))))
+
+  ;; default:
+  (must-succeed*
+   (tailrec fact)
+   (must-be-redundant
+    (defun fact{1} (n r)
+      (declare (xargs :measure (acl2-count n)
+                      :guard (and (natp n) (acl2-numberp r))))
+      (if (zp n) r (fact{1} (+ -1 n) (* r n))))
+    (defun fact{1}-wrapper (n)
+      (declare (xargs :guard (natp n)))
+      (fact{1} n 1))
+    (defthm fact-~>-fact{1}-wrapper (equal (fact n) (fact{1}-wrapper n)))))
+
+  ;; automatic:
+  (must-succeed*
+   (tailrec fact :domain :auto)
+   (must-be-redundant
+    (defun fact{1} (n r)
+      (declare (xargs :measure (acl2-count n)
+                      :guard (and (natp n) (acl2-numberp r))))
+      (if (zp n) r (fact{1} (+ -1 n) (* r n))))
+    (defun fact{1}-wrapper (n)
+      (declare (xargs :guard (natp n)))
+      (fact{1} n 1))
+    (defthm fact-~>-fact{1}-wrapper (equal (fact n) (fact{1}-wrapper n)))))
 
   ;; function name:
   (must-succeed*
