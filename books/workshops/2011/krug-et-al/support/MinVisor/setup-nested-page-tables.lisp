@@ -4048,6 +4048,7 @@ or
 
  (local
   (defattach (ancestors-check ancestors-check-disjointp-hack-2)
+    :system-ok t
     :hints (("Goal" :use ancestors-check-disjointp-hack-constraint-2))))
 
 
