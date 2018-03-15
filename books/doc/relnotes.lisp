@@ -205,6 +205,13 @@
 
  <h3>Miscellaneous</h3>
 
+ <p>A BibTeX file has been added to the community books, containing reference
+ information for papers published at the ACL2 Workshops.  This may be useful to
+ you if you wish to cite such a paper in a LaTeX document.  It is available at
+ @('books/workshops/references/').  That directory also contains an example
+ LaTeX file demonstrating how the references may be cited, as well as a README
+ with some more information.</p>
+
  ")
 
 (defxdoc note-8-0-books

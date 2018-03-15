@@ -19,6 +19,10 @@ This directory contains the following files:
   authors' names contains an ogonek, which is not supported in the OT1
   internal encoding.
 
+This data was first compiled by Jared Davis, covering the workshops
+from 2000 to 2004, and later extended by Keshav Kini, covering the
+workshops through 2017.
+
 Please keep this BibTeX resource up to date as new ACL2 workshops
 occur, and feel free to correct any errors or mistakes in the data if
 you find them (using a pull request to this repository).
