@@ -66,16 +66,15 @@
   :parents (release-notes)
   :short "Pointers to what has changed in the community books"
   :long "<p>This section of the online @(see documentation) contains notes on
-            the changes in the community books between successive released
-            versions of ACL2.</p>
+ the changes in the community books between successive released versions of
+ ACL2.</p>
 
-         <p>Each topic @('note-x-y-books') is a note describing what in the
-            community books distributed with ACL2 version X.Y was new in
-            comparison to the community books distributed with the preceding
-            version of ACL2.</p>
+ <p>Each topic @('note-x-y-books') is a note describing what in the community
+ books distributed with ACL2 version X.Y was new in comparison to the community
+ books distributed with the preceding version of ACL2.</p>
 
-         <p>The current version of ACL2 is the value of the constant @('(@
-            acl2-version)').</p>")
+ <p>The current version of ACL2 is the value of the constant @('(@
+ acl2-version)').</p>")
 
 (defxdoc note-8-1-books
 
@@ -103,12 +102,12 @@
  <h3>New Libraries</h3>
 
  <p>A new regular expression library, @(see acre::acre), is available in
- \"books/centaur/acre/\".  Compared to the implementation in \"projects/regex\",
- this version's features are less similar to GNU grep and somewhat more similar
- to Perl regular expressions.  However, it does not aim to be fully compatible,
- but to have a well-defined set of features with clean code that can be easily
- extended and behaves predictably (as much as possible, for regular
- expressions).</p>
+ @('books/centaur/acre/').  Compared to the implementation in
+ @('projects/regex'), this version's features are less similar to GNU grep and
+ somewhat more similar to Perl regular expressions.  However, it does not aim
+ to be fully compatible, but to have a well-defined set of features with clean
+ code that can be easily extended and behaves predictably (as much as possible,
+ for regular expressions).</p>
 
  <h3>Changes to Existing Libraries</h3>
 
@@ -129,8 +128,8 @@
  include-book) down to a given book, which may be useful for reducing book
  dependencies.</p>
 
- <p>Added a <see topic='@(url fty)'>fixtype</see>
- for <see topic='@(url set::std/osets)'>finite sets</see>.</p>
+ <p>Added a <see topic='@(url fty)'>fixtype</see> for <see topic='@(url
+ set::std/osets)'>finite sets</see>.</p>
 
  <p>Improved the @('copy-def') utility (community book
  @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
@@ -196,7 +195,7 @@
  <h3>Build System Updates</h3>
 
  <p>The build system now has support for @(see ifdef) and @(see ifndef), which
- are @(see make-event)-supported macros defined in \"books/build/ifdef.lisp\".
+ are @(see make-event)-supported macros defined in @('books/build/ifdef.lisp').
  In particular, this allows the community books' makefile to support building
  different versions of the manual depending what external tools are
  installed.</p>
@@ -280,14 +279,14 @@
 
  <h4>GLMC</h4>
 
- <p>GLMC (in directory centaur/glmc) is a connection from ACL2 to AIG-based
- hardware model checkers, via @(see gl::gl); this can be used to prove safety
- properties without finding an inductive invariant.  See @(see gl::glmc) for
- details.</p>
+ <p>GLMC (in directory @('centaur/glmc')) is a connection from ACL2 to
+ AIG-based hardware model checkers, via @(see gl::gl); this can be used to
+ prove safety properties without finding an inductive invariant.  See @(see
+ gl::glmc) for details.</p>
 
  <h4>Truth</h4>
 
- <p>Directory centaur/truth contains a library for using integers as a
+ <p>Directory @('centaur/truth') contains a library for using integers as a
  representation for Boolean functions with small (single-digit) numbers of
  variables, expressing the functions as truth tables.  Truth tables for 5 or
  fewer variables are especially efficient since the formulas are represented as
@@ -295,12 +294,12 @@
 
  <h4>Ipasir</h4>
 
- <p>The @(see ipasir::ipasir) library (in directory centaur/ipasir) contains an
- axiomatized interface for using incremental SAT solver libraries in ACL2.  A
- solver object is represented as an abstract stobj, and actual solver functions
- from a suitable shared library can be called as the implementation.
+ <p>The @(see ipasir::ipasir) library (in directory @('centaur/ipasir'))
+ contains an axiomatized interface for using incremental SAT solver libraries in
+ ACL2.  A solver object is represented as an abstract stobj, and actual solver
+ functions from a suitable shared library can be called as the implementation.
  Integration with @(see aignet::aignet) is also provided in the book
- \"centaur/aignet/ipasir\".</p>
+ @('centaur/aignet/ipasir').</p>
 
  <h4>ABNF</h4>
 
@@ -519,16 +518,16 @@
 
  <h4>AVR ISA</h4>
  <p>Julien Schmaltz and Peter Schwabes' AVR ISA model has been contributed in book
- \"projects/avr-isa\".</p>
+ @('projects/avr-isa').</p>
 
  <h4>Miscellaneous Books</h4>
 
- <p>The book \"clause-processors/use-by-hint\" now contains an additional
+ <p>The book @('clause-processors/use-by-hint') now contains an additional
  utility, @(see use-termhint), that helps structure hints in a way that
  coincides with the structure of a proof and allows hints to contain terms that
  have been simplified along with the goal.</p>
 
- <p>A new book \"tools/symlet\" introduces a macro @('let-syms') and @('b*')
+ <p>A new book @('tools/symlet') introduces a macro @('let-syms') and @('b*')
  binder @('symlet') that simply replace occurrences of some symbols with some
  corresponding terms in the enclosed term.  Like Common Lisp's
  @('symbol-macrolet') but much less smart.</p>
