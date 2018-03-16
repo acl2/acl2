@@ -2,9 +2,6 @@
 ; Written by J Strother Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-(include-book "pltpa")
-(in-package "PLTP")
-
 ; Listing-I: [/ DEFS] and [THEOREMS]
 
 ; Section: [/ DEFS]

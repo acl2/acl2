@@ -2,9 +2,6 @@
 ; Written by J Strother Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-(include-book "pltpa")
-(in-package "PLTP")
-
 ; Appendix A. Function Definitions
 
 ; This section is the PLTP(A) version of the definitions in Appendix A of the
