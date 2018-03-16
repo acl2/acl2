@@ -6529,10 +6529,11 @@
      ((and (> (length (symbol-name pat)) 0)
            (eql #\! (char (symbol-name pat) 0)))
       (mv (cons (list 'equal x
-                      (intern (coerce (cdr (coerce (symbol-name pat)
-                                                   'list))
-                                      'string)
-                              "ACL2"))
+                      (intern-in-package-of-symbol
+                       (subseq (symbol-name pat)
+                               1
+                               (length (symbol-name pat)))
+                       pat))
                 tests)
           bindings))
      ((eq pat '&) (mv tests bindings))

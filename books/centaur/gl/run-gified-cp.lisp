@@ -160,10 +160,10 @@
 
 (defun run-gified-lhs-and-okp-breakdown (lhs okp)
   (case-match okp
-    (('mv-nth ''0 (acl2::fn . '(fn actuals hyp clk config bvar-db state)))
+    (('mv-nth ''0 (fn . '(fn actuals hyp clk config bvar-db state)))
      (case-match lhs
        ((ev ('mv-nth ''1 (!fn . '(fn actuals hyp clk config bvar-db state))) 'env)
-        (mv nil ev acl2::fn))
+        (mv nil ev fn))
        (& (mv "lhs mismatched" nil nil))))
     (& (mv "okp mismatched" nil nil))))
 
@@ -313,7 +313,7 @@
 
 (in-theory (disable evals-of-formalsp))
 
-(defun run-gified-check-geval-thm (thm acl2::gfn acl2::fn geval)
+(defun run-gified-check-geval-thm (thm gfn fn geval)
   (case-match thm
     (('implies
       '(bfr-hyp-eval hyp (car env))
@@ -770,7 +770,7 @@
 
 
 
-(defun nths-matching-formalsp (acl2::idx formals acl2::varname list)
+(defun nths-matching-formalsp (idx formals varname list)
   (declare (xargs :measure (acl2-count formals)))
   (if (atom formals)
       (eq list nil)
@@ -778,7 +778,7 @@
          (let ((car (car list)))
            (case-match car
              (('nth ('quote !idx) !varname) t)))
-         (nths-matching-formalsp (1+ acl2::idx) (cdr formals) acl2::varname (cdr list)))))
+         (nths-matching-formalsp (1+ idx) (cdr formals) varname (cdr list)))))
 
 (local
  (progn

@@ -2832,7 +2832,9 @@
            (:STANDARD "standard-proveall.lsp")
            (otherwise ; = :JACM
             "jacm-proveall.lsp"))
-         :ld-pre-eval-print t)
+         :ld-pre-eval-print t
+         :ld-error-action :error
+         :ld-user-stobjs-modified-warning t)
      (post-proveall-msg ',key state))))
 
 (defmacro acl2::pltpa nil
