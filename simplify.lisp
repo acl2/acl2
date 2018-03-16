@@ -6256,7 +6256,10 @@
               (add-literal-and-pt (car cl) (car pt-lst)
                                   cl1 pt-lst1 ttree)))))
 
-(defun remove-trivial-equivalences
+(defstub remove-trivial-equivalences-enabled-p () t)
+(defattach remove-trivial-equivalences-enabled-p constant-t-function-arity-0)
+
+(defun remove-trivial-equivalences-rec
   (cl pt-lst remove-flg ens wrld state ttree hitp avoid-lst)
 
 ; This function looks for two kinds of equivalence hypotheses in cl and uses
@@ -6307,11 +6310,18 @@
                equiv rhs lhs lit-position cl 0 pt-lst
                (and remove-flg (eq condition 'disposable))
                ens wrld state ttree)
-              (remove-trivial-equivalences new-cl new-pt-lst remove-flg
-                                           ens wrld state
-                                           ttree t
-                                           (cons lit avoid-lst))))
+              (remove-trivial-equivalences-rec new-cl new-pt-lst remove-flg
+                                               ens wrld state
+                                               ttree t
+                                               (cons lit avoid-lst))))
      (t (mv hitp cl pt-lst ttree)))))
+
+(defun remove-trivial-equivalences (cl pt-lst remove-flg ens wrld state ttree)
+  (cond
+   ((remove-trivial-equivalences-enabled-p)
+    (remove-trivial-equivalences-rec cl pt-lst remove-flg ens wrld state ttree
+                                     nil nil))
+   (t (mv nil cl pt-lst ttree))))
 
 ; In a break with nqthm, we implement a really trivial theorem prover which
 ; gets the first shot at any conjecture we have to prove.  The idea is to build
@@ -6826,7 +6836,7 @@
             (crunch-clause-segments1 seg1 pts1 (cons marker seg2) nil)
             (mv-let (hitp cl pts ttree)
                     (remove-trivial-equivalences cl pts nil ;;; see Note
-                                                 ens wrld state ttree nil nil)
+                                                 ens wrld state ttree)
 
 ; Note: In the call of remove-trivial-equivalences above we use remove-flg =
 ; nil.  At one time, we used remove-flg = t, thinking that our cl here was the
@@ -7986,7 +7996,7 @@
                                        t
                                        (access rewrite-constant rcnst
                                                :current-enabled-structure)
-                                       wrld state nil nil nil)
+                                       wrld state nil)
           (declare (ignore pts))
           (let ((local-rcnst (change rewrite-constant rcnst
                                      :top-clause top-clause
@@ -8080,7 +8090,7 @@
                         t
                         (access rewrite-constant local-rcnst
                                 :current-enabled-structure)
-                        wrld state ttree nil nil))
+                        wrld state ttree))
                       (declare (ignore pts hitp))
                       (mv step-limit
                           'hit

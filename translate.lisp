@@ -1324,7 +1324,7 @@
       :program
     (cddadr x)))
 
-; Command Tuples
+; Essay on Command Tuples
 
 ; When LD has executed a world-changing form, it stores a "command tuple" as
 ; the new 'global-value of 'command-landmark.  These landmarks divide the world
@@ -1371,7 +1371,7 @@
 ; creates a function can have a keyword as its car.
 
   (make command-tuple
-        :number n
+        :number n ; the absolute command number
         :defun-mode/form (if (eq defun-mode :program)
                              form
                            (cons defun-mode form))
@@ -6342,7 +6342,8 @@
 
 ; Cons x1 onto the front of each element of lst.
 
-  (cond ((null lst) nil)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
         (t (cons (cons x1 (car lst))
                  (pairlis-x1 x1 (cdr lst))))))
 
@@ -6350,7 +6351,8 @@
 
 ; Make an alist pairing each element of lst with x2.
 
-  (cond ((null lst) nil)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
         (t (cons (cons (car lst) x2)
                  (pairlis-x2 (cdr lst) x2)))))
 
@@ -7072,6 +7074,30 @@
                                in stobjs-out list!")
                           nil)))))))
 
+(defun make-lambda-term (formals actuals body)
+
+; Warning: If you consider making a call of this function, ask yourself whether
+; make-lambda-application would be more appropriate; the answer depends on why
+; you are calling this function.  For example, make-lambda-application function
+; requires that every free variable in body is a member of formals, but the
+; present function does not.  Make-lambda-application will drop an unused
+; formal, but the present function does not (though its caller could choose to
+; "hide" such a formal; see translate11-let).
+
+; Formals is a true list of distinct variables, actuals is a true list of terms
+; of the same length as formals, and body is a term.  We want to create
+; something like ((lambda formals body) . actuals).  However, body may have
+; free variables that do not belong to formals, and lambdas must be closed in
+; ACL2.  We add the necessary extra variables to the end of formals and
+; actuals.  See translate11-let for how this function may be called to "hide"
+; unused formals.
+
+  (let* ((body-vars (all-vars body))
+         (extra-body-vars (set-difference-eq body-vars formals)))
+    (fcons-term (make-lambda (append formals extra-body-vars)
+                             body)
+                (append actuals extra-body-vars))))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -7428,11 +7454,11 @@
               x))
    ((not (arglistp (strip-cars (cadr x))))
     (mv-let (culprit explan)
-            (find-first-bad-arg (strip-cars (cadr x)))
-            (trans-er ctx
-                      "The form ~x0 is an improper let expression because it ~
+      (find-first-bad-arg (strip-cars (cadr x)))
+      (trans-er ctx
+                "The form ~x0 is an improper let expression because it ~
                        attempts to bind ~x1, which ~@2."
-                      x culprit explan)))
+                x culprit explan)))
    (t
     (let* ((bound-vars (strip-cars (cadr x)))
            (multiple-bindings-p (consp (cdr bound-vars)))
@@ -7453,152 +7479,143 @@
                   (non-trivial-stobj-binding stobj-flags (cadr x))
                   x))
        (t (mv-let
-           (erp edcls)
-           (collect-declarations-cmp (butlast (cddr x) 1)
-                                     bound-vars 'let ctx wrld)
-           (cond
-            (erp (mv erp edcls bindings))
-            (t
-             (trans-er-let*
-              ((value-forms
-                (cond (targs (trans-value targs))
-                      ((and stobjs-bound ; hence (not (eq stobjs-out t))
-                            (not multiple-bindings-p))
+            (erp edcls)
+            (collect-declarations-cmp (butlast (cddr x) 1)
+                                      bound-vars 'let ctx wrld)
+            (cond
+             (erp (mv erp edcls bindings))
+             (t
+              (trans-er-let*
+               ((value-forms
+                 (cond (targs (trans-value targs))
+                       ((and stobjs-bound ; hence (not (eq stobjs-out t))
+                             (not multiple-bindings-p))
 
 ; In this case, we know that the only variable of the LET is a stobj name.
 ; Note that (list (car bound-vars)) is thus a stobjs-out specifying
 ; a single result consisting of that stobj.
 
-                       (trans-er-let*
-                        ((val (translate11 (cadr (car (cadr x)))
-                                           (list (car bound-vars))
-                                           bindings known-stobjs flet-alist
-                                           x ctx wrld state-vars)))
-                        (trans-value (list val))))
-                      (t (translate11-lst (strip-cadrs (cadr x))
-                                          (if (eq stobjs-out t)
-                                              t
-                                            stobj-flags)
-                                          bindings known-stobjs
-                                          "in a LET binding (or LAMBDA ~
+                        (trans-er-let*
+                         ((val (translate11 (cadr (car (cadr x)))
+                                            (list (car bound-vars))
+                                            bindings known-stobjs flet-alist
+                                            x ctx wrld state-vars)))
+                         (trans-value (list val))))
+                       (t (translate11-lst (strip-cadrs (cadr x))
+                                           (if (eq stobjs-out t)
+                                               t
+                                             stobj-flags)
+                                           bindings known-stobjs
+                                           "in a LET binding (or LAMBDA ~
                                            application)"
-                                          flet-alist x ctx wrld
-                                          state-vars))))
-               (tbody
-                (if tbody0
-                    (trans-value tbody0)
-                  (translate11 (car (last x)) stobjs-out bindings known-stobjs
-                               flet-alist x ctx wrld state-vars)))
-               (tdcls (translate11-lst
-                       (translate-dcl-lst edcls wrld)
-                       (if (eq stobjs-out t)
-                           t
-                         nil) ;;; '(nil ... nil)
-                       bindings known-stobjs
-                       "in a DECLARE form in a LET (or LAMBDA)"
-                       flet-alist x ctx wrld state-vars)))
-              (let ((used-vars (union-eq (all-vars tbody)
-                                         (all-vars1-lst tdcls nil)))
-                    (ignore-vars (ignore-vars edcls))
-                    (ignorable-vars (ignorable-vars edcls))
-                    (stobjs-out (translate-deref stobjs-out bindings)))
-                (cond
-                 ((and stobjs-bound ; hence (not (eq stobjs-out t))
-                       (not (consp stobjs-out)))
-                  (unknown-binding-msg-er x ctx stobjs-bound
-                                          "a LET" "the LET" "the LET"))
-                 ((and
-                   (null tbody0)             ; else skip this check
-                   stobjs-bound              ; hence (not (eq stobjs-out t))
-                   (not multiple-bindings-p) ; possible stobj mod in bindings
-                   (not (eq (caar (cadr x))
-                            (cadar (cadr x)))) ; stobj mod in bindings
-                   (assert$ (null (cdr stobjs-bound))
-                            (not (member-eq (car stobjs-bound) stobjs-out))))
-                  (let ((stobjs-returned (collect-non-x nil stobjs-out)))
-                    (trans-er+ x ctx
-                               "The single-threaded object ~x0 has been bound ~
+                                           flet-alist x ctx wrld
+                                           state-vars))))
+                (tbody
+                 (if tbody0
+                     (trans-value tbody0)
+                   (translate11 (car (last x)) stobjs-out bindings known-stobjs
+                                flet-alist x ctx wrld state-vars)))
+                (tdcls (translate11-lst
+                        (translate-dcl-lst edcls wrld)
+                        (if (eq stobjs-out t)
+                            t
+                          nil) ;;; '(nil ... nil)
+                        bindings known-stobjs
+                        "in a DECLARE form in a LET (or LAMBDA)"
+                        flet-alist x ctx wrld state-vars)))
+               (let ((used-vars (union-eq (all-vars tbody)
+                                          (all-vars1-lst tdcls nil)))
+                     (ignore-vars (ignore-vars edcls))
+                     (ignorable-vars (ignorable-vars edcls))
+                     (stobjs-out (translate-deref stobjs-out bindings)))
+                 (cond
+                  ((and stobjs-bound ; hence (not (eq stobjs-out t))
+                        (not (consp stobjs-out)))
+                   (unknown-binding-msg-er x ctx stobjs-bound
+                                           "a LET" "the LET" "the LET"))
+                  ((and
+                    (null tbody0)            ; else skip this check
+                    stobjs-bound             ; hence (not (eq stobjs-out t))
+                    (not multiple-bindings-p) ; possible stobj mod in bindings
+                    (not (eq (caar (cadr x))
+                             (cadar (cadr x)))) ; stobj mod in bindings
+                    (assert$ (null (cdr stobjs-bound))
+                             (not (member-eq (car stobjs-bound) stobjs-out))))
+                   (let ((stobjs-returned (collect-non-x nil stobjs-out)))
+                     (trans-er+ x ctx
+                                "The single-threaded object ~x0 has been bound ~
                                 in a LET.  It is a requirement that this ~
                                 object be among the outputs of the LET, but ~
                                 it is not.  The LET returns ~#1~[no ~
                                 single-threaded objects~/the single-threaded ~
                                 object ~&2~/the single-threaded objects ~&2~]."
-                               (car stobjs-bound)
-                               (zero-one-or-more stobjs-returned)
-                               stobjs-returned)))
-                 ((intersectp-eq used-vars ignore-vars)
-                  (trans-er+ x ctx
-                             "Contrary to the declaration that ~#0~[it ~
+                                (car stobjs-bound)
+                                (zero-one-or-more stobjs-returned)
+                                stobjs-returned)))
+                  ((intersectp-eq used-vars ignore-vars)
+                   (trans-er+ x ctx
+                              "Contrary to the declaration that ~#0~[it ~
                               is~/they are~] IGNOREd, the variable~#0~[ ~&0 ~
                               is~/s ~&0 are~] used in the body of the LET ~
                               expression that binds ~&1."
-                             (intersection-eq used-vars ignore-vars)
-                             bound-vars))
-                 (t
-                  (let* ((ignore-vars (augment-ignore-vars bound-vars
-                                                           value-forms
-                                                           ignore-vars))
-                         (diff (set-difference-eq
-                                bound-vars
-                                (union-eq used-vars
-                                          (union-eq ignorable-vars
-                                                    ignore-vars))))
-                         (ignore-ok
-                          (if (null diff)
-                              t
-                            (cdr (assoc-eq
-                                  :ignore-ok
-                                  (table-alist 'acl2-defaults-table wrld))))))
-                    (cond
-                     ((null ignore-ok)
-                      (trans-er+ x ctx
-                                 "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
+                              (intersection-eq used-vars ignore-vars)
+                              bound-vars))
+                  (t
+                   (let* ((ignore-vars (augment-ignore-vars bound-vars
+                                                            value-forms
+                                                            ignore-vars))
+                          (diff (set-difference-eq
+                                 bound-vars
+                                 (union-eq used-vars
+                                           (union-eq ignorable-vars
+                                                     ignore-vars))))
+                          (ignore-ok
+                           (if (null diff)
+                               t
+                             (cdr (assoc-eq
+                                   :ignore-ok
+                                   (table-alist 'acl2-defaults-table wrld))))))
+                     (cond
+                      ((null ignore-ok)
+                       (trans-er+ x ctx
+                                  "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
                                   used in the body of the LET expression that ~
                                   binds ~&1.  But ~&0 ~#0~[is~/are~] not ~
                                   declared IGNOREd or IGNORABLE.  See :DOC ~
                                   set-ignore-ok."
-                                 diff
-                                 bound-vars))
-                     (t
-                      (prog2$
-                       (cond
-                        ((eq ignore-ok :warn)
-                         (warning$-cw1 ctx "Ignored-variables"
-                                       "The variable~#0~[ ~&0 is~/s ~&0 are~] ~
+                                  diff
+                                  bound-vars))
+                      (t
+                       (prog2$
+                        (cond
+                         ((eq ignore-ok :warn)
+                          (warning$-cw1 ctx "Ignored-variables"
+                                        "The variable~#0~[ ~&0 is~/s ~&0 are~] ~
                                         not used in the body of the LET ~
                                         expression that binds ~&1.  But ~&0 ~
                                         ~#0~[is~/are~] not declared IGNOREd ~
                                         or IGNORABLE.  See :DOC set-ignore-ok."
-                                       diff
-                                       bound-vars))
-                        (t nil))
-                       (let* ((tbody
-                               (cond
-                                (tdcls
-                                 (let ((guardian (dcl-guardian tdcls)))
-                                   (cond ((equal guardian *t*)
+                                        diff
+                                        bound-vars))
+                         (t nil))
+                        (let* ((tbody
+                                (cond
+                                 (tdcls
+                                  (let ((guardian (dcl-guardian tdcls)))
+                                    (cond ((equal guardian *t*)
 
 ; See the comment about THE in dcl-guardian.
 
-                                          tbody)
-                                         (t (prog2$-call guardian tbody)))))
-                                (t tbody)))
-                              (body-vars (all-vars tbody))
-                              (extra-body-vars (set-difference-eq
-                                                body-vars
-                                                bound-vars)))
-                         (trans-value
-                          (cons (make-lambda
-                                 (append bound-vars extra-body-vars)
-                                 tbody)
-
-; See the analogous line in the handling of MV-LET for an explanation
-; of hide-ignored-actuals.
-
-                                (append
-                                 (hide-ignored-actuals
-                                  ignore-vars bound-vars value-forms)
-                                 extra-body-vars)))))))))))))))))))))
+                                           tbody)
+                                          (t (prog2$-call guardian tbody)))))
+                                 (t tbody))))
+                          (trans-value
+                           (make-lambda-term bound-vars
+                                             (hide-ignored-actuals
+                                              ignore-vars
+                                              bound-vars
+                                              value-forms)
+                                             tbody))))))))))))))))))))
 
 (defun translate11-let* (x tbody targs stobjs-out bindings known-stobjs
                            flet-alist ctx wrld state-vars)

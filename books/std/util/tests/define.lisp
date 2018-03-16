@@ -32,6 +32,7 @@
 (include-book "../define")
 (include-book "utils")
 (include-book "misc/assert" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 (define foo ()
   :returns (ans integerp)
@@ -619,4 +620,3 @@
 (assert-guard-verified another-guard-test-4)
 (assert-guard-verified another-guard-test-5)
 (assert-guard-verified another-guard-test-6)
-

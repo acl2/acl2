@@ -81,7 +81,7 @@
 ; state.
 
 ; It is convenient to introduce a function for popping the stack, without
-; concern for whether the stack is a null-terminated list.
+; concern for whether the stack is a nil-terminated list.
 
 (defund popped-stack (x)
   (declare (xargs :guard t))

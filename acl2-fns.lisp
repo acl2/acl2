@@ -423,7 +423,7 @@
 #+acl2-mv-as-values
 (defun max-output-type-for-declare-form-lst (type-list1 type-list2)
 
-; Type-list1 and type-list2 are known to be true lists (null-terminated
+; Type-list1 and type-list2 are known to be true lists (nil-terminated
 ; lists).
 
   (cond ((or (null type-list1) (null type-list2))

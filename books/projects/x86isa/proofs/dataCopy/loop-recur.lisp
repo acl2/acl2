@@ -87,13 +87,15 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             address-aligned-p
                              riml-size
                              riml32
                              n32-to-i32
                              n64-to-i64
                              riml08
                              two-byte-opcode-decode-and-execute
-                             x86-effective-addr
+                             x86-effective-addr-when-64-bit-modep
+                             x86-effective-addr-32/64
                              subset-p
                              signed-byte-p)
                             (get-prefixes-opener-lemma-group-4-prefix

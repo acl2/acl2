@@ -2501,7 +2501,7 @@
             (equal x86-3 (mv-nth 2 three-vals-of-modr/m))
 
             (equal temp-rip2 (if modr/m? (1+ temp-rip1) temp-rip1))
-            (equal sib? (and modr/m? (x86-decode-sib-p modr/m)))
+            (equal sib? (and modr/m? (x86-decode-sib-p modr/m nil)))
 
             ;; sib byte:
             (equal three-vals-of-sib

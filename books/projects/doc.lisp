@@ -5,6 +5,7 @@
 ; information.
 
 (in-package "ACL2")
+(include-book "build/ifdef" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "milawa/doc")
 (include-book "regex/regex-ui")
@@ -16,6 +17,9 @@
 (include-book "sat/proof-checker-itp13/top")
 (include-book "sat/proof-checker-array/top")
 (include-book "sat/dimacs-reader/reader")
+(ifdef "OS_HAS_SMTLINK"
+       (include-book "smtlink/doc")
+       :endif)
 
 (defxdoc projects
   :parents (top)

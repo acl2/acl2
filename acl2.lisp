@@ -1569,7 +1569,7 @@ ACL2 from scratch.")
 
 (defparameter *acl2-readtable*
   (copy-readtable nil)
-  "*acl2-readtable* is the readtable we use (a) to restrict the use
+  "*acl2-readtable* is the readtable we use (a) to restrict the use of
 #. to cause evaluation during READing (b) and to define our own version
 of backquote.")
 
@@ -1679,8 +1679,9 @@ which is saved just in case it's needed later.")
      'fancy-string-reader-macro)
 
 ; Thanks to Jared Davis for contributing the code for #\Y and #\Z (see
-; serialize-raw.lisp).  Note that p. 531 of CLtL2 specifies that #\Y and #\Z
-; may be available to us (though we check this by using
+; serialize-raw.lisp).  Note that Section 2.4.8 Sharpsign of the Common Lisp
+; Hyperspec (also Table 22-4, p. 531 of CLtL2) specifies that #\Y and #\Z may
+; be available to us (though we check this by using
 ; set-new-dispatch-macro-character).  Keep these two settings in sync with
 ; *reckless-acl2-readtable*.
 

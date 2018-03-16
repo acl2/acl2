@@ -9,6 +9,7 @@
 (in-package "ACL2")
 
 (include-book "misc/assert" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 (defmacro test-case (form &key (expected 'nil expected-p))
   (let ((form (if expected-p

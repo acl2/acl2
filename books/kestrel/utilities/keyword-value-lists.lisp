@@ -1,10 +1,13 @@
 ; Keyword-Value Lists
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Authors:
+;   Alessandro Coglio (coglio@kestrel.edu)
+;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,18 +59,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define keywords-of-keyword-value-list ((kvlist keyword-value-listp))
-  :returns (keywords symbol-listp
-                     :hyp :guard
-                     :hints (("Goal"
-                              :in-theory (enable keyword-value-list-to-alist))))
+(define make-keyword-value-list-from-keys-and-value ((keys keyword-listp)
+                                                     val)
+  :returns (kvlist keyword-value-listp
+                   :hyp :guard)
   :parents (kestrel-utilities system-utilities)
-  :short "Extract the list of keywords from
-          a @('nil')-terminated list of even length
-          with keywords at its even-numbered positions (counting from 0),
-          into the corresponding alist."
+  :short "Make a list satisfying @(tsee keyword-value-listp) by associating
+          each member of a true-list of keywords list of keywords with a
+          given value."
   :long
   "<p>
-   The returned keywords are in the same order as in the starting list.
+   The keywords in the result are in the same order as in the input keys.
    </p>"
-  (strip-cars (keyword-value-list-to-alist kvlist)))
+  (cond
+   ((endp keys) nil)
+   (t (list* (car keys) val
+             (make-keyword-value-list-from-keys-and-value (cdr keys) val)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

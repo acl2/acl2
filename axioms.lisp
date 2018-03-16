@@ -27482,6 +27482,14 @@ Lisp definition."
                    val)
               state)))
 
+(defun constant-t-function-arity-0 ()
+  (declare (xargs :mode :logic :guard t))
+  t)
+
+(defun constant-nil-function-arity-0 ()
+  (declare (xargs :mode :logic :guard t))
+  nil)
+
 (encapsulate
   ()
 

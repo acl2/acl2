@@ -166,7 +166,8 @@
                                                    state))
             state))))
 
-(defattach finalize-event-user finalize-event-user-memoize)
+(defattach (finalize-event-user finalize-event-user-memoize)
+  :system-ok t)
 
 (defxdoc memoized-prover-fns
   :parents (memoize)

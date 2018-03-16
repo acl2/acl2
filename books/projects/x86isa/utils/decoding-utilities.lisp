@@ -1734,7 +1734,6 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
     (aref1 '32-bit-mode-two-byte-has-modr/m
            *32-bit-mode-two-byte-has-modr/m-ar* opcode))
 
-
   ;; We assume ModR/M is an unsigned-byte 8.
   (defmacro mrm-r/m (ModR/M)
     `(n03 ,ModR/M))
@@ -1747,15 +1746,34 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
     `(mbe :logic (part-select ,ModR/M :low 6 :width 2)
           :exec (ash ,ModR/M -6)))
 
+  ;; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
   (define x86-decode-SIB-p
-    ((ModR/M :type (unsigned-byte 8)))
-    :short "If ModR/M.mod is not #b11 and ModR/M.r/m is #b100, then SIB is expected."
+    ((ModR/M :type (unsigned-byte 8))
+     (16-bit-addressp booleanp))
     :returns (bool booleanp :hyp (n08p ModR/M))
-    (let* ((r/m (mrm-r/m ModR/M))
-           (mod (mrm-mod ModR/M)))
-      (declare (type (unsigned-byte 8) r/m mod))
-      (and (int= r/m 4)
-           (not (int= mod 3)))))
+    :short "Returns a boolean saying whether a SIB byte is expected."
+    :long
+    "<p>
+     This is based on Intel manual, Mar'17, Volume 2, Tables 2-1 and 2-2,
+     as well as AMD manual, Dec'17, Volume 3, Tables A-33 and A-35.
+     When the address size is 32 or 64 bits,
+     Intel Table 2-2 and AMD Table A-35 apply:
+     a SIB byte is expected exactly when
+     ModR/M.mod is not #b11 and ModR/M.r/m is #b100.
+     When the address size is 16 bits, no SIB byte is expected.
+     </p>
+     <p>
+     The second argument of this function says whether
+     the address size is 16 bits or not (i.e. 32 or 64 bits).
+     In 64-bit mode, this argument is always @('nil').
+     In 32-bit mode, this argument may be @('t') or @('nil').
+     </p>"
+    (and (not 16-bit-addressp)
+         (let* ((r/m (mrm-r/m ModR/M))
+                (mod (mrm-mod ModR/M)))
+           (declare (type (unsigned-byte 8) r/m mod))
+           (and (int= r/m 4)
+                (not (int= mod 3))))))
 
   ;; We assume sib is an unsigned-byte 8.
   (defmacro sib-base (sib)

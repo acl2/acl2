@@ -11142,11 +11142,12 @@
 
   (filename-to-sysfile-include-book-alist1 x local-markers-allowedp state nil))
 
-(defun all-keywords-p (keywords)
-  (if (consp keywords)
-      (and (keywordp (car keywords))
-           (all-keywords-p (cdr keywords)))
-    (null keywords)))
+(defun keyword-listp (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (keywordp (car x))
+           (keyword-listp (cdr x)))
+    (null x)))
 
 (defun read-file-into-template (template ch state acc)
 
@@ -11191,7 +11192,7 @@
       (cond
        (eofp
         (cond
-         ((all-keywords-p template)
+         ((keyword-listp template)
           (value (revappend acc (make-list (length template)))))
          (t (mv 'eof template state))))
        ((null (car template))
@@ -11246,7 +11247,7 @@
                    (make-list-ac posn-nil nil acc))))
            (t ; no template element available for this value
             (assert$
-             (all-keywords-p template)
+             (keyword-listp template)
              (mv 'stray-value2 (list val template) state)))))))))))
 
 (defun fast-cert-data (cert-data)
@@ -22156,7 +22157,7 @@
 
 (defun first-assoc-keyword (keys x)
   (declare (xargs :guard (and (keyword-value-listp x)
-                              (all-keywords-p keys))))
+                              (keyword-listp keys))))
   (cond ((endp keys)
          nil)
         (t (or (assoc-keyword (car keys) x)
@@ -25930,7 +25931,7 @@
 
 (defun process-defattach-args1 (args ctx wrld state erasures explicit-erasures
                                      attachment-alist helper-alist-lst
-                                     skip-checks)
+                                     skip-checks system-ok)
 
 ; We accumulate into four arguments as follows:
 
@@ -25960,7 +25961,8 @@
                (unless-ttag
                 (msg
                  " (unless :SKIP-CHECKS T is specified with an active trust ~
-                  tag)")))
+                  tag)"))
+               (not-boot-strap-p (not (f-get-global 'boot-strap-flg state))))
            (case-match arg
              ((f g . kwd-value-lst)
               (er-let*
@@ -26048,11 +26050,20 @@
                              attachments~@0, but ~x1 is in :PROGRAM mode.~@2"
                             unless-ttag f see-doc))))
                 ((and (member-eq f *unattachable-primitives*)
-                      (not (f-get-global 'boot-strap-flg state)))
+                      not-boot-strap-p)
                  (er soft ctx
                      "It is illegal to add or remove an attachment to the ~
                       function symbol ~x0 because it is given special ~
                       treatment by the ACL2 implementation."
+                     f))
+                ((and not-boot-strap-p
+                      (not system-ok)
+                      (getpropc f 'predefined)) ; acl2-system-namep-state
+                 (er soft ctx
+                     "The function symbol ~x0 is built into ACL2.  Thus, to ~
+                      add or remove an attachment to this symbol it is ~
+                      required to specify :SYSTEM-OK T in your defattach ~
+                      event."
                      f))
                 (t
                  (let ((at-alist (attachment-alist f wrld)))
@@ -26110,7 +26121,8 @@
                                                      (cons f explicit-erasures)
                                                      attachment-alist
                                                      helper-alist-lst
-                                                     skip-checks)))))
+                                                     skip-checks
+                                                     system-ok)))))
                         ((and (or (null attach-pair)
                                   (cdr attach-pair)) ; attaching for execution
                               (not (and skip-checks-t
@@ -26239,7 +26251,7 @@
                           explicit-erasures
                           (cons (cons f g) attachment-alist)
                           (cons helper-alist helper-alist-lst)
-                          skip-checks)))))))))))
+                          skip-checks system-ok)))))))))))
              (& (er soft ctx
                     "Each tuple supplied to a defattach event must be of the ~
                      form (f g . kwd-value-lst).  The tuple ~x0 is thus ~
@@ -26293,8 +26305,8 @@
                                              aa
                                              hl)))))))
 
-(defconst *defattach-keys-plus-skip-checks*
-  (cons :skip-checks *defattach-keys*))
+(defconst *defattach-keys-extended*
+  (append *defattach-keys* '(:skip-checks :system-ok)))
 
 (defun process-defattach-args (args ctx state)
 
@@ -26319,8 +26331,7 @@
          ((null (cddr args))
           (process-defattach-args `((,(car args) ,(cadr args))) ctx state))
          ((and (true-listp args)
-               (eql (length args) 4)
-               (eq (caddr args) :SKIP-CHECKS))
+               (member-eq (caddr args) '(:SKIP-CHECKS :SYSTEM-OK)))
           (er soft ctx
               "~@0the form:~|~%~y1."
               msg
@@ -26359,7 +26370,7 @@
               once.  See :DOC defattach."
              (car (duplicate-keysp-eq args))))
         ((or (not (keyword-value-listp constraint-kwd-alist))
-             (strip-keyword-list *defattach-keys-plus-skip-checks*
+             (strip-keyword-list *defattach-keys-extended*
                                  constraint-kwd-alist))
          (er soft ctx
              "Illegal defattach argument list.  The tail following the ~
@@ -26367,15 +26378,23 @@
               list of keywords and values (see :DOC keyword-value-listp) ~
               whose keys are without duplicates and all belong to the list ~
               ~x0.  That tail is, however, ~x1.  See :DOC defattach."
-             *defattach-keys-plus-skip-checks*
+             *defattach-keys-extended*
              constraint-kwd-alist))
         (t (let* ((wrld (w state))
                   (ld-skip-proofsp (ld-skip-proofsp state))
-                  (skip-checks
-                   (cadr (assoc-keyword :skip-checks constraint-kwd-alist)))
+                  (skip-checks-tail
+                   (assoc-keyword :skip-checks constraint-kwd-alist))
+                  (skip-checks (cadr skip-checks-tail))
                   (constraint-kwd-alist
-                   (if skip-checks
+                   (if skip-checks-tail
                        (remove-keyword :skip-checks constraint-kwd-alist)
+                     constraint-kwd-alist))
+                  (system-ok-tail
+                   (assoc-keyword :system-ok constraint-kwd-alist))
+                  (system-ok (cadr system-ok-tail))
+                  (constraint-kwd-alist
+                   (if system-ok-tail
+                       (remove-keyword :system-ok constraint-kwd-alist)
                      constraint-kwd-alist)))
              (cond
               ((and skip-checks
@@ -26391,10 +26410,15 @@
                (er soft ctx
                    "It is illegal to specify a non-nil value of :SKIP-CHECKS ~
                     for defattach unless there is an active trust tag."))
+              ((not (booleanp system-ok))
+               (er soft ctx
+                   "Illegal value for :SKIP-CHECKS (must be ~x0 or ~x1): ~x2."
+                   t nil system-ok))
               (t
                (er-let* ((tuple
                           (process-defattach-args1 args ctx wrld state nil nil
-                                                   nil nil skip-checks))
+                                                   nil nil
+                                                   skip-checks system-ok))
                          (constraint-helpers
                           (cond
                            ((or (eq ld-skip-proofsp 'include-book)
@@ -26743,9 +26767,9 @@
 
 ; We are considering the case of a pair (f . g), where f is a warrant and g is
 ; true-apply$-warrant, which is the always-true function we have chosen to
-; attach to warrants.  The argument supporting attachments of dopplegangers
+; attach to warrants.  The argument supporting attachments of doppelgangers
 ; also supports the attachment of each warrant to true-apply$-warrant, because
-; in the doppleganger model, every warrant is true.
+; in the doppelganger model, every warrant is true.
 
               (warrantp (caar alist) wrld))
          (defattach-constraint-rec
@@ -27658,7 +27682,7 @@
 ; reason is that we can view attachments as being done in two stages: first,
 ; the user does some attachments, and we check here for cycles; then, the
 ; resulting evaluation theory is extended to a bigger evaluation theory in
-; which functions are attached to their dopplegangers, and where the warrants
+; which functions are attached to their doppelgangers, and where the warrants
 ; are all true.  That second step is justified in the paper, ``Limited Second
 ; Order Functionality in a First Order Setting'', where we prove that for any
 ; certified user book we could attach defined functions to badge-userfn and
@@ -27968,6 +27992,26 @@
                            (t state)))
                    (install-event :attachments-recorded event-form 'defattach 0
                                   ttree cltl-cmd nil ctx wrld4 state))))))))
+
+(defmacro defattach-system (&whole form &rest args)
+  (cond ((and (symbolp (car args)) ; (defattach-system f g)
+              (eql (length args) 2)
+              (symbolp (cadr args)))
+         `(local (defattach (,(car args) ,(cadr args))
+                   :system-ok t)))
+        ((symbolp (car args))
+         (er hard 'defattach-system
+             "When the first argument of a defattach-system call is a symbol, ~
+              there must be exactly two arguments, both of them symbols.  The ~
+              call ~x0 is thus illegal."
+             form))
+        ((member-eq :system-ok args)
+         (er hard 'defattach-system
+             "The argument :system-ok is illegal for a defattach-system call. ~
+              Consider instead using defattach or removing :system-ok."
+             form))
+        (t
+         `(local (defattach ,@args :system-ok t)))))
 
 ; We now provide support for return-last.
 

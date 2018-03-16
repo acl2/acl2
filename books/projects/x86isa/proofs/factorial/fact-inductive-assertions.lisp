@@ -455,7 +455,8 @@
                         riml32
                         riml08
                         two-byte-opcode-decode-and-execute
-                        x86-effective-addr
+                        x86-effective-addr-when-64-bit-modep
+                        x86-effective-addr-32/64
                         subset-p
                         ;; Flags
                         write-user-rflags
@@ -508,7 +509,8 @@
                         riml32
                         riml08
                         two-byte-opcode-decode-and-execute
-                        x86-effective-addr
+                        x86-effective-addr-when-64-bit-modep
+                        x86-effective-addr-32/64
                         subset-p
                         ;; Flags
                         write-user-rflags
@@ -566,7 +568,8 @@
              riml32
              riml08
              two-byte-opcode-decode-and-execute
-             x86-effective-addr
+             x86-effective-addr-when-64-bit-modep
+             x86-effective-addr-32/64
              subset-p
              ;; Flags
              write-user-rflags

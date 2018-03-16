@@ -909,7 +909,7 @@
             state))))))
 
 (defun pair-keywords (keywords lst)
-  (declare (xargs :guard (and (all-keywords-p keywords)
+  (declare (xargs :guard (and (keyword-listp keywords)
                               (keyword-value-listp lst))))
   ;; returns (mv alist rst)
   (if (consp keywords)
@@ -2996,7 +2996,7 @@
    ((not (true-listp sub))
     (pprogn (io? proof-builder nil state
                  (sub)
-                 (fms0 "~|A substitution must be a true (null-terminated) ~
+                 (fms0 "~|A substitution must be a true (nil-terminated) ~
                         list, but~%~x0 is not.~|"
                        (list (cons #\0 sub))))
             (mv t nil state)))

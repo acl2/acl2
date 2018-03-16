@@ -31,6 +31,8 @@
                          apply-term*
                          assert-equal
                          body
+                         check-user-lambda
+                         compute-stobj-flags
                          conjoin
                          conjoin-untranslated-terms
                          conjoin2
@@ -137,6 +139,7 @@
                          keyword-value-list-to-alist
                          lambda-body
                          lambda-formals
+                         macro-namep
                          macro-required-args
                          make-event-terse
                          make-implication
@@ -169,6 +172,7 @@
                          set-numbered-name-index-start
                          simplify-hyps
                          sr-limit
+                         stobjs-in
                          stobjs-out
                          strip-cddrs
                          strip-keyword-list
@@ -191,6 +195,7 @@
                          trans-eval-error-triple
                          translate-term-lst
                          ubody
+                         uguard
                          unnormalized-body
                          untranslate-lst
                          unwrapped-nonexec-body

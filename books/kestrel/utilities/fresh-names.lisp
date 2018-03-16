@@ -14,6 +14,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Added by Matt K. and used below in fresh-name-in-world-with-$s:
+(define add-suffix-to-fn-or-const ((name (and (symbolp name)
+                                              (not (keywordp name))))
+                                   (suffix stringp))
+  (let* ((s (symbol-name name))
+         (len (length s)))
+    (cond
+
+; The following test is essentially from legal-variable-or-constant-namep.  We
+; could simply call legal-variable-or-constant-namep, but this is a bit more
+; efficient.
+
+     ((and (not (= len 0))
+           (eql (char s 0) #\*)
+           (eql (char s (1- len)) #\*))
+      (intern-in-package-of-symbol
+       (concatenate 'string (subseq s 0 (1- len)) suffix "*")
+       name))
+     (t (add-suffix-to-fn name suffix)))))
+
 (define fresh-name-in-world-with-$s ((name (and (symbolp name)
                                                 (not (keywordp name))))
                                      (names-to-avoid symbol-listp)
@@ -27,7 +47,11 @@
   :long
   "<p>
    The name returned by this function should be usable for
-   a new function, theorem, etc.
+   a new function, theorem, constant, etc.
+   </p>
+   <p>
+   Note that for a constant, the @('$') signs are appended before the final
+   @('*') character.
    </p>
    <p>
    The input name must not be a keyword,
@@ -51,7 +75,7 @@
   (if (or (logical-namep name wrld)
           (member name names-to-avoid)
           (equal (symbol-package-name name) *main-lisp-package-name*))
-      (fresh-name-in-world-with-$s (add-suffix-to-fn name "$")
+      (fresh-name-in-world-with-$s (add-suffix-to-fn-or-const name "$")
                                    names-to-avoid
                                    wrld)
     name)

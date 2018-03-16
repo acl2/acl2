@@ -16,6 +16,8 @@
 ; - Perhaps improve lambdafy-rec to deal with dropped conjuncts and disjuncts;
 ;   see adjust-sterm-for-tterm.
 
+; - Perhaps preserve type declarations.
+
 (in-package "ACL2")
 
 (include-book "make-executable")
@@ -138,6 +140,48 @@
 
  <p>End of Remarks.</p>")
 
+(defun dcl-guardian-p (g)
+
+; See remove-declare-effects.
+
+  (declare (xargs :guard t))
+  (case-match g
+    (('check-dcl-guardian term
+                          ('quote term))
+     (prog2$ term t))
+    (('return-last ''progn
+                   ('check-dcl-guardian term
+                                        ('quote term))
+                   g2)
+     (prog2$ term (dcl-guardian-p g2)))
+    (& nil)))
+
+(defun remove-declare-effects (tterm)
+
+; This function returns a term that is provably equivalent to tterm.  In the
+; case that tterm results from translation of a let, let*, or mv-let term, we
+; attempt to remove the effect of declare forms.
+
+; In particular, we deal with type declarations as follows.  Define a
+; dcl-guardian term to be a term other than *t* that is created by a call of
+; dcl-guardian.  We strip off such terms from tterm.
+
+  (declare (xargs :guard t))
+  (case-match tterm
+    (('return-last ''progn g u)
+     (cond ((dcl-guardian-p g)
+            u)
+           (t tterm)))
+    ((('lambda formals ('return-last ''progn g u))
+      . args)
+     (cond ((dcl-guardian-p g)
+            `((lambda ,formals ,(remove-declare-effects u))
+              ,@args))
+           (t tterm)))
+    (('hide x) ; Deal with ignore and ignorable declarations.
+     x)
+    (& tterm)))
+
 (program)
 
 (defun check-du-inv-fn (uterm tterm wrld)
@@ -145,7 +189,8 @@
     (translate-cmp uterm t nil t 'check-du-inv-fn wrld
                    (default-state-vars nil))
     (and (not erp)
-         (equal val tterm))))
+         (equal (remove-declare-effects val)
+                (remove-declare-effects tterm)))))
 
 (defmacro check-du-inv (uterm tterm wrld form)
 
@@ -1298,7 +1343,9 @@
        (('let* ((var val) . bindings) . rest)
         (let ((x (directed-untranslate-rec
                   `(let ((,var ,val))
-                     (let* ,bindings ,@rest))
+                     (let* ,bindings
+; Throw away declarations.
+                       ,(car (last rest))))
                   tterm sterm iff-flg lflg wrld)))
           (case-match x
             (('let ((var2 val2))
@@ -1341,7 +1388,9 @@
           (('let let-bindings . let-rest)
            (and (symbol-doublet-listp let-bindings)  ; always true?
                 (let* ((ubody (car (last let-rest))) ; ignore declarationsa
-                       (tbody (lambda-body (ffn-symb tterm)))
+                       (tbody (remove-declare-effects
+; Throw away the effects of type declarations.
+                               (lambda-body (ffn-symb tterm))))
                        (sbody (lambda-body (ffn-symb sterm)))
                        (uformals (strip-cars let-bindings))
                        (sformals-all (lambda-formals (ffn-symb sterm)))

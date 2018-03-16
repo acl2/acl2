@@ -94,23 +94,24 @@ the @('fault') field instead.</li>
     :short "Read the instruction pointer from the register RIP, EIP, or IP."
     :long
     "<p>
-   In 64-bit mode, a 64-bit instruction pointer is read from the full RIP.
-   Since, in the model, this is a 48-bit signed integer,
-   this function returns a 48-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, a 32-bit or 16-bit instruction pointer is read from
-   EIP (i.e. the low 32 bits of RIP)
-   or IP (i.e. the low 16 bits of RIP),
-   based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
-   Either way, this function returns an unsigned 32-bit or 16-bit integer,
-   which is also a signed 48-bit integer.
-   </p>
-   <p>
-   See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
-   AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
-   and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
-   </p>"
+     In 64-bit mode, a 64-bit instruction pointer is read from the full RIP.
+     Since, in the model, this is a 48-bit signed integer,
+     this function returns a 48-bit signed integer.
+     </p>
+    <p>
+     In 32-bit mode, a 32-bit or 16-bit instruction pointer is read from
+     EIP (i.e. the low 32 bits of RIP)
+     or IP (i.e. the low 16 bits of RIP),
+     based on the CS.D bit,
+     i.e. the D bit of the current code segment descriptor.
+     Either way, this function returns an unsigned 32-bit or 16-bit integer,
+     which is also a signed 48-bit integer.
+     </p>
+     <p>
+     See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
+     AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
+     and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
+     </p>"
     (b* ((*ip (rip x86)))
       (if (64-bit-modep x86)
           *ip
@@ -142,31 +143,31 @@ the @('fault') field instead.</li>
     :short "Increment an instruction pointer by a specified amount."
     :long
     "<p>
-   This just calculates the incremented value,
-   without storing it into the register RIP, EIP, or IP.
-   The starting value is the result of @(tsee read-*ip)
-   or a previous invocation of @('increment-*ip').
-   </p>
-   <p>
-   In 64-bit mode, we check whether the result is a canonical address;
-   in 32-bit mode, we check whether the result is within the segment limit.
-   If these checks are not satisfied,
-   this function returns an error flag (and 0 as incremented address),
-   which causes the x86 model to stop execution with an error.
-   It is not clear whether these checks should be performed
-   when the instruction pointer is incremented
-   or when an instruction byte is eventually accessed;
-   the Intel and AMD manuals seem unclear in this respect.
-   But since the failure of these checks stops execution with an error,
-   and it is in a way always \"safe\" to stop execution with an error
-   (in the sense that the model provides no guarantees when this happens),
-   for now we choose to perform these checks here.
-   </p>
-   <p>
-   Note that a code segment is never expand-down,
-   so the valid effective addresses are always between 0 and the segment limit
-   (cf. @(tsee segment-base-and-bounds)).
-   </p>"
+     This just calculates the incremented value,
+     without storing it into the register RIP, EIP, or IP.
+     The starting value is the result of @(tsee read-*ip)
+     or a previous invocation of @('increment-*ip').
+     </p>
+     <p>
+     In 64-bit mode, we check whether the result is a canonical address;
+     in 32-bit mode, we check whether the result is within the segment limit.
+     If these checks are not satisfied,
+     this function returns an error flag (and 0 as incremented address),
+     which causes the x86 model to stop execution with an error.
+     It is not clear whether these checks should be performed
+     when the instruction pointer is incremented
+     or when an instruction byte is eventually accessed;
+     the Intel and AMD manuals seem unclear in this respect.
+     But since the failure of these checks stops execution with an error,
+     and it is in a way always \"safe\" to stop execution with an error
+     (in the sense that the model provides no guarantees when this happens),
+     for now we choose to perform these checks here.
+     </p>
+     <p>
+     Note that a code segment is never expand-down,
+     so the valid effective addresses are always between 0 and the segment limit
+     (cf. @(tsee segment-base-and-bounds)).
+     </p>"
     (b* ((*ip+delta (+ *ip delta)))
       (if (64-bit-modep x86)
           (if (mbe :logic (canonical-address-p *ip+delta)
@@ -235,74 +236,75 @@ the @('fault') field instead.</li>
     :short "Write an instruction pointer into the register RIP, EIP, or IP."
     :long
     "<p>
-   In 64-bit mode, a 64-bit instruction pointer is written into the full RIP.
-   Since, in the model, this is a 48-bit signed integer,
-   this function consumes a 48-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, the instruction pointer is 32 or 16 bits
-   based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
-   In these cases, the argument to this function should be
-   a 32-bit or 16-bit unsigned integer, which is also a 48-bit signed integer.
-   </p>
-   <p>
-   See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
-   AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
-   and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
-   </p>
-   <p>
-   According to Intel manual, Mar'17, Vol. 1, Table 3-1,
-   it seems that
-   when writing a 32-bit instruction pointer (EIP)
-   the high 32 bits of RIP should be set to 0,
-   and when writing a 16-bit instruction pointer (IP)
-   the high 48 bits of RIP should be left unmodified;
-   since in our model the RIP is 48 bits,
-   the above applies to the high 16 and 32 bits, respectively.
-   The pseudocode for the JMP instruction in Intel manual, Mar'17, Vol. 2
-   shows an assignment @('EIP <- tempEIP AND 0000FFFFh') for the 16-bit case,
-   which seems to imply that
-   the high 32 (or 16, in our model) bits are left unmodified
-   and the high 16 bits of EIP are set to 0,
-   which would contradict Table 3-1;
-   the pseudocode for some other instructions
-   that directly write the instruction pointer (e.g. RET and Jcc)
-   show similar assignments.
-   However, it is possible that this assignment has a typo and should be
-   @('IP <- tempEIP AND 0000FFFFh') instead,
-   which would be consistent with Table 3-1.
-   But we also note that the pseudocode for the JMP instruction
-   shows an assignment @('EIP <- tempEIP') for the 32-bit case,
-   which seems to imply that
-   the high 32 (or 16, in our model) bits are left unmodified,
-   which would contradict Table 3-1.
-   The AMD manuals do not show pseudocode for these instructions,
-   and AMD manual, Oct'13, Vol. 1, Fig. 2-10
-   (which is somewhat analogous to Intel's Table 3-1)
-   shows the high bits simply grayed out;
-   so the AMD manuals do not provide disambiguation help.
-   It is also possible that Table 3-1 has a typo and should say
-   that a 16-bit instruction pointer is zero-extended,
-   but that is not quite consistent with the pseudocode assignments to EIP,
-   which seem to imply that the high bits are untouched.
-   Table 3-1 is under a section titled
-   &lsquo;Address Calculation in 64-Bit Mode&rsquo;,
-   which may suggest that the table may not apply to 32-bit mode,
-   but then it is not clear how it would just apply to 64-bit mode.
-   For now, we decide to have this function follow Intel's Table 3-1,
-   but we may revise that if we manage to resolve these ambiguities.
-   </p>
-   <p>
-   This function should be always called
-   with an instruction pointer of the right type
-   (48-bit signed, 32-bit unsigned, or 16-bit unsigned)
-   based on the mode and code segment.
-   We may add a guard to ensure that in the future,
-   but for now in the code below
-   we coerce the instruction pointer to 32 and 16 bits as appropriate,
-   to verify guards;
-   these coercions are expected not to change the argument instruction pointer.
-   </p>"
+     In 64-bit mode, a 64-bit instruction pointer is written into the full RIP.
+     Since, in the model, this is a 48-bit signed integer,
+     this function consumes a 48-bit signed integer.
+     </p>
+     <p>
+     In 32-bit mode, the instruction pointer is 32 or 16 bits
+     based on the CS.D bit, i.e. the D bit of the current code segment descriptor.
+     In these cases, the argument to this function should be
+     a 32-bit or 16-bit unsigned integer, which is also a 48-bit signed integer.
+     </p>
+     <p>
+     See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
+     AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
+     and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
+     </p>
+     <p>
+     According to Intel manual, Mar'17, Vol. 1, Table 3-1,
+     it seems that
+     when writing a 32-bit instruction pointer (EIP)
+     the high 32 bits of RIP should be set to 0,
+     and when writing a 16-bit instruction pointer (IP)
+     the high 48 bits of RIP should be left unmodified;
+     since in our model the RIP is 48 bits,
+     the above applies to the high 16 and 32 bits, respectively.
+     The pseudocode for the JMP instruction in Intel manual, Mar'17, Vol. 2
+     shows an assignment @('EIP <- tempEIP AND 0000FFFFh') for the 16-bit case,
+     which seems to imply that
+     the high 32 (or 16, in our model) bits are left unmodified
+     and the high 16 bits of EIP are set to 0,
+     which would contradict Table 3-1;
+     the pseudocode for some other instructions
+     that directly write the instruction pointer (e.g. RET and Jcc)
+     show similar assignments.
+     However, it is possible that this assignment has a typo and should be
+     @('IP <- tempEIP AND 0000FFFFh') instead,
+     which would be consistent with Table 3-1.
+     But we also note that the pseudocode for the JMP instruction
+     shows an assignment @('EIP <- tempEIP') for the 32-bit case,
+     which seems to imply that
+     the high 32 (or 16, in our model) bits are left unmodified,
+     which would contradict Table 3-1.
+     The AMD manuals do not show pseudocode for these instructions,
+     and AMD manual, Oct'13, Vol. 1, Fig. 2-10
+     (which is somewhat analogous to Intel's Table 3-1)
+     shows the high bits simply grayed out;
+     so the AMD manuals do not provide disambiguation help.
+     It is also possible that Table 3-1 has a typo and should say
+     that a 16-bit instruction pointer is zero-extended,
+     but that is not quite consistent with the pseudocode assignments to EIP,
+     which seem to imply that the high bits are untouched.
+     Table 3-1 is under a section titled
+     &lsquo;Address Calculation in 64-Bit Mode&rsquo;,
+     which may suggest that the table may not apply to 32-bit mode,
+     but then it is not clear how it would just apply to 64-bit mode.
+     For now, we decide to have this function follow Intel's Table 3-1,
+     but we may revise that if we manage to resolve these ambiguities.
+     </p>
+     <p>
+     This function should be always called
+     with an instruction pointer of the right type
+     (48-bit signed, 32-bit unsigned, or 16-bit unsigned)
+     based on the mode and code segment.
+     We may add a guard to ensure that in the future,
+     but for now in the code below
+     we coerce the instruction pointer to 32 and 16 bits as appropriate,
+     to verify guards;
+     these coercions are expected not to change
+     the argument instruction pointer.
+     </p>"
     (if (64-bit-modep x86)
         (!rip *ip x86)
       (b* ((cs-hidden (xr :seg-hidden *cs* x86))
@@ -342,30 +344,31 @@ the @('fault') field instead.</li>
     :short "Read the stack pointer from the register RSP, ESP, or SP."
     :long
     "<p>
-   In 64-bit mode, a 64-bit stack pointer is read from the full RSP.
-   Since, in the model, this is a 64-bit signed integer,
-   this function returns a 64-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, a 32-bit or 16-bit stack pointer is read from
-   ESP (i.e. the low 32 bits of RSP)
-   or SP (i.e. the low 16 bits of RSP),
-   based on the SS.B bit, i.e. the B bit of the current code segment register.
-   Either way, this function returns an unsigne 32-bit or 16-bit integer,
-   which is also a signed 64-bit integer.
-   </p>
-   <p>
-   See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
-   and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
-   The actual size of the value returned by this function is @('StackAddrSize'),
-   introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
-   </p>
-   <p>
-   In 32-bit mode, the address-size override prefix (if present)
-   does not affect the stack address size.
-   It would not make sense to change the stack address size
-   on a per-instruction basis.
-   </p>"
+     In 64-bit mode, a 64-bit stack pointer is read from the full RSP.
+     Since, in the model, this is a 64-bit signed integer,
+     this function returns a 64-bit signed integer.
+     </p>
+     <p>
+     In 32-bit mode, a 32-bit or 16-bit stack pointer is read from
+     ESP (i.e. the low 32 bits of RSP)
+     or SP (i.e. the low 16 bits of RSP),
+     based on the SS.B bit, i.e. the B bit of the current code segment register.
+     Either way, this function returns an unsigne 32-bit or 16-bit integer,
+     which is also a signed 64-bit integer.
+     </p>
+     <p>
+     See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
+     and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
+     The actual size of the value returned by this function
+     is @('StackAddrSize'),
+     introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
+     </p>
+     <p>
+     In 32-bit mode, the address-size override prefix (if present)
+     does not affect the stack address size.
+     It would not make sense to change the stack address size
+     on a per-instruction basis.
+     </p>"
     (b* ((*sp (rgfi *rsp* x86)))
       (if (64-bit-modep x86)
           *sp
@@ -398,41 +401,41 @@ the @('fault') field instead.</li>
     :short "Add a specified amount to a stack pointer."
     :long
     "<p>
-   The amount may be positive (increment) or negative (decrement).
-   This just calculates the new stack pointer value,
-   without storing it into the register RSP, ESP, or SP.
-   The starting value is the result of @(tsee read-*sp)
-   or a previous invocation of @('add-to-*sp').
-   </p>
-   <p>
-   In 64-bit mode, we check whether the result is a canonical address;
-   in 32-bit mode, we check whether the result is within the segment limit.
-   If these checks are not satisfied,
-   this function returns an error flag (and 0 as new pointer),
-   which causes the x86 model to stop execution with an error.
-   It is not clear whether these checks should be performed
-   when the stack pointer is updated,
-   or when the stack is eventually accessed through the updated pointer;
-   the Intel and AMD manuals seem unclear in this respect.
-   But since the failure of these checks stops execution with an error,
-   and it is in a way always \"safe\" to stop execution with an error
-   (in the sense that the model provides no guarantees when this happens),
-   for now we choose to perform these checks here.
-   </p>
-   <p>
-   Note that a stack segment may be expand-down or expand-up
-   (see Intel manual, Mar'17, Vol. 3, Sec. 3.4.5.1),
-   so the checks need to cover these two cases.
-   See @(tsee segment-base-and-bounds) and @(tsee ea-to-la).
-   </p>
-   <p>
-   With well-formed segments,
-   the segment limit checks should ensure that
-   the new stack pointer is a 32-bit or 16-bit (based on SS.B)
-   unsigned integer in 32-bit mode.
-   Thus, the conversions @(tsee n32) and @(tsee n16) below
-   are expected to leave their arguments unchanged.
-   </p>"
+     The amount may be positive (increment) or negative (decrement).
+     This just calculates the new stack pointer value,
+     without storing it into the register RSP, ESP, or SP.
+     The starting value is the result of @(tsee read-*sp)
+     or a previous invocation of @('add-to-*sp').
+     </p>
+     <p>
+     In 64-bit mode, we check whether the result is a canonical address;
+     in 32-bit mode, we check whether the result is within the segment limit.
+     If these checks are not satisfied,
+     this function returns an error flag (and 0 as new pointer),
+     which causes the x86 model to stop execution with an error.
+     It is not clear whether these checks should be performed
+     when the stack pointer is updated,
+     or when the stack is eventually accessed through the updated pointer;
+     the Intel and AMD manuals seem unclear in this respect.
+     But since the failure of these checks stops execution with an error,
+     and it is in a way always \"safe\" to stop execution with an error
+     (in the sense that the model provides no guarantees when this happens),
+     for now we choose to perform these checks here.
+     </p>
+     <p>
+     Note that a stack segment may be expand-down or expand-up
+     (see Intel manual, Mar'17, Vol. 3, Sec. 3.4.5.1),
+     so the checks need to cover these two cases.
+     See @(tsee segment-base-and-bounds) and @(tsee ea-to-la).
+     </p>
+     <p>
+     With well-formed segments,
+     the segment limit checks should ensure that
+     the new stack pointer is a 32-bit or 16-bit (based on SS.B)
+     unsigned integer in 32-bit mode.
+     Thus, the conversions @(tsee n32) and @(tsee n16) below
+     are expected to leave their arguments unchanged.
+     </p>"
     (b* ((*sp+delta (+ *sp delta)))
       (if (64-bit-modep x86)
           (if (mbe :logic (canonical-address-p *sp+delta)
@@ -445,8 +448,8 @@ the @('fault') field instead.</li>
              (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
              (ss.b (data-segment-descriptor-attributes-layout-slice :d/b ss-attr))
              (ss.e (data-segment-descriptor-attributes-layout-slice :e ss-attr))
-             (ss-lower (if ss.e (1+ ss.limit) 0))
-             (ss-upper (if ss.e (if ss.b #xffffffff #xffff) ss.limit))
+             (ss-lower (if (= ss.e 1) (1+ ss.limit) 0))
+             (ss-upper (if (= ss.e 1) (if (= ss.b 1) #xffffffff #xffff) ss.limit))
              ((unless (and (<= ss-lower *sp+delta)
                            (<= *sp+delta ss-upper)))
               (mv (list :out-of-segment-stack-address *sp+delta ss-lower ss-upper)
@@ -483,45 +486,46 @@ the @('fault') field instead.</li>
     :short "Write a stack pointer into the register RSP, ESP, or SP."
     :long
     "<p>
-   In 64-bit mode, a 64-bit stack pointer is written into the full RSP.
-   Since, in the model, this is a 64-bit signed integer,
-   this function consumes a 64-bit signed integer.
-   </p>
-   <p>
-   In 32-bit mode, the stack pointer is 32 or 16 bits based on the SS.B bit,
-   i.e. the B bit of the current stack segment descriptor.
-   In these cases, the argument to this function should be
-   a 32-bit or 16-bit unsigned integer, which is also a 64-bit signed integer.
-   </p>
-   <p>
-   See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
-   and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
-   The actual size of the value returned by this function is @('StackAddrSize'),
-   introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
-   </p>
-   <p>
-   The pseudocode of stack instructions like PUSH
-   in Intel manual, Mar'17, Vol. 2
-   show assignments of the form
-   @('RSP <- ...'), @('ESP <- ...'), and @('SP <- ...')
-   based on the stack address size.
-   This suggests that
-   when the stack address size is 32
-   the assignment to ESP leaves the high 32 bits of RSP unchanged,
-   and when the stack address size is 16
-   the assignment to SP leaves the high 48 bits of RSP unchanged.
-   </p>
-   <p>
-   This function should be always called
-   with a stack pointer of the right type
-   (64-bit signed, 32-bit unsigned, or 16-bit unsigned)
-   based on the stack address size.
-   We may add a guard to ensure that in the future,
-   but for now in the code below
-   we coerce the stack pointer to 32 and 16 bits as appropriate,
-   to verify guards;
-   these coercions are expected not to change the argument stack pointer.
-   </p>"
+     In 64-bit mode, a 64-bit stack pointer is written into the full RSP.
+     Since, in the model, this is a 64-bit signed integer,
+     this function consumes a 64-bit signed integer.
+     </p>
+     <p>
+     In 32-bit mode, the stack pointer is 32 or 16 bits based on the SS.B bit,
+     i.e. the B bit of the current stack segment descriptor.
+     In these cases, the argument to this function should be
+     a 32-bit or 16-bit unsigned integer, which is also a 64-bit signed integer.
+     </p>
+     <p>
+     See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
+     and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
+     The actual size of the value returned by this function
+     is @('StackAddrSize'),
+     introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
+     </p>
+     <p>
+     The pseudocode of stack instructions like PUSH
+     in Intel manual, Mar'17, Vol. 2
+     show assignments of the form
+     @('RSP <- ...'), @('ESP <- ...'), and @('SP <- ...')
+     based on the stack address size.
+     This suggests that
+     when the stack address size is 32
+     the assignment to ESP leaves the high 32 bits of RSP unchanged,
+     and when the stack address size is 16
+     the assignment to SP leaves the high 48 bits of RSP unchanged.
+     </p>
+     <p>
+     This function should be always called
+     with a stack pointer of the right type
+     (64-bit signed, 32-bit unsigned, or 16-bit unsigned)
+     based on the stack address size.
+     We may add a guard to ensure that in the future,
+     but for now in the code below
+     we coerce the stack pointer to 32 and 16 bits as appropriate,
+     to verify guards;
+     these coercions are expected not to change the argument stack pointer.
+     </p>"
     (if (64-bit-modep x86)
         (!rgfi *rsp* *sp x86)
       (b* ((ss-hidden (xr :seg-hidden *ss* x86))
@@ -548,6 +552,53 @@ the @('fault') field instead.</li>
                       (!rgfi *rsp* *sp x86))))))
 
 ;; ======================================================================
+
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+(define select-address-size ((p4? booleanp) (x86 x86p))
+  :returns (address-size (member-equal address-size '(2 4 8)))
+  :inline t
+  :parents (decoding-and-spec-utils)
+  :short "Address size of an instruction, in bytes."
+  :long
+  "<p>
+   This is based on AMD manual, Dec'17, Volume 3, Table 1-3,
+   and AMD manual, Dec'17, Volume 2, Sections 4.7 and 4.8.
+   </p>
+   <p>
+   In 64-bit mode, the address size is
+   64 bits if there is no address override prefix,
+   32 bits if there is an address override prefix.
+   In 32-bit mode, the address size is
+   32 bits if either
+   (i) the default address size is 32 bits
+   and there is no address override prefix, or
+   (ii) the default address size is 16 bits
+   and there is an eddress override prefix;
+   otherwise, the address size is 16 bits.
+   In 32-bit mode,
+   the default address size is determined by the CS.D bit of the code segment:
+   32 bits if CS.D is 1, 16 bits if CS.D is 0.
+   </p>
+   <p>
+   The boolean argument of this function
+   indicates whether there is an override prefix or not.
+   </p>"
+  (if (64-bit-modep x86)
+      (if p4? 4 8)
+    (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+         (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+         (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+      (if (= cs.d 1) (if p4? 2 4) (if p4? 4 2))))
+  ///
+
+  (defrule select-address-size-not-2-when-64-bit-modep
+    (implies (64-bit-modep x86)
+             (not (equal 2 (select-address-size prefixes x86))))))
+
+;; ======================================================================
+
+;; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 
 (defsection effective-address-computations
 
@@ -581,7 +632,9 @@ the @('fault') field instead.</li>
            <p>Note that, in 32-bit mode,
            we call this function only when the address size is 32 bits.
            When the address size is 16 bits, there is no SIB byte:
-           See Intel Vol. 2 Table 2-1.</p>"
+           See Intel Vol. 2 Table 2-1.</p>
+           <p>The displacement is read as a signed values:
+           see AMD manual, Dec'17, Volume 3, Section 1.5.</p>"
 
     :returns (mv flg
                  (non-truncated-memory-address
@@ -652,16 +705,17 @@ the @('fault') field instead.</li>
          (scale (the (unsigned-byte 2) (sib-scale sib)))
          (scaled-index (ash index scale))
 
-         (effective-addr (+ base displacement scaled-index)))
+         (effective-addr (+ base scaled-index)))
 
-        (mv flg effective-addr 0 nrip-bytes x86))
+        (mv flg effective-addr displacement nrip-bytes x86))
 
     ///
 
-    (defthm x86-effective-addr-from-sib-returns-natp-displacement
-      (equal (mv-nth 2 (x86-effective-addr-from-sib
-                        temp-RIP rex-byte mod sib x86))
-             0)
+    (defthm x86-effective-addr-from-sib-returns-integerp-displacement
+      (implies (x86p x86)
+               (integerp (mv-nth 2 (x86-effective-addr-from-sib
+                                    temp-RIP rex-byte mod sib x86))))
+      :rule-classes (:rewrite :type-prescription)
       :hints (("Goal" :in-theory (e/d (rime-size riml-size) ()))))
 
     (defthm x86-effective-addr-from-sib-returns-<=-increment-rip-bytes
@@ -680,7 +734,161 @@ the @('fault') field instead.</li>
               (equal (logext n (loghead n x)) x))
      :hints (("Goal" :in-theory (e/d (logext loghead logapp logbitp) ())))))
 
-  (define x86-effective-addr
+  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
+  (define x86-effective-addr-16-disp
+    ((temp-rip :type (signed-byte   #.*max-linear-address-size*) )
+     (mod      :type (unsigned-byte 2) "mod field of ModR/M byte")
+     x86)
+    :returns (mv flg
+                 (disp i16p
+                       :hyp (x86p x86)
+                       :hints (("Goal" :in-theory (enable rime-size))))
+                 (increment-rip-by natp)
+                 (x86 x86p :hyp (x86p x86)))
+    :short "Calculate the displacement for
+            16-bit effective address calculation."
+    :long
+    "<p>
+     This is according to Intel manual, Mar'17, Vol. 2, Table 2-1.
+     </p>
+     <p>
+     The displacement is absent (i.e. 0) when Mod is 00b.
+     An exception to this is when R/M is 110b,
+     in which case there is a 16-bit displacement that is added to the index.
+     This case is not handled by this function,
+     but is instead handled in
+     its caller function @(tsee x86-effective-addr-16).
+     </p>
+     <p>
+     The displacement is a signed 8-bit value when Mod is 01b.
+     The displacement is a signed 16-bit value when Mod is 10b.
+     This function is not called when Mod is 11b.
+     </p>
+     <p>
+     If an error occurs when trying to read the displacement,
+     0 is returned as displacement,
+     but the caller ignores the returned displacement given the error.
+     </p>
+     <p>
+     This function is called only when the address size is 16 bits.
+     </p>"
+    (case mod
+      (0 (mv nil 0 0 x86))
+      (1 (b* (((mv flg byte x86) (rime-size 1 temp-rip *cs* :x x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil byte 1 x86)))
+      (2 (b* (((mv flg word x86) (rime-size 2 temp-rip *cs* :x x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil word 2 x86)))
+      (otherwise ; shouldn't happen
+       (mv 'mod-value-wrong 0 0 x86)))
+    ///
+
+    (more-returns
+     (disp integerp
+           :hyp (x86p x86)
+           :name integerp-of-x86-effective-addr-16-disp.disp
+           :rule-classes :type-prescription))
+
+    (defthm mv-nth-2-x86-effective-addr-16-disp-<=-4
+      (<= (mv-nth 2 (x86-effective-addr-16-disp temp-RIP mod x86))
+          4)
+      :rule-classes :linear))
+
+  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
+  (define x86-effective-addr-16
+    ((temp-rip :type (signed-byte   #.*max-linear-address-size*) )
+     (r/m      :type (unsigned-byte 3) "r/m field of ModR/M byte")
+     (mod      :type (unsigned-byte 2) "mod field of ModR/M byte")
+     x86)
+    :returns (mv flg
+                 (address n16p)
+                 (increment-rip-by natp)
+                 (x86 x86p :hyp (x86p x86)))
+    :short "Effective address calculation with 16-bit addressing."
+    :long
+    "<p>
+     This is according to Intel manual, Mar'17, Vol. 2, Table 2-1.
+     </p>
+     <p>
+     We assume that the additions in the table are modular,
+     even though the documentation is not clear in that respect.
+     So we simply apply @('n16') to the exact integer result.
+     This is in analogy to the use of @('n32')
+     for effective address calculation in 64-bit mode
+     when there is an address size override prefix:
+     see @(tsee x86-effective-addr-32/64).
+     </p>"
+    (case r/m
+      (0 (b* ((bx (rr16 *rbx* x86))
+              (si (rr16 *rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx si disp)) increment-rip-by x86)))
+      (1 (b* ((bx (rr16 *rbx* x86))
+              (di (rr16 *rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx di disp)) increment-rip-by x86)))
+      (2 (b* ((bp (rr16 *rbp* x86))
+              (si (rr16 *rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bp si disp)) increment-rip-by x86)))
+      (3 (b* ((bp (rr16 *rbp* x86))
+              (di (rr16 *rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bp di disp)) increment-rip-by x86)))
+      (4 (b* ((si (rr16 *rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ si disp)) increment-rip-by x86)))
+      (5 (b* ((di (rr16 *rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ di disp)) increment-rip-by x86)))
+      (6 (case mod
+           (0 (b* (((mv flg disp x86) (rime-size 2 temp-rip *cs* :x x86))
+                   ((when flg) (mv flg 0 0 x86)))
+                (mv nil (n16 disp) 2 x86)))
+           (otherwise (b* ((bp (rr16 *rbp* x86))
+                           ((mv flg disp increment-rip-by x86)
+                            (x86-effective-addr-16-disp temp-rip mod x86))
+                           ((when flg) (mv flg 0 0 x86)))
+                        (mv nil (n16 (+ bp disp)) increment-rip-by x86)))))
+      (7 (b* ((bx (rr16 *rbx* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx disp)) increment-rip-by x86)))
+      (otherwise ; shouldn't happen
+       (mv :r/m-out-of-range 0 0 x86)))
+    ///
+
+    (defthm-sb i64p-mv-nth-1-x86-effective-addr-16
+      :hyp t
+      :bound 64
+      :concl (mv-nth 1 (x86-effective-addr-16 temp-RIP r/m mod x86))
+      :gen-linear t
+      :gen-type t)
+
+    (defthm natp-mv-nth-2-x86-effective-addr-16
+      (natp (mv-nth 2 (x86-effective-addr-16 temp-RIP r/m mod x86)))
+      :rule-classes :type-prescription)
+
+    (defthm mv-nth-2-x86-effective-addr-16-<=-4
+      (<= (mv-nth 2 (x86-effective-addr-16 temp-RIP r/m mod x86))
+          4)
+      :rule-classes :linear))
+
+  (define x86-effective-addr-32/64
     (p4
      (temp-RIP       :type (signed-byte   #.*max-linear-address-size*) )
      (rex-byte       :type (unsigned-byte 8) "Rex byte")
@@ -694,7 +902,8 @@ the @('fault') field instead.</li>
      ;; instruction. For details, see *Z-addressing-method-info* in
      ;; x86isa/utils/decoding-utilities.lisp.
      (num-imm-bytes  :type (unsigned-byte 3)
-                     "Number of immediate bytes (0, 1, 2, or 4) that follow the sib (or displacement bytes, if any).")
+                     "Number of immediate bytes (0, 1, 2, or 4)
+                      that follow the sib (or displacement bytes, if any).")
      x86)
 
     :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 rime-size) ())))
@@ -708,13 +917,14 @@ the @('fault') field instead.</li>
               increment-RIP-by
               (x86 x86p :hyp (force (x86p x86))))
 
+    :short "Effective address calculation with 32-bit and 64-bit addressing."
 
-    :long "<p> We do not add the FS and GS bases (if FS and GS
-    overrides are present) to the effective address computed in this
-    function.  We choose do so either directly in the instruction
-    semantic functions or in functions like @(see
-    x86-operand-from-modr/m-and-sib-bytes) and @(see
-    x86-operand-to-reg/mem).</p>
+    :long  "<p>Note that we do not add segment bases
+    (such as the FS and GS bases, if FS and GS overrides are present)
+    to the effective address computed in this function.
+    Addition of those segment base addresses is a part of the
+    segmentation process --- we handle that in the function @(see
+    ea-to-la) that performs the segment address translation.</p>
 
     <p>Quoting from Intel Vol 1, Sec 3.3.7:</p>
 
@@ -766,8 +976,9 @@ the @('fault') field instead.</li>
                 ;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
                 (x86-effective-addr-from-sib temp-RIP rex-byte mod sib
                                              x86))
-               (5 ;; RIP-relative addressing
+               (5
                 (if (64-bit-modep x86)
+                    ;; RIP-relative addressing in 64-bit mode:
                     (b* (((mv ?flg0 dword x86)
                           ;; dword is the sign-extended displacement
                           ;; present in the instruction.
@@ -780,8 +991,14 @@ the @('fault') field instead.</li>
                                                            (+ 4 num-imm-bytes)
                                                            x86))
                          ((when flg) (mv flg 0 0 0 x86)))
-                        (mv flg0 next-rip dword 4 x86))
-                  (mv 'non-64-bit-modes-unimplemented 0 0 0 x86)))
+                      (mv flg0 next-rip dword 4 x86))
+                  ;; displacement only in 32-bit mode:
+                  (b* (((mv flg dword x86)
+                        ;; dword is the sign-extended displacement
+                        ;; present in the instruction.
+                        (rime-size 4 temp-RIP *cs* :x x86))
+                       ((when flg) (mv flg 0 0 0 x86)))
+                    (mv nil 0 dword 4 x86))))
 
                (otherwise
                 (mv nil
@@ -834,10 +1051,16 @@ the @('fault') field instead.</li>
          ;; 64 bits.  Note that our current virtual memory functions can
          ;; cause an error if the address we are reading from/writing to
          ;; is >= 2^47-8.
-
-         (dst-base (if p4
-                       (n32 dst-base)
-                     (n64-to-i64 (n64 dst-base)))))
+         ;; In 32-bit mode,
+         ;; this function we are in is called when the address size is 32 bits
+         ;; (X86-EFFECTIVE-ADDR-16 is called when the address size is 16 bits),
+         ;; so the following code always returns
+         ;; a 32-bit address in 32-bit mode.
+         (dst-base (if (64-bit-modep x86)
+                       (if p4
+                           (n32 dst-base)
+                         (n64-to-i64 (n64 dst-base)))
+                     (n32 dst-base))))
 
         (mv flg dst-base increment-RIP-by x86))
 
@@ -845,6 +1068,72 @@ the @('fault') field instead.</li>
 
     (local (in-theory (e/d () (force (force)))))
 
+
+    (defthm-sb i64p-mv-nth-1-x86-effective-addr-32/64
+      :hyp t
+      :bound 64
+      :concl (mv-nth 1 (x86-effective-addr-32/64
+                        p4 temp-RIP rex-byte r/m mod sib
+                        num-imm-bytes x86))
+      :gen-linear t
+      :gen-type t)
+
+    (defthm natp-mv-nth-2-x86-effective-addr-32/64
+      (natp (mv-nth 2 (x86-effective-addr-32/64
+                       p4 temp-RIP rex-byte r/m mod sib
+                       num-imm-bytes x86)))
+      :rule-classes :type-prescription)
+
+    (defthm mv-nth-2-x86-effective-addr-32/64-<=-4
+      (<= (mv-nth 2 (x86-effective-addr-32/64
+                     p4 temp-RIP rex-byte r/m mod sib
+                     num-imm-bytes x86))
+          4)
+      :rule-classes :linear))
+
+  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
+  (define x86-effective-addr
+    (p4
+     (temp-RIP       :type (signed-byte   #.*max-linear-address-size*) )
+     (rex-byte       :type (unsigned-byte 8) "Rex byte")
+     (r/m            :type (unsigned-byte 3) "r/m field of ModR/M byte")
+     (mod            :type (unsigned-byte 2) "mod field of ModR/M byte")
+     (sib            :type (unsigned-byte 8) "Sib byte")
+     ;; num-imm-bytes is needed for computing the next RIP when
+     ;; RIP-relative addressing is done.  Note that this argument is
+     ;; only relevant when the operand addressing mode is I, i.e.,
+     ;; when the operand value is encoded in subsequent bytes of the
+     ;; instruction. For details, see *Z-addressing-method-info* in
+     ;; x86isa/utils/decoding-utilities.lisp.
+     (num-imm-bytes  :type (unsigned-byte 3)
+       "Number of immediate bytes (0, 1, 2, or 4)
+                      that follow the sib (or displacement bytes, if any).")
+     x86)
+
+    ;; Returns the flag, the effective address (taking the SIB and
+    ;; ModR/M bytes into account) and the number of bytes to increment
+    ;; the temp-RIP by.
+    :returns (mv
+              flg
+              i64p-memory-address
+              increment-RIP-by
+              (x86 x86p :hyp (force (x86p x86))))
+
+    :short "Effective address calculation."
+
+    :long
+    "<p>
+     This is a wrapper that calls
+     @(tsee x86-effective-addr-16) or @(tsee x86-effective-addr-32/64)
+     based on the address size.
+     </p>"
+
+    (if (eql 2 (select-address-size (if p4 t nil) x86))
+        (x86-effective-addr-16 temp-rip r/m mod x86)
+      (x86-effective-addr-32/64
+       p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+
+    ///
 
     (defthm-sb i64p-mv-nth-1-x86-effective-addr
       :hyp t
@@ -866,7 +1155,14 @@ the @('fault') field instead.</li>
                      p4 temp-RIP rex-byte r/m mod sib
                      num-imm-bytes x86))
           4)
-      :rule-classes :linear)))
+      :rule-classes :linear)
+
+    (defruled x86-effective-addr-when-64-bit-modep
+      (implies (64-bit-modep x86)
+               (equal (x86-effective-addr
+                       p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86)
+                      (x86-effective-addr-32/64
+                       p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))))))
 
 ;; ======================================================================
 
@@ -992,6 +1288,56 @@ made from privilege level 3.</sf>"
       (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (alignment-checking-enabled-p x86))))
 
+  ;; Factored out by Alessandro Coglio <coglio@kestrel.edu>
+  ;; Alignment check originally contributed by Dmitry Nadezhin
+  (define address-aligned-p
+    ((addr :type (signed-byte #.*max-linear-address-size*))
+     (operand-size :type (member 1 2 4 6 8 10 16))
+     (memory-ptr? booleanp))
+    :returns (yes/no booleanp)
+    :short "Check the alignment of a linear address."
+    :long
+    "<p>
+     Besides the address to check for alignment,
+     this function takes as argument the operand size
+     (from which the alignment to check is determined)
+     and a flag indicating whether the address to check for alignment
+     contains a memory operand of the form m16:16, m16:32, or m16:64
+     (see Intel manual, Mar'17, Volume 2, Section 3.1.1.3).
+     </p>
+     <p>
+     Words, doublewords, quadwords, and double quadwords
+     must be aligned at boundaries of 2, 4, 8, or 16 bytes.
+     Memory pointers of the form m16:xx must be aligned so that
+     their xx portion is aligned as a word, doubleword, or quadword;
+     this automatically guarantees that their m16 portion is aligned as a word.
+     See Intel manual, Mar'17, Volume 1, Section 4.1.1.
+     See AMD manual, Dec'17, Volume 2, Table 8-7
+     (note that the table does not mention explicitly
+     memory pointers of the form m16:64).
+     </p>
+     <p>
+     If the operand size is 6, the operand must be an m16:32 pointer.
+     If the operand size is 10, the operand must an m16:64 pointer.
+     If the operand size is 4, it may be either an m16:16 pointer or not;
+     in this case, the @('memory-ptr?') argument is used to
+     determined whether the address should be aligned
+     at a word or doubleword boundary.
+     If the operand size is 1, 2, 8, or 16,
+     it cannot be a memory pointer of the form m16:xx.
+     </p>"
+    (case operand-size
+      (6 (equal (logand addr #b11) 0)) ; m16:32
+      (10 (equal (logand addr #b111) 0)) ; m16:64
+      (otherwise
+       (if (and memory-ptr?
+                (eql operand-size 4))
+           (equal (logand addr #b1) 0) ; m16:16
+         (equal (logand addr
+                        (the (integer 0 15) (- operand-size 1)))
+                0))))
+    :inline t)
+
   (define x86-operand-from-modr/m-and-sib-bytes
     ((reg-type      :type (unsigned-byte  1)
                     "@('reg-type') is @('*gpr-access*') for GPRs, and
@@ -1098,49 +1444,10 @@ made from privilege level 3.</sf>"
           (mv 'x86-operand-from-modr/m-and-sib-bytes-Non-Canonical-Address-Encountered
               0 0 0 x86))
 
-         ((when
-              ;; Check alignment for memory accesses.
-              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
-              ;; Alignment of Words, Doublewords, and Double
-              ;; Quadwords:
-
-              ;; "The natural boundaries for words,
-              ;; double words, and quadwords are even-numbered
-              ;; addresses, addresses evenly divisible by four,
-              ;; and addresses evenly divisible by eight,
-              ;; respectively. A natural boundary for a double
-              ;; quadword is any address evenly divisible by 16."
-              (and (not (equal mod #b11))
-                   inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   ;; operand-size: (member 1 2 4 6 8 10 16)
-                   (case operand-size
-                     ;; A memory operand of the form m16:32 requires a
-                     ;; read of 6 bytes.  The natural boundary of the
-                     ;; 32-bit portion is an address divisible by 4,
-                     ;; which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (6   (not (equal (logand v-addr #b11) 0)))
-                     ;; A memory operand of the form m16:64 requires a
-                     ;; read of 10 bytes.  The natural boundary of the
-                     ;; 64-bit portion is an address divisible by 8,
-                     ;; which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (10  (not (equal (logand v-addr #b111) 0)))
-                     (otherwise
-                      (if (and memory-ptr?
-                               (eql operand-size 4))
-                          ;; If the 32-bit operand is of type m16:16,
-                          ;; instead of being aligned at an address
-                          ;; divisible by 4, it should be aligned at
-                          ;; an even address.
-                          (not (equal (logand v-addr #b1) 0))
-                        (not (equal (logand v-addr
-                                            (the (integer 0 15)
-                                              (- operand-size 1)))
-                                    0)))))))
+         ((when (and (not (equal mod #b11))
+                     inst-ac?
+                     (alignment-checking-enabled-p x86)
+                     (not (address-aligned-p v-addr operand-size memory-ptr?))))
           (mv 'x86-operand-from-modr/m-and-sib-bytes-memory-access-not-aligned
               0 0 0 x86))
 
@@ -1253,49 +1560,9 @@ made from privilege level 3.</sf>"
                                   operand rex-byte x86)))
             (mv nil x86)))
 
-         ;; [Alignment check contributed by Dmitry Nadezhin, thanks!]
-         ((when
-              ;; Check alignment for memory accesses.
-              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
-              ;; Alignment of Words, Doublewords, and Double
-              ;; Quadwords:
-
-              ;; "The natural boundaries for words,
-              ;; double words, and quadwords are even-numbered
-              ;; addresses, addresses evenly divisible by four,
-              ;; and addresses evenly divisible by eight,
-              ;; respectively. A natural boundary for a double
-              ;; quadword is any address evenly divisible by 16."
-              (and inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   ;; operand-size: (member 1 2 4 6 8 10 16)
-                   (case operand-size
-                     ;; A memory operand of the form m16:32 requires a
-                     ;; write of 6 bytes.  The natural boundary of the
-                     ;; 32-bit portion is an address divisible by 4,
-                     ;; which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (6   (not (equal (logand v-addr #b11) 0)))
-                     ;; A memory operand of the form m16:64 requires a
-                     ;; write of 10 bytes.  The natural boundary of
-                     ;; the 64-bit portion is an address divisible by
-                     ;; 8, which guarantees that the 16-bit portion is
-                     ;; also at its natural boundary (an even
-                     ;; address).
-                     (10  (not (equal (logand v-addr #b111) 0)))
-                     (otherwise
-                      (if (and memory-ptr?
-                               (eql operand-size 4))
-                          ;; If the 32-bit operand is of type m16:16,
-                          ;; instead of being aligned at an address
-                          ;; divisible by 4, it should be aligned at
-                          ;; an even address.
-                          (not (equal (logand v-addr #b1) 0))
-                        (not (equal (logand v-addr
-                                            (the (integer 0 15)
-                                              (- operand-size 1)))
-                                    0)))))))
+         ((when (and inst-ac?
+                     (alignment-checking-enabled-p x86)
+                     (not (address-aligned-p v-addr operand-size memory-ptr?))))
           (mv t x86))
 
          ((mv flg x86)
@@ -1339,27 +1606,10 @@ made from privilege level 3.</sf>"
                                   operand x86)))
             (mv nil x86)))
 
-         ;; [Alignment check contributed by Dmitry Nadezhin, thanks!]
-         ((when
-              ;; Check alignment for memory accesses.
-              ;; Source: Intel Manual, Volume 1, Section 4.1.1,
-              ;; Alignment of Words, Doublewords, and Double
-              ;; Quadwords:
-
-              ;; "The natural boundaries for words,
-              ;; double words, and quadwords are even-numbered
-              ;; addresses, addresses evenly divisible by four,
-              ;; and addresses evenly divisible by eight,
-              ;; respectively. A natural boundary for a double
-              ;; quadword is any address evenly divisible by 16."
-              (and inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   ;; operand-size: (member 4 8 16)
-                   (not (equal (logand
-                                v-addr
-                                (the (integer 0 15)
-                                  (- operand-size 1)))
-                               0))))
+         ((when (and inst-ac?
+                     (alignment-checking-enabled-p x86)
+                     ;; operand is never an m16:16 memory pointer here
+                     (not (address-aligned-p v-addr operand-size nil))))
           (mv t x86))
 
          ((mv flg x86)
@@ -1376,6 +1626,326 @@ made from privilege level 3.</sf>"
                  (x86-operand-to-xmm/mem
                   operand-size inst-ac? operand v-addr rex-byte r/m mod x86))))
       :hints (("Goal" :in-theory (e/d () (force (force))))))))
+
+;; ======================================================================
+
+; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+;; The following are tentative extensions of
+;; X86-OPERAND-FROM-MODR/M-AND-SIB-BYTES, X86-OPERAND-TO-REG/MEM, and
+;; X86-OPERAND-TO-XMM/MEM to 32-bit mode. They are named like the existing ones
+;; but with a $ at the end. The extension to 32-bit mode requires a change of
+;; interface, because the extended functions traffic in effective addresses
+;; rather than linear addresses. These new functions are currently not called
+;; by any other function, but callers to the old functions can be progressively
+;; "redirected" to call the new functions, eventually eliminating the old
+;; functions and removing the ending $ from the names of the new functions.
+
+(define x86-operand-from-modr/m-and-sib-bytes$
+  ((reg-type      :type (unsigned-byte  1)
+                  "@('reg-type') is @('*gpr-access*') for GPRs, and
+                   @('*xmm-access*') for XMMs.")
+   (operand-size  :type (member 1 2 4 6 8 10 16))
+   (inst-ac?      booleanp
+                  "@('t') if instruction does alignment checking,
+                   @('nil') otherwise.")
+   (memory-ptr?   booleanp
+                  "@('t') if the operand is a memory operand of the
+                   form m16:16, m16:32, or m16:64")
+   (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                  "Register of the segment to read the operand from
+                   (when reading the operand from memory).")
+   (p4?           :type (or t nil)
+                  "Address-Size Override Prefix Present?")
+   (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
+   (rex-byte      :type (unsigned-byte 8))
+   (r/m           :type (unsigned-byte 3))
+   (mod           :type (unsigned-byte 2))
+   (sib           :type (unsigned-byte 8))
+   (num-imm-bytes :type (unsigned-byte 3))
+   x86)
+
+  :guard (if (equal mod #b11)
+             (cond
+              ((equal reg-type #.*gpr-access*)
+               (member operand-size '(1 2 4 8)))
+              (t (member operand-size '(4 8 16))))
+           (member operand-size '(member 1 2 4 6 8 10 16)))
+  :guard-hints (("Goal" :in-theory (e/d* ()
+                                         (las-to-pas
+                                          unsigned-byte-p
+                                          signed-byte-p))))
+
+  :returns
+  (mv flg
+      operand
+      increment-RIP-by
+      addr
+      (x86 x86p :hyp (force (x86p x86))))
+
+  :short "Read an operand from memory or a register."
+
+  :long
+  "<p>
+   Based on the ModR/M byte,
+   the operand is read from either a register or memory.
+   In the latter case, we calculate the effective address
+   and the we read the operand from it.
+   Besides returning the operand,
+   we also return the calculated effective address.
+   This is useful for instructions that modify the operand after reading it
+   (e.g. the source/destination operand of ADD),
+   which pass the effective address calculated by this function
+   to @(tsee x86-operand-to-reg/mem$) (which writes the result to memory).
+   </p>"
+
+  (b* (((mv ?flg0
+            (the (signed-byte 64) addr)
+            (the (integer 0 4) increment-RIP-by)
+            x86)
+        (if (equal mod #b11)
+            (mv nil 0 0 x86)
+          (x86-effective-addr
+           p4? temp-rip rex-byte r/m mod sib num-imm-bytes x86)))
+       ((when flg0)
+        (mv (cons 'x86-effective-addr-error flg0) 0 0 0 x86))
+
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by RME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to RME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
+       ((when (and (not (equal mod #b11))
+                   (b* (((mv flg addr-linear) (ea-to-la addr seg-reg x86)))
+                     (and (not flg)
+                          (canonical-address-p addr-linear)
+                          inst-ac?
+                          (alignment-checking-enabled-p x86)
+                          (not (address-aligned-p
+                                addr-linear operand-size memory-ptr?))))))
+        (mv 'x86-operand-from-modr/m-and-sib-bytes-memory-access-not-aligned
+            0 0 0 x86))
+
+       ((mv ?flg2 operand x86)
+        (if (equal mod #b11)
+            (if (int= reg-type #.*gpr-access*)
+                (mv nil
+                    (rgfi-size operand-size
+                               (reg-index r/m rex-byte #.*b*)
+                               rex-byte
+                               x86)
+                    x86)
+              (mv nil
+                  (xmmi-size operand-size
+                             (reg-index r/m rex-byte #.*b*)
+                             x86)
+                  x86))
+          ;; The operand is being fetched from the memory, not the
+          ;; instruction stream. That's why we have :r instead of :x
+          ;; below.
+          (rme-size operand-size addr seg-reg :r x86)))
+       ((when flg2)
+        (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
+
+    (mv nil operand increment-RIP-by addr x86))
+
+  ///
+
+  (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand
+    :hyp (and (member operand-size '(1 2 4 8 16))
+              (equal bound (ash operand-size 3))
+              (x86p x86))
+    :bound bound
+    :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+                      reg-type operand-size inst-ac? memory-ptr? seg-reg p4?
+                      temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
+    :gen-linear t
+    :gen-type t
+    :hints (("Goal" :in-theory (enable rme-size))))
+
+  (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand-6-and-10-bytes-read
+    :hyp (and (member operand-size '(6 10))
+              (equal bound (ash operand-size 3))
+              (not (equal mod #b11))
+              (x86p x86))
+    :bound bound
+    :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+                      reg-type operand-size inst-ac? memory-ptr? seg-reg p4?
+                      temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
+    :gen-linear t
+    :gen-type t
+    :hints (("Goal" :in-theory (enable rme-size))))
+
+  (defthm integerp-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-type-prescription
+    (implies (force (x86p x86))
+             (natp (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes$
+                              reg-type operand-size inst-ac? memory-ptr? seg-reg p4
+                              temp-RIP rex-byte r/m mod sib num-imm-bytes x86))))
+    :hints (("Goal" :in-theory (e/d (rml-size) ())))
+    :rule-classes :type-prescription)
+
+  (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-linear<=4
+    (implies (x86p x86)
+             (<= (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes$
+                            reg-type operand-size inst-ac? memory-ptr? seg-reg p4
+                            temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
+                 4))
+    :hints (("Goal" :in-theory (e/d (rml-size) ())))
+    :rule-classes :linear)
+
+  (defthm-sb i64p-x86-operand-from-modr/m-and-sib-bytes$
+    :hyp (forced-and (x86p x86))
+    :bound 64
+    :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes$
+                      reg-type operand-size inst-ac? memory-ptr? seg-reg p4
+                      temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+    :gen-linear t
+    :gen-type t))
+
+(define x86-operand-to-reg/mem$
+  ((operand-size :type (member 1 2 4 6 8 10 16))
+   (inst-ac?      booleanp
+                  "@('t') if instruction does alignment checking, @('nil') otherwise")
+   (memory-ptr?   booleanp
+                  "@('t') if the operand is a memory operand
+                   of the form m16:16, m16:32, or m16:64")
+   (operand      :type (integer 0 *))
+   (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                  "Register of the segment to read the operand from
+                   (when reading the operand from memory).")
+   (addr         :type (signed-byte 64))
+   (rex-byte     :type (unsigned-byte 8))
+   (r/m          :type (unsigned-byte 3))
+   (mod          :type (unsigned-byte 2))
+   x86)
+
+  :short "Write an operand to memory or a general-purpose register."
+
+  :long
+  "<p>
+   Based on the ModR/M byte,
+   the operand is written to either a register or memory.
+   The address argument of this function is often
+   the effective address calculated and returned by
+   @(tsee x86-operand-from-modr/m-and-sib-bytes$).
+   </p>"
+
+  :guard (and (unsigned-byte-p (ash operand-size 3) operand)
+              (if (equal mod #b11)
+                  (member operand-size '(member 1 2 4 8))
+                (member operand-size '(member 1 2 4 6 8 10 16))))
+
+  (b* (((when (equal mod #b11))
+        (let* ((x86 (!rgfi-size operand-size (reg-index r/m rex-byte #.*b*)
+                                operand rex-byte x86)))
+          (mv nil x86)))
+
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by RME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to RME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
+       ((mv flg addr-linear) (ea-to-la addr seg-reg x86))
+       ((when (and (not flg)
+                   (canonical-address-p addr-linear)
+                   inst-ac?
+                   (alignment-checking-enabled-p x86)
+                   (not (address-aligned-p
+                         addr-linear operand-size memory-ptr?))))
+        (mv 'x86-operand-to-reg/mem-memory-access-not-aligned x86))
+
+       ((mv flg x86)
+        (wme-size operand-size addr seg-reg operand x86)))
+    (mv flg x86))
+
+  ///
+
+  (defthm x86p-x86-operand-to-reg/mem$
+    (implies (force (x86p x86))
+             (x86p
+              (mv-nth
+               1
+               (x86-operand-to-reg/mem$
+                operand-size inst-ac?
+                memory-ptr? operand addr seg-reg rex-byte r/m mod x86))))
+    :hints (("Goal" :in-theory (e/d () (force (force)))))))
+
+(define x86-operand-to-xmm/mem$
+  ((operand-size  :type (member 4 8 16))
+   (inst-ac?      booleanp
+                  "@('t') if instruction does alignment checking,
+                   @('nil') otherwise")
+   (operand       :type (integer 0 *))
+   (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                  "Register of the segment to read the operand from
+                   (when reading the operand from memory).")
+   (addr          :type (signed-byte 64))
+   (rex-byte      :type (unsigned-byte 8))
+   (r/m           :type (unsigned-byte 3))
+   (mod           :type (unsigned-byte 2))
+   x86)
+
+  :short "Write an operand to memory or an XMM register."
+
+  :long
+  "<p>
+   Based on the ModR/M byte,
+   the operand is written to either a register or memory.
+   The address argument of this function is often
+   the effective address calculated and returned by
+   @(tsee x86-operand-from-modr/m-and-sib-bytes$).
+   </p>"
+
+  :guard (unsigned-byte-p (ash operand-size 3) operand)
+
+  (b* (((when (equal mod #b11))
+        (let* ((x86 (!xmmi-size operand-size (reg-index r/m rex-byte #.*b*)
+                                operand x86)))
+          (mv nil x86)))
+
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by RME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to RME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
+       ((mv flg addr-linear) (ea-to-la addr seg-reg x86))
+       ((when (and (not flg)
+                   (canonical-address-p addr-linear)
+                   inst-ac?
+                   (alignment-checking-enabled-p x86)
+                   (not (address-aligned-p
+                         addr-linear operand-size nil))))
+        (mv 'x86-operand-to-xmm/mem-memory-access-not-aligned x86))
+
+       ((mv flg x86)
+        (wme-size operand-size addr seg-reg operand x86)))
+    (mv flg x86))
+
+  ///
+
+  (defthm x86p-x86-operand-to-xmm/mem$
+    (implies (force (x86p x86))
+             (x86p
+              (mv-nth
+               1
+               (x86-operand-to-xmm/mem$
+                operand-size inst-ac? operand seg-reg addr rex-byte r/m mod x86))))
+    :hints (("Goal" :in-theory (e/d () (force (force)))))))
 
 ;; ======================================================================
 
@@ -1575,5 +2145,3 @@ made from privilege level 3.</sf>"
           2 ;; 16-bit operand-size
         4   ;; Default 32-bit operand size (in 64-bit mode)
         ))))
-
-;; ======================================================================

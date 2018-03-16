@@ -809,7 +809,7 @@ sub to_basename {
 
 
 
-# Event types:
+# "Event" types:
 my $add_dir_event = 'add-include-book-dir';
 my $include_book_event = 'include-book';
 my $depends_on_event = 'depends-on';
@@ -817,6 +817,37 @@ my $depends_rec_event = 'depends-rec';
 my $loads_event = 'loads';
 my $cert_param_event = 'cert_param';
 my $ld_event = 'ld';
+my $ifdef_event = 'ifdef';
+my $endif_event = 'endif';
+
+sub get_ifdef {
+    my ($base,$the_line,$events) = @_;
+
+    my @res = $the_line =~ m/^[^;]* # not commented
+                             \(
+                             (?:[^\s():]*::)? # package prefix
+                             if(?<negate>n?)def \s+
+                             "(?<var>\w*)"
+                             /xi;
+    if (@res) {
+	push (@$events, [$ifdef_event, $+{negate} ? 1 : 0, $+{var}]);
+	return 1;
+    }
+    return 0;
+}
+
+sub get_endif {
+    my ($base,$the_line,$events) = @_;
+
+    my @res = $the_line =~ m/^[^;]* # not commented
+                             :endif \s* \)
+                             /xi;
+    if (@res) {
+	push (@$events, [$endif_event]);
+	return 1;
+    }
+    return 0;
+}
 
 
 sub get_add_dir {
@@ -1067,6 +1098,8 @@ sub scan_src {
 	    $done = $done || get_loads($fname, $the_line, \@events);
 	    $done = $done || get_add_dir($fname, $the_line, \@events);
 	    $done = $done || get_cert_param($fname, $the_line, \@events);
+	    $done = $done || get_ifdef($fname, $the_line, \@events);
+	    $done = $done || get_endif($fname, $the_line, \@events);
 	}
 	$timestamp = ftimestamp($file);
 	close($file);
@@ -1228,122 +1261,152 @@ sub src_deps {
     push(@{$certinfo->srcdeps}, $fname);
     $depdb->sources->{$fname} = 1;
 
+    # track the level of ifdefs
+    my $ifdef_level = 0;           # nesting depth
+    my $ifdef_skipping_level = 0;  # min level of a false ifdef (0 means all surrounding ifdefs were true)
+
     foreach my $event (@$events) {
 	my $type = $event->[0];
-	if ($type eq $add_dir_event) {
-	    my $name = $event->[1];
-	    my $dir = $event->[2];
-
-	    print "add_dir_event: name=$name, dir=$dir\n" if $debugging;
-	    my $newdir;
-	    if (File::Spec->file_name_is_absolute($dir)) {
-		$newdir = canonical_path($dir);
-	    }
-	    else {
-		# was:
-		# my $newdir = canonical_path(rel_path($basedir, $dir));
-		my $basedir = dirname($fname);
-		my $catdir = File::Spec->file_name_is_absolute($dir) ?
-		    $dir :
-		    File::Spec->catfile($basedir, $dir);
-		$newdir = canonical_path($catdir);
-	    }
-	    print "add_dir_event: newdir is $newdir\n" if $debugging;
-
-	    if (! $newdir) {
-		print "Bad path processing (add-include-book-dir :$name \"$dir\") in $fname\n";
-	    }
-	    $certinfo->include_dirs->{$name} = $newdir;
-	    print "src_deps: add_dir $name " . $certinfo->include_dirs->{$name} . "\n" if $debugging;
-	} elsif ($type eq $include_book_event) {
-	    my $bookname = $event->[1];
-	    my $dir = $event->[2];
-	    my $fullname = expand_dirname_cmd($bookname, $fname, $dir,
-					      $certinfo->include_dirs,
-					      "include-book",
-					      ".cert");
-	    if (! $fullname) {
-		print "Bad path in (include-book \"$bookname\""
-                      . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
-	    } else {
-		print "include-book fullname: $fullname\n" if $debugging;
-		if ($portp) {
-		    push(@{$certinfo->portdeps}, $fullname);
-		} else {
-		    push(@{$certinfo->bookdeps}, $fullname);
+	if ($type eq $ifdef_event) {
+	    my $negate = $event->[1];
+	    my $var = $event->[2];
+	    my $value = $ENV{$var} || "";
+	    $ifdef_level = $ifdef_level + 1;
+	    print "ifdef_event: negate=$negate, var=$var, new level $ifdef_level\n" if $debugging;
+	    my $empty = $value eq "";
+	    my $expr = (($value eq "") xor $negate);
+	    my $nexpr = not $expr;
+	    print "empty: $empty expr: $expr nexpr: $nexpr\n" if $debugging;
+	    if (($value eq "") xor $negate) {
+		if ($ifdef_skipping_level == 0) {
+		    print "now skipping, level=$ifdef_level\n" if $debugging;
+		    $ifdef_skipping_level = $ifdef_level;
 		}
-		add_deps($fullname, $depdb, $fname);
-		my $book_certinfo = $depdb->certdeps->{$fullname};
-		if ($book_certinfo) {
-		    while (my ($kwd, $path) = each(%{$book_certinfo->include_dirs})) {
-			$certinfo->include_dirs->{$kwd} = $path;
+	    }
+	} elsif ($type eq $endif_event) {
+	    print "endif_event, current level $ifdef_level\n" if $debugging;
+	    if ($ifdef_skipping_level == $ifdef_level) {
+		print "no longer skipping\n" if $debugging;
+		$ifdef_skipping_level = 0;
+	    }
+	    $ifdef_level = $ifdef_level-1;
+	} elsif ($ifdef_skipping_level == 0) {
+	    # Only pay attention to other events if we're not skipping due to ifdefs.
+	    if ($type eq $add_dir_event) {
+		my $name = $event->[1];
+		my $dir = $event->[2];
+
+		print "add_dir_event: name=$name, dir=$dir\n" if $debugging;
+		my $newdir;
+		if (File::Spec->file_name_is_absolute($dir)) {
+		    $newdir = canonical_path($dir);
+		}
+		else {
+		    # was:
+		    # my $newdir = canonical_path(rel_path($basedir, $dir));
+		    my $basedir = dirname($fname);
+		    my $catdir = File::Spec->file_name_is_absolute($dir) ?
+			$dir :
+			File::Spec->catfile($basedir, $dir);
+		    $newdir = canonical_path($catdir);
+		}
+		print "add_dir_event: newdir is $newdir\n" if $debugging;
+
+		if (! $newdir) {
+		    print "Bad path processing (add-include-book-dir :$name \"$dir\") in $fname\n";
+		}
+		$certinfo->include_dirs->{$name} = $newdir;
+		print "src_deps: add_dir $name " . $certinfo->include_dirs->{$name} . "\n" if $debugging;
+	    } elsif ($type eq $include_book_event) {
+		my $bookname = $event->[1];
+		my $dir = $event->[2];
+		my $fullname = expand_dirname_cmd($bookname, $fname, $dir,
+						  $certinfo->include_dirs,
+						  "include-book",
+						  ".cert");
+		if (! $fullname) {
+		    print "Bad path in (include-book \"$bookname\""
+			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+		} else {
+		    print "include-book fullname: $fullname\n" if $debugging;
+		    if ($portp) {
+			push(@{$certinfo->portdeps}, $fullname);
+		    } else {
+			push(@{$certinfo->bookdeps}, $fullname);
 		    }
-		} else {
-		    # Presumably we've printed an error message already?
+		    add_deps($fullname, $depdb, $fname);
+		    my $book_certinfo = $depdb->certdeps->{$fullname};
+		    if ($book_certinfo) {
+			while (my ($kwd, $path) = each(%{$book_certinfo->include_dirs})) {
+			    $certinfo->include_dirs->{$kwd} = $path;
+			}
+		    } else {
+			# Presumably we've printed an error message already?
+		    }
 		}
-	    }
-	} elsif ($type eq $depends_on_event) {
-	    my $depname = $event->[1];
-	    my $dir = $event->[2];
-	    my $fullname = expand_dirname_cmd($depname, $fname, $dir,
-					      $certinfo->include_dirs,
-					      "depends-on", "");
-	    if (! $fullname) {
-		print "Bad path in (depends-on \"$depname\""
-                      . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+	    } elsif ($type eq $depends_on_event) {
+		my $depname = $event->[1];
+		my $dir = $event->[2];
+		my $fullname = expand_dirname_cmd($depname, $fname, $dir,
+						  $certinfo->include_dirs,
+						  "depends-on", "");
+		if (! $fullname) {
+		    print "Bad path in (depends-on \"$depname\""
+			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+		} else {
+		    push(@{$certinfo->otherdeps}, $fullname);
+		    $depdb->others->{$fullname} = 1;
+		}
+	    } elsif ($type eq $depends_rec_event) {
+		my $depname = $event->[1];
+		my $dir = $event->[2];
+		my $fullname = expand_dirname_cmd($depname, $fname, $dir,
+						  $certinfo->include_dirs,
+						  "depends-rec", ".cert");
+		if (! $fullname) {
+		    print "Bad path in (depends-rec \"$depname\""
+			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+		} else {
+		    print "depends_rec $fullname\n" if $debugging;
+		    add_deps($fullname, $depdb, $fname);
+		    my @tmpcerts = ();
+		    my @tmpothers = ();
+		    deps_dfs($fullname, $depdb, $certinfo->rec_visited,
+			     $certinfo->srcdeps, \@tmpcerts, \@tmpothers);
+		}
+	    } elsif ($type eq $loads_event) {
+		my $srcname = $event->[1];
+		my $dir = $event->[2];
+		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
+						  $certinfo->include_dirs, "loads", "");
+		if ($fullname) {
+		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
+		} else {
+		    print "Bad path in (loads \"$srcname\""
+			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+		}
+	    } elsif ($type eq $cert_param_event) {
+		# print "cert_param: $fname, " . $event->[1] . " = " . $event->[2] . "\n";
+		$certinfo->params->{$event->[1]} = $event->[2];
+	    } elsif ($type eq $ld_event) {
+		my $srcname = $event->[1];
+		my $dir = $event->[2];
+		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
+						  $certinfo->include_dirs, "ld", "");
+		if ($fullname) {
+		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
+		} else {
+		    print "Bad path in (ld \"$srcname\""
+			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+		}
+		if (! $ldp) {
+		    print "Warning: LD event in book context in $fname:\n";
+		    print_event($event);
+		    print "\n";
+		}
 	    } else {
-		push(@{$certinfo->otherdeps}, $fullname);
-		$depdb->others->{$fullname} = 1;
+		print "unknown event type: $type\n";
 	    }
-	} elsif ($type eq $depends_rec_event) {
-	    my $depname = $event->[1];
-	    my $dir = $event->[2];
-	    my $fullname = expand_dirname_cmd($depname, $fname, $dir,
-					      $certinfo->include_dirs,
-					      "depends-rec", ".cert");
-	    if (! $fullname) {
-		print "Bad path in (depends-rec \"$depname\""
-                      . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
-	    } else {
-		print "depends_rec $fullname\n" if $debugging;
-		add_deps($fullname, $depdb, $fname);
-		my @tmpcerts = ();
-		my @tmpothers = ();
-		deps_dfs($fullname, $depdb, $certinfo->rec_visited,
-			 $certinfo->srcdeps, \@tmpcerts, \@tmpothers);
-	    }
-	} elsif ($type eq $loads_event) {
-	    my $srcname = $event->[1];
-	    my $dir = $event->[2];
-	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
-					      $certinfo->include_dirs, "loads", "");
-	    if ($fullname) {
-		src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
-	    } else {
-		print "Bad path in (loads \"$srcname\""
-		    . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
-	    }
-	} elsif ($type eq $cert_param_event) {
-	    # print "cert_param: $fname, " . $event->[1] . " = " . $event->[2] . "\n";
-	    $certinfo->params->{$event->[1]} = $event->[2];
-	} elsif ($type eq $ld_event) {
-	    my $srcname = $event->[1];
-	    my $dir = $event->[2];
-	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
-					      $certinfo->include_dirs, "ld", "");
-	    if ($fullname) {
-		src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
-	    } else {
-		print "Bad path in (ld \"$srcname\""
-		    . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
-	    }
-	    if (! $ldp) {
-		print "Warning: LD event in book context in $fname:\n";
-		print_event($event);
-		print "\n";
-	    }
-	} else {
-	    print "unknown event type: $type\n";
 	}
     }
 

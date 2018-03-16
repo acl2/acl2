@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Implementation
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -295,7 +295,7 @@
 (define sofun-fparams ((sofun (sofunp sofun wrld)) (wrld plist-worldp))
   :returns (fparams "A @(tsee funvar-setp).")
   :verify-guards nil
-  :short "Function parameter of a second-order function recorded in the table."
+  :short "Function parameters of a second-order function recorded in the table."
   (let ((table (table-alist 'second-order-functions wrld)))
     (second (cdr (assoc-eq sofun table)))))
 
@@ -345,20 +345,18 @@
       (append (funvars-of-term (car terms) wrld)
               (funvars-of-terms (cdr terms) wrld)))))
 
-(define funvars-of-defun ((fun symbolp) (wrld plist-worldp))
+(define funvars-of-plain-fn ((fun symbolp) (wrld plist-worldp))
   :returns (funvars "A @(tsee funvar-listp).")
   :mode :program
   :short "Function variables referenced
-          by a plain or quantifier second-order function
-          or by an instance of it."
+          by a plain second-order function or by an instance of it."
   :long
   "<p>
-   Plain and quantifier second-order functions and their instances
+   Plain second-order functions and their instances
    may reference function variables
    in their defining bodies,
-   in their measures (absent in quantifier functions),
-   and in their guards
-   (which are introduced via @(':witness-dcls') for quantifier functions).
+   in their measures (absent in non-recursive functions),
+   and in their guards.
    For now recursive second-order functions (which are all plain)
    and their instances
    are only allowed to use @(tsee o<) as their well-founded relation,
@@ -372,17 +370,12 @@
    </p>
    <p>
    The returned list may contain duplicates.
-   </p>
-   <p>
-   Note that (an instance of) a quantifier function
-   is ultimately introduced by a @(tsee defun) primitive event,
-   so the @('defun') suffix in the name of @('funvars-of-defun') is appropriate.
    </p>"
   (let* ((body (ubody fun wrld))
          (measure (if (recursivep fun nil wrld)
                       (measure fun wrld)
                     nil))
-         (guard (guard fun nil wrld))
+         (guard (uguard fun wrld))
          (body-funvars (funvars-of-term body wrld))
          (measure-funvars (funvars-of-term measure wrld))
          (guard-funvars (funvars-of-term guard wrld)))
@@ -390,12 +383,11 @@
             measure-funvars
             guard-funvars)))
 
-(define funvars-of-defchoose ((fun symbolp) (wrld plist-worldp))
+(define funvars-of-choice-fn ((fun symbolp) (wrld plist-worldp))
   :returns (funvars "A @(tsee funvar-listp).")
   :mode :program
   :short "Function variables referenced
-          by a choice second-order function
-          or by an instance of it."
+          by a choice second-order function or by an instance of it."
   :long
   "<p>
    Choice second-order functions and their instances
@@ -406,7 +398,29 @@
    </p>"
   (funvars-of-term (defchoose-body fun wrld) wrld))
 
-(define funvars-of-defthm ((thm symbolp) (wrld plist-worldp))
+(define funvars-of-quantifier-fn ((fun symbolp) (wrld plist-worldp))
+  :returns (funvars "A @(tsee funvar-listp).")
+  :mode :program
+  :short "Function variables referenced
+          by a quantifier second-order function or by an instance of it."
+  :long
+  "<p>
+   Quantifier second-order functions and their instances
+   may reference function variables
+   in their matrices
+   and in their guards (which are introduced via @(':witness-dcls')).
+   </p>
+   <p>
+   The returned list may contain duplicates.
+   </p>"
+  (let* ((matrix (defun-sk-matrix fun wrld))
+         (guard (uguard fun wrld))
+         (matrix-funvars (funvars-of-term matrix wrld))
+         (guard-funvars (funvars-of-term guard wrld)))
+    (append matrix-funvars
+            guard-funvars)))
+
+(define funvars-of-thm ((thm symbolp) (wrld plist-worldp))
   :returns (funvars "A @(tsee funvar-listp).")
   :mode :program
   :short "Function variables referenced
@@ -454,9 +468,9 @@
    of which @('fun') is an instance.
    </p>"
   (let ((funvars (case kind
-                   (plain (funvars-of-defun fun wrld))
-                   (choice (funvars-of-defchoose fun wrld))
-                   (quant (funvars-of-defun fun wrld)))))
+                   (plain (funvars-of-plain-fn fun wrld))
+                   (choice (funvars-of-choice-fn fun wrld))
+                   (quant (funvars-of-quantifier-fn fun wrld)))))
     (cond ((set-equiv funvars fparams) nil)
           (fparams
            (msg "~x0 must depend on exactly its function parameters ~x1, ~
@@ -517,13 +531,13 @@
    </p>"
   (let* ((rule-name (defun-sk-rewrite-name fun wrld))
          (rule-body (formula rule-name nil wrld))
-         (fun-body (ubody fun wrld)))
+         (fun-matrix (defun-sk-matrix fun wrld)))
     (if (set-equiv (funvars-of-term rule-body wrld)
-                   (funvars-of-term fun-body wrld))
+                   (funvars-of-term fun-matrix wrld))
         nil
       (msg "The custom rewrite rule ~x0 must have ~
-            the same function variables as the function body ~x1.~%"
-           rule-body fun-body))))
+            the same function variables as the function's matrix ~x1.~%"
+           rule-body fun-matrix))))
 
 (define defun2-fn (sofun
                    fparams
@@ -926,7 +940,7 @@
   "<p>
    A theorem is second-order iff it depends on one or more function variables.
    </p>"
-  (not (null (funvars-of-defthm sothm wrld))))
+  (not (null (funvars-of-thm sothm wrld))))
 
 (define no-trivial-pairsp ((alist alistp))
   :returns (yes/no booleanp)
@@ -1309,13 +1323,17 @@
      the constraints are that
      (1) the application of @('S')
      to the rewrite rule generated by the @(tsee defun-sk) of @('sofun'),
-     and (2) the application of @('S') to the definition of @('sofun'),
+     and (2) the application of @('S') to the definition of @('sofun')
+     (or to the defining theorem of @('sofun')
+     if @('sofun') was introduced with @(':constrain t')),
      are both theorems,
      which both follow by the construction
      of the instance @('fun') of @('sofun'),
      i.e. they follow from
      (1) the rewrite rule generated by the @(tsee defun-sk) of @('fun')
-     and (2) the definition of @('fun').
+     and (2) the definition of @('fun')
+     (or the defining theorem of @('fun')
+     if @('fun') was introduced with @(':constrain t')).
      </li>
    </ul>
    <p>
@@ -1326,24 +1344,31 @@
    <ul>
      <li>
      If @('fun1') is a plain second-order function,
-     the fact used in the the proof is the definition of @('fun2')
-     (by construction, since @('fun2') is an instance of @('fun1'),
-     @('fun2') is introduced by a @(tsee defun)),
+     the fact used in the the proof is the definition of @('fun2'),
      whose name is the name of @('fun2').
+     (Note that by construction, since @('fun2') is an instance of @('fun1'),
+     @('fun2') is introduced by a @(tsee defun).)
      </li>
      <li>
      If @('fun1') is a choice second-order function,
-     the fact used in the proof is the @(tsee defchoose) axiom of @('fun2')
-     (by construction, since @('fun2') is an instance of @('fun1'),
-     @('fun2') is introduced by a @(tsee defchoose)),
+     the fact used in the proof is the @(tsee defchoose) axiom of @('fun2'),
      whose name is the name of @('fun2').
+     (Note that by construction, since @('fun2') is an instance of @('fun1'),
+     @('fun2') is introduced by a @(tsee defchoose).)
      </li>
      <li>
      If @('fun1') is a quantifier second-order function,
-     the fact used in the proof is
-     the @(tsee defun-sk) rewrite rule of @('fun2')
-     (by construction, since @('fun2') is an instance of @('fun1'),
-     @('fun2') is introduced by a @(tsee defun-sk)).
+     the facts used in the proof are
+     (1) the @(tsee defun-sk) rewrite rule of @('fun2')
+     and (2)
+     either (i) the definition of @('fun2')
+     (if @('fun2') was introduced without @(':constrain t')),
+     whose name is the name of @('fun2'),
+     or (ii) the defining theorem of @('fun2')
+     (if @('fun2') was introduced with @(':constrain t')),
+     whose name is @('fun2') followed by @('-definition').
+     (Note that by construction, since @('fun2') is an instance of @('fun1'),
+     @('fun2') is introduced by a @(tsee defun-sk).)
      </li>
      <li>
      Otherwise, @('fun1') is a function variable, which has no constraints,
@@ -1359,8 +1384,11 @@
                  (choice-sofunp 1st wrld))
              (cons 2nd (sothm-inst-facts (cdr fsbs) wrld)))
             ((quant-sofunp 1st wrld)
-             (cons (defun-sk-rewrite-name 2nd wrld)
-                   (sothm-inst-facts (cdr fsbs) wrld)))
+             `(,(defun-sk-rewrite-name 2nd wrld)
+               ,(if (definedp 2nd wrld)
+                    2nd
+                  (defun-sk-definition-name 2nd wrld))
+               ,@(sothm-inst-facts (cdr fsbs) wrld)))
             (t (sothm-inst-facts (cdr fsbs) wrld))))))
 
 (define sothm-inst-proof
@@ -1438,7 +1466,7 @@
                   sothm-inst))
        (sothm (car sothm-inst))
        (inst (cdr sothm-inst))
-       ((unless (subsetp (alist-keys inst) (funvars-of-defthm sothm wrld)))
+       ((unless (subsetp (alist-keys inst) (funvars-of-thm sothm wrld)))
         (er-soft+ ctx t nil
                   "Each function variable key of ~x0 must be ~
                    among function variable that ~x1 depends on."
@@ -1449,7 +1477,7 @@
                    must be a keyword-value list, ~
                    but ~x0 is not."
                   options))
-       (keywords (keywords-of-keyword-value-list options))
+       (keywords (evens options))
        ((unless (no-duplicatesp keywords))
         (er-soft+ ctx t nil
                   "The inputs keywords must be unique."))
@@ -1582,7 +1610,7 @@
    to ensure that the recursive calls are properly transformed.
    </p>"
   (b* ((wrld (w state))
-       ((unless (subsetp (keywords-of-keyword-value-list options)
+       ((unless (subsetp (evens options)
                          '(:verify-guards :print)))
         (er-soft+ ctx t nil
                   "Only the input keywords ~
@@ -1598,7 +1626,7 @@
        (sofun-measure (if (recursivep sofun nil wrld)
                           (measure sofun wrld)
                         nil))
-       (sofun-guard (guard sofun nil wrld))
+       (sofun-guard (uguard sofun wrld))
        (fsbs (if sofun-measure (acons sofun fun inst) inst))
        (fun-body (fun-subst-term fsbs sofun-body wrld))
        (fun-body (untranslate fun-body nil wrld))
@@ -1667,7 +1695,7 @@
    iff it is second-order.
    </p>"
   (b* ((wrld (w state))
-       ((unless (subsetp (keywords-of-keyword-value-list options)
+       ((unless (subsetp (evens options)
                          '(:print)))
         (er-soft+ ctx t nil
                   "Only the input keyword :PRINT is allowed, ~
@@ -1721,7 +1749,12 @@
    This is printed when @(':print') is @(':result').
    </p>
    <p>
-   Only the @(':skolem-name'), @(':thm-name'), @(':rewrite'), and @(':print')
+   Only the
+   @(':skolem-name'),
+   @(':thm-name'),
+   @(':rewrite'),
+   @(':constrain'), and
+   @(':print')
    options may be present.
    </p>
    <p>
@@ -1729,11 +1762,12 @@
    iff it is second-order.
    </p>"
   (b* ((wrld (w state))
-       ((unless (subsetp (keywords-of-keyword-value-list options)
-                         '(:skolem-name :thm-name :rewrite :print)))
+       ((unless (subsetp (evens options)
+                         '(:skolem-name :thm-name :rewrite :constrain :print)))
         (er-soft+ ctx t nil
                   "Only the input keywords ~
-                   :SKOLEM-NAME, :THM-NAME, :REWRITE, and :PRINT are allowed, ~
+                   :SKOLEM-NAME, :THM-NAME, :REWRITE, :CONSTRAIN and :PRINT ~
+                   are allowed, ~
                    because ~x0 is a quantifier second-order function."
                   sofun))
        (bound-vars (defun-sk-bound-vars sofun wrld))
@@ -1764,7 +1798,12 @@
                    (if thm-name-option
                        `(:thm-name ,(cadr thm-name-option))
                      nil)))
-       (sofun-guard (guard sofun nil wrld))
+       (constrain (let ((constrain-option
+                         (assoc-keyword :constrain options)))
+                    (if constrain-option
+                        `(:constrain ,(cadr constrain-option))
+                      nil)))
+       (sofun-guard (uguard sofun wrld))
        (fun-guard (fun-subst-term inst sofun-guard wrld))
        (fun-guard (untranslate fun-guard t wrld))
        (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
@@ -1778,6 +1817,7 @@
                       (list :rewrite rewrite))
                ,@skolem-name
                ,@thm-name
+               ,@constrain
                :witness-dcls (,wit-dcl)))
        (defun-sk-event `(defun-sk ,fun ,formals
                           ,body
@@ -1884,7 +1924,7 @@
                    but ~x1 is not."
                   (if 2nd-order "third" "second")
                   options))
-       (keywords (keywords-of-keyword-value-list options))
+       (keywords (evens options))
        ((unless (no-duplicatesp keywords))
         (er-soft+ ctx t nil
                   "The input keywords must be unique."))

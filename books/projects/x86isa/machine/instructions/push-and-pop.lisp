@@ -97,14 +97,26 @@
        ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by WME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to WME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, WME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
        (inst-ac? (alignment-checking-enabled-p x86))
+       ((mv flg new-rsp-linear) (ea-to-la new-rsp *ss* x86))
        ((when (and inst-ac?
+                   (not flg)
                    (not (equal (logand
-                                new-rsp
+                                new-rsp-linear
                                 (the (integer 0 15)
                                   (- operand-size 1)))
                                0))))
-        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp)) ;; #AC(0)
+        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp-linear)) ;; #AC(0)
 
        ;; See "Z" in http://ref.x86asm.net/geek.html#x50
        (reg (mbe :logic (loghead 3 opcode)
@@ -216,6 +228,8 @@
        ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
+       ;; TODO: perform alignment check on linear (not effective) addresses
+       ;; when this instruction is fully extended to 32-bit mode.
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand
@@ -494,12 +508,16 @@ the execution in this case.</p>"
                 (if p3? 2 4)
               (if p3? 4 2)))))
        (rsp (read-*sp x86))
+       ;; See the comment about alignment checks in X86-PUSH-GENERAL-REGISTER
+       ;; about the use of EA-TO-LA here.
        (inst-ac? (alignment-checking-enabled-p x86))
+       ((mv flg rsp-linear) (ea-to-la rsp *ss* x86))
        ((when (and inst-ac?
-                   (not (equal (logand rsp (the (integer 0 15)
-                                                (- operand-size 1)))
+                   (not flg)
+                   (not (equal (logand rsp-linear (the (integer 0 15)
+                                                       (- operand-size 1)))
                                0))))
-        (!!fault-fresh :ac 0 :rsp-not-aligned rsp)) ;; #AC(0)
+        (!!fault-fresh :ac 0 :rsp-not-aligned rsp-linear)) ;; #AC(0)
 
        ((mv flg new-rsp) (add-to-*sp rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
@@ -604,6 +622,8 @@ the execution in this case.</p>"
               (if p3? 4 2)))))
 
        (rsp (read-*sp x86))
+       ;; TODO: perform alignment check on linear (not effective) addresses
+       ;; when this instruction is fully extended to 32-bit mode.
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
@@ -834,6 +854,8 @@ the execution in this case.</p>"
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
         (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
+       ;; TODO: perform alignment check on linear (not effective) addresses
+       ;; when this instruction is fully extended to 32-bit mode.
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand new-rsp
@@ -953,6 +975,8 @@ the execution in this case.</p>"
        (rsp (rgfi *rsp* x86))
        ((when (not (canonical-address-p rsp)))
         (!!fault-fresh :ss 0 :rsp-not-canonical rsp)) ;; #SS(0)
+       ;; TODO: perform alignment check on linear (not effective) addresses
+       ;; when this instruction is fully extended to 32-bit mode.
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand rsp

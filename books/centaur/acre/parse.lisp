@@ -43,6 +43,8 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
+(local (xdoc::set-default-parents acre-internals))
+
 (local (in-theory (disable take (tau-system) nth)))
 
 (local (Defthm explode-of-str-fix
