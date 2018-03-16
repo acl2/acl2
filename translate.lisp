@@ -1324,7 +1324,7 @@
       :program
     (cddadr x)))
 
-; Command Tuples
+; Essay on Command Tuples
 
 ; When LD has executed a world-changing form, it stores a "command tuple" as
 ; the new 'global-value of 'command-landmark.  These landmarks divide the world
@@ -1371,7 +1371,7 @@
 ; creates a function can have a keyword as its car.
 
   (make command-tuple
-        :number n
+        :number n ; the absolute command number
         :defun-mode/form (if (eq defun-mode :program)
                              form
                            (cons defun-mode form))
