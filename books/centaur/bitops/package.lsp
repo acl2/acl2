@@ -255,4 +255,6 @@
     sparseint-trailing-0-count
     sparseint-trailing-0-count-from
     sparseint-trailing-1-count
-    sparseint-trailing-1-count-from))
+    sparseint-trailing-1-count-from
+    sparseint-bitcount
+    sparseint-bitcount-from))

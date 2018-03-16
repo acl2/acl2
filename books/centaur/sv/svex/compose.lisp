@@ -212,37 +212,10 @@ variables depend on themselves."
 
 (define 4vmask-bitcount ((x 4vmask-p))
   :returns (count natp :rule-classes :type-prescription)
-  :prepwork ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-             (local (defthmd logcount-lemma
-                      (equal (logcount (loghead n (lognot x)))
-                             (- (nfix n) (logcount (loghead n x))))
-                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
-                                                         bitops::ihsext-inductions)))))
-             (local (defthm natp-of-expt-2-30
-                      (natp (expt 2 30))
-                      :rule-classes :type-prescription))
-             (local (defthm loghead-by-integer-length-or-greater
-                      (implies (and (< (integer-length x) (nfix n))
-                                    (<= 0 (ifix x)))
-                               (equal (loghead n x) (ifix x)))
-                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
-                                                         bitops::ihsext-inductions)))))
-             (local (defthm integer-length-of-lognot
-                      (equal (integer-length (lognot x))
-                             (integer-length x))
-                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
-                                                         bitops::ihsext-inductions)))))
-             (local (include-book "arithmetic/top-with-meta" :dir :system))
-             (local (in-theory (disable (expt) (loghead)))))
   :guard-hints ((and stable-under-simplificationp
                      '(:use ((:instance logcount-lemma (n (expt 2 30)))))))
   (b* ((x (mbe :logic (4vmask-fix x) :exec x)))
-    (mbe :logic (non-exec (logcount (loghead (4vmask-bits-maxcount) x)))
-         :exec (let ((nbits (min (4vmask-bits-maxcount) (+ 1 (integer-length x)))))
-                 (if (<= 0 x)
-                     (logcount (loghead nbits x))
-                   (- (4vmask-bits-maxcount)
-                      (logcount (loghead nbits (lognot x))))))))
+    (sparseint-bitcount (sparseint-concatenate (4vmask-bits-maxcount) x 0)))
   ///
   (fty::deffixequiv 4vmask-bitcount))
 
@@ -411,13 +384,13 @@ b = (a << 1) | (b << 1)
        (var1 (svex-var svar1))
        (mask1 (svex-mask-lookup var1 masks1))
        (mask2 (svex-mask-lookup var1 masks2))
-       ((when (< mask2 0))
+       ((when (sparseint-< mask2 0))
         (cw "Warning: Infinite mask on variable ~x0~%" svar1)
         (svex-vars-detect-loops (cdr vars) masks1 masks2))
-       ((when (eql mask2 0))
+       ((when (sparseint-equal mask2 0))
         ;; Mask is now empty; drop this variable
         (svex-vars-detect-loops (cdr vars) masks1 masks2))
-       ((when (or (< mask1 0)
+       ((when (or (sparseint-< mask1 0)
                   (< (4vmask-bitcount mask2) (4vmask-bitcount mask1))))
         ;; Mask decreasing; good
         (cons svar1 (svex-vars-detect-loops (cdr vars) masks1 masks2))))
@@ -444,9 +417,9 @@ b = (a << 1) | (b << 1)
        (svex-var (svex-var var))
        (mask1 (svex-mask-lookup svex-var curr-masks))
        (mask2 (svex-mask-lookup svex-var final-masks))
-       ((when (< mask2 0))
+       ((when (sparseint-< mask2 0))
         (svex-compose-extract-nonstable-vars (cdr loop-updates) curr-masks final-masks))
-       ((when (< mask1 0))
+       ((when (sparseint-< mask1 0))
         (cons (car loop-updates)
               (svex-compose-extract-nonstable-vars (cdr loop-updates) curr-masks final-masks))))
     (if (< (4vmask-bitcount mask2) (4vmask-bitcount mask1))
@@ -464,7 +437,7 @@ b = (a << 1) | (b << 1)
        (svar (caar loop-updates))
        (var (svex-var svar))
        (mask (svex-mask-lookup var masks))
-       ((when (eql 0 mask))
+       ((when (sparseint-equal 0 mask))
         (svex-compose-keep-nonzero-mask-updates (cdr loop-updates) masks)))
     (cons (car loop-updates)
           (svex-compose-keep-nonzero-mask-updates (cdr loop-updates) masks))))
@@ -1113,17 +1086,17 @@ comments following this last example.</p>
 (define svex/indices-for-mask ((x svex-p)
                                (mask 4vmask-p)
                                (offset natp))
-  :guard (and (<= 0 mask)
-              (<= offset (integer-length mask)))
-  :measure (nfix (- (integer-length (4vmask-fix mask)) (nfix offset)))
+  :guard (and (not (sparseint-< mask 0))
+              (<= offset (sparseint-length mask)))
+  :measure (nfix (- (sparseint-length (4vmask-fix mask)) (nfix offset)))
   :returns (pairs svex/indexlist-p)
   :prepwork ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
              (local (include-book "arithmetic/top-with-meta" :dir :system)))
-  (b* (((when (mbe :logic (zp (- (integer-length (4vmask-fix mask)) (nfix offset)))
-                   :exec (eql offset (integer-length mask))))
+  (b* (((when (mbe :logic (zp (- (sparseint-length (4vmask-fix mask)) (nfix offset)))
+                   :exec (eql offset (sparseint-length mask))))
         nil)
        (mask (4vmask-fix mask))
-       ((when (logbitp offset mask))
+       ((when (eql 1 (sparseint-bit offset mask)))
         (cons (make-svex/index :expr x :idx (lnfix offset))
               (svex/indices-for-mask x mask (1+ (lnfix offset))))))
     (svex/indices-for-mask x mask (1+ (lnfix offset))))
@@ -1145,13 +1118,13 @@ comments following this last example.</p>
                                               bitops::ihsext-recursive-redefs)))))
 
   (defret member-of-svex/indices-for-mask
-    (implies (and (<= 0 (4vmask-fix mask))
+    (implies (and (<= 0 (sparseint-val (4vmask-fix mask)))
                   (svex/index-p p))
              (iff (member p pairs)
                   (b* (((svex/index p)))
                     (and (equal p.expr (svex-fix x))
                          (<= (lnfix offset) p.idx)
-                         (logbitp p.idx (4vmask-fix mask))))))))
+                         (logbitp p.idx (sparseint-val (4vmask-fix mask)))))))))
        
                                
 (define svex/indices-of-masks ((x svex-mask-alist-p))
@@ -1173,7 +1146,7 @@ comments following this last example.</p>
         (svex/indices-of-masks (cdr x)))
        ((unless (svex-case (caar x) :var))
         (svex/indices-of-masks (cdr x)))
-       ((unless (<= 0 (4vmask-fix (cdar x))))
+       ((when (sparseint-< (4vmask-fix (cdar x)) 0))
         (svex/indices-of-masks (cdr x))))
     (append-without-guard
      (svex/indices-for-mask (caar x) (cdar x) 0)
@@ -1201,7 +1174,7 @@ comments following this last example.</p>
     :hints (("goal" :in-theory (enable svex-mask-alist-fix))))
 
   (local (defthm member-of-svexlist-filter-alist-keys-when-logbitp-of-mask-lookup
-           (implies (and (logbitp n (svex-mask-lookup k x))
+           (implies (and (logbitp n (sparseint-val (svex-mask-lookup k x)))
                          (svex-p k))
                     (member k (svexlist-filter (alist-keys x))))
            :hints(("Goal" :in-theory (enable alist-keys svexlist-filter)))))
@@ -1213,8 +1186,8 @@ comments following this last example.</p>
                   (b* (((svex/index p)))
                     (and (svex-case p.expr :var)
                          (<= 0 p.idx)
-                         (<= 0 (svex-mask-lookup p.expr x))
-                         (logbitp p.idx (svex-mask-lookup p.expr x))))))
+                         (<= 0 (sparseint-val (svex-mask-lookup p.expr x)))
+                         (logbitp p.idx (sparseint-val (svex-mask-lookup p.expr x)))))))
     :hints(("Goal" :in-theory (e/d (alist-keys
                                     svex-mask-alist-fix
                                       svexlist-filter
@@ -1299,7 +1272,7 @@ comments following this last example.</p>
 A pseudo-node is an svex/integer pair, representing either a bit of that svex
 expression (if the index is nonnegative) or a tail of that expression (if
 negative -- the lognot is the number of bits to shift).</p>"
-
+        
         ((x svex/index-p "current expression/bit (pseudo-node) to be traversed")
          (trav-index natp "next unused traversal index")
          (stack svex/index-nat-alist-p
@@ -1320,6 +1293,7 @@ negative -- the lognot is the number of bits to shift).</p>"
                        (svex-count (svex/index->expr x))
                        0
                        0)
+        :measure-debug t
         :hints (("goal" :in-theory (enable alist-keys))
                 (and stable-under-simplificationp
                      '(:in-theory (enable nfix))))
@@ -1368,8 +1342,8 @@ negative -- the lognot is the number of bits to shift).</p>"
                        (trav-indices (hons-acons x index trav-indices))
                        (trav-index (1+ trav-index))
                        (mask (if (<= 0 x.idx)
-                                 (ash 1 x.idx)
-                               (ash -1 (lognot x.idx))))
+                                 (sparseint-concatenate x.idx 0 1)
+                               (sparseint-concatenate (lognot x.idx) 0 -1)))
                        (argmasks (svex-argmasks mask x.expr.fn x.expr.args))
                        (!return
                         (svex-args-compose-bit-sccs
@@ -1385,7 +1359,7 @@ negative -- the lognot is the number of bits to shift).</p>"
                          !return))
                       ;; Before continuing, make sure we're in the final-masks.
                       (mask-look (svex-mask-lookup x.expr params.final-masks))
-                      ((unless (<= 0 mask-look))
+                      ((when (sparseint-< mask-look 0))
                        (b* ((err (msg "Encountered a variable ~x0 that had negative
                                    final-masks.  ~ Debugging info saved in
                                    ~x1."
@@ -1393,7 +1367,7 @@ negative -- the lognot is the number of bits to shift).</p>"
                             (- (sneaky-save :svex-scc-debug-info
                                             (list x . !args))))
                          !return))
-                      ((unless (logbitp x.idx mask-look))
+                      ((unless (eql 1 (sparseint-bit x.idx mask-look)))
                        ;; This bit isn't set in the masks so this isn't one of the looping bits.
                        !return)
 
@@ -1515,7 +1489,7 @@ negative -- the lognot is the number of bits to shift).</p>"
                                              (alist-keys (svex/index-nat-alist-fix trav-indices))))
                        (svex-count x)
                        0
-                       (+ 1 (nfix (- (integer-length (4vmask-fix mask)) (nfix offset)))))
+                       (+ 1 (nfix (- (sparseint-length (4vmask-fix mask)) (nfix offset)))))
         
 
         :returns (mv (err)
@@ -1538,13 +1512,13 @@ negative -- the lognot is the number of bits to shift).</p>"
              (min-lowlink nil)
              (err nil)
 
-             ((when (<= (integer-length mask) offset))
-              (b* ((tail (logtail offset mask)) ;; either 0 or -1.
-                   ((when (eql tail 0)) !return)
+             ((when (<= (sparseint-length mask) offset))
+              (b* ((tail (sparseint-rightshift offset mask)) ;; either 0 or -1.
+                   ((when (sparseint-equal tail 0)) !return)
                    (pair (make-svex/index :expr x :idx (lognot offset))))
                 (svex-compose-bit-sccs pair trav-index stack trav-indices finalized-updates params)))
 
-             (next-idx (+ offset (bitops::trailing-0-count-from mask offset)))
+             (next-idx (+ offset (sparseint-trailing-0-count-from mask offset)))
              ;; next-idx might just be offset itself, still need to increment it before recurring
              ;; (logbitp next-idx mask) is always true
 
@@ -1799,47 +1773,13 @@ negative -- the lognot is the number of bits to shift).</p>"
         (svex-mask-alist-compose-bit-sccs (cdr x) trav-index stack trav-indices finalized-updates params))
        ((cons key mask) (car x))
        ((unless (and (svex-case key :var)
-                     (not (eql 0 (4vmask-fix mask)))))
+                     (not (sparseint-equal 0 (4vmask-fix mask)))))
         (svex-mask-alist-compose-bit-sccs (cdr x) trav-index stack trav-indices finalized-updates params))
        ((mv err ?min-lowlink trav-index stack trav-indices finalized-updates)
         (prog2$ (cw "svex-mask-compose-bit-sccs, key: ~x0, mask: ~x1~%" key mask)
                 (svex-mask-compose-bit-sccs key 0 mask trav-index stack trav-indices finalized-updates params)))
        ((when err) (mv err finalized-updates)))
     (svex-mask-alist-compose-bit-sccs (cdr x) trav-index stack trav-indices finalized-updates params)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1860,7 +1800,7 @@ negative -- the lognot is the number of bits to shift).</p>"
        ((when (atom stack)) nil)
        ((when (and (equal (svex-fix x) (caar stack))
                    ;; previously seen mask is a (non-strict) subset of the current mask
-                   (equal 0 (logand (cdar stack) (lognot (4vmask-fix mask))))))
+                   (not (sparseint-test-bitandc2 (cdar stack) (4vmask-fix mask)))))
         (list (car stack)))
        (rest (svex-loopdebug-stack-search x mask (cdr stack))))
     (and rest (cons (car stack) rest))))
@@ -1876,8 +1816,7 @@ we've seen before with a mask that overlaps with that one.</p>"
   :prepwork ((local (defthm lookup-in-svex-mask-alist
                       (implies (and (svex-mask-alist-p x)
                                     (hons-assoc-equal k x))
-                               (and (4vmask-p (cdr (hons-assoc-equal k x)))
-                                    (integerp (cdr (hons-assoc-equal k x)))))
+                               (and (4vmask-p (cdr (hons-assoc-equal k x)))))
                       :hints(("Goal" :in-theory (enable svex-mask-alist-p
                                                         hons-assoc-equal))))))
                                
@@ -1897,7 +1836,7 @@ we've seen before with a mask that overlaps with that one.</p>"
     (b* ((x (mbe :logic (svex-fix x) :exec x))
          (stack (svex-mask-alist-fix stack))
          (mask (4vmask-fix mask))
-         ((when (eql mask 0)) (mv nil nil)))
+         ((when (sparseint-equal mask 0)) (mv nil nil)))
       (svex-case x
         :quote (mv nil nil)
         :call (b* ((argmasks (svex-argmasks mask x.fn x.args)))
@@ -1950,7 +1889,7 @@ we've seen before with a mask that overlaps with that one.</p>"
        (svar1 (car loop-vars))
        (var1 (svex-var svar1))
        (mask1 (svex-mask-lookup var1 final-masks))
-       ((when (eql mask1 0))
+       ((when (sparseint-equal mask1 0))
         (svex-masks-summarize-loops (cdr loop-vars) final-masks assigns))
        ((mv & &)
         (svex-compose-loopdebug var1 mask1 assigns nil 100)))
@@ -1970,7 +1909,7 @@ we've seen before with a mask that overlaps with that one.</p>"
        ((cons key mask) (car x))
        ((unless (svex-case key :var))
         (svex-compose-extract-loop-var-alist-from-final-masks (cdr x)))
-       ((when (eql 0 (4vmask-fix mask)))
+       ((when (sparseint-equal 0 (4vmask-fix mask)))
         (svex-compose-extract-loop-var-alist-from-final-masks (cdr x))))
     (cons (cons (svex-var->name key) (4vmask-fix mask))
           (svex-compose-extract-loop-var-alist-from-final-masks (cdr x)))))

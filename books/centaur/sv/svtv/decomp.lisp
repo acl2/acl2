@@ -2280,7 +2280,8 @@ trigger on any of the following:</p>
          (implies (equal (nfix n) (len x))
                   (equal (nthcdr n (append x y))
                          y))
-         :hints(("Goal" :in-theory (enable nthcdr append len)))))
+         :hints(("Goal" :in-theory (enable nthcdr append len)
+                 :induct (nthcdr n x)))))
 
 (local (defthm take-of-append
          (implies (equal (nfix n) (len x))
