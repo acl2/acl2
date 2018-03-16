@@ -45,6 +45,7 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (the (unsigned-byte 8) (prefixes-slice :group-2-prefix prefixes)))
        (p3? (equal #.*operand-size-override*
                    (prefixes-slice :group-3-prefix prefixes)))
@@ -70,7 +71,9 @@
        (register (rgfi-size operand-size (reg-index reg rex-byte #.*r*)
                             rex-byte x86))
 
-       ((mv flg0 (the (signed-byte 64) addr) (the (unsigned-byte 3) increment-RIP-by) x86)
+       ((mv flg0
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-RIP-by) x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
           (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
@@ -78,6 +81,7 @@
                               x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
+
        ((mv flg1 addr)
         (case p2
           (0 (mv nil addr))
@@ -114,7 +118,6 @@
            temp-rip)
          (the (signed-byte #.*max-linear-address-size*)
            start-rip)))
-
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
@@ -163,16 +166,19 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p3? (equal #.*operand-size-override*
                    (prefixes-slice :group-3-prefix prefixes)))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes-slice :group-4-prefix prefixes)))
+
        ((the (integer 1 8) operand-size)
         (if (equal opcode #x8A)
             1
           ;; Intel manual, Mar'17, Volume 1, Table 3-4:
           (if (64-bit-modep x86)
-              (if (and ; (equal opcode #x8B) ;;;;;; REMOVE
-                   (logbitp #.*w* rex-byte))
+              (if (logbitp #.*w* rex-byte)
                   8
                 (if p3? 2 4))
             (b* ((cs-hidden (xr :seg-hidden *cs* x86))
@@ -183,8 +189,6 @@
                   (if p3? 2 4)
                 (if p3? 4 2))))))
 
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
         (x86-operand-from-modr/m-and-sib-bytes
@@ -207,7 +211,6 @@
            temp-rip)
          (the (signed-byte #.*max-linear-address-size*)
            start-rip)))
-
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
