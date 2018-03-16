@@ -57,6 +57,7 @@
 ;; push
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-general-register
   :parents (one-byte-opcodes)
 
@@ -473,6 +474,7 @@ the execution in this case.</p>"
 ;; pop
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pop-general-register
   :parents (one-byte-opcodes)
 
