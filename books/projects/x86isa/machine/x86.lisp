@@ -2593,47 +2593,23 @@
 
     (#x88
      "(MOV Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-MR start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-MR
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x89
      "(MOV Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-MR start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-MR
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x8A
      "(MOV Gb Eb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV Gb Eb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-RM
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x8B
      "(MOV Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV Gv Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-RM
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x8C
      "(MOV Ev Sw)  Special MOVE instruction for segment registers"
