@@ -88,6 +88,7 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              address-aligned-p
                              riml-size
                              riml32

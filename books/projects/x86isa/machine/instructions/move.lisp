@@ -153,6 +153,7 @@
        (x86 (write-*ip temp-rip x86)))
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-RM
 
   ;; Op/En: RM
@@ -208,14 +209,32 @@
                   (if p3? 2 4)
                 (if p3? 4 2))))))
 
+       (seg-reg (case p2
+                  ;; Intel manual, Mar'17, Volume 2, Section 2.1.1:
+                  (#x2E *cs*)
+                  (#x36 *ss*)
+                  (#x3E *ds*)
+                  (#x26 *es*)
+                  (#x64 *fs*)
+                  (#x65 *gs*)
+                  ;; Intel manual, Mar'17, Volume 1, Table 3-5:
+                  (otherwise *ds*)))
+
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* operand-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                operand-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
