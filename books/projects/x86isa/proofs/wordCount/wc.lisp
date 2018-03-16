@@ -562,6 +562,7 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -1138,6 +1139,7 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -1416,6 +1418,7 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
@@ -2076,6 +2079,7 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
@@ -2448,6 +2452,7 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
@@ -2884,6 +2889,7 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
@@ -3301,6 +3307,7 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
@@ -3831,6 +3838,7 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
@@ -4599,6 +4607,7 @@
                              jcc/cmovcc/setcc-spec
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08

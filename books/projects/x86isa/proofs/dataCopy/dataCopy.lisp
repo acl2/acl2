@@ -66,6 +66,7 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -610,6 +611,7 @@
                                     top-level-opcode-execute
                                     !rgfi-size
                                     x86-operand-to-reg/mem
+                                    x86-operand-to-reg/mem$
                                     wr64
                                     wr32
                                     wr16
@@ -1324,6 +1326,7 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32

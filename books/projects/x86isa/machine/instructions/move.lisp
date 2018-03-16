@@ -13,6 +13,7 @@
 ;; INSTRUCTION: MOV
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-MR
 
   ;; Op/En: MR
@@ -82,30 +83,42 @@
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
 
-       ((mv flg1 addr)
-        (case p2
-          (0 (mv nil addr))
-          ;; I don't really need to check whether FS and GS base are
-          ;; canonical or not.  On the real machine, if the MSRs
-          ;; containing these bases are assigned non-canonical
-          ;; addresses, an exception is raised.
-          (#.*fs-override*
-           (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-                  (fs-base (n64-to-i64 nat-fs-base)))
-             (if (not (canonical-address-p fs-base))
-                 (mv 'Non-Canonical-FS-Base fs-base)
-               (mv nil (+ fs-base addr)))))
-          (#.*gs-override*
-           (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-                  (gs-base (n64-to-i64 nat-gs-base)))
-             (if (not (canonical-address-p gs-base))
-                 (mv 'Non-Canonical-GS-Base gs-base)
-               (mv nil (+ gs-base addr)))))
-          (t (mv 'Unidentified-P2 addr))))
-       ((when flg1)
-        (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
-       ((when (not (canonical-address-p addr)))
-        (!!ms-fresh :addr-not-canonical addr))
+       (seg-reg (case p2
+                  ;; Intel manual, Mar'17, Volume 2, Section 2.1.1:
+                  (#x2E *cs*)
+                  (#x36 *ss*)
+                  (#x3E *ds*)
+                  (#x26 *es*)
+                  (#x64 *fs*)
+                  (#x65 *gs*)
+                  ;; Intel manual, Mar'17, Volume 1, Table 3-5:
+                  (otherwise *ds*)))
+
+       ;; TODO: remove (done by X86-OPERAND-TO-REG/MEM$):
+       ;; ((mv flg1 addr)
+       ;;  (case p2
+       ;;    (0 (mv nil addr))
+       ;;    ;; I don't really need to check whether FS and GS base are
+       ;;    ;; canonical or not.  On the real machine, if the MSRs
+       ;;    ;; containing these bases are assigned non-canonical
+       ;;    ;; addresses, an exception is raised.
+       ;;    (#.*fs-override*
+       ;;     (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
+       ;;            (fs-base (n64-to-i64 nat-fs-base)))
+       ;;       (if (not (canonical-address-p fs-base))
+       ;;           (mv 'Non-Canonical-FS-Base fs-base)
+       ;;         (mv nil (+ fs-base addr)))))
+       ;;    (#.*gs-override*
+       ;;     (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
+       ;;            (gs-base (n64-to-i64 nat-gs-base)))
+       ;;       (if (not (canonical-address-p gs-base))
+       ;;           (mv 'Non-Canonical-GS-Base gs-base)
+       ;;         (mv nil (+ gs-base addr)))))
+       ;;    (t (mv 'Unidentified-P2 addr))))
+       ;; ((when flg1)
+       ;;  (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
+       ;; ((when (not (canonical-address-p addr)))
+       ;;  (!!ms-fresh :addr-not-canonical addr))
 
        ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
@@ -124,10 +137,16 @@
        ;; Update the x86 state:
        (inst-ac? t)
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem
-         operand-size inst-ac?
-         nil ;; Not a memory pointer operand
-         register addr rex-byte r/m mod x86))
+        (x86-operand-to-reg/mem$ operand-size
+                                 inst-ac?
+                                 nil ;; Not a memory pointer operand
+                                 register
+                                 seg-reg
+                                 addr
+                                 rex-byte
+                                 r/m
+                                 mod
+                                  x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
