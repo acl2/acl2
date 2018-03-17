@@ -342,9 +342,8 @@
                     ((list y1 y2) (formals op wrld))
                     (guard (uguard op wrld)))
                  (case-match guard
-                   (('if (dom must-be-y1) (dom must-be-y2) *nil*)
-                    (if (and (eq must-be-y1 y1)
-                             (eq must-be-y2 y2))
+                   (('if (dom !y1) (dom !y2) *nil*)
+                    (if (symbolp dom)
                         dom
                       default))
                    (& default))))
