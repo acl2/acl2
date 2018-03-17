@@ -2349,13 +2349,6 @@
 
     (erase-acl2p-checkpoints-for-summary state))))
 
-(defun character-alistp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (characterp (car (car x)))
-                (character-alistp (cdr x))))))
-
 (defun tilde-@p (arg)
   (declare (xargs :guard t))
   (or (stringp arg)
@@ -15672,6 +15665,10 @@
 ; Warning: This function is used for printing ttag notes, so do not change
 ; *standard-co*, not even to (standard-co state)!
 
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple))))
   (fms str alist *standard-co* state evisc-tuple))
 
 (defun print-ttag-note (val active-book-name include-bookp deferred-p state)

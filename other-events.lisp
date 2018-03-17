@@ -28295,6 +28295,11 @@
               (t 'result))))))
 
 (defun fms-to-string-fn (str alist evisc-tuple fmt-control-alist)
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)
+                       (alistp fmt-control-alist))))
   (channel-to-string
    (fms str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere nil fmt-control-alist))
@@ -28303,6 +28308,11 @@
   `(fms-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist))
 
 (defun fms!-to-string-fn (str alist evisc-tuple fmt-control-alist)
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)
+                       (alistp fmt-control-alist))))
   (channel-to-string
    (fms! str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere nil fmt-control-alist))
@@ -28311,6 +28321,11 @@
   `(fms!-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist))
 
 (defun fmt-to-string-fn (str alist evisc-tuple fmt-control-alist)
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)
+                       (alistp fmt-control-alist))))
   (channel-to-string
    (fmt str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -28319,6 +28334,11 @@
   `(fmt-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist))
 
 (defun fmt!-to-string-fn (str alist evisc-tuple fmt-control-alist)
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)
+                       (alistp fmt-control-alist))))
   (channel-to-string
    (fmt! str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -28327,6 +28347,12 @@
   `(fmt!-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist))
 
 (defun fmt1-to-string-fn (str alist col evisc-tuple fmt-control-alist)
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)
+                       (alistp fmt-control-alist)))
+           (type (signed-byte 30) col))
   (channel-to-string
    (fmt1 str alist col chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -28335,6 +28361,12 @@
   `(fmt1-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist))
 
 (defun fmt1!-to-string-fn (str alist col evisc-tuple fmt-control-alist)
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)
+                       (alistp fmt-control-alist)))
+           (type (signed-byte 30) col))
   (channel-to-string
    (fmt1! str alist col chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
