@@ -358,7 +358,8 @@
         ,@(mutual-fixequivs->inductive-fix-thms
            fixequiv-al gutslist)
         :hints ,hints
-        :no-induction-hint ,(cdr (assoc :no-induction-hint kwd-alist))))))
+        :no-induction-hint ,(cdr (assoc :no-induction-hint kwd-alist))
+        :skip-others t))))
 
 (defun fixequivs->const/cong-thms (fixequivs)
   (if (atom fixequivs)
