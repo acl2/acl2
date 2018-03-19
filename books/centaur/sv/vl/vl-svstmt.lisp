@@ -1870,6 +1870,11 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
              trigger
              trigger-subst))))))
 
+(local (defthm integer-length-when-posp
+         (implies (posp x)
+                  (posp (integer-length x)))
+         :rule-classes :type-prescription))
+
 #!sv
 (define svar->lhs-by-mask ((x svar-p)
                            (mask 4vmask-p))
@@ -1877,8 +1882,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   :long "<p>Fails by returning an empty LHS if the mask is negative, i.e. an ~
          infinite range of bits should be written.</p>"
   :returns (lhs lhs-p)
-  (and (< 0 (4vmask-fix mask))
-       (list (make-lhrange :w (integer-length (4vmask-fix mask))
+  (and (sparseint-< 0 (4vmask-fix mask))
+       (list (make-lhrange :w (sparseint-length (4vmask-fix mask))
                            :atom (make-lhatom-var :name x :rsh 0))))
   ///
   (defthm vars-of-svar->lhs-by-mask
@@ -1926,8 +1931,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
           of the variables that are supposed to be written."
   :returns (assigns assigns-p)
   :measure (len (svex-alist-fix x))
-  :prepwork ((local (defthm integerp-when-4vmask-p
-                      (implies (4vmask-p x) (integerp x)))))
+  ;; :prepwork ((local (defthm integerp-when-4vmask-p
+  ;;                     (implies (4vmask-p x) (integerp x)))))
   (b* ((x (svex-alist-fix x))
        (masks (4vmask-alist-fix masks))
        (sizes (svar-size-alist-fix sizes))
@@ -1938,7 +1943,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        (- (or size (raise "error: expected all sizes to be bound")))
        (size (or size 0))
        (lhs (svar->lhs-by-size var size))
-       (fullmaskp (eql mask (acl2::logmask size)))
+       (fullmaskp (sparseint-equal mask (sparseint-concatenate size -1 0)))
        ((when fullmaskp)
         ;; simple case: just write the whole thing.
         (cons (cons lhs (make-driver :value rhs))
@@ -1952,7 +1957,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                  (make-driver
                   :value
                   (make-svex-call :fn 'bit?
-                                  :args (list (sv::svex-quote (sv::2vec mask))
+                                  :args (list (sv::svex-quote (sv::2vec (sparseint-val mask)))
                                               rhs
                                               (svex-z)))))
            (cons lhs
@@ -2060,8 +2065,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        (var (sv::svar-fix var))
        (wmask (sv::4vmask-fix wmask))
        (rmask (sv::svex-mask-lookup (sv::make-svex-var :name var) read-masks))
-       (overlap (logand wmask rmask))
-       (warnings (if (eql overlap 0)
+       (overlap (sv::sparseint-bitand wmask rmask))
+       (warnings (if (sv::sparseint-equal overlap 0)
                      warnings
                    (warn :type :vl-always-comb-looks-like-latch
                          :msg "Variable ~a0 was both read and written (or not ~
@@ -2098,18 +2103,18 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                              (acc sv::4vmask-alist-p))
   :returns (res sv::4vmask-alist-p)
   :measure (len (sv::4vmask-alist-fix masks))
-  :prepwork ((local (defthm integerp-lookup-in-4vmask-alist
-                      (implies (and (sv::4vmask-alist-p x)
-                                    (hons-assoc-equal k x))
-                               (integerp (cdr (hons-assoc-equal k x))))
-                      :hints(("Goal" :in-theory (enable sv::4vmask-alist-p
-                                                        hons-assoc-equal))))))
+  ;; :prepwork ((local (defthm integerp-lookup-in-4vmask-alist
+  ;;                     (implies (and (sv::4vmask-alist-p x)
+  ;;                                   (hons-assoc-equal k x))
+  ;;                              (integerp (cdr (hons-assoc-equal k x))))
+  ;;                     :hints(("Goal" :in-theory (enable sv::4vmask-alist-p
+  ;;                                                       hons-assoc-equal))))))
   (b* ((masks (sv::4vmask-alist-fix masks))
        (acc (sv::4vmask-alist-fix acc))
        ((When (atom masks)) acc)
        ((cons key val) (car masks))
        (look (or (cdr (hons-get key acc)) 0))
-       (newval (logior val look)))
+       (newval (sv::sparseint-bitor val look)))
     (combine-mask-alists (cdr masks) (hons-acons key newval acc))))
 
 

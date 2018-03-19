@@ -2889,7 +2889,7 @@ by redefining the constant.</p>")
        (offset (lnfix offset))
        (y (lifix y)))
     (sparseint$-case x
-      :leaf (b* ((x (loghead width (logtail offset x.val))))
+      :leaf (b* ((x (bignum-loghead width (logtail offset x.val))))
               (compare x y))
       :concat
       (b* (((when (<= x.width offset))
@@ -2902,7 +2902,7 @@ by redefining the constant.</p>")
               (- width width1) 0 x.msbs (logtail width1 y)))
            ((unless (eql msbs-compare 0)) msbs-compare))
         (sparseint$-compare-int-width
-         width1 offset x.lsbs (loghead width1 y)))))
+         width1 offset x.lsbs (bignum-loghead width1 y)))))
   ///
   (local (in-theory (disable (:d sparseint$-compare-int-width))))
 
@@ -2935,7 +2935,7 @@ by redefining the constant.</p>")
            (msbs-compare (sparseint$-compare-int 0 x.msbs (logtail width1 y)))
            ((unless (eql 0 msbs-compare)) msbs-compare))
         (sparseint$-compare-int-width width1 offset x.lsbs
-                                      (loghead width1 y)))))
+                                      (bignum-loghead width1 y)))))
   ///
 
   (defret <fn>-correct
@@ -2961,13 +2961,13 @@ by redefining the constant.</p>")
     (sparseint$-case x
       :leaf
       (sparseint$-case y
-        :leaf (b* ((xval (loghead width x.val))
-                   (yval (loghead width (logtail y-offset y.val))))
+        :leaf (b* ((xval (bignum-loghead width x.val))
+                   (yval (bignum-loghead width (logtail y-offset y.val))))
                 (compare xval yval))
-        :concat (- (sparseint$-compare-int-width width y-offset y (loghead width x.val))))
+        :concat (- (sparseint$-compare-int-width width y-offset y (bignum-loghead width x.val))))
       :concat
       (sparseint$-case y
-        :leaf (sparseint$-compare-int-width width 0 x (loghead width (logtail y-offset y.val)))
+        :leaf (sparseint$-compare-int-width width 0 x (bignum-loghead width (logtail y-offset y.val)))
         :concat
         (b* (((when (<= width x.width))
               (sparseint$-compare-width width x.lsbs y-offset y))
@@ -4885,7 +4885,7 @@ by redefining the constant.</p>")
   :returns (count natp :rule-classes :type-prescription)
   :verify-guards nil
   (sparseint$-case x
-    :leaf (logcount (loghead (lposfix width) (logtail offset (logxor (- (lbfix negbit)) x.val))))
+    :leaf (logcount (bignum-loghead (lposfix width) (logtail offset (logxor (- (lbfix negbit)) x.val))))
     :concat (b* ((width (lposfix width))
                  (offset (lnfix offset))
                  ((when (<= x.width offset))
