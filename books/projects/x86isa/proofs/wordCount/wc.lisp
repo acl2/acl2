@@ -562,6 +562,7 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -572,6 +573,7 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              riml-size
                              riml32
                              n32-to-i32
@@ -1138,6 +1140,7 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -1149,6 +1152,7 @@
                              write-canonical-address-to-memory
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              riml-size
                              riml32
                              n32-to-i32
@@ -1416,12 +1420,14 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              riml-size
                              riml08
                              rml32
@@ -2076,12 +2082,14 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              riml-size
                              riml08
                              rml32
@@ -2448,12 +2456,14 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              write-canonical-address-to-memory
                              riml-size
                              riml08
@@ -2884,12 +2894,14 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              write-canonical-address-to-memory
                              riml-size
                              riml08
@@ -3301,12 +3313,14 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              write-canonical-address-to-memory
                              riml-size
                              riml08
@@ -3831,12 +3845,14 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              write-canonical-address-to-memory
                              riml-size
                              riml08
@@ -4599,12 +4615,14 @@
                              jcc/cmovcc/setcc-spec
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              write-canonical-address-to-memory
                              riml-size
                              riml08

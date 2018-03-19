@@ -3296,7 +3296,11 @@
                      0 10 col channel state nil)))))))))))
 
 (defun fmt0 (s alist i maximum col channel state evisc-tuple)
-  (declare (type (signed-byte 30) i maximum col)
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp s)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)))
+           (type (signed-byte 30) i maximum col)
            (type string s))
 
 ; WARNING:  If you add new tilde-directives update :DOC fmt and the
@@ -3796,7 +3800,11 @@
 
 ; WARNING:  The master copy of the tilde-directives list is in :DOC fmt.
 
-  (declare (type (signed-byte 30) col))
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)))
+           (type (signed-byte 30) col))
   (the2s
    (signed-byte 30)
    (mv-let (col state)
@@ -3817,6 +3825,10 @@
 ; For a discussion of our style of pretty-printing, see
 ; http://www.cs.utexas.edu/~boyer/pretty-print.pdf.
 
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple))))
   (the2s
    (signed-byte 30)
    (pprogn
@@ -3827,6 +3839,10 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple))))
   (pprogn
    (newline channel state)
    (mv-let (col state)
@@ -3838,6 +3854,10 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple))))
   (mv-let (erp col state)
           (state-global-let*
            ((write-for-read t))
@@ -3851,6 +3871,10 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple))))
   (mv-let (erp col state)
           (state-global-let*
            ((write-for-read t))

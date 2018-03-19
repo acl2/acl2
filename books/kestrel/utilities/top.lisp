@@ -33,6 +33,8 @@
 (include-book "fresh-names")
 (include-book "include-book-paths")
 (include-book "install-not-norm-event")
+(include-book "integer-range-fixing")
+(include-book "integer-range-lists")
 (include-book "integers-from-to")
 (include-book "keyword-value-lists")
 (include-book "list-set-theorems")
