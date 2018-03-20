@@ -43,6 +43,8 @@
          !flgi-undefined
          write-user-rflags
 
+         select-segment-register
+
          pos
          mv-nth-0-las-to-pas-subset-p
          member-p

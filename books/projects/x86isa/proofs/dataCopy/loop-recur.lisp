@@ -74,6 +74,8 @@
                              sal/shl-spec
                              sal/shl-spec-64
 
+                             select-segment-register
+
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem

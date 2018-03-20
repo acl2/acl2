@@ -559,6 +559,8 @@
                              imul-spec-32
                              gpr-sub-spec-4
 
+                             select-segment-register
+
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
@@ -1128,6 +1130,8 @@
 
                              instruction-decoding-and-spec-rules
 
+                             select-segment-register
+
                              gpr-add-spec-4
                              gpr-add-spec-8
                              gpr-sub-spec-8
@@ -1416,6 +1420,8 @@
                              gpr-add-spec-4
                              gpr-sub-spec-4
                              jcc/cmovcc/setcc-spec
+
+                             select-segment-register
 
                              write-user-rflags
                              !rgfi-size
@@ -2078,6 +2084,8 @@
 
                              gpr-sub-spec-4
                              jcc/cmovcc/setcc-spec
+
+                             select-segment-register
 
                              write-user-rflags
                              !rgfi-size

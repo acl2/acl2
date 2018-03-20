@@ -2145,3 +2145,59 @@ made from privilege level 3.</sf>"
           2 ;; 16-bit operand-size
         4   ;; Default 32-bit operand size (in 64-bit mode)
         ))))
+
+;; ======================================================================
+
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+(define select-segment-register ((p2 (unsigned-byte-p 8 p2))
+                                 (p4? booleanp)
+                                 (mod (unsigned-byte-p 2 mod))
+                                 (r/m (unsigned-byte-p 3 r/m))
+                                 (x86 x86p))
+  :returns (seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
+  :inline t
+  :parents (decoding-and-spec-utils)
+  :short "Segment register to use for an instruction operand  in memory."
+  :long
+  "<p>
+   If there is a segment register override prefix,
+   the prefix determines the segment register,
+   according to Intel manual, Mar'17, Volume 2, Section 2.1.1.
+   </p>
+   <p>
+   Otherwise, we use the default segment selection rules
+   in Intel manual, Mar'17, Volume 1, Table 3-5.
+   Since we only call this function for instruction operands,
+   the CS rule does not apply.
+   Since for now we only call this function for non-string instruction,
+   the ES rule does not apply for now.
+   So the result is either SS or DS,
+   based on whether the base register is one of *SP *BP or not:
+   this determination is made based on
+   Intel manual, Mar'17, Volume 2, Table 2-1 if the address size is 16 bits,
+   and Intel manual, Mar'17, Volume 2, Table 2-2 otherwise.
+   </p>
+   <p>
+   Note that here we may recalculate the address size
+   even if that has already been calculated as part of
+   the decoding of the instruction whose operand we are accessing.
+   Thus, it may be possible to optimize the overall code.
+   </p>"
+  (case p2
+    (#x2E *cs*)
+    (#x36 *ss*)
+    (#x3E *ds*)
+    (#x26 *es*)
+    (#x64 *fs*)
+    (#x65 *gs*)
+    (t (b* ((addr-size (select-address-size p4? x86)))
+         (if (= addr-size 2)
+             (if (and (not (= mod 3))
+                      (or (= r/m 2) (= r/m 3)))
+                 *ss*
+               *ds*)
+           (if (and (or (= mod 1) (= mod 2))
+                    (= r/m 5))
+               *ss*
+             *ds*))))))

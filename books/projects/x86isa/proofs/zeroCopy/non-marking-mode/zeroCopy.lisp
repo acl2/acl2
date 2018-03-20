@@ -1618,7 +1618,8 @@
                              pos
                              member-p
                              subset-p
-                             rb-wb-equal-in-non-marking-mode)
+                             rb-wb-equal-in-non-marking-mode
+                             select-segment-register)
 
                             (rewire_dst_to_src-disable
                              ;; Unnecessary here, and too expensive...
