@@ -173,6 +173,9 @@
  <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
  subsumed by the built-in @(tsee evens) utility.</p>
 
+ <p>Added utilities to fix values to @(tsee integer-range-p), as well as to
+ recognize and to fix to true lists of @(tsee integer-range-p) values.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
@@ -185,9 +188,9 @@
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
- <p>The model includes more support for 32-bit mode.  In particular, the
- `PUSH/POP general-purpose register' instructions now also work in 32-bit
- mode.</p>
+ <p>The model includes more support for 32-bit mode.  In particular, some
+ variants of the PUSH, POP, and MOVE instructions also work in 32-bit mode
+ now.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
