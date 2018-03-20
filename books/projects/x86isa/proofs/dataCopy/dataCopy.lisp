@@ -77,6 +77,7 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              riml-size
                              riml32
                              n32-to-i32
@@ -624,6 +625,7 @@
                                     wml64
                                     rr32
                                     x86-operand-from-modr/m-and-sib-bytes
+                                    x86-operand-from-modr/m-and-sib-bytes$
                                     riml-size
                                     riml32
                                     n32-to-i32
@@ -1337,6 +1339,7 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
                              riml-size
                              riml32
                              riml64
