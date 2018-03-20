@@ -40,8 +40,8 @@
   (b* ((ctx 'x86-mov-Op/En-MR)
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
@@ -171,8 +171,8 @@
   (b* ((ctx 'x86-mov-Op/En-RM)
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
