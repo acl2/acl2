@@ -109,6 +109,16 @@
  code that can be easily extended and behaves predictably (as much as possible,
  for regular expressions).</p>
 
+ <p>Added PLTP(A), The Pure Lisp Theorem Prover, reimplemented in ACL2.  An
+ ACL2 reconstruction of the 1973 Pure Lisp Theorem Prover (PLTP), the original
+ ``Boyer-Moore theorem prover'' after which both NQTHM and ACL2 were modeled,
+ is available in @('books/projects/pltpa/pltpa.lisp').  More importantly, a <a
+ href='http://www.cs.utexas.edu/users/moore/best-ideas/pltp/index.html'>PLTP
+ archive</a> has been set up.  That archive includes much original source
+ material (e.g., scanned images of the 1973 POP-2 implementation of PLTP) as
+ well as an extensive discussion of the differences between PLTP and PLTP(A),
+ and an OCaml version of PLTP, named PLTA(O), by Grant Passmore.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>A bug has been fixed in the expander (see @(see defthm?)), which had
