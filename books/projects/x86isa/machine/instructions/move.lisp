@@ -85,29 +85,7 @@
         (!!ms-fresh :x86-effective-addr-error flg0))
 
        (seg-reg (select-segment-register p2 p4? mod  r/m x86))
-       ;; (seg-reg (case p2
-       ;;            ;; Intel manual, Mar'17, Volume 2, Section 2.1.1:
-       ;;            (#x2E *cs*)
-       ;;            (#x36 *ss*)
-       ;;            (#x3E *ds*)
-       ;;            (#x26 *es*)
-       ;;            (#x64 *fs*)
-       ;;            (#x65 *gs*)
-       ;;            ;; Intel manual, Mar'17, Volume 1, Table 3-5:
-       ;;            (t (b* ((addr-size (select-address-size p4? x86)))
-       ;;                 (if (= addr-size 2)
-       ;;                     ;; Intel manual, Mar'17, Volume 2, Table 2-1:
-       ;;                     (if (and (not (= mod 3))
-       ;;                              (or (= r/m 2) (= r/m 3)))
-       ;;                         *ss*
-       ;;                       *ds*)
-       ;;                   ;; Intel manual, Mar'17, Volume 2, Table 2-2:
-       ;;                   (if (and (or (= mod 1) (= mod 2))
-       ;;                            (= r/m 5))
-       ;;                       *ss*
-       ;;                     *ds*))))))
 
-       ;; TODO: remove (done by X86-OPERAND-TO-REG/MEM$):
        ;; ((mv flg1 addr)
        ;;  (case p2
        ;;    (0 (mv nil addr))
@@ -223,27 +201,6 @@
                 (if p3? 4 2))))))
 
        (seg-reg (select-segment-register p2 p4? mod  r/m x86))
-       ;; (seg-reg (case p2
-       ;;            ;; Intel manual, Mar'17, Volume 2, Section 2.1.1:
-       ;;            (#x2E *cs*)
-       ;;            (#x36 *ss*)
-       ;;            (#x3E *ds*)
-       ;;            (#x26 *es*)
-       ;;            (#x64 *fs*)
-       ;;            (#x65 *gs*)
-       ;;            ;; Intel manual, Mar'17, Volume 1, Table 3-5:
-       ;;            (t (b* ((addr-size (select-address-size p4? x86)))
-       ;;                 (if (= addr-size 2)
-       ;;                     ;; Intel manual, Mar'17, Volume 2, Table 2-1:
-       ;;                     (if (and (not (= mod 3))
-       ;;                              (or (= r/m 2) (= r/m 3)))
-       ;;                         *ss*
-       ;;                       *ds*)
-       ;;                   ;; Intel manual, Mar'17, Volume 2, Table 2-2:
-       ;;                   (if (and (or (= mod 1) (= mod 2))
-       ;;                            (= r/m 5))
-       ;;                       *ss*
-       ;;                     *ds*))))))
 
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
