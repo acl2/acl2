@@ -226,10 +226,10 @@
   (declare (ignore args))
   (llist (acl2-count (caddr fn)) 1))
 
-; We restrict the following to builds with #+acl2-devel builds of ACL2 (see
-; :DOC verify-guards-for-system-functions), thus avoiding redefinition errors
-; (due to the measure changing from calls of :?)  when certifying with ordinary
-; ACL2 builds.
+; We restrict the following to builds with #+acl2-devel (see :DOC
+; verify-guards-for-system-functions), thus avoiding redefinition errors (due
+; to the measure changing from calls of :?)  when certifying with ordinary ACL2
+; builds.
 #+acl2-devel
 (mutual-recursion
 

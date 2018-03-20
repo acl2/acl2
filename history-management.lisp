@@ -16158,68 +16158,9 @@
       wrld
     (global-set var val wrld)))
 
-(defun cltl-def-from-name2 (fn stobj-function axiomatic-p wrld)
-
-; Normally we expect to find the cltl definition of fn at the first
-; 'cltl-command 'global-value triple.  But if fn is introduced by encapsulate
-; then we may have to search further.  Try this, for example:
-
-; (encapsulate ((f (x) x))
-;              (local (defun f (x) x))
-;              (defun g (x) (f x)))
-; (cltl-def-from-name 'f nil (w state))
-
-  (cond ((endp wrld)
-         nil)
-        ((and (eq 'cltl-command (caar wrld))
-              (eq 'global-value (cadar wrld))
-              (let ((cltl-command-value (cddar wrld)))
-                (assoc-eq fn
-                          (if stobj-function
-                              (nth (if axiomatic-p 6 4)
-                                   cltl-command-value)
-                            (cdddr cltl-command-value))))))
-        (t (cltl-def-from-name2 fn stobj-function axiomatic-p (cdr wrld)))))
-
 (defrec absstobj-info
   (st$c . logic-exec-pairs)
   t)
-
-(defun cltl-def-from-name1 (fn stobj-function axiomatic-p wrld)
-
-; See cltl-def-from-name, which is a wrapper for this function in which
-; axiomatic-p is nil.  When axiomatic-p is t, then we are to return a function
-; suitable for oneify, which in the stobj case is the axiomatic definition
-; rather than the raw Lisp definition.
-
-  (and (function-symbolp fn wrld)
-       (let* ((event-number
-               (getpropc (or stobj-function fn) 'absolute-event-number nil
-                         wrld))
-              (wrld
-               (and event-number
-                    (lookup-world-index 'event event-number wrld)))
-              (def
-               (and wrld
-                    (cltl-def-from-name2 fn stobj-function axiomatic-p wrld))))
-         (and def
-              (or (null stobj-function)
-                  (and (not (member-equal *stobj-inline-declare* def))
-                       (or axiomatic-p
-                           (not (getpropc stobj-function 'absstobj-info nil
-                                          wrld)))))
-              (cons 'defun def)))))
-
-(defun cltl-def-from-name (fn wrld)
-
-; This function returns the raw Lisp definition of fn.  If fn does not have a
-; 'stobj-function property in wrld, then the returned definition is also the
-; definition that is oneified to create the corresponding *1* function.
-
-  (cltl-def-from-name1 fn
-                       (getpropc fn 'stobj-function nil wrld)
-                       nil
-                       wrld))
 
 (defun table-cltl-cmd (name key val op ctx wrld)
 
