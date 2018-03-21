@@ -33,7 +33,8 @@
 ; start PLTP(A), define a function, and prove a theorem.
 
 #||
-(include-book "pltpa") ; Load these sources
+(include-book ; (Matt K mod) breaking line to fool dependency scanner
+  "pltpa") ; Load these sources
 
 (pltpa)                ; Switch from ACL2 package to PLTP package and boot up
                        ; the PLTP logical world

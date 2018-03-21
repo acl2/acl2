@@ -3720,6 +3720,7 @@
 ; the world protection/modification functions do pretty fancy things.
 
             current-acl2-world global-enabled-structure
+            acl2-world-alist           ;;; manage this ourselves, e.g., for pso
             inhibit-output-lst         ;;; allow user to modify this in a book
             inhibited-summary-types    ;;; allow user to modify this in a book
             keep-tmp-files             ;;; allow user to modify this in a book
