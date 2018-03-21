@@ -1423,51 +1423,23 @@
   '(
     (#x00
      "(ADD Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-ADD*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(ADD Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-ADD* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x01
      "(ADD Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-ADD*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(ADD Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-ADD* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x02
      "(ADD Gb Eb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-ADD*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(ADD Gb Eb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-ADD* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x03
      "(ADD Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-ADD*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(ADD Gv Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-ADD* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x04
      "(ADD AL lb)"
@@ -1507,51 +1479,23 @@
 
     (#x08
      "(OR Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-OR*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(OR Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x09
      "(OR Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-OR*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(OR Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x0A
      "(OR Gb Eb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-OR*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(OR Gb Eb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x0B
      "(OR Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-OR*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(OR Gv Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x0C
      "(OR AL Ib)"
@@ -1591,51 +1535,23 @@
 
     (#x10
      "(ADC Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-ADC*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(ADC Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-ADC* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x11
      "(ADC Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-ADC*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(ADC Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-ADC* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x12
      "(ADC Gb Eb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-ADC*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(ADC Gb Eb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-ADC* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x13
      "(ADC Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-ADC*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(ADC Gv Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-ADC* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x14
      "(ADC AL Ib)"
@@ -1667,61 +1583,31 @@
       (cons (ms x86)
             (list start-rip temp-rip prefixes rex-byte opcode)) x86))
 
-
     (#x17
      "(POP SS)"
      (x86-step-unimplemented
       (cons (ms x86)
             (list start-rip temp-rip prefixes rex-byte opcode)) x86))
 
-
     (#x18
      "(SBB Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-SBB*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(SBB Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-SBB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x19
      "(SBB Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-SBB*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(SBB Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-SBB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x1A
      "(SBB Gb Eb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-SBB*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(SBB Gb Eb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-SBB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x1B
      "(SBB Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-SBB*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(SBB Gv Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-SBB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x1C
      "(SBB AL Ib)"
@@ -1763,51 +1649,23 @@
 
     (#x20
      "(AND Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-AND*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(AND Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x21
      "(AND Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-AND*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(AND Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x22
      "(AND Gb Eb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-AND*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(AND Gb Eb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x23
      "(AND Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-AND*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(AND Gv Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x24
      "(AND AL Ib)"
@@ -1855,51 +1713,23 @@
 
     (#x28
      "(SUB Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-SUB*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(SUB Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-SUB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x29
      "(SUB Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-SUB*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(SUB Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-SUB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x2A
      "(SUB Gb Eb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-SUB*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(SUB Gb Eb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-SUB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x2B
      "(SUB Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-SUB*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(SUB Gv Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-SUB* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x2C
      "(SUB AL Ib)"
@@ -1944,54 +1774,25 @@
       (cons (ms x86)
             (list start-rip temp-rip prefixes rex-byte opcode)) x86))
 
-
     (#x30
      "(XOR Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-XOR*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(XOR Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x31
      "(XOR Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-XOR*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(XOR Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x32
      "(XOR Gb Eb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-XOR*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(XOR Gb Eb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x33
      "(XOR Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-XOR*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(XOR Gv Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x34
      "(XOR AL Ib)"
@@ -2039,51 +1840,23 @@
 
     (#x38
      "(CMP Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-CMP*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(CMP Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-CMP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x39
      "(CMP Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-CMP*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(CMP Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-CMP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x3A
      "(CMP Gb Eb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-CMP*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(CMP Gb Eb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-CMP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x3B
      "(CMP Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-          #.*OP-CMP*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(CMP Gv Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+      #.*OP-CMP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x3C
      "(CMP AL Ib)"
@@ -2558,27 +2331,13 @@
 
     (#x84
      "(TEST Eb Gb)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-TEST*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(TEST Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-TEST* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x85
      "(TEST Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-          #.*OP-TEST*
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(TEST Ev Gv) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+      #.*OP-TEST* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#x86 #x87)
      "#x86: (XCHG Eb Gb) #x87: (XCHG Ev Gv)"
