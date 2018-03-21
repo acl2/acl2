@@ -25242,8 +25242,6 @@
 
 ; Essay on Defattach
 
-; (Tame Apply$ Version: It remains to accommodate apply$ evaluation!)
-
 ; In this essay we discuss both the implementation of defattach and its logical
 ; characterization.
 
