@@ -189,8 +189,8 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>The model includes more support for 32-bit mode.  In particular, some
- variants of the PUSH, POP, and MOVE instructions also work in 32-bit mode
- now.</p>
+ variants of the PUSH, POP, MOVE, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP, and
+ TEST instructions also work in 32-bit mode now.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
