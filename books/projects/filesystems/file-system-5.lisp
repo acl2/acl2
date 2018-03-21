@@ -11,7 +11,7 @@
 ; at this point. Thus, only read and write permissions exist, and they are
 ; limited to being on/off for the creating user, and on/off for others.
 
-; Further, I'm not changing anything about directories at this point.
+; Further, we're not changing anything about directories at this point.
 
 (include-book "file-system-4")
 (in-theory (disable l4-stricter-fs-p))
@@ -226,10 +226,10 @@
                               (block-listp disk)
                               (natp user))))
   (let ((file (l5-stat hns fs disk)))
-    (if (or (not (l5-regular-file-entry-p file)) 
+    (if (or (not (l5-regular-file-entry-p file))
             (not (l5-regular-file-readable-p file user)))
         nil
-      (let* ((file-text 
+      (let* ((file-text
               (coerce
                (unmake-blocks (fetch-blocks-by-indices
                                disk
@@ -242,6 +242,8 @@
             nil
           (subseq file-text start (+ start n)))))))
 
+; This function writes a specified text string to a specified position to a
+; text file at a specified path.
 (defun l5-wrchs (hns fs disk alv start text user)
   (declare (xargs :guard (and (symbol-listp hns)
                               (l5-fs-p fs)
@@ -436,19 +438,116 @@
            (l5-fs-p (delete-assoc-equal name fs))))
 
 (defthm
+  l5-wrchs-returns-fs-lemma-2
+  (implies
+   (and
+    (l5-regular-file-entry-p (cdr (assoc-equal name fs)))
+    (l5-regular-file-writable-p (cdr (assoc-equal name fs))
+                                user)
+    (equal
+     (count-free-blocks
+      (set-indices-in-alv
+       alv
+       (l5-regular-file-contents (cdr (assoc-equal name fs)))
+       nil))
+     (len
+      (make-blocks
+       (insert-text
+        (unmake-blocks
+         (fetch-blocks-by-indices
+          disk
+          (l5-regular-file-contents
+           (cdr (assoc-equal name fs))))
+         (l5-regular-file-length (cdr (assoc-equal name fs))))
+        start text))))
+    (consp (assoc-equal name fs))
+    (l5-fs-p fs)
+    (boolean-listp alv)
+    (stringp text)
+    (integerp start)
+    (<= 0 start)
+    (block-listp disk)
+    (equal (len alv) (len disk))
+    (integerp user))
+   (l5-regular-file-entry-p
+    (l5-make-regular-file
+     (find-n-free-blocks
+      (set-indices-in-alv
+       alv
+       (l5-regular-file-contents (cdr (assoc-equal name fs)))
+       nil)
+      (count-free-blocks
+       (set-indices-in-alv
+        alv
+        (l5-regular-file-contents (cdr (assoc-equal name fs)))
+        nil)))
+     (len
+      (insert-text
+       (unmake-blocks
+        (fetch-blocks-by-indices
+         disk
+         (l5-regular-file-contents (cdr (assoc-equal name fs))))
+        (l5-regular-file-length (cdr (assoc-equal name fs))))
+       start text))
+     (l5-regular-file-user-read (cdr (assoc-equal name fs)))
+     (l5-regular-file-user-write (cdr (assoc-equal name fs)))
+     (l5-regular-file-other-read (cdr (assoc-equal name fs)))
+     (l5-regular-file-other-write (cdr (assoc-equal name fs)))
+     (l5-regular-file-user (cdr (assoc-equal name fs))))))
+  :hints
+  (("goal"
+    :in-theory (disable l5-make-regular-file-correctness-1)
+    :use
+    (:instance
+     l5-make-regular-file-correctness-1
+     (contents
+      (find-n-free-blocks
+       (set-indices-in-alv
+        alv
+        (l5-regular-file-contents (cdr (assoc-equal name fs)))
+        nil)
+       (count-free-blocks
+        (set-indices-in-alv
+         alv
+         (l5-regular-file-contents (cdr (assoc-equal name fs)))
+         nil))))
+     (length
+      (len
+       (insert-text
+        (unmake-blocks
+         (fetch-blocks-by-indices
+          disk
+          (l5-regular-file-contents
+           (cdr (assoc-equal name fs))))
+         (l5-regular-file-length (cdr (assoc-equal name fs))))
+        start text)))
+     (user-read
+      (l5-regular-file-user-read (cdr (assoc-equal name fs))))
+     (user-write
+      (l5-regular-file-user-write (cdr (assoc-equal name fs))))
+     (other-read
+      (l5-regular-file-other-read (cdr (assoc-equal name fs))))
+     (other-write
+      (l5-regular-file-other-write (cdr (assoc-equal name fs))))
+     (user
+      (l5-regular-file-user (cdr (assoc-equal name fs))))))))
+
+(defthm
   l5-wrchs-returns-fs
-  (implies (and (l5-fs-p fs)
-                (stringp text)
-                (integerp start)
-                (<= 0 start)
-                (integerp user)
-                (<= 0 user)
-                (symbol-listp hns)
-                (block-listp disk)
-                (equal (len alv) (len disk))
-                (boolean-listp alv))
-           (l5-fs-p (mv-nth 0
-                            (l5-wrchs hns fs disk alv start text user)))))
+  (implies
+   (and (l5-fs-p fs)
+        (stringp text)
+        (integerp start)
+        (<= 0 start)
+        (integerp user)
+        (<= 0 user)
+        (symbol-listp hns)
+        (block-listp disk)
+        (equal (len alv) (len disk))
+        (boolean-listp alv))
+   (l5-fs-p
+    (mv-nth 0
+            (l5-wrchs hns fs disk alv start text user)))))
 
 (defthm l5-wrchs-correctness-1-lemma-1
   (implies (l5-fs-p fs)
@@ -545,8 +644,9 @@
                        (l5-wrchs hns fs disk alv start text user)
                        (mv (l5-to-l4-fs new-fs)
                            new-disk new-alv))))))
-  :hints (("goal" :in-theory (enable l3-regular-file-entry-p)
-           :induct (l5-stat hns fs disk))))
+  :hints
+  (("goal" :in-theory (enable l3-regular-file-entry-p)
+               :induct (l5-stat hns fs disk))))
 
 (defthm l5-rdchs-correctness-1-lemma-1
   (implies (and (symbol-listp hns)
@@ -942,7 +1042,6 @@
                (:rewrite non-nil-nth)
                (:rewrite default-<-2)
                (:type-prescription true-listp)
-               (:rewrite l2-wrchs-returns-fs-lemma-5)
                (:rewrite l4-wrchs-correctness-1-lemma-18)
                (:type-prescription make-blocks)
                (:definition update-nth)
@@ -1141,7 +1240,6 @@
                         (:DEFINITION SET-INDICES)
                         (:REWRITE DEFAULT-<-2)
                         (:REWRITE DEFAULT-<-1)
-                        (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-5)
                         (:REWRITE L2-FSCK-AFTER-L2-WRCHS-LEMMA-5)
                         (:REWRITE L5-WRCHS-CORRECTNESS-1-LEMMA-7)
                         (:REWRITE L5-STAT-CORRECTNESS-1-LEMMA-4)
