@@ -203,6 +203,18 @@
  automatically infer the domain for some of the transformation's applicability
  conditions.</p>
 
+ <h4><see topic='@(url acl2::bitops)'>Bitops</see></h4>
+
+ <p>Added the @(see bitops::sparseint) library, which represents large integers
+ as balanced binary trees, which can save memory by sharing structure among many
+ such objects.</p>
+
+ <h4><see topic='@(url acl2::sv)'>SV</see></h4>
+
+ <p>Improved scalability of several SV utilities when large variables are present
+ by recoding several functions that previously used Lisp bignums to use a
+ @(see bitops::sparseint) based encoding.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>

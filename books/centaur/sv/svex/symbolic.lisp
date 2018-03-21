@@ -631,7 +631,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (local (defthm 4vec-zero-ext-of-4vec-mask?
            (equal (4vec-zero-ext w (4vec-mask? mask x y))
                   (4vec-mask? (if (and (2vec-p w) (<= 0 (2vec->val w)))
-                                  (loghead (2vec->val w) (4vmask-fix mask))
+                                  (sparseint-concatenate (2vec->val w) (4vmask-fix mask) 0)
                                 mask)
                               (4vec-zero-ext w x)
                               (4vec-zero-ext w y)))
@@ -643,7 +643,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
            (implies (equal z (4vec-mask? mask x y))
                     (equal (4vec-zero-ext w z)
                            (4vec-mask? (if (and (2vec-p w) (<= 0 (2vec->val w)))
-                                           (loghead (2vec->val w) (4vmask-fix mask))
+                                           (sparseint-concatenate (2vec->val w) (4vmask-fix mask) 0)
                                          mask)
                                        (4vec-zero-ext w x)
                                        (4vec-zero-ext w y))))))
@@ -722,7 +722,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
               (svex-aig-memotable-fix memo)))
          (width (2vec->val width))
          (mask (svex-mask-lookup x masks))
-         ((when (eql 0 (logtail width mask)))
+         ((unless (sparseint-test-bitand (sparseint-concatenate width 0 -1) mask))
           (svex-concat->a4vec lsbs env masks memo))
          ((mv upper2 lower2 memo)
           (svex-concat->a4vec msbs env masks memo)))
@@ -765,7 +765,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 
 
   ///
-  (verify-guards svex->a4vec)
+  (verify-guards svex->a4vec :guard-debug t)
 
   (defun-sk svex->a4vec-table-ok (memo env masks aigenv)
     (forall x
@@ -1020,14 +1020,14 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                  acl2::loghead-identity)))
      (defthm mask-of-bit?-logand-lognot
        (implies (4vmask-p mask)
-                (equal (4vec-mask mask (4vec-bit? (2vec (logand a (lognot mask))) x y))
+                (equal (4vec-mask mask (4vec-bit? (2vec (logand a (lognot (sparseint-val mask)))) x y))
                        (4vec-mask mask y)))
        :hints(("Goal" :in-theory (e/d* (4vec-mask 4vec-bit? 3vec-bit?)))
               (logbitp-reasoning)))
 
      (defthm mask-of-bit?-logand-lognot2
        (implies (4vmask-p mask)
-                (equal (4vec-mask mask (4vec-bit? (2vec (logand (lognot mask) a)) x y))
+                (equal (4vec-mask mask (4vec-bit? (2vec (logand (lognot (sparseint-val mask)) a)) x y))
                        (4vec-mask mask y)))
        :hints(("Goal" :in-theory (e/d* (4vec-mask 4vec-bit? 3vec-bit?)))
               (logbitp-reasoning)))
@@ -1038,16 +1038,16 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                        (svex-mask-alist-complete masks)
                        (2vec-p width)
                        (<= (nfix w) (2vec->val width)))
-                  (4vmask-subsumes (loghead w (svex-mask-lookup lsbs masks))
-                                   (loghead w (svex-mask-lookup x masks)))))
+                  (4vmask-subsumes (sparseint-concatenate w (svex-mask-lookup lsbs masks) 0)
+                                   (sparseint-concatenate w (svex-mask-lookup x masks) 0))))
        :hints (("goal" :use ((:instance svex-mask-alist-complete-necc
                               (y x) (mask-al masks))
                              (:instance svex-argmasks-okp-necc
                               (vals (b* (((mv width lsbs msbs) (svex-const-concat-args x)))
                                       (list width
                                             (4vec-bit?
-                                             (2vec (logandc1 (svex-mask-lookup lsbs masks)
-                                                             (svex-mask-lookup x masks)))
+                                             (2vec (logandc1 (sparseint-val (svex-mask-lookup lsbs masks))
+                                                             (sparseint-val (svex-mask-lookup x masks))))
                                              (4vec-change-all-bits (svex-eval lsbs env))
                                              (svex-eval lsbs env))
                                             (svex-eval msbs env))))
@@ -1084,7 +1084,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                        (2vec-p width)
                        (<= 0 (2vec->val width)))
                   (4vmask-subsumes (svex-mask-lookup msbs masks)
-                                   (logtail (4vec->lower width) (svex-mask-lookup x masks)))))
+                                   (sparseint-rightshift (4vec->lower width) (svex-mask-lookup x masks)))))
        :hints (("goal" :use ((:instance svex-mask-alist-complete-necc
                               (y x) (mask-al masks))
                              (:instance svex-argmasks-okp-necc
@@ -1092,9 +1092,9 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                       (list width
                                             (svex-eval lsbs env)
                                             (4vec-bit?
-                                             (2vec (logandc1 (svex-mask-lookup msbs masks)
+                                             (2vec (logandc1 (sparseint-val (svex-mask-lookup msbs masks))
                                                              (logtail (2vec->val width)
-                                                                      (svex-mask-lookup x masks))))
+                                                                      (sparseint-val (svex-mask-lookup x masks)))))
                                              (4vec-change-all-bits (svex-eval msbs env))
                                              (svex-eval msbs env)))))
                               (mask (svex-mask-lookup x masks))
@@ -1129,7 +1129,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
          (implies (and (svex-is-const-concat x)
                        (svex-mask-alist-complete masks)
                        (2vec-p width) (<= 0 (2vec->val width))
-                       (equal 0 (logtail (2vec->val width) (svex-mask-lookup x masks))))
+                       (equal 0 (logtail (2vec->val width) (sparseint-val (svex-mask-lookup x masks)))))
                   (4vmask-subsumes (svex-mask-lookup lsbs masks)
                                    (svex-mask-lookup x masks))))
        :hints (("goal" :use ((:instance argmasks-okp-for-const-concat-implies-lsb-mask-subsumes-outer (w (2vec->val (mv-nth 0 (svex-const-concat-args x))))))
@@ -1145,7 +1145,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                          (<= 0 (2vec->val width)))
                     (equal (4vec-mask mask (4vec-zero-ext width x))
                            (4vec-concat width (4vec-mask mask x)
-                                        (4vec-mask (logtail (2vec->val width) (4vmask-fix mask))
+                                        (4vec-mask (sparseint-rightshift (2vec->val width) (4vmask-fix mask))
                                                    0))))
            :hints(("Goal" :in-theory (enable 4vec-mask 4vec-zero-ext 4vec-concat))
                   (logbitp-reasoning :prune-examples nil))))
@@ -1156,7 +1156,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (equal (4vec-mask mask (4vec-concat width x y))
                            (4vec-concat width
                                         (4vec-mask mask x)
-                                        (4vec-mask (logtail (2vec->val width) (4vmask-fix mask))
+                                        (4vec-mask (sparseint-rightshift (2vec->val width) (4vmask-fix mask))
                                                    y))))
            :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat))
                   (logbitp-reasoning :prune-examples nil))))
@@ -1168,7 +1168,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                          (equal w1 (2vec->val w)))
                     (equal (4vec-concat w
                                         (4vec-mask mask x)
-                                        (4vec-mask (logtail w1 mask1)
+                                        (4vec-mask (sparseint-rightshift w1 mask1)
                                                    (4vec-rsh w x)))
                            (4vec-mask mask x)))
            :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-rsh 4vec-shift-core))
@@ -1241,7 +1241,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (local (defthm 4vec-rsh-of-4vec-mask
            (implies (and (2vec-p shift) (<= 0 (2vec->val shift)))
                     (equal (4vec-rsh shift (4vec-mask mask x))
-                           (4vec-mask (logtail (2vec->val shift) (4vmask-fix mask))
+                           (4vec-mask (sparseint-rightshift (2vec->val shift) (4vmask-fix mask))
                                       (4vec-rsh shift x))))
            :hints(("Goal" :in-theory (enable 4vec-mask 4vec-rsh 4vec-shift-core)))))
 
@@ -1250,8 +1250,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                          (<= 0 (2vec->val w)))
                     (equal (equal (4vec-zero-ext w (4vec-mask m x))
                                   (4vec-zero-ext w (4vec-mask m y)))
-                           (equal (4vec-mask (loghead (2vec->val w) (4vmask-fix m)) x)
-                                  (4vec-mask (loghead (2vec->val w) (4vmask-fix m)) y))))
+                           (equal (4vec-mask (sparseint-concatenate (2vec->val w) (4vmask-fix m) 0) x)
+                                  (4vec-mask (sparseint-concatenate (2vec->val w) (4vmask-fix m) 0) y))))
            :hints(("Goal" :in-theory (enable 4vec-zero-ext 4vec-mask))
                   (logbitp-reasoning))))
 
@@ -1406,7 +1406,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   ;;          :otf-flg t))
 
   (local (defthmd 4vec-mask-of-4vec-concat-under-mask
-           (implies (and (equal (logtail (2vec->val width) (4vmask-fix mask))
+           (implies (and (equal (logtail (2vec->val width) (sparseint-val (4vmask-fix mask)))
                                 0)
                          (2vec-p width)
                          (<= 0 (2vec->val width)))
@@ -1541,8 +1541,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 
   (local (defthm 4vec-mask-of-loghead-4vec-mask
            (implies (equal mask1 (4vmask-fix mask))
-                    (Equal (4vec-mask (loghead n mask1) (4vec-mask mask x))
-                           (4vec-mask (loghead n mask1) x)))
+                    (Equal (4vec-mask (sparseint-concatenate n mask1 0) (4vec-mask mask x))
+                           (4vec-mask (sparseint-concatenate n mask1 0) x)))
            :hints(("Goal" :in-theory (enable 4vec-mask))
                   (logbitp-reasoning))))
 
@@ -1636,8 +1636,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 
   (local (defthm 4vec-mask-of-loghead-zero-ext
            (implies (natp width)
-                    (equal (4vec-mask (loghead width mask) (4vec-zero-ext (2vec width) x))
-                           (4vec-mask (loghead width mask) x)))
+                    (equal (4vec-mask (sparseint-concatenate width mask 0) (4vec-zero-ext (2vec width) x))
+                           (4vec-mask (sparseint-concatenate width mask 0) x)))
            :hints(("Goal" :in-theory (enable 4vec-mask 4vec-zero-ext))
                   (logbitp-reasoning))))
 
@@ -1692,7 +1692,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (local (Defthm 4vec-rsh-of-4vec-mask?
            (implies (and (2vec-p sh) (<= 0 (2vec->val sh)))
                     (equal (4vec-rsh sh (4vec-mask? mask a b))
-                           (4vec-mask? (logtail (2vec->val sh) (4vmask-fix mask))
+                           (4vec-mask? (sparseint-rightshift (2vec->val sh) (4vmask-fix mask))
                                        (4vec-rsh sh a)
                                        (4vec-rsh sh b))))
            :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-mask?
@@ -1713,7 +1713,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (local (defthm 4vmask-subsumes-of-loghead
            (implies (and (4vmask-subsumes a b)
                          (4vmask-p a) (4vmask-p b))
-                    (4vmask-subsumes (loghead w a) (loghead w b)))
+                    (4vmask-subsumes (sparseint-concatenate w a 0) (sparseint-concatenate w b 0)))
            :hints(("Goal" :in-theory (enable 4vmask-subsumes))
                   (logbitp-reasoning))))
 
@@ -1721,16 +1721,16 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
            (implies (and (2vec-p w) (<= 0 (2vec->val w)))
                     (equal (4vec-mask? mask (4vec-concat w a b) (4vec-concat w c d))
                            (4vec-concat w
-                                        (4vec-mask? (loghead (2vec->val w) (4vmask-fix mask))
+                                        (4vec-mask? (sparseint-concatenate (2vec->val w) (4vmask-fix mask) 0)
                                                     (4vec-zero-ext w a)
                                                     (4vec-zero-ext w c))
-                                        (4vec-mask? (logtail (2vec->val w) (4vmask-fix mask)) b d))))
+                                        (4vec-mask? (sparseint-rightshift (2vec->val w) (4vmask-fix mask)) b d))))
            :hints(("Goal" :in-theory (enable 4vec-mask? 4vec-bit? 3vec-bit?
                                              4vec-concat 4vec-zero-ext))
                   (logbitp-reasoning))))
 
   (local (defthm 4vec-mask?-of-concat-when-logtail-0
-           (implies (and (equal 0 (logtail (2vec->val w) (4vmask-fix mask)))
+           (implies (and (equal 0 (logtail (2vec->val w) (sparseint-val (4vmask-fix mask))))
                          (2vec-p w) (<= 0 (2vec->val w)))
                     (equal (4vec-mask? mask (4vec-concat w a b) c)
                            (4vec-mask? mask a c)))
@@ -1743,6 +1743,28 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                         (4veclist-mask? c2 t2 f2)))
            :hints(("Goal" :in-theory (enable 4veclist-mask?)))))
 
+
+  (local
+   (progn
+     (defcong 4vmask-equal equal (4vec-mask? mask a b) 1
+       :hints(("Goal" :in-theory (enable 4vec-mask?))))
+     (defthm sparseint-concatenate-self-under-4vmask-equal
+       (4vmask-equal (sparseint-concatenate width (sparseint-concatenate width a b) c)
+                     (sparseint-concatenate width a c))
+       :hints(("Goal" :in-theory (enable bitops::logapp-right-assoc))))
+
+     (defcong sparseint-equal 4vmask-equal (sparseint-concatenate width a b) 2)
+     (defcong sparseint-equal 4vmask-equal (sparseint-concatenate width a b) 3)
+
+     (defthm sparseint-equal-rightshift-0
+       (sparseint-equal (sparseint-rightshift 0 x) x))))
+
+
+  (local (defthm logand-ash-neg1-equal-0
+           (implies (natp n)
+                    (equal (equal 0 (logand (ash -1 n) x))
+                           (equal 0 (logtail n x))))
+           :hints ((logbitp-reasoning :prune-examples nil))))
 
   (defthm-svex->a4vec-flag
     (defthm svex->a4vec-correct
@@ -2304,30 +2326,52 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                           bitops::ihsext-inductions))))
          :rule-classes :linear))
 
-(define 4vmask-to-a4vec-varcount ((mask natp) (boolmask integerp))
-  :returns (count natp :rule-classes :type-prescription)
-  (b* ((mask (lnfix mask)))
-    (- (* 2 (logcount mask))
-       (logcount (logand mask (lifix boolmask))))))
+(define sparseint-nfix ((x sparseint-p))
+  :guard (not (sparseint-< x 0))
+  :returns (new-x sparseint-p)
+  :inline t
+  (mbe :logic (if (sparseint-< x 0) 0 (sparseint-fix x))
+       :exec x)
+  ///
+  (defret <fn>-correct
+    (equal (sparseint-val new-x) (nfix (sparseint-val x)))))
 
-(define 4vmask-to-a4vec-rec ((mask natp) (boolmask integerp) (nextvar natp))
+(define 4vmask-to-a4vec-varcount ((mask 4vmask-p) (boolmask integerp))
+  :guard (not (sparseint-< mask 0))
+  :returns (count natp :rule-classes :type-prescription)
+  (b* ((mask (sparseint-nfix (4vmask-fix mask))))
+    (- (* 2 (sparseint-bitcount mask))
+       (sparseint-bitcount (sparseint-bitand mask (int-to-sparseint boolmask))))))
+
+(local (defcong sparseint-equal sparseint-equal (sparseint-nfix x) 1))
+
+(local (defthm integer-length-posp
+         (implies (posp x)
+                  (posp (integer-length x)))
+         :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                            ihsext-inductions)))
+         :rule-classes :type-prescription))
+
+(define 4vmask-to-a4vec-rec ((mask 4vmask-p) (boolmask integerp) (nextvar natp))
+  :guard (not (sparseint-< mask 0))
   :returns (mv (upper nat-bool-listp)
                (lower nat-bool-listp))
-  :measure (integer-length mask)
+  :verify-guards nil
+  :measure (sparseint-length (sparseint-nfix mask))
   :hints(("Goal" :in-theory (enable bitops::integer-length**
                                     4vmask-fix)))
-  (b* ((mask (lnfix mask))
+  (b* ((mask (sparseint-nfix (4vmask-fix mask)))
        (nextvar (lnfix nextvar))
-       ((when (eql mask 0))
+       ((when (sparseint-equal mask 0))
         (mv (aig-sterm t) (aig-sterm nil)))
        ((mv ubit0 ubit1 nextvar)
-        (if (logbitp 0 mask)
+        (if (eql 1 (sparseint-bit 0 mask))
             (if (logbitp 0 boolmask)
                 (mv nextvar nextvar (+ 1 nextvar))
               (mv nextvar (1+ nextvar) (+ 2 nextvar)))
           (mv t nil nextvar)))
        ((mv rest-upper rest-lower)
-        (4vmask-to-a4vec-rec (logcdr mask) (logcdr boolmask) nextvar)))
+        (4vmask-to-a4vec-rec (sparseint-rightshift 1 mask) (logcdr boolmask) nextvar)))
     (mv (aig-scons ubit0 rest-upper)
         (aig-scons ubit1 rest-lower)))
   ///
@@ -2335,6 +2379,15 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   ;;   (equal (mv-nth 2 (4vmask-to-a4vec-rec mask nextvar))
   ;;          (+ (* 2 (logcount (nfix mask))) (nfix nextvar)))
   ;;   :hints(("Goal" :in-theory (enable bitops::logcount**))))
+
+  (defret true-listp-of-<fn>-upper
+    (true-listp upper)
+    :rule-classes :type-prescription)
+  (defret true-listp-of-<fn>-lower
+    (true-listp lower)
+    :rule-classes :type-prescription)
+
+  (verify-guards 4vmask-to-a4vec-rec)
 
   (defthm 4vmask-to-a4vec-rec-lower-bounds
     (and (nat-bool-list-lower-boundp nextvar (mv-nth 0 (4vmask-to-a4vec-rec mask boolmask nextvar)))
@@ -2356,7 +2409,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                       bitops::logcount**)
             :induct (4vmask-to-a4vec-rec mask boolmask nextvar)
             :expand ((:free (bound a b) (nat-bool-list-upper-boundp bound (cons a b)))
-                     (:free (bound) (nat-bool-list-upper-boundp bound nil)))
+                     (:free (bound) (nat-bool-list-upper-boundp bound nil))
+                     (:free (x) (logtail 1 x)))
             :do-not-induct t))
     :rule-classes ((:forward-chaining :trigger-terms ((4vmask-to-a4vec-rec mask boolmask nextvar)))))
 
@@ -2382,7 +2436,11 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                       4vmask-to-a4vec-varcount
                                       bitops::logand**
                                       bitops::logcount**
-                                      bitops::logbitp**)))
+                                      bitops::logbitp**)
+            :induct (4vmask-to-a4vec-rec mask boolmask nextvar))
+           (and stable-under-simplificationp
+                '(:expand ((logcount (sparseint-val (4vmask-fix mask)))
+                           (:free (x) (logtail 1 x))))))
     :rule-classes nil))
 
   ;; (defthm eval-4vmask-to-a4vec-rec-cons-greater
@@ -2403,29 +2461,30 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   ;;                   (equal (aig-list->s lower (cons (cons var val) env))
   ;;                          (aig-list->s lower env)))))))
 
-(define 4vmask-to-a4vec-rec-env ((mask natp)
+(define 4vmask-to-a4vec-rec-env ((mask 4vmask-p)
                                  (boolmask integerp)
                                  (upper integerp)
                                  (lower integerp)
                                  (nextvar natp))
+  :guard (not (sparseint-< mask 0))
   :returns (env "environment for the resulting 4vmask")
-  :measure (integer-length mask)
+  :measure (sparseint-length (sparseint-nfix (4vmask-fix mask)))
   :hints(("Goal" :in-theory (enable bitops::integer-length**
                                     4vmask-fix)))
-  (b* ((mask (lnfix mask))
+  (b* ((mask (sparseint-nfix (4vmask-fix mask)))
        (nextvar (lnfix nextvar))
-       ((when (eql mask 0)) nil)
+       ((when (sparseint-equal mask 0)) nil)
        (rest-env
-        (4vmask-to-a4vec-rec-env (logcdr mask)
+        (4vmask-to-a4vec-rec-env (sparseint-rightshift 1 mask)
                                  (logcdr boolmask)
                                  (logcdr upper)
                                  (logcdr lower)
-                                 (if (logbitp 0 mask)
+                                 (if (eql 1 (sparseint-bit 0 mask))
                                      (if (logbitp 0 boolmask)
                                          (+ 1 nextvar)
                                        (+ 2 nextvar))
                                    nextvar))))
-    (if (logbitp 0 mask)
+    (if (eql 1 (sparseint-bit 0 mask))
         (cons (cons nextvar (logbitp 0 upper))
               (if (logbitp 0 boolmask)
                   rest-env
@@ -2445,7 +2504,10 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                                       4vmask-to-a4vec-varcount
                                       bitops::logand**)
             :do-not-induct t
-            :induct (4vmask-to-a4vec-rec-env mask boolmask upper lower nextvar))))
+            :induct (4vmask-to-a4vec-rec-env mask boolmask upper lower nextvar))
+           (and stable-under-simplificationp
+                '(:expand ((:free (x) (logtail 1 x))
+                           (logcount (sparseint-val (4vmask-fix mask))))))))
 
   (defthm nat-bool-aig-list->s-of-cons-nonmember
     (implies (and (nat-bool-listp x)
@@ -2468,25 +2530,29 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
           (4vmask-to-a4vec-rec mask boolmask nextvar))
          (env
           (4vmask-to-a4vec-rec-env mask boolmask upper lower nextvar)))
-      (and (equal (logand (nfix mask) (aig-list->s uppera env))
-                  (logand (nfix mask) upper))
+      (and (equal (logand (nfix (sparseint-val (4vmask-fix mask))) (aig-list->s uppera env))
+                  (logand (nfix (sparseint-val (4vmask-fix mask))) upper))
            (implies (eql 0 (logand boolmask (logxor upper lower)))
-                    (equal (logand (nfix mask) (aig-list->s lowera env))
-                           (logand (nfix mask) lower)))))
+                    (equal (logand (nfix (sparseint-val (4vmask-fix mask))) (aig-list->s lowera env))
+                           (logand (nfix (sparseint-val (4vmask-fix mask))) lower)))))
     :hints(("Goal" :in-theory (enable 4vmask-to-a4vec-rec
                                       bitops::logand**
                                       bitops::logxor**
                                       bitops::logbitp**
                                       4vmask-fix)
-            :induct (4vmask-to-a4vec-rec-env mask boolmask upper lower nextvar))
+            :induct (4vmask-to-a4vec-rec-env mask boolmask upper lower nextvar)
+            :expand ((:free (x) (logtail 1 x))))
            (and stable-under-simplificationp
-                '(:in-theory (enable bitops::b-xor))))))
+                '(:in-theory (enable bitops::b-xor)))
+           (and stable-under-simplificationp
+                '(:in-theory (enable nfix))))))
 
 (define 4vec-boolmaskp ((x 4vec-p) (mask integerp))
   (b* (((4vec x) x))
     (eql 0 (logand mask (logxor x.upper x.lower)))))
 
-(define 4vmask-to-a4vec ((mask natp) (boolmask integerp) (nextvar natp))
+(define 4vmask-to-a4vec ((mask 4vmask-p) (boolmask integerp) (nextvar natp))
+  :guard (not (sparseint-< mask 0))
   :returns (res nat-bool-a4vec-p!
                 :hints(("Goal" :in-theory (enable nat-bool-a4vec-p))))
   :prepwork ((local (defthm true-listp-when-nat-bool-listp
@@ -2521,7 +2587,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     :rule-classes ((:forward-chaining :trigger-terms ((4vmask-to-a4vec mask boolmask nextvar))))))
 
 
-(define 4vmask-to-a4vec-env ((mask natp) (boolmask integerp) (val 4vec-p) (nextvar natp))
+(define 4vmask-to-a4vec-env ((mask 4vmask-p) (boolmask integerp) (val 4vec-p) (nextvar natp))
+  :guard (not (sparseint-< mask 0))
   :returns env
   :prepwork ((local (defthm true-listp-when-nat-bool-listp
                       (implies (nat-bool-listp x)
@@ -2548,9 +2615,11 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (defthm eval-4vmask-to-a4vec-with-env
     (b* ((vala (4vmask-to-a4vec mask boolmask nextvar))
          (env (4vmask-to-a4vec-env mask boolmask val nextvar)))
-      (implies (4vec-boolmaskp val boolmask)
-               (equal (4vec-mask (nfix mask) (a4vec-eval vala env))
-                      (4vec-mask (nfix mask) val))))
+      (implies (and (4vec-boolmaskp val boolmask)
+                    (4vmask-p mask)
+                    (natp (sparseint-val mask)))
+               (equal (4vec-mask mask (a4vec-eval vala env))
+                      (4vec-mask mask val))))
     :hints(("Goal" :in-theory (e/d (4vmask-to-a4vec
                                     4vec-boolmaskp
                                       4vmask-fix
@@ -2560,20 +2629,20 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
             :use ((:instance eval-4vmask-to-a4vec-rec-with-env
                    (upper (4vec->upper val))
                    (lower (4vec->lower val)))))
-           (bitops::logbitp-reasoning)
+           ;; (bitops::logbitp-reasoning)
            ;; (and stable-under-simplificationp
            ;;      '(:bdd (:vars nil)))
            ))
 
-  (defthm eval-4vmask-to-a4vec-with-env-mask-natp
-    (b* ((vala (4vmask-to-a4vec mask boolmask nextvar))
-         (env (4vmask-to-a4vec-env mask boolmask val nextvar)))
-      (implies (and (natp mask)
-                    (4vec-boolmaskp val boolmask))
-               (equal (4vec-mask mask (a4vec-eval vala env))
-                      (4vec-mask mask val))))
-    :hints (("Goal" :use eval-4vmask-to-a4vec-with-env
-             :in-theory (disable eval-4vmask-to-a4vec-with-env)))))
+  ;; (defthm eval-4vmask-to-a4vec-with-env-mask-natp
+  ;;   (b* ((vala (4vmask-to-a4vec mask boolmask nextvar))
+  ;;        (env (4vmask-to-a4vec-env mask boolmask val nextvar)))
+  ;;     (implies (and (4vec-boolmaskp val boolmask))
+  ;;              (equal (4vec-mask mask (a4vec-eval vala env))
+  ;;                     (4vec-mask mask val))))
+  ;;   :hints (("Goal" :use eval-4vmask-to-a4vec-with-env
+  ;;            :in-theory (disable eval-4vmask-to-a4vec-with-env))))
+  )
 
 
 
@@ -2590,7 +2659,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (b* (((when (atom vars)) 0)
        (mask (svex-mask-lookup (svex-var (car vars)) masks))
        (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
-       ((when (< mask 0)) 0))
+       ((when (sparseint-< mask 0)) 0))
     (+ (4vmask-to-a4vec-varcount mask boolmask)
        (svex-maskbits-for-vars (cdr vars) masks boolmasks))))
 
@@ -2599,7 +2668,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   :prepwork ((local (in-theory (enable svarlist-p svarlist-fix))))
   (b* (((when (atom vars)) t)
        (mask (svex-mask-lookup (svex-var (car vars)) masks))
-       ((when (< mask 0)) nil))
+       ((when (sparseint-< mask 0)) nil))
     (svex-maskbits-ok (cdr vars) masks)))
 
 (define svex-varmasks->a4env-rec ((vars svarlist-p)
@@ -2623,7 +2692,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
        ((when (atom vars))
         (mv nil acc (lnfix nextvar)))
        (mask (svex-mask-lookup (svex-var (car vars)) masks))
-       ((when (< mask 0))
+       ((when (sparseint-< mask 0))
         (mv (msg "Negative mask: ~x0~%" (svar-fix (car vars))) acc (lnfix nextvar)))
        (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
        (a4vec (4vmask-to-a4vec mask boolmask nextvar))
@@ -2640,7 +2709,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                 ((when (atom vars))
                  (list nil acc (lnfix nextvar)))
                 (mask (svex-mask-lookup (svex-var (car vars)) masks))
-                ((when (< mask 0))
+                ((when (sparseint-< mask 0))
                  (list (msg "Negative mask: ~x0~%" (svar-fix (car vars))) acc (lnfix nextvar)))
                 (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
                 (a4vec (4vmask-to-a4vec mask boolmask nextvar))
@@ -2988,7 +3057,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (b* (((when (atom vars))
         (mv nil acc (lnfix nextvar)))
        (mask (svex-mask-lookup (svex-var (car vars)) masks))
-       ((when (< mask 0))
+       ((when (sparseint-< mask 0))
         (mv (msg "Negative mask: ~x0~%" (svar-fix (car vars)))
             acc (lnfix nextvar)))
        (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
@@ -3017,7 +3086,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
            (b* (((when (atom vars))
                  (list nil acc (lnfix nextvar)))
                 (mask (svex-mask-lookup (svex-var (car vars)) masks))
-                ((when (< mask 0))
+                ((when (sparseint-< mask 0))
                  (list (msg "Negative mask: ~x0~%" (svar-fix (car vars)))
                        acc (lnfix nextvar)))
                 (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
@@ -3052,7 +3121,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
      (declare (ignorable vars masks boolmasks nextvar a4acc goalenv envacc))
      (b* (((when (atom vars)) nil)
           (mask (svex-mask-lookup (svex-var (car vars)) masks))
-          ((when (< mask 0)) nil)
+          ((when (sparseint-< mask 0)) nil)
           (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
           (4vec (svex-env-lookup (car vars) goalenv))
           (env-part

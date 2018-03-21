@@ -975,7 +975,7 @@ should address this again later.</p>"
                  ;; Bozo -- convert this to a zero-extend when possible?
                  (make-svex-call
                   :fn 'bit?
-                  :args (list (svex-quote (2vec (svex-mask-lookup (make-svex-var :name key) masks)))
+                  :args (list (svex-quote (2vec (sparseint-val (svex-mask-lookup (make-svex-var :name key) masks))))
                               ;; care
                               (make-svex-var :name val)
                               ;; don't-care

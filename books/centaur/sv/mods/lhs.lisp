@@ -3112,16 +3112,16 @@ bits of @('foo'):</p>
        ((when (eq (lhatom-kind first.atom) :z))
         (lhs-check-masks rest mask-acc conf-acc))
        ((lhatom-var first.atom) first.atom)
-       (firstmask (ash (lognot (ash -1 first.w)) first.atom.rsh))
+       (firstmask (sparseint-concatenate first.atom.rsh 0 (sparseint-concatenate first.w -1 0)))
        (varmask (or (cdr (hons-get first.atom.name mask-acc)) 0))
-       (conflict (logand varmask firstmask))
-       (mask-acc (hons-acons first.atom.name (logior firstmask varmask) mask-acc))
-       (conf-acc (if (eql 0 conflict)
+       (conflict (sparseint-bitand varmask firstmask))
+       (mask-acc (hons-acons first.atom.name (sparseint-bitor firstmask varmask) mask-acc))
+       (conf-acc (if (sparseint-bit 0 conflict)
                      conf-acc
                    (hons-acons first.atom.name
-                               (logior conflict
-                                       (or (cdr (hons-get first.atom.name conf-acc))
-                                           0))
+                               (sparseint-bitor conflict
+                                                (or (cdr (hons-get first.atom.name conf-acc))
+                                                    0))
                                conf-acc))))
     (lhs-check-masks rest mask-acc conf-acc)))
 
