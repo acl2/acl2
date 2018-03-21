@@ -985,7 +985,7 @@
 ; Shape: ttree
             (all-runes-in-ttree-lst lst ans))
            (assumption
-; Shape: term
+; Shape: assumption record
             ans)
            (pt
 ; Shape: parent tree - just numbers
