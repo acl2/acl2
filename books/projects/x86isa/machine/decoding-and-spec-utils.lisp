@@ -510,8 +510,8 @@ the @('fault') field instead.</li>
      <p>
      See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
      and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
-     The actual size of the value returned by this function
-     is @('StackAddrSize'),
+     The actual size of the value consumed by this function
+     should be @('StackAddrSize'),
      introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.1.9.
      </p>
      <p>
@@ -520,11 +520,19 @@ the @('fault') field instead.</li>
      show assignments of the form
      @('RSP <- ...'), @('ESP <- ...'), and @('SP <- ...')
      based on the stack address size.
-     This suggests that
+     This may suggests that
      when the stack address size is 32
      the assignment to ESP leaves the high 32 bits of RSP unchanged,
      and when the stack address size is 16
      the assignment to SP leaves the high 48 bits of RSP unchanged.
+     However,
+     as explained in the documentation of @(tsee wr32) and @(tsee wr16),
+     normally writing to the low 32 bits of a general-purpose register
+     (which RSP/ESP/SP is) zeros the high 32 bits,
+     while writing the low 16 bits leaves the high 48 bits unchanged.
+     Thus, we follow this requirement also when writing RSP/ESP/SP implicitly,
+     via stack manipulation instructions like PUSH that use
+     this @(tsee write-*sp) function to update the stack pointer register.
      </p>
      <p>
      This function should be always called
@@ -541,19 +549,20 @@ the @('fault') field instead.</li>
         (!rgfi *rsp* *sp x86)
       (b* ((ss-hidden (xr :seg-hidden *ss* x86))
            (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
-           (ss.b (data-segment-descriptor-attributes-layout-slice :d/b ss-attr))
-           ;; converting RSP to unsigned (via N64) and then back to signed (via
-           ;; I64) lets the guard proofs go through easily, but at some point we
-           ;; might look into adding theorems about PART-INSTALL and
-           ;; SIGNED-BYTE-P to the BITOPS libraries to let the guard proofs here
-           ;; go through without the conversions:
-           (rsp (rgfi *rsp* x86))
-           (ursp (n64 rsp))
-           (ursp-new (if (= ss.b 1)
-                         (part-install (n32 *sp) ursp :low 0 :width 32)
-                       (part-install (n16 *sp) ursp :low 0 :width 16)))
-           (rsp-new (i64 ursp-new)))
-        (!rgfi *rsp* rsp-new x86)))
+           (ss.b (data-segment-descriptor-attributes-layout-slice
+                  :d/b ss-attr)))
+        (if (= ss.b 1)
+            (!rgfi *rsp* (n32 *sp) x86)
+          ;; converting RSP to unsigned (via N64) and then back to signed (via
+          ;; I64) lets the guard proofs go through easily, but at some point we
+          ;; might look into adding theorems about PART-INSTALL and
+          ;; SIGNED-BYTE-P to the BITOPS libraries to let the guard proofs here
+          ;; go through without the conversions:
+          (b* ((rsp (rgfi *rsp* x86))
+               (ursp (n64 rsp))
+               (ursp-new (part-install (n16 *sp) ursp :low 0 :width 16))
+               (rsp-new (i64 ursp-new)))
+            (!rgfi *rsp* rsp-new x86)))))
     :inline t
     ///
 
