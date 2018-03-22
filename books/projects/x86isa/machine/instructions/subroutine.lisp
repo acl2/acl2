@@ -13,7 +13,7 @@
 ;; INSTRUCTION: CALL
 ;; ======================================================================
 
-;; From Intel Vol. 1, 6-11:
+;; From Intel manual, Mar'17, Volume 1, Section 6.3.7:
 
 ;; In 64-bit mode, the operand size for all near branches (CALL, RET,
 ;; JCC, JCXZ, JMP, and LOOP) is forced to 64 bits. These instructions
@@ -22,10 +22,10 @@
 
 ;; The following aspects of near branches are controlled by the
 ;; effective operand size:
-
-;; Truncation of the size of the instruction pointer Size of a stack
-;; pop or push, due to a CALL or RET Size of a stack-pointer increment
-;; or decrement, due to a CALL or RET Indirect-branch operand size
+;;   Truncation of the size of the instruction pointer
+;;   Size of a stack pop or push, due to a CALL or RET
+;;   Size of a stack-pointer increment or decrement, due to a CALL or RET
+;;   Indirect-branch operand size
 
 ;; In 64-bit mode, all of the above actions are forced to 64 bits
 ;; regardless of operand size prefixes (operand size prefixes are
@@ -217,7 +217,7 @@
 ;; INSTRUCTION: RET
 ;; ======================================================================
 
-;; From Intel Vol. 1, 6-11:
+;; From Intel manual, Mar'17, Volume 1, Section 6.3.7:
 
 ;; In 64-bit mode, the operand size for all near branches (CALL, RET,
 ;; JCC, JCXZ, JMP, and LOOP) is forced to 64 bits. These instructions
@@ -226,10 +226,10 @@
 
 ;; The following aspects of near branches are controlled by the
 ;; effective operand size:
-;;   Truncation of the size of the instruction pointer Size of a stack
-;;   pop or push, due to a CALL or RET Size of a stack-pointer
-;;   increment or decrement, due to a CALL or RET Indirect-branch
-;;   operand size
+;;   Truncation of the size of the instruction pointer
+;;   Size of a stack pop or push, due to a CALL or RET
+;;   Size of a stack-pointer increment or decrement, due to a CALL or RET
+;;   Indirect-branch operand size
 
 ;; In 64-bit mode, all of the above actions are forced to 64 bits
 ;; regardless of operand size prefixes (operand size prefixes are

@@ -98,7 +98,7 @@ the @('fault') field instead.</li>
      Since, in the model, this is a 48-bit signed integer,
      this function returns a 48-bit signed integer.
      </p>
-    <p>
+     <p>
      In 32-bit mode, a 32-bit or 16-bit instruction pointer is read from
      EIP (i.e. the low 32 bits of RIP)
      or IP (i.e. the low 16 bits of RIP),
@@ -111,6 +111,12 @@ the @('fault') field instead.</li>
      See AMD manual, Oct'13, Vol. 1, Sec. 2.2.4 and Sec. 2.5.
      AMD manual, Apr'16, Vol. 2, Sec 4.7.2.,
      and Intel manual, Mar'17, Vol. 1, Sec. 3.6.
+     </p>
+     <p>
+     In 32-bit mode, the address-size override prefix (if present)
+     should not affect the instruction pointer size.
+     It does not seem to make sense
+     to change the instruction pointer size on a per-instruction basis.
      </p>"
     (b* ((*ip (rip x86)))
       (if (64-bit-modep x86)
@@ -159,7 +165,7 @@ the @('fault') field instead.</li>
      or when an instruction byte is eventually accessed;
      the Intel and AMD manuals seem unclear in this respect.
      But since the failure of these checks stops execution with an error,
-     and it is in a way always \"safe\" to stop execution with an error
+     and it is in a way always ``safe'' to stop execution with an error
      (in the sense that the model provides no guarantees when this happens),
      for now we choose to perform these checks here.
      </p>
@@ -353,7 +359,7 @@ the @('fault') field instead.</li>
      ESP (i.e. the low 32 bits of RSP)
      or SP (i.e. the low 16 bits of RSP),
      based on the SS.B bit, i.e. the B bit of the current code segment register.
-     Either way, this function returns an unsigne 32-bit or 16-bit integer,
+     Either way, this function returns an unsigned 32-bit or 16-bit integer,
      which is also a signed 64-bit integer.
      </p>
      <p>
@@ -361,13 +367,13 @@ the @('fault') field instead.</li>
      and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
      The actual size of the value returned by this function
      is @('StackAddrSize'),
-     introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
+     introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.1.9.
      </p>
      <p>
      In 32-bit mode, the address-size override prefix (if present)
-     does not affect the stack address size.
-     It would not make sense to change the stack address size
-     on a per-instruction basis.
+     should not affect the stack address size.
+     It does not seem to make sense
+     to change the stack address size on a per-instruction basis.
      </p>"
     (b* ((*sp (rgfi *rsp* x86)))
       (if (64-bit-modep x86)
@@ -418,7 +424,7 @@ the @('fault') field instead.</li>
      or when the stack is eventually accessed through the updated pointer;
      the Intel and AMD manuals seem unclear in this respect.
      But since the failure of these checks stops execution with an error,
-     and it is in a way always \"safe\" to stop execution with an error
+     and it is in a way always ``safe'' to stop execution with an error
      (in the sense that the model provides no guarantees when this happens),
      for now we choose to perform these checks here.
      </p>
@@ -501,7 +507,7 @@ the @('fault') field instead.</li>
      and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
      The actual size of the value returned by this function
      is @('StackAddrSize'),
-     introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.19.
+     introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.1.9.
      </p>
      <p>
      The pseudocode of stack instructions like PUSH
