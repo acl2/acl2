@@ -224,7 +224,7 @@
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (increment-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
@@ -449,7 +449,7 @@
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (increment-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)

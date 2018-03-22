@@ -111,7 +111,7 @@
        ;; ((when (not (canonical-address-p addr)))
        ;;  (!!ms-fresh :addr-not-canonical addr))
 
-       ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ;; If the instruction goes beyond 15 bytes, stop. Change to an
@@ -220,7 +220,7 @@
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ;; If the instruction goes beyond 15 bytes, stop. Change to an

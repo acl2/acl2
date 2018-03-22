@@ -254,7 +254,7 @@
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
@@ -685,7 +685,7 @@ the execution in this case.</p>"
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
 
-       ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
        ;; If the instruction goes beyond 15 bytes, stop. Change to an
