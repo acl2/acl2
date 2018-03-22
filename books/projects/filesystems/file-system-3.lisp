@@ -23,13 +23,25 @@
 ;; long. If the character-list is not exactly aligned to a block boundary, we
 ;; fill the space with null characters.
 ;; It will be used in wrchs.
-(defun make-blocks (text)
+(defund make-blocks (text)
   (declare (xargs :guard (character-listp text)
                   :measure (len text)))
   (if (atom text)
       nil
     (cons (make-character-list (take *blocksize* text))
           (make-blocks (nthcdr *blocksize* text)))))
+
+(defthm
+  make-blocks-correctness-5
+  (iff (consp (make-blocks text))
+       (consp text))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary (iff (equal (len (make-blocks text)) 0)
+                    (atom text))
+    :hints (("goal''" :expand (len (make-blocks text))))))
+  :hints (("goal" :in-theory (enable make-blocks))))
 
 ;; Characterisation of a disk, which is a list of blocks as described before.
 (defun block-listp (block-list)
@@ -43,7 +55,9 @@
 ;; Proving that we get a proper block-list out of make-blocks.
 (defthm make-blocks-correctness-2
         (implies (character-listp text)
-                 (block-listp (make-blocks text))))
+                 (block-listp (make-blocks text)))
+        :hints (("Goal" :in-theory (enable make-blocks))))
+
 ;; Lemma
 (defthm block-listp-correctness-1
   (implies (block-listp block-list)
@@ -68,17 +82,22 @@
 ;; This is the counterpart of make-blocks that collapses blocks into a
 ;; character-list of the appropriate length.
 ;; It will be used in stat and, by extension, in rdchs.
-(defun unmake-blocks (blocks n)
-  (declare (xargs :guard (and (block-listp blocks)
-                              (natp n)
-                              (feasible-file-length-p (len blocks) n))
-                  :guard-hints (("Goal" :in-theory (enable feasible-file-length-p)) )))
+(defun
+  unmake-blocks (blocks n)
+  (declare
+   (xargs
+    :guard (and (block-listp blocks)
+                (natp n)
+                (feasible-file-length-p (len blocks) n))
+    :guard-hints
+    (("goal" :in-theory (enable feasible-file-length-p)))))
   (if (atom blocks)
       nil
-    (if (atom (cdr blocks))
-        (take n (car blocks))
-      (binary-append (car blocks)
-                     (unmake-blocks (cdr blocks) (- n *blocksize*))))))
+      (if (atom (cdr blocks))
+          (take n (car blocks))
+          (binary-append (car blocks)
+                         (unmake-blocks (cdr blocks)
+                                        (- n *blocksize*))))))
 
 ;; Proving that we get a proper character-list out provided we don't ask for
 ;; more characters than we have.
@@ -94,31 +113,30 @@
                  (iff (consp (nthcdr n l)) (> (len l) n)))
         :hints (("Goal" :induct (nthcdr n l))))
 
-(defthm unmake-make-blocks-lemma-2
-  (implies (and (natp n) (>= (len l) n))
-           (equal (len (nthcdr n l)) (- (len l) n))))
-
 (encapsulate ()
   (local (include-book "std/lists/repeat" :dir :system))
 
   ;; Proving that make and unmake are, in a sense, inverse functions of each
   ;; other.
-  (defthm unmake-make-blocks
+  (defthm
+    unmake-make-blocks
     (implies (and (character-listp text))
-             (equal (unmake-blocks (make-blocks text) (len text)) text))
-    :hints (("Subgoal *1/3.2" :in-theory (disable unmake-make-blocks-lemma-1)
-             :use (:instance unmake-make-blocks-lemma-1 (n *blocksize*) (l
-                                                                         text)))
-            ("Subgoal *1/3.1'"
-             :in-theory (disable already-a-character-list
-                                 take-of-too-many)
-             :use ((:instance take-of-too-many (x text) (n *blocksize*))
-                   (:instance unmake-make-blocks-lemma-1 (n *blocksize*) (l
-                                                                          text))))))
+             (equal (unmake-blocks (make-blocks text)
+                                   (len text))
+                    text))
+    :hints
+    (("goal" :in-theory (enable make-blocks))
+     ("subgoal *1/3.3'"
+      :in-theory (disable first-n-ac-of-make-character-list
+                          take-of-too-many)
+      :use ((:instance first-n-ac-of-make-character-list
+                       (i (len text))
+                       (l (first-n-ac 8 text nil))
+                       (ac nil))
+            (:instance take-of-too-many (x text)
+                       (n *blocksize*)))))))
 
-  )
-
-;; This is a function that might be needed later.
+;; This is a constant that might be needed later.
 ;; This is to be returned when a block is not found. It's full of null
 ;; characters and is *blocksize* long.
 (defconst *nullblock* (make-character-list (take *blocksize* nil)))
@@ -126,17 +144,21 @@
 ;; This function serves to get the specified blocks from a disk. If the block
 ;; is not found (most likely because of an invalid index) we return a null block
 ;; as noted above.
-(defun fetch-blocks-by-indices (block-list index-list)
+(defun
+  fetch-blocks-by-indices
+  (block-list index-list)
   (declare (xargs :guard (and (block-listp block-list)
                               (nat-listp index-list))))
-  (if (atom index-list)
-      nil
-    (let ((tail (fetch-blocks-by-indices block-list (cdr index-list))) )
-      (if (>= (car index-list) (len block-list))
-          (cons *nullblock* tail)
+  (if
+   (atom index-list)
+   nil
+   (let
+    ((tail
+      (fetch-blocks-by-indices block-list (cdr index-list))))
+    (if (>= (car index-list) (len block-list))
+        (cons *nullblock* tail)
         (cons (nth (car index-list) block-list)
-              tail)
-        ))))
+              tail)))))
 
 ;; Prove that a proper block-list is returned.
 (defthm fetch-blocks-by-indices-correctness-1
@@ -158,6 +180,7 @@
                                    index-list)
           (fetch-blocks-by-indices block-list index-list))))
 
+
 (defthm
   make-blocks-correctness-1
   (implies (character-listp text)
@@ -166,14 +189,8 @@
                    (len text))
                 (not (< (* *blocksize* (len (make-blocks text)))
                         (len text)))))
-  :instructions (:induct (:change-goal (main . 2) t)
-                         :bash :promote
-                         (:claim (character-listp (nthcdr *blocksize* text)))
-                         (:casesplit (>= (len text) *blocksize*))
-                         :bash :bash (:demote 1)
-                         (:dive 1 1)
-                         :x
-                         :top :s))
+  :hints (("goal" :in-theory (enable make-blocks)
+           :induct t)))
 
 ;; This function, which is kept disabled, recognises a regular file entry. I am
 ;; deciding not to make things overly complicated by making getter and setter
@@ -456,8 +473,7 @@
 ; This function deletes a file or directory given its path.
 
 ; Note that we don't need to do anything with the disk - the blocks can just
-; lie there, forever unreferred to. In a later model we might think about
-; re-using the blocks.
+; lie there, forever unreferred to. In model 4, we start re-using the blocks.
 (defun l3-unlink (hns fs)
   (declare (xargs :guard (and (symbol-listp hns)
                               (l3-fs-p fs))))
@@ -561,11 +577,16 @@
   
   )
 
-(defthm make-blocks-correctness-3
+(defthm
+  make-blocks-correctness-3
   (implies (and (character-listp cl))
-           (feasible-file-length-p (len (make-blocks cl))  (len cl)))
-  :hints (("Goal" :in-theory (e/d (feasible-file-length-p) (make-blocks-correctness-1))
-           :use (:instance make-blocks-correctness-1 (text cl))) ))
+           (feasible-file-length-p (len (make-blocks cl))
+                                   (len cl)))
+  :hints
+  (("goal"
+    :in-theory (e/d (feasible-file-length-p)
+                    (make-blocks-correctness-1))
+    :use (:instance make-blocks-correctness-1 (text cl)))))
 
 ; This function writes a specified text string to a specified position to a
 ; text file at a specified path.
@@ -966,7 +987,8 @@
                        (:rewrite l3-create-returns-fs)
                        (:rewrite l3-stat-correctness-1)
                        (:rewrite l3-create-correctness-1)
-                       (:rewrite l3-rdchs-correctness-1))
+                       (:rewrite l3-rdchs-correctness-1)
+                       l3-bounded-fs-p-correctness-1)
            :use ((:instance l2-read-after-create-2
                             (fs (l3-to-l2-fs fs disk)))
                  l3-to-l2-fs-correctness-1
