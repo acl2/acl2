@@ -298,11 +298,15 @@ the @('fault') field instead.</li>
      but that is not quite consistent with the pseudocode assignments to EIP,
      which seem to imply that the high bits are untouched.
      Table 3-1 is under a section titled
-     &lsquo;Address Calculation in 64-Bit Mode&rsquo;,
+     `Address Calculation in 64-Bit Mode',
      which may suggest that the table may not apply to 32-bit mode,
      but then it is not clear how it would just apply to 64-bit mode.
      For now, we decide to have this function follow Intel's Table 3-1,
      but we may revise that if we manage to resolve these ambiguities.
+     We also note that Intel's Table 3-1 is consistent with the way in which
+     32-bit and 16-bit values are written to general-purpose registers
+     (even though RIP/EIP/IP is not a general-purpose register);
+     see @(tsee wr32) and @(tsee wr16).
      </p>
      <p>
      This function should be always called
