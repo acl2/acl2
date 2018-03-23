@@ -331,7 +331,9 @@
        ((mv flg rsp-linear) (ea-to-la rsp *ss* x86))
        ((when (and inst-ac?
                    (not flg)
-                   (not (equal (logand rsp-linear 7) 0))))
+                   (not (equal (logand rsp-linear
+                                       (- operand-size 1))
+                               0))))
         (!!ms-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
 
        ((mv flg (the (signed-byte 64) tos) x86)
