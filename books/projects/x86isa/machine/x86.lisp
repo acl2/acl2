@@ -2846,25 +2846,11 @@
 
     (#xC2
      "(RETN lw)"
-     (if (64-bit-modep x86)
-         (x86-ret start-rip temp-rip prefixes rex-byte opcode
-                  modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(RETN lw) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-ret start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xC3
      "(RETN)"
-     (if (64-bit-modep x86)
-         (x86-ret start-rip temp-rip prefixes rex-byte opcode
-                  modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "RETN is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-ret start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xC4 #xC5)
      "Escape to VEX opcode map"
