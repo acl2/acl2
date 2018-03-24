@@ -1,6 +1,6 @@
 (defpkg "S"
   (set-difference-equal
-   (union-eq '(PACK
+   (union-eq '(PACKN-POS
                ORDINARYP
                <<
                <<-IRREFLEXIVITY
