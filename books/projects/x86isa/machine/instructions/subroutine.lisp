@@ -255,7 +255,7 @@
   ;;        #xC3:    NP: Near return to calling procedure
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rime-size rml16) ())))
+  :guard-hints (("Goal" :in-theory (e/d (rime-size rml16 rme-size rme16) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -336,8 +336,12 @@
                                0))))
         (!!ms-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
 
+       ;; Note that instruction pointers are modeled as signed in 64-bit mode,
+       ;; but unsigned in 32-bit mode.
        ((mv flg (the (signed-byte 64) tos) x86)
-        (rime-size operand-size rsp *ss* :r x86))
+        (if (= operand-size 8)
+            (rime-size operand-size rsp *ss* :r x86)
+          (rme-size operand-size rsp *ss* :r x86)))
        ((when flg)
         (!!ms-fresh :ss 0 :riml64-error flg)) ;; #SS(0)
 
