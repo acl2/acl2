@@ -12121,22 +12121,57 @@
                                    :obj '?
                                    :geneqv *geneqv-iff*
                                    :pequiv-info nil)
-                    (sl-let (rewritten-concl ttree)
-                            (rewrite-entry (rewrite (fargn term 2) alist 1)
-                                           :obj '?
-                                           :geneqv *geneqv-iff*
-                                           :pequiv-info nil)
-                            (mv step-limit
-                                (subcor-var
+                    (cond
+                     ((equal rewritten-test *nil*)
+                      (mv step-limit *t* ttree))
+                     (t
+                      (sl-let (rewritten-concl ttree)
+                              (rewrite-entry (rewrite (fargn term 2) alist 1)
+                                             :obj '?
+                                             :geneqv *geneqv-iff*
+                                             :pequiv-info nil)
+                              (cond
+                               ((equal rewritten-concl *nil*)
+                                (mv step-limit
+                                    (dumb-negate-lit rewritten-test)
+                                    ttree))
+                               ((or (quotep rewritten-concl) ; not *nil*
+				    (equal rewritten-test rewritten-concl))
+                                (mv step-limit *t* ttree))
+                               ((quotep rewritten-test) ; not *nil*
+
+; We already handle the case above that rewritten-test is *nil*.  So (implies
+; test concl) almost simplifies to rewritten-concl, the issue being that
+; implies returns a boolean but rewritten-concl might not be Boolean.  At this
+; point we have already handled the case that rewritten-concl is a quotep (so,
+; there is no opportunity at this point to simplify, for example, '3 to 't);
+; but we could perhaps simplify here by checking that the rewritten-concl has a
+; Boolean type-set.  However, it seems unlikely that such extra computational
+; effort would be worthwhile, since calls of implies can generally be expected
+; to be in a Boolean context, and we already optimize for that case just below.
+
+                                (let ((rune
+                                       (geneqv-refinementp 'iff geneqv wrld)))
+                                  (cond
+                                   (rune (mv step-limit
+                                             rewritten-concl
+                                             (push-lemma rune ttree)))
+                                   (t (mv step-limit
+                                          (fcons-term* 'if
+                                                       rewritten-concl
+                                                       *t*
+                                                       *nil*)
+                                          ttree)))))
+                               (t (mv step-limit
+                                      (subcor-var
 
 ; It seems reasonable to keep this in sync with the corresponding use of
 ; subcor-var in rewrite-atm.
 
-                                 (formals 'IMPLIES wrld)
-                                 (list rewritten-test
-                                       rewritten-concl)
-                                 (body 'IMPLIES t wrld))
-                                ttree))))
+                                       (formals 'IMPLIES wrld)
+                                       (list rewritten-test rewritten-concl)
+                                       (body 'IMPLIES t wrld))
+                                      ttree))))))))
            ((eq (ffn-symb term) 'double-rewrite)
             (sl-let
              (term ttree)
