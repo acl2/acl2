@@ -5328,13 +5328,44 @@
   (intern-in-package-of-symbol (coerce (packn1 lst) 'string)
                                witness))
 
+(defun find-first-non-cl-symbol (lst)
+  (declare (xargs :guard (good-atom-listp lst)))
+  (cond ((endp lst) nil)
+        ((and (symbolp (car lst))
+              (not (equal (symbol-package-name (car lst))
+                          "COMMON-LISP")))
+         (car lst))
+        (t (find-first-non-cl-symbol (cdr lst)))))
+
 (defun packn (lst)
   (declare (xargs :guard (good-atom-listp lst)))
-  (let ((ans
-; See comment in intern-in-package-of-symbol for an explanation of this trick.
-         (intern (coerce (packn1 lst) 'string)
-                 "ACL2")))
-    ans))
+
+; This function produces a symbol which is named by concatenating string
+; representations of the elements of lst, which may be any good atoms.  The
+; package of the output symbol will be the package of the first symbol in the
+; input list which is not in the "COMMON-LISP" package, or, if no such symbol
+; exists, will be "ACL2".
+
+; We treat the "COMMON-LISP" package as a special exception because in ACL2 we
+; limit the usage of symbols in that package, for example by disallowing their
+; use as function names.  We therefore prefer not to allow packn to create
+; symbols in the "COMMON-LISP" package.  The function packn-pos may be called
+; instead when it is desired to specify explicitly a package for the symbol.
+
+  (let ((witness (find-first-non-cl-symbol lst)))
+    (cond (witness (packn-pos lst witness))
+          (t
+
+; It is tempting to avoid returning two values in raw Lisp in this case, as is
+; done by intern.  However, if that were necessary, then it would be necessary
+; to prevent the user from making a definition like this one that can return
+; multiple values in just one case.   We think that ACL2's syntax checking will
+; not allow any use to be made of the second value, so we don't worry about
+; that here.  Perhaps we should be more nervous because of the possibility of
+; problems caused by some sort of automatic proclaiming mechanism.
+
+           (intern (coerce (packn1 lst) 'string)
+                   "ACL2")))))
 
 (defun pack2 (n1 n2)
   (packn (list n1 n2)))

@@ -6057,7 +6057,7 @@
         (t (bind-free-vars-to-unbound-free-vars
             (cdr vars)
             (cons (cons (car vars)
-                        (packn (list "UNBOUND-FREE-" (car vars))))
+                        (packn (list 'unbound-free- (car vars))))
                   alist)))))
 
 ; The Accumulated Persistence Essay

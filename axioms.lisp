@@ -2864,7 +2864,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; symbol-package of sym is one of those known to ACL2.  Thus, the only case of
 ; concern is the case that sym resides in the "COMMON-LISP" package.  Since sym
 ; is an ACL2 object, then by the Invariant on Symbols in the Common Lisp
-; Package (see bad-lisp-objectp), its symbol-package is *main-lisp-package* or
+; Package (see bad-lisp-atomp), its symbol-package is *main-lisp-package* or
 ; else its *initial-lisp-symbol-mark* property is "COMMON-LISP".  So we set the
 ; *initial-lisp-symbol-mark* for ans in each of these sub-cases, which
 ; preserves the above invariant.
