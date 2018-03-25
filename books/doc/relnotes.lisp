@@ -190,7 +190,8 @@
 
  <p>The model includes more support for 32-bit mode.  In particular, some
  variants of the PUSH, POP, MOVE, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP, TEST,
- and RET instructions also work in 32-bit mode now.</p>
+ and RET instructions also work in 32-bit mode now, and the 32-bit instruction
+ PUSHA is now part of the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
