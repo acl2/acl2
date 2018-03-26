@@ -30288,3 +30288,15 @@
                  (take (caddr (concrete-badge-userfn fn))
                        args))))
         :rule-classes nil))))
+
+(defmacro apply$-lambda-logical (fn args)
+
+; This macro is called in apply-raw.lisp, so we put it here since the more
+; natural location, apply.lisp, is too late (see *acl2-files*).
+
+  (declare (xargs :guard ; avoid re-evaluation
+                  (symbolp fn)))
+  `(ev$ (ec-call (car (ec-call (cdr (cdr ,fn))))) ; = (lambda-body fn)
+        (ec-call
+         (pairlis$ (ec-call (car (cdr ,fn))) ; = (lambda-formals fn)
+                   ,args))))

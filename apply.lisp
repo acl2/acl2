@@ -93,8 +93,59 @@
 ;     support top-level evaluation of ground apply$ expressions.  These magic
 ;     functions are defined in the source file apply-raw.lisp.
 
-; Note: This entire file is processed only in pass 2, fundamentally because
-; apply$-primp and apply$-prim are only defined in pass 2.
+; Note: With the exception of the events immediately below (which are needed by
+; the raw Lisp definitions of the *1* function for apply$-lambda), this entire
+; file is processed only in pass 2, fundamentally because apply$-primp and
+; apply$-prim are only defined in pass 2.
+
+(defun apply$-lambda-guard (fn args)
+
+; This function provides the guard for a lambda application.  It implies
+; (true-listp args), in support of guard verification for the apply$
+; mutual-recursion.  It also guarantees that if we have a good lambda, then we
+; can avoid checking in the raw Lisp definition of apply$-lambda that the arity
+; of fn (the length of its formals) equals the length of args.
+
+; We were a bit on the fence regarding whether to incorporate this change.  On
+; the positive side: in one test involving trivial computation on a list of
+; length 10,000,000, we found a 13% speedup.  But one thing that gave us pause
+; is that the following test showed no speedup at all -- in fact it seemed to
+; show a consistent slowdown, though probably well under 1%.  (In one trio of
+; runs the average was 6.56 seconds for the old ACL2 and 6.58 for the new.)
+
+;   cd books/system/tests/
+;   acl2
+;   (include-book "apply-timings")
+;   ; Get a function with a guard of t:
+;   (with-output
+;     :off event
+;     (encapsulate
+;       ()
+;       (local (in-theory (disable (:e ap4))))
+;       (defun ap4-10M ()
+;         (declare (xargs :guard t))
+;         (ap4 *10m*
+;              *good-lambda1* *good-lambda2* *good-lambda3* *good-lambda4*
+;              0))))
+;   (time$ (ap4-10M))
+
+; But we decided that a stronger guard would be more appropriate, in part
+; because that's really the idea of guards, in part because more user bugs
+; could be caught, and in part because this would likely need to be part of the
+; guards in support of a loop macro.
+
+  (declare (xargs :guard t :mode :logic))
+  (and (consp fn)
+       (consp (cdr fn))
+       (true-listp args)
+       (equal (len (cadr fn))
+              (length args))))
+
+(defun apply$-guard (fn args)
+  (declare (xargs :guard t :mode :logic))
+  (if (atom fn)
+      (true-listp args)
+    (apply$-lambda-guard fn args)))
 
 (when-pass-2
 
@@ -225,7 +276,7 @@
 (mutual-recursion
 
 (defun apply$ (fn args)
-  (declare (xargs :guard (true-listp args)
+  (declare (xargs :guard (apply$-guard fn args)
                   :guard-hints (("Goal" :do-not-induct t))
                   :mode :program))
   (cond
@@ -275,12 +326,9 @@
 ; superior call of when-pass-2.  Keep this in sync with the raw Lisp
 ; definition, which is in apply-raw.lisp.
 
-  (declare (xargs :guard (and (consp fn) (true-listp args))
+  (declare (xargs :guard (apply$-lambda-guard fn args)
                   :guard-hints (("Goal" :do-not-induct t))))
-  (ev$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
-       (ec-call
-        (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
-                  args))))
+  (apply$-lambda-logical fn args))
 
 (defun ev$ (x a)
   (declare (xargs :guard t))

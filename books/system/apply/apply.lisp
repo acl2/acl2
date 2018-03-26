@@ -234,7 +234,8 @@
 (mutual-recursion
 
 (defun apply$ (fn args)
-  (declare (xargs :guard (true-listp args)
+  (declare (xargs :guard (apply$-guard fn args)
+                  :verify-guards nil
                   :guard-hints (("Goal" :do-not-induct t))
                   :measure (apply$-measure fn args)
                   :well-founded-relation l<))
@@ -262,14 +263,11 @@
    (t (apply$-userfn fn args))))
 
 (defun apply$-lambda (fn args)
-  (declare (xargs :guard (and (consp fn) (true-listp args))
+  (declare (xargs :guard (apply$-lambda-guard fn args)
                   :guard-hints (("Goal" :do-not-induct t))
                   :measure (apply$-lambda-measure fn args)
                   :well-founded-relation l<))
-  (ev$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
-       (ec-call
-        (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
-                  args))))
+  (apply$-lambda-logical fn args))
 
 (defun ev$ (x a)
   (declare (xargs :guard t
@@ -304,6 +302,13 @@
    (t (cons (EV$ (car x) a)
             (EV$-LIST (cdr x) a)))))
 )
+
+(defthm len-ev$-list ; useful for verifying guards for apply$
+  (equal (len (ev$-list x a))
+         (len x)))
+
+#+acl2-devel
+(verify-guards apply$)
 
 (in-theory (disable ev$ ev$-list
                     badge
