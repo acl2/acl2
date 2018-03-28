@@ -237,6 +237,10 @@
  LaTeX file demonstrating how the references may be cited, as well as a README
  with some more information.</p>
 
+ <p>A Developer's Guide (see @(see developers-guide)) has been added, to assist
+ those who may wish to become ACL2 Developers.  It replaces the much smaller
+ ``system-development'' topic.</p>
+
  ")
 
 (defxdoc note-8-0-books
