@@ -2647,179 +2647,83 @@
 
     (#xB0
      "(MOV AL/R8L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV AL/R8L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB1
      "(MOV CL/R9L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV CL/R9L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB2
      "(MOV DL/R10L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV DL/R10L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB3
      "(MOV BL/R11L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV BL/R11L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB4
      "(MOV AH/R12L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV AH/R12L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB5
      "(MOV CH/R13L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV CH/R13L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB6
      "(MOV DH/R14L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV DH/R14L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB7
      "(MOV BH/R15L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV BH/R15L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB8
      "(MOV AL/R8L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV AL/R8L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB9
      "(MOV CL/R9L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV CL/R9L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBA
      "(MOV DL/R10L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV DL/R10L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBB
      "(MOV BL/R11L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV BL/R11L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBC
      "(MOV AH/R12L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV AH/R12L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBD
      "(MOV CH/R13L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV CH/R13L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBE
      "(MOV DH/R14L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV DH/R14L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBF
      "(MOV BH/R15L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV BH/R15L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xC0 #xC1)
      "Shift Group 2; C0: (GRP2 Eb Ib); C1: (GRP2 Ev Ib);

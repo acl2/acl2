@@ -381,6 +381,7 @@
        (x86 (!rip temp-rip x86)))
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-OI
 
   ;; Op/En: OI
@@ -391,7 +392,7 @@
   ;; B8 + rd: MOV r64, imm64
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (rme-size riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -441,32 +442,32 @@
 
        (p3? (equal #.*operand-size-override*
                    (prefixes-slice :group-3-prefix prefixes)))
+
        ((the (integer 1 8) operand-size)
         (if (and (<= #xB0 opcode) ;; B0+rb
                  (<= opcode #xB7))
             1
-          (if (and (<= #xB8 opcode) ;; B8 +rw
-                   (<= opcode #xBF)
-                   (logbitp #.*w* rex-byte))
-              8
-            (if p3?
-                ;; See Table 3-4, P. 3-26, Intel Vol. 1.
-                2 ; 16-bit operand-size
-              4))))
+          ;; Intel manual, Mar'17, Volume 1, Table 3-4:
+          (if (64-bit-modep x86)
+              (if (logbitp #.*w* rex-byte)
+                  8
+                (if p3? 2 4))
+            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+                 (cs.d
+                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+              (if (= cs.d 1)
+                  (if p3? 2 4)
+                (if p3? 4 2))))))
 
        ((mv flg0 imm x86)
-        (rml-size operand-size temp-rip :x x86))
+        (rme-size operand-size temp-rip *cs* :x x86))
        ((when flg0)
         (!!ms-fresh :imm-rml-size-error flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip operand-size))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg temp-rip) (add-to-*ip temp-rip operand-size x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
        ;; If the instruction goes beyond 15 bytes, stop. Change to an
        ;; exception later.
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
@@ -483,7 +484,7 @@
        ;; See Intel Table 3.1, p.3-3, Vol. 2-A
        (x86 (!rgfi-size operand-size (reg-index reg rex-byte #.*b*)
                         imm rex-byte x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
       x86))
 
 (def-inst x86-mov-Op/En-MI
