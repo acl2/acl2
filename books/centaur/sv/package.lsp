@@ -41,6 +41,7 @@
     std::*std-exports*
     set::*sets-exports*
     bitops::*bitops-exports*
+    bitops::*sparseint-exports*
     ;; Things we want to "export"
     '()
     ;; Things we want to "import"

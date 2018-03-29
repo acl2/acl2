@@ -30,5 +30,7 @@
 
 (in-package "ACL2")
 (include-book "std/portcullis" :dir :system)
-(include-book "kestrel/soft/portcullis" :dir :system) ; for soft::soft
+(include-book "kestrel/soft/portcullis" :dir :system)
+(include-book "kestrel/apt/portcullis" :dir :system)
+(include-book "centaur/acre/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all

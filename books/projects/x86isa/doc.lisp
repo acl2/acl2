@@ -115,7 +115,8 @@
  instruction fetch-decode-execute cycle.</p>
 
  <p>The model is being extended to support 32-bit mode, both as the legacy
- protected mode and as the compatibility sub-mode of Intel's IA-32e mode.</p>
+ protected mode and as the compatibility sub-mode of Intel's IA-32e mode.  This
+ extension is still experimental; it has not been thoroughly tested yet.</p>
 
  <p>To see a list of opcodes implemented in these books, see @(see
  implemented-opcodes).</p>
@@ -349,9 +350,9 @@
 
  <h5>Contributors to the x86 ISA Model</h5>
 
- <p>Thanks to Alessandro Coglio (Kestrel Institute) for adding growing
- support for 32-bit mode and for improving the documentation of these
- books.</p>
+ <p>Thanks to Alessandro Coglio (Kestrel Institute and Kestrel Technology LLC)
+ for adding growing support for 32-bit mode and for improving the documentation
+ of these books.</p>
 
  <p>Thanks to Cuong Kim Chau for implementing the floating point
  instructions and for performing many experiments \(along with Keshav

@@ -2864,7 +2864,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; symbol-package of sym is one of those known to ACL2.  Thus, the only case of
 ; concern is the case that sym resides in the "COMMON-LISP" package.  Since sym
 ; is an ACL2 object, then by the Invariant on Symbols in the Common Lisp
-; Package (see bad-lisp-objectp), its symbol-package is *main-lisp-package* or
+; Package (see bad-lisp-atomp), its symbol-package is *main-lisp-package* or
 ; else its *initial-lisp-symbol-mark* property is "COMMON-LISP".  So we set the
 ; *initial-lisp-symbol-mark* for ans in each of these sub-cases, which
 ; preserves the above invariant.
@@ -3352,6 +3352,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defthm symbol-alistp-forward-to-eqlable-alistp
   (implies (symbol-alistp x)
+           (eqlable-alistp x))
+  :rule-classes :forward-chaining)
+
+(defun symbol-alistp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (symbolp (car (car x)))
+                (symbol-alistp (cdr x))))))
+
+(defthm symbol-alistp-forward-to-eqlable-alistp
+  (implies (symbol-alistp x)
+           (eqlable-alistp x))
+  :rule-classes :forward-chaining)
+
+(defun character-alistp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (characterp (car (car x)))
+                (character-alistp (cdr x))))))
+
+(defthm character-alistp-forward-to-eqlable-alistp
+  (implies (character-alistp x)
            (eqlable-alistp x))
   :rule-classes :forward-chaining)
 
@@ -7417,13 +7441,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (hard-error 'let*-macro
                                  "Implementation error: Ignored variables ~x0 ~
                                   must be bound in superior LET* form!"
-                                 ignore-vars))
+                                 (list (cons #\0 ignore-vars))))
                  (prog2$ (or (null ignorable-vars)
                              (hard-error 'let*-macro
                                          "Implementation error: Ignorable ~
                                           variables ~x0 must be bound in ~
                                           superior LET* form!"
-                                         ignorable-vars))
+                                         (list (cons #\0 ignorable-vars))))
                          body)))
         (t ; (consp bindings)
          (cons 'let
@@ -20001,7 +20025,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (skip-proofs
 (defun print-rational-as-decimal (x channel state)
   (declare (xargs :guard (and (rationalp x)
+                              (symbolp channel)
                               (state-p state)
+                              (boundp-global 'print-base state)
                               (equal (print-base) 10)
                               (open-output-channel-p channel :character state))))
   (let ((x00 (round (* 100 (abs x)) 1)))
@@ -20023,6 +20049,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun print-timer (name channel state)
   (declare (xargs :guard (and (symbolp name)
                               (state-p state)
+                              (boundp-global 'print-base state)
                               (open-output-channel-p channel :character state)
                       (consp (get-timer name state)))))
   (print-rational-as-decimal (car (get-timer name state)) channel state))
@@ -21299,7 +21326,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (f-put-global 'compiler-enabled val state))
         (t (prog2$ (hard-error 'set-compiler-enabled
                                "Illegal value for set-compiler-enabled: ~x0"
-                               val)
+                               (list (cons #\0 val)))
                    state))))
 
 (defun set-port-file-enabled (val state)
@@ -21309,7 +21336,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (f-put-global 'port-file-enabled val state))
         (t (prog2$ (hard-error 'set-port-file-enabled
                                "Illegal value for set-port-file-enabled: ~x0"
-                               val)
+                               (list (cons #\0 val)))
                    state))))
 
 (defun default-measure-function (wrld)
@@ -26982,7 +27009,8 @@ Lisp definition."
     (er hard? 'time-tracker
         "Illegal first argument for ~x0 (should be a symbol): ~x1.  See :DOC ~
          time-tracker."
-        'time-tracker))
+        'time-tracker
+        tag))
    ((and (not (booleanp tag))
          (not (member-eq kwd
                          '(:init :end :print? :stop :start :start!))))
@@ -27481,6 +27509,14 @@ Lisp definition."
                    (natp val)
                    val)
               state)))
+
+(defun constant-t-function-arity-0 ()
+  (declare (xargs :mode :logic :guard t))
+  t)
+
+(defun constant-nil-function-arity-0 ()
+  (declare (xargs :mode :logic :guard t))
+  nil)
 
 (encapsulate
   ()

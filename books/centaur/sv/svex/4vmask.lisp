@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "svex")
+(include-book "centaur/bitops/sparseint" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -135,12 +136,22 @@ svex-argmasks).</p>")
 (define 4vmask-p (x)
   :short "Recognizer for @(see 4vmask)s."
   :returns bool
-  (integerp x)
+  (sparseint-p x)
   ///
   (defthm 4vmask-p-compound-recognizer
-    (equal (4vmask-p x)
-           (integerp x))
-    :rule-classes :compound-recognizer))
+    (implies (4vmask-p x)
+             (or (integerp x)
+                 (consp x)))
+    :hints(("Goal" :in-theory (enable sparseint-p bitops::sparseint$-p)))
+    :rule-classes :compound-recognizer)
+
+  (defthm sparseint-p-when-4vmask-p
+    (implies (4vmask-p x)
+             (sparseint-p x)))
+
+  (defthm 4vmask-p-when-sparseint-p
+    (implies (sparseint-p x)
+             (4vmask-p x))))
 
 (define 4vmask-fix ((x 4vmask-p))
   :short "Fixing function for @(see 4vmask)s."
@@ -170,7 +181,7 @@ relevant'') in the default case.</p>"
   ((mask  4vmask-p "Mask of bits that we care about.")
    (value 4vec-p   "Original value to be masked."))
   :returns (masked-value 4vec-p "@('value') with irrelevant bits replaced by Xes.")
-  (b* ((mask (4vmask-fix mask))
+  (b* ((mask (sparseint-val (4vmask-fix mask)))
        ((4vec value) value))
     (4vec (logior (lognot mask) value.upper)
           (logand mask value.lower)))
@@ -197,7 +208,7 @@ relevant'') in the default case.</p>"
   ((mask  4vmask-p "Mask of bits that we care about.")
    (value 4vec-p   "Original value to be masked."))
   :returns (masked-value 4vec-p "@('value') with irrelevant bits replaced by 0s.")
-  (b* ((mask (4vmask-fix mask))
+  (b* ((mask (sparseint-val (4vmask-fix mask)))
        ((4vec value) value))
     (4vec (logand mask value.upper)
           (logand mask value.lower)))
@@ -231,15 +242,14 @@ relevant'') in the default case.</p>"
   :short "@(call 4vmask-empty) recognizes the empty @(see 4vmask)."
   :inline t
   :enabled t
-  (mbe :logic (4vmask-equiv x 0)
-       :exec (eql x 0)))
+  (sparseint-equal (4vmask-fix x) 0))
 
 (define 4vmask-subsumes ((x 4vmask-p) (y 4vmask-p))
   :short "@(call 4vmask-subsumes) checks whether the @(see 4vmask) @('x') cares
 about strictly more bits than @('y') cares about."
   :returns (subsumesp booleanp :rule-classes :type-prescription)
   :inline t
-  (eql 0 (logandc1 (4vmask-fix x) (4vmask-fix y)))
+  (not (sparseint-test-bitandc1 (4vmask-fix x) (4vmask-fix y)))
   ///
   (deffixequiv 4vmask-subsumes)
 
@@ -281,8 +291,8 @@ creating a new mask that includes all bits that are relevant for in either
 @('x') or @('y')."
   :returns (union 4vmask-p :rule-classes :type-prescription)
   :inline t
-  (logior (4vmask-fix x)
-          (4vmask-fix y))
+  (sparseint-bitor (4vmask-fix x)
+                   (4vmask-fix y))
   ///
   (deffixequiv 4vmask-union)
 
@@ -386,7 +396,11 @@ creating a new mask that includes all bits that are relevant for in either
                  "Mask for this variable.")
   :long "<p>Any unbound variables are treated as having mask @('-1'), i.e., all
          bits are considered relevant.</p>"
-  :prepwork ((local (in-theory (enable 4vmask-alist-p))))
+  :prepwork ((local (in-theory (enable 4vmask-alist-p)))
+             (local (defthm assoc-equal-is-hons-assoc-equal-when-4vmask-alist-p
+                      (implies (4vmask-alist-p x)
+                               (equal (assoc-equal k x)
+                                      (hons-assoc-equal k x))))))
   (mbe :logic (4vmask-fix (cdr (hons-assoc-equal (svar-fix var) (4vmask-alist-fix alist))))
        :exec (let ((look (assoc-equal (svar-fix var) (4vmask-alist-fix alist))))
                 (if look
@@ -426,7 +440,7 @@ creating a new mask that includes all bits that are relevant for in either
   :returns (res 4vec-p)
   (b* (((4vec care))
        ((4vec dontcare))
-       (mask (4vmask-fix mask)))
+       (mask (sparseint-val (4vmask-fix mask))))
     (4vec (logite mask care.upper dontcare.upper)
           (logite mask care.lower dontcare.lower)))
   ///

@@ -638,18 +638,18 @@ B is the builtin combinator table."
 ; this is hacking. to be consistent we need to drive this from tables.
 (defun untrans-top-texp (name nbody conx-entries)
   "prettyify a normalized/core defdata top texp"
-  (let ((acl2::tname name)) ;REPORT to Matt!
-  (case-match nbody
-    (('OR 'NIL ('ACONS key val !tname)) (list 'alistof key val))
-    (('OR 'NIL ('CONS ('CONS key val) !tname)) (list 'alistof key val))
-    (('OR 'NIL ('MSET key val !tname)) (list 'map key val))
-    (('LISTOF ('CONS key val)) (list 'alistof key val))
-    (('OR 'NIL ('CONS x !tname)) (list 'listof x))
-    ((!tname . args) (if (assoc-eq name conx-entries) ;new record being constructed
-                         (cons 'record args)
-                      (cons name args)))
-    (('RANGE dom range-exp) (list 'range dom (kwote range-exp)))
-    (& nbody))))
+  (let ((tname name))
+    (case-match nbody
+      (('OR 'NIL ('ACONS key val !tname)) (list 'alistof key val))
+      (('OR 'NIL ('CONS ('CONS key val) !tname)) (list 'alistof key val))
+      (('OR 'NIL ('MSET key val !tname)) (list 'map key val))
+      (('LISTOF ('CONS key val)) (list 'alistof key val))
+      (('OR 'NIL ('CONS x !tname)) (list 'listof x))
+      ((!tname . args) (if (assoc-eq name conx-entries) ;new record being constructed
+                           (cons 'record args)
+                         (cons name args)))
+      (('RANGE dom range-exp) (list 'range dom (kwote range-exp)))
+      (& nbody))))
 
 
 

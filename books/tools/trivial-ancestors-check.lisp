@@ -109,6 +109,7 @@
 
 ;; test
 (local (defattach (ancestors-check trivial-ancestors-check)
+         :system-ok t
          :hints (("goal" :in-theory '(trivial-ancestors-check-ok)))))
 
 ;; This macro makes a local event, but you can also do
@@ -117,6 +118,7 @@
 ;; if you want this book to be included only locally.
 (defmacro use-trivial-ancestors-check ()
   '(local (defattach (ancestors-check trivial-ancestors-check)
+            :system-ok t
             :hints (("goal" :in-theory '(trivial-ancestors-check-ok))))))
 
 

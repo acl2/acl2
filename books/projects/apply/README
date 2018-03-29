@@ -1,86 +1,17 @@
-This is the README for /books/projects/apply/.  The following summary is
-accurate, insofar as it goes, for ACL2 Version_7.4.  As of this writing, the
-books on this directory
+This is the README for /books/projects/apply/.  Files include:
 
-apply-prim.lisp
-constraints.lisp
-apply.lisp
+apply-lemmas.lisp -- an initial set of lemmas we think are useful when
+  proving theorems about apply$
 
-are identical to their namesakes on /books/projects/apply-model/ with one
-exception: the books here are all in the "ACL2" symbol package while the books
-in /books/projects/apply-model/ are all in an isolated package.  The reasons
-both directories exist are discussed in /books/projects/apply-model/README.
-But the short answer is: we expect the functionality described below eventually
-to become part of ACL2 and in the meantime it is liable to be extended
-experimentally or corrected.
+report.lisp -- the events mentioned in the Examples section of the
+   paper ``Limited Second Order Functionality in a First Order
+   Setting'' by Kaufmann and Moore
 
-In this directory we provide the apply.lisp book, described in the paper
-"Limited Second-Order Functionality in a First-Order Setting," by Kaufmann and
-Moore, 2017.  
+Note that report.lisp starts by including apply-lemmas.lisp and hence
+demostrates the ease with which apply-lemmas allows one to prove
+user-level theorems about apply$ and mapping functions.
 
-Notable functions defined here include:
-
-(APPLY$ fn args)     - applies function named fn to args, i.e.,returns
-                       (fn (nth 0 args) ... (nth n-1 args)), where fn is a
-                       function of arity n, provided there is a warrant for fn
-                       and the arguments are suitably tame.  By ``there is a
-                       warrant'' we mean that either fn is one of a large
-                       number of built-ins or that fn is a user-defined
-                       function on which DEF-WARRANT, below, was successful.
-                       Furthermore, in the context of trying to prove theorems
-                       about (APPLY$ fn args), we mean that the warrant
-                       predicate, (APPLY$-WARRANT-fn), for fn is available as a
-                       hypothesis, and in the context of top-level ACL2
-                       evaluation, we mean that The Rubric of ACL2 Version_7.4
-                       has been executed.  The Rubric may be found in the ACL2
-                       Version_7.4 source file apply-raw.lisp.
-
-(EV$ x a)            - evaluates an expression x composed of warranted
-                       functions under an alist a binding the variable symbols.
-                       This behavior is conditioned in the obvious way on
-                       warrants as for APPLY$.
-
-(DEF-WARRANT fn)     - analyzes a defun'd function, creates a ``badge'' for fn
-
-                       if possible, and generates a warrant, if possible.
-                       DEF-WARRANT is an event.  The warrant for fn is a 0-ary
-                       predicate, named APPLY$-WARRANT-fn, which hypothesizes
-                       that APPLY$ fn works appropriately for fn.  DEF-WARRANT
-                       checks a number of important properties of fn's
-                       definition, including that it is free of STATE and
-                       stobjs, that it returns a single value, that it is not
-                       in a mutually recursive clique, that every other
-                       function name in it has a badge, and that the formals of
-                       fn are used in certain restricted ways, e.g., no formal
-                       is used both as a ``function'' (i.e., fed to APPLY$) and
-                       as an ordinary object.
-
-                       Functions returning multiple values cannot be APPLY$'d
-                       because APPLY$ always returns 1 value.  Thus, warrants
-                       for multi-valued functions cannot be issued but, if the
-                       function satisfies the other checks, DEF-WARRANT records
-                       a badge for fn that tells future calls of def-warrant
-                       which arguments of fn are treated as ``functions,'' etc.
-                       This allows a multi-valued function to be defined,
-                       badged but not warranted with a call of DEF-WARRANT, and
-                       then used in the definition of a single-valued function
-                       that can be warranted.
-
-                       When proving theorems about APPLY$, the warrants for all
-                       user-defined functions involved in the proof must be
-                       available as hypotheses.  To execute a warranted
-                       user-defined function at the top-level of the ACL2 loop,
-                       The Rubric (see the discussion of APPLY$ above) must
-                       have been executed.
-
-                       The paper cited above contains a meta-level proof that
-                       it is possible to satisfy all the warrants of all the
-                       functions issued by successful DEF-WARRANTs, thus
-                       theorems containing warrant hypotheses are non-vacuous.
-
-(DEFUN$ fn ...)      - like DEFUN but executes (DEF-WARRANT fn) afterwards.
-
-A standard cert.pl will certify the books on this directory:
-
-<path-to-acl2-system-books/>build/cert.pl --acl2 <your-acl2> *.lisp
-
+We welcome further development of apply-lemmas.lisp, but would urge
+developers to continue to ensure that report.lisp (or a principled
+revision of it) demonstrates the efficacy of the new
+apply-lemmas.lisp.

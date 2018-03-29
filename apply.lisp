@@ -93,8 +93,59 @@
 ;     support top-level evaluation of ground apply$ expressions.  These magic
 ;     functions are defined in the source file apply-raw.lisp.
 
-; Note: This entire file is processed only in pass 2, fundamentally because
-; apply$-primp and apply$-prim are only defined in pass 2.
+; Note: With the exception of the events immediately below (which are needed by
+; the raw Lisp definitions of the *1* function for apply$-lambda), this entire
+; file is processed only in pass 2, fundamentally because apply$-primp and
+; apply$-prim are only defined in pass 2.
+
+(defun apply$-lambda-guard (fn args)
+
+; This function provides the guard for a lambda application.  It implies
+; (true-listp args), in support of guard verification for the apply$
+; mutual-recursion.  It also guarantees that if we have a good lambda, then we
+; can avoid checking in the raw Lisp definition of apply$-lambda that the arity
+; of fn (the length of its formals) equals the length of args.
+
+; We were a bit on the fence regarding whether to incorporate this change.  On
+; the positive side: in one test involving trivial computation on a list of
+; length 10,000,000, we found a 13% speedup.  But one thing that gave us pause
+; is that the following test showed no speedup at all -- in fact it seemed to
+; show a consistent slowdown, though probably well under 1%.  (In one trio of
+; runs the average was 6.56 seconds for the old ACL2 and 6.58 for the new.)
+
+;   cd books/system/tests/
+;   acl2
+;   (include-book "apply-timings")
+;   ; Get a function with a guard of t:
+;   (with-output
+;     :off event
+;     (encapsulate
+;       ()
+;       (local (in-theory (disable (:e ap4))))
+;       (defun ap4-10M ()
+;         (declare (xargs :guard t))
+;         (ap4 *10m*
+;              *good-lambda1* *good-lambda2* *good-lambda3* *good-lambda4*
+;              0))))
+;   (time$ (ap4-10M))
+
+; But we decided that a stronger guard would be more appropriate, in part
+; because that's really the idea of guards, in part because more user bugs
+; could be caught, and in part because this would likely need to be part of the
+; guards in support of a loop macro.
+
+  (declare (xargs :guard t :mode :logic))
+  (and (consp fn)
+       (consp (cdr fn))
+       (true-listp args)
+       (equal (len (cadr fn))
+              (length args))))
+
+(defun apply$-guard (fn args)
+  (declare (xargs :guard t :mode :logic))
+  (if (atom fn)
+      (true-listp args)
+    (apply$-lambda-guard fn args)))
 
 (when-pass-2
 
@@ -225,7 +276,7 @@
 (mutual-recursion
 
 (defun apply$ (fn args)
-  (declare (xargs :guard (true-listp args)
+  (declare (xargs :guard (apply$-guard fn args)
                   :guard-hints (("Goal" :do-not-induct t))
                   :mode :program))
   (cond
@@ -275,12 +326,9 @@
 ; superior call of when-pass-2.  Keep this in sync with the raw Lisp
 ; definition, which is in apply-raw.lisp.
 
-  (declare (xargs :guard (and (consp fn) (true-listp args))
+  (declare (xargs :guard (apply$-lambda-guard fn args)
                   :guard-hints (("Goal" :do-not-induct t))))
-  (ev$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
-       (ec-call
-        (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
-                  args))))
+  (apply$-lambda-logical fn args))
 
 (defun ev$ (x a)
   (declare (xargs :guard t))
@@ -1231,63 +1279,71 @@
                                    alist1)))))))
  )
 
-(defun ancestrally-dependent-on-apply$p1 (flg x wrld acc)
+(defun ancestrally-dependent-on-apply$-userfn-p1 (flg x wrld acc)
 
 ; This is just all-fnnames1 except it recursively explores the body of each fn
-; it encounters and it short circuits if it sees the fnnames APPLY$ or EV$.
-; Flg = t means x is a list of terms; else x is a term.  Acc is just the fns
-; we've seen so far and is returned, but it is incomplete if its car is APPLY$,
-; which is the signal that we found EITHER APPLY$ or EV$!
+; it encounters and it short circuits if it sees the fnname APPLY$-USERFN or,
+; as a shortcut, the fnnames APPLY$ or EV$ (which are ancestrally dependent on
+; APPLY$-USERFN).  Flg = t means x is a list of terms; else x is a term.  Acc
+; is just the fns we've seen so far and is returned, but it is incomplete if
+; its car is APPLY$-USERFN, which is the signal that we found a dependence on
+; APPLY$-USERFN.
+
+; At one time we merely checked for ancestral dependence on APPLY$ or EV$.
+; That was probably sufficient, since measures must be tame and APPLY$-USERFN
+; is not badged.  However, it is more robust to make this stronger check for
+; ancestral dependence on APPLY$-USERFN.
 
   (declare (xargs :mode :program))
   (cond
-   ((eq (car acc) 'apply$) acc)
+   ((eq (car acc) 'apply$-userfn) acc)
    (flg ; x is a list of terms
     (cond ((null x) acc)
-          (t (ancestrally-dependent-on-apply$p1
+          (t (ancestrally-dependent-on-apply$-userfn-p1
               nil
               (car x)
               wrld
-              (ancestrally-dependent-on-apply$p1 t (cdr x) wrld acc)))))
+              (ancestrally-dependent-on-apply$-userfn-p1 t (cdr x) wrld acc)))))
    ((variablep x) acc)
    ((fquotep x) acc)
    ((flambda-applicationp x)
-    (ancestrally-dependent-on-apply$p1
+    (ancestrally-dependent-on-apply$-userfn-p1
      nil
      (lambda-body (ffn-symb x))
      wrld
-     (ancestrally-dependent-on-apply$p1 t (fargs x) wrld acc)))
+     (ancestrally-dependent-on-apply$-userfn-p1 t (fargs x) wrld acc)))
    ((or (eq (ffn-symb x) 'apply$)
-        (eq (ffn-symb x) 'ev$))
-    (cons 'apply$ acc))
+        (eq (ffn-symb x) 'ev$)
+        (eq (ffn-symb x) 'apply$-userfn))
+    (cons 'apply$-userfn acc))
    ((member-eq (ffn-symb x) acc)
-    (ancestrally-dependent-on-apply$p1
+    (ancestrally-dependent-on-apply$-userfn-p1
      t
      (fargs x)
      wrld
      (cons (ffn-symb x) acc)))
    (t
-    (ancestrally-dependent-on-apply$p1
+    (ancestrally-dependent-on-apply$-userfn-p1
      nil
      (body (ffn-symb x) nil wrld)
      wrld
-     (ancestrally-dependent-on-apply$p1
+     (ancestrally-dependent-on-apply$-userfn-p1
       t
       (fargs x)
       wrld
       (cons (ffn-symb x) acc))))))
 
-(defun ancestrally-dependent-on-apply$p (x wrld)
+(defun ancestrally-dependent-on-apply$-userfn-p (x wrld)
   (declare (xargs :mode :program))
-  (let ((ans (ancestrally-dependent-on-apply$p1 nil x wrld nil)))
-    (eq (car ans) 'apply$)))
+  (let ((ans (ancestrally-dependent-on-apply$-userfn-p1 nil x wrld nil)))
+    (eq (car ans) 'apply$-userfn)))
 
 (defun acceptable-warranted-justificationp (fn ens wrld)
 
 ; Fn is a function symbol being considered for a warrant.  We check that its
 ; well-founded-relation is O<, that its domain recognizer is O-P, and that its
 ; measure is tame, natural-number valued, and not ancestrally dependent on
-; APPLY$.  We just use type-set to confirm the type of the measure.
+; APPLY$-USERFN.  We just use type-set to confirm the type of the measure.
 
 ; Our motivation is two-fold.  First, during the foundational construction of
 ; the model we must admit every G1 function before we admit any G2 function.
@@ -1343,7 +1399,7 @@
              (executable-tamep
               (access justification just :measure)
               wrld)
-             (not (ancestrally-dependent-on-apply$p
+             (not (ancestrally-dependent-on-apply$-userfn-p
                    (access justification just :measure)
                    wrld))
              (mv-let (ts ttree)
@@ -1413,7 +1469,7 @@
        ((not (acceptable-warranted-justificationp fn ens wrld))
 
 ; We insist that every badged function be justified with O< over O-P on a
-; measure m that is tame, not ancestrally dependent on APPLY$, and natp.
+; measure m that is tame, not ancestrally dependent on APPLY$-USERFN, and natp.
 ; See acceptable-warranted-justificationp for some explanation.
 
         (mv (msg "~x0 cannot be warranted because it its justification is too ~
@@ -1421,7 +1477,7 @@
                   which all warrants are valid requires that warranted ~
                   functions be justified by the well-founded relation O< on ~
                   the domain O-P with a measure that is tame, not ancestrally ~
-                  dependent on APPLY$, and natural-number valued as ~
+                  dependent on APPLY$-USERFN, and natural-number valued as ~
                   determined by type-set.  The relevant fields of ~x0's ~
                   justification are ~%well-founded relation: ~x1~%domain: ~
                   ~x2~%measure: ~x3.~%If the problem is that the measure ~

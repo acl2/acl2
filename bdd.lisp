@@ -3123,7 +3123,7 @@
                                            t
                                            (access rewrite-constant rcnst
                                                    :current-enabled-structure)
-                                           wrld state nil nil nil)
+                                           wrld state nil)
               (declare (ignore hitp))
               (let ((position (cond ((integerp literal-hint)
                                      (position literal-hint

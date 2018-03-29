@@ -633,11 +633,11 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
        (mask (4vmask-fix mask))
        ((mv first rest endp) (gl::first/rest/end vec))
        ((when endp)
-        (or (mbe :logic (equal (logtail idx mask) -1)
-                 :exec (and (<= (integer-length mask) idx)
-                            (logbitp idx mask)))  ;; (equal (4vmask-fix mask) -1)
+        (or (mbe :logic (equal (logtail idx (sparseint-val mask)) -1)
+                 :exec (and (<= (sparseint-length mask) idx)
+                            (eql 1 (sparseint-bit idx mask))))  ;; (equal (4vmask-fix mask) -1)
             (equal first (mbe :logic (acl2::bool-fix upperp) :exec upperp)))))
-    (and (or (logbitp idx (4vmask-fix mask))
+    (and (or (eql 1 (sparseint-bit idx (4vmask-fix mask)))
              (equal first (mbe :logic (acl2::bool-fix upperp) :exec upperp)))
          (a4vec-mask-check mask (1+ (lnfix idx)) rest upperp)))
   ///
@@ -657,27 +657,27 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
    (defthm a4vec-mask-check-correct-lemma
      (implies (a4vec-mask-check mask idx vec upperp)
               (and (implies upperp
-                            (equal (logior (lognot (logtail idx (4vmask-fix mask)))
+                            (equal (logior (lognot (logtail idx (sparseint-val (4vmask-fix mask))))
                                            (aig-list->s vec env))
                                    (aig-list->s vec env)))
                    (implies (not upperp)
-                            (equal (logand (logtail idx (4vmask-fix mask))
+                            (equal (logand (logtail idx (sparseint-val (4vmask-fix mask)))
                                            (aig-list->s vec env))
                                    (aig-list->s vec env)))))
      :hints(("Goal" :in-theory (enable* aig-list->s aig-logior-ss aig-i2v
                                         bitops::ihsext-recursive-redefs)
              :induct (a4vec-mask-check mask idx vec upperp)
              :expand ((:with logtail-in-terms-of-logbitp
-                       (LOGTAIL IDX (4VMASK-FIX mask))))
+                       (LOGTAIL IDX (sparseint-val (4VMASK-FIX mask)))))
              ))
      :rule-classes nil))
 
   (defthmd a4vec-mask-check-correct
     (and (implies (a4vec-mask-check mask 0 vec t)
-                  (equal (logior (lognot (4vmask-fix mask)) (aig-list->s vec env))
+                  (equal (logior (lognot (sparseint-val (4vmask-fix mask))) (aig-list->s vec env))
                          (aig-list->s vec env)))
          (implies (a4vec-mask-check mask 0 vec nil)
-                  (equal (logand (4vmask-fix mask) (aig-list->s vec env))
+                  (equal (logand (sparseint-val (4vmask-fix mask)) (aig-list->s vec env))
                          (aig-list->s vec env))))
     :hints (("goal" :use ((:instance a4vec-mask-check-correct-lemma
                            (idx 0) (upperp t))
@@ -727,7 +727,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
        ((when (and (a4vec-mask-check mask 0 x.upper t)
                    (a4vec-mask-check mask 0 x.lower nil)))
         (a4vec-fix x))
-       (dontcare (lognot mask))
+       (dontcare (sparseint-val (sparseint-bitnot mask)))
        (dc-aigs  (aig-i2v dontcare))
        (ans (a4vec (aig-logior-ss dc-aigs x.upper)
                    (aig-logandc1-ss dc-aigs x.lower)))
@@ -2559,14 +2559,14 @@ creating enormous vectors when given a huge @('width') argument.</p>"
        ((a4vec x))
        ((a4vec y))
        (mask (4vmask-fix mask))
-       ((when (eql mask 0))
+       ((when (sparseint-equal mask 0))
         ;; [Jared] this was previously using 4vec-0.  I think it's probably
         ;; better to use 4vec-x, in general, since for instance many
         ;; arithmetic operations check a2vec-p and then do something really
         ;; simple in the "nope, not a 2vec, may as well just return all xes."
         (a4vec-x))
-       ((when (< 0 mask))
-        (b* ((width (+ 1 (integer-length mask))))
+       ((when (sparseint-< 0 mask))
+        (b* ((width (+ 1 (sparseint-length mask))))
           (a4vec-ite (aig-and (a2vec-p w) ;; Is the width properly two-valued?
                               (aig-not (aig-sign-s w.upper))) ;; Is it natural?
                      ;; Note: May want to do something more to coerce w to
@@ -2696,7 +2696,7 @@ optimization to avoid problems due to large masks.</p>"
        ((a4vec lsb))
        ((a4vec in))
        (mask (4vmask-fix mask))
-       ((when (eql mask 0))
+       ((when (sparseint-equal mask 0))
         ;; [Jared] this was previously using 4vec-0.  I think it's probably
         ;; better to use 4vec-x, in general, since for instance many
         ;; arithmetic operations check a2vec-p and then do something really
@@ -2706,11 +2706,11 @@ optimization to avoid problems due to large masks.</p>"
      (aig-and (a2vec-p lsb)
               (aig-and (a2vec-p width)
                        (aig-not (aig-sign-s width.upper)))) 
-     (b* ((maskwidth (and (or (< 0 mask)
+     (b* ((maskwidth (and (or (sparseint-< 0 mask)
                               (and (not (and (a4vec-constantp width)
                                              (a4vec-constantp lsb)))
                                    (cw "Warning: bitblasting variable part select under unbounded mask~%")))
-                          (+ 1 (integer-length mask))))
+                          (+ 1 (sparseint-length mask))))
           (width-limit (if maskwidth
                            (min maskwidth (aig-list->s-upper-bound width.upper))
                          (aig-list->s-upper-bound width.upper)))
@@ -3186,7 +3186,23 @@ lowermost @('pos') bits of @('y') with the corresponding bits of @('x').</p>"
              :in-theory (enable acl2::logcons)
              :expand ((aig-list->s shamt env))))))
 
-
+(define aig-force-sign-s ((sign)
+                          (x true-listp))
+  :returns (new-x true-listp :rule-classes :type-prescription)
+  (b* (((mv first rest end) (gl::first/rest/end x))
+       ((when end) (list sign)))
+    (aig-scons first (aig-force-sign-s sign rest)))
+  ///
+  (defret <fn>-correct
+    (implies (equal (aig-eval (aig-sign-s x) env)
+                    (aig-eval sign env))
+             (equal (aig-list->s (aig-force-sign-s sign x) env)
+                    (aig-list->s x env)))
+    :hints(("Goal" :in-theory (enable aig-sign-s
+                                      gl::s-endp)
+            :expand ((:free (a b) (aig-list->s (cons a b) env))
+                     (aig-list->s x env))))))
+    
 (define a4vec-rsh ((amt  a4vec-p  "Right-shift amount.")
                    (x    a4vec-p  "Vector to shift.")
                    (mask 4vmask-p "Care mask for the result."))
@@ -3201,9 +3217,9 @@ creating enormous vectors when given a huge shift amount.</p>"
     (a4vec-ite (a2vec-p amt)
                ;; Valid shift amount.
                (b* ((shamt (aig-unary-minus-s amt.upper))
-                    ((when (eql 0 mask)) (a4vec-x))
-                    ((when (< 0 mask))
-                     (b* ((maskwidth (+ 1 (integer-length mask)))
+                    ((when (sparseint-equal 0 mask)) (a4vec-x))
+                    ((when (sparseint-< 0 mask))
+                     (b* ((maskwidth (+ 1 (sparseint-length mask)))
                           (upper (aig-head-of-concat shamt (aig-sterm nil) x.upper maskwidth))
                           (lower (aig-head-of-concat shamt (aig-sterm nil) x.lower maskwidth)))
                        (a4vec upper lower)))
@@ -3213,18 +3229,15 @@ creating enormous vectors when given a huge shift amount.</p>"
                     ((mv upper-left lower-left)
                      (if (eq sign t)
                          (mv nil nil)
-                       (b* ((lsh-amt (if (<= 0 mask)
-                                         (aig-logcollapse-ns
-                                          (integer-length (integer-length mask))
-                                          shamt)
-                                       shamt)))
+                       (b* ((lsh-amt (aig-force-sign-s nil shamt)))
                          (mv (aig-ash-ss 1 x.upper lsh-amt)
                              (aig-ash-ss 1 x.lower lsh-amt)))))
                     ((mv upper-right lower-right)
                      (if (not sign)
                          (mv nil nil)
-                       (mv (aig-right-shift-ss 1 x.upper shamt)
-                           (aig-right-shift-ss 1 x.lower shamt)))))
+                       (b* ((rsh-amt (aig-force-sign-s t shamt)))
+                         (mv (aig-right-shift-ss 1 x.upper rsh-amt)
+                             (aig-right-shift-ss 1 x.lower rsh-amt))))))
                  (a4vec (aig-ite-bss-fn sign upper-right upper-left)
                         (aig-ite-bss-fn sign lower-right lower-left)))
                ;; X/Z bits in shift amount, just return all Xes.
@@ -3273,7 +3286,7 @@ creating enormous vectors when given a huge shift amount.</p>"
        ((a4vec in))
        ((a4vec val))
        (mask (4vmask-fix mask))
-       ((when (eql mask 0))
+       ((when (sparseint-equal mask 0))
         ;; [Jared] this was previously using 4vec-0.  I think it's probably
         ;; better to use 4vec-x, in general, since for instance many
         ;; arithmetic operations check a2vec-p and then do something really
@@ -3283,7 +3296,7 @@ creating enormous vectors when given a huge shift amount.</p>"
      (aig-and (a2vec-p lsb)
               (aig-and (a2vec-p width)
                        (aig-not (aig-sign-s width.upper)))) 
-     (b* (((unless (< 0 mask))
+     (b* (((unless (sparseint-< 0 mask))
            (and (not (and (a4vec-constantp width)
                           (a4vec-constantp lsb)))
                 (cw "Warning: bitblasting variable part install under unbounded mask~%"))
@@ -3303,7 +3316,7 @@ creating enormous vectors when given a huge shift amount.</p>"
                                                (a4vec sum sum))
                                              in -1) -1)
                        mask)))
-          (maskwidth (+ 1 (integer-length mask)))
+          (maskwidth (+ 1 (sparseint-length mask)))
           ;; first concatenate the lower bits of x with the val, not truncated at width
           (lsbs.upper (aig-head-of-concat lsb.upper in.upper val.upper maskwidth))
           (lsbs.lower (aig-head-of-concat lsb.upper in.lower val.lower maskwidth))
@@ -3486,10 +3499,10 @@ provides special optimization to avoid problems due to large masks.</p>"
                            ;; Try to defend against catastrophically large
                            ;; shift amounts by reducing the shift amount by
                            ;; the mask.
-                           (if (<= 0 mask)
-                               (aig-logcollapse-ns (integer-length (integer-length mask))
-                                                   shamt)
-                             shamt)))
+                           (if (sparseint-< mask 0)
+                               shamt
+                             (aig-logcollapse-ns (integer-length (sparseint-length mask))
+                                                 shamt))))
                        (mv (aig-ash-ss 1 x.upper lsh-amt)
                            (aig-ash-ss 1 x.lower lsh-amt))))
 

@@ -61,8 +61,21 @@
   '(lambda (x)
      (binary-+ '8 (binary-* '9 (fix x)))))
 
+(defun ap1-guard-rec (fn lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) t)
+        (t (and (apply$-guard fn (list (car lst)))
+                (ap1-guard-rec fn (cdr lst))))))
+
+(defun ap1-guard (fn lst)
+  (declare (xargs :guard t))
+  (or (atom fn)
+      (ap1-guard-rec fn lst)))
+
+
 (defun$ ap1 (lst fn1 acc)
-  (declare (xargs :guard (acl2-numberp acc)))
+  (declare (xargs :guard (and (acl2-numberp acc)
+                              (ap1-guard fn1 lst))))
   (cond ((atom lst) acc)
         (t (ap1 (cdr lst)
                 fn1
@@ -70,7 +83,9 @@
                    acc)))))
 
 (defun$ ap2 (lst fn1 fn2 acc)
-  (declare (xargs :guard (acl2-numberp acc)))
+  (declare (xargs :guard (and (acl2-numberp acc)
+                              (ap1-guard fn1 lst)
+                              (ap1-guard fn2 lst))))
   (cond ((atom lst) acc)
         (t (ap2 (cdr lst)
                 fn1 fn2
@@ -79,7 +94,10 @@
                    acc)))))
 
 (defun$ ap3 (lst fn1 fn2 fn3 acc)
-  (declare (xargs :guard (acl2-numberp acc)))
+  (declare (xargs :guard (and (acl2-numberp acc)
+                              (ap1-guard fn1 lst)
+                              (ap1-guard fn2 lst)
+                              (ap1-guard fn3 lst))))
   (cond ((atom lst) acc)
         (t (ap3 (cdr lst)
                 fn1 fn2 fn3
@@ -89,7 +107,11 @@
                    acc)))))
 
 (defun$ ap4 (lst fn1 fn2 fn3 fn4 acc)
-  (declare (xargs :guard (acl2-numberp acc)))
+  (declare (xargs :guard (and (acl2-numberp acc)
+                              (ap1-guard fn1 lst)
+                              (ap1-guard fn2 lst)
+                              (ap1-guard fn3 lst)
+                              (ap1-guard fn4 lst))))
   (cond ((atom lst) acc)
         (t (ap4 (cdr lst)
                 fn1 fn2 fn3 fn4

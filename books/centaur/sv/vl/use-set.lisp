@@ -701,14 +701,14 @@
 ;;          :hints(("Goal" :in-theory (enable* ihsext-inductions
 ;;                                             ihsext-recursive-redefs)))))
         
-(define mask-to-ranges-aux ((x integerp)
-                            (~x (equal ~x (lognot x)))
-                            (len (eql len (integer-length x)))
+(define mask-to-ranges-aux ((x sparseint-p)
+                            (len (eql len (sparseint-length x)))
                             (idx natp))
-  :measure (nfix (- (integer-length x) (nfix idx)))
-  :guard (logbitp idx x)
+  :measure (nfix (- (integer-length (sparseint-val x)) (nfix idx)))
+  :guard (eql 1 (sparseint-bit idx x))
   :guard-hints (("goal" :use ((:instance logbitp-of-trailing-0-count-logtail
-                               (idx (+ idx (bitops::trailing-0-count (lognot (logtail idx x)))))))))
+                               (idx (+ idx (bitops::trailing-0-count (lognot (logtail idx (sparseint-val x))))))
+                               (x (sparseint-val x))))))
   :returns (ranges rangelist-p)
 
 
@@ -718,23 +718,21 @@
                                         bitopS::trailing-0-count-bound
                                         bitops::logbitp-when-bitmaskp
                                         bitops::logcdr-natp))))
-  (b* ((x (lifix x))
-       (idx (lnfix idx))
-       ((unless (mbt (logbitp idx x))) nil)
-       (len (mbe :logic (integer-length x) :exec len))
-       (~x (mbe :logic (lognot x) :exec ~x))
+  (b* ((idx (lnfix idx))
+       ((unless (mbt (eql 1 (sparseint-bit idx x)))) nil)
+       (len (mbe :logic (sparseint-length x) :exec len))
        ((when (<= len idx))
         (list (make-range :lsb idx :width nil)))
-       (count (bitops::trailing-0-count-from ~x idx))
+       (count (sparseint-trailing-1-count-from x idx))
        (range (make-range :lsb idx :width count))
        (next-idx (+ idx count))
        ((when (>= next-idx len))
         (list range))
-       (next-idx (+ next-idx (bitops::trailing-0-count-from x next-idx))))
-    (cons range (mask-to-ranges-aux x ~x len next-idx)))
+       (next-idx (+ next-idx (sparseint-trailing-0-count-from x next-idx))))
+    (cons range (mask-to-ranges-aux x len next-idx)))
   ///
   (defret consp-of-mask-to-ranges-aux
-    (implies (logbitp idx x)
+    (implies (logbitp idx (sparseint-val x))
              (consp ranges)))
 
   (defret lsb-of-mask-to-ranges-aux
@@ -769,7 +767,7 @@
             :induct t)
            (and stable-under-simplificationp
                 '(:use ((:instance logbitp-of-trailing-0-count-logtail
-                               (idx idx) (x (lognot x))))
+                               (idx idx) (x (lognot (sparseint-val x)))))
                   :in-theory (disable logbitp-of-trailing-0-count-logtail)))))
 
   (local (defthm greater-than-trailing-0-count-when-not-logbitp
@@ -842,10 +840,10 @@
                                               ihsext-recursive-redefs)))))
 
   (defret in-rangelist-of-mask-to-ranges-aux
-    (implies (logbitp idx x)
+    (implies (logbitp idx (sparseint-val x))
              (iff (in-rangelist n ranges)
                   (and (<= (nfix idx) (nfix n))
-                       (logbitp n x))))
+                       (logbitp n (sparseint-val x)))))
     :hints(("Goal" :in-theory (e/d (in-range)
                                    ((:d mask-to-ranges-aux)))
             :induct <call>
@@ -853,17 +851,18 @@
                      (:free (a b) (in-rangelist n (cons a b)))))
            (and stable-under-simplificationp
                 '(:use ((:instance logbitp-of-trailing-0-count-logtail
-                               (idx idx) (x (lognot x)))
+                               (idx idx) (x (lognot (sparseint-val x))))
                         (:instance logbitp-of-trailing-0-count-logtail
-                         (idx (+ (nfix idx) (bitops::trailing-0-count (lognot (logtail idx x)))))))
+                         (idx (+ (nfix idx) (bitops::trailing-0-count (lognot (logtail idx (sparseint-val x))))))
+                         (x (sparseint-val x))))
                   :in-theory (disable logbitp-of-trailing-0-count-logtail))))))
 
-(define mask-to-ranges ((x integerp))
+(define mask-to-ranges ((x sparseint-p))
   :returns (ranges rangelist-p)
-  (if (zip x)
+  (if (sparseint-equal x 0)
       nil
-    (mask-to-ranges-aux x (lognot x) (integer-length x)
-                        (bitops::trailing-0-count x)))
+    (mask-to-ranges-aux x (sparseint-length x)
+                        (sparseint-trailing-0-count x)))
   ///
   (defret proper-rangelist-p-of-mask-to-ranges
     (proper-rangelist-p ranges))
@@ -884,7 +883,7 @@
 
   (defret in-rangelist-of-mask-to-ranges
     (iff (in-rangelist n ranges)
-         (logbitp n x))))
+         (logbitp n (sparseint-val x)))))
        
 
 
@@ -931,7 +930,7 @@
        (prev-ranges (cdr (hons-get addr (rangemap-fix uses))))
        (uses (hons-acons addr (append-tr ranges prev-ranges)
                          (rangemap-fix uses)))
-       (warnings (if (< mask 0)
+       (warnings (if (sparseint-< mask 0)
                      (cons (vl::make-vl-warning
                             :type :sv-use-set-unresolved-range
                             :msg "Couldn't resolve the range of possible uses for ~w0 (negative caremask)."
@@ -2936,7 +2935,14 @@
                              vl::nest-hier-prefix-when-stringp
                              vl::vl-warninglist-p-when-not-consp)))
 
-  (fty::deffixequiv-mutual scopetree-collect-use/set-warnings))
+  (local (make-event
+          `(in-theory (disable . ,(getpropc 'scopetree-collect-use/set-warnings 'acl2::recursivep)))))
+  (with-output :off (prove)
+    (progn
+      (fty::deffixequiv-mutual scopetree-collect-use/set-warnings :args (uses))
+      (fty::deffixequiv-mutual scopetree-collect-use/set-warnings :args (sets))
+      (fty::deffixequiv-mutual scopetree-collect-use/set-warnings :args (warnings))
+      (fty::deffixequiv-mutual scopetree-collect-use/set-warnings :omit (uses sets warnings)))))
          
                                                        
          

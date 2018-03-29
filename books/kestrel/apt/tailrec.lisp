@@ -1,6 +1,6 @@
 ; APT Tail Recursion Transformation -- Implementation
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -315,13 +315,57 @@
   (((tailrec-variantp variant)
     "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." description)))
 
+(define tailrec-infer-domain
+  ((combine pseudo-termp "Result of @(tsee tailrec-check-old).")
+   (q symbolp "Result of @(tsee tailrec-check-inputs).")
+   (r symbolp "Result of @(tsee tailrec-check-inputs).")
+   (variant tailrec-variantp "Input to the trasformation, after validation.")
+   (verbose booleanp "Print informative messages or not.")
+   (wrld plist-worldp))
+  :returns (domain "A @(tsee pseudo-termfnp).")
+  :verify-guards nil
+  :short "Infer the domain over which some applicability conditions must hold."
+  :long
+  "<p>
+   This is used when the @(':domain') input is @(':auto').
+   A domain is inferred as described in the documentation.
+   </p>"
+  (b* ((default '(lambda (x) 't))
+       (domain
+        (if (member-eq variant '(:monoid :monoid-alt))
+            (case-match combine
+              ((op . args)
+               (b* (((unless (symbolp op)) default)
+                    ((unless (or (equal args (list q r))
+                                 (equal args (list r q))))
+                     default)
+                    ((list y1 y2) (formals op wrld))
+                    (guard (uguard op wrld)))
+                 (case-match guard
+                   (('if (dom !y1) (dom !y2) *nil*)
+                    (if (symbolp dom)
+                        dom
+                      default))
+                   (& default))))
+              (& default))
+          default))
+       ((run-when verbose)
+        (cw "~%")
+        (cw "Inferred domain for the applicability conditions: ~x0.~%" domain)))
+    domain))
+
 (define tailrec-check-domain
   ((domain "Input to the transformation.")
    (old-fn-name symbolp "Result of @(tsee tailrec-check-old).")
+   (combine pseudo-termp "Result of @(tsee tailrec-check-old).")
+   (q symbolp "Result of @(tsee tailrec-check-inputs).")
+   (r symbolp "Result of @(tsee tailrec-check-inputs).")
+   (variant tailrec-variantp "Input to the trasformation, after validation.")
    (do-verify-guards booleanp
                      "Result of validating
                       the @(':verify-guards') input to the transformation
                       (in @(tsee tailrec-check-inputs)).")
+   (verbose booleanp "Print informative messages or not.")
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
@@ -331,18 +375,70 @@
                          the predicate denoted by @('domain').")
                state)
   :mode :program
-  :short "Ensure that the @('domain') input to the transformation is valid."
+  :short "Ensure that the @(':domain') input to the transformation is valid."
   :long
   "<p>
    If successful, return:
-   @('domain') itself, if it is a function name;
-   the translated lambda expression denoted by @('domain'),
-   if @('domain') is a macro name;
-   the translation of @('domain'),
-   if @('domain') is a lambda expression.
+   the input itself, if it is a function name;
+   the translated lambda expression denoted by the input,
+   if the input is a macro name;
+   the translation of the input,
+   if the input is a lambda expression;
+   the inferred function name
+   or the default translated lambda expression that holds for every value,
+   if the input is @(':auto').
    </p>"
-  (b* (((er (list fn/lambda stobjs-in stobjs-out description))
-        (ensure-function/macro/lambda$ domain "The :DOMAIN input" t nil))
+  (b* ((wrld (w state))
+       ((when (eq domain :auto))
+        (value (tailrec-infer-domain combine q r variant verbose wrld)))
+       (description "The :DOMAIN input")
+       ((er (list fn/lambda stobjs-in stobjs-out description))
+        (cond ((function-namep domain wrld)
+               (value (list domain
+                            (stobjs-in domain wrld)
+                            (stobjs-out domain wrld)
+                            (msg "~@0, which is the function ~x1,"
+                                 description domain))))
+              ((macro-namep domain wrld)
+               (b* ((args (macro-required-args domain wrld))
+                    (ulambda `(lambda ,args (,domain ,@args)))
+                    ((mv tlambda stobjs-out) (check-user-lambda ulambda wrld))
+                    (stobjs-in (compute-stobj-flags args t wrld)))
+                 (value
+                  (list tlambda
+                        stobjs-in
+                        stobjs-out
+                        (msg "~@0, which is the lambda expression ~x1 ~
+                              denoted by the macro ~x2,"
+                             description ulambda domain)))))
+              ((symbolp domain)
+               (er-soft+ ctx t nil "~@0 must be :AUTO, ~
+                                    a function name, ~
+                                    a macro name, ~
+                                    or a lambda expression.  ~
+                                    The symbol ~x1 is not :AUTO or ~
+                                    the name of a function or macro."
+                         description domain))
+              (t (b* (((mv tlambda/msg stobjs-out)
+                       (check-user-lambda domain wrld))
+                      ((when (msgp tlambda/msg))
+                       (er-soft+ ctx t nil
+                                 "~@0 must be :AUTO, ~
+                                  a function name, ~
+                                  a macro name, ~
+                                  or a lambda expression.  ~
+                                  Since ~x1 is not a symbol, ~
+                                  it must be a lambda expression.  ~
+                                  ~@2"
+                                 description domain tlambda/msg))
+                      (tlambda tlambda/msg)
+                      (stobjs-in
+                       (compute-stobj-flags (lambda-formals tlambda) t wrld)))
+                   (value (list tlambda
+                                stobjs-in
+                                stobjs-out
+                                (msg "~@0, which is the lambda expression ~x1,"
+                                     description domain)))))))
        ((er &) (ensure-function/lambda-logic-mode$ fn/lambda description t nil))
        ((er &) (ensure-function/lambda-arity$ stobjs-in 1 description t nil))
        ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
@@ -636,15 +732,16 @@
                   updates
                   combine
                   q
-                  r)) (tailrec-check-old
-                       old variant verify-guards verbose ctx state))
+                  r)) (tailrec-check-old old variant verify-guards
+                                         verbose ctx state))
        ((er &) (tailrec-check-variant$ variant "The :VARIANT input" t nil))
        ((er do-verify-guards) (ensure-boolean-or-auto-and-return-boolean$
                                verify-guards
                                (guard-verified-p old-fn-name (w state))
                                "The :VERIFY-GUARDS input" t nil))
        ((er domain$) (tailrec-check-domain
-                      domain old-fn-name do-verify-guards ctx state))
+                      domain old-fn-name combine q r variant do-verify-guards
+                      verbose ctx state))
        ((er new-fn-name) (tailrec-check-new-name
                           new-name old-fn-name ctx state))
        ((er new-fn-enable) (ensure-boolean-or-auto-and-return-boolean$
@@ -2456,7 +2553,7 @@
                      ;; optional inputs:
                      &key
                      (variant ':monoid)
-                     (domain '(lambda (x) t))
+                     (domain ':auto)
                      (new-name ':auto)
                      (new-enable ':auto)
                      (wrapper-name ':auto)

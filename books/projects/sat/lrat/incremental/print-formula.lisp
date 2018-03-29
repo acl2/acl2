@@ -24,14 +24,14 @@
                    (not (member 0 (cdar formula)))))
          (er hard? 'check-formula-with-increasing-keys
              "Alleged formula has bad entry:~|~x0~|This entry fails to be ~
-                  a null-terminated list of non-zero integers starting with a ~
-                  positive integer."
+              a nil-terminated list of non-zero integers starting with a ~
+              positive integer."
              (car formula)))
         ((and (cdr formula)
               (not (< (caar formula) (caadr formula))))
          (er hard? 'check-formula-with-increasing-keys
              "Formula does not have indices in strictly increasing order: ~
-                  it has an index ~x0 followed immediately by index ~x1."
+              it has an index ~x0 followed immediately by index ~x1."
              (caar formula) (caadr formula)))
         (t (check-formula-with-increasing-keys (cdr formula)))))
 

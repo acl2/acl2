@@ -444,7 +444,7 @@ are used to write natural numbers into the GPRs.</p>"
     register.</em></p>
 
     <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
-    &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
+    `No Extension of 8-Bit and 16-Bit Results'.</p>
 
     <p>In 32-bit mode, the upper 32 bits are undefined, as specified by the
     following quote from the same page as above:</p>

@@ -1,0 +1,28 @@
+This directory contains the following files:
+
+- =README.org=: This file.
+
+- =workshops.bib=: A BibTeX file containing citation/reference data
+  for publications that were presented at ACL2 workshops over the
+  years, as well as at ITP 2010 which took the place of the ninth ACL2
+  workshop.
+
+  See [[https://www.cs.utexas.edu/users/moore/acl2/workshops.html]] for
+  more information on the ACL2 workshops.
+
+- =workshops.tex=: A TeX document which demonstrates how the entries
+  in =workshops.bib= can be used.
+
+  Note the ~\usepackage~ forms -- the use of =amssymb= is required for
+  one of the paper names which contains some symbols provided by
+  =amssymb=, and the use of =fontenc= is required because one of the
+  authors' names contains an ogonek, which is not supported in the OT1
+  internal encoding.
+
+This data was first compiled by Jared Davis, covering the workshops
+from 2000 to 2004, and later extended by Keshav Kini to cover the
+workshops from 1999 to 2017.
+
+Please keep this BibTeX resource up to date as new ACL2 workshops
+occur, and feel free to correct any errors or mistakes in the data if
+you find them (using a pull request to this repository).

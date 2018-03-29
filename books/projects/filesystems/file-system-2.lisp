@@ -287,9 +287,10 @@
                 (<= 0 (cddr (assoc-equal name fs))))))
 
 (defthm l2-wrchs-returns-fs-lemma-5
-  (implies (and (l2-fs-p fs)
-                (consp (assoc-equal name fs)))
-           (symbolp name)))
+  (implies (and (consp (assoc-equal name fs))
+                (l2-fs-p fs))
+           (symbolp name))
+  :rule-classes :forward-chaining)
 
 ;; This theorem shows that the property l2-fs-p is preserved by wrchs.
 (defthm l2-wrchs-returns-fs

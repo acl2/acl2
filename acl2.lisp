@@ -33,6 +33,8 @@
 ; implied, of Computational Logic, Inc., Office of Naval Research, DARPA or the
 ; U.S. Government.
 
+; This file cannot be compiled because it changes packages in the middle.
+
 ; This file, acl2.lisp, (a) builds the packages for the ACL2 system, (b)
 ; defines the functions for loading and compiling ACL2 and for running code
 ; verified using ACL2, and (c) makes a couple of checks concerning minor,

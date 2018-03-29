@@ -13,7 +13,7 @@
 ;; INSTRUCTION: CALL
 ;; ======================================================================
 
-;; From Intel Vol. 1, 6-11:
+;; From Intel manual, Mar'17, Volume 1, Section 6.3.7:
 
 ;; In 64-bit mode, the operand size for all near branches (CALL, RET,
 ;; JCC, JCXZ, JMP, and LOOP) is forced to 64 bits. These instructions
@@ -22,10 +22,10 @@
 
 ;; The following aspects of near branches are controlled by the
 ;; effective operand size:
-
-;; Truncation of the size of the instruction pointer Size of a stack
-;; pop or push, due to a CALL or RET Size of a stack-pointer increment
-;; or decrement, due to a CALL or RET Indirect-branch operand size
+;;   Truncation of the size of the instruction pointer
+;;   Size of a stack pop or push, due to a CALL or RET
+;;   Size of a stack-pointer increment or decrement, due to a CALL or RET
+;;   Indirect-branch operand size
 
 ;; In 64-bit mode, all of the above actions are forced to 64 bits
 ;; regardless of operand size prefixes (operand size prefixes are
@@ -217,7 +217,7 @@
 ;; INSTRUCTION: RET
 ;; ======================================================================
 
-;; From Intel Vol. 1, 6-11:
+;; From Intel manual, Mar'17, Volume 1, Section 6.3.7:
 
 ;; In 64-bit mode, the operand size for all near branches (CALL, RET,
 ;; JCC, JCXZ, JMP, and LOOP) is forced to 64 bits. These instructions
@@ -226,10 +226,10 @@
 
 ;; The following aspects of near branches are controlled by the
 ;; effective operand size:
-;;   Truncation of the size of the instruction pointer Size of a stack
-;;   pop or push, due to a CALL or RET Size of a stack-pointer
-;;   increment or decrement, due to a CALL or RET Indirect-branch
-;;   operand size
+;;   Truncation of the size of the instruction pointer
+;;   Size of a stack pop or push, due to a CALL or RET
+;;   Size of a stack-pointer increment or decrement, due to a CALL or RET
+;;   Indirect-branch operand size
 
 ;; In 64-bit mode, all of the above actions are forced to 64 bits
 ;; regardless of operand size prefixes (operand size prefixes are
@@ -242,6 +242,12 @@
 ;; branches. Such addresses are 64 bits by default; but they can be
 ;; overridden to 32 bits by an address size prefix.
 
+;; In 32-bit mode, the operand size should be the size of the code address,
+;; i.e. 32 bits if CS.D = 1 and 16 bits if CS.D = 0. Note that also in 64-bit
+;; mode (see above) the operand size (64 bits) is equal to the size of the code
+;; address (64 bits, even though in our model we only model the low 48 bits due
+;; to the invariant of instruction pointers being canonical).
+
 (def-inst x86-ret
 
   ;; Op/En: #xC2 iw: I:  Near return to calling procedure and pop imm16 bytes from
@@ -249,7 +255,7 @@
   ;;        #xC3:    NP: Near return to calling procedure
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (rime-size rml16 rme-size rme16) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -261,21 +267,36 @@
   :body
 
   (b* ((ctx 'x86-ret)
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
-       (rsp (rgfi *rsp* x86))
-       ((when (not (canonical-address-p rsp)))
-        (!!ms-fresh :old-rsp-invalid rsp))
 
-       ((mv flg0 (the (signed-byte #.*max-linear-address-size+1*) new-rsp) x86)
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+
+       (rsp (read-*sp x86))
+
+       ((the (integer 2 8) operand-size)
+        (if (64-bit-modep x86)
+            8
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1) 4 2))))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) new-rsp) x86)
         (if (equal opcode #xC3)
-            (mv nil (+ (the (signed-byte #.*max-linear-address-size*) rsp) 8) x86)
-          (b* (((mv flg0 (the (unsigned-byte 16) imm16) x86)
-                (rml16 temp-rip :x x86)))
-            (mv flg0 (+ (the (signed-byte #.*max-linear-address-size*) rsp) imm16) x86))))
-       ((when flg0)
-        (!!ms-fresh :imm-rml16-error flg0))
+            (b* (((mv flg1 new-rsp)
+                  (add-to-*sp rsp operand-size x86))
+                 ((when flg1) (mv flg1 0 x86)))
+              (mv nil new-rsp x86))
+          (b* (((mv flg1 (the (unsigned-byte 16) imm16) x86)
+                (rme16 temp-rip *cs* :x x86))
+               ((when flg1) (mv flg1 0 x86))
+               ((mv flg1 new-rsp)
+                (add-to-*sp rsp (+ operand-size imm16) x86))
+               ((when flg1) (mv flg1 0 x86)))
+            (mv nil new-rsp x86))))
+       ((when flg)
+        (!!ms-fresh :imm-rml16-error flg))
 
        ;; For #xC3: We don't need to check for valid length for
        ;; one-byte instructions.  The length will be more than 15 only
@@ -288,36 +309,71 @@
             (-
              ;; Adding 2 to account for imm16 in #xC2.
              (the (signed-byte #.*max-linear-address-size+1*)
-               (+ 2 temp-rip))
+                  (+ 2 temp-rip))
              (the (signed-byte #.*max-linear-address-size*)
-               start-rip))
+                  start-rip))
           ;; Irrelevant for #xC3.
           0))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-
-       ((when (mbe :logic (not (canonical-address-p new-rsp))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               new-rsp))))
-        (!!ms-fresh :new-rsp-invalid new-rsp))
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by RIME-SIZE below, which consumes an effective address,
+       ;; and uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to RIME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, RIME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
        (inst-ac? (alignment-checking-enabled-p x86))
-       ((when (and inst-ac? (not (equal (logand rsp 7) 0))))
-        (!!ms-fresh :memory-access-unaligned rsp))
+       ((mv flg rsp-linear) (ea-to-la rsp *ss* x86))
+       ((when (and inst-ac?
+                   (not flg)
+                   (not (equal (logand rsp-linear
+                                       (- operand-size 1))
+                               0))))
+        (!!ms-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
+
+       ;; Note that instruction pointers are modeled as signed in 64-bit mode,
+       ;; but unsigned in 32-bit mode.
        ((mv flg (the (signed-byte 64) tos) x86)
-        (riml64 rsp :r x86))
+        (if (= operand-size 8)
+            (rime-size operand-size rsp *ss* :r x86)
+          (rme-size operand-size rsp *ss* :r x86)))
        ((when flg)
-        (!!ms-fresh :riml64-error flg))
-       ((when (not (canonical-address-p tos)))
-        (!!ms-fresh :invalid-return-address tos))
+        (!!ms-fresh :ss 0 :riml64-error flg)) ;; #SS(0)
+
+       ;; Ensure that the return address is canonical (for 64-bit mode) and
+       ;; within code segment limits (for 32-bit mode). It is not clear whether
+       ;; this check should be performed here or deferred to when the next
+       ;; instruction is fetched, but for now we do it here because this is the
+       ;; approach taken in other parts of the model. It is in a way always
+       ;; "safe" to stop execution with an error (in the sense that the model
+       ;; provides no guarantees when this happens).
+       ((unless (if (64-bit-modep x86)
+                    (canonical-address-p tos)
+                  (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+                       (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
+                    (and (<= 0 tos) (<= tos cs.limit)))))
+        (!!ms-fresh :gp 0 :bad-return-address tos)) ;; #GP(0)
+
        ;; Update the x86 state:
+
        ;; Increment the stack pointer.
-       (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*)
-                           new-rsp) x86))
+       (x86 (write-*sp new-rsp x86))
+
        ;; Update the rip to point to the return address.
+       ;; The pseudocode for RET in Intel manual, Mar'17, Volume 2
+       ;; says that a 16-bit return instruction pointer
+       ;; should be zero-extended and stored into EIP.
+       ;; Thus, we do not use WRITE-*IP here,
+       ;; which has a different treatment for 16-bit instruction pointers.
+       ;; This seems inconsistent, and it is an ambiguous aspect
+       ;; of the Intel and AMD manuals.
        (x86 (!rip (the (signed-byte #.*max-linear-address-size*) tos) x86)))
+
     x86))
 
 ;; ======================================================================

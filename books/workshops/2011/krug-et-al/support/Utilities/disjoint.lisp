@@ -947,4 +947,5 @@
  :rule-classes nil)
 
 (defattach (ancestors-check ancestors-check-disjointp-hack)
+ :system-ok t
  :hints (("Goal" :use ancestors-check-disjointp-hack-constraint)))

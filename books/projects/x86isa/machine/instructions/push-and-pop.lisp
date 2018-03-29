@@ -57,6 +57,7 @@
 ;; push
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-general-register
   :parents (one-byte-opcodes)
 
@@ -97,14 +98,26 @@
        ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by WME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to WME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, WME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
        (inst-ac? (alignment-checking-enabled-p x86))
+       ((mv flg new-rsp-linear) (ea-to-la new-rsp *ss* x86))
        ((when (and inst-ac?
+                   (not flg)
                    (not (equal (logand
-                                new-rsp
+                                new-rsp-linear
                                 (the (integer 0 15)
                                   (- operand-size 1)))
                                0))))
-        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp)) ;; #AC(0)
+        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp-linear)) ;; #AC(0)
 
        ;; See "Z" in http://ref.x86asm.net/geek.html#x50
        (reg (mbe :logic (loghead 3 opcode)
@@ -216,6 +229,8 @@
        ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
+       ;; TODO: perform alignment check on linear (not effective) addresses
+       ;; when this instruction is fully extended to 32-bit mode.
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand
@@ -239,7 +254,7 @@
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
@@ -459,6 +474,7 @@ the execution in this case.</p>"
 ;; pop
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pop-general-register
   :parents (one-byte-opcodes)
 
@@ -494,12 +510,16 @@ the execution in this case.</p>"
                 (if p3? 2 4)
               (if p3? 4 2)))))
        (rsp (read-*sp x86))
+       ;; See the comment about alignment checks in X86-PUSH-GENERAL-REGISTER
+       ;; about the use of EA-TO-LA here.
        (inst-ac? (alignment-checking-enabled-p x86))
+       ((mv flg rsp-linear) (ea-to-la rsp *ss* x86))
        ((when (and inst-ac?
-                   (not (equal (logand rsp (the (integer 0 15)
-                                                (- operand-size 1)))
+                   (not flg)
+                   (not (equal (logand rsp-linear (the (integer 0 15)
+                                                       (- operand-size 1)))
                                0))))
-        (!!fault-fresh :ac 0 :rsp-not-aligned rsp)) ;; #AC(0)
+        (!!fault-fresh :ac 0 :rsp-not-aligned rsp-linear)) ;; #AC(0)
 
        ((mv flg new-rsp) (add-to-*sp rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
@@ -604,6 +624,8 @@ the execution in this case.</p>"
               (if p3? 4 2)))))
 
        (rsp (read-*sp x86))
+       ;; TODO: perform alignment check on linear (not effective) addresses
+       ;; when this instruction is fully extended to 32-bit mode.
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
@@ -663,7 +685,7 @@ the execution in this case.</p>"
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
 
-       ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
        ;; If the instruction goes beyond 15 bytes, stop. Change to an
@@ -834,6 +856,8 @@ the execution in this case.</p>"
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
         (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
+       ;; TODO: perform alignment check on linear (not effective) addresses
+       ;; when this instruction is fully extended to 32-bit mode.
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand new-rsp
@@ -953,6 +977,8 @@ the execution in this case.</p>"
        (rsp (rgfi *rsp* x86))
        ((when (not (canonical-address-p rsp)))
         (!!fault-fresh :ss 0 :rsp-not-canonical rsp)) ;; #SS(0)
+       ;; TODO: perform alignment check on linear (not effective) addresses
+       ;; when this instruction is fully extended to 32-bit mode.
        (inst-ac? (alignment-checking-enabled-p x86))
        ((when (and inst-ac?
                    (not (equal (logand rsp
@@ -1019,7 +1045,7 @@ the execution in this case.</p>"
 ;; INSTRUCTION: PUSHA/PUSHAD
 ;; ======================================================================
 
-;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
 
 (def-inst x86-pusha
 
@@ -1029,8 +1055,22 @@ the execution in this case.</p>"
 
   :long
   "<p>
-   This is invalid in 64-bit mode.
-   It throws a #UD exception.
+   In 64-bit mode, this instruction is invalid; it throws a #UD exception.
+   </p>
+   <p>
+   Note that the stack pointer is read twice:
+   via  @(tsee read-*sp) and via @(tsee rgfi-size).
+   The former is used as the address to write into the stack,
+   while the latter is used as (part of) the data to write into the stack.
+   In principle, the sizes of these two stack pointers may differ:
+   the former's size is determined solely by CS.D,
+   while the latter's size is also influenced
+   by the operand size override prefix.
+   It seems odd that the two sizes would differ, though.
+   </p>
+   <p>
+   We use some simple and repetitive code to write the registers into the stack.
+   It may be possible to optimize it by pushing all the registers in one shot.
    </p>"
 
   :implemented
@@ -1040,14 +1080,106 @@ the execution in this case.</p>"
                                (canonical-address-p temp-rip)))
 
   :body
-  (b* ((ctx 'x86-pusha))
-    (!!fault-fresh :ud nil))) ;; #UD
+
+  (b* ((ctx 'x86-pusha)
+
+       ((when (64-bit-modep x86)) (!!fault-fresh :ud nil)) ;; #UD
+
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (p3? (eql #.*operand-size-override*
+                 (prefixes-slice :group-3-prefix prefixes)))
+       ((the (integer 2 4) operand-size)
+        (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+             (cs.d
+              (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+          (if (= cs.d 1)
+              (if p3? 2 4)
+            (if p3? 4 2))))
+
+       (rsp (read-*sp x86))
+
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by WME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to WME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, WME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ;; It suffices to check the initial stack pointer for alignment.
+       ((mv flg rsp-linear) (ea-to-la rsp *ss* x86))
+       ((when (and inst-ac?
+                   (not flg)
+                   (not (equal (logand rsp-linear
+                                       (the (integer 1 3) (- operand-size 1)))
+                               0))))
+        (!!fault-fresh :ac 0 :rsp-not-aligned rsp-linear)) ;; #AC(0)
+
+       (eax/ax (rgfi-size operand-size *rax* 0 x86))
+       (ecx/cx (rgfi-size operand-size *rcx* 0 x86))
+       (edx/dx (rgfi-size operand-size *rdx* 0 x86))
+       (ebx/bx (rgfi-size operand-size *rbx* 0 x86))
+       (esp/sp (rgfi-size operand-size *rsp* 0 x86))
+       (ebp/bp (rgfi-size operand-size *rbp* 0 x86))
+       (esi/si (rgfi-size operand-size *rsi* 0 x86))
+       (edi/di (rgfi-size operand-size *rdi* 0 x86))
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* eax/ax x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* ecx/cx x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* edx/dx x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* ebx/bx x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* esp/sp x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* ebp/bp x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* esi/si x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* edi/di x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       (x86 (write-*sp rsp x86))
+       (x86 (write-*ip temp-rip x86)))
+
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: POPA/POPAD
 ;; ======================================================================
 
-;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
 
 (def-inst x86-popa
 
@@ -1057,8 +1189,11 @@ the execution in this case.</p>"
 
   :long
   "<p>
-   This is invalid in 64-bit mode.
-   It throws a #UD exception.
+   In 64-bit mode, this instruction is invalid; it throws a #UD exception.
+   </p>
+   <p>
+   We use some simple and repetitive code to read the registers from the stack.
+   It may be possible to optimize it by popping all the registers in one shot.
    </p>"
 
   :implemented
@@ -1068,7 +1203,102 @@ the execution in this case.</p>"
                                (canonical-address-p temp-rip)))
 
   :body
-  (b* ((ctx 'x86-popa))
-    (!!fault-fresh :ud nil))) ;; #UD
+  (b* ((ctx 'x86-popa)
+
+       ((when (64-bit-modep x86)) (!!fault-fresh :ud nil)) ;; #UD
+
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (p3? (eql #.*operand-size-override*
+                 (prefixes-slice :group-3-prefix prefixes)))
+       ((the (integer 2 4) operand-size)
+        (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+             (cs.d
+              (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+          (if (= cs.d 1)
+              (if p3? 2 4)
+            (if p3? 4 2))))
+
+       (rsp (read-*sp x86))
+
+       ;; The alignment check must be performed on linear addresses, not
+       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
+       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
+       ;; is inelegant, because segment address translation is already
+       ;; performed by RME-SIZE below, which consumes an effective address, and
+       ;; uses a linear address internally. This suggests that perhaps
+       ;; alignment checks should be moved to RME-SIZE and similar functions.
+       ;; For now, we call EA-TO-LA here and we perform the alignment check if
+       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
+       ;; attempting to access linear memory anyhow.
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ;; It suffices to check the initial stack pointer for alignment.
+       ((mv flg rsp-linear) (ea-to-la rsp *ss* x86))
+       ((when (and inst-ac?
+                   (not flg)
+                   (not (equal (logand rsp-linear
+                                       (the (integer 1 3) (- operand-size 1)))
+                               0))))
+        (!!fault-fresh :ac 0 :rsp-not-aligned rsp-linear)) ;; #AC(0)
+
+       ((mv flg edi/di x86) (rme-size operand-size rsp *ss* :r x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg esi/si x86) (rme-size operand-size rsp *ss* :r x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg ebp/bp x86) (rme-size operand-size rsp *ss* :r x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ;; pushed ESP/SP is not actually read (see pseudocode in
+       ;; Intel manual, Mar'17, Volume 2, POPA/POPAD reference):
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg ebx/bx x86) (rme-size operand-size rsp *ss* :r x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg edx/dx x86) (rme-size operand-size rsp *ss* :r x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg ecx/cx x86) (rme-size operand-size rsp *ss* :r x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg eax/ax x86) (rme-size operand-size rsp *ss* :r x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       (x86 (!rgfi-size operand-size *rdi* edi/di 0 x86))
+       (x86 (!rgfi-size operand-size *rsi* esi/si 0 x86))
+       (x86 (!rgfi-size operand-size *rbp* ebp/bp 0 x86))
+       ;; ESP/SP is not actually written (see pseudocode in
+       ;; Intel manual, Mar'17, Volume 2, POPA/POPAD reference)
+       (x86 (!rgfi-size operand-size *rbx* ebx/bx 0 x86))
+       (x86 (!rgfi-size operand-size *rdx* edx/dx 0 x86))
+       (x86 (!rgfi-size operand-size *rcx* ecx/cx 0 x86))
+       (x86 (!rgfi-size operand-size *rax* eax/ax 0 x86))
+
+       (x86 (write-*sp rsp x86))
+       (x86 (write-*ip temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (enable rme-size-of-2-to-rme16
+                                           rme-size-of-4-to-rme32))))
 
 ;; ======================================================================

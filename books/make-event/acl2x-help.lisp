@@ -85,21 +85,25 @@
 ;; Use acl2x-replace to make this a no-op except on the first pass :-)
 (defmacro use-acl2x-replace ()
   '(acl2x-replace
-    (defattach acl2x-expansion-alist acl2x-expansion-alist-replacement)
+    (defattach (acl2x-expansion-alist acl2x-expansion-alist-replacement)
+      :system-ok t)
     (value-triple :invisible)))
 
 (defmacro use-acl2x-replace! ()
-  '(defattach acl2x-expansion-alist acl2x-expansion-alist-replacement))
+  '(defattach (acl2x-expansion-alist acl2x-expansion-alist-replacement)
+     :system-ok t))
 
 
 (verify-termination hons-copy-with-state)
 (verify-guards hons-copy-with-state)
 
 (defmacro no-acl2x-replace ()
-  '(defattach acl2x-expansion-alist hons-copy-with-state))
+  '(defattach (acl2x-expansion-alist hons-copy-with-state)
+     :system-ok t))
 
 (defmacro no-acl2x-replace! ()
-  '(defattach acl2x-expansion-alist hons-copy-with-state))
+  '(defattach (acl2x-expansion-alist hons-copy-with-state)
+     :system-ok t))
 
 ;; Use of acl2x-replace that skips the proofs of form in the first pass, but
 ;; not the second.

@@ -23,11 +23,21 @@
                        (bounded-nat-listp y b)))))
 
 (defthm bounded-nat-listp-correctness-3
-  (implies (and (natp b)
-                (bounded-nat-listp l (+ b 1))
+  (implies (and (bounded-nat-listp l (+ b 1))
+                (natp b)
                 (not (bounded-nat-listp l b)))
-           (member-equal b l)))
+           (member-equal b l))
+  :rule-classes :forward-chaining)
 
 (defthm bounded-nat-listp-correctness-4
   (implies (bounded-nat-listp l b)
-           (not (member-equal b l))))
+           (not (member-equal b l)))
+  :rule-classes :forward-chaining)
+
+(defthmd bounded-nat-listp-correctness-5
+  (implies (and (<= x y) (bounded-nat-listp l x))
+           (bounded-nat-listp l y)))
+
+(defthm bounded-nat-listp-correctness-6
+  (implies (and (bounded-nat-listp ac b) (natp val) (< val b))
+           (bounded-nat-listp (make-list-ac n val ac) b)))
