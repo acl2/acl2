@@ -588,7 +588,7 @@
      <p>
      Since the restriction test follows from the guard,
      the test is wrapped by @(tsee mbt).
-     Since @(tse mbt) requires its argument to be @('t')
+     Since @(tsee mbt) requires its argument to be @('t')
      (not just non-@('nil')),
      but @('restriction<x1,...,xn>') may not be always boolean-valued,
      @('(and ... t)') is used to ensure a boolean value.
