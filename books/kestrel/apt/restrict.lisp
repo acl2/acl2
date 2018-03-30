@@ -214,7 +214,8 @@
 (defval *restrict-app-cond-names*
   :short "Names of all the applicability conditions."
   '(:restriction-of-rec-calls
-    :restriction-guard)
+    :restriction-guard
+    :restriction-boolean)
   ///
 
   (defruled symbol-listp-of-*restrict-app-cond-names*
@@ -447,6 +448,9 @@
             (restriction-guard (term-guard-obligation restriction$ state))
             (formula-trans (implicate old-guard restriction-guard)))
          (untranslate formula-trans t wrld)))
+      (:restriction-boolean
+       (b* ((formula-trans (apply-term* 'acl2::booleanp restriction$)))
+         (untranslate formula-trans t wrld)))
       (t (impossible)))))
 
 (define restrict-app-cond-present-p
@@ -460,6 +464,7 @@
   (case name
     (:restriction-of-rec-calls (if (recursivep old-fn-name nil wrld) t nil))
     (:restriction-guard do-verify-guards)
+    (:restriction-boolean t)
     (t (impossible))))
 
 (define restrict-app-conds
@@ -552,9 +557,7 @@
    (a no-op if the old function is not recursive),
    and then wrapping the resulting term with a conditional
    that tests the restricting predicate,
-   as described in the documentation;
-   since the test is provable from the guard (see below),
-   it is wrapped with @(tsee mbt).
+   as described in the documentation.
    Thus, the new function is recursive iff the old function is.
    If the old function is non-executable,
    the non-executable wrapper is removed first.
@@ -573,6 +576,8 @@
    by conjoining the restricting predicate
    after the guard of the old function,
    as described in the documentation.
+   Since the restriction test follows from the guard,
+   it is wrapped with @(tsee mbt).
    </p>"
   (b* ((macro (function-intro-macro new-fn-enable make-non-executable))
        (formals (formals old-fn-name wrld))
@@ -581,7 +586,7 @@
                    (ubody old-fn-name wrld)))
        (new-body-core (sublis-fn-simple (acons old-fn-name new-fn-name nil)
                                         old-body))
-       (new-body `(if (mbt (and ,restriction$ t)) ,new-body-core ,undefined$))
+       (new-body `(if (mbt ,restriction$) ,new-body-core ,undefined$))
        (new-body (untranslate new-body nil wrld))
        (recursive (recursivep old-fn-name nil wrld))
        (wfrel? (and recursive
@@ -749,6 +754,13 @@
    without implementation-specific proof hints
    that may refer to local events of the @(tsee encapsulate)
    that do not exist in the history after the transformation.
+   </p>
+   <p>
+   The guard verification involves proving that
+   the restriction test inside @(tsee mbt) is equal to @('t').
+   The guard itself implies that it is non-@('nil'),
+   and  the applicability condition @(':restriction-boolean')
+   is used to prove that, therefore, it is @('t').
    </p>"
   (b* ((recursive (recursivep old-fn-name nil wrld))
        (hints (if recursive
@@ -756,14 +768,18 @@
                      :in-theory '(,old-to-new-thm-name)
                      :use ((:guard-theorem ,old-fn-name)
                            ,(cdr (assoc-eq :restriction-guard
-                                           app-cond-thm-names))
+                                   app-cond-thm-names))
                            ,(cdr (assoc-eq :restriction-of-rec-calls
-                                           app-cond-thm-names)))))
+                                   app-cond-thm-names))
+                           ,(cdr (assoc-eq :restriction-boolean
+                                   app-cond-thm-names)))))
                 `(("Goal"
                    :in-theory nil
                    :use ((:guard-theorem ,old-fn-name)
                          ,(cdr (assoc-eq :restriction-guard
-                                         app-cond-thm-names)))))))
+                                 app-cond-thm-names))
+                         ,(cdr (assoc-eq :restriction-boolean
+                                 app-cond-thm-names)))))))
        (event `(local (verify-guards ,new-fn-name :hints ,hints))))
     event))
 

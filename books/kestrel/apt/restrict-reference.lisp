@@ -539,6 +539,22 @@
 
      </blockquote>
 
+   <p>
+   @(':restriction-boolean')
+   </p>
+
+     <blockquote>
+
+     <p>
+     The restricting predicate is boolean-valued:
+     </p>
+
+     @({
+       (booleanp restriction<x1,...,xn>)
+     })
+
+     </blockquote>
+
    <h3>
    Generated Function and Theorem
    </h3>
@@ -556,13 +572,13 @@
      @({
        ;; when old is not recursive:
        (defun new (x1 ... xn)
-         (if (mbt (and restriction<x1,...,xn> t))
+         (if (mbt restriction<x1,...,xn>)
              old-body<x1,...,xn>
            undefined))
 
        ;; when old is recursive:
        (defun new (x1 ... xn)
-         (if (mbt (and restriction<x1,...,xn> t))
+         (if (mbt restriction<x1,...,xn>)
              old-body<x1,...,xn,
                       (new update1-x1<x1,...,xn>
                            ...
@@ -590,8 +606,8 @@
      the test is wrapped by @(tsee mbt).
      Since @(tsee mbt) requires its argument to be @('t')
      (not just non-@('nil')),
-     but @('restriction<x1,...,xn>') may not be always boolean-valued,
-     @('(and ... t)') is used to ensure a boolean value.
+     the applicability condition @(':restriction-boolean') ensures that
+     the restriction test is @('t') when it is non-@('nil').
      </p>
 
      </blockquote>
