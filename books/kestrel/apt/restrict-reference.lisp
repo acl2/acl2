@@ -1,6 +1,6 @@
 ; APT Domain Restriction Transformation -- Reference Documentation
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -556,13 +556,13 @@
      @({
        ;; when old is not recursive:
        (defun new (x1 ... xn)
-         (if restriction<x1,...,xn>
+         (if (mbt (and restriction<x1,...,xn> t))
              old-body<x1,...,xn>
            undefined))
 
        ;; when old is recursive:
        (defun new (x1 ... xn)
-         (if restriction<x1,...,xn>
+         (if (mbt (and restriction<x1,...,xn> t))
              old-body<x1,...,xn,
                       (new update1-x1<x1,...,xn>
                            ...
@@ -583,6 +583,15 @@
      <p>
      The guard is @('(and old-guard<x1,...,xn> restriction<x1,...,xn>)'),
      where @('old-guard<x1,...,xn>') is the guard term of @('old').
+     </p>
+
+     <p>
+     Since the restriction test follows from the guard,
+     the test is wrapped by @(tsee mbt).
+     Since @(tse mbt) requires its argument to be @('t')
+     (not just non-@('nil')),
+     but @('restriction<x1,...,xn>') may not be always boolean-valued,
+     @('(and ... t)') is used to ensure a boolean value.
      </p>
 
      </blockquote>

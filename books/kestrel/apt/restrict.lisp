@@ -1,6 +1,6 @@
 ; APT Domain Restriction Transformation -- Implementation
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -552,7 +552,9 @@
    (a no-op if the old function is not recursive),
    and then wrapping the resulting term with a conditional
    that tests the restricting predicate,
-   as described in the documentation.
+   as described in the documentation;
+   since the test is provable from the guard (see below),
+   it is wrapped with @(tsee mbt).
    Thus, the new function is recursive iff the old function is.
    If the old function is non-executable,
    the non-executable wrapper is removed first.
@@ -579,7 +581,7 @@
                    (ubody old-fn-name wrld)))
        (new-body-core (sublis-fn-simple (acons old-fn-name new-fn-name nil)
                                         old-body))
-       (new-body `(if ,restriction$ ,new-body-core ,undefined$))
+       (new-body `(if (mbt (and ,restriction$ t)) ,new-body-core ,undefined$))
        (new-body (untranslate new-body nil wrld))
        (recursive (recursivep old-fn-name nil wrld))
        (wfrel? (and recursive
