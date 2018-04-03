@@ -3,14 +3,18 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; The utility make-executable attempts to modify a given term, producing one
-; that is logically equivalent and has a given stobjs-out.
-
-; This is very preliminary!  In particular, we don't attempt to replace cons
-; nests by calls of mv -- of course, we can't even do that since mv is a macro
-; if we insist on producing a term, which currently is the case.  We could
-; consider defining a function (mv* x), where the caller can for example
-; transform (mv* (cons a (cons b (cons c 'nil)))) into (mv a b c).  But that's
-; for another day, if at all.
+; that is logically equivalent and has a given stobjs-out, or at least
+; indicates a given stobjs-out.  Since mv is a macro, we can't produce a term
+; with a given stobjs-out of length 2 or more.  So instead we introduce an
+; identity function mv-marker so that (mv-marker n (cons x1 (cons x2 ... (cons
+; xn nil) ...)))  is a (genuine) term that the caller of make-executable could
+; transform into an mv "call".  This puts a burden on the caller, in
+; particular, if the caller is untranslate.  In that case the
+; untranslate-preprocess mechanism could be used, although that might step on
+; the existing untranslate-preprocess-fn if such is already installed; if such
+; an approach is adopted, consider using the untranslate-patterns interface to
+; untranslate-preprocess.  A quick-and-dirty approach to remove mv-marker would
+; simply be to scan the term, and we include code for that below.
 
 ; Moreover, at this point we make little attempt to deal with stobjs.  Later we
 ; may consider, for example given stobj (defstobj st fld), replacing (nth '0
@@ -21,6 +25,17 @@
 
 (defconst *ordinary-stobjs-out*
   '(nil))
+
+(defun mv-marker (n x)
+
+; Logically, (mv-marker n x) is x.  But we expect x to be an expression whose
+; stobjs-out has length n.  We expect to untranslate (mv-marker n (cons x1 ...))
+; to (mv x1 ...), where (cons ...) denotes a formal list with n elements x1,
+; x2, ....
+
+  (declare (ignore n)
+           (xargs :mode :logic :guard t))
+  x)
 
 (mutual-recursion
 
@@ -82,7 +97,9 @@
         (fcons-term* 'mv-list
                      (kwote (len fn-stobjs-out))
                      term2))
-       (t term2))))))
+       ((equal stobjs-out *ordinary-stobjs-out*)
+        term2)
+       (t (fcons-term* 'mv-marker (kwote (length stobjs-out)) term2)))))))
 
 (defun make-executable-lst (lst wrld)
   (declare (xargs :guard (and (pseudo-term-listp lst)
@@ -90,4 +107,39 @@
   (cond ((endp lst) nil)
         (t (cons (make-executable (car lst) *ordinary-stobjs-out* wrld)
                  (make-executable-lst (cdr lst) wrld)))))
+)
+
+(defun good-mv-marker-args (n x)
+  (declare (xargs :guard t))
+  (and (integerp n)
+       (< 1 n)
+       (true-listp x) ; always true?
+       (eq (car x) 'list)
+       (eql n
+            (length (cdr x)))))
+
+(mutual-recursion
+
+(defun remove-mv-marker-from-untranslated-term (x)
+  (declare (xargs :guard t))
+  (cond
+   ((or (not (true-listp x)) ; impossible?
+        (atom x))
+    x)
+   ((and (eq (car x) 'mv-marker)
+         (eql (length x) 3))
+    (cond ((and (integerp (cadr x))
+                (< 1 (cadr x))
+                (good-mv-marker-args (cadr x) (caddr x)))
+           (cons 'mv (remove-mv-marker-from-untranslated-term-lst
+                      (cdr (caddr x)))))
+          (t (caddr x))))
+   (t (cons (car x)
+            (remove-mv-marker-from-untranslated-term-lst (cdr x))))))
+
+(defun remove-mv-marker-from-untranslated-term-lst (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (remove-mv-marker-from-untranslated-term (car lst))
+                 (remove-mv-marker-from-untranslated-term-lst (cdr lst))))))
 )

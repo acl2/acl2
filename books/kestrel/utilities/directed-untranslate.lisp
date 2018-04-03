@@ -1085,6 +1085,43 @@
                        ,@(cddr uterm)))
                    (t uterm)))))
 
+(defun drop-unused-formals-1 (formals actuals unused-vars)
+  (cond ((endp formals)
+         (assert$ (endp actuals) (mv nil nil)))
+        ((member-eq (car formals) unused-vars)
+         (drop-unused-formals-1 (cdr formals) (cdr actuals) unused-vars))
+        (t (mv-let (f2 a2)
+             (drop-unused-formals-1 (cdr formals) (cdr actuals) unused-vars)
+             (mv (cons (car formals) f2)
+                 (cons (car actuals) a2))))))
+
+(mutual-recursion
+
+(defun drop-unused-formals (term)
+  (cond ((or (variablep term)
+             (fquotep term))
+         term)
+        ((flambdap (ffn-symb term)) ; ((lambda formals body) . actuals)
+         (let* ((lam (ffn-symb term))
+                (formals (lambda-formals lam))
+                (body (drop-unused-formals (lambda-body lam)))
+                (unused-vars (set-difference-eq formals (all-vars body)))
+                (actuals (fargs term)))
+           (mv-let (formals2 actuals2)
+             (cond ((null unused-vars) ; optimization
+                    (mv formals actuals))
+                   (t (drop-unused-formals-1 formals actuals unused-vars)))
+             (fcons-term (make-lambda formals2 body)
+                         actuals2))))
+        (t (fcons-term (ffn-symb term)
+                       (drop-unused-formals-lst (fargs term))))))
+
+(defun drop-unused-formals-lst (x)
+  (cond ((endp x) nil)
+        (t (cons (drop-unused-formals (car x))
+                 (drop-unused-formals-lst (cdr x))))))
+)
+
 (defun du-untranslate (term iff-flg wrld)
 
 ; This version of untranslate removes empty let bindings.  At one time during
@@ -1092,7 +1129,8 @@
 ; that's no longer necessary, it seems harmless to redress that grievance in
 ; case this ever comes up.
 
-  (let ((ans (untranslate term iff-flg wrld)))
+  (let ((ans (remove-mv-marker-from-untranslated-term
+              (untranslate (drop-unused-formals term) iff-flg wrld))))
     (case-match ans
       (('let 'nil body)
        body)
@@ -1365,6 +1403,14 @@
          (fquotep tterm)
          (atom uterm))
      (du-untranslate sterm iff-flg wrld))
+    ((eq (ffn-symb sterm) 'mv-marker)
+     (let ((ans (directed-untranslate-rec uterm tterm
+                                          (fargn sterm 2)
+                                          iff-flg lflg wrld))
+           (n (du-untranslate (fargn sterm 1) nil wrld)))
+       (cond ((good-mv-marker-args n ans)
+              (cons 'mv (cdr ans)))
+             (t ans))))
     ((eq (ffn-symb sterm) 'mv-list)
      (let ((ans (directed-untranslate-rec uterm tterm
                                           (fargn sterm 2)
