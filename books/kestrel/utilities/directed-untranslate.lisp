@@ -481,7 +481,7 @@
 ; Since (unlike directed-untranslate-rec) we don't have uterm as an input, we
 ; can't call directed-untranslate-drop-disjuncts or
 ; directed-untranslate-drop-conjuncts here.  We might consider adding such
-; functionality here on behalf of the present function's call froman
+; functionality here on behalf of the present function's call from
 ; weak-one-way-unify.  But then maybe a flag should say whether we're calling
 ; this function on behalf of weak-one-way-unify, where we want to do such
 ; drops, or directed-untranslate, where we don't want the present function to
@@ -491,6 +491,17 @@
   (mv-let
     (flg sterm)
     (case-match tterm
+
+; Some clauses below are dodgy for the following reason.  Recall that normally
+; we think of sterm as a simplified term.  So if tterm is, say (if (atom x) y
+; z), and sterm is (if (consp x) z y), then why is it OK to re-introduce atom
+; into the result?  After all, maybe (definitely) atom expanded, introducing
+; consp, and we would be undoing that simplification.  However, we don't feel
+; too bad about that, because the goal of directed-untranslate is presumably to
+; preserve structure, and atom is in the list
+; *expandable-boot-strap-non-rec-fns*, so it can't truly be disabled -- it's
+; more like a macro in that sense than a function.
+
       (('if ('not (not-consp &)) & &)
        (cond
         ((member-eq not-consp '(endp atom))
@@ -500,6 +511,11 @@
                                (fcons-term* 'not (fcons-term* not-consp y))
                                stbr
                                sfbr)))
+           (('if ('not ('consp y)) stbr sfbr)
+            (mv t (fcons-term* 'if
+                               (fcons-term* 'not (fcons-term* not-consp y))
+                               sfbr
+                               stbr)))
            (& (mv nil sterm))))
         (t (mv nil sterm))))
       (('if (not-consp &) ttbr tfbr)
@@ -514,6 +530,11 @@
                                       sfbr
                                       stbr)))
                   (t (mv nil sterm))))
+           (('if ('not ('consp y)) stbr sfbr)
+            (mv t (fcons-term* 'if
+                               (fcons-term* not-consp y)
+                               stbr
+                               sfbr)))
            (& (mv nil sterm))))
         (t (mv nil sterm))))
       ((equality-fn & &)
@@ -528,12 +549,24 @@
          (('if x *nil* *t*)
           (mv t (fcons-term* 'null x)))
          (& (mv nil sterm))))
-      (('return-last ''mbe1-raw *t* &) ; ('mbt &)
+      (('return-last ''mbe1-raw *t* x) ; ('mbt x)
        (cond ((not (ffn-symb-p sterm 'return-last))
-              (mv t (fcons-term* 'return-last
-                                 ''mbe1-raw
-                                 *t*
-                                 sterm)))
+              (cond ((equal sterm x)
+                     (mv t tterm))
+                    ((if-tautologyp `(iff ,sterm ,x))
+                     (mv t
+                         (fcons-term* 'return-last
+                                      ''mbe1-raw
+                                      *t*
+                                      sterm)))
+                    ((if-tautologyp `(iff ,(dumb-negate-lit sterm) ,x))
+                     (mv t
+                         (fcons-term* 'not
+                                      (fcons-term* 'return-last
+                                                   ''mbe1-raw
+                                                   *t*
+                                                   (dumb-negate-lit sterm)))))
+                    (t (mv nil sterm))))
              (t (mv nil sterm))))
       (& (mv nil sterm)))
     (or
@@ -561,6 +594,29 @@
                                      stbr)))))
                (& nil))))
        (& nil))
+
+; The following is a reasonable thing to do: swap the true and false branches
+; when that allows either the true branches or the false branches to match up
+; between tterm and sterm.  But suppose we encounter tterm and sterm as
+; (if ttest1 ttbr1 tfbr1) and (if stest stbr1 sfbr1), and now also suppose
+; that later we find this tterm/sterm pair, with the same stest:
+; (if ttest2 ttbr2 tfbr2) and (if stest stbr2 sfbr1).
+; Quite possibly we should swap branches in both sterms, but maybe only one
+; meets the criterion below.  It might be better, then, to swap neither.
+; Perhaps some memoization would help, but that would make things awkward to
+; get right when it's tterm2/sterm2 that meets the criteria.
+#||
+     (case-match tterm
+       (('if & ttbr tfbr)
+        (case-match sterm
+          (('if stst stbr sfbr)
+           (and (or (equal tfbr stbr)
+                    (equal ttbr sfbr))
+                (fcons-term* 'if (dumb-negate-lit stst) sfbr stbr)))
+          (& nil)))
+       (& nil))
+||#
+
      (and (ffn-symb-p tterm 'not)
           (case-match sterm
             (('if x *nil* *t*)

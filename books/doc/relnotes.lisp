@@ -166,9 +166,10 @@
  built-in system utilities is analogous to the relationship between @(tsee
  fcons-term) and @(tsee cons-term).</p>
 
- <p>Improved @(tsee directed-untranslate) to avoid assertion errors that could
- occur when using @(tsee declare) forms with @(tsee let), @(tsee let*), or
- @(tsee mv-let) expressions.</p>
+ <p>Made improvements to @(tsee directed-untranslate) in a few ways, one of
+ which was to avoid assertion errors that could occur when using @(tsee
+ declare) forms with @(tsee let), @(tsee let*), or @(tsee mv-let)
+ expressions.</p>
 
  <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
  subsumed by the built-in @(tsee evens) utility.</p>
