@@ -39,7 +39,7 @@
                         (CONS A (CONS B 'NIL))
                         Y))
                (sterm '(< Y (BAR (CONS A (CONS B 'NIL))))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X Y) (< Y (BAR X)))
            (CONS A (CONS B 'NIL))
            Y)))
@@ -154,7 +154,7 @@
                         D C))
                (sterm '(< (H (CONS C (CONS D 'NIL)))
                           (BAR (CONS A (CONS B 'NIL))))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X D C)
                    ((LAMBDA (Y X) (< Y (BAR X)))
                     (H (CONS C (CONS D 'NIL)))
@@ -395,7 +395,7 @@
                         D C))
                (sterm '(< (H (CONS C (CONS D 'NIL)))
                           (MESS A))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X D C)
                    ((LAMBDA (Y X) (< Y (MESS X)))
                     (H (CONS C (CONS D 'NIL)))
@@ -675,7 +675,7 @@
                         D C))
                (sterm '(< (H (CONS C (CONS D 'NIL)))
                           (MESS A))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X D C)
                    ((LAMBDA (Y X)
                             ((LAMBDA (Z Y) (< Y Z)) (MESS X) Y))
@@ -986,7 +986,7 @@
                         (CONS A (CONS B 'NIL))
                         A))
                (sterm '(< A (BAR (H (CONS A (CONS B 'NIL)))))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X A)
                    ((LAMBDA (X A) (< A (BAR X)))
                     (H X)
@@ -1249,7 +1249,9 @@
  (equal
   (lambdafy '((LAMBDA (Y1) (CONS (CDR Y1) Y1))
               (CONS X Y))
-            '(CONS Y (CONS X Y)))
+            '(CONS Y (CONS X Y))
+            nil
+            (w state))
   '((LAMBDA (Y1 Y) (CONS Y Y1))
     (CONS X Y)
     Y)))
@@ -1260,7 +1262,9 @@
  (equal
   (lambdafy '((LAMBDA (Y) (CONS (CDR Y) Y))
               (CONS X Y))
-            '(CONS Y (CONS X Y)))
+            '(CONS Y (CONS X Y))
+            nil
+            (w state))
 ; Formerly ((LAMBDA (Y) (CONS Y Y)) (CONS X Y))
   '((LAMBDA (Y1 Y) (CONS Y Y1))
     (CONS X Y)
@@ -1276,7 +1280,7 @@
  (let ((tterm '((LAMBDA (Y) (CONS Y Y))
                 (CONS X Y)))
        (sterm '(CONS (CONS X Y) (CONS X Y))))
-   (equal (lambdafy tterm sterm)
+   (equal (lambdafy tterm sterm nil (w state))
           tterm)))
 
 ; But imagine that we alpha-convert tterm in this example, replacing y by y1.
@@ -1289,7 +1293,7 @@
  (let ((tterm '((LAMBDA (Y1) (CONS Y1 Y1))
                 (CONS X Y)))
        (sterm '(CONS (CONS X Y) (CONS X Y))))
-   (equal (lambdafy tterm sterm)
+   (equal (lambdafy tterm sterm nil (w state))
           tterm)))
 
 ; So for purposes of lambdafy, we will initially rename top-level lambda
@@ -1430,10 +1434,6 @@
           (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv (first x) y)))
 
-; !! Add an assert! for the following.  Also consider changing du-untranslate
-; to try to eliminate every (let () ...), or otherwise avoid that when the
-; following example is run before handling mv-let.
-
 (defund foo (x y) (mv x y))
 (defund foo2 (x y) (mv x y))
 (defund bar (x y) (mv x y))
@@ -1445,8 +1445,9 @@
                                      (mv-nth '0 mv)
                                      (mv-nth '1 mv)))
                        (foo x y)))
-              (sterm '(bar2 (mv-nth 0 (foo2 x y))
-                            (mv-nth 1 (foo2 x y)))))
+              (sterm '(bar2 (mv-nth '0 (foo2 x y))
+                            (mv-nth '1 (foo2 x y)))))
+; !! Try '(nil nil) for exec-p.
           (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv-let (x y) (foo2 x y) (bar2 x y))))
 

@@ -72,6 +72,8 @@
                  (make-executable (fargn term 1) *ordinary-stobjs-out* wrld)
                  (make-executable (fargn term 2) stobjs-out wrld)
                  (make-executable (fargn term 3) stobjs-out wrld)))
+   ((eq (ffn-symb term) 'mv-list)
+    term)
    ((eq (ffn-symb term) 'return-last)
 
 ; For relevant background see translate11.
@@ -179,3 +181,81 @@
         (t (cons (remove-mv-marker-from-untranslated-term (car lst))
                  (remove-mv-marker-from-untranslated-term-lst (cdr lst))))))
 )
+
+(mutual-recursion
+
+(defun remove-mv-marker-from-translated-term (x)
+
+; It is tempting to call this function remove-mv-marker or remove-mv-markers,
+; but it seems safest to give this a name that makes us think, when deciding
+; whether to call this function or remove-mv-marker-from-untranslated-term,
+; about whether the argument is translated.
+
+  (declare (xargs :guard (pseudo-termp x)
+
+; Termination proves easily.  Guard verification might be reasonably easy with
+; a few lemmas, but we don't bother.
+
+                  :mode :program))
+  (cond
+   ((or (variablep x)
+        (fquotep x))
+    x)
+   ((eq (ffn-symb x) 'mv-marker)
+    (remove-mv-marker-from-translated-term (fargn x 2)))
+   ((flambdap (ffn-symb x))
+    (make-lambda-application
+     (lambda-formals (ffn-symb x))
+     (remove-mv-marker-from-translated-term (lambda-body (ffn-symb x)))
+     (remove-mv-marker-from-translated-term-lst (fargs x))))
+   (t (fcons-term (ffn-symb x)
+                  (remove-mv-marker-from-translated-term-lst (fargs x))))))
+
+(defun remove-mv-marker-from-translated-term-lst (lst)
+  (declare (xargs :guard (pseudo-term-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (remove-mv-marker-from-translated-term (car lst))
+                 (remove-mv-marker-from-translated-term-lst (cdr lst))))))
+)
+
+(defun remake-executable (term stobjs-out wrld)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp stobjs-out)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (make-executable (remove-mv-marker-from-translated-term term)
+                   stobjs-out
+                   wrld))
+
+(defun remake-executable-lst (lst wrld)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (make-executable-lst (remove-mv-marker-from-translated-term-lst lst)
+                       wrld))
+
+(defun mv-marker-type-p (term)
+
+; Recognize whether term represents a multiply-valued expression according to
+; an mv-marker call.
+
+  (declare (xargs :guard (pseudo-termp term)))
+  (cond
+   ((or (variablep term)
+        (fquotep term))
+    nil)
+   ((eq (ffn-symb term) 'mv-marker)
+    t)
+   ((flambdap (ffn-symb term))
+    (mv-marker-type-p (lambda-body (ffn-symb term))))
+   ((or (eq (ffn-symb term) 'if)
+        (and (eq (ffn-symb term) 'return-last)
+             (equal (fargn term 1) ''mbe1-raw)))
+
+; We probably only need to check (fargn term 3), but we are conservative here.
+
+    (or (mv-marker-type-p (fargn term 2))
+        (mv-marker-type-p (fargn term 3))))
+   ((eq (ffn-symb term) 'return-last)
+    (mv-marker-type-p (fargn term 3)))
+   (t nil)))
