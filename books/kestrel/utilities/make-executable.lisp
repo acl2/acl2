@@ -142,6 +142,10 @@
               (and (true-listp (cadr x))
                    (eql n (length (cadr x)))
                    (maybe-kwote-lst (cadr x))))
+             ((eq (car x) 'cons) ; (cons a b) where b is not nil
+              (let ((args (mv-marker-args (1- n) (caddr x))))
+                (and args
+                     (cons (cadr x) args))))
              (t nil))))
 
 (mutual-recursion
