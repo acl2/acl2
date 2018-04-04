@@ -55,7 +55,9 @@
     (cond
      ((equal stobjs-out *ordinary-stobjs-out*)
       term)
-     (t term)))
+     (t (fcons-term* 'mv-marker
+                     (kwote (length stobjs-out))
+                     term))))
    ((flambdap (ffn-symb term))
     (let* ((fn (ffn-symb term))
            (new-body (make-executable (lambda-body fn) stobjs-out wrld))
@@ -109,31 +111,61 @@
                  (make-executable-lst (cdr lst) wrld)))))
 )
 
-(defun good-mv-marker-args (n x)
+(defun maybe-kwote (x)
+
+; We return an untranslated term that represents (quote x).
+
+  (declare (xargs :guard t))
+  (cond ((or (acl2-numberp x)
+             (booleanp x)
+             (keywordp x)
+             (stringp x)
+             (characterp x))
+         x)
+        (t (kwote x))))
+
+(defun maybe-kwote-lst (x)
+  (declare (xargs :guard (true-listp x)))
+  (cond ((endp x) nil)
+        (t (cons (maybe-kwote (car x))
+                 (maybe-kwote-lst (cdr x))))))
+
+(defun mv-marker-args (n x)
   (declare (xargs :guard t))
   (and (integerp n)
        (< 1 n)
        (true-listp x) ; always true?
-       (eq (car x) 'list)
-       (eql n
-            (length (cdr x)))))
+       (cond ((eq (car x) 'list)
+              (and (eql n (length (cdr x)))
+                   (cdr x)))
+             ((eq (car x) 'quote)
+              (and (true-listp (cadr x))
+                   (eql n (length (cadr x)))
+                   (maybe-kwote-lst (cadr x))))
+             (t nil))))
 
 (mutual-recursion
 
 (defun remove-mv-marker-from-untranslated-term (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+
+; It doesn't seem worth the trouble at the moment to find a suitable measure
+; and prove termination.  The problem is that (mv-marker-args (cadr x) (caddr
+; x)) can actually (I think) have a larger acl2-count than x.
+
+                  :mode :program))
   (cond
    ((or (not (true-listp x)) ; impossible?
-        (atom x))
+        (atom x)
+        (eq (car x) 'quote))
     x)
    ((and (eq (car x) 'mv-marker)
          (eql (length x) 3))
-    (cond ((and (integerp (cadr x))
-                (< 1 (cadr x))
-                (good-mv-marker-args (cadr x) (caddr x)))
-           (cons 'mv (remove-mv-marker-from-untranslated-term-lst
-                      (cdr (caddr x)))))
-          (t (caddr x))))
+    (or (let ((args (mv-marker-args (cadr x) (caddr x))))
+          (and args
+               (cons 'mv
+                     (remove-mv-marker-from-untranslated-term-lst args))))
+        (caddr x)))
    (t (cons (car x)
             (remove-mv-marker-from-untranslated-term-lst (cdr x))))))
 

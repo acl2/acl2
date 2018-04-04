@@ -1404,12 +1404,12 @@
          (atom uterm))
      (du-untranslate sterm iff-flg wrld))
     ((eq (ffn-symb sterm) 'mv-marker)
-     (let ((ans (directed-untranslate-rec uterm tterm
-                                          (fargn sterm 2)
-                                          iff-flg lflg wrld))
-           (n (du-untranslate (fargn sterm 1) nil wrld)))
-       (cond ((good-mv-marker-args n ans)
-              (cons 'mv (cdr ans)))
+     (let* ((ans (directed-untranslate-rec uterm tterm
+                                           (fargn sterm 2)
+                                           iff-flg lflg wrld))
+            (n (du-untranslate (fargn sterm 1) nil wrld))
+            (args (mv-marker-args n ans)))
+       (cond (args (cons 'mv args))
              (t ans))))
     ((eq (ffn-symb sterm) 'mv-list)
      (let ((ans (directed-untranslate-rec uterm tterm
