@@ -43,6 +43,7 @@
 (include-book "../mlib/scopestack")
 (include-book "../util/cwtime")
 (include-book "../util/gc")
+(include-book "std/strings/fast-cat" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
 (local (include-book "../util/arithmetic"))
