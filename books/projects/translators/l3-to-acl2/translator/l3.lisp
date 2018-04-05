@@ -260,11 +260,6 @@
 ; (defmacro false ()
 ;   nil)
 
-(defmacro assert! (condition value)
-; Like assert$, but avoids runtime check when in :program mode.
-  `(assert$ (mbt ,condition)
-            ,value))
-
 (verify-termination doublet-listp)
 (verify-guards doublet-listp)
 

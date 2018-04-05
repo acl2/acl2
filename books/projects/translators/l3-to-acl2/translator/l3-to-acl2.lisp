@@ -982,17 +982,17 @@
             (trans-value trans-clauses))
            (t (trans-value
                (append trans-clauses
-                       `((& (assert! nil
+                       `((& (prog2$ (impossible)
 
 ; Here we assume that if the processor state st$ is returned, then it is
 ; returned as st$ or (mv .. st$).
 
-                                     ,(case-match typ
-                                        ('qty 'st$)
-                                        ((t0 'qty)
-                                         `(mv (arb ,t0) st$))
-                                        (&
-                                         `(arb ,typ)))))))))))))
+                                    ,(case-match typ
+                                       ('qty 'st$)
+                                       ((t0 'qty)
+                                        `(mv (arb ,t0) st$))
+                                       (&
+                                        `(arb ,typ)))))))))))))
 
 (defun l3-trans-cs-clauses-rec (clauses ctx bindings)
   (declare (xargs :stobjs bindings))
