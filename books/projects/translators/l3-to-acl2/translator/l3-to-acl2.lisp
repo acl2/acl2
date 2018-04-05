@@ -1277,8 +1277,8 @@
 
 (include-book "misc/file-io" :dir :system)
 
-(make-event
- `(defconst *translator-dir* ,(cbd)))
+(defconst *l3-book-path*
+  "projects/translators/l3-to-acl2/translator/l3")
 
 (defun l3-to-acl2-fn (infile outfile logic-p str-to-sym form state)
   (declare (xargs :stobjs state))
@@ -1288,9 +1288,7 @@
                                          state)))
     (write-list (list* '(in-package "ACL2")
                        `(value-triple '(:generated-by ,form))
-                       `(include-book ,(concatenate 'string
-                                                    *translator-dir*
-                                                    "l3"))
+                       `(include-book ,*l3-book-path* :dir :system)
                        output-list)
                 outfile
                 ctx

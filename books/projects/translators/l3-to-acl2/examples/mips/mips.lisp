@@ -8,7 +8,8 @@
                                                ("DATA" . IS_DATA)
                                                ("gpr" . GPREGS)))))
 
-(INCLUDE-BOOK "/Users/kaufmann/projects/l3-to-acl2/translator/l3")
+(INCLUDE-BOOK "projects/translators/l3-to-acl2/translator/l3"
+              :DIR :SYSTEM)
 
 (VALUE-TRIPLE (LIST :ERROR (VAL _ = RECORD
                                 ("StatusRegister" (SQBKT ("'rst" (FTY 23))
