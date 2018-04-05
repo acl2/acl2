@@ -10160,7 +10160,7 @@
   (if (eq name 'STATE)
 ; This is just an optimization because it is so common.
       'REPLACED-STATE
-    (packn (list "REPLACED-" name))))
+    (packn (list 'replaced- name))))
 
 (defun replace-stobjs1 (stobjs-out val)
   (cond ((endp val) val)

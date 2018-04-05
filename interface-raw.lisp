@@ -1091,9 +1091,11 @@
   (symbolp x))
 
 (defun-*1* apply$-lambda (fn args)
-  (if (and (consp fn) (true-listp args)) ; guard
+  (declare (ftype (function (t t) (values t))
+                  ev$))
+  (if (apply$-lambda-guard fn args) ; guard
       (apply$-lambda fn args)
-    (gv apply$-lambda (fn args) (apply$-lambda fn (fix-true-list args)))))
+    (gv apply$-lambda (fn args) (apply$-lambda-logical fn args))))
 
 ;; Historical Comment from Ruben Gamboa:
 ;; I added *1*-defns for the non-standard predicates.  Note,

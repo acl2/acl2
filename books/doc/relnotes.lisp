@@ -166,9 +166,11 @@
  built-in system utilities is analogous to the relationship between @(tsee
  fcons-term) and @(tsee cons-term).</p>
 
- <p>Improved @(tsee directed-untranslate) to avoid assertion errors that could
- occur when using @(tsee declare) forms with @(tsee let), @(tsee let*), or
- @(tsee mv-let) expressions.</p>
+ <p>Made several improvements to @(tsee directed-untranslate), including: one
+ to avoid assertion errors that could occur when using @(tsee declare) forms
+ with @(tsee let), @(tsee let*), or @(tsee mv-let) expressions: one to enhance
+ insertion of appropriate @(tsee mv) calls; and one to extend dropping of
+ unused @(tsee let) bindings..</p>
 
  <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
  subsumed by the built-in @(tsee evens) utility.</p>
@@ -189,8 +191,9 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>The model includes more support for 32-bit mode.  In particular, some
- variants of the PUSH, POP, MOVE, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP, and
- TEST instructions also work in 32-bit mode now.</p>
+ variants of the PUSH, POP, MOV, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP, TEST,
+ and RET instructions also work in 32-bit mode now, and the 32-bit instructions
+ PUSHA and POPA are now part of the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
@@ -235,6 +238,10 @@
  @('books/workshops/references/').  That directory also contains an example
  LaTeX file demonstrating how the references may be cited, as well as a README
  with some more information.</p>
+
+ <p>A Developer's Guide (see @(see developers-guide)) has been added, to assist
+ those who may wish to become ACL2 Developers.  It replaces the much smaller
+ ``system-development'' topic.</p>
 
  ")
 

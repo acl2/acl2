@@ -239,6 +239,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "clause-processors/doc" :dir :system)
 (include-book "system/event-names" :dir :system)
 (include-book "system/acl2-system-exports" :dir :system)
+(include-book "system/doc/developers-guide" :dir :system)
 
 ;; [Jared] removing these to speed up the manual build
 ;; BOZO should we put them back in?

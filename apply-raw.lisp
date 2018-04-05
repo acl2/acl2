@@ -3238,10 +3238,10 @@
 
 (defun apply$-lambda (fn args)
 
-; Keep this in sync with the logical definition (as noted below), which is in
-; apply.lisp.  The present definition is the one that will be installed in
-; ACL2, because of the inclusion of apply$-lambda in
-; *boot-strap-pass-2-acl2-loop-only-fns*.
+; This raw Lisp definition of apply$-lambda is the one that will be installed
+; in ACL2, because the inclusion of apply$-lambda in
+; *boot-strap-pass-2-acl2-loop-only-fns* avoids installationx of the logical
+; definition of apply$-lambda.
 
   (declare (ftype (function (t t) (values t))
                   ev$))
@@ -3250,18 +3250,6 @@
               (compile-tame-compliant-unrestricted-lambda fn))))
     (when compiled-version
       (return-from apply$-lambda
-                   (let ((arity (length (cadr fn))))
-                     (apply compiled-version
-                            (if (= arity
-                                   (length args))
-                                args
-                              (take arity args)))))))
-
-; Warning: Keep the code below in sync with the logical definition of
-; apply$-lambda.
-
-  (ev$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
-       (ec-call
-        (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
-                  args))))
+                   (apply compiled-version args))))
+  (apply$-lambda-logical fn args))
 

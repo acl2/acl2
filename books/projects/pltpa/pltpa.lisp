@@ -469,7 +469,7 @@
    ((endp targets) nil)
    (t (let ((sym (cond ((symbolp (car targets))
                         (car targets))
-                       (t 'G))))
+                       (t 'GENRL))))
         (mv-let (root k1)
           (find-root-and-suffix sym)
           (let* ((k (cond ((assoc-eq root suffix-alist)
@@ -583,66 +583,85 @@
 
 
 (defun simplify-msg (term1 wrld)
-  (cw "Simplification produces:~%~y0.~%"
+  (cw "WHICH IS EQUIVALENT TO:~%~y0.~%"
       (untranslate term1 wrld)))
 
 (defun do-fertilize1-msg (action term1 flg)
-; Flg indicates whether the IF-term being manipulated is an IMPLIES or not.
-  (cw "Use the equality ~x0 by ~#1~[cross-~/~]fertilizing, substituting the ~
-       ~#2~[right~/left~]-hand side for the ~#2~[left~/right~]-hand side ~
-       ~#1~[into the ~#2~[left~/right~]-sides of appropriate ~
-       equalities~/everywhere~] in the ~#3~[conclusion~/true-branch~] and ~
-       ~#3~[dropping~/rearranging the false-branch to hide~] the equality ~
-       used.~%~%"
-      term1
-      (cond ((member-eq action '(XRL XLR)) 0) (t 1))
-      (cond ((member-eq action '(XRL MRL)) 0) (t 1))
-      (cond (flg 0) (t 1))))
+
+  (declare (ignore action flg))
+
+; We have chosen to ignore the details available as to what fertilization did.
+; But, for the record, action is one of XLR, XRL, MLR, MRL and indicates
+; whether the substitution is cross-fertilization (X) or massive substitution
+; (M), and whether its Left for Right or vice versa.  Flg indicates whether the
+; IF-term being manipulated is an IMPLIES or not.  If it is not an IMPLIES,
+; PLTP(A) rearranged the false branch to hide the equality.
+
+  (cw "FERTILIZE WITH ~x0.~%~%" term1))
 
 (defun fertilize-msg (term1 wrld)
-  (cw "Fertilize produces:~%~y0.~%"
+  (cw "THE THEOREM TO BE PROVED IS NOW:~%~y0.~%"
       (untranslate term1 wrld)))
 
 (defun tilde-*-generalize1-phrase1 (alist)
   (cond ((null alist) nil)
-        (t (cons (msg "~p0 by ~x1"
+        (t (cons (msg "~p0 BY ~x1"
                       (caar alist)
                       (cdar alist))
                  (tilde-*-generalize1-phrase1 (cdr alist))))))
 
 (defun tilde-*-generalize1-phrase (alist)
-    (list* "" "~@*" "~@* and " "~@*, "
+    (list* "" "~@*" "~@* AND " "~@*, "
          (tilde-*-generalize1-phrase1 alist)
          nil))
 
-(defun generalize1-msg (alist)
+; Note: We print PLTP's ``(WORK ON FIRST CONJUNCT ONLY)'' message when
+; PLTP(A)'s generalize uses split-conjunction to split off the first conjunct.
+; But we don't print it again when INDUCT uses split-conjunction.  This is ok
+; because if generalize gets a conjunction as input it produces a conjunction
+; as output for induct and while induct must recognize that its been given a
+; conjunction it doesn't have to print the message again because PLTP didn't.
+
+(defun split-conjunction-msg (flg)
   (cond
-   (alist
-    (cw "Generalize by replacing the common subterm~#0~[s~/~] ~*1 and adding ~
-         type-restrictions when possible.~%~%"
-        (cond ((cdr alist) 0)(t 1))
-        (tilde-*-generalize1-phrase alist)))
+   (flg
+    (cw "(WORK ON FIRST CONJUNCT ONLY)~%~%"))
    (t nil)))
 
-(defun generalize-msg (term1 wrld)
-  (cw "Generalize produces:~%~y0.~%"
-      (untranslate term1 wrld)))
+(defun generalize-msg (flg alist term wrld)
+; Flg is t if term is the first conjunct of the current goal theorem and
+; is nil if term is the whole goal theorem.  Alist is the generalizing
+; substitution mapping subterms to new vars.
+  (cond
+   (alist
+    (cw "GENERALIZE COMMON SUBTERM~#0~[S~/~] BY REPLACING ~*1.~%~%~
+         THE GENERALIZED ~#2~[~/(first conjunct) ~]TERM IS:~%~x3~%~%"
+        (cond ((cdr alist) 0)(t 1))
+        (tilde-*-generalize1-phrase alist)
+        (if flg 1 0)
+        (untranslate term wrld)))
+   (t nil)))
+
+(defun tilde-*-induct-phrase (vars)
+  (list* "" "~x*" "~x* AND " "~x*, " vars nil))
 
 (defun induct-msg (signal indvars new-goal wrld)
   (cond
    ((eq signal 'STUCK)
     (cw "Stuck with:~%~y0.~%" new-goal))
    ((eq signal 'SIMPLE)
-    (cw "Simple induction on ~&0:~%~y1.~%"
-        indvars
+    (cw "MUST TRY INDUCTION.~%~%~
+         INDUCT ON ~*0.~%~%~
+         THE THEOREM TO BE PROVED IS NOW:~%~y1.~%"
+        (tilde-*-induct-phrase indvars)
         (untranslate new-goal wrld)))
-   ((eq signal 'SPECIAL1)
-    (cw "Special Mode 1 induction on ~&0:~%~y1.~%"
-        indvars
-        (untranslate new-goal wrld)))
-   ((eq signal 'SPECIAL2)
-    (cw "Special Mode 2 induction on ~&0:~%~y1.~%"
-        indvars
+   ((or (eq signal 'SPECIAL1)
+        (eq signal 'SPECIAL2))
+    (cw "MUST TRY INDUCTION.~%~%~
+         (SPECIAL CASE REQUIRED)~%~%~
+         INDUCT ON ~*0.~%~%~
+         THE THEOREM TO BE PROVED IS NOW:~%~y1.~%"
+        (tilde-*-induct-phrase indvars)
         (untranslate new-goal wrld)))
    (t (cw "Special case not covered!~%~y0.~%"
           (untranslate new-goal wrld)))))
@@ -2137,22 +2156,16 @@
    (t a)))
 
 ; Renaming: Our generalize is PLTP's GENRLIZE.
-(defun generalize1 (term wrld)
+(defun generalize (term wrld)
   (mv-let (flg a b)
     (split-conjunction term)
-    (let* ((substlist (new-vars (generalizable-subterms a) term))
-           (a1 (add-type-restrictions substlist (subst* substlist a) wrld)))
-      (prog2$
-       (generalize1-msg substlist)
-       (reassemble-conjunction flg a1 b)))))
-
-(defun generalize (term wrld)
-  (let ((term1 (generalize1 term wrld)))
-    (cond
-     ((equal term term1) term)
-     (t (prog2$
-         (generalize-msg term1 wrld)
-         term1)))))
+    (prog2$
+     (split-conjunction-msg flg)
+     (let* ((substlist (new-vars (generalizable-subterms a) term))
+            (a1 (add-type-restrictions substlist (subst* substlist a) wrld)))
+       (prog2$
+        (generalize-msg flg substlist a1 wrld)
+        (reassemble-conjunction flg a1 b))))))
 
 ; -----------------------------------------------------------------
 ; Induction
@@ -2840,5 +2853,6 @@
 
 (defmacro acl2::pltpa nil
   `(er-progn (in-package "PLTP")
-             (boot-strap)))
+             (boot-strap)
+             (set-feature :all :pltp-notation)))
 

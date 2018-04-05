@@ -17,6 +17,12 @@
 
 (BOOT-STRAP)
 
+; This causes us to print IF as COND as we did in 14 September, 1973.  It also
+; untranslates numeric constants, e.g., (cons nil (cons nil nil)), to their
+; counterparts, e.g., 2, so output more closely resembles the 1973 conventions.
+
+(SET-FEATURE :ALL :PLTP-NOTATION)
+
 ; These two DCLs are not in the JACM paper because PLTP did not require
 ; undefined functions to have known arities.
 

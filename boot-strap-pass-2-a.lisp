@@ -80,8 +80,9 @@
    :rule-classes ((:forward-chaining :trigger-terms
                                      ((explode-atom x y))))))
 
-(verify-termination-boot-strap packn) ; and guards
 (verify-termination-boot-strap packn-pos) ; and guards
+(verify-termination-boot-strap find-first-non-cl-symbol) ; and guards
+(verify-termination-boot-strap packn) ; and guards
 )
 
 (verify-termination-boot-strap read-file-into-string1) ; and guards

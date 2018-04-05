@@ -260,11 +260,6 @@
 ; (defmacro false ()
 ;   nil)
 
-(defmacro assert! (condition value)
-; Like assert$, but avoids runtime check when in :program mode.
-  `(assert$ (mbt ,condition)
-            ,value))
-
 (verify-termination doublet-listp)
 (verify-guards doublet-listp)
 
@@ -604,7 +599,7 @@
 ; The following was needed in order to admit encode in tiny.lisp.
 (defthm equal-len-0
   (equal (equal (len x) 0)
-         (atom x)))
+         (not (consp x))))
 
 ; The following was useful for admitting dfn-loadconstant.
 (encapsulate

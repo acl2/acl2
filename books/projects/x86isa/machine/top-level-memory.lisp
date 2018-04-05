@@ -960,7 +960,42 @@
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr))
              (equal (rme-size nbytes eff-addr seg-reg r-x x86)
-                    (rml-size nbytes eff-addr r-x x86)))))
+                    (rml-size nbytes eff-addr r-x x86))))
+
+  (defruled rme-size-of-1-to-rme08
+    (equal (rme-size 1 eff-addr seg-reg r-x x86)
+           (rme08 eff-addr seg-reg r-x x86))
+    :enable (rme-size rme08))
+
+  (defruled rme-size-of-2-to-rme16
+    (equal (rme-size 2 eff-addr seg-reg r-x x86)
+           (rme16 eff-addr seg-reg r-x x86))
+    :enable (rme-size rme16))
+
+  (defruled rme-size-of-4-to-rme32
+    (equal (rme-size 4 eff-addr seg-reg r-x x86)
+           (rme32 eff-addr seg-reg r-x x86))
+    :enable (rme-size rme32))
+
+  (defruled rme-size-of-6-to-rme48
+    (equal (rme-size 6 eff-addr seg-reg r-x x86)
+           (rme48 eff-addr seg-reg r-x x86))
+    :enable (rme-size rme48))
+
+  (defruled rme-size-of-8-to-rme64
+    (equal (rme-size 8 eff-addr seg-reg r-x x86)
+           (rme64 eff-addr seg-reg r-x x86))
+    :enable (rme-size rme64))
+
+  (defruled rme-size-of-10-to-rme64
+    (equal (rme-size 10 eff-addr seg-reg r-x x86)
+           (rme80 eff-addr seg-reg r-x x86))
+    :enable (rme-size rme80))
+
+  (defruled rme-size-of-16-to-rme128
+    (equal (rme-size 16 eff-addr seg-reg r-x x86)
+           (rme128 eff-addr seg-reg r-x x86))
+    :enable (rme-size rme128)))
 
 (define rime-size
   ((nbytes :type (member 1 2 4 8))
@@ -995,7 +1030,27 @@
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr))
              (equal (rime-size nbytes eff-addr seg-reg r-x x86)
-                    (riml-size nbytes eff-addr r-x x86)))))
+                    (riml-size nbytes eff-addr r-x x86))))
+
+  (defruled rime-size-of-1-to-rime08
+    (equal (rime-size 1 eff-addr seg-reg r-x x86)
+           (rime08 eff-addr seg-reg r-x x86))
+    :enable (rime-size rime08))
+
+  (defruled rime-size-of-2-to-rime16
+    (equal (rime-size 2 eff-addr seg-reg r-x x86)
+           (rime16 eff-addr seg-reg r-x x86))
+    :enable (rime-size rime16))
+
+  (defruled rime-size-of-4-to-rime32
+    (equal (rime-size 4 eff-addr seg-reg r-x x86)
+           (rime32 eff-addr seg-reg r-x x86))
+    :enable (rime-size rime32))
+
+  (defruled rime-size-of-8-to-rime64
+    (equal (rime-size 8 eff-addr seg-reg r-x x86)
+           (rime64 eff-addr seg-reg r-x x86))
+    :enable (rime-size rime64)))
 
 (define wme-size
   ((nbytes :type (member 1 2 4 6 8 10 16))

@@ -1348,7 +1348,7 @@
   :guard (equal escape-byte #x0F)
   :guard-hints (("Goal" :do-not '(preprocess)
                  :in-theory (e/d*
-                             (increment-*ip-is-i48p-rewrite-rule)
+                             (add-to-*ip-is-i48p-rewrite-rule)
                              (unsigned-byte-p
                               (:type-prescription bitops::logand-natp-type-2)
                               (:type-prescription bitops::ash-natp-type)
@@ -1365,7 +1365,7 @@
        ((when flg0)
         (!!ms-fresh :opcode-byte-access-error flg0))
 
-       ((mv flg temp-rip) (increment-*ip temp-rip 1 x86))
+       ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
        (modr/m? (if (64-bit-modep x86)
@@ -1378,7 +1378,7 @@
        ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
 
        ((mv flg temp-rip) (if modr/m?
-                              (increment-*ip temp-rip 1 x86)
+                              (add-to-*ip temp-rip 1 x86)
                             (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :increment-error flg))
 
@@ -1394,7 +1394,7 @@
         (!!ms-fresh :sib-byte-read-error flg2))
 
        ((mv flg temp-rip) (if sib?
-                              (increment-*ip temp-rip 1 x86)
+                              (add-to-*ip temp-rip 1 x86)
                             (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :increment-error flg)))
 
@@ -1408,7 +1408,7 @@
                   (x86p x86))
              (x86p (two-byte-opcode-decode-and-execute
                     start-rip temp-rip prefixes rex-byte escape-byte x86)))
-    :enable increment-*ip-is-i48p-rewrite-rule))
+    :enable add-to-*ip-is-i48p-rewrite-rule))
 
 (defconst *top-level-op-list*
 
@@ -2647,179 +2647,83 @@
 
     (#xB0
      "(MOV AL/R8L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV AL/R8L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB1
      "(MOV CL/R9L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV CL/R9L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB2
      "(MOV DL/R10L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV DL/R10L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB3
      "(MOV BL/R11L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV BL/R11L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB4
      "(MOV AH/R12L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV AH/R12L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB5
      "(MOV CH/R13L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV CH/R13L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB6
      "(MOV DH/R14L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV DH/R14L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB7
      "(MOV BH/R15L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV BH/R15L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB8
      "(MOV AL/R8L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV AL/R8L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xB9
      "(MOV CL/R9L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV CL/R9L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBA
      "(MOV DL/R10L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV DL/R10L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBB
      "(MOV BL/R11L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV BL/R11L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBC
      "(MOV AH/R12L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV AH/R12L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBD
      "(MOV CH/R13L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV CH/R13L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBE
      "(MOV DH/R14L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV DH/R14L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xBF
      "(MOV BH/R15L lb)"
-     (if (64-bit-modep x86)
-         (x86-mov-Op/En-OI start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV BH/R15L lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-Op/En-OI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xC0 #xC1)
      "Shift Group 2; C0: (GRP2 Eb Ib); C1: (GRP2 Ev Ib);
@@ -2846,25 +2750,11 @@
 
     (#xC2
      "(RETN lw)"
-     (if (64-bit-modep x86)
-         (x86-ret start-rip temp-rip prefixes rex-byte opcode
-                  modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(RETN lw) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-ret start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xC3
      "(RETN)"
-     (if (64-bit-modep x86)
-         (x86-ret start-rip temp-rip prefixes rex-byte opcode
-                  modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "RETN is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-ret start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xC4 #xC5)
      "Escape to VEX opcode map"
@@ -3346,7 +3236,7 @@
                        (eql byte prefix-1?))
                    (mv-let
                      (flg next-rip)
-                     (increment-*ip start-rip 1 x86)
+                     (add-to-*ip start-rip 1 x86)
                      (if flg
                          (mv flg prefixes x86)
                        ;; Storing the group 1 prefix and going on...
@@ -3365,7 +3255,7 @@
                        (eql byte (the (unsigned-byte 8) prefix-2?)))
                    (mv-let
                      (flg next-rip)
-                     (increment-*ip start-rip 1 x86)
+                     (add-to-*ip start-rip 1 x86)
                      (if flg
                          (mv flg prefixes x86)
                        ;; Storing the group 2 prefix and going on...
@@ -3383,7 +3273,7 @@
                        (eql byte (the (unsigned-byte 8) prefix-3?)))
                    (mv-let
                      (flg next-rip)
-                     (increment-*ip start-rip 1 x86)
+                     (add-to-*ip start-rip 1 x86)
                      (if flg
                          (mv flg prefixes x86)
                        ;; Storing the group 3 prefix and going on...
@@ -3401,7 +3291,7 @@
                        (eql byte (the (unsigned-byte 8) prefix-4?)))
                    (mv-let
                      (flg next-rip)
-                     (increment-*ip start-rip 1 x86)
+                     (add-to-*ip start-rip 1 x86)
                      (if flg
                          (mv flg prefixes x86)
                        ;; Storing the group 4 prefix and going on...
@@ -3602,7 +3492,7 @@
                          (equal prefix-byte-group-code 1)))
                   (equal (prefixes-slice :group-1-prefix prefixes) 0)
                   (not (zp cnt))
-                  (not (mv-nth 0 (increment-*ip start-rip 1 x86))))
+                  (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
@@ -3610,7 +3500,7 @@
                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
                                    prefixes)
                                   (1- cnt) x86)))
-    :hints (("Goal" :in-theory (e/d* (increment-*ip)
+    :hints (("Goal" :in-theory (e/d* (add-to-*ip)
                                      (rb
                                       unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
@@ -3628,7 +3518,7 @@
                          (equal prefix-byte-group-code 2)))
                   (equal (prefixes-slice :group-2-prefix prefixes) 0)
                   (not (zp cnt))
-                  (not (mv-nth 0 (increment-*ip start-rip 1 x86))))
+                  (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
@@ -3636,7 +3526,7 @@
                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
                                    prefixes)
                                   (1- cnt) x86)))
-    :hints (("Goal" :in-theory (e/d* (increment-*ip)
+    :hints (("Goal" :in-theory (e/d* (add-to-*ip)
                                      (rb
                                       unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
@@ -3654,7 +3544,7 @@
                          (equal prefix-byte-group-code 3)))
                   (equal (prefixes-slice :group-3-prefix prefixes) 0)
                   (not (zp cnt))
-                  (not (mv-nth 0 (increment-*ip start-rip 1 x86))))
+                  (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
@@ -3662,7 +3552,7 @@
                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
                                    prefixes)
                                   (1- cnt) x86)))
-    :hints (("Goal" :in-theory (e/d* (increment-*ip)
+    :hints (("Goal" :in-theory (e/d* (add-to-*ip)
                                      (rb
                                       unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
@@ -3680,7 +3570,7 @@
                          (equal prefix-byte-group-code 4)))
                   (equal (prefixes-slice :group-4-prefix prefixes) 0)
                   (not (zp cnt))
-                  (not (mv-nth 0 (increment-*ip start-rip 1 x86))))
+                  (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
@@ -3688,7 +3578,7 @@
                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
                                    prefixes)
                                   (1- cnt) x86)))
-    :hints (("Goal" :in-theory (e/d* (increment-*ip)
+    :hints (("Goal" :in-theory (e/d* (add-to-*ip)
                                      (rb
                                       unsigned-byte-p
                                       negative-logand-to-positive-logand-with-n44p-x
@@ -3740,8 +3630,8 @@ semantic function.</p>"
        ((the (unsigned-byte 4) prefix-length) (prefixes-slice :num-prefixes prefixes))
 
        ((mv flg temp-rip) (if (equal 0 prefix-length)
-                              (increment-*ip start-rip 1 x86)
-                            (increment-*ip start-rip (1+ prefix-length) x86)))
+                              (add-to-*ip start-rip 1 x86)
+                            (add-to-*ip start-rip (1+ prefix-length) x86)))
        ((when flg) (!!ms-fresh :increment-error flg))
 
        ;; If opcode/rex/escape-byte is a rex byte, it is filed away in
@@ -3766,7 +3656,7 @@ semantic function.</p>"
        ((mv flg2 temp-rip)
         (if (equal rex-byte 0)
             (mv nil temp-rip)
-          (increment-*ip temp-rip 1 x86)))
+          (add-to-*ip temp-rip 1 x86)))
        ((when flg2) (!!ms-fresh :increment-error flg2))
 
        ;; Possible values of opcode/escape-byte:
@@ -3818,7 +3708,7 @@ semantic function.</p>"
 
        ((mv flg4 temp-rip)
         (if modr/m?
-            (increment-*ip temp-rip 1 x86)
+            (add-to-*ip temp-rip 1 x86)
           (mv nil temp-rip)))
        ((when flg4) (!!ms-fresh :increment-error flg2))
 
@@ -3836,20 +3726,20 @@ semantic function.</p>"
 
        ((mv flg6 temp-rip)
         (if sib?
-            (increment-*ip temp-rip 1 x86)
+            (add-to-*ip temp-rip 1 x86)
           (mv nil temp-rip)))
        ((when flg6) (!!ms-fresh :increment-error flg6)))
     (top-level-opcode-execute
      start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
 
-  :guard-hints (("Goal" :in-theory (enable increment-*ip-is-i48p-rewrite-rule)))
+  :guard-hints (("Goal" :in-theory (enable add-to-*ip-is-i48p-rewrite-rule)))
 
   ///
 
   (defrule x86p-x86-fetch-decode-execute
     (implies (x86p x86)
              (x86p (x86-fetch-decode-execute x86)))
-    :enable increment-*ip-is-i48p-rewrite-rule)
+    :enable add-to-*ip-is-i48p-rewrite-rule)
 
   (defthm x86-fetch-decode-execute-opener
     (implies
@@ -3864,8 +3754,8 @@ semantic function.</p>"
       (equal prefix-length (prefixes-slice :num-prefixes prefixes))
       (equal temp-rip0
              (if (equal prefix-length 0)
-                 (mv-nth 1 (increment-*ip start-rip 1 x86))
-               (mv-nth 1 (increment-*ip start-rip (1+ prefix-length) x86))))
+                 (mv-nth 1 (add-to-*ip start-rip 1 x86))
+               (mv-nth 1 (add-to-*ip start-rip (1+ prefix-length) x86))))
       (equal rex-byte (if (and (64-bit-modep x86)
                                (equal (ash opcode/rex/escape-byte -4) 4))
                           opcode/rex/escape-byte
@@ -3875,7 +3765,7 @@ semantic function.</p>"
                                   (mv-nth 1 (rme08 temp-rip0 *cs* :x x86))))
       (equal temp-rip1 (if (equal rex-byte 0)
                            temp-rip0
-                         (mv-nth 1 (increment-*ip temp-rip0 1 x86))))
+                         (mv-nth 1 (add-to-*ip temp-rip0 1 x86))))
       (equal modr/m? (if (64-bit-modep x86)
                          (64-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte)
                        (32-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte)))
@@ -3883,7 +3773,7 @@ semantic function.</p>"
                         (mv-nth 1 (rme08 temp-rip1 *cs* :x x86))
                       0))
       (equal temp-rip2 (if modr/m?
-                           (mv-nth 1 (increment-*ip temp-rip1 1 x86))
+                           (mv-nth 1 (add-to-*ip temp-rip1 1 x86))
                          temp-rip1))
       (equal p4? (equal #.*addr-size-override*
                         (prefixes-slice :group-4-prefix prefixes)))
@@ -3892,14 +3782,14 @@ semantic function.</p>"
       (equal sib (if sib? (mv-nth 1 (rme08 temp-rip2 *cs* :x x86)) 0))
 
       (equal temp-rip3 (if sib?
-                           (mv-nth 1 (increment-*ip temp-rip2 1 x86))
+                           (mv-nth 1 (add-to-*ip temp-rip2 1 x86))
                          temp-rip2))
 
       (or (programmer-level-mode x86)
           (not (page-structure-marking-mode x86)))
       (not (if (equal prefix-length 0)
-               (mv-nth 0 (increment-*ip start-rip 1 x86))
-             (mv-nth 0 (increment-*ip start-rip (1+ prefix-length) x86))))
+               (mv-nth 0 (add-to-*ip start-rip 1 x86))
+             (mv-nth 0 (add-to-*ip start-rip (1+ prefix-length) x86))))
       (if (and (equal prefix-length 0)
                (equal rex-byte 0)
                (not modr/m?))
@@ -3910,13 +3800,13 @@ semantic function.</p>"
         (not (mv-nth 0 (rme08 temp-rip0 *cs* :x x86))))
       (if (equal rex-byte 0)
           t
-        (not (mv-nth 0 (increment-*ip temp-rip0 1 x86))))
+        (not (mv-nth 0 (add-to-*ip temp-rip0 1 x86))))
       (if modr/m?
-          (and (not (mv-nth 0 (increment-*ip temp-rip1 1 x86)))
+          (and (not (mv-nth 0 (add-to-*ip temp-rip1 1 x86)))
                (not (mv-nth 0 (rme08 temp-rip1 *cs* :x x86))))
         t)
       (if sib?
-          (and (not (mv-nth 0 (increment-*ip temp-rip2 1 x86)))
+          (and (not (mv-nth 0 (add-to-*ip temp-rip2 1 x86)))
                (not (mv-nth 0 (rme08 temp-rip2 *cs* :x x86))))
         t)
       (x86p x86)

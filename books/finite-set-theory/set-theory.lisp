@@ -11,8 +11,8 @@
 ; The original kernel of this book was created with support from
 ; Compaq Systems Research Center, Palo Alto, CA.  A report documenting
 ; the main ideas in this book is available from the ACL2 home page.
-; Visit the link "Papers about ACL2 and its Applications" and then
-; visit "Finite Set Theory".
+; Visit the link "Publications about ACL2 and its Applications" and
+; then visit "Finite Set Theory".
 
 (in-package "S")
 
@@ -1020,11 +1020,6 @@
 ; including ``def'' in front of them and still search for ``(def...''
 ; when looking for things.
 
-(defun packn-in-pkg (lst pkg-witness)
-  (declare (xargs :mode :program))
-  (acl2::intern-in-package-of-symbol (coerce (acl2::packn1 lst) 'string)
-                                     pkg-witness))
-
 (defmacro defx (&rest args)
   (let ((temp (member :strategy args)))
 
@@ -1035,7 +1030,7 @@
     (cond
      (temp
       `(,(if (keywordp (cadr temp))
-             (packn-in-pkg (list (symbol-name (cadr temp))) 'defx)
+             (packn-pos (list (symbol-name (cadr temp))) 'defx)
            (cadr temp))
         ,@(butlast args (length temp))
         ,@(cddr temp)))
@@ -1056,7 +1051,7 @@
 
 (defun genname1 (name n avoid)
   (declare (xargs :mode :program))
-  (let ((new-name (packn-in-pkg (list name n) name)))
+  (let ((new-name (packn-pos (list name n) name)))
     (cond ((acl2::member-equal new-name avoid)
            (genname1 name (+ 1 n) avoid))
           (t new-name))))
@@ -1080,13 +1075,13 @@
            (vars (cdr expr))
            (x (nth (- n 1) vars))
            (name1
-            (packn-in-pkg (list fn "-SET-INSERT") fn))
+            (packn-pos (list fn "-SET-INSERT") fn))
            (name2
-            (packn-in-pkg (list fn "-CANONICALIZE") fn))
+            (packn-pos (list fn "-CANONICALIZE") fn))
            (vars1 (acl2::remove-eq x vars)) ; Matt K. mod from delete1, v2-9-4
            (e (genname 'e vars1))
            (a (genname x vars1))
-           (x-equiv (packn-in-pkg (list x "-EQUIV") x)))
+           (x-equiv (packn-pos (list x "-EQUIV") x)))
       `(encapsulate
         nil
         (local (in-theory (enable scons scar scdr ur-elementp)))
@@ -1129,11 +1124,11 @@
            (vars (cdr expr))
            (x (nth (- n 1) vars))
            (name1
-            (packn-in-pkg (list "SUBSETP-" fn "-" fn) fn))
+            (packn-pos (list "SUBSETP-" fn "-" fn) fn))
            (vars1 (acl2::remove1-eq x vars)) ; Matt K. mod from delete1-eq, v2-9-4
            (a1 (genname1 x 1 vars1))
            (a2 (genname1 x 2 (cons a1 vars1)))
-           (x-equiv (packn-in-pkg (list x "-EQUIV") x)))
+           (x-equiv (packn-pos (list x "-EQUIV") x)))
       `(encapsulate
         nil
         (defthm ,name1
@@ -2780,8 +2775,8 @@
       (let ((hyps (cadr xterm))
             (lhs (cadr (caddr xterm)))
             (rhs (caddr (caddr xterm)))
-            (name-1 (packn-in-pkg (list name "-1") name))
-            (name-2 (packn-in-pkg (list name "-2") name)))
+            (name-1 (packn-pos (list name "-1") name))
+            (name-2 (packn-pos (list name "-2") name)))
         `(encapsulate
           nil
           (local
@@ -3190,40 +3185,40 @@
                   (scons (scar ,s) ,rcall)
                 ,rcall))))
 
-        (defthm ,(packn-in-pkg (list "SETP-" name) 'defmap)
+        (defthm ,(packn-pos (list "SETP-" name) 'defmap)
           (setp ,call))
 
-        (defthm ,(packn-in-pkg (list "UR-ELEMENTP-" name) 'defmap)
+        (defthm ,(packn-pos (list "UR-ELEMENTP-" name) 'defmap)
           (equal (ur-elementp ,call)
                  (equal ,call nil)))
 
-        (defthm ,(packn-in-pkg (list "MEM-" name) 'defmap)
+        (defthm ,(packn-pos (list "MEM-" name) 'defmap)
           (equal (mem ,x ,call)
                  (and ,body             ; we write it this way in case body
                       (mem ,x ,s)))     ; is not Boolean!
           :otf-flg t)
 
-        (defthm ,(packn-in-pkg (list "SUBSETP-" name) 'defmap)
+        (defthm ,(packn-pos (list "SUBSETP-" name) 'defmap)
           (subsetp ,call ,s))
 
         ,@(defmap-congruences vars call (+ sloc 1) 1)
 
-        (defthm ,(packn-in-pkg (list "MEM-" name "-CORROLLARY") 'defmap)
+        (defthm ,(packn-pos (list "MEM-" name "-CORROLLARY") 'defmap)
           (implies (and (subsetp ,s1 ,call)
                         (mem ,x ,s1))
                    ,body))
 
-        (defthm ,(packn-in-pkg (list "CARDINALITY-" name) 'defmap)
+        (defthm ,(packn-pos (list "CARDINALITY-" name) 'defmap)
           (<= (cardinality ,call)
               (cardinality ,s))
           :rule-classes :linear)
 
-        (defthm ,(packn-in-pkg (list "UNION-" name) 'defmap)
+        (defthm ,(packn-pos (list "UNION-" name) 'defmap)
           (= (,name ,@(put-nth `(union ,s1 ,s) sloc vars))
              (union (,name ,@(put-nth s1 sloc vars))
                     ,call)))
 
-        (defthm ,(packn-in-pkg (list "INTERSECTION-" name) 'defmap)
+        (defthm ,(packn-pos (list "INTERSECTION-" name) 'defmap)
           (= (,name ,@(put-nth `(intersection ,s1 ,s) sloc vars))
              (intersection (,name ,@(put-nth s1 sloc vars))
                            ,call)))
@@ -3247,32 +3242,32 @@
             (let ((,x (scar ,s)))
               (scons ,body ,rcall))))
 
-        (defthm ,(packn-in-pkg (list "SETP-" name) 'defmap)
+        (defthm ,(packn-pos (list "SETP-" name) 'defmap)
           (setp ,call))
 
-        (defthm ,(packn-in-pkg (list "UR-ELEMENTP-" name) 'defmap)
+        (defthm ,(packn-pos (list "UR-ELEMENTP-" name) 'defmap)
           (equal (ur-elementp ,call)
                  (ur-elementp ,s)))
 
-        (defthm ,(packn-in-pkg (list "WEAK-MEM-" name) 'defmap)
+        (defthm ,(packn-pos (list "WEAK-MEM-" name) 'defmap)
           (implies (and (mem ,x ,s)
                         (= ,fx ,body))
                    (mem ,fx ,call)))
 
 
-        (defthm ,(packn-in-pkg (list "SUBSETP-" name) 'defmap)
+        (defthm ,(packn-pos (list "SUBSETP-" name) 'defmap)
           (implies (subsetp ,s1 ,s)
                    (subsetp (,name ,@(put-nth s1 sloc vars))
                             ,call)))
 
         ,@(defmap-congruences vars call (+ sloc 1) 1)
 
-        (defthm ,(packn-in-pkg (list "CARDINALITY-" name) 'defmap)
+        (defthm ,(packn-pos (list "CARDINALITY-" name) 'defmap)
           (<= (cardinality ,call)
               (cardinality ,s))
           :rule-classes :linear)
 
-        (defthm ,(packn-in-pkg (list "UNION-" name) 'defmap)
+        (defthm ,(packn-pos (list "UNION-" name) 'defmap)
           (= (,name ,@(put-nth `(union ,s1 ,s) sloc vars))
              (union (,name ,@(put-nth s1 sloc vars))
                     ,call)))
@@ -3286,7 +3281,7 @@
 ; Then the lhs is nil because the two sets are disjoint, but the
 ; rhs is {1 2}.
 
-        (defthm ,(packn-in-pkg (list "INTERSECTION-" name) 'defmap)
+        (defthm ,(packn-pos (list "INTERSECTION-" name) 'defmap)
           (subsetp (,name ,@(put-nth `(intersection ,s1 ,s) sloc vars))
                    (intersection (,name ,@(put-nth s1 sloc vars))
                                  ,call)))

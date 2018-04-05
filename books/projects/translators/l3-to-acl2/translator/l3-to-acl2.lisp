@@ -982,17 +982,17 @@
             (trans-value trans-clauses))
            (t (trans-value
                (append trans-clauses
-                       `((& (assert! nil
+                       `((& (prog2$ (impossible)
 
 ; Here we assume that if the processor state st$ is returned, then it is
 ; returned as st$ or (mv .. st$).
 
-                                     ,(case-match typ
-                                        ('qty 'st$)
-                                        ((t0 'qty)
-                                         `(mv (arb ,t0) st$))
-                                        (&
-                                         `(arb ,typ)))))))))))))
+                                    ,(case-match typ
+                                       ('qty 'st$)
+                                       ((t0 'qty)
+                                        `(mv (arb ,t0) st$))
+                                       (&
+                                        `(arb ,typ)))))))))))))
 
 (defun l3-trans-cs-clauses-rec (clauses ctx bindings)
   (declare (xargs :stobjs bindings))
@@ -1277,8 +1277,8 @@
 
 (include-book "misc/file-io" :dir :system)
 
-(make-event
- `(defconst *translator-dir* ,(cbd)))
+(defconst *l3-book-path*
+  "projects/translators/l3-to-acl2/translator/l3")
 
 (defun l3-to-acl2-fn (infile outfile logic-p str-to-sym form state)
   (declare (xargs :stobjs state))
@@ -1288,9 +1288,7 @@
                                          state)))
     (write-list (list* '(in-package "ACL2")
                        `(value-triple '(:generated-by ,form))
-                       `(include-book ,(concatenate 'string
-                                                    *translator-dir*
-                                                    "l3"))
+                       `(include-book ,*l3-book-path* :dir :system)
                        output-list)
                 outfile
                 ctx

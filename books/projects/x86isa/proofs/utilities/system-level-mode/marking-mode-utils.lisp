@@ -1121,13 +1121,13 @@
   ;; Get-prefixes and xlate-equiv-memory:
 
   ;; The following definition has not been changed after extending GET-PREFIXES
-  ;; to use INCREMENT-*IP instead of just incrementing RIP by 1 (and checking
+  ;; to use ADD-TO-*IP instead of just incrementing RIP by 1 (and checking
   ;; that the resulting address is canonical). In other words, the following
   ;; definition implicitly assumes execution in 64-bit mode, which is what
   ;; currently these proof utilities assume anyhow (usually via explicit
   ;; (64-BIT-MODEP X86) hypotheses in theorems. If we generalize these proof
   ;; utilities to include 32-bit mode, then we will probably need to edit the
-  ;; following definition to mirror GET-PREFIXES in using INCREMENT-*IP.
+  ;; following definition to mirror GET-PREFIXES in using ADD-TO-*IP.
   (defun-nx get-prefixes-two-x86-induct-hint
     (start-rip prefixes cnt x86-1 x86-2)
     (declare (xargs :measure (nfix cnt)))
