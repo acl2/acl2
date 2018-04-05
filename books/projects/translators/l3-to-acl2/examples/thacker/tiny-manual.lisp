@@ -191,8 +191,10 @@ val shifter_def = Def
 ||#
 
 ;;; Translation note: when generating case-match+, when the last condition is
-;;; not t, we may replace the last case with t and just call assert! (see
-;;; l3.lisp) to check that it's the expected value.
+;;; not t, we may add a catchall case which ostensibly returns an arbitrary
+;;; value of the correct shape/type, but then prove that it is unreachable,
+;;; using PROG2$ and IMPOSSIBLE (see the ACL2 documentation for PROG2$ and
+;;; IMPOSSIBLE).
 
 (defun-struct shifter (((shift (type-shiftt shift))
                         (a (unsigned-byte-p 32 a))))
@@ -202,8 +204,8 @@ val shifter_def = Def
    ('rcy1 (ash a -1))
    ('rcy8 (ash a -8))
    ('rcy16 (ash a -16))
-   (& (assert! nil
-               (arb (unsigned-byte 32))))))
+   (& (prog2$ (impossible)
+              (arb (unsigned-byte 32))))))
 
 #||
 wordT ALU (func::funcT, shift::shiftT, a::wordT, b::wordT) =
@@ -345,8 +347,8 @@ val incPC_def = Def
                                            (if (inrdy st$) 2 1))
                                        st$)))
                  (mv (unit-value) st$)))
-   (& (assert! nil
-               (mv (arb uty) st$)))))
+   (& (prog2$ (impossible)
+              (mv (arb uty) st$)))))
 
 #||
 -- Common functionality
@@ -994,8 +996,8 @@ val Run_def = Def
    (('out v6) (dfn-out v6 st$))
    (('storedm v7) (dfn-storedm v7 st$))
    (('storeim v8) (dfn-storeim v8 st$))
-   (& (assert! nil
-               (mv (arb uty) st$)))))
+   (& (prog2$ (impossible)
+              (mv (arb uty) st$)))))
 
 #||
 
@@ -1209,8 +1211,8 @@ val Decode_def = Def
         (6 (call-constructor instruction jump
                              (tuple func shift      rw ra rb)))
         (7 'reservedinstr)
-        (& (assert! nil
-                    (arb instruction)))
+        (& (prog2$ (impossible)
+                   (arb instruction)))
         )))))
 
 #||
@@ -1646,8 +1648,8 @@ val Encode_def = Def
    (('jump (func shift Rw Ra Rb))
     (enc (tuple (tuple func shift 'skipNever Rw Ra Rb) 6)))
    ('ReservedInstr 7)
-   (& (assert! nil
-               (arb (unsigned-byte 32))))))
+   (& (prog2$ (impossible)
+              (arb (unsigned-byte 32))))))
 
 #||
 ---------------------------------------------
@@ -1754,8 +1756,8 @@ val LoadIM_def = tDef
    ((h . t_var) (let ((st$ (update-imi a (encode h) st$)))
                   (loadim (tuple (n+ 10 a 1) t_var)
                           st$)))
-   (& (assert! nil
-               (mv (arb uty) st$)))))
+   (& (prog2$ (impossible)
+              (mv (arb uty) st$)))))
 
 #||
 ---------------------------------------------

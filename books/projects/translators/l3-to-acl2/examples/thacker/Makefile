@@ -46,8 +46,8 @@ tiny.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
 	@echo '            :str-to-sym' >> workxxx.$@
 	@echo '            (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' >> workxxx.$@
 	@$(ACL2) < workxxx.$@ > $@.out
-	@echo "diff tiny.lisp gold/tiny.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'"
-	@diff tiny.lisp gold/tiny.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'
+	@echo "diff tiny.lisp gold/tiny.lisp"
+	@diff tiny.lisp gold/tiny.lisp
 	@echo "Successfully built $@"
 
 tiny-logic.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
@@ -59,8 +59,8 @@ tiny-logic.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
 	@echo '            :str-to-sym' >> workxxx.$@
 	@echo '            (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' >> workxxx.$@
 	@$(ACL2) < workxxx.$@ > $@.out
-	@echo "diff tiny-logic.lisp gold/tiny-logic.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'"
-	@diff tiny-logic.lisp gold/tiny-logic.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'
+	@echo "diff tiny-logic.lisp gold/tiny-logic.lisp"
+	@diff tiny-logic.lisp gold/tiny-logic.lisp
 	@echo "Successfully built $@"
 
 run-check.txt: run.cert
