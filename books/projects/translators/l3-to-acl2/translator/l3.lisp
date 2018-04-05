@@ -599,7 +599,7 @@
 ; The following was needed in order to admit encode in tiny.lisp.
 (defthm equal-len-0
   (equal (equal (len x) 0)
-         (atom x)))
+         (not (consp x))))
 
 ; The following was useful for admitting dfn-loadconstant.
 (encapsulate
