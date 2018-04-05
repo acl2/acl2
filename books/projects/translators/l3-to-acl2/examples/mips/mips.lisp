@@ -8,8 +8,7 @@
                                                ("DATA" . IS_DATA)
                                                ("gpr" . GPREGS)))))
 
-(INCLUDE-BOOK
-     "/home/kkini/src/acl2/books/projects/translators/l3-to-acl2/translator/l3")
+(INCLUDE-BOOK "/Users/kaufmann/projects/l3-to-acl2/translator/l3")
 
 (VALUE-TRIPLE (LIST :ERROR (VAL _ = RECORD
                                 ("StatusRegister" (SQBKT ("'rst" (FTY 23))
