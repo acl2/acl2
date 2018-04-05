@@ -627,7 +627,7 @@
    (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
    (new-name$ symbolp "Result of @(tsee restrict-check-inputs).")
    (thm-name$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (thm-enable booleanp "Input to the transformation, after validation.")
+   (thm-enable$ booleanp "Input to the transformation, after validation.")
    (app-cond-thm-names symbol-symbol-alistp
                        "Map from the names of the applicability conditions
                         to the corresponding theorems
@@ -680,7 +680,7 @@
    and the induction rule of the old function,
    and using the @(':restriction-of-rec-calls') applicability condition.
    </p>"
-  (b* ((macro (theorem-intro-macro thm-enable))
+  (b* ((macro (theorem-intro-macro thm-enable$))
        (formals (formals old$ wrld))
        (formula (implicate restriction$
                            `(equal (,old$ ,@formals)
@@ -790,7 +790,7 @@
    (new-name$ symbolp "Result of @(tsee restrict-check-inputs).")
    (new-enable$ booleanp "Result of @(tsee restrict-check-inputs).")
    (thm-name$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (thm-enable booleanp "Input to the transformation, after validation.")
+   (thm-enable$ booleanp "Input to the transformation, after validation.")
    (non-executable$ booleanp "Result of @(tsee restrict-check-inputs).")
    (verify-guards$ booleanp "Result of @(tsee restrict-check-inputs).")
    (hints$ symbol-alistp "Result of @(tsee restrict-check-inputs).")
@@ -931,7 +931,7 @@
                                             restriction$
                                             new-name$
                                             thm-name$
-                                            thm-enable
+                                            thm-enable$
                                             app-cond-thm-names
                                             old-fn-unnorm-name
                                             new-fn-unnorm-name
