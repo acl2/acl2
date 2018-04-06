@@ -5352,20 +5352,8 @@
 ; symbols in the "COMMON-LISP" package.  The function packn-pos may be called
 ; instead when it is desired to specify explicitly a package for the symbol.
 
-  (let ((witness (find-first-non-cl-symbol lst)))
-    (cond (witness (packn-pos lst witness))
-          (t
-
-; It is tempting to avoid returning two values in raw Lisp in this case, as is
-; done by intern.  However, if that were necessary, then it would be necessary
-; to prevent the user from making a definition like this one that can return
-; multiple values in just one case.   We think that ACL2's syntax checking will
-; not allow any use to be made of the second value, so we don't worry about
-; that here.  Perhaps we should be more nervous because of the possibility of
-; problems caused by some sort of automatic proclaiming mechanism.
-
-           (intern (coerce (packn1 lst) 'string)
-                   "ACL2")))))
+  (packn-pos lst (or (find-first-non-cl-symbol lst)
+                     'packn)))
 
 (defun pack2 (n1 n2)
   (packn (list n1 n2)))
