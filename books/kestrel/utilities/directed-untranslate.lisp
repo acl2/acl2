@@ -1386,14 +1386,21 @@
 ;             (APPEND X Y)))
 ;   ACL2 !>
 
+; A subtlety, noticed by Stephen Westfold and incorporated into
+; directed-untranslate-tests.lisp, is that the free variables bound with mv in
+; tterm might not appear in the same order as in the translation of the
+; modified uterm, unless we are careful.  So, we are careful!
+
   (or (case-match uterm
         (('mv-let vars mv-let-body . rest)
          (case-match tterm
-           ((('lambda (mv-var . &)
+           ((('lambda (mv-var . other-vars)
                (('lambda lvars &) . &))
-             . &)
+             & . other-vars)
             (and (equal vars (take (length vars) lvars))
-                 `(let ((,mv-var ,mv-let-body))
+                 `(let ((,mv-var ,mv-let-body)
+                        ,@(pairlis$ other-vars
+                                    (pairlis$ other-vars nil)))
                     (let ,(make-mv-nths vars mv-var 0)
                       ,@(butlast rest 1)
                       ,(car (last rest)))))))))
