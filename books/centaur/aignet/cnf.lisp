@@ -364,6 +364,7 @@ correctness criterion we've described.</p>
 
   (define lit-collect-supergate ((lit litp)
                                  top use-muxes
+                                 (limit natp)
                                  (supergate lit-listp)
                                  aignet-refcounts aignet)
     :guard (and (< (lit-id lit) (u32-length aignet-refcounts))
@@ -371,26 +372,31 @@ correctness criterion we've described.</p>
                 (true-listp supergate))
     :measure (lit-id lit)
     :verify-guards nil
-    :returns (res lit-listp :hyp (and (lit-listp supergate) (litp lit)))
+    :returns (mv (res lit-listp :hyp (and (lit-listp supergate) (litp lit)))
+                 (rem-limit natp :rule-classes :type-prescription))
     (b* ((lit (lit-fix lit))
          (supergate (lit-list-fix supergate))
+         (limit (lnfix limit))
          ((when (or (int= (lit-neg lit) 1)
                     (not (int= (id->type (lit-id lit) aignet) (gate-type)))
                     (int= (id->regp (lit-id lit) aignet) 1) ;; xor
                     (and (not top) (< 1 (get-u32 (lit-id lit) aignet-refcounts)))
                     (and use-muxes
                          (b* (((mv muxp & & &) (id-is-mux (lit-id lit) aignet)))
-                           muxp))))
-          (cond ((or (member (lit-negate lit) supergate)
-                     (int= (lit-fix lit) 0))
-                 ;; Complementary literal is in the supergate, so add 0.
-                 (list 0))
-                ((member lit supergate) supergate)
-                (t (cons lit supergate))))
-         (supergate (lit-collect-supergate (gate-id->fanin0 (lit-id lit) aignet)
-                                           nil use-muxes supergate aignet-refcounts aignet)))
+                           muxp))
+                    (eql 0 limit)))
+          (mv (cond ((or (member (lit-negate lit) supergate)
+                         (int= (lit-fix lit) 0))
+                     ;; Complementary literal is in the supergate, so add 0.
+                     (list 0))
+                    ((member lit supergate) supergate)
+                    (t (cons lit supergate)))
+              (if (eql 0 limit) limit (1- limit))))
+         ((mv supergate limit)
+          (lit-collect-supergate (gate-id->fanin0 (lit-id lit) aignet)
+                                 nil use-muxes limit supergate aignet-refcounts aignet)))
       (lit-collect-supergate (gate-id->fanin1 (lit-id lit) aignet)
-                             nil use-muxes supergate aignet-refcounts aignet))
+                             nil use-muxes limit supergate aignet-refcounts aignet))
     ///
   ;; (defthm true-listp-of-collect-supergate
   ;;   (implies (true-listp supergate)
@@ -407,37 +413,24 @@ correctness criterion we've described.</p>
              (implies (lit-listp x) (true-listp x))
              :rule-classes :forward-chaining))
     (verify-guards lit-collect-supergate)
-    (defthm aignet-lit-listp-of-collect-supergate
+    (defret aignet-lit-listp-of-collect-supergate
       (implies (and (aignet-litp lit aignet)
                     (aignet-lit-listp supergate aignet))
-               (aignet-lit-listp
-                (lit-collect-supergate lit top use-muxes supergate
-                                       aignet-refcounts aignet)
-                aignet))
-      :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
-                                                     aignet-refcounts aignet)
+               (aignet-lit-listp res aignet))
+      :hints (("goal" :induct <call>
                :do-not-induct t
                :in-theory (disable (:definition lit-collect-supergate))
-               :expand ((:free (top use-muxes)
-                         (lit-collect-supergate lit top use-muxes supergate
-                                                aignet-refcounts aignet))))))
+               :expand ((:free (top use-muxes) <call>)))))
 
-    (defthm collect-supergate-correct
-      (equal (aignet-eval-conjunction
-              (lit-collect-supergate
-               lit top use-muxes supergate
-               aignet-refcounts aignet)
-              invals regvals aignet)
+    (defret collect-supergate-correct
+      (equal (aignet-eval-conjunction res invals regvals aignet)
              (acl2::b-and (lit-eval lit invals regvals aignet)
                           (aignet-eval-conjunction supergate invals regvals aignet)))
-      :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
-                                                     aignet-refcounts aignet)
+      :hints (("goal" :induct <call>
                :do-not-induct t
                :in-theory (e/d (eval-and-of-lits)
                                ((:definition lit-collect-supergate)))
-               :expand ((:free (top use-muxes)
-                         (lit-collect-supergate lit top use-muxes supergate
-                                                aignet-refcounts aignet))))
+               :expand ((:free (top use-muxes) <call>)))
               (and stable-under-simplificationp
                    '(:expand ((lit-eval lit invals regvals aignet)
                               (id-eval (lit-id lit) invals regvals aignet))))))
@@ -2570,26 +2563,28 @@ correctness criterion we've described.</p>
   (local (in-theory (disable lookup-id-out-of-bounds member)))
 
   (defthmd lits-max-id-val-of-supergate
-    (<= (lits-max-id-val (lit-collect-supergate
-                          lit top use-muxes supergate aignet-refcounts aignet))
+    (<= (lits-max-id-val (mv-nth 0 (lit-collect-supergate
+                                    lit top use-muxes limit supergate aignet-refcounts aignet)))
         (max (lit-id lit)
              (lits-max-id-val supergate)))
     :hints(("Goal" :in-theory (enable lit-collect-supergate))))
+
 
   ;; measure decreases on children of a supergate
   (defthm supergate-decr-top
     (implies (and (int= (id->type id aignet) (gate-type))
                   (not (and (or use-muxes
                                 (eql (id->regp id aignet) 1))
-                            (mv-nth 0 (id-is-mux id aignet)))))
-             (< (lits-max-id-val (lit-collect-supergate
-                                  (mk-lit id 0)
-                                  t use-muxes nil aignet-refcounts aignet))
+                            (mv-nth 0 (id-is-mux id aignet))))
+                  (not (zp limit)))
+             (< (lits-max-id-val (mv-nth 0 (lit-collect-supergate
+                                            (mk-lit id 0)
+                                            t use-muxes limit nil aignet-refcounts aignet)))
                 (nfix id)))
     :hints (("goal" :expand ((:free (use-muxes)
                               (lit-collect-supergate
                                (mk-lit id 0)
-                               t use-muxes nil aignet-refcounts aignet)))
+                               t use-muxes limit nil aignet-refcounts aignet)))
              :use ((:instance lits-max-id-val-of-supergate
                     (lit (gate-id->fanin0 id aignet))
                     (top nil)
@@ -2597,12 +2592,16 @@ correctness criterion we've described.</p>
                    (:instance lits-max-id-val-of-supergate
                     (lit (gate-id->fanin1 id aignet))
                     (top nil)
-                    (supergate (lit-collect-supergate
-                                (gate-id->fanin0 id aignet)
-                                nil use-muxes nil aignet-refcounts aignet))))
+                    (supergate (mv-nth 0 (lit-collect-supergate
+                                          (gate-id->fanin0 id aignet)
+                                          nil use-muxes limit nil aignet-refcounts aignet)))
+                    (limit (mv-nth 1 (lit-collect-supergate
+                                          (gate-id->fanin0 id aignet)
+                                          nil use-muxes limit nil aignet-refcounts aignet)))))
              :in-theory (e/d () (lits-max-id-val-of-supergate)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable id-is-mux))))
+                 '(:in-theory (e/d (id-is-mux)
+                                   (id-type-when-is-mux)))))
     :rule-classes (:rewrite :linear))
 
   (defthm lits-max-id-val-of-cdr
@@ -2690,8 +2689,11 @@ correctness criterion we've described.</p>
                (cnf (mux-add-clauses id c tb fb sat-lits cnf)))
             (mv sat-lits cnf)))
          (lit (mk-lit id 0))
-         (supergate (lit-collect-supergate
-                     lit t use-muxes nil aignet-refcounts aignet))
+         ((mv supergate &)
+          (lit-collect-supergate
+           lit t use-muxes
+           1000 ;; size limit -- bozo make configurable
+           nil aignet-refcounts aignet))
          ((when (member 0 supergate))
           ;; one of the fanins is const 0, so the node is const 0
           (b* ((sat-lits (sat-add-aignet-lit lit sat-lits aignet))
@@ -2984,29 +2986,30 @@ correctness criterion we've described.</p>
   (defthmd collect-supergate-correct-rw
     (implies (and
               ;; this hyp isn't logically necessary but just helps us bind the free vars
-              (not (member-equal 0 (lit-collect-supergate
-                                    (mk-lit id 0) top use-muxes nil
-                                    aignet-refcounts aignet)))
+              (not (member-equal 0 (mv-nth 0 (lit-collect-supergate
+                                              (mk-lit id 0) top use-muxes limit nil
+                                              aignet-refcounts aignet))))
               (aignet-litp (mk-lit id 0) aignet))
              (equal (id-eval id invals regvals aignet)
                     (aignet-eval-conjunction
-                     (lit-collect-supergate
-                      (mk-lit id 0) top use-muxes nil
-                      aignet-refcounts aignet)
+                     (mv-nth 0 (lit-collect-supergate
+                                (mk-lit id 0) top use-muxes limit nil
+                                aignet-refcounts aignet))
                      invals regvals aignet)))
     :hints (("goal" :in-theory (enable lit-eval collect-supergate-correct
                                        aignet-eval-conjunction))))
 
   (defthmd collect-supergate-correct-rw-when-0
-    (implies (and (member-equal 0 (lit-collect-supergate
-                                   (mk-lit id 0) top use-muxes nil
-                                   aignet-refcounts aignet))
+    (implies (and (member-equal 0 (mv-nth 0 (lit-collect-supergate
+                                             (mk-lit id 0) top use-muxes 1000 nil
+                                             aignet-refcounts aignet)))
                   (aignet-litp (mk-lit id 0) aignet))
              (equal (id-eval id invals regvals aignet)
                     0))
     :hints (("goal" :use ((:instance collect-supergate-correct
                            (lit (mk-lit id 0))
-                           (supergate nil)))
+                           (supergate nil)
+                           (limit 1000)))
              :in-theory (e/d (lit-eval
                               aignet-eval-conjunction)
                              (collect-supergate-correct)))))

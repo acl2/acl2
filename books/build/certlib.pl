@@ -172,7 +172,11 @@ sub abs_canonical_path {
     my $absdir = get_abs_path($voldir); # Cwd::fast_abs_path($voldir);
     # print "absdir: $absdir\n";
     if ($absdir) {
-	return File::Spec->catfile($absdir, $file);
+	if ($file) {
+	    return File::Spec->catfile($absdir, $file);
+	} else {
+	    return $absdir;
+	}
     } else {
 	print "Warning: canonical_path: Directory not found: " . $voldir . "\n";
 	return 0;
