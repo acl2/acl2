@@ -334,9 +334,9 @@
         (trans-value `(,sym)))
 
 ; If x1 is an option type expression, or for that matter any other type
-; expression not handled above, we simply make no contraints on the type of the
-; field.  This seems harmless enough for now, though we may want to revisit it
-; when we start doing proofs.
+; expression not handled above, we simply make no constraints on the type of
+; the field.  This seems harmless enough for now, though we may want to revisit
+; it when we start doing proofs.
 
 ;       (trans-err ctx
 ;                  "Unexpected type for stobj field, ~x0"
@@ -495,7 +495,7 @@
     (('eq & &)
      (trans-value `bty))
     (& (trans-err ctx
-                  "Unrecognized type expresion: ~x0"
+                  "Unrecognized type expression: ~x0"
                   l3-expr))))
 
 (defun l3-get-type-lst (lst ctx bindings)
@@ -601,7 +601,7 @@
               (cond ((iff x1 x2)
                      (er hard 'expr-st$-out-p
                          "Surprise!  Expr-st$-out-p returns different state ~
-                          resutls, ~x0 and ~x1, for the two branches of an ~
+                          results, ~x0 and ~x1, for the two branches of an ~
                           ITE expression:~|~x2"
                          x1 x2 x))
                     (t
@@ -637,7 +637,7 @@
     (('ln &) nil)
     (('eq & &) nil)
     (& (er hard 'expr-st$-out-p
-           "Unrecognized expresion: ~x0"
+           "Unrecognized expression: ~x0"
            x))))
 
 (defun expr-st$-out-listp (x n)
@@ -966,7 +966,7 @@
                           (t 'equal))))
         (trans-value `(,eq-sym ,x1 ,x2)))))
     (& (trans-err ctx
-                  "Unrecognized expresion: ~x0"
+                  "Unrecognized expression: ~x0"
                   l3-expr))))
 
 (defun l3-trans-cs-clauses (clauses typ ctx bindings)
