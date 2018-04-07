@@ -169,8 +169,9 @@
  <p>Made several improvements to @(tsee directed-untranslate), including: one
  to avoid assertion errors that could occur when using @(tsee declare) forms
  with @(tsee let), @(tsee let*), or @(tsee mv-let) expressions: one to enhance
- insertion of appropriate @(tsee mv) calls; and one to extend dropping of
- unused @(tsee let) bindings..</p>
+ insertion of appropriate @(tsee mv) calls; one to extend dropping of
+ unused @(tsee let) bindings; and one to avoid an assertion error with
+ @('mv-let') expressions.</p>
 
  <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
  subsumed by the built-in @(tsee evens) utility.</p>
