@@ -89,8 +89,7 @@
                            ('RCY1 (ASH A -1))
                            ('RCY8 (ASH A -8))
                            ('RCY16 (ASH A -16))
-                           (& (PROG2$ (IMPOSSIBLE)
-                                      (ARB (UNSIGNED-BYTE 32))))))
+                           (& (IMPOSSIBLE (ARB (UNSIGNED-BYTE 32))))))
 
 (DEFUN-STRUCT ALU
               (((FUNC (TYPE-FUNCT FUNC))
@@ -127,8 +126,7 @@
                  (LET ((ST$ (UPDATE-PCTR (N+ 10 (PCTR ST$) (IF (INRDY ST$) 2 1))
                                          ST$)))
                       (MV (UNIT-VALUE) ST$)))
-                (& (PROG2$ (IMPOSSIBLE)
-                           (MV (ARB UTY) ST$)))))
+                (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
 
 (DEFUN-STRUCT NORM
               (((FUNC (TYPE-FUNCT FUNC))
@@ -305,8 +303,7 @@
                            (('OUT V6) (DFN-OUT V6 ST$))
                            (('STOREDM V7) (DFN-STOREDM V7 ST$))
                            (('STOREIM V8) (DFN-STOREIM V8 ST$))
-                           (& (PROG2$ (IMPOSSIBLE)
-                                      (MV (ARB UTY) ST$)))))
+                           (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
 
 (DEFUN-STRUCT
  DECODE ((OPC (UNSIGNED-BYTE-P 32 OPC)))
@@ -347,8 +344,7 @@
                      (6 (CALL-CONSTRUCTOR INSTRUCTION
                                           JUMP (TUPLE FUNC SHIFT RW RA RB)))
                      (7 'RESERVEDINSTR)
-                     (& (PROG2$ (IMPOSSIBLE)
-                                (ARB INSTRUCTION))))))))
+                     (& (IMPOSSIBLE (ARB INSTRUCTION))))))))
 
 (DEFUN-STRUCT NEXT (ST$)
               (DECLARE (XARGS :STOBJS ST$))
@@ -393,8 +389,7 @@
                             (ENC (TUPLE (TUPLE FUNC SHIFT 'SKIPNEVER RW RA RB)
                                         6)))
                            ('RESERVEDINSTR 7)
-                           (& (PROG2$ (IMPOSSIBLE)
-                                      (ARB (UNSIGNED-BYTE 32))))))
+                           (& (IMPOSSIBLE (ARB (UNSIGNED-BYTE 32))))))
 
 (DEFUN-STRUCT LOADIM
               (((A (UNSIGNED-BYTE-P 10 A))
@@ -406,8 +401,7 @@
                            ((H . T_VAR)
                             (LET ((ST$ (UPDATE-IMI A (ENCODE H) ST$)))
                                  (LOADIM (TUPLE (N+ 10 A 1) T_VAR) ST$)))
-                           (& (PROG2$ (IMPOSSIBLE)
-                                      (MV (ARB UTY) ST$)))))
+                           (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
 
 (DEFUN-STRUCT INITIALIZE
               ((P (TYPE-INSTRUCTION-LIST P)) ST$)
