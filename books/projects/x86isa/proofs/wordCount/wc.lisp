@@ -435,7 +435,12 @@
 ;; Main
 ;;**********************************************************************
 
-(in-theory (e/d* () (env-assumptions i64p)))
+(local (in-theory (e/d* (rime-size
+                         rme-size
+                         wime-size
+                         wme-size)
+                        (env-assumptions
+                         i64p))))
 
 (defthm effects-to-gc-no-call
 

@@ -412,7 +412,6 @@
 (in-theory (e/d (subset-p) (loop-clk)))
 
 (defthm factorial-preamble-n=0-post-cond
-
   (implies (fact-init-x86-state 0 (rip x86) x86)
 
            (and (fact-init-x86-state 0 (xr :rip 0 x86) (x86-run (fact-preamble-n=0) x86))
@@ -447,6 +446,8 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rme-size
+                             rime-size
                              rml08
                              rml32
                              riml32
@@ -487,6 +488,8 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rme-size
+                             rime-size
                              rml08
                              rml32
                              riml32
@@ -534,6 +537,8 @@
                              ;; Spec functions:
                              gpr-and-spec-4
                              jcc/cmovcc/setcc-spec
+                             rme-size
+                             rime-size
                              rml08
                              rml32
                              riml32
@@ -563,6 +568,8 @@
                              x86-operand-from-modr/m-and-sib-bytes$
                              write-user-rflags
                              !flgi-undefined
+                             rme-size
+                             rime-size
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
