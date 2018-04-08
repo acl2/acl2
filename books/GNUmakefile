@@ -837,6 +837,7 @@ clause-processors/SULFA/target.cert: \
 
 projects/translators/l3-to-acl2/target.cert: \
   projects/translators/l3-to-acl2-deps.cert
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1 clean"
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
 
 workshops/1999/multiplier/proof.cert: \
