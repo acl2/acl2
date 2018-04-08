@@ -179,6 +179,8 @@
  <p>Added utilities to fix values to @(tsee integer-range-p), as well as to
  recognize and to fix to true lists of @(tsee integer-range-p) values.</p>
 
+ <p>Added some theorems about @(tsee nat-list-fix).</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
@@ -206,6 +208,10 @@
  <p>Improved @(tsee apt::tailrec) transformation with an option to attempt to
  automatically infer the domain for some of the transformation's applicability
  conditions.</p>
+
+ <p>Improved @(tsee apt::restrict) transformation to wrap the restriction test
+ with @(tsee mbt); added an applicability condition to ensure that the
+ restriction test is boolean-valued.</p>
 
  <h4><see topic='@(url acl2::bitops)'>Bitops</see></h4>
 
