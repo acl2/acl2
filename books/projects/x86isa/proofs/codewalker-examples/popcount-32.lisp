@@ -165,6 +165,10 @@
                          rr32
                          x86-operand-from-modr/m-and-sib-bytes
                          x86-operand-from-modr/m-and-sib-bytes$
+                         rime-size
+                         rme-size
+                         wime-size
+                         wme-size
                          riml-size
                          riml32
                          n32-to-i32

@@ -701,7 +701,9 @@
            (e/d* (len
                   page-size
                   loghead-negative
-                  disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
+                  disjoint-p-all-xlation-governing-entries-paddrs-subset-p
+                  rme-size wme-size
+                  rime-size wime-size)
                  (create-canonical-address-list
                   (:rewrite program-at-values-and-!flgi)
                   (:rewrite get-prefixes-opener-lemma-group-4-prefix-in-marking-mode)

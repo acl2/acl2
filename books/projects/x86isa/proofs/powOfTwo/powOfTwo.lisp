@@ -227,6 +227,10 @@
                              wr64
                              rr32
                              rr64
+                             rime-size
+                             rme-size
+                             wime-size
+                             wme-size
                              rml32
                              rml64
                              wml32
@@ -274,6 +278,10 @@
                              wr64
                              rr32
                              rr64
+                             rime-size
+                             rme-size
+                             wime-size
+                             wme-size
                              rml32
                              rml64
                              wml32

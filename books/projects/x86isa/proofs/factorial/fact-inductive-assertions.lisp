@@ -565,6 +565,8 @@
              wr32
              rr32
              rr64
+             rme-size
+             rime-size
              rml32
              rml64
              wml32
@@ -628,8 +630,8 @@
                 (equal (rip x86) addr)
                 (assertions n0 addr x86) ;; (Begin n0 n)
                 (equal (rip (x86-run k x86)) (+ 25 addr)))
-           (assertions n0 addr (x86-run k x86)) ;; (Halt n0 a)
-           )
+           ;; (Halt n0 a)
+           (assertions n0 addr (x86-run k x86)))
   :hints (("Goal" :in-theory (e/d ()
                                   (assertions
                                    Inv-Inv-x86-run))

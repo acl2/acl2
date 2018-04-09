@@ -24,7 +24,8 @@
   ;; 89: MOV r/m64, r64
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32)
+                                        ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -119,9 +120,9 @@
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
          (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
+              temp-rip)
          (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
+              start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
@@ -137,7 +138,7 @@
                                  rex-byte
                                  r/m
                                  mod
-                                  x86))
+                                 x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
@@ -460,8 +461,14 @@
                   (if p3? 2 4)
                 (if p3? 4 2))))))
 
+       ;; We don't do any alignment check below when fetching the
+       ;; immediate operand; reading the immediate operand is done
+       ;; during code fetching, where alignment checks aren't supposed
+       ;; to be done (see Intel Manuals, Volume 3, Section 6.15,
+       ;; Exception and Interrupt Reference, Interrupt 17 Alignment
+       ;; Check Exception (#AC) for details).
        ((mv flg0 imm x86)
-        (rme-size operand-size temp-rip *cs* :x x86))
+        (rme-size operand-size temp-rip *cs* :x nil x86 :mem-ptr? nil))
        ((when flg0)
         (!!ms-fresh :imm-rml-size-error flg0))
 
