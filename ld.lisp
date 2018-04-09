@@ -1431,6 +1431,15 @@
                                             standard-oi-expanded)
                                            (delete-assoc-eq 'dir alist)))
                             (t alist)))))))
+          ((and (not (stringp standard-oi))
+                dir)
+           (er hard ctx
+               "It is illegal to supply a :DIR argument to LD here because ~
+                the first argument of the LD call, ~x0, is not a string.  ~
+                Such an argument would be ignored anyhow, so you probably ~
+                should consider simply removing that :DIR argument.  See :DOC ~
+                ld."
+               standard-oi))
           ((assoc-eq 'dir alist)
            (delete-assoc-eq 'dir alist))
           (t alist))))
@@ -1657,38 +1666,39 @@
                              action
                            :return!))
                        alist))))
-
-    #-acl2-loop-only
-    (cond (*load-compiled-stack*
-           (error "It is illegal to call LD while loading a compiled book, in ~
-                   this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
-                  (caar *load-compiled-stack*)))
-          ((= *ld-level* 0)
-           (return-from
-            ld-fn
-            (let ((complete-flg nil))
-              (unwind-protect
-                  (mv-let (erp val state)
-                          (ld-fn0 alist state bind-flg)
-                          (progn (setq complete-flg t)
-                                 (mv erp val state)))
-                (when (and (not complete-flg)
-                           (not *acl2-panic-exit-status*))
-                  (fms "***NOTE***: An interrupt or error has occurred in the ~
-                        process of cleaning up from an earlier interrupt or ~
-                        error.  This is likely to leave you at the raw Lisp ~
-                        prompt after you abort to the top level.  If so, then ~
-                        execute ~x0 to re-enter the ACL2 read-eval-print ~
-                        loop.~|~%"
-                       (list (cons #\0 '(lp)))
-                       *standard-co*
-                       state
-                       nil)))))))
-    (cond ((not (f-get-global 'ld-okp state))
-           (er soft 'ld
-               "It is illegal to call LD in this context.  See DOC ~
-                calling-ld-in-bad-contexts."))
-          (t (ld-fn0 alist state bind-flg)))))
+    (cond
+     ((not (f-get-global 'ld-okp state))
+      (er soft 'ld
+          "It is illegal to call LD in this context.  See :DOC ~
+           calling-ld-in-bad-contexts."))
+     (t
+      #-acl2-loop-only
+      (cond (*load-compiled-stack*
+             (error "It is illegal to call LD while loading a compiled book, ~
+                     in this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
+                    (caar *load-compiled-stack*)))
+            ((= *ld-level* 0)
+             (return-from
+              ld-fn
+              (let ((complete-flg nil))
+                (unwind-protect
+                    (mv-let (erp val state)
+                      (ld-fn0 alist state bind-flg)
+                      (progn (setq complete-flg t)
+                             (mv erp val state)))
+                  (when (and (not complete-flg)
+                             (not *acl2-panic-exit-status*))
+                    (fms "***NOTE***: An interrupt or error has occurred in ~
+                          the process of cleaning up from an earlier ~
+                          interrupt or error.  This is likely to leave you at ~
+                          the raw Lisp prompt after you abort to the top ~
+                          level.  If so, then execute ~x0 to re-enter the ~
+                          ACL2 read-eval-print loop.~|~%"
+                         (list (cons #\0 '(lp)))
+                         *standard-co*
+                         state
+                         nil)))))))
+      (ld-fn0 alist state bind-flg)))))
 
 (defmacro ld (standard-oi
               &key
@@ -2953,39 +2963,35 @@
                  full-book-name
                  old-book-hash
                  ev-lst-book-hash))
-            (t (mv-let (changedp fixed-cmds)
-                 (make-include-books-absolute-lst
-                  (append
-                   cmds
-                   (cons (assert$
+            (t (let ((fixed-cmds
+                      (append
+                       cmds
+                       (cons (assert$
 
 ; We want to execute the in-package here.  But we don't need to restore the
 ; package, as that is done with a state-global-let* binding in puff-fn1.
 
-                          (and (consp (car ev-lst))
-                               (eq (caar ev-lst) 'in-package))
-                          (car ev-lst))
-                         (subst-by-position expansion-alist
-                                            (cdr ev-lst)
-                                            1)))
-                  (directory-of-absolute-pathname full-book-name)
-                  (cbd)
-                  (list* 'in-package
-                         'defpkg
-                         (primitive-event-macros))
-                  t ctx state)
-                 (declare (ignore changedp))
-                 (value `((ld ',fixed-cmds
-                              :dir ,(get-directory-of-file full-book-name))
-                          (maybe-install-acl2-defaults-table
-                           ',(table-alist 'acl2-defaults-table wrld)
-                           state)
+                              (and (consp (car ev-lst))
+                                   (eq (caar ev-lst) 'in-package))
+                              (car ev-lst))
+                             (subst-by-position expansion-alist
+                                                (cdr ev-lst)
+                                                1)))))
+                 (value
+                  `((ld
 
-; It is tempting to reset the cbd here, but instead -- in case there is an
-; error above -- we handle this issue with a state-global-let* binding in
-; puff-fn1.
+; We are comfortable setting the cbd here because when ld returns, it will set
+; the cbd to its starting value (because ld calls ld-fn with bind-flg t).
 
-                          ,@final-cmds)))))))))))
+                     ',(cons `(set-cbd
+                               ,(directory-of-absolute-pathname
+                                 full-book-name))
+                             fixed-cmds)
+                     :ld-error-action :error)
+                    (maybe-install-acl2-defaults-table
+                     ',(table-alist 'acl2-defaults-table wrld)
+                     state)
+                    ,@final-cmds)))))))))))
 
 (defun puff-command-block1 (wrld immediate ans ctx state)
 
@@ -3229,8 +3235,6 @@
    (state-global-let*
     ((current-package ; See comment about this binding in puff-include-book.
       (current-package state))
-     (connected-book-directory ; See comment in puff-include-book.
-      (cbd))
      (modifying-include-book-dir-alist
 
 ; The Essay on Include-book-dir-alist explains that the above state global must
@@ -3239,14 +3243,18 @@
 ; enforce the rule that these are used for the include-book-dir-alist when in
 ; the ACL2 loop, but state globals 'raw-include-book-dir-alist and
 ; 'raw-include-book-dir!-alist are used instead when in raw Lisp (see for
-; example change-include-book-dir).  Here, we are presumably evaluating puff or
-; puff* in the loop rather than inside include-book, since these are not
-; embedded event forms.  So we need not worry about puff being evaluated inside
-; an event inside a book.  (Note that make-event is not legal inside a book
-; except with a check-expansion argument that is used as the expansion.)  Now,
-; with raw mode one can in principle call all sorts of ACL2 system functions in
-; raw Lisp that we never intended to be called there -- but that requires a
-; trust tag, so it's not our problem!
+; example change-include-book-dir).  Without binding
+; modifying-include-book-dir-alist here, we will get an error when replaying an
+; event of the form (table acl2-defaults-table :include-book-dir-alist ...).
+
+; But such an error is not necessary, since there is no danger that we are in
+; raw Lisp here.  That is because we are (presumably) evaluating puff or puff*
+; in the loop rather than when loading a book's compiled file, since puff and
+; puff* are not embedded event forms.  (Note that make-event is not legal
+; inside a book except with a check-expansion argument that is used as the
+; expansion.)  Now, with raw mode one can in principle call all sorts of ACL2
+; system functions in raw Lisp that we never intended to be called there -- but
+; that requires a trust tag, so it's not our problem!
 
       t))
     (let ((wrld (w state)))
