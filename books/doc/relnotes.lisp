@@ -166,8 +166,8 @@
  built-in system utilities is analogous to the relationship between @(tsee
  fcons-term) and @(tsee cons-term).</p>
 
- <p>Added a utility @(tsee all-lambdas) to collect all the lambda expression in
- a term.</p>
+ <p>Added a utility @(tsee all-lambdas) to collect all the lambda expressions
+ in a term.</p>
 
  <p>Added utilities @(tsee apply-terms-same-args) and @(tsee
  fapply-terms-same-args) to apply each function in a specified list to a
