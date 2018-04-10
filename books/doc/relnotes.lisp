@@ -166,6 +166,13 @@
  built-in system utilities is analogous to the relationship between @(tsee
  fcons-term) and @(tsee cons-term).</p>
 
+ <p>Added a utility @(tsee all-lambdas) to collect all the lambda expression in
+ a term.</p>
+
+ <p>Added utilities @(tsee apply-terms-same-args) and @(tsee
+ fapply-terms-same-args) to apply each function in a specified list to a
+ specified list of arguments.</p>
+
  <p>Made several improvements to @(tsee directed-untranslate), including: one
  to avoid assertion errors that could occur when using @(tsee declare) forms
  with @(tsee let), @(tsee let*), or @(tsee mv-let) expressions: one to enhance
@@ -189,11 +196,12 @@
  includes, among others, theorems stating that the number-to-digits and
  digits-to-number conversions are mutual inverses in a suitable sense.</p>
 
- <p>Added more <see topic='@(url error-checking)'>error-checking
+ <p>Added some <see topic='@(url error-checking)'>error-checking
  functions</see>.</p>
 
  <p>Extended the <see topic='@(url term-function-recognizers)'>term function
- recognizers with recognizers for true listss.</p>
+ recognizers with recognizers for true lists of (pseudo-)lambda-expressions and
+ (pseudo-)term-functions.</p>
 
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
