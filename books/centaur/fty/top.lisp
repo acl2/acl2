@@ -231,9 +231,9 @@ second function.</p>")
 
   :long "<p>In its most basic form, @('deffixtype') just associates a new type
 name with the corresponding predicate, fixing function, and equivalence
-relation.  It stores this association in a @(see table).  The type then becomes
-``known'' to other @(see fty) macros such as @(see deffixequiv), @(see
-defprod), and so on.</p>
+relation.  It stores this association in a @(see table), @('fty::fixtypes').
+The type then becomes ``known'' to other @(see fty) macros such as @(see
+deffixequiv), @(see defprod), and so on.</p>
 
 
 <h4>Basic Example</h4>

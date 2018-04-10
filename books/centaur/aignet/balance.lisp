@@ -72,6 +72,8 @@
                        depth less and take somewhat longer.")
    (search-limit natp :default 1000
                  "Search at most this many literals for a match.")
+   (supergate-limit posp :default 1000
+                    "Build supergates at most this big.")
    (gatesimp gatesimp-p :default (default-gatesimp)
              "Gate simplification parameters.  Warning: This transform will do
               nothing good if hashing is turned off."))
@@ -1211,6 +1213,7 @@
 
 (define lit-collect-superxor ((lit litp)
                               top
+                              (limit natp)
                               (superxor lit-listp)
                               aignet-refcounts aignet)
   :guard (and (< (lit-id lit) (u32-length aignet-refcounts))
@@ -1218,18 +1221,22 @@
               (true-listp superxor))
   :measure (lit-id lit)
   :verify-guards nil
-  :returns (res lit-listp :hyp (and (lit-listp superxor) (litp lit)))
+  :returns (mv (res lit-listp :hyp (and (lit-listp superxor) (litp lit)))
+               (rem-limit natp :rule-classes :type-prescription))
   (b* ((lit (lit-fix lit))
        (superxor (lit-list-fix superxor))
        ((when (or (int= (lit-neg lit) 1)
                   (not (int= (id->type (lit-id lit) aignet) (gate-type)))
                   (int= (id->regp (lit-id lit) aignet) 0) ;; and
-                  (and (not top) (< 1 (get-u32 (lit-id lit) aignet-refcounts)))))
-        (cons lit superxor))
-       (superxor (lit-collect-superxor (gate-id->fanin0 (lit-id lit) aignet)
-                                       nil superxor aignet-refcounts aignet)))
+                  (and (not top) (< 1 (get-u32 (lit-id lit) aignet-refcounts)))
+                  (zp limit)))
+        (mv (cons lit superxor)
+            (if (zp limit) 0 (1- limit))))
+       ((mv superxor limit)
+        (lit-collect-superxor (gate-id->fanin0 (lit-id lit) aignet)
+                              nil limit superxor aignet-refcounts aignet)))
     (lit-collect-superxor (gate-id->fanin1 (lit-id lit) aignet)
-                          nil superxor aignet-refcounts aignet))
+                          nil limit superxor aignet-refcounts aignet))
   ///
   ;; (defthm true-listp-of-collect-superxor
   ;;   (implies (true-listp superxor)
@@ -1243,40 +1250,27 @@
   ;;                      (lit-collect-superxor lit top use-muxes superxor
   ;;                                             aignet-refcounts aignet))))))
   (local (defthm lit-listp-true-listp
-           (implies (lit-listp x) (true-listp x))
-           :rule-classes :forward-chaining))
+           (implies (lit-listp x) (true-listp x))))
   (verify-guards lit-collect-superxor)
-  (defthm aignet-lit-listp-of-collect-superxor
+  (defret aignet-lit-listp-of-collect-superxor
     (implies (and (aignet-litp lit aignet)
                   (aignet-lit-listp superxor aignet))
-             (aignet-lit-listp
-              (lit-collect-superxor lit top superxor
-                                     aignet-refcounts aignet)
+             (aignet-lit-listp res
               aignet))
-    :hints (("goal" :induct (lit-collect-superxor lit top superxor
-                                                   aignet-refcounts aignet)
+    :hints (("goal" :induct <call>
              :do-not-induct t
              :in-theory (disable (:definition lit-collect-superxor))
-             :expand ((:free (top)
-                       (lit-collect-superxor lit top superxor
-                                              aignet-refcounts aignet))))))
+             :expand ((:free (top) <call>)))))
 
-  (defthm collect-superxor-correct
-    (equal (aignet-eval-parity
-            (lit-collect-superxor
-             lit top superxor
-             aignet-refcounts aignet)
-            invals regvals aignet)
+  (defret collect-superxor-correct
+    (equal (aignet-eval-parity res invals regvals aignet)
            (acl2::b-xor (lit-eval lit invals regvals aignet)
                         (aignet-eval-parity superxor invals regvals aignet)))
-    :hints (("goal" :induct (lit-collect-superxor lit top superxor
-                                                   aignet-refcounts aignet)
+    :hints (("goal" :induct <call>
              :do-not-induct t
              :in-theory (e/d (eval-xor-of-lits)
                              ((:definition lit-collect-superxor)))
-             :expand ((:free (top)
-                       (lit-collect-superxor lit top superxor
-                                              aignet-refcounts aignet))))
+             :expand ((:free (top) <call>)))
             (and stable-under-simplificationp
                  '(:expand ((lit-eval lit invals regvals aignet)
                             (aignet-eval-parity (cons lit superxor) invals regvals aignet)
@@ -1289,32 +1283,39 @@
                              member
                              (:d lit-collect-superxor))))
 
-  (defthmd lits-max-id-val-of-lit-collect-superxor
-    (<= (lits-max-id-val (lit-collect-superxor lit top supergate aignet-refcounts aignet))
-        (max (lit-id lit) (lits-max-id-val supergate)))
-    :hints(("Goal" :in-theory (enable lits-max-id-val lit-collect-superxor))))
+  (defretd lits-max-id-val-of-lit-collect-superxor
+    (<= (lits-max-id-val res)
+        (max (lit-id lit) (lits-max-id-val superxor)))
+    :hints(("Goal" :in-theory (enable lits-max-id-val)
+            :induct <call>
+            :expand ((:free (top) <call>)))))
 
-  (defthm superxor-decr-top
+  (defret superxor-decr-top
     (implies (and (int= (id->type id aignet) (gate-type))
-                  (eql (id->regp id aignet) 1))
-             (< (lits-max-id-val (lit-collect-superxor
-                                  (mk-lit id 0)
-                                  t nil aignet-refcounts aignet))
+                  (eql (id->regp id aignet) 1)
+                  (not (zp limit)))
+             (< (lits-max-id-val
+                 (mv-nth 0 (lit-collect-superxor
+                            (mk-lit id 0)
+                            t limit nil aignet-refcounts aignet)))
                 (nfix id)))
     :hints (("goal" :expand ((:free (use-muxes)
                               (lit-collect-superxor
                                (mk-lit id 0)
-                               t nil aignet-refcounts aignet)))
+                               t limit nil aignet-refcounts aignet)))
              :use ((:instance lits-max-id-val-of-lit-collect-superxor
                     (lit (gate-id->fanin0 id aignet))
                     (top nil)
-                    (supergate nil))
+                    (superxor nil))
                    (:instance lits-max-id-val-of-lit-collect-superxor
                     (lit (gate-id->fanin1 id aignet))
                     (top nil)
-                    (supergate (lit-collect-superxor
-                                (gate-id->fanin0 id aignet)
-                                nil nil aignet-refcounts aignet))))
+                    (superxor (mv-nth 0 (lit-collect-superxor
+                                          (gate-id->fanin0 id aignet)
+                                          nil limit nil aignet-refcounts aignet)))
+                    (limit  (mv-nth 1 (lit-collect-superxor
+                                       (gate-id->fanin0 id aignet)
+                                       nil limit nil aignet-refcounts aignet)))))
              :in-theory (e/d () (lits-max-id-val-of-lit-collect-superxor
                                  lit-collect-superxor)))
             (and stable-under-simplificationp
@@ -1347,9 +1348,11 @@
           (b* ((mark (set-bit node 1 mark)))
             (mv (get-lit node copy) mark copy levels aignet2 strash)))
          (xorp (eql (id->regp node aignet) 1))
-         (supergate (if xorp
-                        (lit-collect-superxor (make-lit node 0) t nil refcounts aignet)
-                      (lit-collect-supergate (make-lit node 0) t nil nil refcounts aignet)))
+         ((balance-config config))
+         ((mv supergate &)
+          (if xorp
+              (lit-collect-superxor (make-lit node 0) t config.supergate-limit nil refcounts aignet)
+            (lit-collect-supergate (make-lit node 0) t nil config.supergate-limit nil refcounts aignet)))
          ((mv copy-lits mark copy levels aignet2 strash)
           (aignet-balance-list-rec supergate config aignet mark copy refcounts levels aignet2 strash))
          ((mv result-lit levels aignet2 strash)
@@ -1742,8 +1745,11 @@
        (- (b* (((acl2::local-stobjs u32arr)
                 (mv blah u32arr))
                (u32arr (resize-u32 (+ 1 (max-fanin aignet)) u32arr))
-               (supergate (lit-collect-supergate (co-id->fanin (outnum->id n aignet) aignet)
-                                                 t nil nil u32arr aignet)))
+               ((mv supergate &)
+                (lit-collect-supergate (co-id->fanin (outnum->id n aignet) aignet)
+                                       t nil
+                                       (balance-config->supergate-limit config)
+                                       nil u32arr aignet)))
             (cw "Input supergate size: ~x0~%" (len supergate))
             (cw "Gate numbers: ~x0~%" (count-gates-list supergate aignet))
             (mv nil u32arr)))
@@ -1753,7 +1759,10 @@
        (- (b* (((acl2::local-stobjs u32arr)
                 (mv blah u32arr))
                (u32arr (resize-u32 (+ 1 (max-fanin aignet2)) u32arr))
-               (supergate (lit-collect-supergate lit t nil nil u32arr aignet2)))
+               ((mv supergate &)
+                (lit-collect-supergate lit t nil
+                                       (balance-config->supergate-limit config)
+                                       nil u32arr aignet2)))
             (cw "Output supergate size: ~x0~%" (len supergate))
             (cw "Gate numbers: ~x0~%" (count-gates-list supergate aignet2))
             (mv nil u32arr))))

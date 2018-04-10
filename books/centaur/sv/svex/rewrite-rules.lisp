@@ -3479,7 +3479,7 @@
 
   (def-svex-rewrite qmark-select-1
     :lhs (? a b c)
-    :checks ((not (eql 0 (4vec->lower (3vec-fix (svex-xeval a))))))
+    :checks ((not (sparseint-equal 0 (s4vec->lower (s3vec-fix (svex-s4xeval a))))))
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
@@ -3491,7 +3491,7 @@
 
   (def-svex-rewrite qmark*-select-1
     :lhs (?* a b c)
-    :checks ((not (eql 0 (4vec->lower (3vec-fix (svex-xeval a))))))
+    :checks ((not (sparseint-equal 0 (s4vec->lower (s3vec-fix (svex-s4xeval a))))))
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
@@ -3503,7 +3503,7 @@
 
   (def-svex-rewrite qmark-select-0
     :lhs (? a b c)
-    :checks ((eql 0 (4vec->upper (3vec-fix (svex-xeval a)))))
+    :checks ((sparseint-equal 0 (s4vec->upper (s3vec-fix (svex-s4xeval a)))))
     :rhs c
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
@@ -3515,7 +3515,7 @@
 
   (def-svex-rewrite qmark*-select-0
     :lhs (?* a b c)
-    :checks ((eql 0 (4vec->upper (3vec-fix (svex-xeval a)))))
+    :checks ((sparseint-equal 0 (s4vec->upper (s3vec-fix (svex-s4xeval a)))))
     :rhs c
     :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
@@ -3588,7 +3588,7 @@
 
   (def-svex-rewrite ?*-merge-branches
     :lhs (?* test x y)
-    :checks ((not (2vec-p (svex-xeval test)))
+    :checks ((not (s4vec-2vec-p (svex-s4xeval test)))
              (bind res (merge-branches test
                                        (normalize-concat x mask)
                                        (normalize-concat y mask)

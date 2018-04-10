@@ -390,7 +390,8 @@ equal.</p>
   :parents (std/basic)
   :short "Prove that some case is unreachable using @(see guard)s."
 
-  :long "<p>Logically, @('(impossible)') just returns @('nil').</p>
+  :long "<p>Logically, @('(impossible)') just returns @('nil'), and
+@('(impossible x)') just returns @('x').</p>
 
 <p>But @('impossible') has a guard of @('nil'), so whenever you use it in a
 function, you will be obliged to prove that it cannot be executed when the
@@ -411,29 +412,51 @@ sum type has been covered.  For instance, you can write:</p>
 also be @(':baz'), then the guard verification will fail and remind us that we
 need to extend @('f') to handle @(':baz') types as well.</p>
 
-<p>If somehow @('(impossible)') is ever executed (e.g., due to program mode
-code that is violating guards), it just causes a hard error.</p>"
+<p>The optional argument to @('impossible') can be used to design your code in
+a more convenient way.  Suppose that in the example of the function @('f')
+above, both @('handle-foo') and @('handle-bar') are functions that always
+return integers.  Then by changing @('(impossible)') to, say, @('(impossible
+0)') in the definition of @('f'), you can now prove that @('f') always returns
+an integer.  With the original definition of @('f'), you would require the
+additional hypothesis @('(whatever-p x)'), and as part of the proof of the
+theorem, ACL2 would have to re-prove that the @('otherwise') case is
+unreachable.</p>
 
-  (defun impossible ()
+<p>If somehow @('(impossible)') is ever executed &mdash; e.g., due to program
+mode code that is violating guards, or because @(see guard-checking) has been
+set to @('nil') or @(':none') &mdash; it just causes a hard error.</p>"
+
+  "<p>@(def impossible)</p>"
+
+  (defun impossible-fn ()
     (declare (xargs :guard nil))
-    (er hard 'impossible "Provably impossible")))
+    (er hard 'impossible
+        "Reached code that is provably impossible to reach without violating ~
+         guards somewhere (see :DOC GUARD).  This could have happened because ~
+         you are running code that is in program mode (see :DOC DEFUN-MODE), ~
+         or because you have guard checking set to NIL or :NONE (see :DOC ~
+         SET-GUARD-CHECKING)."))
+
+  (defmacro impossible (&optional retval)
+    ;; We make this a macro because if retval is an mv or involves stobjs or
+    ;; something it could get hairy if `impossible' were a function.
+    (if retval `(prog2$ (impossible-fn) ,retval) '(impossible-fn)))
+  (add-macro-alias impossible impossible-fn))
 
 
 (defsection impliez
 
   ;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
-  
+
   :parents (std/basic)
-  
+
   :short "Logical implication defined via @(tsee if)."
 
   :long
-  "<p>Since @(tsee implies) is a function,
-  guards in the consequent must be verified
-  without assuming the antecedent.
-  @('impliez') is a macro that expands to an @(tsee if),
-  so guards in the consequent can be verified
-  assuming the antecedent.</p>"
+  "<p>Since @(tsee implies) is a function, guards in the consequent must be
+verified without assuming the antecedent.  @('impliez') is a macro that expands
+to an @(tsee if), so guards in the consequent can be verified assuming the
+antecedent.</p>"
 
   "<p>@(def impliez)</p>"
 

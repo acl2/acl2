@@ -169,14 +169,17 @@
  <p>Made several improvements to @(tsee directed-untranslate), including: one
  to avoid assertion errors that could occur when using @(tsee declare) forms
  with @(tsee let), @(tsee let*), or @(tsee mv-let) expressions: one to enhance
- insertion of appropriate @(tsee mv) calls; and one to extend dropping of
- unused @(tsee let) bindings..</p>
+ insertion of appropriate @(tsee mv) calls; one to extend dropping of
+ unused @(tsee let) bindings; and one to avoid an assertion error with
+ @('mv-let') expressions.</p>
 
  <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
  subsumed by the built-in @(tsee evens) utility.</p>
 
  <p>Added utilities to fix values to @(tsee integer-range-p), as well as to
  recognize and to fix to true lists of @(tsee integer-range-p) values.</p>
+
+ <p>Added some theorems about @(tsee nat-list-fix).</p>
 
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
@@ -205,6 +208,10 @@
  <p>Improved @(tsee apt::tailrec) transformation with an option to attempt to
  automatically infer the domain for some of the transformation's applicability
  conditions.</p>
+
+ <p>Improved @(tsee apt::restrict) transformation to wrap the restriction test
+ with @(tsee mbt); added an applicability condition to ensure that the
+ restriction test is boolean-valued.</p>
 
  <h4><see topic='@(url acl2::bitops)'>Bitops</see></h4>
 

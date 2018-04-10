@@ -1584,3 +1584,49 @@
           (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(let ((y (first x))) (+ y y))))
 )
+
+; ------------------------------
+
+; Example 9: Preserving invariant checked by check-du-inv when handling mv-let
+
+; This example comes from Stephen Westfold.  It failed until expand-mv-let
+; added, to its result, extra variables to the top-level binding of the MV
+; variable result.
+
+(local-test
+
+(defstub drone-choose-and-execute-plan.1 (* * *) => (mv * *))
+(defstub drones-choose-and-execute-plans.1 (* * *) => (mv * *))
+(defstub replace-dr-st (* *) => *)
+(assert!
+ (let ((uterm '(mv-let
+                 (drn-st-new coord-st-1)
+                 (drone-choose-and-execute-plan.1 plans drn-st coord-st)
+                 (mv-let (drn-sts-new coord-st-2)
+                   (drones-choose-and-execute-plans.1
+                    (rest drn-plan-pairs)
+                    (replace-dr-st drn-sts drn-st-new)
+                    coord-st-1)
+                   (mv drn-sts-new coord-st-2))))
+       (tterm '((lambda
+                  (mv drn-sts drn-plan-pairs)
+                  ((lambda
+                     (drn-st-new coord-st-1 drn-sts drn-plan-pairs)
+                     ((lambda (mv)
+                        ((lambda (drn-sts-new coord-st-2)
+                           (cons drn-sts-new (cons coord-st-2 'nil)))
+                         (mv-nth '0 mv)
+                         (mv-nth '1 mv)))
+                      (drones-choose-and-execute-plans.1
+                       (cdr drn-plan-pairs)
+                       (replace-dr-st drn-sts drn-st-new)
+                       coord-st-1)))
+                   (mv-nth '0 mv)
+                   (mv-nth '1 mv)
+                   drn-sts drn-plan-pairs))
+                (drone-choose-and-execute-plan.1 plans drn-st coord-st)
+                drn-sts drn-plan-pairs)))
+   (equal
+    (directed-untranslate uterm tterm tterm nil nil (w state))
+    uterm)))
+)

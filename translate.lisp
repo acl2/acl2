@@ -9170,7 +9170,7 @@
       (trans-er+ x ctx
                  "It is illegal to call ~x0 in a function body without ~
                   specifying a value for :ld-user-stobjs-modified-warning.  ~
-                  See :DOC user-stobjs-modified-warning."
+                  See :DOC user-stobjs-modified-warnings."
                  (car x)))
      (t
       (mv-let
