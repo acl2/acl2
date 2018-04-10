@@ -38,6 +38,7 @@
   :parents (Tutorial)
   :short "Example 1: the basics"
   :long "<h3>Example 1</h3>
+<p>Prerequisite read for this tutorial example is @(tsee tutorial).</p>
 <p>The first example is a basic polynomial inequality.  Let's say we want to
 prove below theorem:</p>
 
@@ -199,6 +200,7 @@ Smtlink).</p>
   :parents (Tutorial)
   :short "Example 2: something wild"
   :long "<h3>Example 2</h3>
+<p>Prerequisite read for this tutorial example is @(tsee tutorial).</p>
 <p>Smtlink is extensible, with the user's understanding that the extended part
 is not verified and therefore is the user's responsibility to ensure its
 soundness.  A different trust tag is installed if this customized Smtlink is
@@ -273,6 +275,7 @@ reasoning.</p>
   :parents (Tutorial)
   :short "Example 3: defence against evil"
   :long "<h3>Example 3</h3>
+<p>Prerequisite read for this tutorial example is @(tsee tutorial).</p>
 <p>The third evil example is from one of the reviews we get when we first
 published our paper in @(see Smtlink). </p>
 
