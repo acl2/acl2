@@ -1,6 +1,6 @@
 ; Error Checking
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -522,6 +522,22 @@
                              with keywords at its even-numbered positions ~
                              (counting from 0)." description)))
 
+(def-error-checker ensure-member-of-list
+  ((x "Value to check.")
+   (list true-listp "List that must include @('x') as member.")
+   (list-description msgp "Description of @('list') for the error message."))
+  "Cause an error if a value is not a member of a list."
+  (((member-equal x list)
+    "~@0 must be ~@1." description list-description)))
+
+(def-error-checker ensure-not-member-of-list
+  ((x "Value to check.")
+   (list true-listp "List that must not include @('x') as member.")
+   (list-description msgp "Description of @('list') for the error message."))
+  "Cause an error if a value is a member of a list."
+  (((not (member-equal x list))
+    "~@0 must not be ~@1." description list-description)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-error-checker ensure-defun-mode
@@ -832,6 +848,12 @@
   "Cause an error if a function is in program mode."
   (((logicp fn (w state))
     "~@0 must be in logic mode." description)))
+
+(def-error-checker ensure-function-program-mode
+  ((fn (function-namep fn (w state)) "Function to check."))
+  "Cause an error if a function is in logic mode."
+  (((programp fn (w state))
+    "~@0 must be in program mode." description)))
 
 (def-error-checker ensure-function-defined
   ((fn (logic-function-namep fn (w state)) "Function to check."))
