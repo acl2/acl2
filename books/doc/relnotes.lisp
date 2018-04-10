@@ -200,8 +200,8 @@
  functions</see>.</p>
 
  <p>Extended the <see topic='@(url term-function-recognizers)'>term function
- recognizers with recognizers for true lists of (pseudo-)lambda-expressions and
- (pseudo-)term-functions.</p>
+ recognizers</see> with recognizers for true lists of
+ (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
