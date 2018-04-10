@@ -23,7 +23,7 @@
 
 (defsection tailrec-implementation
   :parents (implementation tailrec)
-  :short "Implementation of @(tailrec).")
+  :short "Implementation of @(tsee tailrec).")
 
 (xdoc::order-subtopics tailrec-implementation nil t)
 
