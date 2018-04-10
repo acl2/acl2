@@ -189,6 +189,12 @@
  includes, among others, theorems stating that the number-to-digits and
  digits-to-number conversions are mutual inverses in a suitable sense.</p>
 
+ <p>Added more <see topic='@(url error-checking)'>error-checking
+ functions</see>.</p>
+
+ <p>Extended the <see topic='@(url term-function-recognizers)'>term function
+ recognizers with recognizers for true listss.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
