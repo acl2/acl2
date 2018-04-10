@@ -8,7 +8,8 @@
                                                ("DATA" . IS_DATA)
                                                ("gpr" . GPREGS)))))
 
-(INCLUDE-BOOK "/Users/kaufmann/projects/l3-to-acl2/translator/l3")
+(INCLUDE-BOOK "projects/translators/l3-to-acl2/translator/l3"
+              :DIR :SYSTEM)
 
 (VALUE-TRIPLE (LIST :ERROR (VAL _ = RECORD
                                 ("StatusRegister" (SQBKT ("'rst" (FTY 23))
@@ -1218,7 +1219,7 @@
                            ('RI 10)
                            ('OV 12)
                            ('TR 13)
-                           (& (ASSERT! NIL (ARB (UNSIGNED-BYTE 5))))))
+                           (& (IMPOSSIBLE (ARB (UNSIGNED-BYTE 5))))))
 
 (VALUE-TRIPLE
  (LIST
@@ -6185,7 +6186,7 @@
                                          (('SLTI V9) (DFN-SLTI V9 ST$))
                                          (('SLTIU V10) (DFN-SLTIU V10 ST$))
                                          (('XORI V11) (DFN-XORI V11 ST$))
-                                         (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
+                                         (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
                            (('ARITHR V12)
                             (CASE-MATCH+ V12 (('ADD V13) (DFN-ADD V13 ST$))
                                          (('ADDU V14) (DFN-ADDU V14 ST$))
@@ -6201,7 +6202,7 @@
                                          (('SUB V24) (DFN-SUB V24 ST$))
                                          (('SUBU V25) (DFN-SUBU V25 ST$))
                                          (('XOR V26) (DFN-XOR V26 ST$))
-                                         (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
+                                         (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
                            (('BRANCH V27)
                             (CASE-MATCH+ V27 (('BEQ V28) (DFN-BEQ V28 ST$))
                                          (('BEQL V29) (DFN-BEQL V29 ST$))
@@ -6223,13 +6224,13 @@
                                          (('JAL V45) (DFN-JAL V45 ST$))
                                          (('JALR V46) (DFN-JALR V46 ST$))
                                          (('JR V47) (DFN-JR V47 ST$))
-                                         (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
+                                         (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
                            (('CP V48)
                             (CASE-MATCH+ V48 (('DMFC0 V49) (DFN-DMFC0 V49 ST$))
                                          (('DMTC0 V50) (DFN-DMTC0 V50 ST$))
                                          (('MFC0 V51) (DFN-MFC0 V51 ST$))
                                          (('MTC0 V52) (DFN-MTC0 V52 ST$))
-                                         (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
+                                         (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
                            (('LOAD V53)
                             (CASE-MATCH+ V53 (('LB V54) (DFN-LB V54 ST$))
                                          (('LBU V55) (DFN-LBU V55 ST$))
@@ -6244,7 +6245,7 @@
                                          (('LWL V64) (DFN-LWL V64 ST$))
                                          (('LWR V65) (DFN-LWR V65 ST$))
                                          (('LWU V66) (DFN-LWU V66 ST$))
-                                         (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
+                                         (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
                            (('MULTDIV V67)
                             (CASE-MATCH+ V67 (('DDIV V68) (DFN-DDIV V68 ST$))
                                          (('DDIVU V69) (DFN-DDIVU V69 ST$))
@@ -6258,7 +6259,7 @@
                                          (('MTLO V77) (DFN-MTLO V77 ST$))
                                          (('MULT V78) (DFN-MULT V78 ST$))
                                          (('MULTU V79) (DFN-MULTU V79 ST$))
-                                         (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
+                                         (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
                            (('SHIFT V80)
                             (CASE-MATCH+ V80 (('DSLL V81) (DFN-DSLL V81 ST$))
                                          (('DSLL32 V82) (DFN-DSLL32 V82 ST$))
@@ -6275,7 +6276,7 @@
                                          (('SRAV V93) (DFN-SRAV V93 ST$))
                                          (('SRL V94) (DFN-SRL V94 ST$))
                                          (('SRLV V95) (DFN-SRLV V95 ST$))
-                                         (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
+                                         (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
                            (('STORE V96)
                             (CASE-MATCH+ V96 (('SB V97) (DFN-SB V97 ST$))
                                          (('SC V98) (DFN-SC V98 ST$))
@@ -6287,7 +6288,7 @@
                                          (('SW V104) (DFN-SW V104 ST$))
                                          (('SWL V105) (DFN-SWL V105 ST$))
                                          (('SWR V106) (DFN-SWR V106 ST$))
-                                         (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
+                                         (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
                            (('TRAP V107)
                             (CASE-MATCH+ V107 (('TEQ V108) (DFN-TEQ V108 ST$))
                                          (('TEQI V109) (DFN-TEQI V109 ST$))
@@ -6301,8 +6302,8 @@
                                          (('TLTU V117) (DFN-TLTU V117 ST$))
                                          (('TNE V118) (DFN-TNE V118 ST$))
                                          (('TNEI V119) (DFN-TNEI V119 ST$))
-                                         (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
-                           (& (ASSERT! NIL (MV (ARB UTY) ST$)))))
+                                         (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
+                           (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
 
 (VALUE-TRIPLE
  (LIST

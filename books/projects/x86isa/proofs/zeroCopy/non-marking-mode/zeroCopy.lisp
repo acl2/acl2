@@ -1613,6 +1613,8 @@
                              x86-operand-to-reg/mem$
                              rr08 rr32 rr64 wr08 wr32 wr64
                              riml08 riml32 riml64
+                             rme-size wme-size
+                             rime-size wime-size
                              !flgi-undefined
                              write-user-rflags
                              pos

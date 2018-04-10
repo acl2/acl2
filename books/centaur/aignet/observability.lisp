@@ -691,7 +691,8 @@
        ((acl2::local-stobjs aignet-refcounts)
         (mv hyps rest aignet-refcounts))
        (aignet-refcounts (resize-u32 (+ 1 (lnfix id)) aignet-refcounts)) ;; empty
-       (lits (lit-collect-supergate (make-lit id 0) t nil nil aignet-refcounts aignet))
+       ((mv lits &)
+        (lit-collect-supergate (make-lit id 0) t nil 1000 nil aignet-refcounts aignet))
        (- (cw "Observability supergate: ~x0 lits~%" (len lits)))
        ((mv hyps rest) (observability-split-supergate-aux lits config full-size aignet))
        (- (cw "Observability hyp lits: ~x0 concl: ~x1~%" (len hyps) (len rest))))

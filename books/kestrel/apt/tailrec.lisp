@@ -19,6 +19,14 @@
 (include-book "utilities/print-specifiers")
 (include-book "utilities/transformation-table")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection tailrec-implementation
+  :parents (implementation tailrec)
+  :short "Implementation of @(tsee tailrec).")
+
+(xdoc::order-subtopics tailrec-implementation nil t)
+
 (local (xdoc::set-default-parents tailrec-implementation))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -125,8 +133,8 @@
                 combine-nonrec (cdr terms-to-try) r q))))))
 
 (define tailrec-decompose-recursive-branch
-  ((old-fn-name symbolp "Target function of the transformation,
-                         denoted by the input @('old').")
+  ((old$ symbolp "Target function of the transformation,
+                  denoted by the input @('old').")
    (rec-branch pseudo-termp
                "Recursive branch of the target function,
                 namely the term @('combine<nonrec<x1,...,xn>,
@@ -157,23 +165,23 @@
   :short "Decompose the recursive branch of the target function
           into its components,
           as described in the documentation."
-  (b* ((rec-calls (all-calls (list old-fn-name) rec-branch nil nil))
+  (b* ((rec-calls (all-calls (list old$) rec-branch nil nil))
        (rec-calls (remove-duplicates-equal rec-calls))
        ((when (/= (len rec-calls) 1))
         (er-soft+ ctx t nil
                   "After translation and LET expansion, ~
                    the recursive branch ~x0 of the target function ~x1 ~
                    must not contain different calls to ~x1."
-                  rec-branch old-fn-name))
+                  rec-branch old$))
        (rec-call (car rec-calls))
        ((when (equal rec-call rec-branch))
         (er-soft+ ctx t nil
                   "The target function ~x0 is already tail-recursive."
-                  old-fn-name))
+                  old$))
        (updates (fargs rec-call))
-       (formals (formals old-fn-name (w state)))
-       (r (genvar old-fn-name "R" nil formals))
-       (q (genvar old-fn-name "Q" nil formals))
+       (formals (formals old$ (w state)))
+       (r (genvar old$ "R" nil formals))
+       (q (genvar old$ "Q" nil formals))
        (combine-nonrec (subst-expr r rec-call rec-branch))
        ((er &) (ensure-term-does-not-call$
                 combine-nonrec
@@ -182,14 +190,14 @@
                       and after replacing the calls to ~x0 ~
                       with a fresh variable ~x1, ~
                       the recursive branch ~x2 of the target function ~x0"
-                     old-fn-name r combine-nonrec)
+                     old$ r combine-nonrec)
                 t nil))
        ((mv found nonrec combine)
         (tailrec-find-nonrec-term combine-nonrec combine-nonrec r q))
        ((unless found)
         (er-soft+ ctx t nil
                   "Unable to decompose the recursive branch ~x0 ~
-                   of the target function ~x1." rec-branch old-fn-name)))
+                   of the target function ~x1." rec-branch old$)))
     (value (list nonrec updates combine q r))))
 
 (define tailrec-check-old
@@ -202,7 +210,7 @@
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (result "A tuple @('(old-fn-name
+               (result "A tuple @('(old$
                                     test<x1,...,xn>
                                     base<x1,...,xn>
                                     nonrec<x1,...,xn>
@@ -220,7 +228,7 @@
                                          symbolp
                                          symbolp
                                          result)'),
-                        where @('old-fn-name') is the name
+                        where @('old$') is the name
                         of the target function of the transformation
                         (denoted by the @('old') input)
                         and the other components
@@ -234,40 +242,40 @@
    if @('verbose') is @('t').
    </p>"
   (b* ((wrld (w state))
-       ((er old-fn-name) (ensure-function-name-or-numbered-wildcard$
-                          old "The first input" t nil))
-       (description (msg "The target function ~x0" old-fn-name))
-       ((er &) (ensure-function-logic-mode$ old-fn-name description t nil))
-       ((er &) (ensure-function-defined$ old-fn-name description t nil))
-       ((er &) (ensure-function-number-of-results$ old-fn-name 1
+       ((er old$) (ensure-function-name-or-numbered-wildcard$
+                   old "The first input" t nil))
+       (description (msg "The target function ~x0" old$))
+       ((er &) (ensure-function-logic-mode$ old$ description t nil))
+       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-number-of-results$ old$ 1
                                                    description t nil))
-       ((er &) (ensure-function-no-stobjs$ old-fn-name description t nil))
-       ((er &) (ensure-function-singly-recursive$ old-fn-name
+       ((er &) (ensure-function-no-stobjs$ old$ description t nil))
+       ((er &) (ensure-function-singly-recursive$ old$
                                                   description t nil))
-       ((er &) (ensure-function-known-measure$ old-fn-name description t nil))
-       (body (if (non-executablep old-fn-name wrld)
-                 (unwrapped-nonexec-body old-fn-name wrld)
-               (ubody old-fn-name wrld)))
+       ((er &) (ensure-function-known-measure$ old$ description t nil))
+       (body (if (non-executablep old$ wrld)
+                 (unwrapped-nonexec-body old$ wrld)
+               (ubody old$ wrld)))
        (body (remove-lambdas body))
        ((er (list test base combine-nonrec-reccall))
         (ensure-term-if-call$ body
                               (msg "After translation and LET expansion, ~
                                     the body ~x0 of the target function ~x1"
-                                   body old-fn-name)
+                                   body old$)
                               t nil))
        ((er &) (ensure-term-does-not-call$
-                test old-fn-name
+                test old$
                 (msg "After translation and LET expansion, ~
                       the exit test ~x0 ~
                       of the target function ~x1"
-                     test old-fn-name)
+                     test old$)
                 t nil))
        ((er &) (ensure-term-does-not-call$
-                base old-fn-name
+                base old$
                 (msg "After translation and LET expansion, ~
                       the first branch ~x0 ~
                       of the target function ~x1"
-                     base old-fn-name)
+                     base old$)
                 t nil))
        ((er &) (if (member-eq variant '(:monoid :monoid-alt))
                    (ensure-term-ground$
@@ -281,22 +289,22 @@
                            "")
                          variant
                          base
-                         old-fn-name)
+                         old$)
                     t nil)
                  (value nil)))
        ((er (list nonrec updates combine q r))
         (tailrec-decompose-recursive-branch
-         old-fn-name combine-nonrec-reccall ctx state))
+         old$ combine-nonrec-reccall ctx state))
        ((er &) (if (eq verify-guards t)
                    (ensure-function-guard-verified$
-                    old-fn-name
+                    old$
                     (msg "Since the :VERIFY-GUARDS input is T, ~
-                          the target function ~x0" old-fn-name)
+                          the target function ~x0" old$)
                     t nil)
                  (value nil)))
        ((run-when verbose)
         (cw "~%")
-        (cw "Components of the target function ~x0:~%" old-fn-name)
+        (cw "Components of the target function ~x0:~%" old$)
         (cw "- Exit test: ~x0.~%" (untranslate test nil wrld))
         (cw "- Base value: ~x0.~%" (untranslate base nil wrld))
         (cw "- Non-recursive computation: ~x0.~%" (untranslate nonrec nil wrld))
@@ -304,7 +312,7 @@
         (cw "- Combination operator: ~x0.~%" (untranslate combine nil wrld))
         (cw "- Fresh variable for non-recursive computation: ~x0.~%" q)
         (cw "- Fresh variable for recursive call: ~x0.~%" r)))
-    (value (list old-fn-name test base nonrec updates combine q r))))
+    (value (list old$ test base nonrec updates combine q r))))
 
 (std::defenum tailrec-variantp (:assoc :monoid :monoid-alt)
   :short "Variants of the tail recursion transformation.")
@@ -319,7 +327,7 @@
   ((combine pseudo-termp "Result of @(tsee tailrec-check-old).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
    (verbose booleanp "Print informative messages or not.")
    (wrld plist-worldp))
   :returns (domain "A @(tsee pseudo-termfnp).")
@@ -332,7 +340,7 @@
    </p>"
   (b* ((default '(lambda (x) 't))
        (domain
-        (if (member-eq variant '(:monoid :monoid-alt))
+        (if (member-eq variant$ '(:monoid :monoid-alt))
             (case-match combine
               ((op . args)
                (b* (((unless (symbolp op)) default)
@@ -356,15 +364,15 @@
 
 (define tailrec-check-domain
   ((domain "Input to the transformation.")
-   (old-fn-name symbolp "Result of @(tsee tailrec-check-old).")
+   (old$ symbolp "Result of @(tsee tailrec-check-old).")
    (combine pseudo-termp "Result of @(tsee tailrec-check-old).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (do-verify-guards booleanp
-                     "Result of validating
-                      the @(':verify-guards') input to the transformation
-                      (in @(tsee tailrec-check-inputs)).")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
+   (verify-guards$ booleanp
+                   "Result of validating
+                    the @(':verify-guards') input to the transformation
+                    (in @(tsee tailrec-check-inputs)).")
    (verbose booleanp "Print informative messages or not.")
    (ctx "Context for errors.")
    state)
@@ -390,7 +398,7 @@
    </p>"
   (b* ((wrld (w state))
        ((when (eq domain :auto))
-        (value (tailrec-infer-domain combine q r variant verbose wrld)))
+        (value (tailrec-infer-domain combine q r variant$ verbose wrld)))
        (description "The :DOMAIN input")
        ((er (list fn/lambda stobjs-in stobjs-out description))
         (cond ((function-namep domain wrld)
@@ -448,42 +456,42 @@
                                                   stobjs-out
                                                   description t nil))
        ((er &) (ensure-function/lambda-closed$ fn/lambda description t nil))
-       ((er &) (if do-verify-guards
+       ((er &) (if verify-guards$
                    (ensure-function/lambda-guard-verified-exec-fns$
                     fn/lambda
                     (msg "Since either the :VERIFY-GUARDS input is T, ~
                           or it is (perhaps by default) :AUTO ~
                           and the target function ~x0 is guard-verified, ~@1"
-                         old-fn-name (msg-downcase-first description))
+                         old$ (msg-downcase-first description))
                     t nil)
                  (value nil)))
        ((er &) (if (symbolp fn/lambda)
                    (ensure-symbol-different$ fn/lambda
-                                             old-fn-name
+                                             old$
                                              (msg "the target function ~x0"
-                                                  old-fn-name)
+                                                  old$)
                                              description t nil)
                  (ensure-term-does-not-call$ (lambda-body fn/lambda)
-                                             old-fn-name
+                                             old$
                                              description t nil))))
     (value fn/lambda)))
 
 (define tailrec-check-new-name
   ((new-name "Input to the transformation.")
-   (old-fn-name symbolp "Result of @(tsee tailrec-check-old).")
+   (old$ symbolp "Result of @(tsee tailrec-check-old).")
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (new-fn-name "A @(tsee symbolp)
-                             to use as the name for the new function.")
+               (new-name$ "A @(tsee symbolp)
+                           to use as the name for the new function.")
                state)
   :mode :program
   :short "Ensure that the @(':new-name') input to the transformation is valid."
   (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
        (name (if (eq new-name :auto)
-                 (next-numbered-name old-fn-name (w state))
+                 (next-numbered-name old$ (w state))
                new-name))
        (description (msg "The name ~x0 of the new function, ~@1,"
                          name
@@ -497,21 +505,21 @@
 
 (define tailrec-check-wrapper-name
   ((wrapper-name "Input to the transformation.")
-   (new-fn-name symbolp "Result of @(tsee tailrec-check-new-name).")
+   (new-name$ symbolp "Result of @(tsee tailrec-check-new-name).")
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (wrapper-fn-name "A @(tsee symbolp)
-                                 to use as the name for the wrapper function.")
+               (wrapper-name$ "A @(tsee symbolp)
+                               to use as the name for the wrapper function.")
                state)
   :mode :program
   :short "Ensure that the @(':wrapper-name') input to the transformation
           is valid."
   (b* (((er &) (ensure-symbol$ wrapper-name "The :WRAPPER-NAME input" t nil))
        (name (if (eq wrapper-name :auto)
-                 (add-suffix-to-fn new-fn-name "-WRAPPER")
+                 (add-suffix-to-fn new-name$ "-WRAPPER")
                wrapper-name))
        (description (msg "The name ~x0 of the wrapper function, ~@1,"
                          name
@@ -522,39 +530,39 @@
                            "supplied as the :WRAPPER-NAME input")))
        ((er &) (ensure-symbol-new-event-name$ name description t nil))
        ((er &) (ensure-symbol-different$
-                name new-fn-name
+                name new-name$
                 (msg "the name ~x0 of the new function ~
-                      (determined by the :NEW-NAME input)." new-fn-name)
+                      (determined by the :NEW-NAME input)." new-name$)
                 description
                 t nil)))
     (value name)))
 
 (define tailrec-check-thm-name
   ((thm-name "Input to the transformation.")
-   (old-fn-name symbolp "Result of @(tsee tailrec-check-old).")
-   (new-fn-name symbolp "Result of @(tsee tailrec-check-new-name).")
-   (wrapper-fn-name symbolp "Result of @(tsee tailrec-check-wrapper-name).")
+   (old$ symbolp "Result of @(tsee tailrec-check-old).")
+   (new-name$ symbolp "Result of @(tsee tailrec-check-new-name).")
+   (wrapper-name$ symbolp "Result of @(tsee tailrec-check-wrapper-name).")
    (ctx "Context for errors.")
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (old-to-wrapper-thm-name "A @(tsee symbolp)
-                                         to use for the theorem that
-                                         relates the old and new functions.")
+               (thm-name$ "A @(tsee symbolp)
+                           to use for the theorem that
+                           relates the old and new functions.")
                state)
   :mode :program
   :short "Ensure that the @(':thm-name') input to the transformation
           is valid."
   (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
        (name (if (eq thm-name :auto)
-                 (make-paired-name old-fn-name wrapper-fn-name 2 (w state))
+                 (make-paired-name old$ wrapper-name$ 2 (w state))
                thm-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the target function ~x1 ~
                           to the wrapper function ~x2 ~
                           ~@3,"
-                         name old-fn-name wrapper-fn-name
+                         name old$ wrapper-name$
                          (if (eq thm-name :auto)
                              "automatically generated ~
                               since the :THM-NAME input ~
@@ -562,15 +570,15 @@
                            "supplied as the :THM-NAME input")))
        ((er &) (ensure-symbol-new-event-name$ name description t nil))
        ((er &) (ensure-symbol-different$
-                name new-fn-name
+                name new-name$
                 (msg "the name ~x0 of the new function ~
-                      (determined by the :NEW-NAME input)." new-fn-name)
+                      (determined by the :NEW-NAME input)." new-name$)
                 description
                 t nil))
        ((er &) (ensure-symbol-different$
-                name wrapper-fn-name
+                name wrapper-name$
                 (msg "the name ~x0 of the wrapper function ~
-                      (determined by the :WRAPPER-NAME input)." wrapper-fn-name)
+                      (determined by the :WRAPPER-NAME input)." wrapper-name$)
                 description
                 t nil)))
     (value name)))
@@ -603,8 +611,8 @@
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (hints-alist "A @('symbol-alistp') that is the alist form of
-                             the keyword-value list @('hints').")
+               (hints$ "A @('symbol-alistp') that is the alist form of
+                        the keyword-value list @('hints').")
                state)
   :mode :program
   :short "Ensure that the @(':hints') input to the transformation is valid."
@@ -645,7 +653,7 @@
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (result "A tuple @('(old-fn-name
+               (result "A tuple @('(old$
                                     test<x1,...,xn>
                                     base<x1,...,xn>
                                     nonrec<x1,...,xn>
@@ -654,13 +662,13 @@
                                     q
                                     r
                                     domain$
-                                    new-fn-name
-                                    new-fn-enable
-                                    wrapper-fn-name
-                                    old-to-wrapper-thm-name
-                                    make-non-executable
-                                    do-verify-guards
-                                    hints-alist
+                                    new-name$
+                                    new-enable$
+                                    wrapper-name$
+                                    thm-name$
+                                    non-executable$
+                                    verify-guards$
+                                    hints$
                                     print$)')
                         satisfying
                         @('(typed-tuplep symbolp
@@ -685,21 +693,21 @@
                         the results of @(tsee tailrec-check-old),
                         @('domain$') is
                         the result of @(tsee tailrec-check-domain),
-                        @('new-fn-name') is
+                        @('new-name$') is
                         the result of @(tsee tailrec-check-new-name),
-                        @('new-fn-enable') indicates whether
+                        @('new-enable$') indicates whether
                         the new function should be enabled or not,
-                        @('wrapper-fn-name') is
+                        @('wrapper-name$') is
                         the result of @(tsee tailrec-check-wrapper-name),
-                        @('old-to-wrapper-thm-name') is
+                        @('thm-name$') is
                         the result of @(tsee tailrec-check-thm-name),
                         @('non-executable') indicates whether
                         the new and wrapper functions should be
                         non-executable or not, and
-                        @('do-verify-guards') indicates whether the guards of
+                        @('verify-guards$') indicates whether the guards of
                         the new and wrapper functions
                         should be verified or not,
-                        @('hints-alist') is
+                        @('hints$') is
                         the result of @(tsee tailrec-check-hints), and
                         @('print$') is a canonicalized version of
                         the @(':print') input.")
@@ -725,7 +733,7 @@
    </p>"
   (b* (((er print$) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
        (verbose (if (member-eq :expand print$) t nil))
-       ((er (list old-fn-name
+       ((er (list old$
                   test
                   base
                   nonrec
@@ -735,35 +743,35 @@
                   r)) (tailrec-check-old old variant verify-guards
                                          verbose ctx state))
        ((er &) (tailrec-check-variant$ variant "The :VARIANT input" t nil))
-       ((er do-verify-guards) (ensure-boolean-or-auto-and-return-boolean$
-                               verify-guards
-                               (guard-verified-p old-fn-name (w state))
-                               "The :VERIFY-GUARDS input" t nil))
+       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
+                             verify-guards
+                             (guard-verified-p old$ (w state))
+                             "The :VERIFY-GUARDS input" t nil))
        ((er domain$) (tailrec-check-domain
-                      domain old-fn-name combine q r variant do-verify-guards
+                      domain old$ combine q r variant verify-guards$
                       verbose ctx state))
-       ((er new-fn-name) (tailrec-check-new-name
-                          new-name old-fn-name ctx state))
-       ((er new-fn-enable) (ensure-boolean-or-auto-and-return-boolean$
-                            new-enable
-                            (fundef-enabledp old state)
-                            "The :NEW-ENABLE input" t nil))
-       ((er wrapper-fn-name) (tailrec-check-wrapper-name
-                              wrapper-name new-fn-name ctx state))
+       ((er new-name$) (tailrec-check-new-name
+                        new-name old$ ctx state))
+       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
+                          new-enable
+                          (fundef-enabledp old state)
+                          "The :NEW-ENABLE input" t nil))
+       ((er wrapper-name$) (tailrec-check-wrapper-name
+                            wrapper-name new-name$ ctx state))
        ((er &) (ensure-boolean$ wrapper-enable
                                 "The :WRAPPER-ENABLE input" t nil))
-       ((er old-to-wrapper-thm-name) (tailrec-check-thm-name
+       ((er thm-name$) (tailrec-check-thm-name
                                       thm-name
-                                      old-fn-name new-fn-name wrapper-fn-name
+                                      old$ new-name$ wrapper-name$
                                       ctx state))
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
-       ((er make-non-executable) (ensure-boolean-or-auto-and-return-boolean$
-                                  non-executable
-                                  (non-executablep old (w state))
-                                  "The :NON-EXECUTABLE input" t nil))
-       ((er hints-alist) (tailrec-check-hints hints ctx state))
+       ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
+                              non-executable
+                              (non-executablep old (w state))
+                              "The :NON-EXECUTABLE input" t nil))
+       ((er hints$) (tailrec-check-hints hints ctx state))
        ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
-    (value (list old-fn-name
+    (value (list old$
                  test
                  base
                  nonrec
@@ -772,17 +780,17 @@
                  q
                  r
                  domain$
-                 new-fn-name
-                 new-fn-enable
-                 wrapper-fn-name
-                 old-to-wrapper-thm-name
-                 make-non-executable
-                 do-verify-guards
-                 hints-alist
+                 new-name$
+                 new-enable$
+                 wrapper-name$
+                 thm-name$
+                 non-executable$
+                 verify-guards$
+                 hints$
                  print$))))
 
 (define tailrec-var-u
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs)."))
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs)."))
   :returns (u "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('u') to use in the
@@ -791,10 +799,10 @@
           @(':combine-associativity'), and
           @(':combine-associativity-uncond')
           applicability conditions."
-  (genvar old-fn-name "U" nil nil))
+  (genvar old$ "U" nil nil))
 
 (define tailrec-var-v
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs)."))
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs)."))
   :returns (v "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('u') to use in the
@@ -803,20 +811,20 @@
           @(':combine-associativity'), and
           @(':combine-associativity-uncond')
           applicability conditions."
-  (genvar old-fn-name "V" nil nil))
+  (genvar old$ "V" nil nil))
 
 (define tailrec-var-w
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs)."))
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs)."))
   :returns (w "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('u') to use in the
           @(':combine-associativity') and
           @(':combine-associativity-uncond')
           applicability conditions."
-  (genvar old-fn-name "W" nil nil))
+  (genvar old$ "W" nil nil))
 
 (define tailrec-id-var-u
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (wrld plist-worldp))
   :returns (u "A @(tsee symbolp).")
   :mode :program
@@ -828,7 +836,7 @@
   "<p>
    This must be distinct from the formals of the old function.
    </p>"
-  (genvar old-fn-name "U" nil (formals old-fn-name wrld)))
+  (genvar old$ "U" nil (formals old$ wrld)))
 
 (define tailrec-combine-op
   ((combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
@@ -847,7 +855,7 @@
 (define tailrec-app-cond-formula
   ((name (member-eq name *tailrec-app-cond-names*)
          "Name of the applicability condition.")
-   (old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
@@ -860,10 +868,10 @@
   :mode :program
   :short "Formula of the named applicability condition."
   (b* ((wrld (w state))
-       (u (tailrec-var-u old-fn-name))
-       (v (tailrec-var-v old-fn-name))
-       (w (tailrec-var-w old-fn-name))
-       (u1 (tailrec-id-var-u old-fn-name wrld))
+       (u (tailrec-var-u old$))
+       (v (tailrec-var-v old$))
+       (w (tailrec-var-w old$))
+       (u1 (tailrec-id-var-u old$ wrld))
        (combine-op (tailrec-combine-op combine q r)))
     (case name
       (:domain-of-base
@@ -928,7 +936,7 @@
                                (term-guard-obligation combine state))
                     t wrld))
       (:domain-of-nonrec-when-guard
-       (untranslate (implicate (conjoin2 (guard old-fn-name nil wrld)
+       (untranslate (implicate (conjoin2 (guard old$ nil wrld)
                                          (dumb-negate-lit test))
                                (apply-term* domain$ nonrec))
                     t wrld))
@@ -937,59 +945,59 @@
 (define tailrec-app-cond-present-p
   ((name (member-eq name *tailrec-app-cond-names*)
          "Name of the applicability condition.")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (do-verify-guards booleanp "Result of @(tsee tailrec-check-inputs)."))
-  :returns (yes/no booleanp :hyp (booleanp do-verify-guards))
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
+   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs)."))
+  :returns (yes/no booleanp :hyp (booleanp verify-guards$))
   :short "Check if the named applicability condition is present."
   (case name
     (:domain-of-base t)
     ((:domain-of-nonrec
       :domain-of-combine
-      :combine-associativity) (if (member-eq variant '(:monoid :assoc)) t nil))
+      :combine-associativity) (if (member-eq variant$ '(:monoid :assoc)) t nil))
     ((:domain-of-combine-uncond
-      :combine-associativity-uncond) (eq variant :monoid-alt))
+      :combine-associativity-uncond) (eq variant$ :monoid-alt))
     ((:combine-left-identity
-      :combine-right-identity) (if (member-eq variant '(:monoid :monoid-alt))
+      :combine-right-identity) (if (member-eq variant$ '(:monoid :monoid-alt))
                                    t nil))
     ((:domain-guard
-      :combine-guard) do-verify-guards)
-    (:domain-of-nonrec-when-guard (and (eq variant :monoid-alt)
-                                       do-verify-guards))
+      :combine-guard) verify-guards$)
+    (:domain-of-nonrec-when-guard (and (eq variant$ :monoid-alt)
+                                       verify-guards$))
     (t (impossible))))
 
 (define tailrec-app-conds
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
    (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (do-verify-guards booleanp "Result of @(tsee tailrec-check-inputs).")
+   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs).")
    state)
   :returns (app-conds "A @(tsee symbol-alistp).")
   :mode :program
   :short "Generate the applicability conditions that must hold."
   (tailrec-app-conds-aux *tailrec-app-cond-names*
-                         old-fn-name test base nonrec combine q r
-                         variant domain$ do-verify-guards
+                         old$ test base nonrec combine q r
+                         variant$ domain$ verify-guards$
                          nil state)
 
   :prepwork
   ((define tailrec-app-conds-aux
      ((names (subsetp-eq names *tailrec-app-cond-names*))
-      (old-fn-name symbolp)
+      (old$ symbolp)
       (test pseudo-termp)
       (base pseudo-termp)
       (nonrec pseudo-termp)
       (combine pseudo-termp)
       (q symbolp)
       (r symbolp)
-      (variant tailrec-variantp)
+      (variant$ tailrec-variantp)
       (domain$ pseudo-termfnp)
-      (do-verify-guards booleanp)
+      (verify-guards$ booleanp)
       (rev-app-conds symbol-alistp)
       state)
      :returns (app-conds) ; SYMBOL-LISTP
@@ -999,28 +1007,28 @@
          (reverse rev-app-conds)
        (b* ((name (car names))
             ((unless (tailrec-app-cond-present-p
-                      name variant do-verify-guards))
+                      name variant$ verify-guards$))
              (tailrec-app-conds-aux (cdr names)
-                                    old-fn-name
+                                    old$
                                     test base nonrec combine q r
-                                    variant domain$ do-verify-guards
+                                    variant$ domain$ verify-guards$
                                     rev-app-conds state))
             (formula (tailrec-app-cond-formula
                       name
-                      old-fn-name test base nonrec combine q r domain$
+                      old$ test base nonrec combine q r domain$
                       state)))
          (tailrec-app-conds-aux (cdr names)
-                                old-fn-name test base nonrec combine q r
-                                variant domain$ do-verify-guards
+                                old$ test base nonrec combine q r
+                                variant$ domain$ verify-guards$
                                 (acons name formula rev-app-conds)
                                 state))))))
 
 (define tailrec-domain-of-old-intro-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
    (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (names-to-avoid symbol-listp "Names of other events
                                  (calculated in @(tsee tailrec-event)).")
@@ -1054,12 +1062,12 @@
    </p>"
   (b* ((name (fresh-name-in-world-with-$s 'domain-of-old names-to-avoid wrld))
        (formula (untranslate (apply-term* domain$
-                                          (apply-term old-fn-name
-                                                      (formals old-fn-name
+                                          (apply-term old$
+                                                      (formals old$
                                                                wrld)))
                              t wrld))
        (hints
-        (case variant
+        (case variant$
           ((:monoid :assoc)
            (b* ((domain-of-base-thm
                  (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
@@ -1069,15 +1077,15 @@
                  (cdr (assoc-eq :domain-of-combine app-cond-thm-names)))
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
-                             :extra-bindings-ok
-                             (,(tailrec-var-u old-fn-name)
-                              ,nonrec)
-                             (,(tailrec-var-v old-fn-name)
-                              (,old-fn-name ,@updates)))))
+                   :extra-bindings-ok
+                   (,(tailrec-var-u old$)
+                    ,nonrec)
+                   (,(tailrec-var-v old$)
+                    (,old$ ,@updates)))))
              `(("Goal"
                 :in-theory '(,old-fn-unnorm-name
-                             (:induction ,old-fn-name))
-                :induct (,old-fn-name ,@(formals old-fn-name wrld)))
+                             (:induction ,old$))
+                :induct (,old$ ,@(formals old$ wrld)))
                '(:use (,domain-of-base-thm
                        ,domain-of-nonrec-thm
                        ,domain-of-combine-instance)))))
@@ -1088,11 +1096,11 @@
                  (cdr (assoc-eq :domain-of-combine-uncond app-cond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
-                             :extra-bindings-ok
-                             (,(tailrec-var-u old-fn-name)
-                              ,nonrec)
-                             (,(tailrec-var-v old-fn-name)
-                              (,old-fn-name ,@updates)))))
+                   :extra-bindings-ok
+                   (,(tailrec-var-u old$)
+                    ,nonrec)
+                   (,(tailrec-var-v old$)
+                    (,old$ ,@updates)))))
              `(("Goal"
                 :in-theory '(,old-fn-unnorm-name)
                 :cases (,test))
@@ -1106,7 +1114,7 @@
     (mv event name)))
 
 (define tailrec-new-fn-intro-events
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
@@ -1114,12 +1122,12 @@
    (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
    (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
-   (new-fn-enable booleanp "Result of @(tsee tailrec-check-inputs).")
-   (make-non-executable booleanp "Result of @(tsee tailrec-check-inputs).")
-   (do-verify-guards booleanp "Result of @(tsee tailrec-check-inputs).")
+   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
+   (new-enable$ booleanp "Result of @(tsee tailrec-check-inputs).")
+   (non-executable$ booleanp "Result of @(tsee tailrec-check-inputs).")
+   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs).")
    (app-cond-thm-names symbol-symbol-alistp
                        "Map from the names of the applicability conditions
                         to the corresponding theorems
@@ -1181,31 +1189,31 @@
    We use the hints for the latter case also for the former case
    (which will ignore some of the supplied facts).
    </p>"
-  (b* ((macro (function-intro-macro new-fn-enable make-non-executable))
-       (formals (rcons r (formals old-fn-name wrld)))
+  (b* ((macro (function-intro-macro new-enable$ non-executable$))
+       (formals (rcons r (formals old$ wrld)))
        (body
         (b* ((combine-op (tailrec-combine-op combine q r))
-             (nonrec-branch (case variant
+             (nonrec-branch (case variant$
                               ((:monoid :monoid-alt) r)
                               (:assoc (apply-term* combine-op r base))
                               (t (impossible))))
-             (rec-branch (subcor-var (cons r (formals old-fn-name wrld))
+             (rec-branch (subcor-var (cons r (formals old$ wrld))
                                      (cons (apply-term* combine-op r nonrec)
                                            updates)
-                                     (apply-term new-fn-name formals)))
+                                     (apply-term new-name$ formals)))
              (body `(if ,test
                         ,nonrec-branch
                       ,rec-branch)))
           (untranslate body nil wrld)))
-       (wfrel (well-founded-relation old-fn-name wrld))
-       (measure (untranslate (measure old-fn-name wrld) nil wrld))
+       (wfrel (well-founded-relation old$ wrld))
+       (measure (untranslate (measure old$ wrld) nil wrld))
        (termination-hints
-        `(("Goal" :use (:termination-theorem ,old-fn-name) :in-theory nil)))
-       (guard (untranslate (conjoin2 (guard old-fn-name nil wrld)
+        `(("Goal" :use (:termination-theorem ,old$) :in-theory nil)))
+       (guard (untranslate (conjoin2 (guard old$ nil wrld)
                                      (apply-term* domain$ r))
                            t wrld))
        (guard-hints
-        (case variant
+        (case variant$
           ((:monoid :assoc)
            (b* ((z (car (if (symbolp domain$)
                             (formals domain$ wrld)
@@ -1222,26 +1230,26 @@
                  (cdr (assoc-eq :combine-guard app-cond-thm-names)))
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
-                             :extra-bindings-ok
-                             (,(tailrec-var-u old-fn-name) ,r)
-                             (,(tailrec-var-v old-fn-name) ,nonrec)))
+                   :extra-bindings-ok
+                   (,(tailrec-var-u old$) ,r)
+                   (,(tailrec-var-v old$) ,nonrec)))
                 (domain-guard-instance
                  `(:instance ,domain-guard-thm
-                             :extra-bindings-ok
-                             (,z ,r)))
+                   :extra-bindings-ok
+                   (,z ,r)))
                 (combine-guard-instance-base
                  `(:instance ,combine-guard-thm
-                             :extra-bindings-ok
-                             (,q ,r)
-                             (,r ,base)))
+                   :extra-bindings-ok
+                   (,q ,r)
+                   (,r ,base)))
                 (combine-guard-instance-nonrec
                  `(:instance ,combine-guard-thm
-                             :extra-bindings-ok
-                             (,q ,r)
-                             (,r ,nonrec))))
+                   :extra-bindings-ok
+                   (,q ,r)
+                   (,r ,nonrec))))
              `(("Goal"
                 :in-theory nil
-                :use ((:guard-theorem ,old-fn-name)
+                :use ((:guard-theorem ,old$)
                       ,domain-guard-instance
                       ,domain-of-base-thm
                       ,domain-of-nonrec-thm
@@ -1262,29 +1270,29 @@
                  (cdr (assoc-eq :combine-guard app-cond-thm-names)))
                 (domain-of-nonrec-when-guard-thm
                  (cdr (assoc-eq :domain-of-nonrec-when-guard
-                                app-cond-thm-names)))
+                        app-cond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
-                             :extra-bindings-ok
-                             (,(tailrec-var-u old-fn-name) ,r)
-                             (,(tailrec-var-v old-fn-name) ,nonrec)))
+                   :extra-bindings-ok
+                   (,(tailrec-var-u old$) ,r)
+                   (,(tailrec-var-v old$) ,nonrec)))
                 (domain-guard-instance
                  `(:instance ,domain-guard-thm
-                             :extra-bindings-ok
-                             (,z ,r)))
+                   :extra-bindings-ok
+                   (,z ,r)))
                 (combine-guard-instance-base
                  `(:instance ,combine-guard-thm
-                             :extra-bindings-ok
-                             (,q ,r)
-                             (,r ,base)))
+                   :extra-bindings-ok
+                   (,q ,r)
+                   (,r ,base)))
                 (combine-guard-instance-nonrec
                  `(:instance ,combine-guard-thm
-                             :extra-bindings-ok
-                             (,q ,r)
-                             (,r ,nonrec))))
+                   :extra-bindings-ok
+                   (,q ,r)
+                   (,r ,nonrec))))
              `(("Goal"
                 :in-theory nil
-                :use ((:guard-theorem ,old-fn-name)
+                :use ((:guard-theorem ,old$)
                       ,domain-guard-instance
                       ,domain-of-base-thm
                       ,domain-of-nonrec-when-guard-thm
@@ -1294,34 +1302,34 @@
           (t (impossible))))
        (local-event
         `(local
-          (,macro ,new-fn-name (,@formals)
+          (,macro ,new-name$ (,@formals)
                   (declare (xargs :well-founded-relation ,wfrel
                                   :measure ,measure
                                   :hints ,termination-hints
                                   :guard ,guard
-                                  :verify-guards ,do-verify-guards
-                                  ,@(and do-verify-guards
-                                         (list :guard-hints guard-hints))))
+                                  :verify-guards ,verify-guards$
+                             ,@(and verify-guards$
+                                    (list :guard-hints guard-hints))))
                   ,body)))
        (exported-event
-        `(,macro ,new-fn-name (,@formals)
+        `(,macro ,new-name$ (,@formals)
                  (declare (xargs :well-founded-relation ,wfrel
                                  :measure ,measure
                                  :guard ,guard
-                                 :verify-guards ,do-verify-guards))
+                                 :verify-guards ,verify-guards$))
                  ,body)))
     (mv local-event exported-event formals)))
 
 (define tailrec-new-to-old-intro-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
    (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
    (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (names-to-avoid symbol-listp "Names of other events
                                  (calculated in @(tsee tailrec-event)).")
    (app-cond-thm-names symbol-symbol-alistp
@@ -1377,15 +1385,15 @@
        (formula
         (untranslate (implicate
                       (apply-term* domain$ r)
-                      `(equal ,(apply-term new-fn-name new-fn-formals)
+                      `(equal ,(apply-term new-name$ new-fn-formals)
                               ,(apply-term* (tailrec-combine-op combine q r)
                                             r
-                                            (apply-term old-fn-name
-                                                        (formals old-fn-name
+                                            (apply-term old$
+                                                        (formals old$
                                                                  wrld)))))
                      t wrld))
        (hints
-        (case variant
+        (case variant$
           ((:monoid :assoc)
            (b* ((domain-of-nonrec-thm
                  (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
@@ -1397,32 +1405,32 @@
                  (cdr (assoc-eq :combine-right-identity app-cond-thm-names)))
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
-                             :extra-bindings-ok
-                             (,(tailrec-var-u old-fn-name) ,r)
-                             (,(tailrec-var-v old-fn-name) ,nonrec)))
+                   :extra-bindings-ok
+                   (,(tailrec-var-u old$) ,r)
+                   (,(tailrec-var-v old$) ,nonrec)))
                 (combine-associativity-instance
                  `(:instance ,combine-associativity-thm
-                             :extra-bindings-ok
-                             (,(tailrec-var-u old-fn-name) ,r)
-                             (,(tailrec-var-v old-fn-name) ,nonrec)
-                             (,(tailrec-var-w old-fn-name)
-                              ,(apply-term old-fn-name updates))))
+                   :extra-bindings-ok
+                   (,(tailrec-var-u old$) ,r)
+                   (,(tailrec-var-v old$) ,nonrec)
+                   (,(tailrec-var-w old$)
+                    ,(apply-term old$ updates))))
                 (combine-right-identity-instance?
                  (and combine-right-identity-thm?
                       `(:instance ,combine-right-identity-thm?
-                                  :extra-bindings-ok
-                                  (,(tailrec-id-var-u old-fn-name wrld) ,r))))
+                        :extra-bindings-ok
+                        (,(tailrec-id-var-u old$ wrld) ,r))))
                 (domain-of-old-thm-instance
                  `(:instance ,domain-of-old-thm-name
-                             :extra-bindings-ok
-                             ,@(alist-to-doublets (pairlis$ (formals old-fn-name
-                                                                     wrld)
-                                                            updates)))))
+                   :extra-bindings-ok
+                   ,@(alist-to-doublets (pairlis$ (formals old$
+                                                           wrld)
+                                                  updates)))))
              `(("Goal"
                 :in-theory '(,old-fn-unnorm-name
                              ,new-fn-unnorm-name
-                             (:induction ,new-fn-name))
-                :induct (,new-fn-name ,@new-fn-formals))
+                             (:induction ,new-name$))
+                :induct (,new-name$ ,@new-fn-formals))
                '(:use (,@(and combine-right-identity-thm?
                               (list combine-right-identity-instance?))
                        ,domain-of-nonrec-thm
@@ -1434,30 +1442,30 @@
                  (cdr (assoc-eq :domain-of-combine-uncond app-cond-thm-names)))
                 (combine-associativity-uncond-thm
                  (cdr (assoc-eq :combine-associativity-uncond
-                                app-cond-thm-names)))
+                        app-cond-thm-names)))
                 (combine-right-identity-thm
                  (cdr (assoc-eq :combine-right-identity app-cond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
-                             :extra-bindings-ok
-                             (,(tailrec-var-u old-fn-name) ,r)
-                             (,(tailrec-var-v old-fn-name) ,nonrec)))
+                   :extra-bindings-ok
+                   (,(tailrec-var-u old$) ,r)
+                   (,(tailrec-var-v old$) ,nonrec)))
                 (combine-associativity-uncond-instance
                  `(:instance ,combine-associativity-uncond-thm
-                             :extra-bindings-ok
-                             (,(tailrec-var-u old-fn-name) ,r)
-                             (,(tailrec-var-v old-fn-name) ,nonrec)
-                             (,(tailrec-var-w old-fn-name)
-                              ,(apply-term old-fn-name updates))))
+                   :extra-bindings-ok
+                   (,(tailrec-var-u old$) ,r)
+                   (,(tailrec-var-v old$) ,nonrec)
+                   (,(tailrec-var-w old$)
+                    ,(apply-term old$ updates))))
                 (combine-right-identity-instance
                  `(:instance ,combine-right-identity-thm
-                             :extra-bindings-ok
-                             (,(tailrec-id-var-u old-fn-name wrld) ,r))))
+                   :extra-bindings-ok
+                   (,(tailrec-id-var-u old$ wrld) ,r))))
              `(("Goal"
                 :in-theory '(,old-fn-unnorm-name
                              ,new-fn-unnorm-name
-                             (:induction ,new-fn-name))
-                :induct (,new-fn-name ,@new-fn-formals))
+                             (:induction ,new-name$))
+                :induct (,new-name$ ,@new-fn-formals))
                '(:use (,combine-right-identity-instance
                        ,domain-of-combine-uncond-instance
                        ,combine-associativity-uncond-instance)))))
@@ -1469,7 +1477,7 @@
     (mv event name)))
 
 (define tailrec-alpha-fn-intro-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
    (names-to-avoid symbol-listp "Names already used by preceding events.")
@@ -1493,12 +1501,12 @@
    The name used for @($\\alpha$) is returned, along with the event.
    </p>"
   (b* ((name (fresh-name-in-world-with-$s 'alpha names-to-avoid wrld))
-       (formals (formals old-fn-name wrld))
+       (formals (formals old$ wrld))
        (body `(if ,test (list ,@formals) (,name ,@updates)))
-       (wfrel (well-founded-relation old-fn-name wrld))
-       (measure (measure old-fn-name wrld))
+       (wfrel (well-founded-relation old$ wrld))
+       (measure (measure old$ wrld))
        (termination-hints
-        `(("Goal" :use (:termination-theorem ,old-fn-name) :in-theory nil)))
+        `(("Goal" :use (:termination-theorem ,old$) :in-theory nil)))
        (event `(local
                 (defun ,name ,formals
                   (declare (xargs :well-founded-relation ,wfrel
@@ -1512,7 +1520,7 @@
 
 (define tailrec-alpha-component-terms
   ((alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
-   (old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (wrld plist-worldp))
   :returns (terms "A @(tsee pseudo-term-listp).")
   :verify-guards nil
@@ -1526,7 +1534,7 @@
    The recursion constructs the terms in reverse order,
    with @('i') going from @('n') down to 1, exiting when it reaches 0.
    </p>"
-  (b* ((formals (formals old-fn-name wrld))
+  (b* ((formals (formals old$ wrld))
        (n (len formals)))
     (tailrec-alpha-component-terms-aux n alpha-fn-name formals nil))
 
@@ -1547,7 +1555,7 @@
                                             (cons term terms)))))))
 
 (define tailrec-test-of-alpha-intro-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
    (names-to-avoid symbol-listp "Names already used by preceding events.")
@@ -1577,9 +1585,9 @@
    because it is just a lemma used to prove other theorems.
    </p>"
   (b* ((name (fresh-name-in-world-with-$s 'test-of-alpha names-to-avoid wrld))
-       (formals (formals old-fn-name wrld))
+       (formals (formals old$ wrld))
        (alpha-component-terms (tailrec-alpha-component-terms alpha-fn-name
-                                                             old-fn-name
+                                                             old$
                                                              wrld))
        (formula (subcor-var formals alpha-component-terms test))
        (hints `(("Goal"
@@ -1592,7 +1600,7 @@
     (mv event name)))
 
 (define tailrec-old-guard-of-alpha-intro-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
    (names-to-avoid symbol-listp "Names already used by preceding events.")
    (wrld plist-worldp))
@@ -1624,18 +1632,18 @@
   (b* ((name (fresh-name-in-world-with-$s 'old-guard-of-alpha
                                           names-to-avoid
                                           wrld))
-       (formals (formals old-fn-name wrld))
+       (formals (formals old$ wrld))
        (alpha-component-terms (tailrec-alpha-component-terms alpha-fn-name
-                                                             old-fn-name
+                                                             old$
                                                              wrld))
-       (old-guard (guard old-fn-name nil wrld))
+       (old-guard (guard old$ nil wrld))
        (formula (implicate old-guard
                            (subcor-var
                             formals alpha-component-terms old-guard)))
        (hints `(("Goal"
                  :in-theory '(,alpha-fn-name nth-0-cons nth-add1)
                  :induct (,alpha-fn-name ,@formals))
-                '(:use (:guard-theorem ,old-fn-name))))
+                '(:use (:guard-theorem ,old$))))
        (event `(local (defthm ,name
                         ,formula
                         :rule-classes nil
@@ -1643,7 +1651,7 @@
     (mv event name)))
 
 (define tailrec-domain-of-ground-base-intro-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
    (app-cond-thm-names symbol-symbol-alistp
@@ -1677,9 +1685,9 @@
        (formula (apply-term* domain$ base))
        (domain-of-base-thm
         (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
-       (formals (formals old-fn-name wrld))
+       (formals (formals old$ wrld))
        (alpha-comps (tailrec-alpha-component-terms alpha-fn-name
-                                                   old-fn-name
+                                                   old$
                                                    wrld))
        (hints `(("Goal"
                  :in-theory nil
@@ -1695,7 +1703,7 @@
     (mv event name)))
 
 (define tailrec-combine-left-identity-ground-intro-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
@@ -1731,16 +1739,16 @@
   (b* ((name (fresh-name-in-world-with-$s 'combine-left-identity-ground
                                           names-to-avoid
                                           wrld))
-       (u (tailrec-var-u old-fn-name))
+       (u (tailrec-var-u old$))
        (combine-op (tailrec-combine-op combine q r))
        (formula (implicate (apply-term* domain$ u)
                            `(equal ,(apply-term* combine-op base u)
                                    ,u)))
        (combine-left-identity-thm
         (cdr (assoc-eq :combine-left-identity app-cond-thm-names)))
-       (formals (formals old-fn-name wrld))
+       (formals (formals old$ wrld))
        (alpha-comps (tailrec-alpha-component-terms alpha-fn-name
-                                                   old-fn-name
+                                                   old$
                                                    wrld))
        (hints `(("Goal"
                  :in-theory nil
@@ -1756,7 +1764,7 @@
     (mv event name)))
 
 (define tailrec-base-guard-intro-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
    (test-of-alpha-thm-name
@@ -1784,17 +1792,17 @@
    </p>"
   (b* ((wrld (w state))
        (name (fresh-name-in-world-with-$s 'base-guard names-to-avoid wrld))
-       (formula (implicate (guard old-fn-name nil wrld)
+       (formula (implicate (guard old$ nil wrld)
                            (term-guard-obligation base state)))
-       (formals (formals old-fn-name wrld))
+       (formals (formals old$ wrld))
        (alpha-comps (tailrec-alpha-component-terms alpha-fn-name
-                                                   old-fn-name
+                                                   old$
                                                    wrld))
        (hints `(("Goal"
                  :in-theory nil
                  :use (,old-guard-of-alpha-thm-name
                        ,test-of-alpha-thm-name
-                       (:instance (:guard-theorem ,old-fn-name)
+                       (:instance (:guard-theorem ,old$)
                         :extra-bindings-ok
                         ,@(alist-to-doublets (pairlis$ formals
                                                        alpha-comps)))))))
@@ -1805,14 +1813,14 @@
     (mv event name)))
 
 (define tailrec-old-as-new
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
+   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (new-fn-formals symbol-listp
                    "Result of @(tsee tailrec-new-fn-intro-events).")
    (wrld plist-worldp))
@@ -1833,27 +1841,27 @@
    As explained in the documentation,
    for now it uses @('base<x1,...,xn>') instead of the @($\\beta$) function.
    </p>"
-  (untranslate (case variant
+  (untranslate (case variant$
                  (:assoc
                   `(if ,test
                        ,base
-                     ,(subcor-var (cons r (formals old-fn-name wrld))
+                     ,(subcor-var (cons r (formals old$ wrld))
                                   (cons nonrec updates)
-                                  (apply-term new-fn-name new-fn-formals))))
+                                  (apply-term new-name$ new-fn-formals))))
                  ((:monoid :monoid-alt)
-                  (subst-var base r (apply-term new-fn-name new-fn-formals)))
+                  (subst-var base r (apply-term new-name$ new-fn-formals)))
                  (t (impossible)))
                nil wrld))
 
 (define tailrec-old-to-new-intro-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
+   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (names-to-avoid symbol-listp "Names of other events
                                  (calculated in @(tsee tailrec-event)).")
    (app-cond-thm-names symbol-symbol-alistp
@@ -1902,23 +1910,23 @@
    instead of just enabling the definition of old function.
    </p>"
   (b* ((name (fresh-name-in-world-with-$s 'old-to-new names-to-avoid wrld))
-       (formula `(equal ,(apply-term old-fn-name (formals old-fn-name wrld))
+       (formula `(equal ,(apply-term old$ (formals old$ wrld))
                         ,(tailrec-old-as-new
-                          old-fn-name test base nonrec updates r variant
-                          new-fn-name new-fn-formals wrld)))
+                          old$ test base nonrec updates r variant$
+                          new-name$ new-fn-formals wrld)))
        (hints
-        (case variant
+        (case variant$
           ((:monoid :monoid-alt)
            (b* ((combine-left-identity-ground-instance
                  `(:instance ,combine-left-identity-ground-thm-name
-                             :extra-bindings-ok
-                             (,(tailrec-id-var-u old-fn-name wrld)
-                              ,(apply-term old-fn-name (formals old-fn-name
-                                                                wrld)))))
+                   :extra-bindings-ok
+                   (,(tailrec-id-var-u old$ wrld)
+                    ,(apply-term old$ (formals old$
+                                               wrld)))))
                 (new-to-old-thm-instance
                  `(:instance ,new-to-old-thm-name
-                             :extra-bindings-ok
-                             (,r ,base))))
+                   :extra-bindings-ok
+                   (,r ,base))))
              `(("Goal"
                 :in-theory nil
                 :use (,domain-of-ground-base-thm-name
@@ -1926,17 +1934,17 @@
                       ,new-to-old-thm-instance
                       ,combine-left-identity-ground-instance)))))
           (:assoc
-           (b* ((formals (formals old-fn-name wrld))
+           (b* ((formals (formals old$ wrld))
                 (domain-of-nonrec-thm
                  (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
                 (new-to-old-thm-instance
                  `(:instance ,new-to-old-thm-name
-                             :extra-bindings-ok
-                             (,r ,nonrec)
-                             ,@(alist-to-doublets (pairlis$ formals updates)))))
+                   :extra-bindings-ok
+                   (,r ,nonrec)
+                   ,@(alist-to-doublets (pairlis$ formals updates)))))
              `(("Goal"
                 :in-theory nil
-                :expand ((,old-fn-name ,@formals))
+                :expand ((,old$ ,@formals))
                 :use (,domain-of-nonrec-thm
                       ,new-to-old-thm-instance)))))
           (t (impossible))))
@@ -1947,18 +1955,18 @@
     (mv event name)))
 
 (define tailrec-wrapper-fn-intro-events
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
-   (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-enable booleanp "Input to the trasformation, after validation.")
-   (make-non-executable booleanp "Result of @(tsee tailrec-check-inputs).")
-   (do-verify-guards booleanp "Result of @(tsee tailrec-check-inputs).")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
+   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
+   (wrapper-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
+   (wrapper-enable$ booleanp "Input to the trasformation, after validation.")
+   (non-executable$ booleanp "Result of @(tsee tailrec-check-inputs).")
+   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs).")
    (app-cond-thm-names symbol-symbol-alistp
                        "Map from the names of the applicability conditions
                         to the corresponding theorems
@@ -2006,17 +2014,17 @@
    (i.e. when the variant is @(':monoid') or @(':monoid-alt'))
    follows the proof for the special case of a ground base term.
    </p>"
-  (b* ((macro (function-intro-macro wrapper-enable make-non-executable))
-       (formals (formals old-fn-name wrld))
-       (body (tailrec-old-as-new old-fn-name test base nonrec updates r variant
-                                 new-fn-name new-fn-formals wrld))
-       (guard (untranslate (guard old-fn-name nil wrld) t wrld))
+  (b* ((macro (function-intro-macro wrapper-enable$ non-executable$))
+       (formals (formals old$ wrld))
+       (body (tailrec-old-as-new old$ test base nonrec updates r variant$
+                                 new-name$ new-fn-formals wrld))
+       (guard (untranslate (guard old$ nil wrld) t wrld))
        (guard-hints
-        (case variant
+        (case variant$
           ((:monoid :monoid-alt)
            `(("Goal"
               :in-theory nil
-              :use ((:guard-theorem ,old-fn-name)
+              :use ((:guard-theorem ,old$)
                     ,domain-of-ground-base-thm-name
                     ,base-guard-thm-name))))
           (:assoc
@@ -2024,29 +2032,29 @@
                  (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names))))
              `(("Goal"
                 :in-theory nil
-                :use ((:guard-theorem ,old-fn-name)
+                :use ((:guard-theorem ,old$)
                       ,domain-of-nonrec-thm)))))
           (t (impossible))))
        (local-event
         `(local
-          (,macro ,wrapper-fn-name (,@formals)
+          (,macro ,wrapper-name$ (,@formals)
                   (declare (xargs :guard ,guard
-                                  :verify-guards ,do-verify-guards
-                                  ,@(and do-verify-guards
-                                         (list :guard-hints guard-hints))))
+                                  :verify-guards ,verify-guards$
+                             ,@(and verify-guards$
+                                    (list :guard-hints guard-hints))))
                   ,body)))
        (exported-event
-        `(,macro ,wrapper-fn-name (,@formals)
+        `(,macro ,wrapper-name$ (,@formals)
                  (declare (xargs :guard ,guard
-                                 :verify-guards ,do-verify-guards))
+                                 :verify-guards ,verify-guards$))
                  ,body)))
     (mv local-event exported-event)))
 
 (define tailrec-old-to-wrapper-intro-events
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
-   (old-to-wrapper-thm-name symbolp "Result of @(tsee tailrec-check-inputs).")
-   (thm-enable booleanp "Input to the trasformation, after validation.")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
+   (wrapper-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
+   (thm-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
+   (thm-enable$ booleanp "Input to the trasformation, after validation.")
    (old-to-new-thm-name symbolp
                         "Result of @(tsee tailrec-old-to-new-intro-event).")
    (wrapper-fn-unnorm-name symbolp "Name of the theorem that installs
@@ -2085,23 +2093,23 @@
    expanding the (non-normalized) definition of the wrapper function
    and using the theorem that relates the old function to the new function.
    </p>"
-  (b* ((macro (theorem-intro-macro thm-enable))
-       (formals (formals old-fn-name wrld))
-       (formula (untranslate `(equal ,(apply-term old-fn-name formals)
-                                     ,(apply-term wrapper-fn-name formals))
+  (b* ((macro (theorem-intro-macro thm-enable$))
+       (formals (formals old$ wrld))
+       (formula (untranslate `(equal ,(apply-term old$ formals)
+                                     ,(apply-term wrapper-name$ formals))
                              t wrld))
        (hints `(("Goal"
                  :in-theory '(,wrapper-fn-unnorm-name)
                  :use ,old-to-new-thm-name)))
-       (local-event `(local (,macro ,old-to-wrapper-thm-name
+       (local-event `(local (,macro ,thm-name$
                                     ,formula
                                     :hints ,hints)))
-       (exported-event `(,macro ,old-to-wrapper-thm-name
+       (exported-event `(,macro ,thm-name$
                                 ,formula)))
     (mv local-event exported-event)))
 
 (define tailrec-event
-  ((old-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
+  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
    (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
@@ -2109,19 +2117,19 @@
    (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
    (q symbolp "Result of @(tsee tailrec-check-inputs).")
    (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant tailrec-variantp "Input to the trasformation, after validation.")
+   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
    (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (new-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
-   (new-fn-enable booleanp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-fn-name symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-enable booleanp "Input to the trasformation, after validation.")
-   (old-to-wrapper-thm-name symbolp "Result of @(tsee tailrec-check-inputs).")
-   (thm-enable booleanp "Input to the trasformation, after validation.")
-   (make-non-executable booleanp "Result of @(tsee tailrec-check-inputs).")
-   (do-verify-guards booleanp "Result of @(tsee tailrec-check-inputs).")
-   (hints-alist symbol-alistp "Result of @(tsee tailrec-check-inputs).")
+   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
+   (new-enable$ booleanp "Result of @(tsee tailrec-check-inputs).")
+   (wrapper-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
+   (wrapper-enable$ booleanp "Input to the trasformation, after validation.")
+   (thm-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
+   (thm-enable$ booleanp "Input to the trasformation, after validation.")
+   (non-executable$ booleanp "Result of @(tsee tailrec-check-inputs).")
+   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs).")
+   (hints$ symbol-alistp "Result of @(tsee tailrec-check-inputs).")
    (print$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (show-only booleanp "Input to the transformation, after validation.")
+   (show-only$ booleanp "Input to the transformation, after validation.")
    (app-conds symbol-alistp "Result of @(tsee tailrec-app-conds).")
    (call pseudo-event-formp "Call to the transformation.")
    state)
@@ -2217,12 +2225,12 @@
    and threaded through the event-generating code.
    </p>"
   (b* ((wrld (w state))
-       (names-to-avoid (list new-fn-name
-                             wrapper-fn-name
-                             old-to-wrapper-thm-name))
+       (names-to-avoid (list new-name$
+                             wrapper-name$
+                             thm-name$))
        ((mv app-cond-thm-events
             app-cond-thm-names) (named-formulas-to-thm-events app-conds
-                                                              hints-alist
+                                                              hints$
                                                               nil
                                                               t
                                                               t
@@ -2231,15 +2239,15 @@
        (names-to-avoid (append names-to-avoid
                                (strip-cdrs app-cond-thm-names)))
        ((mv old-fn-unnorm-event
-            old-fn-unnorm-name) (install-not-norm-event old-fn-name
+            old-fn-unnorm-name) (install-not-norm-event old$
                                                         t
                                                         names-to-avoid
                                                         wrld))
        (names-to-avoid (rcons old-fn-unnorm-name names-to-avoid))
        ((mv domain-of-old-thm-event
             domain-of-old-thm-name) (tailrec-domain-of-old-intro-event
-                                     old-fn-name test nonrec updates
-                                     variant domain$
+                                     old$ test nonrec updates
+                                     variant$ domain$
                                      names-to-avoid
                                      app-cond-thm-names
                                      old-fn-unnorm-name
@@ -2248,24 +2256,24 @@
        ((mv new-fn-local-event
             new-fn-exported-event
             new-fn-formals) (tailrec-new-fn-intro-events
-                             old-fn-name
+                             old$
                              test base nonrec updates combine q r
-                             variant domain$
-                             new-fn-name new-fn-enable
-                             make-non-executable do-verify-guards
+                             variant$ domain$
+                             new-name$ new-enable$
+                             non-executable$ verify-guards$
                              app-cond-thm-names
                              wrld))
        ((mv new-fn-unnorm-event
-            new-fn-unnorm-name) (install-not-norm-event new-fn-name
+            new-fn-unnorm-name) (install-not-norm-event new-name$
                                                         t
                                                         names-to-avoid
                                                         wrld))
        (names-to-avoid (rcons new-fn-unnorm-name names-to-avoid))
        ((mv new-to-old-thm-event
             new-to-old-thm-name) (tailrec-new-to-old-intro-event
-                                  old-fn-name nonrec updates combine q r
-                                  variant domain$
-                                  new-fn-name
+                                  old$ nonrec updates combine q r
+                                  variant$ domain$
+                                  new-name$
                                   names-to-avoid
                                   app-cond-thm-names
                                   old-fn-unnorm-name
@@ -2274,11 +2282,11 @@
                                   new-fn-unnorm-name
                                   wrld))
        (names-to-avoid (rcons new-to-old-thm-name names-to-avoid))
-       (gen-alpha (member-eq variant '(:monoid :monoid-alt)))
+       (gen-alpha (member-eq variant$ '(:monoid :monoid-alt)))
        ((mv alpha-fn-event?
             alpha-fn-name?) (if gen-alpha
                                 (tailrec-alpha-fn-intro-event
-                                 old-fn-name test updates
+                                 old$ test updates
                                  names-to-avoid wrld)
                               (mv nil nil)))
        (names-to-avoid (if gen-alpha
@@ -2287,7 +2295,7 @@
        ((mv test-of-alpha-thm-event?
             test-of-alpha-thm-name?) (if gen-alpha
                                          (tailrec-test-of-alpha-intro-event
-                                          old-fn-name test
+                                          old$ test
                                           alpha-fn-name?
                                           names-to-avoid wrld)
                                        (mv nil nil)))
@@ -2297,19 +2305,19 @@
        ((mv old-guard-of-alpha-thm-event?
             old-guard-of-alpha-thm-name?)
         (if (and gen-alpha
-                 do-verify-guards)
+                 verify-guards$)
             (tailrec-old-guard-of-alpha-intro-event
-             old-fn-name alpha-fn-name? names-to-avoid wrld)
+             old$ alpha-fn-name? names-to-avoid wrld)
           (mv nil nil)))
        (names-to-avoid (if (and gen-alpha
-                                do-verify-guards)
+                                verify-guards$)
                            (rcons old-guard-of-alpha-thm-name? names-to-avoid)
                          names-to-avoid))
        ((mv domain-of-ground-base-thm-event?
             domain-of-ground-base-thm-name?)
         (if gen-alpha
             (tailrec-domain-of-ground-base-intro-event
-             old-fn-name base domain$ app-cond-thm-names
+             old$ base domain$ app-cond-thm-names
              alpha-fn-name? test-of-alpha-thm-name?
              names-to-avoid wrld)
           (mv nil nil)))
@@ -2321,7 +2329,7 @@
             combine-left-identity-ground-thm-name?)
         (if gen-alpha
             (tailrec-combine-left-identity-ground-intro-event
-             old-fn-name base combine q r domain$ app-cond-thm-names
+             old$ base combine q r domain$ app-cond-thm-names
              alpha-fn-name? test-of-alpha-thm-name?
              names-to-avoid wrld)
           (mv nil nil)))
@@ -2331,22 +2339,22 @@
                          names-to-avoid))
        ((mv base-guard-thm-event?
             base-guard-thm-name?) (if (and gen-alpha
-                                           do-verify-guards)
+                                           verify-guards$)
                                       (tailrec-base-guard-intro-event
-                                       old-fn-name base
+                                       old$ base
                                        alpha-fn-name? test-of-alpha-thm-name?
                                        old-guard-of-alpha-thm-name?
                                        names-to-avoid state)
                                     (mv nil nil)))
        (names-to-avoid (if (and gen-alpha
-                                do-verify-guards)
+                                verify-guards$)
                            (rcons base-guard-thm-name? names-to-avoid)
                          names-to-avoid))
        ((mv old-to-new-thm-event
             old-to-new-thm-name) (tailrec-old-to-new-intro-event
-                                  old-fn-name test base nonrec updates r
-                                  variant
-                                  new-fn-name
+                                  old$ test base nonrec updates r
+                                  variant$
+                                  new-name$
                                   names-to-avoid
                                   app-cond-thm-names
                                   domain-of-old-thm-name
@@ -2358,36 +2366,36 @@
        (names-to-avoid (rcons old-to-new-thm-name names-to-avoid))
        ((mv wrapper-fn-local-event
             wrapper-fn-exported-event) (tailrec-wrapper-fn-intro-events
-                                        old-fn-name
+                                        old$
                                         test base nonrec updates r
-                                        variant
-                                        new-fn-name
-                                        wrapper-fn-name wrapper-enable
-                                        make-non-executable do-verify-guards
+                                        variant$
+                                        new-name$
+                                        wrapper-name$ wrapper-enable$
+                                        non-executable$ verify-guards$
                                         app-cond-thm-names
                                         domain-of-ground-base-thm-name?
                                         base-guard-thm-name?
                                         new-fn-formals
                                         wrld))
        ((mv wrapper-fn-unnorm-event
-            wrapper-fn-unnorm-name) (install-not-norm-event wrapper-fn-name
+            wrapper-fn-unnorm-name) (install-not-norm-event wrapper-name$
                                                             t
                                                             names-to-avoid
                                                             wrld))
        ((mv
          old-to-wrapper-thm-local-event
          old-to-wrapper-thm-exported-event) (tailrec-old-to-wrapper-intro-events
-                                             old-fn-name
-                                             wrapper-fn-name
-                                             old-to-wrapper-thm-name
-                                             thm-enable
+                                             old$
+                                             wrapper-name$
+                                             thm-name$
+                                             thm-enable$
                                              old-to-new-thm-name
                                              wrapper-fn-unnorm-name
                                              wrld))
        (new-fn-numbered-name-event `(add-numbered-name-in-use
-                                     ,new-fn-name))
+                                     ,new-name$))
        (wrapper-fn-numbered-name-event `(add-numbered-name-in-use
-                                         ,wrapper-fn-name))
+                                         ,wrapper-name$))
        (encapsulate-events
         `((logic)
           (set-ignore-ok t)
@@ -2405,14 +2413,14 @@
           ,@(and gen-alpha
                  (list test-of-alpha-thm-event?))
           ,@(and gen-alpha
-                 do-verify-guards
+                 verify-guards$
                  (list old-guard-of-alpha-thm-event?))
           ,@(and gen-alpha
                  (list domain-of-ground-base-thm-event?))
           ,@(and gen-alpha
                  (list combine-left-identity-ground-thm-event?))
           ,@(and gen-alpha
-                 do-verify-guards
+                 verify-guards$
                  (list base-guard-thm-event?))
           ,old-to-new-thm-event
           ,wrapper-fn-local-event
@@ -2425,7 +2433,7 @@
           ,wrapper-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
        (expand-output-p (if (member-eq :expand print$) t nil))
-       ((when show-only)
+       ((when show-only$)
         (if expand-output-p
             (cw "~%~x0~|" encapsulate)
           (cw "~x0~|" encapsulate))
@@ -2488,7 +2496,7 @@
         (b* (((run-when show-only) (cw "~x0~|" encapsulate?)))
           (cw "~%The transformation ~x0 is redundant.~%" call)
           (value '(value-triple :invisible))))
-       ((er (list old-fn-name
+       ((er (list old$
                   test
                   base
                   nonrec
@@ -2497,13 +2505,13 @@
                   q
                   r
                   domain$
-                  new-fn-name
-                  new-fn-enable
-                  wrapper-fn-name
-                  old-to-wrapper-thm-name
-                  make-non-executable
-                  do-verify-guards
-                  hints-alist
+                  new-name$
+                  new-enable$
+                  wrapper-name$
+                  thm-name$
+                  non-executable$
+                  verify-guards$
+                  hints$
                   print$)) (tailrec-check-inputs old
                                                  variant
                                                  domain
@@ -2520,27 +2528,26 @@
                                                  show-only
                                                  ctx state))
        (app-conds (tailrec-app-conds
-                   old-fn-name test base nonrec combine q r variant domain$
-                   do-verify-guards
+                   old$ test base nonrec combine q r variant domain$
+                   verify-guards$
                    state))
        ((er &) (ensure-named-formulas app-conds
-                                      hints-alist
+                                      hints$
                                       (if (member-eq :expand print$) t nil)
                                       t nil ctx state))
        (event (tailrec-event
-               old-fn-name test base nonrec updates combine q r
+               old$ test base nonrec updates combine q r
                variant domain$
-               new-fn-name new-fn-enable
-               wrapper-fn-name wrapper-enable
-               old-to-wrapper-thm-name thm-enable
-               make-non-executable do-verify-guards
-               hints-alist print$ show-only app-conds
+               new-name$ new-enable$
+               wrapper-name$ wrapper-enable
+               thm-name$ thm-enable
+               non-executable$ verify-guards$
+               hints$ print$ show-only app-conds
                call state)))
     (value event)))
 
-(defsection tailrec-implementation
-  :parents (implementation tailrec)
-  :short "Implementation of the tail recursion transformation."
+(defsection tailrec-macro-definition
+  :short "Definition of the @(tsee tailrec) macro."
   :long
   "<p>
    Submit the event form generated by @(tsee tailrec-fn),.

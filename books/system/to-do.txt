@@ -21,6 +21,16 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Perhaps eliminate either directory-of-absolute-pathname or get-directory-of-file.}}
+
+These two source functions seem to do roughly the same thing, though
+one is more careful.  Perhaps they could be merged into a single
+function, which might have a flag argument specifying whether or not
+to check the filename argument and cause an error if the argument
+isn't appropriate.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Strengthen state-p so that channel info has file-clocks that don't exceed file-clock.}}
 
 [Note that duplicate-free open channel lists probably also needs to be

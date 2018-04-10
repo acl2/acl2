@@ -137,8 +137,9 @@
                (ipasir (ipasir::ipasir-add-clauses ipasir new-clauses)))
             (mv sat-lits ipasir)))
          (lit (mk-lit id 0))
-         (supergate (lit-collect-supergate
-                     lit t use-muxes nil aignet-refcounts aignet))
+         ((mv supergate &)
+          (lit-collect-supergate
+           lit t use-muxes 1000 nil aignet-refcounts aignet))
          ((when (member 0 supergate))
           ;; one of the fanins is const 0, so the node is const 0
           (b* ((sat-lits (sat-add-aignet-lit lit sat-lits aignet))

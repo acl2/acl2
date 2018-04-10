@@ -466,7 +466,17 @@
 ; We extend alist in place in order to streamline the ultimate application of
 ; sublis-expr.
 
-            (mv var (extend-gen-alist1 sterm var alist)))
+            (cond ((mv-marker-type-p sterm)
+
+; If sterm represents multiple values, then we do not want to generate a
+; binding of the form (var sterm), since that would be illegal; and even if it
+; were made legal, ultimately we would be substituting a variable, var, where a
+; multiple-value expression, sterm, formerly occurred -- which would likely
+; generate a syntactic error in the ultimate definition.
+
+                   (mv nil alist))
+                  (t
+                   (mv var (extend-gen-alist1 sterm var alist)))))
            (t (mv (if (dumb-occur (car old) sterm)
                       (subst-expr var (car old) sterm)
                     nil)
@@ -836,7 +846,7 @@
 
 (mutual-recursion
 
-(defun weak-one-way-unify (tterm sterm new-formals old-formals)
+(defun weak-one-way-unify (tterm sterm new-formals old-formals exec-p wrld)
 
 ; See the Essay on Handling of Lambda Applications by Directed-untranslate.
 
@@ -877,12 +887,12 @@
 
   (let ((alist (pairlis-x1 :? new-formals)))
     (mv-let (sterm? alist)
-      (weak-one-way-unify-rec tterm sterm alist)
+      (weak-one-way-unify-rec tterm sterm alist exec-p wrld)
       (let ((sterm (or sterm? sterm)))
         (mv sterm
             (bind-?-final alist (all-vars sterm) old-formals))))))
 
-(defun weak-one-way-unify-rec (tterm sterm alist)
+(defun weak-one-way-unify-rec (tterm sterm alist exec-p wrld)
 
 ; This function is just as described in weak-one-way-unify, with two
 ; exceptions.  First, the present function makes no attempt to add pairs using
@@ -897,7 +907,7 @@
          (not (and (nvariablep tterm)
                    (eq (ffn-symb tterm) 'mv-list))))
     (mv-let (new-sterm alist)
-      (weak-one-way-unify-rec tterm (fargn sterm 2) alist)
+      (weak-one-way-unify-rec tterm (fargn sterm 2) alist exec-p wrld)
       (mv (and new-sterm (fcons-term* 'mv-list (fargn sterm 1) new-sterm))
           alist)))
    ((variablep tterm)
@@ -921,13 +931,13 @@
     (let* ((lambdafied-sterm
             (and (lambda-applicationp tterm)
                  (not (lambda-applicationp sterm))
-                 (lambdafy-rec tterm sterm)))
+                 (lambdafy-rec tterm sterm exec-p wrld)))
            (sterm (or lambdafied-sterm
                       (adjust-sterm-for-tterm tterm sterm)
                       sterm)))
       (mv-let
         (new-args new-alist)
-        (weak-one-way-unify-lst (fargs tterm) (fargs sterm) alist)
+        (weak-one-way-unify-lst (fargs tterm) (fargs sterm) alist exec-p wrld)
         (let ((new-sterm?
                (and (or lambdafied-sterm new-args)
                     (fcons-term (ffn-symb sterm)
@@ -935,22 +945,22 @@
                                     (fargs sterm))))))
           (mv new-sterm? new-alist)))))))
 
-(defun weak-one-way-unify-lst (tterm-lst sterm-lst alist)
+(defun weak-one-way-unify-lst (tterm-lst sterm-lst alist exec-p wrld)
   (cond ((equal (length tterm-lst)
                 (length sterm-lst))
-         (weak-one-way-unify-lst-rec tterm-lst sterm-lst alist))
+         (weak-one-way-unify-lst-rec tterm-lst sterm-lst alist exec-p wrld))
         (t (mv nil alist))))
 
-(defun weak-one-way-unify-lst-rec (tterm-lst sterm-lst alist)
+(defun weak-one-way-unify-lst-rec (tterm-lst sterm-lst alist exec-p wrld)
   (cond ((endp sterm-lst) (mv nil alist))
         (t (mv-let (new-sterm alist)
              (weak-one-way-unify-rec (car tterm-lst)
                                      (car sterm-lst)
-                                     alist)
+                                     alist exec-p wrld)
              (mv-let (new-sterm-lst alist)
                (weak-one-way-unify-lst-rec (cdr tterm-lst)
                                            (cdr sterm-lst)
-                                           alist)
+                                           alist exec-p wrld)
                (mv (cond (new-sterm
                           (cons new-sterm
                                 (or new-sterm-lst
@@ -961,7 +971,7 @@
                          (t nil))
                    alist))))))
 
-(defun lambdafy-rec (tterm sterm)
+(defun lambdafy-rec (tterm sterm exec-p wrld)
 
 ; See the Essay on Handling of Lambda Applications by Directed-untranslate.
 
@@ -995,13 +1005,16 @@
                   (not (some-var-dumb-occur f1 sterm))
                   (let* ((gen-sterm (sublis-expr (pairlis$ a1 f1) sterm))
                          (lambdafied-sterm
-                          (lambdafy-rec body gen-sterm))
+                          (lambdafy-rec body gen-sterm exec-p wrld))
                          (extra-vars ; to create a proper lambda application
                           (set-difference-eq (all-vars lambdafied-sterm)
                                              formals)))
                     `((lambda ,(append? formals extra-vars)
                         ,lambdafied-sterm)
-                      ,@(append? actuals extra-vars)))))))
+                      ,@(append? (if exec-p
+                                     (remake-executable-lst actuals wrld)
+                                   actuals)
+                                 extra-vars)))))))
         (let* ((tfn (ffn-symb tterm))
                (old-tformals (lambda-formals tfn))
                (tfn-body (lambda-body tfn)))
@@ -1013,7 +1026,9 @@
               (weak-one-way-unify new-tbody
                                   sterm
                                   new-tformals
-                                  old-tformals)
+                                  old-tformals
+                                  exec-p
+                                  wrld)
 
 ; We must basically ignore tterm at this point.  Its body helped us to
 ; generalize sterm to new-sterm and record that generalization in gen-alist.
@@ -1039,9 +1054,13 @@
 
                   (lambdafy-restore old-tformals new-tformals new-body)
                   (fcons-term lam
-                              (append? new-args new-extra-vars)))))))))))
+                              (append?
+                               (if exec-p
+                                   (remake-executable-lst new-args wrld)
+                                 new-args)
+                               new-extra-vars)))))))))))
 
-(defun lambdafy (tterm sterm)
+(defun lambdafy (tterm sterm exec-p wrld)
   (let ((tterm
 
 ; We expect that, for example, a call of member in (the user-level term that
@@ -1057,7 +1076,7 @@
 ;                    (return-last 'progn
 ;                                 (member-eql-exec$guard-check x l)
 ;                                 (member-equal x l))))
-;     x (fix-true-listp lst))
+;     x (fix-true-listp lst) nil (w state))
 ;   '(member-equal x lst))
 
 ; Without the call of remove-guard-holders just below, the result is as
@@ -1070,7 +1089,7 @@
 ; in particular, directed-untranslate-rec.
 
          (remove-guard-holders tterm)))
-    (lambdafy-rec tterm sterm)))
+    (lambdafy-rec tterm sterm exec-p wrld)))
 )
 
 (defun extend-let (uterm tterm)
@@ -1085,6 +1104,43 @@
                        ,@(cddr uterm)))
                    (t uterm)))))
 
+(defun drop-unused-formals-1 (formals actuals unused-vars)
+  (cond ((endp formals)
+         (assert$ (endp actuals) (mv nil nil)))
+        ((member-eq (car formals) unused-vars)
+         (drop-unused-formals-1 (cdr formals) (cdr actuals) unused-vars))
+        (t (mv-let (f2 a2)
+             (drop-unused-formals-1 (cdr formals) (cdr actuals) unused-vars)
+             (mv (cons (car formals) f2)
+                 (cons (car actuals) a2))))))
+
+(mutual-recursion
+
+(defun drop-unused-formals (term)
+  (cond ((or (variablep term)
+             (fquotep term))
+         term)
+        ((flambdap (ffn-symb term)) ; ((lambda formals body) . actuals)
+         (let* ((lam (ffn-symb term))
+                (formals (lambda-formals lam))
+                (body (drop-unused-formals (lambda-body lam)))
+                (unused-vars (set-difference-eq formals (all-vars body)))
+                (actuals (fargs term)))
+           (mv-let (formals2 actuals2)
+             (cond ((null unused-vars) ; optimization
+                    (mv formals actuals))
+                   (t (drop-unused-formals-1 formals actuals unused-vars)))
+             (fcons-term (make-lambda formals2 body)
+                         actuals2))))
+        (t (fcons-term (ffn-symb term)
+                       (drop-unused-formals-lst (fargs term))))))
+
+(defun drop-unused-formals-lst (x)
+  (cond ((endp x) nil)
+        (t (cons (drop-unused-formals (car x))
+                 (drop-unused-formals-lst (cdr x))))))
+)
+
 (defun du-untranslate (term iff-flg wrld)
 
 ; This version of untranslate removes empty let bindings.  At one time during
@@ -1092,7 +1148,8 @@
 ; that's no longer necessary, it seems harmless to redress that grievance in
 ; case this ever comes up.
 
-  (let ((ans (untranslate term iff-flg wrld)))
+  (let ((ans (remove-mv-marker-from-untranslated-term
+              (untranslate (drop-unused-formals term) iff-flg wrld))))
     (case-match ans
       (('let 'nil body)
        body)
@@ -1202,10 +1259,18 @@
 ; (nthp 1 '(cadr x) x).
 
   (declare (xargs :guard (natp n)))
-  (cond ((and (true-listp xn)
+  (cond ((and (true-listp xn) ; case (DU-NTHP n ([MV-]NTH n MV) MV)
               (member-eq (car xn) '(nth mv-nth))
               (eql (cadr xn) n)
               (equal (caddr xn) x))
+         t)
+        ((and (true-listp xn) ; case (DU-NTHP n ([MV-]NTH n (MV-LIST _ MV)) MV)
+              (member-eq (car xn) '(nth mv-nth))
+              (eql (cadr xn) n)
+              (let ((tmp (caddr xn)))
+                (case-match tmp
+                  (('mv-list & !x) t)
+                  (& nil))))
          t)
         ((and (consp xn)
               (consp (cdr xn))
@@ -1321,14 +1386,21 @@
 ;             (APPEND X Y)))
 ;   ACL2 !>
 
+; A subtlety, noticed by Stephen Westfold and incorporated into
+; directed-untranslate-tests.lisp, is that the free variables bound with mv in
+; tterm might not appear in the same order as in the translation of the
+; modified uterm, unless we are careful.  So, we are careful!
+
   (or (case-match uterm
         (('mv-let vars mv-let-body . rest)
          (case-match tterm
-           ((('lambda (mv-var . &)
+           ((('lambda (mv-var . other-vars)
                (('lambda lvars &) . &))
-             . &)
+             & . other-vars)
             (and (equal vars (take (length vars) lvars))
-                 `(let ((,mv-var ,mv-let-body))
+                 `(let ((,mv-var ,mv-let-body)
+                        ,@(pairlis$ other-vars
+                                    (pairlis$ other-vars nil)))
                     (let ,(make-mv-nths vars mv-var 0)
                       ,@(butlast rest 1)
                       ,(car (last rest)))))))))
@@ -1338,7 +1410,7 @@
 
 (mutual-recursion
 
-(defun directed-untranslate-rec (uterm tterm sterm iff-flg lflg wrld)
+(defun directed-untranslate-rec (uterm tterm sterm iff-flg lflg exec-p wrld)
 
 ; Tterm is the translation of uterm (as may be checked by check-du-inv).  We
 ; return a form whose translation, with respect to iff-flg, is provably equal
@@ -1347,6 +1419,9 @@
 
 ; When lflg is true, we allow ourselves to modify sterm to match the lambda
 ; applictions in tterm.
+
+; When exec-p is true we assume that sterm has already been made executable
+; (with make-executable), and we try to produce an executable result.
 
   (check-du-inv
    uterm tterm wrld
@@ -1365,10 +1440,18 @@
          (fquotep tterm)
          (atom uterm))
      (du-untranslate sterm iff-flg wrld))
+    ((eq (ffn-symb sterm) 'mv-marker)
+     (let* ((ans (directed-untranslate-rec uterm tterm
+                                           (fargn sterm 2)
+                                           iff-flg lflg exec-p wrld))
+            (n (du-untranslate (fargn sterm 1) nil wrld))
+            (args (mv-marker-args n ans)))
+       (cond (args (cons 'mv args))
+             (t ans))))
     ((eq (ffn-symb sterm) 'mv-list)
      (let ((ans (directed-untranslate-rec uterm tterm
                                           (fargn sterm 2)
-                                          iff-flg lflg wrld))
+                                          iff-flg lflg exec-p wrld))
            (n (du-untranslate (fargn sterm 1) nil wrld)))
        (list 'mv-list n ans)))
     ((and (eq (ffn-symb tterm) 'return-last)
@@ -1376,22 +1459,22 @@
           (case-match uterm
             (('prog2$ & uterm2)
              (directed-untranslate-rec
-              uterm2 (fargn tterm 3) sterm iff-flg lflg wrld)))))
+              uterm2 (fargn tterm 3) sterm iff-flg lflg exec-p wrld)))))
     ((and (consp uterm) (eq (car uterm) 'mv-let))
      (let* ((uterm (expand-mv-let uterm tterm))
             (ans (directed-untranslate-rec uterm tterm sterm iff-flg lflg
-                                           wrld)))
+                                           exec-p wrld)))
        (du-make-mv-let ans wrld)))
     ((and (consp uterm) (eq (car uterm) 'let*))
      (case-match uterm
        (('let* () . &)
         (directed-untranslate-rec
          (car (last uterm))
-         tterm sterm iff-flg lflg wrld))
+         tterm sterm iff-flg lflg exec-p wrld))
        (('let* ((& &)) . &)
         (let ((x (directed-untranslate-rec
                   (cons 'let (cdr uterm))
-                  tterm sterm iff-flg lflg wrld)))
+                  tterm sterm iff-flg lflg exec-p wrld)))
           (case-match x
             (('let ((& &)) . &)
              (cons 'let* (cdr x)))
@@ -1402,7 +1485,7 @@
                      (let* ,bindings
 ; Throw away declarations.
                        ,(car (last rest))))
-                  tterm sterm iff-flg lflg wrld)))
+                  tterm sterm iff-flg lflg exec-p wrld)))
           (case-match x
             (('let ((var2 val2))
                ('let* bindings2 . rest2))
@@ -1462,11 +1545,17 @@
                                                       tformals
                                                       sargs-main))
                        (args (directed-untranslate-lst
-                              uactuals tactuals sactuals nil lflg wrld))
+                              uactuals
+                              tactuals
+                              (if exec-p
+                                  (remake-executable-lst sactuals wrld)
+                                sactuals)
+                              nil lflg exec-p wrld))
                        (body (directed-untranslate-rec
-                              ubody tbody sbody iff-flg lflg wrld))
-                       (bindings (collect-non-trivial-bindings sformals-main
-                                                               args)))
+                              ubody tbody sbody iff-flg lflg exec-p wrld))
+                       (bindings (collect-non-trivial-bindings
+                                  sformals-main
+                                  args)))
                   (if bindings
                       (make-let-smart bindings body (all-vars-for-real sbody))
                     body)))))
@@ -1474,292 +1563,298 @@
     ((and (lambda-applicationp tterm)
           (not (lambda-applicationp sterm))
           lflg)
-     (let ((new-sterm (lambdafy tterm sterm)))
+     (let ((new-sterm (lambdafy tterm sterm exec-p wrld)))
        (assert$
         new-sterm ; lambdafy should do something in this case
         (directed-untranslate-rec uterm tterm new-sterm iff-flg
                                   nil ; lflg transitions from t to nil
-                                  wrld))))
+                                  exec-p wrld))))
     (t
      (let ((sterm? (adjust-sterm-for-tterm tterm sterm)))
        (cond
         (sterm?
-         (directed-untranslate-rec uterm tterm sterm? iff-flg lflg wrld))
+         (directed-untranslate-rec uterm tterm sterm? iff-flg lflg exec-p wrld))
         (t
          (mv-let (uterm1 tterm1)
            (directed-untranslate-drop-conjuncts uterm tterm sterm)
            (cond
             (tterm1 (directed-untranslate-rec uterm1 tterm1 sterm iff-flg lflg
-                                              wrld))
+                                              exec-p wrld))
             (t
              (mv-let (uterm1 tterm1)
-               (directed-untranslate-drop-disjuncts uterm tterm sterm iff-flg wrld)
+               (directed-untranslate-drop-disjuncts uterm tterm sterm iff-flg
+                                                    wrld)
                (cond
                 (tterm1 (directed-untranslate-rec uterm1 tterm1 sterm iff-flg lflg
-                                                  wrld))
-                (t
-                 (or
+                                                  exec-p wrld))
 
-; At one time, we replaced sterm by (if (not tst) fbr tbr when tterm is (if
+;;; (TODO) Warning: The following comment is probably fine, but there is a
+;;; small chance that it is obsolete.  Consider re-reading it carefully.
+; At one time, we replaced sterm by (if (not tst) fbr tbr) when tterm is (if
 ; (not &) & &) and sterm is (if tst tbr fbr) where tst is not a call of NOT.
 ; However, that seems to be covered now by the case in adjust-sterm-for-tterm
 ; where we swap the true and false branches of sterm when one of those is the
 ; false or true branch (resp.) of tterm.
 
-                  (cond
-                   ((eq (car uterm) 'cond)
+                ((eq (car uterm) 'cond)
 
 ; Deal here specially with the case that uterm is a COND.
 
-                    (let ((clauses (directed-untranslate-into-cond-clauses
-                                    (cdr uterm) tterm sterm iff-flg lflg wrld)))
-                      (case-match clauses
-                        ((('t x))
-                         x)
-                        (& (cons 'cond clauses)))))
+                 (let ((clauses (directed-untranslate-into-cond-clauses
+                                 (cdr uterm) tterm sterm iff-flg lflg exec-p wrld)))
+                   (case-match clauses
+                     ((('t x))
+                      x)
+                     (& (cons 'cond clauses)))))
 
 ; The next case applies when uterm represents a disjunction or conjunction.
 
-                   ((and (eq (ffn-symb sterm) 'if) ; optimization
-                         (case-match sterm ; following similar handling in untranslate1
+                ((and (eq (ffn-symb sterm) 'if) ; optimization
+                      (case-match sterm ; following similar handling in untranslate1
 
 ; We could also require more; for example, in the OR case, (eq (ffn-symb tterm)
 ; 'if) and (equal (fargn tterm 1) (fargn tterm 2)).  But any such requirements
 ; are probably always true, and even if not, we are happy to try to recover an
 ; OR or AND directly from sterm as follows.
 
-                           (('if & *nil* *t*) ; generate a NOT, not an AND or OR
-                            nil)
-                           (('if x1 x2 *nil*)
-                            (and (eq (car uterm) 'and)
-                                 (cond
-                                  ((cddr uterm) ; tterm is (if x1' x2' nil)
-                                   (untranslate-and
-                                    (directed-untranslate-rec (cadr uterm)
-                                                              (fargn tterm 1)
-                                                              x1 t lflg wrld)
-                                    (directed-untranslate-rec (if (cdddr uterm)
-                                                                  (cons 'and
-                                                                        (cddr uterm))
-                                                                (caddr uterm))
-                                                              (fargn tterm 2)
-                                                              x2 iff-flg lflg wrld)
-                                    iff-flg))
-                                  ((cdr uterm) ; uterm is (and x)
-                                   (directed-untranslate-rec (cadr uterm)
-                                                             tterm sterm t lflg
-                                                             wrld))
-                                  (t ; uterm is (and)
-                                   (directed-untranslate-rec t tterm sterm t lflg
-                                                             wrld)))))
-                           (('if x1 *nil* x2)
-                            (and (eq (car uterm) 'and) ; tterm is (if x1' x3' *nil*)
-                                 (directed-untranslate-rec uterm
-                                                           tterm
-                                                           (fcons-term* 'if
-                                                                        (dumb-negate-lit x1)
-                                                                        x2
-                                                                        *nil*)
-                                                           iff-flg lflg wrld)))
-                           (('if x1 x1-alt x2)
-                            (and (eq (car uterm) 'or) ; tterm is (if x1' & x2')
-                                 (or (equal x1-alt x1)
-                                     (equal x1-alt *t*))
-                                 (cond
-                                  ((cddr uterm) ; tterm is (if x1' & x2')
-                                   (untranslate-or
-                                    (directed-untranslate-rec (cadr uterm)
-                                                              (fargn tterm 1)
-                                                              x1 t lflg wrld)
-                                    (directed-untranslate-rec (cons 'or
-                                                                    (cddr uterm))
-                                                              (fargn tterm 3)
-                                                              x2 iff-flg lflg
-                                                              wrld)))
-                                  ((cdr uterm) ; uterm is (or x)
-                                   (directed-untranslate-rec (cadr uterm)
-                                                             tterm sterm t lflg
-                                                             wrld))
-                                  (t ; uterm is (or)
-                                   (directed-untranslate-rec t tterm sterm t lflg
-                                                             wrld)))))
-                           (('if x1 x2 *t*)
-                            (and (eq (car uterm) 'or)
-                                 (directed-untranslate-rec uterm
-                                                           tterm
-                                                           (fcons-term* 'if
-                                                                        (dumb-negate-lit x1)
-                                                                        *t*
-                                                                        x2)
-                                                           iff-flg lflg wrld)))
-                           (& nil))))
-                   ((and (eq (car uterm) '>)  ; (> x0 y0)
-                         (eq (car sterm) '<)  ; (< y1 x1)
-                         (eq (car tterm) '<)) ; (< y2 y1)
+                        (('if & *nil* *t*) ; generate a NOT, not an AND or OR
+                         nil)
+                        (('if x1 x2 *nil*)
+                         (and (eq (car uterm) 'and)
+                              (cond
+                               ((cddr uterm) ; tterm is (if x1' x2' nil)
+                                (untranslate-and
+                                 (directed-untranslate-rec (cadr uterm)
+                                                           (fargn tterm 1)
+                                                           x1 t lflg exec-p wrld)
+                                 (directed-untranslate-rec (if (cdddr uterm)
+                                                               (cons 'and
+                                                                     (cddr uterm))
+                                                             (caddr uterm))
+                                                           (fargn tterm 2)
+                                                           x2 iff-flg lflg
+                         exec-p wrld)
+                                 iff-flg))
+                               ((cdr uterm) ; uterm is (and x)
+                                (directed-untranslate-rec (cadr uterm)
+                                                          tterm sterm t lflg
+                                                          exec-p wrld))
+                               (t ; uterm is (and)
+                                (directed-untranslate-rec t tterm sterm t lflg
+                                                          exec-p wrld)))))
+                        (('if x1 *nil* x2)
+                         (and (eq (car uterm) 'and) ; tterm is (if x1' x3' *nil*)
+                              (directed-untranslate-rec uterm
+                                                        tterm
+                                                        (fcons-term* 'if
+                                                                     (dumb-negate-lit x1)
+                                                                     x2
+                                                                     *nil*)
+                                                        iff-flg lflg exec-p wrld)))
+                        (('if x1 x1-alt x2)
+                         (and (eq (car uterm) 'or) ; tterm is (if x1' & x2')
+                              (or (equal x1-alt x1)
+                                  (equal x1-alt *t*))
+                              (cond
+                               ((cddr uterm) ; tterm is (if x1' & x2')
+                                (untranslate-or
+                                 (directed-untranslate-rec (cadr uterm)
+                                                           (fargn tterm 1)
+                                                           x1 t lflg exec-p wrld)
+                                 (directed-untranslate-rec (cons 'or
+                                                                 (cddr uterm))
+                                                           (fargn tterm 3)
+                                                           x2 iff-flg lflg
+                                                           exec-p wrld)))
+                               ((cdr uterm) ; uterm is (or x)
+                                (directed-untranslate-rec (cadr uterm)
+                                                          tterm sterm t lflg
+                                                          exec-p wrld))
+                               (t ; uterm is (or)
+                                (directed-untranslate-rec t tterm sterm t lflg
+                                                          exec-p wrld)))))
+                        (('if x1 x2 *t*)
+                         (and (eq (car uterm) 'or)
+                              (directed-untranslate-rec uterm
+                                                        tterm
+                                                        (fcons-term* 'if
+                                                                     (dumb-negate-lit x1)
+                                                                     *t*
+                                                                     x2)
+                                                        iff-flg lflg exec-p wrld)))
+                        (& nil))))
+                ((and (eq (car uterm) '>)  ; (> x0 y0)
+                      (eq (car sterm) '<)  ; (< y1 x1)
+                      (eq (car tterm) '<)) ; (< y2 y1)
 
 ; Replace < in sterm by >.
 
-                    (list '>
-                          (directed-untranslate-rec
-                           (cadr uterm)
-                           (fargn tterm 2) (fargn sterm 2) nil lflg wrld)
-                          (directed-untranslate-rec
-                           (caddr uterm)
-                           (fargn tterm 1) (fargn sterm 1) nil lflg wrld)))
-                   ((eq (car uterm) '<=) ; (<= x0 y0), translates as (not (< y1 x1))
+                 (list '>
+                       (directed-untranslate-rec
+                        (cadr uterm)
+                        (fargn tterm 2) (fargn sterm 2) nil lflg exec-p wrld)
+                       (directed-untranslate-rec
+                        (caddr uterm)
+                        (fargn tterm 1) (fargn sterm 1) nil lflg exec-p wrld)))
+                ((eq (car uterm) '<=) ; (<= x0 y0), translates as (not (< y1 x1))
 
 ; If uterm, tterm, and sterm all represent a <= call, then call <= in the
 ; result.
 
-                    (or (case-match tterm
-                          (('not ('< y1 x1)) ; should always match
-                           (case-match sterm
-                             (('not ('< y2 x2))
-                              (cons '<= (directed-untranslate-lst
-                                         (cdr uterm)  ; (x0 y0)
-                                         (list x1 y1) ; from tterm
-                                         (list x2 y2) ; from sterm
-                                         nil lflg wrld)))
-                             (& nil)))
-                          (& nil))
-                        (du-untranslate sterm iff-flg wrld)))
-                   ((eq (car uterm) '>=) ; (>= x0 y0), translates as (not (< x1 y1))
+                 (or (case-match tterm
+                       (('not ('< y1 x1)) ; should always match
+                        (case-match sterm
+                          (('not ('< y2 x2))
+                           (cons '<= (directed-untranslate-lst
+                                      (cdr uterm)  ; (x0 y0)
+                                      (list x1 y1) ; from tterm
+                                      (list x2 y2) ; from sterm
+                                      nil lflg exec-p wrld)))
+                          (& nil)))
+                       (& nil))
+                     (du-untranslate sterm iff-flg wrld)))
+                ((eq (car uterm) '>=) ; (>= x0 y0), translates as (not (< x1 y1))
 
 ; If uterm, tterm, and sterm all represent a >= call, then call >= in the
 ; result.
 
-                    (or (case-match tterm
-                          (('not ('< x1 y1))
-                           (case-match sterm
-                             (('not ('< x2 y2))
-                              (cons '>= (directed-untranslate-lst
-                                         (cdr uterm)  ; (x0 y0)
-                                         (list x1 y1) ; from tterm
-                                         (list x2 y2) ; from sterm
-                                         nil lflg wrld)))
-                             (& nil)))
-                          (& nil))
-                        (du-untranslate sterm iff-flg wrld)))
-                   (t
-                    (or
+                 (or (case-match tterm
+                       (('not ('< x1 y1))
+                        (case-match sterm
+                          (('not ('< x2 y2))
+                           (cons '>= (directed-untranslate-lst
+                                      (cdr uterm)  ; (x0 y0)
+                                      (list x1 y1) ; from tterm
+                                      (list x2 y2) ; from sterm
+                                      nil lflg exec-p wrld)))
+                          (& nil)))
+                       (& nil))
+                     (du-untranslate sterm iff-flg wrld)))
+                (t
+                 (or
 
 ; Attempt to do something nice with cases where uterm is a call of list or
 ; list*.
 
-                     (case-match uterm
-                       (('mv . x)
-                        (let ((list-version
-                               (directed-untranslate-rec
-                                (cons 'list x)
-                                tterm sterm iff-flg lflg wrld)))
-                          (cond ((eq (car list-version) 'list)
-                                 (cons 'mv (cdr list-version)))
-                                (t list-version))))
-                       (('list x) ; tterm is (cons x' nil)
-                        (case-match sterm
-                          (('cons a *nil*)
-                           (list 'list
-                                 (directed-untranslate-rec x (fargn tterm 1) a nil
-                                                           lflg wrld)))
-                          (& nil)))
-                       (('list x . y) ; same translation as for (cons x (list . y))
-                        (case-match sterm
-                          (('cons a b)
-                           (let ((tmp1 (directed-untranslate-rec x
-                                                                 (fargn tterm 1)
-                                                                 a nil lflg wrld))
-                                 (tmp2 (directed-untranslate-rec `(list ,@y)
-                                                                 (fargn tterm 2)
-                                                                 b nil lflg wrld)))
-                             (if (and (consp tmp2) (eq (car tmp2) 'list))
-                                 `(list ,tmp1 ,@(cdr tmp2))
-                               `(cons ,tmp1 ,tmp2))))
-                          (& nil)))
-                       (('list* x) ; same transation as for x
-                        (list 'list*
-                              (directed-untranslate-rec x tterm sterm nil lflg
-                                                        wrld)))
-                       (('list* x . y) ; same translation as for (cons x (list* . y))
-                        (case-match sterm
-                          (('cons a b)
-                           (let ((tmp1 (directed-untranslate-rec x
-                                                                 (fargn tterm 1)
-                                                                 a nil lflg wrld))
-                                 (tmp2 (directed-untranslate-rec `(list* ,@y)
-                                                                 (fargn tterm 2)
-                                                                 b nil lflg wrld)))
-                             (if (and (consp tmp2) (eq (car tmp2) 'list*))
-                                 `(list* ,tmp1 ,@(cdr tmp2))
-                               `(list* ,tmp1 ,tmp2))))
-                          (& nil)))
-                       (& nil))
+                  (case-match uterm
+                    (('mv . x)
+                     (let ((list-version
+                            (directed-untranslate-rec
+                             (cons 'list x)
+                             tterm sterm iff-flg lflg exec-p wrld)))
+                       (cond ((eq (car list-version) 'list)
+                              (cons 'mv (cdr list-version)))
+                             (t list-version))))
+                    (('list x) ; tterm is (cons x' nil)
+                     (case-match sterm
+                       (('cons a *nil*)
+                        (list 'list
+                              (directed-untranslate-rec x (fargn tterm 1) a nil
+                                                        lflg exec-p wrld)))
+                       (& nil)))
+                    (('list x . y) ; same translation as for (cons x (list . y))
+                     (case-match sterm
+                       (('cons a b)
+                        (let ((tmp1 (directed-untranslate-rec x
+                                                              (fargn tterm 1)
+                                                              a nil lflg exec-p
+                                                              wrld))
+                              (tmp2 (directed-untranslate-rec `(list ,@y)
+                                                              (fargn tterm 2)
+                                                              b nil lflg exec-p
+                                                              wrld)))
+                          (if (and (consp tmp2) (eq (car tmp2) 'list))
+                              `(list ,tmp1 ,@(cdr tmp2))
+                            `(cons ,tmp1 ,tmp2))))
+                       (& nil)))
+                    (('list* x) ; same transation as for x
+                     (list 'list*
+                           (directed-untranslate-rec x tterm sterm nil lflg
+                                                     exec-p wrld)))
+                    (('list* x . y) ; same translation as for (cons x (list* . y))
+                     (case-match sterm
+                       (('cons a b)
+                        (let ((tmp1 (directed-untranslate-rec x
+                                                              (fargn tterm 1)
+                                                              a nil lflg exec-p
+                                                              wrld))
+                              (tmp2 (directed-untranslate-rec `(list* ,@y)
+                                                              (fargn tterm 2)
+                                                              b nil lflg exec-p
+                                                              wrld)))
+                          (if (and (consp tmp2) (eq (car tmp2) 'list*))
+                              `(list* ,tmp1 ,@(cdr tmp2))
+                            `(list* ,tmp1 ,tmp2))))
+                       (& nil)))
+                    (& nil))
 
 ; Attempt to preserve macros like cadr.
 
-                     (and (member-eq (ffn-symb tterm) '(car cdr))
-                          (directed-untranslate-car-cdr-nest uterm tterm sterm lflg
-                                                             wrld))
+                  (and (member-eq (ffn-symb tterm) '(car cdr))
+                       (directed-untranslate-car-cdr-nest uterm tterm sterm lflg
+                                                          exec-p wrld))
 
 ; Final cases:
 
-                     (and (eql (length (fargs sterm))
-                               (length (fargs tterm)))
-                          (let* ((pair (cdr (assoc-eq (ffn-symb sterm)
-                                                      (untrans-table wrld))))
-                                 (op ; the fn-symb of sterm, or a corresponding macro
-                                  (if pair
-                                      (car pair)
-                                    (or (cdr (assoc-eq (ffn-symb sterm)
-                                                       (table-alist
-                                                        'std::define-macro-fns
-                                                        wrld)))
-                                        (ffn-symb sterm)))))
-                            (cond
-                             ((symbolp (ffn-symb sterm))
-                              (cond ((and (cdr pair) ; hence pair, and we might right-associate
-                                          (case-match uterm
-                                            ((!op & & & . &) t) ; we want to flatten
-                                            (& nil))) ; (op x (op y ...))
+                  (and (eql (length (fargs sterm))
+                            (length (fargs tterm)))
+                       (let* ((pair (cdr (assoc-eq (ffn-symb sterm)
+                                                   (untrans-table wrld))))
+                              (op ; the fn-symb of sterm, or a corresponding macro
+                               (if pair
+                                   (car pair)
+                                 (or (cdr (assoc-eq (ffn-symb sterm)
+                                                    (table-alist
+                                                     'std::define-macro-fns
+                                                     wrld)))
+                                     (ffn-symb sterm)))))
+                         (cond
+                          ((symbolp (ffn-symb sterm))
+                           (cond ((and (cdr pair) ; hence pair, and we might right-associate
+                                       (case-match uterm
+                                         ((!op & & & . &) t) ; we want to flatten
+                                         (& nil))) ; (op x (op y ...))
 
 ; Uterm is (op & & & . &) where op is a macro with &rest args corresponding to
 ; the function symbol of sterm.  Untranslate to a suitably flattened op call.
 
-                                     (let ((arg1 (directed-untranslate-rec
-                                                  (cadr uterm)
-                                                  (fargn tterm 1) (fargn sterm 1)
-                                                  nil lflg wrld))
-                                           (arg2 (directed-untranslate-rec
-                                                  (cons op (cddr uterm))
-                                                  (fargn tterm 2) (fargn sterm 2)
-                                                  nil lflg wrld)))
-                                       (cond ((and (consp arg2)
-                                                   (equal (car arg2) op))
-                                              (list* op arg1 (cdr arg2)))
-                                             (t (list op arg1 arg2)))))
-                                    ((or (equal (car uterm) op)
-                                         (equal (car uterm) (ffn-symb tterm))
-                                         (equal (macro-abbrev-p op wrld) (ffn-symb tterm)))
+                                  (let ((arg1 (directed-untranslate-rec
+                                               (cadr uterm)
+                                               (fargn tterm 1) (fargn sterm 1)
+                                               nil lflg exec-p wrld))
+                                        (arg2 (directed-untranslate-rec
+                                               (cons op (cddr uterm))
+                                               (fargn tterm 2) (fargn sterm 2)
+                                               nil lflg exec-p wrld)))
+                                    (cond ((and (consp arg2)
+                                                (equal (car arg2) op))
+                                           (list* op arg1 (cdr arg2)))
+                                          (t (list op arg1 arg2)))))
+                                 ((or (equal (car uterm) op)
+                                      (equal (car uterm) (ffn-symb tterm))
+                                      (equal (macro-abbrev-p op wrld) (ffn-symb tterm)))
 
 ; If op is a suitable function (or macro) call for the result, then apply it to
 ; the result of recursively untranslating (directedly) the args.
 
-                                     (cons op (directed-untranslate-lst
-                                               (cdr uterm) (fargs tterm) (fargs sterm)
-                                               (case (ffn-symb sterm)
-                                                 (if (list t iff-flg iff-flg))
-                                                 (not '(t))
-                                                 (otherwise nil))
-                                               lflg wrld)))
-                                    ((equal sterm tterm)
+                                  (cons op (directed-untranslate-lst
+                                            (cdr uterm) (fargs tterm) (fargs sterm)
+                                            (case (ffn-symb sterm)
+                                              (if (list t iff-flg iff-flg))
+                                              (not '(t))
+                                              (otherwise nil))
+                                            lflg exec-p wrld)))
+                                 ((equal sterm tterm)
 
 ; It's probably better to use the macro at hand than to untranslate.
 
-                                     uterm)
-                                    (t nil)))
-                             (t nil))))
-                     (du-untranslate sterm iff-flg wrld))))))))))))))))))
+                                  uterm)
+                                 (t nil)))
+                          (t nil))))
+                  (du-untranslate sterm iff-flg wrld)))))))))))))))
 
-(defun directed-untranslate-lst (uargs targs sargs iff-flg-lst lflg wrld)
+(defun directed-untranslate-lst (uargs targs sargs iff-flg-lst lflg exec-p
+                                       wrld)
   (cond ((endp sargs) nil)
         ((or (endp uargs) (endp targs))
          (untranslate-lst sargs nil wrld))
@@ -1767,15 +1862,15 @@
                                            (car targs)
                                            (car sargs)
                                            (car iff-flg-lst)
-                                           lflg wrld)
+                                           lflg exec-p wrld)
                  (directed-untranslate-lst (cdr uargs)
                                            (cdr targs)
                                            (cdr sargs)
                                            (cdr iff-flg-lst)
-                                           lflg wrld)))))
+                                           lflg exec-p wrld)))))
 
 (defun directed-untranslate-into-cond-clauses (cond-clauses tterm sterm iff-flg
-                                                            lflg wrld)
+                                                            lflg exec-p wrld)
 
 ; This is based on ACL2 source function untranslate-into-cond-clauses.  It
 ; returns new cond-clauses C (with luck, similar in structure to the input
@@ -1799,16 +1894,16 @@
     (cond
      ((eq (caar cond-clauses) t)
       (directed-untranslate-rec (cadar cond-clauses)
-                                tterm sterm iff-flg lflg wrld))
+                                tterm sterm iff-flg lflg exec-p wrld))
      ((equal (fargn sterm 3) *nil*)
       (list (list (directed-untranslate-rec (caar cond-clauses)
                                             (fargn tterm 1)
                                             (fargn sterm 1)
-                                            t lflg wrld)
+                                            t lflg exec-p wrld)
                   (directed-untranslate-rec (cadar cond-clauses)
                                             (fargn tterm 2)
                                             (fargn sterm 2)
-                                            iff-flg lflg wrld))))
+                                            iff-flg lflg exec-p wrld))))
      (t (list (list t
                     (du-untranslate sterm iff-flg wrld))))))
    ((and (endp (cddr cond-clauses))
@@ -1840,7 +1935,7 @@
            (cl2 (cadr cond-clauses))
            (fbr (cadr cl2))
            (ans (directed-untranslate-rec `(if ,tst ,tbr ,fbr)
-                                          tterm sterm iff-flg lflg wrld)))
+                                          tterm sterm iff-flg lflg exec-p wrld)))
       (case-match ans
         (('if x y z)
          `((,x ,y) (t ,z)))
@@ -1849,22 +1944,22 @@
     (cons (list (directed-untranslate-rec (caar cond-clauses)
                                           (fargn tterm 1)
                                           (fargn sterm 1)
-                                          t lflg wrld)
+                                          t lflg exec-p wrld)
                 (directed-untranslate-rec (cadar cond-clauses)
                                           (fargn tterm 2)
                                           (fargn sterm 2)
-                                          iff-flg lflg wrld))
+                                          iff-flg lflg exec-p wrld))
           (directed-untranslate-into-cond-clauses
            (cdr cond-clauses)
            (fargn tterm 3)
            (fargn sterm 3)
-           iff-flg lflg wrld)))))
+           iff-flg lflg exec-p wrld)))))
 
-(defun directed-untranslate-car-cdr-nest (uterm tterm sterm lflg wrld)
+(defun directed-untranslate-car-cdr-nest (uterm tterm sterm lflg exec-p wrld)
 
 ; Tterm is a call of car or cdr.  Uterm may be a call of a name in
 ; *ca<d^n>r-alist*, such as CADDR.  We return nil or else a suitable result for
-; (directed-untranslate uterm tterm sterm wrld).
+; (directed-untranslate-rec uterm tterm sterm ...).
 
   (and (eq (ffn-symb tterm) (ffn-symb sterm))
        (let ((triple (assoc-eq (car uterm) *car-cdr-macro-alist*)))
@@ -1876,7 +1971,7 @@
                                (list op2 (cadr uterm))
                                (fargn tterm 1)
                                (fargn sterm 1)
-                               nil lflg wrld)))
+                               nil lflg exec-p wrld)))
                        (and (consp x)
                             (eq (car x) op2)
                             (list (car uterm) (cadr x))))))))))
@@ -1914,24 +2009,26 @@
 ; uterm translates to tterm.  We ensure with set-ignore-ok-world below that
 ; such failures are not merely due to ignored formals.
 
-  (let ((wrld (set-ignore-ok-world t wrld))
-        (sterm (if stobjs-out
-                   (make-executable sterm stobjs-out wrld)
-                 sterm)))
+  (let* ((wrld (set-ignore-ok-world t wrld))
+         (exec-p (and stobjs-out t))
+         (sterm (if exec-p
+                    (make-executable sterm stobjs-out wrld)
+                  sterm)))
     (if (check-du-inv-fn uterm tterm wrld)
-        (directed-untranslate-rec uterm tterm sterm iff-flg t wrld)
+        (directed-untranslate-rec uterm tterm sterm iff-flg t exec-p wrld)
       (untranslate sterm iff-flg wrld))))
 
 (defun directed-untranslate-no-lets (uterm tterm sterm iff-flg stobjs-out wrld)
 
 ; See directed-untranslate.  Here we refuse to introduce lambdas into sterm.
 
-  (let ((wrld (set-ignore-ok-world t wrld))
-        (sterm (if stobjs-out
-                   (make-executable sterm stobjs-out wrld)
-                 sterm)))
+  (let* ((wrld (set-ignore-ok-world t wrld))
+         (exec-p (and stobjs-out t))
+         (sterm (if exec-p
+                    (make-executable sterm stobjs-out wrld)
+                  sterm)))
     (if (check-du-inv-fn uterm tterm wrld)
-        (directed-untranslate-rec uterm tterm sterm iff-flg nil wrld)
+        (directed-untranslate-rec uterm tterm sterm iff-flg nil exec-p wrld)
       (untranslate sterm iff-flg wrld))))
 
 ; Essay on Handling of Lambda Applications by Directed-untranslate
