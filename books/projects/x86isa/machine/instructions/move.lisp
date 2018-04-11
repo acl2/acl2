@@ -87,31 +87,6 @@
 
        (seg-reg (select-segment-register p2 p4? mod  r/m x86))
 
-       ;; ((mv flg1 addr)
-       ;;  (case p2
-       ;;    (0 (mv nil addr))
-       ;;    ;; I don't really need to check whether FS and GS base are
-       ;;    ;; canonical or not.  On the real machine, if the MSRs
-       ;;    ;; containing these bases are assigned non-canonical
-       ;;    ;; addresses, an exception is raised.
-       ;;    (#.*fs-override*
-       ;;     (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-       ;;            (fs-base (n64-to-i64 nat-fs-base)))
-       ;;       (if (not (canonical-address-p fs-base))
-       ;;           (mv 'Non-Canonical-FS-Base fs-base)
-       ;;         (mv nil (+ fs-base addr)))))
-       ;;    (#.*gs-override*
-       ;;     (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-       ;;            (gs-base (n64-to-i64 nat-gs-base)))
-       ;;       (if (not (canonical-address-p gs-base))
-       ;;           (mv 'Non-Canonical-GS-Base gs-base)
-       ;;         (mv nil (+ gs-base addr)))))
-       ;;    (t (mv 'Unidentified-P2 addr))))
-       ;; ((when flg1)
-       ;;  (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
-       ;; ((when (not (canonical-address-p addr)))
-       ;;  (!!ms-fresh :addr-not-canonical addr))
-
        ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
@@ -201,7 +176,7 @@
                   (if p3? 2 4)
                 (if p3? 4 2))))))
 
-       (seg-reg (select-segment-register p2 p4? mod  r/m x86))
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
