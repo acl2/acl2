@@ -29,34 +29,34 @@
   :short "Check the alignment of a linear address."
   :long
   "<p>
-     Besides the address to check for alignment,
-     this function takes as argument the operand size
-     (from which the alignment to check is determined)
-     and a flag indicating whether the address to check for alignment
-     contains a memory operand of the form m16:16, m16:32, or m16:64
-     (see Intel manual, Mar'17, Volume 2, Section 3.1.1.3).
-     </p>
-     <p>
-     Words, doublewords, quadwords, and double quadwords
-     must be aligned at boundaries of 2, 4, 8, or 16 bytes.
-     Memory pointers of the form m16:xx must be aligned so that
-     their xx portion is aligned as a word, doubleword, or quadword;
-     this automatically guarantees that their m16 portion is aligned as a word.
-     See Intel manual, Mar'17, Volume 1, Section 4.1.1.
-     See AMD manual, Dec'17, Volume 2, Table 8-7
-     (note that the table does not mention explicitly
-     memory pointers of the form m16:64).
-     </p>
-     <p>
-     If the operand size is 6, the operand must be an m16:32 pointer.
-     If the operand size is 10, the operand must an m16:64 pointer.
-     If the operand size is 4, it may be either an m16:16 pointer or not;
-     in this case, the @('memory-ptr?') argument is used to
-     determined whether the address should be aligned
-     at a word or doubleword boundary.
-     If the operand size is 1, 2, 8, or 16,
-     it cannot be a memory pointer of the form m16:xx.
-     </p>"
+   Besides the address to check for alignment,
+   this function takes as argument the operand size
+   (from which the alignment to check is determined)
+   and a flag indicating whether the address to check for alignment
+   contains a memory operand of the form m16:16, m16:32, or m16:64
+   (see Intel manual, Mar'17, Volume 2, Section 3.1.1.3).
+   </p>
+   <p>
+   Words, doublewords, quadwords, and double quadwords
+   must be aligned at boundaries of 2, 4, 8, or 16 bytes.
+   Memory pointers of the form m16:xx must be aligned so that
+   their xx portion is aligned as a word, doubleword, or quadword;
+   this automatically guarantees that their m16 portion is aligned as a word.
+   See Intel manual, Mar'17, Volume 1, Section 4.1.1.
+   See AMD manual, Dec'17, Volume 2, Table 8-7
+   (note that the table does not mention explicitly
+   memory pointers of the form m16:64).
+   </p>
+   <p>
+   If the operand size is 6, the operand must be an m16:32 pointer.
+   If the operand size is 10, the operand must an m16:64 pointer.
+   If the operand size is 4, it may be either an m16:16 pointer or not;
+   in this case, the @('memory-ptr?') argument is used to
+   determined whether the address should be aligned
+   at a word or doubleword boundary.
+   If the operand size is 1, 2, 8, or 16,
+   it cannot be a memory pointer of the form m16:xx.
+   </p>"
   (b* ((addr (the (signed-byte #.*max-linear-address-size*) addr))
        (operand-size (the (integer 0 16) operand-size)))
     (case operand-size
