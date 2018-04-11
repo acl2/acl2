@@ -9,8 +9,8 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
-; The documentation is ambiguous about the determination of the operand size of
-; the PUSH and POP instructions in 64-bit mode.
+; The Intel and AMD documentation is ambiguous about the determination of the
+; operand size of the PUSH and POP instructions in 64-bit mode.
 ;
 ; The PUSH and POP instruction reference in Intel manual, Mar'17, Vol. 2 says
 ; that the D flag of the current code segment descriptor determines the default
