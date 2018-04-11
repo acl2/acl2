@@ -1999,23 +1999,11 @@
 
     (#x60
      "(PUSHA) or (PUSHAD)"
-     (if (64-bit-modep x86)
-         (x86-pusha start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "PUSHA/PUSHAD is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-pusha start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x61
      "(POPA) or (POPAD)"
-     (if (64-bit-modep x86)
-         (x86-popa start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "POPA/POPAD is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-popa start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x62
      "(BOUND Gv Ma)"
