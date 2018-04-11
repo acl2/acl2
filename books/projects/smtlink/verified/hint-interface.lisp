@@ -106,6 +106,7 @@
     :true-listp t)
 
   (define true-list-fix ((lst true-listp))
+    :parents (SMT-hint-interface)
     :short "Fixing function for true-listp."
     :returns (fixed-lst true-listp)
     (mbe :logic (if (consp lst)
@@ -297,6 +298,7 @@
       (cons d.name (flatten-formals/returns rest))))
 
   (define make-alist-fn-lst ((fn-lst func-listp))
+    :parents (SMT-hint-interface)
     :short "@(call make-alist-fn-lst) makes fn-lst a fast alist"
     :returns (fast-fn-lst func-alistp)
     :measure (len fn-lst)
