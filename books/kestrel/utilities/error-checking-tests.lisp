@@ -1,6 +1,6 @@
 ; Error Checking -- Tests
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,6 +53,24 @@
 
 (must-fail
  (ensure-symbol #\a "This" t nil 'test state)
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
+ (b* (((er x) (ensure-symbol-list nil "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-symbol-list '(a b c) "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-symbol-list #\Space "This" t nil 'test state)
+ :with-output-off nil)
+
+(must-fail
+ (ensure-symbol-list '(a 1 b) "This" t nil 'test state)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -180,6 +198,69 @@
 
 (must-fail
  (ensure-doublet-list '((a x) (b . y)) "This" t nil 'test state)
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
+ (b* (((er x) (ensure-keyword-value-list nil "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x)
+       (ensure-keyword-value-list '(:a 1 :b 2) "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-keyword-value-list "zzz" "This" t nil 'test state)
+ :with-output-off nil)
+
+(must-fail
+ (ensure-keyword-value-list '((:a 1) (:b 2)) "This" t nil 'test state)
+ :with-output-off nil)
+
+(must-fail
+ (ensure-keyword-value-list '((:a . 1) (:b . 2)) "This" t nil 'test state)
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
+ (b* (((er x) (ensure-member-of-list
+               4 '(2 4 88) "in the list" "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-member-of-list
+               "a" '(:a "a" (1 2)) "in the list" "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-member-of-list 4 nil "in the list" "This" t nil 'test state)
+ :with-output-off nil)
+
+(must-fail
+ (ensure-member-of-list 4 '("tt" t 41) "in the list" "This" t nil 'test state)
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
+ (b* (((er x) (ensure-not-member-of-list
+               4 nil "not in the list" "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-not-member-of-list
+               4 '(55 #\c (4)) "not in the list" "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-not-member-of-list 4 '(4) "not in the list" "This" t nil 'test state)
+ :with-output-off nil)
+
+(must-fail
+ (ensure-not-member-of-list 4 '(5 4) "not in the list" "This" t nil 'test state)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -606,6 +687,20 @@
 
 (must-fail
  (ensure-function-logic-mode 'untranslate "This" t nil 'test state)
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
+ (b* (((er x) (ensure-function-program-mode 'fmt "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-function-program-mode 'prove "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-function-program-mode 'len "This" t nil 'test state)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
