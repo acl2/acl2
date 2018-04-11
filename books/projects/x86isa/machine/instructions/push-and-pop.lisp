@@ -78,12 +78,13 @@
   :body
 
   (b* ((ctx 'x86-push-general-register)
+
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
+
        ((the (integer 1 8) operand-size)
         (if (64-bit-modep x86)
             (if p3? 2 8)
@@ -94,6 +95,7 @@
             (if (= cs.d 1)
                 (if p3? 2 4)
               (if p3? 4 2)))))
+
        (rsp (read-*sp x86))
        ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
@@ -160,13 +162,14 @@
     (add-to-implemented-opcodes-table 'PUSH #x57 '(:nil nil)
                                       'x86-push-general-register)))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-Ev
   :parents (one-byte-opcodes)
 
-  :short "PUSH: FF/6 r/m"
+  :short "PUSH: FF /6 r/m"
 
   :long "<p>Op/En: M</p>
-   <p><tt>FF/6 r/m16/32/64</tt></p>
+   <p><tt>FF /6 r/m16/32/64</tt></p>
    <p>Note that <tt>FF/6 r/m32</tt> is N.E. in 64-bit mode
       and that <tt>FF/6 r/m64</tt> is N.E. in 32-bit mode.</p>
 
@@ -177,12 +180,6 @@
    <p>This opcode belongs to Group 5, and it has an opcode
    extension (ModR/m.reg = 6).</p>"
 
-  ;; This instruction has been extended to 32-bit mode except for the call to
-  ;; X86-OPERAND-FROM-MODR/M-AND-SIB-BYTES, which still needs to be extended to
-  ;; 32-bit mode. The top-level dispatch is still calling this function only in
-  ;; 64-bit mode (i.e. this instruction is still considered unimplemented in
-  ;; 32-bit mode).
-
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
@@ -192,15 +189,16 @@
   :body
 
   (b* ((ctx 'x86-push-Ev)
+
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
 
@@ -219,17 +217,26 @@
        ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?E-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* operand-size
-         ;; inst-ac? is nil here because we only need increment-RIP-by
-         ;; from this function.
-         nil
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
+       ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by) ?E-addr x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                operand-size
+                                                ;; inst-ac? is nil here because
+                                                ;; we only need
+                                                ;; increment-RIP-by from this
+                                                ;; function
+                                                nil
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 

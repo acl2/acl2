@@ -3042,36 +3042,60 @@
 
     (#xFF
      "(GRP5 INC/DEC Ev): Opcode-extension: Modr/m.reg
-      0:(INC Ev);   1:(DEC Ev); 2:(CALLN Ev);
-      4:(JUMPN Ev);             6:(PUSH Ev);
+      0:(INC Ev); 1:(DEC Ev); 2:(CALLN Ev);
+      4:(JUMPN Ev); 5:(JMPF Mp); 6:(PUSH Ev);
       Otherwise:unimplemented"
-     (if (64-bit-modep x86)
-         (case (mrm-reg ModR/M)
-           (#x0
+     (case (mrm-reg ModR/M)
+       (#x0
+        (if (64-bit-modep x86)
             (x86-inc/dec-FE-FF start-rip temp-rip prefixes rex-byte
-                               opcode modr/m sib x86))
-           (#x1
+                               opcode modr/m sib x86)
+          (x86-step-unimplemented
+           (cons (cons "INC Ev is not implemented in 32-bit mode."
+                       (ms x86))
+                 (list start-rip temp-rip prefixes rex-byte opcode))
+           x86)))
+       (#x1
+        (if (64-bit-modep x86)
             (x86-inc/dec-FE-FF start-rip temp-rip prefixes rex-byte
-                               opcode modr/m sib x86))
-           (#x2
+                               opcode modr/m sib x86)
+          (x86-step-unimplemented
+           (cons (cons "DEC Ev is not implemented in 32-bit mode."
+                       (ms x86))
+                 (list start-rip temp-rip prefixes rex-byte opcode))
+           x86)))
+       (#x2
+        (if (64-bit-modep x86)
             (x86-call-FF/2-Op/En-M start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m sib x86))
-           (#x4
+                                   opcode modr/m sib x86)
+          (x86-step-unimplemented
+           (cons (cons "CALLN Ev is not implemented in 32-bit mode."
+                       (ms x86))
+                 (list start-rip temp-rip prefixes rex-byte opcode))
+           x86)))
+       (#x4
+        (if (64-bit-modep x86)
             (x86-near-jmp-Op/En-M start-rip temp-rip prefixes rex-byte opcode
-                                  modr/m sib x86))
-           (#x5
+                                  modr/m sib x86)
+          (x86-step-unimplemented
+           (cons (cons "JMPN Ev is not implemented in 32-bit mode."
+                       (ms x86))
+                 (list start-rip temp-rip prefixes rex-byte opcode))
+           x86)))
+       (#x5
+        (if (64-bit-modep x86)
             (x86-far-jmp-Op/En-D start-rip temp-rip prefixes rex-byte opcode
-                                 modr/m sib x86))
-           (#x6
-            (x86-push-Ev start-rip temp-rip prefixes rex-byte
-                         opcode modr/m sib x86))
-           (otherwise
-            (x86-step-unimplemented (mrm-reg ModR/M) x86)))
-       (x86-step-unimplemented
-        (cons (cons "GRP5 is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+                                 modr/m sib x86)
+          (x86-step-unimplemented
+           (cons (cons "far JMP Mp is not implemented in 32-bit mode."
+                       (ms x86))
+                 (list start-rip temp-rip prefixes rex-byte opcode))
+           x86)))
+       (#x6
+        (x86-push-Ev
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
+       (otherwise
+        (x86-step-unimplemented (mrm-reg ModR/M) x86))))
 
     (otherwise
      "This branch should not be reached."
