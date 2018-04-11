@@ -84,11 +84,11 @@
      to the corresponding generated theorem names.
      </li>
      <li>
-     @('old-fn-unnorm-name') is the name of the generated theorem
+     @('old-unnorm-name') is the name of the generated theorem
      that installs the non-normalized definition of the target function.
      </li>
      <li>
-     @('new-fn-unnorm-name') is the name of the generated theorem
+     @('new-unnorm-name') is the name of the generated theorem
      that installs the non-normalized definition of the new function.
      </li>
      <li>
@@ -705,8 +705,8 @@
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
    (app-cond-thm-names symbol-symbol-alistp)
-   (old-fn-unnorm-name symbolp)
-   (new-fn-unnorm-name symbolp)
+   (old-unnorm-name symbolp)
+   (new-unnorm-name symbolp)
    (wrld plist-worldp))
   :returns (mv (old-to-new-local-event "A @(tsee pseudo-event-formp).")
                (old-to-new-exported-event "A @(tsee pseudo-event-formp)."))
@@ -758,15 +758,15 @@
        (recursive (recursivep old$ nil wrld))
        (hints (if recursive
                   `(("Goal"
-                     :in-theory '(,old-fn-unnorm-name
-                                  ,new-fn-unnorm-name
+                     :in-theory '(,old-unnorm-name
+                                  ,new-unnorm-name
                                   (:induction ,old$))
                      :induct (,old$ ,@formals))
                     '(:use ,(cdr (assoc-eq :restriction-of-rec-calls
                                    app-cond-thm-names))))
                 `(("Goal"
-                   :in-theory '(,old-fn-unnorm-name
-                                ,new-fn-unnorm-name)))))
+                   :in-theory '(,old-unnorm-name
+                                ,new-unnorm-name)))))
        (local-event `(local
                       (,macro ,thm-name$
                               ,formula
@@ -969,12 +969,12 @@
                                                               wrld))
        (names-to-avoid (append names-to-avoid
                                (strip-cdrs app-cond-thm-names)))
-       ((mv old-fn-unnorm-event
-            old-fn-unnorm-name) (install-not-norm-event old$
-                                                        t
-                                                        names-to-avoid
-                                                        wrld))
-       (names-to-avoid (rcons names-to-avoid old-fn-unnorm-name))
+       ((mv old-unnorm-event
+            old-unnorm-name) (install-not-norm-event old$
+                                                     t
+                                                     names-to-avoid
+                                                     wrld))
+       (names-to-avoid (rcons names-to-avoid old-unnorm-name))
        ((mv new-fn-local-event
             new-fn-exported-event) (restrict-new-fn-intro-events
                                     old$
@@ -985,11 +985,11 @@
                                     non-executable$
                                     verify-guards$
                                     wrld))
-       ((mv new-fn-unnorm-event
-            new-fn-unnorm-name) (install-not-norm-event new-name$
-                                                        t
-                                                        names-to-avoid
-                                                        wrld))
+       ((mv new-unnorm-event
+            new-unnorm-name) (install-not-norm-event new-name$
+                                                     t
+                                                     names-to-avoid
+                                                     wrld))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event) (restrict-old-to-new-intro-events
                                             old$
@@ -998,8 +998,8 @@
                                             thm-name$
                                             thm-enable$
                                             app-cond-thm-names
-                                            old-fn-unnorm-name
-                                            new-fn-unnorm-name
+                                            old-unnorm-name
+                                            new-unnorm-name
                                             wrld))
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
@@ -1016,9 +1016,9 @@
                              ,@app-cond-thm-events
                              (set-default-hints nil)
                              (set-override-hints nil)
-                             ,old-fn-unnorm-event
+                             ,old-unnorm-event
                              ,new-fn-local-event
-                             ,new-fn-unnorm-event
+                             ,new-unnorm-event
                              ,old-to-new-thm-local-event
                              ,@new-fn-verify-guards-event?
                              ,new-fn-exported-event
