@@ -55,68 +55,32 @@
      @('print'), and
      @('show-only')
      are the homonymous inputs to @(tsee tailrec),
-     before being validated.
+     before being processed.
      These formal parameters have no types because they may be any values.
      </li>
      <li>
      @('call') is the call to @(tsee tailrec) supplied by the user.
      </li>
      <li>
-     @('old$') is the name of the target function.
-     It is the result of validating @('old').
-     </li>
-     <li>
-     @('variant$') is @('variant'), after validation.
-     </li>
-     <li>
-     @('domain$') is the domain to use for some of the applicability conditions,
-     in translated form.
-     It is the result of validating @('domain').
-     </li>
-     <li>
-     @('new-name$') is the name to use for the new function.
-     It is the result of validating @('new-name').
-     </li>
-     <li>
-     @('new-enable$') is the enablement status to use for the new function.
-     It is the result of validating @('new-enable').
-     </li>
-     <li>
-     @('wrapper-name$') is the name to use for the wrapper function.
-     It is the result of validating @('wrapper-name').
-     </li>
-     <li>
-     @('wrapper-enable$') is @('wrapper-enable'), after validation.
-     </li>
-     <li>
-     @('thm-name$') is the name to use for the old-to-wrapper theorem.
-     It is the result of validating @('thm-name').
-     </li>
-     <li>
-     @('thm-enable$') is @('thm-enable'), after validation.
-     </li>
-     <li>
-     @('non-executable$') is the non-executable status
-     to use for the new and wrapper functions.
-     It is the result of validating @('non-executable').
-     </li>
-     <li>
-     @('verify-guards$') is the guard verification status
-     to use for the new and wrapper functions.
-     It is the result of validating @('verify-guards').
-     </li>
-     <li>
-     @('hints$') is an alist with unique keys
-     from keywords that identify applicability conditions
-     to hints to use to prove the corresponding applicability conditions.
-     It is the result of validating @('hints').
-     </li>
-     <li>
-     @('print$') is a print specifier in list form.
-     It is the result of validating @('print').
-     </li>
-     <li>
-     @('show-only$') is @('show-only'), after validation.
+     @('old$'),
+     @('variant$'),
+     @('domain$'),
+     @('new-name$'),
+     @('new-enable$'),
+     @('wrapper-name$'),
+     @('wrapper-enable$'),
+     @('thm-name$'),
+     @('thm-enable$'),
+     @('non-executable$'),
+     @('verify-guards$'),
+     @('hints$'),
+     @('print$'), and
+     @('show-only$')
+     are the results of processing
+     the homonymous (without the @('$')) inputs to @(tsee tailrec).
+     Some are identical to the corresponding inputs,
+     but they have types implied by their successful validation,
+     performed when they are processed.
      </li>
      <li>
      @('test') is the term @('test<x1,...,xn>') described in the documentation.
@@ -229,9 +193,22 @@
 
 (xdoc::order-subtopics tailrec-implementation nil t)
 
-(local (xdoc::set-default-parents tailrec-implementation))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc tailrec-input-processing
+  :parents (tailrec-implementation)
+  :short "Input processing performed by @(tsee tailrec)."
+  :long
+  "<p>
+   This involves validating the inputs.
+   When validation fails, <see topic='@(url er)'>soft errors</see> occur.
+   Thus, generally the input processing functions return
+   <see topic='@(url error-triple)'>error triples</see>.
+   </p>")
+
+(xdoc::order-subtopics tailrec-input-processing nil t)
+
+(local (xdoc::set-default-parents tailrec-input-processing))
 
 (define tailrec-check-nonrec-conditions
   ((combine-nonrec pseudo-termp)
@@ -338,9 +315,7 @@
                                             (rec-branch pseudo-termp)
                                             ctx
                                             state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+  :returns (mv erp
                (result "A tuple @('(nonrec<x1,...,xn>
                                     (... update-xi<x1...,xn> ...)
                                     combine<q,r>
@@ -400,9 +375,7 @@
                            (verbose booleanp)
                            ctx
                            state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+  :returns (mv erp
                (result "A tuple @('(old$
                                     test<x1,...,xn>
                                     base<x1,...,xn>
@@ -564,9 +537,7 @@
                               (verbose booleanp)
                               ctx
                               state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+  :returns (mv erp
                (domain$ "A @(tsee pseudo-termfnp) that is
                          the predicate denoted by @('domain').")
                state)
@@ -668,9 +639,7 @@
                                 (old$ symbolp)
                                 ctx
                                 state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+  :returns (mv erp
                (new-name$ "A @(tsee symbolp)
                            to use as the name for the new function.")
                state)
@@ -694,9 +663,7 @@
                                     (new-name$ symbolp)
                                     ctx
                                     state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+  :returns (mv erp
                (wrapper-name$ "A @(tsee symbolp)
                                to use as the name for the wrapper function.")
                state)
@@ -729,9 +696,7 @@
                                 (wrapper-name$ symbolp)
                                 ctx
                                 state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+  :returns (mv erp
                (thm-name$ "A @(tsee symbolp)
                            to use for the theorem that
                            relates the old and new functions.")
@@ -790,9 +755,7 @@
     (no-duplicatesp-eq *tailrec-app-cond-names*)))
 
 (define tailrec-check-hints (hints ctx state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+  :returns (mv erp
                (hints$ "A @('symbol-alistp') that is the alist form of
                         the keyword-value list @('hints').")
                state)
@@ -832,9 +795,7 @@
                               show-only
                               ctx
                               state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+  :returns (mv erp
                (result "A tuple @('(old$
                                     test<x1,...,xn>
                                     base<x1,...,xn>
@@ -898,18 +859,18 @@
   :short "Ensure that all the inputs to the transformation are valid."
   :long
   "<p>
-   The inputs are validated
+   The inputs are processed
    in the order in which they appear in the documentation,
-   except that @(':print') is validated just before @('old')
+   except that @(':print') is processed just before @('old')
    so that the @('verbose') argument of @(tsee tailrec-check-old)
    can be computed from @(':print'),
-   and except that @(':verify-guards') is validated just before @('domain')
-   because the result of validating @(':verify-guards')
-   is used to validate @('domain').
-   @('old') is validated before @(':verify-guards')
-   because the result of validating @('old')
-   is used to validate @(':verify-guards').
-   @(':verify-guards') is also used to validate @('old'),
+   and except that @(':verify-guards') is processed just before @('domain')
+   because the result of processing @(':verify-guards')
+   is used to process @('domain').
+   @('old') is processed before @(':verify-guards')
+   because the result of processing @('old')
+   is used to process @(':verify-guards').
+   @(':verify-guards') is also used to process @('old'),
    but it is only tested for equality with @('t')
    (see @(tsee tailrec-check-old)).
    </p>"
@@ -970,6 +931,16 @@
                  verify-guards$
                  hints$
                  print$))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc tailrec-event-generation
+  :parents (tailrec-implementation)
+  :short "Event generation performed by @(tsee tailrec).")
+
+(xdoc::order-subtopics tailrec-event-generation nil t)
+
+(local (xdoc::set-default-parents tailrec-event-generation))
 
 (define tailrec-var-u ((old$ symbolp))
   :returns (u "A @(tsee symbolp).")
@@ -2578,6 +2549,8 @@
        ,@print-events
        (value-triple :invisible))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-fn
   (old
    variant
@@ -2596,13 +2569,12 @@
    (call pseudo-event-formp)
    ctx
    state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+  :returns (mv erp
                (event "A @(tsee pseudo-event-formp).")
                state)
   :mode :program
-  :short "Validate the inputs,
+  :parents (tailrec-implementation)
+  :short "Process the inputs,
           prove the applicability conditions, and
           generate the event form to submit."
   :long
@@ -2668,10 +2640,11 @@
     (value event)))
 
 (defsection tailrec-macro-definition
+  :parents (tailrec-implementation)
   :short "Definition of the @(tsee tailrec) macro."
   :long
   "<p>
-   Submit the event form generated by @(tsee tailrec-fn),.
+   Submit the event form generated by @(tsee tailrec-fn).
    </p>
    @(def tailrec)"
   (defmacro tailrec (&whole
