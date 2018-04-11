@@ -270,7 +270,7 @@
   (b* ((ctx 'x86-ret)
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (rsp (read-*sp x86))
 
