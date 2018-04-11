@@ -331,7 +331,7 @@
             (rime-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil)
           (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil)))
        ((when flg)
-        (cond         
+        (cond
          ((and (consp flg) (eql (car flg) :non-canonical-address))
           (!!fault-fresh :ss 0 :riml64-error flg)) ;; #SS(0)
          ((and (consp flg) (eql (car flg) :unaligned-linear-address))
