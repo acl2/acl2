@@ -248,6 +248,7 @@
 ;; address (64 bits, even though in our model we only model the low 48 bits due
 ;; to the invariant of instruction pointers being canonical).
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-ret
 
   ;; Op/En: #xC2 iw: I:  Near return to calling procedure and pop imm16 bytes from
