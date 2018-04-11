@@ -348,7 +348,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 2 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 2 nil)))
              (equal (rme16 eff-addr seg-reg r-x check-alignment? x86)
                     (rml16 eff-addr r-x x86)))))
 
@@ -391,7 +392,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 2 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 2 nil)))
              (equal (rime16 eff-addr seg-reg r-x check-alignment? x86)
                     (riml16 eff-addr r-x x86)))))
 
@@ -426,7 +428,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 2 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 2 nil)))
              (equal (wme16 eff-addr seg-reg val check-alignment? x86)
                     (wml16 eff-addr val x86)))))
 
@@ -461,7 +464,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 2 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 2 nil)))
              (equal (wime16 eff-addr seg-reg val check-alignment? x86)
                     (wiml16 eff-addr val x86)))))
 
@@ -513,7 +517,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 4 mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 4 mem-ptr?)))
              (equal (rme32 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
                     (rml32 eff-addr r-x x86)))))
 
@@ -561,7 +566,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 4 mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 4 mem-ptr?)))
              (equal (rime32 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
                     (riml32 eff-addr r-x x86)))))
 
@@ -601,7 +607,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 4 mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 4 mem-ptr?)))
              (equal (wme32 eff-addr seg-reg val check-alignment? x86 :mem-ptr? mem-ptr?)
                     (wml32 eff-addr val x86)))))
 
@@ -641,7 +648,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 4 mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 4 mem-ptr?)))
              (equal (wime32 eff-addr seg-reg val check-alignment? x86 :mem-ptr? mem-ptr?)
                     (wiml32 eff-addr val x86)))))
 
@@ -689,7 +697,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 6 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 6 t)))
              (equal (rme48 eff-addr seg-reg r-x check-alignment? x86)
                     (rml48 eff-addr r-x x86)))))
 
@@ -725,7 +734,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 6 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 6 t)))
              (equal (wme48 eff-addr seg-reg val check-alignment? x86)
                     (wml48 eff-addr val x86)))))
 
@@ -773,7 +783,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 8 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 8 nil)))
              (equal (rme64 eff-addr seg-reg r-x check-alignment? x86)
                     (rml64 eff-addr r-x x86)))))
 
@@ -817,7 +828,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 8 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 8 nil)))
              (equal (rime64 eff-addr seg-reg r-x check-alignment? x86)
                     (riml64 eff-addr r-x x86)))))
 
@@ -853,7 +865,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 8 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 8 nil)))
              (equal (wme64 eff-addr seg-reg val check-alignment? x86)
                     (wml64 eff-addr val x86)))))
 
@@ -889,7 +902,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 8 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 8 nil)))
              (equal (wime64 eff-addr seg-reg val check-alignment? x86)
                     (wiml64 eff-addr val x86)))))
 
@@ -937,7 +951,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 10 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 10 t)))
              (equal (rme80 eff-addr seg-reg r-x check-alignment? x86)
                     (rml80 eff-addr r-x x86)))))
 
@@ -973,7 +988,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 10 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 10 t)))
              (equal (wme80 eff-addr seg-reg val check-alignment? x86)
                     (wml80 eff-addr val x86)))))
 
@@ -1024,7 +1040,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 16 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 16 t)))
              (equal (rme128 eff-addr seg-reg r-x check-alignment? x86)
                     (rml128 eff-addr r-x x86)))))
 
@@ -1063,7 +1080,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 16 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 16 t)))
              (equal (wme128 eff-addr seg-reg val check-alignment? x86)
                     (wml128 eff-addr val x86)))))
 
@@ -1109,7 +1127,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr nbytes mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr nbytes mem-ptr?)))
              (equal (rme-size nbytes eff-addr seg-reg r-x check-alignment? x86
                               :mem-ptr? mem-ptr?)
                     (rml-size nbytes eff-addr r-x x86))))
@@ -1187,7 +1206,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr nbytes mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr nbytes mem-ptr?)))
              (equal (rime-size
                      nbytes eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
                     (riml-size nbytes eff-addr r-x x86))))
@@ -1257,7 +1277,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr nbytes mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr nbytes mem-ptr?)))
              (equal (wme-size
                      nbytes eff-addr seg-reg val check-alignment? x86 :mem-ptr? mem-ptr?)
                     (wml-size nbytes eff-addr val x86)))))
@@ -1304,7 +1325,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr nbytes mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr nbytes mem-ptr?)))
              (equal (wime-size
                      nbytes eff-addr seg-reg val check-alignment? x86 :mem-ptr? mem-ptr?)
                     (wiml-size nbytes eff-addr val x86)))))
