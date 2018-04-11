@@ -266,6 +266,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
+ (b* (((er x) (ensure-symbol-not-keyword 'a "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-symbol-not-keyword 'std::a "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-symbol-not-keyword :xx "This" t nil 'test state)
+ :with-output-off nil)
+
+(must-fail
+ (ensure-symbol-not-keyword keyword::sym "This" t nil 'test state)
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
  (b* (((er x) (ensure-defun-mode :logic "This" t nil 'test state)))
    (value (equal x nil))))
 

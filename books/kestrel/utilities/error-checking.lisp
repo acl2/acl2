@@ -537,6 +537,11 @@
   (((not (member-equal x list))
     "~@0 must not be ~@1." description list-description)))
 
+(def-error-checker ensure-symbol-not-keyword
+  ((symb symbolp "Symbol to check."))
+  "Cause an error if a symbol is a keyword."
+  (((not (keywordp symb)) "~@0 must not be a keyword." description)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-error-checker ensure-defun-mode
