@@ -23,7 +23,209 @@
 
 (defsection tailrec-implementation
   :parents (implementation tailrec)
-  :short "Implementation of @(tsee tailrec).")
+  :short "Implementation of @(tsee tailrec)."
+  :long
+  "<p>
+   The implementation functions have formal parameters
+   consistently named as follows:
+   </p>
+   <ul>
+     <li>
+     @('state') is the ACL2's @(see state).
+     </li>
+     <li>
+     @('wrld') is the ACL2's @(see world).
+     </li>
+     <li>
+     @('ctx') is the context used for errors.
+     </li>
+     <li>
+     @('old'),
+     @('variant'),
+     @('domain'),
+     @('new-name'),
+     @('new-enable'),
+     @('wrapper-name'),
+     @('wrapper-enable'),
+     @('thm-name'),
+     @('thm-enable'),
+     @('non-executable'),
+     @('verify-guards'),
+     @('hints'),
+     @('print'), and
+     @('show-only')
+     are the homonymous inputs to @(tsee tailrec),
+     before being validated.
+     These formal parameters have no types because they may be any values.
+     </li>
+     <li>
+     @('call') is the call to @(tsee tailrec) supplied by the user.
+     </li>
+     <li>
+     @('old$') is the name of the target function.
+     It is the result of validating @('old').
+     </li>
+     <li>
+     @('variant$') is @('variant'), after validation.
+     </li>
+     <li>
+     @('domain$') is the domain to use for some of the applicability conditions,
+     in translated form.
+     It is the result of validating @('domain').
+     </li>
+     <li>
+     @('new-name$') is the name to use for the new function.
+     It is the result of validating @('new-name').
+     </li>
+     <li>
+     @('new-enable$') is the enablement status to use for the new function.
+     It is the result of validating @('new-enable').
+     </li>
+     <li>
+     @('wrapper-name$') is the name to use for the wrapper function.
+     It is the result of validating @('wrapper-name').
+     </li>
+     <li>
+     @('wrapper-enable$') is @('wrapper-enable'), after validation.
+     </li>
+     <li>
+     @('thm-name$') is the name to use for the old-to-wrapper theorem.
+     It is the result of validating @('thm-name').
+     </li>
+     <li>
+     @('thm-enable$') is @('thm-enable'), after validation.
+     </li>
+     <li>
+     @('non-executable$') is the non-executable status
+     to use for the new and wrapper functions.
+     It is the result of validating @('non-executable').
+     </li>
+     <li>
+     @('verify-guards$') is the guard verification status
+     to use for the new and wrapper functions.
+     It is the result of validating @('verify-guards').
+     </li>
+     <li>
+     @('hints$') is an alist with unique keys
+     from keywords that identify applicability conditions
+     to hints to use to prove the corresponding applicability conditions.
+     It is the result of validating @('hints').
+     </li>
+     <li>
+     @('print$') is a print specifier in list form.
+     It is the result of validating @('print').
+     </li>
+     <li>
+     @('show-only$') is @('show-only'), after validation.
+     </li>
+     <li>
+     @('test') is the term @('test<x1,...,xn>') described in the documentation.
+     </li>
+     <li>
+     @('base') is the term @('base<x1,...,xn>') described in the documentation.
+     </li>
+     <li>
+     @('rec-branch') is the recursive branch of the target function,
+     namely the term @('combine<nonrec<x1,...,xn>,
+                                (old update-x1<x1,...,xn>
+                                     ...
+                                     update-xn<x1,...,xn>)>')
+     described in the documentation.
+     </li>
+     <li>
+     @('nonrec') is the term @('nonrec<x1,...,xn>')
+     described in the documentation.
+     </li>
+     <li>
+     @('updates') is the list of terms
+     @('update-x1<x1,...,xn>'), ..., @('update-xn<x1,...,xn>')
+     described in the documentation.
+     </li>
+     <li>
+     @('r') is the homonymous fresh variable described in the documentation.
+     </li>
+     <li>
+     @('q') is the homonymous fresh variable described in the documentation.
+     </li>
+     <li>
+     @('combine-nonrec') is the term @('combine<nonrec<x1,...,xn>,r>')
+     described in the documentation.
+     </li>
+     <li>
+     @('combine') is the term @('combine<q,r>') described in the documentation.
+     </li>
+     <li>
+     @('verbose') is a flag saying
+     whether to print certain informative messages or not.
+     </li>
+     <li>
+     @('names-to-avoid') is a cumulative list of names of generated events,
+     used to ensure the absence of name clashes in the generated events.
+     </li>
+     <li>
+     @('app-cond-thm-names') is an alist
+     from the keywords that identify the applicability conditions
+     to the corresponding generated theorem names.
+     </li>
+     <li>
+     @('old-fn-unnorm-name') is the name of the generated theorem
+     that installs the non-normalized definition of the target function.
+     </li>
+     <li>
+     @('new-fn-unnorm-name') is the name of the generated theorem
+     that installs the non-normalized definition of the new function.
+     </li>
+     <li>
+     @('wrapper-fn-unnorm-name') is the name of the generated theorem
+     that installs the non-normalized definition of the wrapper function.
+     </li>
+     <li>
+     @('new-fn-formals') are the formal parameters of the new function.
+     </li>
+     <li>
+     @('domain-of-old-thm-name') is the name of the theorem
+     generated by @(tsee tailrec-new-to-old-intro-event).
+     </li>
+     <li>
+     @('alpha-fn-name') is the name of the function
+     generated by @(tsee tailrec-alpha-fn-intro-event).
+     </li>
+     <li>
+     @('test-of-alpha-thm-name') is the name of the theorem
+     generated by @(tsee tailrec-test-of-alpha-intro-event).
+     </li>
+     <li>
+     @('old-guard-of-alpha-thm-name') is the name of the theorem
+     generated by @(tsee tailrec-old-guard-of-alpha-intro-event).
+     </li>
+     <li>
+     @('domain-of-ground-base-thm-name') is the name of the theorem
+     generated by @(tsee tailrec-domain-of-ground-base-intro-event).
+     </li>
+     <li>
+     @('combine-left-identity-ground-thm-name') is the name of the theorem
+     generated by @(tsee tailrec-combine-left-identity-ground-intro-event).
+     </li>
+     <li>
+     @('new-to-old-thm-name') is the name of the theorem
+     generated by @(tsee tailrec-new-to-old-intro-event).
+     </li>
+     <li>
+     @('base-guard-thm-name') is the name of the theorem
+     generated by @(tsee tailrec-base-guard-intro-event).
+     </li>
+     <li>
+     @('old-to-new-thm-name') is the name of the theorem
+     generated by @(tsee tailrec-old-to-new-intro-event).
+     </li>
+     <li>
+     @('app-conds') are the applicability conditions.
+     </li>
+   </ul>
+   <p>
+   The parameters of implementation functions that are not listed above
+   are described in, or clear from, those functions' documentation.
+   </p>")
 
 (xdoc::order-subtopics tailrec-implementation nil t)
 
@@ -32,16 +234,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-check-nonrec-conditions
-  ((combine-nonrec pseudo-termp "The term @('combine<nonrec<x1,...,xn>,r>')
-                                 described in the documentation.")
+  ((combine-nonrec pseudo-termp)
    (nonrec? pseudo-termp "Candidate @('nonrec<x1,...,xn>') to check.")
-   (r symbolp "The fresh variable @('r') described in the documentation.")
-   (q symbolp "The fresh variable @('q') described in the documentation."))
+   (r symbolp)
+   (q symbolp))
   :returns
   (mv (yes/no booleanp)
       (combine "The @(tsee pseudo-termp) @('combine<q,r>')
                 described in the documentation,
-                if @('yes/no') is @('t')."))
+                if @('yes/no') is @('t');
+                otherwise @('nil')."))
   :verify-guards nil
   :short "Check whether @('nonrec?') satisfies the conditions
           for @('nonrec<x1,...,xn>') described in the documentation."
@@ -67,19 +269,20 @@
   :verify-guards nil
 
   (define tailrec-find-nonrec-term
-    ((combine-nonrec pseudo-termp "The term @('combine<nonrec<x1,...,xn>,r>')
-                                   described in the documentation.")
+    ((combine-nonrec pseudo-termp)
      (term-to-try pseudo-termp "Subterm of @('combine<nonrec<x1,...,xn>,r>')
                                 to examine next.")
-     (r symbolp "The fresh variable @('r') described in the documentation.")
-     (q symbolp "The fresh variable @('q') described in the documentation."))
+     (r symbolp)
+     (q symbolp))
     :returns (mv (success "A @(tsee booleanp).")
                  (nonrec "The @(tsee pseudo-termp) @('nonrec<x1,...,xn>')
                           described in the documentation,
-                          if @('success') is @('t').")
+                          if @('success') is @('t');
+                          otherwise @('nil').")
                  (combine "The @(tsee pseudo-termp) @('combine<q,r>')
                            described in the documentation,
-                           if @('success') is @('t')."))
+                           if @('success') is @('t');
+                           otherwise @('nil')."))
     :parents (tailrec-find-nonrec-term-in-term/terms)
     :short "Find the maximal and leftmost subterm of @('term-to-try')
             that satisfies the conditions for @('nonrec<x1,...,xn>')
@@ -100,12 +303,11 @@
       (tailrec-find-nonrec-terms combine-nonrec (fargs term-to-try) r q)))
 
   (define tailrec-find-nonrec-terms
-    ((combine-nonrec pseudo-termp "The term @('combine<nonrec<x1,...,xn>,r>')
-                                   described in the documentation.")
+    ((combine-nonrec pseudo-termp)
      (terms-to-try pseudo-term-listp "Subterms of @('combine-nonrec')
                                       to examine next.")
-     (r symbolp "The fresh variable @('r') described in the documentation.")
-     (q symbolp "The fresh variable @('q') described in the documentation."))
+     (r symbolp)
+     (q symbolp))
     :returns (mv (success "A @(tsee booleanp).")
                  (nonrec "The @(tsee pseudo-termp) @('nonrec<x1,...,xn>')
                           described in the documentation,
@@ -132,18 +334,10 @@
                (tailrec-find-nonrec-terms
                 combine-nonrec (cdr terms-to-try) r q))))))
 
-(define tailrec-decompose-recursive-branch
-  ((old$ symbolp "Target function of the transformation,
-                  denoted by the input @('old').")
-   (rec-branch pseudo-termp
-               "Recursive branch of the target function,
-                namely the term @('combine<nonrec<x1,...,xn>,
-                                           (old update-x1<x1,...,xn>
-                                                ...
-                                                update-xn<x1,...,xn>)>')
-                described in the documentation.")
-   (ctx "Context for errors.")
-   state)
+(define tailrec-decompose-recursive-branch ((old$ symbolp)
+                                            (rec-branch pseudo-termp)
+                                            ctx
+                                            state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -200,13 +394,12 @@
                    of the target function ~x1." rec-branch old$)))
     (value (list nonrec updates combine q r))))
 
-(define tailrec-check-old
-  ((old "Input to the transformation.")
-   (variant "Input to the transformation.")
-   (verify-guards "Input to the transformation.")
-   (verbose booleanp "Print informative messages or not.")
-   (ctx "Context for errors.")
-   state)
+(define tailrec-check-old (old
+                           variant
+                           verify-guards
+                           (verbose booleanp)
+                           ctx
+                           state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -318,18 +511,17 @@
   :short "Variants of the tail recursion transformation.")
 
 (def-error-checker tailrec-check-variant
-  ((variant "Input to the transformation."))
+  (variant)
   "Ensure that the @('variant') input to the transformation is valid."
   (((tailrec-variantp variant)
     "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." description)))
 
-(define tailrec-infer-domain
-  ((combine pseudo-termp "Result of @(tsee tailrec-check-old).")
-   (q symbolp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (verbose booleanp "Print informative messages or not.")
-   (wrld plist-worldp))
+(define tailrec-infer-domain ((combine pseudo-termp)
+                              (q symbolp)
+                              (r symbolp)
+                              (variant$ tailrec-variantp)
+                              (verbose booleanp)
+                              (wrld plist-worldp))
   :returns (domain "A @(tsee pseudo-termfnp).")
   :verify-guards nil
   :short "Infer the domain over which some applicability conditions must hold."
@@ -362,20 +554,16 @@
         (cw "Inferred domain for the applicability conditions: ~x0.~%" domain)))
     domain))
 
-(define tailrec-check-domain
-  ((domain "Input to the transformation.")
-   (old$ symbolp "Result of @(tsee tailrec-check-old).")
-   (combine pseudo-termp "Result of @(tsee tailrec-check-old).")
-   (q symbolp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (verify-guards$ booleanp
-                   "Result of validating
-                    the @(':verify-guards') input to the transformation
-                    (in @(tsee tailrec-check-inputs)).")
-   (verbose booleanp "Print informative messages or not.")
-   (ctx "Context for errors.")
-   state)
+(define tailrec-check-domain (domain
+                              (old$ symbolp)
+                              (combine pseudo-termp)
+                              (q symbolp)
+                              (r symbolp)
+                              (variant$ tailrec-variantp)
+                              (verify-guards$ booleanp)
+                              (verbose booleanp)
+                              ctx
+                              state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -476,11 +664,10 @@
                                              description t nil))))
     (value fn/lambda)))
 
-(define tailrec-check-new-name
-  ((new-name "Input to the transformation.")
-   (old$ symbolp "Result of @(tsee tailrec-check-old).")
-   (ctx "Context for errors.")
-   state)
+(define tailrec-check-new-name (new-name
+                                (old$ symbolp)
+                                ctx
+                                state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -503,11 +690,10 @@
        ((er &) (ensure-symbol-new-event-name$ name description t nil)))
     (value name)))
 
-(define tailrec-check-wrapper-name
-  ((wrapper-name "Input to the transformation.")
-   (new-name$ symbolp "Result of @(tsee tailrec-check-new-name).")
-   (ctx "Context for errors.")
-   state)
+(define tailrec-check-wrapper-name (wrapper-name
+                                    (new-name$ symbolp)
+                                    ctx
+                                    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -537,13 +723,12 @@
                 t nil)))
     (value name)))
 
-(define tailrec-check-thm-name
-  ((thm-name "Input to the transformation.")
-   (old$ symbolp "Result of @(tsee tailrec-check-old).")
-   (new-name$ symbolp "Result of @(tsee tailrec-check-new-name).")
-   (wrapper-name$ symbolp "Result of @(tsee tailrec-check-wrapper-name).")
-   (ctx "Context for errors.")
-   state)
+(define tailrec-check-thm-name (thm-name
+                                (old$ symbolp)
+                                (new-name$ symbolp)
+                                (wrapper-name$ symbolp)
+                                ctx
+                                state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -604,10 +789,7 @@
   (defruled no-duplicatesp-eq-of-*tailrec-app-cond-names*
     (no-duplicatesp-eq *tailrec-app-cond-names*)))
 
-(define tailrec-check-hints
-  ((hints "Input to the transformation.")
-   (ctx "Context for errors.")
-   state)
+(define tailrec-check-hints (hints ctx state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -634,21 +816,21 @@
                                     description t nil)))
     (value alist)))
 
-(define tailrec-check-inputs ((old "Input to the transformation.")
-                              (variant "Input to the transformation.")
-                              (domain "Input to the transformation.")
-                              (new-name "Input to the transformation.")
-                              (new-enable "Input to the transformation.")
-                              (wrapper-name "Input to the transformation.")
-                              (wrapper-enable "Input to the transformation.")
-                              (thm-name "Input to the transformation.")
-                              (thm-enable "Input to the transformation.")
-                              (non-executable "Input to the transformation.")
-                              (verify-guards "Input to the transformation.")
-                              (hints "Input to the transformation.")
-                              (print "Input to the transformation.")
-                              (show-only "Input to the transformation.")
-                              (ctx "Context for errors.")
+(define tailrec-check-inputs (old
+                              variant
+                              domain
+                              new-name
+                              new-enable
+                              wrapper-name
+                              wrapper-enable
+                              thm-name
+                              thm-enable
+                              non-executable
+                              verify-guards
+                              hints
+                              print
+                              show-only
+                              ctx
                               state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
@@ -789,8 +971,7 @@
                  hints$
                  print$))))
 
-(define tailrec-var-u
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs)."))
+(define tailrec-var-u ((old$ symbolp))
   :returns (u "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('u') to use in the
@@ -801,8 +982,7 @@
           applicability conditions."
   (genvar old$ "U" nil nil))
 
-(define tailrec-var-v
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs)."))
+(define tailrec-var-v ((old$ symbolp))
   :returns (v "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('u') to use in the
@@ -813,8 +993,7 @@
           applicability conditions."
   (genvar old$ "V" nil nil))
 
-(define tailrec-var-w
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs)."))
+(define tailrec-var-w ((old$ symbolp))
   :returns (w "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('u') to use in the
@@ -823,9 +1002,7 @@
           applicability conditions."
   (genvar old$ "W" nil nil))
 
-(define tailrec-id-var-u
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrld plist-worldp))
+(define tailrec-id-var-u ((old$ symbolp) (wrld plist-worldp))
   :returns (u "A @(tsee symbolp).")
   :mode :program
   :short "The variable @('u') to use in the
@@ -838,10 +1015,9 @@
    </p>"
   (genvar old$ "U" nil (formals old$ wrld)))
 
-(define tailrec-combine-op
-  ((combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (q symbolp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs)."))
+(define tailrec-combine-op ((combine pseudo-termp)
+                            (q symbolp)
+                            (r symbolp))
   :returns (combine-op pseudo-lambdap
                        :hyp :guard
                        :hints (("Goal" :in-theory (enable pseudo-lambdap))))
@@ -855,14 +1031,14 @@
 (define tailrec-app-cond-formula
   ((name (member-eq name *tailrec-app-cond-names*)
          "Name of the applicability condition.")
-   (old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (q symbolp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
+   (old$ symbolp)
+   (test pseudo-termp)
+   (base pseudo-termp)
+   (nonrec pseudo-termp)
+   (combine pseudo-termp)
+   (q symbolp)
+   (r symbolp)
+   (domain$ pseudo-termfnp)
    state)
   :returns (formula "An untranslated term.")
   :mode :program
@@ -945,8 +1121,8 @@
 (define tailrec-app-cond-present-p
   ((name (member-eq name *tailrec-app-cond-names*)
          "Name of the applicability condition.")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs)."))
+   (variant$ tailrec-variantp)
+   (verify-guards$ booleanp))
   :returns (yes/no booleanp :hyp (booleanp verify-guards$))
   :short "Check if the named applicability condition is present."
   (case name
@@ -965,18 +1141,17 @@
                                        verify-guards$))
     (t (impossible))))
 
-(define tailrec-app-conds
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (q symbolp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   state)
+(define tailrec-app-conds ((old$ symbolp)
+                           (test pseudo-termp)
+                           (base pseudo-termp)
+                           (nonrec pseudo-termp)
+                           (combine pseudo-termp)
+                           (q symbolp)
+                           (r symbolp)
+                           (variant$ tailrec-variantp)
+                           (domain$ pseudo-termfnp)
+                           (verify-guards$ booleanp)
+                           state)
   :returns (app-conds "A @(tsee symbol-alistp).")
   :mode :program
   :short "Generate the applicability conditions that must hold."
@@ -1024,21 +1199,15 @@
                                 state))))))
 
 (define tailrec-domain-of-old-intro-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (names-to-avoid symbol-listp "Names of other events
-                                 (calculated in @(tsee tailrec-event)).")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee tailrec-event)).")
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
+  ((old$ symbolp)
+   (test pseudo-termp)
+   (nonrec pseudo-termp)
+   (updates pseudo-term-listp)
+   (variant$ tailrec-variantp)
+   (domain$ pseudo-termfnp)
+   (names-to-avoid symbol-listp)
+   (app-cond-thm-names symbol-symbol-alistp)
+   (old-fn-unnorm-name symbolp)
    (wrld plist-worldp))
   :returns (mv (domain-of-old-thm-event "A @(tsee pseudo-event-formp).")
                (domain-of-old-thm-name "A @(tsee symbolp)
@@ -1114,24 +1283,21 @@
     (mv event name)))
 
 (define tailrec-new-fn-intro-events
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
-   (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (q symbolp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (new-enable$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (non-executable$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee tailrec-event)).")
+  ((old$ symbolp)
+   (test pseudo-termp)
+   (base pseudo-termp)
+   (nonrec pseudo-termp)
+   (updates pseudo-term-listp)
+   (combine pseudo-termp)
+   (q symbolp)
+   (r symbolp)
+   (variant$ tailrec-variantp)
+   (domain$ pseudo-termfnp)
+   (new-name$ symbolp)
+   (new-enable$ booleanp)
+   (non-executable$ booleanp)
+   (verify-guards$ booleanp)
+   (app-cond-thm-names symbol-symbol-alistp)
    (wrld plist-worldp))
   :returns (mv (new-fn-local-event "A @(tsee pseudo-event-formp).")
                (new-fn-exported-event "A @(tsee pseudo-event-formp).")
@@ -1320,33 +1486,23 @@
                  ,body)))
     (mv local-event exported-event formals)))
 
-(define tailrec-new-to-old-intro-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
-   (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (q symbolp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (names-to-avoid symbol-listp "Names of other events
-                                 (calculated in @(tsee tailrec-event)).")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee tailrec-event)).")
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (domain-of-old-thm-name
-    symbolp "Result of @(tsee tailrec-domain-of-old-intro-event).")
-   (new-fn-formals symbol-listp
-                   "Result of @(tsee tailrec-new-fn-intro-events).")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
-   (wrld plist-worldp))
+(define tailrec-new-to-old-intro-event ((old$ symbolp)
+                                        (nonrec pseudo-termp)
+                                        (updates pseudo-term-listp)
+                                        (combine pseudo-termp)
+                                        (q symbolp)
+                                        (r symbolp)
+                                        (variant$ tailrec-variantp)
+                                        (domain$ pseudo-termfnp)
+                                        (new-name$ symbolp)
+                                        (names-to-avoid symbol-listp)
+                                        (app-cond-thm-names
+                                         symbol-symbol-alistp)
+                                        (old-fn-unnorm-name symbolp)
+                                        (domain-of-old-thm-name symbolp)
+                                        (new-fn-formals symbol-listp)
+                                        (new-fn-unnorm-name symbolp)
+                                        (wrld plist-worldp))
   :returns (mv (new-to-old-thm-event "A @(tsee pseudo-event-formp).")
                (new-to-old-thm-name "A @(tsee symbolp)
                                      that names the theorem."))
@@ -1476,12 +1632,11 @@
                         :hints ,hints))))
     (mv event name)))
 
-(define tailrec-alpha-fn-intro-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
-   (names-to-avoid symbol-listp "Names already used by preceding events.")
-   (wrld plist-worldp))
+(define tailrec-alpha-fn-intro-event ((old$ symbolp)
+                                      (test pseudo-termp)
+                                      (updates pseudo-term-listp)
+                                      (names-to-avoid symbol-listp)
+                                      (wrld plist-worldp))
   :returns (mv (alpha-fn-event "A @(tsee pseudo-event-formp).")
                (alpha-fn-name "A @(tsee symbolp)."))
   :mode :program
@@ -1518,10 +1673,9 @@
                   ,body))))
     (mv event name)))
 
-(define tailrec-alpha-component-terms
-  ((alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
-   (old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrld plist-worldp))
+(define tailrec-alpha-component-terms ((alpha-fn-name symbolp)
+                                       (old$ symbolp)
+                                       (wrld plist-worldp))
   :returns (terms "A @(tsee pseudo-term-listp).")
   :verify-guards nil
   :short "Generate the terms of the components of the result of @($\\alpha$)."
@@ -1554,12 +1708,11 @@
                                             formals
                                             (cons term terms)))))))
 
-(define tailrec-test-of-alpha-intro-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
-   (names-to-avoid symbol-listp "Names already used by preceding events.")
-   (wrld plist-worldp))
+(define tailrec-test-of-alpha-intro-event ((old$ symbolp)
+                                           (test pseudo-termp)
+                                           (alpha-fn-name symbolp)
+                                           (names-to-avoid symbol-listp)
+                                           (wrld plist-worldp))
   :returns (mv (test-of-alpha-thm-event "A @(tsee pseudo-event-formp).")
                (test-of-alpha-thm-name "A @(tsee symbolp)
                                         that names the theorem."))
@@ -1599,11 +1752,10 @@
                         :hints ,hints))))
     (mv event name)))
 
-(define tailrec-old-guard-of-alpha-intro-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
-   (names-to-avoid symbol-listp "Names already used by preceding events.")
-   (wrld plist-worldp))
+(define tailrec-old-guard-of-alpha-intro-event ((old$ symbolp)
+                                                (alpha-fn-name symbolp)
+                                                (names-to-avoid symbol-listp)
+                                                (wrld plist-worldp))
   :returns (mv (old-guard-of-alpha-thm-event "A @(tsee pseudo-event-formp).")
                (old-guard-of-alpha-thm-name "A @(tsee symbolp)
                                              that names the theorem."))
@@ -1651,17 +1803,13 @@
     (mv event name)))
 
 (define tailrec-domain-of-ground-base-intro-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee tailrec-event)).")
-   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
-   (test-of-alpha-thm-name
-    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event).")
-   (names-to-avoid symbol-listp "Names already used by preceding events.")
+  ((old$ symbolp)
+   (base pseudo-termp)
+   (domain$ pseudo-termfnp)
+   (app-cond-thm-names symbol-symbol-alistp)
+   (alpha-fn-name symbolp)
+   (test-of-alpha-thm-name symbolp)
+   (names-to-avoid symbol-listp)
    (wrld plist-worldp))
   :returns (mv (domain-of-ground-base-thm-event "A @(tsee pseudo-event-formp).")
                (domain-of-ground-base-thm-name "A @(tsee symbolp)
@@ -1703,20 +1851,16 @@
     (mv event name)))
 
 (define tailrec-combine-left-identity-ground-intro-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (q symbolp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee tailrec-event)).")
-   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
-   (test-of-alpha-thm-name
-    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event).")
-   (names-to-avoid symbol-listp "Names already used by preceding events.")
+  ((old$ symbolp)
+   (base pseudo-termp)
+   (combine pseudo-termp)
+   (q symbolp)
+   (r symbolp)
+   (domain$ pseudo-termfnp)
+   (app-cond-thm-names symbol-symbol-alistp)
+   (alpha-fn-name symbolp)
+   (test-of-alpha-thm-name symbolp)
+   (names-to-avoid symbol-listp)
    (wrld plist-worldp))
   :returns (mv (combine-left-identity-ground-thm-event
                 "A @(tsee pseudo-event-formp).")
@@ -1764,14 +1908,12 @@
     (mv event name)))
 
 (define tailrec-base-guard-intro-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (alpha-fn-name symbolp "Result of @(tsee tailrec-alpha-fn-intro-event).")
-   (test-of-alpha-thm-name
-    symbolp "Result of @(tsee tailrec-test-of-alpha-intro-event).")
-   (old-guard-of-alpha-thm-name
-    symbolp "Result of @(tsee tailrec-old-guard-of-alpha-intro-event).")
-   (names-to-avoid symbol-listp "Names already used by preceding events.")
+  ((old$ symbolp)
+   (base pseudo-termp)
+   (alpha-fn-name symbolp)
+   (test-of-alpha-thm-name symbolp)
+   (old-guard-of-alpha-thm-name symbolp)
+   (names-to-avoid symbol-listp)
    state)
   :returns (mv (base-guard-thm-event "A @(tsee pseudo-event-formp).")
                (base-guard-thm-name "A @(tsee symbolp)
@@ -1813,16 +1955,15 @@
     (mv event name)))
 
 (define tailrec-old-as-new
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (new-fn-formals symbol-listp
-                   "Result of @(tsee tailrec-new-fn-intro-events).")
+  ((old$ symbolp)
+   (test pseudo-termp)
+   (base pseudo-termp)
+   (nonrec pseudo-termp)
+   (updates pseudo-term-listp)
+   (r symbolp)
+   (variant$ tailrec-variantp)
+   (new-name$ symbolp)
+   (new-fn-formals symbol-listp)
    (wrld plist-worldp))
   :returns (term "An untranslated term.")
   :mode :program
@@ -1854,31 +1995,21 @@
                nil wrld))
 
 (define tailrec-old-to-new-intro-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (names-to-avoid symbol-listp "Names of other events
-                                 (calculated in @(tsee tailrec-event)).")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee tailrec-event)).")
-   (domain-of-old-thm-name
-    symbolp "Result of @(tsee tailrec-domain-of-old-intro-event).")
-   (domain-of-ground-base-thm-name
-    symbolp "Result of @(tsee tailrec-domain-of-ground-base-intro-event).")
-   (combine-left-identity-ground-thm-name
-    symbolp
-    "Result of @(tsee tailrec-combine-left-identity-ground-intro-event).")
-   (new-fn-formals symbol-listp
-                   "Result of @(tsee tailrec-new-fn-intro-events).")
-   (new-to-old-thm-name
-    symbolp "Result of @(tsee tailrec-new-to-old-intro-event).")
+  ((old$ symbolp)
+   (test pseudo-termp)
+   (base pseudo-termp)
+   (nonrec pseudo-termp)
+   (updates pseudo-term-listp)
+   (r symbolp)
+   (variant$ tailrec-variantp)
+   (new-name$ symbolp)
+   (names-to-avoid symbol-listp)
+   (app-cond-thm-names symbol-symbol-alistp)
+   (domain-of-old-thm-name symbolp)
+   (domain-of-ground-base-thm-name symbolp)
+   (combine-left-identity-ground-thm-name symbolp)
+   (new-fn-formals symbol-listp)
+   (new-to-old-thm-name symbolp)
    (wrld plist-worldp))
   :returns (mv (old-to-new-thm-event "A @(tsee pseudo-event-formp).")
                (old-to-new-thm-name "A @(tsee symbolp)
@@ -1955,28 +2086,22 @@
     (mv event name)))
 
 (define tailrec-wrapper-fn-intro-events
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-enable$ booleanp "Input to the trasformation, after validation.")
-   (non-executable$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee tailrec-event)).")
-   (domain-of-ground-base-thm-name
-    symbolp "Result of @(tsee tailrec-domain-of-ground-base-intro-event).")
-   (base-guard-thm-name
-    symbolp "Result of @(tsee tailrec-base-guard-intro-event).")
-   (new-fn-formals symbol-listp
-                   "Result of @(tsee tailrec-new-fn-intro-events).")
+  ((old$ symbolp)
+   (test pseudo-termp)
+   (base pseudo-termp)
+   (nonrec pseudo-termp)
+   (updates pseudo-term-listp)
+   (r symbolp)
+   (variant$ tailrec-variantp)
+   (new-name$ symbolp)
+   (wrapper-name$ symbolp)
+   (wrapper-enable$ booleanp)
+   (non-executable$ booleanp)
+   (verify-guards$ booleanp)
+   (app-cond-thm-names symbol-symbol-alistp)
+   (domain-of-ground-base-thm-name symbolp)
+   (base-guard-thm-name symbolp)
+   (new-fn-formals symbol-listp)
    (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp)."))
@@ -2051,15 +2176,12 @@
     (mv local-event exported-event)))
 
 (define tailrec-old-to-wrapper-intro-events
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (thm-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (thm-enable$ booleanp "Input to the trasformation, after validation.")
-   (old-to-new-thm-name symbolp
-                        "Result of @(tsee tailrec-old-to-new-intro-event).")
-   (wrapper-fn-unnorm-name symbolp "Name of the theorem that installs
-                                    the non-normalized definition
-                                    of the wrapper function.")
+  ((old$ symbolp)
+   (wrapper-name$ symbolp)
+   (thm-name$ symbolp)
+   (thm-enable$ booleanp)
+   (old-to-new-thm-name symbolp)
+   (wrapper-fn-unnorm-name symbolp)
    (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp)."))
@@ -2108,31 +2230,30 @@
                                 ,formula)))
     (mv local-event exported-event)))
 
-(define tailrec-event
-  ((old$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (test pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (base pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (nonrec pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (updates pseudo-term-listp "Result of @(tsee tailrec-check-inputs).")
-   (combine pseudo-termp "Result of @(tsee tailrec-check-inputs).")
-   (q symbolp "Result of @(tsee tailrec-check-inputs).")
-   (r symbolp "Result of @(tsee tailrec-check-inputs).")
-   (variant$ tailrec-variantp "Input to the trasformation, after validation.")
-   (domain$ pseudo-termfnp "Result of @(tsee tailrec-check-inputs).")
-   (new-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (new-enable$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (wrapper-enable$ booleanp "Input to the trasformation, after validation.")
-   (thm-name$ symbolp "Result of @(tsee tailrec-check-inputs).")
-   (thm-enable$ booleanp "Input to the trasformation, after validation.")
-   (non-executable$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (verify-guards$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (hints$ symbol-alistp "Result of @(tsee tailrec-check-inputs).")
-   (print$ booleanp "Result of @(tsee tailrec-check-inputs).")
-   (show-only$ booleanp "Input to the transformation, after validation.")
-   (app-conds symbol-alistp "Result of @(tsee tailrec-app-conds).")
-   (call pseudo-event-formp "Call to the transformation.")
-   state)
+(define tailrec-event ((old$ symbolp)
+                       (test pseudo-termp)
+                       (base pseudo-termp)
+                       (nonrec pseudo-termp)
+                       (updates pseudo-term-listp)
+                       (combine pseudo-termp)
+                       (q symbolp)
+                       (r symbolp)
+                       (variant$ tailrec-variantp)
+                       (domain$ pseudo-termfnp)
+                       (new-name$ symbolp)
+                       (new-enable$ booleanp)
+                       (wrapper-name$ symbolp)
+                       (wrapper-enable$ booleanp)
+                       (thm-name$ symbolp)
+                       (thm-enable$ booleanp)
+                       (non-executable$ booleanp)
+                       (verify-guards$ booleanp)
+                       (hints$ symbol-alistp)
+                       (print$ canonical-print-specifier-p)
+                       (show-only$ booleanp)
+                       (app-conds symbol-alistp)
+                       (call pseudo-event-formp)
+                       state)
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
   :short "Event form generated by the transformation."
@@ -2458,22 +2579,22 @@
        (value-triple :invisible))))
 
 (define tailrec-fn
-  ((old "Input to the transformation.")
-   (variant "Input to the transformation.")
-   (domain "Input to the transformation.")
-   (new-name "Input to the transformation.")
-   (new-enable "Input to the transformation.")
-   (wrapper-name "Input to the transformation.")
-   (wrapper-enable "Input to the transformation.")
-   (thm-name "Input to the transformation.")
-   (thm-enable "Input to the transformation.")
-   (non-executable "Input to the transformation.")
-   (verify-guards "Input to the transformation.")
-   (hints "Input to the transformation.")
-   (print "Input to the transformation.")
-   (show-only "Input to the transformation.")
-   (call pseudo-event-formp "Call to the transformation.")
-   (ctx "Context for errors.")
+  (old
+   variant
+   domain
+   new-name
+   new-enable
+   wrapper-name
+   wrapper-enable
+   thm-name
+   thm-enable
+   non-executable
+   verify-guards
+   hints
+   print
+   show-only
+   (call pseudo-event-formp)
+   ctx
    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error

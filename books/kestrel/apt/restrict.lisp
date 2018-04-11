@@ -25,7 +25,114 @@
 
 (defsection restrict-implementation
   :parents (implementation restrict)
-  :short "Implementation of @(tsee restrict).")
+  :short "Implementation of @(tsee restrict)."
+  :long
+  "<p>
+   The implementation functions have formal parameters
+   consistently named as follows:
+   </p>
+   <ul>
+     <li>
+     @('state') is the ACL2's @(see state).
+     </li>
+     <li>
+     @('wrld') is the ACL2's @(see world).
+     </li>
+     <li>
+     @('ctx') is the context used for errors.
+     </li>
+     <li>
+     @('old'),
+     @('restriction'),
+     @('undefined'),
+     @('new-name'),
+     @('new-enable'),
+     @('thm-name'),
+     @('thm-enable'),
+     @('non-executable'),
+     @('verify-guards'),
+     @('hints'),
+     @('print'), and
+     @('show-only')
+     are the homonymous inputs to @(tsee tailrec),
+     before being validated.
+     These formal parameters have no types because they may be any values.
+     </li>
+     <li>
+     @('call') is the call to @(tsee tailrec) supplied by the user.
+     </li>
+     <li>
+     @('old$') is the name of the target function.
+     It is the result of validating @('old').
+     </li>
+     <li>
+     @('restriction$') is the restricting predicate, in translated form.
+     It is the result of validating @('restriction').
+     </li>
+     <li>
+     @('undefined$') is the value to return
+     when the restriction is not satisfied.
+     It is the result of validating @('undefined').
+     </li>
+     <li>
+     @('new-name$') is the name to use for the new function.
+     It is the result of validating @('new-name').
+     </li>
+     <li>
+     @('new-enable$') is the enablement status to use for the new function.
+     It is the result of validating @('new-enable').
+     </li>
+     <li>
+     @('thm-name$') is the name to use for the old-to-new theorem.
+     It is the result of validating @('thm-name').
+     </li>
+     <li>
+     @('thm-enable$') is @('thm-enable'), after validation.
+     </li>
+     <li>
+     @('non-executable$') is the non-executable status
+     to use for the new function.
+     It is the result of validating @('non-executable').
+     </li>
+     <li>
+     @('verify-guards$') is the guard verification status
+     to use for the new function.
+     It is the result of validating @('verify-guards').
+     </li>
+     <li>
+     @('hints$') is an alist with unique keys
+     from keywords that identify applicability conditions
+     to hints to use to prove the corresponding applicability conditions.
+     It is the result of validating @('hints').
+     </li>
+     <li>
+     @('print$') is a print specifier in list form.
+     It is the result of validating @('print').
+     </li>
+     <li>
+     @('show-only$') is @('show-only'), after validation.
+     </li>
+     <li>
+     @('app-cond-thm-names') is an alist
+     from the keywords that identify the applicability conditions
+     to the corresponding generated theorem names.
+     </li>
+     <li>
+     @('old-fn-unnorm-name') is the name of the generated theorem
+     that installs the non-normalized definition of the target function.
+     </li>
+     <li>
+     @('new-fn-unnorm-name') is the name of the generated theorem
+     that installs the non-normalized definition of the new function.
+     </li>
+     <li>
+     @('app-conds') are the applicability conditions.
+     </li>
+   </ul>
+   <p>
+   The parameters of implementation functions that are not listed above
+   are described in, or clear from, those functions' documentation.
+   </p>")
 
 (xdoc::order-subtopics restrict-implementation nil t)
 
@@ -33,11 +140,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict-check-old
-  ((old "Input to the transformation.")
-   (verify-guards "Input to the transformation.")
-   (ctx "Context for errors.")
-   state)
+(define restrict-check-old (old verify-guards ctx state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -80,15 +183,11 @@
                  (value nil))))
     (value old$)))
 
-(define restrict-check-restriction
-  ((restriction "Input to the transformation.")
-   (old$ symbolp "Result of @(tsee restrict-check-old).")
-   (verify-guards$ booleanp
-                   "Result of validating
-                    the @(':verify-guards') input to the transformation
-                    (in @(tsee restrict-check-inputs)).")
-   (ctx "Context for errors.")
-   state)
+(define restrict-check-restriction (restriction
+                                    (old$ symbolp)
+                                    (verify-guards$ booleanp)
+                                    ctx
+                                    state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -124,11 +223,10 @@
                                            description t nil)))
     (value term)))
 
-(define restrict-check-undefined
-  ((undefined "Input to the transformation.")
-   (old$ symbolp "Result of @(tsee restrict-check-old).")
-   (ctx "Context for errors.")
-   state)
+(define restrict-check-undefined (undefined
+                                  (old$ symbolp)
+                                  ctx
+                                  state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -155,11 +253,10 @@
                                            description t nil)))
     (value term)))
 
-(define restrict-check-new-name
-  ((new-name "Input to the transformation.")
-   (old$ symbolp "Result of @(tsee restrict-check-old).")
-   (ctx "Context for errors.")
-   state)
+(define restrict-check-new-name (new-name
+                                 (old$ symbolp)
+                                 ctx
+                                 state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -182,12 +279,11 @@
        ((er &) (ensure-symbol-new-event-name$ name description t nil)))
     (value name)))
 
-(define restrict-check-thm-name
-  ((thm-name "Input to the transformation.")
-   (old$ symbolp "Result of @(tsee restrict-check-old).")
-   (new-name$ symbolp "Result of @(tsee restrict-check-new-name).")
-   (ctx "Context for errors.")
-   state)
+(define restrict-check-thm-name (thm-name
+                                 (old$ symbolp)
+                                 (new-name$ symbolp)
+                                 ctx
+                                 state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -234,10 +330,7 @@
   (defruled no-duplicatesp-eq-of-*restrict-app-cond-names*
     (no-duplicatesp-eq *restrict-app-cond-names*)))
 
-(define restrict-check-hints
-  ((hints "Input to the transformation.")
-   (ctx "Context for errors.")
-   state)
+(define restrict-check-hints (hints ctx state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
@@ -264,19 +357,19 @@
                                     description t nil)))
     (value alist)))
 
-(define restrict-check-inputs ((old "Input to the transformation.")
-                               (restriction "Input to the transformation.")
-                               (undefined "Input to the transformation.")
-                               (new-name "Input to the transformation.")
-                               (new-enable "Input to the transformation.")
-                               (thm-name "Input to the transformation.")
-                               (thm-enable "Input to the transformation.")
-                               (non-executable "Input to the transformation.")
-                               (verify-guards "Input to the transformation.")
-                               (hints "Input to the transformation.")
-                               (print "Input to the transformation.")
-                               (show-only "Input to the transformation.")
-                               (ctx "Context for errors.")
+(define restrict-check-inputs (old
+                               restriction
+                               undefined
+                               new-name
+                               new-enable
+                               thm-name
+                               thm-enable
+                               non-executable
+                               verify-guards
+                               hints
+                               print
+                               show-only
+                               ctx
                                state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
@@ -378,11 +471,11 @@
                  print$))))
 
 (define restrict-restriction-of-rec-calls-consequent
-  ((old$ symbolp "Result of @(tsee restrict-check-inputs).")
+  ((old$ symbolp)
    (rec-calls-with-tests pseudo-tests-and-call-listp
                          "Recursive calls, with controlling tests,
                           of the old function.")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
+   (restriction$ pseudo-termp)
    (wrld plist-worldp))
   :returns (consequent "A @(tsee pseudo-termp).")
   :verify-guards nil
@@ -439,8 +532,8 @@
 (define restrict-app-cond-formula
   ((name (member-eq name *restrict-app-cond-names*)
          "Name of the applicability condition.")
-   (old$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
+   (old$ symbolp)
+   (restriction$ pseudo-termp)
    state)
   :returns (formula "An untranslated term.")
   :mode :program
@@ -466,8 +559,8 @@
 (define restrict-app-cond-present-p
   ((name (member-eq name *restrict-app-cond-names*)
          "Name of the applicability condition.")
-   (old$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (verify-guards$ booleanp "Result of @(tsee restrict-check-inputs).")
+   (old$ symbolp)
+   (verify-guards$ booleanp)
    (wrld plist-worldp))
   :returns (yes/no booleanp :hyp (booleanp verify-guards$))
   :short "Check if the named applicability condition is present."
@@ -477,11 +570,10 @@
     (:restriction-boolean t)
     (t (impossible))))
 
-(define restrict-app-conds
-  ((old$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (verify-guards$ booleanp "Result of @(tsee restrict-check-inputs).")
-   state)
+(define restrict-app-conds ((old$ symbolp)
+                            (restriction$ pseudo-termp)
+                            (verify-guards$ booleanp)
+                            state)
   :returns (app-conds "A @(tsee symbol-alistp).")
   :mode :program
   :short "Generate the applicability conditions that must hold."
@@ -522,15 +614,14 @@
                                  (acons name formula rev-app-conds)
                                  state))))))
 
-(define restrict-new-fn-intro-events
-  ((old$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (undefined$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (new-name$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (new-enable$ booleanp "Result of @(tsee restrict-check-inputs).")
-   (non-executable$ booleanp "Result of @(tsee restrict-check-inputs).")
-   (verify-guards$ booleanp "Result of @(tsee restrict-check-inputs).")
-   (wrld plist-worldp))
+(define restrict-new-fn-intro-events ((old$ symbolp)
+                                      (restriction$ pseudo-termp)
+                                      (undefined$ pseudo-termp)
+                                      (new-name$ symbolp)
+                                      (new-enable$ booleanp)
+                                      (non-executable$ booleanp)
+                                      (verify-guards$ booleanp)
+                                      (wrld plist-worldp))
   :returns (mv (new-fn-local-event "A @(tsee pseudo-event-formp).")
                (new-fn-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
@@ -633,21 +724,14 @@
     (mv local-event exported-event)))
 
 (define restrict-old-to-new-intro-events
-  ((old$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (new-name$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (thm-name$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (thm-enable$ booleanp "Input to the transformation, after validation.")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee restrict-event)).")
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
+  ((old$ symbolp)
+   (restriction$ pseudo-termp)
+   (new-name$ symbolp)
+   (thm-name$ symbolp)
+   (thm-enable$ booleanp)
+   (app-cond-thm-names symbol-symbol-alistp)
+   (old-fn-unnorm-name symbolp)
+   (new-fn-unnorm-name symbolp)
    (wrld plist-worldp))
   :returns (mv (old-to-new-local-event "A @(tsee pseudo-event-formp).")
                (old-to-new-exported-event "A @(tsee pseudo-event-formp)."))
@@ -717,13 +801,10 @@
     (mv local-event exported-event)))
 
 (define restrict-new-fn-verify-guards-event
-  ((old$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (new-name$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (thm-name$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee restrict-event)).")
+  ((old$ symbolp)
+   (new-name$ symbolp)
+   (thm-name$ symbolp)
+   (app-cond-thm-names symbol-symbol-alistp)
    (wrld plist-worldp))
   :returns (new-fn-verify-guards-event pseudo-event-formp)
   :verify-guards nil
@@ -793,22 +874,21 @@
        (event `(local (verify-guards ,new-name$ :hints ,hints))))
     event))
 
-(define restrict-event
-  ((old$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (undefined$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (new-name$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (new-enable$ booleanp "Result of @(tsee restrict-check-inputs).")
-   (thm-name$ symbolp "Result of @(tsee restrict-check-inputs).")
-   (thm-enable$ booleanp "Input to the transformation, after validation.")
-   (non-executable$ booleanp "Result of @(tsee restrict-check-inputs).")
-   (verify-guards$ booleanp "Result of @(tsee restrict-check-inputs).")
-   (hints$ symbol-alistp "Result of @(tsee restrict-check-inputs).")
-   (print$ booleanp "Result of @(tsee restrict-check-inputs).")
-   (show-only$ booleanp "Input to the transformation, after validation.")
-   (app-conds symbol-alistp "Result of @(tsee restrict-app-conds).")
-   (call pseudo-event-formp "Call to the transformation.")
-   (wrld plist-worldp))
+(define restrict-event ((old$ symbolp)
+                        (restriction$ pseudo-termp)
+                        (undefined$ pseudo-termp)
+                        (new-name$ symbolp)
+                        (new-enable$ booleanp)
+                        (thm-name$ symbolp)
+                        (thm-enable$ booleanp)
+                        (non-executable$ booleanp)
+                        (verify-guards$ booleanp)
+                        (hints$ symbol-alistp)
+                        (print$ canonical-print-specifier-p)
+                        (show-only$ booleanp)
+                        (app-conds symbol-alistp)
+                        (call pseudo-event-formp)
+                        (wrld plist-worldp))
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
   :short "Event form generated by the transformation."
@@ -993,22 +1073,21 @@
        ,@print-events
        (value-triple :invisible))))
 
-(define restrict-fn
-  ((old "Input to the transformation.")
-   (restriction "Input to the transformation.")
-   (undefined "Input to the transformation.")
-   (new-name "Input to the transformation.")
-   (new-enable "Input to the transformation.")
-   (thm-name "Input to the transformation.")
-   (thm-enable "Input to the transformation.")
-   (non-executable "Input to the transformation.")
-   (verify-guards "Input to the transformation.")
-   (hints "Input to the transformation.")
-   (print "Input to the transformation.")
-   (show-only "Input to the transformation.")
-   (call pseudo-event-formp "Call to the transformation.")
-   (ctx "Context for errors.")
-   state)
+(define restrict-fn (old
+                     restriction
+                     undefined
+                     new-name
+                     new-enable
+                     thm-name
+                     thm-enable
+                     non-executable
+                     verify-guards
+                     hints
+                     print
+                     show-only
+                     (call pseudo-event-formp)
+                     ctx
+                     state)
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
