@@ -248,6 +248,7 @@
 ;; address (64 bits, even though in our model we only model the low 48 bits due
 ;; to the invariant of instruction pointers being canonical).
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-ret
 
   ;; Op/En: #xC2 iw: I:  Near return to calling procedure and pop imm16 bytes from
@@ -269,7 +270,7 @@
   (b* ((ctx 'x86-ret)
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (rsp (read-*sp x86))
 
@@ -331,7 +332,7 @@
             (rime-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil)
           (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil)))
        ((when flg)
-        (cond         
+        (cond
          ((and (consp flg) (eql (car flg) :non-canonical-address))
           (!!fault-fresh :ss 0 :riml64-error flg)) ;; #SS(0)
          ((and (consp flg) (eql (car flg) :unaligned-linear-address))

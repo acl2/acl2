@@ -24,7 +24,7 @@
 ;; To be compatible with Arithmetic books
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
-(defsection SMT-goal-generator
+(defsection SMT-goal-generate
   :parents (verified)
   :short "SMT-goal-generator generates the three type of goals for the verified clause processor"
 
@@ -348,7 +348,7 @@
     ;; 3. clean the code in a more structured way - treat lambdas in another function
     ;; 4. clean up the above encapsulated theorems, maybe in another file
     (define expand ((expand-args ex-args-p) state)
-      :parents (SMT-goal-generator)
+      :parents (SMT-goal-generate)
       :returns (expanded-result ex-outs-p)
       :measure (expand-measure expand-args)
       :verify-guards nil
@@ -587,7 +587,7 @@
 
   (local (in-theory (enable lambda->formals-fix lambda->actuals-fix)))
   (defprod lambda-binding
-    :parents (SMT-goal-generator)
+    :parents (SMT-goal-generate)
     ((formals symbol-listp
               :default nil
               :reqfix (lambda->formals-fix formals actuals))
@@ -614,7 +614,7 @@
   ;;                               `((lambda ,b.formals ,term) ,@b.actuals))))
 
   (defprod fhg-single-args
-    :parents (SMT-goal-generator)
+    :parents (SMT-goal-generate)
     ((fn func-p :default nil)
      (actuals pseudo-term-listp :default nil)
      (fn-returns-hint-acc hint-pair-listp :default nil)
@@ -704,7 +704,7 @@
 
   ;; function hypotheses generation arguments
   (defprod fhg-args
-    :parents (SMT-goal-generator)
+    :parents (SMT-goal-generate)
     ((term-lst pseudo-term-listp :default nil)
      (fn-lst func-alistp :default nil)
      (fn-returns-hint-acc hint-pair-listp :default nil)
@@ -798,6 +798,7 @@
   ;;     theorems.
   ;;
   (define generate-fn-hint-lst ((args fhg-args-p))
+    :parents (SMT-goal-generate)
     :short "@(call generate-fn-hint-lst) generate auxiliary hypotheses from function expansion"
     :returns (fn-hint-lst fhg-args-p)
     :measure (acl2-count (fhg-args->term-lst args))
@@ -924,6 +925,7 @@
 
     ;; The top level function for generating SMT goals: G-prim and A's
     (define SMT-goal-generator ((cl pseudo-term-listp) (hints smtlink-hint-p) state)
+      :parents (SMT-goal-generate)
       :returns (new-hints smtlink-hint-p)
       :short "@(call SMT-goal-generator) is the top level function for generating SMT goals: G-prim and A's"
       :verify-guards nil

@@ -134,8 +134,7 @@
 
 (defun mv-marker-args (n x)
   (declare (xargs :guard t))
-  (and (integerp n)
-       (< 1 n)
+  (and (natp n)
        (true-listp x) ; always true?
        (cond ((eq (car x) 'list)
               (and (eql n (length (cdr x)))
@@ -144,7 +143,8 @@
               (and (true-listp (cadr x))
                    (eql n (length (cadr x)))
                    (maybe-kwote-lst (cadr x))))
-             ((eq (car x) 'cons) ; (cons a b) where b is not nil
+             ((and (eq (car x) 'cons) ; (cons a b) where b is not nil
+                   (< 0 n))
               (let ((args (mv-marker-args (1- n) (caddr x))))
                 (and args
                      (cons (cadr x) args))))

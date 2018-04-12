@@ -94,6 +94,23 @@
                                               rev-result))))
      :verify-guards nil)))
 
+(define apply-terms-same-args ((fns pseudo-termfnp) (args pseudo-term-listp))
+  :returns (terms "A @(tsee pseudo-term-listp).")
+  :verify-guards nil
+  :parents (term-utilities)
+  :short "Apply each function symbol or lambda expression of a list
+          to the same list of pseudo-term arguments,
+          obtaining a list of corresponding function applications."
+  :long
+  "<p>
+   This utility lifts @(tsee apply-term)
+   from a single function to a list of functions.
+   </p>"
+  (if (endp fns)
+      nil
+    (cons (apply-term (car fns) args)
+          (apply-terms-same-args (cdr fns) args))))
+
 (define fapply-term ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= (len terms)
@@ -151,6 +168,22 @@
                                          (cons (fapply-term* fn (car terms))
                                                rev-result))))
      :verify-guards nil)))
+
+(define fapply-terms-same-args ((fns pseudo-termfnp) (args pseudo-term-listp))
+  :returns (terms "A @(tsee pseudo-term-listp).")
+  :verify-guards nil
+  :parents (term-utilities)
+  :short "Variant of @(tsee apply-terms-same-args)
+          that performs no simplification."
+  :long
+  "<p>
+   The meaning of the starting @('f') in the name of this utility
+   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
+   </p>"
+  (if (endp fns)
+      nil
+    (cons (fapply-term (car fns) args)
+          (fapply-terms-same-args (cdr fns) args))))
 
 (defines fsublis-var
   :parents (term-utilities)
@@ -345,6 +378,32 @@
     (sublis-fn-rec-lst alist terms nil t)
     (assert$ (null vars)
              result)))
+
+(defines all-lambdas
+  :parents (term-utilities)
+  :short "Lambda expressions in a term."
+  :verify-guards nil ; done below
+
+  (define all-lambdas ((term pseudo-termp) (ans pseudo-lambda-listp))
+    :returns (final-ans pseudo-lambda-listp :hyp :guard)
+    (b* (((when (variablep term)) ans)
+         ((when (fquotep term)) ans)
+         (fn (ffn-symb term))
+         (ans (if (flambdap fn)
+                  (all-lambdas (lambda-body fn) (add-to-set-equal fn ans))
+                ans)))
+      (all-lambdas-lst (fargs term) ans)))
+
+  (define all-lambdas-lst ((terms pseudo-term-listp) (ans pseudo-lambda-listp))
+    :returns (final-ans pseudo-lambda-listp :hyp :guard)
+    (if (endp terms)
+        ans
+      (all-lambdas-lst (cdr terms)
+                       (all-lambdas (car terms) ans))))
+
+  ///
+
+  (verify-guards all-lambdas))
 
 (defines all-program-ffn-symbs
   :parents (term-utilities)

@@ -29,34 +29,34 @@
   :short "Check the alignment of a linear address."
   :long
   "<p>
-     Besides the address to check for alignment,
-     this function takes as argument the operand size
-     (from which the alignment to check is determined)
-     and a flag indicating whether the address to check for alignment
-     contains a memory operand of the form m16:16, m16:32, or m16:64
-     (see Intel manual, Mar'17, Volume 2, Section 3.1.1.3).
-     </p>
-     <p>
-     Words, doublewords, quadwords, and double quadwords
-     must be aligned at boundaries of 2, 4, 8, or 16 bytes.
-     Memory pointers of the form m16:xx must be aligned so that
-     their xx portion is aligned as a word, doubleword, or quadword;
-     this automatically guarantees that their m16 portion is aligned as a word.
-     See Intel manual, Mar'17, Volume 1, Section 4.1.1.
-     See AMD manual, Dec'17, Volume 2, Table 8-7
-     (note that the table does not mention explicitly
-     memory pointers of the form m16:64).
-     </p>
-     <p>
-     If the operand size is 6, the operand must be an m16:32 pointer.
-     If the operand size is 10, the operand must an m16:64 pointer.
-     If the operand size is 4, it may be either an m16:16 pointer or not;
-     in this case, the @('memory-ptr?') argument is used to
-     determined whether the address should be aligned
-     at a word or doubleword boundary.
-     If the operand size is 1, 2, 8, or 16,
-     it cannot be a memory pointer of the form m16:xx.
-     </p>"
+   Besides the address to check for alignment,
+   this function takes as argument the operand size
+   (from which the alignment to check is determined)
+   and a flag indicating whether the address to check for alignment
+   contains a memory operand of the form m16:16, m16:32, or m16:64
+   (see Intel manual, Mar'17, Volume 2, Section 3.1.1.3).
+   </p>
+   <p>
+   Words, doublewords, quadwords, and double quadwords
+   must be aligned at boundaries of 2, 4, 8, or 16 bytes.
+   Memory pointers of the form m16:xx must be aligned so that
+   their xx portion is aligned as a word, doubleword, or quadword;
+   this automatically guarantees that their m16 portion is aligned as a word.
+   See Intel manual, Mar'17, Volume 1, Section 4.1.1.
+   See AMD manual, Dec'17, Volume 2, Table 8-7
+   (note that the table does not mention explicitly
+   memory pointers of the form m16:64).
+   </p>
+   <p>
+   If the operand size is 6, the operand must be an m16:32 pointer.
+   If the operand size is 10, the operand must an m16:64 pointer.
+   If the operand size is 4, it may be either an m16:16 pointer or not;
+   in this case, the @('memory-ptr?') argument is used to
+   determined whether the address should be aligned
+   at a word or doubleword boundary.
+   If the operand size is 1, 2, 8, or 16,
+   it cannot be a memory pointer of the form m16:xx.
+   </p>"
   (b* ((addr (the (signed-byte #.*max-linear-address-size*) addr))
        (operand-size (the (integer 0 16) operand-size)))
     (case operand-size
@@ -348,7 +348,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 2 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 2 nil)))
              (equal (rme16 eff-addr seg-reg r-x check-alignment? x86)
                     (rml16 eff-addr r-x x86)))))
 
@@ -391,7 +392,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 2 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 2 nil)))
              (equal (rime16 eff-addr seg-reg r-x check-alignment? x86)
                     (riml16 eff-addr r-x x86)))))
 
@@ -426,7 +428,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 2 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 2 nil)))
              (equal (wme16 eff-addr seg-reg val check-alignment? x86)
                     (wml16 eff-addr val x86)))))
 
@@ -461,7 +464,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 2 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 2 nil)))
              (equal (wime16 eff-addr seg-reg val check-alignment? x86)
                     (wiml16 eff-addr val x86)))))
 
@@ -513,7 +517,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 4 mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 4 mem-ptr?)))
              (equal (rme32 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
                     (rml32 eff-addr r-x x86)))))
 
@@ -561,7 +566,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 4 mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 4 mem-ptr?)))
              (equal (rime32 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
                     (riml32 eff-addr r-x x86)))))
 
@@ -601,7 +607,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 4 mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 4 mem-ptr?)))
              (equal (wme32 eff-addr seg-reg val check-alignment? x86 :mem-ptr? mem-ptr?)
                     (wml32 eff-addr val x86)))))
 
@@ -641,7 +648,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 4 mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 4 mem-ptr?)))
              (equal (wime32 eff-addr seg-reg val check-alignment? x86 :mem-ptr? mem-ptr?)
                     (wiml32 eff-addr val x86)))))
 
@@ -689,7 +697,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 6 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 6 t)))
              (equal (rme48 eff-addr seg-reg r-x check-alignment? x86)
                     (rml48 eff-addr r-x x86)))))
 
@@ -725,7 +734,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 6 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 6 t)))
              (equal (wme48 eff-addr seg-reg val check-alignment? x86)
                     (wml48 eff-addr val x86)))))
 
@@ -773,7 +783,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 8 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 8 nil)))
              (equal (rme64 eff-addr seg-reg r-x check-alignment? x86)
                     (rml64 eff-addr r-x x86)))))
 
@@ -817,7 +828,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 8 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 8 nil)))
              (equal (rime64 eff-addr seg-reg r-x check-alignment? x86)
                     (riml64 eff-addr r-x x86)))))
 
@@ -853,7 +865,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 8 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 8 nil)))
              (equal (wme64 eff-addr seg-reg val check-alignment? x86)
                     (wml64 eff-addr val x86)))))
 
@@ -889,7 +902,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 8 nil))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 8 nil)))
              (equal (wime64 eff-addr seg-reg val check-alignment? x86)
                     (wiml64 eff-addr val x86)))))
 
@@ -937,7 +951,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 10 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 10 t)))
              (equal (rme80 eff-addr seg-reg r-x check-alignment? x86)
                     (rml80 eff-addr r-x x86)))))
 
@@ -973,7 +988,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 10 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 10 t)))
              (equal (wme80 eff-addr seg-reg val check-alignment? x86)
                     (wml80 eff-addr val x86)))))
 
@@ -1024,7 +1040,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 16 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 16 t)))
              (equal (rme128 eff-addr seg-reg r-x check-alignment? x86)
                     (rml128 eff-addr r-x x86)))))
 
@@ -1063,7 +1080,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr 16 t))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr 16 t)))
              (equal (wme128 eff-addr seg-reg val check-alignment? x86)
                     (wml128 eff-addr val x86)))))
 
@@ -1109,7 +1127,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr nbytes mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr nbytes mem-ptr?)))
              (equal (rme-size nbytes eff-addr seg-reg r-x check-alignment? x86
                               :mem-ptr? mem-ptr?)
                     (rml-size nbytes eff-addr r-x x86))))
@@ -1187,7 +1206,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr nbytes mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr nbytes mem-ptr?)))
              (equal (rime-size
                      nbytes eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
                     (riml-size nbytes eff-addr r-x x86))))
@@ -1257,7 +1277,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr nbytes mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr nbytes mem-ptr?)))
              (equal (wme-size
                      nbytes eff-addr seg-reg val check-alignment? x86 :mem-ptr? mem-ptr?)
                     (wml-size nbytes eff-addr val x86)))))
@@ -1304,7 +1325,8 @@
                   (not (equal seg-reg *fs*))
                   (not (equal seg-reg *gs*))
                   (canonical-address-p eff-addr)
-                  (address-aligned-p eff-addr nbytes mem-ptr?))
+                  (or (not check-alignment?)
+                      (address-aligned-p eff-addr nbytes mem-ptr?)))
              (equal (wime-size
                      nbytes eff-addr seg-reg val check-alignment? x86 :mem-ptr? mem-ptr?)
                     (wiml-size nbytes eff-addr val x86)))))
