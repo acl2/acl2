@@ -112,7 +112,7 @@
    This involves validating the inputs.
    When validation fails, <see topic='@(url er)'>soft errors</see> occur.
    Thus, generally the input processing functions return
-   <see topic='@(url error-triple)'>error triples</see>.
+   <see topic='@(url acl2::error-triple)'>error triples</see>.
    </p>")
 
 (xdoc::order-subtopics restrict-input-processing nil t)
