@@ -2855,15 +2855,8 @@
 
     (#xE9
      "(JMP near Jz)"
-     (if (64-bit-modep x86)
-         (x86-near-jmp-Op/En-D start-rip temp-rip prefixes rex-byte
-                               opcode modr/m
-                               sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(JMP near Jz) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-near-jmp-Op/En-D
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xEA
      "far JMP"
@@ -2881,15 +2874,8 @@
 
     (#xEB
      "(JMP short Jb)"
-     (if (64-bit-modep x86)
-         (x86-near-jmp-Op/En-D start-rip temp-rip prefixes rex-byte
-                               opcode modr/m
-                               sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(JMP short Jb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-near-jmp-Op/En-D
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xF4
      "(HLT)"
