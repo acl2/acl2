@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; April 2018
 
 (in-package "ADE")
 
@@ -824,123 +824,123 @@
 
 ;; ======================================================================
 
-(defmacro state-fn-n-gen (name &optional data-width)
+(defmacro run-gen (name &optional data-width)
   (declare (xargs :guard (symbolp name)))
-  (b* ((state-fn (intern$ (concatenate 'string
-                                       (symbol-name name)
-                                       "$STATE-FN")
-                          "ADE"))
-       (state-fn-n (intern$ (concatenate 'string
+  (b* ((step (intern$ (concatenate 'string
+                                   (symbol-name name)
+                                   "$STEP")
+                      "ADE"))
+       (run (intern$ (concatenate 'string
+                                  (symbol-name name)
+                                  "$RUN")
+                     "ADE"))
+       (len-of-run (intern$ (concatenate 'string
+                                         "LEN-OF-"
                                          (symbol-name name)
-                                         "$STATE-FN-N")
+                                         "$RUN")
                             "ADE"))
-       (len-of-state-fn-n (intern$ (concatenate 'string
-                                                "LEN-OF-"
-                                                (symbol-name name)
-                                                "$STATE-FN-N")
-                                   "ADE"))
        (st-len-const (intern$ (concatenate 'string
                                            "*"
                                            (symbol-name name)
                                            "$ST-LEN*")
                               "ADE"))
-       (open-state-fn-n-zp (intern$ (concatenate 'string
-                                                 "OPEN-"
-                                                 (symbol-name name)
-                                                 "$STATE-FN-N-ZP")
-                                    "ADE"))
-       (open-state-fn-n (intern$ (concatenate 'string
-                                              "OPEN-"
-                                              (symbol-name name)
-                                              "$STATE-FN-N")
-                                 "ADE"))
-       (state-fn-m+n (intern$ (concatenate 'string
-                                           (symbol-name name)
-                                           "$STATE-FN-M+N")
-                              "ADE"))
+       (open-run-zp (intern$ (concatenate 'string
+                                          "OPEN-"
+                                          (symbol-name name)
+                                          "$RUN-ZP")
+                             "ADE"))
+       (open-run (intern$ (concatenate 'string
+                                       "OPEN-"
+                                       (symbol-name name)
+                                       "$RUN")
+                          "ADE"))
+       (run-m+n (intern$ (concatenate 'string
+                                      (symbol-name name)
+                                      "$RUN-M+N")
+                         "ADE"))
        (inputs-lst 'inputs-lst))
     (if data-width
         `(progn
 
-           (defun ,state-fn-n (,inputs-lst st ,data-width n)
+           (defun ,run (,inputs-lst st ,data-width n)
              (if (zp n)
                  st
-               (,state-fn-n (cdr ,inputs-lst)
-                            (,state-fn (car ,inputs-lst) st ,data-width)
-                            ,data-width
-                            (1- n))))
+               (,run (cdr ,inputs-lst)
+                     (,step (car ,inputs-lst) st ,data-width)
+                     ,data-width
+                     (1- n))))
 
-           (defthm ,len-of-state-fn-n
+           (defthm ,len-of-run
              (implies
               (equal (len st) ,st-len-const)
-              (equal (len (,state-fn-n ,inputs-lst st ,data-width n))
+              (equal (len (,run ,inputs-lst st ,data-width n))
                      ,st-len-const)))
 
-           (defthm ,open-state-fn-n-zp
+           (defthm ,open-run-zp
              (implies (zp n)
-                      (equal (,state-fn-n ,inputs-lst st ,data-width n)
+                      (equal (,run ,inputs-lst st ,data-width n)
                              st)))
 
-           (defthm ,open-state-fn-n
+           (defthm ,open-run
              (implies
               (not (zp n))
               (equal
-               (,state-fn-n ,inputs-lst st ,data-width n)
-               (,state-fn-n (cdr ,inputs-lst)
-                            (,state-fn (car ,inputs-lst) st ,data-width)
-                            ,data-width
-                            (1- n)))))
+               (,run ,inputs-lst st ,data-width n)
+               (,run (cdr ,inputs-lst)
+                     (,step (car ,inputs-lst) st ,data-width)
+                     ,data-width
+                     (1- n)))))
 
-           (defthm ,state-fn-m+n
+           (defthm ,run-m+n
              (implies
               (and (natp m)
                    (natp n))
-              (equal (,state-fn-n ,inputs-lst st ,data-width (+ m n))
-                     (,state-fn-n
+              (equal (,run ,inputs-lst st ,data-width (+ m n))
+                     (,run
                       (nthcdr m ,inputs-lst)
-                      (,state-fn-n ,inputs-lst st ,data-width m)
+                      (,run ,inputs-lst st ,data-width m)
                       ,data-width
                       n)))
              :hints (("Goal"
-                      :induct (,state-fn-n ,inputs-lst st ,data-width m)))))
+                      :induct (,run ,inputs-lst st ,data-width m)))))
 
       `(progn
 
-         (defun ,state-fn-n (,inputs-lst st n)
+         (defun ,run (,inputs-lst st n)
            (if (zp n)
                st
-             (,state-fn-n (cdr ,inputs-lst)
-                          (,state-fn (car ,inputs-lst) st)
-                          (1- n))))
+             (,run (cdr ,inputs-lst)
+                   (,step (car ,inputs-lst) st)
+                   (1- n))))
 
-         (defthm ,len-of-state-fn-n
+         (defthm ,len-of-run
            (implies (equal (len st) ,st-len-const)
-                    (equal (len (,state-fn-n ,inputs-lst st n))
+                    (equal (len (,run ,inputs-lst st n))
                            ,st-len-const)))
 
-         (defthm ,open-state-fn-n-zp
+         (defthm ,open-run-zp
            (implies (zp n)
-                    (equal (,state-fn-n ,inputs-lst st n)
+                    (equal (,run ,inputs-lst st n)
                            st)))
 
-         (defthm ,open-state-fn-n
+         (defthm ,open-run
            (implies
             (not (zp n))
-            (equal (,state-fn-n ,inputs-lst st n)
-                   (,state-fn-n (cdr ,inputs-lst)
-                                (,state-fn (car ,inputs-lst) st)
-                                (1- n)))))
+            (equal (,run ,inputs-lst st n)
+                   (,run (cdr ,inputs-lst)
+                         (,step (car ,inputs-lst) st)
+                         (1- n)))))
 
-         (defthm ,state-fn-m+n
+         (defthm ,run-m+n
            (implies (and (natp m)
                          (natp n))
-                    (equal (,state-fn-n ,inputs-lst st (+ m n))
-                           (,state-fn-n
+                    (equal (,run ,inputs-lst st (+ m n))
+                           (,run
                             (nthcdr m ,inputs-lst)
-                            (,state-fn-n ,inputs-lst st m)
+                            (,run ,inputs-lst st m)
                             n)))
            :hints (("Goal"
-                    :induct (,state-fn-n ,inputs-lst st m)))))
+                    :induct (,run ,inputs-lst st m)))))
       )))
 
 (defmacro input-format-n-gen (name &optional data-width)
@@ -1063,14 +1063,14 @@
                                                (symbol-name name)
                                                "$INPUT-FORMAT-M+N")
                                   "ADE"))
-       (state-fn (intern$ (concatenate 'string
-                                       (symbol-name name)
-                                       "$STATE-FN")
-                          "ADE"))
-       (state-fn-n (intern$ (concatenate 'string
-                                         (symbol-name name)
-                                         "$STATE-FN-N")
-                            "ADE"))
+       (step (intern$ (concatenate 'string
+                                   (symbol-name name)
+                                   "$STEP")
+                      "ADE"))
+       (run (intern$ (concatenate 'string
+                                  (symbol-name name)
+                                  "$RUN")
+                     "ADE"))
        (inputs-lst 'inputs-lst))
     (if data-width
         `(progn
@@ -1082,7 +1082,7 @@
                (and (,input-format (car ,inputs-lst) st ,data-width)
                     (,input-format-n
                      (cdr ,inputs-lst)
-                     (,state-fn (car ,inputs-lst) st ,data-width)
+                     (,step (car ,inputs-lst) st ,data-width)
                      ,data-width
                      (1- n)))))
 
@@ -1099,7 +1099,7 @@
                      (and (,input-format (car ,inputs-lst) st ,data-width)
                           (,input-format-n
                            (cdr ,inputs-lst)
-                           (,state-fn (car ,inputs-lst) st ,data-width)
+                           (,step (car ,inputs-lst) st ,data-width)
                            ,data-width
                            (1- n))))))
 
@@ -1111,7 +1111,7 @@
                      (and (,input-format-n ,inputs-lst st ,data-width m)
                           (,input-format-n
                            (nthcdr m ,inputs-lst)
-                           (,state-fn-n ,inputs-lst st ,data-width m)
+                           (,run ,inputs-lst st ,data-width m)
                            ,data-width
                            n))))
              :hints
@@ -1126,7 +1126,7 @@
                t
              (and (,input-format (car ,inputs-lst) st)
                   (,input-format-n (cdr ,inputs-lst)
-                                   (,state-fn (car ,inputs-lst) st)
+                                   (,step (car ,inputs-lst) st)
                                    (1- n)))))
 
          (defthm ,open-input-format-n-zp
@@ -1140,7 +1140,7 @@
             (equal (,input-format-n ,inputs-lst st n)
                    (and (,input-format (car ,inputs-lst) st)
                         (,input-format-n (cdr ,inputs-lst)
-                                         (,state-fn (car ,inputs-lst) st)
+                                         (,step (car ,inputs-lst) st)
                                          (1- n))))))
 
          (defthm ,input-format-m+n
@@ -1150,7 +1150,7 @@
                            (and (,input-format-n ,inputs-lst st m)
                                 (,input-format-n
                                  (nthcdr m ,inputs-lst)
-                                 (,state-fn-n ,inputs-lst st m)
+                                 (,run ,inputs-lst st m)
                                  n))))
            :hints (("Goal"
                     :induct (,input-format-n ,inputs-lst st m)))))
@@ -1164,10 +1164,10 @@
                               (booleanp complex-link))))
   (b* ((recognizer (unstring (symbol-name name)
                              "&"))
-       (state-fn (unstring (symbol-name name)
-                           "$STATE-FN"))
-       (state-fn-n (unstring (symbol-name name)
-                             "$STATE-FN-N"))
+       (step (unstring (symbol-name name)
+                       "$STEP"))
+       (run (unstring (symbol-name name)
+                      "$RUN"))
        (state-lemma (unstring (symbol-name name)
                               "$STATE"))
        (input-format (unstring (symbol-name name)
@@ -1185,11 +1185,11 @@
     `(progn
        (defthm ,st-format-preserved
          (implies (,st-format st data-width)
-                  (,st-format (,state-fn inputs st data-width)
+                  (,st-format (,step inputs st data-width)
                               data-width))
          :hints (("Goal"
                   :in-theory (enable get-field
-                                     ,state-fn
+                                     ,step
                                      ,st-format))))
 
        (defthmd ,state-alt
@@ -1199,15 +1199,15 @@
                           `(,input-format inputs data-width))
                        (,st-format st data-width))
                   (equal (de (si ',name data-width) inputs st netlist)
-                         (,state-fn inputs st data-width)))
+                         (,step inputs st data-width)))
          :hints (("Goal"
                   :in-theory (enable ,input-format
                                      ,state-lemma))))
 
-       (state-fn-n-gen ,name data-width)
+       (run-gen ,name data-width)
        ,(if complex-link
-           `(input-format-n-with-state-gen ,name data-width)
-         `(input-format-n-gen ,name data-width))
+            `(input-format-n-with-state-gen ,name data-width)
+          `(input-format-n-gen ,name data-width))
 
        (defthmd ,simulate
          (implies (and (,recognizer netlist data-width)
@@ -1218,7 +1218,7 @@
                   (equal (de-sim-n (si ',name data-width)
                                    inputs-lst st netlist
                                    n)
-                         (,state-fn-n inputs-lst st data-width n)))
+                         (,run inputs-lst st data-width n)))
          :hints (("Goal" :in-theory (enable ,state-alt)))))))
 
 ;; Formalizing the relationship between input and output sequences
@@ -1231,16 +1231,22 @@
                               (booleanp op)
                               (booleanp inv)
                               (booleanp complex-link))))
-  (b* ((extract-state (unstring (symbol-name name)
-                                "$EXTRACT-STATE"))
-       (step-spec (unstring (symbol-name name)
-                            "$STEP-SPEC"))
-       (state-fn-n (unstring (symbol-name name)
-                             "$STATE-FN-N"))
+  (b* (;; (recognizer (unstring (symbol-name name)
+       ;;                       "&"))
+       (extract (unstring (symbol-name name)
+                          "$EXTRACT"))
+       (extracted-step (unstring (symbol-name name)
+                                 "$EXTRACTED-STEP"))
+       (run (unstring (symbol-name name)
+                      "$RUN"))
+       ;; (de-sim-lemma (unstring (symbol-name name)
+       ;;                         "$DE-SIM-N"))
        (input-format-n (unstring (symbol-name name)
                                  "$INPUT-FORMAT-N"))
        (valid-st (unstring (symbol-name name)
                            "$VALID-ST"))
+       ;; (valid-st=>st-format (unstring (symbol-name name)
+       ;;                                "$VALID-ST=>ST-FORMAT"))
        (st-inv (unstring (symbol-name name)
                          "$INV"))
        (in-seq (unstring (symbol-name name)
@@ -1262,6 +1268,18 @@
                           `(,input-format-n inputs-lst st data-width n)
                         `(,input-format-n inputs-lst data-width n))
                      (,valid-st st data-width))))
+       ;; (hyps (if inv
+       ;;           `(and (,recognizer netlist data-width)
+       ;;                 ,(if complex-link
+       ;;                      `(,input-format-n inputs-lst st data-width n)
+       ;;                    `(,input-format-n inputs-lst data-width n))
+       ;;                 (,valid-st st data-width)
+       ;;                 (,st-inv st))
+       ;;         `(and (,recognizer netlist data-width)
+       ;;               ,(if complex-link
+       ;;                    `(,input-format-n inputs-lst st data-width n)
+       ;;                  `(,input-format-n inputs-lst data-width n))
+       ;;               (,valid-st st data-width))))
        (concl (if op
                   `(equal (append final-extracted-st
                                   (,out-seq inputs-lst st data-width n))
@@ -1289,11 +1307,22 @@
                                           (acl2::associativity-of-append))))))
 
        (defthmd ,dataflow-correct
-         (b* ((extracted-st (,extract-state st))
-              (final-st (,state-fn-n inputs-lst st data-width n))
-              (final-extracted-st (,extract-state final-st)))
+         (b* ((extracted-st (,extract st))
+              (final-st (,run inputs-lst st data-width n))
+              (final-extracted-st (,extract final-st)))
            (implies ,hyps ,concl))
-         :hints (("Goal" :in-theory (enable ,step-spec)))))))
+         :hints (("Goal" :in-theory (enable ,extracted-step))))
+
+       ;; (defthmd ,dataflow-correct
+       ;;   (b* ((extracted-st (,extract st))
+       ;;        (final-st (de-sim-n (si ',name data-width)
+       ;;                            inputs-lst st netlist n))
+       ;;        (final-extracted-st (,extract final-st)))
+       ;;     (implies ,hyps ,concl))
+       ;;   :hints (("Goal" :in-theory (enable ,extracted-step
+       ;;                                      ,valid-st=>st-format
+       ;;                                      ,de-sim-lemma))))
+       )))
 
 ;; ST-TRANS-FN generates (1) condition functions on GO signals' values based on
 ;; their interleavings, and (2) functions that counts the number of DE steps to

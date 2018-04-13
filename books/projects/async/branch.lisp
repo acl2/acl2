@@ -13,8 +13,8 @@
 
 ;; ======================================================================
 
-;; Constructing a DE module generator for a storage-free branch joint. Proving
-;; the value lemma for this module generator.
+;; Construct a DE module generator for a storage-free branch joint.  Prove the
+;; value lemma for this module generator.
 
 (defconst *branch$go-num* 1)
 
@@ -28,7 +28,7 @@
   (+ (branch$data-ins-len data-width)
      *branch$go-num*))
 
-;; DE module generator of branch
+;; DE module generator of BRANCH
 
 (module-generator
  branch* (data-width)
@@ -60,8 +60,8 @@
 
  :guard (natp data-width))
 
-;; DE netlist generator. A generated netlist will contain an instance of
-;; branch.
+;; DE netlist generator.  A generated netlist will contain an instance of
+;; BRANCH.
 
 (defun branch$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -70,7 +70,7 @@
                 *joint-cntl*
                 :test 'equal)))
 
-;; Recognizer for branch
+;; Recognizer for BRANCH
 
 (defund branch& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
@@ -89,58 +89,62 @@
         (net-arity-okp (branch$netlist 64))
         (branch& (branch$netlist 64) 64))))
 
-;; Extracting the input data
+;; Extract the input and output signals from BRANCH
 
-(defun branch$data-in (inputs data-width)
-  (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
-  (take (mbe :logic (nfix data-width)
-             :exec  data-width)
-        (nthcdr 4 inputs)))
+(progn
+  ;; Extract the input data
 
-(defthm len-branch$data-in
-  (equal (len (branch$data-in inputs data-width))
-         (nfix data-width)))
+  (defun branch$data-in (inputs data-width)
+    (declare (xargs :guard (and (true-listp inputs)
+                                (natp data-width))))
+    (take (mbe :logic (nfix data-width)
+               :exec  data-width)
+          (nthcdr 4 inputs)))
 
-(in-theory (disable branch$data-in))
+  (defthm len-branch$data-in
+    (equal (len (branch$data-in inputs data-width))
+           (nfix data-width)))
 
-;; Extracting the "act0" signal
+  (in-theory (disable branch$data-in))
 
-(defund branch$act0 (inputs data-width)
-  (b* ((full-in     (nth 0 inputs))
-       (empty-out0- (nth 1 inputs))
-       (select      (nth 3 inputs))
-       (go-signals  (nthcdr (branch$data-ins-len data-width) inputs))
+  ;; Extract the "act0" signal
 
-       (go-branch (nth 0 go-signals))
+  (defund branch$act0 (inputs data-width)
+    (b* ((full-in     (nth 0 inputs))
+         (empty-out0- (nth 1 inputs))
+         (select      (nth 3 inputs))
+         (go-signals  (nthcdr (branch$data-ins-len data-width) inputs))
 
-       (ready-out0- (f-or empty-out0- select)))
+         (go-branch (nth 0 go-signals))
 
-    (joint-act full-in ready-out0- go-branch)))
+         (ready-out0- (f-or empty-out0- select)))
 
-;; Extracting the "act1" signal
+      (joint-act full-in ready-out0- go-branch)))
 
-(defund branch$act1 (inputs data-width)
-  (b* ((full-in     (nth 0 inputs))
-       (empty-out1- (nth 2 inputs))
-       (select      (nth 3 inputs))
-       (go-signals  (nthcdr (branch$data-ins-len data-width) inputs))
+  ;; Extract the "act1" signal
 
-       (go-branch (nth 0 go-signals))
+  (defund branch$act1 (inputs data-width)
+    (b* ((full-in     (nth 0 inputs))
+         (empty-out1- (nth 2 inputs))
+         (select      (nth 3 inputs))
+         (go-signals  (nthcdr (branch$data-ins-len data-width) inputs))
 
-       (ready-out1- (f-or empty-out1- (f-not select))))
+         (go-branch (nth 0 go-signals))
 
-    (joint-act full-in ready-out1- go-branch)))
+         (ready-out1- (f-or empty-out1- (f-not select))))
 
-;; Extracting the "act" signal
+      (joint-act full-in ready-out1- go-branch)))
 
-(defund branch$act (inputs data-width)
-  (f-or (branch$act0 inputs data-width)
-        (branch$act1 inputs data-width)))
+  ;; Extract the "act" signal
 
-(not-primp-lemma branch)
+  (defund branch$act (inputs data-width)
+    (f-or (branch$act0 inputs data-width)
+          (branch$act1 inputs data-width)))
+  )
 
-;; The value lemma for branch
+(not-primp-lemma branch) ;; Prove that BRANCH is not a DE primitive.
+
+;; The value lemma for BRANCH
 
 (defthmd branch$value
   (b* ((inputs (list* full-in empty-out0- empty-out1- select
@@ -164,7 +168,6 @@
                        st
                        netlist)
            :in-theory (e/d (de-rules
-                            get-field
                             not-primp-branch
                             branch&
                             branch*$destructure
@@ -174,9 +177,6 @@
                             branch$act0
                             branch$act1)
                            ((branch*)
-                            (si)
-                            (sis)
-                            open-v-threefix
                             de-module-disabled-rules)))))
 
 

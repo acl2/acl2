@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; April 2018
 
 (in-package "ADE")
 
@@ -27,14 +27,14 @@
   (declare (xargs :guard t))
   (or (fullp link-st) (emptyp link-st)))
 
-(defun extract-state (st)
+(defun extract-valid-data (st)
   ;;(declare (xargs :guard (true-listp st)))
   (if (atom st)
       nil
     (if (fullp (car st))
         (cons (strip-cars (cadr st))
-              (extract-state (cddr st)))
-      (extract-state (cddr st)))))
+              (extract-valid-data (cddr st)))
+      (extract-valid-data (cddr st)))))
 
 ;; Some utility functions that help print out a readable format of link states.
 
@@ -80,7 +80,8 @@
   (if (atom x)
       nil
     (cons (car x)
-          (cons (string-append (str::natstr count) "----------")
+          (cons (string-append (str::natstr count)
+                               "------------------------------")
                 (pretty-list (cdr x) (1+ count))))))
 
 ;; SIGNAL-VALS-GEN randomly generates a sequence of signals' values.

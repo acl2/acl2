@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; March 2018
 
 (in-package "ADE")
 
@@ -296,6 +296,68 @@
                        (expt 2 (len a))
                        (- (v-to-nat a)
                           (v-to-nat b))))))
+
+  (local
+   (defthm v-to-nat-of-repeat-nil-is-zero
+     (equal (v-to-nat (repeat n nil)) 0)
+     :hints (("Goal" :in-theory (enable v-to-nat repeat)))))
+
+  (local
+   (defthm v-to-nat-of-take
+     (implies (<= 0 n)
+              (equal (v-to-nat (take n l))
+                     (- (v-to-nat l)
+                        (* (expt 2 n) (v-to-nat (nthcdr n l))))))
+     :hints (("Goal" :in-theory (enable bvp v-to-nat)))))
+
+  (local
+   (defun nthcdr-v-adder-sub-induct (n c a b)
+     (if (zp n)
+         (list c a b)
+       (nthcdr-v-adder-sub-induct (1- n)
+                                  (b-or3 (b-and (car a) (not (car b)))
+                                         (b-and (car a) c)
+                                         (b-and (not (car b)) c))
+                                  (cdr a)
+                                  (cdr b)))))
+
+  (local
+   (defthm nthcdr-v-adder-sub-1
+     (implies (and (natp n)
+                   (booleanp c)
+                   (equal n (len a))
+                   (equal (v-to-nat b) (v-to-nat a))
+                   (bv2p a b))
+              (equal (nthcdr n (v-adder c a (v-not b)))
+                     (list c)))
+     :hints (("Goal"
+              :in-theory (enable bvp v-adder v-not)))))
+
+  (local
+   (defthm nthcdr-v-adder-sub-2
+     (implies (and (natp n)
+                   (booleanp c)
+                   (equal n (len a))
+                   (< (v-to-nat b) (v-to-nat a))
+                   (bv2p a b))
+              (equal (nthcdr n (v-adder c a (v-not b)))
+                     (list t)))
+     :hints (("Goal"
+              :induct (nthcdr-v-adder-sub-induct n c a b)
+              :in-theory (enable bvp v-adder v-to-nat v-not)))))
+
+  (defthm v-to-nat-of-take-of-v-adder-sub
+    (implies (and (natp n)
+                  (equal n (len a))
+                  (<= (v-to-nat b) (v-to-nat a))
+                  (bv2p a b))
+             (equal (v-to-nat (take n
+                                    (v-adder t a (v-not b))))
+                    (- (v-to-nat a)
+                       (v-to-nat b))))
+    :hints (("Goal"
+             :use (:instance nthcdr-v-adder-sub-2
+                             (c t)))))
 
   (defthm ripple-adder-2-comp-sub
     (implies (and (posp n)

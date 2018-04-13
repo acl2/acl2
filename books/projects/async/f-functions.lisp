@@ -21,6 +21,14 @@
   (declare (xargs :guard t))
   (3v-fix a))
 
+(defthm f-buf-car-of-v-threefix
+  (equal (f-buf (car (v-threefix x)))
+         (f-buf (car x))))
+
+(defthm nth-v-threefix
+  (equal (nth n (v-threefix l))
+         (f-buf (nth n l))))
+
 (defun f-and (a b)
   (declare (xargs :guard t))
   (if (or (equal a nil) (equal b nil))
@@ -231,7 +239,7 @@
 (defthm f-buf-of-not-booleanp
   (implies (not (booleanp x))
            (equal (f-buf x)
-                  *X*))
+                  *x*))
   :hints (("Goal" :in-theory (enable 3vp))))
 
 ;;  Some facts for those times when various "F-functions" are disabled.
@@ -434,6 +442,15 @@
           (f-and3 x y z))
    (equal (f-and3 x y (f-buf z))
           (f-and3 x y z))
+
+   (equal (f-and4 (f-buf a) b c d)
+          (f-and4 a b c d))
+   (equal (f-and4 a (f-buf b) c d)
+          (f-and4 a b c d))
+   (equal (f-and4 a b (f-buf c) d)
+          (f-and4 a b c d))
+   (equal (f-and4 a b c (f-buf d))
+          (f-and4 a b c d))
 
    (equal (f-or (f-buf x) y)
           (f-or x y))
