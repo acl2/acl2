@@ -3297,6 +3297,12 @@
 
 (defun fmt0 (s alist i maximum col channel state evisc-tuple)
   (declare (xargs :guard ; incomplete guard
+
+; The guard on this function is quite incomplete.  Some runtime checks can
+; result in hard errors even when the guard is met.  Perhaps raw Lisp errors
+; are possible as well; it would be nice to eliminate those, especially if they
+; can arise from calls of logic mode functions, in particular via calls of cw.
+
                   (and (stringp s)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)))
@@ -3501,15 +3507,15 @@
                                           0
                                           (the-fixnum! (length (car s1)) 'fmt0)
                                           col channel state evisc-tuple))
-                                   (t (mv (er-hard-val 0 'fmt0
-                                              "Illegal Fmt Syntax.  The ~
-                                               tilde-@ directive at position ~
-                                               ~x0 of the string below is ~
-                                               illegal because its variable ~
-                                               evaluated to ~x1, which is ~
-                                               neither a string nor a ~
-                                               list.~|~%~x2"
-                                              i s1 s)
+                                   (t (mv (er-hard-val
+                                           0 'fmt0
+                                           "Illegal Fmt Syntax.  The tilde-@ ~
+                                            directive at position ~x0 of the ~
+                                            string below is illegal because ~
+                                            its variable evaluated to ~x1, ~
+                                            which is neither a string nor a ~
+                                            list.~|~%~x2"
+                                           i s1 s)
                                           state)))
                              (fmt0 s alist (+f i 3) maximum col
                                    channel state evisc-tuple))))
@@ -3528,47 +3534,77 @@
                                  (fmt0 s alist (the-fixnum o) maximum
                                        col channel state evisc-tuple))))))
              (#\* (let ((x (fmt-var s alist i maximum)))
-                    (mv-letc (col state)
-                             (fmt0* (car x) (cadr x) (caddr x) (cadddr x)
-                                    (car (cddddr x))
-                                    (append (cdr (cddddr x)) alist)
-                                    col channel state evisc-tuple)
-                             (fmt0 s alist (+f i 3) maximum col
-                                   channel state evisc-tuple))))
-             (#\& (let ((i+3 (+f i 3)))
-                    (declare (type (signed-byte 30) i+3))
-                    (mv-letc (col state)
-                             (fmt0&v '&
-                                     (fmt-var s alist i maximum)
-                                     (punctp (and (< i+3 maximum)
-                                                  (char s i+3)))
-                                     col channel state evisc-tuple)
-                             (fmt0 s alist
-                                   (the-fixnum
-                                    (cond
-                                     ((punctp (and (< i+3 maximum)
-                                                   (char s i+3)))
-                                      (+f i 4))
-                                     (t i+3)))
-                                   maximum
-                                   col channel state evisc-tuple))))
-             (#\v (let ((i+3 (+f i 3)))
-                    (declare (type (signed-byte 30) i+3))
-                    (mv-letc (col state)
-                             (fmt0&v 'v
-                                     (fmt-var s alist i maximum)
-                                     (punctp (and (< i+3 maximum)
-                                                  (char s i+3)))
-                                     col channel state evisc-tuple)
-                             (fmt0 s alist
-                                   (the-fixnum
-                                    (cond
-                                     ((punctp (and (< i+3 maximum)
-                                                   (char s i+3)))
-                                      (+f i 4))
-                                     (t i+3)))
-                                   maximum
-                                   col channel state evisc-tuple))))
+                    (cond
+                     ((or (< (len x) 5)
+                          (not (character-alistp (cdr (cddddr x)))))
+                      (mv (er-hard-val
+                           0
+                           'fmt0
+                           "Illegal Fmt Syntax.  The tilde directive, ~~*, at ~
+                            location ~x0 in the fmt string below uses the ~
+                            variable ~x1.  That directive requires a list of ~
+                            length at least 5 for which the elements past the ~
+                            first five satisfy ~x2, but it was supplied the ~
+                            value ~x3.~|~%~x4~|~%"
+
+; The final newline(s) provide separation of the string from the "See :DOC
+; set-iprint" message that can be printed by fmt-abbrev1 if lst is elided
+; during printing.
+
+                           i
+                           (char s (+f i 2))
+                           'character-alistp
+                           x
+                           s)
+                          state))
+                     (t
+                      (mv-letc (col state)
+                               (fmt0* (car x) (cadr x) (caddr x) (cadddr x)
+                                      (car (cddddr x))
+                                      (append (cdr (cddddr x)) alist)
+                                      col channel state evisc-tuple)
+                               (fmt0 s alist (+f i 3) maximum col
+                                     channel state evisc-tuple))))))
+             ((#\& #\v)
+              (let ((i+3 (+f i 3))
+                    (lst (fmt-var s alist i maximum)))
+                (declare (type (signed-byte 30) i+3))
+                (cond
+                 ((not (true-listp lst))
+                  (mv (er-hard-val
+                       0
+                       'fmt0
+                       "Illegal Fmt Syntax.  The tilde directive at location ~
+                        ~x0 in the fmt string below uses the variable ~x1.  ~
+                        That ~s2 directive requires a true list, but it was ~
+                        supplied the value ~x3.~|~%~x4~|~%"
+
+; The final newline(s) provide separation of the string from the "See :DOC
+; set-iprint" message that can be printed by fmt-abbrev1 if lst is elided
+; during printing.
+
+                       i
+                       (char s (+f i 2))
+                       (if (eql fmc #\&) "~&" "~v")
+                       lst
+                       s)
+                      state))
+                 (t
+                  (mv-letc (col state)
+                           (fmt0&v (if (eql fmc #\&) '& 'v)
+                                   lst
+                                   (punctp (and (< i+3 maximum)
+                                                (char s i+3)))
+                                   col channel state evisc-tuple)
+                           (fmt0 s alist
+                                 (the-fixnum
+                                  (cond
+                                   ((punctp (and (< i+3 maximum)
+                                                 (char s i+3)))
+                                    (+f i 4))
+                                   (t i+3)))
+                                 maximum
+                                 col channel state evisc-tuple))))))
              (#\n (maybe-newline
                    (mv-letc (col state)
                             (spell-number (fmt-var s alist i maximum)
