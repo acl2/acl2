@@ -157,7 +157,7 @@
                            ((1-bit-adder*)
                             de-module-disabled-rules)))))
 
-(defun 1-bit-adder$state-fn (inputs st)
+(defun 1-bit-adder$step (inputs st)
   (b* ((a-act    (nth 0 inputs))
        (a-in     (nth 1 inputs))
        (b-act    (nth 2 inputs))
@@ -210,8 +210,8 @@
                                    (car ci)))
                       (car co))))))
 
-(defthm len-of-1-bit-adder$state-fn
-  (equal (len (1-bit-adder$state-fn inputs st))
+(defthm len-of-1-bit-adder$step
+  (equal (len (1-bit-adder$step inputs st))
          *1-bit-adder$st-len*))
 
 (local
@@ -225,7 +225,7 @@
     (implies (and (1-bit-adder& netlist)
                   (equal (len go-signals) *1-bit-adder$go-num*))
              (equal (de '1-bit-adder inputs st netlist)
-                    (1-bit-adder$state-fn inputs st))))
+                    (1-bit-adder$step inputs st))))
   :hints (("Goal"
            :do-not '(preprocess)
            :expand (de '1-bit-adder
@@ -244,7 +244,7 @@
                             acl2::alistp-when-hons-duplicity-alist-p
                             de-module-disabled-rules)))))
 
-(in-theory (disable 1-bit-adder$state-fn))
+(in-theory (disable 1-bit-adder$step))
 
 ;; ======================================================================
 
@@ -395,7 +395,7 @@
                            ((serial-adder*)
                             de-module-disabled-rules)))))
 
-(defun serial-adder$state-fn (inputs st)
+(defun serial-adder$step (inputs st)
   (b* ((cntl-act   (nth 0 inputs))
        (bit-in     (nth 1 inputs))
        (result-act (nth 2 inputs))
@@ -442,10 +442,10 @@
                       (car lreg2)))
           (list (write-shift-reg s-act (car s) (car reg2)))
 
-          (1-bit-adder$state-fn 1-bit-adder$inputs bit-add))))
+          (1-bit-adder$step 1-bit-adder$inputs bit-add))))
 
-(defthm len-of-serial-adder$state-fn
-  (equal (len (serial-adder$state-fn inputs st))
+(defthm len-of-serial-adder$step
+  (equal (len (serial-adder$step inputs st))
          *serial-adder$st-len*))
 
 (defthmd serial-adder$state
@@ -460,7 +460,7 @@
                   (equal (len (car reg0)) *data-width*)
                   (equal (len (car reg1)) *data-width*))
              (equal (de 'serial-adder inputs st netlist)
-                    (serial-adder$state-fn inputs st))))
+                    (serial-adder$step inputs st))))
   :hints (("Goal"
            :do-not '(preprocess)
            :expand (de 'serial-adder
@@ -479,7 +479,7 @@
                             acl2::alistp-when-hons-duplicity-alist-p
                             de-module-disabled-rules)))))
 
-(in-theory (disable serial-adder$state-fn))
+(in-theory (disable serial-adder$step))
 
 ;; ======================================================================
 
@@ -659,7 +659,7 @@
                             open-v-threefix
                             de-module-disabled-rules)))))
 
-(defun async-adder$state-fn (inputs st)
+(defun async-adder$step (inputs st)
   (b* ((dr-lresult (nth 0 inputs))
        (go-signals (nthcdr 1 inputs))
 
@@ -730,10 +730,10 @@
                       (strip-cars result))
                nil)
 
-     (serial-adder$state-fn serial-adder$inputs serial-add))))
+     (serial-adder$step serial-adder$inputs serial-add))))
 
-(defthm len-of-async-adder$state-fn
-  (equal (len (async-adder$state-fn inputs st))
+(defthm len-of-async-adder$step
+  (equal (len (async-adder$step inputs st))
          *async-adder$st-len*))
 
 (defthmd async-adder$state
@@ -763,7 +763,7 @@
                   (true-listp (car reg2))
                   (equal (len (car reg2)) *data-width*))
              (equal (de 'async-adder inputs st netlist)
-                    (async-adder$state-fn inputs st))))
+                    (async-adder$step inputs st))))
   :hints (("Goal"
            :do-not '(preprocess)
            :expand (de 'async-adder
@@ -788,7 +788,7 @@
                             open-v-threefix
                             de-module-disabled-rules)))))
 
-(in-theory (disable async-adder$state-fn))
+(in-theory (disable async-adder$step))
 
 ;; ======================================================================
 
@@ -893,14 +893,14 @@
           (true-listp (car reg2))
           (equal (len (car reg2)) *data-width*))
      (equal (de 'async-adder inputs st netlist)
-            (async-adder$state-fn inputs st))))
+            (async-adder$step inputs st))))
   :hints (("Goal"
            :in-theory (enable async-adder$input-format)
            :use (:instance async-adder$state
                            (dr-lresult (nth 0 inputs))
                            (go-signals (nthcdr 1 inputs))))))
 
-(state-fn-n-gen async-adder)
+(run-gen async-adder)
 
 (input-format-n-gen async-adder)
 
@@ -927,14 +927,14 @@
                   (true-listp (car reg2))
                   (equal (len (car reg2)) *data-width*))
              (equal (de-sim-n 'async-adder inputs-lst st netlist n)
-                    (async-adder$state-fn-n inputs-lst st n))))
+                    (async-adder$run inputs-lst st n))))
   :hints (("Goal"
            :do-not '(preprocess)
            :induct (de-sim-n 'async-adder inputs-lst st netlist n)
            :in-theory (e/d (de-sim-n
                             async-adder$state-alt
-                            async-adder$state-fn
-                            serial-adder$state-fn
+                            async-adder$step
+                            serial-adder$step
                             list-rewrite-10)
                            (nth
                             nthcdr
@@ -1035,7 +1035,7 @@
     (and (emptyp (extract-async-adder-result-status st))
          (async-adder$result-empty-n
           (cdr inputs-lst)
-          (async-adder$state-fn (car inputs-lst) st)
+          (async-adder$step (car inputs-lst) st)
           (1- n)))))
 
 (defthm open-async-adder$result-empty-n-zp
@@ -1049,7 +1049,7 @@
                   (and (emptyp (extract-async-adder-result-status st))
                        (async-adder$result-empty-n
                         (cdr inputs-lst)
-                        (async-adder$state-fn (car inputs-lst) st)
+                        (async-adder$step (car inputs-lst) st)
                         (1- n))))))
 
 (defthm async-adder$result-emptyp-m+n
@@ -1059,7 +1059,7 @@
                   (and (async-adder$result-empty-n inputs-lst st m)
                        (async-adder$result-empty-n
                         (nthcdr m inputs-lst)
-                        (async-adder$state-fn-n inputs-lst st m)
+                        (async-adder$run inputs-lst st m)
                         n))))
   :hints (("Goal"
            :induct (async-adder$result-empty-n inputs-lst st m))))
@@ -1070,9 +1070,9 @@
                 (natp n)
                 (< m n))
            (emptyp (extract-async-adder-result-status
-                    (async-adder$state-fn-n inputs-lst st m))))
+                    (async-adder$run inputs-lst st m))))
   :hints (("Goal"
-           :in-theory (enable async-adder$state-fn-n))))
+           :in-theory (enable async-adder$run))))
 
 (in-theory (disable async-adder$result-empty-n))
 
@@ -1100,7 +1100,7 @@
         '(async-adder$result-empty-n inputs-lst st n))
        (concl2
         '(equal
-          (async-adder$state-fn-n inputs-lst st n)
+          (async-adder$run inputs-lst st n)
           (list '(nil)
                 next-cntl
                 '(t)
@@ -1194,7 +1194,7 @@
             :hints (("Goal"
                      :in-theory (e/d* (async-adder$st-trans
                                        async-adder$st-trans->numsteps)
-                                      (open-async-adder$state-fn-n
+                                      (open-async-adder$run
                                        fullp emptyp
                                        open-async-adder$input-format-n)))))
           )
@@ -1237,11 +1237,11 @@
                                          async-adder$input-format
                                          async-adder$go-signals
                                          async-adder$state
-                                         async-adder$state-fn
-                                         serial-adder$state-fn
+                                         async-adder$step
+                                         serial-adder$step
                                          serial-adder$ready-out
                                          serial-adder$ready-in-
-                                         1-bit-adder$state-fn
+                                         1-bit-adder$step
                                          1-bit-adder$ready-out
                                          1-bit-adder$empty-a-
                                          1-bit-adder$empty-b-
@@ -1295,11 +1295,11 @@
                                          async-adder$input-format
                                          async-adder$go-signals
                                          async-adder$state
-                                         async-adder$state-fn
-                                         serial-adder$state-fn
+                                         async-adder$step
+                                         serial-adder$step
                                          serial-adder$ready-out
                                          serial-adder$ready-in-
-                                         1-bit-adder$state-fn
+                                         1-bit-adder$step
                                          1-bit-adder$ready-out
                                          1-bit-adder$empty-a-
                                          1-bit-adder$empty-b-
@@ -1412,7 +1412,7 @@
         '(async-adder$result-empty-n inputs-lst st n))
        (concl2
         '(equal
-          (async-adder$state-fn-n inputs-lst st n)
+          (async-adder$run inputs-lst st n)
           (list '(nil)
                 cntl
                 '(t)
@@ -1516,7 +1516,7 @@
             :hints (("Goal"
                      :in-theory (e/d* (async-adder-last-round$st-trans
                                        async-adder-last-round$st-trans->numsteps)
-                                      (open-async-adder$state-fn-n
+                                      (open-async-adder$run
                                        fullp emptyp
                                        open-async-adder$input-format-n)))))
           )
@@ -1560,11 +1560,11 @@
                                          async-adder$input-format
                                          async-adder$go-signals
                                          async-adder$state
-                                         async-adder$state-fn
-                                         serial-adder$state-fn
+                                         async-adder$step
+                                         serial-adder$step
                                          serial-adder$ready-out
                                          serial-adder$ready-in-
-                                         1-bit-adder$state-fn
+                                         1-bit-adder$step
                                          1-bit-adder$ready-out
                                          1-bit-adder$empty-a-
                                          1-bit-adder$empty-b-
@@ -1619,11 +1619,11 @@
                                          async-adder$input-format
                                          async-adder$go-signals
                                          async-adder$state
-                                         async-adder$state-fn
-                                         serial-adder$state-fn
+                                         async-adder$step
+                                         serial-adder$step
                                          serial-adder$ready-out
                                          serial-adder$ready-in-
-                                         1-bit-adder$state-fn
+                                         1-bit-adder$step
                                          1-bit-adder$ready-out
                                          1-bit-adder$empty-a-
                                          1-bit-adder$empty-b-
@@ -1708,12 +1708,12 @@
            (equal (len (car reg1)) *data-width*)
            (true-listp (car reg2))
            (equal (len (car reg2)) *data-width*))
-      (equal (async-adder$state-fn inputs st)
+      (equal (async-adder$step inputs st)
              st)))
    :hints (("Goal" :in-theory (e/d* (async-adder$input-format
-                                     async-adder$state-fn
-                                     serial-adder$state-fn
-                                     1-bit-adder$state-fn
+                                     async-adder$step
+                                     serial-adder$step
+                                     1-bit-adder$step
                                      1-bit-adder$ready-out
                                      write-shift-reg
                                      v-threefix-append)
@@ -1782,10 +1782,10 @@
           (equal (len (car reg1)) *data-width*)
           (true-listp (car reg2))
           (equal (len (car reg2)) *data-width*))
-     (equal (async-adder$state-fn-n inputs-lst st n)
+     (equal (async-adder$run inputs-lst st n)
             st)))
   :hints (("Goal"
-           :in-theory (e/d (async-adder$state-fn-n
+           :in-theory (e/d (async-adder$run
                             async-adder$input-format-n
                             async-adder$state-fixpoint-instance)
                            (car-cdr-elim)))))
@@ -1826,7 +1826,7 @@
               n)
           (async-adder$input-format-n inputs-lst n)
           (last-round-st st))
-     (equal (async-adder$state-fn-n inputs-lst st n)
+     (equal (async-adder$run inputs-lst st n)
             (list '(nil)
                   cntl
                   '(t)
@@ -1883,7 +1883,7 @@
                         (async-adder-last-round$st-trans->numsteps
                          inputs-lst))))
                  (:instance
-                  async-adder$state-fn-m+n
+                  async-adder$run-m+n
                   (m (async-adder-last-round$st-trans->numsteps inputs-lst))
                   (n (- n
                         (async-adder-last-round$st-trans->numsteps
@@ -1891,9 +1891,9 @@
            :in-theory (e/d (async-adder-last-round$sim
                             async-adder$state-fixpoint
                             last-round-st)
-                           (open-async-adder$state-fn-n
+                           (open-async-adder$run
                             async-adder$input-format-m+n
-                            async-adder$state-fn-m+n
+                            async-adder$run-m+n
                             car-cdr-elim)))))
 
 ;; ======================================================================
@@ -2020,7 +2020,7 @@
     (simulate-async-adder-loop-induct
      (nthcdr (async-adder$st-trans->numsteps inputs-lst)
              inputs-lst)
-     (async-adder$state-fn-n inputs-lst
+     (async-adder$run inputs-lst
                              st
                              (async-adder$st-trans->numsteps inputs-lst))
      (- n (async-adder$st-trans->numsteps inputs-lst))
@@ -2091,7 +2091,7 @@
                               async-adder$st-trans-n)
                              (open-async-adder$input-format-n
                               open-async-adder$result-empty-n
-                              open-async-adder$state-fn-n
+                              open-async-adder$run
                               open-v-threefix
                               fullp
                               emptyp
@@ -2154,7 +2154,7 @@
             (async-adder$input-format-n inputs-lst n)
             (async-adder$inv-st st))
        (equal
-        (async-adder$state-fn-n inputs-lst st n)
+        (async-adder$run inputs-lst st n)
         (list
          '(nil)
          (pairlis$ (next-cntl-state-n (strip-cars next-cntl)
@@ -2248,14 +2248,16 @@
   (defthm f-buf-of-car-fv-shift-right-canceled
     (equal (f-buf (car (fv-shift-right a si)))
            (car (fv-shift-right a si)))
-    :hints (("Goal" :in-theory (enable fv-shift-right))))
+    :hints (("Goal" :in-theory (e/d (fv-shift-right)
+                                    (f-buf-car-of-v-threefix)))))
 
   (defthm f-buf-of-car-fv-shift-right-nil-n-canceled
     (implies (posp n)
              (equal (f-buf (car (fv-shift-right-nil-n a n)))
                     (car (fv-shift-right-nil-n a n))))
-    :hints (("Goal" :in-theory (enable fv-shift-right-nil-n
-                                       fv-shift-right)))))
+    :hints (("Goal" :in-theory (e/d (fv-shift-right-nil-n
+                                     fv-shift-right)
+                                    (f-buf-car-of-v-threefix))))))
 
 (defun async-adder$init-st (st)
   (b* ((lcntl      (nth *async-adder$lcntl* st))
@@ -2381,7 +2383,7 @@
           (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
           (async-adder$input-format-n inputs-lst n)
           (async-adder$init-st st))
-     (equal (async-adder$state-fn-n inputs-lst st n)
+     (equal (async-adder$run inputs-lst st n)
             (list
              '(nil)
              '((nil) (t) (t) (t) (t))
@@ -2591,7 +2593,7 @@
           (>= n (async-adder-numsteps inputs-lst operand-size))
           (async-adder$input-format-n inputs-lst n)
           (async-adder$init-st st))
-     (equal (async-adder$state-fn-n inputs-lst st n)
+     (equal (async-adder$run inputs-lst st n)
             (list
              '(nil)
              '((nil) (t) (t) (t) (t))
@@ -2650,7 +2652,7 @@
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance
-                  async-adder$state-fn-m+n
+                  async-adder$run-m+n
                   (m (async-adder$st-trans-n->numsteps
                       inputs-lst
                       (1- operand-size)))
@@ -2673,9 +2675,9 @@
                             async-adder-numsteps
                             fv-serial-adder
                             pos-len=>consp)
-                           (async-adder$state-fn-m+n
+                           (async-adder$run-m+n
                             async-adder$input-format-m+n
-                            open-async-adder$state-fn-n
+                            open-async-adder$run
                             open-async-adder$input-format-n
                             open-async-adder$st-trans-n
                             open-async-adder$st-trans-n->numsteps
@@ -2790,7 +2792,7 @@
                             fullp
                             emptyp
                             open-de-sim-n
-                            open-async-adder$state-fn-n
+                            open-async-adder$run
                             open-async-adder$input-format-n
                             car-cdr-elim)))))
 
@@ -2835,7 +2837,7 @@
                            (fullp
                             emptyp
                             open-de-sim-n
-                            open-async-adder$state-fn-n
+                            open-async-adder$run
                             open-async-adder$input-format-n
                             open-fv-shift-right-nil-n
                             open-fv-serial-sum
@@ -2887,7 +2889,7 @@
                              (fullp
                               emptyp
                               open-de-sim-n
-                              open-async-adder$state-fn-n
+                              open-async-adder$run
                               open-async-adder$input-format-n
                               open-fv-shift-right-nil-n
                               open-fv-serial-sum

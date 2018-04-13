@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; April 2018
 
 (in-package "ADE")
 
@@ -19,7 +19,7 @@
 ;;; Table of Contents:
 ;;;
 ;;; 1. DE Module Generator of Q5'
-;;; 2. Specifying the Final State of Q5' After An N-Step Execution
+;;; 2. Specify the Final State of Q5' After An N-Step Execution
 ;;; 3. Single-Step-Update Property
 ;;; 4. Relationship Between the Input and Output Sequences
 
@@ -27,9 +27,9 @@
 
 ;; 1. DE Module Generator of Q5'
 ;;
-;; Constructing a DE module generator for a queue of five links, Q5', using the
-;; link-joint model. Proving the value and state lemmas for this module
-;; generator. Note that Q5' is a complex link.
+;; Construct a DE module generator for a queue of five links, Q5', using the
+;; link-joint model.  Prove the value and state lemmas for this module
+;; generator.  Note that Q5' is a complex link.
 
 (defconst *queue5$go-num* 4)
 (defconst *queue5$st-len* 10)
@@ -44,14 +44,22 @@
   (+ (queue5$data-ins-len data-width)
      *queue5$go-num*))
 
-;; DE module generator of Q5'. It reports the "ready-in-" signal at its input
-;; port, and the "ready-out" signal and output data at its output port.
+;; DE module generator of Q5'
 
 (module-generator
  queue5* (data-width)
  (si 'queue5 data-width)
+ ;; INPUTS
+ ;; There are 3 types of inputs for a complex link:
+ ;; * in-act and out-act signals,
+ ;; * input data,
+ ;; * GO signals.
  (list* 'in-act 'out-act (append (sis 'data-in 0 data-width)
                                  (sis 'go 0 *queue5$go-num*)))
+ ;; OUTPUTS
+ ;; For a complex link, in addition to outputing the data, we also report the
+ ;; "ready-in-" signals from the links at the module's input ports and the
+ ;; "ready-out" signals from the links at the module's output ports.
  (list* 'ready-in- 'ready-out
         (sis 'data-out 0 data-width))
  '(l0 d0 l1 d1 l2 d2 l3 d3 l4 d4)
@@ -143,7 +151,7 @@
  `(progn
     ,@(state-accessors-gen 'queue5 '(l0 d0 l1 d1 l2 d2 l3 d3 l4 d4) 0)))
 
-;; DE netlist generator. A generated netlist will contain an instance of Q5'.
+;; DE netlist generator.  A generated netlist will contain an instance of Q5'.
 
 (defun queue5$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -241,137 +249,88 @@
   :hints (("Goal" :in-theory (enable queue5$valid-st)))
   :rule-classes :forward-chaining)
 
-;; Q5' simulator
+;; Extract the input and output signals from Q5'
 
 (progn
-  (defun queue5$map-to-links (st)
-    (b* ((l0 (get-field *queue5$l0* st))
-         (d0 (get-field *queue5$d0* st))
-         (l1 (get-field *queue5$l1* st))
-         (d1 (get-field *queue5$d1* st))
-         (l2 (get-field *queue5$l2* st))
-         (d2 (get-field *queue5$d2* st))
-         (l3 (get-field *queue5$l3* st))
-         (d3 (get-field *queue5$d3* st))
-         (l4 (get-field *queue5$l4* st))
-         (d4 (get-field *queue5$d4* st)))
-      (map-to-links (list (list 'l0 l0 d0)
-                          (list 'l1 l1 d1)
-                          (list 'l2 l2 d2)
-                          (list 'l3 l3 d3)
-                          (list 'l4 l4 d4)))))
+  ;; Extract the "in-act" signal
 
-  (defun queue5$map-to-links-list (x)
-    (if (atom x)
-        nil
-      (cons (queue5$map-to-links (car x))
-            (queue5$map-to-links-list (cdr x)))))
+  (defund queue5$in-act (inputs)
+    (nth 0 inputs))
 
-  (defund queue5$sim (data-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp n))
-                    :verify-guards nil
-                    :stobjs state))
-    (b* ((num-signals (queue5$ins-len data-width))
-         ((mv inputs-lst state)
-          (signal-vals-gen num-signals n state nil))
-         ;;(- (cw "~x0~%" inputs-lst))
-         (empty '(nil))
-         (invalid-data (make-list data-width :initial-element '(x)))
-         (st (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data)))
-      (mv (pretty-list
-           (remove-dup-neighbors
-            (queue5$map-to-links-list
-             (de-sim-list (si 'queue5 data-width)
-                          inputs-lst
-                          st
-                          (queue5$netlist data-width))))
-           0)
-          state)))
+  ;; Extract the "out-act" signal
+
+  (defund queue5$out-act (inputs)
+    (nth 1 inputs))
+
+  ;; Extract the input data
+
+  (defun queue5$data-in (inputs data-width)
+    (declare (xargs :guard (and (true-listp inputs)
+                                (natp data-width))))
+    (take (mbe :logic (nfix data-width)
+               :exec  data-width)
+          (nthcdr 2 inputs)))
+
+  (defthm len-queue5$data-in
+    (equal (len (queue5$data-in inputs data-width))
+           (nfix data-width)))
+
+  (in-theory (disable queue5$data-in))
+
+  ;; Extract the "ready-in-" signal
+
+  (defund queue5$ready-in- (st)
+    (b* ((l0 (get-field *queue5$l0* st)))
+      (f-buf (car l0))))
+
+  (defthm booleanp-queue5$ready-in-
+    (implies (queue5$valid-st st data-width)
+             (booleanp (queue5$ready-in- st)))
+    :hints (("Goal" :in-theory (enable queue5$valid-st
+                                       queue5$ready-in-)))
+    :rule-classes :type-prescription)
+
+  ;; Extract the "ready-out" signal
+
+  (defund queue5$ready-out (st)
+    (b* ((l4 (get-field *queue5$l4* st)))
+      (f-buf (car l4))))
+
+  (defthm booleanp-queue5$ready-out
+    (implies (queue5$valid-st st data-width)
+             (booleanp (queue5$ready-out st)))
+    :hints (("Goal" :in-theory (enable queue5$valid-st
+                                       queue5$ready-out)))
+    :rule-classes :type-prescription)
+
+  ;; Extract the output data
+
+  (defund queue5$data-out (st)
+    (v-threefix (strip-cars (get-field *queue5$d4* st))))
+
+  (defthm len-queue5$data-out-1
+    (implies (queue5$st-format st data-width)
+             (equal (len (queue5$data-out st))
+                    data-width))
+    :hints (("Goal" :in-theory (enable queue5$st-format
+                                       queue5$data-out))))
+
+  (defthm len-queue5$data-out-2
+    (implies (queue5$valid-st st data-width)
+             (equal (len (queue5$data-out st))
+                    data-width))
+    :hints (("Goal" :in-theory (enable queue5$valid-st))))
+
+  (defthm bvp-queue5$data-out
+    (implies (and (queue5$valid-st st data-width)
+                  (queue5$ready-out st))
+             (bvp (queue5$data-out st)))
+    :hints (("Goal" :in-theory (enable queue5$valid-st
+                                       queue5$ready-out
+                                       queue5$data-out))))
   )
 
-;; Extracting the "in-act" signal. It is an input signal for a complex link.
-
-(defund queue5$in-act (inputs)
-  (nth 0 inputs))
-
-;; Extracting the "out-act" signal. It is an input signal for a complex link.
-
-(defund queue5$out-act (inputs)
-  (nth 1 inputs))
-
-;; Extracting the input data
-
-(defun queue5$data-in (inputs data-width)
-  (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
-  (take (mbe :logic (nfix data-width)
-             :exec  data-width)
-        (nthcdr 2 inputs)))
-
-(defthm len-queue5$data-in
-  (equal (len (queue5$data-in inputs data-width))
-         (nfix data-width)))
-
-(in-theory (disable queue5$data-in))
-
-;; Extracting the "ready-in-" signal
-
-(defund queue5$ready-in- (st)
-  (b* ((l0 (get-field *queue5$l0* st)))
-    (f-buf (car l0))))
-
-(defthm booleanp-queue5$ready-in-
-  (implies (queue5$valid-st st data-width)
-           (booleanp (queue5$ready-in- st)))
-  :hints (("Goal" :in-theory (enable queue5$valid-st
-                                     queue5$ready-in-)))
-  :rule-classes :type-prescription)
-
-;; Extracting the "ready-out" signal
-
-(defund queue5$ready-out (st)
-  (b* ((l4 (get-field *queue5$l4* st)))
-    (f-buf (car l4))))
-
-(defthm booleanp-queue5$ready-out
-  (implies (queue5$valid-st st data-width)
-           (booleanp (queue5$ready-out st)))
-  :hints (("Goal" :in-theory (enable queue5$valid-st
-                                     queue5$ready-out)))
-  :rule-classes :type-prescription)
-
-;; Extracting the output data
-
-(defund queue5$data-out (st)
-  (v-threefix (strip-cars (get-field *queue5$d4* st))))
-
-(defthm len-queue5$data-out-1
-  (implies (queue5$st-format st data-width)
-           (equal (len (queue5$data-out st))
-                  data-width))
-  :hints (("Goal" :in-theory (enable queue5$st-format
-                                     queue5$data-out))))
-
-(defthm len-queue5$data-out-2
-  (implies (queue5$valid-st st data-width)
-           (equal (len (queue5$data-out st))
-                  data-width))
-  :hints (("Goal" :in-theory (enable queue5$valid-st))))
-
-(defthm bvp-queue5$data-out
-  (implies (and (queue5$valid-st st data-width)
-                (queue5$ready-out st))
-           (bvp (queue5$data-out st)))
-  :hints (("Goal" :in-theory (enable queue5$valid-st
-                                     queue5$ready-out
-                                     queue5$data-out))))
-
-(not-primp-lemma queue5)
+(not-primp-lemma queue5) ;; Prove that Q5' is not a DE primitive.
 
 ;; The value lemma for Q5'
 
@@ -391,8 +350,6 @@
                        st
                        netlist)
            :in-theory (e/d (de-rules
-                            get-field
-                            len-1-true-listp=>true-listp
                             not-primp-queue5
                             queue5&
                             queue5*$destructure
@@ -408,7 +365,7 @@
 
 ;; This function specifies the next state of Q5'.
 
-(defun queue5$state-fn (inputs st data-width)
+(defun queue5$step (inputs st data-width)
   (b* ((in-act     (queue5$in-act inputs))
        (out-act    (queue5$out-act inputs))
        (data-in    (queue5$data-in inputs data-width))
@@ -462,8 +419,8 @@
      (pairlis$ (fv-if trans4-act (strip-cars d3) (strip-cars d4))
                nil))))
 
-(defthm len-of-queue5$state-fn
-  (equal (len (queue5$state-fn inputs st data-width))
+(defthm len-of-queue5$step
+  (equal (len (queue5$step inputs st data-width))
          *queue5$st-len*))
 
 ;; The state lemma for Q5'
@@ -477,7 +434,7 @@
                   (equal (len go-signals) *queue5$go-num*)
                   (queue5$st-format st data-width))
              (equal (de (si 'queue5 data-width) inputs st netlist)
-                    (queue5$state-fn inputs st data-width))))
+                    (queue5$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
            :do-not '(preprocess)
@@ -486,8 +443,6 @@
                        st
                        netlist)
            :in-theory (e/d (de-rules
-                            get-field
-                            len-1-true-listp=>true-listp
                             not-primp-queue5
                             queue5&
                             queue5*$destructure
@@ -501,11 +456,64 @@
                            ((queue5*)
                             de-module-disabled-rules)))))
 
-(in-theory (disable queue5$state-fn))
+(in-theory (disable queue5$step))
 
 ;; ======================================================================
 
-;; 2. Specifying the Final State of Q5' After An N-Step Execution
+;; 2. Specify the Final State of Q5' After An N-Step Execution
+
+;; Q5' simulator
+
+(progn
+  (defun queue5$map-to-links (st)
+    (b* ((l0 (get-field *queue5$l0* st))
+         (d0 (get-field *queue5$d0* st))
+         (l1 (get-field *queue5$l1* st))
+         (d1 (get-field *queue5$d1* st))
+         (l2 (get-field *queue5$l2* st))
+         (d2 (get-field *queue5$d2* st))
+         (l3 (get-field *queue5$l3* st))
+         (d3 (get-field *queue5$d3* st))
+         (l4 (get-field *queue5$l4* st))
+         (d4 (get-field *queue5$d4* st)))
+      (map-to-links (list (list 'l0 l0 d0)
+                          (list 'l1 l1 d1)
+                          (list 'l2 l2 d2)
+                          (list 'l3 l3 d3)
+                          (list 'l4 l4 d4)))))
+
+  (defun queue5$map-to-links-list (x)
+    (if (atom x)
+        nil
+      (cons (queue5$map-to-links (car x))
+            (queue5$map-to-links-list (cdr x)))))
+
+  (defund queue5$sim (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue5$ins-len data-width))
+         ((mv inputs-lst state)
+          (signal-vals-gen num-signals n state nil))
+         ;;(- (cw "~x0~%" inputs-lst))
+         (empty '(nil))
+         (invalid-data (make-list data-width :initial-element '(x)))
+         (st (list empty invalid-data
+                   empty invalid-data
+                   empty invalid-data
+                   empty invalid-data
+                   empty invalid-data)))
+      (mv (pretty-list
+           (remove-dup-neighbors
+            (queue5$map-to-links-list
+             (de-sim-list (si 'queue5 data-width)
+                          inputs-lst
+                          st
+                          (queue5$netlist data-width))))
+           0)
+          state)))
+  )
 
 ;; Conditions on the inputs
 
@@ -539,7 +547,7 @@
 ;; The extraction function for Q5' that extracts the future output sequence
 ;; from the current state.
 
-(defund queue5$extract-state (st)
+(defund queue5$extract (st)
   (b* ((l0 (get-field *queue5$l0* st))
        (d0 (get-field *queue5$d0* st))
        (l1 (get-field *queue5$l1* st))
@@ -550,31 +558,73 @@
        (d3 (get-field *queue5$d3* st))
        (l4 (get-field *queue5$l4* st))
        (d4 (get-field *queue5$d4* st)))
-    (extract-state (list l0 d0 l1 d1 l2 d2 l3 d3 l4 d4))))
+    (extract-valid-data (list l0 d0 l1 d1 l2 d2 l3 d3 l4 d4))))
 
-(defthm queue5$extract-state-not-empty
+(defthm queue5$extract-not-empty
   (implies (and (queue5$ready-out st)
                 (queue5$valid-st st data-width))
-           (< 0 (len (queue5$extract-state st))))
+           (< 0 (len (queue5$extract st))))
   :hints (("Goal" :in-theory (e/d (queue5$valid-st
-                                   queue5$extract-state
+                                   queue5$extract
                                    queue5$ready-out)
                                   (nfix))))
   :rule-classes :linear)
 
 (defthmd queue5$data-out-rewrite
   (implies (and (queue5$valid-st st data-width)
-                (equal n (1- (len (queue5$extract-state st))))
+                (equal n (1- (len (queue5$extract st))))
                 (queue5$ready-out st))
            (equal (list (queue5$data-out st))
-                  (list (nth n (queue5$extract-state st)))))
+                  (list (nth n (queue5$extract st)))))
   :hints (("Goal"
            :in-theory (enable queue5$valid-st
-                              queue5$extract-state
+                              queue5$extract
                               queue5$ready-out
                               queue5$data-out))))
 
-;; Extracting the accepted input sequence
+;; The extracted next-state function for Q5'.  Note that this function avoids
+;; exploring the internal computation of Q5'.
+
+(defund queue5$extracted-step (inputs st data-width)
+  (b* ((data-in (queue5$data-in inputs data-width))
+       (extracted-st (queue5$extract st))
+       (n (1- (len extracted-st))))
+    (cond
+     ((equal (queue5$out-act inputs) t)
+      (cond
+       ((equal (queue5$in-act inputs) t)
+        (cons data-in (take n extracted-st)))
+       (t (take n extracted-st))))
+     (t (cond
+         ((equal (queue5$in-act inputs) t)
+          (cons data-in extracted-st))
+         (t extracted-st))))))
+
+;; The single-step-update property
+
+(defthm queue5$extracted-step-correct
+  (b* ((next-st (queue5$step inputs st data-width)))
+    (implies (and (queue5$input-format inputs st data-width)
+                  (queue5$valid-st st data-width))
+             (equal (queue5$extract next-st)
+                    (queue5$extracted-step inputs st data-width))))
+  :hints (("Goal"
+           :in-theory (enable get-field
+                              f-sr
+                              queue5$extracted-step
+                              queue5$input-format
+                              queue5$valid-st
+                              queue5$st-format
+                              queue5$step
+                              queue5$ready-in-
+                              queue5$ready-out
+                              queue5$extract))))
+
+;; ======================================================================
+
+;; 4. Relationship Between the Input and Output Sequences
+
+;; Extract the accepted input sequence
 
 (defun queue5$in-seq (inputs-lst st data-width n)
   (declare (ignorable st)
@@ -584,16 +634,16 @@
     (b* ((inputs (car inputs-lst)))
       (if (equal (queue5$in-act inputs) t)
           (append (queue5$in-seq (cdr inputs-lst)
-                                 (queue5$state-fn inputs st data-width)
+                                 (queue5$step inputs st data-width)
                                  data-width
                                  (1- n))
                   (list (queue5$data-in inputs data-width)))
         (queue5$in-seq (cdr inputs-lst)
-                       (queue5$state-fn inputs st data-width)
+                       (queue5$step inputs st data-width)
                        data-width
                        (1- n))))))
 
-;; Extracting the valid output sequence
+;; Extract the valid output sequence
 
 (defun queue5$out-seq (inputs-lst st data-width n)
   (declare (xargs :measure (acl2-count n)))
@@ -602,12 +652,12 @@
     (b* ((inputs (car inputs-lst)))
       (if (equal (queue5$out-act inputs) t)
           (append (queue5$out-seq (cdr inputs-lst)
-                                  (queue5$state-fn inputs st data-width)
+                                  (queue5$step inputs st data-width)
                                   data-width
                                   (1- n))
                   (list (queue5$data-out st)))
         (queue5$out-seq (cdr inputs-lst)
-                        (queue5$state-fn inputs st data-width)
+                        (queue5$step inputs st data-width)
                         data-width
                         (1- n))))))
 
@@ -638,60 +688,19 @@
                    (queue5$out-seq inputs-lst st data-width n)))))
      state)))
 
-;; The extracted next-state function for Q5'
-
-(defund queue5$step-spec (inputs st data-width)
-  (b* ((data-in (queue5$data-in inputs data-width))
-       (extracted-st (queue5$extract-state st))
-       (n (1- (len extracted-st))))
-    (cond
-     ((equal (queue5$out-act inputs) t)
-      (cond
-       ((equal (queue5$in-act inputs) t)
-        (cons data-in (take n extracted-st)))
-       (t (take n extracted-st))))
-     (t (cond
-         ((equal (queue5$in-act inputs) t)
-          (cons data-in extracted-st))
-         (t extracted-st))))))
-
-;; The single-step-update property
-
-(defthm queue5$step-spec-correct
-  (b* ((next-st (queue5$state-fn inputs st data-width)))
-    (implies (and (queue5$input-format inputs st data-width)
-                  (queue5$valid-st st data-width))
-             (equal (queue5$extract-state next-st)
-                    (queue5$step-spec inputs st data-width))))
-  :hints (("Goal"
-           :in-theory (enable get-field
-                              f-sr
-                              queue5$step-spec
-                              queue5$input-format
-                              queue5$valid-st
-                              queue5$st-format
-                              queue5$state-fn
-                              queue5$ready-in-
-                              queue5$ready-out
-                              queue5$extract-state))))
-
-;; ======================================================================
-
-;; 4. Relationship Between the Input and Output Sequences
-
-;; Proving that queue5$valid-st is an invariant.
+;; Prove that queue5$valid-st is an invariant.
 
 (defthm queue5$valid-st-preserved
   (implies (and (queue5$input-format inputs st data-width)
                 (queue5$valid-st st data-width))
-           (queue5$valid-st (queue5$state-fn inputs st data-width)
+           (queue5$valid-st (queue5$step inputs st data-width)
                             data-width))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             queue5$input-format
                             queue5$valid-st
                             queue5$st-format
-                            queue5$state-fn
+                            queue5$step
                             queue5$ready-in-
                             queue5$ready-out
                             f-sr)
@@ -699,20 +708,20 @@
                             nthcdr
                             acl2::true-listp-append)))))
 
-(defthm queue5$extract-state-lemma
+(defthm queue5$extract-lemma
   (implies (and (queue5$input-format inputs st data-width)
                 (queue5$valid-st st data-width)
-                (equal n (1- (len (queue5$extract-state st))))
+                (equal n (1- (len (queue5$extract st))))
                 (queue5$out-act inputs))
            (equal (append
-                   (take n (queue5$extract-state st))
+                   (take n (queue5$extract st))
                    (list (queue5$data-out st)))
-                  (queue5$extract-state st)))
+                  (queue5$extract st)))
   :hints (("Goal"
            :in-theory (enable queue5$input-format
                               queue5$valid-st
                               queue5$st-format
-                              queue5$extract-state
+                              queue5$extract
                               queue5$out-act
                               queue5$ready-out
                               queue5$data-out))))

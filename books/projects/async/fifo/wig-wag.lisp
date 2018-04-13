@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; April 2018
 
 (in-package "ADE")
 
@@ -21,7 +21,7 @@
 ;;; Table of Contents:
 ;;;
 ;;; 1. DE Module Generator of WW
-;;; 2. Specifying the Final State of WW After An N-Step Execution
+;;; 2. Specify the Final State of WW After An N-Step Execution
 ;;; 3. Single-Step-Update Property
 ;;; 4. Relationship Between the Input and Output Sequences
 
@@ -29,8 +29,8 @@
 
 ;; 1. DE Module Generator of WW
 ;;
-;; Constructing a DE module generator for a wig-wag circuit, WW, using the
-;; link-joint model. Proving the value and state lemmas for this module
+;; Construct a DE module generator for a wig-wag circuit, WW, using the
+;; link-joint model.  Prove the value and state lemmas for this module
 ;; generator.
 
 (defconst *wig-wag$go-num* (+ *alt-branch$go-num*
@@ -47,11 +47,9 @@
   (+ (wig-wag$data-ins-len data-width)
      *wig-wag$go-num*))
 
-;; DE module generator of WW. It reports the "in-act" signal at its input
-;; port, and the "out-act" signal and output data at its output port.  The
-;; alt-branch joint in WW accepts input data and places them alternately into
-;; links L0 and L1. The alt-merge joint takes data alternately from links L0
-;; and L1 and delivers them as outputs.
+;; DE module generator of WW.  The ALT-BRANCH joint in WW accepts input data
+;; and places them alternately into links L0 and L1.  The ALT-MERGE joint takes
+;; data alternately from links L0 and L1 and delivers them as outputs.
 
 (module-generator
  wig-wag* (data-width)
@@ -103,7 +101,7 @@
  `(progn
     ,@(state-accessors-gen 'wig-wag '(l0 d0 l1 d1 br me) 0)))
 
-;; DE netlist generator. A generated netlist will contain an instance of WW.
+;; DE netlist generator.  A generated netlist will contain an instance of WW.
 
 (defun wig-wag$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -178,6 +176,234 @@
   :hints (("Goal" :in-theory (enable wig-wag$valid-st)))
   :rule-classes :forward-chaining)
 
+;; Extract the input and output signals from WW
+
+(progn
+  ;; Extract the input data
+
+  (defun wig-wag$data-in (inputs data-width)
+    (declare (xargs :guard (and (true-listp inputs)
+                                (natp data-width))))
+    (take (mbe :logic (nfix data-width)
+               :exec  data-width)
+          (nthcdr 2 inputs)))
+
+  (defthm len-wig-wag$data-in
+    (equal (len (wig-wag$data-in inputs data-width))
+           (nfix data-width)))
+
+  (in-theory (disable wig-wag$data-in))
+
+  ;; Extract the inputs for the alt-branch joint
+
+  (defund wig-wag$br-inputs (inputs st data-width)
+    (b* ((full-in (nth 0 inputs))
+         (data-in (wig-wag$data-in inputs data-width))
+         (go-signals (nthcdr (wig-wag$data-ins-len data-width) inputs))
+
+         (br-go-signals (take *alt-branch$go-num* go-signals))
+
+         (l0 (get-field *wig-wag$l0* st))
+         (l1 (get-field *wig-wag$l1* st)))
+
+      (list* full-in (f-buf (car l0)) (f-buf (car l1))
+             (append data-in br-go-signals))))
+
+  ;; Extract the inputs for the alt-merge joint
+
+  (defund wig-wag$me-inputs (inputs st data-width)
+    (b* ((empty-out- (nth 1 inputs))
+         (go-signals (nthcdr (wig-wag$data-ins-len data-width) inputs))
+
+         (me-go-signals (nthcdr *alt-branch$go-num* go-signals))
+
+         (l0 (get-field *wig-wag$l0* st))
+         (d0 (get-field *wig-wag$d0* st))
+         (l1 (get-field *wig-wag$l1* st))
+         (d1 (get-field *wig-wag$d1* st)))
+
+      (list* (f-buf (car l0)) (f-buf (car l1)) empty-out-
+             (append (v-threefix (strip-cars d0))
+                     (v-threefix (strip-cars d1))
+                     me-go-signals))))
+
+  ;; Extract the "in-act" signal
+
+  (defund wig-wag$in-act (inputs st data-width)
+    (b* ((br-inputs (wig-wag$br-inputs inputs st data-width))
+         (br (get-field *wig-wag$br* st)))
+      (alt-branch$act br-inputs br data-width)))
+
+  ;; Extract the "out-act" signal
+
+  (defund wig-wag$out-act (inputs st data-width)
+    (b* ((me-inputs (wig-wag$me-inputs inputs st data-width))
+         (me (get-field *wig-wag$me* st)))
+      (alt-merge$act me-inputs me data-width)))
+
+  ;; Extract the output data
+
+  (defund wig-wag$data-out (st)
+    (b* ((d0 (get-field *wig-wag$d0* st))
+         (d1 (get-field *wig-wag$d1* st))
+         (me (get-field *wig-wag$me* st))
+
+         (me-select (get-field *alt-merge$select* me)))
+      (fv-if (car me-select)
+             (strip-cars d1)
+             (strip-cars d0))))
+
+  (defthm len-wig-wag$data-out-1
+    (implies (wig-wag$st-format st data-width)
+             (equal (len (wig-wag$data-out st))
+                    data-width))
+    :hints (("Goal" :in-theory (enable wig-wag$st-format
+                                       wig-wag$data-out))))
+
+  (defthm len-wig-wag$data-out-2
+    (implies (wig-wag$valid-st st data-width)
+             (equal (len (wig-wag$data-out st))
+                    data-width))
+    :hints (("Goal" :in-theory (enable wig-wag$valid-st))))
+
+  (defthm bvp-wig-wag$data-out
+    (implies (and (wig-wag$valid-st st data-width)
+                  (wig-wag$out-act inputs st data-width))
+             (bvp (wig-wag$data-out st)))
+    :hints (("Goal" :in-theory (enable f-and3
+                                       f-and
+                                       joint-act
+                                       wig-wag$valid-st
+                                       wig-wag$st-format
+                                       wig-wag$out-act
+                                       wig-wag$data-out
+                                       wig-wag$me-inputs
+                                       alt-merge$valid-st
+                                       alt-merge$act
+                                       alt-merge$act0
+                                       alt-merge$act1))))
+  )
+
+(not-primp-lemma wig-wag) ;; Prove that WW is not a DE primitive.
+
+;; The value lemma for WW
+
+(defthmd wig-wag$value
+  (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
+    (implies (and (wig-wag& netlist data-width)
+                  (true-listp data-in)
+                  (equal (len data-in) data-width)
+                  (true-listp go-signals)
+                  (equal (len go-signals) *wig-wag$go-num*)
+                  (wig-wag$st-format st data-width))
+             (equal (se (si 'wig-wag data-width) inputs st netlist)
+                    (list* (wig-wag$in-act inputs st data-width)
+                           (wig-wag$out-act inputs st data-width)
+                           (wig-wag$data-out st)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :do-not '(preprocess)
+           :expand (se (si 'wig-wag data-width)
+                       (list* full-in empty-out-
+                              (append data-in go-signals))
+                       st
+                       netlist)
+           :in-theory (e/d (de-rules
+                            not-primp-wig-wag
+                            wig-wag&
+                            wig-wag*$destructure
+                            wig-wag$data-in
+                            alt-branch$value
+                            alt-merge$value
+                            latch-n$value
+                            wig-wag$st-format
+                            wig-wag$in-act
+                            wig-wag$out-act
+                            wig-wag$data-out
+                            wig-wag$br-inputs
+                            wig-wag$me-inputs)
+                           ((wig-wag*)
+                            de-module-disabled-rules)))))
+
+;; This function specifies the next state of WW.
+
+(defun wig-wag$step (inputs st data-width)
+  (b* ((data-in (wig-wag$data-in inputs data-width))
+
+       (l0 (get-field *wig-wag$l0* st))
+       (d0 (get-field *wig-wag$d0* st))
+       (l1 (get-field *wig-wag$l1* st))
+       (d1 (get-field *wig-wag$d1* st))
+       (br (get-field *wig-wag$br* st))
+       (me (get-field *wig-wag$me* st))
+
+       (br-inputs (wig-wag$br-inputs inputs st data-width))
+       (me-inputs (wig-wag$me-inputs inputs st data-width))
+
+       (br-act0 (alt-branch$act0 br-inputs br data-width))
+       (br-act1 (alt-branch$act1 br-inputs br data-width))
+       (me-act0 (alt-merge$act0 me-inputs me data-width))
+       (me-act1 (alt-merge$act1 me-inputs me data-width)))
+    (list
+     ;; L0
+     (list (f-sr br-act0 me-act0 (car l0)))
+     (pairlis$ (fv-if br-act0 data-in (strip-cars d0))
+               nil)
+
+     ;; L1
+     (list (f-sr br-act1 me-act1 (car l1)))
+     (pairlis$ (fv-if br-act1 data-in (strip-cars d1))
+               nil)
+
+     ;; Joint alt-branch
+     (alt-branch$step br-inputs br data-width)
+     ;; Joint alt-merge
+     (alt-merge$step me-inputs me data-width))))
+
+(defthm len-of-wig-wag$step
+  (equal (len (wig-wag$step inputs st data-width))
+         *wig-wag$st-len*))
+
+;; The state lemma for WW
+
+(defthmd wig-wag$state
+  (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
+    (implies (and (wig-wag& netlist data-width)
+                  (true-listp data-in)
+                  (equal (len data-in) data-width)
+                  (true-listp go-signals)
+                  (equal (len go-signals) *wig-wag$go-num*)
+                  (wig-wag$st-format st data-width))
+             (equal (de (si 'wig-wag data-width) inputs st netlist)
+                    (wig-wag$step inputs st data-width))))
+  :hints (("Goal"
+           :do-not-induct t
+           :do-not '(preprocess)
+           :expand (de (si 'wig-wag data-width)
+                       (list* full-in empty-out-
+                              (append data-in go-signals))
+                       st
+                       netlist)
+           :in-theory (e/d (de-rules
+                            not-primp-wig-wag
+                            wig-wag&
+                            wig-wag*$destructure
+                            wig-wag$st-format
+                            wig-wag$data-in
+                            wig-wag$br-inputs
+                            wig-wag$me-inputs
+                            alt-branch$value alt-branch$state
+                            alt-merge$value alt-merge$state
+                            latch-n$value latch-n$state)
+                           ((wig-wag*)
+                            de-module-disabled-rules)))))
+
+(in-theory (disable wig-wag$step))
+
+;; ======================================================================
+
+;; 2. Specify the Final State of WW After An N-Step Execution
+
 ;; WW simulator
 
 (progn
@@ -228,234 +454,6 @@
            0)
           state)))
   )
-
-;; Extracting the input data
-
-(defun wig-wag$data-in (inputs data-width)
-  (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
-  (take (mbe :logic (nfix data-width)
-             :exec  data-width)
-        (nthcdr 2 inputs)))
-
-(defthm len-wig-wag$data-in
-  (equal (len (wig-wag$data-in inputs data-width))
-         (nfix data-width)))
-
-(in-theory (disable wig-wag$data-in))
-
-;; Extracting the inputs for the alt-branch joint
-
-(defund wig-wag$br-inputs (inputs st data-width)
-  (b* ((full-in (nth 0 inputs))
-       (data-in (wig-wag$data-in inputs data-width))
-       (go-signals (nthcdr (wig-wag$data-ins-len data-width) inputs))
-
-       (br-go-signals (take *alt-branch$go-num* go-signals))
-
-       (l0 (get-field *wig-wag$l0* st))
-       (l1 (get-field *wig-wag$l1* st)))
-
-    (list* full-in (f-buf (car l0)) (f-buf (car l1))
-           (append data-in br-go-signals))))
-
-;; Extracting the inputs for the alt-merge joint
-
-(defund wig-wag$me-inputs (inputs st data-width)
-  (b* ((empty-out- (nth 1 inputs))
-       (go-signals (nthcdr (wig-wag$data-ins-len data-width) inputs))
-
-       (me-go-signals (nthcdr *alt-branch$go-num* go-signals))
-
-       (l0 (get-field *wig-wag$l0* st))
-       (d0 (get-field *wig-wag$d0* st))
-       (l1 (get-field *wig-wag$l1* st))
-       (d1 (get-field *wig-wag$d1* st)))
-
-    (list* (f-buf (car l0)) (f-buf (car l1)) empty-out-
-           (append (v-threefix (strip-cars d0))
-                   (v-threefix (strip-cars d1))
-                   me-go-signals))))
-
-;; Extracting the "in-act" signal
-
-(defund wig-wag$in-act (inputs st data-width)
-  (b* ((br-inputs (wig-wag$br-inputs inputs st data-width))
-       (br (get-field *wig-wag$br* st)))
-    (alt-branch$act br-inputs br data-width)))
-
-;; Extracting the "out-act" signal
-
-(defund wig-wag$out-act (inputs st data-width)
-  (b* ((me-inputs (wig-wag$me-inputs inputs st data-width))
-       (me (get-field *wig-wag$me* st)))
-    (alt-merge$act me-inputs me data-width)))
-
-;; Extracting the output data
-
-(defund wig-wag$data-out (st)
-  (b* ((d0 (get-field *wig-wag$d0* st))
-       (d1 (get-field *wig-wag$d1* st))
-       (me (get-field *wig-wag$me* st))
-
-       (me-select (get-field *alt-merge$select* me)))
-    (fv-if (car me-select)
-           (strip-cars d1)
-           (strip-cars d0))))
-
-(defthm len-wig-wag$data-out-1
-  (implies (wig-wag$st-format st data-width)
-           (equal (len (wig-wag$data-out st))
-                  data-width))
-  :hints (("Goal" :in-theory (enable wig-wag$st-format
-                                     wig-wag$data-out))))
-
-(defthm len-wig-wag$data-out-2
-  (implies (wig-wag$valid-st st data-width)
-           (equal (len (wig-wag$data-out st))
-                  data-width))
-  :hints (("Goal" :in-theory (enable wig-wag$valid-st))))
-
-(defthm bvp-wig-wag$data-out
-  (implies (and (wig-wag$valid-st st data-width)
-                (wig-wag$out-act inputs st data-width))
-           (bvp (wig-wag$data-out st)))
-  :hints (("Goal" :in-theory (enable f-and3
-                                     f-and
-                                     joint-act
-                                     wig-wag$valid-st
-                                     wig-wag$st-format
-                                     wig-wag$out-act
-                                     wig-wag$data-out
-                                     wig-wag$me-inputs
-                                     alt-merge$valid-st
-                                     alt-merge$act
-                                     alt-merge$act0
-                                     alt-merge$act1))))
-
-(not-primp-lemma wig-wag)
-
-;; The value lemma for WW
-
-(defthmd wig-wag$value
-  (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-    (implies (and (wig-wag& netlist data-width)
-                  (true-listp data-in)
-                  (equal (len data-in) data-width)
-                  (true-listp go-signals)
-                  (equal (len go-signals) *wig-wag$go-num*)
-                  (wig-wag$st-format st data-width))
-             (equal (se (si 'wig-wag data-width) inputs st netlist)
-                    (list* (wig-wag$in-act inputs st data-width)
-                           (wig-wag$out-act inputs st data-width)
-                           (wig-wag$data-out st)))))
-  :hints (("Goal"
-           :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'wig-wag data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
-           :in-theory (e/d (de-rules
-                            get-field
-                            len-1-true-listp=>true-listp
-                            not-primp-wig-wag
-                            wig-wag&
-                            wig-wag*$destructure
-                            wig-wag$data-in
-                            alt-branch$value
-                            alt-merge$value
-                            latch-n$value
-                            wig-wag$st-format
-                            wig-wag$in-act
-                            wig-wag$out-act
-                            wig-wag$data-out
-                            wig-wag$br-inputs
-                            wig-wag$me-inputs)
-                           ((wig-wag*)
-                            de-module-disabled-rules)))))
-
-;; This function specifies the next state of WW.
-
-(defun wig-wag$state-fn (inputs st data-width)
-  (b* ((data-in (wig-wag$data-in inputs data-width))
-
-       (l0 (get-field *wig-wag$l0* st))
-       (d0 (get-field *wig-wag$d0* st))
-       (l1 (get-field *wig-wag$l1* st))
-       (d1 (get-field *wig-wag$d1* st))
-       (br (get-field *wig-wag$br* st))
-       (me (get-field *wig-wag$me* st))
-
-       (br-inputs (wig-wag$br-inputs inputs st data-width))
-       (me-inputs (wig-wag$me-inputs inputs st data-width))
-
-       (br-act0 (alt-branch$act0 br-inputs br data-width))
-       (br-act1 (alt-branch$act1 br-inputs br data-width))
-       (me-act0 (alt-merge$act0 me-inputs me data-width))
-       (me-act1 (alt-merge$act1 me-inputs me data-width)))
-    (list
-     ;; L0
-     (list (f-sr br-act0 me-act0 (car l0)))
-     (pairlis$ (fv-if br-act0 data-in (strip-cars d0))
-               nil)
-
-     ;; L1
-     (list (f-sr br-act1 me-act1 (car l1)))
-     (pairlis$ (fv-if br-act1 data-in (strip-cars d1))
-               nil)
-
-     ;; Joint alt-branch
-     (alt-branch$state-fn br-inputs br data-width)
-     ;; Joint alt-merge
-     (alt-merge$state-fn me-inputs me data-width))))
-
-(defthm len-of-wig-wag$state-fn
-  (equal (len (wig-wag$state-fn inputs st data-width))
-         *wig-wag$st-len*))
-
-;; The state lemma for WW
-
-(defthmd wig-wag$state
-  (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-    (implies (and (wig-wag& netlist data-width)
-                  (true-listp data-in)
-                  (equal (len data-in) data-width)
-                  (true-listp go-signals)
-                  (equal (len go-signals) *wig-wag$go-num*)
-                  (wig-wag$st-format st data-width))
-             (equal (de (si 'wig-wag data-width) inputs st netlist)
-                    (wig-wag$state-fn inputs st data-width))))
-  :hints (("Goal"
-           :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'wig-wag data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
-           :in-theory (e/d (de-rules
-                            get-field
-                            len-1-true-listp=>true-listp
-                            not-primp-wig-wag
-                            wig-wag&
-                            wig-wag*$destructure
-                            wig-wag$st-format
-                            wig-wag$data-in
-                            wig-wag$br-inputs
-                            wig-wag$me-inputs
-                            alt-branch$value alt-branch$state
-                            alt-merge$value alt-merge$state
-                            latch-n$value latch-n$state)
-                           ((wig-wag*)
-                            de-module-disabled-rules)))))
-
-(in-theory (disable wig-wag$state-fn))
-
-;; ======================================================================
-
-;; 2. Specifying the Final State of WW After An N-Step Execution
 
 ;; Conditions on the inputs
 
@@ -525,7 +523,7 @@
 ;; The extraction function for WW that extracts the future output sequence from
 ;; the current state.
 
-(defund wig-wag$extract-state (st)
+(defund wig-wag$extract (st)
   (b* ((l0 (get-field *wig-wag$l0* st))
        (d0 (get-field *wig-wag$d0* st))
        (l1 (get-field *wig-wag$l1* st))
@@ -540,13 +538,13 @@
                           (car me-select-buf))))
 
     (if valid-me-select
-        (extract-state (list l0 d0 l1 d1))
-      (extract-state (list l1 d1 l0 d0)))))
+        (extract-valid-data (list l0 d0 l1 d1))
+      (extract-valid-data (list l1 d1 l0 d0)))))
 
-(defthm wig-wag$extract-state-not-empty
+(defthm wig-wag$extract-not-empty
   (implies (and (wig-wag$out-act inputs st data-width)
                 (wig-wag$valid-st st data-width))
-           (< 0 (len (wig-wag$extract-state st))))
+           (< 0 (len (wig-wag$extract st))))
   :hints (("Goal"
            :in-theory (e/d (f-and3
                             alt-merge$act
@@ -554,12 +552,12 @@
                             alt-merge$act1
                             wig-wag$me-inputs
                             wig-wag$valid-st
-                            wig-wag$extract-state
+                            wig-wag$extract
                             wig-wag$out-act)
                            (nfix))))
   :rule-classes :linear)
 
-;; Specifying and proving a state invariant
+;; Specify and prove a state invariant
 
 (progn
   (defund wig-wag$inv (st)
@@ -599,27 +597,27 @@
     (implies (and (wig-wag$input-format inputs data-width)
                   (wig-wag$valid-st st data-width)
                   (wig-wag$inv st))
-             (wig-wag$inv (wig-wag$state-fn inputs st data-width)))
+             (wig-wag$inv (wig-wag$step inputs st data-width)))
     :hints (("Goal"
              :in-theory (e/d (get-field
                               wig-wag$input-format
                               wig-wag$valid-st
                               wig-wag$st-format
                               wig-wag$inv
-                              wig-wag$state-fn
+                              wig-wag$step
                               wig-wag$in-act
                               wig-wag$out-act
                               wig-wag$br-inputs
                               wig-wag$me-inputs
                               alt-branch$valid-st
                               alt-branch$inv
-                              alt-branch$state-fn
+                              alt-branch$step
                               alt-branch$act
                               alt-branch$act0
                               alt-branch$act1
                               alt-merge$valid-st
                               alt-merge$inv
-                              alt-merge$state-fn
+                              alt-merge$step
                               alt-merge$act
                               alt-merge$act0
                               alt-merge$act1
@@ -632,7 +630,74 @@
                               open-v-threefix)))))
   )
 
-;; Extracting the accepted input sequence
+;; The extracted next-state function for WW.  Note that this function avoids
+;; exploring the internal computation of WW.
+
+(defund wig-wag$extracted-step (inputs st data-width)
+  (b* ((data-in (wig-wag$data-in inputs data-width))
+       (extracted-st (wig-wag$extract st))
+       (n (1- (len extracted-st))))
+    (cond
+     ((equal (wig-wag$out-act inputs st data-width) t)
+      (cond
+       ((equal (wig-wag$in-act inputs st data-width) t)
+        (cons data-in (take n extracted-st)))
+       (t (take n extracted-st))))
+     (t (cond
+         ((equal (wig-wag$in-act inputs st data-width) t)
+          (cons data-in extracted-st))
+         (t extracted-st))))))
+
+;; The single-step-update property
+
+(defthm wig-wag$extracted-step-correct
+  (b* ((next-st (wig-wag$step inputs st data-width)))
+    (implies (and (wig-wag$input-format inputs data-width)
+                  (wig-wag$valid-st st data-width)
+                  (wig-wag$inv st))
+             (equal (wig-wag$extract next-st)
+                    (wig-wag$extracted-step inputs st data-width))))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            f-if
+                            wig-wag$extracted-step
+                            wig-wag$input-format
+                            wig-wag$valid-st
+                            wig-wag$st-format
+                            wig-wag$inv
+                            wig-wag$step
+                            wig-wag$in-act
+                            wig-wag$out-act
+                            wig-wag$extract
+                            wig-wag$br-inputs
+                            wig-wag$me-inputs
+                            alt-branch$valid-st
+                            alt-branch$inv
+                            alt-branch$act
+                            alt-branch$act0
+                            alt-branch$act1
+                            alt-merge$valid-st
+                            alt-merge$inv
+                            alt-merge$step
+                            alt-merge$act
+                            alt-merge$act0
+                            alt-merge$act1)
+                           (nthcdr
+                            len-nthcdr
+                            3v-fix
+                            true-listp
+                            pairlis$
+                            strip-cars
+                            default-car
+                            default-cdr
+                            default-+-1
+                            default-+-2)))))
+
+;; ======================================================================
+
+;; 4. Relationship Between the Input and Output Sequences
+
+;; Extract the accepted input sequence
 
 (defun wig-wag$in-seq (inputs-lst st data-width n)
   (declare (xargs :measure (acl2-count n)))
@@ -641,16 +706,16 @@
     (b* ((inputs (car inputs-lst)))
       (if (equal (wig-wag$in-act inputs st data-width) t)
           (append (wig-wag$in-seq (cdr inputs-lst)
-                                 (wig-wag$state-fn inputs st data-width)
+                                 (wig-wag$step inputs st data-width)
                                  data-width
                                  (1- n))
                   (list (wig-wag$data-in inputs data-width)))
         (wig-wag$in-seq (cdr inputs-lst)
-                       (wig-wag$state-fn inputs st data-width)
+                       (wig-wag$step inputs st data-width)
                        data-width
                        (1- n))))))
 
-;; Extracting the valid output sequence
+;; Extract the valid output sequence
 
 (defun wig-wag$out-seq (inputs-lst st data-width n)
   (declare (xargs :measure (acl2-count n)))
@@ -659,12 +724,12 @@
     (b* ((inputs (car inputs-lst)))
       (if (equal (wig-wag$out-act inputs st data-width) t)
           (append (wig-wag$out-seq (cdr inputs-lst)
-                                  (wig-wag$state-fn inputs st data-width)
+                                  (wig-wag$step inputs st data-width)
                                   data-width
                                   (1- n))
                   (list (wig-wag$data-out st)))
         (wig-wag$out-seq (cdr inputs-lst)
-                        (wig-wag$state-fn inputs st data-width)
+                        (wig-wag$step inputs st data-width)
                         data-width
                         (1- n))))))
 
@@ -698,73 +763,7 @@
                    (wig-wag$out-seq inputs-lst st data-width n)))))
      state)))
 
-;; The extracted next-state function for WW
-
-(defund wig-wag$step-spec (inputs st data-width)
-  (b* ((data-in (wig-wag$data-in inputs data-width))
-       (extracted-st (wig-wag$extract-state st))
-       (n (1- (len extracted-st))))
-    (cond
-     ((equal (wig-wag$out-act inputs st data-width) t)
-      (cond
-       ((equal (wig-wag$in-act inputs st data-width) t)
-        (cons data-in (take n extracted-st)))
-       (t (take n extracted-st))))
-     (t (cond
-         ((equal (wig-wag$in-act inputs st data-width) t)
-          (cons data-in extracted-st))
-         (t extracted-st))))))
-
-;; The single-step-update property
-
-(defthm wig-wag$step-spec-correct
-  (b* ((next-st (wig-wag$state-fn inputs st data-width)))
-    (implies (and (wig-wag$input-format inputs data-width)
-                  (wig-wag$valid-st st data-width)
-                  (wig-wag$inv st))
-             (equal (wig-wag$extract-state next-st)
-                    (wig-wag$step-spec inputs st data-width))))
-  :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-if
-                            wig-wag$step-spec
-                            wig-wag$input-format
-                            wig-wag$valid-st
-                            wig-wag$st-format
-                            wig-wag$inv
-                            wig-wag$state-fn
-                            wig-wag$in-act
-                            wig-wag$out-act
-                            wig-wag$extract-state
-                            wig-wag$br-inputs
-                            wig-wag$me-inputs
-                            alt-branch$valid-st
-                            alt-branch$inv
-                            alt-branch$act
-                            alt-branch$act0
-                            alt-branch$act1
-                            alt-merge$valid-st
-                            alt-merge$inv
-                            alt-merge$state-fn
-                            alt-merge$act
-                            alt-merge$act0
-                            alt-merge$act1)
-                           (nthcdr
-                            len-nthcdr
-                            3v-fix
-                            true-listp
-                            pairlis$
-                            strip-cars
-                            default-car
-                            default-cdr
-                            default-+-1
-                            default-+-2)))))
-
-;; ======================================================================
-
-;; 4. Relationship Between the Input and Output Sequences
-
-;; Proving that wig-wag$valid-st is an invariant.
+;; Prove that wig-wag$valid-st is an invariant.
 
 (encapsulate
   ()
@@ -927,14 +926,14 @@
   (defthm wig-wag$valid-st-preserved
     (implies (and (wig-wag$input-format inputs data-width)
                   (wig-wag$valid-st st data-width))
-             (wig-wag$valid-st (wig-wag$state-fn inputs st data-width)
+             (wig-wag$valid-st (wig-wag$step inputs st data-width)
                                data-width))
     :hints (("Goal"
              :in-theory (e/d (get-field
                               wig-wag$input-format
                               wig-wag$valid-st
                               wig-wag$st-format
-                              wig-wag$state-fn
+                              wig-wag$step
                               wig-wag$in-act
                               wig-wag$out-act
                               alt-branch$act
@@ -944,14 +943,14 @@
                               acl2::true-listp-append)))))
   )
 
-(defthm wig-wag$extract-state-lemma
+(defthm wig-wag$extract-lemma
   (implies (and (wig-wag$valid-st st data-width)
-                (equal n (1- (len (wig-wag$extract-state st))))
+                (equal n (1- (len (wig-wag$extract st))))
                 (wig-wag$out-act inputs st data-width))
            (equal (append
-                   (take n (wig-wag$extract-state st))
+                   (take n (wig-wag$extract st))
                    (list (wig-wag$data-out st)))
-                  (wig-wag$extract-state st)))
+                  (wig-wag$extract st)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (enable f-and3
@@ -959,7 +958,7 @@
                               joint-act
                               wig-wag$valid-st
                               wig-wag$st-format
-                              wig-wag$extract-state
+                              wig-wag$extract
                               wig-wag$out-act
                               wig-wag$data-out
                               wig-wag$me-inputs

@@ -133,6 +133,19 @@
         (f-nand (tr-or-nor (tfirstn a tree) (not parity) (car tree))
                 (tr-or-nor (trestn a tree) (not parity) (cdr tree)))))))
 
+(local
+ (defthm tr-or-nor-of-v-threefix-canceled-aux
+   (implies (not (booleanp (car (v-threefix x))))
+            (not (booleanp (car x))))))
+
+(defthm tr-or-nor-of-v-threefix-canceled
+  (equal (tr-or-nor (v-threefix a) parity tree)
+         (tr-or-nor a parity tree))
+  :hints (("Goal" :in-theory (enable f-or
+                                     f-nor
+                                     f-not
+                                     tr-or-nor))))
+
 (not-primp-lemma t-or)
 (not-primp-lemma t-nor)
 

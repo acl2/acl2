@@ -34,11 +34,11 @@
 
 (defthmd half-adder$value
   (implies (half-adder& netlist)
-           (equal (se 'half-adder (list a b) sts netlist)
+           (equal (se 'half-adder (list a b) st netlist)
                   (list (f-xor a b)
                         (f-and a b))))
   :hints (("Goal"
-           :expand (se 'half-adder (list a b) sts netlist)
+           :expand (se 'half-adder (list a b) st netlist)
            :in-theory (enable de-rules half-adder&))))
 
 ;; ======================================================================
@@ -70,12 +70,12 @@
 
 (defthmd full-adder$value
   (implies (full-adder& netlist)
-           (equal (se 'full-adder (list c a b) sts netlist)
+           (equal (se 'full-adder (list c a b) st netlist)
                   (list (f-xor3 c a b)
                         (f-or (f-and a b)
                               (f-and (f-xor a b) c)))))
   :hints (("Goal"
-           :expand (se 'full-adder (list c a b) sts netlist)
+           :expand (se 'full-adder (list c a b) st netlist)
            :in-theory (enable de-rules
                               full-adder&
                               half-adder$value
@@ -143,7 +143,7 @@
         (ripple-adder& (ripple-adder$netlist 64) 64))))
 
 (local
- (defun ripple-adder-body-induct (m n wire-alist sts-alist netlist)
+ (defun ripple-adder-body-induct (m n wire-alist st-alist netlist)
    (if (zp n)
        wire-alist
      (ripple-adder-body-induct
@@ -152,9 +152,9 @@
       (se-occ-bindings 1
                        (ripple-adder-body m n)
                        wire-alist
-                       sts-alist
+                       st-alist
                        netlist)
-      sts-alist
+      st-alist
       netlist))))
 
 (local
@@ -177,7 +177,7 @@
                                             (list (si 'carry (+ m n))))
                                     (se-occ (ripple-adder-body m n)
                                             wire-alist
-                                            sts-alist
+                                            st-alist
                                             netlist))
                    (fv-adder
                     (assoc-eq-value (si 'carry m) wire-alist)
@@ -190,7 +190,7 @@
                                sis)
             :induct (ripple-adder-body-induct m n
                                               wire-alist
-                                              sts-alist
+                                              st-alist
                                               netlist)))))
 
 (local
@@ -202,7 +202,7 @@
                                             (list (si 'carry n)))
                                     (se-occ (ripple-adder-body 0 n)
                                             wire-alist
-                                            sts-alist
+                                            st-alist
                                             netlist))
                    (fv-adder
                     (assoc-eq-value (si 'carry 0) wire-alist)
@@ -223,14 +223,14 @@
                 (equal n (len b)))
            (equal (se (si 'ripple-adder n)
                       (cons c (append a b))
-                      sts
+                      st
                       netlist)
                   (fv-adder c a b)))
   :hints (("Goal"
            :do-not '(preprocess)
            :expand (se (si 'ripple-adder n)
                        (cons c (append a b))
-                       sts
+                       st
                        netlist)
            :in-theory (e/d* (de-rules
                              ripple-adder&
@@ -246,7 +246,7 @@
            (equal (v-to-nat
                    (se (si 'ripple-adder n)
                        (cons c (append a b))
-                       sts
+                       st
                        netlist))
                   (+ (bool->bit c)
                      (v-to-nat a)
