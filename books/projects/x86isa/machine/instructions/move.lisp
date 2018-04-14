@@ -655,23 +655,24 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
+       ((when (equal mod #b11))
+        ;; See "M" in http://ref.x86asm.net/#Instruction-Operand-Codes
+        (!!fault-fresh :ud nil ;; #UD
+                       :x86-lea "Source operand is not a memory location"))
+
        ((mv ?flg0
             (the (signed-byte 64) M)
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
-        (if (equal mod #b11)
-            ;; See "M" in http://ref.x86asm.net/#Instruction-Operand-Codes
-            (mv "Source operand is not a memory location" 0 0 x86)
-          (x86-effective-addr p4?
-                              temp-rip
-                              rex-byte
-                              r/m
-                              mod
-                              sib
-                              0 ;; No immediate operand
-                              x86)))
-       ((when flg0)
-        (!!fault-fresh :ud nil :x86-effective-addr-error flg0)) ;; #UD
+        (x86-effective-addr p4?
+                            temp-rip
+                            rex-byte
+                            r/m
+                            mod
+                            sib
+                            0 ;; No immediate operand
+                            x86))
+       ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
 
        ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
