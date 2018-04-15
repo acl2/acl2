@@ -1628,6 +1628,42 @@
           ("subgoal *1/4.1"
            :in-theory (enable l3-regular-file-entry-p))))
 
+(defthm
+  l6-stat-correctness-1-lemma-12
+  (implies (and (symbol-listp hns)
+                (block-listp disk)
+                (l6-stricter-fs-p fs fa-table)
+                (stringp (l3-stat hns (l6-to-l4-fs-helper fs fa-table)
+                                  disk)))
+           (equal (length (l3-stat hns (l6-to-l4-fs-helper fs fa-table)
+                                   disk))
+                  (l6-regular-file-length (l6-stat hns fs))))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies (and (symbol-listp hns)
+                  (block-listp disk)
+                  (l6-stricter-fs-p fs fa-table)
+                  (l6-regular-file-entry-p (l6-stat hns fs)))
+             (equal (len (explode (l3-stat hns (l6-to-l4-fs-helper fs fa-table)
+                                           disk)))
+                    (l6-regular-file-length (l6-stat hns fs))))))
+  :hints
+  (("subgoal *1/5''" :in-theory (enable l3-regular-file-entry-p))
+   ("subgoal *1/4.2'"
+    :in-theory (disable unmake-blocks-correctness-2)
+    :use
+    (:instance
+     unmake-blocks-correctness-2
+     (blocks
+      (fetch-blocks-by-indices
+       disk
+       (mv-nth 0
+               (l6-file-index-list (cdr (assoc-equal (car hns) fs))
+                                   fa-table))))
+     (n (l6-regular-file-length (cdr (assoc-equal (car hns) fs))))))
+   ("subgoal *1/4.1'" :in-theory (enable l3-regular-file-entry-p))))
+
 ;; This is the first of two theorems showing the equivalence of the l6 and l4
 ;; versions of stat.
 (defthm
@@ -5269,6 +5305,137 @@
                 (hns hns1))))))
 
 (defthm
+  l6-stat-after-write-lemma-7
+  (implies
+   (and (l6-stricter-fs-p fs fa-table)
+        (stringp text2)
+        (integerp start2)
+        (<= 0 start2)
+        (block-listp disk)
+        (equal (len fa-table) (len disk))
+        (<= *ms-first-data-cluster* (len disk))
+        (<= (len disk) *ms-bad-cluster*)
+        (symbol-listp hns1)
+        (symbol-listp hns2)
+        (>= (count-free-blocks (fa-table-to-alv fa-table))
+            (len (make-blocks (insert-text nil start2 text2))))
+        (not (equal hns1 hns2))
+        (l6-regular-file-entry-p (l6-stat hns1 fs)))
+   (equal
+    (l6-regular-file-length
+     (l6-stat hns1
+              (mv-nth 0
+                      (l6-wrchs hns2 fs disk fa-table start2 text2))))
+    (l6-regular-file-length (l6-stat hns1 fs))))
+  :instructions
+  ((:in-theory (disable l6-stat-correctness-1-lemma-12))
+   (:use
+    (:instance
+     l6-stat-correctness-1-lemma-12
+     (hns hns1)
+     (fs (mv-nth 0
+                 (l6-wrchs hns2 fs disk fa-table start2 text2)))
+     (disk (mv-nth 1
+                   (l6-wrchs hns2 fs disk fa-table start2 text2)))
+     (fa-table (mv-nth 2
+                       (l6-wrchs hns2 fs disk fa-table start2 text2)))))
+   :promote (:demote 1)
+   (:dive 1 1)
+   (:claim (and (<= (len fa-table) 268435447)
+                (<= 2 (len fa-table))))
+   :s :top :promote
+   (:in-theory (disable l6-stat-correctness-1-lemma-11))
+   (:use
+    (:instance
+     l6-stat-correctness-1-lemma-11
+     (hns hns1)
+     (fs (mv-nth 0
+                 (l6-wrchs hns2 fs disk fa-table start2 text2)))
+     (disk (mv-nth 1
+                   (l6-wrchs hns2 fs disk fa-table start2 text2)))
+     (fa-table (mv-nth 2
+                       (l6-wrchs hns2 fs disk fa-table start2 text2)))))
+   :promote (:demote 1)
+   (:dive 1 1)
+   (:claim
+    (l6-stricter-fs-p (mv-nth 0
+                              (l6-wrchs hns2 fs disk fa-table start2 text2))
+                      (mv-nth 2
+                              (l6-wrchs hns2 fs disk fa-table start2 text2))))
+   :s
+   :up :s-prop :top :promote (:demote 16)
+   (:dive 1 1)
+   := (:drop 17)
+   :top (:dive 1 1)
+   (:rewrite l6-stat-after-write-lemma-6)
+   :s :up :s-prop :top :promote (:dive 1)
+   (:=
+    (length
+     (l3-stat hns1
+              (l6-to-l4-fs-helper
+               (mv-nth 0
+                       (l6-wrchs hns2 fs disk fa-table start2 text2))
+               (mv-nth 2
+                       (l6-wrchs hns2 fs disk fa-table start2 text2)))
+              (mv-nth 1
+                      (l6-wrchs hns2 fs disk fa-table start2 text2)))))
+   (:drop 17)
+   :top
+   (:use (:instance l6-stat-correctness-1-lemma-12
+                    (hns hns1)))
+   :promote (:demote 1)
+   (:dive 1 1)
+   :s
+   (:claim
+    (and
+     (mv-nth 1 (l6-list-all-ok-indices fs fa-table))
+     (no-duplicatesp-equal (mv-nth 0
+                                   (l6-list-all-ok-indices fs fa-table)))))
+   (:rewrite l6-stat-correctness-1-lemma-11)
+   :s :up :s-prop :top :promote
+   (:= (l6-regular-file-length (l6-stat hns1 fs))
+       (length (l3-stat hns1 (l6-to-l4-fs-helper fs fa-table)
+                        disk)))
+   (:drop 19)
+   (:in-theory (disable l4-stat-after-write
+                        l6-stricter-fs-p-correctness-1))
+   (:use (:instance l4-stat-after-write
+                    (fs (l6-to-l4-fs-helper fs fa-table))
+                    (alv (fa-table-to-alv fa-table)))
+         l6-stricter-fs-p-correctness-1)
+   :promote (:demote 1 2)
+   (:dive 1 1 1)
+   :s
+   (:claim (l3-fs-p (l6-to-l4-fs-helper fs fa-table)))
+   (:rewrite l4-collect-all-index-lists-correctness-3)
+   :top (:dive 1 2 1)
+   :s :up :s-prop :x :top (:dive 1)
+   :s :top (:dive 2 1 1)
+   :top :promote
+   (:in-theory (disable l6-wrchs-correctness-1))
+   (:use (:instance l6-wrchs-correctness-1 (hns hns2)
+                    (start start2)
+                    (text text2)))
+   :promote (:demote 1)
+   (:dive 1)
+   :s :top :promote (:demote 22)
+   (:= (l4-wrchs hns2 (l6-to-l4-fs-helper fs fa-table)
+                 disk (fa-table-to-alv fa-table)
+                 start2 text2)
+       (list (l6-to-l4-fs-helper
+              (mv-nth 0
+                      (l6-wrchs hns2 fs disk fa-table start2 text2))
+              (mv-nth 2
+                      (l6-wrchs hns2 fs disk fa-table start2 text2)))
+             (mv-nth 1
+                     (l6-wrchs hns2 fs disk fa-table start2 text2))
+             (fa-table-to-alv
+              (mv-nth 2
+                      (l6-wrchs hns2 fs disk fa-table start2 text2)))))
+   (:drop 22)
+   :bash))
+
+(defthm
   l6-stat-after-write
   (implies
    (and (l6-stricter-fs-p fs fa-table)
@@ -5308,7 +5475,8 @@
   :instructions
   (:promote
    (:in-theory (disable l4-stat-after-write
-                        l4-stricter-fs-p l6-to-l4-fs))
+                        l4-stricter-fs-p l6-to-l4-fs
+                        l6-stat-after-write-lemma-7))
    (:use (:instance l4-stat-after-write
                     (fs (mv-nth 0 (l6-to-l4-fs fs fa-table)))
                     (alv (mv-nth 1 (l6-to-l4-fs fs fa-table)))))
@@ -5398,38 +5566,8 @@
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory (disable l4-read-after-write-2 l4-stricter-fs-p
-                        l6-wrchs-returns-stricter-fs-lemma-10
-                        l4-rdchs l6-rdchs l6-rdchs-correctness-1
-                        l6-wrchs-correctness-1
-                        l6-stat-correctness-1)
-    :use
-    ((:instance l4-read-after-write-2
-                (fs (l6-to-l4-fs-helper fs fa-table))
-                (alv (fa-table-to-alv fa-table)))
-     l6-wrchs-returns-stricter-fs-lemma-10
-     (:instance
-      l6-rdchs-correctness-1 (hns hns1)
-      (fs
-       (mv-nth 0
-               (l6-wrchs hns2 fs disk fa-table start2 text2)))
-      (disk
-       (mv-nth 1
-               (l6-wrchs hns2 fs disk fa-table start2 text2)))
-      (fa-table
-       (mv-nth 2
-               (l6-wrchs hns2 fs disk fa-table start2 text2)))
-      (start start1)
-      (n n1))
-     (:instance l6-rdchs-correctness-1 (hns hns1)
-                (start start1)
-                (n n1))
-     (:instance l6-wrchs-correctness-1 (hns hns2)
-                (start start2)
-                (text text2))
-     (:instance l6-stat-correctness-1 (hns hns1))))
-   ("subgoal 2" :in-theory (enable l6-stricter-fs-p))
-   ("subgoal 1" :in-theory (enable l6-stricter-fs-p))))
+    :in-theory (disable l6-stat-after-write)
+    :use l6-stat-after-write)))
 
 (defconst *sample-fs-1* nil)
 (defconst *sample-disk-1* (make-list 6 :initial-element *nullblock*))
