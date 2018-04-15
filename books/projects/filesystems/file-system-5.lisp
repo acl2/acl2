@@ -909,28 +909,33 @@
   ()
 
   (local
-   (defun induction-scheme (hns1 hns2 fs)
-     (if (atom hns1)
+   (defun
+       induction-scheme (hns1 hns2 fs)
+     (if
+         (atom hns1)
          fs
-       (if (atom fs)
+       (if
+           (atom fs)
            nil
-         (let ((sd (assoc (car hns2) fs)))
-           (if (atom sd)
+         (let
+             ((sd (assoc (car hns2) fs)))
+           (if
+               (atom sd)
                fs
-             (if (atom hns2)
+             (if
+                 (atom hns2)
                  fs
                (if (not (equal (car hns1) (car hns2)))
                    fs
                  (let ((contents (cdr sd)))
                    (if (atom (cdr hns1))
-                       (cons (cons (car sd)
-                                   contents)
+                       (cons (cons (car sd) contents)
                              (delete-assoc (car hns2) fs))
                      (cons (cons (car sd)
-                                 (induction-scheme (cdr hns1) (cdr hns2) contents))
-                           (delete-assoc (car hns2) fs)))
-                   ))))
-           )))))
+                                 (induction-scheme (cdr hns1)
+                                                   (cdr hns2)
+                                                   contents))
+                           (delete-assoc (car hns2) fs))))))))))))
 
   (defthm
     l5-read-after-write-2-lemma-5
