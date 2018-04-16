@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; April 2018
 
 (in-package "ADE")
 
@@ -15,16 +15,16 @@
 
 ;;; Table of Contents:
 ;;;
-;;; 1. DE Module Generator of alt-branch
-;;; 2. Specifying and Proving a State Invariant
+;;; 1. DE Module Generator of ALT-BRANCH
+;;; 2. Specify and Prove a State Invariant
 
 ;; ======================================================================
 
-;; 1. DE Module Generator of alt-branch
+;; 1. DE Module Generator of ALT-BRANCH
 ;;
-;; Constructing a DE module generator for an alternate branch, alt-branch,
-;; using the link-joint model. Proving the value and state lemmas for this
-;; module generator.
+;; Construct a DE module generator for an alternate branch, ALT-BRANCH, using
+;; the link-joint model.  Prove the value and state lemmas for this module
+;; generator.
 
 (defconst *alt-branch$go-num* 2)
 (defconst *alt-branch$st-len* 4)
@@ -39,7 +39,7 @@
   (+ (alt-branch$data-ins-len data-width)
      *alt-branch$go-num*))
 
-;; DE module generator of alt-branch
+;; DE module generator of ALT-BRANCH
 
 (module-generator
  alt-branch* (data-width)
@@ -96,8 +96,8 @@
                            '(lselect select lselect-buf select-buf)
                            0)))
 
-;; DE netlist generator. A generated netlist will contain an instance of
-;; alt-branch.
+;; DE netlist generator.  A generated netlist will contain an instance of
+;; ALT-BRANCH.
 
 (defun alt-branch$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -106,7 +106,7 @@
                 *joint-cntl*
                 :test 'equal)))
 
-;; Recognizer for alt-branch
+;; Recognizer for ALT-BRANCH
 
 (defund alt-branch& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
@@ -125,7 +125,7 @@
         (net-arity-okp (alt-branch$netlist 64))
         (alt-branch& (alt-branch$netlist 64) 64))))
 
-;; Constraints on the state of alt-branch
+;; Constraints on the state of ALT-BRANCH
 
 (defund alt-branch$valid-st (st)
   (b* ((lselect     (get-field *alt-branch$lselect* st))
@@ -140,7 +140,171 @@
          (or (emptyp lselect-buf)
              (booleanp (car select-buf))))))
 
-;; alt-branch simulator
+;; Extract the input and output signals from ALT-BRANCH
+
+(progn
+  ;; Extract the input data
+
+  (defun alt-branch$data-in (inputs data-width)
+    (declare (xargs :guard (and (true-listp inputs)
+                                (natp data-width))))
+    (take (mbe :logic (nfix data-width)
+               :exec  data-width)
+          (nthcdr 3 inputs)))
+
+  (defthm len-alt-branch$data-in
+    (equal (len (alt-branch$data-in inputs data-width))
+           (nfix data-width)))
+
+  (in-theory (disable alt-branch$data-in))
+
+  ;; Extract the "act0" signal
+
+  (defund alt-branch$act0 (inputs st data-width)
+    (b* ((full-in    (nth 0 inputs))
+         (empty-out0- (nth 1 inputs))
+         (go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs))
+
+         (go-alt-branch (nth 0 go-signals))
+
+         (lselect (get-field *alt-branch$lselect* st))
+         (select  (get-field *alt-branch$select* st))
+         (lselect-buf (get-field *alt-branch$lselect-buf* st))
+
+         (ready-in (f-and full-in (car lselect)))
+         (ready-out0- (f-or3 empty-out0- (car lselect-buf) (car select))))
+
+      (joint-act ready-in ready-out0- go-alt-branch)))
+
+  ;; Extract the "act1" signal
+
+  (defund alt-branch$act1 (inputs st data-width)
+    (b* ((full-in    (nth 0 inputs))
+         (empty-out1- (nth 2 inputs))
+         (go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs))
+
+         (go-alt-branch (nth 0 go-signals))
+
+         (lselect (get-field *alt-branch$lselect* st))
+         (select  (get-field *alt-branch$select* st))
+         (lselect-buf (get-field *alt-branch$lselect-buf* st))
+
+         (ready-in (f-and full-in (car lselect)))
+         (ready-out1- (f-or3 empty-out1-
+                             (car lselect-buf)
+                             (f-not (car select)))))
+
+      (joint-act ready-in ready-out1- go-alt-branch)))
+
+  ;; Extract the "act" signal
+
+  (defund alt-branch$act (inputs st data-width)
+    (f-or (alt-branch$act0 inputs st data-width)
+          (alt-branch$act1 inputs st data-width)))
+  )
+
+(not-primp-lemma alt-branch) ;; Prove that ALT-BRANCH is not a DE primitive.
+
+;; The value lemma for ALT-BRANCH
+
+(defthmd alt-branch$value
+  (b* ((inputs (list* full-in empty-out0- empty-out1-
+                      (append data-in go-signals))))
+    (implies (and (alt-branch& netlist data-width)
+                  (true-listp data-in)
+                  (equal (len data-in) data-width)
+                  (true-listp go-signals)
+                  (equal (len go-signals) *alt-branch$go-num*))
+             (equal (se (si 'alt-branch data-width) inputs st netlist)
+                    (list* (alt-branch$act inputs st data-width)
+                           (alt-branch$act0 inputs st data-width)
+                           (alt-branch$act1 inputs st data-width)
+                           (v-threefix data-in)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :do-not '(preprocess)
+           :expand (se (si 'alt-branch data-width)
+                       (list* full-in empty-out0- empty-out1-
+                              (append data-in go-signals))
+                       st
+                       netlist)
+           :in-theory (e/d (de-rules
+                            not-primp-alt-branch
+                            alt-branch&
+                            alt-branch*$destructure
+                            joint-cntl$value
+                            v-buf$value
+                            alt-branch$act
+                            alt-branch$act0
+                            alt-branch$act1)
+                           ((alt-branch*)
+                            de-module-disabled-rules)))))
+
+;; This function specifies the next state of ALT-BRANCH.
+
+(defun alt-branch$step (inputs st data-width)
+  (b* ((go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs))
+
+       (go-buf (nth 1 go-signals))
+
+       (lselect (get-field *alt-branch$lselect* st))
+       (select  (get-field *alt-branch$select* st))
+       (lselect-buf (get-field *alt-branch$lselect-buf* st))
+       (select-buf  (get-field *alt-branch$select-buf* st))
+
+       (act (alt-branch$act inputs st data-width))
+       (buf-act (joint-act (car lselect-buf) (car lselect) go-buf)))
+    (list
+     ;; Select
+     (list (f-sr buf-act act (car lselect)))
+     (list (f-if buf-act (car select-buf) (car select)))
+
+     ;; Select-buf
+     (list (f-sr act buf-act (car lselect-buf)))
+     (list (f-if act (f-not (car select)) (car select-buf))))))
+
+(defthm len-of-alt-branch$step
+  (equal (len (alt-branch$step inputs st data-width))
+         *alt-branch$st-len*))
+
+;; The state lemma for ALT-BRANCH
+
+(defthmd alt-branch$state
+  (b* ((inputs (list* full-in empty-out0- empty-out1-
+                      (append data-in go-signals))))
+    (implies (and (alt-branch& netlist data-width)
+                  (equal (len data-in) data-width)
+                  (true-listp go-signals)
+                  (equal (len go-signals) *alt-branch$go-num*))
+             (equal (de (si 'alt-branch data-width) inputs st netlist)
+                    (alt-branch$step inputs st data-width))))
+  :hints (("Goal"
+           :do-not-induct t
+           :do-not '(preprocess)
+           :expand (de (si 'alt-branch data-width)
+                       (list* full-in empty-out0- empty-out1-
+                              (append data-in go-signals))
+                       st
+                       netlist)
+           :in-theory (e/d (de-rules
+                            not-primp-alt-branch
+                            alt-branch&
+                            alt-branch*$destructure
+                            alt-branch$act
+                            alt-branch$act0
+                            alt-branch$act1
+                            joint-cntl$value
+                            v-buf$value)
+                           ((alt-branch*)
+                            de-module-disabled-rules)))))
+
+(in-theory (disable alt-branch$step))
+
+;; ======================================================================
+
+;; 2. Specify and Prove a State Invariant
+
+;; ALT-BRANCH simulator
 
 (progn
   (defun alt-branch$map-to-links (st)
@@ -181,168 +345,6 @@
           state)))
   )
 
-;; Extracting the input data
-
-(defun alt-branch$data-in (inputs data-width)
-  (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
-  (take (mbe :logic (nfix data-width)
-             :exec  data-width)
-        (nthcdr 3 inputs)))
-
-(defthm len-alt-branch$data-in
-  (equal (len (alt-branch$data-in inputs data-width))
-         (nfix data-width)))
-
-(in-theory (disable alt-branch$data-in))
-
-;; Extracting the "act0" signal
-
-(defund alt-branch$act0 (inputs st data-width)
-  (b* ((full-in    (nth 0 inputs))
-       (empty-out0- (nth 1 inputs))
-       (go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs))
-
-       (go-alt-branch (nth 0 go-signals))
-
-       (lselect (get-field *alt-branch$lselect* st))
-       (select  (get-field *alt-branch$select* st))
-       (lselect-buf (get-field *alt-branch$lselect-buf* st))
-
-       (ready-in (f-and full-in (car lselect)))
-       (ready-out0- (f-or3 empty-out0- (car lselect-buf) (car select))))
-
-    (joint-act ready-in ready-out0- go-alt-branch)))
-
-;; Extracting the "act1" signal
-
-(defund alt-branch$act1 (inputs st data-width)
-  (b* ((full-in    (nth 0 inputs))
-       (empty-out1- (nth 2 inputs))
-       (go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs))
-
-       (go-alt-branch (nth 0 go-signals))
-
-       (lselect (get-field *alt-branch$lselect* st))
-       (select  (get-field *alt-branch$select* st))
-       (lselect-buf (get-field *alt-branch$lselect-buf* st))
-
-       (ready-in (f-and full-in (car lselect)))
-       (ready-out1- (f-or3 empty-out1-
-                           (car lselect-buf)
-                           (f-not (car select)))))
-
-    (joint-act ready-in ready-out1- go-alt-branch)))
-
-;; Extracting the "act" signal
-
-(defund alt-branch$act (inputs st data-width)
-  (f-or (alt-branch$act0 inputs st data-width)
-        (alt-branch$act1 inputs st data-width)))
-
-(not-primp-lemma alt-branch)
-
-;; The value lemma for alt-branch
-
-(defthmd alt-branch$value
-  (b* ((inputs (list* full-in empty-out0- empty-out1-
-                      (append data-in go-signals))))
-    (implies (and (alt-branch& netlist data-width)
-                  (true-listp data-in)
-                  (equal (len data-in) data-width)
-                  (true-listp go-signals)
-                  (equal (len go-signals) *alt-branch$go-num*))
-             (equal (se (si 'alt-branch data-width) inputs st netlist)
-                    (list* (alt-branch$act inputs st data-width)
-                           (alt-branch$act0 inputs st data-width)
-                           (alt-branch$act1 inputs st data-width)
-                           (v-threefix data-in)))))
-  :hints (("Goal"
-           :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'alt-branch data-width)
-                       (list* full-in empty-out0- empty-out1-
-                              (append data-in go-signals))
-                       st
-                       netlist)
-           :in-theory (e/d (de-rules
-                            get-field
-                            not-primp-alt-branch
-                            alt-branch&
-                            alt-branch*$destructure
-                            joint-cntl$value
-                            v-buf$value
-                            alt-branch$act
-                            alt-branch$act0
-                            alt-branch$act1)
-                           ((alt-branch*)
-                            de-module-disabled-rules)))))
-
-;; This function specifies the next state of alt-branch.
-
-(defun alt-branch$state-fn (inputs st data-width)
-  (b* ((go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs))
-
-       (go-buf (nth 1 go-signals))
-
-       (lselect (get-field *alt-branch$lselect* st))
-       (select  (get-field *alt-branch$select* st))
-       (lselect-buf (get-field *alt-branch$lselect-buf* st))
-       (select-buf  (get-field *alt-branch$select-buf* st))
-
-       (act (alt-branch$act inputs st data-width))
-       (buf-act (joint-act (car lselect-buf) (car lselect) go-buf)))
-    (list
-     ;; Select
-     (list (f-sr buf-act act (car lselect)))
-     (list (f-if buf-act (car select-buf) (car select)))
-
-     ;; Select-buf
-     (list (f-sr act buf-act (car lselect-buf)))
-     (list (f-if act (f-not (car select)) (car select-buf))))))
-
-(defthm len-of-alt-branch$state-fn
-  (equal (len (alt-branch$state-fn inputs st data-width))
-         *alt-branch$st-len*))
-
-;; The state lemma for alt-branch
-
-(defthmd alt-branch$state
-  (b* ((inputs (list* full-in empty-out0- empty-out1-
-                      (append data-in go-signals))))
-    (implies (and (alt-branch& netlist data-width)
-                  (equal (len data-in) data-width)
-                  (true-listp go-signals)
-                  (equal (len go-signals) *alt-branch$go-num*))
-             (equal (de (si 'alt-branch data-width) inputs st netlist)
-                    (alt-branch$state-fn inputs st data-width))))
-  :hints (("Goal"
-           :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'alt-branch data-width)
-                       (list* full-in empty-out0- empty-out1-
-                              (append data-in go-signals))
-                       st
-                       netlist)
-           :in-theory (e/d (de-rules
-                            get-field
-                            not-primp-alt-branch
-                            alt-branch&
-                            alt-branch*$destructure
-                            alt-branch$act
-                            alt-branch$act0
-                            alt-branch$act1
-                            joint-cntl$value
-                            v-buf$value)
-                           ((alt-branch*)
-                            de-module-disabled-rules)))))
-
-(in-theory (disable alt-branch$state-fn))
-
-;; ======================================================================
-
-;; 2. Specifying and Proving a State Invariant
-
 ;; Conditions on the inputs
 
 (defund alt-branch$input-format (inputs data-width)
@@ -368,12 +370,12 @@
   (implies (and (alt-branch$input-format inputs data-width)
                 (alt-branch$valid-st st))
            (alt-branch$valid-st
-            (alt-branch$state-fn inputs st data-width)))
+            (alt-branch$step inputs st data-width)))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             alt-branch$input-format
                             alt-branch$valid-st
-                            alt-branch$state-fn
+                            alt-branch$step
                             alt-branch$act
                             alt-branch$act0
                             alt-branch$act1
@@ -394,13 +396,13 @@
   (implies (and (alt-branch$input-format inputs data-width)
                 (alt-branch$valid-st st)
                 (alt-branch$inv st))
-           (alt-branch$inv (alt-branch$state-fn inputs st data-width)))
+           (alt-branch$inv (alt-branch$step inputs st data-width)))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             alt-branch$input-format
                             alt-branch$valid-st
                             alt-branch$inv
-                            alt-branch$state-fn
+                            alt-branch$step
                             alt-branch$act
                             alt-branch$act0
                             alt-branch$act1

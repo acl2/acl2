@@ -216,9 +216,9 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>The model includes more support for 32-bit mode.  In particular, some
- variants of the PUSH, POP, MOV, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP, TEST,
- and RET instructions also work in 32-bit mode now, and the 32-bit instructions
- PUSHA and POPA are now part of the model.</p>
+ variants of the PUSH, POP, MOV, LEA, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP,
+ TEST, JMP, and RET instructions also work in 32-bit mode now, and the 32-bit
+ instructions PUSHA and POPA are now part of the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>

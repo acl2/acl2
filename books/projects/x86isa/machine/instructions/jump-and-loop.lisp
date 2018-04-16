@@ -39,6 +39,7 @@
 ;; are 64 bits by default; but they can be overridden to 32 bits by an address
 ;; size prefix.
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-near-jmp-Op/En-D
 
   ;; Op/En: D
@@ -48,8 +49,12 @@
   ;;                sign-extended to 64-bits
 
   :parents (one-byte-opcodes)
-  :guard-debug t
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+
+  :guard-hints (("Goal" :in-theory (e/d (rime-size-of-1-to-rime08
+                                         rime-size-of-2-to-rime16
+                                         rime-size-of-4-to-rime32)
+                                        ())))
+
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
@@ -63,66 +68,49 @@
   :body
 
   (b* ((ctx 'x86-near-jmp-Op/En-D)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (p3? (equal #.*operand-size-override*
+                   (prefixes-slice :group-3-prefix prefixes)))
 
        ((the (integer 0 4) offset-size)
-        (case opcode
-          (#xEB 1)
-          (#xE9 4)
-          ;; Will cause an error in riml-size
-          (otherwise 0)))
+        (if (eql opcode #xEB) ; jump short
+            1 ; always 8 bits (rel8)
+          ;; opcode = #xE9 -- jump near relative:
+          (if (64-bit-modep x86)
+              4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
+            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+                 (cs.d (code-segment-descriptor-attributes-layout-slice
+                        :d cs-attr)))
+              (if (= cs.d 1)
+                  (if p3? 2 4) ; 16 or 32 bits (rel16 or rel32)
+                (if p3? 4 2))))))
 
        ((mv ?flg (the (signed-byte 32) offset) x86)
-        (mbe :logic
-             (riml-size offset-size temp-rip :x x86)
-             :exec
-             (case offset-size
-               (1
-                (mv-let (flag val x86)
-                  (rml08 temp-rip :x x86)
-                  (mv flag
-                      (n08-to-i08 val)
-                      x86)))
-               (4
-                (mv-let (flag val x86)
-                  (rml32 temp-rip :x x86)
-                  (mv flag
-                      (n32-to-i32 val)
-                      x86)))
-               (otherwise
-                (mv 'riml-size 0 x86)))))
+        (rime-size offset-size temp-rip *cs* :x nil x86))
+       ((when flg) (!!ms-fresh :rime-size-error flg))
 
-       ((when flg)
-        (!!ms-fresh :riml-size-error flg))
+       ((mv flg next-rip)
+        (add-to-*ip temp-rip (the (integer 0 4) offset-size) x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) next-rip)
-        (+ (the (integer 0 4) offset-size) temp-rip))
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           next-rip)
          (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
+              next-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+              start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ next-rip offset))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (or
-                          (< (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip)
-                             #.*-2^47*)
-                          (<= #.*2^47*
-                              (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                temp-rip)))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg temp-rip) (add-to-*ip next-rip offset x86))
+       ((when flg) (!!ms-fresh :virtual-memory-error temp-rip))
+
        ;; Update the x86 state:
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 (def-inst x86-near-jmp-Op/En-M

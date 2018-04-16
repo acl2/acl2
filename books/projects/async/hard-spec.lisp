@@ -1025,6 +1025,15 @@
                   (bvp v)))
   :hints (("Goal" :in-theory (enable bvp))))
 
+(defthm take-v-threefix
+ (equal (take n (v-threefix l))
+        (v-threefix (take n l)))
+ :hints (("Goal" :in-theory (enable repeat))))
+
+(defthm nthcdr-v-threefix
+ (equal (nthcdr n (v-threefix l))
+        (v-threefix (nthcdr n l))))
+
 (defthm v-threefix-make-list-4x
   (equal (v-threefix (make-list n :initial-element *x*))
          (make-list n :initial-element *x*))

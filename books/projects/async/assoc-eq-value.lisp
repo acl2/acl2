@@ -282,6 +282,27 @@
   (equal (assoc-eq-values (cdr keys) alist)
          (cdr (assoc-eq-values keys alist))))
 
+(defthm assoc-eq-values-of-repeat-cons-1
+  (implies (equal sym (car x))
+           (equal (assoc-eq-values (repeat n sym)
+                                   (cons x l))
+                  (repeat n (cdr x))))
+  :hints (("Goal" :in-theory (enable repeat))))
+
+(defthm assoc-eq-values-of-repeat-cons-2
+  (implies (not (equal sym (car x)))
+           (equal (assoc-eq-values (repeat n sym)
+                                   (cons x l))
+                  (assoc-eq-values (repeat n sym) l)))
+  :hints (("Goal" :in-theory (enable repeat))))
+
+(defthm assoc-eq-values-of-repeat-append
+  (implies (not (member sym (strip-cars x)))
+           (equal (assoc-eq-values (repeat n sym)
+                                   (append x y))
+                  (assoc-eq-values (repeat n sym) y)))
+  :hints (("Goal" :in-theory (enable repeat))))
+
 (in-theory (disable assoc-eq-values))
 
 (defthm assoc-eq-values-of-sis-pairlis$-sis

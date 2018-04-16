@@ -606,6 +606,7 @@
 ;; INSTRUCTION: LEA
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-lea
 
   ;; Op/En: RM
@@ -619,92 +620,102 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
+
   :implemented
   (add-to-implemented-opcodes-table 'LEA #x8D '(:nil nil) 'x86-lea)
 
   :body
 
-
   (b* ((ctx 'x86-lea)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p3? (equal #.*operand-size-override*
                    (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       ;; this is the operand size
+       ;; in Intel manual, Mar'17, Vol 2, Tables 3-53 and 3-54:
        ((the (integer 2 8) register-size)
-        (if (logbitp #.*w* rex-byte)
-            8
-          (if p3?
-              2
-            4)))
+        (if (64-bit-modep x86)
+            (if (logbitp #.*w* rex-byte)
+                8
+              (if p3? 2 4))
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
 
-       ((mv ?flg0 (the (signed-byte 64) M) (the (unsigned-byte 3) increment-RIP-by) x86)
-        (if (equal mod #b11)
-            ;; See "M" in http://ref.x86asm.net/#Instruction-Operand-Codes
-            (mv "Source operand is not a memory location" 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
-                              0 ;; No immediate operand
-                              x86)))
-       ((when flg0)
-        (!!ms-fresh :x86-effective-addr-error flg0))
+       ((when (equal mod #b11))
+        ;; See "M" in http://ref.x86asm.net/#Instruction-Operand-Codes
+        (!!fault-fresh :ud nil ;; #UD
+                       :x86-lea "Source operand is not a memory location"))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
+       ((mv ?flg0
+            (the (signed-byte 64) M)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
+        (x86-effective-addr p4?
+                            temp-rip
+                            rex-byte
+                            r/m
+                            mod
+                            sib
+                            0 ;; No immediate operand
+                            x86))
+       ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
 
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ;; If the instruction goes beyond 15 bytes, stop. Change to an
        ;; exception later.
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
          (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
+              temp-rip)
          (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
+              start-rip)))
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-       ((mv flg1 M)
-        (case p2
-          (0 (mv nil M))
-          ;; I don't really need to check whether FS and GS base are
-          ;; canonical or not.  On the real machine, if the MSRs
-          ;; containing these bases are assigned non-canonical
-          ;; addresses, an exception is raised.
-          (#.*fs-override*
-           (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-                  (fs-base (n64-to-i64 nat-fs-base)))
-             (if (not (canonical-address-p fs-base))
-                 (mv 'Non-Canonical-FS-Base fs-base)
-               (mv nil (+ fs-base M)))))
-          (#.*gs-override*
-           (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-                  (gs-base (n64-to-i64 nat-gs-base)))
-             (if (not (canonical-address-p gs-base))
-                 (mv 'Non-Canonical-GS-Base gs-base)
-               (mv nil (+ gs-base M)))))
-          (t (mv 'Unidentified-P2 M))))
-       ((when flg1)
-        (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
+       ;; ((mv flg1 M)
+       ;;  (case p2
+       ;;    (0 (mv nil M))
+       ;;    ;; I don't really need to check whether FS and GS base are
+       ;;    ;; canonical or not.  On the real machine, if the MSRs
+       ;;    ;; containing these bases are assigned non-canonical
+       ;;    ;; addresses, an exception is raised.
+       ;;    (#.*fs-override*
+       ;;     (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
+       ;;            (fs-base (n64-to-i64 nat-fs-base)))
+       ;;       (if (not (canonical-address-p fs-base))
+       ;;           (mv 'Non-Canonical-FS-Base fs-base)
+       ;;         (mv nil (+ fs-base M)))))
+       ;;    (#.*gs-override*
+       ;;     (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
+       ;;            (gs-base (n64-to-i64 nat-gs-base)))
+       ;;       (if (not (canonical-address-p gs-base))
+       ;;           (mv 'Non-Canonical-GS-Base gs-base)
+       ;;         (mv nil (+ gs-base M)))))
+       ;;    (t (mv 'Unidentified-P2 M))))
+       ;; ((when flg1)
+       ;;  (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
 
        (M (trunc register-size M))
        ;; Update the x86 state:
-       (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*)
-                        M rex-byte x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (!rgfi-size
+             register-size (reg-index reg rex-byte #.*r*) M rex-byte x86))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
