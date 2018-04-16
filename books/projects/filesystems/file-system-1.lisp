@@ -258,21 +258,9 @@
            (equal (car (assoc-equal name alist)) name)))
 
 (defthm l1-read-after-write-1-lemma-2
-  (implies (and (l1-fs-p fs) (stringp text) (stringp (l1-stat hns fs)))
-           (stringp (l1-stat hns (l1-wrchs hns fs start text)))))
-
-(defthm l1-read-after-write-1-lemma-3
-  (implies (l1-rdchs hns fs start n)
-           (stringp (l1-stat hns fs))))
-
-(defthm l1-read-after-write-1
-  (implies (and (l1-fs-p fs)
-                (stringp text)
-                (symbol-listp hns)
-                (natp start)
-                (equal n (length text))
-                (stringp (l1-stat hns fs)))
-           (equal (l1-rdchs hns (l1-wrchs hns fs start text) start n) text)))
+  (implies (l1-fs-p fs)
+           (equal (stringp (l1-stat hns (l1-wrchs hns fs start text)))
+                  (stringp (l1-stat hns fs)))))
 
 (defthm l1-read-after-write-2-lemma-1
   (implies (l1-fs-p fs)
@@ -290,48 +278,70 @@
 
 (encapsulate
   ()
-  (local (defun induction-scheme (hns1 hns2 fs)
-           (if (atom hns1)
-               fs
-             (if (atom fs)
-                 nil
-               (let ((sd (assoc (car hns2) fs)))
-                 (if (atom sd)
-                     fs
-                   (if (atom hns2)
-                       fs
-                     (if (not (equal (car hns1) (car hns2)))
-                         fs
-                       (let ((contents (cdr sd)))
-                         (if (atom (cdr hns1))
-                             (cons (cons (car sd)
-                                         contents)
-                                   (delete-assoc (car hns2) fs))
-                           (cons (cons (car sd)
-                                       (induction-scheme (cdr hns1) (cdr hns2) contents))
-                                 (delete-assoc (car hns2) fs)))
-                         ))))
-                 )))))
 
-  (defthm l1-read-after-write-2-lemma-3
+  (local
+   (defun
+       induction-scheme (hns1 hns2 fs)
+     (if
+         (atom hns1)
+         fs
+       (if
+           (atom fs)
+           nil
+         (let
+             ((sd (assoc (car hns2) fs)))
+           (if
+               (atom sd)
+               fs
+             (if
+                 (atom hns2)
+                 fs
+               (if (not (equal (car hns1) (car hns2)))
+                   fs
+                 (let ((contents (cdr sd)))
+                   (if (atom (cdr hns1))
+                       (cons (cons (car sd) contents)
+                             (delete-assoc (car hns2) fs))
+                     (cons (cons (car sd)
+                                 (induction-scheme (cdr hns1)
+                                                   (cdr hns2)
+                                                   contents))
+                           (delete-assoc (car hns2) fs))))))))))))
+
+  (defthm
+    l1-read-after-write-2-lemma-3
+    (implies
+     (l1-fs-p fs)
+     (equal
+      (stringp (l1-stat hns1 (l1-wrchs hns2 fs start2 text2)))
+      (stringp (l1-stat hns1 fs))))
+    :hints (("goal" :induct (induction-scheme hns1 hns2 fs))))
+
+  (defthm
+    l1-stat-after-write
     (implies (and (l1-fs-p fs)
                   (stringp text2)
                   (symbol-listp hns1)
                   (symbol-listp hns2)
-                  (not (equal hns1 hns2))
                   (natp start2)
                   (stringp (l1-stat hns1 fs)))
-             (equal (l1-stat hns1 (l1-wrchs hns2 fs start2 text2)) (l1-stat hns1 fs)))
-    :hints (("Goal"  :induct (induction-scheme hns1 hns2 fs))
-            ("Subgoal *1/7.1''" :in-theory (disable alistp-l1-fs-p)
-             :use (:instance alistp-l1-fs-p (fs (l1-wrchs (cdr hns2)
-                                                    (cdr (assoc-equal (car hns1) fs))
-                                                    start2 text2))))))
+             (equal (l1-stat hns1 (l1-wrchs hns2 fs start2 text2))
+                    (if (not (equal hns1 hns2))
+                        (l1-stat hns1 fs)
+                        (coerce (insert-text (coerce (l1-stat hns1 fs) 'list)
+                                             start2 text2)
+                                'string))))
+    :hints (("goal" :induct (induction-scheme hns1 hns2 fs)))))
 
-  )
+(defthm l1-read-after-write-1
+  (implies (and (l1-fs-p fs)
+                (stringp text)
+                (symbol-listp hns)
+                (natp start)
+                (equal n (length text))
+                (stringp (l1-stat hns fs)))
+           (equal (l1-rdchs hns (l1-wrchs hns fs start text) start n) text)))
 
-;; to be revisited - (stringp (l1-stat hns1 fs)) is not a necessary condition
-;; but the proof doesn't go through without it
 (defthm l1-read-after-write-2
   (implies (and (l1-fs-p fs)
                 (stringp text2)
@@ -340,19 +350,9 @@
                 (not (equal hns1 hns2))
                 (natp start1)
                 (natp start2)
-                (natp n1)
-                (stringp (l1-stat hns1 fs)))
+                (natp n1))
            (equal (l1-rdchs hns1 (l1-wrchs hns2 fs start2 text2) start1 n1)
                   (l1-rdchs hns1 fs start1 n1))))
-
-(defthm l1-read-after-create-1
-  (implies (and (l1-fs-p fs)
-                (stringp text)
-                (symbol-listp hns)
-                (equal n (length text))
-                (not (l1-stat hns fs))
-                (stringp (l1-stat hns (l1-create hns fs text))))
-           (equal (l1-rdchs hns (l1-create hns fs text) 0 n) text)))
 
 ;; Induction argument for the proof of
 ;; (implies
@@ -394,44 +394,61 @@
 ;; (l1-stat (cdr hns1) (cdr (assoc (car hns1) fs))) =
 ;; (l1-stat hns1 fs)
 
-(encapsulate ()
+(encapsulate
+  ()
 
-  (local (defun induction-scheme (hns1 hns2 fs)
-           (if (atom hns1)
+  (local
+   (defun
+       induction-scheme (hns1 hns2 fs)
+     (if
+         (atom hns1)
+         fs
+       (if
+           (atom fs)
+           nil
+         (let
+             ((sd (assoc (car hns1) fs)))
+           (if
+               (atom sd)
                fs
-             (if (atom fs)
-                 nil
-               (let ((sd (assoc (car hns1) fs)))
-                 (if (atom sd)
-                     fs
-                   (if (atom hns2)
-                       fs
-                     (if (not (equal (car hns1) (car hns2)))
-                         fs
-                       (let ((contents (cdr sd)))
-                         (if (stringp (cdr sd))
-                             (cons (cons (car sd)
-                                         contents)
-                                   (delete-assoc (car hns2) fs))
-                           (cons (cons (car sd)
-                                       (induction-scheme (cdr hns1) (cdr hns2) contents))
-                                 (delete-assoc (car hns2) fs)))
-                         ))))
-                 )))))
+             (if
+                 (atom hns2)
+                 fs
+               (if (not (equal (car hns1) (car hns2)))
+                   fs
+                 (let ((contents (cdr sd)))
+                   (if (stringp (cdr sd))
+                       (cons (cons (car sd) contents)
+                             (delete-assoc (car hns2) fs))
+                     (cons (cons (car sd)
+                                 (induction-scheme (cdr hns1)
+                                                   (cdr hns2)
+                                                   contents))
+                           (delete-assoc (car hns2) fs))))))))))))
 
-  (defthm l1-read-after-create-2-lemma-1
+  (defthm
+    l1-stat-after-create
     (implies
      (and (l1-fs-p fs)
           (stringp text2)
           (symbol-listp hns1)
           (symbol-listp hns2)
-          (not (equal hns1 hns2))
           (not (l1-stat hns2 fs))
           (stringp (l1-stat hns2 (l1-create hns2 fs text2)))
           (stringp (l1-stat hns1 fs)))
-     (equal (l1-stat hns1 (l1-create hns2 fs text2)) (l1-stat hns1 fs)))
-    :hints (("Goal" :induct (induction-scheme hns1 hns2 fs)) ))
-  )
+     (equal (l1-stat hns1 (l1-create hns2 fs text2))
+            (if (equal hns1 hns2)
+                text2 (l1-stat hns1 fs))))
+    :hints (("goal" :induct (induction-scheme hns1 hns2 fs)))))
+
+(defthm l1-read-after-create-1
+  (implies (and (l1-fs-p fs)
+                (stringp text)
+                (symbol-listp hns)
+                (equal n (length text))
+                (not (l1-stat hns fs))
+                (stringp (l1-stat hns (l1-create hns fs text))))
+           (equal (l1-rdchs hns (l1-create hns fs text) 0 n) text)))
 
 (defthm l1-read-after-create-2
   (implies (and (l1-fs-p fs)
