@@ -1,5 +1,4 @@
-; AIGNET - And-Inverter Graph Networks
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,50 +25,17 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Sol Swords <sswords@centtech.com>
+; Original author (this file): Sol Swords <sswords@centtech.com>
 
-(in-package "AIGNET")
-(include-book "aig-cnf")
-(include-book "aiger")
-(include-book "aignet-absstobj")
-(include-book "aig-sim")
-(include-book "arrays")
-(include-book "bit-lemmas")
-(include-book "cnf")
-(include-book "construction")
-(include-book "copying")
-(include-book "eval")
-(include-book "from-hons-aig-fast")
-(include-book "from-hons-aig")
-(include-book "litp")
-(include-book "portcullis")
-(include-book "prune")
-(include-book "refcounts")
-(include-book "semantics")
-(include-book "snodes")
-(include-book "to-hons-aig")
-(include-book "transforms")
-;; (include-book "types")
-(include-book "vecsim")
+(in-package "VL")
 
+(include-book "xdoc/archive-matching-topics" :dir :system)
 
+(local (include-book "kit/top"))
+(local (include-book "doc"))
+(local (include-book "mlib/remove-bad")) ;; hack -- only included by sv/vl/top
 
-
-
-
-
-#||
-
-(ld
- "top.lisp")
-
-(include-book
- "xdoc/save" :dir :system)
-
-(defsection acl2::boolean-reasoning
-  :parents (acl2::top)
-  :short "placeholder")
-
-(xdoc::save "./my-manual" :redef-okp t :zip-p nil)
-
-||#
+(xdoc::archive-matching-topics
+ (or (str::strprefixp "[books]/centaur/vl/" (cdr (assoc :from x)))
+     ;; hack -- this book isn't included in sv, probably should be moved to vl/lint dir
+     (equal (cdr (assoc :from x)) "[books]/centaur/sv/vl/use-set.lisp")))

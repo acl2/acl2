@@ -1,5 +1,4 @@
-; AIGNET - And-Inverter Graph Networks
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,50 +25,20 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Sol Swords <sswords@centtech.com>
+; Original author (this file): Sol Swords <sswords@centtech.com>
 
-(in-package "AIGNET")
-(include-book "aig-cnf")
-(include-book "aiger")
-(include-book "aignet-absstobj")
-(include-book "aig-sim")
-(include-book "arrays")
-(include-book "bit-lemmas")
-(include-book "cnf")
-(include-book "construction")
-(include-book "copying")
-(include-book "eval")
-(include-book "from-hons-aig-fast")
-(include-book "from-hons-aig")
-(include-book "litp")
-(include-book "portcullis")
-(include-book "prune")
-(include-book "refcounts")
-(include-book "semantics")
-(include-book "snodes")
-(include-book "to-hons-aig")
-(include-book "transforms")
-;; (include-book "types")
-(include-book "vecsim")
+(in-package "ACL2")
+
+(include-book "xdoc/archive-matching-topics" :dir :system)
+(local
+ (progn
+   (include-book "centaur/esim/stv/stv-top" :dir :system)
+   (include-book "centaur/esim/stv/stv-debug" :dir :system)
+   (include-book "centaur/esim/esim-sexpr-correct" :dir :system)
+   (include-book "centaur/esim/defmodules" :dir :system)
+   (include-book "centaur/4v-sexpr/top" :dir :system)))
 
 
-
-
-
-
-
-#||
-
-(ld
- "top.lisp")
-
-(include-book
- "xdoc/save" :dir :system)
-
-(defsection acl2::boolean-reasoning
-  :parents (acl2::top)
-  :short "placeholder")
-
-(xdoc::save "./my-manual" :redef-okp t :zip-p nil)
-
-||#
+(xdoc::archive-matching-topics
+ (or (str::strprefixp "[books]/centaur/esim/" (cdr (assoc :from x)))
+     (str::strprefixp "[books]/centaur/4v-sexpr/" (cdr (assoc :from x)))))

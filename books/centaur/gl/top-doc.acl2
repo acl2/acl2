@@ -1,5 +1,5 @@
-; AIGNET - And-Inverter Graph Networks
-; Copyright (C) 2013 Centaur Technology
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,48 +28,8 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "AIGNET")
-(include-book "aig-cnf")
-(include-book "aiger")
-(include-book "aignet-absstobj")
-(include-book "aig-sim")
-(include-book "arrays")
-(include-book "bit-lemmas")
-(include-book "cnf")
-(include-book "construction")
-(include-book "copying")
-(include-book "eval")
-(include-book "from-hons-aig-fast")
-(include-book "from-hons-aig")
-(include-book "litp")
+(set-waterfall-parallelism nil)
+
 (include-book "portcullis")
-(include-book "prune")
-(include-book "refcounts")
-(include-book "semantics")
-(include-book "snodes")
-(include-book "to-hons-aig")
-(include-book "transforms")
-;; (include-book "types")
-(include-book "vecsim")
+; cert-flags: ? t :ttags :all
 
-
-
-
-
-
-
-#||
-
-(ld
- "top.lisp")
-
-(include-book
- "xdoc/save" :dir :system)
-
-(defsection acl2::boolean-reasoning
-  :parents (acl2::top)
-  :short "placeholder")
-
-(xdoc::save "./my-manual" :redef-okp t :zip-p nil)
-
-||#

@@ -97,15 +97,6 @@
 ]>
 ")
 
-(defun gather-topic-names (x)
-  (if (atom x)
-      nil
-    (cons (cdr (assoc :name (car x)))
-          (gather-topic-names (cdr x)))))
-
-(defun topics-fal (x)
-  (make-fast-alist (pairlis$ (gather-topic-names x) x)))
-
 
 ; ------------------ Making Flat Indexes ------------------------
 

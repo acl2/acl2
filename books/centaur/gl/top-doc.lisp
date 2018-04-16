@@ -1,5 +1,4 @@
-; AIGNET - And-Inverter Graph Networks
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,50 +25,36 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Sol Swords <sswords@centtech.com>
+; Original author (this file): Sol Swords <sswords@centtech.com>
 
-(in-package "AIGNET")
-(include-book "aig-cnf")
-(include-book "aiger")
-(include-book "aignet-absstobj")
-(include-book "aig-sim")
-(include-book "arrays")
-(include-book "bit-lemmas")
-(include-book "cnf")
-(include-book "construction")
-(include-book "copying")
-(include-book "eval")
-(include-book "from-hons-aig-fast")
-(include-book "from-hons-aig")
-(include-book "litp")
-(include-book "portcullis")
-(include-book "prune")
-(include-book "refcounts")
-(include-book "semantics")
-(include-book "snodes")
-(include-book "to-hons-aig")
-(include-book "transforms")
-;; (include-book "types")
-(include-book "vecsim")
+(in-package "GL")
 
+(include-book "xdoc/archive-matching-topics" :dir :system)
+(local
+ (progn
+   (include-book "build/ifdef" :dir :system)
+   (include-book "gl")
+   (include-book "bfr-aig-bddify")
+   (include-book "gl-ttags")
+   (include-book "gobject-type-thms")
+   (include-book "bfr-satlink")
+   (include-book "bfr-fraig-satlink")
+   (include-book "def-gl-rule")
 
+   (include-book "centaur/glmc/glmc" :dir :system)
+   (include-book "centaur/glmc/bfr-mcheck-abc" :dir :system)
 
+   (include-book "centaur/misc/try-gl-concls" :dir :system)
+   (acl2::ifdef "OS_HAS_GLUCOSE"
+                (acl2::ifdef "OS_HAS_ABC"
+                             (include-book "centaur/glmc/glmc-test" :dir :system)
+                             (include-book "centaur/glmc/counter" :dir :system)
+                             :endif)
+                :endif)))
 
 
-
-
-#||
-
-(ld
- "top.lisp")
-
-(include-book
- "xdoc/save" :dir :system)
-
-(defsection acl2::boolean-reasoning
-  :parents (acl2::top)
-  :short "placeholder")
-
-(xdoc::save "./my-manual" :redef-okp t :zip-p nil)
-
-||#
+(xdoc::archive-matching-topics
+ (let* ((from (cdr (assoc :from x))))
+   (or (str::strprefixp "[books]/centaur/gl/" from)
+       (str::strprefixp "[books]/centaur/glmc/" from)
+       (str::strprefixp "[books]/centaur/misc/try-gl-concls" from))))
