@@ -929,7 +929,7 @@
   (implies (<= (len l) (nfix n))
            (equal (nth n l) nil)))
 
-;; Renamed for consistency with std/lists/nth.lisp
+;; Renamed for consistency with books/std/lists/nth.lisp
 (defthm nth-of-append
   (equal (nth n (append x y))
          (if (< (nfix n) (len x))
