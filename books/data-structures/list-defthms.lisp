@@ -929,18 +929,19 @@
   (implies (<= (len l) (nfix n))
            (equal (nth n l) nil)))
 
-(defthm nth-append
-  (equal (nth n (append a b))
-         (if (< (nfix n) (len a))
-             (nth n a)
-             (nth (- (nfix n) (len a)) b))))
+;; Renamed for consistency with std/lists/nth.lisp
+(defthm nth-of-append
+  (equal (nth n (append x y))
+         (if (< (nfix n) (len x))
+             (nth n x)
+           (nth (- n (len x)) y))))
 
-(defthm nth-revappend
-  (equal (nth n (revappend a b))
-         (if (< (nfix n) (len a))
-             (nth (- (len a) (1+ (nfix n))) a)
-           (nth (- (nfix n) (len a)) b)))
-  :hints (("Goal" :induct (revappend a b))))
+;; Renamed for consistency with books/std/lists/nth.lisp
+(defthm nth-of-revappend
+  (equal (nth n (revappend x y))
+         (if (< (nfix n) (len x))
+             (nth (- (len x) (+ 1 (nfix n))) x)
+           (nth (- n (len x)) y))))
 
 (defthm nth-reverse
   (implies (and (integerp n)
