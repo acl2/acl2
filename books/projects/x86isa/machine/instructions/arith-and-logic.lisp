@@ -178,6 +178,9 @@
                              (eql operation #.*OP-TEST*))))
         ;; CMP and TEST do not allow a LOCK prefix.
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (and lock? (eql mod 3)))
+        ;; Only memory operands allow a LOCK prefix.
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p3? (equal #.*operand-size-override*
@@ -398,11 +401,11 @@
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when (and lock (or (eql operation #.*OP-CMP*)
-                            (eql operation #.*OP-TEST*))))
-        ;; CMP and TEST do not allow a LOCK prefix.
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ;; Since the destination is a general-purpose register and not memory,
+       ;; the LOCK prefix cannot be used for ADD, ADC, SUB, SBB, OR, AND, and
+       ;; XOR. In general, the LOCK prefix cannot be used for CMP and TEST.
+       (lock? (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p3? (equal #.*operand-size-override*
