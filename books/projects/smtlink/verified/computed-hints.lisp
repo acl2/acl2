@@ -38,7 +38,7 @@
   (define ch-replace (next-stage)
     (if (equal next-stage nil)
         nil
-      `((,next-stage clause))))
+      `((,next-stage clause stable-under-simplificationp))))
 
   (define treat-in-theory-hint (kwd-alist)
     (mv-let (pre post)
@@ -63,11 +63,12 @@
                  ,@kwd-alist
                  )))))
 
-  (define SMT-verified-cp-hint (cl)
+  (define SMT-verified-cp-hint (cl flg)
     (b* (((mv & kwd-alist tag) (extract-hint-wrapper cl))
          (next-stage (cdr (assoc tag *SMT-computed-hints-table*)))
          (ch-replace-hint (ch-replace next-stage))
-         (rest-hint (treat-in-theory-hint kwd-alist)))
+         (rest-hint (treat-in-theory-hint kwd-alist))
+         ((unless flg) nil))
       `(:computed-hint-replacement
         ,ch-replace-hint
         ,@rest-hint)))
