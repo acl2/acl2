@@ -173,10 +173,10 @@
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
-       (lock? (eql #.*lock*
-                   (prefixes-slice :group-1-prefix prefixes)))
-       ((when (and lock? (eql operation #.*OP-CMP*)))
-        ;; CMP does not allow a LOCK prefix.
+       (lock? (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when (and lock? (or (eql operation #.*OP-CMP*)
+                             (eql operation #.*OP-TEST*))))
+        ;; CMP and TEST do not allow a LOCK prefix.
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
@@ -398,10 +398,10 @@
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
-       ((when (and lock (eql operation #.*OP-CMP*)))
-        ;; CMP does not allow a LOCK prefix.
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when (and lock (or (eql operation #.*OP-CMP*)
+                            (eql operation #.*OP-TEST*))))
+        ;; CMP and TEST do not allow a LOCK prefix.
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
