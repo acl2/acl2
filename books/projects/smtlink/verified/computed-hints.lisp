@@ -38,7 +38,7 @@
   (define ch-replace (next-stage)
     (if (equal next-stage nil)
         nil
-      `((,next-stage clause stable-under-simplificationp))))
+      `((,next-stage clause))))
 
   (define treat-in-theory-hint (kwd-alist)
     (mv-let (pre post)
@@ -63,19 +63,19 @@
                  ,@kwd-alist
                  )))))
 
-  (define SMT-verified-cp-hint (cl flg)
+  (define SMT-verified-cp-hint (cl)
     (b* (((mv & kwd-alist tag) (extract-hint-wrapper cl))
          (next-stage (cdr (assoc tag *SMT-computed-hints-table*)))
          (ch-replace-hint (ch-replace next-stage))
-         (rest-hint (treat-in-theory-hint kwd-alist))
-         ((unless flg) nil))
+         (rest-hint (treat-in-theory-hint kwd-alist)))
       `(:computed-hint-replacement
         ,ch-replace-hint
         ,@rest-hint)))
 
-  (define SMT-process-hint (cl)
+  (define SMT-process-hint (cl flg)
     (b* (((mv & kwd-alist tag) (extract-hint-wrapper cl))
-         (next-stage (cdr (assoc tag *SMT-computed-hints-table*))))
+         (next-stage (cdr (assoc tag *SMT-computed-hints-table*)))
+         ((unless flg) nil))
       `(:computed-hint-replacement
         ,(ch-replace next-stage)
         ;; :do-not '(preprocess)
@@ -85,6 +85,6 @@
 
   )
 ;; Add this line to your code to add a default hint of Smtlink
-;; (add-default-hints '((SMT-computed-hint clause)))
+;; (add-default-hints '((SMT-computed-hint clause stable-under-simplificationp)))
 ;; Remove hint:
-;; (remove-default-hints '((SMT-computed-hint clause)))
+;; (remove-default-hints '((SMT-computed-hint clause stable-under-simplificationp)))

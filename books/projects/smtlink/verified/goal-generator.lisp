@@ -416,7 +416,10 @@
                    (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
                  (basic-function (member-equal fn-call *SMT-basics*))
                  (lvl-item (assoc-equal fn-call a.fn-lvls))
-                 ((if (or basic-function (<= a.wrld-fn-len 0) (and lvl-item (zp (cdr lvl-item)))))
+                 (extract-res (meta-extract-formula fn-call state))
+                 ((if (or basic-function (<= a.wrld-fn-len 0)
+                          (and lvl-item (zp (cdr lvl-item)))
+                          (equal extract-res ''t)))
                   (b* ((actuals-res
                         (expand (change-ex-args a :term-lst fn-actuals) state))
                        ((ex-outs ac) actuals-res)
@@ -431,7 +434,6 @@
                   (prog2$
                    (er hard? 'SMT-goal-generator=>expand "formals get a list that's not a symbol-listp for ~q0, the formals are ~q1" fn-call formals)
                    (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-                 (extract-res (meta-extract-formula fn-call state))
                  ((unless (true-listp extract-res))
                   (prog2$
                    (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-true-listp for ~q0The extracted result is ~q1" fn-call extract-res)
