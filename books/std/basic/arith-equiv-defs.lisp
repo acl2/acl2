@@ -114,7 +114,9 @@
   (defrefinement int-equiv nat-equiv
     :hints(("Goal" :in-theory (enable int-equiv))))
 
-  (defcong nat-equiv equal (zp a)  1))
+  (defcong nat-equiv equal (zp a)  1)
+
+  (defcong nat-equiv equal (nth n l) 1))
 
 
 (defsection bit-equiv
