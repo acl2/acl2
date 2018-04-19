@@ -1885,16 +1885,6 @@
          (Equal (len (append a b))
                 (+ (len a) (len b)))))
 
-(local (defthm my-nth-of-append
-         (equal (nth n (append x y))
-                (if (< (nfix n) (len x))
-                    (nth n x)
-                  (nth (- (nfix n) (len x)) y)))
-         :hints (("goal" :use nth-of-append
-                  :in-theory (e/d (nfix) (nth-of-append))))))
-
-(local (in-theory (disable nth-of-append)))
-
 (defthm smml-smme-blocksizes-ok-of-addblock
   (implies (and (smml-smme-blocksizes-ok smm smme)
                 (smml-smme-reads-ok smm smme)

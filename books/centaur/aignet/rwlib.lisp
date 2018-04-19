@@ -1157,17 +1157,6 @@
            (implies (< (nfix n) (len smm))
                     (equal (nth n new-smm) (nth n smm)))))
 
-  (local (in-theory (disable acl2::nth-of-append)))
-
-  (local (defthm my-nth-of-append
-           (equal (nth n (append x y))
-                  (if (< (nfix n) (len x))
-                      (nth n x)
-                    (nth (- (nfix n) (len x)) y)))
-           :hints (("goal" :use ((:instance acl2::nth-of-append
-                                  (n (nfix n)) (x x) (y y)))
-                    :do-not-induct t))))
-
   (local (defthm litp-nth-of-lit-list
            (implies (and (lit-listp x)
                          (< (nfix n) (len x)))
