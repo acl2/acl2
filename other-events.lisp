@@ -29156,7 +29156,7 @@
 
 ; We assume that w = (w *the-live-state*), that the call of
 ; ev-fncall-w-guard in magic-ev-fncall has been successfully executed, that
-; programp = (programp fn w), and that stobjs-out = (stobjs-outt fn w).
+; programp = (programp fn w), and that stobjs-out = (stobjs-out fn w).
 
   (the #+acl2-mv-as-values (values t t)
        #-acl2-mv-as-values t
@@ -29274,8 +29274,7 @@
                           fails to satisfy ~x1"
                          fn
                          'ev-fncall-w-guard))))))
-        (prog2$ (cw "~@0" msg)
-                (mv t msg)))))))
+        (mv t msg))))))
 )
 
 (defun make-event-ctx (event-form)

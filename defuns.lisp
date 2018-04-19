@@ -927,7 +927,7 @@
 ;  (if (consp x)
 ;      (if (if (consp x)
 ;              (p x)
-;            (p (f (cons x x)))
+;            (p (f (cons x x))))
 ;          x
 ;        (f (cdr x)))
 ;    x)
