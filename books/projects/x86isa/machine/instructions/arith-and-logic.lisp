@@ -637,6 +637,12 @@
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
 
+       ;; The opcode 82H is an alternative encoding that generates #UD in
+       ;; 64-bit mode; see AMD manual, Dec'17, Volume 3, Appendix B.3.
+       ((when (and (eql opcode #x82)
+                   (64-bit-modep x86)))
+        (!!fault-fresh :ud nil))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
 

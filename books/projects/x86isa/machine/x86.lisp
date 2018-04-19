@@ -2243,18 +2243,44 @@
         (x86-step-unimplemented (mrm-reg ModR/M) x86))))
 
     (#x82
-     "(GRP1 Eb Ib)"
-     (if (64-bit-modep x86)
-         (x86-step-unimplemented
-          (list* (ms x86)
-                 "(GRP1 Eb Ib) invalid opcode in 64-bit mode"
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-          x86)
-       (x86-step-unimplemented
-        (cons (cons "(GRP1 Eb Ib) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     "(GRP1 Eb Ib): Opcode-extension: Modr/m.reg
+      0:(ADD Eb Ib); 1:(OR Eb Ib);  2:(ADC Eb Ib); 3:(SBB Eb Ib)
+      4:(AND Eb Ib); 5:(SUB Eb Ib); 6:(XOR Eb Ib); 7:(CMP Eb Ib)"
+     (case (mrm-reg ModR/M)
+       (#x0
+        (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+         #.*OP-ADD* start-rip temp-rip prefixes rex-byte opcode modr/m sib
+         x86))
+       (#x1
+        (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+         #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m sib
+         x86))
+       (#x2
+        (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+         #.*OP-ADC* start-rip temp-rip prefixes rex-byte opcode modr/m sib
+         x86))
+       (#x3
+        (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+         #.*OP-SBB* start-rip temp-rip prefixes rex-byte opcode modr/m sib
+         x86))
+       (#x4
+        (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+         #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m sib
+         x86))
+       (#x5
+        (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+         #.*OP-SUB* start-rip temp-rip prefixes rex-byte opcode modr/m sib
+         x86))
+       (#x6
+        (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+         #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m sib
+         x86))
+       (#x7
+        (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+         #.*OP-CMP* start-rip temp-rip prefixes rex-byte opcode modr/m sib
+         x86))
+       (otherwise
+        (x86-step-unimplemented (mrm-reg ModR/M) x86))))
 
     (#x83
      "(GRP1 Ev Ib): Opcode-extension: Modr/m.reg
