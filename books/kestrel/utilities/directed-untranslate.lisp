@@ -1654,7 +1654,8 @@
                         (('if x1 x1-alt x2)
                          (and (eq (car uterm) 'or) ; tterm is (if x1' & x2')
                               (or (equal x1-alt x1)
-                                  (equal x1-alt *t*))
+                                  (and iff-flg
+                                       (equal x1-alt *t*)))
                               (cond
                                ((cddr uterm) ; tterm is (if x1' & x2')
                                 (untranslate-or
