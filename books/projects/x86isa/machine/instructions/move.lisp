@@ -445,7 +445,7 @@
        ((mv flg0 imm x86)
         (rme-size operand-size temp-rip *cs* :x nil x86 :mem-ptr? nil))
        ((when flg0)
-        (!!ms-fresh :imm-rml-size-error flg0))
+        (!!ms-fresh :imm-rme-size-error flg0))
 
        ((mv flg temp-rip) (add-to-*ip temp-rip operand-size x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))

@@ -226,6 +226,12 @@ the @('fault') field instead.</li>
             (<= -140737488355328 (mv-nth 1 (add-to-*ip *ip delta x86)))
             (< (mv-nth 1 (add-to-*ip *ip delta x86)) 140737488355328))))
 
+    (defrule add-to-*ip-rationalp-type
+      (implies (and (rationalp *ip)
+                    (rationalp delta))
+               (rationalp (mv-nth 1 (add-to-*ip *ip delta x86))))
+      :rule-classes :type-prescription)
+
     (defrule mv-nth-0-of-add-to-*ip-when-64-bit-modep
       (implies (64-bit-modep x86)
                (equal (mv-nth 0 (add-to-*ip *ip delta x86))
@@ -475,7 +481,7 @@ the @('fault') field instead.</li>
     :inline t
     ///
 
-    (defthm-sb add-to-*ip-is-i64p
+    (defthm-sb add-to-*sp-is-i64p
       :bound 48
       :concl (mv-nth 1 (add-to-*sp *sp delta x86))
       :gen-type t
