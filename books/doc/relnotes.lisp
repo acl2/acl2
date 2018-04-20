@@ -203,6 +203,9 @@
  recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
+ <p>Added a new utility, @(tsee skip-in-book), that wraps around a form to
+ prevent its evaluation during book certification or inclusion.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
