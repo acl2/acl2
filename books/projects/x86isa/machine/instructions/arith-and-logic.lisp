@@ -1062,6 +1062,110 @@
        (x86 (!rip temp-rip x86)))
     x86))
 
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+(def-inst x86-inc/dec-4x
+
+  ;; 40 + rw: INC r16
+  ;; 40 + rd: INC r32
+  ;; 48 + rw: DEC r16
+  ;; 48 + rd: DEC r32
+
+  :parents (one-byte-opcodes)
+
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+
+  :implemented
+  (progn
+    (add-to-implemented-opcodes-table 'INC #x40 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'INC #x41 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'INC #x42 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'INC #x43 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'INC #x44 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'INC #x45 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'INC #x46 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'INC #x47 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'DEC #x48 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'DEC #x49 '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'DEC #x4A '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'DEC #x4B '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'DEC #x4C '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'DEC #x4D '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'DEC #x4E '(:nil nil)
+                                      'x86-inc/dec-4x)
+    (add-to-implemented-opcodes-table 'DEC #x4F '(:nil nil)
+                                      'x86-inc/dec-4x))
+
+  :body
+
+  (b* ((ctx 'x86-inc/dec-4x)
+
+       ;; This is not encodable in 64-bit mode, because in that mode a 4x byte
+       ;; is treated as a REX prefix, not as an opcode. Thus, if we reach this
+       ;; point in the code, we know that we are in 32-bit mode.
+
+       (p3? (equal #.*operand-size-override*
+                   (prefixes-slice :group-3-prefix prefixes)))
+
+       ((the (integer 2 4) operand-size)
+        (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+             (cs.d
+              (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+          (if (= cs.d 1)
+              (if p3? 2 4)
+            (if p3? 4 2))))
+
+       ;; If the instruction goes beyond 15 bytes, stop. Change to an
+       ;; exception later.
+       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
+        (-
+         (the (signed-byte #.*max-linear-address-size*)
+              temp-rip)
+         (the (signed-byte #.*max-linear-address-size*)
+              start-rip)))
+       ((when (< 15 addr-diff))
+        (!!ms-fresh :instruction-length addr-diff))
+
+       (reg (the (unsigned-byte 3) (logand 7 opcode)))
+       (operand (rgfi-size operand-size reg 0 x86))
+
+       ;; Computing the flags and the result:
+       ((the (unsigned-byte 32) input-rflags) (rflags x86))
+       ((the (unsigned-byte 1) old-cf)
+        (rflags-slice :cf input-rflags))
+       ((mv result output-rflags undefined-flags)
+        (gpr-arith/logic-spec operand-size
+                              (if (logbitp 3 opcode) ; 48-4F
+                                  ;; DEC
+                                  #.*OP-SUB*
+                                ;; INC
+                                #.*OP-ADD*)
+                              operand 1 input-rflags))
+
+       ;; Updating the x86 state:
+       ;; CF is unchanged (see Intel manual, Mar'17, Vol. 2, INC & DEC)
+       (output-rflags (the (unsigned-byte 32)
+                           (!rflags-slice :cf old-cf output-rflags)))
+       (x86 (write-user-rflags output-rflags undefined-flags x86))
+       (x86 (!rgfi-size operand-size reg result 0 x86))
+       (x86 (write-*ip temp-rip x86)))
+    x86))
+
 ;; ======================================================================
 ;; INSTRUCTION: NOT/NEG
 ;; ======================================================================

@@ -1905,17 +1905,14 @@
            #x44 #x45 #x46 #x47
            #x48 #x49 #x4A #x4B
            #x4C #x4D #x4E #x4F)
-     "REX prefixes"
+     "REX prefixes or INC/DEC"
      (if (64-bit-modep x86)
          (x86-step-unimplemented
           (list* (ms x86)
                  "REX prefix in 64-bit mode"
                  (list start-rip temp-rip prefixes rex-byte opcode)) x86)
-       (x86-step-unimplemented
-        (cons (cons "INC/DEC are not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+       (x86-inc/dec-4x
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)))
 
     (#x50
      "(PUSH rAX/r8)"
