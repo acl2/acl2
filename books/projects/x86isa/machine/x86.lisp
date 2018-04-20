@@ -2149,18 +2149,11 @@
       (cons (ms x86)
             (list start-rip temp-rip prefixes rex-byte opcode)) x86))
 
-
     ((#x70 #x71 #x72 #x73 #x74 #x75 #x76 #x77 #x78 #x79 #x7A #x7B
            #x7C #x7D #x7E #x7F)
      "(Jcc Jb)"
-     (if (64-bit-modep x86)
-         (x86-one-byte-jcc start-rip temp-rip prefixes rex-byte opcode modr/m
-                           sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(Jcc Jb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-one-byte-jcc
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x80
      "(GRP1 Eb Ib): Opcode-extension: Modr/m.reg
