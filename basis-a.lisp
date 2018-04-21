@@ -2746,16 +2746,31 @@
                                channel state)))))))
 
 (defun fmt-var (s alist i maximum)
+
+; We return the value associated in alist with the character at position i+2 of
+; s.  We assume that there is a tilde character at position i or (less
+; frequently) i-1.
+
   (declare (type (signed-byte 30) i maximum)
            (type string s))
   (let ((x (assoc (the character (fmt-char s i 2 maximum t)) alist)))
     (cond (x (cdr x))
-          (t (er hard 'fmt-var
-                 "Unbound Fmt Variable.  The tilde directive at location ~x0 ~
-                  in the fmt string below uses the variable ~x1.  But ~
-                  this variable is not bound in the association list, ~
-                  ~x2, supplied with the fmt string.~|~%~x3"
-                 i (char s (+f i 2)) alist s)))))
+          (t (let ((tilde-position
+
+; This calculation is a bit ugly.  We are making it in April, 2018, after many
+; years of an error message for ~X01 (or ~P34, etc. -- any of ~X, ~Y, ~P, or
+; ~Q) stating that the tilde directive starts at location n where n-1 should be
+; reported.
+
+                    (if (eql (charf s i) #\~)
+                        i
+                      (1-f i))))
+               (er hard 'fmt-var
+                   "Unbound Fmt Variable.  The tilde directive at location ~
+                    ~x0 in the fmt string below uses the variable ~x1.  But ~
+                    this variable is not bound in the association list, ~x2, ~
+                    supplied with the fmt string.~|~%~x3"
+                   tilde-position (char s (+f i 2)) alist s))))))
 
 (defun splat-atom (x print-base print-radix indent col channel state)
 
@@ -3055,6 +3070,13 @@
   (ppr2 (ppr1 x (print-base) (print-radix) width rpc state eviscp)
         col channel state eviscp))
 
+(defun msgp (x)
+  (declare (xargs :guard t))
+  (or (stringp x)
+      (and (consp x)
+           (stringp (car x))
+           (character-alistp (cdr x)))))
+
 (mutual-recursion
 
 (defun fmt0* (str0 str1 str2 str3 lst alist col channel state evisc-tuple)
@@ -3326,7 +3348,7 @@
          (let ((fmc (the character (fmt-char s i 1 maximum t))))
            (declare (type character fmc))
            (case
-            fmc
+             fmc
              ((#\p #\q #\P #\Q #\x #\y #\X #\Y)
 
 ; The only difference between pqPQ and xyXY is that the former can cause infix
@@ -3361,17 +3383,17 @@
                       (evisc-table (table-alist 'evisc-table (w state)))
                       (eviscp (or local-evisc-tuple evisc-table)))
                  (mv-let
-                  (x state)
-                  (cond (eviscp (eviscerate-top
-                                 (fmt-var s alist i maximum)
-                                 (cadr local-evisc-tuple)   ;;; print-level
-                                 (caddr local-evisc-tuple)  ;;; print-length
-                                 (car local-evisc-tuple)    ;;; alist
-                                 evisc-table
-                                 (cadddr local-evisc-tuple) ;;; hiding-cars
-                                 state))
-                        (t (mv (fmt-var s alist i maximum)
-                               state)))
+                   (x state)
+                   (cond (eviscp (eviscerate-top
+                                  (fmt-var s alist i maximum)
+                                  (cadr local-evisc-tuple) ;;; print-level
+                                  (caddr local-evisc-tuple) ;;; print-length
+                                  (car local-evisc-tuple)   ;;; alist
+                                  evisc-table
+                                  (cadddr local-evisc-tuple) ;;; hiding-cars
+                                  state))
+                         (t (mv (fmt-var s alist i maximum)
+                                state)))
 
 ; Through Version_3.4, ACL2 could hyphenate rule names during proof commentary
 ; because of the following COND branch in the case of ~x/~y/~X/~Y (though
@@ -3394,114 +3416,114 @@
 ;                                           3))
 ;                                   maximum col channel state evisc-tuple)))
 
-                  (let ((fmt-hard-right-margin
-                         (fmt-hard-right-margin state)))
-                    (declare (type (signed-byte 30) fmt-hard-right-margin))
-                    (let ((sz (flsz x pq col fmt-hard-right-margin state
-                                    eviscp)))
-                      (declare (type (signed-byte 30) sz))
-                      (cond
-                       ((and px
-                             (> col (the-fixnum *fmt-ppr-indentation*))
-                             (>= sz fmt-hard-right-margin)
-                             (not (>= (flsz x
-                                            pq
-                                            (the-fixnum
-                                             *fmt-ppr-indentation*)
-                                            fmt-hard-right-margin
-                                            state eviscp)
-                                      fmt-hard-right-margin)))
-                        (pprogn
-                         (newline channel state)
-                         (spaces1 (the-fixnum *fmt-ppr-indentation*) 0
-                                  fmt-hard-right-margin
-                                  channel state)
-                         (fmt0 s alist i maximum
-                               (the-fixnum *fmt-ppr-indentation*)
-                               channel state evisc-tuple)))
-                       ((or qy
-                            (>= sz fmt-hard-right-margin))
-                        (pprogn
-                         (cond (qy
-                                state)
-                               ((= col 0) state)
-                               (t (newline channel state)))
-                         (if qy
-                             state
-                           (spaces1 (the-fixnum *fmt-ppr-indentation*)
-                                    0 fmt-hard-right-margin channel state))
-                         (let ((c (fmt-char s i
-                                            (the-fixnum
-                                             (if caps
-                                                 4
-                                               3))
-                                            maximum nil)))
-                           (cond ((punctp c)
-                                  (pprogn
-                                   (fmt-ppr
-                                    x
-                                    pq
-                                    (+f fmt-hard-right-margin
-                                        (-f (if qy
-                                                col
-                                              *fmt-ppr-indentation*)))
-                                    1
-                                    (the-fixnum
-                                     (if qy
-                                         col
-                                       *fmt-ppr-indentation*))
-                                    channel state eviscp)
-                                   (princ$ c channel state)
-                                   (newline channel state)
-                                   (fmt0 s alist
-                                         (scan-past-whitespace
-                                          s
-                                          (+f i (if caps
-                                                    5
-                                                  4))
-                                          maximum)
-                                         maximum 0 channel state
-                                         evisc-tuple)))
-                                 (t
-                                  (pprogn
-                                   (fmt-ppr
-                                    x
-                                    pq
-                                    (+f fmt-hard-right-margin
-                                        (-f (if qy
-                                                col
-                                              *fmt-ppr-indentation*)))
-                                    0
-                                    (the-fixnum
-                                     (if qy
-                                         col
-                                       *fmt-ppr-indentation*))
-                                    channel state eviscp)
-                                   (newline channel state)
-                                   (fmt0 s alist
-                                         (scan-past-whitespace
-                                          s
-                                          (+f i (if caps
-                                                    4
-                                                  3))
-                                          maximum)
-                                         maximum 0 channel state
-                                         evisc-tuple)))))))
-                       (t (pprogn
-                           (flpr x pq channel state eviscp)
-                           (fmt0 s alist
-                                 (+f i (if caps
-                                           4
-                                         3))
-                                 maximum sz
-                                 channel state evisc-tuple))))))))))
+                   (let ((fmt-hard-right-margin
+                          (fmt-hard-right-margin state)))
+                     (declare (type (signed-byte 30) fmt-hard-right-margin))
+                     (let ((sz (flsz x pq col fmt-hard-right-margin state
+                                     eviscp)))
+                       (declare (type (signed-byte 30) sz))
+                       (cond
+                        ((and px
+                              (> col (the-fixnum *fmt-ppr-indentation*))
+                              (>= sz fmt-hard-right-margin)
+                              (not (>= (flsz x
+                                             pq
+                                             (the-fixnum
+                                              *fmt-ppr-indentation*)
+                                             fmt-hard-right-margin
+                                             state eviscp)
+                                       fmt-hard-right-margin)))
+                         (pprogn
+                          (newline channel state)
+                          (spaces1 (the-fixnum *fmt-ppr-indentation*) 0
+                                   fmt-hard-right-margin
+                                   channel state)
+                          (fmt0 s alist i maximum
+                                (the-fixnum *fmt-ppr-indentation*)
+                                channel state evisc-tuple)))
+                        ((or qy
+                             (>= sz fmt-hard-right-margin))
+                         (pprogn
+                          (cond (qy
+                                 state)
+                                ((= col 0) state)
+                                (t (newline channel state)))
+                          (if qy
+                              state
+                            (spaces1 (the-fixnum *fmt-ppr-indentation*)
+                                     0 fmt-hard-right-margin channel state))
+                          (let ((c (fmt-char s i
+                                             (the-fixnum
+                                              (if caps
+                                                  4
+                                                3))
+                                             maximum nil)))
+                            (cond ((punctp c)
+                                   (pprogn
+                                    (fmt-ppr
+                                     x
+                                     pq
+                                     (+f fmt-hard-right-margin
+                                         (-f (if qy
+                                                 col
+                                               *fmt-ppr-indentation*)))
+                                     1
+                                     (the-fixnum
+                                      (if qy
+                                          col
+                                        *fmt-ppr-indentation*))
+                                     channel state eviscp)
+                                    (princ$ c channel state)
+                                    (newline channel state)
+                                    (fmt0 s alist
+                                          (scan-past-whitespace
+                                           s
+                                           (+f i (if caps
+                                                     5
+                                                   4))
+                                           maximum)
+                                          maximum 0 channel state
+                                          evisc-tuple)))
+                                  (t
+                                   (pprogn
+                                    (fmt-ppr
+                                     x
+                                     pq
+                                     (+f fmt-hard-right-margin
+                                         (-f (if qy
+                                                 col
+                                               *fmt-ppr-indentation*)))
+                                     0
+                                     (the-fixnum
+                                      (if qy
+                                          col
+                                        *fmt-ppr-indentation*))
+                                     channel state eviscp)
+                                    (newline channel state)
+                                    (fmt0 s alist
+                                          (scan-past-whitespace
+                                           s
+                                           (+f i (if caps
+                                                     4
+                                                   3))
+                                           maximum)
+                                          maximum 0 channel state
+                                          evisc-tuple)))))))
+                        (t (pprogn
+                            (flpr x pq channel state eviscp)
+                            (fmt0 s alist
+                                  (+f i (if caps
+                                            4
+                                          3))
+                                  maximum sz
+                                  channel state evisc-tuple))))))))))
              (#\@ (let ((s1 (fmt-var s alist i maximum)))
                     (mv-letc (col state)
                              (cond ((stringp s1)
                                     (fmt0 s1 alist 0
                                           (the-fixnum! (length s1) 'fmt0)
                                           col channel state evisc-tuple))
-                                   ((consp s1)
+                                   ((msgp s1)
                                     (fmt0 (car s1)
                                           (append (cdr s1) alist)
                                           0
@@ -3514,8 +3536,10 @@
                                             string below is illegal because ~
                                             its variable evaluated to ~x1, ~
                                             which is neither a string nor a ~
-                                            list.~|~%~x2"
-                                           i s1 s)
+                                            true-list whose CAR is a string ~
+                                            and whose CDR satisfies ~
+                                            ~x2.~|~%~x3"
+                                           i s1 'character-alistp s)
                                           state)))
                              (fmt0 s alist (+f i 3) maximum col
                                    channel state evisc-tuple))))
@@ -3605,38 +3629,74 @@
                                    (t i+3)))
                                  maximum
                                  col channel state evisc-tuple))))))
-             (#\n (maybe-newline
+             ((#\n #\N)
+              (let ((k (fmt-var s alist i maximum)))
+                (cond
+                 ((not (or (integerp k)
+                           (and (consp k)
+                                (integerp (car k)))))
+                  (mv (er-hard-val
+                       0
+                       'fmt0
+                       "Illegal Fmt Syntax.  The tilde directive at location ~
+                        ~x0 in the fmt string below uses the variable ~x1.  ~
+                        That ~s2 directive requires either an integer or a ~
+                        CONS whose CAR is an integer, but it was supplied the ~
+                        value ~x3.~|~%~x4~|~%"
+
+; The final newline(s) provide separation of the string from the "See :DOC
+; set-iprint" message that can be printed by fmt-abbrev1 if lst is elided
+; during printing.
+
+                       i
+                       (char s (+f i 2))
+                       (if (eql fmc #\n) "~n" "~N")
+                       k
+                       s)
+                      state))
+                 (t
+                  (maybe-newline
                    (mv-letc (col state)
-                            (spell-number (fmt-var s alist i maximum)
-                                          nil col channel state evisc-tuple)
+                            (spell-number k
+                                          (eql fmc #\N)
+                                          col channel state evisc-tuple)
                             (fmt0 s alist (+f i 3) maximum col channel
-                                  state evisc-tuple))))
-             (#\N (maybe-newline
-                   (mv-letc (col state)
-                            (spell-number (fmt-var s alist i maximum)
-                                          t col channel state evisc-tuple)
-                            (fmt0 s alist (+f i 3) maximum col channel
-                                  state evisc-tuple))))
+                                  state evisc-tuple)))))))
              (#\t (maybe-newline
                    (let ((goal-col (fmt-var s alist i maximum))
                          (fmt-hard-right-margin (fmt-hard-right-margin state)))
                      (declare (type (signed-byte 30)
                                     goal-col fmt-hard-right-margin))
                      (pprogn
-                      (cond ((> goal-col fmt-hard-right-margin)
-                             (let ((er (er hard 'fmt0
-                                           "It is illegal to tab past the ~
-                                            value of (@ ~
-                                            fmt-hard-right-margin), ~x0, and ~
-                                            hence the directive ~~t~s1 to tab ~
-                                            to column ~x2 is illegal.  See ~
-                                            :DOC set-fmt-hard-right-margin."
-                                           fmt-hard-right-margin
-                                           (string (fmt-char s i 2 maximum t))
-                                           goal-col)))
+                      (cond ((or (not (natp goal-col))
+                                 (> goal-col fmt-hard-right-margin))
+                             (let ((er
+                                    (if (natp goal-col)
+                                        (er hard 'fmt0
+                                            "It is illegal to tab past the ~
+                                             value of (@ ~
+                                             fmt-hard-right-margin), ~x0, and ~
+                                             hence the directive ~~t~s1 to ~
+                                             tab to column ~x2 is illegal.  ~
+                                             See :DOC ~
+                                             set-fmt-hard-right-margin."
+                                            fmt-hard-right-margin
+                                            (string (fmt-char s i 2 maximum t))
+                                            goal-col)
+                                      (er hard 'fmt0
+                                          "Illegal Fmt Syntax.  The tilde ~
+                                           directive at location ~x0 in the ~
+                                           fmt string below uses the variable ~
+                                           ~x1.  That ~~t directive requires ~
+                                           a natural number, but it was ~
+                                           supplied the value ~x2.~|~%~x3~|~%"
+                                          i
+                                          (char s (+f i 2))
+                                          goal-col
+                                          s))))
                                (declare (ignore er))
                                state))
-                            ((>= col goal-col)
+                            ((>= col (the-fixnum goal-col))
                              (pprogn (newline channel state)
                                      (spaces1 (the-fixnum goal-col) 0
                                               fmt-hard-right-margin
@@ -3660,14 +3720,14 @@
                                      (fmt0 s alist (+f i 3) maximum col channel
                                            state evisc-tuple)))
                            (t (mv (er-hard-val 0 'fmt0
-                                      "Illegal Fmt Syntax.  The tilde-c ~
+                                               "Illegal Fmt Syntax.  The tilde-c ~
                                        directive at position ~x0 of the string ~
                                        below is illegal because its variable ~
                                        evaluated to ~x1, which is not of the ~
                                        form (n . width), where n and width are ~
                                        integers and width is ~
                                        nonnegative.~|~%~x2"
-                                      i pair s)
+                                               i pair s)
                                   state))))))
              ((#\f #\F)
               (maybe-newline
@@ -3678,18 +3738,28 @@
                                col channel state)
                         (fmt0 s alist (+f i 3) maximum col channel
                               state evisc-tuple))))
-             (#\s (maybe-newline
+             ((#\s #\S)
+              (let ((x (fmt-var s alist i maximum)))
+                (cond
+                 ((or (symbolp x)
+                      (stringp x)
+                      (acl2-numberp x))
+                  (maybe-newline
                    (mv-letc (col state)
-                            (fmt-tilde-s (fmt-var s alist i maximum) col
-                                         channel state)
+                            (if (eql fmc #\s)
+                                (fmt-tilde-s x col channel state)
+                              (fmt-tilde-cap-s x col channel state))
                             (fmt0 s alist (+f i 3) maximum col channel
                                   state evisc-tuple))))
-             (#\S (maybe-newline
-                   (mv-letc (col state)
-                            (fmt-tilde-cap-s (fmt-var s alist i maximum) col
-                                             channel state)
-                            (fmt0 s alist (+f i 3) maximum col channel
-                                  state evisc-tuple))))
+                 (t (mv (er-hard-val
+                         0 'fmt0
+                         "Illegal Fmt Syntax.  The tilde-~s0 directive at ~
+                          position ~x1 of the string below is illegal because ~
+                          its variable evaluated to ~x2, which is not a ~
+                          symbol, a string, or a number.~|~%~x3"
+                         (if (eql fmc #\s) "s" "S")
+                         i x s)
+                        state)))))
              (#\Space (let ((fmt-hard-right-margin
                              (fmt-hard-right-margin state)))
                         (declare (type (signed-byte 30) fmt-hard-right-margin))
@@ -3707,8 +3777,17 @@
                    (let ((fmt-hard-right-margin
                           (fmt-hard-right-margin state)))
                      (declare (type (signed-byte 30) fmt-hard-right-margin))
-                     (let ((n (the-half-fixnum! (fmt-var s alist i maximum)
-                                                'fmt0)))
+                     (let* ((n0 (fmt-var s alist i maximum))
+                            (n (if (natp n0)
+                                   (the-half-fixnum! n0 'fmt0)
+                                 (er-hard-val
+                                  0 'fmt0
+                                  "Illegal Fmt Syntax.  The tilde-_ ~
+                                   directive at position ~x0 of the string ~
+                                   below is illegal because its variable ~
+                                   evaluated to ~x1, which is not a ~
+                                   natural number.~|~%~x2"
+                                  i n0 s))))
                        (declare (type (signed-byte 30) n))
                        (let ((new-col (+f col n)))
                          (declare (type (signed-byte 30) new-col))
@@ -3750,14 +3829,13 @@
                                 maximum 0 channel state evisc-tuple)))
                         (t (fmt0 s alist (+f i 2) maximum col channel
                                  state evisc-tuple))))
-             (otherwise (let ((x
-                               (er hard 'fmt0
-                                   "Illegal Fmt Syntax.  The tilde ~
-                                     directive at position ~x0 of the ~
-                                     string below is unrecognized.~|~%~x1"
-                                   i s)))
-                          (declare (ignore x))
-                          (mv 0 state))))))
+             (otherwise (mv (er-hard-val
+                             0 'fmt0
+                             "Illegal Fmt Syntax.  The tilde directive at ~
+                              position ~x0 of the string below is ~
+                              unrecognized.~|~%~x1"
+                             i s)
+                            state)))))
         ((and (> col (fmt-soft-right-margin state))
               (eql c #\Space))
          (pprogn (newline channel state)
