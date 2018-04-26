@@ -29,7 +29,7 @@
 ;; generator.
 
 (defconst *alt-merge$go-num* 2)
-(defconst *alt-merge$st-len* 4)
+(defconst *alt-merge$st-len* 2)
 
 (defun alt-merge$data-ins-len (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -52,22 +52,25 @@
                 (sis 'go 0 *alt-merge$go-num*)))
  (list* 'act 'act0 'act1
         (sis 'data-out 0 data-width))
- '(lselect select lselect-buf select-buf)
+ '(select select-buf)
  (list
   ;; LINKS
   ;; Select
-  '(lselect (select-status) link-cntl (buf-act act))
-  '(select (select-out select-out~) latch (buf-act select-in))
+  '(select (select-status select-out)
+           link1
+           (buf-act act select-in))
 
   ;; Select-buf
-  '(lselect-buf (select-buf-status) link-cntl (act buf-act))
-  '(select-buf (select-buf-out select-buf-out~) latch (act select-buf-in))
+  '(select-buf (select-buf-status select-buf-out)
+               link1
+               (act buf-act select-buf-in))
 
   ;; JOINTS
   ;; Alt-Merge
-  '(g0 (m-full-in0) b-and3 (full-in0 select-status select-out~))
-  '(g1 (m-full-in1) b-and3 (full-in1 select-status select-out))
-  '(g2 (m-empty-out-) b-or (empty-out- select-buf-status))
+  '(g0 (select-out~) b-not (select-out))
+  '(g1 (m-full-in0) b-and3 (full-in0 select-status select-out~))
+  '(g2 (m-full-in1) b-and3 (full-in1 select-status select-out))
+  '(g3 (m-empty-out-) b-or (empty-out- select-buf-status))
   (list 'alt-merge-cntl0
         '(act0)
         'joint-cntl
@@ -97,9 +100,7 @@
 
 (make-event
  `(progn
-    ,@(state-accessors-gen 'alt-merge
-                           '(lselect select lselect-buf select-buf)
-                           0)))
+    ,@(state-accessors-gen 'alt-merge '(select select-buf) 0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ALT-MERGE.
@@ -107,8 +108,9 @@
 (defun alt-merge$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (alt-merge* data-width)
-        (union$ (tv-if$netlist (make-tree data-width))
+        (union$ (link1$netlist)
                 *joint-cntl*
+                (tv-if$netlist (make-tree data-width))
                 :test 'equal)))
 
 ;; Recognizer for ALT-MERGE
@@ -119,7 +121,8 @@
   (and (equal (assoc (si 'alt-merge data-width) netlist)
               (alt-merge* data-width))
        (b* ((netlist (delete-to-eq (si 'alt-merge data-width) netlist)))
-         (and (joint-cntl& netlist)
+         (and (link1& netlist)
+              (joint-cntl& netlist)
               (tv-if& netlist (make-tree data-width))))))
 
 ;; Sanity check
@@ -133,17 +136,10 @@
 ;; Constraints on the state of ALT-MERGE
 
 (defund alt-merge$valid-st (st)
-  (b* ((lselect (get-field *alt-merge$lselect* st))
-       (select  (get-field *alt-merge$select* st))
-       (lselect-buf (get-field *alt-merge$lselect-buf* st))
-       (select-buf  (get-field *alt-merge$select-buf* st)))
-    (and (validp lselect)
-         (or (emptyp lselect)
-             (booleanp (car select)))
-
-         (validp lselect-buf)
-         (or (emptyp lselect-buf)
-             (booleanp (car select-buf))))))
+  (b* ((select (get-field *alt-merge$select* st))
+       (select-buf (get-field *alt-merge$select-buf* st)))
+    (and (link1$valid-st select)
+         (link1$valid-st select-buf))))
 
 ;; Extract the input and output signals from ALT-MERGE
 
@@ -183,17 +179,19 @@
 
   (defund alt-merge$act0 (inputs st data-width)
     (b* ((full-in0   (nth 0 inputs))
-         (empty-out-  (nth 2 inputs))
+         (empty-out- (nth 2 inputs))
          (go-signals (nthcdr (alt-merge$data-ins-len data-width) inputs))
 
          (go-alt-merge (nth 0 go-signals))
 
-         (lselect (get-field *alt-merge$lselect* st))
-         (select  (get-field *alt-merge$select* st))
-         (lselect-buf (get-field *alt-merge$lselect-buf* st))
+         (select (get-field *alt-merge$select* st))
+         (select.s (get-field *link1$s* select))
+         (select.d (get-field *link1$d* select))
+         (select-buf (get-field *alt-merge$select-buf* st))
+         (select-buf.s (get-field *link1$s* select-buf))
 
-         (m-full-in0 (f-and3 full-in0 (car lselect) (f-not (car select))))
-         (m-empty-out- (f-or empty-out- (car lselect-buf))))
+         (m-full-in0 (f-and3 full-in0 (car select.s) (f-not (car select.d))))
+         (m-empty-out- (f-or empty-out- (car select-buf.s))))
 
       (joint-act m-full-in0 m-empty-out- go-alt-merge)))
 
@@ -201,17 +199,19 @@
 
   (defund alt-merge$act1 (inputs st data-width)
     (b* ((full-in1   (nth 1 inputs))
-         (empty-out-  (nth 2 inputs))
+         (empty-out- (nth 2 inputs))
          (go-signals (nthcdr (alt-merge$data-ins-len data-width) inputs))
 
          (go-alt-merge (nth 0 go-signals))
 
-         (lselect (get-field *alt-merge$lselect* st))
-         (select  (get-field *alt-merge$select* st))
-         (lselect-buf (get-field *alt-merge$lselect-buf* st))
+         (select (get-field *alt-merge$select* st))
+         (select.s (get-field *link1$s* select))
+         (select.d (get-field *link1$d* select))
+         (select-buf (get-field *alt-merge$select-buf* st))
+         (select-buf.s (get-field *link1$s* select-buf))
 
-         (m-full-in1 (f-and3 full-in1 (car lselect) (car select)))
-         (m-empty-out- (f-or empty-out- (car lselect-buf))))
+         (m-full-in1 (f-and3 full-in1 (car select.s) (car select.d)))
+         (m-empty-out- (f-or empty-out- (car select-buf.s))))
 
       (joint-act m-full-in1 m-empty-out- go-alt-merge)))
 
@@ -229,7 +229,8 @@
 (defthmd alt-merge$value
   (b* ((inputs (list* full-in0 full-in1 empty-out-
                       (append data-in0 data-in1 go-signals)))
-       (select (get-field *alt-merge$select* st)))
+       (select (get-field *alt-merge$select* st))
+       (select.d (get-field *link1$d* select)))
     (implies (and (posp data-width)
                   (alt-merge& netlist data-width)
                   (true-listp data-in0)
@@ -242,19 +243,16 @@
                     (list* (alt-merge$act inputs st data-width)
                            (alt-merge$act0 inputs st data-width)
                            (alt-merge$act1 inputs st data-width)
-                           (fv-if (car select) data-in1 data-in0)))))
+                           (fv-if (car select.d) data-in1 data-in0)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'alt-merge data-width)
-                       (list* full-in0 full-in1 empty-out-
-                              (append data-in0 data-in1 go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'alt-merge data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-alt-merge
                             alt-merge&
                             alt-merge*$destructure
+                            link1$value
                             joint-cntl$value
                             tv-if$value
                             alt-merge$act
@@ -270,21 +268,23 @@
 
        (go-buf (nth 1 go-signals))
 
-       (lselect (get-field *alt-merge$lselect* st))
-       (select  (get-field *alt-merge$select* st))
-       (lselect-buf (get-field *alt-merge$lselect-buf* st))
-       (select-buf  (get-field *alt-merge$select-buf* st))
+       (select (get-field *alt-merge$select* st))
+       (select.s (get-field *link1$s* select))
+       (select.d (get-field *link1$d* select))
+       (select-buf (get-field *alt-merge$select-buf* st))
+       (select-buf.s (get-field *link1$s* select-buf))
+       (select-buf.d (get-field *link1$d* select-buf))
 
        (act (alt-merge$act inputs st data-width))
-       (buf-act (joint-act (car lselect-buf) (car lselect) go-buf)))
+       (buf-act (joint-act (car select-buf.s) (car select.s) go-buf))
+
+       (select-inputs (list buf-act act (car select-buf.d)))
+       (select-buf-inputs (list act buf-act (f-not (car select.d)))))
     (list
      ;; Select
-     (list (f-sr buf-act act (car lselect)))
-     (list (f-if buf-act (car select-buf) (car select)))
-
+     (link1$step select-inputs select)
      ;; Select-buf
-     (list (f-sr act buf-act (car lselect-buf)))
-     (list (f-if act (f-not (car select)) (car select-buf))))))
+     (link1$step select-buf-inputs select-buf))))
 
 (defthm len-of-alt-merge$step
   (equal (len (alt-merge$step inputs st data-width))
@@ -304,12 +304,8 @@
                     (alt-merge$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'alt-merge data-width)
-                       (list* full-in0 full-in1 empty-out-
-                              (append data-in0 data-in1 go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'alt-merge data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-alt-merge
                             alt-merge&
@@ -317,6 +313,7 @@
                             alt-merge$act
                             alt-merge$act0
                             alt-merge$act1
+                            link1$value link1$state
                             joint-cntl$value
                             tv-if$value)
                            ((alt-merge*)
@@ -332,12 +329,10 @@
 
 (progn
   (defun alt-merge$map-to-links (st)
-    (b* ((lselect     (get-field *alt-merge$lselect* st))
-         (select      (get-field *alt-merge$select* st))
-         (lselect-buf (get-field *alt-merge$lselect-buf* st))
-         (select-buf  (get-field *alt-merge$select-buf* st)))
-      (map-to-links (list (list 'select lselect (list select))
-                          (list 'select-buf lselect-buf (list select-buf))))))
+    (b* ((select (get-field *alt-merge$select* st))
+         (select-buf (get-field *alt-merge$select-buf* st)))
+      (map-to-links1 (list (list* 'select select)
+                           (list* 'select-buf select-buf)))))
 
   (defun alt-merge$map-to-links-list (x)
     (if (atom x)
@@ -356,8 +351,8 @@
          ;;(- (cw "~x0~%" inputs-lst))
          (full '(t))
          (empty '(nil))
-         (st (list full '(nil)
-                   empty '(x))))
+         (st (list (list full '(nil))
+                   (list empty '(x)))))
       (mv (pretty-list
            (remove-dup-neighbors
             (alt-merge$map-to-links-list
@@ -414,9 +409,11 @@
 ;; A state invariant
 
 (defund alt-merge$inv (st)
-  (b* ((lselect     (get-field *alt-merge$lselect* st))
-       (lselect-buf (get-field *alt-merge$lselect-buf* st)))
-    (not (equal lselect lselect-buf))))
+  (b* ((select (get-field *alt-merge$select* st))
+       (select.s (get-field *link1$s* select))
+       (select-buf (get-field *alt-merge$select-buf* st))
+       (select-buf.s (get-field *link1$s* select-buf)))
+    (not (equal select.s select-buf.s))))
 
 (defthm alt-merge$inv-preserved
   (implies (and (alt-merge$input-format inputs data-width)

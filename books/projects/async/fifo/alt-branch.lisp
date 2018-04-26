@@ -27,7 +27,7 @@
 ;; generator.
 
 (defconst *alt-branch$go-num* 2)
-(defconst *alt-branch$st-len* 4)
+(defconst *alt-branch$st-len* 2)
 
 (defun alt-branch$data-ins-len (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -49,30 +49,33 @@
                 (sis 'go 0 *alt-branch$go-num*)))
  (list* 'act 'act0 'act1
         (sis 'data-out 0 data-width))
- '(lselect select lselect-buf select-buf)
+ '(select select-buf)
  (list
   ;; LINKS
   ;; Select
-  '(lselect (select-status) link-cntl (buf-act act))
-  '(select (select-out select-out~) latch (buf-act select-in))
+  '(select (select-status select-out)
+           link1
+           (buf-act act select-in))
 
   ;; Select-buf
-  '(lselect-buf (select-buf-status) link-cntl (act buf-act))
-  '(select-buf (select-buf-out select-buf-out~) latch (act select-buf-in))
+  '(select-buf (select-buf-status select-buf-out)
+               link1
+               (act buf-act select-buf-in))
 
   ;; JOINTS
   ;; Alt-Branch
-  '(g0 (ready-in) b-and (full-in select-status))
-  '(g1 (ready-out0-) b-or3 (empty-out0- select-buf-status select-out))
-  '(g2 (ready-out1-) b-or3 (empty-out1- select-buf-status select-out~))
+  '(g0 (select-out~) b-not (select-out))
+  '(g1 (m-full-in) b-and (full-in select-status))
+  '(g2 (m-empty-out0-) b-or3 (empty-out0- select-buf-status select-out))
+  '(g3 (m-empty-out1-) b-or3 (empty-out1- select-buf-status select-out~))
   (list 'alt-branch-cntl0
         '(act0)
         'joint-cntl
-        (list 'ready-in 'ready-out0- (si 'go 0)))
+        (list 'm-full-in 'm-empty-out0- (si 'go 0)))
   (list 'alt-branch-cntl1
         '(act1)
         'joint-cntl
-        (list 'ready-in 'ready-out1- (si 'go 0)))
+        (list 'm-full-in 'm-empty-out1- (si 'go 0)))
   '(alt-branch-cntl (act) b-or (act0 act1))
 
   (list 'alt-branch-op0
@@ -92,9 +95,7 @@
 
 (make-event
  `(progn
-    ,@(state-accessors-gen 'alt-branch
-                           '(lselect select lselect-buf select-buf)
-                           0)))
+    ,@(state-accessors-gen 'alt-branch '(select select-buf) 0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ALT-BRANCH.
@@ -102,8 +103,9 @@
 (defun alt-branch$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (alt-branch* data-width)
-        (union$ (v-buf$netlist data-width)
+        (union$ (link1$netlist)
                 *joint-cntl*
+                (v-buf$netlist data-width)
                 :test 'equal)))
 
 ;; Recognizer for ALT-BRANCH
@@ -114,7 +116,8 @@
   (and (equal (assoc (si 'alt-branch data-width) netlist)
               (alt-branch* data-width))
        (b* ((netlist (delete-to-eq (si 'alt-branch data-width) netlist)))
-         (and (joint-cntl& netlist)
+         (and (link1& netlist)
+              (joint-cntl& netlist)
               (v-buf& netlist data-width)))))
 
 ;; Sanity check
@@ -128,17 +131,10 @@
 ;; Constraints on the state of ALT-BRANCH
 
 (defund alt-branch$valid-st (st)
-  (b* ((lselect     (get-field *alt-branch$lselect* st))
-       (select      (get-field *alt-branch$select* st))
-       (lselect-buf (get-field *alt-branch$lselect-buf* st))
-       (select-buf  (get-field *alt-branch$select-buf* st)))
-    (and (validp lselect)
-         (or (emptyp lselect)
-             (booleanp (car select)))
-
-         (validp lselect-buf)
-         (or (emptyp lselect-buf)
-             (booleanp (car select-buf))))))
+  (b* ((select (get-field *alt-branch$select* st))
+       (select-buf (get-field *alt-branch$select-buf* st)))
+    (and (link1$valid-st select)
+         (link1$valid-st select-buf))))
 
 ;; Extract the input and output signals from ALT-BRANCH
 
@@ -161,40 +157,44 @@
   ;; Extract the "act0" signal
 
   (defund alt-branch$act0 (inputs st data-width)
-    (b* ((full-in    (nth 0 inputs))
+    (b* ((full-in     (nth 0 inputs))
          (empty-out0- (nth 1 inputs))
-         (go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs))
+         (go-signals  (nthcdr (alt-branch$data-ins-len data-width) inputs))
 
          (go-alt-branch (nth 0 go-signals))
 
-         (lselect (get-field *alt-branch$lselect* st))
-         (select  (get-field *alt-branch$select* st))
-         (lselect-buf (get-field *alt-branch$lselect-buf* st))
+         (select (get-field *alt-branch$select* st))
+         (select.s (get-field *link1$s* select))
+         (select.d (get-field *link1$d* select))
+         (select-buf (get-field *alt-branch$select-buf* st))
+         (select-buf.s (get-field *link1$s* select-buf))
 
-         (ready-in (f-and full-in (car lselect)))
-         (ready-out0- (f-or3 empty-out0- (car lselect-buf) (car select))))
+         (m-full-in (f-and full-in (car select.s)))
+         (m-empty-out0- (f-or3 empty-out0- (car select-buf.s) (car select.d))))
 
-      (joint-act ready-in ready-out0- go-alt-branch)))
+      (joint-act m-full-in m-empty-out0- go-alt-branch)))
 
   ;; Extract the "act1" signal
 
   (defund alt-branch$act1 (inputs st data-width)
-    (b* ((full-in    (nth 0 inputs))
+    (b* ((full-in     (nth 0 inputs))
          (empty-out1- (nth 2 inputs))
-         (go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs))
+         (go-signals  (nthcdr (alt-branch$data-ins-len data-width) inputs))
 
          (go-alt-branch (nth 0 go-signals))
 
-         (lselect (get-field *alt-branch$lselect* st))
-         (select  (get-field *alt-branch$select* st))
-         (lselect-buf (get-field *alt-branch$lselect-buf* st))
+         (select (get-field *alt-branch$select* st))
+         (select.s (get-field *link1$s* select))
+         (select.d (get-field *link1$d* select))
+         (select-buf (get-field *alt-branch$select-buf* st))
+         (select-buf.s (get-field *link1$s* select-buf))
 
-         (ready-in (f-and full-in (car lselect)))
-         (ready-out1- (f-or3 empty-out1-
-                             (car lselect-buf)
-                             (f-not (car select)))))
+         (m-full-in (f-and full-in (car select.s)))
+         (m-empty-out1- (f-or3 empty-out1-
+                               (car select-buf.s)
+                               (f-not (car select.d)))))
 
-      (joint-act ready-in ready-out1- go-alt-branch)))
+      (joint-act m-full-in m-empty-out1- go-alt-branch)))
 
   ;; Extract the "act" signal
 
@@ -222,16 +222,13 @@
                            (v-threefix data-in)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'alt-branch data-width)
-                       (list* full-in empty-out0- empty-out1-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'alt-branch data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-alt-branch
                             alt-branch&
                             alt-branch*$destructure
+                            link1$value
                             joint-cntl$value
                             v-buf$value
                             alt-branch$act
@@ -247,21 +244,23 @@
 
        (go-buf (nth 1 go-signals))
 
-       (lselect (get-field *alt-branch$lselect* st))
-       (select  (get-field *alt-branch$select* st))
-       (lselect-buf (get-field *alt-branch$lselect-buf* st))
-       (select-buf  (get-field *alt-branch$select-buf* st))
+       (select (get-field *alt-branch$select* st))
+       (select.s (get-field *link1$s* select))
+       (select.d (get-field *link1$d* select))
+       (select-buf (get-field *alt-branch$select-buf* st))
+       (select-buf.s (get-field *link1$s* select-buf))
+       (select-buf.d (get-field *link1$d* select-buf))
 
        (act (alt-branch$act inputs st data-width))
-       (buf-act (joint-act (car lselect-buf) (car lselect) go-buf)))
+       (buf-act (joint-act (car select-buf.s) (car select.s) go-buf))
+
+       (select-inputs (list buf-act act (car select-buf.d)))
+       (select-buf-inputs (list act buf-act (f-not (car select.d)))))
     (list
      ;; Select
-     (list (f-sr buf-act act (car lselect)))
-     (list (f-if buf-act (car select-buf) (car select)))
-
+     (link1$step select-inputs select)
      ;; Select-buf
-     (list (f-sr act buf-act (car lselect-buf)))
-     (list (f-if act (f-not (car select)) (car select-buf))))))
+     (link1$step select-buf-inputs select-buf))))
 
 (defthm len-of-alt-branch$step
   (equal (len (alt-branch$step inputs st data-width))
@@ -280,12 +279,8 @@
                     (alt-branch$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'alt-branch data-width)
-                       (list* full-in empty-out0- empty-out1-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'alt-branch data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-alt-branch
                             alt-branch&
@@ -293,6 +288,7 @@
                             alt-branch$act
                             alt-branch$act0
                             alt-branch$act1
+                            link1$value link1$state
                             joint-cntl$value
                             v-buf$value)
                            ((alt-branch*)
@@ -308,12 +304,10 @@
 
 (progn
   (defun alt-branch$map-to-links (st)
-    (b* ((lselect (get-field *alt-branch$lselect* st))
-         (select  (get-field *alt-branch$select* st))
-         (lselect-buf (get-field *alt-branch$lselect-buf* st))
-         (select-buf  (get-field *alt-branch$select-buf* st)))
-      (map-to-links (list (list 'select lselect (list select))
-                          (list 'select-buf lselect-buf (list select-buf))))))
+    (b* ((select (get-field *alt-branch$select* st))
+         (select-buf (get-field *alt-branch$select-buf* st)))
+      (map-to-links1 (list (list* 'select select)
+                           (list* 'select-buf select-buf)))))
 
   (defun alt-branch$map-to-links-list (x)
     (if (atom x)
@@ -332,8 +326,8 @@
          ;;(- (cw "~x0~%" inputs-lst))
          (full '(t))
          (empty '(nil))
-         (st (list full '(nil)
-                   empty '(x))))
+         (st (list (list full '(nil))
+                   (list empty '(x)))))
       (mv (pretty-list
            (remove-dup-neighbors
             (alt-branch$map-to-links-list
@@ -388,9 +382,11 @@
 ;; A state invariant
 
 (defund alt-branch$inv (st)
-  (b* ((lselect     (get-field *alt-branch$lselect* st))
-       (lselect-buf (get-field *alt-branch$lselect-buf* st)))
-    (not (equal lselect lselect-buf))))
+  (b* ((select (get-field *alt-branch$select* st))
+       (select.s (get-field *link1$s* select))
+       (select-buf (get-field *alt-branch$select-buf* st))
+       (select-buf.s (get-field *link1$s* select-buf)))
+    (not (equal select.s select-buf.s))))
 
 (defthm alt-branch$inv-preserved
   (implies (and (alt-branch$input-format inputs data-width)

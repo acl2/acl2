@@ -10,7 +10,6 @@
 
 (include-book "async-serial-adder-control")
 (include-book "../link-joint")
-(include-book "../store-n")
 (include-book "../vector-module")
 (include-book "../adders/adder")
 
@@ -144,7 +143,6 @@
                           (f-buf (car s))
                           (f-buf (car ci))))))
   :hints (("Goal"
-           :do-not '(preprocess)
            :expand (se '1-bit-adder inputs st netlist)
            :in-theory (e/d (de-rules
                             1-bit-adder&
@@ -227,12 +225,8 @@
              (equal (de '1-bit-adder inputs st netlist)
                     (1-bit-adder$step inputs st))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (de '1-bit-adder
-                       (list* a-act a-in b-act b-in dr-lci s-act
-                              go-signals)
-                       st
-                       netlist)
+           :expand (:free (inputs)
+                          (de '1-bit-adder inputs st netlist))
            :in-theory (e/d (de-rules
                             1-bit-adder&
                             1-bit-adder*$destructure
@@ -383,7 +377,6 @@
                            (append (car reg2)
                                    (list (f-buf (car ci))))))))
   :hints (("Goal"
-           :do-not '(preprocess)
            :expand (se 'serial-adder inputs st netlist)
            :in-theory (e/d (de-rules
                             serial-adder&
@@ -462,11 +455,8 @@
              (equal (de 'serial-adder inputs st netlist)
                     (serial-adder$step inputs st))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (de 'serial-adder
-                       (list* cntl-act bit-in result-act go-signals)
-                       st
-                       netlist)
+           :expand (:free (inputs)
+                          (de 'serial-adder inputs st netlist))
            :in-theory (e/d (de-rules
                             serial-adder&
                             serial-adder*$destructure
@@ -643,7 +633,6 @@
                            (async-adder$ready-out st)
                            (v-threefix (strip-cars result))))))
   :hints (("Goal"
-           :do-not '(preprocess)
            :expand (se 'async-adder inputs st netlist)
            :in-theory (e/d (de-rules
                             async-adder&
@@ -765,11 +754,8 @@
              (equal (de 'async-adder inputs st netlist)
                     (async-adder$step inputs st))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (de 'async-adder
-                       (list* dr-lresult go-signals)
-                       st
-                       netlist)
+           :expand (:free (inputs)
+                          (de 'async-adder inputs st netlist))
            :in-theory (e/d (de-rules
                             async-adder&
                             async-adder*$destructure
@@ -929,7 +915,6 @@
              (equal (de-sim-n 'async-adder inputs-lst st netlist n)
                     (async-adder$run inputs-lst st n))))
   :hints (("Goal"
-           :do-not '(preprocess)
            :induct (de-sim-n 'async-adder inputs-lst st netlist n)
            :in-theory (e/d (de-sim-n
                             async-adder$state-alt
@@ -1289,7 +1274,6 @@
                       (async-adder$input-format-n inputs-lst n))
                  ,concl2))
               :hints (("Goal"
-                       :do-not '(preprocess)
                        :do-not-induct t
                        :in-theory (e/d* (async-adder$st-trans-rules
                                          async-adder$input-format
@@ -1613,7 +1597,6 @@
                       (async-adder$input-format-n inputs-lst n))
                  ,concl2))
               :hints (("Goal"
-                       :do-not '(preprocess)
                        :do-not-induct t
                        :in-theory (e/d* (async-adder-last-round$st-trans-rules
                                          async-adder$input-format
@@ -2248,16 +2231,14 @@
   (defthm f-buf-of-car-fv-shift-right-canceled
     (equal (f-buf (car (fv-shift-right a si)))
            (car (fv-shift-right a si)))
-    :hints (("Goal" :in-theory (e/d (fv-shift-right)
-                                    (f-buf-car-of-v-threefix)))))
+    :hints (("Goal" :in-theory (enable fv-shift-right))))
 
   (defthm f-buf-of-car-fv-shift-right-nil-n-canceled
     (implies (posp n)
              (equal (f-buf (car (fv-shift-right-nil-n a n)))
                     (car (fv-shift-right-nil-n a n))))
-    :hints (("Goal" :in-theory (e/d (fv-shift-right-nil-n
-                                     fv-shift-right)
-                                    (f-buf-car-of-v-threefix))))))
+    :hints (("Goal" :in-theory (enable fv-shift-right-nil-n
+                                       fv-shift-right)))))
 
 (defun async-adder$init-st (st)
   (b* ((lcntl      (nth *async-adder$lcntl* st))

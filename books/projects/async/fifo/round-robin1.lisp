@@ -38,7 +38,7 @@
                                    *queue3$go-num*
                                    *alt-branch$go-num*
                                    *alt-merge$go-num*))
-(defconst *round-robin1$st-len* 12)
+(defconst *round-robin1$st-len* 8)
 
 (defun round-robin1$data-ins-len (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -61,36 +61,32 @@
                                     (sis 'go 0 *round-robin1$go-num*)))
  (list* 'in-act 'out-act
         (sis 'data-out 0 data-width))
- '(la0 a0 lb0 b0 la1 a1 lb1 b1 q2 q3 br me)
+ '(a0 b0 a1 b1 q2 q3 br me)
  (list
   ;; LINKS
   ;; A0
-  '(la0 (a0-status) link-cntl (br-act0 q2-in-act))
   (list 'a0
-        (sis 'a0-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'br-act0 (sis 'data 0 data-width)))
+        (list* 'a0-status (sis 'a0-out 0 data-width))
+        (si 'link data-width)
+        (list* 'br-act0 'q2-in-act (sis 'data 0 data-width)))
 
   ;; B0
-  '(lb0 (b0-status) link-cntl (br-act1 q3-in-act))
   (list 'b0
-        (sis 'b0-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'br-act1 (sis 'data 0 data-width)))
+        (list* 'b0-status (sis 'b0-out 0 data-width))
+        (si 'link data-width)
+        (list* 'br-act1 'q3-in-act (sis 'data 0 data-width)))
 
   ;; A1
-  '(la1 (a1-status) link-cntl (q2-out-act me-act0))
   (list 'a1
-        (sis 'a1-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'q2-out-act (sis 'q2-data-out 0 data-width)))
+        (list* 'a1-status (sis 'a1-out 0 data-width))
+        (si 'link data-width)
+        (list* 'q2-out-act 'me-act0 (sis 'q2-data-out 0 data-width)))
 
   ;; B1
-  '(lb1 (b1-status) link-cntl (q3-out-act me-act1))
   (list 'b1
-        (sis 'b1-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'q3-out-act (sis 'q3-data-out 0 data-width)))
+        (list* 'b1-status (sis 'b1-out 0 data-width))
+        (si 'link data-width)
+        (list* 'q3-out-act 'me-act1 (sis 'q3-data-out 0 data-width)))
 
   ;; JOINTS
   ;; 2-link queue Q2
@@ -143,9 +139,7 @@
 
 (make-event
  `(progn
-    ,@(state-accessors-gen 'round-robin1
-                           '(la0 a0 lb0 b0 la1 a1 lb1 b1 q2 q3 br me)
-                           0)))
+    ,@(state-accessors-gen 'round-robin1 '(a0 b0 a1 b1 q2 q3 br me) 0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of RR1.
 
@@ -166,11 +160,11 @@
   (and (equal (assoc (si 'round-robin1 data-width) netlist)
               (round-robin1* data-width))
        (b* ((netlist (delete-to-eq (si 'round-robin1 data-width) netlist)))
-         (and (queue2& netlist data-width)
+         (and (link& netlist data-width)
+              (queue2& netlist data-width)
               (queue3& netlist data-width)
               (alt-branch& netlist data-width)
-              (alt-merge& netlist data-width)
-              (latch-n& netlist data-width)))))
+              (alt-merge& netlist data-width)))))
 
 ;; Sanity check
 
@@ -183,25 +177,18 @@
 ;; Constraints on the state of RR1
 
 (defund round-robin1$st-format (st data-width)
-  (b* ((a0  (get-field *round-robin1$a0* st))
-       (b0  (get-field *round-robin1$b0* st))
-       (a1  (get-field *round-robin1$a1* st))
-       (b1  (get-field *round-robin1$b1* st))
-       (q2  (get-field *round-robin1$q2* st))
-       (q3  (get-field *round-robin1$q3* st)))
+  (b* ((a0 (get-field *round-robin1$a0* st))
+       (b0 (get-field *round-robin1$b0* st))
+       (a1 (get-field *round-robin1$a1* st))
+       (b1 (get-field *round-robin1$b1* st))
+       (q2 (get-field *round-robin1$q2* st))
+       (q3 (get-field *round-robin1$q3* st)))
     (and (< 0 data-width)
 
-         (len-1-true-listp a0)
-         (equal (len a0) data-width)
-
-         (len-1-true-listp b0)
-         (equal (len b0) data-width)
-
-         (len-1-true-listp a1)
-         (equal (len a1) data-width)
-
-         (len-1-true-listp b1)
-         (equal (len b1) data-width)
+         (link$st-format a0 data-width)
+         (link$st-format b0 data-width)
+         (link$st-format a1 data-width)
+         (link$st-format b1 data-width)
 
          (queue2$st-format q2 data-width)
          (queue3$st-format q3 data-width))))
@@ -213,35 +200,20 @@
   :rule-classes :forward-chaining)
 
 (defund round-robin1$valid-st (st data-width)
-  (b* ((la0 (get-field *round-robin1$la0* st))
-       (a0  (get-field *round-robin1$a0* st))
-       (lb0 (get-field *round-robin1$lb0* st))
-       (b0  (get-field *round-robin1$b0* st))
-       (la1 (get-field *round-robin1$la1* st))
-       (a1  (get-field *round-robin1$a1* st))
-       (lb1 (get-field *round-robin1$lb1* st))
-       (b1  (get-field *round-robin1$b1* st))
-       (q2  (get-field *round-robin1$q2* st))
-       (q3  (get-field *round-robin1$q3* st))
-       (br  (get-field *round-robin1$br* st))
-       (me  (get-field *round-robin1$me* st)))
+  (b* ((a0 (get-field *round-robin1$a0* st))
+       (b0 (get-field *round-robin1$b0* st))
+       (a1 (get-field *round-robin1$a1* st))
+       (b1 (get-field *round-robin1$b1* st))
+       (q2 (get-field *round-robin1$q2* st))
+       (q3 (get-field *round-robin1$q3* st))
+       (br (get-field *round-robin1$br* st))
+       (me (get-field *round-robin1$me* st)))
     (and (round-robin1$st-format st data-width)
 
-         (validp la0)
-         (or (emptyp la0)
-             (bvp (strip-cars a0)))
-
-         (validp lb0)
-         (or (emptyp lb0)
-             (bvp (strip-cars b0)))
-
-         (validp la1)
-         (or (emptyp la1)
-             (bvp (strip-cars a1)))
-
-         (validp lb1)
-         (or (emptyp lb1)
-             (bvp (strip-cars b1)))
+         (link$valid-st a0 data-width)
+         (link$valid-st b0 data-width)
+         (link$valid-st a1 data-width)
+         (link$valid-st b1 data-width)
 
          (queue2$valid-st q2 data-width)
          (queue3$valid-st q3 data-width)
@@ -280,12 +252,14 @@
 
          (q2-go-signals (take *queue2$go-num* go-signals))
 
-         (la0 (get-field *round-robin1$la0* st))
-         (a0  (get-field *round-robin1$a0* st))
-         (la1 (get-field *round-robin1$la1* st)))
+         (a0 (get-field *round-robin1$a0* st))
+         (a0.s (get-field *link$s* a0))
+         (a0.d (get-field *link$d* a0))
+         (a1 (get-field *round-robin1$a1* st))
+         (a1.s (get-field *link$s* a1)))
 
-      (list* (f-buf (car la0)) (f-buf (car la1))
-             (append (v-threefix (strip-cars a0))
+      (list* (f-buf (car a0.s)) (f-buf (car a1.s))
+             (append (v-threefix (strip-cars a0.d))
                      q2-go-signals))))
 
   ;; Extract the inputs for the Q3 joint
@@ -297,12 +271,14 @@
                               (nthcdr *queue2$go-num*
                                       go-signals)))
 
-         (lb0 (get-field *round-robin1$lb0* st))
-         (b0  (get-field *round-robin1$b0* st))
-         (lb1 (get-field *round-robin1$lb1* st)))
+         (b0 (get-field *round-robin1$b0* st))
+         (b0.s (get-field *link$s* b0))
+         (b0.d (get-field *link$d* b0))
+         (b1 (get-field *round-robin1$b1* st))
+         (b1.s (get-field *link$s* b1)))
 
-      (list* (f-buf (car lb0)) (f-buf (car lb1))
-             (append (v-threefix (strip-cars b0))
+      (list* (f-buf (car b0.s)) (f-buf (car b1.s))
+             (append (v-threefix (strip-cars b0.d))
                      q3-go-signals))))
 
   ;; Extract the inputs for the alt-branch joint
@@ -317,10 +293,12 @@
                                          *queue3$go-num*)
                                       go-signals)))
 
-         (la0 (get-field *round-robin1$la0* st))
-         (lb0 (get-field *round-robin1$lb0* st)))
+         (a0 (get-field *round-robin1$a0* st))
+         (a0.s (get-field *link$s* a0))
+         (b0 (get-field *round-robin1$b0* st))
+         (b0.s (get-field *link$s* b0)))
 
-      (list* full-in (f-buf (car la0)) (f-buf (car lb0))
+      (list* full-in (f-buf (car a0.s)) (f-buf (car b0.s))
              (append data-in br-go-signals))))
 
   ;; Extract the inputs for the alt-merge joint
@@ -334,14 +312,16 @@
                                    *alt-branch$go-num*)
                                 go-signals))
 
-         (la1 (get-field *round-robin1$la1* st))
-         (a1  (get-field *round-robin1$a1* st))
-         (lb1 (get-field *round-robin1$lb1* st))
-         (b1  (get-field *round-robin1$b1* st)))
+         (a1 (get-field *round-robin1$a1* st))
+         (a1.s (get-field *link$s* a1))
+         (a1.d (get-field *link$d* a1))
+         (b1 (get-field *round-robin1$b1* st))
+         (b1.s (get-field *link$s* b1))
+         (b1.d (get-field *link$d* b1)))
 
-      (list* (f-buf (car la1)) (f-buf (car lb1)) empty-out-
-             (append (v-threefix (strip-cars a1))
-                     (v-threefix (strip-cars b1))
+      (list* (f-buf (car a1.s)) (f-buf (car b1.s)) empty-out-
+             (append (v-threefix (strip-cars a1.d))
+                     (v-threefix (strip-cars b1.d))
                      me-go-signals))))
 
   ;; Extract the "in-act" signal
@@ -362,13 +342,16 @@
 
   (defund round-robin1$data-out (st)
     (b* ((a1 (get-field *round-robin1$a1* st))
+         (a1.d (get-field *link$d* a1))
          (b1 (get-field *round-robin1$b1* st))
+         (b1.d (get-field *link$d* b1))
          (me (get-field *round-robin1$me* st))
 
-         (me-select (get-field *alt-merge$select* me)))
-      (fv-if (car me-select)
-             (strip-cars b1)
-             (strip-cars a1))))
+         (me-select (get-field *alt-merge$select* me))
+         (me-select.d (get-field *link1$d* me-select)))
+      (fv-if (car me-select.d)
+             (strip-cars b1.d)
+             (strip-cars a1.d))))
 
   (defthm len-round-robin1$data-out-1
     (implies (round-robin1$st-format st data-width)
@@ -381,7 +364,8 @@
     (implies (round-robin1$valid-st st data-width)
              (equal (len (round-robin1$data-out st))
                     data-width))
-    :hints (("Goal" :in-theory (enable round-robin1$valid-st))))
+    :hints (("Goal" :in-theory (enable round-robin1$valid-st
+                                       round-robin1$data-out))))
 
   (defthm bvp-round-robin1$data-out
     (implies (and (round-robin1$valid-st st data-width)
@@ -419,22 +403,19 @@
                            (round-robin1$data-out st)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'round-robin1 data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'round-robin1 data-width)
+                              inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-round-robin1
                             round-robin1&
                             round-robin1*$destructure
                             round-robin1$data-in
+                            link$value
                             queue2$value
                             queue3$value
                             alt-branch$value
                             alt-merge$value
-                            latch-n$value
                             round-robin1$st-format
                             round-robin1$in-act
                             round-robin1$out-act
@@ -449,18 +430,14 @@
 (defun round-robin1$step (inputs st data-width)
   (b* ((data-in (round-robin1$data-in inputs data-width))
 
-       (la0 (get-field *round-robin1$la0* st))
-       (a0  (get-field *round-robin1$a0* st))
-       (lb0 (get-field *round-robin1$lb0* st))
-       (b0  (get-field *round-robin1$b0* st))
-       (la1 (get-field *round-robin1$la1* st))
-       (a1  (get-field *round-robin1$a1* st))
-       (lb1 (get-field *round-robin1$lb1* st))
-       (b1  (get-field *round-robin1$b1* st))
-       (q2  (get-field *round-robin1$q2* st))
-       (q3  (get-field *round-robin1$q3* st))
-       (br  (get-field *round-robin1$br* st))
-       (me  (get-field *round-robin1$me* st))
+       (a0 (get-field *round-robin1$a0* st))
+       (b0 (get-field *round-robin1$b0* st))
+       (a1 (get-field *round-robin1$a1* st))
+       (b1 (get-field *round-robin1$b1* st))
+       (q2 (get-field *round-robin1$q2* st))
+       (q3 (get-field *round-robin1$q3* st))
+       (br (get-field *round-robin1$br* st))
+       (me (get-field *round-robin1$me* st))
 
        (q2-inputs (round-robin1$q2-inputs inputs st data-width))
        (q2-in-act (queue2$in-act q2-inputs q2 data-width))
@@ -478,28 +455,22 @@
 
        (me-inputs (round-robin1$me-inputs inputs st data-width))
        (me-act0 (alt-merge$act0 me-inputs me data-width))
-       (me-act1 (alt-merge$act1 me-inputs me data-width)))
+       (me-act1 (alt-merge$act1 me-inputs me data-width))
+
+       (a0-inputs (list* br-act0 q2-in-act data-in))
+       (b0-inputs (list* br-act1 q3-in-act data-in))
+       (a1-inputs (list* q2-out-act me-act0 q2-data-out))
+       (b1-inputs (list* q3-out-act me-act1 q3-data-out)))
 
     (list
      ;; A0
-     (list (f-sr br-act0 q2-in-act (car la0)))
-     (pairlis$ (fv-if br-act0 data-in (strip-cars a0))
-               nil)
-
+     (link$step a0-inputs a0 data-width)
      ;; B0
-     (list (f-sr br-act1 q3-in-act (car lb0)))
-     (pairlis$ (fv-if br-act1 data-in (strip-cars b0))
-               nil)
-
+     (link$step b0-inputs b0 data-width)
      ;; A1
-     (list (f-sr q2-out-act me-act0 (car la1)))
-     (pairlis$ (fv-if q2-out-act q2-data-out (strip-cars a1))
-               nil)
-
+     (link$step a1-inputs a1 data-width)
      ;; B1
-     (list (f-sr q3-out-act me-act1 (car lb1)))
-     (pairlis$ (fv-if q3-out-act q3-data-out (strip-cars b1))
-               nil)
+     (link$step b1-inputs b1 data-width)
 
      ;; Joint Q2
      (queue2$step q2-inputs q2 data-width)
@@ -528,12 +499,9 @@
                     (round-robin1$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'round-robin1 data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'round-robin1 data-width)
+                              inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-round-robin1
                             round-robin1&
@@ -544,11 +512,11 @@
                             round-robin1$q3-inputs
                             round-robin1$br-inputs
                             round-robin1$me-inputs
+                            link$value link$state
                             queue2$value queue2$state
                             queue3$value queue3$state
                             alt-branch$value alt-branch$state
-                            alt-merge$value alt-merge$state
-                            latch-n$value latch-n$state)
+                            alt-merge$value alt-merge$state)
                            ((round-robin1*)
                             de-module-disabled-rules)))))
 
@@ -562,25 +530,21 @@
 
 (progn
   (defun round-robin1$map-to-links (st)
-    (b* ((la0 (get-field *round-robin1$la0* st))
-         (a0  (get-field *round-robin1$a0* st))
-         (lb0 (get-field *round-robin1$lb0* st))
-         (b0  (get-field *round-robin1$b0* st))
-         (la1 (get-field *round-robin1$la1* st))
-         (a1  (get-field *round-robin1$a1* st))
-         (lb1 (get-field *round-robin1$lb1* st))
-         (b1  (get-field *round-robin1$b1* st))
-         (q2  (get-field *round-robin1$q2* st))
-         (q3  (get-field *round-robin1$q3* st))
-         (br  (get-field *round-robin1$br* st))
-         (me  (get-field *round-robin1$me* st)))
+    (b* ((a0 (get-field *round-robin1$a0* st))
+         (b0 (get-field *round-robin1$b0* st))
+         (a1 (get-field *round-robin1$a1* st))
+         (b1 (get-field *round-robin1$b1* st))
+         (q2 (get-field *round-robin1$q2* st))
+         (q3 (get-field *round-robin1$q3* st))
+         (br (get-field *round-robin1$br* st))
+         (me (get-field *round-robin1$me* st)))
       (append (list (cons 'alt-branch (alt-branch$map-to-links br)))
-              (map-to-links (list (list 'a0 la0 a0)
-                                  (list 'b0 lb0 b0)))
+              (map-to-links (list (list* 'a0 a0)
+                                  (list* 'b0 b0)))
               (cons (cons 'Q2 (queue2$map-to-links q2))
                     (cons (cons 'Q3 (queue3$map-to-links q3))
-                          (map-to-links (list (list 'a1 la1 a1)
-                                              (list 'b1 lb1 b1)))))
+                          (map-to-links (list (list* 'a1 a1)
+                                              (list* 'b1 b1)))))
               (list (cons 'alt-merge (alt-merge$map-to-links me))))))
 
   (defun round-robin1$map-to-links-list (x)
@@ -601,24 +565,20 @@
          (full '(t))
          (empty '(nil))
          (invalid-data (make-list data-width :initial-element '(x)))
-         (la0 empty)
-         (a0 invalid-data)
-         (lb0 empty)
-         (b0 invalid-data)
-         (la1 empty)
-         (a1 invalid-data)
-         (lb1 empty)
-         (b1 invalid-data)
-         (q2 (list empty invalid-data
-                   empty invalid-data))
-         (q3 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
-         (br (list full '(nil)
-                   empty '(x)))
-         (me (list full '(nil)
-                   empty '(x)))
-         (st (list la0 a0 lb0 b0 la1 a1 lb1 b1 q2 q3 br me)))
+         (q2 (list (list empty invalid-data)
+                   (list empty invalid-data)))
+         (q3 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
+         (br (list (list full '(nil))
+                   (list empty '(x))))
+         (me (list (list full '(nil))
+                   (list empty '(x))))
+         (st (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   q2 q3 br me)))
       (mv (pretty-list
            (remove-dup-neighbors
             (round-robin1$map-to-links-list
@@ -781,31 +741,29 @@
 ;; from the current state.
 
 (defund round-robin1$extract (st)
-  (b* ((la0 (get-field *round-robin1$la0* st))
-       (a0  (get-field *round-robin1$a0* st))
-       (lb0 (get-field *round-robin1$lb0* st))
-       (b0  (get-field *round-robin1$b0* st))
-       (la1 (get-field *round-robin1$la1* st))
-       (a1  (get-field *round-robin1$a1* st))
-       (lb1 (get-field *round-robin1$lb1* st))
-       (b1  (get-field *round-robin1$b1* st))
-       (q2  (get-field *round-robin1$q2* st))
-       (q3  (get-field *round-robin1$q3* st))
-       (me  (get-field *round-robin1$me* st))
+  (b* ((a0 (get-field *round-robin1$a0* st))
+       (b0 (get-field *round-robin1$b0* st))
+       (a1 (get-field *round-robin1$a1* st))
+       (b1 (get-field *round-robin1$b1* st))
+       (q2 (get-field *round-robin1$q2* st))
+       (q3 (get-field *round-robin1$q3* st))
+       (me (get-field *round-robin1$me* st))
 
-       (a-seq (append (extract-valid-data (list la0 a0))
+       (a-seq (append (extract-valid-data (list a0))
                       (queue2$extract q2)
-                      (extract-valid-data (list la1 a1))))
-       (b-seq (append (extract-valid-data (list lb0 b0))
+                      (extract-valid-data (list a1))))
+       (b-seq (append (extract-valid-data (list b0))
                       (queue3$extract q3)
-                      (extract-valid-data (list lb1 b1))))
+                      (extract-valid-data (list b1))))
 
-       (me-lselect    (get-field *alt-merge$lselect* me))
-       (me-select     (get-field *alt-merge$select* me))
+       (me-select (get-field *alt-merge$select* me))
+       (me-select.s (get-field *link1$s* me-select))
+       (me-select.d (get-field *link1$d* me-select))
        (me-select-buf (get-field *alt-merge$select-buf* me))
-       (valid-me-select (if (fullp me-lselect)
-                            (car me-select)
-                          (car me-select-buf))))
+       (me-select-buf.d (get-field *link1$d* me-select-buf))
+       (valid-me-select (if (fullp me-select.s)
+                            (car me-select.d)
+                          (car me-select-buf.d))))
 
     (cond ((< (len a-seq) (len b-seq))
            (interleave b-seq a-seq))
@@ -834,39 +792,39 @@
 
 (progn
   (defund round-robin1$inv (st)
-    (b* ((la0 (get-field *round-robin1$la0* st))
-         (a0  (get-field *round-robin1$a0* st))
-         (lb0 (get-field *round-robin1$lb0* st))
-         (b0  (get-field *round-robin1$b0* st))
-         (la1 (get-field *round-robin1$la1* st))
-         (a1  (get-field *round-robin1$a1* st))
-         (lb1 (get-field *round-robin1$lb1* st))
-         (b1  (get-field *round-robin1$b1* st))
-         (q2  (get-field *round-robin1$q2* st))
-         (q3  (get-field *round-robin1$q3* st))
-         (br  (get-field *round-robin1$br* st))
-         (me  (get-field *round-robin1$me* st))
+    (b* ((a0 (get-field *round-robin1$a0* st))
+         (b0 (get-field *round-robin1$b0* st))
+         (a1 (get-field *round-robin1$a1* st))
+         (b1 (get-field *round-robin1$b1* st))
+         (q2 (get-field *round-robin1$q2* st))
+         (q3 (get-field *round-robin1$q3* st))
+         (br (get-field *round-robin1$br* st))
+         (me (get-field *round-robin1$me* st))
 
-         (a-seq (append (extract-valid-data (list la0 a0))
+         (a-seq (append (extract-valid-data (list a0))
                         (queue2$extract q2)
-                        (extract-valid-data (list la1 a1))))
-         (b-seq (append (extract-valid-data (list lb0 b0))
+                        (extract-valid-data (list a1))))
+         (b-seq (append (extract-valid-data (list b0))
                         (queue3$extract q3)
-                        (extract-valid-data (list lb1 b1))))
+                        (extract-valid-data (list b1))))
 
-         (br-lselect    (get-field *alt-branch$lselect* br))
-         (br-select     (get-field *alt-branch$select* br))
+         (br-select (get-field *alt-branch$select* br))
+         (br-select.s (get-field *link1$s* br-select))
+         (br-select.d (get-field *link1$d* br-select))
          (br-select-buf (get-field *alt-branch$select-buf* br))
-         (valid-br-select (if (fullp br-lselect)
-                              (car br-select)
-                            (car br-select-buf)))
+         (br-select-buf.d (get-field *link1$d* br-select-buf))
+         (valid-br-select (if (fullp br-select.s)
+                              (car br-select.d)
+                            (car br-select-buf.d)))
 
-         (me-lselect    (get-field *alt-merge$lselect* me))
-         (me-select     (get-field *alt-merge$select* me))
+         (me-select (get-field *alt-merge$select* me))
+         (me-select.s (get-field *link1$s* me-select))
+         (me-select.d (get-field *link1$d* me-select))
          (me-select-buf (get-field *alt-merge$select-buf* me))
-         (valid-me-select (if (fullp me-lselect)
-                              (car me-select)
-                            (car me-select-buf))))
+         (me-select-buf.d (get-field *link1$d* me-select-buf))
+         (valid-me-select (if (fullp me-select.s)
+                              (car me-select.d)
+                            (car me-select-buf.d))))
 
       (and (alt-branch$inv br)
            (alt-merge$inv me)
@@ -881,8 +839,12 @@
 
   (local
    (defthm booleanp-round-robin1$q2-in-act
-     (implies (and (or (equal (nth *round-robin1$la0* st) '(t))
-                       (equal (nth *round-robin1$la0* st) '(nil)))
+     (implies (and (or (equal (nth *link$s*
+                                   (nth *round-robin1$a0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$a0* st))
+                              '(nil)))
                    (queue2$valid-st (nth *round-robin1$q2* st)
                                     data-width))
               (booleanp
@@ -898,8 +860,12 @@
 
   (local
    (defthm booleanp-round-robin1$q3-in-act
-     (implies (and (or (equal (nth *round-robin1$lb0* st) '(t))
-                       (equal (nth *round-robin1$lb0* st) '(nil)))
+     (implies (and (or (equal (nth *link$s*
+                                   (nth *round-robin1$b0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$b0* st))
+                              '(nil)))
                    (queue3$valid-st (nth *round-robin1$q3* st)
                                     data-width))
               (booleanp
@@ -915,7 +881,9 @@
 
   (local
    (defthm round-robin1$q2-in-act-nil
-     (implies (equal (nth *round-robin1$la0* st) '(nil))
+     (implies (equal (nth *link$s*
+                          (nth *round-robin1$a0* st))
+                     '(nil))
               (not (queue2$in-act
                     (round-robin1$q2-inputs inputs st data-width)
                     (nth *round-robin1$q2* st)
@@ -927,7 +895,9 @@
 
   (local
    (defthm round-robin1$q3-in-act-nil
-     (implies (equal (nth *round-robin1$lb0* st) '(nil))
+     (implies (equal (nth *link$s*
+                          (nth *round-robin1$b0* st))
+                     '(nil))
               (not (queue3$in-act
                     (round-robin1$q3-inputs inputs st data-width)
                     (nth *round-robin1$q3* st)
@@ -939,8 +909,12 @@
 
   (local
    (defthm booleanp-round-robin1$q2-out-act
-     (implies (and (or (equal (nth *round-robin1$la1* st) '(t))
-                       (equal (nth *round-robin1$la1* st) '(nil)))
+     (implies (and (or (equal (nth *link$s*
+                                   (nth *round-robin1$a1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$a1* st))
+                              '(nil)))
                    (queue2$valid-st (nth *round-robin1$q2* st)
                                     data-width))
               (booleanp
@@ -956,8 +930,12 @@
 
   (local
    (defthm booleanp-round-robin1$q3-out-act
-     (implies (and (or (equal (nth *round-robin1$lb1* st) '(t))
-                       (equal (nth *round-robin1$lb1* st) '(nil)))
+     (implies (and (or (equal (nth *link$s*
+                                   (nth *round-robin1$b1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$b1* st))
+                              '(nil)))
                    (queue3$valid-st (nth *round-robin1$q3* st)
                                     data-width))
               (booleanp
@@ -973,7 +951,9 @@
 
   (local
    (defthm round-robin1$q2-out-act-nil
-     (implies (equal (nth *round-robin1$la1* st) '(t))
+     (implies (equal (nth *link$s*
+                          (nth *round-robin1$a1* st))
+                     '(t))
               (not (queue2$out-act
                     (round-robin1$q2-inputs inputs st data-width)
                     (nth *round-robin1$q2* st)
@@ -985,7 +965,9 @@
 
   (local
    (defthm round-robin1$q3-out-act-nil
-     (implies (equal (nth *round-robin1$lb1* st) '(t))
+     (implies (equal (nth *link$s*
+                          (nth *round-robin1$b1* st))
+                     '(t))
               (not (queue3$out-act
                     (round-robin1$q3-inputs inputs st data-width)
                     (nth *round-robin1$q3* st)
@@ -998,10 +980,18 @@
   (local
    (defthm booleanp-round-robin1$br-act0
      (implies (and (booleanp (nth 0 inputs))
-                   (or (equal (nth *round-robin1$la0* st) '(t))
-                       (equal (nth *round-robin1$la0* st) '(nil)))
-                   (or (equal (nth *round-robin1$lb0* st) '(t))
-                       (equal (nth *round-robin1$lb0* st) '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *round-robin1$a0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$a0* st))
+                              '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *round-robin1$b0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$b0* st))
+                              '(nil)))
                    (alt-branch$valid-st (nth *round-robin1$br* st)))
               (booleanp
                (alt-branch$act0 (round-robin1$br-inputs inputs st data-width)
@@ -1017,10 +1007,18 @@
   (local
    (defthm booleanp-round-robin1$br-act1
      (implies (and (booleanp (nth 0 inputs))
-                   (or (equal (nth *round-robin1$la0* st) '(t))
-                       (equal (nth *round-robin1$la0* st) '(nil)))
-                   (or (equal (nth *round-robin1$lb0* st) '(t))
-                       (equal (nth *round-robin1$lb0* st) '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *round-robin1$a0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$a0* st))
+                              '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *round-robin1$b0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$b0* st))
+                              '(nil)))
                    (alt-branch$valid-st (nth *round-robin1$br* st)))
               (booleanp
                (alt-branch$act1 (round-robin1$br-inputs inputs st data-width)
@@ -1035,7 +1033,9 @@
 
   (local
    (defthm round-robin1$br-act0-nil
-     (implies (and (equal (nth *round-robin1$la0* st) '(t))
+     (implies (and (equal (nth *link$s*
+                               (nth *round-robin1$a0* st))
+                          '(t))
                    (alt-branch$valid-st (nth *round-robin1$br* st)))
               (not (alt-branch$act0
                     (round-robin1$br-inputs inputs st data-width)
@@ -1051,7 +1051,9 @@
 
   (local
    (defthm round-robin1$br-act1-nil
-     (implies (and (equal (nth *round-robin1$lb0* st) '(t))
+     (implies (and (equal (nth *link$s*
+                               (nth *round-robin1$b0* st))
+                          '(t))
                    (alt-branch$valid-st (nth *round-robin1$br* st)))
               (not (alt-branch$act1
                     (round-robin1$br-inputs inputs st data-width)
@@ -1068,10 +1070,18 @@
   (local
    (defthm booleanp-round-robin1$me-act0
      (implies (and (booleanp (nth 1 inputs))
-                   (or (equal (nth *round-robin1$la1* st) '(t))
-                       (equal (nth *round-robin1$la1* st) '(nil)))
-                   (or (equal (nth *round-robin1$lb1* st) '(t))
-                       (equal (nth *round-robin1$lb1* st) '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *round-robin1$a1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$a1* st))
+                              '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *round-robin1$b1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$b1* st))
+                              '(nil)))
                    (alt-merge$valid-st (nth *round-robin1$me* st)))
               (booleanp
                (alt-merge$act0 (round-robin1$me-inputs inputs st data-width)
@@ -1088,10 +1098,18 @@
   (local
    (defthm booleanp-round-robin1$me-act1
      (implies (and (booleanp (nth 1 inputs))
-                   (or (equal (nth *round-robin1$la1* st) '(t))
-                       (equal (nth *round-robin1$la1* st) '(nil)))
-                   (or (equal (nth *round-robin1$lb1* st) '(t))
-                       (equal (nth *round-robin1$lb1* st) '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *round-robin1$a1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$a1* st))
+                              '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *round-robin1$b1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *round-robin1$b1* st))
+                              '(nil)))
                    (alt-merge$valid-st (nth *round-robin1$me* st)))
               (booleanp
                (alt-merge$act1 (round-robin1$me-inputs inputs st data-width)
@@ -1107,7 +1125,9 @@
 
   (local
    (defthm round-robin1$me-act0-nil
-     (implies (and (equal (nth *round-robin1$la1* st) '(nil))
+     (implies (and (equal (nth *link$s*
+                               (nth *round-robin1$a1* st))
+                          '(nil))
                    (alt-merge$valid-st (nth *round-robin1$me* st)))
               (not (alt-merge$act0
                     (round-robin1$me-inputs inputs st data-width)
@@ -1124,7 +1144,9 @@
 
   (local
    (defthm round-robin1$me-act1-nil
-     (implies (and (equal (nth *round-robin1$lb1* st) '(nil))
+     (implies (and (equal (nth *link$s*
+                               (nth *round-robin1$b1* st))
+                          '(nil))
                    (alt-merge$valid-st (nth *round-robin1$me* st)))
               (not (alt-merge$act1
                     (round-robin1$me-inputs inputs st data-width)
@@ -1249,26 +1271,28 @@
 
   (local
    (defthm round-robin1$q2-get-$data-in-rewrite
-     (b* ((a0 (get-field *round-robin1$a0* st)))
-       (implies (and (bvp (strip-cars a0))
-                     (equal (len a0) data-width))
+     (b* ((a0 (get-field *round-robin1$a0* st))
+          (a0.d (get-field *link$d* a0)))
+       (implies (and (bvp (strip-cars a0.d))
+                     (equal (len a0.d) data-width))
                 (equal (queue2$data-in
                         (round-robin1$q2-inputs inputs st data-width)
                         data-width)
-                       (strip-cars a0))))
+                       (strip-cars a0.d))))
      :hints (("Goal"
               :in-theory (enable queue2$data-in
                                  round-robin1$q2-inputs)))))
 
   (local
    (defthm round-robin1$q3-get-$data-in-rewrite
-     (b* ((b0 (get-field *round-robin1$b0* st)))
-       (implies (and (bvp (strip-cars b0))
-                     (equal (len b0) data-width))
+     (b* ((b0 (get-field *round-robin1$b0* st))
+          (b0.d (get-field *link$d* b0)))
+       (implies (and (bvp (strip-cars b0.d))
+                     (equal (len b0.d) data-width))
                 (equal (queue3$data-in
                         (round-robin1$q3-inputs inputs st data-width)
                         data-width)
-                       (strip-cars b0))))
+                       (strip-cars b0.d))))
      :hints (("Goal"
               :in-theory (enable queue3$data-in
                                  round-robin1$q3-inputs)))))
@@ -1481,24 +1505,20 @@
        (full '(t))
        (empty '(nil))
        (invalid-data (make-list data-width :initial-element '(x)))
-       (la0 empty)
-       (a0 invalid-data)
-       (lb0 empty)
-       (b0 invalid-data)
-       (la1 empty)
-       (a1 invalid-data)
-       (lb1 empty)
-       (b1 invalid-data)
-       (q2 (list empty invalid-data
-                 empty invalid-data))
-       (q3 (list empty invalid-data
-                 empty invalid-data
-                 empty invalid-data))
-       (br (list full '(nil)
-                 empty '(x)))
-       (me (list full '(nil)
-                 empty '(x)))
-       (st (list la0 a0 lb0 b0 la1 a1 lb1 b1 q2 q3 br me)))
+       (q2 (list (list empty invalid-data)
+                 (list empty invalid-data)))
+       (q3 (list (list empty invalid-data)
+                 (list empty invalid-data)
+                 (list empty invalid-data)))
+       (br (list (list full '(nil))
+                 (list empty '(x))))
+       (me (list (list full '(nil))
+                 (list empty '(x))))
+       (st (list (list empty invalid-data)
+                 (list empty invalid-data)
+                 (list empty invalid-data)
+                 (list empty invalid-data)
+                 q2 q3 br me)))
     (mv
      (append
       (list (cons 'in-seq
