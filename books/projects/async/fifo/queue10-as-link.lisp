@@ -296,11 +296,8 @@
                            (queue10$data-out st)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'queue10 data-width)
-                       (list* in-act out-act (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'queue10 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue10
                             queue5$st-format=>natp-data-width
@@ -332,12 +329,6 @@
   (equal (len (queue10$step inputs st data-width))
          *queue10$st-len*))
 
-(local
- (defthm v-threefix-of-queue5$data-out
-   (equal (v-threefix (queue5$data-out st))
-          (queue5$data-out st))
-   :hints (("Goal" :in-theory (enable queue5$data-out)))))
-
 ;; The state lemma for Q10'
 
 (defthmd queue10$state
@@ -352,11 +343,8 @@
                     (queue10$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'queue10 data-width)
-                       (list* in-act out-act (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'queue10 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue10
                             queue10&
@@ -405,16 +393,16 @@
          ;;(- (cw "~x0~%" inputs-lst))
          (empty '(nil))
          (invalid-data (make-list data-width :initial-element '(x)))
-         (q5-0 (list empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data))
-         (q5-1 (list empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data))
+         (q5-0 (list (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)))
+         (q5-1 (list (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)))
          (st (list q5-0 q5-1)))
       (mv (pretty-list
            (remove-dup-neighbors
@@ -566,7 +554,7 @@
   ()
 
   (local
-   (defthm queue10$q5-0-get-$data-in-rewrite
+   (defthm queue10$q5-0-data-in-rewrite
      (equal (queue5$data-in
              (queue10$q5-0-inputs inputs st data-width)
              data-width)
@@ -577,7 +565,7 @@
                                  queue10$q5-0-inputs)))))
 
   (local
-   (defthm queue10$q5-1-get-$data-in-rewrite
+   (defthm queue10$q5-1-data-in-rewrite
      (b* ((q5-0 (nth *queue10$q5-0* st)))
        (implies (queue5$valid-st q5-0 data-width)
                 (equal (queue5$data-in
@@ -710,16 +698,16 @@
         (signal-vals-gen num-signals n state nil))
        (empty '(nil))
        (invalid-data (make-list data-width :initial-element '(x)))
-       (q5-0 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
-       (q5-1 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
+       (q5-0 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
+       (q5-1 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
        (st (list q5-0 q5-1)))
     (mv
      (append

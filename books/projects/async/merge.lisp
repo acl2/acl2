@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; April 2018
 
 (in-package "ADE")
 
@@ -185,12 +185,8 @@
                            (fv-if select data-in1 data-in0)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'merge data-width)
-                       (list* full-in0 full-in1 empty-out- select
-                              (append data-in0 data-in1 go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'merge data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-merge
                             merge&

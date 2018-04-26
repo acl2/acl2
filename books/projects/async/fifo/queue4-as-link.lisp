@@ -9,7 +9,6 @@
 (in-package "ADE")
 
 (include-book "../link-joint")
-(include-book "../store-n")
 (include-book "../vector-module")
 
 (local (in-theory (disable nth)))
@@ -32,7 +31,7 @@
 ;; generator.  Note that Q4' is a complex link.
 
 (defconst *queue4$go-num* 3)
-(defconst *queue4$st-len* 8)
+(defconst *queue4$st-len* 4)
 
 (defun queue4$data-ins-len (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -62,36 +61,32 @@
  ;; "ready-out" signals from the links at the module's output ports.
  (list* 'ready-in- 'ready-out
         (sis 'data-out 0 data-width))
- '(l0 d0 l1 d1 l2 d2 l3 d3)
+ '(l0 l1 l2 l3)
  (list
   ;; LINKS
   ;; L0
-  '(l0 (l0-status) link-cntl (in-act trans1-act))
-  (list 'd0
-        (sis 'd0-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'in-act (sis 'data-in 0 data-width)))
+  (list 'l0
+        (list* 'l0-status (sis 'd0-out 0 data-width))
+        (si 'link data-width)
+        (list* 'in-act 'trans1-act (sis 'data-in 0 data-width)))
 
   ;; L1
-  '(l1 (l1-status) link-cntl (trans1-act trans2-act))
-  (list 'd1
-        (sis 'd1-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'trans1-act (sis 'd1-in 0 data-width)))
+  (list 'l1
+        (list* 'l1-status (sis 'd1-out 0 data-width))
+        (si 'link data-width)
+        (list* 'trans1-act 'trans2-act (sis 'd1-in 0 data-width)))
 
   ;; L2
-  '(l2 (l2-status) link-cntl (trans2-act trans3-act))
-  (list 'd2
-        (sis 'd2-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'trans2-act (sis 'd2-in 0 data-width)))
+  (list 'l2
+        (list* 'l2-status (sis 'd2-out 0 data-width))
+        (si 'link data-width)
+        (list* 'trans2-act 'trans3-act (sis 'd2-in 0 data-width)))
 
   ;; L3
-  '(l3 (l3-status) link-cntl (trans3-act out-act))
-  (list 'd3
-        (sis 'data-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'trans3-act (sis 'd3-in 0 data-width)))
+  (list 'l3
+        (list* 'l3-status (sis 'data-out 0 data-width))
+        (si 'link data-width)
+        (list* 'trans3-act 'out-act (sis 'd3-in 0 data-width)))
 
   ;; JOINTS
   ;; Transfer data1
@@ -132,16 +127,16 @@
 
 (make-event
  `(progn
-    ,@(state-accessors-gen 'queue4 '(l0 d0 l1 d1 l2 d2 l3 d3) 0)))
+    ,@(state-accessors-gen 'queue4 '(l0 l1 l2 l3) 0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of Q4'.
 
 (defun queue4$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue4* data-width)
-        (union$ (latch-n$netlist data-width)
-                (v-buf$netlist data-width)
+        (union$ (link$netlist data-width)
                 *joint-cntl*
+                (v-buf$netlist data-width)
                 :test 'equal)))
 
 ;; Recognizer for Q4'
@@ -153,7 +148,7 @@
               (queue4* data-width))
        (b* ((netlist (delete-to-eq (si 'queue4 data-width) netlist)))
          (and (joint-cntl& netlist)
-              (latch-n& netlist data-width)
+              (link& netlist data-width)
               (v-buf& netlist data-width)))))
 
 ;; Sanity check
@@ -167,21 +162,14 @@
 ;; Constraints on the state of Q4'
 
 (defund queue4$st-format (st data-width)
-  (b* ((d0 (get-field *queue4$d0* st))
-       (d1 (get-field *queue4$d1* st))
-       (d2 (get-field *queue4$d2* st))
-       (d3 (get-field *queue4$d3* st)))
-    (and (len-1-true-listp d0)
-         (equal (len d0) data-width)
-
-         (len-1-true-listp d1)
-         (equal (len d1) data-width)
-
-         (len-1-true-listp d2)
-         (equal (len d2) data-width)
-
-         (len-1-true-listp d3)
-         (equal (len d3) data-width))))
+  (b* ((l0 (get-field *queue4$l0* st))
+       (l1 (get-field *queue4$l1* st))
+       (l2 (get-field *queue4$l2* st))
+       (l3 (get-field *queue4$l3* st)))
+    (and (link$st-format l0 data-width)
+         (link$st-format l1 data-width)
+         (link$st-format l2 data-width)
+         (link$st-format l3 data-width))))
 
 (defthm queue4$st-format=>natp-data-width
   (implies (queue4$st-format st data-width)
@@ -191,30 +179,13 @@
 
 (defund queue4$valid-st (st data-width)
   (b* ((l0 (get-field *queue4$l0* st))
-       (d0 (get-field *queue4$d0* st))
        (l1 (get-field *queue4$l1* st))
-       (d1 (get-field *queue4$d1* st))
        (l2 (get-field *queue4$l2* st))
-       (d2 (get-field *queue4$d2* st))
-       (l3 (get-field *queue4$l3* st))
-       (d3 (get-field *queue4$d3* st)))
-    (and (queue4$st-format st data-width)
-
-         (validp l0)
-         (or (emptyp l0)
-             (bvp (strip-cars d0)))
-
-         (validp l1)
-         (or (emptyp l1)
-             (bvp (strip-cars d1)))
-
-         (validp l2)
-         (or (emptyp l2)
-             (bvp (strip-cars d2)))
-
-         (validp l3)
-         (or (emptyp l3)
-             (bvp (strip-cars d3))))))
+       (l3 (get-field *queue4$l3* st)))
+    (and (link$valid-st l0 data-width)
+         (link$valid-st l1 data-width)
+         (link$valid-st l2 data-width)
+         (link$valid-st l3 data-width))))
 
 (defthmd queue4$valid-st=>natp-data-width
   (implies (queue4$valid-st st data-width)
@@ -253,8 +224,9 @@
   ;; Extract the "ready-in-" signal
 
   (defund queue4$ready-in- (st)
-    (b* ((l0 (get-field *queue4$l0* st)))
-      (f-buf (car l0))))
+    (b* ((l0 (get-field *queue4$l0* st))
+         (l0.s (get-field *link$s* l0)))
+      (f-buf (car l0.s))))
 
   (defthm booleanp-queue4$ready-in-
     (implies (queue4$valid-st st data-width)
@@ -266,8 +238,9 @@
   ;; Extract the "ready-out" signal
 
   (defund queue4$ready-out (st)
-    (b* ((l3 (get-field *queue4$l3* st)))
-      (f-buf (car l3))))
+    (b* ((l3 (get-field *queue4$l3* st))
+         (l3.s (get-field *link$s* l3)))
+      (f-buf (car l3.s))))
 
   (defthm booleanp-queue4$ready-out
     (implies (queue4$valid-st st data-width)
@@ -279,7 +252,13 @@
   ;; Extract the output data
 
   (defund queue4$data-out (st)
-    (v-threefix (strip-cars (get-field *queue4$d3* st))))
+    (v-threefix (strip-cars (get-field *link$d*
+                                       (get-field *queue4$l3* st)))))
+
+  (defthm v-threefix-of-queue4$data-out-canceled
+    (equal (v-threefix (queue4$data-out st))
+           (queue4$data-out st))
+    :hints (("Goal" :in-theory (enable queue4$data-out))))
 
   (defthm len-queue4$data-out-1
     (implies (queue4$st-format st data-width)
@@ -292,7 +271,8 @@
     (implies (queue4$valid-st st data-width)
              (equal (len (queue4$data-out st))
                     data-width))
-    :hints (("Goal" :in-theory (enable queue4$valid-st))))
+    :hints (("Goal" :in-theory (enable queue4$valid-st
+                                       queue4$data-out))))
 
   (defthm bvp-queue4$data-out
     (implies (and (queue4$valid-st st data-width)
@@ -317,17 +297,14 @@
                            (queue4$data-out st)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'queue4 data-width)
-                       (list* in-act out-act (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'queue4 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue4
                             queue4&
                             queue4*$destructure
+                            link$value
                             joint-cntl$value
-                            latch-n$value
                             v-buf$value
                             queue4$st-format
                             queue4$ready-in-
@@ -349,43 +326,56 @@
        (go-trans3 (nth 2 go-signals))
 
        (l0 (get-field *queue4$l0* st))
-       (d0 (get-field *queue4$d0* st))
+       (l0.s (get-field *link$s* l0))
+       (l0.d (get-field *link$d* l0))
        (l1 (get-field *queue4$l1* st))
-       (d1 (get-field *queue4$d1* st))
+       (l1.s (get-field *link$s* l1))
+       (l1.d (get-field *link$d* l1))
        (l2 (get-field *queue4$l2* st))
-       (d2 (get-field *queue4$d2* st))
+       (l2.s (get-field *link$s* l2))
+       (l2.d (get-field *link$d* l2))
        (l3 (get-field *queue4$l3* st))
-       (d3 (get-field *queue4$d3* st))
+       (l3.s (get-field *link$s* l3))
 
-       (trans1-act (joint-act (car l0) (car l1) go-trans1))
-       (trans2-act (joint-act (car l1) (car l2) go-trans2))
-       (trans3-act (joint-act (car l2) (car l3) go-trans3)))
+       (trans1-act (joint-act (car l0.s) (car l1.s) go-trans1))
+       (trans2-act (joint-act (car l1.s) (car l2.s) go-trans2))
+       (trans3-act (joint-act (car l2.s) (car l3.s) go-trans3))
+
+       (l0-inputs (list* in-act trans1-act data-in))
+       (l1-inputs (list* trans1-act trans2-act
+                         (fv-if in-act data-in (strip-cars l0.d))))
+       (l2-inputs (list* trans2-act trans3-act (strip-cars l1.d)))
+       (l3-inputs (list* trans3-act out-act (strip-cars l2.d))))
     (list
      ;; L0
-     (list (f-sr in-act trans1-act (car l0)))
-     (pairlis$ (fv-if in-act data-in (strip-cars d0))
-               nil)
-
+     (link$step l0-inputs l0 data-width)
      ;; L1
-     (list (f-sr trans1-act trans2-act (car l1)))
-     (pairlis$ (fv-if trans1-act
-                      (fv-if in-act data-in (strip-cars d0))
-                      (strip-cars d1))
-               nil)
-
+     (link$step l1-inputs l1 data-width)
      ;; L2
-     (list (f-sr trans2-act trans3-act (car l2)))
-     (pairlis$ (fv-if trans2-act (strip-cars d1) (strip-cars d2))
-               nil)
-
+     (link$step l2-inputs l2 data-width)
      ;; L3
-     (list (f-sr trans3-act out-act (car l3)))
-     (pairlis$ (fv-if trans3-act (strip-cars d2) (strip-cars d3))
-               nil))))
+     (link$step l3-inputs l3 data-width))))
 
 (defthm len-of-queue4$step
   (equal (len (queue4$step inputs st data-width))
          *queue4$st-len*))
+
+(defthm queue4$step-v-threefix-of-data-in-canceled
+  (implies
+   (and (true-listp data-in)
+        (equal (len data-in) data-width))
+   (equal (queue4$step (list* in-act out-act
+                              (append (v-threefix data-in) go-signals))
+                       st
+                       data-width)
+          (queue4$step (list* in-act out-act
+                              (append data-in go-signals))
+                       st
+                       data-width)))
+  :hints (("Goal" :in-theory (enable queue4$step
+                                     queue4$data-in
+                                     queue4$in-act
+                                     queue4$out-act))))
 
 ;; The state lemma for Q4'
 
@@ -401,11 +391,8 @@
                     (queue4$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'queue4 data-width)
-                       (list* in-act out-act (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'queue4 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue4
                             queue4&
@@ -414,8 +401,8 @@
                             queue4$in-act
                             queue4$out-act
                             queue4$data-in
+                            link$value link$state
                             joint-cntl$value
-                            latch-n$value latch-n$state
                             v-buf$value)
                            ((queue4*)
                             de-module-disabled-rules)))))
@@ -431,17 +418,13 @@
 (progn
   (defun queue4$map-to-links (st)
     (b* ((l0 (get-field *queue4$l0* st))
-         (d0 (get-field *queue4$d0* st))
          (l1 (get-field *queue4$l1* st))
-         (d1 (get-field *queue4$d1* st))
          (l2 (get-field *queue4$l2* st))
-         (d2 (get-field *queue4$d2* st))
-         (l3 (get-field *queue4$l3* st))
-         (d3 (get-field *queue4$d3* st)))
-      (map-to-links (list (list 'l0 l0 d0)
-                          (list 'l1 l1 d1)
-                          (list 'l2 l2 d2)
-                          (list 'l3 l3 d3)))))
+         (l3 (get-field *queue4$l3* st)))
+      (map-to-links (list (list* 'l0 l0)
+                          (list* 'l1 l1)
+                          (list* 'l2 l2)
+                          (list* 'l3 l3)))))
 
   (defun queue4$map-to-links-list (x)
     (if (atom x)
@@ -460,10 +443,10 @@
          ;;(- (cw "~x0~%" inputs-lst))
          (empty '(nil))
          (invalid-data (make-list data-width :initial-element '(x)))
-         (st (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data)))
+         (st (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data))))
       (mv (pretty-list
            (remove-dup-neighbors
             (queue4$map-to-links-list
@@ -509,14 +492,10 @@
 
 (defund queue4$extract (st)
   (b* ((l0 (get-field *queue4$l0* st))
-       (d0 (get-field *queue4$d0* st))
        (l1 (get-field *queue4$l1* st))
-       (d1 (get-field *queue4$d1* st))
        (l2 (get-field *queue4$l2* st))
-       (d2 (get-field *queue4$d2* st))
-       (l3 (get-field *queue4$l3* st))
-       (d3 (get-field *queue4$d3* st)))
-    (extract-valid-data (list l0 d0 l1 d1 l2 d2 l3 d3))))
+       (l3 (get-field *queue4$l3* st)))
+    (extract-valid-data (list l0 l1 l2 l3))))
 
 (defthm queue4$extract-not-empty
   (implies (and (queue4$ready-out st)
@@ -631,10 +610,10 @@
         (signal-vals-gen num-signals n state nil))
        (empty '(nil))
        (invalid-data (make-list data-width :initial-element '(x)))
-       (st (list empty invalid-data
-                 empty invalid-data
-                 empty invalid-data
-                 empty invalid-data)))
+       (st (list (list empty invalid-data)
+                 (list empty invalid-data)
+                 (list empty invalid-data)
+                 (list empty invalid-data))))
     (mv
      (append
       (list (cons 'in-seq
