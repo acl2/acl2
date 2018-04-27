@@ -317,8 +317,9 @@
          (q8-data-out (queue8$data-out q8))
          (q10-data-out (queue10$data-out q10))
 
-         (me-select (get-field *alt-merge$select* me)))
-      (fv-if (car me-select)
+         (me-select (get-field *alt-merge$select* me))
+         (me-select.d (get-field *link1$d* me-select)))
+      (fv-if (car me-select.d)
              q10-data-out
              q8-data-out)))
 
@@ -372,12 +373,8 @@
                            (round-robin3$data-out st)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'round-robin3 data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'round-robin3 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-round-robin3
                             round-robin3&
@@ -437,12 +434,8 @@
                     (round-robin3$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'round-robin3 data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'round-robin3 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-round-robin3
                             round-robin3&
@@ -497,30 +490,30 @@
          (full '(t))
          (empty '(nil))
          (invalid-data (make-list data-width :initial-element '(x)))
-         (q4-0 (list empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data))
-         (q4-1 (list empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data))
+         (q4-0 (list (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)))
+         (q4-1 (list (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)))
          (q8 (list q4-0 q4-1))
-         (q5-0 (list empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data))
-         (q5-1 (list empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data))
+         (q5-0 (list (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)))
+         (q5-1 (list (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)))
          (q10 (list q5-0 q5-1))
-         (br (list full '(nil)
-                   empty '(x)))
-         (me (list full '(nil)
-                   empty '(x)))
+         (br (list (list full '(nil))
+                   (list empty '(x))))
+         (me (list (list full '(nil))
+                   (list empty '(x))))
          (st (list q8 q10 br me)))
       (mv (pretty-list
            (remove-dup-neighbors
@@ -720,12 +713,14 @@
        (a-seq (queue8$extract q8))
        (b-seq (queue10$extract q10))
 
-       (me-lselect    (get-field *alt-merge$lselect* me))
-       (me-select     (get-field *alt-merge$select* me))
-       (me-select-buf (get-field *alt-merge$select-buf* me))
-       (valid-me-select (if (fullp me-lselect)
-                            (car me-select)
-                          (car me-select-buf))))
+       (me-select       (get-field *alt-merge$select* me))
+       (me-select.s     (get-field *link1$s* me-select))
+       (me-select.d     (get-field *link1$d* me-select))
+       (me-select-buf   (get-field *alt-merge$select-buf* me))
+       (me-select-buf.d (get-field *link1$d* me-select-buf))
+       (valid-me-select (if (fullp me-select.s)
+                            (car me-select.d)
+                          (car me-select-buf.d))))
 
     (cond ((< (len a-seq) (len b-seq))
            (interleave b-seq a-seq))
@@ -764,19 +759,23 @@
          (a-seq (queue8$extract q8))
          (b-seq (queue10$extract q10))
 
-         (br-lselect    (get-field *alt-branch$lselect* br))
-         (br-select     (get-field *alt-branch$select* br))
-         (br-select-buf (get-field *alt-branch$select-buf* br))
-         (valid-br-select (if (fullp br-lselect)
-                              (car br-select)
-                            (car br-select-buf)))
+         (br-select       (get-field *alt-branch$select* br))
+         (br-select.s     (get-field *link1$s* br-select))
+         (br-select.d     (get-field *link1$d* br-select))
+         (br-select-buf   (get-field *alt-branch$select-buf* br))
+         (br-select-buf.d (get-field *link1$d* br-select-buf))
+         (valid-br-select (if (fullp br-select.s)
+                              (car br-select.d)
+                            (car br-select-buf.d)))
 
-         (me-lselect    (get-field *alt-merge$lselect* me))
-         (me-select     (get-field *alt-merge$select* me))
-         (me-select-buf (get-field *alt-merge$select-buf* me))
-         (valid-me-select (if (fullp me-lselect)
-                              (car me-select)
-                            (car me-select-buf))))
+         (me-select       (get-field *alt-merge$select* me))
+         (me-select.s     (get-field *link1$s* me-select))
+         (me-select.d     (get-field *link1$d* me-select))
+         (me-select-buf   (get-field *alt-merge$select-buf* me))
+         (me-select-buf.d (get-field *link1$d* me-select-buf))
+         (valid-me-select (if (fullp me-select.s)
+                              (car me-select.d)
+                            (car me-select-buf.d))))
 
       (and (alt-branch$inv br)
            (alt-merge$inv me)
@@ -810,15 +809,16 @@
   (local
    (defthm round-robin3$q8-in-act-nil-1
      (b* ((br (nth *round-robin3$br* st))
-
-          (br-lselect (nth *alt-branch$lselect* br))
           (br-select (nth *alt-branch$select* br))
-          (br-lselect-buf (nth *alt-branch$lselect-buf* br)))
+          (br-select.s (nth *link1$s* br-select))
+          (br-select.d (nth *link1$d* br-select))
+          (br-select-buf (nth *alt-branch$select-buf* br))
+          (br-select-buf.s (nth *link1$s* br-select-buf)))
 
        (implies (and (alt-branch$valid-st br)
-                     (or (and (equal br-lselect '(t))
-                              (car br-select))
-                         (equal br-lselect-buf '(t))))
+                     (or (and (equal br-select.s '(t))
+                              (car br-select.d))
+                         (equal br-select-buf.s '(t))))
                 (not (queue8$in-act
                       (round-robin3$q8-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
@@ -847,15 +847,16 @@
   (local
    (defthm round-robin3$q8-out-act-nil-1
      (b* ((me (nth *round-robin3$me* st))
-
-          (me-lselect (nth *alt-merge$lselect* me))
           (me-select (nth *alt-merge$select* me))
-          (me-lselect-buf (nth *alt-merge$lselect-buf* me)))
+          (me-select.s (nth *link1$s* me-select))
+          (me-select.d (nth *link1$d* me-select))
+          (me-select-buf (nth *alt-merge$select-buf* me))
+          (me-select-buf.s (nth *link1$s* me-select-buf)))
 
        (implies (and (alt-merge$valid-st me)
-                     (or (and (equal me-lselect '(t))
-                              (car me-select))
-                         (equal me-lselect-buf '(t))))
+                     (or (and (equal me-select.s '(t))
+                              (car me-select.d))
+                         (equal me-select-buf.s '(t))))
                 (not (queue8$out-act
                       (round-robin3$q8-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
@@ -884,15 +885,16 @@
   (local
    (defthm round-robin3$q10-in-act-nil-1
      (b* ((br (nth *round-robin3$br* st))
-
-          (br-lselect (nth *alt-branch$lselect* br))
           (br-select (nth *alt-branch$select* br))
-          (br-lselect-buf (nth *alt-branch$lselect-buf* br)))
+          (br-select.s (nth *link1$s* br-select))
+          (br-select.d (nth *link1$d* br-select))
+          (br-select-buf (nth *alt-branch$select-buf* br))
+          (br-select-buf.s (nth *link1$s* br-select-buf)))
 
        (implies (and (alt-branch$valid-st br)
-                     (or (and (equal br-lselect '(t))
-                              (not (car br-select)))
-                         (equal br-lselect-buf '(t))))
+                     (or (and (equal br-select.s '(t))
+                              (not (car br-select.d)))
+                         (equal br-select-buf.s '(t))))
                 (not (queue10$in-act
                       (round-robin3$q10-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
@@ -921,15 +923,16 @@
   (local
    (defthm round-robin3$q10-out-act-nil-1
      (b* ((me (nth *round-robin3$me* st))
-
-          (me-lselect (nth *alt-merge$lselect* me))
           (me-select (nth *alt-merge$select* me))
-          (me-lselect-buf (nth *alt-merge$lselect-buf* me)))
+          (me-select.s (nth *link1$s* me-select))
+          (me-select.d (nth *link1$d* me-select))
+          (me-select-buf (nth *alt-merge$select-buf* me))
+          (me-select-buf.s (nth *link1$s* me-select-buf)))
 
        (implies (and (alt-merge$valid-st me)
-                     (or (and (equal me-lselect '(t))
-                              (not (car me-select)))
-                         (equal me-lselect-buf '(t))))
+                     (or (and (equal me-select.s '(t))
+                              (not (car me-select.d)))
+                         (equal me-select-buf.s '(t))))
                 (not (queue10$out-act
                       (round-robin3$q10-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
@@ -959,16 +962,17 @@
    (defthm booleanp-round-robin3$q8-in-act
      (b* ((q8 (nth *round-robin3$q8* st))
           (br (nth *round-robin3$br* st))
-
-          (br-lselect (nth *alt-branch$lselect* br))
           (br-select (nth *alt-branch$select* br))
-          (br-lselect-buf (nth *alt-branch$lselect-buf* br)))
+          (br-select.s (nth *link1$s* br-select))
+          (br-select.d (nth *link1$d* br-select))
+          (br-select-buf (nth *alt-branch$select-buf* br))
+          (br-select-buf.s (nth *link1$s* br-select-buf)))
 
        (implies (and (booleanp (nth 0 inputs))
                      (queue8$valid-st q8 data-width)
-                     (equal br-lselect '(t))
-                     (not (car br-select))
-                     (equal br-lselect-buf '(nil)))
+                     (equal br-select.s '(t))
+                     (not (car br-select.d))
+                     (equal br-select-buf.s '(nil)))
                 (booleanp (queue8$in-act
                            (round-robin3$q8-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
@@ -979,86 +983,27 @@
      :rule-classes :type-prescription))
 
   (local
-   (defthm round-robin3$rewrite-to-q8-in-act-1
+   (defthm round-robin3$rewrite-to-q8-in-act
      (b* ((q8 (nth *round-robin3$q8* st))
           (br (nth *round-robin3$br* st))
-
-          (br-lselect (nth *alt-branch$lselect* br))
           (br-select (nth *alt-branch$select* br))
-          (br-lselect-buf (nth *alt-branch$lselect-buf* br)))
+          (br-select.s (nth *link1$s* br-select))
+          (br-select.d (nth *link1$d* br-select))
+          (br-select-buf (nth *alt-branch$select-buf* br))
+          (br-select-buf.s (nth *link1$s* br-select-buf)))
 
        (implies
-        (and (booleanp x)
+        (and (queue8$valid-st q8 data-width)
              (equal x (nth 0 inputs))
-             (queue8$valid-st q8 data-width)
-             (equal br-lselect '(t))
-             (not (car br-select))
-             (equal br-lselect-buf '(nil)))
+             (equal y (queue8$ready-in- q8))
+             (equal br-select.s '(t))
+             (not (car br-select.d))
+             (equal br-select-buf.s '(nil)))
         (equal (joint-act x
-                          (queue8$ready-in- q8)
+                          y
                           (car (nthcdr (+ *round-robin3$go-branch-offset*
                                           data-width)
                                        inputs)))
-               (queue8$in-act
-                (round-robin3$q8-inputs inputs st data-width)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        queue8$valid-st=>natp-data-width
-                                        queue8$in-act
-                                        alt-branch$act0
-                                        round-robin3$q8-inputs
-                                        round-robin3$br-inputs)))))
-
-  (local
-   (defthm round-robin3$rewrite-to-q8-in-act-2
-     (b* ((q8 (nth *round-robin3$q8* st))
-          (br (nth *round-robin3$br* st))
-
-          (br-lselect (nth *alt-branch$lselect* br))
-          (br-select (nth *alt-branch$select* br))
-          (br-lselect-buf (nth *alt-branch$lselect-buf* br)))
-
-       (implies
-        (and (booleanp x)
-             (equal x (nth 0 inputs))
-             (queue8$valid-st q8 data-width)
-             (equal br-lselect '(t))
-             (not (queue8$ready-in- q8))
-             (equal br-lselect-buf '(nil)))
-        (equal (joint-act x
-                          (car br-select)
-                          (car (nthcdr (+ *round-robin3$go-branch-offset*
-                                          data-width)
-                                       inputs)))
-               (queue8$in-act
-                (round-robin3$q8-inputs inputs st data-width)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-or3
-                                        queue8$valid-st=>natp-data-width
-                                        queue8$in-act
-                                        alt-branch$act0
-                                        round-robin3$q8-inputs
-                                        round-robin3$br-inputs)))))
-
-  (local
-   (defthm round-robin3$rewrite-to-q8-in-act-3
-     (b* ((q8 (nth *round-robin3$q8* st))
-          (br (nth *round-robin3$br* st))
-
-          (br-lselect (nth *alt-branch$lselect* br))
-          (br-select (nth *alt-branch$select* br))
-          (br-lselect-buf (nth *alt-branch$lselect-buf* br)))
-
-       (implies
-        (and (equal (nth 0 inputs) t)
-             (queue8$valid-st q8 data-width)
-             (equal br-lselect '(t))
-             (not (car br-select))
-             (not (queue8$ready-in- q8))
-             (equal br-lselect-buf '(nil)))
-        (equal (f-bool
-                (car (nthcdr (+ *round-robin3$go-branch-offset*
-                                data-width)
-                             inputs)))
                (queue8$in-act
                 (round-robin3$q8-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
@@ -1073,17 +1018,18 @@
      (b* ((q8 (nth *round-robin3$q8* st))
           (q10 (nth *round-robin3$q10* st))
           (me (nth *round-robin3$me* st))
-
-          (me-lselect (nth *alt-merge$lselect* me))
           (me-select (nth *alt-merge$select* me))
-          (me-lselect-buf (nth *alt-merge$lselect-buf* me)))
+          (me-select.s (nth *link1$s* me-select))
+          (me-select.d (nth *link1$d* me-select))
+          (me-select-buf (nth *alt-merge$select-buf* me))
+          (me-select-buf.s (nth *link1$s* me-select-buf)))
 
        (implies (and (booleanp (nth 1 inputs))
                      (queue8$valid-st q8 data-width)
                      (queue10$valid-st q10 data-width)
-                     (equal me-lselect '(t))
-                     (not (car me-select))
-                     (equal me-lselect-buf '(nil)))
+                     (equal me-select.s '(t))
+                     (not (car me-select.d))
+                     (equal me-select-buf.s '(nil)))
                 (booleanp (queue8$out-act
                            (round-robin3$q8-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
@@ -1094,65 +1040,32 @@
      :rule-classes :type-prescription))
 
   (local
-   (defthm round-robin3$rewrite-to-q8-out-act-1
+   (defthm round-robin3$rewrite-to-q8-out-act
      (b* ((q8 (nth *round-robin3$q8* st))
           (q10 (nth *round-robin3$q10* st))
           (me (nth *round-robin3$me* st))
-
-          (me-lselect (nth *alt-merge$lselect* me))
           (me-select (nth *alt-merge$select* me))
-          (me-lselect-buf (nth *alt-merge$lselect-buf* me)))
+          (me-select.s (nth *link1$s* me-select))
+          (me-select.d (nth *link1$d* me-select))
+          (me-select-buf (nth *alt-merge$select-buf* me))
+          (me-select-buf.s (nth *link1$s* me-select-buf)))
 
        (implies
-        (and (booleanp x)
-             (equal x (nth 1 inputs))
-             (queue8$valid-st q8 data-width)
+        (and (queue8$valid-st q8 data-width)
              (queue10$valid-st q10 data-width)
-             (equal me-lselect '(t))
-             (not (car me-select))
-             (equal me-lselect-buf '(nil)))
-        (equal (joint-act (queue8$ready-out q8)
-                          x
+             (equal x (queue8$ready-out q8))
+             (equal y (nth 1 inputs))
+             (equal me-select.s '(t))
+             (not (car me-select.d))
+             (equal me-select-buf.s '(nil)))
+        (equal (joint-act x
+                          y
                           (nth 0 (nthcdr (+ *round-robin3$go-merge-offset*
                                             data-width)
                                          inputs)))
                (queue8$out-act
                 (round-robin3$q8-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
-                                        queue8$valid-st=>natp-data-width
-                                        queue8$out-act
-                                        alt-merge$act0
-                                        round-robin3$q8-inputs
-                                        round-robin3$me-inputs)))))
-
-  (local
-   (defthm round-robin3$rewrite-to-q8-out-act-2
-     (b* ((q8 (nth *round-robin3$q8* st))
-          (q10 (nth *round-robin3$q10* st))
-          (me (nth *round-robin3$me* st))
-
-          (me-lselect (nth *alt-merge$lselect* me))
-          (me-select (nth *alt-merge$select* me))
-          (me-lselect-buf (nth *alt-merge$lselect-buf* me)))
-
-       (implies
-        (and (booleanp x)
-             (equal x (nth 1 inputs))
-             (queue8$valid-st q8 data-width)
-             (queue10$valid-st q10 data-width)
-             (equal me-lselect '(t))
-             (not (car me-select))
-             (queue8$ready-out q8)
-             (equal me-lselect-buf '(nil)))
-        (equal (joint-act t
-                          x
-                          (nth 0 (nthcdr (+ *round-robin3$go-merge-offset*
-                                            data-width)
-                                         inputs)))
-               (queue8$out-act
-                (round-robin3$q8-inputs inputs st data-width)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-and3
                                         queue8$valid-st=>natp-data-width
                                         queue8$out-act
                                         alt-merge$act0
@@ -1163,16 +1076,17 @@
    (defthm booleanp-round-robin3$q10-in-act
      (b* ((q10 (nth *round-robin3$q10* st))
           (br (nth *round-robin3$br* st))
-
-          (br-lselect (nth *alt-branch$lselect* br))
           (br-select (nth *alt-branch$select* br))
-          (br-lselect-buf (nth *alt-branch$lselect-buf* br)))
+          (br-select.s (nth *link1$s* br-select))
+          (br-select.d (nth *link1$d* br-select))
+          (br-select-buf (nth *alt-branch$select-buf* br))
+          (br-select-buf.s (nth *link1$s* br-select-buf)))
 
        (implies (and (booleanp (nth 0 inputs))
                      (queue10$valid-st q10 data-width)
-                     (equal br-lselect '(t))
-                     (equal (car br-select) t)
-                     (equal br-lselect-buf '(nil)))
+                     (equal br-select.s '(t))
+                     (equal (car br-select.d) t)
+                     (equal br-select-buf.s '(nil)))
                 (booleanp (queue10$in-act
                            (round-robin3$q10-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
@@ -1186,18 +1100,18 @@
    (defthm round-robin3$rewrite-to-q10-in-act-1
      (b* ((q10 (nth *round-robin3$q10* st))
           (br (nth *round-robin3$br* st))
-
-          (br-lselect (nth *alt-branch$lselect* br))
           (br-select (nth *alt-branch$select* br))
-          (br-lselect-buf (nth *alt-branch$lselect-buf* br)))
+          (br-select.s (nth *link1$s* br-select))
+          (br-select.d (nth *link1$d* br-select))
+          (br-select-buf (nth *alt-branch$select-buf* br))
+          (br-select-buf.s (nth *link1$s* br-select-buf)))
 
        (implies
-        (and (booleanp x)
+        (and (queue10$valid-st q10 data-width)
              (equal x (nth 0 inputs))
-             (queue10$valid-st q10 data-width)
-             (equal br-lselect '(t))
-             (equal (car br-select) t)
-             (equal br-lselect-buf '(nil)))
+             (equal br-select.s '(t))
+             (equal (car br-select.d) t)
+             (equal br-select-buf.s '(nil)))
         (equal (joint-act x
                           (queue10$ready-in- q10)
                           (car (nthcdr (+ *round-robin3$go-branch-offset*
@@ -1216,19 +1130,20 @@
    (defthm round-robin3$rewrite-to-q10-in-act-2
      (b* ((q10 (nth *round-robin3$q10* st))
           (br (nth *round-robin3$br* st))
-
-          (br-lselect (nth *alt-branch$lselect* br))
           (br-select (nth *alt-branch$select* br))
-          (br-lselect-buf (nth *alt-branch$lselect-buf* br)))
+          (br-select.s (nth *link1$s* br-select))
+          (br-select.d (nth *link1$d* br-select))
+          (br-select-buf (nth *alt-branch$select-buf* br))
+          (br-select-buf.s (nth *link1$s* br-select-buf)))
 
        (implies
-        (and (equal (nth 0 inputs) t)
-             (queue10$valid-st q10 data-width)
-             (equal br-lselect '(t))
-             (booleanp (car br-select))
-             (car br-select)
+        (and (queue10$valid-st q10 data-width)
+             (equal (nth 0 inputs) t)
+             (equal br-select.s '(t))
+             (booleanp (car br-select.d))
+             (car br-select.d)
              (not (queue10$ready-in- q10))
-             (equal br-lselect-buf '(nil)))
+             (equal br-select-buf.s '(nil)))
         (equal (f-bool
                 (car (nthcdr (+ *round-robin3$go-branch-offset*
                                 data-width)
@@ -1247,17 +1162,18 @@
      (b* ((q8 (nth *round-robin3$q8* st))
           (q10 (nth *round-robin3$q10* st))
           (me (nth *round-robin3$me* st))
-
-          (me-lselect (nth *alt-merge$lselect* me))
           (me-select (nth *alt-merge$select* me))
-          (me-lselect-buf (nth *alt-merge$lselect-buf* me)))
+          (me-select.s (nth *link1$s* me-select))
+          (me-select.d (nth *link1$d* me-select))
+          (me-select-buf (nth *alt-merge$select-buf* me))
+          (me-select-buf.s (nth *link1$s* me-select-buf)))
 
        (implies (and (booleanp (nth 1 inputs))
                      (queue8$valid-st q8 data-width)
                      (queue10$valid-st q10 data-width)
-                     (equal me-lselect '(t))
-                     (equal (car me-select) t)
-                     (equal me-lselect-buf '(nil)))
+                     (equal me-select.s '(t))
+                     (equal (car me-select.d) t)
+                     (equal me-select-buf.s '(nil)))
                 (booleanp (queue10$out-act
                            (round-robin3$q10-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
@@ -1268,99 +1184,32 @@
      :rule-classes :type-prescription))
 
   (local
-   (defthm round-robin3$rewrite-to-q10-out-act-1
+   (defthm round-robin3$rewrite-to-q10-out-act
      (b* ((q8 (nth *round-robin3$q8* st))
           (q10 (nth *round-robin3$q10* st))
           (me (nth *round-robin3$me* st))
-
-          (me-lselect (nth *alt-merge$lselect* me))
           (me-select (nth *alt-merge$select* me))
-          (me-lselect-buf (nth *alt-merge$lselect-buf* me)))
+          (me-select.s (nth *link1$s* me-select))
+          (me-select.d (nth *link1$d* me-select))
+          (me-select-buf (nth *alt-merge$select-buf* me))
+          (me-select-buf.s (nth *link1$s* me-select-buf)))
 
        (implies
-        (and (booleanp x)
-             (equal x (nth 1 inputs))
-             (queue8$valid-st q8 data-width)
+        (and (queue8$valid-st q8 data-width)
              (queue10$valid-st q10 data-width)
-             (equal me-lselect '(t))
-             (equal (car me-select) t)
-             (equal me-lselect-buf '(nil)))
-        (equal (joint-act (queue10$ready-out q10)
-                          x
+             (equal x (queue10$ready-out q10))
+             (equal y (nth 1 inputs))
+             (equal me-select.s '(t))
+             (equal (car me-select.d) t)
+             (equal me-select-buf.s '(nil)))
+        (equal (joint-act x
+                          y
                           (nth 0 (nthcdr (+ *round-robin3$go-merge-offset*
                                             data-width)
                                          inputs)))
                (queue10$out-act
                 (round-robin3$q10-inputs inputs st data-width)))))
      :hints (("Goal" :in-theory (enable get-field
-                                        queue10$valid-st=>natp-data-width
-                                        queue10$out-act
-                                        alt-merge$act1
-                                        round-robin3$q10-inputs
-                                        round-robin3$me-inputs)))))
-
-  (local
-   (defthm round-robin3$rewrite-to-q10-out-act-2
-     (b* ((q8 (nth *round-robin3$q8* st))
-          (q10 (nth *round-robin3$q10* st))
-          (me (nth *round-robin3$me* st))
-
-          (me-lselect (nth *alt-merge$lselect* me))
-          (me-select (nth *alt-merge$select* me))
-          (me-lselect-buf (nth *alt-merge$lselect-buf* me)))
-
-       (implies
-        (and (booleanp x)
-             (equal x (nth 1 inputs))
-             (queue8$valid-st q8 data-width)
-             (queue10$valid-st q10 data-width)
-             (equal me-lselect '(t))
-             (queue10$ready-out q10)
-             (equal me-lselect-buf '(nil)))
-        (equal (joint-act (car me-select)
-                          x
-                          (nth 0 (nthcdr (+ *round-robin3$go-merge-offset*
-                                            data-width)
-                                         inputs)))
-               (queue10$out-act
-                (round-robin3$q10-inputs inputs st data-width)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-and3
-                                        queue10$valid-st=>natp-data-width
-                                        queue10$out-act
-                                        alt-merge$act1
-                                        round-robin3$q10-inputs
-                                        round-robin3$me-inputs)))))
-
-  (local
-   (defthm round-robin3$rewrite-to-q10-out-act-3
-     (b* ((q8 (nth *round-robin3$q8* st))
-          (q10 (nth *round-robin3$q10* st))
-          (me (nth *round-robin3$me* st))
-
-          (me-lselect (nth *alt-merge$lselect* me))
-          (me-select (nth *alt-merge$select* me))
-          (me-lselect-buf (nth *alt-merge$lselect-buf* me)))
-
-       (implies
-        (and (booleanp x)
-             (equal x (nth 1 inputs))
-             (queue8$valid-st q8 data-width)
-             (queue10$valid-st q10 data-width)
-             (equal me-lselect '(t))
-             (booleanp (car me-select))
-             (car me-select)
-             (queue10$ready-out q10)
-             (equal me-lselect-buf '(nil)))
-        (equal (joint-act t
-                          x
-                          (nth 0 (nthcdr (+ *round-robin3$go-merge-offset*
-                                            data-width)
-                                         inputs)))
-               (queue10$out-act
-                (round-robin3$q10-inputs inputs st data-width)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-and3
                                         queue10$valid-st=>natp-data-width
                                         queue10$out-act
                                         alt-merge$act1
@@ -1603,30 +1452,30 @@
        (full '(t))
        (empty '(nil))
        (invalid-data (make-list data-width :initial-element '(x)))
-       (q4-0 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
-       (q4-1 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
+       (q4-0 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
+       (q4-1 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
        (q8 (list q4-0 q4-1))
-       (q5-0 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
-       (q5-1 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
+       (q5-0 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
+       (q5-1 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
        (q10 (list q5-0 q5-1))
-       (br (list full '(nil)
-                 empty '(x)))
-       (me (list full '(nil)
-                 empty '(x)))
+       (br (list (list full '(nil))
+                 (list empty '(x))))
+       (me (list (list full '(nil))
+                 (list empty '(x))))
        (st (list q8 q10 br me)))
     (mv
      (append

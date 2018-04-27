@@ -33,7 +33,7 @@
 
 (defconst *queue3-gcd$go-num* (+ *queue3$go-num*
                                  *gcd$go-num*))
-(defconst *queue3-gcd$st-len* 4)
+(defconst *queue3-gcd$st-len* 3)
 
 (defun queue3-gcd$data-ins-len (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -54,15 +54,15 @@
                                      (sis 'go 0 *queue3-gcd$go-num*)))
  (list* 'in-act 'out-act
         (sis 'data-out 0 data-width))
- '(l d q3 gcd)
+ '(l q3 gcd)
  (list
   ;; LINK
   ;; L
-  '(l (l-status) link-cntl (q3-out-act gcd-in-act))
-  (list 'd
-        (sis 'd-out 0 (* 2 data-width))
-        (si 'latch-n (* 2 data-width))
-        (cons 'q3-out-act (sis 'q3-data-out 0 (* 2 data-width))))
+  (list 'l
+        (list* 'l-status (sis 'd-out 0 (* 2 data-width)))
+        (si 'link (* 2 data-width))
+        (list* 'q3-out-act 'gcd-in-act
+               (sis 'q3-data-out 0 (* 2 data-width))))
 
   ;; JOINTS
   ;; Q3
@@ -89,7 +89,7 @@
 
 (make-event
  `(progn
-    ,@(state-accessors-gen 'queue3-gcd '(l d q3 gcd) 0)))
+    ,@(state-accessors-gen 'queue3-gcd '(l q3 gcd) 0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; QUEUE3-GCD.
@@ -111,9 +111,9 @@
   (and (equal (assoc (si 'queue3-gcd data-width) netlist)
               (queue3-gcd* data-width))
        (b* ((netlist (delete-to-eq (si 'queue3-gcd data-width) netlist)))
-         (and (queue3& netlist (* 2 data-width))
-              (gcd& netlist data-width)
-              (latch-n& netlist (* 2 data-width))))))
+         (and (link& netlist (* 2 data-width))
+              (queue3& netlist (* 2 data-width))
+              (gcd& netlist data-width)))))
 
 ;; Sanity check
 
@@ -126,12 +126,10 @@
 ;; Constraints on the state of QUEUE3-GCD
 
 (defund queue3-gcd$st-format (st data-width)
-  (b* ((d   (get-field *queue3-gcd$d* st))
+  (b* ((l   (get-field *queue3-gcd$l* st))
        (q3  (get-field *queue3-gcd$q3* st))
        (gcd (get-field *queue3-gcd$gcd* st)))
-    (and (len-1-true-listp d)
-         (equal (len d) (* 2 data-width))
-
+    (and (link$st-format l (* 2 data-width))
          (queue3$st-format q3 (* 2 data-width))
          (gcd$st-format gcd data-width))))
 
@@ -145,15 +143,9 @@
 
 (defund queue3-gcd$valid-st (st data-width)
   (b* ((l   (get-field *queue3-gcd$l* st))
-       (d   (get-field *queue3-gcd$d* st))
        (q3  (get-field *queue3-gcd$q3* st))
        (gcd (get-field *queue3-gcd$gcd* st)))
-    (and (queue3-gcd$st-format st data-width)
-
-         (validp l)
-         (or (emptyp l)
-             (bvp (strip-cars d)))
-
+    (and (link$valid-st l (* 2 data-width))
          (queue3$valid-st q3 (* 2 data-width))
          (gcd$valid-st gcd data-width))))
 
@@ -162,7 +154,8 @@
            (and (natp data-width)
                 (<= 3 data-width)))
   :hints (("Goal"
-           :in-theory (enable queue3-gcd$valid-st)))
+           :in-theory (enable gcd$valid-st=>data-width-constraint
+                              queue3-gcd$valid-st)))
   :rule-classes :forward-chaining)
 
 ;; Extract the input and output signals from QUEUE3-GCD
@@ -192,9 +185,10 @@
 
        (q3-go-signals (take *queue3$go-num* go-signals))
 
-       (l (get-field *queue3-gcd$l* st)))
+       (l (get-field *queue3-gcd$l* st))
+       (l.s (get-field *link$s* l)))
 
-    (list* full-in (f-buf (car l))
+    (list* full-in (f-buf (car l.s))
            (append data-in q3-go-signals))))
 
 ;; Extract the inputs for the GCD joint
@@ -207,10 +201,11 @@
                              (nthcdr *queue3$go-num* go-signals)))
 
        (l (get-field *queue3-gcd$l* st))
-       (d (get-field *queue3-gcd$d* st)))
+       (l.s (get-field *link$s* l))
+       (l.d (get-field *link$d* l)))
 
-    (list* (f-buf (car l)) empty-out-
-           (append (v-threefix (strip-cars d))
+    (list* (f-buf (car l.s)) empty-out-
+           (append (v-threefix (strip-cars l.d))
                    gcd-go-signals))))
 
 ;; Extract the "in-act" signal
@@ -245,7 +240,8 @@
   (implies (queue3-gcd$valid-st st data-width)
            (equal (len (queue3-gcd$data-out inputs st data-width))
                   data-width))
-  :hints (("Goal" :in-theory (enable queue3-gcd$valid-st))))
+  :hints (("Goal" :in-theory (enable queue3-gcd$valid-st
+                                     queue3-gcd$data-out))))
 
 (defthm bvp-queue3-gcd$data-out
   (implies (and (queue3-gcd$valid-st st data-width)
@@ -274,17 +270,13 @@
                            (queue3-gcd$data-out inputs st data-width)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'queue3-gcd data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'queue3-gcd data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue3-gcd
                             queue3-gcd&
                             queue3-gcd*$destructure
-                            latch-n$value
+                            link$value
                             queue3$value
                             gcd$value
                             queue3-gcd$data-in
@@ -303,7 +295,6 @@
 
 (defun queue3-gcd$step (inputs st data-width)
   (b* ((l   (get-field *queue3-gcd$l* st))
-       (d   (get-field *queue3-gcd$d* st))
        (q3  (get-field *queue3-gcd$q3* st))
        (gcd (get-field *queue3-gcd$gcd* st))
 
@@ -313,13 +304,12 @@
        (d-in (queue3$data-out q3))
 
        (q3-out-act (queue3$out-act q3-inputs q3 (* 2 data-width)))
-       (gcd-in-act (gcd$in-act gcd-inputs gcd data-width)))
+       (gcd-in-act (gcd$in-act gcd-inputs gcd data-width))
+
+       (l-inputs (list* q3-out-act gcd-in-act d-in)))
     (list
      ;; L
-     (list (f-sr q3-out-act gcd-in-act (car l)))
-     (pairlis$ (fv-if q3-out-act d-in (strip-cars d))
-               nil)
-
+     (link$step l-inputs l (* 2 data-width))
      ;; Joint Q3
      (queue3$step q3-inputs q3 (* 2 data-width))
      ;; Joint GCD
@@ -343,12 +333,8 @@
                     (queue3-gcd$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'queue3-gcd data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'queue3-gcd data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue3-gcd
                             queue3-gcd&
@@ -360,7 +346,7 @@
                             queue3-gcd$gcd-inputs
                             queue3$value queue3$state
                             gcd$value gcd$state
-                            latch-n$value latch-n$state)
+                            link$value link$state)
                            ((queue3-gcd*)
                             nfix
                             append
@@ -377,11 +363,10 @@
 (progn
   (defun queue3-gcd$map-to-links (st)
     (b* ((l   (get-field *queue3-gcd$l* st))
-         (d   (get-field *queue3-gcd$d* st))
          (q3  (get-field *queue3-gcd$q3* st))
          (gcd (get-field *queue3-gcd$gcd* st)))
       (append (list (cons 'q3 (queue3$map-to-links q3)))
-              (map-to-links (list (list 'l l d)))
+              (map-to-links (list (list* 'l l)))
               (list (cons 'gcd (gcd$map-to-links gcd))))))
 
   (defun queue3-gcd$map-to-links-list (x)
@@ -402,14 +387,14 @@
          (full '(t))
          (empty '(nil))
          (invalid-data (make-list (* 2 data-width) :initial-element '(x)))
-         (q3 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
-         (gcd (list full '(nil)
-                    empty invalid-data
-                    empty invalid-data
-                    empty invalid-data))
-         (st (list empty invalid-data q3 gcd)))
+         (q3 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
+         (gcd (list (list full '(nil))
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
+         (st (list (list empty invalid-data) q3 gcd)))
       (mv (pretty-list
            (remove-dup-neighbors
             (queue3-gcd$map-to-links-list
@@ -505,13 +490,12 @@
 
 (defund queue3-gcd$extract (st)
   (b* ((l   (get-field *queue3-gcd$l* st))
-       (d   (get-field *queue3-gcd$d* st))
        (q3  (get-field *queue3-gcd$q3* st))
        (gcd (get-field *queue3-gcd$gcd* st)))
     (append
      (queue3-gcd$op-seq
       (append (queue3$extract q3)
-              (extract-valid-data (list l d))))
+              (extract-valid-data (list l))))
      (gcd$extract gcd))))
 
 (defthm queue3-gcd$extract-not-empty
@@ -568,8 +552,12 @@
 (progn
   (local
    (defthm booleanp-queue3-gcd$q3-out-act
-     (implies (and (or (equal (nth *queue3-gcd$l* st) '(t))
-                       (equal (nth *queue3-gcd$l* st) '(nil)))
+     (implies (and (or (equal (nth *link$s*
+                                   (nth *queue3-gcd$l* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *queue3-gcd$l* st))
+                              '(nil)))
                    (queue3$valid-st (nth *queue3-gcd$q3* st)
                                     (* 2 data-width)))
               (booleanp
@@ -586,7 +574,9 @@
 
   (local
    (defthm queue3-gcd$q3-out-act-nil
-     (implies (equal (nth *queue3-gcd$l* st) '(t))
+     (implies (equal (nth *link$s*
+                          (nth *queue3-gcd$l* st))
+                     '(t))
               (not (queue3$out-act (queue3-gcd$q3-inputs inputs st data-width)
                                    (nth *queue3-gcd$q3* st)
                                    (* 2 data-width))))
@@ -598,8 +588,12 @@
 
   (local
    (defthm booleanp-queue3-gcd$gcd-in-act
-     (implies (and (or (equal (nth *queue3-gcd$l* st) '(t))
-                       (equal (nth *queue3-gcd$l* st) '(nil)))
+     (implies (and (or (equal (nth *link$s*
+                                   (nth *queue3-gcd$l* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *queue3-gcd$l* st))
+                              '(nil)))
                    (gcd$valid-st (nth *queue3-gcd$gcd* st)
                                  data-width))
               (booleanp
@@ -618,7 +612,9 @@
 
   (local
    (defthm queue3-gcd$gcd-in-act-nil
-     (implies (equal (nth *queue3-gcd$l* st) '(nil))
+     (implies (equal (nth *link$s*
+                          (nth *queue3-gcd$l* st))
+                     '(nil))
               (not (gcd$in-act (queue3-gcd$gcd-inputs inputs st data-width)
                                (nth *queue3-gcd$gcd* st)
                                data-width)))
@@ -644,12 +640,13 @@
   (local
    (defthm queue3-gcd$extracted-step-correct-aux-2
      (b* ((gcd-inputs (queue3-gcd$gcd-inputs inputs st data-width))
-          (d (nth *queue3-gcd$d* st)))
+          (l (nth *queue3-gcd$l* st))
+          (l.d (nth *link$d* l)))
        (implies (and (natp data-width)
-                     (equal (len d) (* 2 data-width))
-                     (bvp (strip-cars d)))
+                     (equal (len l.d) (* 2 data-width))
+                     (bvp (strip-cars l.d)))
                 (equal (gcd$data-in gcd-inputs data-width)
-                       (strip-cars d))))
+                       (strip-cars l.d))))
      :hints (("Goal" :in-theory (enable get-field
                                         queue3-gcd$gcd-inputs
                                         gcd$data-in)))))
@@ -669,6 +666,7 @@
                       (queue3-gcd$extracted-step inputs st data-width))))
     :hints (("Goal"
              :in-theory (e/d (get-field
+                              take-of-len-free
                               gcd$valid-st=>data-width-constraint
                               queue3$extracted-step
                               gcd$extracted-step
@@ -744,14 +742,14 @@
        (full '(t))
        (empty '(nil))
        (invalid-data (make-list (* 2 data-width) :initial-element '(x)))
-       (q3 (list empty invalid-data
-                 empty invalid-data
-                 empty invalid-data))
-       (gcd (list full '(nil)
-                  empty invalid-data
-                  empty invalid-data
-                  empty invalid-data))
-       (st (list empty invalid-data q3 gcd)))
+       (q3 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
+         (gcd (list (list full '(nil))
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
+         (st (list (list empty invalid-data) q3 gcd)))
     (mv
      (append
       (list (cons 'in-seq

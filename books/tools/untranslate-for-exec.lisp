@@ -260,6 +260,7 @@ support @(see mv-let) and @(see mv) forms.</p>"
              (true-listp (mv-nth 1 (match-cons-nest-aux x acc))))))
 
 (define match-cons-nest ((x ute-term-p))
+  :parents (untranslate-for-execution)
   :short "Matches @('(cons x1 (cons ... (cons xn 'nil)))')."
   :returns (mv (matchp booleanp :rule-classes :type-prescription)
                (args   ute-termlist-p :hyp :guard))
@@ -381,6 +382,7 @@ support @(see mv-let) and @(see mv) forms.</p>"
 ;;        (H X Y))
 
 (define convert-subexpression-to-mv
+  :parents (untranslate-for-execution)
   :short "Rewrite an expression that occurs a multiply valued context to make
           its multiple returns explicit."
   ((n     natp         "Number of return values this expression has.")
@@ -489,6 +491,7 @@ support @(see mv-let) and @(see mv) forms.</p>"
 
 
 (defines reincarnate-mvs
+  :parents (untranslate-for-execution)
   :short "Try to convert translated MV forms back into their MV-LET/MV form."
   :returns-hints (("Goal" :expand ((ute-term-p x))))
   (define reincarnate-mvs

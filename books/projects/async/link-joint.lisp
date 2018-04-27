@@ -10,6 +10,7 @@
 
 (include-book "de")
 (include-book "macros")
+(include-book "store-n")
 
 (include-book "std/lists/flatten" :dir :system)
 
@@ -27,15 +28,6 @@
   (declare (xargs :guard t))
   (or (fullp link-st) (emptyp link-st)))
 
-(defun extract-valid-data (st)
-  ;;(declare (xargs :guard (true-listp st)))
-  (if (atom st)
-      nil
-    (if (fullp (car st))
-        (cons (strip-cars (cadr st))
-              (extract-valid-data (cddr st)))
-      (extract-valid-data (cddr st)))))
-
 ;; Some utility functions that help print out a readable format of link states.
 
 (defun 4v->link-st (x)
@@ -48,15 +40,31 @@
          (4v->link-st (car x)))
         (t nil)))
 
+(defun map-to-links1 (x)
+  (declare (xargs :guard (true-list-listp x)))
+  (if (endp x)
+      nil
+    (cons
+     (b* ((link (car x))
+          (name (first link))
+          (status (second link))
+          (value (third link)))
+       (list* name
+              (if (fullp status)
+                  (list (4v->link-st status)
+                        (v-to-nat value))
+                (list (4v->link-st status) '_))))
+     (map-to-links1 (cdr x)))))
+
 (defun map-to-links (x)
   (declare (xargs :guard (true-list-listp x)))
   (if (endp x)
       nil
     (cons
-     (b* ((tuple (car x))
-          (name (first tuple))
-          (status (second tuple))
-          (value (third tuple)))
+     (b* ((link (car x))
+          (name (first link))
+          (status (second link))
+          (value (third link)))
        (list* name
               (if (fullp status)
                   (list (4v->link-st status)
@@ -259,6 +267,279 @@
            :in-theory (enable de-rules
                               click-link-st&
                               f-gates))))
+
+;; ======================================================================
+
+;; DE module of LINK1
+
+(defconst *link1$st-len* 2)
+
+(module-generator
+ link1* ()
+ 'link1
+ '(fill drain bit-in)
+ '(status bit-out)
+ '(s d)
+ '((s (status) link-cntl (fill drain))
+   (d (bit-out bit-out~) latch (fill bit-in)))
+ :guard t)
+
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'link1 '(s d) 0)))
+
+;; DE netlist containing LINK1
+
+(defun link1$netlist ()
+  (declare (xargs :guard t))
+  (list (link1*)))
+
+;; Recognizer for LINK1
+
+(defund link1& (netlist)
+  (declare (xargs :guard (alistp netlist)))
+  (equal (assoc 'link1 netlist)
+         (link1*)))
+
+;; Sanity check
+
+(local
+ (defthmd check-link1$netlist
+   (and (net-syntax-okp (link1$netlist))
+        (net-arity-okp (link1$netlist))
+        (link1& (link1$netlist)))))
+
+;; Constraints on the state of LINK1
+
+(defun link1$valid-st (st)
+  (b* ((s (get-field *link1$s* st))
+       (d (get-field *link1$d* st)))
+    (and (validp s)
+         (or (emptyp s)
+             (booleanp (car d))))))
+
+(not-primp-lemma link1) ;; Prove that LINK1 is not a DE primitive.
+
+;; The value lemma for LINK1
+
+(defthmd link1$value
+  (b* ((inputs (list fill$ drain bit-in))
+       (s (get-field *link1$s* st))
+       (d (get-field *link1$d* st)))
+    (implies (link1& netlist)
+             (equal (se 'link1 inputs st netlist)
+                    (list (f-buf (car s))
+                          (f-if fill$ bit-in (car d))))))
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (:free (inputs)
+                          (se 'link1 inputs st netlist))
+           :in-theory (e/d (de-rules
+                            not-primp-link1
+                            link1&
+                            link1*$destructure)
+                           ((link1*)
+                            de-module-disabled-rules)))))
+
+;; This function specifies the next state of LINK1.
+
+(defun link1$step (inputs st)
+  (b* ((fill$ (nth 0 inputs))
+       (drain (nth 1 inputs))
+       (bit-in (nth 2 inputs))
+
+       (s (get-field *link1$s* st))
+       (d (get-field *link1$d* st)))
+    (list
+     (list (f-sr fill$ drain (car s)))
+     (list (f-if fill$ bit-in (car d))))))
+
+(defthm len-of-link1$step
+  (equal (len (link1$step inputs st))
+         *link1$st-len*))
+
+;; The state lemma for LINK1
+
+(defthmd link1$state
+  (implies (link1& netlist)
+           (equal (de 'link1 inputs st netlist)
+                  (link1$step inputs st)))
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (de 'link1 inputs st netlist)
+           :in-theory (e/d (de-rules
+                            not-primp-link1
+                            link1&
+                            link1*$destructure)
+                           ((link1*)
+                            de-module-disabled-rules)))))
+
+;;(in-theory (disable link1$step))
+
+;; ======================================================================
+
+;; DE module generator of LINK
+
+(defconst *link$st-len* 2)
+
+(defun link$ins-len (data-width)
+  (declare (xargs :guard (natp data-width)))
+  (+ 2 (mbe :logic (nfix data-width)
+            :exec  data-width)))
+
+(module-generator
+ link* (data-width)
+ (si 'link data-width)
+ (list* 'fill 'drain (sis 'data-in 0 data-width))
+ (list* 'status (sis 'data-out 0 data-width))
+ '(s d)
+ (list
+  '(s (status) link-cntl (fill drain))
+  (list 'd
+        (sis 'data-out 0 data-width)
+        (si 'latch-n data-width)
+        (list* 'fill (sis 'data-in 0 data-width))))
+ :guard (natp data-width))
+
+(make-event
+ `(progn
+    ,@(state-accessors-gen 'link '(s d) 0)))
+
+(defun extract-valid-data (st)
+  ;;(declare (xargs :guard (true-listp st)))
+  (if (atom st)
+      nil
+    (b* ((link (car st)))
+      (if (fullp (get-field *link$s* link))
+          (cons (strip-cars (get-field *link$d* link))
+                (extract-valid-data (cdr st)))
+        (extract-valid-data (cdr st))))))
+
+;; DE netlist generator.  A generated netlist will contain an instance of
+;; LINK.
+
+(defun link$netlist (data-width)
+  (declare (xargs :guard (natp data-width)))
+  (cons (link* data-width)
+        (union$ (latch-n$netlist data-width)
+                :test 'equal)))
+
+;; Recognizer for LINK
+
+(defund link& (netlist data-width)
+  (declare (xargs :guard (and (alistp netlist)
+                              (natp data-width))))
+  (and (equal (assoc (si 'link data-width) netlist)
+              (link* data-width))
+       (b* ((netlist (delete-to-eq (si 'link data-width) netlist)))
+         (latch-n& netlist data-width))))
+
+;; Sanity check
+
+(local
+ (defthmd check-link$netlist-64
+   (and (net-syntax-okp (link$netlist 64))
+        (net-arity-okp (link$netlist 64))
+        (link& (link$netlist 64) 64))))
+
+;; Constraints on the state of LINK
+
+(defun link$st-format (st data-width)
+  (b* ((d (get-field *link$d* st)))
+    (and (len-1-true-listp d)
+         (equal (len d) data-width))))
+
+(defthm link$st-format=>natp-data-width
+  (implies (link$st-format st data-width)
+           (natp data-width))
+  :hints (("Goal" :in-theory (enable link$st-format)))
+  :rule-classes :forward-chaining)
+
+(defun link$valid-st (st data-width)
+  (b* ((s (get-field *link$s* st))
+       (d (get-field *link$d* st)))
+    (and (link$st-format st data-width)
+
+         (validp s) ;; The link status is either full or empty.
+         (or (emptyp s)               ;; When the link is full,
+             (bvp (strip-cars d)))))) ;; its data must be a bit vector.
+
+(defthmd link$valid-st=>natp-data-width
+  (implies (link$valid-st st data-width)
+           (natp data-width))
+  :hints (("Goal" :in-theory (enable link$valid-st)))
+  :rule-classes :forward-chaining)
+
+(not-primp-lemma link) ;; Prove that LINK is not a DE primitive.
+
+;; The value lemma for LINK
+
+(defthmd link$value
+  (b* ((inputs (list* fill$ drain data-in))
+       (s (get-field *link$s* st))
+       (d (get-field *link$d* st)))
+    (implies (and (link& netlist data-width)
+                  (true-listp data-in)
+                  (equal (len data-in) data-width)
+                  (link$st-format st data-width))
+             (equal (se (si 'link data-width) inputs st netlist)
+                    (list* (f-buf (car s))
+                           (fv-if fill$ data-in (strip-cars d))))))
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (:free (inputs data-width)
+                          (se (si 'link data-width) inputs st netlist))
+           :in-theory (e/d (de-rules
+                            not-primp-link
+                            link&
+                            link*$destructure
+                            link$st-format
+                            latch-n$value)
+                           ((link*)
+                            de-module-disabled-rules)))))
+
+;; This function specifies the next state of LINK.
+
+(defun link$step (inputs st data-width)
+  (b* ((fill$ (nth 0 inputs))
+       (drain (nth 1 inputs))
+       (data-in (take (nfix data-width)
+                      (nthcdr 2 inputs)))
+
+       (s (get-field *link$s* st))
+       (d (get-field *link$d* st)))
+    (list
+     (list (f-sr fill$ drain (car s)))
+     (pairlis$ (fv-if fill$ data-in (strip-cars d))
+               nil))))
+
+(defthm len-of-link$step
+  (equal (len (link$step inputs st data-width))
+         *link$st-len*))
+
+;; The state lemma for LINK
+
+(defthmd link$state
+  (implies (and (link& netlist data-width)
+                (true-listp inputs)
+                (equal (len inputs) (link$ins-len data-width))
+                (link$st-format st data-width))
+           (equal (de (si 'link data-width) inputs st netlist)
+                  (link$step inputs st data-width)))
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (:free (data-width)
+                          (de (si 'link data-width) inputs st netlist))
+           :in-theory (e/d (de-rules
+                            not-primp-link
+                            link&
+                            link*$destructure
+                            link$st-format
+                            latch-n$value latch-n$state)
+                           ((link*)
+                            de-module-disabled-rules)))))
+
+;;(in-theory (disable link$step))
 
 
 

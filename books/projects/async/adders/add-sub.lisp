@@ -227,11 +227,8 @@
                       netlist)
                   (fv-adder nil a b)))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (se (si 'ripple-add/sub n)
-                       (cons c (append a b))
-                       sts
-                       netlist)
+           :expand (:free (inputs n)
+                          (se (si 'ripple-add/sub n) inputs sts netlist))
            :in-theory (e/d* (de-rules
                              ripple-add/sub&
                              not-primp-ripple-add/sub)
@@ -251,11 +248,8 @@
                       netlist)
                   (fv-adder t a (fv-not b))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (se (si 'ripple-add/sub n)
-                       (cons c (append a b))
-                       sts
-                       netlist)
+           :expand (:free (inputs n)
+                          (se (si 'ripple-add/sub n) inputs sts netlist))
            :in-theory (e/d* (de-rules
                              ripple-add/sub&
                              not-primp-ripple-add/sub)

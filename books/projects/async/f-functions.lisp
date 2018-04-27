@@ -13,6 +13,8 @@
 
 (include-book "hard-spec")
 
+(local (in-theory (enable 3v-fix)))
+
 ;; ======================================================================
 
 ;; We begin by introducing primitive functions for 4-state logic.
@@ -20,10 +22,6 @@
 (defun f-buf (a)
   (declare (xargs :guard t))
   (3v-fix a))
-
-(defthm f-buf-car-of-v-threefix
-  (equal (f-buf (car (v-threefix x)))
-         (f-buf (car x))))
 
 (defthm nth-v-threefix
   (equal (nth n (v-threefix l))
