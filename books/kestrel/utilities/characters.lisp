@@ -83,11 +83,6 @@
 
   ///
 
-  (more-returns
-   (chars true-listp
-          :name true-listp-of-nats=>chars
-          :rule-classes :type-prescription))
-
   (local
    (defrule verify-guards-lemma-1
      (equal (nats=>chars-aux nats rev-chars)
@@ -125,9 +120,6 @@
   ///
 
   (more-returns
-   (nats true-listp
-         :name true-listp-of-chars=>nats
-         :rule-classes :type-prescription)
    (nats nat-listp
          :name nat-listp-of-chars=>nats))
 
