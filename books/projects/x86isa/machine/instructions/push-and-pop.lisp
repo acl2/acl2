@@ -222,11 +222,7 @@
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by) ?E-addr x86)
         (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
                                                 operand-size
-                                                ;; inst-ac? is nil here because
-                                                ;; we only need
-                                                ;; increment-RIP-by from this
-                                                ;; function
-                                                nil
+                                                t ; do alignment checking
                                                 nil ;; Not a memory pointer operand
                                                 seg-reg
                                                 p4?
