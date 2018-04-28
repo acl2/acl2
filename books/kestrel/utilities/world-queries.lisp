@@ -36,7 +36,7 @@
    </p>
    <p>
    Many of these world query utilities come in two variants:
-   a &ldquo;fast&rdquo; one and a &ldquo;logic-friendly&rdquo; one.
+   a ``fast'' one and a ``logic-friendly'' one.
    The former has relatively weak and no (strong) return type theorems;
    the latter has stronger guards and some run-time checks
    that are believed to never fail
@@ -59,7 +59,7 @@
    </p>
    <p>
    The fast variants provided below are named in a way
-   that is &ldquo;consistent&rdquo; with the built-in world query utilities.
+   that is ``consistent'' with the built-in world query utilities.
    The logic-friendly world query utilities are named by adding @('+')
    after the name of the corresponding fast world query utilities
    (both built-in and provided below).
@@ -537,8 +537,8 @@
   :returns (unwrapped-body "A @(tsee pseudo-termp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Body of a logic-mode defined non-executable function,
-          without the &ldquo;non-executable wrapper&rdquo;."
+  :short "Body of a named logic-mode defined non-executable function,
+          without the ``non-executable wrapper''."
   :long
   "<p>
    @(tsee defun-nx) generates
@@ -608,7 +608,7 @@
   :guard (not (member-eq fn *stobjs-out-invalid*))
   :returns (n natp "Actually a @(tsee posp).")
   :parents (world-queries)
-  :short "Number of values returned by a function."
+  :short "Number of values returned by a named function."
   :long
   "<p>
    This is 1, unless the function uses @(tsee mv)
@@ -658,7 +658,7 @@
   :returns (yes/no booleanp)
   :verify-guards nil
   :parents (world-queries)
-  :short "Check if a function has no input or output @(see stobj)s."
+  :short "Check if a named function has no input or output @(see stobj)s."
   :long
   "<p>
    The function must not be in @('*stobjs-out-invalid*'),
@@ -690,9 +690,9 @@
   :returns (clique "A @(tsee symbol-listp).")
   :parents (world-queries)
   :short "List of mutually recursive functions of which
-          this function is a member,
+          the specified named function is a member,
           based on the @(tsee defun) form that introduced this function,
-          or @('nil') if this function is not recursive."
+          or @('nil') if the specified function is not recursive."
   :long
   "<p>
    This is a specialization of @(tsee recursivep)
@@ -731,7 +731,7 @@
   :returns (measure "A @(tsee pseudo-termp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Measure expression of a logic-mode recursive function."
+  :short "Measure expression of a named logic-mode recursive function."
   :long
   "<p>
    See @(see xargs) for a discussion of the @(':measure') keyword.
@@ -779,7 +779,8 @@
   :returns (measured-subset "A @(tsee symbol-listp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Subset of the formal arguments of a logic-mode recursive function
+  :short "Subset of the formal arguments
+          of a named logic-mode recursive function
           that occur in its @(see measure) expression."
   :long
   "<p>
@@ -825,7 +826,7 @@
   :returns (well-founded-relation "A @(tsee symbolp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Well-founded relation of a logic-mode recursive function."
+  :short "Well-founded relation of a named logic-mode recursive function."
   :long
   "<p>
    See @(see well-founded-relation-rule)
@@ -876,7 +877,7 @@
   :returns (ruler-extenders "A @(tsee symbol-listp) of @(':all').")
   :verify-guards nil
   :parents (world-queries)
-  :short "Ruler-extenders of a logic-mode recursive function."
+  :short "Ruler-extenders of a named logic-mode recursive function."
   :long
   "<p>
    See @(see rulers) for background.
@@ -1101,7 +1102,7 @@
 (define induction-machine ((fn symbolp) (wrld plist-worldp))
   :returns (result "A @('pseudo-induction-machinep').")
   :parents (world-queries)
-  :short "Induction machine of a (singly) recursive logic-mode function."
+  :short "Induction machine of a named logic-mode (singly) recursive function."
   :long
   "<p>
    This is a list of @('tests-and-calls') records
@@ -1192,7 +1193,7 @@
   :returns (calls-with-tests "A @(tsee pseudo-tests-and-call-listp).")
   :mode :program
   :parents (world-queries)
-  :short "Recursive calls of a non-mutually-recursive function,
+  :short "Recursive calls of a named non-mutually-recursive function,
           along with the controlling tests."
   :long
   "<p>
@@ -1231,14 +1232,14 @@
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
   :parents (world-queries)
-  :short "Check if the definition of a function is disabled."
+  :short "Check if the definition of a named function is disabled."
   (if (member-equal `(:definition ,fn) (disabledp fn)) t nil))
 
 (define fundef-enabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
   :parents (world-queries)
-  :short "Check if the definition of a function is enabled."
+  :short "Check if the definition of a named function is enabled."
   (not (fundef-disabledp fn state)))
 
 (define rune-disabledp ((rune (runep rune (w state))) state)
