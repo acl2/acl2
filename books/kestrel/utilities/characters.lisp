@@ -67,29 +67,35 @@
   :parents (character-utilities)
   :short "Convert a true list of natural numbers below 256
           to the corresponding true list of characters."
+  :long
+  "<p>
+   This operation has
+   a natural-recursive definition for logic reasoning
+   and a tail-recursive executional for execution.
+   </p>"
   (mbe :logic (cond ((endp nats) nil)
                     (t (cons (code-char (car nats))
                              (nats=>chars (cdr nats)))))
-       :exec (nats=>chars-aux nats nil))
+       :exec (nats=>chars-exec nats nil))
   :verify-guards nil ; done below
 
   :prepwork
-  ((define nats=>chars-aux ((nats (unsigned-byte-listp 8 nats))
-                            (rev-chars character-listp))
+  ((define nats=>chars-exec ((nats (unsigned-byte-listp 8 nats))
+                             (rev-chars character-listp))
      (cond ((endp nats) (rev rev-chars))
-           (t (nats=>chars-aux (cdr nats)
-                               (cons (code-char (car nats))
-                                     rev-chars))))
+           (t (nats=>chars-exec (cdr nats)
+                                (cons (code-char (car nats))
+                                      rev-chars))))
      :enabled t))
 
   ///
 
   (defrulel verify-guards-lemma-1
-    (equal (nats=>chars-aux nats rev-chars)
+    (equal (nats=>chars-exec nats rev-chars)
            (revappend rev-chars (nats=>chars nats))))
 
   (defrulel verify-guards-lemma-2
-    (equal (nats=>chars-aux nats nil)
+    (equal (nats=>chars-exec nats nil)
            (nats=>chars nats)))
 
   (verify-guards nats=>chars))
@@ -101,19 +107,25 @@
   :parents (character-utilities)
   :short "Convert a true list of characters
           to the corresponding true list of natural numbers below 256."
+  :long
+  "<p>
+   This operation has
+   a natural-recursive definition for logic reasoning
+   and a tail-recursive executional for execution.
+   </p>"
   (mbe :logic (cond ((endp chars) nil)
                     (t (cons (char-code (car chars))
                              (chars=>nats (cdr chars)))))
-       :exec (chars=>nats-aux chars nil))
+       :exec (chars=>nats-exec chars nil))
   :verify-guards nil ; done below
 
   :prepwork
-  ((define chars=>nats-aux ((chars character-listp)
-                            (rev-nats (unsigned-byte-listp 8 rev-nats)))
+  ((define chars=>nats-exec ((chars character-listp)
+                             (rev-nats (unsigned-byte-listp 8 rev-nats)))
      (cond ((endp chars) (rev rev-nats))
-           (t (chars=>nats-aux (cdr chars)
-                               (cons (char-code (car chars))
-                                     rev-nats))))
+           (t (chars=>nats-exec (cdr chars)
+                                (cons (char-code (car chars))
+                                      rev-nats))))
      :enabled t))
 
   ///
@@ -123,11 +135,11 @@
          :name nat-listp-of-chars=>nats))
 
   (defrulel verify-guards-lemma-1
-    (equal (chars=>nats-aux chars rev-nats)
+    (equal (chars=>nats-exec chars rev-nats)
            (revappend rev-nats (chars=>nats chars))))
 
   (defrulel verify-guards-lemma-2
-    (equal (chars=>nats-aux chars nil)
+    (equal (chars=>nats-exec chars nil)
            (chars=>nats chars)))
 
   (verify-guards chars=>nats))
