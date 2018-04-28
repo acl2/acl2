@@ -1,6 +1,6 @@
 ; Character Utilities
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -38,7 +38,7 @@
   (alpha/digit/dash-char-p x)
   :guard (character-listp x)
   :parents (character-utilities)
-  :short "Check if a list of characters
+  :short "Check if a true list of characters
           includes only letters, (decimal) digits, and dashes."
   :true-listp t
   :elementp-of-nil nil)
@@ -55,7 +55,7 @@
   (nondigit-char-p x)
   :guard (character-listp x)
   :parents (character-utilities)
-  :short "Check if a list of characters includes no (decimal) digits."
+  :short "Check if a true list of characters includes no (decimal) digits."
   :true-listp t
   :elementp-of-nil t)
 
@@ -64,8 +64,8 @@
 (define nats=>chars ((nats (unsigned-byte-listp 8 nats)))
   :returns (chars character-listp)
   :parents (character-utilities)
-  :short "Convert a list of natural numbers below 256
-          to the corresponding list of characters."
+  :short "Convert a true list of natural numbers below 256
+          to the corresponding true list of characters."
   (mbe :logic (cond ((endp nats) nil)
                     (t (cons (code-char (car nats))
                              (nats=>chars (cdr nats)))))
@@ -105,8 +105,8 @@
 (define chars=>nats ((chars character-listp))
   :returns (nats (unsigned-byte-listp 8 nats))
   :parents (character-utilities)
-  :short "Convert a list of characters
-          to the corresponding list of natural numbers below 256."
+  :short "Convert a true list of characters
+          to the corresponding true list of natural numbers below 256."
   (mbe :logic (cond ((endp chars) nil)
                     (t (cons (char-code (car chars))
                              (chars=>nats (cdr chars)))))
