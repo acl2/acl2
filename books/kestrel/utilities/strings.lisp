@@ -45,7 +45,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nats=>string ((nats (unsigned-byte-listp 8 nats)))
-  :returns (string stringp :rule-classes (:rewrite :type-prescription))
+  :returns (string stringp)
   :parents (string-utilities)
   :short "Convert a true list of natural numbers below 256
           to the corresponding string."
@@ -60,9 +60,6 @@
   ///
 
   (more-returns
-   (nats true-listp
-         :name true-listp-of-string=>nats
-         :rule-classes :type-prescription)
    (nats nat-listp
          :name nat-listp-of-string=>nats)))
 
