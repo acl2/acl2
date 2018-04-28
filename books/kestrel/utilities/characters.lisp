@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
@@ -83,15 +84,13 @@
 
   ///
 
-  (local
-   (defrule verify-guards-lemma-1
-     (equal (nats=>chars-aux nats rev-chars)
-            (revappend rev-chars (nats=>chars nats)))))
+  (defrulel verify-guards-lemma-1
+    (equal (nats=>chars-aux nats rev-chars)
+           (revappend rev-chars (nats=>chars nats))))
 
-  (local
-   (defrule verify-guards-lemma-2
-     (equal (nats=>chars-aux nats nil)
-            (nats=>chars nats))))
+  (defrulel verify-guards-lemma-2
+    (equal (nats=>chars-aux nats nil)
+           (nats=>chars nats)))
 
   (verify-guards nats=>chars))
 
@@ -123,14 +122,12 @@
    (nats nat-listp
          :name nat-listp-of-chars=>nats))
 
-  (local
-   (defrule verify-guards-lemma-1
-     (equal (chars=>nats-aux chars rev-nats)
-            (revappend rev-nats (chars=>nats chars)))))
+  (defrulel verify-guards-lemma-1
+    (equal (chars=>nats-aux chars rev-nats)
+           (revappend rev-nats (chars=>nats chars))))
 
-  (local
-   (defrule verify-guards-lemma-2
-     (equal (chars=>nats-aux chars nil)
-            (chars=>nats chars))))
+  (defrulel verify-guards-lemma-2
+    (equal (chars=>nats-aux chars nil)
+           (chars=>nats chars)))
 
   (verify-guards chars=>nats))
