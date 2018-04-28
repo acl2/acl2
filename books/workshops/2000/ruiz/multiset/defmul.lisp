@@ -194,7 +194,7 @@
 	       (if (quote ,prefix)
 		   (mv-let
 		    (val state)
-		    (fmx "~%WARNING: The ~#0~[symbol~/symbols~] ~*1 ~
+		    (fmx "~%~%WARNING: The ~#0~[symbol~/symbols~] ~*1 ~
                        ~#0~[is~/are~] defined yet. Perhaps you must ~
                        use the :PREFIX option with a value different from ~
                        ~x2. ~%~%~
@@ -207,7 +207,7 @@
 			     (quote ,rel) (w state)) state))
 		   (mv-let
 		    (val state)
-		    (fmx "~%WARNING: The ~#0~[symbol~/symbols~] ~*1 ~
+		    (fmx "~%~%WARNING: The ~#0~[symbol~/symbols~] ~*1 ~
                        ~#0~[is~/are~] defined yet. Perhaps you must ~
                        use the :PREFIX option. ~%~%~
                        The list of components is: ~%"
@@ -218,7 +218,7 @@
 			     (quote ,rel) (w state)) state)))
 	       (mv-let
 		(val state)
-		(fmx "~%The list of components is: ~%")
+		(fmx "~%~%The list of components is: ~%")
 		(declare (ignore val))
 		(mv nil (components-of-well-founded-relation-rule-fn
 			 (quote ,rel) (w state)) state)))))))

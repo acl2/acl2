@@ -199,7 +199,7 @@
 ; every attempt to select a hint.
 
  '((mv-let (col state)
-           (fmx "**Applying override hints**")
+           (fmx "~%**Applying override hints**")
            (declare (ignore col))
            (value (append '(:no-thanks t) keyword-alist)))))
 
@@ -220,7 +220,7 @@
 (must-fail
  (set-override-hints
   '((mv-let (col state)
-            (fmx "**Applying override hints**")
+            (fmx "~%**Applying override hints**")
             (declare (ignore col))
             (value (append '(:no-thanks t) keyword-alist))))))
 
@@ -288,7 +288,7 @@
 
 (add-custom-keyword-hint :no-thanks-state-in-generator-and-checker
                          (mv-let (col state)
-                                 (fmx "**Applying custom-keyword hint**")
+                                 (fmx "~%**Applying custom-keyword hint**")
                                  (declare (ignore col))
                                  (if (equal clause clause)
                                      (value (splice-keyword-alist
@@ -300,7 +300,7 @@
 (must-fail
  (add-custom-keyword-hint :no-thanks-state-in-generator-only
                           (mv-let (col state)
-                                  (fmx "**Applying custom-keyword hint**")
+                                  (fmx "~%**Applying custom-keyword hint**")
                                   (declare (ignore col))
                                   (if (equal clause clause)
                                       (value (splice-keyword-alist
