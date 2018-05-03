@@ -1,6 +1,6 @@
 ; Term Function Recognizers
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/define" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 (local (include-book "all-vars-theorems"))
@@ -23,16 +23,16 @@
   :long
   "<p>
    In translated @(see term)s,
-   the &lsquo;functions&rsquo; that are applied to argument terms are
+   the `functions' that are applied to argument terms are
    function symbols and lambda expressions.
    </p>
    <p>
    The predicates @(tsee pseudo-termp) and @(tsee termp)
    recognize pseudo-terms and valid translated terms.
    The following predicates recognize
-   lambda expressions in pseudo-terms and valid translated terms,
+   lambda expressions in pseudo-terms and in valid translated terms,
    as well as functions (in the sense above)
-   in pseudo-terms and valid translated terms.
+   in pseudo-terms and in valid translated terms.
    </p>
    <p>
    Note that the predicate @(tsee symbolp) recognizes
@@ -125,7 +125,10 @@
     (implies (and (lambdap lambd wrld)
                   (term-listp terms wrld)
                   (equal (len terms) (len (lambda-formals lambd))))
-             (termp (cons lambd terms) wrld))))
+             (termp (cons lambd terms) wrld)))
+
+  (defrule not-lambdap-of-nil
+    (not (lambdap nil wrld))))
 
 (define termfnp (x (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
@@ -151,3 +154,42 @@
                   (not (eq fn 'quote)))
              (termp (cons fn terms) wrld))
     :enable (arity lambdap)))
+
+(std::deflist pseudo-lambda-listp (x)
+  (pseudo-lambdap x)
+  :parents (term-utilities term-function-recognizers)
+  :short "Recognize true lists of
+          <see topic='@(url pseudo-lambdap)'>pseudo-lambda-expressions</see>."
+  :elementp-of-nil nil
+  :true-listp t)
+
+(std::deflist pseudo-termfn-listp (x)
+  (pseudo-termfnp x)
+  :parents (term-utilities term-function-recognizers)
+  :short "Recognize true lists of
+          <see topic='@(url pseudo-termfnp)'>pseudo-term-functions</see>."
+  :elementp-of-nil t
+  :true-listp t)
+
+(std::deflist lambda-listp (x wrld)
+  (lambdap x wrld)
+  :guard (plist-worldp-with-formals wrld)
+  :parents (term-utilities term-function-recognizers)
+  :short "Recognize true lists of valid
+          <see topic='@(url lambdap)'>translated lambda expressions</see>."
+  :elementp-of-nil nil
+  :true-listp t)
+
+(std::deflist termfn-listp (x wrld)
+  (termfnp x wrld)
+  :guard (plist-worldp-with-formals wrld)
+  :parents (term-utilities term-function-recognizers)
+  :short "Recognize true lists of
+          valid <see topic='@(url termfnp)'>translated term functions</see>."
+  :long
+  "<p>
+   We would need stronger world assumptions for @(':elementp-of-nil nil'),
+   so with the current weaker world assumptions we leave the default,
+   i.e. @(':elementp-of-nil :unknown').
+   </p>"
+  :true-listp t)

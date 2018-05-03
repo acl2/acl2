@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; April 2018
 
 (in-package "ADE")
 
@@ -15,8 +15,8 @@
 
 ;; ======================================================================
 
-;; Constructing a DE module generator for a storage-free merge joint. Proving
-;; the value lemma for this module generator.
+;; Construct a DE module generator for a storage-free merge joint.  Prove the
+;; value lemma for this module generator.
 
 (defconst *merge$go-num* 1)
 
@@ -30,7 +30,7 @@
   (+ (merge$data-ins-len data-width)
      *merge$go-num*))
 
-;; DE module generator of merge
+;; DE module generator of MERGE
 
 (module-generator
  merge* (data-width)
@@ -65,7 +65,8 @@
 
  :guard (natp data-width))
 
-;; DE netlist generator. A generated netlist will contain an instance of merge.
+;; DE netlist generator.  A generated netlist will contain an instance of
+;; MERGE.
 
 (defun merge$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -74,7 +75,7 @@
                 *joint-cntl*
                 :test 'equal)))
 
-;; Recognizer for merge
+;; Recognizer for MERGE
 
 (defund merge& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
@@ -93,74 +94,78 @@
         (net-arity-okp (merge$netlist 64))
         (merge& (merge$netlist 64) 64))))
 
-;; Extracting the 1st input data item
+;; Extract the input and output signals from MERGE
 
-(defun merge$data-in0 (inputs data-width)
-  (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
-  (take (mbe :logic (nfix data-width)
-             :exec  data-width)
-        (nthcdr 4 inputs)))
+(progn
+  ;; Extract the 1st input data item
 
-(defthm len-merge$data-in0
-  (equal (len (merge$data-in0 inputs data-width))
-         (nfix data-width)))
+  (defun merge$data-in0 (inputs data-width)
+    (declare (xargs :guard (and (true-listp inputs)
+                                (natp data-width))))
+    (take (mbe :logic (nfix data-width)
+               :exec  data-width)
+          (nthcdr 4 inputs)))
 
-(in-theory (disable merge$data-in0))
+  (defthm len-merge$data-in0
+    (equal (len (merge$data-in0 inputs data-width))
+           (nfix data-width)))
 
-;; Extracting the 2nd input data item
+  (in-theory (disable merge$data-in0))
 
-(defun merge$data-in1 (inputs data-width)
-  (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
-  (b* ((width (mbe :logic (nfix data-width)
-                   :exec  data-width)))
-    (take width
-          (nthcdr (+ 4 width) inputs))))
+  ;; Extract the 2nd input data item
 
-(defthm len-merge$data-in1
-  (equal (len (merge$data-in1 inputs data-width))
-         (nfix data-width)))
+  (defun merge$data-in1 (inputs data-width)
+    (declare (xargs :guard (and (true-listp inputs)
+                                (natp data-width))))
+    (b* ((width (mbe :logic (nfix data-width)
+                     :exec  data-width)))
+      (take width
+            (nthcdr (+ 4 width) inputs))))
 
-(in-theory (disable merge$data-in1))
+  (defthm len-merge$data-in1
+    (equal (len (merge$data-in1 inputs data-width))
+           (nfix data-width)))
 
-;; Extracting the "act0" signal
+  (in-theory (disable merge$data-in1))
 
-(defund merge$act0 (inputs data-width)
-  (b* ((full-in0   (nth 0 inputs))
-       (empty-out- (nth 2 inputs))
-       (select     (nth 3 inputs))
-       (go-signals (nthcdr (merge$data-ins-len data-width) inputs))
+  ;; Extract the "act0" signal
 
-       (go-merge (nth 0 go-signals))
+  (defund merge$act0 (inputs data-width)
+    (b* ((full-in0   (nth 0 inputs))
+         (empty-out- (nth 2 inputs))
+         (select     (nth 3 inputs))
+         (go-signals (nthcdr (merge$data-ins-len data-width) inputs))
 
-       (ready-in0 (f-and full-in0 (f-not select))))
+         (go-merge (nth 0 go-signals))
 
-    (joint-act ready-in0 empty-out- go-merge)))
+         (ready-in0 (f-and full-in0 (f-not select))))
 
-;; Extracting the "act1" signal
+      (joint-act ready-in0 empty-out- go-merge)))
 
-(defund merge$act1 (inputs data-width)
-  (b* ((full-in1   (nth 1 inputs))
-       (empty-out- (nth 2 inputs))
-       (select     (nth 3 inputs))
-       (go-signals (nthcdr (merge$data-ins-len data-width) inputs))
+  ;; Extract the "act1" signal
 
-       (go-merge (nth 0 go-signals))
+  (defund merge$act1 (inputs data-width)
+    (b* ((full-in1   (nth 1 inputs))
+         (empty-out- (nth 2 inputs))
+         (select     (nth 3 inputs))
+         (go-signals (nthcdr (merge$data-ins-len data-width) inputs))
 
-       (ready-in1 (f-and full-in1 select)))
+         (go-merge (nth 0 go-signals))
 
-    (joint-act ready-in1 empty-out- go-merge)))
+         (ready-in1 (f-and full-in1 select)))
 
-;; Extracting the "act" signal
+      (joint-act ready-in1 empty-out- go-merge)))
 
-(defund merge$act (inputs data-width)
-  (f-or (merge$act0 inputs data-width)
-        (merge$act1 inputs data-width)))
+  ;; Extract the "act" signal
 
-(not-primp-lemma merge)
+  (defund merge$act (inputs data-width)
+    (f-or (merge$act0 inputs data-width)
+          (merge$act1 inputs data-width)))
+  )
 
-;; The value lemma for merge
+(not-primp-lemma merge) ;; Prove that MERGE is not a DE primitive.
+
+;; The value lemma for MERGE
 
 (defthmd merge$value
   (b* ((inputs (list* full-in0 full-in1 empty-out- select
@@ -180,14 +185,9 @@
                            (fv-if select data-in1 data-in0)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'merge data-width)
-                       (list* full-in0 full-in1 empty-out- select
-                              (append data-in0 data-in1 go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'merge data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            get-field
                             not-primp-merge
                             merge&
                             merge*$destructure
@@ -197,8 +197,5 @@
                             merge$act0
                             merge$act1)
                            ((merge*)
-                            (si)
-                            (sis)
-                            open-v-threefix
                             de-module-disabled-rules)))))
 

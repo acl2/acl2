@@ -3355,13 +3355,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (eqlable-alistp x))
   :rule-classes :forward-chaining)
 
-(defun symbol-alistp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (symbolp (car (car x)))
-                (symbol-alistp (cdr x))))))
-
 (defthm symbol-alistp-forward-to-eqlable-alistp
   (implies (symbol-alistp x)
            (eqlable-alistp x))

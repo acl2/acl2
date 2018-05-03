@@ -166,17 +166,45 @@
  built-in system utilities is analogous to the relationship between @(tsee
  fcons-term) and @(tsee cons-term).</p>
 
+ <p>Added a utility @(tsee all-lambdas) to collect all the lambda expressions
+ in a term.</p>
+
+ <p>Added utilities @(tsee apply-terms-same-args) and @(tsee
+ fapply-terms-same-args) to apply each function in a specified list to a
+ specified list of arguments.</p>
+
  <p>Made several improvements to @(tsee directed-untranslate), including: one
  to avoid assertion errors that could occur when using @(tsee declare) forms
  with @(tsee let), @(tsee let*), or @(tsee mv-let) expressions: one to enhance
- insertion of appropriate @(tsee mv) calls; and one to extend dropping of
- unused @(tsee let) bindings..</p>
+ insertion of appropriate @(tsee mv) calls; one to extend dropping of
+ unused @(tsee let) bindings; and one to avoid an assertion error with
+ @('mv-let') expressions.</p>
 
  <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
  subsumed by the built-in @(tsee evens) utility.</p>
 
  <p>Added utilities to fix values to @(tsee integer-range-p), as well as to
  recognize and to fix to true lists of @(tsee integer-range-p) values.</p>
+
+ <p>Added some theorems about @(tsee nat-list-fix).</p>
+
+ <p>Added a <see topic='@(url digits-any-base)'>library</see> to convert
+ between natural numbers and their representations as lists of digits in
+ arbitrary bases in big-endian and little-endian order.  Digits are natural
+ numbers below the base.  There are variants for minimum-length,
+ non-zero-minimum-length, and specified-length lists of digits.  The library
+ includes, among others, theorems stating that the number-to-digits and
+ digits-to-number conversions are mutual inverses in a suitable sense.</p>
+
+ <p>Added some <see topic='@(url error-checking)'>error-checking
+ functions</see>.</p>
+
+ <p>Extended the <see topic='@(url term-function-recognizers)'>term function
+ recognizers</see> with recognizers for true lists of
+ (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
+
+ <p>Added a new utility, @(tsee skip-in-book), that wraps around a form to
+ prevent its evaluation during book certification or inclusion.</p>
 
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
@@ -190,10 +218,11 @@
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
- <p>The model includes more support for 32-bit mode.  In particular, some
- variants of the PUSH, POP, MOV, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP, TEST,
- and RET instructions also work in 32-bit mode now, and the 32-bit instructions
- PUSHA and POPA are now part of the model.</p>
+ <p>The model includes more support for 32-bit mode.  In particular: some
+ variants of the PUSH, POP, MOV, LEA, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP,
+ TEST, JMP, Jcc, and RET instructions also work in 32-bit mode now; the 32-bit
+ instructions PUSHA, POPA, INC with opcodes 40h-47h, and DEC with opcodes
+ 48h-4Fh are now part of the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
@@ -205,6 +234,10 @@
  <p>Improved @(tsee apt::tailrec) transformation with an option to attempt to
  automatically infer the domain for some of the transformation's applicability
  conditions.</p>
+
+ <p>Improved @(tsee apt::restrict) transformation to wrap the restriction test
+ with @(tsee mbt); added an applicability condition to ensure that the
+ restriction test is boolean-valued.</p>
 
  <h4><see topic='@(url acl2::bitops)'>Bitops</see></h4>
 

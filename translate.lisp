@@ -9170,7 +9170,7 @@
       (trans-er+ x ctx
                  "It is illegal to call ~x0 in a function body without ~
                   specifying a value for :ld-user-stobjs-modified-warning.  ~
-                  See :DOC user-stobjs-modified-warning."
+                  See :DOC user-stobjs-modified-warnings."
                  (car x)))
      (t
       (mv-let
@@ -10949,3 +10949,17 @@
                      declaration, has failed.~@1"
                     (untranslate (cadr args) t world)
                     coda))
+
+(set-guard-msg fmx-cw-fn
+               (msg "Guard violation for ~x0:~|~@1"
+                    'fmx-cw-fn
+                    (let ((str (nth 0 args))
+                          (alist (nth 1 args)))
+                      (fmx-cw-msg str alist))))
+
+(set-guard-msg fmx!-cw-fn
+               (msg "Guard violation for ~x0:~|~@1"
+                    'fmx!-cw-fn
+                    (let ((str (nth 0 args))
+                          (alist (nth 1 args)))
+                      (fmx-cw-msg str alist))))

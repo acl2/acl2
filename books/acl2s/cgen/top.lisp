@@ -163,7 +163,7 @@
 
 
 (defxdoc acl2::cgen
-  :parents (acl2::debugging acl2::acl2-sedan)
+  :parents (acl2::debugging acl2::acl2-sedan acl2::testing-utilities)
   :short "Counterexample Generation a.k.a Disproving for ACL2"
   :long
 "

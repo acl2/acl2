@@ -435,7 +435,12 @@
 ;; Main
 ;;**********************************************************************
 
-(in-theory (e/d* () (env-assumptions i64p)))
+(local (in-theory (e/d* (rime-size
+                         rme-size
+                         wime-size
+                         wme-size)
+                        (env-assumptions
+                         i64p))))
 
 (defthm effects-to-gc-no-call
 
@@ -2465,6 +2470,7 @@
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
+                             select-segment-register
                              wr64
                              wr32
                              rr08
@@ -2910,6 +2916,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             select-segment-register
                              write-canonical-address-to-memory
                              riml-size
                              riml08
@@ -3329,6 +3336,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             select-segment-register
                              write-canonical-address-to-memory
                              riml-size
                              riml08
@@ -3854,6 +3862,7 @@
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
+                             select-segment-register
                              wr64
                              wr32
                              rr08
@@ -4631,6 +4640,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             select-segment-register
                              write-canonical-address-to-memory
                              riml-size
                              riml08

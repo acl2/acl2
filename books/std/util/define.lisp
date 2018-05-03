@@ -1751,16 +1751,36 @@ with a single return value.</p>
 formal if there is a return value that has the same name.  To work around this,
 the @(':pre-bind') argument accepts a list of @(see b*) bindings that occur
 before the binding of the return values.  You may also just want to not share
-names between your formals and returns.</p>")
+names between your formals and returns.</p>
 
-(defun dumb-strsubst (old new from str)
-  (b* (((when (>= from (length str))) "")
-       (next (search old str :start2 from))
-       ((unless next) (subseq str from nil)))
-    (concatenate 'string
-                 (subseq str from next)
-                 new
-                 (dumb-strsubst old new (+ (length old) next) str))))
+<h3>Features</h3>
+
+<ul>
+
+<li>The return value names specified by @(':returns') for the function are
+bound in the body of the theorem.  This way if the function is changed to
+e.g. return an additional value, @('defret') forms don't necessarily need to
+change as long as the @(':returns') specifiers are kept up to date.</li>
+
+<li>The return value names are substituted for appropriate expressions in the
+hints and rule-classes.  E.g., in the above example, an occurrence of @('d') in
+the hints or rule-classes would be replaced by @('(mv-nth 0 (my-function a b
+c))').</li>
+
+<li>Any symbol named @('<CALL>') (in any package) is replaced by the call of
+the function in the body, hints, and rule-classes.  Similarly any symbol named
+@('<FN>') is replaced by the function name or macro alias; additionally, any
+symbol named @('<FN!>') is replaced by strictly the function name (not the
+macro alias).</li>
+
+<li>The substrings @('\"<FN>\"') and @('\"<FN!>\"') are replaced in the theorem name by
+the names of the function/macro alias and function (respectively), so that
+similar theorems for different functions can be copied/pasted without editing
+the names.</li>
+
+</ul>
+
+")
     
 
 (defun defret-core (name concl-term kwd-alist disablep guts world)
@@ -1790,13 +1810,15 @@ names between your formals and returns.</p>")
                 `(implies ,hyp ,concl)
               concl))
        (thmname (intern-in-package-of-symbol
-                 (dumb-strsubst "<FN>" (symbol-name fn) 0 (symbol-name name))
+                 (dumb-str-sublis `(("<FN>" . ,(symbol-name fn))
+                                    ("<FN!>" . ,(symbol-name guts.name-fn)))
+                                  (symbol-name name))
                  name)))
     `(,(if disablep 'defthmd 'defthm) ,thmname
-      ,(sublis body-subst thm)
-      ,@(and hints?        `(:hints ,(sublis hint-subst (cdr hints?))))
+      ,(returnspec-sublis body-subst thm)
+      ,@(and hints?        `(:hints ,(returnspec-sublis hint-subst (cdr hints?))))
       ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
-      ,@(and rule-classes? `(:rule-classes ,(sublis hint-subst (cdr rule-classes?)))))))
+      ,@(and rule-classes? `(:rule-classes ,(returnspec-sublis hint-subst (cdr rule-classes?)))))))
 
 
 (defun defret-fn (name args disablep world)

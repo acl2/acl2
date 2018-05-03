@@ -20,7 +20,7 @@
   :parents (z3-py)
   :short "SMT-translator does the LISP to Python translation."
 
-  (define SMT-numberp (sym)
+  (define SMT-numberp ((sym))
     (declare (xargs :guard t))
     :returns (is? booleanp)
     (if (or (rationalp sym) (integerp sym) (real/rationalp sym))
@@ -38,7 +38,7 @@
     :equiv SMT-number-equiv
     :define t)
 
-  (define wordp (atom)
+  (define wordp ((atom))
     (declare (xargs :guard t))
     :returns (word? booleanp)
     (if (or (acl2-numberp atom)
@@ -83,7 +83,8 @@
       (wordp fn))
     :hints (("Goal" :in-theory (enable wordp))))
 
-  (define paragraphp (par)
+  (define paragraphp ((par))
+    :parents (SMT-translator)
     (declare (xargs :guard t))
     :returns (paragraph? booleanp)
     :short "A paragraph is made up of lists of words. Notice a single word is also counted as a paragraphp."

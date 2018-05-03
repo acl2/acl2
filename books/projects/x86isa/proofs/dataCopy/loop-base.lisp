@@ -10,7 +10,10 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* ()
+(local (in-theory (e/d* (rime-size
+                         rme-size
+                         wime-size
+                         wme-size)
                         (mv-nth-1-wb-and-!flgi-commute
                          ia32e-la-to-pa-values-and-!flgi
                          las-to-pas

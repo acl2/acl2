@@ -1563,7 +1563,9 @@
            :in-theory (e/d* (len
                              page-size
                              loghead-negative
-                             disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
+                             disjoint-p-all-xlation-governing-entries-paddrs-subset-p
+                             rme-size wme-size
+                             rime-size wime-size)
                             (rewrite-program-at-to-program-at-alt
                              create-canonical-address-list
                              program-at-xw-rgf

@@ -1,6 +1,6 @@
 ; Kestrel Utilities
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,6 +24,8 @@
 (include-book "defthmr")
 (include-book "defmacroq")
 (include-book "defun-sk-queries")
+(include-book "digits-any-base")
+(include-book "digits-any-base-pow2")
 (include-book "directed-untranslate")
 (include-book "doublets")
 (include-book "enumerations")
@@ -55,6 +57,7 @@
 (include-book "osets")
 (include-book "paired-names")
 (include-book "prove-interface")
+(include-book "skip-in-book")
 (include-book "strings")
 (include-book "symbol-symbol-alists")
 (include-book "symbol-true-list-alists")
@@ -72,6 +75,7 @@
 (include-book "world-queries")
 (include-book "world-theorems")
 (include-book "xdoc-constructors")
+(include-book "zp-lists")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

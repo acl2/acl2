@@ -226,6 +226,12 @@ the @('fault') field instead.</li>
             (<= -140737488355328 (mv-nth 1 (add-to-*ip *ip delta x86)))
             (< (mv-nth 1 (add-to-*ip *ip delta x86)) 140737488355328))))
 
+    (defrule add-to-*ip-rationalp-type
+      (implies (and (rationalp *ip)
+                    (rationalp delta))
+               (rationalp (mv-nth 1 (add-to-*ip *ip delta x86))))
+      :rule-classes :type-prescription)
+
     (defrule mv-nth-0-of-add-to-*ip-when-64-bit-modep
       (implies (64-bit-modep x86)
                (equal (mv-nth 0 (add-to-*ip *ip delta x86))
@@ -475,7 +481,7 @@ the @('fault') field instead.</li>
     :inline t
     ///
 
-    (defthm-sb add-to-*ip-is-i64p
+    (defthm-sb add-to-*sp-is-i64p
       :bound 48
       :concl (mv-nth 1 (add-to-*sp *sp delta x86))
       :gen-type t
@@ -633,6 +639,11 @@ the @('fault') field instead.</li>
 
   (local (xdoc::set-default-parents effective-address-computations))
 
+  ;; Alignment checks are only carried out in data (or stack)
+  ;; accesses, and not in code fetches or system segment accesses.
+  ;; Since these functions are used during code fetching, we call all
+  ;; r*me* functions with check-alignment? nil.
+
   (define x86-effective-addr-from-sib
     ((temp-rip :type (signed-byte #.*max-linear-address-size*))
      (rex-byte :type (unsigned-byte 8) "REX byte")
@@ -672,13 +683,14 @@ the @('fault') field instead.</li>
     :prepwork ((local (in-theory (e/d (rime-size riml-size) ()))))
 
     (b* ((b (sib-base sib))
+         (check-alignment? nil)
          ((mv flg base displacement nrip-bytes x86)
 
           (case mod
 
             (0 (if (equal b 5)
                    (b* (((mv ?flg0 dword x86)
-                         (rime-size 4 temp-RIP *cs* :x x86)) ;; sign-extended
+                         (rime-size 4 temp-RIP *cs* :x check-alignment? x86 :mem-ptr? nil)) ;; sign-extended
                         ((when flg0)
                          (mv (cons flg0 'rime-size-error) 0 0 0 x86)))
                        (mv nil 0 dword 4 x86))
@@ -691,7 +703,7 @@ the @('fault') field instead.</li>
                      x86)))
 
             (1 (b* (((mv ?flg1 byte x86)
-                     (rime-size 1 temp-RIP *cs* :x x86)) ;; sign-extended
+                     (rime-size 1 temp-RIP *cs* :x check-alignment? x86 :mem-ptr? nil)) ;; sign-extended
                     ((when flg1)
                      (mv (cons flg1 'rime-size-error) 0 0 0 x86)))
                  (mv nil
@@ -703,7 +715,7 @@ the @('fault') field instead.</li>
                      x86)))
 
             (2 (b* (((mv ?flg2 dword x86)
-                     (rime-size 4 temp-RIP *cs* :x x86)) ;; sign-extended
+                     (rime-size 4 temp-RIP *cs* :x check-alignment? x86 :mem-ptr? nil)) ;; sign-extended
                     ((when flg2)
                      (mv (cons flg2 'rime-size-error) 0 0 0 x86)))
                  (mv nil
@@ -798,10 +810,10 @@ the @('fault') field instead.</li>
      </p>"
     (case mod
       (0 (mv nil 0 0 x86))
-      (1 (b* (((mv flg byte x86) (rime-size 1 temp-rip *cs* :x x86))
+      (1 (b* (((mv flg byte x86) (rime-size 1 temp-rip *cs* :x nil x86 :mem-ptr? nil))
               ((when flg) (mv flg 0 0 x86)))
            (mv nil byte 1 x86)))
-      (2 (b* (((mv flg word x86) (rime-size 2 temp-rip *cs* :x x86))
+      (2 (b* (((mv flg word x86) (rime-size 2 temp-rip *cs* :x nil x86 :mem-ptr? nil))
               ((when flg) (mv flg 0 0 x86)))
            (mv nil word 2 x86)))
       (otherwise ; shouldn't happen
@@ -879,7 +891,7 @@ the @('fault') field instead.</li>
               ((when flg) (mv flg 0 0 x86)))
            (mv nil (n16 (+ di disp)) increment-rip-by x86)))
       (6 (case mod
-           (0 (b* (((mv flg disp x86) (rime-size 2 temp-rip *cs* :x x86))
+           (0 (b* (((mv flg disp x86) (rime-size 2 temp-rip *cs* :x nil x86 :mem-ptr? nil))
                    ((when flg) (mv flg 0 0 x86)))
                 (mv nil (n16 disp) 2 x86)))
            (otherwise (b* ((bp (rr16 *rbp* x86))
@@ -1006,7 +1018,7 @@ the @('fault') field instead.</li>
                     (b* (((mv ?flg0 dword x86)
                           ;; dword is the sign-extended displacement
                           ;; present in the instruction.
-                          (rime-size 4 temp-RIP *cs* :x x86))
+                          (rime-size 4 temp-RIP *cs* :x nil x86 :mem-ptr? nil))
                          ;; next-rip is the rip of the next instruction.
                          ;; temp-RIP + 4 bytes of the displacement
                          ;; mentioned above + bytes of rest of the
@@ -1020,7 +1032,7 @@ the @('fault') field instead.</li>
                   (b* (((mv flg dword x86)
                         ;; dword is the sign-extended displacement
                         ;; present in the instruction.
-                        (rime-size 4 temp-RIP *cs* :x x86))
+                        (rime-size 4 temp-RIP *cs* :x nil x86 :mem-ptr? nil))
                        ((when flg) (mv flg 0 0 0 x86)))
                     (mv nil 0 dword 4 x86))))
 
@@ -1043,7 +1055,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg2 byte2 x86)
-                      (rime-size 1 temp-RIP *cs* :x x86)) ; sign-extended
+                      (rime-size 1 temp-RIP *cs* :x nil x86 :mem-ptr? nil)) ; sign-extended
                      (reg (if (64-bit-modep x86)
                               (rgfi (reg-index r/m rex-byte #.*b*) x86)
                             (rr32 r/m x86)))) ; rex-byte is 0 in 32-bit mode
@@ -1059,7 +1071,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg1 dword x86)
-                      (rime-size 4 temp-RIP *cs* :x x86)) ; sign-extended
+                      (rime-size 4 temp-RIP *cs* :x nil x86 :mem-ptr? nil)) ; sign-extended
                      (reg (if (64-bit-modep x86)
                               (rgfi (reg-index r/m rex-byte #.*b*) x86)
                             (rr32 r/m x86)))) ; rex-byte is 0 in 32-bit mode
@@ -1231,32 +1243,37 @@ the @('fault') field instead.</li>
     :long "<p> Source: Intel Manuals, Volume 3, Section 6.15, Exception
   and Interrupt Reference:</p>
 
- <sf>Interrupt 17 Alignment Check Exception (#AC)
+ <h4>Interrupt 17 Alignment Check Exception (#AC)</h4>
 
- Exception Class: Fault.
+ <h5>Exception Class: Fault.</h5>
 
- Description: Indicates that the processor detected an unaligned
- memory operand when alignment checking was enabled. Alignment checks
- are only carried out in data (or stack) accesses (not in code fetches
- or system segment accesses). An example of an alignment-check
- violation is a word stored at an odd byte address, or a doubleword
- stored at an address that is not an integer multiple of 4.
+ <blockquote>Description: Indicates that the processor detected an
+ unaligned memory operand when alignment checking was
+ enabled. Alignment checks are only carried out in data (or stack)
+ accesses (not in code fetches or system segment accesses). An example
+ of an alignment-check violation is a word stored at an odd byte
+ address, or a doubleword stored at an address that is not an integer
+ multiple of 4.</blockquote>
 
- Note that the alignment check exception (#AC) is generated only for
- data types that must be aligned on word, doubleword, and quadword
- boundaries. A general-protection exception (#GP) is generated 128-bit
- data types that are not aligned on a 16-byte boundary.
+ <blockquote>Note that the alignment check exception (#AC) is
+ generated only for data types that must be aligned on word,
+ doubleword, and quadword boundaries. A general-protection
+ exception (#GP) is generated 128-bit data types that are not aligned
+ on a 16-byte boundary.</blockquote>
 
- To enable alignment checking, the following conditions must be true:
-   - AM flag in CR0 register is set.
-   - AC flag in the EFLAGS register is set.
-   - The CPL is 3 (protected mode or virtual-8086 mode).
+ <blockquote>To enable alignment checking, the following conditions
+ must be true:</blockquote>
+ <ul>
+   <li> AM flag in CR0 register is set. </li>
+   <li> AC flag in the EFLAGS register is set. </li>
+   <li> The CPL is 3 (protected mode or virtual-8086 mode). </li>
+ </ul>
 
-Alignment-check exceptions (#AC) are generated only when operating at
-privilege level 3 (user mode). Memory references that default to
-privilege level 0, such as segment descriptor loads, do not generate
-alignment-check exceptions, even when caused by a memory reference
-made from privilege level 3.</sf>"
+<blockquote> Alignment-check exceptions (#AC) are generated only when
+operating at privilege level 3 (user mode). Memory references that
+default to privilege level 0, such as segment descriptor loads, do not
+generate alignment-check exceptions, even when caused by a memory
+reference made from privilege level 3.</blockquote>"
 
     (b* ((cr0 (the (unsigned-byte 32) (n32 (ctri *cr0* x86))))
          (AM  (cr0-slice :cr0-am cr0))
@@ -1312,56 +1329,6 @@ made from privilege level 3.</sf>"
       (equal (alignment-checking-enabled-p (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (alignment-checking-enabled-p x86))))
 
-  ;; Factored out by Alessandro Coglio <coglio@kestrel.edu>
-  ;; Alignment check originally contributed by Dmitry Nadezhin
-  (define address-aligned-p
-    ((addr :type (signed-byte #.*max-linear-address-size*))
-     (operand-size :type (member 1 2 4 6 8 10 16))
-     (memory-ptr? booleanp))
-    :returns (yes/no booleanp)
-    :short "Check the alignment of a linear address."
-    :long
-    "<p>
-     Besides the address to check for alignment,
-     this function takes as argument the operand size
-     (from which the alignment to check is determined)
-     and a flag indicating whether the address to check for alignment
-     contains a memory operand of the form m16:16, m16:32, or m16:64
-     (see Intel manual, Mar'17, Volume 2, Section 3.1.1.3).
-     </p>
-     <p>
-     Words, doublewords, quadwords, and double quadwords
-     must be aligned at boundaries of 2, 4, 8, or 16 bytes.
-     Memory pointers of the form m16:xx must be aligned so that
-     their xx portion is aligned as a word, doubleword, or quadword;
-     this automatically guarantees that their m16 portion is aligned as a word.
-     See Intel manual, Mar'17, Volume 1, Section 4.1.1.
-     See AMD manual, Dec'17, Volume 2, Table 8-7
-     (note that the table does not mention explicitly
-     memory pointers of the form m16:64).
-     </p>
-     <p>
-     If the operand size is 6, the operand must be an m16:32 pointer.
-     If the operand size is 10, the operand must an m16:64 pointer.
-     If the operand size is 4, it may be either an m16:16 pointer or not;
-     in this case, the @('memory-ptr?') argument is used to
-     determined whether the address should be aligned
-     at a word or doubleword boundary.
-     If the operand size is 1, 2, 8, or 16,
-     it cannot be a memory pointer of the form m16:xx.
-     </p>"
-    (case operand-size
-      (6 (equal (logand addr #b11) 0)) ; m16:32
-      (10 (equal (logand addr #b111) 0)) ; m16:64
-      (otherwise
-       (if (and memory-ptr?
-                (eql operand-size 4))
-           (equal (logand addr #b1) 0) ; m16:16
-         (equal (logand addr
-                        (the (integer 0 15) (- operand-size 1)))
-                0))))
-    :inline t)
-
   (define x86-operand-from-modr/m-and-sib-bytes
     ((reg-type      :type (unsigned-byte  1)
                     "@('reg-type') is @('*gpr-access*') for GPRs, and
@@ -1385,6 +1352,7 @@ made from privilege level 3.</sf>"
      (num-imm-bytes :type (unsigned-byte 3))
      x86)
 
+    :prepwork ((local (in-theory (e/d* () (unsigned-byte-p signed-byte-p not)))))
     :guard (if (equal mod #b11)
                (cond
                 ((equal reg-type #.*gpr-access*)
@@ -1554,6 +1522,7 @@ made from privilege level 3.</sf>"
                            reg-type operand-size inst-ac? memory-ptr?
                            p2 p4 temp-rip rex-byte r/m mod sib
                            num-imm-bytes x86))))))
+
 
   (define x86-operand-to-reg/mem
     ((operand-size :type (member 1 2 4 6 8 10 16))
@@ -1734,27 +1703,6 @@ made from privilege level 3.</sf>"
        ((when flg0)
         (mv (cons 'x86-effective-addr-error flg0) 0 0 0 x86))
 
-       ;; The alignment check must be performed on linear addresses, not
-       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
-       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
-       ;; is inelegant, because segment address translation is already
-       ;; performed by RME-SIZE below, which consumes an effective address, and
-       ;; uses a linear address internally. This suggests that perhaps
-       ;; alignment checks should be moved to RME-SIZE and similar functions.
-       ;; For now, we call EA-TO-LA here and we perform the alignment check if
-       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
-       ;; attempting to access linear memory anyhow.
-       ((when (and (not (equal mod #b11))
-                   (b* (((mv flg addr-linear) (ea-to-la addr seg-reg x86)))
-                     (and (not flg)
-                          (canonical-address-p addr-linear)
-                          inst-ac?
-                          (alignment-checking-enabled-p x86)
-                          (not (address-aligned-p
-                                addr-linear operand-size memory-ptr?))))))
-        (mv 'x86-operand-from-modr/m-and-sib-bytes-memory-access-not-aligned
-            0 0 0 x86))
-
        ((mv ?flg2 operand x86)
         (if (equal mod #b11)
             (if (int= reg-type #.*gpr-access*)
@@ -1769,10 +1717,13 @@ made from privilege level 3.</sf>"
                              (reg-index r/m rex-byte #.*b*)
                              x86)
                   x86))
-          ;; The operand is being fetched from the memory, not the
-          ;; instruction stream. That's why we have :r instead of :x
-          ;; below.
-          (rme-size operand-size addr seg-reg :r x86)))
+          (b* ((check-alignment? (and inst-ac?
+                                      (alignment-checking-enabled-p x86))))
+            ;; The operand is being fetched from the memory, not the
+            ;; instruction stream. That's why we have :r instead of :x
+            ;; below.
+            (rme-size operand-size addr seg-reg :r check-alignment? x86
+                      :mem-ptr? memory-ptr?))))
        ((when flg2)
         (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
 
@@ -1869,27 +1820,10 @@ made from privilege level 3.</sf>"
                                 operand rex-byte x86)))
           (mv nil x86)))
 
-       ;; The alignment check must be performed on linear addresses, not
-       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
-       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
-       ;; is inelegant, because segment address translation is already
-       ;; performed by RME-SIZE below, which consumes an effective address, and
-       ;; uses a linear address internally. This suggests that perhaps
-       ;; alignment checks should be moved to RME-SIZE and similar functions.
-       ;; For now, we call EA-TO-LA here and we perform the alignment check if
-       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
-       ;; attempting to access linear memory anyhow.
-       ((mv flg addr-linear) (ea-to-la addr seg-reg x86))
-       ((when (and (not flg)
-                   (canonical-address-p addr-linear)
-                   inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   (not (address-aligned-p
-                         addr-linear operand-size memory-ptr?))))
-        (mv 'x86-operand-to-reg/mem-memory-access-not-aligned x86))
-
+       (check-alignment? (and inst-ac? (alignment-checking-enabled-p x86)))
        ((mv flg x86)
-        (wme-size operand-size addr seg-reg operand x86)))
+        (wme-size operand-size addr seg-reg operand check-alignment? x86
+                  :mem-ptr? memory-ptr?)))
     (mv flg x86))
 
   ///
@@ -1937,27 +1871,12 @@ made from privilege level 3.</sf>"
                                 operand x86)))
           (mv nil x86)))
 
-       ;; The alignment check must be performed on linear addresses, not
-       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
-       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
-       ;; is inelegant, because segment address translation is already
-       ;; performed by RME-SIZE below, which consumes an effective address, and
-       ;; uses a linear address internally. This suggests that perhaps
-       ;; alignment checks should be moved to RME-SIZE and similar functions.
-       ;; For now, we call EA-TO-LA here and we perform the alignment check if
-       ;; the error flag is NIL; if it is non-NIL, RME-SIZE will fail before
-       ;; attempting to access linear memory anyhow.
-       ((mv flg addr-linear) (ea-to-la addr seg-reg x86))
-       ((when (and (not flg)
-                   (canonical-address-p addr-linear)
-                   inst-ac?
-                   (alignment-checking-enabled-p x86)
-                   (not (address-aligned-p
-                         addr-linear operand-size nil))))
-        (mv 'x86-operand-to-xmm/mem-memory-access-not-aligned x86))
+       (check-alignment? (and inst-ac? (alignment-checking-enabled-p x86)))
 
        ((mv flg x86)
-        (wme-size operand-size addr seg-reg operand x86)))
+        ;; operand is never an m16:16 memory pointer here
+        (wme-size operand-size addr seg-reg operand
+                  check-alignment? x86 :mem-ptr? nil)))
     (mv flg x86))
 
   ///
@@ -2225,3 +2144,5 @@ made from privilege level 3.</sf>"
                     (= r/m 5))
                *ss*
              *ds*))))))
+
+;; ======================================================================

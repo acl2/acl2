@@ -35,7 +35,7 @@
 
 
 (defxdoc acre
-  :parents (projects)
+  :parents (acl2::projects)
   :short "ACL2 Centaur Regular Expressions"
   :long
    #{"""<p>ACRE is a regular expression package with features somewhat similar

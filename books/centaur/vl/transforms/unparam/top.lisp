@@ -269,7 +269,9 @@ with, we can safely remove @('plus') from our module list.</p>")
                (elabindex "with the overridden parameter values")
                (final-paramdecls vl-paramdecllist-p))
   (b* (((mv ok warnings overrides)
-        (vl-make-paramdecloverrides formals actuals warnings))
+        (vl-make-paramdecloverrides formals actuals
+                                    (vl-simpconfig->unparam-bad-instance-fatalp config)
+                                    warnings))
        ((unless ok)
         (mv nil warnings elabindex nil))
        (mod-ss (vl-elabindex->ss))
@@ -906,7 +908,6 @@ for each usertype is stored in the res field.</p>"
        (elabindex (vl-elabindex-sync-scopes))
        (scopes (vl-elabindex->scopes))
        ((mv mod mod-ss) (vl-scopestack-find-definition/ss inst.modname ss))
-
        ((unless (and mod
                      (or (eq (tag mod) :vl-module)
                          (eq (tag mod) :vl-interface))))

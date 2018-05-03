@@ -248,6 +248,7 @@
 ;; address (64 bits, even though in our model we only model the low 48 bits due
 ;; to the invariant of instruction pointers being canonical).
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-ret
 
   ;; Op/En: #xC2 iw: I:  Near return to calling procedure and pop imm16 bytes from
@@ -269,7 +270,7 @@
   (b* ((ctx 'x86-ret)
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (rsp (read-*sp x86))
 
@@ -288,8 +289,14 @@
                   (add-to-*sp rsp operand-size x86))
                  ((when flg1) (mv flg1 0 x86)))
               (mv nil new-rsp x86))
+          ;; We don't do any alignment check below when fetching the
+          ;; immediate operand; reading the immediate operand is done
+          ;; during code fetching, where alignment checks aren't supposed
+          ;; to be done (see Intel Manuals, Volume 3, Section 6.15,
+          ;; Exception and Interrupt Reference, Interrupt 17 Alignment
+          ;; Check Exception (#AC) for details).
           (b* (((mv flg1 (the (unsigned-byte 16) imm16) x86)
-                (rme16 temp-rip *cs* :x x86))
+                (rme16 temp-rip *cs* :x nil x86))
                ((when flg1) (mv flg1 0 x86))
                ((mv flg1 new-rsp)
                 (add-to-*sp rsp (+ operand-size imm16) x86))
@@ -317,33 +324,21 @@
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-       ;; The alignment check must be performed on linear addresses, not
-       ;; effective addresses. They are the same in 64-bit mode, but for 32-bit
-       ;; mode we need to call EA-TO-LA here to obtain the linear address. This
-       ;; is inelegant, because segment address translation is already
-       ;; performed by RIME-SIZE below, which consumes an effective address,
-       ;; and uses a linear address internally. This suggests that perhaps
-       ;; alignment checks should be moved to RIME-SIZE and similar functions.
-       ;; For now, we call EA-TO-LA here and we perform the alignment check if
-       ;; the error flag is NIL; if it is non-NIL, RIME-SIZE will fail before
-       ;; attempting to access linear memory anyhow.
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((mv flg rsp-linear) (ea-to-la rsp *ss* x86))
-       ((when (and inst-ac?
-                   (not flg)
-                   (not (equal (logand rsp-linear
-                                       (- operand-size 1))
-                               0))))
-        (!!ms-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
-
        ;; Note that instruction pointers are modeled as signed in 64-bit mode,
        ;; but unsigned in 32-bit mode.
+       (check-alignment? (alignment-checking-enabled-p x86))
        ((mv flg (the (signed-byte 64) tos) x86)
         (if (= operand-size 8)
-            (rime-size operand-size rsp *ss* :r x86)
-          (rme-size operand-size rsp *ss* :r x86)))
+            (rime-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil)
+          (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil)))
        ((when flg)
-        (!!ms-fresh :ss 0 :riml64-error flg)) ;; #SS(0)
+        (cond
+         ((and (consp flg) (eql (car flg) :non-canonical-address))
+          (!!fault-fresh :ss 0 :riml64-error flg)) ;; #SS(0)
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!fault-fresh flg))))
 
        ;; Ensure that the return address is canonical (for 64-bit mode) and
        ;; within code segment limits (for 32-bit mode). It is not clear whether

@@ -153,6 +153,7 @@
   :short "Line up parameter arguments with parameter declarations."
   ((formals  vl-paramdecllist-p "In proper order, from the submodule.")
    (actuals  vl-paramargs-p     "From the instance.")
+   (bad-instance-fatalp booleanp)
    (warnings vl-warninglist-p   "Warnings accumulator for the superior module."))
   :returns
   (mv (successp  booleanp :rule-classes :type-prescription)
@@ -172,7 +173,7 @@
 
       (:vl-paramargs-named
        (b* ((actual-names (vl-namedparamvaluelist->names actuals.args))
-            (formal-names (vl-paramdecllist->names (vl-nonlocal-paramdecls formals)))
+            (?formal-names (vl-paramdecllist->names (vl-nonlocal-paramdecls formals)))
 
             ((unless (uniquep actual-names))
              (mv nil
@@ -184,15 +185,15 @@
             (illegal-names
              ;; Actuals that are NOT actually declarations.
              (difference (mergesort actual-names) (mergesort formal-names)))
-            ((when illegal-names)
-             (mv nil
-                 (fatal :type :vl-bad-instance
-                        :msg "parameter~s1 ~&2 ~s2."
-                        :args (list nil
-                                    (if (vl-plural-p illegal-names) "s" "")
-                                    illegal-names
-                                    (if (vl-plural-p illegal-names) "do not exist" "does not exist")))
-                 nil))
+            (warnings (if illegal-names
+                          (warn :type :vl-bad-instance
+                                :msg "parameter~s1 ~&2 ~s2."
+                                :args (list nil
+                                            (if (vl-plural-p illegal-names) "s" "")
+                                            illegal-names
+                                            (if (vl-plural-p illegal-names) "do not exist" "does not exist"))
+                                :fatalp bad-instance-fatalp)
+                        warnings))
 
             ;; No confusion: everything is unique, the instance mentions only
             ;; the non-localparams, etc.  Good enough.

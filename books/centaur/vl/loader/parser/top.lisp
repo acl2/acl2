@@ -38,6 +38,7 @@
 (include-book "classes")
 (include-book "configs")
 (include-book "imports")
+(include-book "std/strings/fast-cat" :dir :system)
 (local (include-book "../../util/arithmetic"))
 
 (local (in-theory (disable (tau-system))))

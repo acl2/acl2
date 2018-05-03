@@ -1386,14 +1386,21 @@
 ;             (APPEND X Y)))
 ;   ACL2 !>
 
+; A subtlety, noticed by Stephen Westfold and incorporated into
+; directed-untranslate-tests.lisp, is that the free variables bound with mv in
+; tterm might not appear in the same order as in the translation of the
+; modified uterm, unless we are careful.  So, we are careful!
+
   (or (case-match uterm
         (('mv-let vars mv-let-body . rest)
          (case-match tterm
-           ((('lambda (mv-var . &)
+           ((('lambda (mv-var . other-vars)
                (('lambda lvars &) . &))
-             . &)
+             & . other-vars)
             (and (equal vars (take (length vars) lvars))
-                 `(let ((,mv-var ,mv-let-body))
+                 `(let ((,mv-var ,mv-let-body)
+                        ,@(pairlis$ other-vars
+                                    (pairlis$ other-vars nil)))
                     (let ,(make-mv-nths vars mv-var 0)
                       ,@(butlast rest 1)
                       ,(car (last rest)))))))))
@@ -1646,10 +1653,11 @@
                                                         iff-flg lflg exec-p wrld)))
                         (('if x1 x1-alt x2)
                          (and (eq (car uterm) 'or) ; tterm is (if x1' & x2')
-                              (or (equal x1-alt x1)
-                                  (equal x1-alt *t*))
                               (cond
-                               ((cddr uterm) ; tterm is (if x1' & x2')
+                               ((and (or (equal x1-alt x1)
+                                         (and iff-flg
+                                              (equal x1-alt *t*)))
+                                     (cddr uterm)) ; tterm is (if x1' & x2')
                                 (untranslate-or
                                  (directed-untranslate-rec (cadr uterm)
                                                            (fargn tterm 1)
@@ -1659,12 +1667,16 @@
                                                            (fargn tterm 3)
                                                            x2 iff-flg lflg
                                                            exec-p wrld)))
+                               ((cddr uterm) ; uterm is (or x y ...)
+                                (directed-untranslate-rec (or-macro (cdr uterm))
+                                                          tterm sterm iff-flg lflg
+                                                          exec-p wrld))
                                ((cdr uterm) ; uterm is (or x)
                                 (directed-untranslate-rec (cadr uterm)
-                                                          tterm sterm t lflg
+                                                          tterm sterm iff-flg lflg
                                                           exec-p wrld))
                                (t ; uterm is (or)
-                                (directed-untranslate-rec t tterm sterm t lflg
+                                (directed-untranslate-rec t tterm sterm iff-flg lflg
                                                           exec-p wrld)))))
                         (('if x1 x2 *t*)
                          (and (eq (car uterm) 'or)

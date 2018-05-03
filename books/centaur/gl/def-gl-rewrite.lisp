@@ -134,9 +134,21 @@ reference.</p>"
   :long
   "<p>Usage:</p>
 @({
+  ;; disallow definition expansion and concrete execution
   (gl::gl-set-uninterpreted fnname)
+  (gl::gl-set-uninterpreted fnname t) ;; same as above
+
+  ;; disallow definition expansion but allow concrete execution
+  (gl::gl-set-uninterpreted fnname :concrete-only)
+
+  ;; disallow concrete execution but allow definition expansion
+  (gl::gl-set-uninterpreted fnname :no-concrete)
+
+  ;; remove restrictions
+  (gl::gl-set-uninterpreted fnname nil)
+  (gl::gl-unset-uninterpreted fnname) ;; same
 })
-<p>prevents GL from opening the definition of fnname or concretely executing
+<p>prevents GL from opening the definition of fnname and/or concretely executing
 it.  GL will still apply rewrite rules to a call of @('fnname').  If the
 call is not rewritten away, symbolic execution of a @('fnname') call will
 simply produce an object (of the :g-apply type) representing a call of

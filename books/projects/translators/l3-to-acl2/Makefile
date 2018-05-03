@@ -27,3 +27,7 @@ export ACL2_SYSTEM_BOOKS ?= $(ACL2_DIR)/books
 DIRS = translator examples/thacker
 include $(ACL2_SYSTEM_BOOKS)/Makefile-subdirs
 
+# For target.cert:
+
+include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
+top: target.cert

@@ -1,6 +1,6 @@
 ; APT Domain Restriction Transformation -- Implementation
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,148 +19,224 @@
 (include-book "utilities/print-specifiers")
 (include-book "utilities/transformation-table")
 
-(local (xdoc::set-default-parents restrict-implementation))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection restrict-implementation
+  :parents (implementation restrict)
+  :short "Implementation of @(tsee restrict)."
+  :long
+  "<p>
+   The implementation functions have formal parameters
+   consistently named as follows:
+   </p>
+   <ul>
+     <li>
+     @('state') is the ACL2's @(see state).
+     </li>
+     <li>
+     @('wrld') is the ACL2's @(see world).
+     </li>
+     <li>
+     @('ctx') is the context used for errors.
+     </li>
+     <li>
+     @('old'),
+     @('restriction'),
+     @('undefined'),
+     @('new-name'),
+     @('new-enable'),
+     @('thm-name'),
+     @('thm-enable'),
+     @('non-executable'),
+     @('verify-guards'),
+     @('hints'),
+     @('print'), and
+     @('show-only')
+     are the homonymous inputs to @(tsee tailrec),
+     before being processed.
+     These formal parameters have no types because they may be any values.
+     </li>
+     <li>
+     @('call') is the call to @(tsee tailrec) supplied by the user.
+     </li>
+     <li>
+     @('old$'),
+     @('restriction$'),
+     @('undefined$'),
+     @('new-name$'),
+     @('new-enable$'),
+     @('thm-name$'),
+     @('thm-enable$'),
+     @('non-executable$'),
+     @('verify-guards$'),
+     @('hints$'),
+     @('print$'), and
+     @('show-only$')
+     are the results of processing
+     the homonymous (without the @('$')) inputs to @(tsee restrict).
+     Some are identical to the corresponding inputs,
+     but they have types implied by their successful validation,
+     performed when they are processed.
+     </li>
+     <li>
+     @('app-conds') are the applicability conditions.
+     </li>
+     <li>
+     @('app-cond-thm-names') is an alist
+     from the keywords that identify the applicability conditions
+     to the corresponding generated theorem names.
+     </li>
+     <li>
+     @('old-unnorm-name') is the name of the generated theorem
+     that installs the non-normalized definition of the target function.
+     </li>
+     <li>
+     @('new-unnorm-name') is the name of the generated theorem
+     that installs the non-normalized definition of the new function.
+     </li>
+   </ul>
+   <p>
+   The parameters of implementation functions that are not listed above
+   are described in, or clear from, those functions' documentation.
+   </p>")
+
+(xdoc::order-subtopics restrict-implementation nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict-check-old
-  ((old "Input to the transformation.")
-   (verify-guards "Input to the transformation.")
-   (ctx "Context for errors.")
-   state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
-               (old-fn-name "A @(tsee symbolp) that is
-                             the name of the target function
-                             of the transformation,
-                             denoted by the @('old') input.")
+(defxdoc restrict-input-processing
+  :parents (restrict-implementation)
+  :short "Input processing performed by @(tsee restrict)."
+  :long
+  "<p>
+   This involves validating the inputs.
+   When validation fails, <see topic='@(url er)'>soft errors</see> occur.
+   Thus, generally the input processing functions return
+   <see topic='@(url acl2::error-triple)'>error triples</see>.
+   </p>")
+
+(xdoc::order-subtopics restrict-input-processing nil t)
+
+(local (xdoc::set-default-parents restrict-input-processing))
+
+(define restrict-process-old (old verify-guards ctx state)
+  :returns (mv erp
+               (old$ "A @(tsee symbolp) that is
+                      the name of the target function
+                      of the transformation,
+                      denoted by the @('old') input.")
                state)
   :mode :program
-  :short "Ensure that the @('old') input to the transformation is valid."
+  :short "Process the @('old') input."
   (b* ((wrld (w state))
-       ((er old-fn-name) (ensure-function-name-or-numbered-wildcard$
-                          old "The first input" t nil))
-       (description (msg "The target function ~x0" old-fn-name))
-       ((er &) (ensure-function-logic-mode$ old-fn-name description t nil))
-       ((er &) (ensure-function-defined$ old-fn-name description t nil))
-       ((er &) (ensure-function-has-args$ old-fn-name description t nil))
-       ((er &) (ensure-function-number-of-results$ old-fn-name 1
+       ((er old$) (ensure-function-name-or-numbered-wildcard$
+                   old "The first input" t nil))
+       (description (msg "The target function ~x0" old$))
+       ((er &) (ensure-function-logic-mode$ old$ description t nil))
+       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-has-args$ old$ description t nil))
+       ((er &) (ensure-function-number-of-results$ old$ 1
                                                    description t nil))
-       ((er &) (ensure-function-no-stobjs$ old-fn-name description t nil))
-       (recursive (recursivep old-fn-name nil wrld))
+       ((er &) (ensure-function-no-stobjs$ old$ description t nil))
+       (recursive (recursivep old$ nil wrld))
        ((er &) (if recursive
-                   (ensure-function-singly-recursive$ old-fn-name
+                   (ensure-function-singly-recursive$ old$
                                                       description t nil)
                  (value nil)))
        ((er &) (if recursive
-                   (ensure-function-known-measure$ old-fn-name
+                   (ensure-function-known-measure$ old$
                                                    description t nil)
                  (value nil)))
        ((er &) (if recursive
-                   (ensure-function-not-in-termination-thm$ old-fn-name
+                   (ensure-function-not-in-termination-thm$ old$
                                                             description t nil)
                  (value nil)))
        ((er &) (if (eq verify-guards t)
                    (ensure-function-guard-verified$
-                    old-fn-name
+                    old$
                     (msg "Since the :VERIFY-GUARDS input is T, ~
-                          the target function ~x0" old-fn-name)
+                          the target function ~x0" old$)
                     t nil)
                  (value nil))))
-    (value old-fn-name)))
+    (value old$)))
 
-(define restrict-check-restriction
-  ((restriction "Input to the transformation.")
-   (old-fn-name symbolp "Result of @(tsee restrict-check-old).")
-   (do-verify-guards booleanp
-                     "Result of validating
-                      the @(':verify-guards') input to the transformation
-                      (in @(tsee restrict-check-inputs)).")
-   (ctx "Context for errors.")
-   state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+(define restrict-process-restriction (restriction
+                                      (old$ symbolp)
+                                      (verify-guards$ booleanp)
+                                      ctx
+                                      state)
+  :returns (mv erp
                (restriction$ "A @(tsee pseudo-termp) that is
                               the translation of @('restriction').")
                state)
   :mode :program
-  :short "Ensure that the @('restriction') input to the transformation
-          is valid."
+  :short "Process the @('restriction') input."
   (b* ((wrld (w state))
        ((er (list term stobjs-out)) (ensure-term$ restriction
                                                   "The second input" t nil))
        (description (msg "The term ~x0 that denotes the restricting predicate"
                          restriction))
        ((er &) (ensure-term-free-vars-subset$ term
-                                              (formals old-fn-name wrld)
+                                              (formals old$ wrld)
                                               description t nil))
        ((er &) (ensure-term-logic-mode$ term description t nil))
        ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
                                                                description
                                                                t nil))
        ((er &) (ensure-term-no-stobjs$ stobjs-out description t nil))
-       ((er &) (if do-verify-guards
+       ((er &) (if verify-guards$
                    (ensure-term-guard-verified-exec-fns$
                     term
                     (msg "Since either the :VERIFY-GUARDS input is T, ~
                           or it is (perhaps by default) :AUTO ~
                           and the target function ~x0 is guard-verified, ~@1"
-                         old-fn-name (msg-downcase-first description))
+                         old$ (msg-downcase-first description))
                     t nil)
                  (value nil)))
-       ((er &) (ensure-term-does-not-call$ term old-fn-name
+       ((er &) (ensure-term-does-not-call$ term old$
                                            description t nil)))
     (value term)))
 
-(define restrict-check-undefined
-  ((undefined "Input to the transformation.")
-   (old-fn-name symbolp "Result of @(tsee restrict-check-old).")
-   (ctx "Context for errors.")
-   state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+(define restrict-process-undefined (undefined
+                                    (old$ symbolp)
+                                    ctx
+                                    state)
+  :returns (mv erp
                (undefined$ "A @(tsee pseudo-termp) that is
                             the translation of @('undefined').")
                state)
   :mode :program
-  :short "Ensure that the @(':undefined') input to the transformation
-          is valid."
+  :short "Process the @(':undefined') input."
   (b* ((wrld (w state))
        ((er (list term stobjs-out)) (ensure-term$ undefined
                                                   "The :UNDEFINED input" t nil))
        (description (msg "The term ~x0 that denotes the undefined value"
                          undefined))
        ((er &) (ensure-term-free-vars-subset$ term
-                                              (formals old-fn-name wrld)
+                                              (formals old$ wrld)
                                               description t nil))
        ((er &) (ensure-term-logic-mode$ term description t nil))
        ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
                                                                description
                                                                t nil))
        ((er &) (ensure-term-no-stobjs$ stobjs-out description t nil))
-       ((er &) (ensure-term-does-not-call$ term old-fn-name
+       ((er &) (ensure-term-does-not-call$ term old$
                                            description t nil)))
     (value term)))
 
-(define restrict-check-new-name
-  ((new-name "Input to the transformation.")
-   (old-fn-name symbolp "Result of @(tsee restrict-check-old).")
-   (ctx "Context for errors.")
-   state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
-               (new-fn-name "A @(tsee symbolp)
-                             to use as the name for the new function.")
+(define restrict-process-new-name (new-name
+                                   (old$ symbolp)
+                                   ctx
+                                   state)
+  :returns (mv erp
+               (new-name$ "A @(tsee symbolp)
+                           to use as the name for the new function.")
                state)
   :mode :program
-  :short "Ensure that the @(':new-name') input to the transformation is valid."
+  :short "Process the @(':new-name') input."
   (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
        (name (if (eq new-name :auto)
-                 (next-numbered-name old-fn-name (w state))
+                 (next-numbered-name old$ (w state))
                new-name))
        (description (msg "The name ~x0 of the new function, ~@1,"
                          name
@@ -172,31 +248,27 @@
        ((er &) (ensure-symbol-new-event-name$ name description t nil)))
     (value name)))
 
-(define restrict-check-thm-name
-  ((thm-name "Input to the transformation.")
-   (old-fn-name symbolp "Result of @(tsee restrict-check-old).")
-   (new-fn-name symbolp "Result of @(tsee restrict-check-new-name).")
-   (ctx "Context for errors.")
-   state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
-               (old-to-new-thm-name "A @(tsee symbolp)
-                                     to use for the theorem
-                                     that relates the old and new functions.")
+(define restrict-process-thm-name (thm-name
+                                   (old$ symbolp)
+                                   (new-name$ symbolp)
+                                   ctx
+                                   state)
+  :returns (mv erp
+               (thm-name$ "A @(tsee symbolp)
+                           to use for the theorem
+                           that relates the old and new functions.")
                state)
   :mode :program
-  :short "Ensure that the @(':thm-name') input to the transformation
-          is valid."
+  :short "Process the @(':thm-name') input."
   (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
        (name (if (eq thm-name :auto)
-                 (make-paired-name old-fn-name new-fn-name 2 (w state))
+                 (make-paired-name old$ new-name$ 2 (w state))
                thm-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the target function ~x1 ~
                           to the new function ~x2, ~
                           ~@3,"
-                         name old-fn-name new-fn-name
+                         name old$ new-name$
                          (if (eq thm-name :auto)
                              "automatically generated ~
                               since the :THM-NAME input ~
@@ -204,9 +276,9 @@
                            "supplied as the :THM-NAME input")))
        ((er &) (ensure-symbol-new-event-name$ name description t nil))
        ((er &) (ensure-symbol-different$
-                name new-fn-name
+                name new-name$
                 (msg "the name ~x0 of the new function ~
-                      (determined by the :NEW-NAME input)." new-fn-name)
+                      (determined by the :NEW-NAME input)." new-name$)
                 description
                 t nil)))
     (value name)))
@@ -214,7 +286,8 @@
 (defval *restrict-app-cond-names*
   :short "Names of all the applicability conditions."
   '(:restriction-of-rec-calls
-    :restriction-guard)
+    :restriction-guard
+    :restriction-boolean)
   ///
 
   (defruled symbol-listp-of-*restrict-app-cond-names*
@@ -223,18 +296,13 @@
   (defruled no-duplicatesp-eq-of-*restrict-app-cond-names*
     (no-duplicatesp-eq *restrict-app-cond-names*)))
 
-(define restrict-check-hints
-  ((hints "Input to the transformation.")
-   (ctx "Context for errors.")
-   state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
-               (hints-alist "A @('symbol-alistp') that is the alist form of
-                             the keyword-value list @('hints').")
+(define restrict-process-hints (hints ctx state)
+  :returns (mv erp
+               (hints$ "A @('symbol-alistp') that is the alist form of
+                        the keyword-value list @('hints').")
                state)
   :mode :program
-  :short "Ensure that the @(':hints') input to the transformation is valid."
+  :short "Process the @(':hints') input."
   :long
   "<p>
    Here we only check that the input is a keyword-value list
@@ -253,32 +321,30 @@
                                     description t nil)))
     (value alist)))
 
-(define restrict-check-inputs ((old "Input to the transformation.")
-                               (restriction "Input to the transformation.")
-                               (undefined "Input to the transformation.")
-                               (new-name "Input to the transformation.")
-                               (new-enable "Input to the transformation.")
-                               (thm-name "Input to the transformation.")
-                               (thm-enable "Input to the transformation.")
-                               (non-executable "Input to the transformation.")
-                               (verify-guards "Input to the transformation.")
-                               (hints "Input to the transformation.")
-                               (print "Input to the transformation.")
-                               (show-only "Input to the transformation.")
-                               (ctx "Context for errors.")
-                               state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
-               (result "A tuple @('(old-fn-name
+(define restrict-process-inputs (old
+                                 restriction
+                                 undefined
+                                 new-name
+                                 new-enable
+                                 thm-name
+                                 thm-enable
+                                 non-executable
+                                 verify-guards
+                                 hints
+                                 print
+                                 show-only
+                                 ctx
+                                 state)
+  :returns (mv erp
+               (result "A tuple @('(old$
                                     restriction$
                                     undefined$
-                                    new-fn-name
-                                    new-fn-enable
-                                    old-to-new-thm-name
-                                    make-non-executable
-                                    do-verify-guards
-                                    hints-alist
+                                    new-name$
+                                    new-enable$
+                                    thm-name$
+                                    non-executable$
+                                    verify-guards$
+                                    hints$
                                     print$)')
                         satisfying
                         @('(typed-tuplep symbolp
@@ -292,91 +358,116 @@
                                          symbol-alistp
                                          canonical-print-specifier-p
                                          result)'),
-                        where @('old-fn-name') is
-                        the result of @(tsee restrict-check-old),
+                        where @('old$') is
+                        the result of @(tsee restrict-process-old),
                         @('restriction$') is
-                        the result of @(tsee restrict-check-restriction),
+                        the result of @(tsee restrict-process-restriction),
                         @('undefined$') is
-                        the result of @(tsee restrict-check-undefined),
-                        @('new-fn-name') is
-                        the result of @(tsee restrict-check-new-name),
-                        @('new-fn-enable') indicates whether
+                        the result of @(tsee restrict-process-undefined),
+                        @('new-name$') is
+                        the result of @(tsee restrict-process-new-name),
+                        @('new-enable$') indicates whether
                         the new function should be enabled or not,
-                        @('old-to-new-thm-name') is
-                        the result of @(tsee restrict-check-thm-name),
-                        @('make-non-executable') indicates whether
+                        @('thm-name$') is
+                        the result of @(tsee restrict-process-thm-name),
+                        @('non-executable$') indicates whether
                         the new function should be
                         non-executable or not,
-                        @('do-verify-guards') indicates whether the guards of
+                        @('verify-guards$') indicates whether the guards of
                         the new function should be verified or not,
-                        @('hints-alist') is
-                        the result of @(tsee restrict-check-hints), and
+                        @('hints$') is
+                        the result of @(tsee restrict-process-hints), and
                         @('print$') is a canonicalized version of
                         the @(':print') input.")
                state)
   :mode :program
-  :short "Ensure that all the inputs to the transformation are valid."
+  :short "Process all the inputs."
   :long
   "<p>
-   The inputs are validated
+   The inputs are processed
    in the order in which they appear in the documentation,
-   except that @(':verify-guards') is validated just before @('restriction')
-   because the result of validating @(':verify-guards')
-   is used to validate @('restriction').
-   @('old') is validated before @(':verify-guards')
-   because the result of validating @('old')
-   is used to validate @(':verify-guards').
-   @(':verify-guards') is also used to validate @('old'),
+   except that @(':verify-guards') is processed just before @('restriction')
+   because the result of processing @(':verify-guards')
+   is used to process @('restriction').
+   @('old') is processed before @(':verify-guards')
+   because the result of processing @('old')
+   is used to process @(':verify-guards').
+   @(':verify-guards') is also used to process @('old'),
    but it is only tested for equality with @('t')
-   (see @(tsee restrict-check-old)).
+   (see @(tsee restrict-process-old)).
    </p>"
-  (b* (((er old-fn-name) (restrict-check-old old verify-guards ctx state))
-       ((er do-verify-guards) (ensure-boolean-or-auto-and-return-boolean$
-                               verify-guards
-                               (guard-verified-p old-fn-name (w state))
-                               "The :VERIFY-GUARDS input" t nil))
-       ((er restriction$) (restrict-check-restriction
-                           restriction old-fn-name do-verify-guards ctx state))
-       ((er undefined$) (restrict-check-undefined
-                         undefined old-fn-name ctx state))
-       ((er new-fn-name) (restrict-check-new-name
-                          new-name old-fn-name ctx state))
-       ((er new-fn-enable) (ensure-boolean-or-auto-and-return-boolean$
-                            new-enable
-                            (fundef-enabledp old state)
-                            "The :NEW-ENABLE input" t nil))
-       ((er old-to-new-thm-name) (restrict-check-thm-name
-                                  thm-name old-fn-name new-fn-name ctx state))
+  (b* (((er old$) (restrict-process-old old verify-guards ctx state))
+       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
+                             verify-guards
+                             (guard-verified-p old$ (w state))
+                             "The :VERIFY-GUARDS input" t nil))
+       ((er restriction$) (restrict-process-restriction
+                           restriction old$ verify-guards$ ctx state))
+       ((er undefined$) (restrict-process-undefined
+                         undefined old$ ctx state))
+       ((er new-name$) (restrict-process-new-name
+                        new-name old$ ctx state))
+       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
+                          new-enable
+                          (fundef-enabledp old state)
+                          "The :NEW-ENABLE input" t nil))
+       ((er thm-name$) (restrict-process-thm-name
+                        thm-name old$ new-name$ ctx state))
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
-       ((er make-non-executable) (ensure-boolean-or-auto-and-return-boolean$
-                                  non-executable
-                                  (non-executablep old (w state))
-                                  "The :NON-EXECUTABLE input" t nil))
-       ((er hints-alist) (restrict-check-hints hints ctx state))
+       ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
+                              non-executable
+                              (non-executablep old (w state))
+                              "The :NON-EXECUTABLE input" t nil))
+       ((er hints$) (restrict-process-hints hints ctx state))
        ((er print$) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
        ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
-    (value (list old-fn-name
+    (value (list old$
                  restriction$
                  undefined$
-                 new-fn-name
-                 new-fn-enable
-                 old-to-new-thm-name
-                 make-non-executable
-                 do-verify-guards
-                 hints-alist
+                 new-name$
+                 new-enable$
+                 thm-name$
+                 non-executable$
+                 verify-guards$
+                 hints$
                  print$))))
 
-(define restrict-restriction-of-rec-calls-consequent
-  ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc restrict-event-generation
+  :parents (restrict-implementation)
+  :short "Event generation performed by @(tsee restrict)."
+  :long
+  "<p>
+   Some events are generated in two slightly different forms:
+   a form that is local to the generated @(tsee encapsulate),
+   and a form that is exported from the @(tsee encapsulate).
+   Proof hints are in the former but not in the latter,
+   thus keeping the ACL2 history ``clean''.
+   </p>
+   <p>
+   Other events are generated only locally in the @(tsee encapsulate),
+   without any exported counterparts.
+   These have automatically generated fresh names:
+   the names used so far
+   are threaded through the event generation functions below.
+   </p>")
+
+(xdoc::order-subtopics restrict-event-generation nil t)
+
+(local (xdoc::set-default-parents restrict-event-generation))
+
+(define restrict-gen-restriction-of-rec-calls-consequent-term
+  ((old$ symbolp)
    (rec-calls-with-tests pseudo-tests-and-call-listp
                          "Recursive calls, with controlling tests,
                           of the old function.")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
+   (restriction$ pseudo-termp)
    (wrld plist-worldp))
   :returns (consequent "A @(tsee pseudo-termp).")
   :verify-guards nil
-  :short "Consequent of the
-          @(':restriction-of-rec-calls') applicability condition."
+  :short "Generate the consequent of
+          the @(':restriction-of-rec-calls') applicability condition."
   :long
   "<p>
    This is the term
@@ -393,15 +484,12 @@
                                updatem-xn<x1,...,xn>>))
    })"
   (conjoin
-   (restrict-restriction-of-rec-calls-consequent-aux old-fn-name
-                                                     rec-calls-with-tests
-                                                     restriction$
-                                                     nil
-                                                     wrld))
+   (restrict-gen-restriction-of-rec-calls-consequent-term-aux
+    old$ rec-calls-with-tests restriction$ nil wrld))
 
   :prepwork
-  ((define restrict-restriction-of-rec-calls-consequent-aux
-     ((old-fn-name symbolp)
+  ((define restrict-gen-restriction-of-rec-calls-consequent-term-aux
+     ((old$ symbolp)
       (rec-calls-with-tests pseudo-tests-and-call-listp)
       (restriction$ pseudo-termp)
       (rev-conjuncts pseudo-term-listp)
@@ -414,71 +502,74 @@
             (tests (access tests-and-call tests-and-call :tests))
             (call (access tests-and-call tests-and-call :call))
             (context (conjoin tests)))
-         (restrict-restriction-of-rec-calls-consequent-aux
-          old-fn-name
+         (restrict-gen-restriction-of-rec-calls-consequent-term-aux
+          old$
           (cdr rec-calls-with-tests)
           restriction$
           (cons (implicate context
-                           (subcor-var (formals old-fn-name wrld)
+                           (subcor-var (formals old$ wrld)
                                        (fargs call)
                                        restriction$))
                 rev-conjuncts)
           wrld))))))
 
-(define restrict-app-cond-formula
+(define restrict-gen-app-cond-formula
   ((name (member-eq name *restrict-app-cond-names*)
          "Name of the applicability condition.")
-   (old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
+   (old$ symbolp)
+   (restriction$ pseudo-termp)
    state)
   :returns (formula "An untranslated term.")
   :mode :program
-  :short "Formula of the named applicability condition."
+  :short "Generate the formula of the named applicability condition."
   (let ((wrld (w state)))
     (case name
       (:restriction-of-rec-calls
-       (b* ((rec-calls-with-tests (recursive-calls old-fn-name wrld))
-            (consequent (restrict-restriction-of-rec-calls-consequent
-                         old-fn-name rec-calls-with-tests restriction$ wrld))
+       (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
+            (consequent (restrict-gen-restriction-of-rec-calls-consequent-term
+                         old$ rec-calls-with-tests restriction$ wrld))
             (formula-trans (implicate restriction$ consequent)))
          (untranslate formula-trans t wrld)))
       (:restriction-guard
-       (b* ((old-guard (guard old-fn-name nil wrld))
+       (b* ((old-guard (guard old$ nil wrld))
             (restriction-guard (term-guard-obligation restriction$ state))
             (formula-trans (implicate old-guard restriction-guard)))
+         (untranslate formula-trans t wrld)))
+      (:restriction-boolean
+       (b* ((formula-trans (apply-term* 'acl2::booleanp restriction$)))
          (untranslate formula-trans t wrld)))
       (t (impossible)))))
 
 (define restrict-app-cond-present-p
   ((name (member-eq name *restrict-app-cond-names*)
          "Name of the applicability condition.")
-   (old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (do-verify-guards booleanp "Result of @(tsee restrict-check-inputs).")
+   (old$ symbolp)
+   (verify-guards$ booleanp)
    (wrld plist-worldp))
-  :returns (yes/no booleanp :hyp (booleanp do-verify-guards))
+  :returns (yes/no booleanp :hyp (booleanp verify-guards$))
   :short "Check if the named applicability condition is present."
   (case name
-    (:restriction-of-rec-calls (if (recursivep old-fn-name nil wrld) t nil))
-    (:restriction-guard do-verify-guards)
+    (:restriction-of-rec-calls (if (recursivep old$ nil wrld) t nil))
+    (:restriction-guard verify-guards$)
+    (:restriction-boolean t)
     (t (impossible))))
 
-(define restrict-app-conds
-  ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (do-verify-guards booleanp "Result of @(tsee restrict-check-inputs).")
-   state)
+(define restrict-gen-app-conds ((old$ symbolp)
+                                (restriction$ pseudo-termp)
+                                (verify-guards$ booleanp)
+                                state)
   :returns (app-conds "A @(tsee symbol-alistp).")
   :mode :program
   :short "Generate the applicability conditions that must hold."
-  (restrict-app-conds-aux *restrict-app-cond-names*
-                          old-fn-name restriction$ do-verify-guards nil state)
+  (restrict-gen-app-conds-aux *restrict-app-cond-names*
+                              old$ restriction$ verify-guards$ nil state)
 
   :prepwork
-  ((define restrict-app-conds-aux
+  ((define restrict-gen-app-conds-aux
      ((names (subsetp-eq names *restrict-app-cond-names*))
-      (old-fn-name symbolp)
+      (old$ symbolp)
       (restriction$ pseudo-termp)
-      (do-verify-guards booleanp)
+      (verify-guards$ booleanp)
       (rev-app-conds symbol-alistp)
       state)
      :returns (app-conds) ; SYMBOL-ALISTP
@@ -488,55 +579,39 @@
          (reverse rev-app-conds)
        (b* ((name (car names))
             ((unless (restrict-app-cond-present-p
-                      name old-fn-name do-verify-guards (w state)))
-             (restrict-app-conds-aux (cdr names)
-                                     old-fn-name
-                                     restriction$
-                                     do-verify-guards
-                                     rev-app-conds
-                                     state))
-            (formula (restrict-app-cond-formula
+                      name old$ verify-guards$ (w state)))
+             (restrict-gen-app-conds-aux (cdr names)
+                                         old$
+                                         restriction$
+                                         verify-guards$
+                                         rev-app-conds
+                                         state))
+            (formula (restrict-gen-app-cond-formula
                       name
-                      old-fn-name
+                      old$
                       restriction$
                       state)))
-         (restrict-app-conds-aux (cdr names)
-                                 old-fn-name
-                                 restriction$
-                                 do-verify-guards
-                                 (acons name formula rev-app-conds)
-                                 state))))))
+         (restrict-gen-app-conds-aux (cdr names)
+                                     old$
+                                     restriction$
+                                     verify-guards$
+                                     (acons name formula rev-app-conds)
+                                     state))))))
 
-(define restrict-new-fn-intro-events
-  ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (undefined$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (new-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (new-fn-enable booleanp "Result of @(tsee restrict-check-inputs).")
-   (make-non-executable booleanp "Result of @(tsee restrict-check-inputs).")
-   (do-verify-guards booleanp "Result of @(tsee restrict-check-inputs).")
-   (wrld plist-worldp))
-  :returns (mv (new-fn-local-event "A @(tsee pseudo-event-formp).")
-               (new-fn-exported-event "A @(tsee pseudo-event-formp)."))
+(define restrict-gen-new-fn ((old$ symbolp)
+                             (restriction$ pseudo-termp)
+                             (undefined$ pseudo-termp)
+                             (new-name$ symbolp)
+                             (new-enable$ booleanp)
+                             (non-executable$ booleanp)
+                             (verify-guards$ booleanp)
+                             (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
-  :short "Local and exported events to introduce the new function."
+  :short "Generate the new function definition."
   :long
   "<p>
-   In the @(tsee encapsulate) generated by @(tsee restrict-event),
-   the new function is introduced via a local event first,
-   then via a redundant non-local (i.e. exported) event.
-   The local event includes the hints for the termination proof,
-   and does not perform guard verification
-   (even if guard verification must take place:
-   guard verification is deferred in this case;
-   see @(tsee restrict-new-fn-verify-guards-event)).
-   The exported event has no termination proof hints
-   and includes guard verification iff guard verification must take place.
-   This keeps the event history after the transformation &ldquo;clean&rdquo;,
-   without implementation-specific termination hints
-   and with the correct @(':verify-guards') in the declarations.
-   </p>
-   <p>
    The macro used to introduce the new function is determined by
    whether the new function must be
    enabled or not, and non-executable or not.
@@ -571,31 +646,37 @@
    by conjoining the restricting predicate
    after the guard of the old function,
    as described in the documentation.
+   Since the restriction test follows from the guard,
+   it is wrapped with @(tsee mbt).
+   </p>
+   <p>
+   Guard verification is deferred;
+   see @(tsee restrict-gen-new-fn-verify-guards).
    </p>"
-  (b* ((macro (function-intro-macro new-fn-enable make-non-executable))
-       (formals (formals old-fn-name wrld))
-       (old-body (if (non-executablep old-fn-name wrld)
-                     (unwrapped-nonexec-body old-fn-name wrld)
-                   (ubody old-fn-name wrld)))
-       (new-body-core (sublis-fn-simple (acons old-fn-name new-fn-name nil)
+  (b* ((macro (function-intro-macro new-enable$ non-executable$))
+       (formals (formals old$ wrld))
+       (old-body (if (non-executablep old$ wrld)
+                     (unwrapped-nonexec-body old$ wrld)
+                   (ubody old$ wrld)))
+       (new-body-core (sublis-fn-simple (acons old$ new-name$ nil)
                                         old-body))
-       (new-body `(if ,restriction$ ,new-body-core ,undefined$))
+       (new-body `(if (mbt ,restriction$) ,new-body-core ,undefined$))
        (new-body (untranslate new-body nil wrld))
-       (recursive (recursivep old-fn-name nil wrld))
+       (recursive (recursivep old$ nil wrld))
        (wfrel? (and recursive
-                    (well-founded-relation old-fn-name wrld)))
+                    (well-founded-relation old$ wrld)))
        (measure? (and recursive
-                      (untranslate (measure old-fn-name wrld) nil wrld)))
+                      (untranslate (measure old$ wrld) nil wrld)))
        (termination-hints? (and recursive
                                 `(("Goal"
                                    :in-theory nil
-                                   :use (:termination-theorem ,old-fn-name)))))
-       (old-guard (guard old-fn-name nil wrld))
+                                   :use (:termination-theorem ,old$)))))
+       (old-guard (guard old$ nil wrld))
        (new-guard (conjoin2 old-guard restriction$))
        (new-guard (untranslate new-guard t wrld))
        (local-event
         `(local
-          (,macro ,new-fn-name (,@formals)
+          (,macro ,new-name$ (,@formals)
                   (declare (xargs ,@(and recursive
                                          (list :well-founded-relation wfrel?
                                                :measure measure?
@@ -605,52 +686,31 @@
                                   :verify-guards nil))
                   ,new-body)))
        (exported-event
-        `(,macro ,new-fn-name (,@formals)
+        `(,macro ,new-name$ (,@formals)
                  (declare (xargs ,@(and recursive
                                         (list :well-founded-relation wfrel?
                                               :measure measure?
                                               :ruler-extenders :all))
                                  :guard ,new-guard
-                                 :verify-guards ,do-verify-guards))
+                                 :verify-guards ,verify-guards$))
                  ,new-body)))
     (mv local-event exported-event)))
 
-(define restrict-old-to-new-intro-events
-  ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (new-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (old-to-new-thm-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (thm-enable booleanp "Input to the transformation, after validation.")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee restrict-event)).")
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
-   (wrld plist-worldp))
-  :returns (mv (old-to-new-local-event "A @(tsee pseudo-event-formp).")
-               (old-to-new-exported-event "A @(tsee pseudo-event-formp)."))
+(define restrict-gen-old-to-new-thm ((old$ symbolp)
+                                     (restriction$ pseudo-termp)
+                                     (new-name$ symbolp)
+                                     (thm-name$ symbolp)
+                                     (thm-enable$ booleanp)
+                                     (app-cond-thm-names symbol-symbol-alistp)
+                                     (old-unnorm-name symbolp)
+                                     (new-unnorm-name symbolp)
+                                     (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
-  :short "Local and exported events to introduce
-          the theorem that relates the old and new functions."
+  :short "Generate the theorem that relates the old and new functions."
   :long
   "<p>
-   In the @(tsee encapsulate) generated by @(tsee restrict-event),
-   the theorem that relates the old and new functions
-   is introduced via a local event first,
-   then via a redundant non-local (i.e. exported) event.
-   The local event includes the hints for the proof.
-   The exported event has no proof hints.
-   This keeps the event history after the transformation &ldquo;clean&rdquo;,
-   without implementation-specific proof hints
-   that may refer to local events of the @(tsee encapsulate)
-   that do not exist in the history after the transformation.
-   </p>
-   <p>
    The macro used to introduce the theorem is determined by
    whether the theorem must be enabled or not.
    </p>
@@ -673,47 +733,44 @@
    and the induction rule of the old function,
    and using the @(':restriction-of-rec-calls') applicability condition.
    </p>"
-  (b* ((macro (theorem-intro-macro thm-enable))
-       (formals (formals old-fn-name wrld))
+  (b* ((macro (theorem-intro-macro thm-enable$))
+       (formals (formals old$ wrld))
        (formula (implicate restriction$
-                           `(equal (,old-fn-name ,@formals)
-                                   (,new-fn-name ,@formals))))
+                           `(equal (,old$ ,@formals)
+                                   (,new-name$ ,@formals))))
        (formula (untranslate formula t wrld))
-       (recursive (recursivep old-fn-name nil wrld))
+       (recursive (recursivep old$ nil wrld))
        (hints (if recursive
                   `(("Goal"
-                     :in-theory '(,old-fn-unnorm-name
-                                  ,new-fn-unnorm-name
-                                  (:induction ,old-fn-name))
-                     :induct (,old-fn-name ,@formals))
+                     :in-theory '(,old-unnorm-name
+                                  ,new-unnorm-name
+                                  (:induction ,old$))
+                     :induct (,old$ ,@formals))
                     '(:use ,(cdr (assoc-eq :restriction-of-rec-calls
-                                           app-cond-thm-names))))
+                                   app-cond-thm-names))))
                 `(("Goal"
-                   :in-theory '(,old-fn-unnorm-name
-                                ,new-fn-unnorm-name)))))
+                   :in-theory '(,old-unnorm-name
+                                ,new-unnorm-name)))))
        (local-event `(local
-                      (,macro ,old-to-new-thm-name
+                      (,macro ,thm-name$
                               ,formula
                               :hints ,hints)))
-       (exported-event `(,macro ,old-to-new-thm-name
+       (exported-event `(,macro ,thm-name$
                                 ,formula)))
     (mv local-event exported-event)))
 
-(define restrict-new-fn-verify-guards-event
-  ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (new-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (old-to-new-thm-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Map from the names of the applicability conditions
-                        to the corresponding theorems
-                        (calculated in @(tsee restrict-event)).")
+(define restrict-gen-new-fn-verify-guards
+  ((old$ symbolp)
+   (new-name$ symbolp)
+   (thm-name$ symbolp)
+   (app-cond-thm-names symbol-symbol-alistp)
    (wrld plist-worldp))
-  :returns (new-fn-verify-guards-event pseudo-event-formp)
+  :returns (local-event pseudo-event-formp)
   :verify-guards nil
-  :short "Event to verify the guards of the new function."
+  :short "Generate the event to verify the guards of the new function."
   :long
   "<p>
-   As mentioned in @(tsee restrict-new-fn-intro-events),
+   As mentioned in @(tsee restrict-gen-new-fn),
    the verification of the guards of the new function,
    when it has to take place,
    is deferred when the function is introduced.
@@ -741,68 +798,72 @@
    but the transformation covers functions with multiple recursive calls).
    </p>
    <p>
-   The guard verification event
-   is local to the @(tsee encapsulate) generated by the transformation.
-   This keeps the event history after the transformation &ldquo;clean&rdquo;,
-   without implementation-specific proof hints
-   that may refer to local events of the @(tsee encapsulate)
-   that do not exist in the history after the transformation.
-   </p>"
-  (b* ((recursive (recursivep old-fn-name nil wrld))
-       (hints (if recursive
-                  `(("Goal"
-                     :in-theory '(,old-to-new-thm-name)
-                     :use ((:guard-theorem ,old-fn-name)
-                           ,(cdr (assoc-eq :restriction-guard
-                                           app-cond-thm-names))
-                           ,(cdr (assoc-eq :restriction-of-rec-calls
-                                           app-cond-thm-names)))))
-                `(("Goal"
-                   :in-theory nil
-                   :use ((:guard-theorem ,old-fn-name)
-                         ,(cdr (assoc-eq :restriction-guard
-                                         app-cond-thm-names)))))))
-       (event `(local (verify-guards ,new-fn-name :hints ,hints))))
-    event))
-
-(define restrict-event
-  ((old-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (restriction$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (undefined$ pseudo-termp "Result of @(tsee restrict-check-inputs).")
-   (new-fn-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (new-fn-enable booleanp "Result of @(tsee restrict-check-inputs).")
-   (old-to-new-thm-name symbolp "Result of @(tsee restrict-check-inputs).")
-   (thm-enable booleanp "Input to the transformation, after validation.")
-   (make-non-executable booleanp "Result of @(tsee restrict-check-inputs).")
-   (do-verify-guards booleanp "Result of @(tsee restrict-check-inputs).")
-   (hints-alist symbol-alistp "Result of @(tsee restrict-check-inputs).")
-   (print$ booleanp "Result of @(tsee restrict-check-inputs).")
-   (show-only booleanp "Input to the transformation, after validation.")
-   (app-conds symbol-alistp "Result of @(tsee restrict-app-conds).")
-   (call pseudo-event-formp "Call to the transformation.")
-   (wrld plist-worldp))
-  :returns (event "A @(tsee pseudo-event-formp).")
-  :mode :program
-  :short "Event form generated by the transformation."
-  :long
-  "<p>
-   This is a @(tsee progn) that starts with
-   a (trivial) @(tsee encapsulate) that includes the events for
-   the applicability conditions,
-   the new function,
-   the theorem that relates the old and new functions,
-   and the recording of the generated numbered name.
-   The @(tsee encapsulate) is followed by events
-   for the recording in the transformation table,
-   and possibly for printing the transformation results on the screen.
+   The guard verification event is local;
+   the exported function definition has @(':verify-guards') set to @('t')
+   (when it must be guard-verified).
    </p>
    <p>
-   The @(tsee encapsulate) starts with some implicitly local event forms to
+   The guard verification involves proving that
+   the restriction test inside @(tsee mbt) is equal to @('t').
+   The guard itself implies that it is non-@('nil'),
+   and  the applicability condition @(':restriction-boolean')
+   is used to prove that, therefore, it is @('t').
+   </p>"
+  (b* ((recursive (recursivep old$ nil wrld))
+       (hints (if recursive
+                  `(("Goal"
+                     :in-theory '(,thm-name$)
+                     :use ((:guard-theorem ,old$)
+                           ,(cdr (assoc-eq :restriction-guard
+                                   app-cond-thm-names))
+                           ,(cdr (assoc-eq :restriction-of-rec-calls
+                                   app-cond-thm-names))
+                           ,(cdr (assoc-eq :restriction-boolean
+                                   app-cond-thm-names)))))
+                `(("Goal"
+                   :in-theory nil
+                   :use ((:guard-theorem ,old$)
+                         ,(cdr (assoc-eq :restriction-guard
+                                 app-cond-thm-names))
+                         ,(cdr (assoc-eq :restriction-boolean
+                                 app-cond-thm-names)))))))
+       (event `(local (verify-guards ,new-name$ :hints ,hints))))
+    event))
+
+(define restrict-gen-everything ((old$ symbolp)
+                                 (restriction$ pseudo-termp)
+                                 (undefined$ pseudo-termp)
+                                 (new-name$ symbolp)
+                                 (new-enable$ booleanp)
+                                 (thm-name$ symbolp)
+                                 (thm-enable$ booleanp)
+                                 (non-executable$ booleanp)
+                                 (verify-guards$ booleanp)
+                                 (hints$ symbol-alistp)
+                                 (print$ canonical-print-specifier-p)
+                                 (show-only$ booleanp)
+                                 (app-conds symbol-alistp)
+                                 (call pseudo-event-formp)
+                                 (wrld plist-worldp))
+  :returns (event "A @(tsee pseudo-event-formp).")
+  :mode :program
+  :short "Generate the top-level event."
+  :long
+  "<p>
+   This is a @(tsee progn) that consists of
+   the expansion of @(tsee restrict) (the @(tsee encapsulate)),
+   followed by an event to extend the transformation table,
+   optionally followed by events to print the exported events
+   (if specified by the @(':print') input).
+   The @(tsee progn) ends with @(':invisible') to avoid printing a return value.
+   </p>
+   <p>
+   The @(tsee encapsulate) starts with some implicitly local events to
    ensure logic mode and
    avoid errors due to ignored or irrelevant formals in the generated function.
-   Other implicitly local event forms remove any default and override hints,
-   to improve the robustness of the generated proofs;
-   this is done after proving the applicability conditions,
+   Other implicitly local events remove any default and override hints,
+   to prevent such hints from sabotaging the generated proofs;
+   this removal is done after proving the applicability conditions,
    in case their proofs rely on the default or override hints.
    </p>
    <p>
@@ -818,18 +879,6 @@
    because the generated proofs are based on the unnormalized bodies.
    </p>
    <p>
-   As explained in @(tsee restrict-new-fn-intro-events)
-   and @(tsee restrict-old-to-new-intro-events),
-   the events for the new function
-   and for the theorem that relates the old and new functions
-   are introduced locally first, then redundantly non-locally
-   (with slight variations).
-   As explained in @(tsee restrict-new-fn-verify-guards-event),
-   if the guards of the new function must be verified,
-   the event to verify them is generated
-   after the theorem that relates the old and new functions.
-   </p>
-   <p>
    The @(tsee encapsulate) is stored into the transformation table,
    associated to the call to the transformation.
    Thus, the table event and (if present) the screen output events
@@ -840,11 +889,11 @@
    </p>
    <p>
    If @(':print') includes @(':submit'),
-   the @(tsee encapsulate) is wrapped to show the normal screen output
-   for the submitted events.
+   the @(tsee encapsulate) is wrapped to show ACL2's output
+   in response to the submitted events.
    This screen output always starts with a blank line,
-   so we do need to print a blank line to separate the submission output
-   from the expansion output (if any).
+   so we do not need to print a blank line to separate
+   the submission-phase output from any expansion-phase output.
    </p>
    <p>
    If @(':print') includes @(':result'),
@@ -854,31 +903,25 @@
    that are introduced non-locally and redundantly in the @(tsee encapsulate).
    If @(':print') also includes @(':expand') or @(':submit'),
    an event to print a blank line is also generated
-   to separate the result output from the expansion or submission output.
-   </p>
-   <p>
-   The @(tsee progn) ends with an event form
-   to avoiding printing any return value on the screen.
+   to separate the result output
+   from the expansion-phase or submission-phase output.
    </p>
    <p>
    If @(':show-only') is @('t'),
-   the @(tsee encapsulate) is just printed on screen, not submitted.
+   the @(tsee encapsulate) is just printed on the screen
+   and not returned as part of the event to submit,
+   which in this case is just an @(':invisible') form.
    In this case,
    the presence or absence of @(':submit') and @(':result') in @(':print')
    is ignored.
    If @(':print') includes @(':expand'),
    a blank line is printed just before the @(tsee encapsulate)
    to separate it from the expansion output.
-   </p>
-   <p>
-   To ensure the absence of name conflicts inside the @(tsee encapsulate),
-   the event names to avoid are accumulated
-   and threaded through the event-generating code.
    </p>"
-  (b* ((names-to-avoid (list new-fn-name old-to-new-thm-name))
+  (b* ((names-to-avoid (list new-name$ thm-name$))
        ((mv app-cond-thm-events
             app-cond-thm-names) (named-formulas-to-thm-events app-conds
-                                                              hints-alist
+                                                              hints$
                                                               nil
                                                               t
                                                               t
@@ -886,56 +929,56 @@
                                                               wrld))
        (names-to-avoid (append names-to-avoid
                                (strip-cdrs app-cond-thm-names)))
-       ((mv old-fn-unnorm-event
-            old-fn-unnorm-name) (install-not-norm-event old-fn-name
-                                                        t
-                                                        names-to-avoid
-                                                        wrld))
-       (names-to-avoid (rcons names-to-avoid old-fn-unnorm-name))
+       ((mv old-unnorm-event
+            old-unnorm-name) (install-not-norm-event old$
+                                                     t
+                                                     names-to-avoid
+                                                     wrld))
+       (names-to-avoid (rcons names-to-avoid old-unnorm-name))
        ((mv new-fn-local-event
-            new-fn-exported-event) (restrict-new-fn-intro-events
-                                    old-fn-name
+            new-fn-exported-event) (restrict-gen-new-fn
+                                    old$
                                     restriction$
                                     undefined$
-                                    new-fn-name
-                                    new-fn-enable
-                                    make-non-executable
-                                    do-verify-guards
+                                    new-name$
+                                    new-enable$
+                                    non-executable$
+                                    verify-guards$
                                     wrld))
-       ((mv new-fn-unnorm-event
-            new-fn-unnorm-name) (install-not-norm-event new-fn-name
-                                                        t
-                                                        names-to-avoid
-                                                        wrld))
+       ((mv new-unnorm-event
+            new-unnorm-name) (install-not-norm-event new-name$
+                                                     t
+                                                     names-to-avoid
+                                                     wrld))
        ((mv old-to-new-thm-local-event
-            old-to-new-thm-exported-event) (restrict-old-to-new-intro-events
-                                            old-fn-name
+            old-to-new-thm-exported-event) (restrict-gen-old-to-new-thm
+                                            old$
                                             restriction$
-                                            new-fn-name
-                                            old-to-new-thm-name
-                                            thm-enable
+                                            new-name$
+                                            thm-name$
+                                            thm-enable$
                                             app-cond-thm-names
-                                            old-fn-unnorm-name
-                                            new-fn-unnorm-name
+                                            old-unnorm-name
+                                            new-unnorm-name
                                             wrld))
-       (new-fn-verify-guards-event? (and do-verify-guards
+       (new-fn-verify-guards-event? (and verify-guards$
                                          (list
-                                          (restrict-new-fn-verify-guards-event
-                                           old-fn-name
-                                           new-fn-name
-                                           old-to-new-thm-name
+                                          (restrict-gen-new-fn-verify-guards
+                                           old$
+                                           new-name$
+                                           thm-name$
                                            app-cond-thm-names
                                            wrld))))
-       (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-fn-name))
+       (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
                              ,@app-cond-thm-events
                              (set-default-hints nil)
                              (set-override-hints nil)
-                             ,old-fn-unnorm-event
+                             ,old-unnorm-event
                              ,new-fn-local-event
-                             ,new-fn-unnorm-event
+                             ,new-unnorm-event
                              ,old-to-new-thm-local-event
                              ,@new-fn-verify-guards-event?
                              ,new-fn-exported-event
@@ -943,7 +986,7 @@
                              ,new-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
        (expand-output-p (if (member-eq :expand print$) t nil))
-       ((when show-only)
+       ((when show-only$)
         (if expand-output-p
             (cw "~%~x0~|" encapsulate)
           (cw "~x0~|" encapsulate))
@@ -965,93 +1008,94 @@
        ,@print-events
        (value-triple :invisible))))
 
-(define restrict-fn
-  ((old "Input to the transformation.")
-   (restriction "Input to the transformation.")
-   (undefined "Input to the transformation.")
-   (new-name "Input to the transformation.")
-   (new-enable "Input to the transformation.")
-   (thm-name "Input to the transformation.")
-   (thm-enable "Input to the transformation.")
-   (non-executable "Input to the transformation.")
-   (verify-guards "Input to the transformation.")
-   (hints "Input to the transformation.")
-   (print "Input to the transformation.")
-   (show-only "Input to the transformation.")
-   (call pseudo-event-formp "Call to the transformation.")
-   (ctx "Context for errors.")
-   state)
-  :returns (mv (erp "@(tsee booleanp) flag of the
-                     <see topic='@(url acl2::error-triple)'>error
-                     triple</see>.")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define restrict-fn (old
+                     restriction
+                     undefined
+                     new-name
+                     new-enable
+                     thm-name
+                     thm-enable
+                     non-executable
+                     verify-guards
+                     hints
+                     print
+                     show-only
+                     (call pseudo-event-formp)
+                     ctx
+                     state)
+  :returns (mv erp
                (event "A @(tsee pseudo-event-formp).")
                state)
   :mode :program
-  :short "Validate the inputs,
+  :parents (restrict-implementation)
+  :short "Check redundancy,
+          process the inputs,
           prove the applicability conditions, and
-          generate the event form to submit."
+          generate the event to submit."
   :long
   "<p>
    If this call to the transformation is redundant,
    a message to that effect is printed on the screen.
    If the transformation is redundant and @(':show-only') is @('t'),
-   the @(tsee encapsulate), retrieved from the table, is shown on screen.
+   the @(tsee encapsulate), retrieved from the table, is shown on the screen.
    </p>"
   (b* ((encapsulate? (previous-transformation-expansion call (w state)))
        ((when encapsulate?)
         (b* (((run-when show-only) (cw "~x0~|" encapsulate?)))
           (cw "~%The transformation ~x0 is redundant.~%" call)
           (value '(value-triple :invisible))))
-       ((er (list old-fn-name
+       ((er (list old$
                   restriction$
                   undefined$
-                  new-fn-name
-                  new-fn-enable
-                  old-to-new-thm-name
-                  make-non-executable
-                  do-verify-guards
-                  hints-alist
-                  print$)) (restrict-check-inputs old
-                                                  restriction
-                                                  undefined
-                                                  new-name
-                                                  new-enable
-                                                  thm-name
-                                                  thm-enable
-                                                  non-executable
-                                                  verify-guards
-                                                  hints
-                                                  print
-                                                  show-only
-                                                  ctx state))
-       (app-conds (restrict-app-conds old-fn-name
-                                      restriction$
-                                      do-verify-guards
-                                      state))
+                  new-name$
+                  new-enable$
+                  thm-name$
+                  non-executable$
+                  verify-guards$
+                  hints$
+                  print$)) (restrict-process-inputs old
+                                                    restriction
+                                                    undefined
+                                                    new-name
+                                                    new-enable
+                                                    thm-name
+                                                    thm-enable
+                                                    non-executable
+                                                    verify-guards
+                                                    hints
+                                                    print
+                                                    show-only
+                                                    ctx state))
+       (app-conds (restrict-gen-app-conds old$
+                                          restriction$
+                                          verify-guards$
+                                          state))
        ((er &) (ensure-named-formulas app-conds
-                                      hints-alist
+                                      hints$
                                       (if (member-eq :expand print$) t nil)
                                       t nil ctx state))
-       (event (restrict-event old-fn-name
-                              restriction$
-                              undefined$
-                              new-fn-name
-                              new-fn-enable
-                              old-to-new-thm-name
-                              thm-enable
-                              make-non-executable
-                              do-verify-guards
-                              hints-alist
-                              print$
-                              show-only
-                              app-conds
-                              call
-                              (w state))))
+       (event (restrict-gen-everything old$
+                                       restriction$
+                                       undefined$
+                                       new-name$
+                                       new-enable$
+                                       thm-name$
+                                       thm-enable
+                                       non-executable$
+                                       verify-guards$
+                                       hints$
+                                       print$
+                                       show-only
+                                       app-conds
+                                       call
+                                       (w state))))
     (value event)))
 
-(defsection restrict-implementation
-  :parents (implementation restrict)
-  :short "Implementation of the domain restriction transformation."
+(defsection restrict-macro-definition
+  :parents (restrict-implementation)
+  :short "Definition of the @(tsee restrict) macro."
   :long
   "<p>
    Submit the event form generated by @(tsee restrict-fn).
