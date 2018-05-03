@@ -114,7 +114,7 @@
     (implies (and (unsigned-byte-listp width (take n x))
                   (unsigned-byte-listp width (nthcdr n x)))
              (unsigned-byte-listp width x)))
-  
+
   (defthm unsigned-byte-listp-of-update-nth
     (implies (and (unsigned-byte-listp n l)
                   (< key (len l)))
