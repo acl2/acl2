@@ -68,6 +68,7 @@
     (integerp       . "_SMT_.Z")
     (booleanp       . "_SMT_.B")))
 
+;;----------------------------------------------------------------
 
 (encapsulate ()
   (local (defun falist-to-xdoc-aux (falist acc)

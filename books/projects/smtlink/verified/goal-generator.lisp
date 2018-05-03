@@ -183,7 +183,7 @@
     remembers how many levels are left for each function. Since functions not
     in @('fn-lst') are added to @('fn-lvls') with 0 level, this argument
     doesn't decrease in that case. This is why it's necessary to have the first
-    argument @('wrld-fn-len'). The third argment is the @(see acl2-count) of
+    argument @('wrld-fn-len'). The third argument is the @(see acl2-count) of
     current @('term-lst') (also see @(see ex-args)). This argument decreases
     every time the recursive function @('expand') goes into expand the @(see
     cdr) of @('term-lst').</p>"
@@ -415,10 +415,11 @@
                    (er hard? 'SMT-goal-generator=>expand "Should be a function call: ~q0" fn-call)
                    (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
                  (basic-function (member-equal fn-call *SMT-basics*))
+                 (flex? (fncall-of-flextype fn-call state))
                  (lvl-item (assoc-equal fn-call a.fn-lvls))
                  (extract-res (meta-extract-formula fn-call state))
-                 ((if (or basic-function (<= a.wrld-fn-len 0)
-                          (and lvl-item (zp (cdr lvl-item)))
+                 ((if (or basic-function flex?
+                          (<= a.wrld-fn-len 0) (and lvl-item (zp (cdr lvl-item)))
                           (equal extract-res ''t)))
                   (b* ((actuals-res
                         (expand (change-ex-args a :term-lst fn-actuals) state))
@@ -953,6 +954,7 @@
                                             state)))
            ((ex-outs e) expand-result)
            (G-prim (car e.expanded-term-lst))
+           (- (cw "G-prim: ~q0" G-prim))
 
            ;; Generate auxiliary hypotheses from function expansion
            (args (with-fast-alist fn-lst (generate-fn-hint-lst (make-fhg-args
@@ -968,7 +970,7 @@
            (fn-more-returns-hint-lst a.fn-more-returns-hint-acc)
 
            ;; Generate auxiliary hypotheses for type extraction
-           ((mv type-decl-list G-prim-without-type) (SMT-extract G-prim))
+           ((mv type-decl-list G-prim-without-type) (SMT-extract G-prim state))
            (structured-decl-list (structurize-type-decl-list type-decl-list))
 
            ;; Combine all auxiliary hypotheses

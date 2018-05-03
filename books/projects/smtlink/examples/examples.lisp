@@ -15,7 +15,7 @@
 ; cert_param: (uses-smtlink)
 
 (value-triple (tshell-ensure))
-(add-default-hints '((SMT::SMT-process-hint clause)))
+(add-default-hints '((SMT::SMT-process-hint clause stable-under-simplificationp)))
 
 
 ;; Section 2. A short tour
