@@ -1,6 +1,6 @@
 ; ABNF Library -- Semantics
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -98,7 +98,7 @@
   :short "Strings."
   :long
   "<p>
-   A string is a @('nil')-terminated list of symbols.
+   A string is a true list of symbols.
    </p>"
   :elt-type symbol
   :true-listp t
@@ -177,8 +177,7 @@
 
   (fty::deflist tree-list
     :parents (semantics)
-    :short "@('nil')-terminated lists
-            of trees of rule names and terminal values."
+    :short "True lists of trees of rule names and terminal values."
     :long
     "<p>
      As explained <see topic='@(url tree)'>here</see>,
@@ -190,7 +189,7 @@
 
   (fty::deflist tree-list-list
     :parents (semantics)
-    :short "@('nil')-terminated lists of @('nil')-terminated lists
+    :short "True lists of true lists
             of trees of rule names and terminal values."
     :long
     "<p>
