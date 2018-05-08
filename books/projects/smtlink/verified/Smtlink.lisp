@@ -10,6 +10,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/basic/inductions" :dir :system)
 (include-book "std/basic/defs" :dir :system)
+(include-book "centaur/fty/baselists" :dir :system)
 
 (include-book "hint-interface")
 (include-book "verified-cps")
@@ -33,6 +34,7 @@
   ;;                                          :more-returns (((> r0 0) :hints (:use ((:instance more-lemma)))))))
   ;;                          :hypotheses (((> a b) :hints (:use ((:instance lemma)))))
   ;;                          :main-hint (:use ((:instance thm1)))
+  ;;                          :fty (...)
   ;;                          :int-to-rat nil
   ;;                          :smt-fname ""
   ;;                          :rm-file t
@@ -717,6 +719,7 @@
     '((:functions . function-lst-syntax-p)
       (:hypotheses . hypothesis-lst-syntax-p)
       (:main-hint . hints-syntax-p)
+      (:fty . symbol-listp)
       (:int-to-rat . booleanp)
       (:smt-fname . stringp)
       (:smt-dir . stringp)
@@ -824,6 +827,7 @@
       (function-lst-syntax-p (function-lst-syntax-p term))
       (hypothesis-lst-syntax-p (hypothesis-lst-syntax-p term))
       (hints-syntax-p (hints-syntax-p term))
+      (symbol-listp (symbol-listp term))
       (booleanp (booleanp term))
       (stringp (stringp term))
       (smt-solver-params-p (smt-solver-params-p term))
@@ -975,7 +979,10 @@
                                       (or (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'function-lst-syntax-p)
                                                (function-lst-syntax-p (cadr term)))
                                           (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'hypothesis-lst-syntax-p)
-                                               (hypothesis-lst-syntax-p (cadr term)))
+                                               (hypothesis-lst-syntax-p (cadr
+                                                                         term)))
+                                          (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'symbol-listp)
+                                               (symbol-listp (cadr term)))
                                           (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'hints-syntax-p)
                                                (hints-syntax-p (cadr term)))
                                           (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'booleanp)
@@ -1007,6 +1014,8 @@
                                           (hypothesis-lst-syntax-p val))
                                  (implies (equal option-type 'hints-syntax-p)
                                           (hints-syntax-p val))
+                                 (implies (equal option-type 'symbol-listp)
+                                          (symbol-listp val))
                                  (implies (equal option-type 'booleanp)
                                           (booleanp val))
                                  (implies (equal option-type 'stringp)
@@ -1278,6 +1287,15 @@
          (new-hint (change-smtlink-hint hint :main-hint content)))
         new-hint))
 
+  (define set-fty-types ((content symbol-listp)
+                         (hint smtlink-hint-p))
+    :parents (process-smtlink-hints)
+    :returns (new-hint smtlink-hint-p)
+    :short "set fty types"
+    (b* ((hint (smtlink-hint-fix hint))
+         (new-hint (change-smtlink-hint hint :fty content)))
+      new-hint))
+
   (define set-int-to-rat ((content booleanp)
                           (hint smtlink-hint-p))
     :parents (process-smtlink-hints)
@@ -1371,6 +1389,7 @@
                                                                     :fast-functions fast-funcs))))
                      (:hypotheses (merge-hypothesis second hint))
                      (:main-hint (merge-main-hint second hint))
+                     (:fty (set-fty-types second hint))
                      (:int-to-rat (set-int-to-rat second hint))
                      (:smt-fname (set-fname second hint))
                      (:smt-dir (set-smt-dir second hint))

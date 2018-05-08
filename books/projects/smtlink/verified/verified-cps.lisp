@@ -91,7 +91,8 @@
                :induct (preprocess-auxes hinted-As (disjoin cl)))))
     )
 
-  (define generate-returns-auxes ((hinted-As-returns hint-pair-listp) (G pseudo-termp))
+  (define generate-returns-auxes ((hinted-As-returns hint-pair-listp)
+                                  (G pseudo-termp))
     :returns (list-of-A-thm pseudo-term-list-listp)
     :measure (len hinted-As-returns)
     (b* ((hinted-As-returns (hint-pair-list-fix hinted-As-returns))
@@ -165,7 +166,32 @@
          (cl0 `((hint-please ',smt-hint 'smt-hint) ,@list-of-not-As ,G-prim))
          (cl1 `((hint-please ',main-hint 'main-hint) ,@list-of-not-As (not ,G-prim) ,G))
          )
-      `(,cl0 ,cl1 ,@aux-clauses ,@aux-clauses-types ,@aux-clauses-returns)))
+      `(,cl0 ,cl1 ,@aux-clauses ,@aux-clauses-types ,@aux-clauses-returns))
+    ///
+    (defthm construct-smtlink-subgoals-corollary
+      (implies (and (pseudo-term-listp cl)
+                    (alistp b)
+                    (hint-pair-listp hinted-As)
+                    (hint-pair-listp hinted-As-returns)
+                    (decl-listp hinted-As-types)
+                    (hint-pair-p hinted-G-prim)
+                    (true-listp smt-hint)
+                    (ev-smtlink-subgoals
+                     (conjoin-clauses
+                      (construct-smtlink-subgoals hinted-As
+                                                  hinted-As-returns
+                                                  hinted-As-types
+                                                  hinted-G-prim
+                                                  smt-hint
+                                                  (disjoin cl)))
+                     b))
+               (ev-smtlink-subgoals (disjoin cl) b))
+      :hints (("Goal"
+               :in-theory (e/d (generate-returns-auxes
+                                generate-types-auxes
+                                preprocess-auxes)
+                               ())
+               ))))
 
 
   ;; If I give guard to smtlink-hint, then I get the error:
@@ -218,7 +244,8 @@
   ;;         Prove correctness of clause processor
   ;;
 
-  (local (in-theory (enable Smtlink-subgoals construct-smtlink-subgoals)))
+  (local (in-theory (e/d () (smtlink-hint-p smtlink-hint->aux-hint-list
+                                            smtlink-hint->expanded-clause-w/-hint))))
   (defthm correctness-of-Smtlink-subgoals-crock
     (implies (and (pseudo-term-listp cl)
                   (alistp b)
@@ -227,10 +254,27 @@
                    b))
              (ev-Smtlink-subgoals (disjoin (remove-hint-please cl)) b))
     :hints (("Goal"
-             :in-theory (e/d () (preprocess-auxes-corollary))
-             :use ((:instance preprocess-auxes-corollary
+             :in-theory (e/d () (construct-smtlink-subgoals-corollary))
+             :expand (Smtlink-subgoals cl smtlink-hint)
+             :use ((:instance construct-smtlink-subgoals-corollary
                               (hinted-As (smtlink-hint->aux-hint-list
                                           smtlink-hint))
+                              (hinted-As-returns
+                               (smtlink-hint->aux-thm-list smtlink-hint))
+                              (hinted-As-types
+                               (smtlink-hint->type-decl-list smtlink-hint))
+                              (hinted-G-prim
+                               (smtlink-hint->expanded-clause-w/-hint
+                                smtlink-hint))
+                              (smt-hint
+                               (if (smtlink-hint->custom-p smtlink-hint)
+                                   `(:clause-processor (SMT-trusted-cp-custom
+                                                        clause ',smtlink-hint
+                                                        state))
+                                 `(:clause-processor (SMT-trusted-cp
+                                                      clause
+                                                      ',smtlink-hint
+                                                      state))))
                               (cl (remove-hint-please cl))))
              )))
 
