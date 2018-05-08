@@ -162,9 +162,6 @@
              (< (abs (- 1 (* b y))) (expt 2 (- p)))))
   :rule-classes ())
 
-(defund rcp24 (b)
-  (ndecode (frcp (nencode b (sp))) (sp)))
-
 (defthm rcp24-spec
   (implies (and (rationalp b)
                 (exactp b 24)

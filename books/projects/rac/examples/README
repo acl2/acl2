@@ -1,0 +1,39 @@
+This subdirectory contains two examples of MASC programs:
+
+  hello.cpp: a mindless example intended to illustrate the MASC parser.
+
+  imul/imul.cpp: a toy integer multiplier, described in the ACL22014 paper
+
+    www.russinoff.com/papers/masc.html
+
+As described in ../README, compile and run hello.cpp, and parse it with the options 
+-m, -c, and -a.
+
+
+Load ACL2 and run the LISP version:
+
+  ACL2 !>(include-book "hello")
+
+  ACL2 !>(in-package "RTL")
+
+  RTL !>(set-print-base 2 state)
+
+  RTL !>(reversebyte #b00011011)
+
+
+cd to the imul subdirectory and do the same with imul.cpp:
+
+  ACL2 !>(include-book "imul")
+
+  ACL2 !>(in-package "RTL")
+
+  RTL !>(imul 123 456)
+
+Certify the correctness proof:
+
+  RTL !>(certify-book "proof" 1)
+
+
+
+ 
+1

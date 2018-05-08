@@ -119,6 +119,11 @@
  well as an extensive discussion of the differences between PLTP and PLTP(A),
  and an OCaml version of PLTP, named PLTA(O), by Grant Passmore.</p>
 
+<p>A new directory, @('books/projects/arm/'), contains proofs of correctness of 
+the Floating-point operations of addition, multiplication, fused multiply-add, 
+division, and square root, as implemented in the FPU of an Arm Cortex-A class
+high-end processor.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>A bug has been fixed in the expander (see @(see defthm?)), which had
@@ -131,6 +136,13 @@
  <p>The @('misc/assert.lisp') book no longer includes @('misc/eval.lisp'),
  since tests about the @('misc/assert.lisp') utilities are now in a separate
  book @('misc/assert-tests.lisp').</p>
+
+<p>The old directory @('books/projects/masc/') has been replaced by the bew
+directory@('books/projects/rac/').  The reason is that our RTL modeling
+language now uses the register class templates of Algorithm C instead of those
+of SystemC, so the name <i>Modeling Algorithms in SystemC</i> now makes even
+less sense than it did; the best we could come up with as a replacement is
+<i>Restricted Algorithmic C</i>. </p>
 
  <h4><see topic='@(url kestrel-utilities)'>Kestrel Utilities</see></h4>
 
@@ -800,7 +812,7 @@
  includes some general utilities to build and execute tests, retrieve
  constituents of ACL2 events like @(see defun-sk), etc.</p>
 
- <h4>@(see RTL::|Modeling Algorithms in SystemC and ACL2|)</h4>
+ <h4>Modeling Algorithms in SystemC and ACL2</h4>
 
  <p>David Russinoff has contributed a library, @('projects/masc/'),
  for modeling algorithms in SystemC and ACL2.</p>

@@ -20,7 +20,7 @@
 
 (include-book "./util")
 
-(include-book "../rel9-rtl-pkg/lib/srt")
+(include-book "./srt")
 
 (include-book "./gl")
 

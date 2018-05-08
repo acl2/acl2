@@ -1,0 +1,30 @@
+This directory contains proofs of correctness of the Floating-point
+operations of addition, multiplication, fused multiply-add, division,
+and square root, as implemented in the FPU of an Arm Cortex-A class
+high-end processor.  The proofs, developed between 2016 and 2018, are
+based on C models of the Verilog RTL designs.  Functional equivalence
+between the C and the Verilog has been formally verified with the
+Mentor Graphic sequential logic equivalence checker SLEC, and the C
+has been mechanically translated to ACL2.  The proofs are based on the
+results of this translation.
+
+The proofs reside in the subdirectories fmul, fadd, fdiv. and fsqrt.
+(The FMA proof is spread across fmul and fadd.)  Each subdirectory
+contains the following files.  In this description, * represents
+fmul64, fadd64, fdiv64, or fsqrt64:
+
+(1) The C model, *.cpp.
+
+(2) A mechanically generated pseudocode version of the model, *.ps.
+
+(3) The ACL2 translation, *.lisp.
+
+(4) The proof script, consisting of the remaining files of the
+subdirectory.  The only one of these that is intended to be
+human-readable is summary.lisp, which lists the main definitions and
+results that are proved in the other files.
+
+The proofs are documented in Chapters 16-19 of this forthcoming book:
+
+Russinoff, David M., "Formal Verification of Floating-Point Hardware
+Design: A Mathematical Approach", Springer, 2018.
