@@ -1006,6 +1006,10 @@
   (equal (len (v-threefix x))
          (len x)))
 
+(defthm car-v-threefix
+  (equal (car (v-threefix x))
+         (3v-fix (car x))))
+
 (defthm append-v-threefix
   (equal (append (v-threefix a)
                  (v-threefix b))

@@ -40,6 +40,7 @@
 (include-book "pseudo-good-worldp") ; for e.g. macro-args-structurep
 (include-book "bind-macro-args") ; not guard-verified as of this writing; might be later
 (include-book "case-match")
+(include-book "fmx-cw")
 
 ; The following is commented out only because we aren't currently motivated to
 ; put its functions into ACL2 system constant *system-verify-guards-alist*,

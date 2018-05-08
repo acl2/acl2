@@ -2073,7 +2073,10 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                                always updated) in an always_comb block.  ~
                                Verilog simulators may treat this variable as ~
                                a latch.  Overlap of read and write bits: ~s1"
-                         :args (list var (str::hexify overlap)))))
+                         :args (list var
+                                     (if (< (sv::sparseint-length overlap) 40000)
+                                         (str::hexify (sv::sparseint-val overlap))
+                                       "<more than 10000 digits>")))))
        ((wmv warnings)
         (vl-always->svex-latch-warnings (cdr write-masks) read-masks)))
     warnings))

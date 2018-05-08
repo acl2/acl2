@@ -8063,32 +8063,38 @@
        '(get-brr-local 'ancestors state)))
 
 (defun tilde-@-failure-reason-phrase1-backchain-limit (hyp-number
-                                                       pairs
+                                                       info
                                                        state)
-  (msg "a backchain limit was reached while processing :HYP ~x0.  ~@1"
-       hyp-number
-       (cond ((null pairs)
-              (let ((str "  Note that the brr command, :ANCESTORS, will show ~
-                          you the ancestors stack."))
-                (cond ((backchain-limit (w state) :rewrite)
-                       (msg "This appears to be due to the global ~
-                             backchain-limit of ~x0.~@1"
-                            (backchain-limit (w state) :rewrite)
-                            str))
-                      (t
-                       (msg "It is not clear how this could have happened.  ~
-                             Consider emailing a reproducible example to the ~
-                             ACL2 implementors.~@0"
-                            str)))))
-             (t
-              (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] ~
-                    at index ~&0 ~#0~[shows~/each show~] a rune whose ~
-                    ~#0~[~/respective ~]backchain limit of ~v1 has been ~
-                    reached, for backchaining through its indicated ~
-                    hypothesis.~|~%~@2"
-                   (strip-cars pairs)
-                   (strip-cdrs pairs)
-                   (show-ancestors-stack-msg state))))))
+  (msg
+   "a backchain limit was reached while processing :HYP ~x0.  ~@1"
+   hyp-number
+   (cond
+    ((eq info :limit-0) ; see relieve-hyp
+     (msg "Note that the limit is 0 for that :HYP."))
+    (t ; info is a list of ancestors
+     (let ((pairs (backchain-limit-enforcers 0 info (w state))))
+       (cond
+        ((null pairs)
+         (let ((str "  Note that the brr command, :ANCESTORS, will show you ~
+                     the ancestors stack."))
+           (cond ((backchain-limit (w state) :rewrite)
+                  (msg "This appears to be due to the global backchain-limit ~
+                        of ~x0.~@1"
+                       (backchain-limit (w state) :rewrite)
+                       str))
+                 (t
+                  (msg "It is not clear how this could have happened.  ~
+                        Consider emailing a reproducible example to the ACL2 ~
+                        implementors.~@0"
+                       str)))))
+        (t
+         (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] at ~
+               index ~&0 ~#0~[shows~/each show~] a rune whose ~
+               ~#0~[~/respective ~]backchain limit of ~v1 has been reached, ~
+               for backchaining through its indicated hypothesis.~|~%~@2"
+              (strip-cars pairs)
+              (strip-cdrs pairs)
+              (show-ancestors-stack-msg state)))))))))
 
 (mutual-recursion
 
@@ -8221,7 +8227,7 @@
                ((eq (cadr failure-reason) 'backchain-limit)
                 (tilde-@-failure-reason-phrase1-backchain-limit
                  n
-                 (backchain-limit-enforcers 0 (cddr failure-reason) (w state))
+                 (cddr failure-reason)
                  state))
                ((eq (cadr failure-reason) 'rewrote-to)
                 (msg ":HYP ~x0 rewrote to ~X12."
@@ -13187,7 +13193,14 @@
                                           (if on-ancestorsp
                                               'ancestors
                                             (cons 'backchain-limit
-                                                  ancestors))
+                                                  (or ancestors
+
+; If there are no ancestors, then the failure may be because the rune specifies
+; a backchain-limit of 0.
+
+                                                      (and (eql backchain-limit
+                                                                0)
+                                                           :limit-0))))
                                           unify-subst ttree)))))
                                   (t
                                    (mv-let

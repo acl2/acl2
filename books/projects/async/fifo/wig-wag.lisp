@@ -35,7 +35,7 @@
 
 (defconst *wig-wag$go-num* (+ *alt-branch$go-num*
                              *alt-merge$go-num*))
-(defconst *wig-wag$st-len* 6)
+(defconst *wig-wag$st-len* 4)
 
 (defun wig-wag$data-ins-len (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -55,25 +55,23 @@
  wig-wag* (data-width)
  (si 'wig-wag data-width)
  (list* 'full-in 'empty-out- (append (sis 'data-in 0 data-width)
-                                    (sis 'go 0 *wig-wag$go-num*)))
+                                     (sis 'go 0 *wig-wag$go-num*)))
  (list* 'in-act 'out-act
         (sis 'data-out 0 data-width))
- '(l0 d0 l1 d1 br me)
+ '(l0 l1 br me)
  (list
   ;; LINKS
   ;; L0
-  '(l0 (l0-status) link-cntl (br-act0 me-act0))
-  (list 'd0
-        (sis 'd0-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'br-act0 (sis 'data 0 data-width)))
+  (list 'l0
+        (list* 'l0-status (sis 'd0-out 0 data-width))
+        (si 'link data-width)
+        (list* 'br-act0 'me-act0 (sis 'data 0 data-width)))
 
   ;; L1
-  '(l1 (l1-status) link-cntl (br-act1 me-act1))
-  (list 'd1
-        (sis 'd1-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'br-act1 (sis 'data 0 data-width)))
+  (list 'l1
+        (list* 'l1-status (sis 'd1-out 0 data-width))
+        (si 'link data-width)
+        (list* 'br-act1 'me-act1 (sis 'data 0 data-width)))
 
   ;; JOINTS
   ;; Alt-Branch
@@ -99,16 +97,16 @@
 
 (make-event
  `(progn
-    ,@(state-accessors-gen 'wig-wag '(l0 d0 l1 d1 br me) 0)))
+    ,@(state-accessors-gen 'wig-wag '(l0 l1 br me) 0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of WW.
 
 (defun wig-wag$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (wig-wag* data-width)
-        (union$ (alt-branch$netlist data-width)
+        (union$ (link$netlist data-width)
+                (alt-branch$netlist data-width)
                 (alt-merge$netlist data-width)
-                (latch-n$netlist data-width)
                 :test 'equal)))
 
 ;; Recognizer for WW
@@ -119,9 +117,9 @@
   (and (equal (assoc (si 'wig-wag data-width) netlist)
               (wig-wag* data-width))
        (b* ((netlist (delete-to-eq (si 'wig-wag data-width) netlist)))
-         (and (alt-branch& netlist data-width)
-              (alt-merge& netlist data-width)
-              (latch-n& netlist data-width)))))
+         (and (link& netlist data-width)
+              (alt-branch& netlist data-width)
+              (alt-merge& netlist data-width)))))
 
 ;; Sanity check
 
@@ -134,15 +132,11 @@
 ;; Constraints on the state of WW
 
 (defund wig-wag$st-format (st data-width)
-  (b* ((d0 (get-field *wig-wag$d0* st))
-       (d1 (get-field *wig-wag$d1* st)))
+  (b* ((l0 (get-field *wig-wag$l0* st))
+       (l1 (get-field *wig-wag$l1* st)))
     (and (< 0 data-width)
-
-         (len-1-true-listp d0)
-         (equal (len d0) data-width)
-
-         (len-1-true-listp d1)
-         (equal (len d1) data-width))))
+         (link$st-format l0 data-width)
+         (link$st-format l1 data-width))))
 
 (defthm wig-wag$st-format=>posp-data-width
   (implies (wig-wag$st-format st data-width)
@@ -152,27 +146,20 @@
 
 (defund wig-wag$valid-st (st data-width)
   (b* ((l0 (get-field *wig-wag$l0* st))
-       (d0 (get-field *wig-wag$d0* st))
        (l1 (get-field *wig-wag$l1* st))
-       (d1 (get-field *wig-wag$d1* st))
        (br (get-field *wig-wag$br* st))
        (me (get-field *wig-wag$me* st)))
     (and (wig-wag$st-format st data-width)
 
-         (validp l0)
-         (or (emptyp l0)
-             (bvp (strip-cars d0)))
-
-         (validp l1)
-         (or (emptyp l1)
-             (bvp (strip-cars d1)))
+         (link$valid-st l0 data-width)
+         (link$valid-st l1 data-width)
 
          (alt-branch$valid-st br)
          (alt-merge$valid-st me))))
 
 (defthmd wig-wag$valid-st=>posp-data-width
   (implies (wig-wag$valid-st st data-width)
-           (natp data-width))
+           (posp data-width))
   :hints (("Goal" :in-theory (enable wig-wag$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -204,9 +191,11 @@
          (br-go-signals (take *alt-branch$go-num* go-signals))
 
          (l0 (get-field *wig-wag$l0* st))
-         (l1 (get-field *wig-wag$l1* st)))
+         (l0.s (get-field *link$s* l0))
+         (l1 (get-field *wig-wag$l1* st))
+         (l1.s (get-field *link$s* l1)))
 
-      (list* full-in (f-buf (car l0)) (f-buf (car l1))
+      (list* full-in (f-buf (car l0.s)) (f-buf (car l1.s))
              (append data-in br-go-signals))))
 
   ;; Extract the inputs for the alt-merge joint
@@ -218,13 +207,15 @@
          (me-go-signals (nthcdr *alt-branch$go-num* go-signals))
 
          (l0 (get-field *wig-wag$l0* st))
-         (d0 (get-field *wig-wag$d0* st))
+         (l0.s (get-field *link$s* l0))
+         (l0.d (get-field *link$d* l0))
          (l1 (get-field *wig-wag$l1* st))
-         (d1 (get-field *wig-wag$d1* st)))
+         (l1.s (get-field *link$s* l1))
+         (l1.d (get-field *link$d* l1)))
 
-      (list* (f-buf (car l0)) (f-buf (car l1)) empty-out-
-             (append (v-threefix (strip-cars d0))
-                     (v-threefix (strip-cars d1))
+      (list* (f-buf (car l0.s)) (f-buf (car l1.s)) empty-out-
+             (append (v-threefix (strip-cars l0.d))
+                     (v-threefix (strip-cars l1.d))
                      me-go-signals))))
 
   ;; Extract the "in-act" signal
@@ -244,14 +235,16 @@
   ;; Extract the output data
 
   (defund wig-wag$data-out (st)
-    (b* ((d0 (get-field *wig-wag$d0* st))
-         (d1 (get-field *wig-wag$d1* st))
+    (b* ((l0 (get-field *wig-wag$l0* st))
+         (l0.d (get-field *link$d* l0))
+         (l1 (get-field *wig-wag$l1* st))
+         (l1.d (get-field *link$d* l1))
          (me (get-field *wig-wag$me* st))
-
-         (me-select (get-field *alt-merge$select* me)))
-      (fv-if (car me-select)
-             (strip-cars d1)
-             (strip-cars d0))))
+         (me-select (get-field *alt-merge$select* me))
+         (me-select.d (get-field *link1$d* me-select)))
+      (fv-if (car me-select.d)
+             (strip-cars l1.d)
+             (strip-cars l0.d))))
 
   (defthm len-wig-wag$data-out-1
     (implies (wig-wag$st-format st data-width)
@@ -264,7 +257,8 @@
     (implies (wig-wag$valid-st st data-width)
              (equal (len (wig-wag$data-out st))
                     data-width))
-    :hints (("Goal" :in-theory (enable wig-wag$valid-st))))
+    :hints (("Goal" :in-theory (enable wig-wag$valid-st
+                                       wig-wag$data-out))))
 
   (defthm bvp-wig-wag$data-out
     (implies (and (wig-wag$valid-st st data-width)
@@ -302,12 +296,8 @@
                            (wig-wag$data-out st)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'wig-wag data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'wig-wag data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-wig-wag
                             wig-wag&
@@ -315,7 +305,7 @@
                             wig-wag$data-in
                             alt-branch$value
                             alt-merge$value
-                            latch-n$value
+                            link$value
                             wig-wag$st-format
                             wig-wag$in-act
                             wig-wag$out-act
@@ -331,9 +321,7 @@
   (b* ((data-in (wig-wag$data-in inputs data-width))
 
        (l0 (get-field *wig-wag$l0* st))
-       (d0 (get-field *wig-wag$d0* st))
        (l1 (get-field *wig-wag$l1* st))
-       (d1 (get-field *wig-wag$d1* st))
        (br (get-field *wig-wag$br* st))
        (me (get-field *wig-wag$me* st))
 
@@ -343,17 +331,15 @@
        (br-act0 (alt-branch$act0 br-inputs br data-width))
        (br-act1 (alt-branch$act1 br-inputs br data-width))
        (me-act0 (alt-merge$act0 me-inputs me data-width))
-       (me-act1 (alt-merge$act1 me-inputs me data-width)))
+       (me-act1 (alt-merge$act1 me-inputs me data-width))
+
+       (l0-inputs (list* br-act0 me-act0 data-in))
+       (l1-inputs (list* br-act1 me-act1 data-in)))
     (list
      ;; L0
-     (list (f-sr br-act0 me-act0 (car l0)))
-     (pairlis$ (fv-if br-act0 data-in (strip-cars d0))
-               nil)
-
+     (link$step l0-inputs l0 data-width)
      ;; L1
-     (list (f-sr br-act1 me-act1 (car l1)))
-     (pairlis$ (fv-if br-act1 data-in (strip-cars d1))
-               nil)
+     (link$step l1-inputs l1 data-width)
 
      ;; Joint alt-branch
      (alt-branch$step br-inputs br data-width)
@@ -378,12 +364,8 @@
                     (wig-wag$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'wig-wag data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'wig-wag data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-wig-wag
                             wig-wag&
@@ -394,7 +376,7 @@
                             wig-wag$me-inputs
                             alt-branch$value alt-branch$state
                             alt-merge$value alt-merge$state
-                            latch-n$value latch-n$state)
+                            link$value link$state)
                            ((wig-wag*)
                             de-module-disabled-rules)))))
 
@@ -409,14 +391,12 @@
 (progn
   (defun wig-wag$map-to-links (st)
     (b* ((l0 (get-field *wig-wag$l0* st))
-         (d0 (get-field *wig-wag$d0* st))
          (l1 (get-field *wig-wag$l1* st))
-         (d1 (get-field *wig-wag$d1* st))
          (br (get-field *wig-wag$br* st))
          (me (get-field *wig-wag$me* st)))
       (append (list (cons 'alt-branch (alt-branch$map-to-links br)))
-              (map-to-links (list (list 'l0 l0 d0)
-                                  (list 'l1 l1 d1)))
+              (map-to-links (list (list* 'l0 l0)
+                                  (list* 'l1 l1)))
               (list (cons 'alt-merge (alt-merge$map-to-links me))))))
 
   (defun wig-wag$map-to-links-list (x)
@@ -437,12 +417,12 @@
          (full '(t))
          (empty '(nil))
          (invalid-data (make-list data-width :initial-element '(x)))
-         (br (list full '(nil)
-                   empty '(x)))
-         (me (list full '(nil)
-                   empty '(x)))
-         (st (list empty invalid-data
-                   empty invalid-data
+         (br (list (list full '(nil))
+                   (list empty '(x))))
+         (me (list (list full '(nil))
+                   (list empty '(x))))
+         (st (list (list empty invalid-data)
+                   (list empty invalid-data)
                    br me)))
       (mv (pretty-list
            (remove-dup-neighbors
@@ -525,21 +505,21 @@
 
 (defund wig-wag$extract (st)
   (b* ((l0 (get-field *wig-wag$l0* st))
-       (d0 (get-field *wig-wag$d0* st))
        (l1 (get-field *wig-wag$l1* st))
-       (d1 (get-field *wig-wag$d1* st))
        (me (get-field *wig-wag$me* st))
 
-       (me-lselect    (get-field *alt-merge$lselect* me))
-       (me-select     (get-field *alt-merge$select* me))
-       (me-select-buf (get-field *alt-merge$select-buf* me))
-       (valid-me-select (if (fullp me-lselect)
-                            (car me-select)
-                          (car me-select-buf))))
+       (me-select       (get-field *alt-merge$select* me))
+       (me-select.s     (get-field *link1$s* me-select))
+       (me-select.d     (get-field *link1$d* me-select))
+       (me-select-buf   (get-field *alt-merge$select-buf* me))
+       (me-select-buf.d (get-field *link1$d* me-select-buf))
+       (valid-me-select (if (fullp me-select.s)
+                            (car me-select.d)
+                          (car me-select-buf.d))))
 
     (if valid-me-select
-        (extract-valid-data (list l0 d0 l1 d1))
-      (extract-valid-data (list l1 d1 l0 d0)))))
+        (extract-valid-data (list l0 l1))
+      (extract-valid-data (list l1 l0)))))
 
 (defthm wig-wag$extract-not-empty
   (implies (and (wig-wag$out-act inputs st data-width)
@@ -562,34 +542,40 @@
 (progn
   (defund wig-wag$inv (st)
     (b* ((l0 (get-field *wig-wag$l0* st))
+         (l0.s (get-field *link$s* l0))
          (l1 (get-field *wig-wag$l1* st))
+         (l1.s (get-field *link$s* l1))
          (br (get-field *wig-wag$br* st))
          (me (get-field *wig-wag$me* st))
 
-         (br-lselect    (get-field *alt-branch$lselect* br))
-         (br-select     (get-field *alt-branch$select* br))
-         (br-select-buf (get-field *alt-branch$select-buf* br))
-         (valid-br-select (if (fullp br-lselect)
-                              (car br-select)
-                            (car br-select-buf)))
+         (br-select       (get-field *alt-branch$select* br))
+         (br-select.s     (get-field *link1$s* br-select))
+         (br-select.d     (get-field *link1$d* br-select))
+         (br-select-buf   (get-field *alt-branch$select-buf* br))
+         (br-select-buf.d (get-field *link1$d* br-select-buf))
+         (valid-br-select (if (fullp br-select.s)
+                              (car br-select.d)
+                            (car br-select-buf.d)))
 
-         (me-lselect    (get-field *alt-merge$lselect* me))
-         (me-select     (get-field *alt-merge$select* me))
-         (me-select-buf (get-field *alt-merge$select-buf* me))
-         (valid-me-select (if (fullp me-lselect)
-                              (car me-select)
-                            (car me-select-buf))))
+         (me-select       (get-field *alt-merge$select* me))
+         (me-select.s     (get-field *link1$s* me-select))
+         (me-select.d     (get-field *link1$d* me-select))
+         (me-select-buf   (get-field *alt-merge$select-buf* me))
+         (me-select-buf.d (get-field *link1$d* me-select-buf))
+         (valid-me-select (if (fullp me-select.s)
+                              (car me-select.d)
+                            (car me-select-buf.d))))
 
       (and (alt-branch$inv br)
            (alt-merge$inv me)
-           (or (and (equal l0 l1)
+           (or (and (equal l0.s l1.s)
                     (equal valid-br-select valid-me-select))
-               (and (fullp l0)
-                    (emptyp l1)
+               (and (fullp l0.s)
+                    (emptyp l1.s)
                     valid-br-select
                     (not valid-me-select))
-               (and (emptyp l0)
-                    (fullp l1)
+               (and (emptyp l0.s)
+                    (fullp l1.s)
                     (not valid-br-select)
                     valid-me-select)))))
 
@@ -746,12 +732,12 @@
        (full '(t))
        (empty '(nil))
        (invalid-data (make-list data-width :initial-element '(x)))
-       (br (list full '(nil)
-                 empty '(x)))
-       (me (list full '(nil)
-                 empty '(x)))
-       (st (list empty invalid-data
-                 empty invalid-data
+       (br (list (list full '(nil))
+                 (list empty '(x))))
+       (me (list (list full '(nil))
+                 (list empty '(x))))
+       (st (list (list empty invalid-data)
+                 (list empty invalid-data)
                  br me)))
     (mv
      (append
@@ -771,10 +757,18 @@
   (local
    (defthm booleanp-wig-wag$br-act0
      (implies (and (booleanp (nth 0 inputs))
-                   (or (equal (nth *wig-wag$l0* st) '(t))
-                       (equal (nth *wig-wag$l0* st) '(nil)))
-                   (or (equal (nth *wig-wag$l1* st) '(t))
-                       (equal (nth *wig-wag$l1* st) '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *wig-wag$l0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *wig-wag$l0* st))
+                              '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *wig-wag$l1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *wig-wag$l1* st))
+                              '(nil)))
                    (alt-branch$valid-st (nth *wig-wag$br* st)))
               (booleanp
                (alt-branch$act0 (wig-wag$br-inputs inputs st data-width)
@@ -790,10 +784,18 @@
   (local
    (defthm booleanp-wig-wag$br-act1
      (implies (and (booleanp (nth 0 inputs))
-                   (or (equal (nth *wig-wag$l0* st) '(t))
-                       (equal (nth *wig-wag$l0* st) '(nil)))
-                   (or (equal (nth *wig-wag$l1* st) '(t))
-                       (equal (nth *wig-wag$l1* st) '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *wig-wag$l0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *wig-wag$l0* st))
+                              '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *wig-wag$l1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *wig-wag$l1* st))
+                              '(nil)))
                    (alt-branch$valid-st (nth *wig-wag$br* st)))
               (booleanp
                (alt-branch$act1 (wig-wag$br-inputs inputs st data-width)
@@ -809,10 +811,18 @@
   (local
    (defthm booleanp-wig-wag$me-act0
      (implies (and (booleanp (nth 1 inputs))
-                   (or (equal (nth *wig-wag$l0* st) '(t))
-                       (equal (nth *wig-wag$l0* st) '(nil)))
-                   (or (equal (nth *wig-wag$l1* st) '(t))
-                       (equal (nth *wig-wag$l1* st) '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *wig-wag$l0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *wig-wag$l0* st))
+                              '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *wig-wag$l1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *wig-wag$l1* st))
+                              '(nil)))
                    (alt-merge$valid-st (nth *wig-wag$me* st)))
               (booleanp
                (alt-merge$act0 (wig-wag$me-inputs inputs st data-width)
@@ -829,10 +839,18 @@
   (local
    (defthm booleanp-wig-wag$me-act1
      (implies (and (booleanp (nth 1 inputs))
-                   (or (equal (nth *wig-wag$l0* st) '(t))
-                       (equal (nth *wig-wag$l0* st) '(nil)))
-                   (or (equal (nth *wig-wag$l1* st) '(t))
-                       (equal (nth *wig-wag$l1* st) '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *wig-wag$l0* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *wig-wag$l0* st))
+                              '(nil)))
+                   (or (equal (nth *link$s*
+                                   (nth *wig-wag$l1* st))
+                              '(t))
+                       (equal (nth *link$s*
+                                   (nth *wig-wag$l1* st))
+                              '(nil)))
                    (alt-merge$valid-st (nth *wig-wag$me* st)))
               (booleanp
                (alt-merge$act1 (wig-wag$me-inputs inputs st data-width)
@@ -848,7 +866,9 @@
 
   (local
    (defthm wig-wag$br-act0-nil
-     (implies (and (equal (nth *wig-wag$l0* st) '(t))
+     (implies (and (equal (nth *link$s*
+                               (nth *wig-wag$l0* st))
+                          '(t))
                    (alt-branch$valid-st (nth *wig-wag$br* st)))
               (not (alt-branch$act0
                     (wig-wag$br-inputs inputs st data-width)
@@ -864,7 +884,9 @@
 
   (local
    (defthm wig-wag$br-act1-nil
-     (implies (and (equal (nth *wig-wag$l1* st) '(t))
+     (implies (and (equal (nth *link$s*
+                               (nth *wig-wag$l1* st))
+                          '(t))
                    (alt-branch$valid-st (nth *wig-wag$br* st)))
               (not (alt-branch$act1
                     (wig-wag$br-inputs inputs st data-width)
@@ -880,7 +902,9 @@
 
   (local
    (defthm wig-wag$me-act0-nil
-     (implies (and (equal (nth *wig-wag$l0* st) '(nil))
+     (implies (and (equal (nth *link$s*
+                               (nth *wig-wag$l0* st))
+                          '(nil))
                    (alt-merge$valid-st (nth *wig-wag$me* st)))
               (not (alt-merge$act0
                     (wig-wag$me-inputs inputs st data-width)
@@ -897,7 +921,9 @@
 
   (local
    (defthm wig-wag$me-act1-nil
-     (implies (and (equal (nth *wig-wag$l1* st) '(nil))
+     (implies (and (equal (nth *link$s*
+                               (nth *wig-wag$l1* st))
+                          '(nil))
                    (alt-merge$valid-st (nth *wig-wag$me* st)))
               (not (alt-merge$act1
                     (wig-wag$me-inputs inputs st data-width)

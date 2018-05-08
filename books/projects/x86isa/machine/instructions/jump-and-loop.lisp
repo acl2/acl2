@@ -109,6 +109,12 @@
        ((mv flg temp-rip) (add-to-*ip next-rip offset x86))
        ((when flg) (!!ms-fresh :virtual-memory-error temp-rip))
 
+       ;; when the size is 16 bits, zero the high bits of EIP
+       ;; (see pseudocode of JMP in Intel manual, Mar'17, Vol. 2:
+       (temp-rip (if (eql offset-size 2)
+                     (logand #xffff temp-rip)
+                   temp-rip))
+
        ;; Update the x86 state:
        (x86 (write-*ip temp-rip x86)))
     x86))

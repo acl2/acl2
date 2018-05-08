@@ -3401,12 +3401,6 @@
 (defun ld-missing-input-ok (state)
   (f-get-global 'ld-missing-input-ok state))
 
-(defun msgp (x)
-  (declare (xargs :guard t))
-  (or (stringp x)
-      (and (true-listp x)
-           (stringp (car x)))))
-
 (defun chk-ld-missing-input-ok (val ctx state)
   (cond ((or (member-eq val '(t nil :warn))
              (msgp val) ; admittedly, a weak check

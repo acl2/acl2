@@ -126,13 +126,14 @@
       (otherwise ;; will not be reached
        nil))))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-one-byte-jcc
 
   ;; Jump (short) if condition is met
 
-  ;; Intel Vol. 2A, p. 3-554 says: "In 64-bit mode, operand size is
-  ;; fixed at 64 bits. JMP Short is RIP + 8-bit offset sign extended to
-  ;; 64 bits."
+  ;; Intel manual, Mar'17, Vol. 2A, Jcc reference says:
+  ;; "In 64-bit mode, operand size is fixed at 64 bits.
+  ;; JMP Short is RIP + 8-bit offset sign extended to 64 bits."
 
   ;; Op/En: D
   ;; Jcc
@@ -156,10 +157,11 @@
   ;; 7F    JNLE/G rel8                                  Jump if ZF = 0 and SF = OF
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32 rime-size) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+                               (canonical-address-p temp-rip))
+                :hints (("Goal" :in-theory (enable rime-size))))
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'JO #x70 '(:nil nil)
@@ -194,12 +196,13 @@
                                       'x86-one-byte-jcc)
     (add-to-implemented-opcodes-table 'JNLE #x7F '(:nil nil)
                                       'x86-one-byte-jcc))
+
   :body
 
   (b* ((ctx 'x86-one-byte-jcc)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
         (-
@@ -212,34 +215,29 @@
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-       (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
-       ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*) rel8/next-rip) x86)
-        (if branch-cond
-            (riml-size 1 temp-rip :x x86)
-          (mv nil (+ 1 temp-rip) x86)))
-       ((when flg)
-        (!!ms-fresh :riml-size-error flg))
+       (branch-cond (jcc/cmovcc/setcc-spec opcode x86)))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (if branch-cond
-            (+ (+ 1 temp-rip) ;; rip of the next instruction
-               rel8/next-rip) ;; rel8
-          rel8/next-rip)      ;; next-rip
-        )
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (or
-                          (< (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip)
-                             #.*-2^47*)
-                          (<= #.*2^47*
-                              (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                temp-rip)))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; Update the x86 state:
-       (x86 (!rip temp-rip x86)))
-    x86))
+    (if branch-cond
+
+        ;; branch condition is true:
+        (b* (;; read rel8 (a value between -128 and +127):
+             ((mv flg rel8 x86) (rime-size 1 temp-rip *cs* :x nil x86))
+             ((when flg) (!!ms-fresh :rime-size-error flg))
+             ;; add rel8 to the address of the next instruction,
+             ;; which is one past temp-rip to take the rel8 byte into account:
+             ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
+             ((when flg) (!!ms-fresh :rip-increment-error flg))
+             ;; set instruction pointer to new value:
+             (x86 (write-*ip next-rip x86)))
+          x86)
+
+      ;; branch condition is false:
+      (b* (;; go to the next instruction,
+           ;; which starts just after the rel byte:
+           ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
+           ((when flg) (!!ms-fresh :rip-increment-error flg))
+           (x86 (write-*ip next-rip x86)))
+        x86))))
 
 (def-inst x86-two-byte-jcc
 

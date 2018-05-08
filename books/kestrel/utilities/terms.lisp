@@ -694,7 +694,7 @@
    An untranslated @(see lambda) expression is
    a lambda expression as entered by the user.
    This function checks whether @('x')is
-   a @('nil')-terminated list of exactly three elements,
+   a true list of exactly three elements,
    whose first element is the symbol @('lambda'),
    whose second element is a list of legal variable symbols without duplicates,
    and whose third element is an untranslated term that is valid for evaluation.
@@ -713,7 +713,7 @@
    if @(tsee check-user-term) does not terminate.
    </p>"
   (b* (((unless (true-listp x))
-        (mv (msg "~x0 is not a NIL-terminated list." x) nil))
+        (mv (msg "~x0 is not a true list." x) nil))
        ((unless (= (len x) 3))
         (mv (msg "~x0 does not consist of exactly three elements." x) nil))
        ((unless (eq (first x) 'lambda))

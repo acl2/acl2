@@ -688,29 +688,6 @@
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-       ;; ((mv flg1 M)
-       ;;  (case p2
-       ;;    (0 (mv nil M))
-       ;;    ;; I don't really need to check whether FS and GS base are
-       ;;    ;; canonical or not.  On the real machine, if the MSRs
-       ;;    ;; containing these bases are assigned non-canonical
-       ;;    ;; addresses, an exception is raised.
-       ;;    (#.*fs-override*
-       ;;     (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-       ;;            (fs-base (n64-to-i64 nat-fs-base)))
-       ;;       (if (not (canonical-address-p fs-base))
-       ;;           (mv 'Non-Canonical-FS-Base fs-base)
-       ;;         (mv nil (+ fs-base M)))))
-       ;;    (#.*gs-override*
-       ;;     (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-       ;;            (gs-base (n64-to-i64 nat-gs-base)))
-       ;;       (if (not (canonical-address-p gs-base))
-       ;;           (mv 'Non-Canonical-GS-Base gs-base)
-       ;;         (mv nil (+ gs-base M)))))
-       ;;    (t (mv 'Unidentified-P2 M))))
-       ;; ((when flg1)
-       ;;  (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
-
        (M (trunc register-size M))
        ;; Update the x86 state:
        (x86 (!rgfi-size

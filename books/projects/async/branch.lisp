@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; April 2018
 
 (in-package "ADE")
 
@@ -161,12 +161,8 @@
                            (v-threefix data-in)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'branch data-width)
-                       (list* full-in empty-out0- empty-out1- select
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'branch data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-branch
                             branch&

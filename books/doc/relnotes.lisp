@@ -203,6 +203,9 @@
  recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
+ <p>Added a new utility, @(tsee skip-in-book), that wraps around a form to
+ prevent its evaluation during book certification or inclusion.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
@@ -215,10 +218,11 @@
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
- <p>The model includes more support for 32-bit mode.  In particular, some
+ <p>The model includes more support for 32-bit mode.  In particular: some
  variants of the PUSH, POP, MOV, LEA, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP,
- TEST, JMP, and RET instructions also work in 32-bit mode now, and the 32-bit
- instructions PUSHA and POPA are now part of the model.</p>
+ TEST, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, JMP, Jcc, and RET instructions
+ also work in 32-bit mode now; the 32-bit instructions PUSHA, POPA, INC with
+ opcodes 40h-47h, and DEC with opcodes 48h-4Fh are now part of the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>

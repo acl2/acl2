@@ -536,7 +536,7 @@
    (xdoc::h4 "Example 2")
 
    (xdoc::code
-    ";; A recursive predicate that recognizes NIL-terminated lists"
+    ";; A recursive predicate that recognizes true lists"
     ";; whose elements satisfy the predicate parameter:"
     "(defun2 all[?p] (?p) (l)"
     "  (cond ((atom l) (null l))"
@@ -546,7 +546,7 @@
 
    (xdoc::code
     ";; A recursive function that homomorphically lifts ?F"
-    ";; to operate on NIL-terminated lists whose elements satisfy ?P:"
+    ";; to operate on true lists whose elements satisfy ?P:"
     "(defun2 map[?f][?p] (?f ?p) (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
@@ -1096,7 +1096,7 @@
    (xdoc::h4 "Example 2")
 
    (xdoc::code
-    ";; Recognize NIL-terminated lists of values that satisfy ?P:"
+    ";; Recognize true lists of values that satisfy ?P:"
     "(defun2 all[?p] (?p) (l)"
     "  (cond ((atom l) (null l))"
     "        (t (and (?p (car l)) (all[?p] (cdr l))))))"
@@ -1104,14 +1104,14 @@
     ";; Recognize octets:"
     "(defun octetp (x) (and (natp x) (< x 256)))"
     ""
-    ";; Recognize NIL-terminated lists of octets:"
+    ";; Recognize true lists of octets:"
     "(defun-inst all[octetp]"
     "  (all[?p] (?p . octetp)))")
 
    (xdoc::h4 "Example 3")
 
    (xdoc::code
-    ";; Homomorphically lift ?F to on NIL-terminated lists of ?P values:"
+    ";; Homomorphically lift ?F to on true lists of ?P values:"
     "(defun2 map[?f][?p] (?f ?p) (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
@@ -1252,7 +1252,7 @@
    (xdoc::h4 "Example 1")
 
    (xdoc::code
-    ";; Homomorphically lift ?F to on NIL-terminated lists of ?P values:"
+    ";; Homomorphically lift ?F to on true lists of ?P values:"
     "(defun2 map[?f][?p] (?f ?p) (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
@@ -1406,7 +1406,7 @@
    (xdoc::h4 "Example 1")
 
    (xdoc::code
-    ";; Homomorphically lift ?F to on NIL-terminated lists of ?P values:"
+    ";; Homomorphically lift ?F to on true lists of ?P values:"
     "(defun2 map[?f][?p] (?f ?p) (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"

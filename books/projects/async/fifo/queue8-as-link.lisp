@@ -296,11 +296,8 @@
                            (queue8$data-out st)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'queue8 data-width)
-                       (list* in-act out-act (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'queue8 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue8
                             queue4$st-format=>natp-data-width
@@ -334,12 +331,6 @@
   (equal (len (queue8$step inputs st data-width))
          *queue8$st-len*))
 
-(local
- (defthm v-threefix-of-queue4$data-out
-   (equal (v-threefix (queue4$data-out st))
-          (queue4$data-out st))
-   :hints (("Goal" :in-theory (enable queue4$data-out)))))
-
 ;; The state lemma for Q8'
 
 (defthmd queue8$state
@@ -354,11 +345,8 @@
                     (queue8$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'queue8 data-width)
-                       (list* in-act out-act (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'queue8 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue8
                             queue8&
@@ -407,14 +395,14 @@
          ;;(- (cw "~x0~%" inputs-lst))
          (empty '(nil))
          (invalid-data (make-list data-width :initial-element '(x)))
-         (q4-0 (list empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data))
-         (q4-1 (list empty invalid-data
-                     empty invalid-data
-                     empty invalid-data
-                     empty invalid-data))
+         (q4-0 (list (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)))
+         (q4-1 (list (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)
+                     (list empty invalid-data)))
          (st (list q4-0 q4-1)))
       (mv (pretty-list
            (remove-dup-neighbors
@@ -566,7 +554,7 @@
   ()
 
   (local
-   (defthm queue8$q4-0-get-$data-in-rewrite
+   (defthm queue8$q4-0-data-in-rewrite
      (equal (queue4$data-in
              (queue8$q4-0-inputs inputs st data-width)
              data-width)
@@ -577,7 +565,7 @@
                                  queue8$q4-0-inputs)))))
 
   (local
-   (defthm queue8$q4-1-get-$data-in-rewrite
+   (defthm queue8$q4-1-data-in-rewrite
      (b* ((q4-0 (nth *queue8$q4-0* st)))
        (implies (queue4$valid-st q4-0 data-width)
                 (equal (queue4$data-in
@@ -710,14 +698,14 @@
         (signal-vals-gen num-signals n state nil))
        (empty '(nil))
        (invalid-data (make-list data-width :initial-element '(x)))
-       (q4-0 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
-       (q4-1 (list empty invalid-data
-                   empty invalid-data
-                   empty invalid-data
-                   empty invalid-data))
+       (q4-0 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
+       (q4-1 (list (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)
+                   (list empty invalid-data)))
        (st (list q4-0 q4-1)))
     (mv
      (append

@@ -9,7 +9,6 @@
 (in-package "ADE")
 
 (include-book "../link-joint")
-(include-book "../store-n")
 (include-book "../vector-module")
 
 (local (in-theory (disable nth)))
@@ -32,7 +31,7 @@
 ;; generator.
 
 (defconst *queue2$go-num* 3)
-(defconst *queue2$st-len* 4)
+(defconst *queue2$st-len* 2)
 
 (defun queue2$data-ins-len (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -65,7 +64,7 @@
  ;; INTERNAL STATE
  ;; Each link have two state-holding devices: one stores the link's full/empty
  ;; status and one stores the link data.
- '(l0 d0 l1 d1)
+ '(l0 l1)
  ;; OCCURRENCES
  ;; Our DE description of a self-timed module allows links and joints to appear
  ;; in any order in the module's occurrence list, except that LINKS MUST BE
@@ -78,18 +77,16 @@
  (list
   ;; LINKS
   ;; L0
-  '(l0 (l0-status) link-cntl (in-act trans-act))
-  (list 'd0
-        (sis 'd0-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'in-act (sis 'd0-in 0 data-width)))
+  (list 'l0
+        (list* 'l0-status (sis 'd0-out 0 data-width))
+        (si 'link data-width)
+        (list* 'in-act 'trans-act (sis 'd0-in 0 data-width)))
 
   ;; L1
-  '(l1 (l1-status) link-cntl (trans-act out-act))
-  (list 'd1
-        (sis 'd1-out 0 data-width)
-        (si 'latch-n data-width)
-        (list* 'trans-act (sis 'd1-in 0 data-width)))
+  (list 'l1
+        (list* 'l1-status (sis 'd1-out 0 data-width))
+        (si 'link data-width)
+        (list* 'trans-act 'out-act (sis 'd1-in 0 data-width)))
 
   ;; JOINTS
   ;; In
@@ -126,16 +123,16 @@
 
 (make-event
  `(progn
-    ,@(state-accessors-gen 'queue2 '(l0 d0 l1 d1) 0)))
+    ,@(state-accessors-gen 'queue2 '(l0 l1) 0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of Q2.
 
 (defun queue2$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue2* data-width)
-        (union$ (latch-n$netlist data-width)
-                (v-buf$netlist data-width)
+        (union$ (link$netlist data-width)
                 *joint-cntl*
+                (v-buf$netlist data-width)
                 :test 'equal)))
 
 ;; Recognizer for Q2
@@ -146,8 +143,8 @@
   (and (equal (assoc (si 'queue2 data-width) netlist)
               (queue2* data-width))
        (b* ((netlist (delete-to-eq (si 'queue2 data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (latch-n& netlist data-width)
+         (and (link& netlist data-width)
+              (joint-cntl& netlist)
               (v-buf& netlist data-width)))))
 
 ;; Sanity check
@@ -161,13 +158,10 @@
 ;; Constraints on the state of Q2
 
 (defund queue2$st-format (st data-width)
-  (b* ((d0 (get-field *queue2$d0* st))
-       (d1 (get-field *queue2$d1* st)))
-    (and (len-1-true-listp d0)
-         (equal (len d0) data-width)
-
-         (len-1-true-listp d1)
-         (equal (len d1) data-width))))
+  (b* ((l0 (get-field *queue2$l0* st))
+       (l1 (get-field *queue2$l1* st)))
+    (and (link$st-format l0 data-width)
+         (link$st-format l1 data-width))))
 
 (defthm queue2$st-format=>natp-data-width
   (implies (queue2$st-format st data-width)
@@ -177,19 +171,9 @@
 
 (defund queue2$valid-st (st data-width)
   (b* ((l0 (get-field *queue2$l0* st))
-       (d0 (get-field *queue2$d0* st))
-       (l1 (get-field *queue2$l1* st))
-       (d1 (get-field *queue2$d1* st)))
-    (and (queue2$st-format st data-width)
-
-         (validp l0) ;; The link status is either full or empty.
-         (or (emptyp l0)
-             (bvp (strip-cars d0))) ;; When the link is full,
-                                    ;; its data must be a bit vector.
-
-         (validp l1)
-         (or (emptyp l1)
-             (bvp (strip-cars d1))))))
+       (l1 (get-field *queue2$l1* st)))
+    (and (link$valid-st l0 data-width)
+         (link$valid-st l1 data-width))))
 
 (defthmd queue2$valid-st=>natp-data-width
   (implies (queue2$valid-st st data-width)
@@ -222,8 +206,9 @@
          (go-signals (nthcdr (queue2$data-ins-len data-width) inputs))
          (go-in (nth 0 go-signals))
 
-         (l0 (get-field *queue2$l0* st)))
-      (joint-act full-in (car l0) go-in)))
+         (l0 (get-field *queue2$l0* st))
+         (l0.s (get-field *link$s* l0)))
+      (joint-act full-in (car l0.s) go-in)))
 
   ;; Extract the "out-act" signal
 
@@ -232,13 +217,15 @@
          (go-signals (nthcdr (queue2$data-ins-len data-width) inputs))
          (go-out (nth 2 go-signals))
 
-         (l1 (get-field *queue2$l1* st)))
-      (joint-act (car l1) empty-out- go-out)))
+         (l1 (get-field *queue2$l1* st))
+         (l1.s (get-field *link$s* l1)))
+      (joint-act (car l1.s) empty-out- go-out)))
 
   ;; Extract the output data
 
   (defund queue2$data-out (st)
-    (v-threefix (strip-cars (get-field *queue2$d1* st))))
+    (v-threefix (strip-cars (get-field *link$d*
+                                       (get-field *queue2$l1* st)))))
 
   (defthm len-queue2$data-out-1
     (implies (queue2$st-format st data-width)
@@ -251,7 +238,8 @@
     (implies (queue2$valid-st st data-width)
              (equal (len (queue2$data-out st))
                     data-width))
-    :hints (("Goal" :in-theory (enable queue2$valid-st))))
+    :hints (("Goal" :in-theory (enable queue2$valid-st
+                                       queue2$data-out))))
 
   (defthm bvp-queue2$data-out
     (implies (and (queue2$valid-st st data-width)
@@ -279,18 +267,14 @@
                            (queue2$data-out st)))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (se (si 'queue2 data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (se (si 'queue2 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue2
                             queue2&
                             queue2*$destructure
+                            link$value
                             joint-cntl$value
-                            latch-n$value
                             v-buf$value
                             queue2$st-format
                             queue2$in-act
@@ -309,23 +293,22 @@
        (go-trans (nth 1 go-signals))
 
        (l0 (get-field *queue2$l0* st))
-       (d0 (get-field *queue2$d0* st))
+       (l0.s (get-field *link$s* l0))
+       (l0.d (get-field *link$d* l0))
        (l1 (get-field *queue2$l1* st))
-       (d1 (get-field *queue2$d1* st))
+       (l1.s (get-field *link$s* l1))
 
        (in-act (queue2$in-act inputs st data-width))
        (out-act (queue2$out-act inputs st data-width))
-       (trans-act (joint-act (car l0) (car l1) go-trans)))
+       (trans-act (joint-act (car l0.s) (car l1.s) go-trans))
+
+       (l0-inputs (list* in-act trans-act data-in))
+       (l1-inputs (list* trans-act out-act (strip-cars l0.d))))
     (list
      ;; L0
-     (list (f-sr in-act trans-act (car l0)))
-     (pairlis$ (fv-if in-act data-in (strip-cars d0))
-               nil)
-
+     (link$step l0-inputs l0 data-width)
      ;; L1
-     (list (f-sr trans-act out-act (car l1)))
-     (pairlis$ (fv-if trans-act (strip-cars d0) (strip-cars d1))
-               nil))))
+     (link$step l1-inputs l1 data-width))))
 
 (defthm len-of-queue2$step
   (equal (len (queue2$step inputs st data-width))
@@ -345,12 +328,8 @@
                     (queue2$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :do-not '(preprocess)
-           :expand (de (si 'queue2 data-width)
-                       (list* full-in empty-out-
-                              (append data-in go-signals))
-                       st
-                       netlist)
+           :expand (:free (inputs data-width)
+                          (de (si 'queue2 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             not-primp-queue2
                             queue2&
@@ -359,8 +338,8 @@
                             queue2$data-in
                             queue2$in-act
                             queue2$out-act
+                            link$value link$state
                             joint-cntl$value
-                            latch-n$value latch-n$state
                             v-buf$value)
                            ((queue2*)
                             de-module-disabled-rules)))))
@@ -376,11 +355,9 @@
 (progn
   (defun queue2$map-to-links (st)
     (b* ((l0 (get-field *queue2$l0* st))
-         (d0 (get-field *queue2$d0* st))
-         (l1 (get-field *queue2$l1* st))
-         (d1 (get-field *queue2$d1* st)))
-      (map-to-links (list (list 'l0 l0 d0)
-                          (list 'l1 l1 d1)))))
+         (l1 (get-field *queue2$l1* st)))
+      (map-to-links (list (list* 'l0 l0)
+                          (list* 'l1 l1)))))
 
   (defun queue2$map-to-links-list (x)
     (if (atom x)
@@ -399,8 +376,8 @@
          ;;(- (cw "~x0~%" inputs-lst))
          (empty '(nil))
          (invalid-data (make-list data-width :initial-element '(x)))
-         (st (list empty invalid-data
-                   empty invalid-data)))
+         (st (list (list empty invalid-data)
+                   (list empty invalid-data))))
       (mv (pretty-list
            (remove-dup-neighbors
             (queue2$map-to-links-list
@@ -441,10 +418,8 @@
 
 (defund queue2$extract (st)
   (b* ((l0 (get-field *queue2$l0* st))
-       (d0 (get-field *queue2$d0* st))
-       (l1 (get-field *queue2$l1* st))
-       (d1 (get-field *queue2$d1* st)))
-    (extract-valid-data (list l0 d0 l1 d1))))
+       (l1 (get-field *queue2$l1* st)))
+    (extract-valid-data (list l0 l1))))
 
 (defthm queue2$extract-not-empty
   (implies (and (queue2$out-act inputs st data-width)
@@ -554,8 +529,8 @@
         (signal-vals-gen num-signals n state nil))
        (empty '(nil))
        (invalid-data (make-list data-width :initial-element '(x)))
-       (st (list empty invalid-data
-                 empty invalid-data)))
+       (st (list (list empty invalid-data)
+                 (list empty invalid-data))))
     (mv
      (append
       (list (cons 'in-seq
@@ -602,4 +577,3 @@
                               queue2$data-out))))
 
 (in-out-stream-lemma queue2)
-

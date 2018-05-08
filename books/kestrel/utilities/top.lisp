@@ -57,6 +57,7 @@
 (include-book "osets")
 (include-book "paired-names")
 (include-book "prove-interface")
+(include-book "skip-in-book")
 (include-book "strings")
 (include-book "symbol-symbol-alists")
 (include-book "symbol-true-list-alists")

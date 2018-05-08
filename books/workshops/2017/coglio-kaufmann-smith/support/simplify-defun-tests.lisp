@@ -1626,7 +1626,7 @@
      (DECLARE (XARGS :NORMALIZE NIL
                      :GUARD T
                      :VERIFY-GUARDS NIL))
-     (OR (SYMBOLP X) (+ 1 1 Y)))
+     (IF (SYMBOLP X) T (+ 1 1 Y)))
    (DEFUN F2{2} (X Y)
      (DECLARE (XARGS :NORMALIZE NIL
                      :GUARD T
@@ -1636,7 +1636,7 @@
      (DECLARE (XARGS :NORMALIZE NIL
                      :GUARD T
                      :VERIFY-GUARDS NIL))
-     (OR (SYMBOLP X) (+ 2 Y))))
+     (IF (SYMBOLP X) T (+ 2 Y))))
 
 ; A duplicate @-var is OK as long as all occurrences match the same term.  But
 ; the different terms may simplify differently because they are in different
@@ -1982,7 +1982,7 @@
                      :GUARD T
                      :VERIFY-GUARDS NIL))
      (IF (TRUE-LISTP X)
-         (OR (EQL (LEN X) 17) Y)
+         (IF (EQL (LEN X) 17) T Y)
          'DONT-CARE)))
 
   ;; Pattern is actually (if @1 @1 _), so this time the entire body is not
@@ -1997,7 +1997,7 @@
                      :GUARD T
                      :VERIFY-GUARDS NIL))
      (IF (TRUE-LISTP (CONS 3 X))
-         (OR (EQL (LEN X) 17) Y)
+         (IF (EQL (LEN X) 17) T Y)
          'DONT-CARE))))
 
 ;; Matching a specified subterm that has only part of it specified as a

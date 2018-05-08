@@ -1,3 +1,6 @@
+; Copyright (C) 2004, Regents of the University of Texas
+; Written by Sol Swords
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ;; Parsing of brace expressions such as {3}, {4,}, {2,5} etc
 

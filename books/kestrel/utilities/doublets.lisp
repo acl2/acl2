@@ -1,6 +1,6 @@
 ; Doublets
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,7 +18,7 @@
 
 (defsection doublets-to-alist
   :parents (kestrel-utilities system-utilities)
-  :short "Turn a @('nil')-terminated list of doublets
+  :short "Turn a true list of doublets
           (i.e. lists of length 2)
           into the corresponding alist."
   :long

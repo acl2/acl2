@@ -90,14 +90,20 @@
 ; well, as you find yourself needing them.
 
 
-; NOTE: Several of the lemmas below have a weird hypothesis, marked
-; with a (*).  These hypotheses should all be unconditionally true
-; when dealing with the real ACL2 state, but currently `state-p1' is
-; not strong enough to imply them.  If the definition of `state-p1' is
-; strengthened in the future, a (state-p1 state) hypothesis could be
-; added where necessary, and these weird hypotheses could be removed,
-; as demonstrated in the commented out "desired versions" of the
-; theorems.
+; NOTE: Four of the lemmas below have a weird hypothesis, written in
+; upper case.  These hypotheses should be unnecessary when dealing
+; with the real ACL2 state, but currently `state-p1' does not
+; sufficiently precisely describe the real ACL2 state for this
+; knowledge to be accessible via `state-p1'.
+
+; If the definition of `state-p1' is strengthened in the future, a
+; (state-p1 state) hypothesis could be added where necessary, and
+; these weird hypotheses could be removed, as demonstrated in the
+; commented out "desired versions" of the theorems.
+
+; See also the entry "Strengthen state-p so that channel info has
+; file-clocks that don't exceed file-clock." in the file
+; books/system/to-do.txt .
 
 ;;;;;;;;;;;;;;;;
 ;;;; Open input channels stay open
@@ -107,16 +113,16 @@
 
   (defthm open-input-channel-p1-under-open-input-channel
     ;; Desired version:
-    ;; (implies (and (open-input-channel-p1 channel type state)
-    ;;               (state-p1 state))
+    ;; (implies (and (state-p1 state)
+    ;;               (open-input-channel-p1 channel type state))
     ;;          (b* (((mv & state)
     ;;                (open-input-channel fname other-type state)))
     ;;            (open-input-channel-p1 channel type state)))
     (implies (open-input-channel-p1 channel type state)
              (b* (((mv other-channel state)
                    (open-input-channel fname other-type state)))
-               (implies (implies (equal other-channel channel) ; (*)
-                                 (equal other-type type))
+               (implies (IMPLIES (EQUAL OTHER-CHANNEL CHANNEL)
+                                 (EQUAL OTHER-TYPE TYPE))
                         (open-input-channel-p1 channel type state)))))
 
   (defthm open-input-channel-p1-under-open-output-channel
@@ -127,13 +133,13 @@
 
   (defthm open-input-channel-p1-under-close-input-channel
     ;; Desired version:
-    ;; (implies (and (open-input-channel-p1 channel type state)
-    ;;               (state-p1 state))
+    ;; (implies (and (state-p1 state)
+    ;;               (open-input-channel-p1 channel type state))
     ;;          (b* ((state (close-input-channel other-channel state)))
     ;;            (iff (open-input-channel-p1 channel type state)
     ;;                 (not (equal channel other-channel)))))
     (implies (and (open-input-channel-p1 channel type state)
-                  (not (equal channel other-channel))) ; (*)
+                  (NOT (EQUAL CHANNEL OTHER-CHANNEL)))
              (b* ((state (close-input-channel other-channel state)))
                (open-input-channel-p1 channel type state))))
 
@@ -192,16 +198,16 @@
 
   (defthm open-output-channel-p1-under-open-output-channel
     ;; Desired version:
-    ;; (implies (and (open-output-channel-p1 channel type state)
-    ;;               (state-p1 state))
+    ;; (implies (and (state-p1 state)
+    ;;               (open-output-channel-p1 channel type state))
     ;;          (b* (((mv & state)
     ;;                (open-output-channel fname other-type state)))
     ;;            (open-output-channel-p1 channel type state)))
     (implies (open-output-channel-p1 channel type state)
              (b* (((mv other-channel state)
                    (open-output-channel fname other-type state)))
-               (implies (implies (equal other-channel channel) ; (*)
-                                 (equal other-type type))
+               (implies (IMPLIES (EQUAL OTHER-CHANNEL CHANNEL)
+                                 (EQUAL OTHER-TYPE TYPE))
                         (open-output-channel-p1 channel type state)))))
 
   (defthm open-output-channel-p1-under-close-input-channel
@@ -211,13 +217,13 @@
 
   (defthm open-output-channel-p1-under-close-output-channel
     ;; Desired version:
-    ;; (implies (and (open-output-channel-p1 channel type state)
-    ;;               (state-p1 state))
+    ;; (implies (and (state-p1 state)
+    ;;               (open-output-channel-p1 channel type state))
     ;;          (b* ((state (close-output-channel other-channel state)))
     ;;            (iff (open-output-channel-p1 channel type state)
     ;;                 (not (equal channel other-channel)))))
     (implies (and (open-output-channel-p1 channel type state)
-                  (not (equal channel other-channel))) ; (*)
+                  (NOT (EQUAL CHANNEL OTHER-CHANNEL)))
              (b* ((state (close-output-channel other-channel state)))
                (open-output-channel-p1 channel type state))))
 
