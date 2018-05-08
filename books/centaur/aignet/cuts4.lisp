@@ -16,6 +16,7 @@
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "std/util/termhints" :dir :system))
 
 (local (acl2::use-trivial-ancestors-check))
 (local (std::add-default-post-define-hook :fix))
