@@ -47,6 +47,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
+(local (include-book "std/util/termhints" :dir :system))
 (local (in-theory (disable acl2::update-nth-when-zp)))
 
 
