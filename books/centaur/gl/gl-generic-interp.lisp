@@ -35,6 +35,10 @@
 (include-book "clause-processors/decomp-hint" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
 (include-book "var-bounds")
+(include-book "constraint-db-deps")
+(include-book "clause-processors/find-subterms" :dir :system)
+(include-book "glcp-unify-thms")
+(include-book "glcp-geval-thms")
 (local (include-book "bfr-reasoning"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "general-object-thms"))
@@ -46,10 +50,7 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (in-theory (disable* set::double-containment w)))
-(include-book "constraint-db-deps")
-(include-book "clause-processors/find-subterms" :dir :system)
-(include-book "glcp-unify-thms")
-(include-book "glcp-geval-thms")
+(local (include-book "std/util/termhints" :dir :system))
 (flag::make-flag sublis-into-term-flg sublis-into-term)
 
 ;; (defthm assoc-equal-nonnil-of-append

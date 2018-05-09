@@ -41,6 +41,7 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
+(local (include-book "std/util/termhints" :dir :system))
 
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))

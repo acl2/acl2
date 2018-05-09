@@ -245,7 +245,7 @@
 (include-book "rtl/rel11/lib/top-doc" :dir :system)
 (include-book "centaur/esim/top-doc" :dir :system)
 (include-book "centaur/aig/top-doc" :dir :system)
-
+(include-book "std/util/termhints" :dir :system)
 
 
 ) ;; end progn so we can see total include-book time

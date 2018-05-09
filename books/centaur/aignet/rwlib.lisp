@@ -43,6 +43,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
+(local (include-book "std/util/termhints" :dir :system))
 (local (in-theory (disable unsigned-byte-p signed-byte-p nth update-nth
                            acl2::resize-list-when-atom)))
 (local (std::add-default-post-define-hook :fix))
