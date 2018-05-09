@@ -49,26 +49,12 @@
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (the (unsigned-byte 8) (prefixes-slice :group-2-prefix prefixes)))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       (byte-operand? (equal opcode #x88))
        ((the (integer 1 8) operand-size)
-        (if (equal opcode #x88)
-            1
-          ;; Intel manual, Mar'17, Volume 1, Table 3-4:
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
 
        (register (rgfi-size operand-size (reg-index reg rex-byte #.*r*)
                             rex-byte x86))
@@ -155,26 +141,12 @@
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       (byte-operand? (equal opcode #x8A))
        ((the (integer 1 8) operand-size)
-        (if (equal opcode #x8A)
-            1
-          ;; Intel manual, Mar'17, Volume 1, Table 3-4:
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
 
        (seg-reg (select-segment-register p2 p4? mod r/m x86))
 
@@ -416,25 +388,10 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
-
+       (byte-operand? (and (<= #xB0 opcode) ;; B0+rb
+                           (<= opcode #xB7)))
        ((the (integer 1 8) operand-size)
-        (if (and (<= #xB0 opcode) ;; B0+rb
-                 (<= opcode #xB7))
-            1
-          ;; Intel manual, Mar'17, Volume 1, Table 3-4:
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
 
        ;; We don't do any alignment check below when fetching the
        ;; immediate operand; reading the immediate operand is done
@@ -506,6 +463,7 @@
                    (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
+
        ((the (integer 1 8) imm-size)
         (if (equal opcode #xC6)
             1
@@ -635,25 +593,13 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
        ;; this is the operand size
        ;; in Intel manual, Mar'17, Vol 2, Tables 3-53 and 3-54:
        ((the (integer 2 8) register-size)
-        (if (64-bit-modep x86)
-            (if (logbitp #.*w* rex-byte)
-                8
-              (if p3? 2 4))
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-               (cs.d
-                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-            (if (= cs.d 1)
-                (if p3? 2 4)
-              (if p3? 4 2)))))
+        (select-operand-size nil rex-byte nil prefixes x86))
 
        ((when (equal mod #b11))
         ;; See "M" in http://ref.x86asm.net/#Instruction-Operand-Codes
