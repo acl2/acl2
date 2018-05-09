@@ -1,2 +1,0 @@
-(include-book "centaur/gl/portcullis" :dir :system)
-(certify-book "gl" 1)
