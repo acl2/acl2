@@ -20,16 +20,12 @@
   (formatp (sp))
   :hints (("Goal" :in-theory (enable sp))))
 
-(defun rcp24 (b)
-  (ndecode (frcp (nencode b (sp))) (sp)))
-
 (defun check-mant (m)
-  (let* ((enc (cat 0 1 #x7F 8 (+ #x800000 m) 23))
-         (b (ndecode enc (sp)))
-         (y (ndecode (frcp enc) (sp))))
-    (and (<= y 1)
-         (> y 1/2)
-         (exactp y 24)
+  (let* ((b (1+ (/ m (expt 2 23))))
+         (y (rcp24 b)))
+    (and (<= 1/2 y)
+         (<= y 1)
+	 (exactp y 24)
          (< (abs (- 1 (* b y))) (expt 2 -23)))))
 
 (defun check-mants (m)
@@ -43,7 +39,7 @@
 (defthm check-mants-lemma
   (check-mants #x800000))
 
-(local-in-theory (disable check-mant (check-mant) frcp (frcp)))
+(local-in-theory (disable check-mant (check-mant) rcp24 (rcp24)))
 
 (local-defthm cf-1
   (implies (and (natp n)
@@ -74,26 +70,10 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (enable exactp2))))
 
-(local-defthmd me-3
-  (implies (and (rationalp b)
-                (exactp b 24)
-                (<= 1 b)
-                (< b 2))
-           (equal (nencode b (sp))
-                  (cat 0 1 #x7F 8 (+ #x800000 (mant b)) 23)))
-  :hints (("Goal" :in-theory (enable sig sgn nencode sp)
-                  :use ((:instance expo<= (x b) (n 0))
-                        (:instance expo>= (x b) (n 0))))))
-
 (local-defthm me-4
-  (implies (and (rationalp b)
-                (exactp b 24)
-                (<= 1 b)
-                (< b 2))
-           (nrepp b (sp)))
-  :hints (("Goal" :in-theory (enable nrepp sp)
-                  :use ((:instance expo<= (x b) (n 0))
-                        (:instance expo>= (x b) (n 0))))))
+  (implies (rationalp b)
+           (equal (1+ (/ (mant b) (expt 2 23)))
+                  b)))
 
 (local-defthmd me-5
   (implies (and (rationalp b)
@@ -105,8 +85,7 @@
                 (<= 1/2 (rcp24 b))
                 (<= (rcp24 b) 1)
                 (< (abs (- 1 (* b (rcp24 b)))) (expt 2 -23))))
-  :hints (("Goal" :in-theory (e/d (me-3 check-mant) (mant ndecode-nencode))
-                  :use ((:instance ndecode-nencode (x b) (f (sp)))))))
+  :hints (("Goal" :use (me-4) :in-theory '(check-mant))))
 
 (local-in-theory (disable mant (mant) rcp24 (rcp24)))
 

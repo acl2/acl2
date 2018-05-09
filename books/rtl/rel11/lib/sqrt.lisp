@@ -263,6 +263,19 @@
            (equal (qsqrt (* (expt 2 (* 2 k)) x) n)
                   (* (expt 2 k) (qsqrt x n)))))
 
+(defthm rnd-qsqrt-equal
+  (implies (and (rationalp x)
+                (> x 0)
+                (not (zp k))
+                (natp n)
+                (>= n (+ k 2))
+                (natp m)
+                (>= m n)
+		(common-mode-p mode))
+           (equal (rnd (qsqrt x m) mode k)
+	          (rnd (qsqrt x n) mode k)))
+  :rule-classes ())
+
 (defthm qsqrt-lower
   (implies (and (rationalp x)
                 (> x 0)
@@ -299,4 +312,24 @@
                 (iff (> (* q q) x) (> q (qsqrt x n)))
                 (iff (= (* q q) x) (= q (qsqrt x n)))))
   :rule-classes ())
+
+(defthmd qsqrt-sqrt
+  (implies (and (rationalp x) (> x 0)
+                (integerp n) (> n 1)
+		(exactp (qsqrt x n) (1- n)))
+	   (equal (* (qsqrt x n) (qsqrt x n))
+	          x)))
+ 
+(defthm qsqrt-exact-equal
+  (implies (and (rationalp x)
+                (> x 0)
+                (not (zp k))
+                (natp n)
+                (> n k)
+                (natp m)
+		(> m k)
+		(exactp (qsqrt x n) k))
+	   (equal (qsqrt x n) (qsqrt x m)))
+  :rule-classes ())
+
 )

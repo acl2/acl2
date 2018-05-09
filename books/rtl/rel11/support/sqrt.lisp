@@ -1862,3 +1862,46 @@ By rnd-rto and rnd-monotone,
   :rule-classes ()
   :hints (("Goal" :use (exactp-cmp-qsqrt-19))))
 
+(defthmd qsqrt-sqrt
+  (implies (and (rationalp x) (> x 0)
+                (integerp n) (> n 1)
+		(exactp (qsqrt x n) (1- n)))
+	   (equal (* (qsqrt x n) (qsqrt x n))
+	          x))
+  :hints (("Goal" :use (qsqrt-pos (:instance exactp-cmp-qsqrt (q (qsqrt x n)))))))
+ 
+(defthm rnd-qsqrt-equal
+  (implies (and (rationalp x)
+                (> x 0)
+                (not (zp k))
+                (natp n)
+                (>= n (+ k 2))
+                (natp m)
+                (>= m n)
+		(common-mode-p mode))
+           (equal (rnd (qsqrt x m) mode k)
+	          (rnd (qsqrt x n) mode k)))
+  :rule-classes ()
+  :hints (("Goal" :use (qsqrt-expo
+                        (:instance rnd-rto-sqrt (x (/ x (expt 2 (* 2 (1+ (fl (/ (expo x) 2))))))))
+                        (:instance rnd-shift (n k) (k (1+ (fl (/ (expo x) 2))))
+			                     (x (rto-sqrt (/ x (expt 2 (* 2 (1+ (fl (/ (expo x) 2)))))) n)))
+                        (:instance rnd-shift (n k) (k (1+ (fl (/ (expo x) 2))))
+			                     (x (rto-sqrt (/ x (expt 2 (* 2 (1+ (fl (/ (expo x) 2)))))) m))))
+		  :in-theory (enable qsqrt))))
+
+(defthm qsqrt-exact-equal
+  (implies (and (rationalp x)
+                (> x 0)
+                (not (zp k))
+                (natp n)
+                (> n k)
+                (natp m)
+		(> m k)
+		(exactp (qsqrt x n) k))
+	   (equal (qsqrt x n) (qsqrt x m)))
+  :rule-classes ()
+  :hints (("Goal" :use (qsqrt-sqrt qsqrt-pos
+                        (:instance exactp-<= (x (qsqrt x n)) (m k) (n (1- n)))
+                        (:instance exactp-<= (x (qsqrt x n)) (m k) (n (1- m)))
+                        (:instance exactp-cmp-qsqrt (q (qsqrt x n)) (n m))))))

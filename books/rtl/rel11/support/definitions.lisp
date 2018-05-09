@@ -969,12 +969,12 @@
   (declare (xargs :guard (formatp f)
                   :verify-guards nil))
   (if (explicitp f)
-      (cat (1- (expt 2 (+ (expw f) 3)))
-           (+ (expw f) 3)
+      (cat (1- (expt 2 (+ (expw f) 2)))
+           (+ (expw f) 2)
            0
            (- (sigw f) 2))
-    (cat (1- (expt 2 (+ (expw f) 2)))
-         (+ (expw f) 2)
+    (cat (1- (expt 2 (+ (expw f) 1)))
+         (+ (expw f) 1)
          0
          (1- (sigw f)))))
 

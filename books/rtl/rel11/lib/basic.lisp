@@ -300,6 +300,13 @@
 	     (= m n))
   :rule-classes ())
 
+(defthmd fl-mod
+  (implies (and (integerp a)
+                (not (zp m))
+                (not (zp n)))
+	   (equal (fl (/ (mod a (* m n)) n))
+	          (mod (fl (/ a n)) m))))
+
 (defthm mod-0-0
   (implies (and (integerp p)
                 (rationalp m)
