@@ -733,7 +733,7 @@
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size nil rex-byte t prefixes))
+        (select-operand-size nil rex-byte t prefixes x86))
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
@@ -850,7 +850,7 @@
        ((when (< 15 addr-diff))
         (!!ms-fresh :instruction-length addr-diff))
 
-       (register-size (select-operand-size nil rex-byte nil prefixes))
+       (register-size (select-operand-size nil rex-byte nil prefixes x86))
        (reg/mem (case reg/mem-size
                   (1
                    (mbe :logic (part-select (n08-to-i08 reg/mem)
@@ -946,7 +946,7 @@
         (!!ms-fresh :instruction-length addr-diff))
 
        ((the (integer 1 8) register-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
 
        ;; Update the x86 state:
        (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*) reg/mem

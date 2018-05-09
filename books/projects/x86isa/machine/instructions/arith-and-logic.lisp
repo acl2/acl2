@@ -891,7 +891,7 @@
 
        (byte-operand? (equal 0 (logand 1 opcode)))
        ((the (integer 1 8) operand-size)
-        (select-operand-size byte-operand? rex-byte t prefixes))
+        (select-operand-size byte-operand? rex-byte t prefixes x86))
        (rAX-size (if (logbitp #.*w* rex-byte)
                      8
                    operand-size))
@@ -997,8 +997,7 @@
                    (prefixes-slice :group-4-prefix prefixes)))
        (select-byte-operand (equal 0 (logand 1 opcode)))
        ((the (integer 1 8) r/mem-size)
-        (select-operand-size
-         select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
        (inst-ac? t)
        ((mv flg0 r/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
@@ -1204,8 +1203,7 @@
 
        (select-byte-operand (equal 0 (logand 1 opcode)))
        ((the (integer 0 8) r/mem-size)
-        (select-operand-size select-byte-operand rex-byte nil
-                             prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
        (inst-ac? t)
        ((mv flg0 r/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)

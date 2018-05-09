@@ -57,8 +57,7 @@
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size
-         select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
@@ -182,7 +181,7 @@
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?v-addr x86)
@@ -279,7 +278,7 @@
                    (prefixes-slice :group-4-prefix prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
@@ -376,7 +375,7 @@
                    (prefixes-slice :group-4-prefix prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
 
        ((the (integer 1 4) imm-size)
         (if (equal opcode #x6B)
