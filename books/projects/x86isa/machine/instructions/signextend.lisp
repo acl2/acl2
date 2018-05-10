@@ -50,7 +50,7 @@
         (!!ms-fresh :instruction-length addr-diff))
 
        ((the (integer 1 8) register-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
        ((the (integer 1 4) src-size) (ash register-size -1))
        ((the (unsigned-byte 32) src)
         (mbe :logic
@@ -110,7 +110,7 @@
         (!!ms-fresh :instruction-length addr-diff))
 
        ((the (integer 1 8) src-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
        (src (rgfi-size src-size *rax* rex-byte x86))
        (rDX (if (logbitp (1- (ash src-size 3)) src)
                 (trunc src-size -1)

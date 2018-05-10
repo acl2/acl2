@@ -1106,16 +1106,8 @@ the execution in this case.</p>"
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
        ((the (integer 2 4) operand-size)
-        (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-             (cs.d
-              (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-          (if (= cs.d 1)
-              (if p3? 2 4)
-            (if p3? 4 2))))
+        (select-operand-size nil 0 nil prefixes x86))
 
        (rsp (read-*sp x86))
 
@@ -1248,16 +1240,8 @@ the execution in this case.</p>"
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
        ((the (integer 2 4) operand-size)
-        (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-             (cs.d
-              (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-          (if (= cs.d 1)
-              (if p3? 2 4)
-            (if p3? 4 2))))
+        (select-operand-size nil 0 nil prefixes x86))
 
        (rsp (read-*sp x86))
 

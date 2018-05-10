@@ -1,6 +1,6 @@
 ; Alists from Symbols to Symbols
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,7 +18,7 @@
   :key (symbolp x)
   :val (symbolp x)
   :parents (kestrel-utilities alists)
-  :short "Recognize @('nil')-terminated alists from symbols to symbols."
+  :short "Recognize true alists from symbols to symbols."
   :keyp-of-nil t
   :valp-of-nil t
   :true-listp t)

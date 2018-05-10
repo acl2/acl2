@@ -2026,11 +2026,13 @@ reference made from privilege level 3.</blockquote>"
 ;; functions.
 (def-ruleset instruction-decoding-and-spec-rules nil)
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (define select-operand-size
   ((byte-operand? :type (or t nil))
    (rex-byte      :type (unsigned-byte  8))
    (imm?          :type (or t nil))
-   (prefixes      :type (unsigned-byte 44)))
+   (prefixes      :type (unsigned-byte 44))
+   (x86 x86p))
 
   :inline t
   :parents (decoding-and-spec-utils)
@@ -2040,54 +2042,71 @@ reference made from privilege level 3.</blockquote>"
   :long "<p>@('select-operand-size') selects the operand size of the
   instruction.  It is cognizant of the instruction prefixes, the
   @('rex') byte, the operand type (e.g., immediate operand or not),
-  and the default operand size.  Note that this function has been
-  written only for the 64-bit mode.</p>
+  and the default operand size (obtained from the state).</p>
 
- <p>This function was written by referring to the following:
- <ol>
- <li>Intel Manuals, Vol. 1, Section 3.6, Table 3-4</li>
- <li>Intel Manuals, Vol. 2, Section 2.2.1.2</li>
- </ol>
- </p>
+  <p>This function was written by referring to the following:
+  <ol>
+  <li>Intel Manuals, Vol. 1, Section 3.6, Table 3-3</li>
+  <li>Intel Manuals, Vol. 1, Section 3.6, Table 3-4</li>
+  <li>Intel Manuals, Vol. 2, Section 2.2.1.2</li>
+  </ol>
+  </p>
 
- <p><img src='res/images/Vol-1-Table-3-4-small.png' width='8%'
- height='8%' />
+  <p><img src='res/images/Vol-1-Table-3-3-small.png' width='8%'
+  height='8%' />
 
- The image above has been captured from Volume 1: Basic Architecture,
- Intel\(R\) 64 and IA-32 Architectures Software Developer's Manual,
- Combined Volumes: 1, 2A, 2B, 2C, 3A, 3B and 3C, Order Number:
- 325462-054US, April 2015.</p>
+  <p><img src='res/images/Vol-1-Table-3-4-small.png' width='8%'
+  height='8%' />
 
- <i>
- <ul>
- <li>Setting REX.W can be used to determine the operand size but does
- not solely determine operand width. Like the 66H size prefix, 64-bit
- operand size override has no effect on byte-specific operations.</li>
+  The first image above has been captured from Volume 1: Basic Architecture,
+  Intel\(R\) 64 and IA-32 Architectures Software Developer's Manual,
+  Order Number: 253665-062US, March 2017.</p>
 
- <li>For non-byte operations: if a 66H prefix is used with prefix
- \(REX.W = 1\), 66H is ignored.</li>
+  The second image above has been captured from Volume 1: Basic Architecture,
+  Intel\(R\) 64 and IA-32 Architectures Software Developer's Manual,
+  Combined Volumes: 1, 2A, 2B, 2C, 3A, 3B and 3C, Order Number:
+  325462-054US, April 2015.</p>
 
- <li>If a 66H override is used with REX and REX.W = 0, the operand size
- is 16 bits.</li>
- </ul>
- </i>"
+  <i>
+  <ul>
+  <li>Setting REX.W can be used to determine the operand size but does
+  not solely determine operand width. Like the 66H size prefix, 64-bit
+  operand size override has no effect on byte-specific operations.</li>
+
+  <li>For non-byte operations: if a 66H prefix is used with prefix
+  \(REX.W = 1\), 66H is ignored.</li>
+
+  <li>If a 66H override is used with REX and REX.W = 0, the operand size
+  is 16 bits.</li>
+  </ul>
+  </i>"
 
   :enabled t
   :returns (size natp :rule-classes :type-prescription)
 
   (if byte-operand?
       1
-    (if (logbitp #.*w* rex-byte)
-        (if imm?
-            ;; Fetch 4 bytes (sign-extended to 64 bits) if operand is
-            ;; immediate.
-            4
-          8)
-      (if (eql #.*operand-size-override*
-               (prefixes-slice :group-3-prefix prefixes))
-          2 ;; 16-bit operand-size
-        4   ;; Default 32-bit operand size (in 64-bit mode)
-        ))))
+    (if (64-bit-modep x86)
+        (if (logbitp #.*w* rex-byte)
+            (if imm?
+                ;; Fetch 4 bytes (sign-extended to 64 bits) if operand is
+                ;; immediate.
+                4
+              8)
+          (if (eql #.*operand-size-override*
+                   (prefixes-slice :group-3-prefix prefixes))
+              2 ;; 16-bit operand-size
+            4   ;; Default 32-bit operand size (in 64-bit mode)
+            ))
+      ;; 32-bit mode:
+      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+           (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+           (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
+           (p3? (eql #.*operand-size-override*
+                     (prefixes-slice :group-3-prefix prefixes))))
+        (if (= cs.d 1)
+            (if p3? 2 4)
+          (if p3? 4 2))))))
 
 ;; ======================================================================
 

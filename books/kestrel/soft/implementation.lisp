@@ -27,7 +27,7 @@
 
 (define *-listp (stars)
   :returns (yes/no booleanp)
-  :short "Recognize @('nil')-terminated lists of @('*')s."
+  :short "Recognize true lists of @('*')s."
   :long
   "<p>
    These lists are used to indicate the number of arity of function variables
@@ -187,7 +187,7 @@
 (define funvar-listp (funvars (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
-  :short "Recoegnize @('nil')-terminated lists of function variables."
+  :short "Recoegnize true lists of function variables."
   (if (atom funvars)
       (null funvars)
     (and (funvarp (car funvars) wrld)
@@ -988,7 +988,7 @@
 (define funvar-inst-listp (insts (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
-  :short "Recognize @('nil')-terminated lists of instantiations."
+  :short "Recognize true lists of instantiations."
   (if (atom insts)
       (null insts)
     (and (funvar-instp (car insts) wrld)

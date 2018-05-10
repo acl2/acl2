@@ -91,7 +91,8 @@
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
        (select-byte-operand (equal opcode #x86))
-       (reg/mem-size (select-operand-size select-byte-operand rex-byte nil prefixes))
+       (reg/mem-size
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
        (inst-ac? t)
        ;; Fetch the first operand and put it in val1.
        ;; If the opcode is #x90+rw/rd, we let rax be the first operand.
@@ -218,7 +219,7 @@
 
        (select-byte-operand (equal opcode #xB0))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
        (rAX (rgfi-size reg/mem-size *rax* rex-byte x86))
        (inst-ac? t)
        ;; Fetch the first (destination) operand:

@@ -4,12 +4,8 @@
 
 ; Description:
 
-; This file formerly connected xdoc with David Russinoff's online rtl manual,
-; http://russinoff.com/libman/index.html.  Some comments below preserve that
-; connection, but code below does not, because that online manual no longer
-; exists.  An upcoming book by David Russinoff is expected to be structurally
-; similar, but probably not accessible without a fee or perhaps a library
-; connection.
+; This file connects xdoc with David Russinoff's online rtl manual,
+; http://russinoff.com/libman/index.html.
 
 (in-package "RTL")
 
@@ -44,11 +40,11 @@
       |Floating-Point Decomposition|
       |Exactness|)
      (|Floating-Point Formats| ; reps.lisp
-      |Classification of Formats|
-      |Normal Encodings|
-      |Denormals and Zeroes|
-      |Infinities and NaNs|
-      |Rebiasing Exponents|)
+       |Classification of Formats|
+       |Normal Encodings|
+       |Denormals and Zeroes|
+       |Infinities and NaNs|
+       |Rebiasing Exponents|)
      (|Rounding| ; round.lisp
       |Truncation|
       |Rounding Away from Zero|
@@ -56,34 +52,34 @@
       |Odd Rounding|
       |IEEE Rounding|
       |Denormal Rounding|))
-    (|Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions| ; excps.lisp
+    (|Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions| ; exps.lisp
      (|IEEE-Compliant Square Root| ; sqrt.lisp
       |Truncated Square Root|
       |Odd-Rounded Square Root|
       |IEEE-Rounded Square Root|)
-     |SSE Floating-Point Instructions|
-     |x87 Instructions|
-     |ARM AArch32 Floating-Point Instructions|)
-    (|Implementation of Elementary Operations|
-     (|Addition| ; add.lisp
-      |Bit Vector Addition|
-      |Leading One Prediction|
-      |Trailing One Prediction|)
-     (|Multiplication| ; mult.lisp
-      |Radix-4 Booth Encoding|
-      |Statically Encoded Multiplier Arrays|
-      |Encoding Redundant Representations|
-      |Radix-8 Booth Encoding|)
-     (|FMA-Based Division| ; div.lisp
-      |Quotient Refinement|
-      |Reciprocal Refinement|
-      |Examples|)
-     (|SRT Division and Square Root| ; srt.lisp
-      |SRT Division and Quotient Digit Selection|
-      |SRT Square Root Extraction|
-      |Square Root Seed Tables|))
-    |Modeling Algorithms in SystemC and ACL2| ; masc.lisp
-    |Bibliography|))
+      |SSE Floating-Point Instructions|
+      |x87 Instructions|
+      |ARM AArch32 Floating-Point Instructions|)
+   (|Implementation of Elementary Operations|
+    (|Addition| ; add.lisp
+     |Bit Vector Addition|
+     |Leading One Prediction|
+     |Trailing One Prediction|)
+    (|Multiplication| ; mult.lisp
+     |Radix-4 Booth Encoding|
+     |Statically Encoded Multiplier Arrays|
+     |Encoding Redundant Representations|
+     |Radix-8 Booth Encoding|)
+    (|FMA-Based Division| ; div.lisp
+     |Quotient Refinement|
+     |Reciprocal Refinement|
+     |Examples|)
+    (|SRT Division and Square Root| ; srt.lisp
+     |SRT Division and Quotient Digit Selection|
+     |SRT Square Root Extraction|
+     |Square Root Seed Tables|))
+   |Modeling Algorithms in C++ and ACL2| ; rac.lisp
+   |Bibliography|))
 
 (defun rtl-node-name-basic (sym)
   sym)
@@ -170,19 +166,14 @@
 (defmacro defsection-rtl (name parent &rest events)
   (let* ((entry (rtl-node-entry name))
          (section-name (cadr entry))
-;        (url (caddr entry))
-         )
+         (url (caddr entry)))
     `(defsection ,section-name
        :parents (,(if (eq parent 'rtl) 'rtl (cadr (rtl-node-entry parent))))
        :short ,(symbol-name name)
        :long ,(concatenate 'string
-;                          "<p>See also <a href='" url "'>"
-                           "<p>See "
-;                          "the corresponding section</a> in David Russinoff's "
+                           "<p>See also <a href='" url "'>"
                            "the corresponding section in David Russinoff's "
-;                          "<a href='http://russinoff.com/libman/'>"
-;                          "online rtl manual</a>.</p>"
-                           "upcoming book.</p>"
+                           "online rtl manual</a>.</p>"
                            (defsection-rtl-defs events))
        (deflabel ,(intern-in-package-of-symbol
                    (concatenate 'string (symbol-name name) "$SECTION")
@@ -208,17 +199,18 @@
   :parents (acl2::bit-vectors acl2::hardware-verification)
   :short "A library of register-transfer logic and computer arithmetic"
   :long "<p>This @(see documentation) for @(see community-books) residing under
-  @('rtl/rel11') formerly contained links to David Russinoff's online rtl
-  manual, ``A Formal Theory of Register-Transfer Logic and Computer
-  Arithmetic.''  The organization of that manual was essentially isomorphic to
-  the organization of the tree of documentation topics under this RTL topic.
-  That online manual no longer exists, but is expected to be structurally
-  similar to an upcoming book by David Russinoff, to be published by Springer
-  in late 2018.  Each leaf topic of that tree corresponds to a section of a
-  book in the directory @('rtl/rel11/lib/').  The
-  (leaf) topic for a section displays definitions and theorems from that
-  section.  Note that the books in @('rtl/rel11/lib/') contain additional
-  definitions and theorems not documented here.</p>
+  @('rtl/rel11') contains links to David Russinoff's online rtl manual, <i><a
+  href='http://russinoff.com/libman/index.html'>A Formal Theory of
+  Register-Transfer Logic and Computer Arithmetic</a></i>.  The organization of
+  that manual is essentially isomorphic to the organization of the tree of
+  documentation topics under this RTL topic.  Each leaf topic of that tree
+  corresponds to a section of a book in the directory @('rtl/rel11/lib/').  The
+  (leaf) topic for a section has two parts: (1) a link near the top of the page
+  points to the corresponding page in the online rtl manual, which contains
+  discussion and proofs written in mathematical English; and (2) the rest of
+  the page displays definitions and theorems from that section.  Note that the
+  books in @('rtl/rel11/lib/') contain additional definitions and theorems not
+  documented here or in the rtl online manual.</p>
 
   <p>See file @('rtl/rel11/README') for additional information about this
   library.</p>")
@@ -227,7 +219,7 @@
                           |Floating-Point Arithmetic|
                           |Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions|
                           |Implementation of Elementary Operations|
-                          |Modeling Algorithms in SystemC and ACL2|
+                          |Modeling Algorithms in C++ and ACL2|
                           |Bibliography|))
 
 (defun defsection-rtl-list-for-tree (parent trees)
@@ -255,4 +247,4 @@
 ; Handle top-level leaves:
 
 (defsection-rtl |Bibliography| rtl)
-(defsection-rtl |Modeling Algorithms in SystemC and ACL2| rtl)
+(defsection-rtl |Modeling Algorithms in C++ and ACL2| rtl)

@@ -1,6 +1,6 @@
 ; Event Forms
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -25,8 +25,7 @@
   :short "Recognize the basic structure of an event form."
   :long
   "<p>
-   Check whether @('x') is a
-   non-empty, @('nil')-terminated list that starts with a symbol
+   Check whether @('x') is a non-empty true list that starts with a symbol
    (like a function or macro call).
    </p>
    <p>
@@ -47,7 +46,7 @@
 (std::deflist pseudo-event-form-listp (x)
   (pseudo-event-formp x)
   :parents (event-forms)
-  :short "Recognize @('nil')-terminated lists whose elements all have the
+  :short "Recognize trues lists whose elements all have the
           <see topic='@(url pseudo-event-formp)'>basic structure
           of an event form</see>."
   :true-listp t

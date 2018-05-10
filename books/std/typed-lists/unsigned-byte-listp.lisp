@@ -113,7 +113,13 @@
   (defthm unsigned-byte-listp-when-take-and-nthcdr
     (implies (and (unsigned-byte-listp width (take n x))
                   (unsigned-byte-listp width (nthcdr n x)))
-             (unsigned-byte-listp width x))))
+             (unsigned-byte-listp width x)))
+
+  (defthm unsigned-byte-listp-of-update-nth
+    (implies (and (unsigned-byte-listp n l)
+                  (< key (len l)))
+             (equal (unsigned-byte-listp n (update-nth key val l))
+                    (unsigned-byte-p n val)))))
 
 
 

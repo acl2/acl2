@@ -152,6 +152,105 @@
                 (* x y)))
   :rule-classes ())
 
+
+
+(defund mag (i y)
+  (if (member (bits y (1+ (* 2 i)) (1- (* 2 i))) '(3 4))
+      2
+    (if (member (bits y (* 2 i) (1- (* 2 i))) '(1 2))
+        1
+      0)))
+
+(defthm mag-0-1-2
+  (member (mag i y) '(0 1 2))
+  :rule-classes ())
+
+(defund nbit (i y)
+  (bitn y (1+ (* 2 i))))
+
+(defthm nbit-0-1
+  (member (nbit i y) '(0 1))
+  :rule-classes ())
+
+(defthmd theta-rewrite
+  (implies (and (natp y) (natp i))
+           (equal (theta i y)
+                  (if  (= (nbit i y) 1)
+                       (- (mag i y))
+                       (mag i y)))))
+
+(defund bmux4p (i x y n)
+  (if  (= (nbit i y) 1)
+       (bits (lognot (* (mag i y) x)) (1- n) 0)
+       (* (mag i y) x)))
+
+(defthmd bvecp-bmux4p
+  (implies (and (not (zp n))
+                (bvecp x (1- n)))
+	   (bvecp (bmux4p i x y n) n)))
+
+(defthmd bmux4p-rewrite
+  (implies (and (not (zp n))
+                (not (zp m))
+	        (bvecp x (1- n))
+	        (bvecp y (1- (* 2 m)))
+		(natp i)
+		(< i m))
+           (equal (bmux4p i x y n)
+                  (+ (* (theta i y) x)
+                     (* (1- (expt 2 n)) (nbit i y))))))
+
+(defund pp4p (i x y n)
+  (if (zerop i)
+      (cat (if (= (nbit 0 y) 0) 1 0) 1
+           (nbit 0 y) 1
+           (nbit 0 y) 1
+           (bmux4p 0 x y n) n)
+    (cat 1 1
+         (lognot (nbit i y)) 1
+         (bmux4p i x y n) n
+         0 1
+         (nbit (1- i) y) 1
+         0 (* 2 (1- i)))))
+
+(defthmd pp4p0-rewrite
+  (implies (and (not (zp n))
+                (not (zp m))
+	        (bvecp x (1- n))
+	        (bvecp y (1- (* 2 m))))
+           (equal (pp4p 0 x y n)
+                  (+ (expt 2 (+ n 2))
+                     (* (theta 0 y) x)
+                     (- (nbit 0 y))))))
+
+(defthmd pp4p-rewrite
+  (implies (and (not (zp n))
+                (not (zp m))
+	        (bvecp x (1- n))
+	        (bvecp y (1- (* 2 m)))
+                (not (zp i))
+                (< i m))
+           (equal (pp4p i x y n)
+                  (+ (expt 2 (+ n (* 2 i) 1))
+                     (expt 2 (+ n (* 2 i)))
+                     (* (expt 2 (* 2 i)) (theta i y) x)
+                     (* (expt 2 (* 2 (1- i))) (nbit (1- i) y))
+                     (- (* (expt 2 (* 2 i)) (nbit i y)))))))
+
+(defun sum-pp4p (x y m n)
+  (if (zp m)
+      0
+    (+ (pp4p (1- m) x y n)
+       (sum-pp4p x y (1- m) n))))
+
+(defthmd booth4-corollary-3
+  (implies (and (not (zp n))
+                (not (zp m))
+	        (bvecp x (1- n))
+	        (bvecp y (1- (* 2 m))))
+           (equal (sum-pp4p x y m n)
+                  (+ (* x y) (expt 2 (+ n (* 2 m)))))))
+
 )
 ;;;**********************************************************************
 ;;;                Statically Encoded Multiplier Arrays

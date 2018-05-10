@@ -17,6 +17,7 @@
 ;; INSTRUCTION: SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
   :guard (not (equal (mrm-reg modr/m) 6))
 
@@ -176,30 +177,40 @@
   :body
 
   (b* ((ctx 'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
+
        (lock (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        (reg (mrm-reg modr/m))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4 (equal #.*addr-size-override*
-                  (prefixes-slice :group-4-prefix prefixes)))
 
-       (select-byte-operand (or (equal opcode #xC0)
-                                (equal opcode #xD0)
-                                (equal opcode #xD2)))
+       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes-slice :group-4-prefix prefixes)))
+
+       (byte-operand? (or (equal opcode #xC0)
+                          (equal opcode #xD0)
+                          (equal opcode #xD2)))
        ((the (integer 0 8) ?reg/mem-size)
-        (select-operand-size select-byte-operand rex-byte nil
-                             prefixes))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
+
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
 
        (inst-ac? t)
-       ((mv flg0 ?reg/mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* reg/mem-size inst-ac?
+       ((mv flg0 ?reg/mem (the (unsigned-byte 3) increment-RIP-by) addr x86)
+        (x86-operand-from-modr/m-and-sib-bytes$
+         #.*gpr-access*
+         reg/mem-size
+         inst-ac?
          nil ;; Not a memory pointer operand
-         p2 p4 temp-rip rex-byte r/m mod sib
+         seg-reg
+         p4?
+         temp-rip
+         rex-byte
+         r/m
+         mod
+         sib
          ;; Bytes of immediate data (only relevant when RIP-relative
          ;; addressing is done to get ?reg/mem operand)
          (if (or (equal opcode #xC0)
@@ -210,14 +221,9 @@
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ increment-RIP-by temp-rip))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ((mv flg1 shift/rotate-by x86)
         (case opcode
@@ -226,28 +232,23 @@
           ((#xD2 #xD3)
            (mv nil (rr08 *rcx* rex-byte x86) x86))
           ((#xC0 #xC1)
-           (rml-size 1 temp-rip :x x86))
+           (rme-size 1 temp-rip *cs* :x nil x86))
           (otherwise ;; will not be reached
            (mv nil 0 x86))))
        ((when flg1)
-        (!!ms-fresh :rml-size-error flg1))
+        (!!ms-fresh :rme-size-error flg1))
 
        (countMask (if (logbitp #.*w* rex-byte)
                       #x3F
                     #x1F))
        (shift/rotate-by (logand countMask shift/rotate-by))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
+       ((mv flg (the (signed-byte #.*max-linear-address-size+1*) temp-rip))
         (if (or (equal opcode #xC0)
                 (equal opcode #xC1))
-            (+ temp-rip 1)
-          temp-rip))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+            (add-to-*ip temp-rip 1 x86)
+          (mv nil temp-rip)))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
@@ -296,17 +297,22 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem
-         reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         ;; TO-DO@Shilpi: Remove this trunc.
-         (trunc reg/mem-size result)
-         (the (signed-byte #.*max-linear-address-size*) v-addr)
-         rex-byte r/m mod x86))
+        (x86-operand-to-reg/mem$ reg/mem-size
+                                 inst-ac?
+                                 nil ;; Not a memory pointer operand
+                                 ;; TO-DO@Shilpi: Remove this trunc.
+                                 (trunc reg/mem-size result)
+                                 seg-reg
+                                 addr
+                                 rex-byte
+                                 r/m
+                                 mod
+                                 x86))
        ;; Note: If flg2 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
-       (x86 (!rip temp-rip x86)))
+
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================

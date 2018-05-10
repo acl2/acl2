@@ -2706,23 +2706,17 @@
       Opcode-extension: Modr/m.reg
       0-5,7: sal/sar/shl/shr/rcl/rcr/rol/ror
       Otherwise: Unimplemented"
-     (if (64-bit-modep x86)
-         (case (mrm-reg ModR/M)
-           ((0 1 2 3 4 5 7)
-            (x86-sal/sar/shl/shr/rcl/rcr/rol/ror start-rip temp-rip prefixes
-                                                 rex-byte opcode modr/m sib
-                                                 x86))
-           (otherwise
-            (x86-step-unimplemented
-             (list* (ms x86)
-                    (list
-                     "Instruction not implemented yet"
-                     start-rip temp-rip prefixes rex-byte opcode)) x86)))
-       (x86-step-unimplemented
-        (cons (cons "GRP2 is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (case (mrm-reg ModR/M)
+       ((0 1 2 3 4 5 7)
+        (x86-sal/sar/shl/shr/rcl/rcr/rol/ror start-rip temp-rip prefixes
+                                             rex-byte opcode modr/m sib
+                                             x86))
+       (otherwise
+        (x86-step-unimplemented
+         (list* (ms x86)
+                (list
+                 "Instruction not implemented yet"
+                 start-rip temp-rip prefixes rex-byte opcode)) x86))))
 
     (#xC2
      "(RETN lw)"
@@ -2797,23 +2791,17 @@
       Opcodes: D0-D3
       D0: (GRP2 Eb 1);   D1: (GRP2 Ev, 1);
       D2: (GRP2 Eb, CL); D3: (GRP2 Ev, CL)"
-     (if (64-bit-modep x86)
-         (case (mrm-reg ModR/M)
-           ((0 1 2 3 4 5 7)
-            (x86-sal/sar/shl/shr/rcl/rcr/rol/ror start-rip temp-rip prefixes
-                                                 rex-byte opcode modr/m sib
-                                                 x86))
-           (otherwise
-            (x86-step-unimplemented (cons (ms x86)
-                                          (list start-rip temp-rip
-                                                prefixes rex-byte
-                                                opcode))
-                                    x86)))
-       (x86-step-unimplemented
-        (cons (cons "GRP2 is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (case (mrm-reg ModR/M)
+       ((0 1 2 3 4 5 7)
+        (x86-sal/sar/shl/shr/rcl/rcr/rol/ror start-rip temp-rip prefixes
+                                             rex-byte opcode modr/m sib
+                                             x86))
+       (otherwise
+        (x86-step-unimplemented (cons (ms x86)
+                                      (list start-rip temp-rip
+                                            prefixes rex-byte
+                                            opcode))
+                                x86))))
 
     ((#xE0 #xE1 #xE2)
      "E0: (LOOPNE/NZ Jb); E1: (LOOPE/Z Jb); E2: (LOOP Jb)"

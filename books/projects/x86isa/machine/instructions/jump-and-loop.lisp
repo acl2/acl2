@@ -270,7 +270,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
        (offset-size
         ;; Offset size can be 2, 4, or 8 bytes.
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
        (inst-ac? t)
        ((mv flg mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)

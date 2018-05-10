@@ -947,7 +947,7 @@
 )
 
 ;;;**********************************************************************
-;;;		      Signed Integer Encodings
+;;;		 Signed Integer and Fixed-Point Encodings
 ;;;**********************************************************************
 
 (defsection-rtl |Signed Integer Formats| |Bit Vectors|
@@ -974,6 +974,13 @@
            (equal (bits (si r n) i j)
                   (bits r i j))))
 
+(defthmd si-shift
+  (implies (and (natp n)
+                (natp k)
+                (bvecp r n))
+           (equal (si (* (expt 2 k) r) (+ k n))
+                  (* (expt 2 k) (si r n)))))
+
 (defund sextend (m n r)
   (declare (xargs :guard (and (natp m)
                               (natp n)
@@ -988,4 +995,99 @@
 	     (equal (si (sextend m n r) m)
 		    (si r n))))
 
+(defthmd si-approx
+  (implies (and (not (zp n))
+                (integerp x)
+                (integerp y)
+                (< (abs (si (mod x (expt 2 n)) n))
+                   (- (expt 2 (1- n)) (abs (- x y)))))
+           (equal (- (si (mod x (expt 2 n)) n)
+                     (si (mod y (expt 2 n)) n))
+                  (- x y))))
+
+(defund ui (r) r)
+
+(defund si (r n)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n))))
+  (if (= (bitn r (1- n)) 1)
+      (- r (expt 2 n))
+    r))
+
+(defund uf (r n m)
+  (* (expt 2 (- m n)) (ui r)))
+
+(defund sf (r n m)
+  (* (expt 2 (- m n)) (si r n)))
+
+(defthmd bits-uf
+  (let ((x (uf r n m))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (bvecp r n)
+                  (natp i)
+                  (natp j)
+                  (<= j i))
+             (equal (bits r i j)
+                    (* (expt 2 (- f j))
+                       (- (chop x (- f j))
+                          (chop x (- f (1+ i)))))))))
+
+(defthmd bits-sf
+  (let ((x (sf r n m))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (bvecp r n)
+                  (natp i)
+                  (natp j)
+                  (<= j i)
+                  (< i n))
+             (equal (bits r i j)
+                    (* (expt 2 (- f j))
+                       (- (chop x (- f j))
+                          (chop x (- f (1+ i)))))))))
+
+(defthm chop-uf
+  (let ((x (uf r n m))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (bvecp r n)
+                  (integerp k)
+                  (<= (- f n) k)
+                  (< k f))
+             (iff (= (chop x k) x)
+                  (= (bits r (1- (- f k)) 0) 0))))
+  :rule-classes ())
+
+(defthm chop-sf
+  (let ((x (sf r n m))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (bvecp r n)
+                  (integerp k)
+                  (<= (- f n) k)
+                  (< k f))
+             (iff (= (chop x k) x)
+                  (= (bits r (1- (- f k)) 0) 0))))
+  :rule-classes ())
+
+(defthmd sf-val
+  (implies (and (natp n)
+                (natp m)
+                (<= m n)
+                (bvecp r n)
+                (integerp y)
+                (= (mod y (expt 2 n)) r)
+                (<= (- (expt 2 (1- n))) y)
+                (< y (expt 2 (1- n))))
+            (equal (sf r n m)
+                   (* (expt 2 (- m n)) y))))
 )

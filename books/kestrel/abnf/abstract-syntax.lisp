@@ -1,6 +1,6 @@
 ; ABNF Library -- Abstract Syntax
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -250,7 +250,7 @@
      In the abstract syntax,
      for the alternatives described in RFC.3.2
      and by rule @('alternation') in RFC.4,
-     we use @('nil')-terminated lists of @(see concatenation)s.
+     we use true lists of @(see concatenation)s.
      We abstract away comments and blank space.
      We also abstract away the restriction that
      there be at least one alternation.
@@ -270,7 +270,7 @@
      In the abstract syntax,
      for the concatenations described in RFC.3.1
      and by rule @('concatenation') in RFC.4,
-     we use @('nil')-terminated lists of @(see repetition)s.
+     we use true lists of @(see repetition)s.
      We abstract away comments and blank space.
      We also abstract away the restriction that
      there be at least one repetition.
@@ -352,7 +352,7 @@
   :long
   "<p>
    In the abstract syntax,
-   we use @('nil')-terminated lists of rules.
+   we use true lists of rules.
    This corresponds to @('rulelist') in RFC.4,
    abstracting away comments and blank space.
    </p>"
@@ -543,7 +543,7 @@
 (std::deflist repetition/element/rulename/charstring-listp (x)
   (repetition/element/rulename/charstring-p x)
   :parents (convenience-constructors)
-  :short "Recognize @('nil')-terminated lists of
+  :short "Recognize true lists of
           repetitions, elements, rule names, and character strings."
   :true-listp t
   :elementp-of-nil nil)
