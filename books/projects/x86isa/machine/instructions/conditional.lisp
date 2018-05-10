@@ -486,7 +486,7 @@
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
        (inst-ac? t)

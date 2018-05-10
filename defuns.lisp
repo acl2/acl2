@@ -2772,7 +2772,17 @@
 ; we returned (mv ts *ts-empty* nil ttree).  We then realized that we could
 ; defer this choice until popping up to the top level (by introducing function
 ; type-set-and-returned-formals-top), which strengthened the resulting type
-; prescription in some cases.
+; prescription in some cases.  Here is an example, where previously the
+; generated type-prescription was trivial -- :args foo reported that the Type
+; is "built-in (or unrestricted)" -- but now it's as expected -- the reported
+; Type is (EQUAL (F1 X Y) X).
+
+;   (defund f1 (x y)
+;     (if (integerp x)
+;         (if (consp y)
+;             (f1 x (cdr y))
+;           x)
+;       x))
 
 ; Observe that the code below satisfies our Claim, since if term satisfies the
 ; requirements of type-alist, then it satisfies the computed type-set, by

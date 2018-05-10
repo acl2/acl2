@@ -186,28 +186,14 @@
        (reg (mrm-reg modr/m))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       (byte-operand? (or (equal opcode #xC0)
+                          (equal opcode #xD0)
+                          (equal opcode #xD2)))
        ((the (integer 0 8) ?reg/mem-size)
-        (if (or (equal opcode #xC0)
-                (equal opcode #xD0)
-                (equal opcode #xD2))
-            1
-          ;; Intel manual, Mar'17, Volume 1, Table 3-4:
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
 
        (seg-reg (select-segment-register p2 p4? mod r/m x86))
 
