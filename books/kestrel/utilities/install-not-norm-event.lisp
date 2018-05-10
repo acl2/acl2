@@ -1,10 +1,12 @@
 ; Non-Normalized Definition Installation Event
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018, Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Matt Kaufmann (kaufmann@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,3 +47,37 @@
                   `(local (install-not-normalized ,fn :defthm-name ',name))
                 `(install-not-normalized ,fn :defthm-name ',name))))
     (mv event name)))
+
+(define install-not-norm-event-lst
+  ((fns symbol-listp "Functions to install the non-normalized definitions of.")
+   (local booleanp "Make the event forms local or not.")
+   (names-to-avoid symbol-listp "Avoid these as theorem names.")
+   (wrld plist-worldp))
+  :returns (mv (events "A list of @(tsee pseudo-event-formp) values.")
+               (names "A @(tsee symbol-listp): the names of the theorems."))
+  :mode :program
+  :parents (kestrel-utilities system-utilities install-not-normalized)
+  :short "Create a list of event forms to
+          <see topic='@(url install-not-normalized)'>install
+          the non-normalized definitions</see>
+          of a list of functions,
+          ensuring that the names of the theorems will not cause a conflict."
+  :long
+  "<p>
+   Ensure that the names of the theorems are not already in use
+   and are not among a list of names to avoid.
+   Start with the default names
+   (i.e. the concatenation of
+   the names of each function suffixed with @('$not-normalized'))
+   and ensure their uniqueness via @(tsee fresh-name-in-world-with-$s).
+   </p>"
+  (cond ((endp fns) (mv nil nil))
+        (t (mv-let (event name)
+             (install-not-norm-event (car fns) local names-to-avoid wrld)
+             (mv-let (rest-events rest-names)
+               (install-not-norm-event-lst (cdr fns)
+                                           local
+                                           (cons name names-to-avoid)
+                                           wrld)
+               (mv (cons event rest-events)
+                   (cons name rest-names)))))))
