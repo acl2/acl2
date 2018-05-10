@@ -76,6 +76,7 @@ my $HELP_MESSAGE = "
 
        --nowarn     Suppress warnings.
        --nopath     Suppress critical path information.
+       --nodepthpath Suppress max-depth path information.
        --nolist     Suppress individual-files list.
 
        -r, --real   Toggle real time versus user+system
@@ -170,6 +171,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'help'   => \$OPTIONS{'help'},
 			     'nowarn' => \$OPTIONS{'nowarn'},
 			     'nopath' => \$OPTIONS{'nopath'},
+			     'nodepthpath' => \$OPTIONS{'nodepthpath'},
 			     'nolist' => \$OPTIONS{'nolist'},
 			     'short=i' =>  \$OPTIONS{'short'},
 			     'max-depth|m=i' =>  \$OPTIONS{'short'},
@@ -323,6 +325,10 @@ unless ($OPTIONS{'nopath'}) {
 
 unless ($OPTIONS{'nolist'}) {
     print individual_files_report($costs, $basecosts, $OPTIONS{"html"}, $OPTIONS{"short"});
+}
+
+unless ($OPTIONS{'nodepthpath'}) {
+    print deepest_path_report($costs, $basecosts, $savings, $topbook, $OPTIONS{"html"}, $OPTIONS{"short"});
 }
 
 
