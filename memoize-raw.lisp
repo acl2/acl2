@@ -192,8 +192,20 @@
 #+(or ccl sbcl)
 (eval-when
  (:execute :compile-toplevel :load-toplevel)
- (when (fboundp #+ccl 'ccl::rdtsc
-                #+sbcl 'sb-impl::read-cycle-counter)
+ (when #+ccl (fboundp 'ccl::rdtsc)
+       #+sbcl
+
+; In SBCL 1.4.7, function sb-impl::read-cycle-counter is no longer defined, as
+; it was in older versions (at least as recently as 1.4.2).  With (apropos
+; "READ-CYCLE-COUNTER") we found sb-vm::%read-cycle-counter; actually, Keshav
+; Kini first pointed us to sb-vm::%read-cycle-counter.  Oddly, fboundp returns
+; nil on this symbol, and it cannot be called as the top-level function symbol
+; in the read-eval-print loop.  But it seems to work fine here, and it seems to
+; be equivalent to sb-impl::read-cycle-counter in older versions.  We completed
+; a successful build and used it for (profile 'rewrite) followed by
+; :mini-proveall and then (memsum), on top of both SBCL 1.1.11 and SBCL 1.4.7.
+
+       (not (ignore-errors (sb-vm::%read-cycle-counter)))
    (pushnew :RDTSC *features*)))
 
 #+rdtsc
@@ -210,12 +222,12 @@
   '(ccl::rdtsc)
   #+sbcl
   '(multiple-value-bind
-      (t1 t2)
-      (sb-impl::read-cycle-counter)
-    (declare (fixnum t1 t2))
-    (the fixnum (logior (the fixnum (ash (logand t1 *2^30-1-for-rdtsc*)
-                                         32))
-                        t2))))
+       (t1 t2)
+       (sb-vm::%read-cycle-counter)
+     (declare (fixnum t1 t2))
+     (the fixnum (logior (the fixnum (ash (logand t1 *2^30-1-for-rdtsc*)
+                                          32))
+                         t2))))
 
 #+rdtsc
 (defmacro rdtsc64 ()
@@ -227,10 +239,10 @@
   '(ccl::rdtsc64)
   #+sbcl
   '(multiple-value-bind
-    (t1 t2)
-    (sb-impl::read-cycle-counter)
-    (declare (fixnum t1 t2))
-    (+ (ash t1 32) t2)))
+       (t1 t2)
+       (sb-vm::%read-cycle-counter)
+     (declare (fixnum t1 t2))
+     (+ (ash t1 32) t2)))
 
 ; SECTION: Multithreaded Memoization
 
