@@ -1,51 +1,72 @@
-This directory contains an ACL2 library of register-transfer logic, developed
-at AMD from 1995 to 2011, and at Intel from 2012 to the present, in support of 
-the mechanical verification of the floating-point arithmetic units designed 
-during those periods by the respective companies.
+This directory contains an ACL2 library of register-transfer logic,
+developed at AMD from 1995 to 2011, at Intel from 2012 to 2016, and at
+Arm from 2016 to the present, in support of the mechanical
+verification of floating-point arithmetic units designed during those
+periods by the respective companies.
 
 The library's primary author is David Russinoff.  Matt Kaufmann, Eric
-Smith, and Hanbing Liu have made significant contributions.  Version
-rel11 is a conversion of rel10 to to a new "RTL" package, created as a
-collaborative effort by Matt Kaufmann, David Rager, and Ben Selfridge,
-with David Russinoff in the loop.
+Smith, and Hanbing Liu have made significant contributions.  The
+current version resides in the subdirectory "rel11" of this directory.
 
-The library's core definitions and lemmas are contained in the subdirectory
-"lib".  A parallel subdirectory, "support", contains a superset of these
-events, including all sublemmas that were required for the proofs of the
-library lemmas.  The "support" directory is organized in such a way as to allow
-for the evolution of "lib", as described in the section 'How to Create a New 
-Release of "books/rtl"' below.  Users should consider "lib" to be the RTL 
+The library's core definitions and lemmas are contained in the
+subdirectory "rtl/rel11/lib".  A parallel subdirectory, "support",
+contains a superset of these events, including all sublemmas that were
+required for the proofs of the library lemmas.  The "support"
+directory is organized in such a way as to allow for the evolution of
+"lib", as described in the section 'How to Create a New Release of
+"books/rtl"' below.  Users should consider "lib" to be the RTL
 library, and are discouraged from accessing "support" directly.
 
-The book "lib/top" includes those books of "lib" that generally revelant to
-floating-point applications.  Other books of "lib", pertaining to more
-specialized theories and applications, may be included separately as needed.
-There is no guarantee that those specialized books are mutually compatible.  See 
-the comments in "lib/top.lisp" for information on each of the other books in 
-"lib".
+The book "lib/top" includes those books of "lib" that are generally
+revelant to floating-point applications.  Other books of "lib",
+pertaining to more specialized theories and applications, may be
+included separately as needed.  There is no guarantee that those
+specialized books are mutually compatible.  See the comments in
+"lib/top.lisp" for information on each of the other books in "lib".
 
-Arithmetic proofs with ACL2 are often cumbersome, but there exist general-purpose 
-arithmetic books that make the task more bearable.  The currently recommended 
-procedure is to include the book "books/arithmetic-5/top" along with "/books/lib/top".
-Unfortunately, there are a number of incompatibilities between the two libraries
-that may severely affect efficiency.  These may be (partially) addressed by
-the following:
+Arithmetic proofs with ACL2 are often cumbersome, but there exist
+general-purpose arithmetic books that make the task more bearable.
+The currently recommended procedure is to include the book
+"books/arithmetic-5/top" along with "/books/rtl/rel*/lib/top".
+Unfortunately, there are a number of incompatibilities between the two
+libraries that may severely affect efficiency.  These may be
+(partially) addressed by something like the following:
 
-(in-theory (disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| 
-                    |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)| cancel-mod-+
-                    mod-cancel-*-const simplify-products-gather-exponents-equal 
-                    simplify-products-gather-exponents-<
-                    cancel-mod-+ reduce-additive-constant-< |(floor x 2)|
-                    |(equal x (if a b c))| |(equal (if a b c) x)|))
+(in-theory (disable
+  |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| 
+  |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)| cancel-mod-+
+  mod-cancel-*-const simplify-products-gather-exponents-equal 
+  simplify-products-gather-exponents-<
+  cancel-mod-+ reduce-additive-constant-< |(floor x 2)|
+  |(equal x (if a b c))| |(equal (if a b c) x)|))
 
+The library files contain virtually no documentation, but are
+documented in a forthcoming book:
 
-The library files contain virtually no documentation.  A detailed
-companion document was formerly available online.  An updated version
-is to appear in a book to be published by Springer in late 2018.
+Russinoff, David M., "Formal Verification of Floating-Point Hardware
+Design: A Mathematical Approach", Springer. 2018.
 
-Many of the interesting events are formal versions of definitions and lemmas
-that are stated and proved in papers that document various applications of 
-the library, many of which are available at "http://www.russinoff.com/papers/".
+The books of the "lib" directory correspond to the chapters of the
+book as follows:
+
+           Chapter                  Book of lib/
+
+ 1 Basic Arithmetic Functions          basic
+ 2 Bit Vectors                         bits
+ 3 Logical Operations                  log
+ 4 Floating-Point Numbers              float
+ 5 Floating-Point Formats              reps
+ 6 Rounding                            round
+ 7 IEEE-Compliant Square Root          sqrt
+ 8 Addition                            add
+ 9 Multiplication                      mult
+ 10 SRT Division and Square Root       srt
+ 11 FMA-Based Division                 div
+ 12-14 Comparative Architectures       excps
+ 15 The Modeling Language              rac
+
+Chapters 16-19 document the correctness proofs of an Arm FPU.  The proof
+scripts reside in the directory "books/projects/arm" os this repository.
 
 
 =======================================================================

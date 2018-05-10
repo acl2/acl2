@@ -518,8 +518,7 @@
    :hints (("goal" :in-theory (enable formatp sigw prec)))))
 
 (defund indef (f)
-  (declare (xargs :guard (formatp f)
-                  :verify-guards nil))
+  (declare (xargs :guard (formatp f)))
   (if (explicitp f)
       (cat (1- (expt 2 (+ (expw f) 2)))
            (+ (expw f) 2)
