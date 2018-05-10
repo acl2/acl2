@@ -604,6 +604,23 @@
 ;; (push-untouchable ipasir-set t)
 ;; (push-untouchable ipasir$cp t)
 
+(acl2::defstobj-clone ipasir2 ipasir :suffix "2")
+(acl2::defstobj-clone ipasir3 ipasir :suffix "3")
+
+(push-untouchable ipasir-init$c t)
+(push-untouchable ipasir-reinit$c t)
+(push-untouchable ipasir-release$c t)
+(push-untouchable ipasir-input$c t)
+(push-untouchable ipasir-add-lit$c t)
+(push-untouchable ipasir-finalize-clause$c t)
+(push-untouchable ipasir-assume$c t)
+(push-untouchable ipasir-val$c t)
+(push-untouchable ipasir-failed$c t)
+(push-untouchable ipasir-solve$c t)
+(push-untouchable ipasir-set-limit$c t)
+(push-untouchable ipasir-callback-count$c t)
+
+
 
 
 (defun with-local-ipasir-core-fn (name bindings inner-form rest)
