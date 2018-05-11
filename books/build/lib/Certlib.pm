@@ -28,6 +28,7 @@
 #
 # Original author: Sol Swords <sswords@centtech.com>
 
+package Certlib;
 use strict;
 use warnings;
 use File::Basename;
@@ -37,25 +38,55 @@ use File::Spec;
 use Storable qw(nstore retrieve);
 use Cwd 'abs_path';
 
-# info about a book:
-use Class::Struct Certinfo => [ bookdeps => '@',        # books included by this one
-				portdeps => '@',        # books included in the portcullis
-				srcdeps => '@',         # source dependencies (.lisp, .acl2)
-				otherdeps => '@',       # from depends_on forms
-				image => '$',           # acl2, or from book.image/cert.image
-				params => '%',          # cert_param entries
-				include_dirs => '%',    # add-include-book-dir(!) forms
-				rec_visited => '%' ];   # already seen files for depends_rec
+use Certinfo;
+use Depdb;
+use Bookscan;
+
+
+use base 'Exporter';
+
+
+our @EXPORT = qw(
+canonical_path
+abs_canonical_path
+certlib_set_opts
+retrieve_cache
+store_cache
+certlib_add_dir
+process_labels_and_targets
+add_deps
+propagate_reqparam
+to_cert_name
+read_costs
+compute_cost_paths
+find_most_expensive
+compute_savings
+warnings_report
+critical_path_report
+individual_files_report
+deepest_path_report
+parallelism_stats
+human_time
+cert_to_acl2x
+cert_to_pcert0
+cert_to_pcert1
+read_targets
+deps_dfs
+);
+
+
+# # info about a book:
+# use Class::Struct Certinfo => [ bookdeps => '@',        # books included by this one
+# 				portdeps => '@',        # books included in the portcullis
+# 				srcdeps => '@',         # source dependencies (.lisp, .acl2)
+# 				otherdeps => '@',       # from depends_on forms
+# 				image => '$',           # acl2, or from book.image/cert.image
+# 				params => '%',          # cert_param entries
+# 				include_dirs => '%',    # add-include-book-dir(!) forms
+# 				rec_visited => '%' ];   # already seen files for depends_rec
 
 # database:
-use Class::Struct Depdb => [ evcache => '%',   # event cache for src files
-			     certdeps => '%',  # certinfo for each book
-			     sources => '%',   # set of source files
-			     others  => '%',   # set of non-book dependency files
-			     stack => '@',     # add_deps traversal stack
-			     tscache => '%' ]; # cache of src file timestamps
-
-my $cache_version_code = 5;
+my $cache_version_code = 6;
 
 # Note: for debugging you can enable this use and then print an error message
 # using
@@ -63,15 +94,22 @@ my $cache_version_code = 5;
 # and you get a backtrace as well.
 use Carp;
 
-
-
-
 my $debugging = 0;
 my $clean_certs = 0;
 my $print_deps = 0;
 my $believe_cache = 0;
 my $pcert_all = 0;
 my $include_excludes = 0;
+
+
+# sub cert_bookdeps {
+#     my ($cert, $depdb) = @_;
+#     my $certinfo = $depdb->certdeps->{$cert};
+#     return $certinfo ? $certinfo->bookdeps : [];
+# }
+
+
+
 #  However, now it makes sense to do it in two
 # passes:
 # - update the dependency-info cache, including the cert and source
@@ -329,103 +367,16 @@ sub cert_to_pcert1 {
 }
 
 
-# Ad hoc structure for data about a book: array with 7 entries --
-# 0. bookdeps -- books included by this one
-# 1. portdeps -- books included by the portcullis
-# 2. srcdeps  -- source files the book depends on (its .lisp file, .acl2 files)
-# 3. otherdeps -- from depends-on forms
-# 4. image -- default is acl2, or from book.image or cert.image file
-# 5. params -- table of cert_param entries
-# 6. include-dirs -- table of add-include-book-dir entries.
-
-sub cert_bookdeps {
-    my ($cert, $depdb) = @_;
-    my $certinfo = $depdb->certdeps->{$cert};
-    return $certinfo ? $certinfo->bookdeps : [];
-}
-
-sub cert_portdeps {
-    my ($cert, $depdb) = @_;
-    my $certinfo = $depdb->certdeps->{$cert};
-    return $certinfo ? $certinfo->portdeps : [];
-}
-
-sub cert_deps {
-    my ($cert, $depdb) = @_;
-    return [ @{cert_bookdeps($cert, $depdb)},
-	     @{cert_portdeps($cert, $depdb)} ];
-}
-
-sub cert_srcdeps {
-    my ($cert, $depdb) = @_;
-    my $certinfo = $depdb->certdeps->{$cert};
-    return $certinfo ? $certinfo->srcdeps : [];
-}
-
-sub cert_otherdeps {
-    my ($cert, $depdb) = @_;
-    my $certinfo = $depdb->certdeps->{$cert};
-    return $certinfo ? $certinfo->otherdeps : [];
-}
-
-sub cert_image {
-    my ($cert, $depdb) = @_;
-    my $certinfo = $depdb->certdeps->{$cert};
-    return $certinfo && $certinfo->image;
-}
-
-sub cert_get_params {
-    my ($cert, $depdb) = @_;
-    my $certinfo = $depdb->certdeps->{$cert};
-    return $certinfo ? $certinfo->params : {};
-}
-
-sub cert_get_param {
-    my ($cert, $depdb, $param) = @_;
-    my $params = cert_get_params($cert, $depdb);
-    return $params->{$param};
-}
-
-sub cert_is_two_pass {
-    my ($certfile, $deps) = @_;
-    return cert_get_param($certfile, $deps, "acl2x");
-}
-
-sub cert_sequential_dep {
-    # Assuming we're doing a provisional certification of some parent
-    # book, find the sequential dependency on certfile.  This is
-    # different depending on whether certfile uses provisional
-    # certification, two-pass certification, etc.
-    my ($certfile, $deps) = @_;
-    my $res;
-    if (cert_get_param($certfile, $deps, "acl2x")) {
-	# NOTE: ACL2 doesn't allow an include-book of a book with an .acl2x but no
-	# .pcert* or .cert file during a (provisional or final) certification.
-	# ($res = $certfile) =~ s/\.cert$/\.acl2x/;
-	$res = $certfile;
-    } elsif (cert_get_param($certfile, $deps, "pcert") || $pcert_all) {
-	($res = $certfile) =~ s/\.cert$/\.pcert0/;
-    } else {
-	$res = $certfile;
-    }
-    return $res;
-}
-
-sub cert_include_dirs {
-    my ($cert, $depdb) = @_;
-    my $certinfo = $depdb->certdeps->{$cert};
-    return $certinfo ? $certinfo->include_dirs : {};
-}
 
 sub read_costs {
-    my ($deps, $basecosts, $warnings, $use_realtime) = @_;
+    my ($depdb, $basecosts, $warnings, $use_realtime) = @_;
 
-    foreach my $certfile (keys %{$deps->certdeps}) {
+    foreach my $certfile (keys %{$depdb->certdeps}) {
 	$basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime);
-	if (cert_get_param($certfile, $deps, "acl2x")) {
+	if ($depdb->cert_get_param($certfile, "acl2x")) {
 	    my $acl2xfile = cert_to_acl2x($certfile);
 	    $basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime);
-	} elsif (cert_get_param($certfile, $deps, "pcert") || $pcert_all) {
+	} elsif ($depdb->cert_get_param($certfile, "pcert") || $pcert_all) {
 	    my $pcert1file = cert_to_pcert1($certfile);
 	    $basecosts->{$pcert1file} = get_cert_time($pcert1file, $warnings, $use_realtime);
 	    my $pcert0file = cert_to_pcert0($certfile);
@@ -486,7 +437,7 @@ sub find_max_depth {
 
 sub compute_cost_paths_aux {
     # horrible: updateds is either 1 or a reference to a hash holding the names of updated targets.
-    my ($target,$deps,$basecosts,$costs,$updateds,$warnings) = @_;
+    my ($target,$depdb,$basecosts,$costs,$updateds,$warnings) = @_;
 
     if (exists $costs->{$target} || ! ($target =~ /\.(cert|acl2x|pcert0|pcert1)$/)) {
 	return $costs->{$target};
@@ -513,9 +464,9 @@ sub compute_cost_paths_aux {
 	## The dependencies are the dependencies of the cert file, but
 	## with each .cert replaced with the corresponding sequential_dep.
 	(my $certfile = $target) =~ s/\.pcert0$/\.cert/;
-	my $certdeps = cert_deps($certfile, $deps);
+	my $certdeps = $depdb->cert_deps($certfile);
 	foreach my $dep (@$certdeps) {
-	    my $deppcert = cert_sequential_dep($dep, $deps);
+	    my $deppcert = $depdb->cert_sequential_dep($dep);
 	    push(@$targetdeps, $deppcert);
 	}
     } elsif ($target =~ /\.pcert1$/) {
@@ -525,19 +476,19 @@ sub compute_cost_paths_aux {
     } elsif ($target =~ /\.acl2x$/) {
 	## The dependencies are the dependencies of the cert file.
 	(my $certfile = $target) =~ s/\.acl2x$/\.cert/;
-	my $certdeps = cert_deps($certfile, $deps);
+	my $certdeps = $depdb->cert_deps($certfile);
 	push(@$targetdeps, @$certdeps);
     } else {
 	# $target =~ /\.cert$/
 	# Depends.
-	if (cert_get_param($target, $deps, "acl2x")) {
+	if ($depdb->cert_get_param($target, "acl2x")) {
 	    # If it's using the acl2x/two-pass, then depend only on the acl2x file.
 	    (my $acl2xfile = $target) =~ s/\.cert$/\.acl2x/;
 	    push (@$targetdeps, $acl2xfile);
 	} else {
 	    # otherwise, depend on its subbooks' certificates and the pcert1, if applicable.
-	    push (@$targetdeps, @{cert_deps($target, $deps)});
-	    if (cert_get_param($target, $deps, "pcert") || $pcert_all) {
+	    push (@$targetdeps, @{$depdb->cert_deps($target)});
+	    if ($depdb->cert_get_param($target, "pcert") || $pcert_all) {
 		(my $pcert1 = $target) =~ s/\.cert$/\.pcert1/;
 		push (@$targetdeps, $pcert1);
 	    }
@@ -552,7 +503,7 @@ sub compute_cost_paths_aux {
     if (@$targetdeps) {
 	foreach my $dep (@$targetdeps) {
 	    if ($dep =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
-		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $updateds, $warnings);
+		my $this_dep_costs = compute_cost_paths_aux($dep, $depdb, $basecosts, $costs, $updateds, $warnings);
 		if (($updateds == 1) || $updateds->{$dep}) {
 		    if (! $this_dep_costs) {
 			if ($dep eq $target) {
@@ -589,9 +540,9 @@ sub compute_cost_paths_aux {
 }
 
 sub compute_cost_paths {
-    my ($deps,$basecosts,$costs,$updateds,$warnings) = @_;
-    foreach my $certfile (keys %{$deps->certdeps}) {
-	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $updateds, $warnings);
+    my ($depdb,$basecosts,$costs,$updateds,$warnings) = @_;
+    foreach my $certfile (keys %{$depdb->certdeps}) {
+	compute_cost_paths_aux($certfile, $depdb, $basecosts, $costs, $updateds, $warnings);
     }
     foreach my $certfile (keys %{$costs}) {
 	if ($costs->{$certfile} == 0) {
@@ -906,64 +857,6 @@ sub to_basename {
 
 
 
-
-# "Event" types:
-my $add_dir_event = 'add-include-book-dir';
-my $include_book_event = 'include-book';
-my $depends_on_event = 'depends-on';
-my $depends_rec_event = 'depends-rec';
-my $loads_event = 'loads';
-my $cert_param_event = 'cert_param';
-my $ld_event = 'ld';
-my $ifdef_event = 'ifdef';
-my $endif_event = 'endif';
-
-sub get_ifdef {
-    my ($base,$the_line,$events) = @_;
-
-    my @res = $the_line =~ m/^[^;]* # not commented
-                             \(
-                             (?:[^\s():]*::)? # package prefix
-                             if(?<negate>n?)def \s+
-                             "(?<var>\w*)"
-                             /xi;
-    if (@res) {
-	push (@$events, [$ifdef_event, $+{negate} ? 1 : 0, $+{var}]);
-	return 1;
-    }
-    return 0;
-}
-
-sub get_endif {
-    my ($base,$the_line,$events) = @_;
-
-    my @res = $the_line =~ m/^[^;]* # not commented
-                             :endif \s* \)
-                             /xi;
-    if (@res) {
-	push (@$events, [$endif_event]);
-	return 1;
-    }
-    return 0;
-}
-
-
-sub get_add_dir {
-    my ($base,$the_line,$events) = @_;
-
-    # Check for ADD-INCLUDE-BOOK-DIR commands
-    my $regexp = "^[^;]*\\([\\s]*add-include-book-dir!?[\\s]+:([^\\s]*)[\\s]*\"([^\"]*[^\"/])/?\"";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	my $name = uc($res[0]);
-	print "$base: add_dir $name $res[1]\n" if $debugging;
-	push (@$events, [$add_dir_event, $name, $res[1]]);
-	return 1;
-    }
-    return 0;
-}
-
-
 sub lookup_colon_dir {
     my $name = uc(shift);
     my $local_dirs = shift;
@@ -977,142 +870,6 @@ sub lookup_colon_dir {
     return $dirpath;
 }
 
-sub print_scanevent {
-    my ($fname,$cmd,$args) = @_;    
-    print "$fname: $cmd ";
-    foreach my $arg (@$args) {
-	$arg && print " $arg";
-    }
-    print "\n";
-}
-sub debug_print_event {
-    my ($fname,$cmd,$args) = @_;
-    if ($debugging) {
-	print_scanevent($fname, $cmd, $args);
-    }
-}
-
-sub get_include_book {
-    my ($base,$the_line,$events) = @_;
-
-    my $regexp = "^[^;]*\\([\\s]*include-book[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	debug_print_event($base, "include_book", \@res);
-	push(@$events, [$include_book_event, $res[0], $res[1]]);
-	return 1;
-    }
-    return 0;
-}
-
-sub get_depends_on {
-    my ($base,$the_line,$events) = @_;
-
-    my $regexp = "\\([\\s]*depends-on[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	debug_print_event($base, "depends_on", \@res);
-	# Disallow depends-on of a certificate, for now.
-	if ($res[0] =~ m/\.cert$/) {
-	    print("**************************** WARNING **************************************\n");
-	    print("$base has a \'depends-on\' dependency on a certificate, $res[0].\n");
-	    print("It is better to use \'include-book\' (in a multiline comment, if necessary)\n");
-	    print("to specify dependencies on books, because \'depends-on\' doesn't trigger\n");
-	    print("a scan of the target's dependencies.\n");
-	    print("***************************************************************************\n");
-	}
-	push(@$events, [$depends_on_event, $res[0], $res[1]]);
-	return 1;
-    }
-    return 0;
-}
-
-sub get_depends_rec {
-    my ($base,$the_line,$events) = @_;
-
-    my $regexp = "\\([\\s]*depends-rec[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	debug_print_event($base, "depends_rec", \@res);
-	push(@$events, [$depends_rec_event, $res[0], $res[1]]);
-	return 1;
-    }
-    return 0;
-}
-
-sub get_loads {
-    my ($base,$the_line,$events) = @_;
-
-    my $regexp = "\\([\\s]*loads[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	debug_print_event($base, "loads", \@res);
-	push(@$events, [$loads_event, $res[0], $res[1]]);
-	return 1;
-    }
-    return 0;
-}
-
-my $two_pass_warning_printed = 0;
-
-# Cert_param lines are currently of the form:
-# cert_param: ( foo = bar , baz = 1 , bla )
-# (the whitespace is optional.)
-# An entry without an = is just set to 1.
-sub parse_params {
-    my $param_str = shift;
-    my @params = split(/,/, $param_str);
-    my @pairs = ();
-    foreach my $param (@params) {
-	$param =~ s/^\s+//;
-	$param =~ s/\s+$//; #remove leading/trailing whitespace
-	my @assign = $param =~ m/([^\s=]*)[\s]*=[\s]*([^\s=]*)/;
-	if (@assign) {
-	    push(@pairs, [$assign[0], $assign[1]]);
-	} else {
-	    push(@pairs, [$param, 1]);
-	}
-    }
-    return \@pairs;
-}
-
-
-
-sub get_cert_param {
-    my ($base,$the_line,$events) = @_;
-
-    my $regexp = "cert[-_]param[\\s]*:?[\\s]*\\(?([^)]*)\\)?";
-    my @match = $the_line =~ m/$regexp/;
-    if (@match) {
-	debug_print_event($base, "cert_param", \@match);
-	my $pairs = parse_params($match[0]);
-	foreach my $pair (@$pairs) {
-	    (my $param, my $val) = @$pair;
-	    push(@$events, [$cert_param_event, $param, $val]);
-	}
-	return 1;
-    }
-    $regexp = ";; two-pass certification";
-    if ($the_line =~ m/$regexp/) {
-	if ($two_pass_warning_printed) {
-	    print "$base has two-pass certification directive\n";
-	} else {
-	    $two_pass_warning_printed = 1;
-	    print "\nin $base:\n";
-	    print "Note: Though we still recognize the \";; two-pass certification\"\n";
-	    print "directive, it is deprecated in favor of:\n";
-	    print ";; cert_param: (acl2x)\n\n";
-	}
-	push (@$events, [$cert_param_event, "acl2x", 1]);
-	return 1;
-    }
-    $regexp = "\\([\\s]*check-hons-enabled[\\s]+\\(:book";
-    if ($the_line =~ m/$regexp/) {
-	push (@$events, [$cert_param_event, "hons-only", 1]);
-	return 1;
-    }
-    return 0;
-}
 
 # (check-hons-enabled (:book
 # cert_param (hons-only)
@@ -1126,21 +883,6 @@ sub get_cert_param {
 #                              a backslash and subsequently any character, or
 #                              a pair of pipes with a series of intervening non-pipe characters.
 # For now, stick with a dumber, less error-prone method.
-
-
-sub get_ld {
-    my ($base,$the_line,$events) = @_;
-
-    # Check for LD commands
-    my $regexp = "^[^;]*\\([\\s]*ld[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	debug_print_event($base, "ld", \@res);
-	push(@$events, [$ld_event, $res[0], $res[1]]);
-	return 1;
-    }
-    return 0;
-}
 
 sub ftimestamp {
     my $file = shift;
@@ -1178,32 +920,6 @@ sub print_dirs {
     while ( (my $k, my $v) = each (%{$local_dirs})) {
 	print "$k -> $v\n";
     }
-}
-
-# Scans a source file line by line to get the list of
-# dependency-affecting events.
-sub scan_src {
-    my $fname = shift;
-    my @events = ();
-    my $timestamp = -1;
-    if (open(my $file, "<", $fname)) {
-	while (my $the_line = <$file>) {
-	    my $done = 0;
-	    $done = get_include_book($fname, $the_line, \@events);
-	    $done = $done || get_ld($fname, $the_line, \@events);
-	    $done = $done || get_depends_on($fname, $the_line, \@events);
-	    $done = $done || get_depends_rec($fname, $the_line, \@events);
-	    $done = $done || get_loads($fname, $the_line, \@events);
-	    $done = $done || get_add_dir($fname, $the_line, \@events);
-	    $done = $done || get_cert_param($fname, $the_line, \@events);
-	    $done = $done || get_ifdef($fname, $the_line, \@events);
-	    $done = $done || get_endif($fname, $the_line, \@events);
-	}
-	$timestamp = ftimestamp($file);
-	close($file);
-    }
-
-    return (\@events, $timestamp);
 }
 
 # Gets the list of dependency-affecting events that are present in a
@@ -1251,7 +967,8 @@ sub src_events {
     }
 
     print "reading events for $fname\n" if $debugging;
-    (my $events, my $timestamp) = scan_src($fname);
+    my $events = scan_src($fname);
+    my $timestamp = ftimestamp($fname);
     my $cache_entry = [$events, $timestamp];
     print "caching events for $fname\n" if $debugging;
     $evcache->{$fname} = $cache_entry;
@@ -1365,7 +1082,7 @@ sub src_deps {
 
     foreach my $event (@$events) {
 	my $type = $event->[0];
-	if ($type eq $ifdef_event) {
+	if ($type eq ifdef_event) {
 	    my $negate = $event->[1];
 	    my $var = $event->[2];
 	    my $value = $ENV{$var} || "";
@@ -1381,7 +1098,7 @@ sub src_deps {
 		    $ifdef_skipping_level = $ifdef_level;
 		}
 	    }
-	} elsif ($type eq $endif_event) {
+	} elsif ($type eq endif_event) {
 	    print "endif_event, current level $ifdef_level\n" if $debugging;
 	    if ($ifdef_skipping_level == $ifdef_level) {
 		print "no longer skipping\n" if $debugging;
@@ -1390,7 +1107,7 @@ sub src_deps {
 	    $ifdef_level = $ifdef_level-1;
 	} elsif ($ifdef_skipping_level == 0) {
 	    # Only pay attention to other events if we're not skipping due to ifdefs.
-	    if ($type eq $add_dir_event) {
+	    if ($type eq add_dir_event) {
 		my $name = $event->[1];
 		my $dir = $event->[2];
 
@@ -1415,7 +1132,7 @@ sub src_deps {
 		}
 		$certinfo->include_dirs->{$name} = $newdir;
 		print "src_deps: add_dir $name " . $certinfo->include_dirs->{$name} . "\n" if $debugging;
-	    } elsif ($type eq $include_book_event) {
+	    } elsif ($type eq include_book_event) {
 		my $bookname = $event->[1];
 		my $dir = $event->[2];
 		my $fullname = expand_dirname_cmd($bookname, $fname, $dir,
@@ -1442,7 +1159,7 @@ sub src_deps {
 			# Presumably we've printed an error message already?
 		    }
 		}
-	    } elsif ($type eq $depends_on_event) {
+	    } elsif ($type eq depends_on_event) {
 		my $depname = $event->[1];
 		my $dir = $event->[2];
 		my $fullname = expand_dirname_cmd($depname, $fname, $dir,
@@ -1455,7 +1172,7 @@ sub src_deps {
 		    push(@{$certinfo->otherdeps}, $fullname);
 		    $depdb->others->{$fullname} = 1;
 		}
-	    } elsif ($type eq $depends_rec_event) {
+	    } elsif ($type eq depends_rec_event) {
 		my $depname = $event->[1];
 		my $dir = $event->[2];
 		my $fullname = expand_dirname_cmd($depname, $fname, $dir,
@@ -1472,7 +1189,7 @@ sub src_deps {
 		    deps_dfs($fullname, $depdb, $certinfo->rec_visited,
 			     $certinfo->srcdeps, \@tmpcerts, \@tmpothers);
 		}
-	    } elsif ($type eq $loads_event) {
+	    } elsif ($type eq loads_event) {
 		my $srcname = $event->[1];
 		my $dir = $event->[2];
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
@@ -1483,10 +1200,13 @@ sub src_deps {
 		    print "Bad path in (loads \"$srcname\""
 			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 		}
-	    } elsif ($type eq $cert_param_event) {
-		# print "cert_param: $fname, " . $event->[1] . " = " . $event->[2] . "\n";
-		$certinfo->params->{$event->[1]} = $event->[2];
-	    } elsif ($type eq $ld_event) {
+	    } elsif ($type eq cert_param_event) {
+		my $pairs = $event->[1];
+		foreach my $pair (@$pairs) {
+		    (my $name, my $val) = @$pair;
+		    $certinfo->params->{$name} = $val;
+		}
+	    } elsif ($type eq ld_event) {
 		my $srcname = $event->[1];
 		my $dir = $event->[2];
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
@@ -1502,7 +1222,7 @@ sub src_deps {
 		    print_event($event);
 		    print "\n";
 		}
-	    } else {
+	    } elsif (! ($type eq set_max_mem_event || $type eq set_max_time_event || $type eq pbs_event)) {
 		print "unknown event type: $type\n";
 	    }
 	}
@@ -1622,10 +1342,10 @@ sub find_deps {
 
 
 
-# Given that the dependency map $depmap is already built, this collects
+# Given that the dependency map $depdb is already built, this collects
 # the full set of sources and targets needed for a given file.
 sub deps_dfs {
-    my ($target, $depmap, $visited, $sources, $certs, $others) = @_;
+    my ($target, $depdb, $visited, $sources, $certs, $others) = @_;
 
     if ($visited->{$target}) {
 	return;
@@ -1634,9 +1354,9 @@ sub deps_dfs {
     $visited->{$target} = 1;
 
     push (@$certs, $target);
-    my $certdeps = cert_deps($target, $depmap);
-    my $srcdeps = cert_srcdeps($target, $depmap);
-    my $otherdeps = cert_otherdeps($target, $depmap);
+    my $certdeps = $depdb->cert_deps($target);
+    my $srcdeps = $depdb->cert_srcdeps($target);
+    my $otherdeps = $depdb->cert_otherdeps($target);
 
     foreach my $dep (@$srcdeps) {
 	if (! $visited->{$dep}) {
@@ -1654,7 +1374,7 @@ sub deps_dfs {
 
 
     foreach my $dep (@$certdeps) {
-	deps_dfs($dep, $depmap, $visited, $sources, $certs, $others);
+	deps_dfs($dep, $depdb, $visited, $sources, $certs, $others);
     }
 
 }
@@ -1662,29 +1382,29 @@ sub deps_dfs {
 # Depth-first search through the dependency map in order to propagate requirements (e.g. hons-only)
 # from books with that cert_param to books that include them.
 sub propagate_reqparam {
-    my ($target, $paramname, $visited, $depmap) = @_;
+    my ($target, $paramname, $visited, $depdb) = @_;
     if ($visited->{$target}) {
 	return;
     }
     $visited->{$target} = 1;
-    my $param = cert_get_param($target, $depmap, $paramname);
+    my $param = $depdb->cert_get_param($target, $paramname);
     if ($param) {
 	if ($param == 1) {
 	    # Indicates this is the book where the certparam was set.
 	    # Set it to the name of the book for debugging purposes.
-	    my $params = cert_get_params($target, $depmap);
+	    my $params = $depdb->cert_get_params($target);
 	    $params->{$paramname} = $target;
 	}
 	return;
     }
     
-    my $certdeps = cert_deps($target, $depmap);
+    my $certdeps = $depdb->cert_deps($target);
     my $set_param = 0;
     foreach my $dep (@$certdeps) {
-	propagate_reqparam($dep, $paramname, $visited, $depmap);
-	my $dep_param = cert_get_param($dep, $depmap, $paramname);
+	propagate_reqparam($dep, $paramname, $visited, $depdb);
+	my $dep_param = $depdb->cert_get_param($dep, $paramname);
 	if ($dep_param) {
-	    my $params = cert_get_params($target, $depmap);
+	    my $params = $depdb->cert_get_params($target);
 	    $params->{$paramname} = $dep_param;
 	    # print "Setting $paramname in $target due to ${dep_param} (via $dep)\n";
 	    return;
@@ -1699,7 +1419,7 @@ sub newer_than_or_equal {
 
 # Returns a hash mapping each certificate to 1 if up to date, 0 if not.
 sub check_up_to_date {
-    my ($targets, $depmap) = @_;
+    my ($targets, $depdb) = @_;
 
     my %up_to_date = ();
     my $dfs;
@@ -1710,7 +1430,7 @@ sub check_up_to_date {
 	    return;
 	}
 	
-	my $certdeps = cert_deps($target, $depmap);
+	my $certdeps = $depdb->cert_deps($target);
 	foreach my $cert (@$certdeps) {
 	    $dfs->($cert);
 	}
@@ -1727,8 +1447,8 @@ sub check_up_to_date {
 		return;
 	    }
 	}
-	my $srcdeps = cert_srcdeps($target, $depmap);
-	my $otherdeps = cert_otherdeps($target, $depmap);
+	my $srcdeps = $depdb->cert_srcdeps($target);
+	my $otherdeps = $depdb->cert_otherdeps($target);
 	
 	foreach my $dep (@$srcdeps, @$otherdeps) {
 	    if ( ! (-e $dep) || ! newer_than_or_equal($target, $dep)) {
@@ -1750,7 +1470,7 @@ sub check_up_to_date {
 
 sub collect_top_up_to_date {
     # up_to_date is the hash returned by check_up_to_date
-    my ($targets, $depmap, $up_to_date) = @_;
+    my ($targets, $depdb, $up_to_date) = @_;
 
     my %under_up_to_date = ();
     my $dfs;
@@ -1762,7 +1482,7 @@ sub collect_top_up_to_date {
 	$under_up_to_date{$target} = $under;
 	$under = $under || $up_to_date->{$target};
 
-	my $certdeps = cert_deps($target, $depmap);
+	my $certdeps = $depdb->cert_deps($target);
 	foreach my $cert (@$certdeps) {
 	    $dfs->($cert, $under);
 	}
@@ -1782,7 +1502,7 @@ sub collect_top_up_to_date {
 
 sub collect_bottom_out_of_date {
     # up_to_date is the hash returned by check_up_to_date
-    my ($targets, $depmap, $up_to_date) = @_;
+    my ($targets, $depdb, $up_to_date) = @_;
 
     my @bottom_out_of_date = ();
     my %visited = ();
@@ -1795,7 +1515,7 @@ sub collect_bottom_out_of_date {
 	}
 	$visited{$target} = 1;
 	my $bottom = 1;
-	foreach my $dep (@{cert_deps($target, $depmap)}) {
+	foreach my $dep (@{$depdb->cert_deps($target)}) {
 	    if (! $dfs->($dep)) {
 		# out of date, but not bottommost
 		$bottom = 0;
@@ -1840,7 +1560,7 @@ sub add_deps {
 		print "   $book\n";
 	    }
 	}
-	print "depmap entry exists\n" if $debugging;
+	print "depdb entry exists\n" if $debugging;
 	return;
     }
 
@@ -1968,7 +1688,7 @@ sub add_deps {
 
     # # Run the recursive add_deps on each dependency.
     # foreach my $dep  (@$bookdeps, @$portdeps, @$recdeps) {
-    # 	add_deps($dep, $cache, $depmap, $sources, $others, $tscache, $target);
+    # 	add_deps($dep, $cache, $depdb, $sources, $others, $tscache, $target);
     # }
 
     # # Collect the recursive dependencies of @$recdeps and add them to srcdeps.
@@ -1978,10 +1698,10 @@ sub add_deps {
     # 	my $recothers = [];
     # 	my $visited = {};
     # 	foreach my $dep (@$recdeps) {
-    # 	    deps_dfs($dep, $depmap, $visited, $recsrcs, $reccerts, $recothers);
+    # 	    deps_dfs($dep, $depdb, $visited, $recsrcs, $reccerts, $recothers);
     # 	}
 
-    # 	push(@{$depmap->{$target}->[2]}, @$recsrcs);
+    # 	push(@{$depdb->{$target}->[2]}, @$recsrcs);
     # }
 	
 }
@@ -2118,7 +1838,7 @@ sub process_labels_and_targets {
 
 sub compute_savings
 {
-    my ($costs,$basecosts,$targets,$updateds,$debug,$deps) = @_;
+    my ($costs,$basecosts,$targets,$updateds,$debug,$depdb) = @_;
 
     (my $topbook, my $topbook_cost) = find_most_expensive($targets, $costs, $updateds);
 
@@ -2141,7 +1861,7 @@ sub compute_savings
 	my %tmpcosts = ();
 	my @tmpwarns = ();
 	$basecosts->{$critfile} = 0.0;
-	compute_cost_paths($deps, $basecosts, \%tmpcosts, $updateds, \@tmpwarns);
+	compute_cost_paths($depdb, $basecosts, \%tmpcosts, $updateds, \@tmpwarns);
 	(my $tmptop, my $tmptopcost) = find_most_expensive($targets, \%tmpcosts, $updateds);
 	my $speedup_savings = $topbook_cost - $tmptopcost;
 	$speedup_savings = $speedup_savings || 0.000001;
@@ -2150,7 +1870,7 @@ sub compute_savings
 	# set the file total cost to 0 and recompute crit path.
 	%tmpcosts = ();
 	$tmpcosts{$critfile} = 0;
-	compute_cost_paths($deps, $basecosts, \%tmpcosts, $updateds, \@tmpwarns);
+	compute_cost_paths($depdb, $basecosts, \%tmpcosts, $updateds, \@tmpwarns);
 	($tmptop, $tmptopcost) = find_most_expensive($targets, \%tmpcosts, $updateds);
 	my $remove_savings = $topbook_cost - $tmptopcost;
 	$remove_savings = $remove_savings || 0.000001;
