@@ -20,7 +20,7 @@ fmul64, fadd64, fdiv64, or fsqrt64:
 
 (1) The C model, *.cpp.
 
-(2) A mechanically generated pseudocode version of the model, *.ps.
+(2) A mechanically generated pseudocode version of the model, *.pc.
 
 (3) The ACL2 translation, *.lisp.
 
