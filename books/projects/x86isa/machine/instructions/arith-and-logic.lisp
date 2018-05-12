@@ -751,6 +751,7 @@
 
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
   :parents (one-byte-opcodes)
 
@@ -778,8 +779,12 @@
   :operation t
   :guard (and (natp operation)
               (<= operation 8))
+  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
+                                           rme-size-of-2-to-rme16
+                                           rme-size-of-4-to-rme32)))
   :prepwork ((local (in-theory (e/d* () (commutativity-of-+)))))
-  :returns (x86 x86p :hyp (x86p x86)
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (e/d* ()
                                                  (force (force)
                                                         gpr-arith/logic-spec-8
@@ -829,11 +834,10 @@
   :body
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
-       ((when (and lock (eql operation #.*OP-CMP*)))
-        ;; CMP does not allow a LOCK prefix.
-        (!!ms-fresh :lock-prefix prefixes))
+
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ;; rAX is not a memory operand:
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (byte-operand? (equal 0 (logand 1 opcode)))
        ((the (integer 1 8) operand-size)
@@ -841,11 +845,12 @@
        (rAX-size (if (logbitp #.*w* rex-byte)
                      8
                    operand-size))
+
        (rAX (rgfi-size rAX-size *rax* rex-byte x86))
        ((mv ?flg imm x86)
-        (rml-size operand-size temp-rip :x x86))
+        (rme-size operand-size temp-rip *cs* :x nil x86))
        ((when flg)
-        (!!ms-fresh :rml-size-error flg))
+        (!!ms-fresh :rme-size-error flg))
 
        ;; Sign-extend imm when required.
        (imm
@@ -858,14 +863,10 @@
                   (the (unsigned-byte 32) imm)))))
           (the (unsigned-byte 32) imm)))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip operand-size))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size+1*) temp-rip))
+        (add-to-*ip temp-rip operand-size x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
          (the (signed-byte #.*max-linear-address-size*)
@@ -896,7 +897,7 @@
           (!rgfi-size rAX-size *rax* result rex-byte x86)))
 
        (x86 (write-user-rflags output-rflags undefined-flags x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
 
     x86))
 
