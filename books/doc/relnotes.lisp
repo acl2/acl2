@@ -129,9 +129,29 @@
 
  <h3>Changes to Existing Libraries</h3>
 
- <p>A bug has been fixed in the expander (see @(see defthm?)), which had
- prevented @(see hints) from being passed to the forcing round (if any).  An
- example may be found in the new book, @('misc/expander-tests.lisp').</p>
+ <p>The behavior and code for the expander (see @(see defthm?)) have been
+ improved in a few ways (some of them technical), as follows.</p>
+
+ <ul>
+
+ <li>A bug has been fixed that was preventing @(see hints) from being passed to
+ the forcing round (if any).  An example may be found in the new book,
+ @('misc/expander-tests.lisp').</li>
+
+ <li>The deprecated @(tsee fmt) directives @('~p') and @('~q') have been
+ replaced by @('~x') and @('~y'), respectively.</li>
+
+ <li>Error messages have been improved for the function @('simplify-hyps') when
+ there is a contradiction.</li>
+
+ <li>The @(see state) globals @('tool2-result') and @('tool2-error') are no
+ longer set.  (They appear to have been unused.)</li>
+
+ <li>The functions @('tool2-fn'), @('tool2-fn-lst'), and @('simplify-hyps') now
+ have a new final argument, @('ctx').  Also, the macro @('tool2') now has a
+ @(':ctx') keyword argument.</li>
+
+ </ul>
 
  <p>Updated the ACL2+books manual to accommodate the replacement of David
  Russinoff's online rtl manual by his upcoming Springer book.</p>

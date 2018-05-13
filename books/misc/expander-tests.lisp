@@ -32,7 +32,7 @@
               (tool2-fn '(cons (f2 x) x)
                         nil nil state
                         '(("[1]Goal" :in-theory (enable f1-true)))
-                        t :all nil nil t)
+                        t :all nil nil t 'top)
               (cond ((and (eq erp nil)
                           (equal val '(((:REWRITE F1-TRUE)
                                         (:REWRITE F1->F2)

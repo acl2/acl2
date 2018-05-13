@@ -218,9 +218,9 @@ directly with ACL2.</p>
                                   (list (cons #\0 byes)
                                         (cons #\1
                                               (list ""
-                                                    "~|~     ~q*."
-                                                    "~|~     ~q*,~|and~|"
-                                                    "~|~     ~q*,~|~%"
+                                                    "~|~     ~y*."
+                                                    "~|~     ~y*,~|and~|"
+                                                    "~|~     ~y*,~|~%"
 
                                                     (make-defthm-forms-for-byes
                                                      byes wrld))))
@@ -242,7 +242,7 @@ directly with ACL2.</p>
                 (t
                  (er hard 'chk-for-hidden-expander-function1
                      "Expected clause to end with hidden call of ~
-                      HIDDEN-EXPANDER-FUNCTION, but instead clause is ~p0."
+                      HIDDEN-EXPANDER-FUNCTION, but instead clause is ~x0."
                      cl)))))
 
 (defun chk-for-hidden-expander-function (clauses)
@@ -261,8 +261,8 @@ directly with ACL2.</p>
 (defun tool1-print (print-flg runes clauses state)
   (cond
    (print-flg
-    (fms "~%***OUTPUT OF TOOL1***~%~%Tag tree:~%  ~p0~%~%List of simplified ~
-          hypotheses:~%  ~p1~|~%"
+    (fms "~%***OUTPUT OF TOOL1***~%~%Tag tree:~%  ~x0~%~%List of simplified ~
+          hypotheses:~%  ~x1~|~%"
          (list (cons #\0 runes)
                (cons #\1
                      (untranslate-clause-lst clauses (w state))))
@@ -364,7 +364,7 @@ directly with ACL2.</p>
                                               eliminate-irrelevance))
                                hints))
                      (er soft ctx
-                         "The hints must be an alist, but ~p0 is not."
+                         "The hints must be an alist, but ~x0 is not."
                          hints)))
             (thints (translate-hints 'tool1 hints ctx wrld state))
             (thyps0
@@ -487,15 +487,16 @@ directly with ACL2.</p>
 (defmacro tool2 (term hyps
                       &key
                       hints g?equiv (prove-assumptions 't) inhibit-output
-                      (must-rewrite-flg 't))
+                      (must-rewrite-flg 't)
+                      (ctx 'tool2))
   `(tool2-fn ',term ',hyps ',g?equiv state ',hints ',prove-assumptions
-             ',inhibit-output t t ,must-rewrite-flg))
+             ',inhibit-output t t ,must-rewrite-flg ,ctx))
 
 (defun tool2-print (print-flg runes rewritten-term state)
   (cond
    (print-flg
-    (fms "~%***OUTPUT OF TOOL2***~%~%Tag tree:~%  ~p0~%~%Rewritten term:~% ~
-          ~p1~|~%"
+    (fms "~%***OUTPUT OF TOOL2***~%~%Tag tree:~%  ~x0~%~%Rewritten term:~% ~
+          ~x1~|~%"
          (list (cons #\0 runes)
                (cons #\1 (untranslate rewritten-term nil (w state))))
          *standard-co* state nil))
@@ -549,8 +550,8 @@ directly with ACL2.</p>
              (t (prepend-step-limit
                  (erp val state)
                  (er soft ctx
-                     "The term~%  ~p0~%failed to rewrite to a new term under ~
-                      hypotheses~%  ~p1."
+                     "The term~%  ~x0~%failed to rewrite to a new term under ~
+                      hypotheses~%  ~x1."
                      (untranslate val nil wrld)
                      (untranslate-lst hyps t wrld))))))
            ((= repeat-limit completed-iterations)
@@ -684,8 +685,13 @@ directly with ACL2.</p>
                          (cond
                           (contradictionp
                            (er soft ctx
-                               "Contradiction found in hypotheses~%  ~
-                                ~p0~%using type-set reasoning!"
+                               "An attempt has been made to simplify the ~
+                                following list of terms, perhaps to be used ~
+                                as hypotheses for ~
+                                simplification:~|~%~x0~|~%However, that list ~
+                                is contradictory!  (Technical note: the ~
+                                contradiction was found using type-set ~
+                                reasoning.)"
                                hyps))
                           (t
                            (sl-let ;from simplify-clause1
@@ -702,8 +708,13 @@ directly with ACL2.</p>
                             (cond
                              (contradictionp
                               (er soft ctx
-                                  "Contradiction found in hypotheses~%  ~
-                                   ~p0~%using linear reasoning!"
+                                  "An attempt has been made to simplify the ~
+                                   following list of terms, perhaps to be ~
+                                   used as hypotheses for ~
+                                   simplification:~|~%~x0~|~%However, that ~
+                                   list is contradictory!  (Technical note: ~
+                                   the contradiction was found using linear ~
+                                   arithmetic reasoning.)"
                                   hyps))
                              (t
 
@@ -753,7 +764,7 @@ directly with ACL2.</p>
                                     (cond
                                      (bad-ass
                                       (er soft ctx
-                                          "Generated false assumption, ~p0! ~ ~
+                                          "Generated false assumption, ~x0! ~ ~
                                            So, rewriting is aborted, just as ~
                                            it would be in the course of a ~
                                            regular Acl2 proof."
@@ -814,12 +825,6 @@ directly with ACL2.</p>
                                                                     byes)))
                                                    (pprogn (tool2-print print-flg runes
                                                                         rewritten-term state)
-                                                           (f-put-global 'tool2-error
-                                                                         nil state)
-                                                           (f-put-global
-                                                            'tool2-result
-                                                            val
-                                                            state)
                                                            (value val))))))))
                                          (t (let* ((runes (all-runes-in-ttree
                                                            ttree nil))
@@ -830,12 +835,6 @@ directly with ACL2.</p>
                                                (tool2-print print-flg runes
                                                             rewritten-term
                                                             state)
-                                               (f-put-global 'tool2-error
-                                                             nil state)
-                                               (f-put-global
-                                                'tool2-result
-                                                val
-                                                state)
                                                (value val)))))))))))))))))))))))))))))))))
 
 (defun tool2-fn0
@@ -856,7 +855,7 @@ directly with ACL2.</p>
 
 (defun tool2-fn
   (term hyps g?equiv state hints prove-assumptions inhibit-output translate-flg
-        print-flg must-rewrite-flg)
+        print-flg must-rewrite-flg ctx)
 
 ; Returns error triple with value (list* runes rewritten-term assumptions).
 ; But assumptions is nil if prove-assumptions is nil (we don't collect them) or
@@ -867,8 +866,7 @@ directly with ACL2.</p>
 ; default it sets the must-rewrite-flg to T, which gives it the same behavior
 ; as before.  (Matt K. mod: Now must-rewrite-flg is passed explicitly here.)
 
-  (let ((ctx 'TOOL2)
-        (wrld (w state))
+  (let ((wrld (w state))
         (ens (ens state)))
     (tool2-fn0 term hyps g?equiv ctx ens wrld state hints prove-assumptions
                inhibit-output translate-flg print-flg must-rewrite-flg)))
@@ -878,7 +876,7 @@ directly with ACL2.</p>
 
 (defun tool2-fn-lst
   (term runes hyps-lst assns g?equiv state hints prove-assumptions inhibit-output
-        print-flg must-rewrite-flg)
+        print-flg must-rewrite-flg ctx)
 
 ; Returns the result of mapping tool2-fn over the list hyps-lst, pairing each
 ; result with the corresponding member of hyps-lst.  Assumes hyps-lst is
@@ -892,18 +890,18 @@ directly with ACL2.</p>
     (mv-let
      (erp x state)
      (tool2-fn term (car hyps-lst) g?equiv state hints prove-assumptions
-               inhibit-output nil print-flg must-rewrite-flg)
+               inhibit-output nil print-flg must-rewrite-flg ctx)
      (cond
       (erp
        (tool2-fn-lst term runes (cdr hyps-lst) assns g?equiv state
                      hints prove-assumptions inhibit-output print-flg
-                     must-rewrite-flg))
+                     must-rewrite-flg ctx))
       (t
        (er-let*
         ((rst (tool2-fn-lst term runes (cdr hyps-lst) assns g?equiv
                             state
                             hints prove-assumptions inhibit-output print-flg
-                            must-rewrite-flg)))
+                            must-rewrite-flg ctx)))
         (value (cons (list* (union-equal runes (car x))
                             (car hyps-lst)
                             (cadr x)
@@ -912,7 +910,8 @@ directly with ACL2.</p>
 
 (defun simplify-hyps
   (remaining-hyps rewritten-previous-hyps-rev runes assns g?equiv state hints
-                  prove-assumptions inhibit-output print-flg must-rewrite-flg)
+                  prove-assumptions inhibit-output print-flg must-rewrite-flg
+                  ctx)
 
 ; Returns the result of mapping tool2-fn over each hyp in remaining-hyps, where
 ; the hyps in rewritten-previous-hyps-rev and (cdr remaining-hyps) are assumed.
@@ -927,13 +926,13 @@ directly with ACL2.</p>
                      (revappend rewritten-previous-hyps-rev
                                 (cdr remaining-hyps))
                      g?equiv state hints prove-assumptions
-                     inhibit-output nil print-flg must-rewrite-flg)))
+                     inhibit-output nil print-flg must-rewrite-flg ctx)))
        (simplify-hyps (cdr remaining-hyps)
                       (cons (cadr x) rewritten-previous-hyps-rev)
                       (union-equal (car x) runes)
                       (union-equal (cddr x) assns)
                       g?equiv state hints prove-assumptions inhibit-output
-                      print-flg must-rewrite-flg)))))
+                      print-flg must-rewrite-flg ctx)))))
 
 (defun tool-fn
   (term hyps simplify-hyps-p g?equiv state hints prove-assumptions inhibit-output
@@ -947,7 +946,7 @@ directly with ACL2.</p>
               ((eq simplify-hyps-p :no-split)
                (simplify-hyps hyps nil nil nil g?equiv state hints
                               prove-assumptions inhibit-output print-flg
-                              must-rewrite-flg))
+                              must-rewrite-flg ctx))
               ((eq simplify-hyps-p t)
                (tool1-fn hyps state hints prove-assumptions inhibit-output
                          nil print-flg))
@@ -960,8 +959,8 @@ directly with ACL2.</p>
            (cond
             ((null (cdr runes-hyps-assns))
              (er soft ctx
-                 "It does not make sense to simplify the term ~p0, because the ~
-                  hypothesis list ~p1 is contradictory."
+                 "It does not make sense to simplify the term ~x0, because the ~
+                  hypothesis list ~x1 is contradictory."
                  (untranslate term nil (w state))
                  (untranslate-lst hyps t (w state))))
             (t
@@ -975,18 +974,18 @@ directly with ACL2.</p>
                                  (cadr runes-hyps-assns)
                                  (cddr runes-hyps-assns)
                                  g?equiv state hints prove-assumptions
-                                 inhibit-output print-flg must-rewrite-flg)))
+                                 inhibit-output print-flg must-rewrite-flg ctx)))
                (cond
                 ((not (= (length x) (length (cadr runes-hyps-assns))))
                  (er soft ctx
-                     "Unable to successfully simplify term~%  ~p0~%and ~
-                      hypotheses~%  ~p1 in every case generated."
+                     "Unable to successfully simplify term~%  ~x0~%and ~
+                      hypotheses~%  ~x1 in every case generated."
                      (untranslate term nil (w state))
                      (untranslate-lst hyps t (w state))))
                 (x (value x))
                 (t (er soft ctx
-                       "No theorems were suggested for term~%  ~p0~%and ~
-                        hypotheses~%  ~p1."
+                       "No theorems were suggested for term~%  ~x0~%and ~
+                        hypotheses~%  ~x1."
                        (untranslate term nil (w state))
                        (untranslate-lst hyps t (w state)))))))))))
 
@@ -1222,15 +1221,15 @@ happens.</p>
            (value (defthm-?-fn-forms1-lst name 0 x (ffn-symb concl)
                     (fargn concl 1) hints wrld))))
          (t (er soft ctx
-                "The form supplied to DEFTHM? must be of the form ~p0 or ~p1, ~
-                 where equiv is an equivalence relation.  However, ~p2 is not ~
+                "The form supplied to DEFTHM? must be of the form ~x0 or ~x1, ~
+                 where equiv is an equivalence relation.  However, ~x2 is not ~
                  an equivalence relation in the current world."
                 '(implies hyps (equiv lhs var))
                 '(equiv lhs var)
                 (ffn-symb concl)))))
        (t (er soft ctx
-              "The form supplied to DEFTHM? must be of the form ~p0 or ~p1,~
-               where var is a variable.  But ~p2 is not of this form."
+              "The form supplied to DEFTHM? must be of the form ~x0 or ~x1,~
+               where var is a variable.  But ~x2 is not of this form."
               '(implies hyps (equiv lhs var))
               '(equiv lhs var)
               form)))))))
@@ -1364,8 +1363,8 @@ simulate\".)  Try these, as well as the examples shown above.</p>
                  (list (cons #\0 n)
                        (cons #\1 total))
                  *standard-co* state nil)
-            (fms "Runes:~%  ~p0~%Simplified hyps:~% ~p1~%Simplified term:~%  ~p2~%Simplified ~
-                  assumptions:~% ~p3~%"
+            (fms "Runes:~%  ~x0~%Simplified hyps:~% ~x1~%Simplified term:~%  ~
+                  ~x2~%Simplified assumptions:~% ~x3~%"
                  (list (cons #\0 (car tuple))
                        (cons #\1 (untranslate-lst (cadr tuple) t wrld))
                        (cons #\2 (untranslate (caddr tuple) nil wrld))
