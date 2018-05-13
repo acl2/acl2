@@ -119,10 +119,13 @@
  well as an extensive discussion of the differences between PLTP and PLTP(A),
  and an OCaml version of PLTP, named PLTA(O), by Grant Passmore.</p>
 
-<p>A new directory, @('books/projects/arm/'), contains proofs of correctness of 
-the Floating-point operations of addition, multiplication, fused multiply-add, 
-division, and square root, as implemented in the FPU of an Arm Cortex-A class
-high-end processor.</p>
+ <p>A new directory, @('books/projects/arm/'), contains proofs of correctness
+ of the Floating-point operations of addition, multiplication, fused
+ multiply-add, division, and square root, as implemented in the FPU of an Arm
+ Cortex-A class high-end processor.</p>
+
+ <p>Improved @(tsee install-not-normalized) to handle cases in which
+ recursively-defined functions have non-recursive normalized definitions.</p>
 
  <h3>Changes to Existing Libraries</h3>
 
@@ -137,12 +140,12 @@ high-end processor.</p>
  since tests about the @('misc/assert.lisp') utilities are now in a separate
  book @('misc/assert-tests.lisp').</p>
 
-<p>The old directory @('books/projects/masc/') has been replaced by the bew
-directory@('books/projects/rac/').  The reason is that our RTL modeling
-language now uses the register class templates of Algorithm C instead of those
-of SystemC, so the name <i>Modeling Algorithms in SystemC</i> now makes even
-less sense than it did; the best we could come up with as a replacement is
-<i>Restricted Algorithmic C</i>. </p>
+ <p>The old directory @('books/projects/masc/') has been replaced by the bew
+ directory@('books/projects/rac/').  The reason is that our RTL modeling
+ language now uses the register class templates of Algorithm C instead of those
+ of SystemC, so the name <i>Modeling Algorithms in SystemC</i> now makes even
+ less sense than it did; the best we could come up with as a replacement is
+ <i>Restricted Algorithmic C</i>. </p>
 
  <h4><see topic='@(url kestrel-utilities)'>Kestrel Utilities</see></h4>
 
@@ -153,9 +156,14 @@ less sense than it did; the best we could come up with as a replacement is
  <p>Added a <see topic='@(url fty)'>fixtype</see> for <see topic='@(url
  set::std/osets)'>finite sets</see>.</p>
 
+ <p>The utility @(tsee make-flag) has a new keyword argument, @(':last-body'),
+ to specify using the most recent @(see definition) rule for a function symbol
+ instead of its original definition.</p>
+
  <p>Improved the @('copy-def') utility (community book
  @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
- recursive case, as is sometimes necessary.</p>
+ recursive case, as is sometimes necessary.  Also improved it to work better
+ with @(tsee mutual-recursion).</p>
 
  <p>Extended and simplified the <see topic='@(url
  defun-sk-queries)'>@('defun-sk') query utilities</see>.  The utilities now
