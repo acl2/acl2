@@ -508,10 +508,10 @@
  messages. These utilities include a macro @(tsee def-error-checker) to
  concisely define error-checking functions.</p>
 
- <p>New macros @(tsee defubyte) and @(tsee defsbyte) have been added that
- introduce <see topic='@(url fty)'>fixtypes</see> for unsigned and signed bytes
- of specified sizes. A number of applications of these macros for common sizes
- is also provided.</p>
+ <p>A new macro @(tsee defbyte) has been added that introduces <see
+ topic='@(url fty)'>fixtypes</see> for signed or unsigned bytes of specified
+ sizes. Several instances of applications of this macro for common sizes of
+ both signed and unsigned bytes is also provided.</p>
 
  <p>Utilities @(tsee doublets-to-alist) and @(tsee keyword-value-list-to-alist)
  have been added that convert lists of doublets and keyword-value lists to

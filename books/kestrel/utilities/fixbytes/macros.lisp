@@ -27,29 +27,30 @@
    but @(tsee unsigned-byte-p) and @(tsee signed-byte-p) are binary predicates.
    </p>
    <p>
-   These utilities provide macros to define unary predicates,
+   These utilities provide a macro to define unary predicates,
    and associated fixtypes,
-   for unsigned and signed bytes of specified sizes,
+   for unsigned or signed bytes of specified sizes,
    as well as for true lists thereof.
-   The macros also generate various theorems that relate
-   the unary predicates to the binary predicates and to other predicates.
+   The macro also generates various theorems that relate
+   the unary predicates
+   to the binary predicates and to other buit-in predicates.
    </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defbyte-fn ((n posp) (unsignedp booleanp))
+(define defbyte-fn ((n posp) (s/u (member-eq s/u '(:signed :unsigned))))
   :returns (event pseudo-event-formp
                   ;; just to speed up the proof:
                   :hints (("Goal" :in-theory (disable packn))))
   :verify-guards nil
-  :parents (defubyte defsbyte)
+  :parents (defbyte)
   :short "Event form to introduce fixtypes for
           unsigned or signed bytes of a given size and true lists thereof."
   :long
   "<p>
-   This is used by the @(tsee defubyte) and @(tsee defsbyte) macros.
+   This is used by the @(tsee defbyte) macro.
    The size is @('n').
-   The argument @('unsignedp') says whether the bytes are unsigned or signed.
+   The argument @('s/u') says whether the bytes are unsigned or signed.
    </p>
    <p>
    The event introduces:
@@ -93,9 +94,15 @@
    <p>
    These generated items include documentation.
    </p>"
-  (b* ((byte (if unsignedp 'ubyte 'sbyte))
-       (byte-p (if unsignedp 'unsigned-byte-p 'signed-byte-p))
-       (byte-listp (if unsignedp 'unsigned-byte-listp 'signed-byte-listp))
+  (b* ((byte (case s/u
+               (:signed 'sbyte)
+               (:unsigned 'ubyte)))
+       (byte-p (case s/u
+                 (:signed 'signed-byte-p)
+                 (:unsigned 'unsigned-byte-p)))
+       (byte-listp (case s/u
+                     (:signed 'signed-byte-listp)
+                     (:unsigned 'unsigned-byte-listp)))
        (byte<n> (packn (list byte n)))
        (byte<n>p (packn (list byte<n> 'p)))
        (byte<n>-fix (packn (list byte<n> '-fix)))
@@ -119,8 +126,12 @@
                                                            '-rewrite)))
        (byte<n>-list-theorems (packn (list byte<n>-list '-theorems)))
        (<n>string (coerce (explode-nonnegative-integer n 10 nil) 'string))
-       (unsigned/signed-string (if unsignedp "unsigned" "signed"))
-       (ubyte/sbyte-string (if unsignedp "ubyte" "sbyte")))
+       (unsigned/signed-string (case s/u
+                                 (:signed "signed")
+                                 (:unsigned "unsigned")))
+       (ubyte/sbyte-string (case s/u
+                             (:signed "sbyte")
+                             (:unsigned "ubyte"))))
     `(progn
        (define ,byte<n>p (x)
          :returns (yes/no booleanp)
@@ -208,20 +219,13 @@
            (implies (,byte<n>-listp x)
                     (true-listp x)))))))
 
-(defsection defubyte
+(defsection defbyte
   :parents (unsigned-and-signed-bytes)
   :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
-          unsigned bytes of a given size and true lists thereof."
-  :long "@(def defubyte)"
-  (defmacro defubyte (size)
-    (declare (xargs :guard (posp size)))
-    `(make-event (defbyte-fn ,size t))))
-
-(defsection defsbyte
-  :parents (unsigned-and-signed-bytes)
-  :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
-          signed bytes of a given size and true lists thereof."
-  :long "@(def defsbyte)"
-  (defmacro defsbyte (size)
-    (declare (xargs :guard (posp size)))
-    `(make-event (defbyte-fn ,size nil))))
+          unsigned or signed bytes of a given size and true lists thereof."
+  :long "@(def defbyte)"
+  (defmacro defbyte (size signed/unsigned)
+    (declare (xargs :guard (and (posp size)
+                                (member-eq signed/unsigned
+                                           '(:signed :unsigned)))))
+    `(make-event (defbyte-fn ,size ,signed/unsigned))))
