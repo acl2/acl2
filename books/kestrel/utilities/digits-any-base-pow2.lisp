@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/bytes" :dir :system)
+(include-book "kestrel/utilities/fixbytes/instances" :dir :system)
 (include-book "kestrel/utilities/digits-any-base" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

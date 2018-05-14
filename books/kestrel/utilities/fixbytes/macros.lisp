@@ -1,4 +1,4 @@
-; Fixtypes for Unsigned and Signed Bytes
+; Fixtypes for Unsigned and Signed Bytes -- Macros
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -33,13 +33,6 @@
    as well as for true lists thereof.
    The macros also generate various theorems that relate
    the unary predicates to the binary predicates and to other predicates.
-   </p>
-   <p>
-   These utilities use these macros to generate fixtypes (and theorems)
-   for (lists of) unsigned and signed bytes of several sizes.
-   If fixtypes for (lists of) unsigned or signed bytes for a certain size
-   are needed but are not among the ones defined here,
-   these utilities can be easily extended to include such fixtypes.
    </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -232,29 +225,3 @@
   (defmacro defsbyte (size)
     (declare (xargs :guard (posp size)))
     `(make-event (defbyte-fn ,size nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defubyte 1)
-(defubyte 2)
-(defubyte 3)
-(defubyte 4)
-(defubyte 8)
-(defubyte 16)
-(defubyte 32)
-(defubyte 64)
-(defubyte 128)
-(defubyte 256)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsbyte 1)
-(defsbyte 2)
-(defsbyte 3)
-(defsbyte 4)
-(defsbyte 8)
-(defsbyte 16)
-(defsbyte 32)
-(defsbyte 64)
-(defsbyte 128)
-(defsbyte 256)
