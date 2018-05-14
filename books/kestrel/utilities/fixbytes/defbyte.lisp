@@ -18,42 +18,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc unsigned-and-signed-bytes
+(defsection defbyte
   :parents (kestrel-utilities fty::fty)
-  :short "<see topic='@(url fty)'>Fixtypes</see> for unsigned and signed bytes."
-  :long
-  "<p>
-   Currently fixtypes can only be associated to unary predicates,
-   but @(tsee unsigned-byte-p) and @(tsee signed-byte-p) are binary predicates.
-   </p>
-   <p>
-   These utilities provide a macro to define unary predicates,
-   and associated fixtypes,
-   for unsigned or signed bytes of specified sizes,
-   as well as for true lists thereof.
-   The macro also generates various theorems that relate
-   the unary predicates
-   to the binary predicates and to other buit-in predicates.
-   </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defbyte-fn ((n posp) (s/u (member-eq s/u '(:signed :unsigned))))
-  :returns (event pseudo-event-formp
-                  ;; just to speed up the proof:
-                  :hints (("Goal" :in-theory (disable packn))))
-  :verify-guards nil
-  :parents (defbyte)
-  :short "Event form to introduce fixtypes for
+  :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
           unsigned or signed bytes of a given size and true lists thereof."
   :long
   "<p>
-   This is used by the @(tsee defbyte) macro.
-   The size is @('n').
-   The argument @('s/u') says whether the bytes are unsigned or signed.
+   Currently fixtypes can only be associated to unary predicates,
+   but @(tsee unsigned-byte-p) and @(tsee signed-byte-p) are binary predicates
+   (as are @(tsee unsigned-byte-listp) and @(tsee signed-byte-listp)).
    </p>
    <p>
-   The event introduces:
+   This macro introduces unary predicates, and associated fixtypes,
+   for unsigned or signed bytes of specified sizes,
+   as well as for true lists thereof.
+   It also generates various theorems that relate the unary predicates
+   to the binary predicates and to other buit-in predicates.
+   The first argument to the macro must be
+   a positive integer @('n') that specifies the size;
+   the second argument must be
+   a keyword among @(':unsigned') and @(':signed')
+   that specifies whether the bytes are unsigned or signed.
+   </p>
+   <p>
+   More precisely, this macro generates:
    </p>
    <ul>
      <li>
@@ -92,140 +80,140 @@
      </li>
    </ul>
    <p>
-   These generated items include documentation.
-   </p>"
-  (b* ((byte (case s/u
-               (:signed 'sbyte)
-               (:unsigned 'ubyte)))
-       (byte-p (case s/u
-                 (:signed 'signed-byte-p)
-                 (:unsigned 'unsigned-byte-p)))
-       (byte-listp (case s/u
-                     (:signed 'signed-byte-listp)
-                     (:unsigned 'unsigned-byte-listp)))
-       (byte<n> (packn (list byte n)))
-       (byte<n>p (packn (list byte<n> 'p)))
-       (byte<n>-fix (packn (list byte<n> '-fix)))
-       (byte<n>-equiv (packn (list byte<n> '-equiv)))
-       (byte<n>-fix-when-byte<n>p (packn (list byte<n>-fix '-when- byte<n>p)))
-       (byte<n>-list (packn (list byte<n> '-list)))
-       (byte<n>-listp (packn (list byte<n>-list 'p)))
-       (byte<n>p-forward-byte-p (packn (list byte<n>p '-forward- byte-p)))
-       (byte<n>-listp-forward-byte-listp (packn (list byte<n>-listp
-                                                      '-forward-
-                                                      byte-listp)))
-       (byte-p-rewrite-byte<n>p (packn (list byte-p '-rewrite- byte<n>p)))
-       (byte<n>-listp-rewrite-byte-listp (packn (list byte<n>-listp
-                                                      '-rewrite-
-                                                      byte-listp)))
-       (byte-listp-rewrite-byte<n>-listp (packn (list byte-listp
-                                                      '-rewrite-
-                                                      byte<n>-listp)))
-       (true-listp-when-byte<n>-listp-rewrite (packn (list 'true-listp-when-
-                                                           byte<n>-listp
-                                                           '-rewrite)))
-       (byte<n>-list-theorems (packn (list byte<n>-list '-theorems)))
-       (<n>string (coerce (explode-nonnegative-integer n 10 nil) 'string))
-       (unsigned/signed-string (case s/u
-                                 (:signed "signed")
-                                 (:unsigned "unsigned")))
-       (ubyte/sbyte-string (case s/u
-                             (:signed "sbyte")
-                             (:unsigned "ubyte"))))
-    `(progn
-       (define ,byte<n>p (x)
-         :returns (yes/no booleanp)
-         :parents (unsigned-and-signed-bytes)
-         :short ,(concatenate 'string
-                              "Recognize "
-                              unsigned/signed-string
-                              " bytes of size "
-                              <n>string
-                              ".")
-         (,byte-p ,n x)
-         :no-function t
-         ///
-         (defrule ,byte<n>p-forward-byte-p
-           (implies (,byte<n>p x)
-                    (,byte-p ,n x))
-           :rule-classes :forward-chaining)
-         (defruled ,byte-p-rewrite-byte<n>p
-           (equal (,byte-p ,n x)
-                  (,byte<n>p x)))
-         (theory-invariant
-          (incompatible (:rewrite ,byte-p-rewrite-byte<n>p)
-                        (:definition ,byte<n>p))))
-       (define ,byte<n>-fix ((x ,byte<n>p))
-         :returns (fixed-x ,byte<n>p)
-         :parents (unsigned-and-signed-bytes)
-         :short ,(concatenate 'string
-                              "Fixing function for @(tsee "
-                              ubyte/sbyte-string
-                              <n>string
-                              "p).")
-         (mbe :logic (if (,byte<n>p x) x 0)
-              :exec x)
-         :no-function t
-         ///
-         (defrule ,byte<n>-fix-when-byte<n>p
-           (implies (,byte<n>p x)
-                    (equal (,byte<n>-fix x) x))
-           :enable ,byte<n>p))
-       (defsection ,byte<n>
-         :parents (unsigned-and-signed-bytes)
-         :short ,(concatenate 'string
-                              "<see topic='@(url fty)'>Fixtype</see> of "
-                              unsigned/signed-string
-                              " bytes of size "
-                              <n>string
-                              ".")
-         (fty::deffixtype ,byte<n>
-           :pred ,byte<n>p
-           :fix ,byte<n>-fix
-           :equiv ,byte<n>-equiv
-           :define t
-           :forward t))
-       (fty::deflist ,byte<n>-list
-         :elt-type ,byte<n>
-         :parents (unsigned-and-signed-bytes)
-         :short ,(concatenate 'string
-                              "<see topic='@(url fty)'>Fixtype</see> of "
-                              "true lists of "
-                              unsigned/signed-string
-                              " bytes of size "
-                              <n>string
-                              ".")
-         :true-listp t
-         :pred ,byte<n>-listp)
-       (defsection ,byte<n>-list-theorems
-         :extension ,byte<n>-list
-         (defrule ,byte<n>-listp-forward-byte-listp
-           (implies (,byte<n>-listp x)
-                    (,byte-listp ,n x))
-           :rule-classes :forward-chaining
-           :enable (,byte<n>-listp ,byte<n>p))
-         (defruled ,byte<n>-listp-rewrite-byte-listp
-           (equal (,byte<n>-listp x)
-                  (,byte-listp ,n x))
-           :enable (,byte<n>-listp ,byte<n>p))
-         (defruled ,byte-listp-rewrite-byte<n>-listp
-           (equal (,byte-listp ,n x)
-                  (,byte<n>-listp x))
-           :enable ,byte<n>-listp-rewrite-byte-listp)
-         (theory-invariant
-          (incompatible (:rewrite ,byte<n>-listp-rewrite-byte-listp)
-                        (:rewrite ,byte-listp-rewrite-byte<n>-listp)))
-         (defruled ,true-listp-when-byte<n>-listp-rewrite
-           (implies (,byte<n>-listp x)
-                    (true-listp x)))))))
+   These generated items include XDOC documentation.
+   </p>
+   @(def defbyte)"
 
-(defsection defbyte
-  :parents (unsigned-and-signed-bytes)
-  :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
-          unsigned or signed bytes of a given size and true lists thereof."
-  :long "@(def defbyte)"
-  (defmacro defbyte (size signed/unsigned)
-    (declare (xargs :guard (and (posp size)
-                                (member-eq signed/unsigned
-                                           '(:signed :unsigned)))))
-    `(make-event (defbyte-fn ,size ,signed/unsigned))))
+  (define defbyte-fn ((n posp) (u/s (member-eq u/s '(:unsigned :signed))))
+    :returns (event pseudo-event-formp
+                    ;; just to speed up the proof:
+                    :hints (("Goal" :in-theory (disable packn))))
+    :verify-guards nil
+    (b* ((byte (case u/s
+                 (:unsigned 'ubyte)
+                 (:signed 'sbyte)))
+         (byte-p (case u/s
+                   (:unsigned 'unsigned-byte-p)
+                   (:signed 'signed-byte-p)))
+         (byte-listp (case u/s
+                       (:unsigned 'unsigned-byte-listp)
+                       (:signed 'signed-byte-listp)))
+         (byte<n> (packn (list byte n)))
+         (byte<n>p (packn (list byte<n> 'p)))
+         (byte<n>-fix (packn (list byte<n> '-fix)))
+         (byte<n>-equiv (packn (list byte<n> '-equiv)))
+         (byte<n>-fix-when-byte<n>p (packn (list byte<n>-fix '-when- byte<n>p)))
+         (byte<n>-list (packn (list byte<n> '-list)))
+         (byte<n>-listp (packn (list byte<n>-list 'p)))
+         (byte<n>p-forward-byte-p (packn (list byte<n>p '-forward- byte-p)))
+         (byte<n>-listp-forward-byte-listp (packn (list byte<n>-listp
+                                                        '-forward-
+                                                        byte-listp)))
+         (byte-p-rewrite-byte<n>p (packn (list byte-p '-rewrite- byte<n>p)))
+         (byte<n>-listp-rewrite-byte-listp (packn (list byte<n>-listp
+                                                        '-rewrite-
+                                                        byte-listp)))
+         (byte-listp-rewrite-byte<n>-listp (packn (list byte-listp
+                                                        '-rewrite-
+                                                        byte<n>-listp)))
+         (true-listp-when-byte<n>-listp-rewrite (packn (list 'true-listp-when-
+                                                             byte<n>-listp
+                                                             '-rewrite)))
+         (byte<n>-list-theorems (packn (list byte<n>-list '-theorems)))
+         (<n>string (coerce (explode-nonnegative-integer n 10 nil) 'string))
+         (unsigned/signed-string (case u/s
+                                   (:unsigned "unsigned")
+                                   (:signed "signed")))
+         (ubyte/sbyte-string (case u/s
+                               (:unsigned "ubyte")
+                               (:signed "sbyte"))))
+      `(progn
+         (define ,byte<n>p (x)
+           :returns (yes/no booleanp)
+           :parents (defbyte)
+           :short ,(concatenate 'string
+                                "Recognize "
+                                unsigned/signed-string
+                                " bytes of size "
+                                <n>string
+                                ".")
+           (,byte-p ,n x)
+           :no-function t
+           ///
+           (defrule ,byte<n>p-forward-byte-p
+             (implies (,byte<n>p x)
+                      (,byte-p ,n x))
+             :rule-classes :forward-chaining)
+           (defruled ,byte-p-rewrite-byte<n>p
+             (equal (,byte-p ,n x)
+                    (,byte<n>p x)))
+           (theory-invariant
+            (incompatible (:rewrite ,byte-p-rewrite-byte<n>p)
+                          (:definition ,byte<n>p))))
+         (define ,byte<n>-fix ((x ,byte<n>p))
+           :returns (fixed-x ,byte<n>p)
+           :parents (defbyte)
+           :short ,(concatenate 'string
+                                "Fixing function for @(tsee "
+                                ubyte/sbyte-string
+                                <n>string
+                                "p).")
+           (mbe :logic (if (,byte<n>p x) x 0)
+                :exec x)
+           :no-function t
+           ///
+           (defrule ,byte<n>-fix-when-byte<n>p
+             (implies (,byte<n>p x)
+                      (equal (,byte<n>-fix x) x))
+             :enable ,byte<n>p))
+         (defsection ,byte<n>
+           :parents (defbyte)
+           :short ,(concatenate 'string
+                                "<see topic='@(url fty)'>Fixtype</see> of "
+                                unsigned/signed-string
+                                " bytes of size "
+                                <n>string
+                                ".")
+           (fty::deffixtype ,byte<n>
+             :pred ,byte<n>p
+             :fix ,byte<n>-fix
+             :equiv ,byte<n>-equiv
+             :define t
+             :forward t))
+         (fty::deflist ,byte<n>-list
+           :elt-type ,byte<n>
+           :parents (defbyte)
+           :short ,(concatenate 'string
+                                "<see topic='@(url fty)'>Fixtype</see> of "
+                                "true lists of "
+                                unsigned/signed-string
+                                " bytes of size "
+                                <n>string
+                                ".")
+           :true-listp t
+           :pred ,byte<n>-listp)
+         (defsection ,byte<n>-list-theorems
+           :extension ,byte<n>-list
+           (defrule ,byte<n>-listp-forward-byte-listp
+             (implies (,byte<n>-listp x)
+                      (,byte-listp ,n x))
+             :rule-classes :forward-chaining
+             :enable (,byte<n>-listp ,byte<n>p))
+           (defruled ,byte<n>-listp-rewrite-byte-listp
+             (equal (,byte<n>-listp x)
+                    (,byte-listp ,n x))
+             :enable (,byte<n>-listp ,byte<n>p))
+           (defruled ,byte-listp-rewrite-byte<n>-listp
+             (equal (,byte-listp ,n x)
+                    (,byte<n>-listp x))
+             :enable ,byte<n>-listp-rewrite-byte-listp)
+           (theory-invariant
+            (incompatible (:rewrite ,byte<n>-listp-rewrite-byte-listp)
+                          (:rewrite ,byte-listp-rewrite-byte<n>-listp)))
+           (defruled ,true-listp-when-byte<n>-listp-rewrite
+             (implies (,byte<n>-listp x)
+                      (true-listp x)))))))
+
+  (defmacro defbyte (n u/s)
+    (declare (xargs :guard (and (posp n) (member-eq u/s '(:unsigned :signed)))))
+    `(make-event (defbyte-fn ,n ,u/s))))
