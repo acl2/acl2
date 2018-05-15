@@ -2212,14 +2212,7 @@
 
     ((#x86 #x87)
      "#x86: (XCHG Eb Gb) #x87: (XCHG Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-xchg start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                   x86)
-       (x86-step-unimplemented
-        (cons (cons "(XCHG Eb Gb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-xchg start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x88
      "(MOV Eb Gb)"
@@ -2291,14 +2284,7 @@
 
     ((#x90 #x91 #x92 #x93 #x94 #x95 #x96 #x97)
      "#x90 -- #x97:  (XCHG .. ..)"
-     (if (64-bit-modep x86)
-         (x86-xchg start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                   x86)
-       (x86-step-unimplemented
-        (cons (cons "(XCHG ...) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-xchg start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x98
      "(CWB) or (CWDE) or (CDQE)"
