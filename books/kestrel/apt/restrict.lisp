@@ -1101,23 +1101,19 @@
                       (hints 'nil)
                       (print ':result)
                       (show-only 'nil))
-    `(with-output
-       :gag-mode nil
-       :off ,(if print (remove-eq 'error acl2::*valid-output-names*) :all)
-       :stack :push
-       (make-event (restrict-fn ',old
-                                ',restriction
-                                ',undefined
-                                ',new-name
-                                ',new-enable
-                                ',thm-name
-                                ',thm-enable
-                                ',non-executable
-                                ',verify-guards
-                                ',hints
-                                ',print
-                                ',show-only
-                                ',call
-                                (cons 'restrict ',old)
-                                state)
-                   :on-behalf-of :quiet))))
+    `(make-event-terse (restrict-fn ',old
+                                    ',restriction
+                                    ',undefined
+                                    ',new-name
+                                    ',new-enable
+                                    ',thm-name
+                                    ',thm-enable
+                                    ',non-executable
+                                    ',verify-guards
+                                    ',hints
+                                    ',print
+                                    ',show-only
+                                    ',call
+                                    (cons 'restrict ',old)
+                                    state)
+                      :suppress-errors ,(not print))))
