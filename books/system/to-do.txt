@@ -21,6 +21,25 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Consider redefining take using mbe, so that the :logic has a standard recursion.}}
+
+This might involve fixing a bunch of community books, perhaps by
+adding a book of lemmas that could also help proprietary books.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Perhaps avoid iteration for guessing type-prescriptions for non-rec functions.}}
+
+Maybe don't look for a fixed point in type-prescription rule
+generation if the function is non-recursive.  It's possible that the
+code already does this, my guess is, probably not.
+
+This one is probably not very important, but it might be a relatively
+easy way to get familiar with the mechanism for generating
+type-prescription rules for defuns.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Perhaps eliminate either directory-of-absolute-pathname or get-directory-of-file.}}
 
 These two source functions seem to do roughly the same thing, though

@@ -17,34 +17,46 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-equal (mv-list 2 (install-not-norm-event 'f nil nil (w state)))
-              '((install-not-normalized f :defthm-name 'f$not-normalized)
+              '((install-not-normalized f
+                                        :defthm-name 'f$not-normalized
+                                        :allp nil)
                 f$not-normalized))
 
 (assert-equal (mv-list 2 (install-not-norm-event 'g t nil (w state)))
               '((local
-                 (install-not-normalized g :defthm-name 'g$not-normalized))
+                 (install-not-normalized g
+                                         :defthm-name 'g$not-normalized
+                                         :allp nil))
                 g$not-normalized))
 
 (assert-equal (mv-list 2 (install-not-norm-event 'f nil '(a b) (w state)))
-              '((install-not-normalized f :defthm-name 'f$not-normalized)
+              '((install-not-normalized f
+                                        :defthm-name 'f$not-normalized
+                                        :allp nil)
                 f$not-normalized))
 
 (assert-equal (mv-list 2 (install-not-norm-event
                           'f nil '(a f$not-normalized) (w state)))
-              '((install-not-normalized f :defthm-name 'f$not-normalized$)
+              '((install-not-normalized f
+                                        :defthm-name 'f$not-normalized$
+                                        :allp nil)
                 f$not-normalized$))
 
 (must-succeed*
  (defun f$not-normalized (x) x)
  (assert-equal (mv-list 2 (install-not-norm-event 'f nil nil (w state)))
-               '((install-not-normalized f :defthm-name 'f$not-normalized$)
+               '((install-not-normalized f
+                                         :defthm-name 'f$not-normalized$
+                                         :allp nil)
                  f$not-normalized$)))
 
 (must-succeed*
  (defun f$not-normalized (x) x)
  (defun f$not-normalized$ (x) x)
  (assert-equal (mv-list 2 (install-not-norm-event 'f nil nil (w state)))
-               '((install-not-normalized f :defthm-name 'f$not-normalized$$)
+               '((install-not-normalized f
+                                         :defthm-name 'f$not-normalized$$
+                                         :allp nil)
                  f$not-normalized$$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
