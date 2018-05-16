@@ -260,14 +260,15 @@
   ;; hints.
   ;; 16. expanded-clause-w/-hint: internal field for storing the SMT theorem.
   ;; 17. smt-cnf: configuration for connection to the SMT solver.
-  ;; 18. wrld-fn-len: a number specifying the upper bound of the length of the
+  ;; 18. fixed-clause: fixed clause
+  ;; 19. wrld-fn-len: a number specifying the upper bound of the length of the
   ;; current world. It sets a limit to the expansion depth to take care of
   ;; recursive function expansion. This will only ensure termination proof of
   ;; the expand function, but it doesn't guarantee performance since the world
   ;; length can be extremely large, and expansion is exponential. Performance
   ;; is replied upon user who will specify which functions are recursive and
   ;; therefore will be expanded only by a given number of levels.
-  ;; 19. custom-p: Used custom version of Smtlink or not. Default nil.
+  ;; 20. custom-p: Used custom version of Smtlink or not. Default nil.
   ;;
   (defprod smtlink-hint
     :parents (SMT-hint-interface)
@@ -288,6 +289,7 @@
      (aux-thm-list hint-pair-listp :default nil)
      (type-decl-list decl-listp :default nil)
      (expanded-clause-w/-hint hint-pair-p :default (make-hint-pair))
+     (fixed-clause pseudo-termp :default nil)
      (smt-cnf smtlink-config-p :default (make-smtlink-config))
      (wrld-fn-len natp :default 0)
      (custom-p booleanp :default nil)))
