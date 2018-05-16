@@ -233,7 +233,7 @@
 
       ;; branch condition is false:
       (b* (;; go to the next instruction,
-           ;; which starts just after the rel byte:
+           ;; which starts just after the rel8 byte:
            ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
            (x86 (write-*ip next-rip x86)))

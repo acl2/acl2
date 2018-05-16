@@ -267,8 +267,8 @@
 
  <p>The model includes more support for 32-bit mode.  In particular: some
  variants of the PUSH, POP, MOV, LEA, XCHG, ADD, ADC, SUB, SBB, OR, AND, XOR,
- CMP, TEST, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, JMP, Jcc, and RET
- instructions also work in 32-bit mode now; the 32-bit instructions PUSHA,
+ CMP, TEST, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, JMP, Jcc, LOOP, LOOPcc, and
+ RET instructions also work in 32-bit mode now; the 32-bit instructions PUSHA,
  POPA, INC with opcodes 40h-47h, and DEC with opcodes 48h-4Fh are now part of
  the model.</p>
 
