@@ -557,8 +557,11 @@
 
 (defines generate-fty-types-mutual
   :flag-hints
-  (("Subgoal 11"
-    :in-theory (disable generate-type-measure-increase-prod)
+  (("Goal"
+    :in-theory (e/d () (generate-type-measure-increase-prod
+                        generate-type-measure-increase-alist
+                        generate-type-measure-increase-list
+                        generate-type-measure-increase-option))
     :use ((:instance
            generate-type-measure-increase-prod
            (acc acc)
@@ -569,10 +572,8 @@
              1
              (generate-fty-field-alist
               (cdr (assoc-equal 'fty::fields (cdr prod)))
-              fty-info))))))
-   ("Subgoal 10"
-    :in-theory (disable generate-type-measure-increase-alist)
-    :use ((:instance
+              fty-info))))
+          (:instance
            generate-type-measure-increase-alist
            (acc acc)
            (fty-info fty-info)
@@ -587,20 +588,16 @@
                       (cdr (assoc-equal
                             (cdr (assoc-equal 'fty::val-type
                                               (cdr flexalst)))
-                            fty-info))))))))
-   ("Subgoal 8"
-    :in-theory (disable generate-type-measure-increase-list)
-    :use ((:instance
+                            fty-info))))))
+          (:instance
            generate-type-measure-increase-list
            (acc acc)
            (fty-info fty-info)
            (name (fty::flexlist->name flexlst))
            (content (fty-info->name
                      (cdr (assoc-equal (fty::flexlist->elt-type flexlst)
-                                       fty-info)))))))
-   ("Subgoal 7"
-    :in-theory (disable generate-type-measure-increase-option)
-    :use ((:instance
+                                       fty-info)))))
+          (:instance
            generate-type-measure-increase-option
            (acc acc)
            (fty-info fty-info)
@@ -869,7 +866,8 @@
   :measure (list (generate-type-measure fty-info acc) 2 0)
   :well-founded-relation acl2::nat-list-<
   :verify-guards nil
-  (b* (((unless (alistp flextypes-table))
+  (b* ((acc (fty-types-fix acc))
+       ((unless (alistp flextypes-table))
         (prog2$ (er hard? 'fty=>generate-fty-type "flextypes-table is not an ~
                            alist?~%")
                 acc))
@@ -916,6 +914,7 @@
   :well-founded-relation acl2::nat-list-<
   :verify-guards nil
   (b* ((name-lst (symbol-list-fix name-lst))
+       (acc (fty-types-fix acc))
        ((unless (consp name-lst)) acc)
        ((cons first rest) name-lst)
        (new-acc (generate-fty-type first flextypes-table fty-info acc))
