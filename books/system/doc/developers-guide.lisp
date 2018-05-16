@@ -771,7 +771,7 @@
          nil))
  })
 
- <p>The other is occurs in a raw Lisp context, as follows.</p>
+ <p>The other definition occurs in a raw Lisp context, as follows.</p>
 
  @({
  #-acl2-loop-only
