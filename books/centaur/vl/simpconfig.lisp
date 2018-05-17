@@ -113,6 +113,10 @@
     booleanp
     "Verbosely report svex rewriting statistics.")
 
+   (sv-include-atts
+    string-listp
+    "Translate SystemVerilog attributes on variable declarations into sv modules.")
+
    (nb-latch-delay-hack
     booleanp
     "Artificially add a delay to nonblocking assignments in latch-like contexts.")

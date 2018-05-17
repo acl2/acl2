@@ -2011,6 +2011,93 @@ we've seen before with a mask that overlaps with that one.</p>"
   ///
   (deffixequiv svex-assigns-compose))
 
+(define svex-assigns-compose-keys ((keys svarlist-p)
+                                   (x svex-alist-p)
+                                   &key (rewrite 't))
+  :parents (svex-composition)
+  :short "Given an alist mapping variables to assigned expressions, compose them together into full update functions."
+  :returns (xx svex-alist-p)
+  (b* ((xvals (svex-alist-vals x))
+       (- (cw "Initial count: ~x0~%" (svexlist-opcount xvals)))
+       ;;; Rewriting here at first presumably won't disrupt decompositions
+       ;;; because the expressions should be relatively small and independent,
+       ;;; to first approximation.
+       ;; (- (sneaky-save 'orig-assigns x))
+       (xvals (if rewrite (cwtime (svexlist-rewrite-top xvals :verbosep t) :mintime 0) xvals))
+       (x (pairlis$ (svex-alist-keys x) xvals))
+       (- (cw "Count after initial rewrite: ~x0~%" (svexlist-opcount xvals)))
+       ((mv updates memo) (cwtime (svex-compose-assigns-keys keys x nil nil) :mintime 1))
+       (- (fast-alist-free memo))
+       (updates-vals (svex-alist-vals updates))
+       (- (cw "Updates count: ~x0~%" (svexlist-opcount updates-vals)))
+       (updates-vals
+        (if rewrite (cwtime (svexlist-rewrite-top updates-vals :verbosep t) :mintime 0) updates-vals))
+       (- (cw "Updates count after rewrite: ~x0~%" (svexlist-opcount updates-vals)))
+       (masks (svexlist-mask-alist updates-vals))
+       ;; (updates-vals (cwtime (svexlist-rewrite updates-vals masks) :mintime 1))
+       ;; (- (cw "Updates count after rewrite: ~x0~%" (svexlist-opcount updates-vals)))
+       ;; (updates (pairlis$ (svex-alist-keys updates) updates-vals))
+       (vars (svexlist-collect-vars updates-vals))
+       (updates (pairlis$ (svex-alist-keys updates) updates-vals))
+       (upd-subset (with-fast-alist updates (svars-extract-updates vars updates)))
+       ;; (- (acl2::sneaky-save 'simple-updates updates))
+       (- (cw "Looping subset count: ~x0~%" (cwtime (svexlist-opcount (svex-alist-vals upd-subset)))))
+       (- (cw "Mask bits count (starting): ~x0~%" (svexlist-masks-measure vars masks)))
+       ((acl2::with-fast updates))
+       ((mv final-masks rest)
+        (cwtime (svexlist-compose-to-fix-rec2 masks upd-subset nil) :mintime 1))
+       ;; (- (sneaky-save 'assigns x)
+       ;;    (sneaky-save 'updates updates)
+       ;;    (sneaky-save 'final-masks final-masks)
+       ;;    (sneaky-save 'loop-vars vars))
+       (final-masks (make-fast-alist final-masks))
+       ;; (- (with-fast-alist x
+       ;;      (svex-masks-summarize-loops vars final-masks x)))
+       (loop-var-alist (fast-alist-clean (svex-compose-extract-loop-var-alist-from-final-masks final-masks)))
+       (next-updates (with-fast-alist rest
+                       (svex-alist-compose* updates rest)))
+
+       
+       ;; (- (acl2::sneaky-save 'next-updates next-updates))
+
+       (- (cw "~x0 loop vars~%" (len loop-var-alist))
+          ;; (cw "rest: ~x0~%keys: ~x1~%"
+          ;;     (len rest) (alist-keys (take (min 20 (len rest)) rest)))
+          )
+       ((mv err looped-updates)
+        (with-fast-alist loop-var-alist
+          (with-fast-alist next-updates
+            (cwtime
+             (svex-mask-alist-compose-bit-sccs
+              final-masks 0 nil nil nil
+              (make-svex-scc-consts :final-masks final-masks
+                                    :updates next-updates
+                                    :loop-vars loop-var-alist))))))
+       ;; (- (acl2::sneaky-save 'looped-updates looped-updates))
+       (- (fast-alist-free loop-var-alist))
+       (- (fast-alist-free final-masks))
+       (- (and err
+               (raise "Error while composing bit-level loops: ~@0" err)))
+
+       (res-updates1 (with-fast-alist looped-updates
+                       (svex-alist-compose* next-updates looped-updates)))
+       ;; (- (acl2::sneaky-save 'res-updates1 res-updates1))
+
+       ;; (res1-updates (svex-compose-keep-nonzero-mask-updates res1 final-masks))
+       ;; This attempts to resolve apparent combinational loops by adding
+       ;; another iteration for variables that are still used in the masks.
+       ;; This isn't necessarily sufficient but it might be for simple cases.
+       (res-updates2 (b* ((vars (svex-alist-keys updates))
+                          (xes-alist (pairlis$ vars (make-list (len vars) :initial-element (svex-x)))))
+                       (with-fast-alist xes-alist (svex-alist-compose* res-updates1 xes-alist))))
+       ;; (res2 (with-fast-alist res1-updates2 (svex-alist-compose* res1 res1-updates2)))
+       )
+    (clear-memoize-table 'svex-compose*)
+    (clear-memoize-table 'svex-compose)
+    res-updates2)
+  ///
+  (deffixequiv svex-assigns-compose))
+
 
 
 #||

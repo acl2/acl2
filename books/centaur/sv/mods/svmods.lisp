@@ -286,6 +286,9 @@ of adding the namespace.</p>"
    :trireg)
   :parents (wire))
 
+(fty::defalist attributes :key-type stringp :val-type maybe-svex :true-listp t)
+
+
 (fty::defprod wire
   :short "Wire info as stored in an svex module."
   ((name name-p)
@@ -298,7 +301,8 @@ of adding the namespace.</p>"
    (delay acl2::maybe-posp :rule-classes :type-prescription)
    (revp    "If true, the range was declared as [low:high] rather than [high:low],
              so the low-idx is the MSB rather than the LSB.")
-   (type wiretype))
+   (type wiretype)
+   (atts attributes))
   :layout :tree)
 
 (fty::deflist wirelist
@@ -417,6 +421,7 @@ of adding the namespace.</p>"
   ///
   (verify-guards constraintlist-addr-p
     :hints(("Goal" :in-theory (enable constraintlist-vars)))))
+
 
 
 (fty::defprod module
