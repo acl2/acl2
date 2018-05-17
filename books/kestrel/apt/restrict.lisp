@@ -344,8 +344,7 @@
                                     thm-name$
                                     non-executable$
                                     verify-guards$
-                                    hints$
-                                    print$)')
+                                    hints$)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -356,7 +355,6 @@
                                          booleanp
                                          booleanp
                                          symbol-alistp
-                                         canonical-print-specifier-p
                                          result)'),
                         where @('old$') is
                         the result of @(tsee restrict-process-old),
@@ -374,11 +372,9 @@
                         the new function should be
                         non-executable or not,
                         @('verify-guards$') indicates whether the guards of
-                        the new function should be verified or not,
+                        the new function should be verified or not, and
                         @('hints$') is
-                        the result of @(tsee restrict-process-hints), and
-                        @('print$') is a canonicalized version of
-                        the @(':print') input.")
+                        the result of @(tsee restrict-process-hints).")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -419,7 +415,7 @@
                               (non-executablep old (w state))
                               "The :NON-EXECUTABLE input" t nil))
        ((er hints$) (restrict-process-hints hints ctx state))
-       ((er print$) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
+       ((er &) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
        ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
     (value (list old$
                  restriction$
@@ -429,8 +425,7 @@
                  thm-name$
                  non-executable$
                  verify-guards$
-                 hints$
-                 print$))))
+                 hints$))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -840,7 +835,7 @@
                                  (non-executable$ booleanp)
                                  (verify-guards$ booleanp)
                                  (hints$ symbol-alistp)
-                                 (print$ canonical-print-specifier-p)
+                                 (print$ print-specifier-p)
                                  (show-only$ booleanp)
                                  (app-conds symbol-alistp)
                                  (call pseudo-event-formp)
@@ -888,35 +883,27 @@
    and because otherwise the table event would have to contain itself.
    </p>
    <p>
-   If @(':print') includes @(':submit'),
+   If @(':print') is @(':all'),
    the @(tsee encapsulate) is wrapped to show ACL2's output
    in response to the submitted events.
-   This screen output always starts with a blank line,
-   so we do not need to print a blank line to separate
-   the submission-phase output from any expansion-phase output.
-   </p>
-   <p>
-   If @(':print') includes @(':result'),
+   If @(':print') is @(':result') or @(':info') or @(':all'),
    the @(tsee progn) includes events to print
-   the exported events on the screen without hints.
-   They are the same event forms
+   the exported events on the screen without hints;
+   these are the same event forms
    that are introduced non-locally and redundantly in the @(tsee encapsulate).
-   If @(':print') also includes @(':expand') or @(':submit'),
-   an event to print a blank line is also generated
-   to separate the result output
-   from the expansion-phase or submission-phase output.
+   If @(':print') is @(':info') or @(':all'),
+   a blank line is printed just before the result, for visual separation;
+   if @(':print') is @(':result'),
+   the blank line is not printed.
    </p>
    <p>
    If @(':show-only') is @('t'),
    the @(tsee encapsulate) is just printed on the screen
    and not returned as part of the event to submit,
    which in this case is just an @(':invisible') form.
-   In this case,
-   the presence or absence of @(':submit') and @(':result') in @(':print')
-   is ignored.
-   If @(':print') includes @(':expand'),
-   a blank line is printed just before the @(tsee encapsulate)
-   to separate it from the expansion output.
+   In this case, if @(':print') is @(':info') or @(':all'),
+   a blank line is printed just before the @(tsee encapsulate),
+   for visual separation.
    </p>"
   (b* ((names-to-avoid (list new-name$ thm-name$))
        ((mv app-cond-thm-events
@@ -985,27 +972,24 @@
                              ,old-to-new-thm-exported-event
                              ,new-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
-       (expand-output-p (if (member-eq :expand print$) t nil))
        ((when show-only$)
-        (if expand-output-p
+        (if (member-eq print$ '(:info :all))
             (cw "~%~x0~|" encapsulate)
           (cw "~x0~|" encapsulate))
         '(value-triple :invisible))
-       (submit-output-p (if (member-eq :submit print$) t nil))
-       (encapsulate+ (restore-output? submit-output-p encapsulate))
+       (encapsulate+ (restore-output? (eq print$ :all) encapsulate))
        (transformation-table-event (record-transformation-call-event
                                     call encapsulate wrld))
-       (result-output-p (if (member-eq :result print$) t nil))
-       (print-events (if result-output-p
-                         `(,@(and (or expand-output-p submit-output-p)
-                                  '((cw-event "~%")))
-                           (cw-event "~x0~|" ',new-fn-exported-event)
-                           (cw-event "~x0~|" ',old-to-new-thm-exported-event))
-                       nil)))
+       (print-result (and
+                      (member-eq print$ '(:result :info :all))
+                      `(,@(and (member-eq print$ '(:info :all))
+                               '((cw-event "~%")))
+                        (cw-event "~x0~|" ',new-fn-exported-event)
+                        (cw-event "~x0~|" ',old-to-new-thm-exported-event)))))
     `(progn
        ,encapsulate+
        ,transformation-table-event
-       ,@print-events
+       ,@print-result
        (value-triple :invisible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1054,8 +1038,7 @@
                   thm-name$
                   non-executable$
                   verify-guards$
-                  hints$
-                  print$)) (restrict-process-inputs old
+                  hints$)) (restrict-process-inputs old
                                                     restriction
                                                     undefined
                                                     new-name
@@ -1074,7 +1057,7 @@
                                           state))
        ((er &) (ensure-named-formulas app-conds
                                       hints$
-                                      (if (member-eq :expand print$) t nil)
+                                      (and (member-eq print '(:info :all)) t)
                                       t nil ctx state))
        (event (restrict-gen-everything old$
                                        restriction$
@@ -1086,7 +1069,7 @@
                                        non-executable$
                                        verify-guards$
                                        hints$
-                                       print$
+                                       print
                                        show-only
                                        app-conds
                                        call
@@ -1132,4 +1115,5 @@
                                     ',show-only
                                     ',call
                                     (cons 'restrict ',old)
-                                    state))))
+                                    state)
+                      :suppress-errors ,(not print))))

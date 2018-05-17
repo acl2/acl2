@@ -551,6 +551,175 @@
          (n (1- (+ n (* 2 m)))) (m 0) (k (+ n (* 2 m))) (x (* x y)) (y 1)))
   :rule-classes ())
 
+
+(encapsulate ()
+
+(local (include-book "arithmetic-5/top" :dir :system))
+
+(local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)|
+                          |(mod (+ x (mod a b)) y)|
+                          simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                          ash-to-floor |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)| mod-theorem-one-b))
+
+(defun theta (i y)
+  (+ (bitn y (1- (* 2 i)))
+     (bitn y (* 2 i))
+     (* -2 (bitn y (1+ (* 2 i))))))
+
+(defun sum-theta (m y)
+   (if (zp m)
+       0
+     (+ (* (expt 2 (* 2 (1- m))) (theta (1- m) y))
+	(sum-theta (1- m) y))))
+
+(defthm sum-theta-lemma
+    (implies (and (not (zp m))
+		  (bvecp y (1- (* 2 m))))
+	     (equal y (sum-theta m y)))
+  :rule-classes ())
+
+(defund mag (i y)
+  (if (member (bits y (1+ (* 2 i)) (1- (* 2 i))) '(3 4))
+      2
+    (if (member (bits y (* 2 i) (1- (* 2 i))) '(1 2))
+        1
+      0)))
+
+(defthm mag-0-1-2
+  (member (mag i y) '(0 1 2))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (enable mag))))
+
+(defund nbit (i y)
+  (bitn y (1+ (* 2 i))))
+
+(defthm nbit-0-1
+  (member (nbit i y) '(0 1))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (enable nbit))))
+
+(defthmd theta-rewrite
+  (implies (and (natp y) (natp i))
+           (equal (theta i y)
+                  (if  (= (nbit i y) 1)
+                       (- (mag i y))
+                       (mag i y))))
+  :hints (("Goal" :in-theory (enable nbit mag)
+                  :use ((:instance bitn-0-1 (x y) (n (1- (* 2 i))))
+                        (:instance bitn-0-1 (x y) (n (* 2 i)))
+                        (:instance bitn-0-1 (x y) (n (1+ (* 2 i))))
+			(:instance bitn-plus-bits (x y) (n (1+ (* 2 i))) (m (1- (* 2 i))))
+			(:instance bitn-plus-bits (x y) (n (* 2 i)) (m (1- (* 2 i))))))))
+
+(defund bmux4p (i x y n)
+  (if  (= (nbit i y) 1)
+       (bits (lognot (* (mag i y) x)) (1- n) 0)
+       (* (mag i y) x)))
+
+(defthmd bvecp-bmux4p
+  (implies (and (not (zp n))
+                (bvecp x (1- n)))
+	   (bvecp (bmux4p i x y n) n))
+  :hints (("Goal" :nonlinearp t
+                  :use (mag-0-1-2
+                        (:instance bits-bounds (x (lognot (* (mag i y) x))) (i (1- n)) (j 0)))
+                  :in-theory (enable bmux4p bvecp))))
+
+(local-in-theory (disable ACL2::|(lognot (* 2 x))|))
+
+(defthmd bmux4p-rewrite
+  (implies (and (not (zp n))
+                (not (zp m))
+	        (bvecp x (1- n))
+	        (bvecp y (1- (* 2 m)))
+		(natp i)
+		(< i m))
+           (equal (bmux4p i x y n)
+                  (+ (* (theta i y) x)
+                     (* (1- (expt 2 n)) (nbit i y)))))
+  :hints (("Goal" :use (mag-0-1-2 nbit-0-1)
+                  :in-theory (enable bvecp bmux4p theta-rewrite bits-lognot))))
+
+(defund pp4p (i x y n)
+  (if (zerop i)
+      (cat (if (= (nbit 0 y) 0) 1 0) 1
+           (nbit 0 y) 1
+           (nbit 0 y) 1
+           (bmux4p 0 x y n) n)
+    (cat 1 1
+         (lognot (nbit i y)) 1
+         (bmux4p i x y n) n
+         0 1
+         (nbit (1- i) y) 1
+         0 (* 2 (1- i)))))
+
+(local-in-theory (disable theta))
+
+(defthmd pp4p0-rewrite
+  (implies (and (not (zp n))
+                (not (zp m))
+	        (bvecp x (1- n))
+	        (bvecp y (1- (* 2 m))))
+           (equal (pp4p 0 x y n)
+                  (+ (expt 2 (+ n 2))
+                     (* (theta 0 y) x)
+                     (- (nbit 0 y)))))
+  :hints (("Goal" :nonlinearp t
+                  :in-theory (enable bvecp pp4p bmux4p-rewrite binary-cat)
+                  :use ((:instance bvecp-bmux4p (i 0))
+		        (:instance nbit-0-1 (i 0))))))
+
+(defthmd pp4p-rewrite
+  (implies (and (not (zp n))
+                (not (zp m))
+	        (bvecp x (1- n))
+	        (bvecp y (1- (* 2 m)))
+                (not (zp i))
+                (< i m))
+           (equal (pp4p i x y n)
+                  (+ (expt 2 (+ n (* 2 i) 1))
+                     (expt 2 (+ n (* 2 i)))
+                     (* (expt 2 (* 2 i)) (theta i y) x)
+                     (* (expt 2 (* 2 (1- i))) (nbit (1- i) y))
+                     (- (* (expt 2 (* 2 i)) (nbit i y))))))
+  :hints (("Goal" :nonlinearp t
+                  :in-theory (enable bvecp pp4p bmux4p-rewrite binary-cat)
+                  :use (bvecp-bmux4p nbit-0-1
+		        (:instance nbit-0-1 (i (1- i)))))))
+
+(defun sum-pp4p (x y m n)
+  (if (zp m)
+      0
+    (+ (pp4p (1- m) x y n)
+       (sum-pp4p x y (1- m) n))))
+
+(local-defthmd booth-lemma-1
+  (implies (and (not (zp n))
+                (not (zp m))
+	        (bvecp x (1- n))
+	        (bvecp y (1- (* 2 m)))
+                (not (zp k))
+                (<= k m))
+           (equal (sum-pp4p x y k n)
+                  (+ (* x (sum-theta k y))
+                     (expt 2 (+ n (* 2 k)))
+                     (- (* (expt 2 (* 2 (1- k))) (nbit (1- k) y))))))
+  :hints (("Goal" :induct (sum-pp4p x y k n)) 
+          ("Subgoal *1/2" :use (pp4p0-rewrite))	  
+          ("Subgoal *1/1" :use (pp4p0-rewrite (:instance pp4p-rewrite (i (1- k)))) :nonlinearp t)))
+
+(defthmd booth4-corollary-3
+  (implies (and (not (zp n))
+                (not (zp m))
+	        (bvecp x (1- n))
+	        (bvecp y (1- (* 2 m))))
+           (equal (sum-pp4p x y m n)
+                  (+ (* x y) (expt 2 (+ n (* 2 m))))))
+  :hints (("Goal" :in-theory (enable nbit)
+                  :use (sum-theta-lemma (:instance booth-lemma-1 (k m))))))
+		  
+)  
+
 ;;;**********************************************************************
 ;;;                Statically Encoded Multiplier Arrays
 ;;;**********************************************************************

@@ -50,6 +50,9 @@ This comment motivates the macro install-not-normalized, defined below.
 
 (include-book "xdoc/top" :dir :system)
 
+; For true-listp-all-fnnames:
+(local (include-book "system/all-fnnames" :dir :system))
+
 (defun install-not-normalized-name (name)
   (declare (xargs :guard (symbolp name)))
   (intern-in-package-of-symbol (concatenate 'string
@@ -60,7 +63,8 @@ This comment motivates the macro install-not-normalized, defined below.
 (defun install-not-normalized-fn-1 (name wrld clique defthm-name)
   (declare (xargs :guard (and (symbolp name)
                               (symbolp defthm-name)
-                              (plist-worldp wrld))))
+                              (plist-worldp wrld)
+                              (symbol-listp clique))))
   (let* ((formals (formals name wrld))
          (body (getprop name 'unnormalized-body nil 'current-acl2-world wrld))
          (defthm-name (or defthm-name
@@ -72,16 +76,20 @@ This comment motivates the macro install-not-normalized, defined below.
                                     (and (true-listp def-bodies)
                                          (car def-bodies))))
                              (and (weak-def-body-p def-body) ; for guard proof
-                                  (access def-body def-body :controller-alist)))))
+                                  (access def-body def-body
+                                          :controller-alist))))
+         (cliquep (and clique
+                       (pseudo-termp body) ; for guard proof
+                       (intersectp-eq clique (all-fnnames body)))))
     `((defthm ,defthm-name
         (equal (,name ,@formals)
                ,body)
         :hints (("Goal" :by ,name))
         :rule-classes ((:definition :install-body t
-                                    ,@(and clique
+                                    ,@(and cliquep
                                            (list :clique
                                                  clique))
-                                    ,@(and clique
+                                    ,@(and cliquep
                                            controller-alist
                                            (list :controller-alist
                                                  controller-alist)))))
@@ -89,6 +97,7 @@ This comment motivates the macro install-not-normalized, defined below.
 
 (defun install-not-normalized-fn-lst (fns wrld all-fns defthm-name-doublets)
   (declare (xargs :guard (and (symbol-listp fns)
+                              (symbol-listp all-fns)
                               (symbol-alistp defthm-name-doublets)
                               (doublet-listp defthm-name-doublets)
                               (symbol-listp (strip-cadrs defthm-name-doublets))

@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/bytes" :dir :system)
+(include-book "kestrel/utilities/fixbytes/instances" :dir :system)
 (include-book "kestrel/utilities/digits-any-base" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,7 +78,7 @@
    the conversions from natural numbers to digits in base @('(expt 2 n)')
    return true lists of unsigned bytes of size @('n').
    These are expressed using the fixtypes for true lists of unsigned bytes
-   introduced via @(tsee defubyte).
+   introduced via @(tsee defbyte).
    </p>"
   (b* ((ubyte<n> (packn (list 'ubyte n)))
        (ubyte<n>-listp (packn (list ubyte<n> '-listp)))

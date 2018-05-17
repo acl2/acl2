@@ -31,7 +31,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
-(include-book "centaur/satlink/portcullis" :dir :system)
+(include-book "centaur/ipasir/portcullis" :dir :system)
 (include-book "centaur/bitops/portcullis" :dir :system)
 
 (defconst *aignet-exports*
@@ -139,7 +139,8 @@
             satlink::*satlink-exports*
             std::*std-exports*
             *bitops-exports*
-            *stobjs-exports*))
+            *stobjs-exports*
+            *ipasir-exports*))
 
 (defpkg "AIGNET-GENSYMS" nil)
 

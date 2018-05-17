@@ -183,27 +183,13 @@
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
                                   (logand 1 opcode))))
        ((the (integer 1 8) operand-size)
-        (if byte-operand?
-            1
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
 
        (G (rgfi-size operand-size
                      (the (unsigned-byte 4)
@@ -408,27 +394,13 @@
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
                                (logand 1 opcode))))
        ((the (integer 1 8) operand-size)
-        (if byte-operand?
-            1
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
 
        (G (rgfi-size operand-size
                      (the (unsigned-byte 4)
@@ -656,8 +628,6 @@
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
 
@@ -665,38 +635,14 @@
                             (eql opcode #x82)
                             (eql opcode #xF6)))
        ((the (integer 1 8) E-size)
-        (if E-byte-operand?
-            1
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size E-byte-operand? rex-byte nil prefixes x86))
 
        (imm-byte-operand? (or (eql opcode #x80)
                               (eql opcode #x82)
                               (eql opcode #x83)
                               (eql opcode #xF6)))
        ((the (integer 1 4) imm-size)
-        (if imm-byte-operand?
-            1
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  4
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size imm-byte-operand? rex-byte t prefixes x86))
 
        (seg-reg (select-segment-register p2 p4? mod r/m x86))
 
@@ -805,6 +751,7 @@
 
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
   :parents (one-byte-opcodes)
 
@@ -832,8 +779,12 @@
   :operation t
   :guard (and (natp operation)
               (<= operation 8))
+  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
+                                           rme-size-of-2-to-rme16
+                                           rme-size-of-4-to-rme32)))
   :prepwork ((local (in-theory (e/d* () (commutativity-of-+)))))
-  :returns (x86 x86p :hyp (x86p x86)
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (e/d* ()
                                                  (force (force)
                                                         gpr-arith/logic-spec-8
@@ -883,23 +834,23 @@
   :body
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
-       ((when (and lock (eql operation #.*OP-CMP*)))
-        ;; CMP does not allow a LOCK prefix.
-        (!!ms-fresh :lock-prefix prefixes))
+
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ;; rAX is not a memory operand:
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (byte-operand? (equal 0 (logand 1 opcode)))
        ((the (integer 1 8) operand-size)
-        (select-operand-size byte-operand? rex-byte t prefixes))
+        (select-operand-size byte-operand? rex-byte t prefixes x86))
        (rAX-size (if (logbitp #.*w* rex-byte)
                      8
                    operand-size))
+
        (rAX (rgfi-size rAX-size *rax* rex-byte x86))
        ((mv ?flg imm x86)
-        (rml-size operand-size temp-rip :x x86))
+        (rme-size operand-size temp-rip *cs* :x nil x86))
        ((when flg)
-        (!!ms-fresh :rml-size-error flg))
+        (!!ms-fresh :rme-size-error flg))
 
        ;; Sign-extend imm when required.
        (imm
@@ -912,14 +863,10 @@
                   (the (unsigned-byte 32) imm)))))
           (the (unsigned-byte 32) imm)))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip operand-size))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size+1*) temp-rip))
+        (add-to-*ip temp-rip operand-size x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
        ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
         (-
          (the (signed-byte #.*max-linear-address-size*)
@@ -950,7 +897,7 @@
           (!rgfi-size rAX-size *rax* result rex-byte x86)))
 
        (x86 (write-user-rflags output-rflags undefined-flags x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
 
     x86))
 
@@ -997,8 +944,7 @@
                    (prefixes-slice :group-4-prefix prefixes)))
        (select-byte-operand (equal 0 (logand 1 opcode)))
        ((the (integer 1 8) r/mem-size)
-        (select-operand-size
-         select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
        (inst-ac? t)
        ((mv flg0 r/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
@@ -1118,17 +1064,8 @@
        ;; is treated as a REX prefix, not as an opcode. Thus, if we reach this
        ;; point in the code, we know that we are in 32-bit mode.
 
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
-
        ((the (integer 2 4) operand-size)
-        (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-             (cs.d
-              (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-          (if (= cs.d 1)
-              (if p3? 2 4)
-            (if p3? 4 2))))
+        (select-operand-size nil 0 nil prefixes x86))
 
        ;; If the instruction goes beyond 15 bytes, stop. Change to an
        ;; exception later.
@@ -1204,8 +1141,7 @@
 
        (select-byte-operand (equal 0 (logand 1 opcode)))
        ((the (integer 0 8) r/mem-size)
-        (select-operand-size select-byte-operand rex-byte nil
-                             prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
        (inst-ac? t)
        ((mv flg0 r/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)

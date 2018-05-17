@@ -234,19 +234,18 @@
 (defmacro ipasir-get-limit-raw (ipasir)
   `(svref (the (simple-array t (2)) ,ipasir) 1))
 
-(defun ipasir-signature ()
-  (cond ((acl2::aokp)
-         (acl2::update-attached-fn-called 'ipasir::ipasir-signature)
-         (handler-case (cffi::foreign-string-to-lisp (ipasir-raw::ipasir-signature))
-           (error () (acl2::throw-without-attach nil ipasir-signature nil))))
-        (t (acl2::throw-without-attach 'ipasir-signature ipasir-signature nil))))
+;; need to define both the regular function name and *1* for attachment to work
+(defun acl2_*1*_ipasir::ipasir-signature-real ()
+  ;; note: foreign-string-to-lisp returns 2 values, just want the first
+  (let* ((ans (cffi::foreign-string-to-lisp (ipasir-raw::ipasir-signature))))
+    ans))
 
-(defun acl2_*1*_ipasir::ipasir-signature ()
-  (cond ((acl2::aokp)
-         (acl2::update-attached-fn-called 'ipasir::ipasir-signature)
-         (handler-case (cffi::foreign-string-to-lisp (ipasir-raw::ipasir-signature))
-           (error () (acl2::throw-without-attach nil ipasir-signature nil))))
-        (t (acl2::throw-without-attach 'ipasir-signature ipasir-signature nil))))
+(defun ipasir-signature-real ()
+  ;; note: foreign-string-to-lisp returns 2 values, just want the first
+  (let* ((ans (cffi::foreign-string-to-lisp (ipasir-raw::ipasir-signature))))
+    ans))
+
+(defattach ipasir-signature ipasir-signature-real)
 
 (defun ipasir-reinit$c (ipasir)
   ;; Note: This function will throw if it is run before an ipasir library is

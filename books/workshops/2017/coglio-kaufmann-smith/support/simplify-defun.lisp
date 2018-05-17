@@ -692,6 +692,7 @@
                   t  ; inhibit-output
                   nil ; print-flg
                   nil ; must-rewrite-flg
+                  'simplify-hyp-list
                   ))))
        (let ((runes (drop-fake-runes (car tmp)))
              (simplified-hyps (assert$ (null (cdr (cadr tmp))) ; singleton check
@@ -746,6 +747,7 @@
                         nil ; translate-flg
                         nil ; print-flg
                         must-rewrite
+                        'simplify-defun-term
                         ))))
     (value (cons (drop-fake-runes (car runes/new-term))
                  (cadr runes/new-term)))))

@@ -9986,8 +9986,11 @@
 ; function names occurring in the :exec part of an mbe.  Keep this in sync with
 ; all-fnnames1-exec.
 
+  (declare (xargs :guard (and (true-listp acc)
+                              (cond (flg (pseudo-term-listp x))
+                                    (t (pseudo-termp x))))))
   (cond (flg ; x is a list of terms
-         (cond ((null x) acc)
+         (cond ((endp x) acc)
                (t (all-fnnames1 nil (car x)
                                 (all-fnnames1 t (cdr x) acc)))))
         ((variablep x) acc)

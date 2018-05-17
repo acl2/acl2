@@ -169,7 +169,7 @@
          (hyps (and hyps-fn
                     (list (cons hyps-fn fn-formals))))
          (singly-recursivep (and (not flagp)
-                                 (recursivep fn nil wrld))))
+                                 (recursivep fn t wrld))))
     `(defthm ,(fn-is-fn-copy-name fn)
        ,(implicate-untranslated-terms hyps equality)
        ,@(and (eq flagp nil)
@@ -229,7 +229,7 @@
   (declare (xargs :mode :program))
   (let* ((hyps-fn[-alist] hyps-fn)
          (equiv[-alist] equiv)
-         (recp (recursivep fn nil wrld))
+         (recp (recursivep fn t wrld))
          (mut-rec-p (cdr recp))
          (alist (cond (mut-rec-p (fn-copy-alist recp nil))
                       (t (list (cons fn (fn-copy-name fn))))))
@@ -273,7 +273,7 @@
                                         pkg)))
         `(encapsulate
            ()
-           (local (make-flag ,flag-name ,fn))
+           (local (make-flag ,flag-name ,fn :last-body t))
            ,encap
            (local (in-theory '((:induction ,flag-name)
                                ,(flag::equivalences-name flag-name)

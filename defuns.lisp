@@ -2688,55 +2688,50 @@
 ; guards.  So during the second pass, a valid rule was present.)  Among the
 ; rules is one that is possibly unsound and represents our current guess at the
 ; type.  We compute, from that guess, a "basic type-set" for term and a list of
-; formals that might be returned by term.  We also return the union of the
-; type-sets of the returned formals and a ttree justifying all our work.  An
-; odd aspect of this ttree is that it will probably include the rune of the
-; very rule we are trying to create, since its use in this process is
-; essentially as an induction hypothesis.
+; formals that might be returned by term.  An odd aspect of this ttree is that
+; it will probably include the rune of the very rule we are trying to create,
+; since its use in this process is essentially as an induction hypothesis.
 
-; Terminology: Consider a term and a type-alist, and the basic
-; type-set and returned formals as computed here.  Let a "satisfying"
-; instance of the term be an instance obtained by replacing each
-; formal by an actual that has as its type-set a subtype of that of
-; the corresponding formal under type-alist.  Let the "returned
-; actuals" of such an instance be the actuals corresponding to
-; returned formals.  We say the type set of such a satisfying instance
-; of term is "described" by a basic type-set and some returned formals
-; if the type-set of the instance is a subset of the union of the
-; basic type-set and the type-sets of the returned actuals.  Claim:
-; The type-set of a satisfying instance of term is given by our
-; answer.
+; This function returns four results.  The first is the basic type-set
+; computed, the second is another type-set which we call the variables
+; type-set, and the third is the set of returned formals.  Those three results
+; satisfy the claim made below.  Informally, we view the second result as the
+; union of the type-sets of the returned formals.  The fourth result is a ttree
+; justifying all the type-set reasoning done so far, accumulated onto the
+; initial ttree.  The ttree returned is 'assumption-free provided the initial
+; ttree and type-alist are also.
 
-; This function returns four results.  The first is the basic type
-; set computed.  The third is the set of returned formals.  The second
-; one is the union of the type-sets of the returned formals.  Thus,
-; the type-set of the term can in fact be obtained by unioning together
-; the first and second answers.  However, top-level calls of this
-; function are basically unconcerned with the second answer.  The fourth
-; answer is a ttree justifying all the type-set reasoning done so far,
-; accumulated onto the initial ttree.
+; The function works by walking through the if structure of the body, using the
+; normal assume-true-false to construct the governing type-alist for each
+; branch.  Upon arriving at a leaf term we compute the result.  If the term is
+; a quote or a call to an ACL2 primitive, we just use type-set.  If the term is
+; a call of a defun'd function, we interpret its type-prescription.
 
-; We claim that if our computation produces the type-set and formals
-; that the type-prescription alleges, then the type-prescription is a
-; correct one.
+; CLAIM.  Consider an input term and type-alist, as well as the return values
+; (mv bts vts vars ttree).  Assume that the variables of term satisfy the
+; requirements of the type-alist.  Then either term satisfies the type-set bts,
+; or else term is equal to some v in vars, in which case term satisfies vts.
+; (Moreover, the returned ttree is an extension of the input ttree that
+; justifies these conclusions, but we do not remark further on that ttree.)
 
-; The function works by walking through the if structure of the body,
-; using the normal assume-true-false to construct the governing
-; type-alist for each output branch.  Upon arriving at an output we
-; compute the type set and returned formals for that branch.  If the
-; output is a quote or a call to an ACL2 primitive, we just use
-; type-set.  If the output is a call of a defun'd function, we
-; interpret its type-prescription.
+; (Remark.  If we care to be a bit pedantic, then we may formulate the Claim in
+; terms of first-order logic as follows.  A type-alist ta and a type-set ts
+; naturally give rise to first-order formulas phi_ta(x1,...xn) and phi_ts(x),
+; respectively.  The Claim says that the following is a theorem of the theory
+; corresponding to the given world, wrld, where the given term has variables
+; x1, ..., xn, vars is {v1,...,vk}, and ta is the given type-alist:
 
-; The ttree returned is 'assumption-free provided the initial ttree
-; and type-alist are also.
+;   phi_ta(x1,...,xn)
+;   ->
+;   phi_bts(term) \/ (phi_vts(term) & (term = v1 \/ ... \/ term = vk)).
+
+; End of Remark.)
 
 ; Historical Plaque from Nqthm.
 
-; In nqthm, the root of the guessing processing was DEFN-TYPE-SET,
-; which was mutually recursive with DEFN-ASSUME-TRUE-FALSE.  The
-; following comment could be found at the entrance to the guessing
-; process:
+; In nqthm, the root of the guessing process was DEFN-TYPE-SET, which was
+; mutually recursive with DEFN-ASSUME-TRUE-FALSE.  The following comment could
+; be found at the entrance to the guessing process:
 
 
 ;   *************************************************************
@@ -2746,168 +2741,194 @@
 ;   PARTIALLY ACCURATE VALUES AS THIS FN COMPUTES THE REAL TYPE-SET.
 ;   *************************************************************
 
-; We now believe that this dreadful warning is an overstatement of the
-; case.  It is true that in nqthm the type-alist used in DEFN-TYPE-SET
-; would cause trouble if it found its way into TYPE-SET, because it
-; bound vars to "defn type-sets" (pairs of type-sets and variables)
-; instead of to type-sets.  But the fear of the inaccurate
-; TYPE-PRESCRIPTIONs above is misplaced we think.  We believe that if
-; one guesses a type-prescription and then confirms that it accurately
-; describes the function body, then the type-prescription is correct.
-; Therefore, in ACL2, far from fencing type-set away from
-; "defun-type-set" we use it explicitly.  This has the wonderful
-; advantage that we do not duplicate the type-set code (which is even
-; worse in ACL2 than it was in nqthm).
+; We now believe that this dreadful warning is an overstatement of the case.
+; It is true that in nqthm the type-alist used in DEFN-TYPE-SET would cause
+; trouble if it found its way into TYPE-SET, because it bound vars to "defn
+; type-sets" (pairs of type-sets and variables) instead of to type-sets.  But
+; the fear of the inaccurate TYPE-PRESCRIPTIONs above is misplaced we think.
+; We believe that if one guesses a type-prescription and then confirms that it
+; accurately describes the function body, then the type-prescription is
+; correct.  Therefore, in ACL2, far from fencing type-set away from
+; "defun-type-set" we use it explicitly.  This has the wonderful advantage that
+; we do not duplicate the type-set code (which is even worse in ACL2 than it
+; was in nqthm).
 
   (cond
    ((variablep term)
 
-; Term is a formal variable.  We compute its type-set under
-; type-alist.  If it is completely unrestricted, then we will say that
-; formal is sometimes returned.  Otherwise, we will say that it is not
-; returned.  Once upon a time we always said it was returned.  But the
-; term (if (integerp x) (if (< x 0) (- x) x) 0) as occurs in
-; integer-abs, then got the type-set "nonnegative integer or x" which
-; meant that it effectively had the type-set unknown.
+; Consider the following historical comment.
 
-; Observe that the code below satisfies our Claim.  If term' is a
-; satisfying instance of this term, then we know that term' is in fact
-; an actual being substituted for this formal.  Since term' is
-; satisfying, the type-set of that actual (i.e., term') is a subtype
-; of ts, below.  Thus, the type-set of term' is indeed described by
-; our answer.
+;   Term is a formal variable.  We compute its type-set under
+;   type-alist.  If it is completely unrestricted, then we will say that
+;   formal is sometimes returned.  Otherwise, we will say that it is not
+;   returned.  Once upon a time we always said it was returned.  But the
+;   term (if (integerp x) (if (< x 0) (- x) x) 0) as occurs in
+;   integer-abs, then got the type-set "nonnegative integer or x" which
+;   meant that it effectively had the type-set unknown.
+
+; Thus, in Version_8.0 and many preceding versions, for the variable, term, we
+; heuristically returned (mv *ts-empty* ts (list term) ttree) when the type of
+; term was completely unrestricted (i.e., equal to *ts-unknown*), and otherwise
+; we returned (mv ts *ts-empty* nil ttree).  We then realized that we could
+; defer this choice until popping up to the top level (by introducing function
+; type-set-and-returned-formals-top), which strengthened the resulting type
+; prescription in some cases.  Here is an example, where previously the
+; generated type-prescription was trivial -- :args foo reported that the Type
+; is "built-in (or unrestricted)" -- but now it's as expected -- the reported
+; Type is (EQUAL (F1 X Y) X).
+
+;   (defund f1 (x y)
+;     (if (integerp x)
+;         (if (consp y)
+;             (f1 x (cdr y))
+;           x)
+;       x))
+
+; Observe that the code below satisfies our Claim, since if term satisfies the
+; requirements of type-alist, then it satisfies the computed type-set, by
+; correctness of the function, type-set.
 
     (mv-let (ts ttree)
             (type-set term nil nil type-alist ens wrld ttree nil nil)
-            (cond ((ts= ts *ts-unknown*)
-                   (mv *ts-empty* ts (list term) ttree))
-                  (t (mv ts *ts-empty* nil ttree)))))
-
+            (mv *ts-empty* ts (list term) ttree)))
    ((fquotep term)
 
-; Term is a constant.  We return a basic type-set consisting of the
-; type-set of term.  Our Claim is true because the type-set of every
-; instance of term is a subtype of the returned basic type-set is a
-; subtype of the basic type-set.
+; Term is a constant.  We return a basic type-set consisting of the type-set of
+; term.  Our Claim holds, again by correctness of type-set.
 
     (mv-let (ts ttree)
             (type-set term nil nil type-alist ens wrld ttree nil nil)
             (mv ts *ts-empty* nil ttree)))
-
    ((flambda-applicationp term)
 
-; Without loss of generality we address ourselves to a special case.
-; Let term be ((lambda (...u...) body) ...arg...).  Let the formals in
-; term be x1, ..., xn.
+; Let term be ((lambda (...u...) body) ...arg...).  Let the formals in term be
+; x1, ..., xn.  We compute a basic type-set, bts, some returned vars, vars, and
+; a variable type-set, vts, for a lambda application as follows.
 
-; We compute a basic type-set, bts, some returned vars, vars, and the
-; type-sets of the vars, vts, for a lambda application as follows.
+; (1) For each argument, arg, obtain bts-arg, vts-arg, and vars-arg, which are
+; the basic type-set, the variable type-set, and the returned variables with
+; respect to the given type-alist.
 
-; (1) For each argument, arg, obtain bts-arg, vts-arg, and vars-arg,
-; which are the basic type-set, the variable type-set, and the
-; returned variables with respect to the given type-alist.
+; (2) Build a new type-alist, type-alist-body, by binding the formals of the
+; lambda, (...u...), to the types of its arguments (...arg...) computed with
+; respect to the given type-alist.
 
-; (2) Build a new type-alist, type-alist-body, by binding the formals
-; of the lambda, (...u...), to the types of its arguments (...arg...).
-; We know that the type of arg is the union of bts-arg and the types
-; of those xi in vars-arg positions (which is to say, vts-arg).
+; (3) Obtain bts-body, vts-body, and vars-body, by recursively processing body
+; under type-alist-body.
 
-; (3) Obtain bts-body, vts-body, and vars-body, by recursively
-; processing body under type-alist-body.
+; (4) Create a preliminary bts by unioning bts-body and those of the bts-args
+; in positions that are sometimes returned, as specified by vars-body.
 
-; (4) Create the final bts by unioning bts-body and those of the
-; bts-args in positions that are sometimes returned, as specified by
-; vars-body.
+; (5) Create the final vars by unioning together those of the vars-args in
+; positions that are sometimes returned, as specified by vars-body.
 
-; (5) Create the final vars by unioning together those of the
-; vars-args in positions that are sometimes returned, as specified by
-; vars-body.
+; (6) Union together the variable type-sets computed for those final vars with
+; respect to type-alist, to create a preliminary vts.
 
-; (6) Union together the types of the vars to create the final vts.
+; (7) Create the final bts and vts by intersecting each of the preliminary bts
+; and vts (from (4) and (6)) with the union of bts-body and vts-body.
 
-; We claim that the type-set of any instance of term that satisfies
-; type-alist is described by the bts and vars computed above and that
-; the vts computed above is the union of the the types of the vars
-; computed.
+; We prove the Claim by induction on the term.  We may assume:
 
-; Now consider an instance, term', of term, in which the formals of
-; term are mapped to some actuals and type-alist is satisfied.  Then
-; the type-set of each actual is a subtype of the type assigned each
-; xi.  Observe further that if term' is an instance of term satisfying
-; type-alist then term' is ((lambda (...u...) body) ...arg'...), where
-; arg' is an instance of arg satisfying type-alist.
+; (a) The hypothesis of the Claim holds for the given term and type-alist: that
+; is, the variables of term satisfy the requirements of type-alist.
 
-; Thus, by induction, the type-set of arg' is a subtype of the union
-; of bts-arg and the type-sets of those actuals in vars-arg positions.
-; But the union of the type-sets of those actuals in vars-arg
-; positions is a subtype of the union of the type-sets of the xi in
-; vars-arg.  Also observe that term' is equal, by lambda expansion, to
-; body', where body' is the instance of body in which each u is
-; replaced by the corresponding arg'.  Note that body' is an instance
-; of body satisfying type-alist-body: the type of arg' is a subtype of
-; that assigned u in type-alist-body, because the type of arg' is a
-; subtype of the union of bts-arg and the type-sets of the actuals in
-; vars-arg positions, but the type assigned u in type-alist-body is
-; the union of bts-arg and the type-sets of the xi in vars-arg.
-; Therefore, by induction, we know that the type-set of body' is a
-; subtype of bts-body and the type-sets of those arg' in vars-body
-; positions.  But the type-set of each arg' is a subtype of bts-arg
-; unioned with the type-sets of the actuals in vars-arg positions.
-; Therefore, when we union over the selected arg' we get a subtype of
-; the union of the union of the selected bts-args and the union of the
-; type-sets of the actuals in vars positions.  By the associativity
-; and commutativity of union, the bts and vars created in (4) and (5)
-; are correct.
+; For convenience we assume that the formals of the lambda are disjoint from
+; the free variables of the given term; otherwise, just rename them and observe
+; that the results are unchanged by that renaming.  Now consider the following
+; assertion.
+
+; (*) Each free variable u of body is equal to the corresponding actual, arg.
+
+; By beta-reduction, term is provably equal to body/s where s is the
+; substitution mapping each formal u of the lambda to the corresponding actual,
+; arg.  With that motivation, we will feel free below to view term as equal to
+; body under the assumption, (*), since of course the following is valid for
+; any property P: (forall (u) (u=arg -> P(body))) <-> P(body/s).
+
+; By (a), each free variable xi of term satisfies its type-set computed from
+; the given type-alist.  Therefore the type-sets are valid that are computed
+; for each argument, arg, with respect to that type-alist.  Thus:
+
+; (b) The hypothesis of the Claim holds for body and body-type-alist under the
+; assumption (*).
+
+; We apply the inductive hypothesis to (b) and obtain:
+
+; (c) The Claim holds under assumption (*) for the triple calculated for body
+; with respect to type-alist-body: bts-body, vts-body, and vars-body.
+
+; It follows from (c) that term satisfies bts-body or vts-body; so the
+; intersection in (7) with the union of these two types is harmless.
+; Therefore, it suffices to prove the Claim for the bts, vts, and vars computed
+; in (4) through (6) above.  That is, it suffices to show, assuming validity of
+; the given type-alist, that either term satisfies bts, or else term satisfies
+; vts and is equal to some variable in vars.  It therefore suffices to assume
+; (*) and (by (b)) the validity of body-type-alist, and show that either body
+; satisfies bts or else body satisfies vts and is equal to some variable in
+; vars.
+
+; So assume (*); thus by (c), either body satisfies bts-body, or else body is
+; equal to some variable in vars-body.  In the former case we are done, so
+; assume that body is equal to some variable, u, in vars-body.  Then by (*),
+; body is equal to the corresponding arg (that is: u is a formal of the lambda
+; being applied, and arg is the corresponding actual).  By the inductive
+; hypothesis together with (4) and (5), either arg has type bts or else arg is
+; equal to some variable in vars.  Since body is equal to arg, then body has
+; type bts or else body is equal to some variable in vars.  By (6) and (a), if
+; body is equal to some variable in vars then body has type vts, which
+; concludes the proof of the Claim.
 
     (mv-let (bts-args vts-args vars-args ttree-args)
-            (type-set-and-returned-formals-lst (fargs term)
-                                               type-alist
-                                               ens wrld)
-            (mv-let (bts-body vts-body vars-body ttree)
-                    (type-set-and-returned-formals
-                     (lambda-body (ffn-symb term))
-                     (zip-variable-type-alist
+      (type-set-and-returned-formals-lst (fargs term)
+                                         type-alist
+                                         ens wrld)
+      (mv-let (bts-body vts-body vars-body ttree)
+        (type-set-and-returned-formals
+         (lambda-body (ffn-symb term))
+         (zip-variable-type-alist
+          (lambda-formals (ffn-symb term))
+          (pairlis$ (vector-ts-union bts-args vts-args)
+                    ttree-args))
+         ens wrld ttree)
+        (let* ((bts (ts-union bts-body
+                              (map-type-sets-via-formals
+                               (lambda-formals (ffn-symb term))
+                               bts-args
+                               vars-body)))
+               (vars (map-returned-formals-via-formals
                       (lambda-formals (ffn-symb term))
-                      (pairlis$ (vector-ts-union bts-args vts-args)
-                                ttree-args))
-                     ens wrld ttree)
-                    (declare (ignore vts-body))
-                    (let* ((bts (ts-union bts-body
-                                          (map-type-sets-via-formals
-                                           (lambda-formals (ffn-symb term))
-                                           bts-args
-                                           vars-body)))
-                           (vars (map-returned-formals-via-formals
-                                  (lambda-formals (ffn-symb term))
-                                  vars-args
-                                  vars-body))
-                           (ts-and-ttree-lst
-                            (type-set-lst vars nil nil type-alist nil ens wrld
-                                          nil nil (backchain-limit wrld :ts))))
+                      vars-args
+                      vars-body))
+               (ts-and-ttree-lst
+                (type-set-lst vars nil nil type-alist nil ens wrld
+                              nil nil (backchain-limit wrld :ts)))
+               (vts0
 
-; Below we make unconventional use of map-type-sets-via-formals.
-; Its first and third arguments are equal and thus every element of
-; its second argument will be ts-unioned into the answer.  This is
-; just a hackish way to union together the type-sets of all the
-; returned formals.
+; Below we make unconventional use of map-type-sets-via-formals.  Its first and
+; third arguments are equal and thus every element of its second argument will
+; be ts-unioned into the answer.  This is just a hackish way to union together
+; the type-sets of all the returned formals.
 
-                      (mv bts
-                          (map-type-sets-via-formals
-                           vars
-                           (strip-cars ts-and-ttree-lst)
-                           vars)
-                          vars
-                          (map-cons-tag-trees (strip-cdrs ts-and-ttree-lst)
-                                              ttree))))))
+                (map-type-sets-via-formals
+                 vars
+                 (strip-cars ts-and-ttree-lst)
+                 vars))
+               (ts1 (ts-union bts-body vts-body)))
+          (mv (ts-intersection bts ts1)
+              (ts-intersection vts0 ts1)
+              vars
+              (map-cons-tag-trees (strip-cdrs ts-and-ttree-lst)
+                                  ttree))))))
    ((eq (ffn-symb term) 'if)
 
-; If by type-set reasoning we can see which way the test goes, we can
-; clearly focus on that branch.  So now we consider (if t1 t2 t3) where
-; we don't know which way t1 will go.  We compute the union of the
-; respective components of the answers for t2 and t3.  In general, the
-; type-set of any instance of this if will be at most the union of the
-; type-sets of the instances of t2 and t3.  (In the instance, t1' might
-; be decidable and a smaller type-set could be produced.)
+; If by type-set reasoning we can see which way the test goes, we can clearly
+; focus on that branch.  So now we consider (if t1 t2 t3) where we don't know
+; which way t1 will go.  We compute the union of the respective components of
+; the answers for t2 and t3.  In general, the type-set of any instance of this
+; if will be at most the union of the type-sets of the instances of t2 and t3.
+; (In the instance, t1' might be decidable and a smaller type-set could be
+; produced.)
 
     (mv-let
      (must-be-true
@@ -2925,11 +2946,10 @@
      (cond
       (must-be-true
 
-; Probably it would be sound to return
-; (mv *ts-empty* *ts-empty* nil (cons-tag-trees ts-ttree ttree)).
-; Since the context is contradictory.  But this hasn't been an issue as far as
-; we know, so we'll avoid making an airtight soundness argument until the need
-; arises.
+; Probably it would be sound to return (mv *ts-empty* *ts-empty* nil
+; (cons-tag-trees ts-ttree ttree)).  Since the context is contradictory.  But
+; this hasn't been an issue as far as we know, so we'll avoid making an
+; airtight soundness argument until the need arises.
 
        (type-set-and-returned-formals (fargn term 2)
                                       true-type-alist ens wrld
@@ -2990,6 +3010,16 @@
 
 )
 
+(defun type-set-and-returned-formals-top (term ens wrld ttree)
+  (mv-let (basic-type-set returned-vars-type-set returned-vars ttree)
+    (type-set-and-returned-formals term nil ens wrld ttree)
+    (cond ((ts= returned-vars-type-set -1)
+           (mv basic-type-set returned-vars ttree))
+          (t
+           (mv (ts-union basic-type-set returned-vars-type-set)
+               nil
+               ttree)))))
+
 (defun guess-type-prescription-for-fn-step (name body ens wrld ttree)
 
 ; This function takes one incremental step towards the type- prescription of
@@ -3008,9 +3038,8 @@
          (old-type-prescriptions
           (getpropc name 'type-prescriptions nil wrld))
          (tp (car old-type-prescriptions)))
-    (mv-let (new-basic-type-set returned-vars-type-set new-returned-vars ttree)
-      (type-set-and-returned-formals body nil ens wrld ttree)
-      (declare (ignore returned-vars-type-set))
+    (mv-let (new-basic-type-set new-returned-vars ttree)
+      (type-set-and-returned-formals-top body ens wrld ttree)
       (cond ((ts= new-basic-type-set *ts-unknown*)
 
 ; Ultimately we will delete this rule.  But at the moment we wish merely to

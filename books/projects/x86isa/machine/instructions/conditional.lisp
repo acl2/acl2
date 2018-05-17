@@ -233,7 +233,7 @@
 
       ;; branch condition is false:
       (b* (;; go to the next instruction,
-           ;; which starts just after the rel byte:
+           ;; which starts just after the rel8 byte:
            ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
            (x86 (write-*ip next-rip x86)))
@@ -486,7 +486,7 @@
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
        (inst-ac? t)

@@ -74,3 +74,47 @@
           satlink::*satlink-exports*
           (remove-eq 'clause acl2::*standard-acl2-imports*)))
 
+(defconst *ipasir-exports*
+  #!ipasir
+  '(ipasir
+    ipasirp
+    create-ipasir
+    ipasir-init
+    ipasir-reinit
+    ipasir-release
+    ipasir-input
+    ipasir-add-lit
+    ipasir-finalize-clause
+    ipasir-assume
+    ipasir-val
+    ipasir-failed
+    ipasir-solve
+    ipasir-set-limit
+    ipasir-callback-count
+    with-local-ipasir
+    ipasir$a
+    ipasir$a->formula
+    ipasir$a->assumption
+    ipasir$a->new-clause
+    ipasir$a->status
+    ipasir$a->solution
+    ipasir$a->solved-assumption
+    ipasir$a->callback-count
+    ipasir$a->history
+    ipasir-cancel-new-clause
+    ipasir-cancel-assumption
+    ipasir-add-empty
+    ipasir-add-unary
+    ipasir-add-binary
+    ipasir-add-ternary
+    ipasir-add-4ary
+    ipasir-add-list
+    ipasir-add-clauses
+    ipasir-set-buf
+    ipasir-set-and
+    ipasir-set-or
+    ipasir-set-mux
+    ipasir-set-xor
+    ipasir-set-iff
+    ipasir-check-equivalence))
+

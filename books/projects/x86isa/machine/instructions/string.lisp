@@ -77,7 +77,7 @@
 
        (select-byte-operand (equal #xA4 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
        (src-addr (if p4?
                      (rgfi-size counter/addr-size *rsi* rex-byte x86)
@@ -292,7 +292,7 @@
 
        (select-byte-operand (equal #xA6 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
        (src-addr (if p4?
                      (rgfi-size counter/addr-size *rsi* rex-byte x86)
@@ -496,7 +496,7 @@
 
        (select-byte-operand (equal #xAA opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
        (rAX (rgfi-size operand-size *rax* rex-byte x86))
 
