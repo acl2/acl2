@@ -944,8 +944,20 @@
     :returns (updated-hints smtlink-hint-p)
     (b* ((hints (smtlink-hint-fix hints))
          ((smtlink-hint h) hints)
-         (fty-info (generate-fty-info-alist-rec h.fty nil state)))
+         (flextypes-table (table-alist 'fty::flextypes-table (w state)))
+         ((unless (alistp flextypes-table)) h)
+         (fty-info (generate-fty-info-alist-rec h.fty nil flextypes-table)))
       (change-smtlink-hint h :fty-info fty-info)))
+
+  (define generate-fty-types-top ((hints smtlink-hint-p) state)
+    :returns (updated-hints smtlink-hint-p)
+    (b* ((hints (smtlink-hint-fix hints))
+         ((smtlink-hint h) hints)
+         (flextypes-table (table-alist 'fty::flextypes-table (w state)))
+         ((unless (alistp flextypes-table)) h)
+         (fty-types (generate-fty-type-list h.fty flextypes-table
+                                            h.fty-info (make-fty-types))))
+      (change-smtlink-hint h :fty-types fty-types)))
 
   (encapsulate ()
     (local (in-theory (enable pseudo-term-listp-of-expand
@@ -976,6 +988,8 @@
            ;; generate all fty related stuff
            (hints (generate-fty-info-alist hints state))
            (- (cw "fty-info: ~q0" (smtlink-hint->fty-info hints)))
+           (hints (generate-fty-types-top hints state))
+           (- (cw "fty-types: ~q0" (smtlink-hint->fty-types hints)))
 
            ((smtlink-hint h) hints)
            ;; Make an alist version of fn-lst
@@ -1030,7 +1044,7 @@
            (hint-with-fn-expand
             (if (equal nil expand-hint)
                 h.main-hint
-                (append `(:in-theory (enable ,@expand-hint)) h.main-hint)))
+              (append `(:in-theory (enable ,@expand-hint)) h.main-hint)))
            (expanded-clause-w/-hint (make-hint-pair :thm G-prim-without-type
                                                     :hints hint-with-fn-expand))
 
