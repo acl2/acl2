@@ -135,14 +135,9 @@
         (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Fetch the second operand and put it in val2.
        ;; If the opcode is #x90+rw/rd, we let the contents of the register
@@ -256,14 +251,9 @@
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Computing the flags and the result:
        ((the (unsigned-byte 32) input-rflags) (rflags x86))
@@ -350,14 +340,11 @@
                                    #.*max-linear-address-size+1*)
                                   temp-rip))))
         (!!ms-fresh :next-rip-invalid temp-rip))
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
        ;; Update the x86 state:
        (x86 (!rip temp-rip x86)))
     x86))

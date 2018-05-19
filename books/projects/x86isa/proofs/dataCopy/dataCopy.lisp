@@ -81,6 +81,7 @@
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml32
                              n32-to-i32
@@ -630,6 +631,7 @@
                                     rr32
                                     x86-operand-from-modr/m-and-sib-bytes
                                     x86-operand-from-modr/m-and-sib-bytes$
+                                    check-instruction-length
                                     riml-size
                                     riml32
                                     n32-to-i32
@@ -1344,6 +1346,7 @@
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml32
                              riml64

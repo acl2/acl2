@@ -2165,3 +2165,48 @@ reference made from privilege level 3.</blockquote>"
              *ds*))))))
 
 ;; ======================================================================
+
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+(define check-instruction-length
+  ((start-rip :type (signed-byte #.*max-linear-address-size*))
+   (temp-rip :type (signed-byte #.*max-linear-address-size*))
+   (delta-rip :type (unsigned-byte 3)))
+  :returns (badlength? acl2::maybe-natp
+                       :hints (("Goal" :in-theory (enable acl2::maybe-natp))))
+  :inline t
+  :parents (decoding-and-spec-utils)
+  :short "Check if the length of an instruction exceeds 15 bytes."
+  :long
+  "<p>
+   The maximum length of an instruction is 15 bytes;
+   a longer instruction causes a #GP(0) exception.
+   See AMD manual, Dec'17, Volume 2, Table 8-6.
+   This function is used to check this condition.
+   </p>
+   <p>
+   The @('start-rip') argument is
+   the instruction pointer at the beginning of the instruction.
+   The @('temp-rip') argument is generally
+   the instruction pointer just past the end of the instruction,
+   in which case the @('delta-rip') argument is 0.
+   In the other cases, @('delta-rip') is a small non-zero number,
+   and @('temp-rip + delta-rip') is
+   the instruction pointer just past the end of the instruction.
+   </p>
+   <p>
+   This function returns @('nil') if the length does not exceed 15 bytes.
+   Otherwise, this function returns the offending length (a number above 15),
+   which is useful for error reporting in the model.
+   </p>"
+  (b* ((start-rip (mbe :logic (ifix start-rip) :exec start-rip))
+       (temp-rip (mbe :logic (ifix temp-rip) :exec temp-rip))
+       (delta-rip (mbe :logic (nfix delta-rip) :exec delta-rip))
+       ((the (signed-byte #.*max-linear-address-size+1*) end-rip)
+        (+ (the (signed-byte #.*max-linear-address-size*) temp-rip)
+           (the (unsigned-byte 3) delta-rip)))
+       ((the (signed-byte #.*max-linear-address-size+2*) length)
+        (- (the (signed-byte #.*max-linear-address-size+1*) end-rip)
+           (the (signed-byte #.*max-linear-address-size*) start-rip))))
+    (and (> length 15)
+         length)))

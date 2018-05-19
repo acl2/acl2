@@ -204,16 +204,12 @@
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           ;; temp-rip right now points to the rel8 byte.  Add 1 to
-           ;; temp-rip to account for rel8 when computing the length
-           ;; of this instruction.
-           (+ 1 temp-rip))
-         (the (signed-byte #.*max-linear-address-size*) start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       ;; temp-rip right now points to the rel8 byte.  Add 1 to
+       ;; temp-rip to account for rel8 when computing the length
+       ;; of this instruction.
+       (badlength? (check-instruction-length start-rip temp-rip 1))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86)))
 
@@ -321,17 +317,12 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           ;; temp-rip right now points to the rel32 byte.  Add 4 to
-           ;; temp-rip to account for rel32 when computing the length
-           ;; of this instruction.
-           (+ 4 temp-rip))
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       ;; temp-rip right now points to the rel32 byte.  Add 4 to
+       ;; temp-rip to account for rel32 when computing the length
+       ;; of this instruction.
+       (badlength? (check-instruction-length start-rip temp-rip 4))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
        ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*)
@@ -394,17 +385,12 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           ;; temp-rip right now points to the rel8 byte.  Add 1 to
-           ;; temp-rip to account for rel8 when computing the length
-           ;; of this instruction.
-           (+ 1 temp-rip))
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       ;; temp-rip right now points to the rel8 byte.  Add 1 to
+       ;; temp-rip to account for rel8 when computing the length
+       ;; of this instruction.
+       (badlength? (check-instruction-length start-rip temp-rip 1))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
@@ -509,16 +495,10 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
 
@@ -650,16 +630,10 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
 

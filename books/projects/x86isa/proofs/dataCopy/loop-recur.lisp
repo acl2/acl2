@@ -94,6 +94,7 @@
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              address-aligned-p
                              riml-size
                              riml32

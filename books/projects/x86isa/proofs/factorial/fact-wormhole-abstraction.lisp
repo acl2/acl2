@@ -375,6 +375,7 @@
                              x86-operand-to-reg/mem$
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              write-user-rflags
                              !flgi-undefined
                              riml-size
@@ -431,6 +432,7 @@
                              x86-operand-to-reg/mem$
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              write-user-rflags
                              !flgi-undefined
                              riml-size
@@ -473,6 +475,7 @@
                              x86-operand-to-reg/mem$
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              write-user-rflags
                              !flgi-undefined
                              riml-size
@@ -522,6 +525,7 @@
                              x86-operand-to-reg/mem$
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              write-user-rflags
                              !flgi-undefined
                              riml-size

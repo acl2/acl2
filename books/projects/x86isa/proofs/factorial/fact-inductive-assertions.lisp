@@ -423,7 +423,7 @@
                          x86))
            (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
-           :in-theory (e/d* ()
+           :in-theory (e/d* (check-instruction-length)
                             (get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
                              get-prefixes-opener-lemma-group-3-prefix
@@ -444,6 +444,7 @@
                         !rgfi-size
                         x86-operand-to-reg/mem
                         x86-operand-to-reg/mem$
+                        check-instruction-length
                         wr64
                         wr32
                         rr32
@@ -509,6 +510,7 @@
                         wml32
                         x86-operand-from-modr/m-and-sib-bytes
                         x86-operand-from-modr/m-and-sib-bytes$
+                        check-instruction-length
                         riml-size
                         riml32
                         riml08
@@ -572,6 +574,7 @@
              wml32
              x86-operand-from-modr/m-and-sib-bytes
              x86-operand-from-modr/m-and-sib-bytes$
+             check-instruction-length
              riml-size
              riml32
              riml08
