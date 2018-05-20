@@ -15,6 +15,7 @@
 (include-book "apply-fn-if-known")
 (include-book "arglistp-theorems")
 (include-book "assert")
+(include-book "auto-instance")
 (include-book "auto-termination")
 (include-book "characters")
 (include-book "copy-def")
