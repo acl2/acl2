@@ -9,7 +9,6 @@
 (in-package "ADE")
 
 (include-book "comp-gcd")
-(include-book "../fifo/queue3")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
