@@ -4464,8 +4464,15 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
         (vl-atts->svex (cdr x) allowed-atts ss scopes))
        ((mv val warnings)
         (if (cdar x)
-            (b* (((mv vttree svex ?type ?size)
-                  (vl-expr-to-svex-untyped (cdar x) ss scopes)))
+            (b* (((mv vttree svex ?type size)
+                  (vl-expr-to-svex-untyped (cdar x) ss scopes))
+                 ;; BOZO we sometimes want the expression to be an LHS, so if
+                 ;; we get a size we'll try and get it to be one.
+                 (svex (if size
+                           (sv::svex-concat size
+                                            (sv::svex-lhsrewrite svex size)
+                                            (sv::svex-z))
+                         svex)))
               (mv svex (vttree->warnings vttree)))
           (mv nil nil)))
        ((wmv rest warnings)
