@@ -125,11 +125,76 @@
 
 (program)
 
-(defun expand-term-to-clause-lst (term wrld)
-  (declare (xargs :guard (and (plist-worldp wrld)
-                              (termp term wrld))))
+; Profiling shows a bottleneck in which almost all the time is inside
+; expand-some-non-rec-fns, whose time is essentially fully consumed by looking
+; up formals and definition bodies.  I see now that this is probably because
+; the world was not an installed world, but rather, a tail of the installed
+; world (as we recurred down that installed world).  But I didn't realize that
+; at first, so I wrote a faster version of expand-some-non-rec-fns.  I no
+; longer have reason to believe that the speedup is significant, but I might as
+; well leave that efficiency improvement here (even if it's minor).  Perhaps
+; some day I'll put this efficiency improvement into ACL2.
+
+(defun fns-formals-body-alist (fns wrld)
+  (cond ((endp fns) nil)
+        (t (let ((def-body (original-def-body (car fns) wrld)))
+             (assert$ (and def-body
+                           (null (access def-body def-body :hyp))
+                           (null (access def-body def-body :recursivep)))
+                      (acons (car fns)
+                             (cons (access def-body def-body :formals)
+                                   (access def-body def-body :concl))
+                             (fns-formals-body-alist (cdr fns) wrld)))))))
+
+(make-event
+ `(defconst *expandables-alist*
+    ',(fns-formals-body-alist *expandable-boot-strap-non-rec-fns* (w state))))
+
+(mutual-recursion
+
+(defun fast-expand-some-non-rec-fns-rec (alist term)
+
+; This definition is based on the ACL2 sources definition of
+; expand-some-non-rec-fns, but unlike that function, we return (mv changedp
+; answer).
+
+  (cond
+   ((variablep term) (mv nil term))
+   ((fquotep term) (mv nil term))
+   (t
+    (mv-let (changedp args)
+      (fast-expand-some-non-rec-fns-lst alist (fargs term))
+      (let ((triple (assoc-eq (ffn-symb term) alist)))
+        (cond (triple
+               (mv t (subcor-var (cadr triple) ; formals
+                                 args
+                                 (cddr triple)))) ; body
+              (changedp (mv t (cons-term (ffn-symb term) args)))
+              (t (mv nil term))))))))
+
+(defun fast-expand-some-non-rec-fns-lst (alist lst)
+  (cond ((null lst) (mv nil nil))
+        (t (mv-let (changedp1 x)
+             (fast-expand-some-non-rec-fns-rec alist (car lst))
+             (mv-let
+               (changedp2 rest)
+               (fast-expand-some-non-rec-fns-lst alist (cdr lst))
+               (cond ((or changedp1 changedp2)
+                      (mv t (cons x rest)))
+                     (t (mv nil lst))))))))
+
+)
+
+(defun fast-expand-some-non-rec-fns (alist term)
+  (mv-let (changedp ans)
+    (fast-expand-some-non-rec-fns-rec alist term)
+    (declare (ignore changedp))
+    ans))
+
+(defun expand-term-to-clause-lst (term)
+  (declare (xargs :guard (pseudo-termp term)))
   (clausify
-   (expand-some-non-rec-fns *expandable-boot-strap-non-rec-fns* term wrld)
+   (fast-expand-some-non-rec-fns *expandables-alist* term)
    nil t nil))
 
 (defun unify-subst-equal-1 (a1 a2)
@@ -302,6 +367,27 @@
         (t (cons `(:instance ,name ,@(alist-to-doublets (car alists)))
                  (alists-to-instances name (cdr alists))))))
 
+(mutual-recursion
+
+(defun all-ffn-symbs-subsetp (term fns)
+
+; This function return nil if term contains any lambdas.
+
+  (cond ((or (variablep term)
+             (fquotep term))
+         t)
+        ((lambda-applicationp (ffn-symb term)) ; optimization
+         nil)
+        ((member-eq (ffn-symb term) fns)
+         (all-ffn-symbs-lst-subsetp (fargs term) fns))
+        (t nil)))
+
+(defun all-ffn-symbs-lst-subsetp (lst fns)
+  (cond ((endp lst) t)
+        (t (and (all-ffn-symbs-subsetp (car lst) fns)
+                (all-ffn-symbs-lst-subsetp (cdr lst) fns)))))
+)
+
 (defun previous-subsumer-hints-1 (term cl-lst fns wrld acc)
   (declare (xargs :guard (and (plist-worldp wrld)
                               (termp term wrld)
@@ -318,12 +404,12 @@
    ((eq (cadar wrld) 'theorem)
     (let ((thm (cddar wrld)))
       (cond
-       ((not (subsetp (all-ffn-symbs thm nil) fns)) ; optimization
+       ((not (all-ffn-symbs-subsetp thm fns))
         (previous-subsumer-hints-1 term cl-lst fns (cdr wrld) acc))
        ((one-way-unify-p thm term)
         `(:by ,(caar wrld)))
        (t
-        (let* ((cl-lst-old (expand-term-to-clause-lst thm wrld)))
+        (let* ((cl-lst-old (expand-term-to-clause-lst thm)))
           (mv-let (alists cl-lst)
             (clause-set-subsumes-alists cl-lst-old cl-lst)
             (cond
@@ -361,7 +447,7 @@
 
   (declare (xargs :guard (and (plist-worldp wrld)
                               (termp term wrld))))
-  (let ((cl-lst (expand-term-to-clause-lst term wrld)))
+  (let ((cl-lst (expand-term-to-clause-lst term)))
     (cond ((null cl-lst) ; term is trivially true
            '(:in-theory
              (theory 'minimal-theory)
