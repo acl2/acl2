@@ -2063,7 +2063,81 @@
  not guard-verified, then it may run slowly.  We don't want built-in functions
  to run slowly.)</p>
 
- <h3>Program efficiently</h3>
+ <h3>Use installed worlds</h3>
+
+ <p>Fundamental utilities for ACL2 programmers are the function, @(tsee
+ getprop), and its associated abbreviation, @(tsee getpropc).  @('Getprop') is
+ defined in the logic to walk through a given logical @(see world), much as
+ @(tsee assoc) walks through a given association list.  However, @('getprop')
+ is defined ``under-the-hood'' with raw Lisp code (see the discussion of
+ @('acl2-loop-only') in @(see developers-guide-background)) so that if the
+ world is what we call ``installed'', typically @('(w state)'), then access is
+ essentially constant-time.  The ACL2 utilities @('set-w'), @('set-w!'),
+ @('extend-world'), and @('retract-world') all may be invoked to install
+ worlds, but it is rarely necessary or even advisable to call these directly.
+ They are typically used in the implementations of @(see events).</p>
+
+ <p>Typically, ACL2 system programming passes along worlds that are installed,
+ and one needn't think about whether a world is installed or not.  A major
+ exception is when code recurs through the world, looking for a suitable
+ triple.  Consider the source code definition of @('new-verify-guards-fns1');
+ we include an elided version of it here.</p>
+
+ @({
+ (defun new-verify-guards-fns1 (wrld installed-wrld acc)
+   (declare (xargs :guard ...))
+   (cond ((or (endp wrld) ...)
+          ...)
+         ((and (eq (cadar wrld) 'symbol-class)
+               (eq (cddar wrld) :COMMON-LISP-COMPLIANT)
+               (getpropc (caar wrld) 'predefined nil installed-wrld))
+          (new-verify-guards-fns1 (cdr wrld)
+                                  installed-wrld
+                                  (cons (caar wrld) acc)))
+         (t (new-verify-guards-fns1 (cdr wrld) installed-wrld acc))))
+ })
+
+ <p>We may reasonably assume from its name that the argument
+ @('installed-wrld') is an installed world.  That's a good thing, since it
+ guarantees that the @('getpropc') call above will be fast.  Suppose, by
+ contrast, that the definition had been made in the following, more
+ ``straightforward'', manner.</p>
+
+ @({
+ (defun BAD-new-verify-guards-fns1 (wrld acc)
+   (declare (xargs :guard ...))
+   (cond ((or (endp wrld) ...)
+          ...)
+         ((and (eq (cadar wrld) 'symbol-class)
+               (eq (cddar wrld) :COMMON-LISP-COMPLIANT)
+               (getpropc (caar wrld) 'predefined nil wrld))
+          (BAD-new-verify-guards-fns1 (cdr wrld)
+                                      (cons (caar wrld) acc)))
+         (t (BAD-new-verify-guards-fns1 (cdr wrld) installed-wrld acc))))
+ })
+
+ <p>As we cdr down the given world, we deal with worlds that are not the
+ installed world.  The @('getpropc') call will then need to walk linearly
+ through its world until it finds the desired property &mdash; typically very
+ far from constant-time behavior.</p>
+
+ <p>Note that there are occasions for which the world is extended a bit before
+ properties are obtained, and that's fine.  For example, in the source code
+ definition of function @('chk-acceptable-defuns1') we find a call
+ @('(putprop-x-lst1 names 'symbol-class symbol-class wrld1)'), which
+ contributes to an extension of @('wrld1') that will ultimately be used for
+ definitional processing, including the termination proof.  The prover makes
+ many calls of @('getprop') (typically via @('getpropc')) on that extended
+ world.  Normally this isn't a problem: @('getprop') will then walk linearly
+ through the new part of the world but will soon hit the installed world, and
+ then finish its work quickly.  When large @(tsee mutual-recursion) nests are
+ involved, this could be problematic, except that this issue is taken care of
+ by the @('big-mutrec') hack; see for example the definition of
+ @('defuns-fn1').  But we're getting into the weeds now; our point is that
+ @('getprop') and @('getpropc') do best with worlds that are installed or are
+ modest extensions of installed worlds.</p>
+
+ <h3>More generally, program efficiently</h3>
 
  <p>Program with tail-recursion when possible, as tail-recursive functions are
  less likely to cause stack overflows and might also execute more
