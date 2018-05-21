@@ -25,6 +25,11 @@
          (gcd-alg a (- b a)))
         (t (gcd-alg (- a b) b))))
 
+(defthm gcd-alg-is-positive
+  (implies (or (posp a) (posp b))
+           (< 0 (gcd-alg a b)))
+  :rule-classes :linear)
+
 (defthm gcd-alg-is-COMMON-divisor
   (implies (and (natp a)
                 (natp b))

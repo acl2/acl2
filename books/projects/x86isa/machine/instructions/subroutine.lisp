@@ -79,14 +79,10 @@
                                    #.*max-linear-address-size+1*)
                                next-rip))))
         (!!ms-fresh :next-rip-invalid next-rip))
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           next-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((the (signed-byte #.*max-linear-address-size+1*) call-rip)
         (+ next-rip rel32))
@@ -175,14 +171,10 @@
                                    #.*max-linear-address-size+1*)
                                next-rip))))
         (!!ms-fresh :temp-rip-invalid next-rip))
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           next-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+
+       (badlength? (check-instruction-length next-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Converting call-rip into a "good" address in our world...
        (call-rip (n64-to-i64 call-rip))
@@ -310,19 +302,11 @@
        ;; if get-prefixes fetches 15 prefixes, and that error will be
        ;; caught in x86-fetch-decode-execute, that is, before control
        ;; reaches this function.
-       ;; For #xC2:
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (if (equal opcode #xC2)
-            (-
-             ;; Adding 2 to account for imm16 in #xC2.
-             (the (signed-byte #.*max-linear-address-size+1*)
-                  (+ 2 temp-rip))
-             (the (signed-byte #.*max-linear-address-size*)
-                  start-rip))
-          ;; Irrelevant for #xC3.
-          0))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       ;; For #xC2: We add 2 to temp-rip to account for imm16.
+       (badlength? (and (eql opcode #xC2)
+                        (check-instruction-length start-rip temp-rip 2)))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Note that instruction pointers are modeled as signed in 64-bit mode,
        ;; but unsigned in 32-bit mode.

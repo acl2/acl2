@@ -33,6 +33,7 @@
       netlist))))
 
 ;; V-BUF
+;; V-NOT
 ;; V-AND
 ;; V-OR
 ;; V-XOR
@@ -40,6 +41,8 @@
 ;; V-WIRE
 
 (vector-module v-buf (g (y) b-buf (a)) ((v-threefix a)))
+
+(vector-module v-not (g (y) b-not (a)) ((fv-not a)) :enable (fv-not))
 
 (vector-module v-and (g (y) b-and (a b)) ((fv-and a b)) :enable (fv-and))
 

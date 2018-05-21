@@ -581,6 +581,7 @@
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml32
                              n32-to-i32
@@ -1162,6 +1163,7 @@
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml32
                              n32-to-i32
@@ -1439,6 +1441,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml08
                              rml32
@@ -2103,6 +2106,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml08
                              rml32
@@ -2478,6 +2482,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              write-canonical-address-to-memory
                              riml-size
                              riml08
@@ -2916,6 +2921,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              select-segment-register
                              write-canonical-address-to-memory
                              riml-size
@@ -3336,6 +3342,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              select-segment-register
                              write-canonical-address-to-memory
                              riml-size
@@ -3870,6 +3877,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              write-canonical-address-to-memory
                              riml-size
                              riml08
@@ -4640,6 +4648,7 @@
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              select-segment-register
                              write-canonical-address-to-memory
                              riml-size

@@ -392,6 +392,9 @@
  (si 'link data-width)
  (list* 'fill 'drain (sis 'data-in 0 data-width))
  (list* 'status (sis 'data-out 0 data-width))
+ ;; INTERNAL STATE
+ ;; A link have two state-holding devices: one stores the link's full/empty
+ ;; status and one stores the link data.
  '(s d)
  (list
   '(s (status) link-cntl (fill drain))

@@ -97,14 +97,9 @@
         (add-to-*ip temp-rip (the (integer 0 4) offset-size) x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              next-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip next-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((mv flg temp-rip) (add-to-*ip next-rip offset x86))
        ((when flg) (!!ms-fresh :virtual-memory-error temp-rip))
@@ -163,19 +158,13 @@
        ((when flg)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes-error flg))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Converting (unsigned-byte-p 64 jmp-addr) to a "good" address
        ;; in our world...
@@ -286,18 +275,10 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ((when flg)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes-error flg))
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength?
+        (check-instruction-length start-rip temp-rip increment-RIP-by))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (selector (the (unsigned-byte 16) (n16 mem)))
        (offset (mbe :logic (part-select mem :low 16 :width
@@ -726,16 +707,12 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           ;; Accounting for rel8 byte to compute the instruction
-           ;; length.
-           (+ 1 temp-rip))
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       ;; temp-rip right now points to the rel8 byte.  Add 1 to
+       ;; temp-rip to account for rel8 when computing the length
+       ;; of this instruction.
+       (badlength? (check-instruction-length start-rip temp-rip 1))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
