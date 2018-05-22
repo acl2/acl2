@@ -43,6 +43,7 @@
 (local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/revappend" :dir :system))
+(include-book "std/lists/take" :dir :system)
 (set-verify-guards-eagerness 2)
 (set-state-ok t)
 
