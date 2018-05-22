@@ -336,8 +336,10 @@
  those who may wish to become ACL2 Developers.  It replaces the much smaller
  ``system-development'' topic.</p>
 
- <p>The @(tsee defpointer) utility now accepts names that have special
- characters such as @('<').</p>
+ <p>The @(tsee defpointer) utility for @(see xdoc) now accepts names that have
+ special characters such as @('<').</p>
+
+ <p>The download button now works in the web-based manual.</p>
 
  ")
 
