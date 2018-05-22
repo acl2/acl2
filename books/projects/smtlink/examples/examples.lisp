@@ -169,23 +169,6 @@ Smtlink).</p>
                (<= (* 2 (expt z n) x y)
                    (* (expt z m) (x^2+y^2 x y))))
       :hints (("Goal"
-               ;; :smtlink-custom (:functions ((expt :formals ((r #-:non-standard-analysis
-               ;;                                                 rationalp
-               ;;                                                 #+:non-standard-analysis
-               ;;                                                 realp)
-               ;;                                              (i #-:non-standard-analysis
-               ;;                                                 rationalp
-               ;;                                                 #+:non-standard-analysis
-               ;;                                                 realp))
-               ;;                                    :returns ((ex #-:non-standard-analysis
-               ;;                                                  rationalp
-               ;;                                                  #+:non-standard-analysis
-               ;;                                                  realp))
-               ;;                                    :level 0))
-               ;;                  :hypotheses (((< (expt z n) (expt z m)))
-               ;;                               ((< 0 (expt z m)))
-               ;;                               ((< 0 (expt z n))))
-               ;;                  :int-to-rat t)
                :smtlink-custom (:functions ((expt :formals ((r real/rationalp)
                                                             (i real/rationalp))
                                                   :returns ((ex real/rationalp))

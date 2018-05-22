@@ -17,6 +17,7 @@
 (include-book "verified/hint-interface")
 (include-book "verified/hint-please")
 (include-book "verified/verified-cps")
+(include-book "verified/fixing-cp")
 (include-book "verified/Smtlink")
 
 ;; trusted

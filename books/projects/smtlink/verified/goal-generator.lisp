@@ -940,20 +940,20 @@
           (er hard? 'SMT-goal-generator=>add-expansion-hint "function call should be a true-listp: ~q0" fn)))
       (cons (car fn) (add-expansion-hint rest))))
 
-  (define generate-fty-info-alist ((hints smtlink-hint-p) state)
+  (define generate-fty-info-alist ((hints smtlink-hint-p)
+                                   (flextypes-table alistp))
     :returns (updated-hints smtlink-hint-p)
     (b* ((hints (smtlink-hint-fix hints))
          ((smtlink-hint h) hints)
-         (flextypes-table (table-alist 'fty::flextypes-table (w state)))
          ((unless (alistp flextypes-table)) h)
          (fty-info (generate-fty-info-alist-rec h.fty nil flextypes-table)))
       (change-smtlink-hint h :fty-info fty-info)))
 
-  (define generate-fty-types-top ((hints smtlink-hint-p) state)
+  (define generate-fty-types-top ((hints smtlink-hint-p)
+                                  (flextypes-table alistp))
     :returns (updated-hints smtlink-hint-p)
     (b* ((hints (smtlink-hint-fix hints))
          ((smtlink-hint h) hints)
-         (flextypes-table (table-alist 'fty::flextypes-table (w state)))
          ((unless (alistp flextypes-table)) h)
          (fty-types (generate-fty-type-list h.fty flextypes-table
                                             h.fty-info (make-fty-types))))
@@ -969,10 +969,6 @@
              (implies (pseudo-term-listp cl)
                       (pseudo-termp (disjoin cl)))))
 
-    ;; (local (defthm hint-pair-listp-of-append
-    ;;          (implies (and (hint-pair-listp x) (hint-pair-listp y))
-    ;;                   (hint-pair-listp (append x y)))))
-
     (local (defthm alistp-of-pseudo-term-alistp
              (implies (pseudo-term-alistp x)
                       (alistp x))))
@@ -986,9 +982,11 @@
       (b* ((cl (pseudo-term-list-fix cl))
            (hints (smtlink-hint-fix hints))
            ;; generate all fty related stuff
-           (hints (generate-fty-info-alist hints state))
+           (flextypes-table (table-alist 'fty::flextypes-table (w state)))
+           ((unless (alistp flextypes-table)) hints)
+           (hints (generate-fty-info-alist hints flextypes-table))
            (- (cw "fty-info: ~q0" (smtlink-hint->fty-info hints)))
-           (hints (generate-fty-types-top hints state))
+           (hints (generate-fty-types-top hints flextypes-table))
            (- (cw "fty-types: ~q0" (smtlink-hint->fty-types hints)))
 
            ((smtlink-hint h) hints)

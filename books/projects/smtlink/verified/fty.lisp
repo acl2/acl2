@@ -825,7 +825,7 @@
            (info (assoc-equal elt-type fty-info))
            ((unless info)
             (prog2$ (er hard? 'fty=>generate-flexlist-type "elt-type ~p0 doesn't ~
-                                exist~%" info)
+                                exist in fty-info~%" elt-type)
                     acc))
            (elt-name (fty-info->name (cdr info)))
            (new-list (acons name elt-name acc.list))
@@ -841,7 +841,8 @@
       :measure (list (generate-type-measure fty-info acc) 2 0)
       :well-founded-relation acl2::nat-list-<
       :verify-guards nil
-      (b* ((acc (fty-types-fix acc))
+      (b* ((- (cw "name: ~q0" name))
+           (acc (fty-types-fix acc))
            ((unless (alistp flextypes-table))
             (prog2$ (er hard? 'fty=>generate-fty-type "flextypes-table is not an ~
                            alist?~%")

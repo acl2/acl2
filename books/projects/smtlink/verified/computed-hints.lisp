@@ -19,9 +19,12 @@
   :parents (verified)
   :short "Define Smtlink computed-hints"
 
+  ;; current tag . next computed-hint
   (defconst *SMT-computed-hints-table*
-    '((process-hint . SMT-verified-cp-hint)
+    '((process-hint . smtlink-cp-w/-in-theory)
+      (fix-hint . smtlink-cp-w/-in-theory)
       (smt-hint . nil)
+      (fixed-hint . nil)
       (main-hint . nil)
       (A-hint . nil)))
 
@@ -63,7 +66,7 @@
                  ,@kwd-alist
                  )))))
 
-  (define SMT-verified-cp-hint (cl)
+  (define smtlink-cp-w/-in-theory (cl)
     (b* (((mv & kwd-alist tag) (extract-hint-wrapper cl))
          (next-stage (cdr (assoc tag *SMT-computed-hints-table*)))
          (ch-replace-hint (ch-replace next-stage))

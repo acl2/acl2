@@ -134,7 +134,7 @@
   ;;
   ;; Adding hint-please:
   ;;
-  ;; 1. ((hint-please smt-hint) (not A1) ... (not An) G-prim)
+  ;; 1. ((hint-please fix-hint) (not A1) ... (not An) G-prim)
   ;; 2. ((hint-please main-hint) (not A1) ... (not An) (not G-prim) G)
   ;; 3. ((hint-please A1-hint) A1 G)
   ;;    ...
@@ -146,7 +146,7 @@
                                       (hinted-As-returns hint-pair-listp)
                                       (hinted-As-types decl-listp)
                                       (hinted-G-prim hint-pair-p)
-                                      (smt-hint true-listp)
+                                      (fix-hint true-listp)
                                       (G pseudo-termp))
     :returns (subgoals pseudo-term-list-listp)
     :guard-hints (("Goal" :in-theory (disable
@@ -156,14 +156,14 @@
          (hinted-As-returns (hint-pair-list-fix hinted-As-returns))
          (hinted-As-types (decl-list-fix hinted-As-types))
          (hinted-G-prim (hint-pair-fix hinted-G-prim))
-         (smt-hint (true-list-fix smt-hint))
+         (fix-hint (true-list-fix fix-hint))
          (G (pseudo-term-fix G))
          ((mv aux-clauses list-of-not-As) (preprocess-auxes hinted-As G))
          (aux-clauses-returns (generate-returns-auxes hinted-As-returns G))
          (aux-clauses-types (generate-types-auxes hinted-As-types G))
          (G-prim (hint-pair->thm hinted-G-prim))
          (main-hint (hint-pair->hints hinted-G-prim))
-         (cl0 `((hint-please ',smt-hint 'smt-hint) ,@list-of-not-As ,G-prim))
+         (cl0 `((hint-please ',fix-hint 'fix-hint) ,@list-of-not-As ,G-prim))
          (cl1 `((hint-please ',main-hint 'main-hint) ,@list-of-not-As (not ,G-prim) ,G))
          )
       `(,cl0 ,cl1 ,@aux-clauses ,@aux-clauses-types ,@aux-clauses-returns))
@@ -175,14 +175,14 @@
                     (hint-pair-listp hinted-As-returns)
                     (decl-listp hinted-As-types)
                     (hint-pair-p hinted-G-prim)
-                    (true-listp smt-hint)
+                    (true-listp fix-hint)
                     (ev-smtlink-subgoals
                      (conjoin-clauses
                       (construct-smtlink-subgoals hinted-As
                                                   hinted-As-returns
                                                   hinted-As-types
                                                   hinted-G-prim
-                                                  smt-hint
+                                                  fix-hint
                                                   (disjoin cl)))
                      b))
                (ev-smtlink-subgoals (disjoin cl) b))
@@ -204,15 +204,6 @@
   ;; (AND (PSEUDO-TERM-LISTP CL) (SMTLINK-HINT-P SMTLINK-HINT)).  See :DOC
   ;; clause-processor.
 
-  ;; (define Smtlink-subgoals ((cl pseudo-term-listp) (smtlink-hint smtlink-hint-p))
-  ;;   :returns (subgoal-lst pseudo-term-list-listp)
-  ;;   (b* ((cl (mbe :logic (pseudo-term-list-fix cl) :exec cl))
-  ;;        (smtlink-hint (mbe :logic (smtlink-hint-fix smtlink-hint) :exec smtlink-hint))
-  ;;        (hinted-As (smtlink-hint->aux-hint-list smtlink-hint))
-  ;;        (hinted-G-prim (smtlink-hint->expanded-clause-w/-hint smtlink-hint))
-  ;;        (smt-hint (smtlink-hint->smt-hint smtlink-hint)))
-  ;;     (construct-smtlink-subgoals hinted-As hinted-G-prim smt-hint (disjoin cl))))
-
   (local (in-theory (enable smtlink-hint-p smtlink-hint->aux-hint-list
                             smtlink-hint->expanded-clause-w/-hint)))
   (define Smtlink-subgoals ((cl pseudo-term-listp) (smtlink-hint t))
@@ -229,13 +220,11 @@
          (hinted-As-returns (smtlink-hint->aux-thm-list smtlink-hint))
          (hinted-As-types (smtlink-hint->type-decl-list smtlink-hint))
          (hinted-G-prim (smtlink-hint->expanded-clause-w/-hint smtlink-hint))
-         (smt-hint
-          (if h.custom-p
-              `(:clause-processor (SMT-trusted-cp-custom clause ',smtlink-hint state))
-            `(:clause-processor (SMT-trusted-cp clause ',smtlink-hint state))))
+         (fix-hint
+          `(:clause-processor (smt-fixing-cp clause ',smtlink-hint)))
          (full (construct-smtlink-subgoals hinted-As
                                            hinted-As-returns hinted-As-types
-                                           hinted-G-prim smt-hint
+                                           hinted-G-prim fix-hint
                                            (disjoin cl)))
          )
       full))
@@ -266,15 +255,9 @@
                               (hinted-G-prim
                                (smtlink-hint->expanded-clause-w/-hint
                                 smtlink-hint))
-                              (smt-hint
-                               (if (smtlink-hint->custom-p smtlink-hint)
-                                   `(:clause-processor (SMT-trusted-cp-custom
-                                                        clause ',smtlink-hint
-                                                        state))
-                                 `(:clause-processor (SMT-trusted-cp
-                                                      clause
-                                                      ',smtlink-hint
-                                                      state))))
+                              (fix-hint
+                               `(:clause-processor
+                                 (smt-fixing-cp clause ',smtlink-hint)))
                               (cl (remove-hint-please cl))))
              )))
 
@@ -299,7 +282,7 @@
                    (:instance correctness-of-remove-hint-please-with-ev-Smtlink-subgoals)))))
 
   ;; -------------------------------------------------------------
-  (defmacro Smt-verified-cp (clause hint)
+  (defmacro smt-verified-cp (clause hint)
     `(Smtlink-subgoals clause
                        ;; A and G-prim and hints
                        (Smt-goal-generator (remove-hint-please ,clause) ,hint state)))
