@@ -541,6 +541,10 @@
           (prog2$ (er hard? 'fty=>generate-fty-field-alist "Should be a symbolp: ~q0"
                       type)
                   (mv nil nil)))
+         ;; is the type a basic type?
+         (basic? (assoc-equal type *SMT-types*))
+         ((if basic?)
+          (mv (list type) (acons name type nil)))
          (info (assoc-equal type fty-info))
          ((unless info)
           (prog2$ (er hard? 'fty=>generate-fty-field-alist "type ~p0 doesn't ~
@@ -597,6 +601,42 @@
                               (cdr (assoc-equal 'fty::val-type
                                                 (cdr flexalst)))
                               fty-info))))))
+            (:instance
+             generate-type-measure-increase-alist
+             (acc acc)
+             (fty-info fty-info)
+             (name (fty::flexlist->name flexalst))
+             (content (fty-alist
+                       (cdr (assoc-equal 'fty::key-type
+                                         (cdr flexalst)))
+                       (fty-info->name
+                        (cdr (assoc-equal
+                              (cdr (assoc-equal 'fty::val-type
+                                                (cdr flexalst)))
+                              fty-info))))))
+            (:instance
+             generate-type-measure-increase-alist
+             (acc acc)
+             (fty-info fty-info)
+             (name (fty::flexlist->name flexalst))
+             (content (fty-alist
+                       (fty-info->name
+                        (cdr (assoc-equal
+                              (cdr (assoc-equal 'fty::key-type
+                                                (cdr flexalst)))
+                              fty-info)))
+                       (cdr (assoc-equal 'fty::val-type
+                                         (cdr flexalst))))))
+            (:instance
+             generate-type-measure-increase-alist
+             (acc acc)
+             (fty-info fty-info)
+             (name (fty::flexlist->name flexalst))
+             (content (fty-alist
+                       (cdr (assoc-equal 'fty::key-type
+                                         (cdr flexalst)))
+                       (cdr (assoc-equal 'fty::val-type
+                                         (cdr flexalst))))))
             (:instance
              generate-type-measure-increase-list
              (acc acc)
@@ -677,6 +717,10 @@
             (prog2$ (er hard? 'fty=>generate-flexoption-type "Must be a symbol ~q0"
                         some-type)
                     acc))
+           ;; is the type a basic type?
+           (basic? (assoc-equal some-type *SMT-types*))
+           ((if basic?)
+            (change-fty-types acc :option (acons name some-type acc.option)))
            (some-info (assoc-equal some-type fty-info))
            ((unless some-info)
             (prog2$ (er hard? 'fty=>generate-flexoption-type "some-type ~p0 doesn't ~
@@ -760,34 +804,54 @@
             (prog2$ (er hard? 'fty=>generate-flexalist-type "Should be a symbolp: ~q0"
                         val-type)
                     acc))
+           (basic-key? (assoc-equal key-type *SMT-types*))
+           (basic-val? (assoc-equal val-type *SMT-types*))
            (key-info (assoc-equal key-type fty-info))
-           ((unless key-info)
-            (prog2$ (er hard? 'fty=>generate-flexalist-type "key-type ~p0 doesn't ~
-                                 exist~%" key-type)
-                    acc))
-           (key-name (fty-info->name (cdr key-info)))
-           (val-info (assoc-equal val-type fty-info))
-           ((unless val-info)
-            (prog2$ (er hard? 'fty=>generate-flexalist-type "val-type ~p0 doesn't ~
-                                 exist~%" val-type)
-                    acc))
-           (val-name (fty-info->name (cdr val-info)))
-           (new-alist (acons name
-                             (make-fty-alist :key-type key-name
-                                             :val-type val-name)
-                             acc.alist))
-           (new-acc (change-fty-types acc :alist new-alist))
-           (new-acc1
-            (generate-fty-type key-name flextypes-table fty-info new-acc))
-           (new-acc1 (mbe :logic (if (o<= (generate-type-measure fty-info new-acc1)
+           (val-info (assoc-equal val-type fty-info)))
+        (cond ((and basic-key? basic-val?)
+               (change-fty-types acc :alist
+                                 (acons name
+                                        (make-fty-alist :key-type key-type
+                                                        :val-type val-type)
+                                        acc.alist)))
+              ((and basic-key? val-info)
+               (b* ((val-name (fty-info->name (cdr val-info)))
+                    (new-alist (acons name
+                                      (make-fty-alist :key-type key-type
+                                                      :val-type val-name)
+                                      acc.alist))
+                    (new-acc (change-fty-types acc :alist new-alist)))
+                 (generate-fty-type val-name flextypes-table fty-info new-acc)))
+              ((and basic-val? key-info)
+               (b* ((key-name (fty-info->name (cdr key-info)))
+                    (new-alist (acons name
+                                      (make-fty-alist :key-type key-name
+                                                      :val-type val-type)
+                                      acc.alist))
+                    (new-acc (change-fty-types acc :alist new-alist)))
+                 (generate-fty-type key-name flextypes-table fty-info new-acc)))
+              ((and key-info val-info)
+               (b* ((val-name (fty-info->name (cdr val-info)))
+                    (key-name (fty-info->name (cdr key-info)))
+                    (new-alist (acons name
+                                      (make-fty-alist :key-type key-name
+                                                      :val-type val-name)
+                                      acc.alist))
+                    (new-acc (change-fty-types acc :alist new-alist))
+                    (new-acc1
+                     (generate-fty-type key-name flextypes-table fty-info
+                                        new-acc))
+                    (new-acc1
+                     (mbe :logic (if (o<= (generate-type-measure fty-info new-acc1)
                                           (generate-type-measure fty-info new-acc))
                                      new-acc1
                                    nil)
                           :exec new-acc1))
-           ((if (null new-acc1)) new-acc))
-        (generate-fty-type val-name flextypes-table fty-info new-acc1))
-      )
-
+                    ((if (null new-acc1)) new-acc))
+                 (generate-fty-type val-name flextypes-table fty-info new-acc1)))
+              (t (prog2$ (er hard? 'fty=>generate-flexalist-type "key-type ~p0 ~
+                             and val-type ~p1 doesn't exist~%" key-type val-type)
+                         acc)))))
 
     (define generate-flexlist-type ((flexlst fty::flexlist-p)
                                     (flextypes-table alistp)
@@ -822,6 +886,10 @@
             (prog2$ (er hard? 'fty=>generate-flexlist-type "Should be a symbolp: ~q0"
                         elt-type)
                     acc))
+           ;; is the type a basic type?
+           (basic? (assoc-equal elt-type *SMT-types*))
+           ((if basic?)
+            (change-fty-types acc :list (acons name elt-type acc.list)))
            (info (assoc-equal elt-type fty-info))
            ((unless info)
             (prog2$ (er hard? 'fty=>generate-flexlist-type "elt-type ~p0 doesn't ~
@@ -847,9 +915,6 @@
             (prog2$ (er hard? 'fty=>generate-fty-type "flextypes-table is not an ~
                            alist?~%")
                     acc))
-           ;; is the type a basic type?
-           (basic? (assoc-equal name *SMT-types*))
-           ((if basic?) acc)
            ;; is the type a flextype?
            (exist? (assoc-equal name flextypes-table))
            ((unless exist?)
@@ -905,7 +970,7 @@
                        (mv-nth
                         1
                         (generate-fty-field-alist
-                         (cdr (assoc-equal 'fty::fields (cdr prod)))
+                         (fty::flexprod->fields prod)
                          fty-info))))
                      (:instance
                       generate-type-measure-increase-alist
@@ -915,14 +980,42 @@
                       (content (fty-alist
                                 (fty-info->name
                                  (cdr (assoc-equal
-                                       (cdr (assoc-equal 'fty::key-type
-                                                         (cdr flexalst)))
+                                       (fty::flexalist->key-type flexalst)
                                        fty-info)))
                                 (fty-info->name
                                  (cdr (assoc-equal
-                                       (cdr (assoc-equal 'fty::val-type
-                                                         (cdr flexalst)))
+                                       (fty::flexalist->val-type flexalst)
                                        fty-info))))))
+                     (:instance
+                      generate-type-measure-increase-alist
+                      (acc acc)
+                      (fty-info fty-info)
+                      (name (fty::flexlist->name flexalst))
+                      (content (fty-alist
+                                (fty::flexalist->key-type flexalst)
+                                (fty-info->name
+                                 (cdr (assoc-equal
+                                       (fty::flexalist->val-type flexalst)
+                                       fty-info))))))
+                     (:instance
+                      generate-type-measure-increase-alist
+                      (acc acc)
+                      (fty-info fty-info)
+                      (name (fty::flexlist->name flexalst))
+                      (content (fty-alist
+                                (fty-info->name
+                                 (cdr (assoc-equal
+                                       (fty::flexalist->key-type flexalst)
+                                       fty-info)))
+                                (fty::flexalist->val-type flexalst))))
+                     (:instance
+                      generate-type-measure-increase-alist
+                      (acc acc)
+                      (fty-info fty-info)
+                      (name (fty::flexlist->name flexalst))
+                      (content (fty-alist
+                                (fty::flexalist->key-type flexalst)
+                                (fty::flexalist->val-type flexalst))))
                      (:instance
                       generate-type-measure-increase-list
                       (acc acc)
@@ -939,11 +1032,8 @@
                       (content
                        (fty-info->name
                         (cdr (assoc-equal
-                              (cdr (assoc-equal
-                                    'type
-                                    (cdr (cadr
-                                          (assoc-equal 'fty::fields
-                                                       (cdr option))))))
+                              (fty::flexprod-field->type
+                               (car (fty::flexprod->fields option)))
                               fty-info)))))))
               )
       :verify-guards nil
@@ -951,6 +1041,10 @@
            (acc (fty-types-fix acc))
            ((unless (consp name-lst)) acc)
            ((cons first rest) name-lst)
+           ;; is the type a basic type?
+           (basic? (assoc-equal first *SMT-types*))
+           ((if basic?)
+            (generate-fty-type-list rest flextypes-table fty-info acc))
            (new-acc (generate-fty-type first flextypes-table fty-info acc))
            (new-acc (mbe :logic (if (o<= (generate-type-measure fty-info new-acc)
                                          (generate-type-measure fty-info acc))
@@ -1168,12 +1262,12 @@
                               generate-flexalist-type
                               generate-fty-type
                               generate-fty-type-list)
-                             ())
+                             (generate-type-measure-increase-list))
              :induct (GENERATE-FTY-TYPES-MUTUAL-FLAG
                       FLAG PROD
                       OPTION FLEXSUM FLEXALST FLEXLST NAME
                       NAME-LST FLEXTYPES-TABLE FTY-INFO ACC))
-            ("Subgoal *1/35"
+            ("Subgoal *1/42"
              :in-theory (e/d (generate-flexlist-type)
                              (generate-type-measure-increase-list))
              :use ((:instance
@@ -1184,7 +1278,16 @@
                     (content (fty-info->name
                               (cdr (assoc-equal (fty::flexlist->elt-type flexlst)
                                                 fty-info)))))))
-            ("Subgoal *1/27"
+            ("Subgoal *1/41"
+             :in-theory (e/d (generate-flexlist-type)
+                             (generate-type-measure-increase-list))
+             :use ((:instance
+                    generate-type-measure-increase-list
+                    (acc acc)
+                    (fty-info fty-info)
+                    (name (fty::flexlist->name flexlst))
+                    (content (fty::flexlist->elt-type flexlst)))))
+            ("Subgoal *1/33"
              :in-theory (e/d (generate-flexalist-type)
                              (generate-type-measure-increase-alist))
              :use ((:instance
@@ -1195,15 +1298,55 @@
                     (content (fty-alist
                               (fty-info->name
                                (cdr (assoc-equal
-                                     (cdr (assoc-equal 'fty::key-type
-                                                       (cdr flexalst)))
+                                     (fty::flexalist->key-type flexalst)
                                      fty-info)))
                               (fty-info->name
                                (cdr (assoc-equal
-                                     (cdr (assoc-equal 'fty::val-type
-                                                       (cdr flexalst)))
+                                     (fty::flexalist->val-type flexalst)
                                      fty-info))))))))
-            ("Subgoal *1/6"
+            ("Subgoal *1/30"
+             :in-theory (e/d (generate-flexalist-type)
+                             (generate-type-measure-increase-alist))
+             :use ((:instance
+                    generate-type-measure-increase-alist
+                    (acc acc)
+                    (fty-info fty-info)
+                    (name (fty::flexlist->name flexalst))
+                    (content (fty-alist
+                              (fty-info->name
+                               (cdr (assoc-equal
+                                     (fty::flexalist->key-type flexalst)
+                                     fty-info)))
+                              (fty::flexalist->val-type flexalst)
+                              )))))
+            ("Subgoal *1/28"
+             :in-theory (e/d (generate-flexalist-type)
+                             (generate-type-measure-increase-alist))
+             :use ((:instance
+                    generate-type-measure-increase-alist
+                    (acc acc)
+                    (fty-info fty-info)
+                    (name (fty::flexlist->name flexalst))
+                    (content (fty-alist
+                              (fty::flexalist->key-type flexalst)
+                              (fty-info->name
+                               (cdr (assoc-equal
+                                     (fty::flexalist->val-type flexalst)
+                                     fty-info)))
+                              )))))
+            ("Subgoal *1/27"
+             :in-theory (e/d (generate-flexalist-type)
+                             (generate-type-measure-increase-alist))
+             :use ((:instance
+                    generate-type-measure-increase-alist
+                    (acc acc)
+                    (fty-info fty-info)
+                    (name (fty::flexlist->name flexalst))
+                    (content (fty-alist
+                              (fty::flexalist->key-type flexalst)
+                              (fty::flexalist->val-type flexalst)
+                              )))))
+            ("Subgoal *1/7"
              :in-theory (e/d (generate-flexoption-type)
                              (generate-type-measure-increase-option))
              :use ((:instance
@@ -1214,12 +1357,20 @@
                     (content
                      (fty-info->name
                       (cdr (assoc-equal
-                            (cdr (assoc-equal
-                                  'type
-                                  (cdr (cadr
-                                        (assoc-equal 'fty::fields
-                                                     (cdr option))))))
+                            (fty::flexprod-field->type
+                             (car (fty::flexprod->fields option)))
                             fty-info)))))))
+            ("Subgoal *1/6"
+             :in-theory (e/d (generate-flexoption-type)
+                             (generate-type-measure-increase-option))
+             :use ((:instance
+                    generate-type-measure-increase-option
+                    (acc acc)
+                    (fty-info fty-info)
+                    (name name)
+                    (content
+                     (fty::flexprod-field->type
+                      (car (fty::flexprod->fields option)))))))
             ("Subgoal *1/3"
              :in-theory (e/d (generate-flexprod-type)
                              (generate-type-measure-increase-prod))
@@ -1232,7 +1383,7 @@
                      (mv-nth
                       1
                       (generate-fty-field-alist
-                       (cdr (assoc-equal 'fty::fields (cdr prod)))
+                       (fty::flexprod->fields prod)
                        fty-info))))))))
 
   (defthm crock5

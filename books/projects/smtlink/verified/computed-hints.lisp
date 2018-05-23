@@ -75,10 +75,13 @@
         ,ch-replace-hint
         ,@rest-hint)))
 
-  (define SMT-process-hint (cl flg)
+  (define SMT-process-hint (cl
+                            ;;flg
+                            )
     (b* (((mv & kwd-alist tag) (extract-hint-wrapper cl))
          (next-stage (cdr (assoc tag *SMT-computed-hints-table*)))
-         ((unless flg) nil))
+         ;; ((unless flg) nil)
+         )
       `(:computed-hint-replacement
         ,(ch-replace next-stage)
         ;; :do-not '(preprocess)

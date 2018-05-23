@@ -15,13 +15,30 @@
 ; cert_param: (uses-smtlink)
 
 (value-triple (tshell-ensure))
-(add-default-hints '((SMT::SMT-process-hint clause stable-under-simplificationp)))
+(add-default-hints '((SMT::SMT-process-hint clause
+                                            ;; stable-under-simplificationp
+                                            )))
 
 
 ;; Section 2. A short tour
 ;; Example 1
 (def-saved-event x^2-y^2
   (defun x^2-y^2 (x y) (- (* x x) (* y y))))
+(def-saved-event x^2+y^2
+  (defun x^2+y^2 (x y) (+ (* x x) (* y y))))
+
+(defthm fty-theorem
+  (implies (and (integer-listp l)
+                (consp (acl2::integer-list-fix l))
+                (consp (cdr (acl2::integer-list-fix l))))
+           (>= (x^2+y^2 (car (acl2::integer-list-fix l))
+                        (car (acl2::integer-list-fix
+                              (cdr (acl2::integer-list-fix l)))))
+               0))
+  :hints(("Goal"
+          :smtlink
+          (:fty (acl2::integer-list))))
+  :rule-classes nil)
 
 (def-saved-event poly-ineq
   (defthm poly-ineq-example
@@ -156,9 +173,6 @@ Smtlink).</p>
   (defattach custom-smt-cnf my-smtlink-expt-config))
 
 ;; Example 2
-(def-saved-event x^2+y^2
-  (defun x^2+y^2 (x y) (+ (* x x) (* y y))))
-
 (def-saved-event poly-of-expt-example
   (encapsulate ()
     (local (include-book "arithmetic-5/top" :dir :system))
@@ -285,4 +299,3 @@ here in this theorem, @('(integerp (/ x y))') is a constraint/hypotheses rather
 than a type declaration. When ACL2 tried to translate it as a constraint, it
 finds out @('integerp') is not a supported function.</p>
 ")
-
