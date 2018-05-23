@@ -31,6 +31,7 @@
                       i48p-x86-operand-from-modr/m-and-sib-bytes))))
    :gen-linear t))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-xchg
 
   ;; Note that for XCHG, the Op/En RM and MR are essentially the same.
