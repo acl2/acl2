@@ -33,6 +33,7 @@
              (logior val08-1 (ash val08-2 8))))
    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-div
 
   :parents (one-byte-opcodes)
