@@ -89,6 +89,12 @@
 
 ; See also comments in (defxdoc note-8-0-books ...).
 
+; Too trivial to mention in the xdoc string below:
+
+; - Added a check in defopener -- actually, in supporting function
+;   simplify-with-prover in books/misc/bash.lisp -- that :hints is indeed an
+;   alist, to avoid an ugly raw Lisp error when that's not the case.
+
   :parents (note-8-1 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 8.1"
 

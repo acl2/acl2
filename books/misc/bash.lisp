@@ -17,40 +17,48 @@
   (let ((wrld (w state))
         (ens (ens state))
         (name-tree 'bash))
-    (er-let*
-     ((thints (translate-hints
-               name-tree
+    (er-progn
+     (cond
+      ((not (alistp hints))
+       (er soft ctx
+           "The :hints provided should be an alist, but the following is not ~
+            (see :DOC hints):  ~x0."
+           hints))
+      (t
+       (er-let*
+           ((thints (translate-hints
+                     name-tree
 
 ; Keep the following in sync with the definition of the proof-builder :bash
 ; command.
 
-               (append
-                *bash-skip-forcing-round-hints*
-                (add-string-val-pair-to-string-val-alist
-                 "Goal"
-                 :do-not
-                 (list 'quote '(generalize eliminate-destructors fertilize
-                                           eliminate-irrelevance))
-                 (add-string-val-pair-to-string-val-alist!
-                  "Goal"
-                  :do-not-induct
-                  name-tree
-                  hints))
-                (default-hints wrld))
-               ctx wrld state))
-      (tterm (translate form t t t ctx wrld state)))
-     (mv-let (erp ttree state)
-             (state-global-let*
-              ((guard-checking-on nil)
-               (in-prove-flg t))
-              (pc-prove tterm form thints t ens wrld ctx state))
-             (cond (erp (mv t nil state))
-                   (t (let ((clauses (unproved-pc-prove-clauses ttree)))
-                        (cond ((and (eql (length clauses) 1)
-                                    (eql (length (car clauses)) 1)
-                                    (eql (caar clauses) tterm))
-                               (mv 'no-change nil state))
-                              (t (value clauses))))))))))
+                     (append
+                      *bash-skip-forcing-round-hints*
+                      (add-string-val-pair-to-string-val-alist
+                       "Goal"
+                       :do-not
+                       (list 'quote '(generalize eliminate-destructors fertilize
+                                                 eliminate-irrelevance))
+                       (add-string-val-pair-to-string-val-alist!
+                        "Goal"
+                        :do-not-induct
+                        name-tree
+                        hints))
+                      (default-hints wrld))
+                     ctx wrld state))
+            (tterm (translate form t t t ctx wrld state)))
+         (mv-let (erp ttree state)
+           (state-global-let*
+            ((guard-checking-on nil)
+             (in-prove-flg t))
+            (pc-prove tterm form thints t ens wrld ctx state))
+           (cond (erp (mv t nil state))
+                 (t (let ((clauses (unproved-pc-prove-clauses ttree)))
+                      (cond ((and (eql (length clauses) 1)
+                                  (eql (length (car clauses)) 1)
+                                  (eql (caar clauses) tterm))
+                             (mv 'no-change nil state))
+                            (t (value clauses)))))))))))))
 
 (defun bash-fn (form hints verbose ctx state)
 
