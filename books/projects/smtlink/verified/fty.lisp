@@ -53,7 +53,7 @@
   (defprod fty-info
     ((name symbolp :default nil) ;; without suffixes
      (category symbolp :default nil) ;; :prod :option :list :alist
-     (type symbolp :default nil) ;; :recognizer :fix :field :constructor :others
+     (type symbolp :default nil) ;; :recognizer :fix :field :constructor
      (guards symbol-listp :default nil) ;; input type
      (returns symbolp :default nil))) ;; output type
 
@@ -158,7 +158,7 @@
          (acc-const
           (acons name (make-fty-info :name name
                                      :category :prod
-                                     :type :fix
+                                     :type :constructor
                                      :guards (generate-field-type-lst fields)
                                      :returns pred)
                  acc-fix)))
@@ -344,8 +344,21 @@
        ;; else, ignore
        (t (generate-fty-info-alist-rec rest acc flextypes-table)))))
 
+  (define fncall-of-flextype-special ((fn-name symbolp))
+    :returns (special? booleanp)
+    (if (and
+         ;; lists
+         (equal fn-name 'CONS)
+         (equal fn-name 'CAR)
+         (equal fn-name 'CDR)
+         ;; alists
+         (equal fn-name 'ACONS)
+         (equal fn-name 'ASSOC-EQUAL)
+         )
+        t nil))
+
   (define fncall-of-flextype ((fn-name symbolp) (fty-info fty-info-alist-p))
-    :returns (flex? booleanp)
+    :returns (flex? t)
     :short "Checking if a function call is a flextype related call.  These calls
     will be translated directly to SMT solver, therefore won't need to be expanded."
     :long "<p>There are five categories of flextype supported in Smtlink.  Examples
@@ -388,19 +401,17 @@
          (fty-info (fty-info-alist-fix fty-info))
          ;; if it's a function existing in the fty-info table
          (item (assoc-equal fn-name fty-info))
-         ((if item) t)
-         ;; special cases
-         ((if (and
-               ;; lists
-               (equal fn-name 'CONS)
-               (equal fn-name 'CAR)
-               (equal fn-name 'CDR)
-               ;; alists
-               (equal fn-name 'ACONS)
-               (equal fn-name 'ASSOC-EQUAL)
-               ))
-          t))
-      nil))
+         ((if item) t))
+      ;; special cases
+      (fncall-of-flextype-special fn-name))
+    ///
+    (more-returns
+     (flex? (implies (and flex?
+                          (fty-info-alist-p fty-info))
+                     (and (or (assoc-equal fn-name fty-info)
+                              (fncall-of-flextype-special fn-name))
+                          (symbolp fn-name)))
+            :name fncall-of-flextype-conclusion)))
 
   (define typedecl-of-flextype ((fn-name symbolp) (fty-info fty-info-alist-p))
     :returns (flex? booleanp)
@@ -413,6 +424,17 @@
       (if (equal type :recognizer)
           t
         nil)))
+
+  (define fixing-of-flextype ((fn-name symbolp) (fty-info fty-info-alist-p))
+    :returns (fixing? symbolp)
+    (b* ((fn-name (symbol-fix fn-name))
+         (fty-info (fty-info-alist-fix fty-info))
+         (item (assoc-equal fn-name fty-info))
+         ((unless item) nil)
+         (info (cdr item))
+         (type (fty-info->type info))
+         ((unless (equal type :fix)) nil))
+      (fty-info->name info)))
 
   ;;----------------------------------------------------------
   ;;     datatypes for storing fty types information
