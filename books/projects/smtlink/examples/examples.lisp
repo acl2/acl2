@@ -30,7 +30,7 @@
 (defthm fty-theorem
   (implies (and (integer-listp l)
                 (consp (acl2::integer-list-fix l))
-                (consp (cdr (acl2::integer-list-fix l))))
+                (consp (acl2::integer-list-fix (cdr (acl2::integer-list-fix l)))))
            (>= (x^2+y^2 (car (acl2::integer-list-fix l))
                         (car (acl2::integer-list-fix
                               (cdr (acl2::integer-list-fix l)))))

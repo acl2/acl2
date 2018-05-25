@@ -51,9 +51,13 @@ class ACL22SMT(object):
     #                   Basic Functions
     #
     # Type declarations
-    def isBool(self, who): return Bool(who)
-    def isInt(self, who): return Int(who)
-    def isReal(self, who): return Real(who)
+    def IntSort(self): return IntSort()
+    def RealSort(self): return RealSort()
+    def BoolSort(self): return BoolSort()
+    # type related functions
+    def integerp(self, x): return sort(x) == IntSort()
+    def rationalp(self, x): return sort(x) == RealSort()
+    def booleanp(self, x): return sort(x) == BoolSort()
 
     def plus(self, *args): return reduce(lambda x, y: x+y, args)
     def times(self, *args): return reduce(lambda x, y: x*y, args)
@@ -69,15 +73,6 @@ class ACL22SMT(object):
     def notx(self, x): return Not(x)
     def implies(self, x, y): return Implies(x,y)
     def Qx(self, x, y): return Q(x,y)
-
-    # type related functions
-    def integerp(self, x): return sort(x) == IntSort()
-    def rationalp(self, x): return sort(x) == RealSort()
-    def booleanp(self, x): return sort(x) == BoolSort()
-    # Uninterpreted function types
-    def Z(self): return IntSort()
-    def R(self): return RealSort()
-    def B(self): return BoolSort()
 
     def ifx(self, condx, thenx, elsex):
         return If(condx, thenx, elsex)

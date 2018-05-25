@@ -53,20 +53,20 @@
   :parents (SMT-basics)
   :short "ACL2 type functions and their corresponding Z3 type declarations."
   ;;(ACL2 type      .  SMT type)
-  `((realp          . "_SMT_.isReal")
-    (rationalp      . "_SMT_.isReal")
-    (integerp       . "_SMT_.isInt")
-    (booleanp       . "_SMT_.isBool")))
+  `((realp          . "_SMT_.RealSort()")
+    (rationalp      . "_SMT_.RealSort()")
+    (integerp       . "_SMT_.IntSort()")
+    (booleanp       . "_SMT_.BoolSort()")))
 
 (defval *SMT-uninterpreted-types*
   :parents (SMT-basics)
   :short "ACL2 type functions and their corresponding Z3 uninterpreted function
     type declarations."
-  `((realp          . "_SMT_.R")
-    (rationalp      . "_SMT_.R")
-    (real/rationalp . "_SMT_.R")
-    (integerp       . "_SMT_.Z")
-    (booleanp       . "_SMT_.B")))
+  `((realp          . "_SMT_.RealSort()")
+    (rationalp      . "_SMT_.RealSort()")
+    (real/rationalp . "_SMT_.RealSort()")
+    (integerp       . "_SMT_.IntSort()")
+    (booleanp       . "_SMT_.BoolSort()")))
 
 ;;----------------------------------------------------------------
 

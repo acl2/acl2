@@ -346,11 +346,12 @@
 
   (define fncall-of-flextype-special ((fn-name symbolp))
     :returns (special? booleanp)
-    (if (and
+    (if (or
          ;; lists
          (equal fn-name 'CONS)
          (equal fn-name 'CAR)
          (equal fn-name 'CDR)
+         (equal fn-name 'CONSP)
          ;; alists
          (equal fn-name 'ACONS)
          (equal fn-name 'ASSOC-EQUAL)
@@ -401,16 +402,17 @@
          (fty-info (fty-info-alist-fix fty-info))
          ;; if it's a function existing in the fty-info table
          (item (assoc-equal fn-name fty-info))
-         ((if item) t))
+         ((if item) t)
+         (- (cw "fn-name: ~q0" fn-name)))
       ;; special cases
       (fncall-of-flextype-special fn-name))
     ///
     (more-returns
      (flex? (implies (and flex?
+                          (symbolp fn-name)
                           (fty-info-alist-p fty-info))
-                     (and (or (assoc-equal fn-name fty-info)
-                              (fncall-of-flextype-special fn-name))
-                          (symbolp fn-name)))
+                     (or (assoc-equal fn-name fty-info)
+                         (fncall-of-flextype-special fn-name)))
             :name fncall-of-flextype-conclusion)))
 
   (define typedecl-of-flextype ((fn-name symbolp) (fty-info fty-info-alist-p))
