@@ -1137,6 +1137,7 @@
                              instruction-decoding-and-spec-rules
 
                              select-segment-register
+                             select-address-size
 
                              gpr-add-spec-4
                              gpr-add-spec-8

@@ -38,10 +38,12 @@
 ;; branches. Such addresses are 64 bits by default; but they can be
 ;; overridden to 32 bits by an address size prefix.
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-call-E8-Op/En-M
 
   ;; Call near, displacement relative to the next instruction
   ;; Op/En: M
+  ;; E8 cw (CALL rel16)
   ;; E8 cd (CALL rel32)
   ;; Note E8 cw (CALL rel16) is N.S. in 64-bit mode.
 
@@ -49,7 +51,12 @@
   ;; since we have no memory operands.
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08
+                                         riml32
+                                         rime-size-of-2-to-rime16
+                                         rime-size-of-4-to-rime32
+                                         select-address-size)
+                                        ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -60,66 +67,64 @@
   :body
 
   (b* ((ctx 'x86-call-E8-Op/En-M)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       ;; AC is not done during code fetches. Fetching rel32 from the
-       ;; instruction stream still qualifies as a code fetch
-       ;; (double-check).
-       ((mv flg0 (the (signed-byte 32) rel32) x86)
-        (riml32 temp-rip :x x86))
-       ((when flg0)
-        (!!ms-fresh :riml32-error flg0))
-       ((the (signed-byte #.*max-linear-address-size+1*) next-rip)
-        (+ 4 temp-rip))
-       ((when (mbe :logic (not (canonical-address-p next-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               next-rip))))
-        (!!ms-fresh :next-rip-invalid next-rip))
+       (p3? (equal #.*operand-size-override*
+                   (prefixes-slice :group-3-prefix prefixes)))
 
-       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((the (integer 0 4) offset-size)
+        (if (64-bit-modep x86)
+            4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d (code-segment-descriptor-attributes-layout-slice
+                      :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4) ; 16 or 32 bits (rel16 or rel32)
+              (if p3? 4 2)))))
+
+       ;; AC is not done during code fetches. Fetching rel16 or rel32 from the
+       ;; instruction stream still qualifies as a code fetch.
+       ((mv flg0 (the (signed-byte 32) rel16/32) x86)
+        (rime-size offset-size temp-rip *cs* :x nil x86))
+       ((when flg0) (!!ms-fresh :rime-size-error flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size+1*) next-rip))
+        (add-to-*ip temp-rip offset-size x86))
+       ((when flg) (!!ms-fresh :rip-increment-error next-rip))
+
+       (badlength? (check-instruction-length start-rip next-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ((the (signed-byte #.*max-linear-address-size+1*) call-rip)
-        (+ next-rip rel32))
-       ((when (mbe :logic (not (canonical-address-p call-rip))
-                   :exec (or
-                          (< (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               call-rip) #.*-2^47*)
-                          (<= #.*2^47*
-                              (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                call-rip)))))
-        (!!ms-fresh :temp-rip-invalid call-rip))
-       (rsp (rgfi *rsp* x86))
-       (new-rsp (- rsp 8))
-       ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :invalid-new-rsp new-rsp))
-       ;; Update the x86 state:
-       ;; Push the return address on the stack.
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((when
-            ;; Check alignment.
-            (and
-             inst-ac?
-             (not (equal (logand new-rsp 7) 0))))
-        (!!ms-fresh :memory-access-unaligned new-rsp)) ;; #AC
-       ((mv flg1 x86)
-        (write-canonical-address-to-memory
-         (the (signed-byte #.*max-linear-address-size*) new-rsp)
-         next-rip  x86))
-       ((when flg1)
-        ;; #SS/#GP exception?
-        (!!ms-fresh :write-canonical-address-to-memory flg1))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) call-rip))
+        (add-to-*ip next-rip rel16/32 x86))
+       ((when flg) (!!ms-fresh :call-rip-invalid call-rip))
+
+       (rsp (read-*sp x86))
+       ((the (integer 2 8) addr-size) (select-address-size nil x86))
+       ((mv flg new-rsp) (add-to-*sp rsp (- addr-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+
+       ((mv flg x86)
+        (wme-size addr-size
+                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                  *ss*
+                  (case addr-size
+                    (2 (n16 next-rip))
+                    (4 (n32 next-rip))
+                    (t (n64 next-rip)))
+                  (alignment-checking-enabled-p x86)
+                  x86
+                  :mem-ptr? nil))
+       ((when flg) (!!ms-fresh :stack-writing-error flg))
+
        ;; Update the rip to point to the called procedure.
-       (x86 (!rip call-rip x86))
+       (x86 (write-*ip call-rip x86))
        ;; Decrement the stack pointer.
-       (x86 (!rgfi *rsp* new-rsp x86)))
+       (x86 (write-*sp new-rsp x86)))
       x86))
 
 (def-inst x86-call-FF/2-Op/En-M
