@@ -147,7 +147,7 @@ Prove termination efficiently by using a previous termination theorem."
    (value (cons 'do-all instrs))))
 
 (define-pc-macro check-all-proved (&rest instrs)
-  (value `(do-all ,instrs
+  (value `(do-all ,@instrs
                   (when-not-proved fail))))
 
 (defun prove-termination-or-guard-fn (kwd old-fn theory fallback-theory verbose)
