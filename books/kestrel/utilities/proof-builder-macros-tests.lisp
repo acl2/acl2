@@ -34,7 +34,7 @@
                   :guard-hints
                   (("Goal"
                     :instructions
-                    ((quiet! (prove-guard f1)))))))
+                    ((prove-guard f1))))))
   (cdr x))
 
 (defund my-consp-2 (x)
@@ -47,15 +47,15 @@
                    :guard-hints
                    (("Goal"
                      :instructions
-                     ((quiet! (prove-guard f1)))))))
+                     ((prove-guard f1))))))
    (cdr x)))
 
 (defun f3 (x)
    (declare (xargs :guard (my-consp-2 x)
                    :guard-hints
                    (("Goal"
-                     :instructions
-                     ((quiet! (prove-guard f1 (enable my-consp-2))))))))
+                     :instructions ; verbose this time
+                     ((prove-guard f1 (enable my-consp-2) nil t))))))
    (cdr x))
 
 (must-fail
@@ -64,9 +64,9 @@
                    :guard-hints
                    (("Goal"
                      :instructions
-                     ((quiet! (prove-guard f1
-                                           (enable my-consp) ; insufficent
-                                           )))))))
+                     ((prove-guard f1
+                                   (enable my-consp) ; insufficent
+                                   ))))))
    (cdr x)))
 
 (defun f4 (x)
@@ -74,9 +74,11 @@
                    :guard-hints
                    (("Goal"
                      :instructions
-                     ((quiet! (prove-guard f1
-                                           (enable my-consp) ; insufficent
-                                           (enable my-consp-2))))))))
+                     ((prove-guard f1
+                                   (enable my-consp) ; insufficent
+                                   (enable my-consp-2)
+; Partially verbose:
+                                   some))))))
    (cdr x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
