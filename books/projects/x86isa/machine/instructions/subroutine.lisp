@@ -81,8 +81,9 @@
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d (code-segment-descriptor-attributes-layout-slice
                       :d cs-attr)))
+            ;; 16 or 32 bits (rel16 or rel32):
             (if (= cs.d 1)
-                (if p3? 2 4) ; 16 or 32 bits (rel16 or rel32)
+                (if p3? 2 4)
               (if p3? 4 2)))))
 
        ;; AC is not done during code fetches. Fetching rel16 or rel32 from the
@@ -127,15 +128,21 @@
        (x86 (write-*sp new-rsp x86)))
       x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-call-FF/2-Op/En-M
 
-  ;; Call near, absolute indirect, address given in r/64.
+  ;; Call near, absolute indirect, address given in r/m16/32/64.
   ;; Op/En: M
+  ;; FF/2 r/m16
+  ;; FF/2 r/m32
   ;; FF/2 r/m64
   ;; Note that FF/2 r/m16 and r/m32 are N.E. in 64-bit mode.
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08
+                                         riml32
+                                         select-address-size)
+                                        ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -147,67 +154,99 @@
   :body
 
   (b* ((ctx ' x86-call-FF/2-Op/En-M)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p3? (equal #.*operand-size-override*
+                   (prefixes-slice :group-3-prefix prefixes)))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes-slice :group-4-prefix prefixes)))
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
+
+       ((the (integer 2 8) operand-size)
+        (if (64-bit-modep x86)
+            8 ; Intel manual, Mar'17, Volume 1, Section 6.3.7
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d (code-segment-descriptor-attributes-layout-slice
+                      :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        ;; Note that the reg field serves as an opcode extension for
        ;; this instruction.  The reg field will always be 2 when this
        ;; function is called.
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((mv flg0 (the (unsigned-byte 64) call-rip) (the (unsigned-byte 3) increment-rip-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* 8 inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       (inst-ac? t)
+       ((mv flg0
+            call-rip
+            (the (unsigned-byte 3) increment-rip-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                operand-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
-       ((the (signed-byte #.*max-linear-address-size+1*) next-rip)
-        (+ temp-rip increment-rip-by))
-       ((when (mbe :logic (not (canonical-address-p next-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               next-rip))))
-        (!!ms-fresh :temp-rip-invalid next-rip))
 
-       (badlength? (check-instruction-length next-rip temp-rip 0))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) next-rip))
+        (add-to-*ip temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error next-rip))
+
+       (badlength? (check-instruction-length start-rip next-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ;; Converting call-rip into a "good" address in our world...
-       (call-rip (n64-to-i64 call-rip))
-       ((when (not (canonical-address-p call-rip)))
-        (!!ms-fresh :temp-rip-invalid call-rip))
-       (rsp (rgfi *rsp* x86))
-       (new-rsp (- rsp 8))
-       ((when (not (canonical-address-p new-rsp)))
-        (!!ms-fresh :invalid-new-rsp new-rsp))
+       ;; Note that instruction pointers are modeled as signed in 64-bit mode,
+       ;; but unsigned in 32-bit mode.
+       (call-rip (if (64-bit-modep x86)
+                     (i64 call-rip)
+                   call-rip))
+       ;; Ensure that the return address is canonical (for 64-bit mode) and
+       ;; within code segment limits (for 32-bit mode). See pseudocode in Intel
+       ;; manual.
+       ((unless (if (64-bit-modep x86)
+                    (canonical-address-p call-rip)
+                  (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+                       (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
+                    (and (<= 0 call-rip) (<= call-rip cs.limit)))))
+        (!!fault-fresh :gp 0 :bad-return-address call-rip)) ;; #GP(0)
+
+       (rsp (read-*sp x86))
+       ((the (integer 2 8) addr-size) (select-address-size nil x86))
+       ((mv flg new-rsp) (add-to-*sp rsp (- addr-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+
        ;; Update the x86 state:
        ;; Push the return address on the stack.
-       ((when
-            ;; Check alignment.
-            (and
-             inst-ac?
-             (not (equal (logand new-rsp 7) 0))))
-        (!!ms-fresh :memory-access-unaligned new-rsp))
-       ((mv flg1 x86)
-        (write-canonical-address-to-memory
-         (the (signed-byte #.*max-linear-address-size*) new-rsp)
-         (the (signed-byte #.*max-linear-address-size*) next-rip)
-         x86))
-       ((when flg1)
-        (!!ms-fresh :write-canonical-address-to-memory flg1))
+       (check-alignment? (alignment-checking-enabled-p x86))
+       ((mv flg x86)
+        ;; Note that instruction pointers are modeled as signed in 64-bit mode,
+        ;; but unsigned in 32-bit mode.
+        (if (= operand-size 8)
+            (wime-size operand-size rsp *ss* call-rip check-alignment? x86)
+          (wme-size operand-size rsp *ss* call-rip check-alignment? x86)))
+       ((when flg) (!!ms-fresh :stack-writing-error flg))
        ;; Update the rip to point to the called procedure.
-       (x86 (!rip call-rip x86))
+       (x86 (write-*ip call-rip x86))
        ;; Decrement the stack pointer.
-       (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86)))
+       (x86 (write-*sp new-rsp x86)))
     x86))
 
 ;; ======================================================================
@@ -330,18 +369,14 @@
           (!!fault-fresh flg))))
 
        ;; Ensure that the return address is canonical (for 64-bit mode) and
-       ;; within code segment limits (for 32-bit mode). It is not clear whether
-       ;; this check should be performed here or deferred to when the next
-       ;; instruction is fetched, but for now we do it here because this is the
-       ;; approach taken in other parts of the model. It is in a way always
-       ;; "safe" to stop execution with an error (in the sense that the model
-       ;; provides no guarantees when this happens).
+       ;; within code segment limits (for 32-bit mode). See pseudocode in Intel
+       ;; manual.
        ((unless (if (64-bit-modep x86)
                     (canonical-address-p tos)
                   (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                        (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
                     (and (<= 0 tos) (<= tos cs.limit)))))
-        (!!ms-fresh :gp 0 :bad-return-address tos)) ;; #GP(0)
+        (!!fault-fresh :gp 0 :bad-return-address tos)) ;; #GP(0)
 
        ;; Update the x86 state:
 
