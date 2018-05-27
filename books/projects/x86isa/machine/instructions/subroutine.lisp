@@ -110,16 +110,25 @@
        ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
 
        ((mv flg x86)
-        (wme-size addr-size
-                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                  *ss*
-                  (case addr-size
-                    (2 (n16 next-rip))
-                    (4 (n32 next-rip))
-                    (t (n64 next-rip)))
-                  (alignment-checking-enabled-p x86)
-                  x86
-                  :mem-ptr? nil))
+        ;; Note that instruction pointers are modeled as signed in 64-bit mode,
+        ;; but unsigned in 32-bit mode.
+        (if (64-bit-modep x86)
+            (wime-size addr-size
+                       (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                       *ss*
+                       next-rip
+                       (alignment-checking-enabled-p x86)
+                       x86)
+          (wme-size addr-size
+                    (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                    *ss*
+                    ;; the following coercions (N16 and N32) should not be
+                    ;; necessary, but they make the guard proofs easier for now:
+                    (if (= addr-size 2)
+                        (n16 next-rip)
+                      (n32 next-rip))
+                    (alignment-checking-enabled-p x86)
+                    x86)))
        ((when flg) (!!ms-fresh :stack-writing-error flg))
 
        ;; Update the rip to point to the called procedure.
