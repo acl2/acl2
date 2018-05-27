@@ -270,7 +270,8 @@
  (more complex) macros, @('prove-guard') (see @(tsee acl2-pc::prove-guard)) and
  @('prove-termination') (see @(tsee acl2-pc::prove-termination)), for
  (respectively) using previously-proved @(see guard) or termination theorems
- efficiently.</p>
+ efficiently, as well as a more general macro, @(tsee acl2-pc::fancy-use), for
+ using lemma instances (via @(':use')) efficiently.</p>
 
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 

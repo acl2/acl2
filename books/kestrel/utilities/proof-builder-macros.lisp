@@ -85,8 +85,11 @@ Verify guards efficiently by using a previous guard theorem."
  <p>For a few small examples, see community book
  @('kestrel/utilities/proof-builder-macros-tests.lisp.')</p>
 
- <p>Hacker tip: Invoke @('(trace$ acl2::prove-termination-or-guard-fn)') to see
- the proof-builder instruction created when invoking @('prove-guard').</p>")
+ <p>For a way to use lemma instances other than guard theorems, see @(see
+ acl2-pc::fancy-use).</p>
+
+ <p>Hacker tip: Invoke @('(trace$ acl2::pc-fancy-use-fn)') to see the
+ proof-builder instruction created when invoking @('prove-guard').</p>")
 
 (defxdoc acl2-pc::prove-termination
   :parents (proof-builder-commands verify-termination termination-theorem)
@@ -138,9 +141,67 @@ Prove termination efficiently by using a previous termination theorem."
  <p>For a few small examples, see community book
  @('kestrel/utilities/proof-builder-macros-tests.lisp.')</p>
 
- <p>Hacker tip: Invoke @('(trace$ acl2::prove-termination-or-guard-fn)') to see
- the proof-builder instruction created when invoking
- @('prove-termination').</p>")
+ <p>For a way to use lemma instances other than termination theorems, see @(see
+ acl2-pc::fancy-use).</p>
+
+ <p>Hacker tip: Invoke @('(trace$ acl2::pc-fancy-use-fn)') to see the
+ proof-builder instruction created when invoking @('prove-termination').</p>")
+
+(defxdoc acl2-pc::fancy-use
+  :parents (proof-builder-commands)
+  :short "(macro)
+Use a previous theorem efficiently."
+  :long "@({
+ Example:
+ (fancy-use (:instance my-thm (x a) (y b))
+            (disable h))
+
+ Example of typical usage:
+ (defun f2 (x)
+   (declare
+    (xargs :hints
+           ((\"Goal\"
+             :instructions
+             ((fancy-use (:instance my-thm (x a) (y b))
+                         (disable h)))))))
+   (f2-body x))
+
+ General Forms:
+ (fancy-use lmi)
+ (fancy-use lmi thy)
+ (fancy-use lmi thy alt-thy)
+ (fancy-use lmi thy alt-thy verbose)
+ })
+
+ <p>where @('lmi') is a @(see lemma-instance) and @('thy') and @('alt-thy'),
+ when supplied and non-@('nil'), are @(see theory) expressions.</p>
+
+ <p>This @(see proof-builder) macro attempts to prove a theorem by applying a
+ single-instance @(':use') hint in a carefully controlled, efficient manner;
+ this is done in the theory, @('thy'), if supplied and non-@('nil'), else in
+ the @(tsee current-theory).  If that proof fails, then the proof is tried
+ again without that @(':use') hint, this time in the following theory,
+ @('thy''): @('thy') if supplied and non-@('nil'), else @('alt-thy') if
+ supplied and non-@('nil'), else the current-theory.</p>
+
+ <p>By default, that attempt is done without output.  However, if @('verbose')
+ is @('t') then there is no inhibition of output, and if @('verbose') is any
+ other non-@('nil') value, then output is mostly inhibited by use of the
+ proof-builder command, @(':quiet').</p>
+
+ <p>If that attempt fails, then the prover is called directly (discarding all
+ of that attempt), in the theory @('thy'') defined above.  The @('verbose')
+ output is ignored for this prover call.</p>
+
+ <p>For a few small examples, see community book
+ @('kestrel/utilities/proof-builder-macros-tests.lisp.')</p>
+
+ <p>For convenient shortcuts in the case of using guard or termination
+ theorems, see @(see acl2-pc::prove-guard) and @(see
+ acl2-pc::prove-termination), respectively.</p>
+
+ <p>Hacker tip: Invoke @('(trace$ acl2::pc-fancy-use-fn)') to see the
+ proof-builder instruction created when invoking @('fancy-use').</p>")
 
 (define-pc-macro when-not-proved (&rest instrs)
   (when-goals-trip
@@ -150,21 +211,21 @@ Prove termination efficiently by using a previous termination theorem."
   (value `(do-all ,@instrs
                   (when-not-proved fail))))
 
-(defun prove-termination-or-guard-fn (kwd old-fn theory fallback-theory verbose)
+(defun pc-fancy-use-fn (lmi theory fallback-theory verbose)
   (let* ((thy (or fallback-theory theory))
          (instr1
           `(protect
             ,@(and theory `((in-theory ,theory)))
             (succeed s-prop) ; expand implies, etc.
             (when-not-proved
-             (use (,kwd ,old-fn))
+             (use ,lmi)
              (when-not-proved
               (demote)
               (dv 1)
               (succeed s-prop) ; expand implies, etc.
               (when-not-proved ; probably unnecessary here, but harmless
                (add-abbreviation @hyp@)
-               (= & (hide (? @hyp@)) 0) ; hide the used guard-theorem
+               (= & (hide (? @hyp@)) 0) ; hide the used theorem
                cg                       ; Prove that hyp = (hide hyp).
                (succeed (drop 1)) ; Proof of hyp = (hide hyp) does not need hypotheses.
                (:prove :hints (("Goal"
@@ -176,7 +237,7 @@ Prove termination efficiently by using a previous termination theorem."
                                 :do-not '(preprocess)
                                 :expand ((:free (v) (hide v)))
                                 :in-theory nil)))
-               top ; back to top of main goal: (implies (hide hyp) new-guard-thm)
+               top ; back to top of main goal: (implies (hide hyp) new-thm)
                split
                (repeat
                 (protect
@@ -200,7 +261,7 @@ Prove termination efficiently by using a previous termination theorem."
          (instr2
           `(:prove
             :hints (("Goal"
-                     :use ((,kwd ,old-fn))
+                     :use (,lmi)
                      ,@(and thy
                             `(:in-theory ,thy)))))))
     (case verbose
@@ -210,12 +271,16 @@ Prove termination efficiently by using a previous termination theorem."
 
 (define-pc-macro prove-guard (old-fn
                               &optional theory fallback-theory verbose)
-  (value (prove-termination-or-guard-fn :guard-theorem
-                                        old-fn theory fallback-theory
-                                        verbose)))
+  (value (pc-fancy-use-fn `(:guard-theorem ,old-fn)
+                          theory fallback-theory
+                          verbose)))
 
 (define-pc-macro prove-termination (old-fn
                                     &optional theory fallback-theory verbose)
-  (value (prove-termination-or-guard-fn :termination-theorem
-                                        old-fn theory fallback-theory
-                                        verbose)))
+  (value (pc-fancy-use-fn `(:termination-theorem ,old-fn)
+                          theory fallback-theory verbose)))
+
+(define-pc-macro fancy-use (lmi
+                            &optional theory fallback-theory verbose)
+  (value (pc-fancy-use-fn lmi
+                          theory fallback-theory verbose)))
