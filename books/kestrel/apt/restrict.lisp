@@ -14,6 +14,7 @@
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/named-formulas" :dir :system)
+(include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "utilities/print-specifiers")
@@ -73,13 +74,10 @@
      @('print$'), and
      @('show-only$')
      are the results of processing
-     the homonymous (without the @('$')) inputs to @(tsee restrict).
+     the homonymous inputs (without the @('$')) to @(tsee restrict).
      Some are identical to the corresponding inputs,
      but they have types implied by their successful validation,
      performed when they are processed.
-     </li>
-     <li>
-     @('app-conds') are the applicability conditions.
      </li>
      <li>
      @('app-cond-thm-names') is an alist
@@ -93,6 +91,10 @@
      <li>
      @('new-unnorm-name') is the name of the generated theorem
      that installs the non-normalized definition of the new function.
+     </li>
+     <li>
+     @('names-to-avoid') is a cumulative list of names of generated events,
+     used to ensure the absence of name clashes in the generated events.
      </li>
    </ul>
    <p>
@@ -549,15 +551,87 @@
     (:restriction-boolean t)
     (t (impossible))))
 
+(define restrict-gen-app-cond ((name symbolp)
+                               (old$ symbolp)
+                               (restriction$ pseudo-termp)
+                               (hints$ symbol-alistp)
+                               (print$ print-specifier-p)
+                               (names-to-avoid symbol-listp)
+                               ctx
+                               state)
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (thm-name "A @(tsee symbolp) that is the name of the theorem."))
+  :mode :program
+  :short "Generate a theorem for the named applicability condition."
+  :long
+  "<p>
+   The theorem has no rule classes, because it is used via @(':use') hints
+   in the generated proofs in other events.
+   </p>
+   <p>
+   This is a local event, because it is only used internally by @('restrict').
+   The event is wrapped into a @(tsee try-event)
+   in order to provide a terse error message if the proof fails
+   (unless @(':print') is @(':all'), in which case everything is printed).
+   In addition,
+   if @(':print') is @(':info') or @(':all'),
+   the event is preceded and followed by events to print progress messages.
+   </p>
+   <p>
+   The name of the theorem is obtained by
+   putting the keyword that names the applicability condition
+   into the \"APT\" package
+   and adding @('$') as needed to avoid name clashes.
+   </p>"
+  (b* ((wrld (w state))
+       (thm-name (fresh-name-in-world-with-$s (intern-in-package-of-symbol
+                                               (symbol-name name)
+                                               (pkg-witness "APT"))
+                                              names-to-avoid
+                                              wrld))
+       (formula (restrict-gen-app-cond-formula name old$ restriction$ state))
+       (hints (cdr (assoc-eq name hints$)))
+       (defthm `(defthm ,thm-name ,formula :hints ,hints :rule-classes nil))
+       (error-msg (msg
+                   "The proof of the ~x0 applicability condition fails:~%~x1~|"
+                   name formula))
+       (try-defthm (try-event defthm ctx t nil error-msg))
+       (print-progress-p (member-eq print$ '(:info :all)))
+       (progress-start? (and print-progress-p
+                             `((cw-event
+                                "~%Attempting to prove the ~x0 ~
+                                 applicability condition:~%~x1~|"
+                                ',name ',formula))))
+       (progress-end? (and print-progress-p
+                           `((cw-event "Done.~%"))))
+       (event `(local (progn ,@progress-start?
+                             ,try-defthm
+                             ,@progress-end?))))
+    (mv event thm-name)))
+
 (define restrict-gen-app-conds ((old$ symbolp)
                                 (restriction$ pseudo-termp)
                                 (verify-guards$ booleanp)
+                                (hints$ symbol-alistp)
+                                (print$ print-specifier-p)
+                                (names-to-avoid symbol-listp)
+                                ctx
                                 state)
-  :returns (app-conds "A @(tsee symbol-alistp).")
+  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
+               (thm-names "A @(tsee symbol-symbol-alistp)
+                           from names of applicability conditions
+                           to names of the corresponding theorems event."))
   :mode :program
-  :short "Generate the applicability conditions that must hold."
+  :short "Generate theorems for the applicability conditions that must hold."
   (restrict-gen-app-conds-aux *restrict-app-cond-names*
-                              old$ restriction$ verify-guards$ nil state)
+                              old$
+                              restriction$
+                              verify-guards$
+                              hints$
+                              print$
+                              names-to-avoid
+                              ctx
+                              state)
 
   :prepwork
   ((define restrict-gen-app-conds-aux
@@ -565,33 +639,48 @@
       (old$ symbolp)
       (restriction$ pseudo-termp)
       (verify-guards$ booleanp)
-      (rev-app-conds symbol-alistp)
+      (hints$ symbol-alistp)
+      (print$ print-specifier-p)
+      (names-to-avoid symbol-listp)
+      ctx
       state)
-     :returns (app-conds) ; SYMBOL-ALISTP
+     :returns (mv events ; PSEUDO-EVENT-FORM-LISTP
+                  thm-names) ; SYMBOL-SYMBOL-ALISTP
      :mode :program
      :parents nil
-     (if (endp names)
-         (reverse rev-app-conds)
-       (b* ((name (car names))
-            ((unless (restrict-app-cond-present-p
-                      name old$ verify-guards$ (w state)))
-             (restrict-gen-app-conds-aux (cdr names)
-                                         old$
-                                         restriction$
-                                         verify-guards$
-                                         rev-app-conds
-                                         state))
-            (formula (restrict-gen-app-cond-formula
-                      name
-                      old$
-                      restriction$
-                      state)))
-         (restrict-gen-app-conds-aux (cdr names)
-                                     old$
-                                     restriction$
-                                     verify-guards$
-                                     (acons name formula rev-app-conds)
-                                     state))))))
+     (b* ((wrld (w state))
+          ((when (endp names)) (mv nil nil))
+          (name (car names))
+          ((unless (restrict-app-cond-present-p name old$ verify-guards$ wrld))
+           (restrict-gen-app-conds-aux (cdr names)
+                                       old$
+                                       restriction$
+                                       verify-guards$
+                                       hints$
+                                       print$
+                                       names-to-avoid
+                                       ctx
+                                       state))
+          ((mv event thm-name) (restrict-gen-app-cond name
+                                                      old$
+                                                      restriction$
+                                                      hints$
+                                                      print$
+                                                      names-to-avoid
+                                                      ctx
+                                                      state))
+          (names-to-avoid (cons thm-name names-to-avoid))
+          ((mv events thm-names) (restrict-gen-app-conds-aux (cdr names)
+                                                             old$
+                                                             restriction$
+                                                             verify-guards$
+                                                             hints$
+                                                             print$
+                                                             names-to-avoid
+                                                             ctx
+                                                             state)))
+       (mv (cons event events)
+           (acons name thm-name thm-names))))))
 
 (define restrict-gen-new-fn ((old$ symbolp)
                              (restriction$ pseudo-termp)
@@ -837,9 +926,9 @@
                                  (hints$ symbol-alistp)
                                  (print$ print-specifier-p)
                                  (show-only$ booleanp)
-                                 (app-conds symbol-alistp)
                                  (call pseudo-event-formp)
-                                 (wrld plist-worldp))
+                                 ctx
+                                 state)
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
   :short "Generate the top-level event."
@@ -860,12 +949,6 @@
    to prevent such hints from sabotaging the generated proofs;
    this removal is done after proving the applicability conditions,
    in case their proofs rely on the default or override hints.
-   </p>
-   <p>
-   The applicability condition theorems
-   are all local to the @(tsee encapsulate),
-   have no rule classes,
-   and are enabled (they must be, because they have no rule classes).
    </p>
    <p>
    The @(tsee encapsulate) also includes events
@@ -905,15 +988,17 @@
    a blank line is printed just before the @(tsee encapsulate),
    for visual separation.
    </p>"
-  (b* ((names-to-avoid (list new-name$ thm-name$))
+  (b* ((wrld (w state))
+       (names-to-avoid (list new-name$ thm-name$))
        ((mv app-cond-thm-events
-            app-cond-thm-names) (named-formulas-to-thm-events app-conds
-                                                              hints$
-                                                              nil
-                                                              t
-                                                              t
-                                                              names-to-avoid
-                                                              wrld))
+            app-cond-thm-names) (restrict-gen-app-conds old$
+                                                        restriction$
+                                                        verify-guards$
+                                                        hints$
+                                                        print$
+                                                        names-to-avoid
+                                                        ctx
+                                                        state))
        (names-to-avoid (append names-to-avoid
                                (strip-cdrs app-cond-thm-names)))
        ((mv old-unnorm-event
@@ -921,7 +1006,7 @@
                                                      t
                                                      names-to-avoid
                                                      wrld))
-       (names-to-avoid (rcons names-to-avoid old-unnorm-name))
+       (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event) (restrict-gen-new-fn
                                     old$
@@ -1015,8 +1100,7 @@
   :mode :program
   :parents (restrict-implementation)
   :short "Check redundancy,
-          process the inputs,
-          prove the applicability conditions, and
+          process the inputs, and
           generate the event to submit."
   :long
   "<p>
@@ -1051,14 +1135,6 @@
                                                     print
                                                     show-only
                                                     ctx state))
-       (app-conds (restrict-gen-app-conds old$
-                                          restriction$
-                                          verify-guards$
-                                          state))
-       ((er &) (ensure-named-formulas app-conds
-                                      hints$
-                                      (and (member-eq print '(:info :all)) t)
-                                      t nil ctx state))
        (event (restrict-gen-everything old$
                                        restriction$
                                        undefined$
@@ -1071,9 +1147,9 @@
                                        hints$
                                        print
                                        show-only
-                                       app-conds
                                        call
-                                       (w state))))
+                                       ctx
+                                       state)))
     (value event)))
 
 (defsection restrict-macro-definition

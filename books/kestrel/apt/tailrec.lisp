@@ -14,6 +14,7 @@
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/named-formulas" :dir :system)
+(include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "utilities/print-specifiers")
@@ -77,7 +78,7 @@
      @('print$'), and
      @('show-only$')
      are the results of processing
-     the homonymous (without the @('$')) inputs to @(tsee tailrec).
+     the homonymous inputs (without the @('$')) to @(tsee tailrec).
      Some are identical to the corresponding inputs,
      but they have types implied by their successful validation,
      performed when they are processed.
@@ -121,9 +122,6 @@
      <li>
      @('verbose') is a flag saying
      whether to print certain informative messages or not.
-     </li>
-     <li>
-     @('app-conds') are the applicability conditions.
      </li>
      <li>
      @('app-cond-thm-names') is an alist
@@ -1124,6 +1122,79 @@
                                        verify-guards$))
     (t (impossible))))
 
+(define tailrec-gen-app-cond ((name symbolp)
+                              (old$ symbolp)
+                              (test pseudo-termp)
+                              (base pseudo-termp)
+                              (nonrec pseudo-termp)
+                              (combine pseudo-termp)
+                              (q symbolp)
+                              (r symbolp)
+                              (domain$ pseudo-termfnp)
+                              (hints$ symbol-alistp)
+                              (print$ print-specifier-p)
+                              (names-to-avoid symbol-listp)
+                              ctx
+                              state)
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (thm-name "A @(tsee symbolp) that is the name of the theorem."))
+  :mode :program
+  :short "Generate a theorem for the named applicability condition."
+  :long
+  "<p>
+   The theorem has no rule classes, because it is used via @(':use') hints
+   in the generated proofs in other events.
+   </p>
+   <p>
+   This is a local event, because it is only used internally by @('tailrec').
+   The event is wrapped into a @(tsee try-event)
+   in order to provide a terse error message if the proof fails
+   (unless @(':print') is @(':all'), in which case everything is printed).
+   In addition,
+   if @(':print') is @(':info') or @(':all'),
+   the event is preceded and followed by events to print progress messages.
+   </p>
+   <p>
+   The name of the theorem is obtained by
+   putting the keyword that names the applicability condition
+   into the \"APT\" package
+   and adding @('$') as needed to avoid name clashes.
+   </p>"
+  (b* ((wrld (w state))
+       (thm-name (fresh-name-in-world-with-$s (intern-in-package-of-symbol
+                                               (symbol-name name)
+                                               (pkg-witness "APT"))
+                                              names-to-avoid
+                                              wrld))
+       (formula (tailrec-gen-app-cond-formula name
+                                              old$
+                                              test
+                                              base
+                                              nonrec
+                                              combine
+                                              q
+                                              r
+                                              domain$
+                                              state))
+       (hints (cdr (assoc-eq name hints$)))
+       (defthm `(defthm ,thm-name ,formula :hints ,hints :rule-classes nil))
+       (error-msg (msg
+                   "The proof of the ~x0 applicability condition fails:~%~x1~|"
+                   name formula))
+       (try-defthm (try-event defthm ctx t nil error-msg))
+       (print-progress-p (member-eq print$ '(:info :all)))
+       (progress-start? (and print-progress-p
+                             `((cw-event
+                                "~%Attempting to prove the ~x0 ~
+                                 applicability condition:~%~x1~|"
+                                ',name ',formula))))
+       (progress-end? (and print-progress-p
+                           `((cw-event "Done.~%"))))
+       (event `(local (progn ,@progress-start?
+                             ,try-defthm
+                             ,@progress-end?))))
+    (mv event thm-name)))
+
 (define tailrec-gen-app-conds ((old$ symbolp)
                                (test pseudo-termp)
                                (base pseudo-termp)
@@ -1134,14 +1205,33 @@
                                (variant$ tailrec-variantp)
                                (domain$ pseudo-termfnp)
                                (verify-guards$ booleanp)
+                               (hints$ symbol-alistp)
+                               (print$ print-specifier-p)
+                               (names-to-avoid symbol-listp)
+                               ctx
                                state)
-  :returns (app-conds "A @(tsee symbol-alistp).")
+  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
+               (thm-names "A @(tsee symbol-symbol-alistp)
+                           from names of applicability conditions
+                           to names of the corresponding theorems event."))
   :mode :program
-  :short "Generate the applicability conditions that must hold."
+  :short "Generate theorems for the applicability conditions that must hold."
   (tailrec-gen-app-conds-aux *tailrec-app-cond-names*
-                             old$ test base nonrec combine q r
-                             variant$ domain$ verify-guards$
-                             nil state)
+                             old$
+                             test
+                             base
+                             nonrec
+                             combine
+                             q
+                             r
+                             variant$
+                             domain$
+                             verify-guards$
+                             hints$
+                             print$
+                             names-to-avoid
+                             ctx
+                             state)
 
   :prepwork
   ((define tailrec-gen-app-conds-aux
@@ -1156,30 +1246,67 @@
       (variant$ tailrec-variantp)
       (domain$ pseudo-termfnp)
       (verify-guards$ booleanp)
-      (rev-app-conds symbol-alistp)
+      (hints$ symbol-alistp)
+      (print$ print-specifier-p)
+      (names-to-avoid symbol-listp)
+      ctx
       state)
-     :returns (app-conds) ; SYMBOL-LISTP
+     :returns (mv events ; PSEUDO-EVENT-FORM-LISTP
+                  thm-names) ; SYMBOL-SYMBOL-ALISTP
      :mode :program
      :parents nil
-     (if (endp names)
-         (reverse rev-app-conds)
-       (b* ((name (car names))
-            ((unless (tailrec-app-cond-present-p
-                      name variant$ verify-guards$))
-             (tailrec-gen-app-conds-aux (cdr names)
-                                        old$
-                                        test base nonrec combine q r
-                                        variant$ domain$ verify-guards$
-                                        rev-app-conds state))
-            (formula (tailrec-gen-app-cond-formula
-                      name
-                      old$ test base nonrec combine q r domain$
-                      state)))
-         (tailrec-gen-app-conds-aux (cdr names)
-                                    old$ test base nonrec combine q r
-                                    variant$ domain$ verify-guards$
-                                    (acons name formula rev-app-conds)
-                                    state))))))
+     (b* (((when (endp names)) (mv nil nil))
+          (name (car names))
+          ((unless (tailrec-app-cond-present-p name variant$ verify-guards$))
+           (tailrec-gen-app-conds-aux (cdr names)
+                                      old$
+                                      test
+                                      base
+                                      nonrec
+                                      combine
+                                      q
+                                      r
+                                      variant$
+                                      domain$
+                                      verify-guards$
+                                      hints$
+                                      print$
+                                      names-to-avoid
+                                      ctx
+                                      state))
+          ((mv event thm-name) (tailrec-gen-app-cond name
+                                                     old$
+                                                     test
+                                                     base
+                                                     nonrec
+                                                     combine
+                                                     q
+                                                     r
+                                                     domain$
+                                                     hints$
+                                                     print$
+                                                     names-to-avoid
+                                                     ctx
+                                                     state))
+          (names-to-avoid (cons thm-name names-to-avoid))
+          ((mv events thm-names) (tailrec-gen-app-conds-aux (cdr names)
+                                                            old$
+                                                            test
+                                                            base
+                                                            nonrec
+                                                            combine
+                                                            q
+                                                            r
+                                                            variant$
+                                                            domain$
+                                                            verify-guards$
+                                                            hints$
+                                                            print$
+                                                            names-to-avoid
+                                                            ctx
+                                                            state)))
+       (mv (cons event events)
+           (acons name thm-name thm-names))))))
 
 (define tailrec-gen-domain-of-old-thm ((old$ symbolp)
                                        (test pseudo-termp)
@@ -2183,8 +2310,8 @@
                                 (hints$ symbol-alistp)
                                 (print$ print-specifier-p)
                                 (show-only$ booleanp)
-                                (app-conds symbol-alistp)
                                 (call pseudo-event-formp)
+                                ctx
                                 state)
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
@@ -2206,12 +2333,6 @@
    to prevent such hints from sabotaging the generated proofs;
    this removal is done after proving the applicability conditions,
    in case their proofs rely on the default or override hints.
-   </p>
-   <p>
-   The applicability condition theorems
-   are all local to the @(tsee encapsulate),
-   have no rule classes,
-   and are enabled (they must be, because they have no rule classes).
    </p>
    <p>
    The @(tsee encapsulate) also includes events
@@ -2256,13 +2377,21 @@
                              wrapper-name$
                              thm-name$))
        ((mv app-cond-thm-events
-            app-cond-thm-names) (named-formulas-to-thm-events app-conds
-                                                              hints$
-                                                              nil
-                                                              t
-                                                              t
-                                                              names-to-avoid
-                                                              wrld))
+            app-cond-thm-names) (tailrec-gen-app-conds old$
+                                                       test
+                                                       base
+                                                       nonrec
+                                                       combine
+                                                       q
+                                                       r
+                                                       variant$
+                                                       domain$
+                                                       verify-guards$
+                                                       hints$
+                                                       print$
+                                                       names-to-avoid
+                                                       ctx
+                                                       state))
        (names-to-avoid (append names-to-avoid
                                (strip-cdrs app-cond-thm-names)))
        ((mv old-unnorm-event
@@ -2270,7 +2399,7 @@
                                                      t
                                                      names-to-avoid
                                                      wrld))
-       (names-to-avoid (rcons old-unnorm-name names-to-avoid))
+       (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv domain-of-old-event
             domain-of-old-name) (tailrec-gen-domain-of-old-thm
                                  old$ test nonrec updates
@@ -2279,7 +2408,7 @@
                                  app-cond-thm-names
                                  old-unnorm-name
                                  wrld))
-       (names-to-avoid (rcons domain-of-old-name names-to-avoid))
+       (names-to-avoid (cons domain-of-old-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event
             new-formals) (tailrec-gen-new-fn
@@ -2295,7 +2424,7 @@
                                                      t
                                                      names-to-avoid
                                                      wrld))
-       (names-to-avoid (rcons new-unnorm-name names-to-avoid))
+       (names-to-avoid (cons new-unnorm-name names-to-avoid))
        ((mv new-to-old-event
             new-to-old-name) (tailrec-gen-new-to-old-thm
                               old$ nonrec updates combine q r
@@ -2308,7 +2437,7 @@
                               new-formals
                               new-unnorm-name
                               wrld))
-       (names-to-avoid (rcons new-to-old-name names-to-avoid))
+       (names-to-avoid (cons new-to-old-name names-to-avoid))
        (gen-alpha (member-eq variant$ '(:monoid :monoid-alt)))
        ((mv alpha-event?
             alpha-name?) (if gen-alpha
@@ -2317,7 +2446,7 @@
                               names-to-avoid wrld)
                            (mv nil nil)))
        (names-to-avoid (if gen-alpha
-                           (rcons alpha-name? names-to-avoid)
+                           (cons alpha-name? names-to-avoid)
                          names-to-avoid))
        ((mv test-of-alpha-event?
             test-of-alpha-name?) (if gen-alpha
@@ -2327,7 +2456,7 @@
                                       names-to-avoid wrld)
                                    (mv nil nil)))
        (names-to-avoid (if gen-alpha
-                           (rcons test-of-alpha-name? names-to-avoid)
+                           (cons test-of-alpha-name? names-to-avoid)
                          names-to-avoid))
        ((mv old-guard-of-alpha-event?
             old-guard-of-alpha-name?)
@@ -2338,7 +2467,7 @@
           (mv nil nil)))
        (names-to-avoid (if (and gen-alpha
                                 verify-guards$)
-                           (rcons old-guard-of-alpha-name? names-to-avoid)
+                           (cons old-guard-of-alpha-name? names-to-avoid)
                          names-to-avoid))
        ((mv domain-of-ground-base-event?
             domain-of-ground-base-name?)
@@ -2349,8 +2478,8 @@
              names-to-avoid wrld)
           (mv nil nil)))
        (names-to-avoid (if gen-alpha
-                           (rcons domain-of-ground-base-name?
-                                  names-to-avoid)
+                           (cons domain-of-ground-base-name?
+                                 names-to-avoid)
                          names-to-avoid))
        ((mv combine-left-identity-ground-event?
             combine-left-identity-ground-name?)
@@ -2361,8 +2490,8 @@
              names-to-avoid wrld)
           (mv nil nil)))
        (names-to-avoid (if gen-alpha
-                           (rcons combine-left-identity-ground-name?
-                                  names-to-avoid)
+                           (cons combine-left-identity-ground-name?
+                                 names-to-avoid)
                          names-to-avoid))
        ((mv base-guard-event?
             base-guard-name?) (if (and gen-alpha
@@ -2375,7 +2504,7 @@
                                 (mv nil nil)))
        (names-to-avoid (if (and gen-alpha
                                 verify-guards$)
-                           (rcons base-guard-name? names-to-avoid)
+                           (cons base-guard-name? names-to-avoid)
                          names-to-avoid))
        ((mv old-to-new-event
             old-to-new-name) (tailrec-gen-old-to-new-thm
@@ -2390,7 +2519,7 @@
                               new-formals
                               new-to-old-name
                               wrld))
-       (names-to-avoid (rcons old-to-new-name names-to-avoid))
+       (names-to-avoid (cons old-to-new-name names-to-avoid))
        ((mv wrapper-fn-local-event
             wrapper-fn-exported-event) (tailrec-gen-wrapper-fn
                                         old$
@@ -2506,8 +2635,7 @@
   :mode :program
   :parents (tailrec-implementation)
   :short "Check redundancy,
-          process the inputs,
-          prove the applicability conditions, and
+          process the inputs, and
           generate the event to submit."
   :long
   "<p>
@@ -2551,23 +2679,30 @@
                                                    print
                                                    show-only
                                                    ctx state))
-       (app-conds (tailrec-gen-app-conds
-                   old$ test base nonrec combine q r variant domain$
-                   verify-guards$
-                   state))
-       ((er &) (ensure-named-formulas app-conds
+       (event (tailrec-gen-everything old$
+                                      test
+                                      base
+                                      nonrec
+                                      updates
+                                      combine
+                                      q
+                                      r
+                                      variant
+                                      domain$
+                                      new-name$
+                                      new-enable$
+                                      wrapper-name$
+                                      wrapper-enable
+                                      thm-name$
+                                      thm-enable
+                                      non-executable$
+                                      verify-guards$
                                       hints$
-                                      (and (member-eq print '(:info :all)) t)
-                                      t nil ctx state))
-       (event (tailrec-gen-everything
-               old$ test base nonrec updates combine q r
-               variant domain$
-               new-name$ new-enable$
-               wrapper-name$ wrapper-enable
-               thm-name$ thm-enable
-               non-executable$ verify-guards$
-               hints$ print show-only app-conds
-               call state)))
+                                      print
+                                      show-only
+                                      call
+                                      ctx
+                                      state)))
     (value event)))
 
 (defsection tailrec-macro-definition
