@@ -302,24 +302,34 @@
   (defruled no-duplicatesp-eq-of-*restrict-app-cond-names*
     (no-duplicatesp-eq *restrict-app-cond-names*)))
 
-(define restrict-app-cond-present-p
-  ((name (member-eq name *restrict-app-cond-names*)
-         "Name of the applicability condition.")
-   (old$ symbolp)
-   (verify-guards$ booleanp)
-   (wrld plist-worldp))
+(define restrict-app-cond-namep (x)
+  :returns (yes/no booleanp)
+  :short "Recognize names of the applicability conditions."
+  (and (member-eq x *restrict-app-cond-names*) t))
+
+(std::deflist restrict-app-cond-name-listp (x)
+  (restrict-app-cond-namep x)
+  :short "Recognize true lists of names of the applicability conditions."
+  :true-listp t
+  :elementp-of-nil nil)
+
+(define restrict-app-cond-present-p ((name restrict-app-cond-namep)
+                                     (old$ symbolp)
+                                     (verify-guards$ booleanp)
+                                     (wrld plist-worldp))
   :returns (yes/no booleanp :hyp (booleanp verify-guards$))
   :short "Check if the named applicability condition is present."
   (case name
     (:restriction-of-rec-calls (if (recursivep old$ nil wrld) t nil))
     (:restriction-guard verify-guards$)
     (:restriction-boolean t)
-    (t (impossible))))
+    (t (impossible)))
+  :guard-hints (("Goal" :in-theory (enable restrict-app-cond-namep))))
 
 (define restrict-app-cond-present-names ((old$ symbolp)
                                          (verify-guards$ booleanp)
                                          (wrld plist-worldp))
-  :returns (present-names symbol-listp)
+  :returns (present-names restrict-app-cond-name-listp)
   :short "Names of the applicability conditions that are present."
   (restrict-app-cond-present-names-aux *restrict-app-cond-names*
                                        old$
@@ -328,13 +338,12 @@
 
   :prepwork
   ((define restrict-app-cond-present-names-aux
-     ((names (and (true-listp names)
-                  (subsetp-eq names *restrict-app-cond-names*)))
+     ((names restrict-app-cond-name-listp)
       (old$ symbolp)
       (verify-guards$ booleanp)
       (wrld plist-worldp))
-     :returns (present-names symbol-listp
-                             :hyp (subsetp-eq names *restrict-app-cond-names*))
+     :returns (present-names restrict-app-cond-name-listp
+                             :hyp (restrict-app-cond-name-listp names))
      :parents nil
      (if (endp names)
          nil
@@ -352,13 +361,11 @@
                                               verify-guards$
                                               wrld))))))
 
-(define restrict-process-hints (hints
-                                (app-cond-present-names
-                                 (and (true-listp app-cond-present-names)
-                                      (subsetp-eq app-cond-present-names
-                                                  *restrict-app-cond-names*)))
-                                ctx
-                                state)
+(define restrict-process-hints
+  (hints
+   (app-cond-present-names restrict-app-cond-name-listp)
+   ctx
+   state)
   :returns (mv erp
                (hints$ "A @('symbol-alistp') that is the alist form of
                         the keyword-value list @('hints').")
@@ -579,12 +586,10 @@
                 rev-conjuncts)
           wrld))))))
 
-(define restrict-gen-app-cond-formula
-  ((name (member-eq name *restrict-app-cond-names*)
-         "Name of the applicability condition.")
-   (old$ symbolp)
-   (restriction$ pseudo-termp)
-   state)
+(define restrict-gen-app-cond-formula ((name restrict-app-cond-namep)
+                                       (old$ symbolp)
+                                       (restriction$ pseudo-termp)
+                                       state)
   :returns (formula "An untranslated term.")
   :mode :program
   :short "Generate the formula of the named applicability condition."
@@ -606,7 +611,7 @@
          (untranslate formula-trans t wrld)))
       (t (impossible)))))
 
-(define restrict-gen-app-cond ((name (member-eq name *restrict-app-cond-names*))
+(define restrict-gen-app-cond ((name restrict-app-cond-namep)
                                (old$ symbolp)
                                (restriction$ pseudo-termp)
                                (hints$ symbol-alistp)
@@ -664,18 +669,16 @@
                              ,@progress-end?))))
     (mv event thm-name)))
 
-(define restrict-gen-app-conds ((old$ symbolp)
-                                (restriction$ pseudo-termp)
-                                (verify-guards$ booleanp)
-                                (hints$ symbol-alistp)
-                                (print$ print-specifier-p)
-                                (app-cond-present-names
-                                 (and (true-listp app-cond-present-names)
-                                      (subsetp-eq app-cond-present-names
-                                                  *restrict-app-cond-names*)))
-                                (names-to-avoid symbol-listp)
-                                ctx
-                                state)
+(define restrict-gen-app-conds
+  ((old$ symbolp)
+   (restriction$ pseudo-termp)
+   (verify-guards$ booleanp)
+   (hints$ symbol-alistp)
+   (print$ print-specifier-p)
+   (app-cond-present-names restrict-app-cond-name-listp)
+   (names-to-avoid symbol-listp)
+   ctx
+   state)
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
                (thm-names "A @(tsee symbol-symbol-alistp)
                            from names of applicability conditions
@@ -693,17 +696,15 @@
                               state)
 
   :prepwork
-  ((define restrict-gen-app-conds-aux
-     ((names (and (true-listp names)
-                  (subsetp-eq names *restrict-app-cond-names*)))
-      (old$ symbolp)
-      (restriction$ pseudo-termp)
-      (verify-guards$ booleanp)
-      (hints$ symbol-alistp)
-      (print$ print-specifier-p)
-      (names-to-avoid symbol-listp)
-      ctx
-      state)
+  ((define restrict-gen-app-conds-aux ((names restrict-app-cond-name-listp)
+                                       (old$ symbolp)
+                                       (restriction$ pseudo-termp)
+                                       (verify-guards$ booleanp)
+                                       (hints$ symbol-alistp)
+                                       (print$ print-specifier-p)
+                                       (names-to-avoid symbol-listp)
+                                       ctx
+                                       state)
      :returns (mv events ; PSEUDO-EVENT-FORM-LISTP
                   thm-names) ; SYMBOL-SYMBOL-ALISTP
      :mode :program
@@ -963,25 +964,23 @@
        (event `(local (verify-guards ,new-name$ :hints ,hints))))
     event))
 
-(define restrict-gen-everything ((old$ symbolp)
-                                 (restriction$ pseudo-termp)
-                                 (undefined$ pseudo-termp)
-                                 (new-name$ symbolp)
-                                 (new-enable$ booleanp)
-                                 (thm-name$ symbolp)
-                                 (thm-enable$ booleanp)
-                                 (non-executable$ booleanp)
-                                 (verify-guards$ booleanp)
-                                 (hints$ symbol-alistp)
-                                 (print$ print-specifier-p)
-                                 (show-only$ booleanp)
-                                 (app-cond-present-names
-                                  (and (true-listp app-cond-present-names)
-                                       (subsetp-eq app-cond-present-names
-                                                   *restrict-app-cond-names*)))
-                                 (call pseudo-event-formp)
-                                 ctx
-                                 state)
+(define restrict-gen-everything
+  ((old$ symbolp)
+   (restriction$ pseudo-termp)
+   (undefined$ pseudo-termp)
+   (new-name$ symbolp)
+   (new-enable$ booleanp)
+   (thm-name$ symbolp)
+   (thm-enable$ booleanp)
+   (non-executable$ booleanp)
+   (verify-guards$ booleanp)
+   (hints$ symbol-alistp)
+   (print$ print-specifier-p)
+   (show-only$ booleanp)
+   (app-cond-present-names restrict-app-cond-name-listp)
+   (call pseudo-event-formp)
+   ctx
+   state)
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
   :short "Generate the top-level event."

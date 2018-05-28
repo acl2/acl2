@@ -754,11 +754,20 @@
   (defruled no-duplicatesp-eq-of-*tailrec-app-cond-names*
     (no-duplicatesp-eq *tailrec-app-cond-names*)))
 
-(define tailrec-app-cond-present-p
-  ((name (member-eq name *tailrec-app-cond-names*)
-         "Name of the applicability condition.")
-   (variant$ tailrec-variantp)
-   (verify-guards$ booleanp))
+(define tailrec-app-cond-namep (x)
+  :returns (yes/no booleanp)
+  :short "Recognize names of the applicability conditions."
+  (and (member-eq x *tailrec-app-cond-names*) t))
+
+(std::deflist tailrec-app-cond-name-listp (x)
+  (tailrec-app-cond-namep x)
+  :short "Recognize true lists of names of the applicability conditions."
+  :true-listp t
+  :elementp-of-nil nil)
+
+(define tailrec-app-cond-present-p ((name tailrec-app-cond-namep)
+                                    (variant$ tailrec-variantp)
+                                    (verify-guards$ booleanp))
   :returns (yes/no booleanp :hyp (booleanp verify-guards$))
   :short "Check if the named applicability condition is present."
   (case name
@@ -775,11 +784,12 @@
       :combine-guard) verify-guards$)
     (:domain-of-nonrec-when-guard (and (eq variant$ :monoid-alt)
                                        verify-guards$))
-    (t (impossible))))
+    (t (impossible)))
+  :guard-hints (("Goal" :in-theory (enable tailrec-app-cond-namep))))
 
 (define tailrec-app-cond-present-names ((variant$ tailrec-variantp)
                                         (verify-guards$ booleanp))
-  :returns (present-names symbol-listp)
+  :returns (present-names tailrec-app-cond-name-listp)
   :short "Names of the applicability conditions that are present."
   (tailrec-app-cond-present-names-aux *tailrec-app-cond-names*
                                       variant$
@@ -787,12 +797,11 @@
 
   :prepwork
   ((define tailrec-app-cond-present-names-aux
-     ((names (and (true-listp names)
-                  (subsetp-eq names *tailrec-app-cond-names*)))
+     ((names tailrec-app-cond-name-listp)
       (variant$ tailrec-variantp)
       (verify-guards$ booleanp))
-     :returns (present-names symbol-listp
-                             :hyp (subsetp-eq names *tailrec-app-cond-names*))
+     :returns (present-names tailrec-app-cond-name-listp
+                             :hyp (tailrec-app-cond-name-listp names))
      :parents nil
      (if (endp names)
          nil
@@ -807,13 +816,11 @@
                                              variant$
                                              verify-guards$))))))
 
-(define tailrec-process-hints (hints
-                               (app-cond-present-names
-                                (and (true-listp app-cond-present-names)
-                                     (subsetp-eq app-cond-present-names
-                                                 *tailrec-app-cond-names*)))
-                               ctx
-                               state)
+(define tailrec-process-hints
+  (hints
+   (app-cond-present-names tailrec-app-cond-name-listp)
+   ctx
+   state)
   :returns (mv erp
                (hints$ "A @('symbol-alistp') that is the alist form of
                         the keyword-value list @('hints').")
@@ -1081,18 +1088,16 @@
    </p>"
   (make-lambda (list q r) combine))
 
-(define tailrec-gen-app-cond-formula
-  ((name (member-eq name *tailrec-app-cond-names*)
-         "Name of the applicability condition.")
-   (old$ symbolp)
-   (test pseudo-termp)
-   (base pseudo-termp)
-   (nonrec pseudo-termp)
-   (combine pseudo-termp)
-   (q symbolp)
-   (r symbolp)
-   (domain$ pseudo-termfnp)
-   state)
+(define tailrec-gen-app-cond-formula ((name tailrec-app-cond-namep)
+                                      (old$ symbolp)
+                                      (test pseudo-termp)
+                                      (base pseudo-termp)
+                                      (nonrec pseudo-termp)
+                                      (combine pseudo-termp)
+                                      (q symbolp)
+                                      (r symbolp)
+                                      (domain$ pseudo-termfnp)
+                                      state)
   :returns (formula "An untranslated term.")
   :mode :program
   :short "Generate the formula of the named applicability condition."
@@ -1171,7 +1176,7 @@
                     t wrld))
       (t (impossible)))))
 
-(define tailrec-gen-app-cond ((name (member-eq name *tailrec-app-cond-names*))
+(define tailrec-gen-app-cond ((name tailrec-app-cond-namep)
                               (old$ symbolp)
                               (test pseudo-termp)
                               (base pseudo-termp)
@@ -1244,25 +1249,23 @@
                              ,@progress-end?))))
     (mv event thm-name)))
 
-(define tailrec-gen-app-conds ((old$ symbolp)
-                               (test pseudo-termp)
-                               (base pseudo-termp)
-                               (nonrec pseudo-termp)
-                               (combine pseudo-termp)
-                               (q symbolp)
-                               (r symbolp)
-                               (variant$ tailrec-variantp)
-                               (domain$ pseudo-termfnp)
-                               (verify-guards$ booleanp)
-                               (hints$ symbol-alistp)
-                               (print$ print-specifier-p)
-                               (app-cond-present-names
-                                (and (true-listp app-cond-present-names)
-                                     (subsetp-eq app-cond-present-names
-                                                 *tailrec-app-cond-names*)))
-                               (names-to-avoid symbol-listp)
-                               ctx
-                               state)
+(define tailrec-gen-app-conds
+  ((old$ symbolp)
+   (test pseudo-termp)
+   (base pseudo-termp)
+   (nonrec pseudo-termp)
+   (combine pseudo-termp)
+   (q symbolp)
+   (r symbolp)
+   (variant$ tailrec-variantp)
+   (domain$ pseudo-termfnp)
+   (verify-guards$ booleanp)
+   (hints$ symbol-alistp)
+   (print$ print-specifier-p)
+   (app-cond-present-names tailrec-app-cond-name-listp)
+   (names-to-avoid symbol-listp)
+   ctx
+   state)
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
                (thm-names "A @(tsee symbol-symbol-alistp)
                            from names of applicability conditions
@@ -1288,8 +1291,7 @@
 
   :prepwork
   ((define tailrec-gen-app-conds-aux
-     ((names (and (true-listp names)
-                  (subsetp-eq names *tailrec-app-cond-names*)))
+     ((names tailrec-app-cond-name-listp)
       (old$ symbolp)
       (test pseudo-termp)
       (base pseudo-termp)
@@ -2326,34 +2328,32 @@
                                 ,formula)))
     (mv local-event exported-event)))
 
-(define tailrec-gen-everything ((old$ symbolp)
-                                (test pseudo-termp)
-                                (base pseudo-termp)
-                                (nonrec pseudo-termp)
-                                (updates pseudo-term-listp)
-                                (combine pseudo-termp)
-                                (q symbolp)
-                                (r symbolp)
-                                (variant$ tailrec-variantp)
-                                (domain$ pseudo-termfnp)
-                                (new-name$ symbolp)
-                                (new-enable$ booleanp)
-                                (wrapper-name$ symbolp)
-                                (wrapper-enable$ booleanp)
-                                (thm-name$ symbolp)
-                                (thm-enable$ booleanp)
-                                (non-executable$ booleanp)
-                                (verify-guards$ booleanp)
-                                (hints$ symbol-alistp)
-                                (print$ print-specifier-p)
-                                (show-only$ booleanp)
-                                (app-cond-present-names
-                                 (and (true-listp app-cond-present-names)
-                                      (subsetp-eq app-cond-present-names
-                                                  *tailrec-app-cond-names*)))
-                                (call pseudo-event-formp)
-                                ctx
-                                state)
+(define tailrec-gen-everything
+  ((old$ symbolp)
+   (test pseudo-termp)
+   (base pseudo-termp)
+   (nonrec pseudo-termp)
+   (updates pseudo-term-listp)
+   (combine pseudo-termp)
+   (q symbolp)
+   (r symbolp)
+   (variant$ tailrec-variantp)
+   (domain$ pseudo-termfnp)
+   (new-name$ symbolp)
+   (new-enable$ booleanp)
+   (wrapper-name$ symbolp)
+   (wrapper-enable$ booleanp)
+   (thm-name$ symbolp)
+   (thm-enable$ booleanp)
+   (non-executable$ booleanp)
+   (verify-guards$ booleanp)
+   (hints$ symbol-alistp)
+   (print$ print-specifier-p)
+   (show-only$ booleanp)
+   (app-cond-present-names tailrec-app-cond-name-listp)
+   (call pseudo-event-formp)
+   ctx
+   state)
   :returns (event "A @(tsee pseudo-event-formp).")
   :mode :program
   :short "Generate the top-level event."
