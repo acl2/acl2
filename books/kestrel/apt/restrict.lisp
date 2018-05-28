@@ -80,6 +80,10 @@
      performed when they are processed.
      </li>
      <li>
+     @('app-cond-present-names') is the list of the names (keywords) of
+     the applicability conditions that are present.
+     </li>
+     <li>
      @('app-cond-thm-names') is an alist
      from the keywords that identify the applicability conditions
      to the corresponding generated theorem names.
@@ -298,7 +302,63 @@
   (defruled no-duplicatesp-eq-of-*restrict-app-cond-names*
     (no-duplicatesp-eq *restrict-app-cond-names*)))
 
-(define restrict-process-hints (hints ctx state)
+(define restrict-app-cond-present-p
+  ((name (member-eq name *restrict-app-cond-names*)
+         "Name of the applicability condition.")
+   (old$ symbolp)
+   (verify-guards$ booleanp)
+   (wrld plist-worldp))
+  :returns (yes/no booleanp :hyp (booleanp verify-guards$))
+  :short "Check if the named applicability condition is present."
+  (case name
+    (:restriction-of-rec-calls (if (recursivep old$ nil wrld) t nil))
+    (:restriction-guard verify-guards$)
+    (:restriction-boolean t)
+    (t (impossible))))
+
+(define restrict-app-cond-present-names ((old$ symbolp)
+                                         (verify-guards$ booleanp)
+                                         (wrld plist-worldp))
+  :returns (present-names symbol-listp)
+  :short "Names of the applicability conditions that are present."
+  (restrict-app-cond-present-names-aux *restrict-app-cond-names*
+                                       old$
+                                       verify-guards$
+                                       wrld)
+
+  :prepwork
+  ((define restrict-app-cond-present-names-aux
+     ((names (and (true-listp names)
+                  (subsetp-eq names *restrict-app-cond-names*)))
+      (old$ symbolp)
+      (verify-guards$ booleanp)
+      (wrld plist-worldp))
+     :returns (present-names symbol-listp
+                             :hyp (subsetp-eq names *restrict-app-cond-names*))
+     :parents nil
+     (if (endp names)
+         nil
+       (if (restrict-app-cond-present-p (car names)
+                                        old$
+                                        verify-guards$
+                                        wrld)
+           (cons (car names)
+                 (restrict-app-cond-present-names-aux (cdr names)
+                                                      old$
+                                                      verify-guards$
+                                                      wrld))
+         (restrict-app-cond-present-names-aux (cdr names)
+                                              old$
+                                              verify-guards$
+                                              wrld))))))
+
+(define restrict-process-hints (hints
+                                (app-cond-present-names
+                                 (and (true-listp app-cond-present-names)
+                                      (subsetp-eq app-cond-present-names
+                                                  *restrict-app-cond-names*)))
+                                ctx
+                                state)
   :returns (mv erp
                (hints$ "A @('symbol-alistp') that is the alist form of
                         the keyword-value list @('hints').")
@@ -319,7 +379,7 @@
        (description
         (msg "The list ~x0 of keywords of the :HINTS input" keys))
        ((er &) (ensure-list-no-duplicates$ keys description t nil))
-       ((er &) (ensure-list-subset$ keys *restrict-app-cond-names*
+       ((er &) (ensure-list-subset$ keys app-cond-present-names
                                     description t nil)))
     (value alist)))
 
@@ -346,7 +406,8 @@
                                     thm-name$
                                     non-executable$
                                     verify-guards$
-                                    hints$)')
+                                    hints$
+                                    app-cond-present-names)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -357,6 +418,7 @@
                                          booleanp
                                          booleanp
                                          symbol-alistp
+                                         symbol-listp
                                          result)'),
                         where @('old$') is
                         the result of @(tsee restrict-process-old),
@@ -374,9 +436,11 @@
                         the new function should be
                         non-executable or not,
                         @('verify-guards$') indicates whether the guards of
-                        the new function should be verified or not, and
+                        the new function should be verified or not,
                         @('hints$') is
-                        the result of @(tsee restrict-process-hints).")
+                        the result of @(tsee restrict-process-hints), and
+                        @('app-cond-present-names') is
+                        the result of @(tsee restrict-app-cond-present-names).")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -394,10 +458,11 @@
    but it is only tested for equality with @('t')
    (see @(tsee restrict-process-old)).
    </p>"
-  (b* (((er old$) (restrict-process-old old verify-guards ctx state))
+  (b* ((wrld (w state))
+       ((er old$) (restrict-process-old old verify-guards ctx state))
        ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
                              verify-guards
-                             (guard-verified-p old$ (w state))
+                             (guard-verified-p old$ wrld)
                              "The :VERIFY-GUARDS input" t nil))
        ((er restriction$) (restrict-process-restriction
                            restriction old$ verify-guards$ ctx state))
@@ -414,9 +479,12 @@
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
        ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
                               non-executable
-                              (non-executablep old (w state))
+                              (non-executablep old wrld)
                               "The :NON-EXECUTABLE input" t nil))
-       ((er hints$) (restrict-process-hints hints ctx state))
+       (app-cond-present-names (restrict-app-cond-present-names
+                                old$ verify-guards$ wrld))
+       ((er hints$) (restrict-process-hints
+                     hints app-cond-present-names ctx state))
        ((er &) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
        ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
     (value (list old$
@@ -427,7 +495,8 @@
                  thm-name$
                  non-executable$
                  verify-guards$
-                 hints$))))
+                 hints$
+                 app-cond-present-names))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -537,21 +606,7 @@
          (untranslate formula-trans t wrld)))
       (t (impossible)))))
 
-(define restrict-app-cond-present-p
-  ((name (member-eq name *restrict-app-cond-names*)
-         "Name of the applicability condition.")
-   (old$ symbolp)
-   (verify-guards$ booleanp)
-   (wrld plist-worldp))
-  :returns (yes/no booleanp :hyp (booleanp verify-guards$))
-  :short "Check if the named applicability condition is present."
-  (case name
-    (:restriction-of-rec-calls (if (recursivep old$ nil wrld) t nil))
-    (:restriction-guard verify-guards$)
-    (:restriction-boolean t)
-    (t (impossible))))
-
-(define restrict-gen-app-cond ((name symbolp)
+(define restrict-gen-app-cond ((name (member-eq name *restrict-app-cond-names*))
                                (old$ symbolp)
                                (restriction$ pseudo-termp)
                                (hints$ symbol-alistp)
@@ -614,6 +669,10 @@
                                 (verify-guards$ booleanp)
                                 (hints$ symbol-alistp)
                                 (print$ print-specifier-p)
+                                (app-cond-present-names
+                                 (and (true-listp app-cond-present-names)
+                                      (subsetp-eq app-cond-present-names
+                                                  *restrict-app-cond-names*)))
                                 (names-to-avoid symbol-listp)
                                 ctx
                                 state)
@@ -623,7 +682,7 @@
                            to names of the corresponding theorems event."))
   :mode :program
   :short "Generate theorems for the applicability conditions that must hold."
-  (restrict-gen-app-conds-aux *restrict-app-cond-names*
+  (restrict-gen-app-conds-aux app-cond-present-names
                               old$
                               restriction$
                               verify-guards$
@@ -635,7 +694,8 @@
 
   :prepwork
   ((define restrict-gen-app-conds-aux
-     ((names (subsetp-eq names *restrict-app-cond-names*))
+     ((names (and (true-listp names)
+                  (subsetp-eq names *restrict-app-cond-names*)))
       (old$ symbolp)
       (restriction$ pseudo-termp)
       (verify-guards$ booleanp)
@@ -648,19 +708,8 @@
                   thm-names) ; SYMBOL-SYMBOL-ALISTP
      :mode :program
      :parents nil
-     (b* ((wrld (w state))
-          ((when (endp names)) (mv nil nil))
+     (b* (((when (endp names)) (mv nil nil))
           (name (car names))
-          ((unless (restrict-app-cond-present-p name old$ verify-guards$ wrld))
-           (restrict-gen-app-conds-aux (cdr names)
-                                       old$
-                                       restriction$
-                                       verify-guards$
-                                       hints$
-                                       print$
-                                       names-to-avoid
-                                       ctx
-                                       state))
           ((mv event thm-name) (restrict-gen-app-cond name
                                                       old$
                                                       restriction$
@@ -926,6 +975,10 @@
                                  (hints$ symbol-alistp)
                                  (print$ print-specifier-p)
                                  (show-only$ booleanp)
+                                 (app-cond-present-names
+                                  (and (true-listp app-cond-present-names)
+                                       (subsetp-eq app-cond-present-names
+                                                   *restrict-app-cond-names*)))
                                  (call pseudo-event-formp)
                                  ctx
                                  state)
@@ -996,6 +1049,7 @@
                                                         verify-guards$
                                                         hints$
                                                         print$
+                                                        app-cond-present-names
                                                         names-to-avoid
                                                         ctx
                                                         state))
@@ -1122,19 +1176,21 @@
                   thm-name$
                   non-executable$
                   verify-guards$
-                  hints$)) (restrict-process-inputs old
-                                                    restriction
-                                                    undefined
-                                                    new-name
-                                                    new-enable
-                                                    thm-name
-                                                    thm-enable
-                                                    non-executable
-                                                    verify-guards
-                                                    hints
-                                                    print
-                                                    show-only
-                                                    ctx state))
+                  hints$
+                  app-cond-present-names)) (restrict-process-inputs
+                                            old
+                                            restriction
+                                            undefined
+                                            new-name
+                                            new-enable
+                                            thm-name
+                                            thm-enable
+                                            non-executable
+                                            verify-guards
+                                            hints
+                                            print
+                                            show-only
+                                            ctx state))
        (event (restrict-gen-everything old$
                                        restriction$
                                        undefined$
@@ -1147,6 +1203,7 @@
                                        hints$
                                        print
                                        show-only
+                                       app-cond-present-names
                                        call
                                        ctx
                                        state)))

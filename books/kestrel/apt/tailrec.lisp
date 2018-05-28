@@ -124,6 +124,10 @@
      whether to print certain informative messages or not.
      </li>
      <li>
+     @('app-cond-present-names') is the list of the names (keywords) of
+     the applicability conditions that are present.
+     </li>
+     <li>
      @('app-cond-thm-names') is an alist
      from the keywords that identify the applicability conditions
      to the corresponding generated theorem names.
@@ -750,7 +754,66 @@
   (defruled no-duplicatesp-eq-of-*tailrec-app-cond-names*
     (no-duplicatesp-eq *tailrec-app-cond-names*)))
 
-(define tailrec-process-hints (hints ctx state)
+(define tailrec-app-cond-present-p
+  ((name (member-eq name *tailrec-app-cond-names*)
+         "Name of the applicability condition.")
+   (variant$ tailrec-variantp)
+   (verify-guards$ booleanp))
+  :returns (yes/no booleanp :hyp (booleanp verify-guards$))
+  :short "Check if the named applicability condition is present."
+  (case name
+    (:domain-of-base t)
+    ((:domain-of-nonrec
+      :domain-of-combine
+      :combine-associativity) (if (member-eq variant$ '(:monoid :assoc)) t nil))
+    ((:domain-of-combine-uncond
+      :combine-associativity-uncond) (eq variant$ :monoid-alt))
+    ((:combine-left-identity
+      :combine-right-identity) (if (member-eq variant$ '(:monoid :monoid-alt))
+                                   t nil))
+    ((:domain-guard
+      :combine-guard) verify-guards$)
+    (:domain-of-nonrec-when-guard (and (eq variant$ :monoid-alt)
+                                       verify-guards$))
+    (t (impossible))))
+
+(define tailrec-app-cond-present-names ((variant$ tailrec-variantp)
+                                        (verify-guards$ booleanp))
+  :returns (present-names symbol-listp)
+  :short "Names of the applicability conditions that are present."
+  (tailrec-app-cond-present-names-aux *tailrec-app-cond-names*
+                                      variant$
+                                      verify-guards$)
+
+  :prepwork
+  ((define tailrec-app-cond-present-names-aux
+     ((names (and (true-listp names)
+                  (subsetp-eq names *tailrec-app-cond-names*)))
+      (variant$ tailrec-variantp)
+      (verify-guards$ booleanp))
+     :returns (present-names symbol-listp
+                             :hyp (subsetp-eq names *tailrec-app-cond-names*))
+     :parents nil
+     (if (endp names)
+         nil
+       (if (tailrec-app-cond-present-p (car names)
+                                       variant$
+                                       verify-guards$)
+           (cons (car names)
+                 (tailrec-app-cond-present-names-aux (cdr names)
+                                                     variant$
+                                                     verify-guards$))
+         (tailrec-app-cond-present-names-aux (cdr names)
+                                             variant$
+                                             verify-guards$))))))
+
+(define tailrec-process-hints (hints
+                               (app-cond-present-names
+                                (and (true-listp app-cond-present-names)
+                                     (subsetp-eq app-cond-present-names
+                                                 *tailrec-app-cond-names*)))
+                               ctx
+                               state)
   :returns (mv erp
                (hints$ "A @('symbol-alistp') that is the alist form of
                         the keyword-value list @('hints').")
@@ -771,7 +834,7 @@
        (description
         (msg "The list ~x0 of keywords of the :HINTS input" keys))
        ((er &) (ensure-list-no-duplicates$ keys description t nil))
-       ((er &) (ensure-list-subset$ keys *tailrec-app-cond-names*
+       ((er &) (ensure-list-subset$ keys app-cond-present-names
                                     description t nil)))
     (value alist)))
 
@@ -807,7 +870,8 @@
                                     thm-name$
                                     non-executable$
                                     verify-guards$
-                                    hints$)')
+                                    hints$
+                                    app-cond-present-names)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -825,6 +889,7 @@
                                          booleanp
                                          booleanp
                                          symbol-alistp
+                                         symbol-listp
                                          result)'),
                         where the first 8 components are
                         the results of @(tsee tailrec-process-old),
@@ -843,9 +908,11 @@
                         non-executable or not, and
                         @('verify-guards$') indicates whether the guards of
                         the new and wrapper functions
-                        should be verified or not, and
+                        should be verified or not,
                         @('hints$') is
-                        the result of @(tsee tailrec-process-hints).")
+                        the result of @(tsee tailrec-process-hints), and
+                        @('app-cond-present-names') is
+                        the result of @(tsee tailrec-app-cond-present-names).")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -866,7 +933,8 @@
    but it is only tested for equality with @('t')
    (see @(tsee tailrec-process-old)).
    </p>"
-  (b* (((er &) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
+  (b* ((wrld (w state))
+       ((er &) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
        (verbose (and (member-eq print '(:info :all)) t))
        ((er (list old$
                   test
@@ -880,7 +948,7 @@
        ((er &) (tailrec-process-variant$ variant "The :VARIANT input" t nil))
        ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
                              verify-guards
-                             (guard-verified-p old$ (w state))
+                             (guard-verified-p old$ wrld)
                              "The :VERIFY-GUARDS input" t nil))
        ((er domain$) (tailrec-process-domain
                       domain old$ combine q r variant verify-guards$
@@ -902,9 +970,12 @@
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
        ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
                               non-executable
-                              (non-executablep old (w state))
+                              (non-executablep old wrld)
                               "The :NON-EXECUTABLE input" t nil))
-       ((er hints$) (tailrec-process-hints hints ctx state))
+       (app-cond-present-names (tailrec-app-cond-present-names
+                                variant verify-guards$))
+       ((er hints$) (tailrec-process-hints
+                     hints app-cond-present-names ctx state))
        ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
     (value (list old$
                  test
@@ -921,7 +992,8 @@
                  thm-name$
                  non-executable$
                  verify-guards$
-                 hints$))))
+                 hints$
+                 app-cond-present-names))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1099,30 +1171,7 @@
                     t wrld))
       (t (impossible)))))
 
-(define tailrec-app-cond-present-p
-  ((name (member-eq name *tailrec-app-cond-names*)
-         "Name of the applicability condition.")
-   (variant$ tailrec-variantp)
-   (verify-guards$ booleanp))
-  :returns (yes/no booleanp :hyp (booleanp verify-guards$))
-  :short "Check if the named applicability condition is present."
-  (case name
-    (:domain-of-base t)
-    ((:domain-of-nonrec
-      :domain-of-combine
-      :combine-associativity) (if (member-eq variant$ '(:monoid :assoc)) t nil))
-    ((:domain-of-combine-uncond
-      :combine-associativity-uncond) (eq variant$ :monoid-alt))
-    ((:combine-left-identity
-      :combine-right-identity) (if (member-eq variant$ '(:monoid :monoid-alt))
-                                   t nil))
-    ((:domain-guard
-      :combine-guard) verify-guards$)
-    (:domain-of-nonrec-when-guard (and (eq variant$ :monoid-alt)
-                                       verify-guards$))
-    (t (impossible))))
-
-(define tailrec-gen-app-cond ((name symbolp)
+(define tailrec-gen-app-cond ((name (member-eq name *tailrec-app-cond-names*))
                               (old$ symbolp)
                               (test pseudo-termp)
                               (base pseudo-termp)
@@ -1207,6 +1256,10 @@
                                (verify-guards$ booleanp)
                                (hints$ symbol-alistp)
                                (print$ print-specifier-p)
+                               (app-cond-present-names
+                                (and (true-listp app-cond-present-names)
+                                     (subsetp-eq app-cond-present-names
+                                                 *tailrec-app-cond-names*)))
                                (names-to-avoid symbol-listp)
                                ctx
                                state)
@@ -1216,7 +1269,7 @@
                            to names of the corresponding theorems event."))
   :mode :program
   :short "Generate theorems for the applicability conditions that must hold."
-  (tailrec-gen-app-conds-aux *tailrec-app-cond-names*
+  (tailrec-gen-app-conds-aux app-cond-present-names
                              old$
                              test
                              base
@@ -1235,7 +1288,8 @@
 
   :prepwork
   ((define tailrec-gen-app-conds-aux
-     ((names (subsetp-eq names *tailrec-app-cond-names*))
+     ((names (and (true-listp names)
+                  (subsetp-eq names *tailrec-app-cond-names*)))
       (old$ symbolp)
       (test pseudo-termp)
       (base pseudo-termp)
@@ -1257,23 +1311,6 @@
      :parents nil
      (b* (((when (endp names)) (mv nil nil))
           (name (car names))
-          ((unless (tailrec-app-cond-present-p name variant$ verify-guards$))
-           (tailrec-gen-app-conds-aux (cdr names)
-                                      old$
-                                      test
-                                      base
-                                      nonrec
-                                      combine
-                                      q
-                                      r
-                                      variant$
-                                      domain$
-                                      verify-guards$
-                                      hints$
-                                      print$
-                                      names-to-avoid
-                                      ctx
-                                      state))
           ((mv event thm-name) (tailrec-gen-app-cond name
                                                      old$
                                                      test
@@ -2310,6 +2347,10 @@
                                 (hints$ symbol-alistp)
                                 (print$ print-specifier-p)
                                 (show-only$ booleanp)
+                                (app-cond-present-names
+                                 (and (true-listp app-cond-present-names)
+                                      (subsetp-eq app-cond-present-names
+                                                  *tailrec-app-cond-names*)))
                                 (call pseudo-event-formp)
                                 ctx
                                 state)
@@ -2389,6 +2430,7 @@
                                                        verify-guards$
                                                        hints$
                                                        print$
+                                                       app-cond-present-names
                                                        names-to-avoid
                                                        ctx
                                                        state))
@@ -2664,21 +2706,23 @@
                   thm-name$
                   non-executable$
                   verify-guards$
-                  hints$)) (tailrec-process-inputs old
-                                                   variant
-                                                   domain
-                                                   new-name
-                                                   new-enable
-                                                   wrapper-name
-                                                   wrapper-enable
-                                                   thm-name
-                                                   thm-enable
-                                                   non-executable
-                                                   verify-guards
-                                                   hints
-                                                   print
-                                                   show-only
-                                                   ctx state))
+                  hints$
+                  app-cond-present-names)) (tailrec-process-inputs
+                                            old
+                                            variant
+                                            domain
+                                            new-name
+                                            new-enable
+                                            wrapper-name
+                                            wrapper-enable
+                                            thm-name
+                                            thm-enable
+                                            non-executable
+                                            verify-guards
+                                            hints
+                                            print
+                                            show-only
+                                            ctx state))
        (event (tailrec-gen-everything old$
                                       test
                                       base
@@ -2700,6 +2744,7 @@
                                       hints$
                                       print
                                       show-only
+                                      app-cond-present-names
                                       call
                                       ctx
                                       state)))
