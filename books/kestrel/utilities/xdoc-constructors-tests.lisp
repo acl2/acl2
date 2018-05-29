@@ -184,3 +184,7 @@ line 3
 </blockquote>
 
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (xdoc::img "ref/to/image") "<img src=\"ref/to/image\"/>")
