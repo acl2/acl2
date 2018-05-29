@@ -80,6 +80,7 @@
                                  (fty-info fty-info-alist-p))
     :returns (translated paragraphp
                          :hints (("Goal" :in-theory (enable wordp))))
+    :guard-hints (("Goal" :in-theory (e/d (string-or-symbol-p) ())))
     (b* ((fn-call (symbol-fix fn-call))
          (- (cw "fn-call: ~q0" fn-call))
          (fn-actuals (pseudo-term-list-fix fn-actuals))
@@ -159,6 +160,7 @@
     :returns (translated paragraphp)
     :guard (or (fncall-of-flextype-special fn-call)
                (assoc-equal fn-call fty-info))
+    :guard-hints (("Goal" :in-theory (e/d (string-or-symbol-p) ())))
     (b* ((fn-call (symbol-fix fn-call))
          (special? (fncall-of-flextype-special fn-call))
          ((if special?)
@@ -176,7 +178,8 @@
 
   (define translate-expression ((args te-args-p))
     :returns (mv (translated paragraphp
-                             :hints (("Goal" :in-theory (enable paragraphp))))
+                             :hints (("Goal" :in-theory (enable paragraphp
+                                                                wordp))))
                  (uninterpreted symbol-listp))
     :measure (acl2-count (te-args->expr-lst args))
     :hints (("Goal" :in-theory (enable pseudo-lambdap)))
@@ -258,7 +261,7 @@
                                  :uninterpreted-lst uninterpreted-rest)))
                ;; if it's an option type fixing function, and it's not nil
                ((if (fixing-of-flextype-option fn-call a.fty-info))
-                (mv (cons `(,fixing? ".val(" ,@translated-actuals ")")
+                (mv (cons `(,fixing? ".val(" ,translated-actuals ")")
                           translated-rest)
                     uninterpreted-1))
                ((unless (consp translated-actuals))
@@ -529,7 +532,7 @@
          (translated-name (translate-symbol name nil))
          (- (cw "fty-info: ~q0" fty-info))
          (fty-item (assoc-equal type fty-info))
-         (type (if (fty-item) (fty-info->name (cdr fty-item)) type))
+         (type (if fty-item (fty-info->name (cdr fty-item)) type))
          (translated-type
           (translate-type type int-to-rat 'common-type)))
       `(,translated-name = "Const" #\( #\" ,translated-name #\,
@@ -606,7 +609,7 @@
          ((hint-pair h) d.type)
          (- (cw "uninterpreted type: ~q0" type))
          (translated-type
-          (translate-type h.thm fty-info int-to-rat 'uninterpreted)))
+          (translate-type h.thm int-to-rat 'uninterpreted)))
       (cons `(#\, #\Space ,translated-type)
             (translate-uninterpreted-arguments type rest
                                                fty-info int-to-rat))))
@@ -679,8 +682,10 @@
                                     h.fty-info
                                     translated-uninterpreted-decls
                                     h.int-to-rat))
+         (translated-fty-types (translate-fty-types h.fty-types h.int-to-rat))
          (translated-theorem-with-fty-type-decls
-          (translate-fty-types h.fty-types translated-theorem-with-type-decls))
+          `(,@translated-fty-types
+            ,@translated-theorem-with-type-decls))
          (- (cw "translated-theorem-with-fty-type-decls: ~q0"
                 translated-theorem-with-fty-type-decls))
          )
