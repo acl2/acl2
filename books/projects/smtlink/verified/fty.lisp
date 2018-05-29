@@ -438,6 +438,19 @@
          ((unless (equal type :fix)) nil))
       (fty-info->name info)))
 
+  (define fixing-of-flextype-option ((fn-name symbolp)
+                                     (fty-info fty-info-alist-p))
+    :returns (fixing? symbolp)
+    (b* ((fn-name (symbol-fix fn-name))
+         (fty-info (fty-info-alist-fix fty-info))
+         (item (assoc-equal fn-name fty-info))
+         ((unless item) nil)
+         (info (cdr item))
+         (type (fty-info->type info))
+         ((unless (equal type :fix)) nil))
+      (equal (fty-info->category info) :option)))
+
+
   ;;----------------------------------------------------------
   ;;     datatypes for storing fty types information
 

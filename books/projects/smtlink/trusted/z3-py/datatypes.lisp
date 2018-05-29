@@ -59,8 +59,14 @@
     :hints (("Goal" :in-theory (enable paragraphp))))
 
   (defthm paragraphp-corollary-3
-    (implies (and (consp x) (paragraphp x)) (and (paragraphp (car x)) (paragraphp (cdr x))))
+    (implies (and (consp x) (paragraphp x))
+             (and (paragraphp (car x))
+                  (paragraphp (cdr x))))
     :hints (("Goal" :in-theory (enable paragraphp))))
+
+(defthm paragraphp-corollary-4
+  (implies (and (paragraphp a) (paragraphp b))
+           (paragraphp (append a b))))
 
   (encapsulate ()
     (local (in-theory (enable paragraphp)))

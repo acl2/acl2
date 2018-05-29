@@ -116,8 +116,14 @@
          ((unless fixing?)
           (er hard? 'SMT-translator=>translate-fty-special "Not fixed:
                                  ~q0" (car fixed))))
-      (list (concatenate 'string (lisp-to-python-names fixing?)  "."
-                         (lisp-to-python-names fn-call)))))
+      ;; acons and assoc are treated differently because they are not class
+      ;; methods in Z3 either
+      (if (or (equal fn-call 'ACONS)
+              (equal fn-call 'ASSOC))
+          (list (concatenate 'string (lisp-to-python-names fixing?) "_"
+                             (lisp-to-python-names fn-call)))
+        (list (concatenate 'string (lisp-to-python-names fixing?)  "."
+                           (lisp-to-python-names fn-call))))))
 
   (define translate-field-accessor ((fty-name symbolp)
                                     (fn-call symbolp))
@@ -247,7 +253,14 @@
                     uninterpreted-rest))
                ((mv translated-actuals uninterpreted-1)
                 (translate-expression
-                 (change-te-args a :expr-lst fn-actuals)))
+                 (change-te-args a
+                                 :expr-lst fn-actuals
+                                 :uninterpreted-lst uninterpreted-rest)))
+               ;; if it's an option type fixing function, and it's not nil
+               ((if (fixing-of-flextype-option fn-call a.fty-info))
+                (mv (cons `(,fixing? ".val(" ,@translated-actuals ")")
+                          translated-rest)
+                    uninterpreted-1))
                ((unless (consp translated-actuals))
                 (mv (er hard? 'SMT-translator=>translate-expression
                         "translated-actuals is not a consp: ~q0"
@@ -269,7 +282,7 @@
                                  :expr-lst fn-actuals
                                  :uninterpreted-lst uninterpreted-rest)))
                (translated-expr
-                `(,translated-fn-call
+                `(,@translated-fn-call
                   #\( ,(map-translated-actuals translated-actuals) #\) )))
             (mv (cons translated-expr translated-rest)
                 uninterpreted-1)))
