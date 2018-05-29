@@ -84,25 +84,50 @@
     (defun explain-fn (state)
       (declare (xargs :stobjs (state)
                       :mode :program))
-      (mv-let (clause ttree)
-        (clausify-type-alist (get-brr-local 'type-alist state)
-                             (list (cddr (get-brr-local 'failure-reason state)))
-                             (ens state) (w state) nil nil)
-        (declare (ignore ttree))
-        (prettyify-clause clause
-                          nil
-                          (w state))))
+
+; When the break-rewrite command :eval is called and the rule that has
+; been broken on fails to be applied, ACL2 prints some information
+; describing why the rule failed; this is mainly handled by the system
+; function TILDE-@-FAILURE-REASON-PHRASE1.
+
+; The current function is intended to supplement those messages, and
+; is to be called after :eval.  It provides the following supplemental
+; information:
+
+; - If the rule failed because a hypothesis couldn't be relieved, we
+;   create and print a clause showing what would need to be proved in
+;   order for the hypothesis to be relieved.
+
+; The above is the only extra information currently implemented; feel
+; free to add more.
+
+; There's no need to do :OK-IF (BRR@ :WONP) before calling this
+; function, since it exits early if failure-reason is nil, which must
+; be the case if (BRR@ :WONP) were T.  (NOTE: please maintain this
+; property if you edit this function.)
+
+      (let ((failure-reason (get-brr-local 'failure-reason state)))
+        (cond
+         ((and (consp failure-reason)
+               (consp (cdr failure-reason))
+               (eq (cadr failure-reason) 'rewrote-to))
+          (mv-let (clause ttree)
+            (clausify-type-alist (get-brr-local 'type-alist state)
+                                 (list (cddr failure-reason))
+                                 (ens state) (w state) nil nil)
+            (declare (ignore ttree))
+            (progn$
+             (cw "Printing target with hyps derived from type-alist~%")
+             (value (prettyify-clause clause nil (w state))))))
+         (t (value :invisible)))))
 
     (defmacro explain ()
-      `(prog2$ (cw "Printing target with hyps derived from type-alist~%")
-               (explain-fn state)))
+      `(explain-fn state))
 
     (defmacro why-explain (rule)
       `(er-progn
         (brr t)
-        (monitor ',rule ''(:eval
-                           :ok-if (brr@ :wonp)
-                           (explain)))))
+        (monitor ',rule ''(:eval (explain)))))
 
     (defmacro with-redef (&rest forms)
       ;; A handy macro you can use to temporarily enable redefinition, but then
