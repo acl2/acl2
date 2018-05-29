@@ -312,3 +312,13 @@
     (declare (xargs :guard (stringp desc-id)))
     `(str::cat (xdoc::p ,desc-id)
                (xdoc::blockquote ,@desc-items))))
+
+(define xdoc::img ((src stringp))
+  :returns (text xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
+  :parents (xdoc::xdoc-constructors)
+  :short "Build an XML image reference @('<img src=\"...\">')."
+  :long
+  "<p>
+   The argument is the value for the @('src') attribute.
+   </p>"
+  (str::cat "<img src=\"" src "\"/>"))
