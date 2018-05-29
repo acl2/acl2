@@ -296,8 +296,28 @@
  the value of constant @('*the-live-state*').  Sometimes we call this the
  ``live state'', to distinguish it from its logical value, which is a list of
  fields.  See @(see state).  Note that the ACL2 state can be viewed a special,
- built-in case of a @(see stobj); indeed, we may also speak of ``live stobjs'',
- to distinguish them from their logical, list-based representations.</p>
+ built-in case of a @(see stobj).  Indeed, we may also speak of ``live
+ stobjs'', to distinguish them from their logical, list-based representations,
+ and a stobj, @('st'), is represented in the implementation as
+ @('*the-live-st*').  These ``live'' constants are illustrated below.</p>
+
+ @({
+ ACL2 !>(defstobj st fld)
+
+ Summary
+ Form:  ( DEFSTOBJ ST ...)
+ Rules: NIL
+ Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+  ST
+ ACL2 !>:q
+
+ Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+ ? *the-live-st*
+ #<SIMPLE-VECTOR 1>
+ ? *the-live-state*
+ ACL2_INVISIBLE::|The Live State Itself|
+ ?
+ })
 
  <p>One of those (logical) fields is the <i>global-table</i>, which is an
  association list mapping symbols, called <i>state global variables</i> (or
