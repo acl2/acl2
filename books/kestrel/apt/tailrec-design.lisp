@@ -28,7 +28,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "The design of the transformation is described in

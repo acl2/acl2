@@ -31,7 +31,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "A print specifier is passed as the @(':print') input to a transformation.
@@ -82,7 +82,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "BRIEF SUMMARY (details are skipped here but provided below).  When the
@@ -174,7 +174,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "The @(':hints') keyword for an APT transformation is legal when there is
