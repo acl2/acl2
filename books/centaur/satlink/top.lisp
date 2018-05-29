@@ -343,8 +343,8 @@ the Glucose and Riss3g solvers.  In particular, see the following scripts:</p>
 <li>When Glucose reports SAT, we just exit (because Satlink can check the
 satisfying assignment itself); or</li>
 
-<li>When Glucose reports UNSAT, we check the proof using the Drat-Trim unsat
-proof checker.  We only print an \"s UNSATISFIABLE\" line if Drat-Trim says
+<li>When Glucose reports UNSAT, we check the proof using the DRAT-trim unsat
+proof checker.  We only print an \"s UNSATISFIABLE\" line if DRAT-trim says
 that the proof is ok.</li>
 
 </ul>

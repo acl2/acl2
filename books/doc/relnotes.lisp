@@ -105,6 +105,13 @@
  additional details, you may also see the raw <a
  href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
 
+ <h3>Deleted Material</h3>
+
+ <p>Marijn Heule's @('drat-trim') tool, for checking SAT solver proofs, is no
+ longer included in the ACL2 repository.  Please obtain the latest version from
+ <a href=\"https://www.cs.utexas.edu/~marijn/drat-trim/\">the official
+ website</a>.</p>
+
  <h3>New Libraries</h3>
 
  <p>A new regular expression library, @(see acre::acre), is available in
@@ -1219,8 +1226,9 @@ books work only for ACL2 built on CCL or SBCL.</p>
  <p>@(see GL) now displays a more informative error message about
  duplicated indices in @(':g-bindings').</p>
 
- <p>@(see Satlink) now uses @('drat-trim'), available at
- @('tools/drat-trim/'), instead of @('drup-trim').</p>
+ <p>@(see Satlink) now uses @('drat-trim'), available <a
+ href=\"https://www.cs.utexas.edu/~marijn/drat-trim/\">here</a>,
+ instead of @('drup-trim').</p>
 
  <p>The book @('tools/untranslate-for-exec.lisp') has been improved to
  handle nested mv-lets.</p>

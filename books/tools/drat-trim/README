@@ -1,0 +1,16 @@
+This directory used to contain a copy of the DRAT-trim program, by
+Marijn J. H. Heule, Warren A. Hunt, Jr., and Nathan Wetzler.
+
+DRAT-trim is often used in conjunction with the SATLINK library, so it
+was placed here as a convenience for the user, but it was never
+directly integrated into the ACL2 build system, so we decided to
+remove it from the repository to prevent bitrot.
+
+If you are looking for DRAT-trim, please go to the official DRAT-trim
+website, which is here:
+
+  https://www.cs.utexas.edu/~marijn/drat-trim/
+
+Or, you can visit the GitHub repository, which is here:
+
+  https://github.com/marijnheule/drat-trim

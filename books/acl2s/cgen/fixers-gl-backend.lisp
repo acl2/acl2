@@ -12,7 +12,7 @@ a) Download Glucose @ http://www.labri.fr/perso/lsimon/downloads/softwares/gluco
 b) Extract and run the following command:
    : cd glucose-syrup/simp; make
 c) Verify that glucose-syrup/simp/glucose --help prints a help message
-(NOTE for Mac users: If you are building Glucose 3.0 or 4.0 on a Mac, the build might fail. In that case, a solution may be to make the two replacements shown below, where the the first in each pair (<) is the Mac version, while the second in each pair (>) is the original source. 
+(NOTE for Mac users: If you are building Glucose 3.0 or 4.0 on a Mac, the build might fail. In that case, a solution may be to make the two replacements shown below, where the the first in each pair (<) is the Mac version, while the second in each pair (>) is the original source.
 
 <     // friend Lit mkLit(Var var, bool sign = false);
 ---
@@ -55,7 +55,7 @@ downloaded from the webpage.
 (defun gl-my-satlink-config ()
   (declare (xargs :guard t))
   *my-config*)
-  
+
 ; You need to do this otherwise the default glucose-cert is used (which gives error: drat-trim)
 (defattach gl::gl-satlink-config gl-my-satlink-config)
 
@@ -97,7 +97,7 @@ downloaded from the webpage.
 (defun can-flow (x f1 f2)
   "value of x can possibly flow from f1 to f2"
   (member-eq x (intersection-eq (g1 :out f1) (g1 :in f2))))
-  
+
 (defun sfixes-lit (fixer l)
   (and (member-equal l (g1 :fixes fixer)) t))
 
@@ -123,7 +123,7 @@ downloaded from the webpage.
             (append (cdr new-arg) (cdr args))
           (cons new-arg (cdr args)))
       (cons (car args) (subst-args new-arg old-arg (cdr args))))))
-  
+
 (defmacro defloop+ (name arglist &rest forms)
   "allows nested for loops"
   (b* ((loop+-form (car (last forms)))
@@ -187,7 +187,7 @@ downloaded from the webpage.
   "map final-value-var to its (list fixer variable) pair"
   (pairlis$ (pvars/final vars fixers)
             (final-fixer-variable-pairs vars fixers)))
-       
+
 
 
 
@@ -238,7 +238,7 @@ downloaded from the webpage.
 
 
 (defloop connection-var-table1 (f1xf2-list)
-  (for ((f1xf2 in f1xf2-list)) 
+  (for ((f1xf2 in f1xf2-list))
        (collect (cons (connection-var f1xf2)
                       (b* (((list f1 x f2) f1xf2))
                           (list (g1 :name f1) x (g1 :name f2)))))))
@@ -269,7 +269,7 @@ downloaded from the webpage.
 (defun trans-conn-with-flow-var (f1xf2)
   (b* (((list f1 x f2) f1xf2))
       (s+ (g1 :name f1) "---" x "--->" (g1 :name f2))))
-    
+
 
 (defloop trans-conn-with-flow-vars (f1xf2-list)
   (for ((f1xf2 in f1xf2-list))
@@ -341,7 +341,7 @@ downloaded from the webpage.
 
 
 ;[Circuit/Each var has atleast one final-value ]
-; \E F_k : x \in Out(F_k): F_k!x 
+; \E F_k : x \in Out(F_k): F_k!x
 
 (defloop C/atleast-one-final-value (vars fixers)
   (for ((x in vars))
@@ -399,7 +399,7 @@ downloaded from the webpage.
 (defun C/TheChosenFixer (lits fixers)
   (append (C/TheChosenFixer-def lits fixers)
           (C/TheCF-uniquely-valid1 lits fixers fixers)))
-  
+
 
 ; [Final-Value fixer is Valid]
 ; F_1!x => F_1.valid
@@ -466,8 +466,8 @@ downloaded from the webpage.
        (collect `(IMPLIES ,(connection-var f1xf2)
                           (AND ,(trans-conn-with-flow-var f1xf2)
                                ,(trans-conn-var (drop-flow-var f1xf2)))))))
-                                              
-                                          
+
+
 (defun C/trans1/basis (fixers vars)
   (C/trans1/basis1 (all-connections fixers vars)))
 
@@ -480,9 +480,9 @@ downloaded from the webpage.
                       (member x (g1 :in f2))  ; and into f2
                       (not (equal f1 f2))     ;ignore loops (in hyps)
                       ;(not (equal f1 f3)) ; BUG: dont ignore these, these are to be caught!
-                      )    
+                      )
               (collect (list x f1 f2 f3))))))
-       
+
 
 (defloop+ C/trans-with-flow1/rec1 (xf1f2f3-list)
   (for ((xf1f2f3 in xf1f2f3-list))
@@ -525,13 +525,13 @@ downloaded from the webpage.
 
 ; One direction of def of transitivity is not enough.
 ; We need the other direction to avoid bogus trans
-; connections which do not have any base connections. 
+; connections which do not have any base connections.
 ;  F_1--x-->F_3 => F_1-x->F_3 \/ \E F_2:: F_1--x-->F_2 /\ F_2--x-->F_3
 
 
 (defloop C/trans-with-flow-only-if2 (f2s f1 f3 x)
   (for ((f2 in f2s))
-       (collect (list 'AND 
+       (collect (list 'AND
                       (trans-conn-with-flow-var (list f1 x f2))
                       (trans-conn-with-flow-var (list f2 x f3))))))
 
@@ -540,7 +540,7 @@ downloaded from the webpage.
   (if (endp fixers)
     '()
     (b* ((f2 (car fixers))
-         ((when (or (equal f2 f1) (equal f2 f3))) 
+         ((when (or (equal f2 f1) (equal f2 f3)))
           (fixers-between-with-flow (cdr fixers) f1 f3 x))
          ((unless (and (can-flow x f1 f2)
                        (can-flow x f2 f3)))
@@ -549,8 +549,8 @@ downloaded from the webpage.
 
 
 (defloop C/trans-with-flow-only-if1 (f1xf3-list all-fixers)
-  (for ((f1xf3 in f1xf3-list)) 
-       (collect 
+  (for ((f1xf3 in f1xf3-list))
+       (collect
         (b* (((list f1 x f3) f1xf3)
              (f2s (fixers-between-with-flow all-fixers f1 f3 x)))
           `(IMPLIES ,(trans-conn-with-flow-var f1xf3)
@@ -559,7 +559,7 @@ downloaded from the webpage.
 
 (defun C/trans-with-flow-only-if-direction (fixers vars)
   (C/trans-with-flow-only-if1 (all-connections fixers vars) fixers))
-  
+
 (defun C/trans (fixers vars)
   (append (C/trans1 fixers vars)
           (C/trans-with-flow-only-if-direction fixers vars)
@@ -581,7 +581,7 @@ downloaded from the webpage.
   (for ((f_j in other-x-fixers))
        (when (not (equal f_j final-f))
          (collect `(IMPLIES
-                    (AND ,(final-value-var (list final-f x)) 
+                    (AND ,(final-value-var (list final-f x))
                          ,(valid-var f_j))
                     ,(and (can-flow x f_j final-f)
                           (trans-conn-with-flow-var (list f_j x final-f))))))))
@@ -592,7 +592,7 @@ downloaded from the webpage.
 
 (defabbrev C/final-value-def1 (x-fixers x)
   (C/final-value-def11 x-fixers x-fixers x))
-       
+
 (defloop C/final-value-def (vars fixers)
   (for ((x in vars))
        (append (C/final-value-def1 (filter-has-output fixers x) x))))
@@ -612,7 +612,7 @@ downloaded from the webpage.
       ;;to avoid specifying too many preservation rules [2016-04-17 Sun]
       ;;TODO -- restrict this to defdata-type only
       (and (consp l) (= (len l) 2))
-      
+
       ))
 
 (deffilter filter-spreserves-lit (fixers l)
@@ -640,8 +640,8 @@ downloaded from the webpage.
                            (OR . ,(C/TheFixer-is-preserved3/inputs
                                    (strip-cars (connections-to-via F x all-fixers))
                                    lit x F all-fixers)))))))
-                  
-                                      
+
+
 
 (defloop C/TheFixer-is-preserved1 (lit-fixers lit all-fixers)
   (for ((F in lit-fixers))
@@ -710,7 +710,7 @@ of the entries is same as the keys"
 ;; now its possible that this lit-instance is actually "fixed", but for that we need to generate the following clause:
 ;; C(.. in-fx-list .. out-fx-list..) => F**C /\ Fin1-x1->F /\ ...
        ;; C(F1x1,F2x2,Fy1,Fy2, F3z) => F**C /\ F1-x1->F /\ F2-x2->F /\ F3.valid
-       ;; No need for F3.valid. INVARIANT: at the least vars(F) \superset of vars(Lit) 
+       ;; No need for F3.valid. INVARIANT: at the least vars(F) \superset of vars(Lit)
        (fxr-in (g1 :in lit-fixer))
        (in-fx-list{} (assoc-lst fxr-in var-fx-list{})))
     `(IMPLIES ,pvar
@@ -737,7 +737,7 @@ of the entries is same as the keys"
        (- (cw "~| x0 matches ~x1 with Sigma ~x2~%" term pat sigma))
        )
     yesp))
-    
+
 (defloop matches-some-rule (term rules)
   (for ((rule in rules))
        (if (match-p term (get-concl rule))
@@ -763,21 +763,21 @@ of the entries is same as the keys"
 
 ; Cxyz => CxG(wy)z or Cxyz => CxG(x'y)z (free variable) TODO -- NOT SUPPORTED for now!!
 ; : {spreserves(G,C)} C(F1.x,G.y,F3.z) =>  F3.valid /\ \E F2:{F2yG}:F2-y->G /\ C(F1.x,F2.y,F3.z)
-       
+
        (input-var-pfxr-alist (get-prule-input-alist prule)) ;can have duplicate keys
        (inputs-only (remove-duplicates-eq (strip-cars input-var-pfxr-alist)))
        (in-fx-list{} (assoc-lst inputs-only var-fx-list{}))
 
        (output-var-pfxr-alist (get-prule-output-alist prule))
        (outputs-only (strip-cars output-var-pfxr-alist))
-       
+
        (disjoint-vars (set-difference-eq vars (union$ inputs-only outputs-only)))
        (disjoint-var-fx-list{} (assoc-lst disjoint-vars var-fx-list{}))
        (fixers-assigning-vars-disjoint (strip-cars (strip-cdrs disjoint-var-fx-list{})))
-       
+
 
        (- (cw "~| input-var-pfxr-alist:~0 output-var-pfxr-alist:~x1 fixers-assigning-vars-disjoint:~x2, ~%" input-var-pfxr-alist output-var-pfxr-alist fixers-assigning-vars-disjoint))
-       
+
        )
     `(IMPLIES ,pvar
               (AND ,@(pvars/valid fixers-assigning-vars-disjoint)
@@ -808,14 +808,14 @@ of the entries is same as the keys"
 (defloop singletonize (xs)
   ;"convert (x1 x2 ... xn) to ((x1) (x2) (x3) ... (xn))"
   (for ((x in xs)) (collect (list x))))
-  
+
 (defloop+ cross-product/binary (A1 A2)
   (for ((a in A1))
-       (for ((b in A2)) 
+       (for ((b in A2))
             (collect (list a b)))))
-  
+
 ; (cross-product/binary A1 '()) == (cross-product/binary '() A1) == NULL != (singletonize A1)
-  
+
 (defun generate-all-tuples (A-list)
   "Given Lists A1,A2,...,An generate all n-tuples (a1,...,an) where ai \in Ai"
   (if (endp A-list)
@@ -826,7 +826,7 @@ of the entries is same as the keys"
           (cross-product/binary (car A-list) (cadr A-list))
           (cross-product/binary (car A-list)
                                 (generate-all-tuples (cdr A-list)))))))
-  
+
 ;(memoize 'cross-product/binary)
 ;(memoize 'generate-all-tuples)
 
@@ -834,7 +834,7 @@ of the entries is same as the keys"
   (b* ((vars-fx-list-alist (fixer-output-x-alst vars fixers))
        (all-possible-f1xf2yf3z (generate-all-tuples (strip-cdrs vars-fx-list-alist))))
     (C-truth-val-f/p/other-inst2 all-possible-f1xf2yf3z lit vars fixers prules)))
-       
+
 (defloop C-truth-val-f/p/other-inst (lits fixers prules{})
   (for ((lit in lits))
        (C-truth-val-f/p/other-inst1 lit (collect-vars lit) fixers (g1 lit prules{}))))
@@ -849,7 +849,7 @@ of the entries is same as the keys"
 
 
 ;; [2016-04-02 Sat]
-;; [2017-08-18 Fri] Modified data structure from lits-lst to flits{} 
+;; [2017-08-18 Fri] Modified data structure from lits-lst to flits{}
 ;; term->flits{} added.
 ; term->flits{} is an alist from each cterm to an alist {(fixername1 . flits_1) ..}
 ; It corresponds to DNF form, i.e., a sum of products i.e. at least one
@@ -884,7 +884,7 @@ of the entries is same as the keys"
                                 ,(car cs))
                     `(IMPLIES ,(pvar/sat-term (car term--lits{}))
                               (OR . ,cs)))))))
-                          
+
 
 
 ; [# Satisfied constraints]
@@ -928,7 +928,7 @@ of the entries is same as the keys"
 ; 1. From connection var assignment, get an adjacency list with backward edges
 ; 2. For each variable, get its final fixer and start from there and go backwards building its assignment entry
 (defun make-bedges-adjlist1 (connvar-edges conn-var-table ans)
-  "given edges in form of symbols F1xF2, return an adjacency list with 
+  "given edges in form of symbols F1xF2, return an adjacency list with
    backward edges of the form (fixer-name . flow-var).
    Initially ans has all fixers mapped to their in-list"
   (if (endp connvar-edges)
@@ -970,7 +970,7 @@ of the entries is same as the keys"
 
 
 (defun dag-term-at (fx b-adjlist fxri{} flag)
-  "given a acyclic adjlist (with backward edges), and (f . x), 
+  "given a acyclic adjlist (with backward edges), and (f . x),
    find the term/expression at that node.
    Note:Each node is a function symbol and the backward-edges are in order of
    the inputs to that node."
@@ -980,7 +980,7 @@ of the entries is same as the keys"
   ;(declare (xargs :measure (acl2-count b-adjlist) :hints (("Goal" :in-theory (disable acl2-count))))
 (if (eq flag :node)
     (b* (((cons f x) fx)
-         ((unless (assoc-equal f b-adjlist)) 
+         ((unless (assoc-equal f b-adjlist))
           (er hard? 'dag-term-at "~| ~x0 not found in adjlist!~%" f))
          (adj-in-nodes (g1 f b-adjlist))
          (b-adjlist1 (delete-assoc-equal f b-adjlist))
@@ -1005,7 +1005,7 @@ of the entries is same as the keys"
                (consp (cdr out-list)))
           ;;take care of mv expressions here only for fixer-regression!
           (list 'MV-NTH (kwote x-pos)
-                (list 'MV-LIST (kwote (len out-list)) dag-term)) 
+                (list 'MV-LIST (kwote (len out-list)) dag-term))
         dag-term))
   (let ((fxs fx))
     (if (endp fxs)
@@ -1033,13 +1033,13 @@ of the entries is same as the keys"
 
 (include-book "simple-graph-array")
 (defun let-binding->dep-graph-alst (vt-lst ans)
-  "Walk down the var-term list vt-lst and add edges. 
+  "Walk down the var-term list vt-lst and add edges.
    Build graph alist in ans"
   (if (endp vt-lst)
       ans
     (b* (((list var term) (car vt-lst))
          (fvars (all-vars term)));only non-buggy for terms
-      (let-binding->dep-graph-alst 
+      (let-binding->dep-graph-alst
        (cdr vt-lst)
        (cgen::union-entry-in-adj-list var fvars ans)))))
 
@@ -1056,7 +1056,7 @@ of the entries is same as the keys"
 (defun do-let*-ordering1 (vars vt-lst debug-flag)
   (declare (xargs :guard (symbol-alistp vt-lst)
                   :mode :program))
-  (b* ((dep-g (let-binding->dep-graph-alst vt-lst 
+  (b* ((dep-g (let-binding->dep-graph-alst vt-lst
                                            (cgen::make-empty-adj-list vars)))
        (sorted-vars (cgen::approximate-topological-sort dep-g debug-flag)))
     (get-ordered-alst (reverse sorted-vars) vt-lst nil)))
@@ -1081,17 +1081,17 @@ of the entries is same as the keys"
 ;;         (t (b* (((cons f args) exp)
 ;;                 (mv args1 ans) (flatten-mv-nth-terms args ans))
 ;;              (mv (cons f args1) ans)))))
-           
-              
+
+
 ;; (defun flatten-mv-nth-terms/alist1 (x-exps ans)
 ;;   (if (endp x-exps)
 ;;       ans
 ;;     (b* (((cons x exp) (car x-exps))
 ;;          ((mv exp1 ans) (flatten-mv-nth-term exp ans)))
 ;;       (flatten-mv-nth-terms/alist1 (cdr x-exps) (append ans (list (cons x exp1)))))))
-         
-         
-  
+
+
+
 ;; (defun flatten-mv-nth-terms/alist (A)
 ;;   (flatten-mv-nth-terms/alist1 A '()))
 
@@ -1126,7 +1126,7 @@ of the entries is same as the keys"
        (let*-b (do-let*-ordering1 vars let*-b nil))
        )
     let*-b))
-       
+
 
 (defun soln-sigma-top (sat-assignment vars fxri{})
   (b* ((fixers (strip-cdrs fxri{}))
@@ -1136,7 +1136,7 @@ of the entries is same as the keys"
        (valid-var-table/true (cgen::assoc-lst pvars/valid valid-var-table))
        (fixer-names/valid (strip-cdrs valid-var-table/true))
        (fxri{}/valid (cgen::assoc-lst fixer-names/valid fxri{}))
-       
+
        (conn-var-table (connection-var-table vars fixers))
        (final-value-var-table (final-value-var-table vars fixers))
 
@@ -1156,7 +1156,7 @@ of the entries is same as the keys"
                       bedges-adjlist)))
     A))
 
-  
+
 (defun make-GL-SAT-encoding (vars lits term->flits{} fxri{})
 ; return (mv bindings hyp concl-hyp)
 ;  (declare (xargs :mode :program :stobjs (state)))
@@ -1164,7 +1164,7 @@ of the entries is same as the keys"
        (terms (strip-cars term->flits{}))
        (bindings (pvars-g-bindings vars fixers lits terms))
        (hyp `(AND . ,(pvars-type-constraints vars fixers lits terms)))
-       (concl-hypothesis `(AND . ,(append 
+       (concl-hypothesis `(AND . ,(append
                                    (C/atleast-one-final-value vars fixers)
                                    ;;(C/atmost-one-final-value vars fixers)
                                    (C/final-value-implies-valid vars fixers)
@@ -1181,10 +1181,10 @@ of the entries is same as the keys"
                                    (C/sat-lits lits fixers)
                                    (C/sat-terms term->flits{})))
                                    ))
-       
+
     (mv bindings hyp concl-hypothesis)))
-       
-       
+
+
 
 
 (defun fixers-sat-glcp-query (num-sat-lits top-hyps bindings trhyp concl-hyp vl state)
@@ -1204,14 +1204,14 @@ bindings:
 ~x0~%" missing-vars)))
                   (cw? (normal-output-flag vl) "****  ERROR ****~%~@0~%" msg))))
        ((when missing-vars) (mv :missing-vars nil state))
-    
+
        (param-bindings nil)
        (trparam nil)
        (config (gl::make-glcp-config
                 :abort-ctrex t
                 :abort-vacuous t
                 :n-counterexamples 1))
-       ((mv erp ?val state) 
+       ((mv erp ?val state)
         (gl::glcp nil (list bindings param-bindings
                             trhyp trparam trconcl
                             concl config) state))
@@ -1228,20 +1228,20 @@ bindings:
                            (newline (standard-co state) state)
                            (value :invisible))
                  (value nil)))
-       
-        ((unless erp) (mv :unsat nil state)) 
+
+        ((unless erp) (mv :unsat nil state))
         (x  (car (@ gl::glcp-counterex-assignments))) ;only pick the first
         (sat-A (gl::glcp-obj-ctrex->obj-alist x))
         )
       (mv nil sat-A state)))
-      
+
 (defun fixers-maxsat-glcp-query-loop (n top-hyps bindings trhyp concl-hyp mode vl state)
   (declare (xargs :mode :program :stobjs (state)))
   (if (zp n)
     (mv :unsat nil 0 state) ;nothing satisfied
     (b* (((mv erp A state) (fixers-sat-glcp-query n top-hyps bindings trhyp concl-hyp vl state))
          ((unless erp) ;got sat assignment
-          (prog2$ 
+          (prog2$
            (cw? (verbose-stats-flag vl) "~|Got a sat assignment for #literals = ~x0~%" n)
            (mv nil A n state)))
          ((when (eq mode :sat)) ;dont continue maxsat loop if in this mode
@@ -1252,7 +1252,7 @@ bindings:
 
 
 
-; fxri{} is the fixer instance metadata table 
+; fxri{} is the fixer instance metadata table
 (defun fixers-maxsat-glcp-query (vars lits term->flits{} relevant-hyps fxri{} mode vl state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* (((when (or (null vars)
@@ -1263,7 +1263,7 @@ bindings:
         (mv :null nil state)); abort, treat as error
        (ctx 'fixers-maxsat-glcp-query)
        ((mv start-code-gen state) (acl2::read-run-time state))
-       
+
        ((mv bindings hyp concl-hyp)
         (make-GL-SAT-encoding vars lits term->flits{} fxri{}))
        ((mv end-code-gen state) (acl2::read-run-time state))
@@ -1279,11 +1279,11 @@ bindings:
                            (newline (standard-co state) state)
                            (value :invisible))
                  (value nil)))
-       
+
        ((er trhyp) (acl2::translate hyp t t nil ctx (w state) state))
-       
-       
-       
+
+
+
        ((mv erp sat-A ?n state)
         (fixers-maxsat-glcp-query-loop (len relevant-hyps)
                                        relevant-hyps ;[2016-05-04 Wed] only count these
@@ -1306,7 +1306,7 @@ bindings:
         (- (cw? (verbose-stats-flag vl) "SAT Assignment: ~x0~%" sat-A/true))
         )
     (mv nil sat-A/true state)))
-  
+
 (defun fxri-let*-soln/gl (flits term->flits{} relevant-terms fxri{} vl state)
   ;; return (mv erp (list let*-binding satisfied-terms) state)
   (declare (xargs :stobjs (state)))
@@ -1320,10 +1320,10 @@ bindings:
                                   fxri{}
                                   :maxsat ;maxsat loop
                                   vl state))
-       
+
        ((when (equal :null erp))
         (value (list nil nil)))
-       
+
        ((when (equal :unsat erp))
         (progn$
          (cw? (verbose-flag vl)
@@ -1335,8 +1335,8 @@ bindings:
        (rterms-pvars/true (filter-true-vars sat-A rterms-pvars/sat))
        (rterms/true (strip-cdrs (cgen::assoc-lst rterms-pvars/true
                                                 (pairlis$ rterms-pvars/sat relevant-terms))))
-       
-        
+
+
        (ssigma (soln-sigma-top sat-A flits-vars fxri{}))
        (let*-soln0 (convert-to-let*-binding ssigma)))
     (mv erp (list let*-soln0 rterms/true) state)))
