@@ -37,6 +37,7 @@
                                                           paragraphp))))
   :measure (len formals)
   (b* ((formals (symbol-list-fix formals))
+       ((unless (consp formals)) nil)
        ((unless (consp (cdr formals)))
         (list (translate-symbol (car formals) nil)))
        ((cons first rest) formals)
@@ -276,7 +277,13 @@
 
 (define translate-fty-types ((fty-types fty-types-p)
                              (int-to-rat booleanp))
-  :returns (translated paragraphp)
+  :returns (translated paragraphp
+                       :hints (("Goal"
+                                :in-theory (enable paragraphp wordp))))
   (b* (((mv translated extra-fn)
-        (translate-fty-types-recur fty-types int-to-rat)))
-    `(,translated ,extra-fn)))
+        (translate-fty-types-recur fty-types int-to-rat))
+       (symbol-lst (translate-symbol-lst (strip-cars fty-types)))
+       (create-line
+        (if (endp symbol-lst) nil
+          `("[" ,@symbol-lst "] = CreateDatatypes(" ,@symbol-lst ")" #\Newline))))
+    `(,translated ,create-line ,extra-fn)))

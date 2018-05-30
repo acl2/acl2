@@ -684,7 +684,7 @@
                                     h.fty-info
                                     translated-uninterpreted-decls
                                     h.int-to-rat))
-         (translated-fty-types (translate-fty-types h.fty-types h.int-to-rat nil))
+         (translated-fty-types (translate-fty-types h.fty-types h.int-to-rat))
          (translated-theorem-with-fty-type-decls
           `(,@translated-fty-types
             ,@translated-theorem-with-type-decls))
