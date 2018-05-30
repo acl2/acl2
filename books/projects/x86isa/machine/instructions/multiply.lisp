@@ -32,12 +32,14 @@
 
   :long
   "<h4>Op/En: M</h4>
-   <p>
-   F6/4: MUL r/m8:  AX := AL \* r/m8<br/>
-   F7/4: MUL r/m16: DX:AX := AX \* r/m16<br/>
-   F7/4: MUL r/m32: EDX:EAX := EAX \* r/m32<br/>
-   F7/4: MUL r/m64: RDX:RAX := RAX \* r/m64
-   </p>"
+
+   <p>F6/4: <br/>
+      MUL r/m8: AX := AL \* r/m8<br/><br/>
+
+      F7/4: <br/>
+      MUL r/m16: DX:AX := AX \* r/m16<br/>
+      MUL r/m32: EDX:EAX := EAX \* r/m32<br/>
+      MUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
 
   :implemented
   (progn
@@ -141,6 +143,7 @@
 ;; INSTRUCTION: IMUL
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-imul-Op/En-M
 
   :parents (one-byte-opcodes)
@@ -165,22 +168,24 @@
   :long
   "<h4>Op/En: M</h4>
 
-  <p>F6/5: <br/>
-     IMUL r/m8:  AX      := AL  \* r/m8<br/><br/>
+   <p>F6/5: <br/>
+      IMUL r/m8: AX := AL \* r/m8<br/><br/>
 
-     F7/5: <br/>
-     IMUL r/m16: DX:AX   := AX  \* r/m16<br/>
-     IMUL r/m32: EDX:EAX := EAX \* r/m32<br/>
-     IMUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
+      F7/5: <br/>
+      IMUL r/m16: DX:AX := AX  \* r/m16<br/>
+      IMUL r/m32: EDX:EAX := EAX \* r/m32<br/>
+      IMUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
 
   :body
 
   (b* ((ctx 'x86-imul-Op/En-M)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
@@ -189,14 +194,27 @@
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?v-addr x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            reg/mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                reg/mem-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -208,12 +226,14 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ;; Computing the result:
        (rAX (rgfi-size reg/mem-size *rax* rex-byte x86))
+
+       ;; Computing the result:
        ((mv product-high product-low product (the (unsigned-byte 1) cf-and-of))
         (imul-spec reg/mem-size rAX reg/mem))
 
        ;; Updating the x86 state:
+
        (x86
         (case reg/mem-size
           (1 ;; AX := AL * r/m8
@@ -237,7 +257,7 @@
                (x86 (!flgi #.*of* cf-and-of x86)))
           x86))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 (def-inst x86-imul-Op/En-RM

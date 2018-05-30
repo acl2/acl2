@@ -2743,14 +2743,8 @@
        (#x4
         (x86-mul start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x5
-        (if (64-bit-modep x86)
-            (x86-imul-Op/En-M start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "(IMUL Eb) is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-imul-Op/En-M
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x6
         (x86-div start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x7
@@ -2783,14 +2777,8 @@
        (#x4
         (x86-mul start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x5
-        (if (64-bit-modep x86)
-            (x86-imul-Op/En-M start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "(IMUL Ev) is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-imul-Op/En-M
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x6
         (x86-div start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x7
