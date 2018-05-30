@@ -279,7 +279,7 @@
      (let-binding let-binding-p :default (make-let-binding))
      (fty symbol-listp :default nil)
      (fty-info fty-info-alist-p :default nil)
-     (fty-types fty-types-p :default (make-fty-types))
+     (fty-types fty-types-p :default nil)
      (fix-hint true-listp :default nil)
      (int-to-rat booleanp :default nil)
      (smt-dir stringp :default "")

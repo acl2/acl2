@@ -8,6 +8,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/strings/top" :dir :system)
 ;; for lambda expression
 (include-book "kestrel/utilities/terms" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
@@ -120,11 +121,12 @@
       ;; acons and assoc are treated differently because they are not class
       ;; methods in Z3 either
       (if (or (equal fn-call 'ACONS)
-              (equal fn-call 'ASSOC))
+              (equal fn-call 'ASSOC-EQUAL)
+              (equal fn-call 'CONSP))
           (list (concatenate 'string (lisp-to-python-names fixing?) "_"
-                             (lisp-to-python-names fn-call)))
+                             (str::downcase-string (lisp-to-python-names fn-call))))
         (list (concatenate 'string (lisp-to-python-names fixing?)  "."
-                           (lisp-to-python-names fn-call))))))
+                           (str::downcase-string (lisp-to-python-names fn-call)))))))
 
   (define translate-field-accessor ((fty-name symbolp)
                                     (fn-call symbolp))
@@ -535,8 +537,8 @@
          (type (if fty-item (fty-info->name (cdr fty-item)) type))
          (translated-type
           (translate-type type int-to-rat 'common-type)))
-      `(,translated-name = "Const" #\( #\" ,translated-name #\,
-                         ,translated-type #\" #\) #\Newline)))
+      `(,translated-name = "z3.Const" #\( #\' ,translated-name #\' #\, #\Space
+                         ,translated-type #\) #\Newline)))
 
   (encapsulate ()
     (local (in-theory (enable paragraph-fix paragraphp)))
@@ -682,7 +684,7 @@
                                     h.fty-info
                                     translated-uninterpreted-decls
                                     h.int-to-rat))
-         (translated-fty-types (translate-fty-types h.fty-types h.int-to-rat))
+         (translated-fty-types (translate-fty-types h.fty-types h.int-to-rat nil))
          (translated-theorem-with-fty-type-decls
           `(,@translated-fty-types
             ,@translated-theorem-with-type-decls))

@@ -956,7 +956,7 @@
          ((smtlink-hint h) hints)
          ((unless (alistp flextypes-table)) h)
          (fty-types (generate-fty-type-list h.fty flextypes-table
-                                            h.fty-info (make-fty-types))))
+                                            h.fty-info nil)))
       (change-smtlink-hint h :fty-types fty-types)))
 
   (encapsulate ()

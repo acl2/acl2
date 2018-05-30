@@ -76,89 +76,64 @@
 (define translate-fty-prod ((name symbolp)
                             (fields fty-field-alist-p)
                             (int-to-rat booleanp))
-  :returns (translated paragraphp
-                       :hints (("Goal"
-                                :in-theory (enable paragraphp wordp))))
+  :returns (mv (translated paragraphp
+                           :hints (("Goal"
+                                    :in-theory (enable paragraphp wordp))))
+               (extended-extra-fn paragraphp))
   (b* ((name (symbol-fix name))
        (name (translate-symbol name nil))
        (datatype-line `(,name "= Datatype" #\( #\' #\" ,name #\' #\) #\Newline))
        (translated-fields (translate-fty-field-lst fields int-to-rat))
        (fields-line `(,name ".declare('" ,name "'" ,@translated-fields ")"
                             #\Newline)))
-    `(,datatype-line
-      ,fields-line)))
-
-(define translate-fty-prod-lst ((prod-lst fty-prod-alist-p)
-                                (int-to-rat booleanp))
-  :returns (translated paragraphp)
-  :measure (len prod-lst)
-  :hints (("Goal" :in-theory (e/d (fty-prod-alist-fix) ())))
-  (b* ((prod-lst (fty-prod-alist-fix prod-lst))
-       ((unless (consp prod-lst)) nil)
-       ((cons first rest) prod-lst))
-    (cons (translate-fty-prod (car first) (cdr first) int-to-rat)
-          (translate-fty-prod-lst rest int-to-rat))))
+    (mv `(,datatype-line
+          ,fields-line)
+        nil)))
 
 (define translate-fty-option ((name symbolp)
                               (some-type symbolp)
                               (int-to-rat booleanp))
-  :returns (translated paragraphp
-                       :hints (("Goal"
-                                :in-theory (enable paragraphp wordp))))
+  :returns (mv (translated paragraphp
+                           :hints (("Goal"
+                                    :in-theory (enable paragraphp wordp))))
+               (extended-extra-fn paragraphp))
   (b* ((name (symbol-fix name))
        (name (translate-symbol name nil))
        (datatype-line
-        `(,name "= Datatype" #\( #\' #\" ,name #\' #\) #\Newline))
+        `(,name "= Datatype" #\( #\' ,name #\' #\) #\Newline))
        (translated-type (translate-type some-type int-to-rat nil))
        (declare-line1
         `(,name ".declare('some', ('val', " ,translated-type "))" #\Newline))
        (declare-line2
         `(,name ".declare('nil')" #\Newline)))
-    `(,datatype-line
-      ,declare-line1
-      ,declare-line2)))
-
-(define translate-fty-option-lst ((option-lst fty-option-alist-p)
-                                  (int-to-rat booleanp))
-  :returns (translated paragraphp)
-  :measure (len option-lst)
-  :hints (("Goal" :in-theory (e/d (fty-option-alist-fix) ())))
-  (b* ((option-lst (fty-option-alist-fix option-lst))
-       ((unless (consp option-lst)) nil)
-       ((cons first rest) option-lst))
-    (cons (translate-fty-option (car first) (cdr first) int-to-rat)
-          (translate-fty-option-lst rest int-to-rat))))
+    (mv `(,datatype-line
+          ,declare-line1
+          ,declare-line2)
+        nil)))
 
 (define translate-fty-list ((name symbolp)
                             (elt-type symbolp)
                             (int-to-rat booleanp))
-  :returns (translated paragraphp
-                       :hints (("Goal"
-                                :in-theory (enable paragraphp wordp))))
+  :returns (mv (translated paragraphp
+                           :hints (("Goal"
+                                    :in-theory (enable paragraphp wordp))))
+               (extended-extra-fn paragraphp))
   (b* ((name (symbol-fix name))
        (name (translate-symbol name nil))
        (datatype-line
-        `(,name "= Datatype" #\( #\' #\" ,name #\' #\) #\Newline))
+        `(,name "= Datatype" #\( #\' ,name #\' #\) #\Newline))
        (translated-elt-type (translate-type elt-type int-to-rat nil))
        (declare-line1
         `(,name ".declare('cons', ('car', " ,translated-elt-type "), "
                 "('cdr', " ,name "))" #\Newline))
        (declare-line2
-        `(,name ".declare('nil')" #\Newline)))
-    `(,datatype-line
-      ,declare-line1
-      ,declare-line2)))
-
-(define translate-fty-list-lst ((list-lst fty-list-alist-p)
-                                (int-to-rat booleanp))
-  :returns (translated paragraphp)
-  :measure (len list-lst)
-  :hints (("Goal" :in-theory (e/d (fty-list-alist-fix) ())))
-  (b* ((list-lst (fty-list-alist-fix list-lst))
-       ((unless (consp list-lst)) nil)
-       ((cons first rest) list-lst))
-    (cons (translate-fty-option (car first) (cdr first) int-to-rat)
-          (translate-fty-list-lst rest int-to-rat))))
+        `(,name ".declare('nil')" #\Newline))
+       (consp-fn `("def " ,name "_consp(l): return Not(l == " ,name ".nil)"
+                       #\Newline)))
+    (mv `(,datatype-line
+          ,declare-line1
+          ,declare-line2)
+        `(,consp-fn))))
 
 (define translate-fty-alist-assoc-return ((key-type symbolp)
                                           (val-type symbolp)
@@ -224,124 +199,84 @@
     `("def " ,fn-name "(): return ArraySort(" ,key-type ", " ,maybe-val ")")))
 
 (define translate-fty-alist ((name symbolp)
-                             (alist-pair fty-alist-p)
+                             (key-type symbolp)
+                             (val-type symbolp)
                              (int-to-rat booleanp))
-  :returns (translated paragraphp
-                       :hints (("Goal"
-                                :in-theory (enable paragraphp wordp))))
+  :returns (mv (translated paragraphp
+                           :hints (("Goal"
+                                    :in-theory (enable paragraphp wordp))))
+               (extended-extra-fn paragraphp))
   :guard-hints (("Goal" :in-theory (e/d (paragraphp wordp) ())))
-  :guard-debug t
   (b* ((name (symbol-fix name))
-       (alist-pair (fty-alist-fix alist-pair))
-       (key-type (fty-alist->key-type alist-pair))
-       (val-type (fty-alist->val-type alist-pair))
+       (key-type (symbol-fix key-type))
+       (val-type (symbol-fix val-type))
        (val-type-pkg (symbol-package-name val-type))
        (val-type-str (translate-type val-type int-to-rat nil))
        (maybe-val-str (concatenate 'string "maybe_" val-type-str))
        (maybe-val (intern$ maybe-val-str val-type-pkg))
-       (maybe-val-type
+       ;; translate-fty-option doesn't generate extra-fn
+       ((mv maybe-val-type &)
         (translate-fty-option maybe-val val-type int-to-rat))
        (assoc-return `(,key-type "_" ,val-type))
        (assoc-return-type
         (translate-fty-alist-assoc-return key-type val-type assoc-return
-                             int-to-rat))
+                                          int-to-rat))
+       (alist-fn
+        (translate-fty-alist-type key-type val-type maybe-val int-to-rat))
        (acons-fn (translate-fty-alist-acons name))
        (assoc-fn
         (translate-fty-alist-assoc name maybe-val assoc-return))
-       (alist-fn
-        (translate-fty-alist-type key-type val-type maybe-val int-to-rat))
        )
-    `(,maybe-val-type
-      ,assoc-return-type
-      ,acons-fn
-      ,assoc-fn
-      ,alist-fn)))
+    (mv `(,maybe-val-type
+          ,assoc-return-type)
+        `(,acons-fn
+          ,assoc-fn
+          ,alist-fn))))
 
-(define translate-fty-alist-lst ((alist-lst fty-alist-alist-p)
-                                 (int-to-rat booleanp))
-  :returns (translated paragraphp)
-  :measure (len alist-lst)
-  :hints (("Goal" :in-theory (e/d (fty-alist-alist-fix) ())))
-  (b* ((alist-lst (fty-alist-alist-fix alist-lst))
-       ((unless (consp alist-lst)) nil)
-       ((cons first rest) alist-lst))
-    (cons (translate-fty-alist (car first) (cdr first) int-to-rat)
-          (translate-fty-alist-lst rest int-to-rat))))
 
-(local
- (defthm symbol-listp-of-strip-cars-fty-prod-alist-p
-   (implies (fty-prod-alist-p prod)
-            (symbol-listp (strip-cars prod))))
- )
+(define translate-one-fty-type ((name symbolp)
+                                (body fty-type-p)
+                                (int-to-rat booleanp))
+  :returns (mv (translated paragraphp
+                           :hints (("Goal"
+                                    :in-theory (enable paragraphp wordp))))
+               (extended-extra-fn paragraphp))
+  (b* ((body (fty-type-fix body)))
+    (cond ((equal (fty-type-kind body) :prod)
+           (translate-fty-prod name (fty-type-prod->fields body) int-to-rat))
+          ((equal (fty-type-kind body) :option)
+           (translate-fty-option name (fty-type-option->some-type body)
+                                 int-to-rat))
+          ((equal (fty-type-kind body) :list)
+           (translate-fty-list name (fty-type-list->elt-type body)
+                               int-to-rat))
+          ((equal (fty-type-kind body) :alist)
+           (translate-fty-alist name (fty-type-alist->key-type body)
+                                (fty-type-alist->val-type body) int-to-rat))
+          (t (mv nil nil)))))
 
-(local
- (defthm symbol-listp-of-strip-cars-fty-option-alist-p
-   (implies (fty-option-alist-p option)
-            (symbol-listp (strip-cars option))))
- )
-
-(local
- (defthm symbol-listp-of-strip-cars-fty-list-alist-p
-   (implies (fty-list-alist-p list)
-            (symbol-listp (strip-cars list))))
- )
-
-(local
- (defthm symbol-listp-of-strip-cars-fty-alist-alist-p
-   (implies (fty-alist-alist-p alist)
-            (symbol-listp (strip-cars alist))))
- )
-
-(local
- (defthm member-of-fty-types-p
-   (implies (fty-types-p f)
-            (and (fty-prod-alist-p (fty-types->prod f))
-                 (fty-option-alist-p (fty-types->option f))
-                 (fty-list-alist-p (fty-types->list f))
-                 (fty-alist-alist-p (fty-types->alist f))))))
-
-(local
- (defthm symbol-listp-of-append
-   (implies (and (symbol-listp a)
-                 (symbol-listp b))
-            (symbol-listp (append a b))))
- )
+(define translate-fty-types-recur ((fty-types fty-types-p)
+                                   (int-to-rat booleanp))
+  :returns (mv (translated paragraphp)
+               (extended-extra-fn paragraphp))
+  :measure (len fty-types)
+  :hints (("Goal" :in-theory (e/d (fty-types-fix)
+                                  ())))
+  (b* ((fty-types (fty-types-fix fty-types))
+       ((unless (consp fty-types)) (mv nil nil))
+       ((cons first rest) fty-types)
+       ((cons name body) first)
+       ((mv translated-first extra-fn-first)
+        (translate-one-fty-type name body int-to-rat))
+       ((mv translated-rest extra-fn-rest)
+        (translate-fty-types-recur rest int-to-rat))
+       (translated (cons translated-first translated-rest))
+       (extra-fn (cons extra-fn-first extra-fn-rest)))
+    (mv translated extra-fn)))
 
 (define translate-fty-types ((fty-types fty-types-p)
                              (int-to-rat booleanp))
   :returns (translated paragraphp)
-  :guard-hints (("Goal"
-                 :in-theory (e/d ()
-                                 (symbol-listp-of-strip-cars-fty-prod-alist-p
-                                  symbol-listp-of-strip-cars-fty-option-alist-p
-                                  symbol-listp-of-strip-cars-fty-list-alist-p
-                                  symbol-listp-of-strip-cars-fty-alist-alist-p
-                                  member-of-fty-types-p
-                                  ))
-                 :use ((:instance symbol-listp-of-strip-cars-fty-prod-alist-p
-                                  (prod (fty-types->prod fty-types)))
-                       (:instance symbol-listp-of-strip-cars-fty-option-alist-p
-                                  (option (fty-types->option fty-types)))
-                       (:instance symbol-listp-of-strip-cars-fty-list-alist-p
-                                  (list (fty-types->list fty-types)))
-                       (:instance symbol-listp-of-strip-cars-fty-alist-alist-p
-                                  (alist (fty-types->alist fty-types)))
-                       (:instance member-of-fty-types-p
-                                  (f fty-types)))
-                 ))
-  (b* ((fty-types (fty-types-fix fty-types))
-       ((fty-types f) fty-types)
-       (prod (translate-fty-prod-lst f.prod int-to-rat))
-       (prod-names (strip-cars f.prod))
-       (option (translate-fty-option-lst f.option int-to-rat))
-       (option-names (strip-cars f.option))
-       (list (translate-fty-list-lst f.list int-to-rat))
-       (list-names (strip-cars f.list))
-       (alist (translate-fty-alist-lst f.alist int-to-rat))
-       (alist-names (strip-cars f.alist))
-       (symbol-lst `(,@prod-names ,@option-names ,@list-names ,@alist-names))
-       (translated-symbol-lst (translate-symbol-lst symbol-lst))
-       (create `(,@translated-symbol-lst "= CreateDatatypes"
-                                         #\( ,@translated-symbol-lst #\)
-                                         #\Newline)))
-    `(,@prod ,@option ,@list ,@alist ,@create)))
+  (b* (((mv translated extra-fn)
+        (translate-fty-types-recur fty-types int-to-rat)))
+    `(,translated ,extra-fn)))
