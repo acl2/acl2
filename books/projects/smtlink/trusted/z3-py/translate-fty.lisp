@@ -15,21 +15,24 @@
 
 (local (in-theory (enable string-or-symbol-p)))
 
-(define translate-symbol ((sym symbolp) (nil-type symbolp))
+(define translate-bool ((b booleanp) (nil-type symbolp))
   :returns (translated paragraphp
                        :hints (("Goal" :in-theory (enable paragraphp wordp))))
   (cond
    ;; Boolean: nil
-   ((and (equal sym 'nil)
+   ((and (equal b 'nil)
          (equal nil-type nil))
     (list "False"))
    ;; A fty nil
-   ((equal sym 'nil)
+   ((equal b 'nil)
     (list (concatenate 'string (lisp-to-python-names nil-type) ".nil")))
    ;; Boolean: t
-   ((equal sym 't) (list "True"))
-   ;; A variable
-   (t (list (lisp-to-python-names sym)))))
+   (t (list "True"))))
+
+(define translate-symbol ((sym symbolp))
+  :returns (translated paragraphp
+                       :hints (("Goal" :in-theory (enable paragraphp wordp))))
+  (lisp-to-python-names sym))
 
 (define translate-symbol-lst ((formals symbol-listp))
   :returns (translated paragraphp
@@ -39,9 +42,9 @@
   (b* ((formals (symbol-list-fix formals))
        ((unless (consp formals)) nil)
        ((unless (consp (cdr formals)))
-        (list (translate-symbol (car formals) nil)))
+        (list (translate-symbol (car formals))))
        ((cons first rest) formals)
-       (translated-name (translate-symbol first nil)))
+       (translated-name (translate-symbol first)))
     (cons translated-name `(#\, #\Space ,@(translate-symbol-lst rest)))))
 
 (define translate-type ((type symbolp)
@@ -68,7 +71,7 @@
   (b* ((fields (fty-field-alist-fix fields))
        ((unless (consp fields)) nil)
        ((cons first rest) fields)
-       (name (translate-symbol (car first) nil))
+       (name (translate-symbol (car first)))
        (type (translate-type (cdr first) int-to-rat nil))
        (translated-field `(", ('" ,name "', " ,type ")")))
     (cons translated-field
@@ -82,7 +85,7 @@
                                     :in-theory (enable paragraphp wordp))))
                (extended-extra-fn paragraphp))
   (b* ((name (symbol-fix name))
-       (name (translate-symbol name nil))
+       (name (translate-symbol name))
        (datatype-line `(,name "= Datatype" #\( #\' #\" ,name #\' #\) #\Newline))
        (translated-fields (translate-fty-field-lst fields int-to-rat))
        (fields-line `(,name ".declare('" ,name "'" ,@translated-fields ")"
@@ -99,7 +102,7 @@
                                     :in-theory (enable paragraphp wordp))))
                (extended-extra-fn paragraphp))
   (b* ((name (symbol-fix name))
-       (name (translate-symbol name nil))
+       (name (translate-symbol name))
        (datatype-line
         `(,name "= Datatype" #\( #\' ,name #\' #\) #\Newline))
        (translated-type (translate-type some-type int-to-rat nil))
@@ -120,7 +123,7 @@
                                     :in-theory (enable paragraphp wordp))))
                (extended-extra-fn paragraphp))
   (b* ((name (symbol-fix name))
-       (name (translate-symbol name nil))
+       (name (translate-symbol name))
        (datatype-line
         `(,name "= Datatype" #\( #\' ,name #\' #\) #\Newline))
        (translated-elt-type (translate-type elt-type int-to-rat nil))
@@ -163,7 +166,7 @@
                        :hints (("Goal"
                                 :in-theory (enable paragraphp wordp))))
   (b* ((name (symbol-fix name))
-       (name (translate-symbol name nil))
+       (name (translate-symbol name))
        (fn-name `(,name "_acons")))
     `("def " ,fn-name "(key, value, alist): return Store(alist, key, value)")))
 
@@ -174,9 +177,9 @@
                        :hints (("Goal"
                                 :in-theory (enable paragraphp wordp))))
   (b* ((name (symbol-fix name))
-       (name (translate-symbol name nil))
+       (name (translate-symbol name))
        (maybe-val (symbol-fix maybe-val))
-       (maybe-val (translate-symbol maybe-val nil))
+       (maybe-val (translate-symbol maybe-val))
        (assoc-return (paragraph-fix assoc-return))
        (fn-name `(,name "_assoc")))
     `("def " ,fn-name "(key, alist): return If(Select(alist, key) == "

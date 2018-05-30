@@ -19,7 +19,7 @@
   :parents (SMT-basics)
   :short "Basic ACL2 functions supported in Smtlink."
   (append
-   '(rationalp realp booleanp integerp)
+   '(rationalp realp booleanp integerp symbolp)
    '(binary-+ binary-* unary-/ unary--
               equal <
               implies if not
@@ -56,7 +56,8 @@
   `((realp          . "_SMT_.RealSort()")
     (rationalp      . "_SMT_.RealSort()")
     (integerp       . "_SMT_.IntSort()")
-    (booleanp       . "_SMT_.BoolSort()")))
+    (booleanp       . "_SMT_.BoolSort()")
+    (symbolp        . "Symbol")))
 
 (defval *SMT-uninterpreted-types*
   :parents (SMT-basics)
@@ -66,7 +67,8 @@
     (rationalp      . "_SMT_.RealSort()")
     (real/rationalp . "_SMT_.RealSort()")
     (integerp       . "_SMT_.IntSort()")
-    (booleanp       . "_SMT_.BoolSort()")))
+    (booleanp       . "_SMT_.BoolSort()")
+    (symbolp        . "Symbol")))
 
 ;;----------------------------------------------------------------
 
