@@ -342,8 +342,11 @@
 
        ;; Updating the x86 state:
        (x86
-        (!rgfi-size reg/mem-size (reg-index reg rex-byte #.*r*)
-                    product-low rex-byte x86))
+        (!rgfi-size reg/mem-size
+                    (reg-index reg rex-byte #.*r*)
+                    product-low
+                    rex-byte
+                    x86))
 
        (x86
         (let* ((x86 (!flgi #.*cf* cf-and-of x86))
@@ -357,6 +360,7 @@
        (x86 (write-*ip temp-rip x86)))
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-imul-Op/En-RMI
 
   :parents (one-byte-opcodes)
@@ -368,7 +372,7 @@
   :long
   "<h4>Op/En: RMI</h4>
 
-  <p>6B ib:<br/>
+   <p>6B ib:<br/>
       IMUL r16, r/m16, imm8<br/>
       IMUL r32, r/m32, imm8 <br/>
       IMUL r64, r/m64, imm8 <br/> <br/>
@@ -385,16 +389,21 @@
     (add-to-implemented-opcodes-table 'PUSHF #x6B '(:nil nil)
                                       'x86-imul-Op/En-RMI))
 
+  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
+                                           rme-size-of-2-to-rme16
+                                           rme-size-of-4-to-rme32)))
+
   :body
 
   (b* ((ctx 'x86-imul-Op/En-RMI)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
@@ -409,32 +418,40 @@
           (if (equal reg/mem-size 2)
               2
             4)))
+
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg0 reg/mem
+       ((mv flg0
+            reg/mem
             (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* reg/mem-size inst-ac?
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$
+         #.*gpr-access*
+         reg/mem-size
+         inst-ac?
          nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
+         seg-reg
+         p4?
+         temp-rip
+         rex-byte
+         r/m
+         mod
+         sib
          imm-size ;; imm-size bytes of immediate data
          x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        ((mv flg1 (the (unsigned-byte 32) imm) x86)
-        (rml-size imm-size temp-rip :x x86))
+        (rme-size imm-size temp-rip *cs* :x nil x86))
        ((when flg1)
-        (!!ms-fresh :riml-size-error flg1))
+        (!!ms-fresh :rime-size-error flg1))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip temp-rip imm-size x86))
@@ -450,9 +467,11 @@
 
        ;; Updating the x86 state:
        (x86
-        (!rgfi-size reg/mem-size (reg-index reg rex-byte #.*r*)
-                    product-low rex-byte x86))
-
+        (!rgfi-size reg/mem-size
+                    (reg-index reg rex-byte #.*r*)
+                    product-low
+                    rex-byte
+                    x86))
 
        (x86
         (let* ((x86 (!flgi #.*cf* cf-and-of x86))
@@ -463,7 +482,7 @@
                (x86 (!flgi #.*of* cf-and-of x86)))
           x86))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
