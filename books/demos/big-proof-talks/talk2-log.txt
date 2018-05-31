@@ -588,9 +588,9 @@ ACL2 !>>(DEFTHM ORDERED-REMARKABLY-FAST-SORT
 
 ACL2 Warning [Non-rec] in ( DEFTHM ORDERED-REMARKABLY-FAST-SORT ...):
 A :REWRITE rule generated from ORDERED-REMARKABLY-FAST-SORT will be
-triggered only by terms containing the non-recursive function symbol
-REMARKABLY-FAST-SORT.  Unless this function is disabled, this rule
-is unlikely ever to be used.
+triggered only by terms containing the function symbol REMARKABLY-FAST-SORT,
+which has a non-recursive definition.  Unless this definition is disabled,
+this rule is unlikely ever to be used.
 
 
 But we reduce the conjecture to T, by the simple :definition 
@@ -890,9 +890,9 @@ on this issue.
 
 ACL2 Warning [Non-rec] in ( DEFTHM PERM-REMARKABLY-FAST-SORT ...):
 A :REWRITE rule generated from PERM-REMARKABLY-FAST-SORT will be triggered
-only by terms containing the non-recursive function symbol 
-REMARKABLY-FAST-SORT.  Unless this function is disabled, this rule
-is unlikely ever to be used.
+only by terms containing the function symbol REMARKABLY-FAST-SORT,
+which has a non-recursive definition.  Unless this definition is disabled,
+this rule is unlikely ever to be used.
 
 
 ACL2 Warning [Subsume] in ( DEFTHM PERM-REMARKABLY-FAST-SORT ...):
@@ -2497,9 +2497,9 @@ ACL2 !>>(DEF-GL-THM
 
 ACL2 Warning [Non-rec] in ( DEFTHM FAST-LOGCOUNT-32-CORRECT ...): 
 A :REWRITE rule generated from FAST-LOGCOUNT-32-CORRECT will be triggered
-only by terms containing the non-recursive function symbol FAST-LOGCOUNT-32.
-Unless this function is disabled, this rule is unlikely ever to be
-used.
+only by terms containing the function symbol FAST-LOGCOUNT-32, which
+has a non-recursive definition.  Unless this definition is disabled,
+this rule is unlikely ever to be used.
 
 Subgoal 5
 Subgoal 4
