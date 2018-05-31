@@ -1065,14 +1065,8 @@
 
     (#xAF
      "(IMUL Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-imul-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                            modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "IMUL is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-imul-Op/En-RM
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xB0 #xB1)
      "B0: (CMPXCHG Eb Gb); B1: (CMPXCHG Ev Gv)"

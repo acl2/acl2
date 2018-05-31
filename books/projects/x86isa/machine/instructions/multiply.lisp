@@ -260,6 +260,7 @@
        (x86 (write-*ip temp-rip x86)))
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-imul-Op/En-RM
 
   :parents (two-byte-opcodes)
@@ -275,35 +276,50 @@
   :long
   "<h4>Op/En: RM</h4>
 
-  <p>0F AF:<br/>
-     IMUL r16, r/m16: r16 := r16 \* r/m16 <br/>
-     IMUL r32, r/m32: r32 := r32 \* r/m32 <br/>
-     IMUL r64, r/m64: r64 := r64 \* r/m64 <br/> </p>"
+   <p>0F AF:<br/>
+      IMUL r16, r/m16: r16 := r16 \* r/m16 <br/>
+      IMUL r32, r/m32: r32 := r32 \* r/m32 <br/>
+      IMUL r64, r/m64: r64 := r64 \* r/m64 <br/> </p>"
 
   :body
 
   (b* ((ctx 'x86-imul-Op/En-RM)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size nil rex-byte nil prefixes x86))
+
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            reg/mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                reg/mem-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -315,8 +331,10 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (register (rgfi-size reg/mem-size (reg-index reg rex-byte #.*r*)
-                            rex-byte x86))
+       (register (rgfi-size reg/mem-size
+                            (reg-index reg rex-byte #.*r*)
+                            rex-byte
+                            x86))
 
        ;; Computing the result:
        ((mv ?product-high product-low ?product (the (unsigned-byte 1) cf-and-of))
@@ -336,7 +354,7 @@
                (x86 (!flgi #.*of* cf-and-of x86)))
           x86))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 (def-inst x86-imul-Op/En-RMI
