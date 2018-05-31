@@ -82,3 +82,38 @@
 
 ;; Inverse-graph
 (create-inverse-graph *inverse-graph* *network*)
+
+
+;; To sumilate packet movement through the network
+;; Run multistep function
+(multi-step (list (list '(pkt1 (11 . 4) (0 . 2) data)  
+                        '(pkt2 (12 . 2) (6 . 8) data))
+                  (list '(pkt3 (8 . 7) (3 . 4) data)  
+                        '(pkt4 (6 . 8) (11 . 4) data)
+                        '(pkt5 (3 . 4) (12 . 6) data))
+                  nil
+                  nil
+                  nil nil nil)
+            nil
+            *linktable*
+            *inverse-graph*
+            nil
+            *network*
+            nil)
+
+;; To trace packet movement through the network
+;; Run trace function
+(trace-pkts (list (list '(pkt1 (11 . 4) (0 . 2) data)  
+                        '(pkt2 (12 . 2) (6 . 8) data))
+                  (list '(pkt3 (8 . 7) (3 . 4) data)  
+                        '(pkt4 (6 . 8) (11 . 4) data)
+                        '(pkt5 (3 . 4) (12 . 6) data))
+                  nil
+                  nil
+                  nil nil nil)
+            nil
+            *linktable*
+            *inverse-graph*
+            nil
+            *network*
+            nil)
